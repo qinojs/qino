@@ -77,7 +77,7 @@ Token-Lebensdauern sind fest: Code 120 s, Access 1 h, Refresh 30 Tage.
 
 - **PKCE ist Pflicht** (`S256`); ohne Challenge bricht `/authorize` ab.
 - Codes gelten 120 Sekunden und genau einmal; Refresh-Tokens rotieren bei jeder Nutzung.
-- Von Tokens wird nur der SHA-256 gespeichert — wie bei `api_key` sind sie nicht auslesbar, nur widerrufbar.
+- Von Tokens wird nur der SHA-256 gespeichert — wie bei `auth.api_keys` sind sie nicht auslesbar, nur widerrufbar.
 - Der Consent-Post ist CSRF-geprüft, sonst könnte eine fremde Seite die Zustimmung auslösen.
 - Tokens eines deaktivierten Users verifizieren nicht mehr.
 - **Dynamic Registration ist offen** — das ist die Spec-Vorgabe und für sich harmlos: eine Registrierung

@@ -1,5 +1,7 @@
 import { api, hee, t } from "@qino/pub/qino.js";
 
+const apiKeys = api["auth.api_keys"];
+
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "–";
 
 cms.initNode("cont.my.api_keys", async (el) => {
@@ -13,7 +15,7 @@ cms.initNode("cont.my.api_keys", async (el) => {
 
   const load = async () => {
     try {
-      const keys = await api.api_key.keys.get();
+      const keys = await apiKeys.get();
       list.innerHTML = keys.length
         ? keys.map((k) => `<div data-key>
             <code>${hee(k.prefix)}…</code> <strong>${hee(k.name)}</strong>
@@ -28,14 +30,14 @@ cms.initNode("cont.my.api_keys", async (el) => {
     const btn = e.target.closest("[data-del]");
     if (!btn) return;
     if (!confirm(labels.del)) return;
-    const r = await api.api_key.key(btn.dataset.del).delete();
+    const r = await apiKeys(btn.dataset.del).delete();
     if (r.ok) btn.closest("[data-key]")?.remove();
   });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
-      const r = await api.api_key.keys.post({ name: name.value || undefined });
+      const r = await apiKeys.post({ name: name.value || undefined });
       token.hidden = false;
       token.value = `${await t`Copy now — shown only once`}: ${r.token}`;
       name.value = "";

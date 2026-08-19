@@ -1,4 +1,4 @@
-# api_key
+# auth.api_keys
 
 Per-user API keys. A logged-in user can mint, list and revoke keys; a key is meant to
 authenticate machine calls to the api API (`{appUrl}api/…`) as that user.
@@ -9,24 +9,25 @@ so a token is shown **once** at creation and can never be read back — only rev
 ## Einbindung in server.ts
 
 ```ts
-app.modules.add(import.meta.resolve("../qino/module/api_key/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/auth.api_keys/plugin.ts"));
 
 // Optional UI:
 app.modules.add(import.meta.resolve("../qino/module/cms.cont.my.api_keys/plugin.ts"));         // self-service
-app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.api_keys/plugin.ts")); // admin
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.auth.api_keys/plugin.ts")); // admin
 ```
 
 ## API (session-authenticated)
 
-Basis: `{appUrl}api/api_key/`
+Der Modulname benennt schon die Ressource, also hängen die Verben an der Wurzel
+`{appUrl}api/auth.api_keys` — wie bei [auth.totp](../auth.totp/) oder [auth.oauth](../auth.oauth/).
 
-| Methode | Pfad        | Access | Beschreibung                                   |
-|---------|-------------|--------|------------------------------------------------|
-| GET     | `keys`      | USER   | Eigene Keys auflisten (id, name, prefix, …)    |
-| POST    | `keys`      | USER   | Key erzeugen → `{ id, token }` (Token einmalig) |
-| DELETE  | `key/:id`   | USER   | Key löschen (eigener, oder beliebiger als superuser) |
+| Methode | Pfad   | Access | Beschreibung                                         |
+|---------|--------|--------|------------------------------------------------------|
+| GET     | –      | USER   | Eigene Keys auflisten (id, name, prefix, …)          |
+| POST    | –      | USER   | Key erzeugen → `{ id, token }` (Token einmalig)      |
+| DELETE  | `:id`  | USER   | Key löschen (eigener, oder beliebiger als superuser) |
 
-`POST keys` input: `{ name?, expires? }` — `expires` in Unix-Sekunden, weglassen = kein Ablauf.
+`POST` input: `{ name?, expires? }` — `expires` in Unix-Sekunden, weglassen = kein Ablauf.
 
 ## Client verwendet einen Key
 

@@ -12,7 +12,7 @@ Endpoint: `POST {appUrl}mcp` — handled methods: `initialize`, `ping`, `tools/l
 Mit `store.addAll()` automatisch dabei; sonst:
 
 ```ts
-app.modules.add(import.meta.resolve("../qino/module/api_key/plugin.ts")); // Bearer auth
+app.modules.add(import.meta.resolve("../qino/module/auth.api_keys/plugin.ts")); // Bearer auth
 app.modules.add(import.meta.resolve("../qino/module/mcp/plugin.ts"));
 ```
 
@@ -20,7 +20,7 @@ app.modules.add(import.meta.resolve("../qino/module/mcp/plugin.ts"));
 
 Auth ist stateless Bearer — ohne gültiges Token antwortet der Endpoint 401. Zwei Quellen:
 
-**Eigener Header** (`api_key`) — für Clients, die einen Header setzen können:
+**Eigener Header** (`auth.api_keys`) — für Clients, die einen Header setzen können:
 
 ```bash
 # Beispiel Claude Code:

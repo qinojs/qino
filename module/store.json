@@ -1,8 +1,8 @@
 {
   "modules": {
     "ai": {},
-    "api_key": {},
     "auth": {},
+    "auth.api_keys": {},
     "auth.backup_codes": {},
     "auth.oauth": {},
     "auth.otp": {},
@@ -31,8 +31,8 @@
     "cms.backend.mail.templates": {},
     "cms.backend.settings": {},
     "cms.backend.superuser": {},
-    "cms.backend.superuser.api_keys": {},
     "cms.backend.superuser.auth": {},
+    "cms.backend.superuser.auth.api_keys": {},
     "cms.backend.superuser.auth.backup_codes": {},
     "cms.backend.superuser.auth.oauth": {},
     "cms.backend.superuser.auth.totp": {},

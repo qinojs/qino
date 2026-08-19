@@ -114,6 +114,10 @@ only says the person is there right now.
 **Not a recovery mechanism.** A link is a [ticket](../ticket/), a one-time code is an ordinary
 factor.
 
+**Not what [auth.api_keys](../auth.api_keys/) does.** A key names the user on a request and never
+opens a session, so it declares no factor and can satisfy no demand — a step-up is a person, and a
+machine call has nobody to ask.
+
 **Not only a record of proofs.** The session keeps `core.via.<name> = <when>` for every way in,
 including ones that prove nothing (`remember`, `login_as`). They are auditable and can never satisfy
 a demand, because only a declared factor is ever asked for.

@@ -5,7 +5,7 @@ import denoJson from "../../deno.json" with { type: "json" };
 import type { Params, Ctx, Tool } from "@qino/qino";
 
 /** MCP server (Streamable HTTP, stateless): exposes the app's api tree as MCP tools.
- *  Requires stateless Bearer auth (e.g. api_key); every call re-runs access/guard via invoke. */
+ *  Requires stateless Bearer auth (e.g. auth.api_keys); every call re-runs access/guard via invoke. */
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 

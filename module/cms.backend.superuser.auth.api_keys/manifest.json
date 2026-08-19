@@ -1,9 +1,9 @@
 {
-  "name": "cms.backend.superuser.api_keys",
+  "name": "cms.backend.superuser.auth.api_keys",
   "description": "Manages API keys across all users.",
   "dependencies": [
     "cms.backend",
-    "api_key"
+    "auth.api_keys"
   ],
   "files": [
     "manifest.json",

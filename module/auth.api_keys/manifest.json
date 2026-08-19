@@ -1,5 +1,5 @@
 {
-  "name": "api_key",
+  "name": "auth.api_keys",
   "description": "Creates and authenticates revocable API keys for users.",
   "dependencies": [
     "core"
