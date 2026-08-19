@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { requestStorage } from "@qino/qino";
+import { requestStorage, isEmptyObject } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
 import { getVers } from "./lib/Vers.ts";
@@ -110,7 +110,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
         const row = await db.row`SELECT * FROM page WHERE ${idWhere}`;
         if (!row) return;
         if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
-        if (!Object.keys(liveData).length) return;
+        if (isEmptyObject(liveData)) return;
         const set = e.table.valuesToFragment(liveData, undefined, true);
         await db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
         await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;

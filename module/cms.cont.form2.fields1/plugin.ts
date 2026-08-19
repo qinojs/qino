@@ -1,4 +1,4 @@
-import { getCtx, hee, html } from "@qino/qino";
+import { getCtx, hee, html, isEmptyObject } from "@qino/qino";
 
 import { sortedIds } from "./sortedIds.ts";
 import options from "./options.ts";
@@ -137,7 +137,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (node.edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
   // start usable: one field
-  if (!Object.keys(node.settings.inputs).length) node.settings.inputs["1"]({});
+  if (isEmptyObject(node.settings.inputs)) node.settings.inputs["1"]({});
 
   const form = await formOf(node);
   const fields = [];

@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, isEmptyObject } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
@@ -37,7 +37,7 @@ export async function setMeta(ctx: Ctx, fileId: number, data: Record<string, any
         if (!ALLOWED_META.has(k) || v === undefined) continue;
         vs[k] = k === "name" ? String(v).trim() : Math.max(0, Math.min(100, Number(v)));
     }
-    if (!Object.keys(vs).length) return;
+    if (isEmptyObject(vs)) return;
     await (await ctx.app.dbFiles.file(fileId)).setVs(vs);
 }
 

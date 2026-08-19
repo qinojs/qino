@@ -1,4 +1,5 @@
 import { toJsonSchema } from "../StandardSchema.ts";
+import { isEmptyObject } from "../util.ts";
 import { asParams, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";
 
@@ -36,7 +37,7 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
     tools.push({
       name: r.name,
       description: r.verb.description ?? r.name,
-      parameters: Object.keys(properties).length ? { type: "object", properties, required } : {},
+      parameters: isEmptyObject(properties) ? {} : { type: "object", properties, required },
       execute: (args) => {
         const raw = { ...asParams(args) };
         // zzz needed? for (const [name, schema] of routeParams(r)) if (schema && name in raw) raw[name] = coerce(raw[name], schema);

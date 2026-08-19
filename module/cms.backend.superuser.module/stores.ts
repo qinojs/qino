@@ -153,7 +153,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
   const icon = moduleIcon(iconMod);
   const manifest = known?.manifest ?? iconMod?.manifest;
   const dependencies = manifest?.dependencies?.length ?? 0;
-  const neededBy = Object.values(all).filter((other) => other.dependencies.includes(mod)).length;
+  const neededBy = [...all.values()].filter((other) => other.dependencies.includes(mod)).length;
   const description = manifest?.description ?? "";
   const detail = getCtx().req.url.toURL();
   detail.searchParams.set("mod", mod);

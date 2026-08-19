@@ -1,4 +1,4 @@
-import { $item, bildJsonItem, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile } from "@qino/qino";
+import { $item, bildJsonItem, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -43,11 +43,11 @@ export class Node {
     }
 
     async init(): Promise<this> {
-        if (!this.vs || !Object.keys(this.vs).length) {
+        if (!this.vs || isEmptyObject(this.vs)) {
             this.vs = await this.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${this.id}` ?? {};
         }
         await this.app.fire("node:construct", { node: this });
-        if (!Object.keys(this.vs).length) {
+        if (isEmptyObject(this.vs)) {
             this.vs = { id: this.id, basis: 0, type: "p" };
             this.#is = false;
             return this;
@@ -107,7 +107,7 @@ export class Node {
         const hit = cache.get(key);
         if (hit !== undefined) return hit;
         const e: AppEvents["node:access"] = { node: this, user, access: await this.#rawAccess(user) };
-        const access = (await this.app.fire("node:access", e)).access as number;
+        const access = (await this.app.fire("node:access", e)).access;
         cache.set(key, access);
         return access;
     }
@@ -668,9 +668,9 @@ export class Node {
         }
         page.#clearFileCache();
 
-        if (Object.keys(old2new).length) {
+        if (!isEmptyObject(old2new)) {
             const newTexts = await page.texts();
-            for (const dbText of Object.values(newTexts)) {
+            for (const dbText of newTexts.values()) {
                 for (const l of this.app.languages.all) {
                     const tl = dbText.lang(l);
                     const old = await tl.get();

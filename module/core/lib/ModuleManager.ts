@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import { getCtx } from "./ctx/Ctx.ts";
-import { enableItemSchemaDefaults, errMsg, unixTime } from "./util.ts";
+import { enableItemSchemaDefaults, errMsg, isEmptyObject, unixTime } from "./util.ts";
 
 import type { App } from "./App.ts";
 
@@ -352,7 +352,7 @@ export class ModuleManager {
     for (const schema of schemas) if (typeof schema !== "function") mergeSchema(dbSchema, schema);
     // Function-form dbSchema runs after the static merge — for tables derived from other modules.
     for (const schema of schemas) if (typeof schema === "function") mergeSchema(dbSchema, schema(dbSchema));
-    if (Object.keys(dbSchema.properties).length) {
+    if (!isEmptyObject(dbSchema.properties)) {
       await this.#app.db.migrate(dbSchema, { patch: true });
       this.#app.db.schema = dbSchema;
       await this.#app.db.loadTables();

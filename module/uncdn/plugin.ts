@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { Output, safeFetch } from "@qino/qino";
+import { Output, safeFetch, isEmptyObject } from "@qino/qino";
 
 import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit } from "./mod.ts";
 import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
@@ -96,7 +96,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!ctx.req.appPath.startsWith(PROXY_PREFIX)) return;
     const rest = ctx.req.appPath.slice(PROXY_PREFIX.length);
     if (!rest) return;
-    if (Object.keys(ctx.req.query).length) done(ctx, 404, "Not allowed");
+    if (!isEmptyObject(ctx.req.query)) done(ctx, 404, "Not allowed");
 
     const url = "https://" + rest;
     const origin = new URL(url).origin;

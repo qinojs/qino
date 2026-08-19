@@ -30,7 +30,7 @@ export interface DbEvents {
 
 /** A row's first column, without building an array for it — these rows have one or two. */
 function firstValue(row: Row): unknown {
-  for (const name in row) if (Object.hasOwn(row, name)) return row[name];
+  for (const name in row) return row[name];
 }
 
 export class Db extends Emitter<DbEvents> {

@@ -81,9 +81,9 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
 
   // --- Dependencies ---
   const deps = modObj.dependencies;
-  const neededBy = Object.entries(allMods)
-    .filter(([, m]) => m.dependencies.includes(modName))
-    .map(([n]) => n)
+  const neededBy = [...allMods.values()]
+    .filter((m) => m.dependencies.includes(modName))
+    .map((m) => m.name)
     .sort();
 
   const u = ctx.req.url.toURL();

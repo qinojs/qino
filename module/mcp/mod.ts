@@ -1,4 +1,4 @@
-import { ApiError, Output, toTools, walk } from "@qino/qino";
+import { ApiError, Output, toTools, walk, isEmptyObject } from "@qino/qino";
 
 import denoJson from "../../deno.json" with { type: "json" };
 
@@ -88,7 +88,7 @@ async function listTools(ctx: Ctx) {
   return tools;
 }
 
-const inputSchema = (t: Tool) => Object.keys(t.parameters).length ? t.parameters : { type: "object", properties: {} };
+const inputSchema = (t: Tool) => isEmptyObject(t.parameters) ? { type: "object", properties: {} } : t.parameters;
 
 async function callTool(params: Params, ctx: Ctx) {
   const name = String(params.name ?? "");
