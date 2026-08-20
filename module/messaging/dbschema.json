@@ -70,13 +70,17 @@
             "type": "string",
             "maxLength": 64,
             "x-index": "primary",
-            "description": "What a message asks for; \"default\" is what a message without a wish gets"
+            "description": "What a message asks for by name"
           },
           "channel": {
             "type": "string",
             "maxLength": 32,
             "x-index": "primary",
             "description": "The channel this variant is for — every channel says it its own way"
+          },
+          "main": {
+            "type": "boolean",
+            "description": "The one a message without a wish gets — one per channel, as with usr_contact"
           },
           "format": {
             "type": "string",

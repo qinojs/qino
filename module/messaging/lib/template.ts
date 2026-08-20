@@ -12,14 +12,16 @@ import type { Profile } from "./format.ts";
 
 const MARKER = /\{\{\s*(\w+)\s*(?:\|([^}]*))?\}\}/g;
 const CONTENT = "{{content}}";
-const DEFAULT = "default";
+/** Markup that opens with a block of its own — it needs no paragraph around it. */
+const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
 
 /**
  * Load the message's frame once, then render the message for each recipient.
  *
- * The result has markup whenever the message or its frame has any. `to` is the recipient row the
- * channel already holds — its columns are the markers, and a missing one falls back to what the
- * marker names after `|`.
+ * The frame is the one the message names, else the channel's main one, and none at all when the
+ * message asks for none. The result has markup whenever the message or its frame has any. `to` is
+ * the recipient row the channel already holds — its columns are the markers, and a missing one
+ * falls back to what the marker names after `|`.
  */
 export async function renderer(
   app: App,
@@ -27,29 +29,49 @@ export async function renderer(
   channel: string,
   profile: Profile = "html",
 ): Promise<(to?: Row) => { text: string; html?: string }> {
-  const frame = msg.template === "" ? undefined : await load(app, msg.template || DEFAULT, channel);
+  return framed(msg.template === "" ? undefined : await load(app, channel, msg.template), msg, profile);
+}
+
+/** The same with the frame in hand — what a preview of an unwritten template needs. */
+export function framed(frame: Msg | undefined, msg: Msg, profile: Profile = "html"): (to?: Row) => { text: string; html?: string } {
   const text = textOf(msg);
   const html = htmlOf(msg, profile);
   const frameText = frame ? textOf(frame) : CONTENT;
-  const frameHtml = frame && htmlOf(frame, profile);
+  // a paragraph holding nothing but the marker is a placeholder, not a paragraph — but only when the
+  // message brings blocks of its own; a lifted line of plain text still wants the frame's <p>
+  const shell = frame && htmlOf(frame, profile);
+  const frameHtml = shell && BLOCK.test(html ?? "") ? shell.replaceAll(`<p>${CONTENT}</p>`, CONTENT) : shell;
   // markup on either side makes it a markup message; the plain side is lifted to match
   const markup = html !== undefined || frameHtml !== undefined;
 
   return (to = {}) => ({
-    text: fill(frameText, text, to, false),
+    // only what was assembled here is tidied: an unframed message goes out exactly as it was written
+    text: frame ? tidy(fill(frameText, text, to, false)) : text,
     html: markup ? fill(frameHtml ?? textToHtml(frameText, profile), html ?? textToHtml(text, profile), to, true) : undefined,
   });
 }
 
-/** Every template, newest channel variants of one name together. */
+/** A frame whose markers came up empty leaves holes — and on sms a blank line costs money. */
+const tidy = (text: string) => text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+
+/** Every template, the channel variants of one name together. */
 export function templates(app: App): Promise<Row[]> {
   return app.db.query`SELECT * FROM message_template ORDER BY name, channel`;
 }
 
-/** The channel's variant of that template; an unknown name simply has no frame. */
-function load(app: App, name: string, channel: string): Promise<Msg | undefined> {
-  return app.db.row<Msg>`SELECT text, format FROM message_template
-    WHERE name = ${name} AND channel = ${channel}`;
+/** Write one template; a new main hands the flag over, because a channel has one. */
+export function saveTemplate(app: App, row: Row): Promise<unknown> {
+  return app.db.transaction(async () => {
+    if (row.main) await app.db.exec`UPDATE message_template SET main = ${false} WHERE channel = ${row.channel}`;
+    await app.db.table("message_template").ensure(row);
+  });
+}
+
+/** The channel's variant of that name, else its main one; an unknown name simply has no frame. */
+function load(app: App, channel: string, name?: string): Promise<Msg | undefined> {
+  return name
+    ? app.db.row<Msg>`SELECT text, format FROM message_template WHERE name = ${name} AND channel = ${channel}`
+    : app.db.row<Msg>`SELECT text, format FROM message_template WHERE channel = ${channel} AND main = ${true}`;
 }
 
 /** The message goes in as it is — it was rendered for this target already; markers do not. */

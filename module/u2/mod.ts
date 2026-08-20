@@ -17,6 +17,22 @@ export async function root(app: App, version?: string): Promise<string> {
   return version ? `${CDN}${version}/` : u2Root;
 }
 
+// What an element fetches on its own once it upgrades — its dependency, declared where it is known.
+// Paths end in "/", so a version bump inside u2 needs no change here.
+const OWN: Record<string, string[]> = {
+  code: ["https://cdn.jsdelivr.net/gh/highlightjs/"], // u2-code highlights with highlight.js
+};
+
+/** Allow what these u2 elements load themselves: `u2.elements(ctx, "code")` on a page showing one. */
+export function elements(ctx: Ctx, ...names: string[]): void {
+  for (const name of names) {
+    for (const src of OWN[name] ?? []) {
+      ctx.res.csp["script-src"][src] = true;
+      ctx.res.csp["style-src"][src] = true;
+    }
+  }
+}
+
 /** Link u2 files (paths below the root) into the document and allow the origin. `u2/auto.js` is one of
  *  them: it fetches whatever the markup turns out to need, which a layout with a settled design can drop. */
 export async function assets(ctx: Ctx, files: string[], version?: string): Promise<void> {

@@ -198,6 +198,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
 async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const ctx = getCtx();
+  u2.elements(ctx, "code"); // the text view highlights with a library of its own
   const app = node.app;
 
   const { db, dbFiles: fm } = app;

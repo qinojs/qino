@@ -40,7 +40,7 @@ Deno.test("telegram gets its own subset — no blocks, no lists, no headings", (
 Deno.test("html degrades to readable text and is sanitized before it reaches a page", () => {
   const html = '<p>Hello <b>you</b></p><ul><li>one</li></ul><a href="https://qino.test">link</a>';
   assertEquals(htmlOf({ text: html, format: "html" }), html);
-  assertEquals(textOf({ text: html, format: "html" }), "Hello you\n• one\nlink");
+  assertEquals(textOf({ text: html, format: "html" }), "Hello you\n\n• one\n\nlink: https://qino.test");
   assertEquals(htmlToText("a &amp; b<br>c"), "a & b\nc");
   assert(!sanitizeHtml('<img src=x onerror="alert(1)"><script>alert(1)</script>ok').includes("onerror"));
 });

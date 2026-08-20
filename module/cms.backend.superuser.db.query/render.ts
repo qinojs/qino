@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, getCtx, html, sql } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 import { ai } from "@qino/qino/ai";
 
 import { askDbAi } from "./lib/ai.ts";
@@ -20,6 +21,7 @@ type Table = { name: string; fields: { name: string; type: string }[] };
 export async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
+  u2.elements(ctx, "code"); // the editor highlights with a library of its own
 
   const tables = await buildSchema(app);
   const token = ctx.req.body?.csrfToken === ctx.csrfToken;

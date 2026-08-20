@@ -9,7 +9,7 @@ import type { Node } from "@qino/qino/cms";
 Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...telegramSchema.properties, ...contactDbSchema.properties } });
-  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT)`;
+  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER)`;
   await db.loadTables();

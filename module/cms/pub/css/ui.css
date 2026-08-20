@@ -162,6 +162,9 @@ qino-cms:not(:defined) { display:none; }
     gap: 1px;
     & > * { margin:0; }
   }
+  u2-code {
+    font-size: 11px;
+  }
 
 }
 

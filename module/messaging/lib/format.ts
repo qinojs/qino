@@ -1,5 +1,7 @@
 import { hee } from "@qino/qino";
 
+import { htmlToText } from "./htmlText.ts";
+
 import type { Msg } from "../mod.ts";
 
 // What a message text is, and how the channels carry it: markdown renders to the markup a channel
@@ -35,20 +37,6 @@ export function htmlOf(msg: Msg, profile: Profile = "html"): string | undefined 
 export function textToHtml(text: string, profile: Profile = "html"): string {
   const escaped = hee(text);
   return profile === "telegram" ? escaped : escaped.replace(/\r\n?/g, "\n").replace(/\n/g, "<br>");
-}
-
-/** A last readable form of arbitrary HTML — not a conversion, a rescue. */
-export function htmlToText(html: string): string {
-  return html
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
-    .replace(/<li[^>]*>/gi, "• ")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|h[1-6]|li|tr|blockquote|pre|table)>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"')
-    .replace(/&#0?39;|&apos;/gi, "'").replace(/&amp;/gi, "&")
-    .replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /** One markdown block: its lines plus what they are. */

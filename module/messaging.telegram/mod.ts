@@ -1,6 +1,6 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql, unixTime } from "@qino/qino";
-import { htmlOf, msgOf, record, textOf } from "@qino/qino/messaging";
+import { msgOf, record, renderer } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
@@ -31,15 +31,21 @@ export async function send(
   if (!where) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
   const time = unixTime();
 
-  const rows = await app.db.query`SELECT id, usr_id, chat_id, error FROM telegram_chat ${where}`;
+  const [rows, render] = await Promise.all([
+    app.db.query`SELECT c.id, c.usr_id, c.chat_id, c.error, u.firstname, u.lastname, u.company, u.email
+      FROM telegram_chat c LEFT JOIN usr u ON u.id = c.usr_id ${where}`,
+    renderer(app, msg, "telegram", "telegram"),
+  ]);
 
   // Telegram has no title of its own; it becomes the first line, bold where markup is on
-  const { text, title, format: _format, ...extra } = msg;
-  const markup = extra.parse_mode ? undefined : htmlOf(msg, "telegram"); // an own parse_mode owns the text
-  const body = markup ?? (extra.parse_mode ? text : textOf(msg));
-  const html = Boolean(markup) || extra.parse_mode === "HTML";
-  const head = title ? (html ? `<b>${hee(title)}</b>` : title) : "";
-  const params = { ...extra, ...(markup ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
+  const { text, title, format: _format, template: _template, ...extra } = msg;
+  const own = Boolean(extra.parse_mode); // an own parse_mode owns the text, escaping included
+  const params = (to: Row) => {
+    const { text: plain, html } = render(to);
+    const body = own ? text : html ?? plain;
+    const head = title ? (html || extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title) : "";
+    return { ...extra, ...(!own && html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
+  };
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
   const outcomes = new Map<number, { sent: boolean; errors: string[] }>();
@@ -47,7 +53,7 @@ export async function send(
   const deliver = async (row: Row) => {
     const outcome = outcomes.getOrInsertComputed(Number(row.usr_id), () => ({ sent: false, errors: [] }));
     try {
-      await sendMessage(app, { ...params, chat_id: Number(row.chat_id) });
+      await sendMessage(app, { ...params(row), chat_id: Number(row.chat_id) });
       sent++;
       outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again

@@ -1,7 +1,7 @@
 // Public API of messaging.webpush. The qino plugin lives in ./plugin.ts.
 import { sendNotification } from "web-push-neo";
 import { sql, unixTime } from "@qino/qino";
-import { msgOf, record, textOf, titleOf } from "@qino/qino/messaging";
+import { msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
 
 import { vapid } from "./lib/vapid.ts";
 
@@ -20,7 +20,7 @@ import type { Msg } from "@qino/qino/messaging";
  * `actions`, `requireInteraction` and friends.
  */
 /** A one-time code proves presence only where the request is not — so the asking device is skipped. */
-const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`AND client_id <> ${Number(id)}`;
+const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`AND s.client_id <> ${Number(id)}`;
 
 export async function send(
   app: App,
@@ -29,25 +29,28 @@ export async function send(
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
-  const who = to.channel != null ? sql`id IN (
+  const who = to.channel != null ? sql`s.id IN (
       SELECT sc.sub_id FROM webpush_subscription_channel sc
       JOIN webpush_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})`
-    : to.grp != null ? sql`usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`usr_id = ${to.usr}`
-    : to.client != null ? sql`client_id = ${Number(to.client)}`
-    : to.sub != null ? sql`id = ${to.sub}`
+    : to.grp != null ? sql`s.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
+    : to.usr != null ? sql`s.usr_id = ${to.usr}`
+    : to.client != null ? sql`s.client_id = ${Number(to.client)}`
+    : to.sub != null ? sql`s.id = ${to.sub}`
     : to.all ? sql`${true}`
     : null;
   if (!who) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
   const where = sql`WHERE ${who} ${notClient(to.notClient)}`;
   const time = unixTime();
 
-  const rows = await app.db.query`SELECT id, usr_id, endpoint, p256dh, auth, error FROM webpush_subscription ${where}`;
+  const [rows, render] = await Promise.all([
+    app.db.query`SELECT s.id, s.usr_id, s.endpoint, s.p256dh, s.auth, s.error, u.firstname, u.lastname, u.company, u.email
+      FROM webpush_subscription s LEFT JOIN usr u ON u.id = s.usr_id ${where}`,
+    renderer(app, msg, "webpush"),
+  ]);
 
   const table = app.db.table("webpush_subscription");
   const options = { vapidDetails: await vapid(app) };
-  const { text: _text, format: _format, ...notification } = msg; // the service worker calls showNotification(title, rest)
-  const payload = JSON.stringify({ ...notification, body: textOf(msg) });
+  const { text: _text, format: _format, template: _template, ...notification } = msg; // the service worker calls showNotification(title, rest)
   const gone: number[] = [];
   const outcomes = new Map<string, { usrId?: number; sent: boolean; errors: string[] }>();
   let sent = 0;
@@ -56,6 +59,7 @@ export async function send(
     const key = usrId == null ? `sub:${row.id}` : `usr:${usrId}`;
     const outcome = outcomes.getOrInsertComputed(key, () => ({ usrId, sent: false, errors: [] }));
     try {
+      const payload = JSON.stringify({ ...notification, body: render(row).text });
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
       sent++;
       outcome.sent = true;

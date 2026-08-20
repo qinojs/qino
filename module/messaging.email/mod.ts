@@ -1,12 +1,12 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, sql, unixTime } from "@qino/qino";
-import { htmlOf, msgOf, record, textOf, titleOf } from "@qino/qino/messaging";
+import { msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
 import { createMessage, transport } from "./lib/transport.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Row } from "@qino/qino";
 import type { Msg } from "@qino/qino/messaging";
 
 export { receive } from "./lib/inbound.ts";
@@ -26,14 +26,11 @@ export async function send(
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
-  // every mail carries a text part: plain readers and spam filters both want one
-  const markup = htmlOf(msg);
-  const body = markup ? { html: markup, text: textOf(msg) } : { text: textOf(msg) };
   const recipients = await addresses(app, to);
   if (!recipients.length) return 0;
 
   const time = unixTime();
-  const [config, mailer] = await Promise.all([defaults(app), transport(app)]);
+  const [config, mailer, render] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
   if (!config.sender) throw new Error("Email has no sender. Set messaging.email.sender.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const from = formatAddress({ address: config.sender, name: config.sendername });
@@ -41,12 +38,14 @@ export async function send(
   const deliveries = [];
   let sent = 0;
   for (const recipient of recipients) {
+    // every mail carries a text part: plain readers and spam filters both want one
+    const { text, html } = render(recipient);
     const error = await deliver(mailer, {
       from,
       to: formatAddress(debug ?? recipient),
       replyTo: config.replyTo || undefined,
       subject: debug ? `Debug! ${msg.title}` : msg.title,
-      content: body,
+      content: html ? { html, text } : { text },
       headers: debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined,
     });
     // the transport took it, so it counts as sent — but nothing reached this address, and the
@@ -87,7 +86,8 @@ async function addresses(app: App, to: { grp?: number; usr?: number; all?: true;
     : null;
   if (!who && !literals.length) throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
 
-  const found = new Map(literals.map((a) => [a.address, a]));
+  // the recipient is also what a template greets, so the user's columns travel with the address
+  const found = new Map<string, Row & { address: string; name?: string; usrId?: number }>(literals.map((a) => [a.address, a]));
   // an address that is somebody's is journaled as theirs, so the mail joins their conversation
   const mine = literals.length
     ? sql`c.address IN (${sql.join(literals.map((a) => sql`${a.address}`), ", ")})`
@@ -99,13 +99,13 @@ async function addresses(app: App, to: { grp?: number; usr?: number; all?: true;
       ORDER BY other.main DESC, other.created, other.address LIMIT 1)`
     : null;
   const rows = await app.db.query`
-    SELECT c.usr_id, c.address, u.firstname, u.lastname FROM usr_contact c
+    SELECT c.usr_id, c.address, u.firstname, u.lastname, u.company, u.email FROM usr_contact c
     LEFT JOIN usr u ON u.id = c.usr_id
     WHERE c.type = ${"email"} AND (${sql.join([pick, mine].flatMap((v) => v ?? []), " OR ")})`;
   for (const row of rows) {
     const name = [row.firstname, row.lastname].filter(Boolean).join(" ");
     const address = addressOf({ address: String(row.address ?? ""), name, usrId: Number(row.usr_id) });
-    if (address) found.set(address.address, address);
+    if (address) found.set(address.address, { ...row, ...address });
   }
   return [...found.values()];
 }

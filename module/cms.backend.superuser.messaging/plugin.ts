@@ -132,6 +132,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
         <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
         <tr><td>${app.t`Title`}<td>${row.title ?? ""}
         <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
+        ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
         <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
       </table>
     </div>
@@ -298,12 +299,12 @@ function cut(text: string, max = 120): string {
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing] = await Promise
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template] = await Promise
     .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`]);
+      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");

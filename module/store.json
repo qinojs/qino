@@ -54,6 +54,7 @@
     "cms.backend.superuser.messaging.email": {},
     "cms.backend.superuser.messaging.sms": {},
     "cms.backend.superuser.messaging.telegram": {},
+    "cms.backend.superuser.messaging.templates": {},
     "cms.backend.superuser.messaging.webpush": {},
     "cms.backend.superuser.module": {},
     "cms.backend.superuser.module.ownStore": {},

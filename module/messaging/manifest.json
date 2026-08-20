@@ -8,6 +8,7 @@
     "README.md",
     "dbschema.json",
     "lib/format.ts",
+    "lib/htmlText.ts",
     "lib/sanitize.ts",
     "lib/template.ts",
     "lib/verify.ts",

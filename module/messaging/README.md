@@ -68,7 +68,7 @@ Two functions answer for every channel, and no channel converts anything itself:
 
 | | |
 | --- | --- |
-| `textOf(msg)` | plain text — markdown flattened (a link keeps its address), html stripped |
+| `textOf(msg)` | plain text — markdown flattened, html walked: both keep a link's address |
 | `htmlOf(msg, profile?)` | the markup, or `undefined` when the message is plain text |
 
 `profile` narrows the markup to what a channel accepts: `telegram` has no headings, lists or
@@ -77,9 +77,57 @@ headings, lists, quotes, fenced code, `**bold**`, `*italic*`, `` `code` `` and l
 escaped before any marker is read, so a message can never smuggle markup past its format. Only
 `http`, `https`, `mailto` and `tel` links survive.
 
+`htmlToText()` does the walking, over a real parser: comments (conditional ones included), scripts
+and styles are gone, blocks become line breaks, lists count, table cells keep their columns, and a
+link keeps its address — a plain-text alternative without the URLs is worth nothing.
+
 Nothing sanitizes on the way out: a mail client is not a page. `sanitizeHtml(html)` is for the
 way *in* — a panel that renders journal HTML must pass it through, because a message is written
 by whoever sent it.
+
+## Templates
+
+A template is the frame a channel puts around every message — the signature under a mail, the
+support line after an SMS. The message asks for it by name, and each channel keeps its own
+variant, so the same message arrives framed the way that channel talks:
+
+| `name` | `channel` | `main` | `format` | `text` |
+| --- | --- | --- | --- | --- |
+| letter | email | ✓ | md | `Hallo {{firstname\|Kunde}},`<br>`{{content}}`<br>`Ihr Team` |
+| signature | sms | ✓ | | `{{content}}` `Fragen? https://…` |
+| newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
+
+`{{content}}` is the message, already rendered for that channel; every other marker is a column of
+the recipient — `firstname`, `lastname`, `company`, `email`, `address` — escaped where the frame is
+markup, and `{{firstname|Kunde}}` says what stands there when nobody is known.
+
+```ts
+send(app, { grp: 3 }, "wie gehts")                            // the channel's main frame, if it has one
+send(app, { grp: 3 }, { text: "…", template: "newsletter" })  // this one
+send(app, { grp: 3 }, { text: "…", template: "" })            // none
+```
+
+What the frame assembles is tidied — trailing spaces, and never more than one blank line in a row,
+because a marker that came up empty leaves a hole and on sms a blank line costs money. The message's
+own text is never touched: unframed, it goes out exactly as it was written.
+
+`main` marks the one a message gets when it names none — one per channel, as `usr_contact.main`
+marks the address a user is written to; `saveTemplate()` hands the flag over. A channel without a
+main frame sends unframed — that is how SMS stays one segment. The frame is
+applied per recipient and never joins the message: the journal keeps the text as it was written
+plus the template's *name*, so the frame can be rewritten without rewriting history, and searching
+the journal finds messages instead of signatures.
+
+Rendering is `renderer(app, msg, channel, profile?)` — it loads the frame once and returns a
+function that renders per recipient, so a mail to a thousand people costs one query.
+
+## Not decided yet
+
+**Whether a message can be reproduced.** Today the journal stores the template's name, so a
+rewritten template changes how history looks. The two ways out — fixing the template (an
+immutable version per name) or storing the whole rendered text in `message_delivery.body` —
+are both open. `body` becomes the honest answer the moment recipient markers make every
+delivery a different text.
 
 ## Channels
 

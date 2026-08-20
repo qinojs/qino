@@ -115,6 +115,7 @@
     "hono/": "npm:/hono@^4/",
     "mysql2/": "npm:/mysql2@^3/",
     "pg": "npm:pg@^8",
+    "htmlparser2": "npm:htmlparser2@^10",
     "sanitize-html": "npm:sanitize-html@^2",
     "web-push-neo": "npm:web-push-neo@0.1.2"
   },

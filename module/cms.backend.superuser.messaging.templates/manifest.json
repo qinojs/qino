@@ -1,0 +1,18 @@
+{
+  "name": "cms.backend.superuser.messaging.templates",
+  "description": "Edits the frames messages are sent in, one variant per channel.",
+  "dependencies": [
+    "cms.backend.superuser.messaging",
+    "messaging"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/emailClientSimulator.js",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

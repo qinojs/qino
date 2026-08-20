@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 import { addContact, ApiError, contactError, contactKey, contactOwner, contacts, errMsg, removeContact, setMainContact, sql, typeContacts, unixTime } from "@qino/qino";
-import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode, textOf } from "@qino/qino/messaging";
+import { dropClaim, msgOf, pendingContacts, record, redeemCode, renderer, requestCode } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
 
@@ -24,8 +24,6 @@ export async function send(
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
-  const body = textOf(msg);
-  const text = msg.title ? `${msg.title}\n${body}` : body;
   const number = to.phone == null ? "" : phoneNumber(to.phone);
   const target = to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
     : to.usr != null ? sql`c.usr_id = ${to.usr}`
@@ -40,9 +38,13 @@ export async function send(
     SELECT other.address FROM usr_contact other
     WHERE other.type = ${"phone"} AND other.usr_id = c.usr_id
     ORDER BY other.main DESC, other.created, other.address LIMIT 1)`;
-  const rows = await app.db.query`
-    SELECT c.usr_id, c.address, c.error FROM usr_contact c
-    WHERE c.type = ${"phone"} AND ${target} ${preferred}`;
+  const [rows, render] = await Promise.all([
+    app.db.query`
+      SELECT c.usr_id, c.address, c.error, u.firstname, u.lastname, u.company, u.email FROM usr_contact c
+      LEFT JOIN usr u ON u.id = c.usr_id
+      WHERE c.type = ${"phone"} AND ${target} ${preferred}`,
+    renderer(app, msg, "sms"),
+  ]);
   // a number nobody verified is still a number — it goes out, without an owner
   if (number && !rows.length) rows.push({ usr_id: null, address: number, error: null });
   const deliveries = [];
@@ -50,6 +52,8 @@ export async function send(
   for (const row of rows) {
     const address = String(row.address);
     const usrId = Number(row.usr_id) || undefined;
+    const body = render(row).text;
+    const text = msg.title ? `${msg.title}\n${body}` : body;
     try {
       await deliver(app, address, text);
       sent++;

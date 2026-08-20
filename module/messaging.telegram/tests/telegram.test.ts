@@ -13,7 +13,7 @@ const SECRET = "test-secret";
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
   return db;

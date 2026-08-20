@@ -2,7 +2,7 @@ import { html, typeContacts, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { cms } from "@qino/qino/cms";
 import { status } from "@qino/qino/cron";
-import { pendingContacts, textOf } from "@qino/qino/messaging";
+import { pendingContacts, templates, textOf } from "@qino/qino/messaging";
 
 import type { App, HtmlString, ItemProxy, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -154,7 +154,7 @@ export async function inbound(node: Node): Promise<HtmlString> {
 export async function send(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   const db = node.app.db;
-  const [groupRows, userRows] = await Promise.all([
+  const [groupRows, userRows, frames] = await Promise.all([
     db.query`
       SELECT g.id, g.name, COUNT(DISTINCT c.usr_id) AS users
       FROM usr_contact c
@@ -167,7 +167,10 @@ export async function send(node: Node): Promise<HtmlString> {
       FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
       WHERE c.type = ${CONTACT}
       GROUP BY c.usr_id, u.email ORDER BY u.email`,
+    templates(node.app),
   ]);
+  const own = frames.filter((f) => f.channel === CHANNEL);
+  const main = own.find((f) => f.main);
 
   return html.async`<div class=-head>${t`Send mail`}</div>
   <form class=-body>
@@ -182,6 +185,11 @@ export async function send(node: Node): Promise<HtmlString> {
       </select>
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
       ${t`Subject`} <input name=title placeholder="${await t`the first line of the text`}">
+      ${t`Template`} <select name=template>
+        ${main ? html`<option value="">${await t`default`} (${main.name})</option>` : ""}
+        <option value="-">${t`none`}</option>
+        ${own.filter((f) => !f.main).map((f) => html`<option value="${f.name}">${f.name}</option>`)}
+      </select>
       ${t`Format`} <select name=format>
         <option value="">${t`Text`}</option>
         <option value=md>Markdown</option>

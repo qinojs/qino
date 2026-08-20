@@ -9,7 +9,7 @@ import type { SmsProvider } from "../mod.ts";
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties, ...authAttemptDbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.query`CREATE TABLE usr_grp (usr_id INTEGER NOT NULL, grp_id INTEGER NOT NULL)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "one@qino.test" });

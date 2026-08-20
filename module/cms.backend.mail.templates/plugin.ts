@@ -1,5 +1,6 @@
 import { getCtx, hee, html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 import { mail } from "@qino/qino/mail";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -99,6 +100,7 @@ async function render(node: Node): Promise<HtmlString | string> {
 
 async function renderDetail(node: Node, id: number): Promise<HtmlString | string> {
   const ctx = getCtx();
+  u2.elements(ctx, "code"); // the editor highlights with a library of its own
   const app = node.app;
   const t = app.t;
   const db = app.db;

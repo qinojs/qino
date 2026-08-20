@@ -10,7 +10,7 @@ import type { App } from "@qino/qino";
 async function makeApp(): Promise<App> {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.query`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();

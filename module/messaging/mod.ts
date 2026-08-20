@@ -6,8 +6,9 @@ import { textOf } from "./lib/format.ts";
 import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
-export { htmlOf, htmlToText, textOf } from "./lib/format.ts";
-export { renderer, templates } from "./lib/template.ts";
+export { htmlOf, textOf } from "./lib/format.ts";
+export { htmlToText } from "./lib/htmlText.ts";
+export { framed, renderer, saveTemplate, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 
 
@@ -20,7 +21,7 @@ export { sanitizeHtml } from "./lib/sanitize.ts";
  * channel accepts, html degrades to plain text where none is possible, and the default — plain
  * text — goes out exactly as it was written. `title` is always plain text.
  *
- * `template` names the frame around it — the channel's `default` when unnamed, none at all when
+ * `template` names the frame around it — the channel's main one when unnamed, none at all when
  * empty. The frame is chrome: it is applied per recipient and never joins the text.
  */
 export type Msg = { text: string; title?: string; format?: "md" | "html"; template?: string };
