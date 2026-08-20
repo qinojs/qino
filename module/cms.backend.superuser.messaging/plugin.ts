@@ -1,101 +1,243 @@
-import { getCtx, html, unixTime } from "@qino/qino";
+import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { channel, channels, messages, userChannels, userMessages } from "@qino/qino/messaging";
+import { channel, channels, userChannels, userMessages } from "@qino/qino/messaging";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, Ctx, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Channel } from "@qino/qino/messaging";
 
 const { name } = manifest;
 
-const OVERVIEW_LIMIT = 100;
+const LIST_LIMIT = 100;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
 }
 
-export async function render(node: Node): Promise<HtmlString> {
-  const app = node.app;
+export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
-  const value = Number(url.searchParams.get("usr"));
-  const usrId = Number.isSafeInteger(value) && value > 0 ? value : 0;
-  const users = await app.db.query`
-    SELECT u.id, u.email, u.firstname, u.lastname
-    FROM usr u
-    ORDER BY u.lastname, u.firstname, u.email, u.id`;
-  const user = users.find((row) => Number(row.id) === usrId);
-  const [journal, emails, reachable, view] = await Promise.all([
-    user ? userMessages(app, usrId) : url.searchParams.has("usr") ? [] : messages(app, OVERVIEW_LIMIT),
-    user && channel(app, "email") ? emailMessages(app, user) : [],
-    user ? userChannels(app, usrId) : [],
+  const msgId = intParam(url, "msg");
+  if (msgId) return renderMessage(node, msgId, url);
+  const usrId = intParam(url, "usr");
+  if (usrId) return renderConversation(node, usrId, url);
+  return renderOverview(node, url);
+}
+
+function intParam(url: URL, key: string): number {
+  const value = Number(url.searchParams.get(key));
+  return Number.isSafeInteger(value) && value > 0 ? value : 0;
+}
+
+/** The journal as a table: one row per logical message, filtered by text and channel. */
+async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
+  const app = node.app;
+  const ctx = getCtx();
+  const search = String(url.searchParams.get("search") ?? "");
+  const filter = String(url.searchParams.get("channel") ?? "");
+  const [used, view] = await Promise.all([
+    app.db.col<string>`SELECT DISTINCT channel FROM message ORDER BY channel`,
     labels(app),
   ]);
-  const rows = [...journal, ...emails].sort((a, b) => Number(b.time) - Number(a.time));
-  const query = [...url.searchParams]
-    .filter(([key]) => key !== "usr")
-    .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`);
 
   return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex-grow:0">
-      <div class=-head>${app.t`User`}</div>
-      <form class=-body method=get action="${url.pathname}">
-        ${query}
-        <select name=usr>
-          <option value="">${app.t`All messages`}</option>
-          ${users.map((row) => html`<option value="${row.id}"${Number(row.id) === usrId ? " selected" : ""}>${userName(row)}</option>`)}
-        </select>
-        <button>${app.t`Open`}</button>
-      </form>
+    <div class=u2-card style="flex-basis:60rem">
+      <div class=-head>${app.t`Messages`}</div>
+      <div class=-body>
+        <form method=get data-filter>
+          ${hidden(url, ["search", "channel", "usr", "msg"])}
+          <input type=search name=search value="${search}" placeholder="${app.t`Search...`}">
+          <select name=channel>
+            <option value="">${app.t`All types`}</option>
+            ${used.map((c) => html`<option value="${c}"${c === filter ? " selected" : ""}>${view.label(c)}</option>`)}
+          </select>
+          <button>${app.t`Search`}</button>
+        </form>
+      </div>
+      <div style="overflow:auto; padding:0">
+        <table class=u2-table>
+          <thead><tr>
+            <th>${app.t`Id`}
+            <th>${view.time}
+            <th>${app.t`Type`}
+            <th>${app.t`Text`}
+            <th>${view.recipients}
+            <th>${view.errors}
+          <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter } })}
+        </table>
+      </div>
     </div>
-    ${user
-      ? conversation(node, user, rows, reachable, view)
-      : url.searchParams.has("usr")
-      ? html.async`<div class=u2-card><div class=-body>${app.t`User not found.`}</div></div>`
-      : html.async`<div class=u2-card cms-part=messages>
-        <div class=-head>${app.t`Messages`} (${rows.length})</div>
-        ${rows.length
-          ? rows.map((row) => message(row, view, url))
-          : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
-      </div>`}
+    ${userCard(node, url, 0)}
     ${renderDashboard(node)}
   </div>`;
 }
 
-async function conversation(
-  node: Node,
-  user: Row,
-  rows: (Row & { deliveries: Row[] })[],
-  reachable: Channel[],
-  view: View,
-): Promise<HtmlString> {
+// List part - re-rendered live on search/filter input via cms.reloadPart(nid, "list", form values).
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+  const app = ctx.app;
+  const search = String(vars.search ?? "").trim();
+  const filter = String(vars.channel ?? "");
+  const sh = sqlSearch(search, ["m.data"], { exact: ["m.id", "m.channel"] });
+  const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
+  const [rows, view] = await Promise.all([
+    app.db.query`
+      SELECT m.id, m.channel, m.direction, m.grp_id, m.data, m.time, g.name AS grp_name,
+        (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
+        (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
+      FROM message m
+      LEFT JOIN grp g ON g.id = m.grp_id
+      WHERE ${where}
+      ORDER BY m.time DESC, m.id DESC
+      LIMIT ${LIST_LIMIT}`,
+    labels(app),
+  ]);
+  if (!rows.length) return html`<tr><td colspan=6>${search || filter ? view.noMatch : view.noMessages}`;
+
+  const pageUrl = await (await node.page()).url();
+  const msgUrl = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "msg=" + id;
+  return html.join(rows.map((row) => {
+    const errors = Number(row.error_count) || 0;
+    const target = messageTarget(row, view);
+    return html`<tr u2-href>
+      <td><a href="${msgUrl(row.id)}">${row.id}</a>
+      <td style="white-space:nowrap">${u2.el.time(row.time)}
+      <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
+      <td>${cut(readableText(row.data))}${target ? html` <small>${target}</small>` : ""}
+      <td>${Number(row.recipient_count) || 0}
+      <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
+  }));
+}
+
+/** One message with its payload and the result per recipient. */
+async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlString> {
   const app = node.app;
-  const latest = String(rows[0]?.channel ?? "");
-  const selected = reachable.some((c) => c.name === latest) ? latest : reachable[0]?.name;
-  return html.async`<div class="u2-card -conversation" cms-part=messages>
-    <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
-    <div class=-scroll>
-      ${rows.length
-        ? html`<table class=-chat><tbody>${rows.toReversed().map((row) => chatMessage(row, view))}</table>`
-        : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
+  const [row, deliveries, view] = await Promise.all([
+    app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
+    app.db.query`
+      SELECT d.usr_id, d.address, d.time, d.error, u.email
+      FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
+      WHERE d.message_id = ${id} ORDER BY d.id`,
+    labels(app),
+  ]);
+  if (!row) return html.async`<div class=u2-card><div class=-body>${app.t`Message does not exist.`}</div></div>`;
+
+  return html.async`<div class=u2-flex>
+    <div class=u2-card style="flex-basis:50rem">
+      <div class=-head>${app.t`Message`} #${row.id}</div>
+      <table class=u2-table>
+        <tr><td>${view.time}<td>${u2.el.time(row.time)}
+        <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
+        <tr><td>${app.t`Text`}<td style="white-space:pre-wrap">${readableText(row.data) || "–"}
+        <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
+      </table>
     </div>
-    <div>
-      ${reachable.length ? html.async`<form class="-body -composer">
-        <input type=hidden name=usr value="${user.id}">
-        <label>
-          ${app.t`Channel`}:
-          <select name=channel>
-            ${reachable.map((c) => html`<option value="${c.name}"${c.name === selected ? " selected" : ""}>${c.label}</option>`)}
-          </select>
-        </label>
-        <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
-        <button type=button data-reply>${app.t`Send`}</button>
-      </form>` : html.async`<div class=-body>${app.t`No reachable channel.`}</div>`}
+    <div class=u2-card style="flex:1 1 31.25rem">
+      <div class=-head>${view.recipients} (${deliveries.length})</div>
+      <div style="overflow:auto; padding:0">
+        <table class=u2-table>
+          <thead><tr>
+            <th>${view.user}
+            <th>${app.t`Address`}
+            <th>${view.time}
+            <th>${view.error}
+          <tbody>${deliveries.map((d) => html`<tr>
+            <td>${d.usr_id
+              ? html`<a href="${paramUrl(url, { usr: String(d.usr_id), msg: "" })}">${d.email ?? "#" + d.usr_id}</a>`
+              : view.anonymous}
+            <td>${d.address ?? ""}
+            <td>${u2.el.time(d.time)}
+            <td>${d.error ?? ""}`)}
+        </table>
+      </div>
     </div>
   </div>`;
+}
+
+async function renderConversation(node: Node, usrId: number, url: URL): Promise<HtmlString> {
+  const app = node.app;
+  const user = await app.db.row`SELECT id, email, firstname, lastname FROM usr WHERE id = ${usrId}`;
+  if (!user) {
+    return html.async`<div class=u2-flex>
+      ${userCard(node, url, 0)}
+      <div class=u2-card><div class=-body>${app.t`User not found.`}</div></div>
+    </div>`;
+  }
+  const [journal, emails, reachable, view] = await Promise.all([
+    userMessages(app, usrId),
+    channel(app, "email") ? emailMessages(app, user) : [],
+    userChannels(app, usrId),
+    labels(app),
+  ]);
+  const rows = [...journal, ...emails].sort((a, b) => Number(b.time) - Number(a.time));
+
+  return html.async`<div class=u2-flex>
+    ${userCard(node, url, usrId)}
+    <div class="u2-card -conversation" style="flex-basis:80rem">
+      <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
+      <div class=-scroll>
+        ${rows.length
+          ? html`<table class=-chat><tbody>${rows.toReversed().map((row) => chatMessage(row, view))}</table>`
+          : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
+      </div>
+      <div>
+        ${reachable.length ? html.async`<form class="-body -composer">
+          <input type=hidden name=usr value="${user.id}">
+          <label>
+            ${app.t`Channel`}:
+            <select name=channel>
+              ${reachable.map((c) => html`<option value="${c.name}"${c.name === selectedChannel(rows, reachable) ? " selected" : ""}>${c.label}</option>`)}
+            </select>
+          </label>
+          <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
+          <button type=button data-reply>${app.t`Send`}</button>
+        </form>` : html.async`<div class=-body>${app.t`No reachable channel.`}</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/** The channel the last message used, else the first the user can be reached on. */
+function selectedChannel(rows: Row[], reachable: Channel[]): string | undefined {
+  const latest = String(rows[0]?.channel ?? "");
+  return reachable.some((c) => c.name === latest) ? latest : reachable[0]?.name;
+}
+
+async function userCard(node: Node, url: URL, usrId: number): Promise<HtmlString> {
+  const app = node.app;
+  const users = await app.db.query`
+    SELECT u.id, u.email, u.firstname, u.lastname
+    FROM usr u
+    ORDER BY u.lastname, u.firstname, u.email, u.id`;
+  return html.async`<div class=u2-card style="flex-grow:0">
+    <div class=-head>${app.t`User`}</div>
+    <form class=-body method=get action="${url.pathname}">
+      ${hidden(url, ["usr", "msg"])}
+      <select name=usr>
+        <option value="">${app.t`All messages`}</option>
+        ${users.map((row) => html`<option value="${row.id}"${Number(row.id) === usrId ? " selected" : ""}>${userName(row)}</option>`)}
+      </select>
+      <button>${app.t`Open`}</button>
+    </form>
+  </div>`;
+}
+
+/** Carries the rest of the query string through a GET form; `own` are the fields the form owns. */
+function hidden(url: URL, own: string[]): HtmlString[] {
+  return [...url.searchParams]
+    .filter(([key]) => !own.includes(key))
+    .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`);
+}
+
+function paramUrl(url: URL, params: Record<string, string>): string {
+  const next = new URL(url);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) next.searchParams.set(key, value);
+    else next.searchParams.delete(key);
+  }
+  return next.pathname + next.search;
 }
 
 function chatMessage(row: Row & { deliveries: Row[] }, view: View): HtmlString {
@@ -114,55 +256,38 @@ function chatBubble(row: Row & { deliveries: Row[] }, view: View): HtmlString {
   </div></div>`;
 }
 
-function message(row: Row & { deliveries: Row[] }, view: View, url: URL): HtmlString {
-  const { recipients, errors: errorsLabel, user, time, error, anonymous, payload } = view;
-  const errors = row.deliveries.filter((delivery) => delivery.error).length;
-  const target = row.grp_id ? messageTarget(row, view) : "";
-  const data = readableData(row.data);
-  const text = readableText(row.data);
-  return html`<details class=-body>
-    <summary>
-      <b>${row.direction === "out" ? "→" : "←"} ${view.badge(row.channel)}</b>
-      · ${u2.el.time(row.time)}
-      ${target ? html` · ${target}` : ""}
-      · ${row.deliveries.length} ${recipients}
-      ${errors ? html` · <span class=u2-badge>${errors} ${errorsLabel}</span>` : ""}
-    </summary>
-    ${text ? html`<p>${text}</p>` : ""}
-    <details>
-      <summary>${payload}</summary>
-      <pre>${data}</pre>
-    </details>
-    ${row.deliveries.length ? html`<table class=u2-table>
-      <thead><tr>
-        <th>${user}
-        <th>${time}
-        <th>${error}
-      <tbody>${row.deliveries.map((delivery) => html`<tr>
-        <td>${delivery.usr_id
-          ? html`<a href="${userUrl(url, Number(delivery.usr_id))}">${delivery.email ?? "#" + delivery.usr_id}</a>`
-          : anonymous}
-        <td>${u2.el.time(delivery.time)}
-        <td>${delivery.error ?? ""}`)}
-    </table>` : ""}
-  </details>`;
-}
-
 function messageTarget(row: Row, view: View): string {
   if (row.grp_id) return `[${row.grp_name ?? view.group} #${row.grp_id}]`;
   const count = Number(row.recipient_count ?? row.deliveries?.length ?? 0);
   return count > 1 ? `[${count} ${view.recipients}]` : "";
 }
 
+/** Incoming or outgoing, as the call-log icons say it. */
+function direction(row: Row, view: View): HtmlString {
+  return row.direction === "out"
+    ? html`<u2-ico inline icon=call_made aria-label="${view.outgoing}">→</u2-ico>`
+    : html`<u2-ico inline icon=call_received aria-label="${view.incoming}">←</u2-ico>`;
+}
+
+function cut(text: string, max = 120): string {
+  const line = text.replace(/\s+/g, " ").trim();
+  return line.length > max ? line.slice(0, max) + "…" : line;
+}
+
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload] = await Promise.all(
-    [app.t`recipients`, app.t`errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`],
-  );
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing] = await Promise
+    .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
+      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload,
-    /** A channel's own label and colour; an unlinked channel keeps the name the journal stored. */
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing,
+    /** A channel's own label; an unlinked channel keeps the name the journal stored. */
+    label(channel: unknown): string {
+      const name = String(channel ?? "");
+      return known.get(name)?.label ?? name;
+    },
+    /** A channel's own label and colour. */
     badge(channel: unknown): HtmlString {
       const name = String(channel ?? "");
       const c = known.get(name);
@@ -218,12 +343,6 @@ function userName(user: Row): string {
   return name ? `${name}${user.email ? " · " + user.email : ""}` : String(user.email ?? "#" + user.id);
 }
 
-function userUrl(url: URL, usrId: number): string {
-  const user = new URL(url);
-  user.searchParams.set("usr", String(usrId));
-  return user.pathname + user.search;
-}
-
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const since = unixTime() - 7 * 86400;
   const totals = await app.db.row`
@@ -238,4 +357,4 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, api } };
+export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { list }, api } };

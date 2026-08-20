@@ -51,7 +51,10 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
 
     const render = async (url: string) => {
       const ctx = await testContext({ url, app });
-      const node = { app, page: () => Promise.resolve({ children: () => Promise.resolve(new Map()) }) } as unknown as Node;
+      const node = {
+        app,
+        page: () => Promise.resolve({ children: () => Promise.resolve(new Map()), url: () => Promise.resolve("/de/backend/superuser/nachrichten") }),
+      } as unknown as Node;
       return requestStorage.run(ctx, () => cms.node.render(node).then(String));
     };
     const normal = await render("http://qino.test/de/backend/superuser/nachrichten?usr=1");
@@ -66,6 +69,18 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--orange)">Email');
     assertStringIncludes(normal, "Earlier mail");
     assertStringIncludes(normal, "Mail body");
+
+    const overview = await render("http://qino.test/de/backend/superuser/nachrichten");
+    assertStringIncludes(overview, "<table class=u2-table");
+    assertStringIncludes(overview, 'name=search');
+    assertStringIncludes(overview, '<option value="telegram">Telegram');
+    assertStringIncludes(overview, "Hello");
+    assertStringIncludes(overview, "<tbody cms-part=list>");
+    assertStringIncludes(overview, "icon=call_made");
+    assertStringIncludes(overview, 'href="/de/backend/superuser/nachrichten?msg=1"');
+    const detail = await render("http://qino.test/de/backend/superuser/nachrichten?msg=1");
+    assertStringIncludes(detail, "user@qino.test");
+    assertStringIncludes(detail, "<pre>");
 
     const editmode = await render("http://qino.test/?cmspid=410&lang=de&usr=1");
     assertStringIncludes(editmode, 'action="/"');

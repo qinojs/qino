@@ -1,7 +1,21 @@
 import { api } from "@qino/pub/qino.js";
 
 cms.initNode("backend.superuser.messaging", (el) => {
-  const node = api.cms.node(Number(cms.el.nid(el)));
+  const nid = Number(cms.el.nid(el));
+  const node = api.cms.node(nid);
+  const filter = el.querySelector("[data-filter]");
+  let timer;
+  filter?.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const vars = Object.fromEntries(new FormData(filter));
+      const url = new URL(location);
+      for (const key of ["search", "channel"]) vars[key] ? url.searchParams.set(key, vars[key]) : url.searchParams.delete(key);
+      history.replaceState(null, "", url);
+      cms.reloadPart(nid, "list", vars);
+    }, 250);
+  });
+
   const scroll = el.querySelector(".-scroll");
   if (scroll) scroll.scrollTop = scroll.scrollHeight;
   let busy = false;
