@@ -1,6 +1,5 @@
-import { addContact, contactOwner, contacts, getCtx, html, pwHash, setMainContact } from "@qino/qino";
+import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, setMainContact } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { channel, typedChannels } from "@qino/qino/messaging";
 
 import { list, allowLoginAs } from "./parts/list.ts";
 import api from "./nodeApi.ts";
@@ -158,7 +157,7 @@ export const cms = {
 /** A username that is a mail address is one the administrator vouches for: it becomes the user's
  *  verified main address. Anything else — "hans" — is a login handle and nothing more. */
 export async function adoptUsername(app: App, usrId: number, username: string): Promise<void> {
-  const address = mailAddressOf(app, username);
+  const address = mailAddressOf(username);
   if (!address) return;
   const owner = await contactOwner(app.db, "email", address);
   if (owner && owner !== usrId) return; // it is someone else's — the login handle may still say it
@@ -166,44 +165,43 @@ export async function adoptUsername(app: App, usrId: number, username: string): 
   await setMainContact(app.db, usrId, "email", address);
 }
 
-/** `normalize` throws on anything that is not an address, which here is an answer, not a failure. */
-function mailAddressOf(app: App, username: string): string | undefined {
-  try { return channel(app, "email")?.normalize?.(username.trim()); } catch { return; }
+/** `contactKey` throws on anything that is not an address, which here is an answer, not a failure. */
+function mailAddressOf(username: string): string | undefined {
+  try { return contactKey("email", username); } catch { return; }
 }
 
 /** The contacts card of one user: where they can be reached, and how to change it. */
 async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const typed = typedChannels(app);
+  const types = contactTypes();
   const rows = await contacts(app.db, usrId);
-  const label = (name: unknown) => typed.find((c) => c.name === name)?.label ?? String(name ?? "");
 
   return html.async`<div class=u2-card style="flex:0 1 26rem" cms-part=contacts>
     <div class=-head>${t`Contacts`}</div>
     <table class="u2-table -contacts">
       <thead><tr>
-        <th>${t`Channel`}
+        <th>${t`Type`}
         <th>${t`Address`}
         <th>${t`Main`}
         <th>
       <tbody>${rows.length
         ? rows.map((row) => html`<tr>
-          <td>${label(row.channel)}
+          <td>${row.type}
           <td>${row.address}${row.error ? html` <span class=u2-badge title="${row.error}">!</span>` : ""}
           <td>${row.main
             ? "★"
-            : html`<button class=u2-unstyle data-main="${row.channel}:${row.address}" title="${t`Make main`}">☆</button>`}
-          <td><button class=u2-unstyle data-contact-delete="${row.channel}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
+            : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${t`Make main`}">☆</button>`}
+          <td><button class=u2-unstyle data-contact-delete="${row.type}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
         : html`<tr><td colspan=4>${await t`No verified contact — this user cannot be reached.`}`}
     </table>
-    ${typed.length ? html.async`<form class=-body data-contact-add>
-      <select name=channel>
-        ${typed.map((c) => html`<option value="${c.name}">${c.label}</option>`)}
+    ${html.async`<form class=-body data-contact-add>
+      <select name=type>
+        ${types.map((type) => html`<option value="${type}">${type}</option>`)}
       </select>
       <input name=address placeholder="${t`Address`}">
       <button type=button data-contact-save>${t`add`}</button>
-    </form>` : ""}
+    </form>`}
   </div>`;
 }
 

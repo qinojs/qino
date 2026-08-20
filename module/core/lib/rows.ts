@@ -38,18 +38,18 @@ class Contacts {
   get #db(): Db { return this.#usr.$table.db; }
   get #id(): number { return Number(this.#usr.$id); }
 
-  /** All of them, or those of one channel, preferred first. */
-  list(channel?: string): Promise<Row[]> { return contacts(this.#db, this.#id, channel); }
+  /** All of them, or those of one kind, preferred first. */
+  list(type?: string): Promise<Row[]> { return contacts(this.#db, this.#id, type); }
 
-  /** The destination to use on this channel: the preferred one, else the oldest. */
-  main(channel: string): Promise<Row | undefined> { return mainContact(this.#db, this.#id, channel); }
+  /** The address to use of this kind: the preferred one, else the oldest. */
+  main(type: string): Promise<Row | undefined> { return mainContact(this.#db, this.#id, type); }
 
-  /** Take an address as proven; the first one on a channel becomes the main. */
-  add(channel: string, address: string): Promise<Row> { return addContact(this.#db, this.#id, channel, address); }
+  /** Take an address as proven; the first one of its kind becomes the main. */
+  add(type: string, address: string): Promise<Row> { return addContact(this.#db, this.#id, type, address); }
 
-  remove(channel: string, address: string): Promise<void> { return removeContact(this.#db, this.#id, channel, address); }
+  remove(type: string, address: string): Promise<void> { return removeContact(this.#db, this.#id, type, address); }
 
-  setMain(channel: string, address: string): Promise<Row> { return setMainContact(this.#db, this.#id, channel, address); }
+  setMain(type: string, address: string): Promise<Row> { return setMainContact(this.#db, this.#id, type, address); }
 }
 
 export class Client extends DbRow {

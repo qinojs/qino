@@ -52,7 +52,8 @@ The authenticated API flow is:
 4. `GET messagingSms/phones` lists `{ phones, pending }`; `DELETE messagingSms/phone/<id>` removes one.
 
 The number is the identity, before and after verification — a claim has no contact row yet, and
-**`usr_contact` holds verified numbers only**. Everything about the pending state, the
+**`usr_contact` holds verified numbers only**. They are stored as `type: "phone"`, not as "sms":
+the number is proven, not the way it was reached, so WhatsApp or Signal would use the same rows. Everything about the pending state, the
 code and its limits belongs to [messaging](../messaging/#verifying-a-contact) and is shared
 with the other channels that need it. Numbers are normalized to E.164 first, so the same
 number written two ways is one claim.

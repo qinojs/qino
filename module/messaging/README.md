@@ -100,14 +100,16 @@ forget once and send to a number that was never anyone's.
 part of the user, and `usr.contacts.add("email", "a@b.ch")` needs no messaging module. What lives
 here is the proof: only a channel can deliver the code that turns a claim into a contact.
 
-A channel whose address can be typed says so with `normalize(address)` — it returns the canonical
-form and throws on anything else. `typedChannels(app)` is that list, and it is what a form
-offering "add a contact" may show. Telegram and Web Push have none: those are linked, not typed.
+Both tables are keyed by the **kind** of address, never by the channel: `phone`, `email`. One
+number serves sms, whatsapp and signal, and nobody should prove the same number once per transport.
+A channel says which kind it delivers to with `contact`; Telegram and Web Push name none, because
+those destinations are linked, never typed.
 
-Storage normalizes on top of that: core keys both tables by `contactKey(address)` — trimmed and
-lowercased — so no notation, no stray space and no capital letter can ever make a second contact
-or a claim that cannot be redeemed. `normalize()` is the part only the channel knows (`0041 79…`
-becoming `+41…`); everything a form or an import hands in passes through it first.
+Core owns what a kind means — `contactKey(type, address)` returns the one form it is stored and
+found under, or throws: `0041 79 123 45 67` and `+41 79 123 45 67` are the same contact, and so are
+`Kim@Example.com` and `kim@example.com`. Everything a form, an import or a provider hands in goes
+through it, so no notation and no stray space can make a second contact or a claim that cannot be
+redeemed.
 
 The claim is spent when it is redeemed or has expired; a wrong code does not spend it but costs
 the account a growing wait, counted in core next to every other wrong proof of identity. Codes last

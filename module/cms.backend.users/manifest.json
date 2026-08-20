@@ -2,8 +2,7 @@
   "name": "cms.backend.users",
   "description": "Manages users, profiles, passwords, status, and group memberships.",
   "dependencies": [
-    "cms.backend",
-    "messaging"
+    "cms.backend"
   ],
   "files": [
     "manifest.json",

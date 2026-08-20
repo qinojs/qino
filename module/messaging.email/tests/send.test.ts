@@ -15,7 +15,7 @@ async function makeApp(): Promise<App> {
   await db.query`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "one@qino.test", firstname: "One", lastname: "User" });
-  await db.table("usr_contact").insert({ channel: "email", address: "one@qino.test", usr_id: 1, main: true, created: 1 });
+  await db.table("usr_contact").insert({ type: "email", address: "one@qino.test", usr_id: 1, main: true, created: 1 });
   return {
     db,
     settings: { "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} } },

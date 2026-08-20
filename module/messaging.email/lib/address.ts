@@ -1,5 +1,3 @@
-import { ApiError } from "@qino/qino";
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Parses `Name <a@b.c>` or a bare address; null for anything that is not one. */
@@ -16,13 +14,6 @@ export function addressOf(input: string | { address?: string; email?: string; na
   address = address.trim().toLowerCase();
   if (!EMAIL_RE.test(address)) return null;
   return { address, name: name || undefined, usrId: typeof input === "object" ? input.usrId : undefined };
-}
-
-/** The canonical address, or an error — what a form gets to show the person who typed it. */
-export function mailAddress(input: string): string {
-  const address = addressOf(input);
-  if (!address) throw new ApiError(422, "Use an email address such as name@example.com");
-  return address.address;
 }
 
 /** The `Name <a@b.c>` form a transport expects. */

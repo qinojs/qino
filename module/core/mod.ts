@@ -45,7 +45,7 @@ export { DbField } from "./lib/db/DbField.ts";
 export { DbFile } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export { Usr } from "./lib/rows.ts";
-export { addContact, channelContacts, contactError, contactKey, contactOwner, contacts, countContacts, mainContact, removeContact, setMainContact } from "./lib/contacts.ts";
+export { addContact, contactError, contactKey, contactOwner, contacts, contactTypes, countContacts, mainContact, removeContact, setMainContact, typeContacts } from "./lib/contacts.ts";
 
 // item.js is core's dependency; other modules take it from here so there is only ever one copy of
 // it — `$item` is a module-local Symbol that a second copy would silently stop matching.

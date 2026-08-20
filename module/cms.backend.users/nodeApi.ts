@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
 import { addContact, errMsg, getCtx, login, pwHash, removeContact, setMainContact } from "@qino/qino";
-import { channel } from "@qino/qino/messaging";
 
 import { adoptUsername } from "./plugin.ts";
 
@@ -37,15 +36,12 @@ export default async function (node: Node, vars:any): Promise<any> {
     return 1;
   }
 
-  // contacts of one user: the address is the identity, so channel and address address it
+  // contacts of one user: kind plus address is the identity, there is no row id in between
   if ("contact_add" in vars) {
     const usr = await target(vars.contact_add);
     if (!usr) return false;
-    const name = String(vars.channel ?? "");
     try {
-      const address = channel(node.app, name)?.normalize?.(String(vars.address ?? "").trim());
-      if (!address) return { ok: false, message: await node.app.t`Choose a channel whose address can be entered.` };
-      await addContact(db, Number(usr.$id), name, address); // the first one on a channel becomes main
+      await addContact(db, Number(usr.$id), String(vars.type ?? ""), String(vars.address ?? ""));
       return { ok: true };
     } catch (e) {
       return { ok: false, message: errMsg(e) };
@@ -55,14 +51,14 @@ export default async function (node: Node, vars:any): Promise<any> {
   if ("contact_delete" in vars) {
     const usr = await target(vars.contact_delete);
     if (!usr) return false;
-    await removeContact(db, Number(usr.$id), String(vars.channel ?? ""), String(vars.address ?? ""));
+    await removeContact(db, Number(usr.$id), String(vars.type ?? ""), String(vars.address ?? ""));
     return { ok: true };
   }
 
   if ("contact_main" in vars) {
     const usr = await target(vars.contact_main);
     if (!usr) return false;
-    await setMainContact(db, Number(usr.$id), String(vars.channel ?? ""), String(vars.address ?? ""));
+    await setMainContact(db, Number(usr.$id), String(vars.type ?? ""), String(vars.address ?? ""));
     return { ok: true };
   }
 

@@ -1,5 +1,4 @@
 import { receive, send } from "./mod.ts";
-import { mailAddress } from "./lib/address.ts";
 import { close } from "./lib/transport.ts";
 
 import { countContacts } from "@qino/qino";
@@ -15,7 +14,7 @@ export const messagingChannel: Channel = {
   name: "email",
   label: "Email",
   color: "--orange",
-  normalize: mailAddress,
+  contact: "email",
   reach: (app: App, usrId: number) => countContacts(app.db, usrId, "email"),
   send,
 };

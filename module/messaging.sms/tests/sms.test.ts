@@ -102,7 +102,7 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   await assertRejects(() => addPhone(app, 2, "+41791234567"), ApiError, "Phone number is unavailable");
   // a stranger may claim the same number: refusing would let anyone lock its owner out of verifying
   await assertRejects(() => addPhone(app, 2, String(pending.address)), ApiError, "Wait before requesting");
-  await db.table("usr_contact_verification").update({ channel: "sms", address: pending.address, usr_id: 1 }, { sent: 1 });
+  await db.table("usr_contact_verification").update({ type: "phone", address: pending.address, usr_id: 1 }, { sent: 1 });
   assertEquals((await addPhone(app, 2, String(pending.address))).address, "+41791234568");
   assertEquals((await pendingPhones(app, 2)).length, 1);
   assertEquals((await pendingPhones(app, 1)).length, 1); // both claims stand, each with its own code

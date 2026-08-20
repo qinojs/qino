@@ -38,23 +38,19 @@ type To = { grp?: number; usr?: number; all?: true; notClient?: string | number 
  * `reach` answers how many destinations one user has, skipping `notClient` as `To` does; `send` is
  * the module's own send() — the declaration is the same function, not a wrapper around it.
  *
- * `normalize` exists only where an address can be typed in: it returns the canonical form and
- * throws on anything else. A Telegram chat and a push endpoint have none — they are linked, never
- * entered — which is exactly what a form offering "add a contact" needs to know.
+ * `contact` names the kind of address it delivers to — `usr_contact.type`, not the channel's own
+ * name: sms, whatsapp and signal all reach a `phone`, and nobody proves the same number three
+ * times. A Telegram chat and a push endpoint have none; those are linked, never entered.
  */
 export type Channel = {
   name: string;
   label: string;
   color?: string;
-  normalize?(address: string): string;
+  contact?: string;
   reach(app: App, usrId: number, notClient?: string | number): Promise<number>;
   send(app: App, to: To, msg: string | Msg): Promise<number>;
 };
 
-/** The channels whose addresses a person can type — what a contact form may offer. */
-export function typedChannels(app: App): Channel[] {
-  return channels(app).filter((c) => c.normalize);
-}
 
 /** Every channel a linked module declares. */
 export function channels(app: App): Channel[] {

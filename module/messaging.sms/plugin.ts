@@ -1,6 +1,6 @@
 import { Access, countContacts, getCtx, s } from "@qino/qino";
 
-import { addPhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
+import { addPhone, pendingPhones, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
 
 import type { ApiTree, App, Params } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
@@ -9,8 +9,8 @@ export const messagingChannel: Channel = {
   name: "sms",
   label: "SMS",
   color: "--green",
-  normalize: phoneNumber,
-  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "sms"),
+  contact: "phone",
+  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "phone"),
   send,
 };
 

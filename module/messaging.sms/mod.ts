@@ -1,5 +1,5 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
-import { addContact, ApiError, channelContacts, contactError, contactOwner, contacts, errMsg, removeContact, setMainContact, sql, unixTime } from "@qino/qino";
+import { addContact, ApiError, contactError, contactKey, contactOwner, contacts, errMsg, removeContact, setMainContact, sql, typeContacts, unixTime } from "@qino/qino";
 import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
@@ -37,11 +37,11 @@ export async function send(
   // one number per user: the preferred one, else the oldest
   const preferred = number ? sql`` : sql`AND c.address = (
     SELECT other.address FROM usr_contact other
-    WHERE other.channel = ${"sms"} AND other.usr_id = c.usr_id
+    WHERE other.type = ${"phone"} AND other.usr_id = c.usr_id
     ORDER BY other.main DESC, other.created, other.address LIMIT 1)`;
   const rows = await app.db.query`
     SELECT c.usr_id, c.address, c.error FROM usr_contact c
-    WHERE c.channel = ${"sms"} AND ${target} ${preferred}`;
+    WHERE c.type = ${"phone"} AND ${target} ${preferred}`;
   // a number nobody verified is still a number — it goes out, without an owner
   if (number && !rows.length) rows.push({ usr_id: null, address: number, error: null });
   const deliveries = [];
@@ -53,12 +53,12 @@ export async function send(
       await deliver(app, address, text);
       sent++;
       deliveries.push({ usrId, address, time: unixTime() });
-      if (row.error) await contactError(app.db, "sms", address);
+      if (row.error) await contactError(app.db, "phone", address);
     } catch (e) {
       const message = errMsg(e);
       deliveries.push({ usrId, address, error: message, time: unixTime() });
       console.warn(`sms: ${address} rejected —`, message);
-      if (usrId) await contactError(app.db, "sms", address, message);
+      if (usrId) await contactError(app.db, "phone", address, message);
     }
   }
   await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time }, deliveries);
@@ -68,12 +68,12 @@ export async function send(
 /** Claim a phone number and send its six-digit code. Nothing is stored on the user until it is verified. */
 export async function addPhone(app: App, usrId: number, input: string): Promise<Row> {
   const number = phoneNumber(input);
-  const owner = await contactOwner(app.db, "sms", number);
+  const owner = await contactOwner(app.db, "phone", number);
   if (owner && owner !== usrId) throw new ApiError(409, "Phone number is unavailable");
   if (owner) return (await app.db.row`SELECT * FROM usr_contact WHERE channel = ${"sms"} AND address = ${number}`)!;
 
   const time = unixTime();
-  const code = await requestCode(app, "sms", usrId, number);
+  const code = await requestCode(app, "phone", usrId, number);
   const journal = (error?: string) =>
     record(app, { channel: "sms", direction: "out", data: { kind: "phone_verification" }, time }, [
       { usrId, address: number, error, time: unixTime() },
@@ -91,46 +91,41 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
 /** Redeem the code and make the number the user's. */
 export async function verifyPhone(app: App, usrId: number, input: string, code: string): Promise<Row> {
   const number = phoneNumber(input);
-  await redeemCode(app, "sms", usrId, number, code);
-  return addContact(app.db, usrId, "sms", number);
+  await redeemCode(app, "phone", usrId, number, code);
+  return addContact(app.db, usrId, "phone", number);
 }
 
 /** Take one user's claim as proven without its code; intended for trusted administration. */
 export async function approvePhone(app: App, usrId: number, address: string): Promise<Row> {
-  const claimed = await dropClaim(app, "sms", usrId, phoneNumber(address));
+  const claimed = await dropClaim(app, "phone", usrId, address);
   if (!claimed) throw new ApiError(404, "Nothing to verify");
-  return addContact(app.db, Number(claimed.usr_id), "sms", String(claimed.address));
+  return addContact(app.db, Number(claimed.usr_id), "phone", String(claimed.address));
 }
 
 /** The user's verified numbers. */
 export function userPhones(app: App, usrId: number): Promise<Row[]> {
-  return contacts(app.db, usrId, "sms");
+  return contacts(app.db, usrId, "phone");
 }
 
 /** The numbers the user is in the middle of verifying. */
 export function pendingPhones(app: App, usrId?: number): Promise<Row[]> {
-  return pendingContacts(app, "sms", usrId);
+  return pendingContacts(app, "phone", usrId);
 }
 
 /** Forget one number owned by the user. */
 export function removePhone(app: App, usrId: number, number: string): Promise<void> {
-  return removeContact(app.db, usrId, "sms", phoneNumber(number));
+  return removeContact(app.db, usrId, "phone", number);
 }
 
 /** Make a number the user's preferred SMS destination. */
 export function setMainPhone(app: App, usrId: number, number: string): Promise<Row> {
-  return setMainContact(app.db, usrId, "sms", phoneNumber(number));
+  return setMainContact(app.db, usrId, "phone", number);
 }
 
 /** Every verified number with its owner. */
 export function phones(app: App, limit = 500): Promise<Row[]> {
-  return channelContacts(app.db, "sms", limit);
+  return typeContacts(app.db, "phone", limit);
 }
 
 /** Normalize common formatting and require an international E.164 number. */
-export function phoneNumber(input: string): string {
-  let number = input.trim().replace(/[\s().-]/g, "");
-  if (number.startsWith("00")) number = "+" + number.slice(2);
-  if (!/^\+[1-9]\d{7,14}$/.test(number)) throw new ApiError(422, "Use an international phone number such as +41791234567");
-  return number;
-}
+export const phoneNumber = (input: string): string => contactKey("phone", input);

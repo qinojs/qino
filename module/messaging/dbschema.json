@@ -95,10 +95,11 @@
     "usr_contact_verification": {
       "additionalProperties": {
         "properties": {
-          "channel": {
+          "type": {
             "type": "string",
             "maxLength": 32,
-            "x-index": "primary"
+            "x-index": "primary",
+            "description": "The kind of address being claimed, as in usr_contact"
           },
           "address": {
             "type": "string",

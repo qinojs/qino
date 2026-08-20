@@ -24,8 +24,8 @@ cms.initNode("backend.users", (el) => {
   // detail: contacts — the address is the identity, so channel and address travel together
   const reloadContacts = () => cms.reloadPart(nid, "contacts", { id: el.querySelector("[itemid]")?.getAttribute("itemid") ?? "" });
   const contactVars = (button, key) => {
-    const [channel, ...rest] = button.dataset[key].split(":");
-    return { channel, address: rest.join(":") };
+    const [type, ...rest] = button.dataset[key].split(":");
+    return { type, address: rest.join(":") };
   };
   const contactResult = (response) => {
     if (response?.ok) return reloadContacts();
@@ -38,7 +38,7 @@ cms.initNode("backend.users", (el) => {
       const form = save.closest("form");
       node.api.post({
         contact_add: itemId(save),
-        channel: form.elements.channel.value,
+        type: form.elements.type.value,
         address: form.elements.address.value.trim(),
       }).then(contactResult);
       return;

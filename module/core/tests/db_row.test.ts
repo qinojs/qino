@@ -315,10 +315,12 @@ Deno.test("usr.contacts is the natural way in and out of usr_contact", async () 
 
   await usr.contacts.add("email", "private@qino.test");
   await usr.contacts.add("email", "  Work@Qino.Test  "); // whitespace and case never make a second contact
+  await usr.contacts.add("phone", "0041 79 123 45 67"); // and a kind that knows more says more
   assertEquals((await usr.contacts.list("email")).map((c) => [c.address, Boolean(c.main)]), [
-    ["private@qino.test", true], // the first one on a channel becomes the main
+    ["private@qino.test", true], // the first one of a kind becomes the main
     ["work@qino.test", false],
   ]);
+  assertEquals((await usr.contacts.main("phone"))?.address, "+41791234567");
 
   await usr.contacts.setMain("email", "WORK@qino.test");
   assertEquals((await usr.contacts.main("email"))?.address, "work@qino.test");

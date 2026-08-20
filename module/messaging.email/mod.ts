@@ -91,13 +91,13 @@ async function addresses(app: App, to: { grp?: number; usr?: number; all?: true;
   const pick = who
     ? sql`(${who}) AND c.address = (
       SELECT other.address FROM usr_contact other
-      WHERE other.channel = ${"email"} AND other.usr_id = c.usr_id
+      WHERE other.type = ${"email"} AND other.usr_id = c.usr_id
       ORDER BY other.main DESC, other.created, other.address LIMIT 1)`
     : null;
   const rows = await app.db.query`
     SELECT c.usr_id, c.address, u.firstname, u.lastname FROM usr_contact c
     LEFT JOIN usr u ON u.id = c.usr_id
-    WHERE c.channel = ${"email"} AND (${sql.join([pick, mine].flatMap((v) => v ?? []), " OR ")})`;
+    WHERE c.type = ${"email"} AND (${sql.join([pick, mine].flatMap((v) => v ?? []), " OR ")})`;
   for (const row of rows) {
     const name = [row.firstname, row.lastname].filter(Boolean).join(" ");
     const address = addressOf({ address: String(row.address ?? ""), name, usrId: Number(row.usr_id) });

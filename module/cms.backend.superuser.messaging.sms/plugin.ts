@@ -23,7 +23,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     app.db.row`SELECT COUNT(*) AS n,
         SUM(CASE WHEN created > ${week} THEN 1 ELSE 0 END) AS fresh,
         SUM(CASE WHEN error IS NULL THEN 0 ELSE 1 END) AS failing
-      FROM usr_contact WHERE channel = ${"sms"}`.catch(() => undefined),
+      FROM usr_contact WHERE type = ${"phone"}`.catch(() => undefined),
     pendingPhones(app).catch(() => []),
     phoneList(app, RECENT),
     Promise.all([app.t`phone numbers`, app.t`pending`, app.t`new in ${RECENT} days`, app.t`failing`]),

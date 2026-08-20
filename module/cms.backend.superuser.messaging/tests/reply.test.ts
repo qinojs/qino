@@ -14,7 +14,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
-  await db.table("usr_contact").insert({ channel: "email", address: "user@qino.test", usr_id: 1, main: true, created: 1 });
+  await db.table("usr_contact").insert({ type: "email", address: "user@qino.test", usr_id: 1, main: true, created: 1 });
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: 1 });
   const linked = {
     "messaging.telegram": { name: "messaging.telegram", plugin: { messagingChannel: telegram } },

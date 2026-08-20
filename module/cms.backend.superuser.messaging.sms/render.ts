@@ -61,12 +61,12 @@ export async function send(node: Node): Promise<HtmlString> {
       FROM usr_contact c
       JOIN usr_grp ug ON ug.usr_id = c.usr_id
       JOIN grp g ON g.id = ug.grp_id
-      WHERE c.channel = ${"sms"}
+      WHERE c.type = ${"phone"}
       GROUP BY g.id, g.name ORDER BY g.name`,
     db.query`
       SELECT c.usr_id, u.email, COUNT(*) AS phones
       FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
-      WHERE c.channel = ${"sms"}
+      WHERE c.type = ${"phone"}
       GROUP BY c.usr_id, u.email ORDER BY u.email`,
   ]);
   const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.phones})</option>`);

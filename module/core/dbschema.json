@@ -492,10 +492,11 @@
     "usr_contact": {
       "additionalProperties": {
         "properties": {
-          "channel": {
+          "type": {
             "type": "string",
             "maxLength": 32,
-            "x-index": "primary"
+            "x-index": "primary",
+            "description": "What kind of address this is — email, phone. Not the transport: one number serves sms and whatsapp"
           },
           "address": {
             "type": "string",
@@ -512,7 +513,7 @@
           "main": {
             "type": "boolean",
             "default": false,
-            "description": "Preferred destination for this user on this channel"
+            "description": "Preferred address of this kind for this user"
           },
           "created": {
             "type": "integer",

@@ -18,14 +18,14 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     if (vars.main) {
       const number = String(vars.main);
-      const usrId = await contactOwner(app.db, "sms", number);
+      const usrId = await contactOwner(app.db, "phone", number);
       if (!usrId) return { ok: false, message: await app.t`Phone number not found.` };
       await setMainPhone(app, usrId, number);
       return { ok: true, message: await app.t`Main number changed.` };
     }
     if (vars.delete) {
       const number = String(vars.delete);
-      const usrId = await contactOwner(app.db, "sms", number);
+      const usrId = await contactOwner(app.db, "phone", number);
       if (usrId) await removePhone(app, usrId, number);
       return { ok: true, message: await app.t`Phone number deleted.` };
     }
