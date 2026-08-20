@@ -35,6 +35,13 @@ Deno.test("the same target shortens to the same code, a different one does not",
   assertEquals(await shorten(await app(), "https://example.test/a"), one); // the code is the target, not a counter
 });
 
+Deno.test("an existing local short link is not shortened again", async () => {
+  const testApp = await app();
+  const link = await shorten(testApp, "https://example.test/a");
+  assertEquals(await shorten(testApp, link), link);
+  assertEquals(Number(await testApp.db.one`SELECT COUNT(*) FROM shorturl`), 1);
+});
+
 Deno.test("a code the app never signed is recognisable without asking the database", async () => {
   const testApp = await app();
   const code = (await shorten(testApp, "https://example.test/a")).split("/").pop()!;

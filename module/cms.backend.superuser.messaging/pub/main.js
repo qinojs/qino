@@ -33,6 +33,7 @@ cms.initNode("backend.superuser.messaging", (el) => {
           usr: form.elements.usr.value,
           channel: form.elements.channel.value,
           text: form.elements.text.value.trim(),
+          format: form.elements.format.value,
         },
       });
       await (await import("@qino/u2/js/dialog/dialog.js")).alert(response?.message || "");

@@ -1,6 +1,6 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, sql, unixTime } from "@qino/qino";
-import { msgOf, record, titleOf } from "@qino/qino/messaging";
+import { htmlOf, msgOf, record, textOf, titleOf } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
@@ -16,15 +16,19 @@ export { setTransport } from "./lib/transport.ts";
  * Deliver a mail to a group, a user, literal addresses, or everyone with an address.
  *
  * Resolves with the number of addresses reached. A mail needs a subject, so an absent title is
- * the first line of the text; without `html` it goes out as plain text.
+ * the first line of the text. `format` decides the body: markdown and html mails carry both an
+ * HTML and a plain-text part, plain text goes out as text alone.
  */
 export async function send(
   app: App,
   to: { grp?: number; usr?: number; all?: true; email?: string | string[] },
-  message: string | Msg & { html?: string },
+  message: string | Msg,
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
+  // every mail carries a text part: plain readers and spam filters both want one
+  const markup = htmlOf(msg);
+  const body = markup ? { html: markup, text: textOf(msg) } : { text: textOf(msg) };
   const recipients = await addresses(app, to);
   if (!recipients.length) return 0;
 
@@ -42,7 +46,7 @@ export async function send(
       to: formatAddress(debug ?? recipient),
       replyTo: config.replyTo || undefined,
       subject: debug ? `Debug! ${msg.title}` : msg.title,
-      content: msg.html ? { html: msg.html, text: msg.text } : { text: msg.text },
+      content: body,
       headers: debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined,
     });
     // the transport took it, so it counts as sent — but nothing reached this address, and the

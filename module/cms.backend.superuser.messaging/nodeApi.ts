@@ -8,7 +8,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   if (!vars.reply) return null;
   const app = node.app;
   try {
-    const { usr, channel: inputChannel, text: input } = vars.reply as Record<string, unknown>;
+    const { usr, channel: inputChannel, text: input, format: inputFormat } = vars.reply as Record<string, unknown>;
     const usrId = Number(usr);
     const name = String(inputChannel ?? "");
     const text = String(input ?? "").trim();
@@ -21,7 +21,8 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
 
     const to = channel(app, name);
     if (!to) return { ok: false, message: await app.t`Channel is not available.` };
-    const sent = await to.send(app, { usr: usrId }, text);
+    const format = inputFormat === "md" || inputFormat === "html" ? inputFormat : undefined;
+    const sent = await to.send(app, { usr: usrId }, { text, format });
     return sent
       ? { ok: true, message: await app.t`Delivered over ${to.label} (${sent}).` }
       : { ok: false, message: await app.t`${to.label} reached nobody.` };

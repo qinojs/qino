@@ -1,6 +1,6 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql, unixTime } from "@qino/qino";
-import { msgOf, record } from "@qino/qino/messaging";
+import { htmlOf, msgOf, record, textOf } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
@@ -12,9 +12,10 @@ import type { Msg } from "@qino/qino/messaging";
  * Deliver a message to a group, a user, one chat, or everyone who linked their account.
  *
  * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
- * way. Everything besides `title` reaches sendMessage() as is, so `parse_mode`,
- * `reply_markup`, `disable_notification` and friends already work — a link needs
- * `parse_mode: "HTML"`. A `title` becomes the first line, bold when markup is on.
+ * way. A `format` becomes Telegram's own HTML subset — no headings, no lists, so those arrive as
+ * bold lines and bullets. Everything besides `title`, `text` and `format` reaches sendMessage()
+ * as is: `reply_markup`, `disable_notification` and friends, and an explicit `parse_mode` still
+ * hands the text over untouched. A `title` becomes the first line, bold when markup is on.
  */
 export async function send(
   app: App,
@@ -33,8 +34,12 @@ export async function send(
   const rows = await app.db.query`SELECT id, usr_id, chat_id, error FROM telegram_chat ${where}`;
 
   // Telegram has no title of its own; it becomes the first line, bold where markup is on
-  const { text, title, ...extra } = msg;
-  const params = { ...extra, text: title ? `${extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title}\n${text}` : text };
+  const { text, title, format: _format, ...extra } = msg;
+  const markup = extra.parse_mode ? undefined : htmlOf(msg, "telegram"); // an own parse_mode owns the text
+  const body = markup ?? (extra.parse_mode ? text : textOf(msg));
+  const html = Boolean(markup) || extra.parse_mode === "HTML";
+  const head = title ? (html ? `<b>${hee(title)}</b>` : title) : "";
+  const params = { ...extra, ...(markup ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
   const outcomes = new Map<number, { sent: boolean; errors: string[] }>();

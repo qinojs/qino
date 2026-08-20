@@ -13,7 +13,7 @@ declares a messaging channel, so `email` is this module's name alone.
 import { send } from "@qino/qino/messaging.email";
 
 await send(app, { usr: 42 }, "Your order shipped.");
-await send(app, { email: "someone@example.com" }, { title: "Invoice", text: "…", html: "<p>…</p>" });
+await send(app, { email: "someone@example.com" }, { title: "Invoice", text: "…", format: "md" });
 ```
 
 Recipients: `{ grp }`, `{ usr }`, `{ email }` (one address or many), `{ all: true }`. A user
@@ -21,7 +21,8 @@ without an address drops out, and an address that turns out to belong to a user 
 that user's, so a mail to a literal address still shows up in their conversation.
 
 The subject is the message's `title`, or the first line of its text when it has none — the same
-rule every channel follows. Without `html` the mail goes out as plain text.
+rule every channel follows. `format` decides the body: `md` and `html` mails carry an HTML part
+plus the plain-text alternative every mail needs, plain text goes out as text alone.
 
 ## Receiving
 
@@ -52,7 +53,7 @@ fetches the mailbox on demand.
 
 ## Not here yet
 
-Attachments, HTML templates, cc/bcc, open and click tracking, and a queue with retries all still
+Attachments, templates, cc/bcc, open and click tracking, and a queue with retries all still
 live in [mail](../mail/). They need storage of their own next to the journal, and the queue is a
 messaging-wide question rather than a mail one — a message that should go out but has not yet is
 not specific to email.

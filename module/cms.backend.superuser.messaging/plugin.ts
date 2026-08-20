@@ -1,14 +1,14 @@
 import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { channels, userChannels, userMessages } from "@qino/qino/messaging";
+import { channels, htmlOf, sanitizeHtml, textOf, userChannels, userMessages } from "@qino/qino/messaging";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, Ctx, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Channel } from "@qino/qino/messaging";
+import type { Channel, Msg } from "@qino/qino/messaging";
 
 const { name } = manifest;
 
@@ -105,7 +105,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
-      <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(String(row.text ?? ""))}${target ? html` <small>${target}</small>` : ""}
+      <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
       <td>${Number(row.recipient_count) || 0}
       <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
   }));
@@ -131,7 +131,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
         <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
         <tr><td>${app.t`Title`}<td>${row.title ?? ""}
-        <tr><td>${app.t`Text`}<td style="white-space:pre-wrap">${row.text ?? ""}
+        <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
       </table>
     </div>
@@ -191,6 +191,13 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
             </select>
           </label>
           <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
+          <label>
+            ${app.t`Format`}:
+            <select name=format>
+              <option value="">${app.t`Text`}</option>
+              <option value=md>Markdown</option>
+            </select>
+          </label>
           <button type=button data-reply>${app.t`Send`}</button>
         </form>` : html.async`<div class=-body>${app.t`No reachable channel.`}</div>`}
       </div>
@@ -250,7 +257,7 @@ function chatBubble(row: Row & { deliveries: Row[] }, view: View): HtmlString {
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
   const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div class=-body>
-    <div class=-text>${row.text ?? ""}</div>
+    <div class=-text>${body(row)}</div>
     <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
@@ -266,6 +273,22 @@ function direction(row: Row, view: View): HtmlString {
   return row.direction === "out"
     ? html`<u2-ico inline icon=call_made aria-label="${view.outgoing}">→</u2-ico>`
     : html`<u2-ico inline icon=call_received aria-label="${view.incoming}">←</u2-ico>`;
+}
+
+/** What the message says, without its markup — for previews and search results. */
+function plain(row: Row): string {
+  return textOf(rowMsg(row));
+}
+
+/** The body as the panel shows it: sanitized markup when the message has some, escaped text
+ *  otherwise. A message is written by whoever sent it, so nothing here is trusted. */
+function body(row: Row): HtmlString {
+  const markup = htmlOf(rowMsg(row));
+  return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text ?? ""}`;
+}
+
+function rowMsg(row: Row): Msg {
+  return { text: String(row.text ?? ""), format: (row.format || undefined) as Msg["format"] };
 }
 
 function cut(text: string, max = 120): string {

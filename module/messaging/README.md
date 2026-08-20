@@ -44,14 +44,42 @@ or not anyone verified it. If a verified contact matches, the delivery is journa
 so a mail to a typed-in address still joins their conversation. `chat` and `sub` are rows in the
 channel's own table, because a Telegram chat and a push endpoint exist only once they were linked.
 
-`msg` is `{ text, title?, … }`, and a bare string is the short form of `{ text }`. Only
+`msg` is `{ text, title?, format?, … }`, and a bare string is the short form of `{ text }`. Only
 `text` is required; `title` is what the channels that need one fall back on — `titleOf(msg)`
 hands out the first line of the text when none was given, so `send(app, { usr: 42 }, "…")`
 works on all of them. Everything else is the channel's own: `parse_mode` and `reply_markup`
-for Telegram, `tag` and `actions` for Web Push, `html` and `cc` for mail.
+for Telegram, `tag` and `actions` for Web Push, `cc` for mail.
 
 What a channel cannot express, it degrades instead of refusing: a `title` becomes the first
 line of an SMS, bold in Telegram, the subject of a mail, the heading of a notification.
+
+## Format
+
+`format` says what the text *is*, never how it is delivered — the same distinction `usr_contact.type`
+makes about addresses:
+
+```ts
+send(app, to, "plain text")                                  // goes out exactly as written
+send(app, to, { text: "**shipped**", format: "md" })         // markup where a channel has it
+send(app, to, { text: "<p>…</p>", format: "html" })          // a document, mail only
+```
+
+Two functions answer for every channel, and no channel converts anything itself:
+
+| | |
+| --- | --- |
+| `textOf(msg)` | plain text — markdown flattened (a link keeps its address), html stripped |
+| `htmlOf(msg, profile?)` | the markup, or `undefined` when the message is plain text |
+
+`profile` narrows the markup to what a channel accepts: `telegram` has no headings, lists or
+paragraphs, so those arrive as bold lines, bullets and blank lines. Markdown is a small subset —
+headings, lists, quotes, fenced code, `**bold**`, `*italic*`, `` `code` `` and links — and it is
+escaped before any marker is read, so a message can never smuggle markup past its format. Only
+`http`, `https`, `mailto` and `tel` links survive.
+
+Nothing sanitizes on the way out: a mail client is not a page. `sanitizeHtml(html)` is for the
+way *in* — a panel that renders journal HTML must pass it through, because a message is written
+by whoever sent it.
 
 ## Channels
 

@@ -72,3 +72,21 @@ Deno.test("a literal address finds its owner, an unknown one stays anonymous, an
 
   await app.db.close();
 });
+
+Deno.test("a markdown mail carries both parts, a plain one only text", async () => {
+  const app = await makeApp();
+  const sent: Record<string, unknown>[] = [];
+  setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
+
+  await send(app, { usr: 1 }, { text: "Hi **there**", format: "md" });
+  assertEquals((sent[0].content as { html: string; text: string }).html, "<p>Hi <b>there</b></p>");
+  assertEquals((sent[0].content as { html: string; text: string }).text, "Hi there");
+
+  await send(app, { usr: 1 }, "Hi **there**");
+  assertEquals(sent[1].content, { text: "Hi **there**" });
+
+  const [plain, markdown] = await messages(app); // newest first: the plain mail, then the markdown one
+  assertEquals([markdown.text, markdown.format], ["Hi **there**", "md"]); // the journal keeps the source
+  assertEquals([plain.text, plain.format], ["Hi **there**", null]);
+  await app.db.close();
+});

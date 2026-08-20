@@ -53,7 +53,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         : { ok: false, message: await app.t`Not delivered.` };
     }
     if (vars.send) {
-      const { to, address, title, text, html } = vars.send as Record<string, string>;
+      const { to, address, title, text, format } = vars.send as Record<string, string>;
       if (!text) return { ok: false, message: await app.t`A text is required.` };
       const [kind, value] = String(to).split(":");
       const recipient = kind === "grp" ? { grp: Number(value) }
@@ -61,7 +61,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         : kind === "address" ? { email: address }
         : { all: true } as const;
       if (kind === "address" && !address) return { ok: false, message: await app.t`An address is required.` };
-      const sent = await send(app, recipient, { text, title: title || undefined, html: html || undefined });
+      const sent = await send(app, recipient, {
+        text,
+        title: title || undefined,
+        format: format === "md" || format === "html" ? format : undefined,
+      });
       return { ok: true, message: await app.t`Delivered to ${sent} addresses.` };
     }
     return null;

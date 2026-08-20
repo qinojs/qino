@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 import { addContact, ApiError, contactError, contactKey, contactOwner, contacts, errMsg, removeContact, setMainContact, sql, typeContacts, unixTime } from "@qino/qino";
-import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode } from "@qino/qino/messaging";
+import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode, textOf } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
 
@@ -15,8 +15,8 @@ export { setProvider, type SmsProvider };
  * verified numbers only, so a group or user selection needs no filtering.
  *
  * `{ phone }` is the number itself and reaches it whether or not anyone verified it; a number
- * that is somebody's is journaled as theirs. An SMS is text and nothing else, so a `title`
- * becomes its first line.
+ * that is somebody's is journaled as theirs. An SMS is text and nothing else: markup is flattened
+ * and a `title` becomes the first line.
  */
 export async function send(
   app: App,
@@ -24,7 +24,8 @@ export async function send(
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
-  const text = msg.title ? `${msg.title}\n${msg.text}` : msg.text;
+  const body = textOf(msg);
+  const text = msg.title ? `${msg.title}\n${body}` : body;
   const number = to.phone == null ? "" : phoneNumber(to.phone);
   const target = to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
     : to.usr != null ? sql`c.usr_id = ${to.usr}`

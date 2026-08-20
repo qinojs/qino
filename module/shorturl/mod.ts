@@ -15,6 +15,11 @@ export { PATH } from "./lib/code.ts";
 export async function shorten(app: App, url: string, opt: { expires?: number } = {}): Promise<string> {
   const root = await app.url();
   const target = new URL(url, root).href;
+  const prefix = `${root}${PATH}/`;
+  const localCode = target.startsWith(prefix) ? target.slice(prefix.length) : "";
+  if (localCode && !localCode.includes("/") && await app.db.one`SELECT code FROM shorturl WHERE code = ${localCode}`) {
+    return target;
+  }
   const table = app.db.table("shorturl");
   // a code taken by another target gives way to the next round, which the link finds again the
   // same way when it is made once more — so codes stay one length instead of growing
@@ -34,7 +39,7 @@ export async function shorten(app: App, url: string, opt: { expires?: number } =
       // never shorten a life, only lengthen it — no expiry is the longest
       await table.update(code, { expires: opt.expires ?? null });
     }
-    return `${root}${PATH}/${code}`;
+    return `${prefix}${code}`;
   }
   throw new Error(`shorturl: no free code for ${target}`);
 }

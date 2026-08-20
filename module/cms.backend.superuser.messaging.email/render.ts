@@ -2,7 +2,7 @@ import { html, typeContacts, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { cms } from "@qino/qino/cms";
 import { status } from "@qino/qino/cron";
-import { pendingContacts } from "@qino/qino/messaging";
+import { pendingContacts, textOf } from "@qino/qino/messaging";
 
 import type { App, HtmlString, ItemProxy, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -182,8 +182,12 @@ export async function send(node: Node): Promise<HtmlString> {
       </select>
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
       ${t`Subject`} <input name=title placeholder="${await t`the first line of the text`}">
-      ${t`Text`} <textarea name=text required rows=3></textarea>
-      ${t`HTML`} <textarea name=html rows=3 placeholder="${await t`optional — without it the mail goes out as plain text`}"></textarea>
+      ${t`Format`} <select name=format>
+        <option value="">${t`Text`}</option>
+        <option value=md>Markdown</option>
+        <option value=html>HTML</option>
+      </select>
+      ${t`Text`} <textarea name=text required rows=6></textarea>
     </u2-fields>
     <button type=button data-send>${t`Send`}</button>
   </form>`;
@@ -265,7 +269,7 @@ export async function journal(node: Node): Promise<HtmlString> {
   const week = unixTime() - RECENT * 86400;
   const [rows, totals, url] = await Promise.all([
     app.db.query`
-      SELECT m.id, m.direction, m.title, m.text, m.time,
+      SELECT m.id, m.direction, m.title, m.text, m.format, m.time,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipients,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS errors
       FROM message m WHERE m.channel = ${CHANNEL} ORDER BY m.time DESC, m.id DESC LIMIT 25`,
@@ -283,7 +287,7 @@ export async function journal(node: Node): Promise<HtmlString> {
       <td>${m.direction === "out"
         ? html`<u2-ico inline icon=call_made>→</u2-ico>`
         : html`<u2-ico inline icon=call_received>←</u2-ico>`}
-      <td>${m.title ? html`<b>${m.title}</b> ` : ""}${cut(String(m.text ?? ""))}
+      <td>${m.title ? html`<b>${m.title}</b> ` : ""}${cut(textOf({ text: String(m.text ?? ""), format: m.format || undefined }))}
       <td>${m.recipients}
       <td>${Number(m.errors) ? html`<span class=u2-badge>${m.errors}</span>` : ""}`)
     : html`<tr><td colspan=6>${nothing}`;

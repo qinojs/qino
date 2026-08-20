@@ -15,17 +15,18 @@ is an incoming update. So a chat is linked, not configured, and `/start` is what
 import { send } from "@qino/qino/messaging.telegram";
 
 await send(app, { usr: 42 }, "Your order shipped.");
-await send(app, { grp: 3 }, { text: '<b>Deploy done</b> — <a href="https://…">log</a>', parse_mode: "HTML" });
+await send(app, { grp: 3 }, { text: "**Deploy done** — [log](https://…)", format: "md" });
 ```
 
 Recipients: `{ grp }`, `{ usr }`, `{ chat }`, `{ all: true }` — no channel, because a chat
 belongs to a person, not to a device; that question is what groups answer.
 
-A `title` has no place of its own here and becomes the first line, bold under
-`parse_mode: "HTML"`. Everything else reaches `sendMessage()` unchanged, so `reply_markup`,
-`disable_notification`, `reply_to_message_id` and friends already work. Text is plain by
-default; markup needs `parse_mode` explicitly, which also means `<` in user data is safe
-until you ask for HTML.
+A `title` has no place of its own here and becomes the first line, bold wherever markup is on.
+Text is plain by default, so `<` in user data is safe until a `format` asks for markup; the
+markup then is Telegram's own subset, and headings and lists — which it has none of — arrive as
+bold lines and bullets. Everything else reaches `sendMessage()` unchanged, so `reply_markup`,
+`disable_notification`, `reply_to_message_id` and friends already work. An explicit `parse_mode`
+still hands the text over untouched, escaping included, for what only Telegram can say.
 
 Resolves with the number of chats reached. A chat that blocked the bot (403) or no longer
 exists is deleted on the way, so the table stays clean without a cleanup job.

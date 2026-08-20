@@ -1,7 +1,7 @@
 // Public API of messaging.webpush. The qino plugin lives in ./plugin.ts.
 import { sendNotification } from "web-push-neo";
 import { sql, unixTime } from "@qino/qino";
-import { msgOf, record, titleOf } from "@qino/qino/messaging";
+import { msgOf, record, textOf, titleOf } from "@qino/qino/messaging";
 
 import { vapid } from "./lib/vapid.ts";
 
@@ -15,8 +15,9 @@ import type { Msg } from "@qino/qino/messaging";
  *
  * Resolves with the number of browsers reached; subscriptions the push service has
  * dropped are removed on the way. A notification needs a title, so an absent one is the
- * first line of the text. Everything besides `text` and `url` reaches showNotification()
- * as is — `icon`, `image`, `tag`, `actions`, `requireInteraction` and friends.
+ * first line of the text. A notification shows no markup, so a formatted text arrives flattened.
+ * Everything besides `text` and `url` reaches showNotification() as is — `icon`, `image`, `tag`,
+ * `actions`, `requireInteraction` and friends.
  */
 /** A one-time code proves presence only where the request is not — so the asking device is skipped. */
 const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`AND client_id <> ${Number(id)}`;
@@ -45,8 +46,8 @@ export async function send(
 
   const table = app.db.table("webpush_subscription");
   const options = { vapidDetails: await vapid(app) };
-  const { text, ...notification } = msg; // the service worker calls showNotification(title, rest)
-  const payload = JSON.stringify({ ...notification, body: text });
+  const { text: _text, format: _format, ...notification } = msg; // the service worker calls showNotification(title, rest)
+  const payload = JSON.stringify({ ...notification, body: textOf(msg) });
   const gone: number[] = [];
   const outcomes = new Map<string, { usrId?: number; sent: boolean; errors: string[] }>();
   let sent = 0;

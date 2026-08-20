@@ -1,16 +1,29 @@
 // Public API of messaging. The qino plugin lives in ./plugin.ts.
 import { sql, unixTime } from "@qino/qino";
+
+import { textOf } from "./lib/format.ts";
+
 import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
+export { htmlOf, htmlToText, textOf } from "./lib/format.ts";
+export { renderer, templates } from "./lib/template.ts";
+export { sanitizeHtml } from "./lib/sanitize.ts";
 
 
 /**
  * What every channel understands. `text` is the message; a bare string is the short form of
  * `{ text }`. Channels add their own fields on top — a push title, a mail subject, a Telegram
  * `parse_mode` — and degrade what they cannot express instead of refusing it.
+ *
+ * `format` says what the text *is*, not how it is delivered: markdown renders to the markup a
+ * channel accepts, html degrades to plain text where none is possible, and the default — plain
+ * text — goes out exactly as it was written. `title` is always plain text.
+ *
+ * `template` names the frame around it — the channel's `default` when unnamed, none at all when
+ * empty. The frame is chrome: it is applied per recipient and never joins the text.
  */
-export type Msg = { text: string; title?: string };
+export type Msg = { text: string; title?: string; format?: "md" | "html"; template?: string };
 
 /** The normal form of a message; a bare string is its text. */
 export function msgOf<T extends Msg>(msg: string | T): T {
@@ -20,7 +33,7 @@ export function msgOf<T extends Msg>(msg: string | T): T {
 /** A title for the channels that need one — the first line of the text when none was given. */
 export function titleOf(msg: Msg, max = 78): string {
   if (msg.title) return msg.title;
-  const line = msg.text.trim().split("\n", 1)[0].trim();
+  const line = textOf(msg).trim().split("\n", 1)[0].trim();
   if (line.length <= max) return line;
   const cut = line.slice(0, max);
   return cut.slice(0, cut.lastIndexOf(" ") + 1 || max).trimEnd() + "…";
@@ -91,6 +104,8 @@ export async function record(
       log_id: message.logId ?? null,
       title: msg?.title?.slice(0, 191) ?? null,
       text: msg?.text ?? null,
+      format: msg?.format ?? null,
+      template: msg?.template ?? null,
       data: JSON.stringify(message.data ?? null),
       time,
     }));
@@ -126,7 +141,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
   const delivery = usrId == null ? sql`` : sql`AND d.usr_id = ${usrId}`;
   const take = limit == null ? sql`` : sql`LIMIT ${limit}`;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.title, m.text, m.data, m.time,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.title, m.text, m.format, m.template, m.data, m.time,
       (SELECT COUNT(*) FROM message_delivery md WHERE md.message_id = m.id) AS recipient_count,
       g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.address, d.time AS delivery_time,
       d.error, u.email
@@ -147,6 +162,8 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
       log_id: row.log_id,
       title: row.title,
       text: row.text,
+      format: row.format,
+      template: row.template,
       data: row.data,
       time: row.time,
       recipient_count: row.recipient_count,

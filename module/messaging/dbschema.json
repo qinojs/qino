@@ -41,6 +41,16 @@
             "type": "string",
             "description": "The message's own text, as every channel understands it"
           },
+          "format": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "What the text is: md, html, or plain text when empty"
+          },
+          "template": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The frame the text was sent in; the journal keeps the message, not the frame"
+          },
           "data": {
             "type": "string",
             "description": "Channel-native JSON payload and routing data"
@@ -51,6 +61,34 @@
           }
         },
         "required": ["id", "channel", "direction", "data", "time"]
+      }
+    },
+    "message_template": {
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary",
+            "description": "What a message asks for; \"default\" is what a message without a wish gets"
+          },
+          "channel": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary",
+            "description": "The channel this variant is for — every channel says it its own way"
+          },
+          "format": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "What the template text is: md, html, or plain text when empty"
+          },
+          "text": {
+            "type": "string",
+            "description": "The frame; {{content}} is the message, every other marker the recipient"
+          }
+        },
+        "required": ["name", "channel"]
       }
     },
     "message_delivery": {
