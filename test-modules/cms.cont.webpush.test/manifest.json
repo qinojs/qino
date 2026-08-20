@@ -1,8 +1,8 @@
 {
-  "name": "cms.cont.web_push.test",
+  "name": "cms.cont.webpush.test",
   "description": "Lets a visitor subscribe this browser to push channels.",
   "dependencies": [
-    "messaging.web_push"
+    "messaging.webpush"
   ],
   "files": [
     "manifest.json",

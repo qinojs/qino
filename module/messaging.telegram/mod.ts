@@ -18,7 +18,7 @@ import type { Msg } from "@qino/qino/messaging";
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; chat?: number; all?: true },
+  to: { grp?: number; usr?: number; all?: true; chat?: number },
   message: string | Msg & Record<string, unknown>,
 ): Promise<number> {
   const msg = msgOf(message);
@@ -63,7 +63,7 @@ export async function send(
     await Promise.all(rows.slice(i, i + 25).map(deliver));
   }
   if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
-  await record(app, { channel: "telegram", direction: "out", grpId: to.grp, data: { to, msg }, time },
+  await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },
     Array.from(outcomes, ([usrId, outcome]) => ({
       usrId,
       error: outcome.sent ? undefined : outcome.errors.join("; "),

@@ -1,5 +1,5 @@
 import { errMsg } from "@qino/qino";
-import { addChannel, removeChannel, removeSubscription, send } from "@qino/qino/messaging.web_push";
+import { addChannel, removeChannel, removeSubscription, send } from "@qino/qino/messaging.webpush";
 
 import type { Node } from "@qino/qino/cms";
 

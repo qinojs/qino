@@ -1,0 +1,82 @@
+import { unixTime } from "@qino/qino";
+import { record } from "@qino/qino/messaging";
+
+import { addressOf } from "./address.ts";
+import { inbound } from "./settings.ts";
+
+import type { App } from "@qino/qino";
+
+/** What the IMAP client and the MIME parser hand back — only the parts this module reads. */
+type Fetched = { uid: number; source: Uint8Array };
+type Parsed = {
+  subject?: string;
+  text?: string;
+  html?: string | false;
+  messageId?: string;
+  date?: Date;
+  from?: { value: { address?: string; name?: string }[] };
+  to?: { text?: string };
+};
+
+/**
+ * Read what is new in the configured mailbox into the journal and mark it seen.
+ *
+ * Resolves with the number of messages taken over; 0 when no mailbox is configured. Seen is the
+ * only bookkeeping — a message the app crashed on stays unseen and arrives with the next run.
+ */
+export async function receive(app: App, { limit = 50 }: { limit?: number } = {}): Promise<number> {
+  const config = await inbound(app);
+  if (!config.host || !config.pass) return 0;
+
+  const { ImapFlow } = await import("npm:imapflow@^1") as { ImapFlow: new (options: unknown) => ImapClient };
+  const { simpleParser } = await import("npm:mailparser@^3") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
+  const client = new ImapFlow({
+    host: config.host,
+    port: config.port ?? (config.secure ? 993 : 143),
+    secure: config.secure,
+    auth: { user: config.user, pass: config.pass },
+    logger: false,
+  });
+
+  await client.connect();
+  const lock = await client.getMailboxLock(config.mailbox);
+  let taken = 0;
+  try {
+    for await (const message of client.fetch({ seen: false }, { uid: true, source: true })) {
+      if (taken >= limit) break;
+      try {
+        await journal(app, await simpleParser(message.source), config.address);
+        await client.messageFlagsAdd({ uid: String(message.uid) }, ["\\Seen"], { uid: true });
+        taken++;
+      } catch (e) {
+        console.error("[email] inbound message failed —", e);
+      }
+    }
+  } finally {
+    lock.release();
+    await client.logout();
+  }
+  return taken;
+}
+
+/** One incoming mail as a journal entry, tied to the user the address belongs to. */
+async function journal(app: App, mail: Parsed, to: string): Promise<void> {
+  const sender = addressOf(mail.from?.value?.[0] ?? "");
+  const usrId = sender ? Number(await app.db.one`SELECT id FROM usr WHERE email = ${sender.address}`) || undefined : undefined;
+  const time = mail.date ? Math.floor(mail.date.getTime() / 1000) : unixTime();
+  await record(app, {
+    channel: "email",
+    direction: "in",
+    msg: { title: String(mail.subject ?? ""), text: String(mail.text ?? "") },
+    data: { messageId: mail.messageId, from: sender?.address, name: sender?.name, to: mail.to?.text ?? to, html: mail.html || undefined },
+    time,
+  }, [{ usrId, address: sender?.address, time: unixTime() }]);
+}
+
+type ImapClient = {
+  connect(): Promise<void>;
+  logout(): Promise<void>;
+  getMailboxLock(mailbox: string): Promise<{ release(): void }>;
+  fetch(range: unknown, options: unknown): AsyncIterable<Fetched>;
+  messageFlagsAdd(range: unknown, flags: string[], options: unknown): Promise<boolean>;
+};

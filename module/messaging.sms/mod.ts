@@ -11,50 +11,57 @@ import type { SmsProvider } from "./lib/provider.ts";
 export { setProvider, type SmsProvider };
 
 /**
- * Deliver text to the phones of a group, user, one phone, or everyone — `usr_phone` holds
- * verified numbers only, so there is nothing to filter out.
- * An SMS is text and nothing else, so a `title` becomes its first line.
+ * Deliver text to the phones of a group, user, one number, or everyone — `usr_phone` holds
+ * verified numbers only, so a group or user selection needs no filtering.
+ *
+ * `{ phone }` is the number itself and reaches it whether or not anyone verified it; a number
+ * that is somebody's is journaled as theirs. An SMS is text and nothing else, so a `title`
+ * becomes its first line.
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; phone?: number; all?: true },
+  to: { grp?: number; usr?: number; all?: true; phone?: string },
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
   const text = msg.title ? `${msg.title}\n${msg.text}` : msg.text;
+  const number = to.phone == null ? "" : phoneNumber(to.phone);
   const target = to.grp != null ? sql`p.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
     : to.usr != null ? sql`p.usr_id = ${to.usr}`
-    : to.phone != null ? sql`p.id = ${to.phone}`
+    : number ? sql`p.number = ${number}`
     : to.all ? sql`${true}`
     : null;
   if (!target) throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
   const time = unixTime();
 
   // one number per user: the preferred one, else the oldest
-  const preferred = to.phone != null ? sql`` : sql`AND p.id = (
+  const preferred = number ? sql`` : sql`AND p.id = (
     SELECT other.id FROM usr_phone other WHERE other.usr_id = p.usr_id
     ORDER BY other.main DESC, other.created, other.id LIMIT 1)`;
   const rows = await app.db.query`
     SELECT p.id, p.usr_id, p.number, p.error FROM usr_phone p
     WHERE ${target} ${preferred}`;
+  // a number nobody verified is still a number — it goes out, without an owner
+  if (number && !rows.length) rows.push({ id: null, usr_id: null, number, error: null });
   const table = app.db.table("usr_phone");
   const deliveries = [];
   let sent = 0;
   for (const row of rows) {
     const address = String(row.number);
+    const usrId = Number(row.usr_id) || undefined;
     try {
       await deliver(app, address, text);
       sent++;
-      deliveries.push({ usrId: Number(row.usr_id), address, time: unixTime() });
+      deliveries.push({ usrId, address, time: unixTime() });
       if (row.error) await table.update(row.id, { error: null });
     } catch (e) {
       const message = errMsg(e);
-      deliveries.push({ usrId: Number(row.usr_id), address, error: message, time: unixTime() });
-      console.warn(`sms: phone ${row.id} rejected —`, message);
-      await table.update(row.id, { error: message.slice(0, 255) });
+      deliveries.push({ usrId, address, error: message, time: unixTime() });
+      console.warn(`sms: ${address} rejected —`, message);
+      if (row.id) await table.update(row.id, { error: message.slice(0, 255) });
     }
   }
-  await record(app, { channel: "sms", direction: "out", grpId: to.grp, data: { to, msg }, time }, deliveries);
+  await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time }, deliveries);
   return sent;
 }
 

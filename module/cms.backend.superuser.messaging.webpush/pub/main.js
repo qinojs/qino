@@ -1,6 +1,6 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 
-cms.initNode("backend.superuser.messaging.web_push", (el) => {
+cms.initNode("backend.superuser.messaging.webpush", (el) => {
   const { execute } = nodePanel(el, ["channels", "send", "subscriptions"]);
   // the button's own form, validated, with its trimmed values — null when invalid
   const form = (button) => {

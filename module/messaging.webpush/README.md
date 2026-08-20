@@ -1,4 +1,4 @@
-# messaging.web_push
+# messaging.webpush
 
 Web Push notifications (RFC 8291 / 8292). Stores what a browser hands out when it
 subscribes, and delivers notifications to it.
@@ -6,7 +6,7 @@ subscribes, and delivers notifications to it.
 ## Sending
 
 ```ts
-import { send } from "@qino/qino/messaging.web_push";
+import { send } from "@qino/qino/messaging.webpush";
 
 await send(app, { channel: "news" }, { title: "New article", text: "…", url: "/blog" });
 await send(app, { usr: 42 }, "Your order shipped.");
@@ -31,7 +31,7 @@ phone routinely wants different channels on each, which a group cannot express, 
 visitors who never log in have no user to group at all. They answer different questions
 and are meant to be used side by side.
 
-Channels are defined in the backend (`cms.backend.superuser.messaging.web_push`); a browser
+Channels are defined in the backend (`cms.backend.superuser.messaging.webpush`); a browser
 subscribing to a name that is not defined is silently ignored.
 
 The name avoids "topic" on purpose — RFC 8030 already uses `Topic` for coalescing at the
@@ -40,7 +40,7 @@ push service, which is a different thing entirely.
 ## Subscribing
 
 ```js
-import { subscribe, unsubscribe, channels } from "/m/messaging.web_push/pub/web_push.js";
+import { subscribe, unsubscribe, channels } from "/m/messaging.webpush/pub/webpush.js";
 await subscribe(["news"]);   // asks for permission; the list replaces what was there
 ```
 
@@ -50,15 +50,15 @@ The service worker comes from the `serviceworker` module — this module only sh
 ## VAPID
 
 Keys are generated on first use and stored in settings. Set
-`messaging.web_push.subject` to a `mailto:` or `https:` URL the push service operators
+`messaging.webpush.subject` to a `mailto:` or `https:` URL the push service operators
 can reach you at; the default is `mailto:admin@localhost`.
 
 ## Storage
 
-`web_push_subscription` — one row per browser. `endpoint_hash` (SHA-256 of the endpoint)
+`webpush_subscription` — one row per browser. `endpoint_hash` (SHA-256 of the endpoint)
 is the identity, because endpoints are up to 1000 characters and cannot be indexed.
 `usr_id` is null for visitors who subscribed without logging in.
-`web_push_channel` is the channel catalogue, `web_push_subscription_channel` the
+`webpush_channel` is the channel catalogue, `webpush_subscription_channel` the
 membership.
 
 `error` holds why the last delivery failed, and goes back to null as soon as one

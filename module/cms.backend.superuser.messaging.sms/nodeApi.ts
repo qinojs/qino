@@ -29,7 +29,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true, message: await app.t`Phone number deleted.` };
     }
     if (vars.test) {
-      const sent = await send(app, { phone: Number(vars.test) }, await app.t`Test message`);
+      const sent = await send(app, { phone: String(vars.test) }, await app.t`Test message`);
       return sent
         ? { ok: true, message: await app.t`Sent.` }
         : { ok: false, message: await app.t`Not delivered.` };

@@ -130,10 +130,11 @@ Deno.test("a linked user's incoming Telegram message is journaled for the conver
       text: "Hello back",
     })), 200);
     const row = await db.row`
-      SELECT m.channel, m.direction, m.data, d.usr_id
+      SELECT m.channel, m.direction, m.text, m.data, d.usr_id
       FROM message m JOIN message_delivery d ON d.message_id = m.id`;
     assertEquals([row?.channel, row?.direction, row?.usr_id], ["telegram", "in", 1]);
-    assertEquals(JSON.parse(String(row?.data)).text, "Hello back");
+    assertEquals(row?.text, "Hello back");
+    assertEquals(JSON.parse(String(row?.data)).messageId, 9);
   } finally {
     bot.restore();
   }

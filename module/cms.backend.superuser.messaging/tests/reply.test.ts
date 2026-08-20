@@ -1,5 +1,5 @@
 import { Db, requestStorage } from "@qino/qino";
-import { assertEquals, assertStringIncludes, fakeT, mailMessagingChannel as email, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, fakeT, emailMessagingChannel as email, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
@@ -12,22 +12,20 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER)`;
-  await db.exec`CREATE TABLE mail (id INTEGER PRIMARY KEY AUTOINCREMENT, log_id INTEGER, subject TEXT, text TEXT, html TEXT)`;
-  await db.exec`CREATE TABLE mail_recipient (mail_id INTEGER, email TEXT, usr_id INTEGER, sent INTEGER, opened INTEGER, error TEXT)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: 1 });
-  await db.exec`INSERT INTO mail (subject, text, html) VALUES (${"Earlier mail"}, ${"Mail body"}, ${""})`;
-  await db.exec`INSERT INTO mail_recipient (mail_id, email, usr_id, sent, opened, error)
-    VALUES (${1}, ${"user@qino.test"}, ${null}, ${2}, ${0}, ${""})`;
   const linked = {
     "messaging.telegram": { name: "messaging.telegram", plugin: { messagingChannel: telegram } },
-    mail: { name: "mail", plugin: { messagingChannel: email } },
+    "messaging.email": { name: "messaging.email", plugin: { messagingChannel: email } },
   };
   const app = {
     db,
     t: fakeT,
-    modules: { linked: () => Object.values(linked), get: (name: string) => linked[name as keyof typeof linked] },
+    modules: {
+      linked: (name?: string) => name === undefined ? Object.values(linked) : linked[name as keyof typeof linked],
+      get: (name: string) => linked[name as keyof typeof linked],
+    },
     settings: { "messaging.telegram": { botToken: "123:test", webhookSecret: "secret" } },
   };
   const original = globalThis.fetch;
@@ -66,9 +64,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(normal, "<u2-time");
     assertStringIncludes(normal, '<option value="telegram" selected>');
     assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--blue)">Telegram');
-    assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--orange)">Email');
-    assertStringIncludes(normal, "Earlier mail");
-    assertStringIncludes(normal, "Mail body");
+    assertStringIncludes(normal, '<option value="email">Email'); // reachable, because the user has an address
 
     const overview = await render("http://qino.test/de/backend/superuser/nachrichten");
     assertStringIncludes(overview, "<table class=u2-table");

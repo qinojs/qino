@@ -28,7 +28,8 @@ async function update(app: App, up: any): Promise<void> {
   await record(app, {
     channel: "telegram",
     direction: "in",
-    data: { updateId: up.update_id, messageId: msg.message_id, chatId, text: String(msg.text ?? "") },
+    msg: { text: String(msg.text ?? "") },
+    data: { updateId: up.update_id, messageId: msg.message_id, chatId },
     time: Number(msg.date) || unixTime(),
   }, [{ usrId, time: unixTime() }]);
   if (!command) return;
@@ -54,7 +55,7 @@ async function reply(app: App, chatId: number, text: string, usrId?: number): Pr
   let failed = false;
   let failure: unknown;
   try { await call(app, "sendMessage", { chat_id: chatId, text }); } catch (e) { failed = true; failure = e; }
-  await record(app, { channel: "telegram", direction: "out", data: { to: { chat: chatId }, msg: { text } }, time }, [{
+  await record(app, { channel: "telegram", direction: "out", msg: { text }, data: { to: { chat: chatId } }, time }, [{
     usrId,
     error: failure instanceof Error ? failure.message : failure == null ? undefined : String(failure),
     time: unixTime(),

@@ -1,0 +1,19 @@
+{
+  "name": "messaging.email",
+  "description": "Email as a messaging channel — sends over any Upyo transport and receives over IMAP.",
+  "dependencies": [
+    "messaging",
+    "cron"
+  ],
+  "files": [
+    "README.md",
+    "lib/address.ts",
+    "lib/inbound.ts",
+    "lib/settings.ts",
+    "lib/transport.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

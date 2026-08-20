@@ -124,7 +124,7 @@ function phone(p: Row, labels: Record<string, string>): HtmlString {
     <td>${p.error ? html`<span class=u2-badge title="${p.error}">${String(p.error).slice(0, 24)}</span>` : ""}
     <td>
       ${p.main ? "" : html`<button type=button class=u2-unstyle data-main="${p.id}" title="${labels.main}">★</button>`}
-      <button type=button class=u2-unstyle data-test="${p.id}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>
+      <button type=button class=u2-unstyle data-test="${p.number}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>
       <button type=button class=u2-unstyle data-delete="${p.id}" u2-confirm="${labels.del}"><u2-ico icon=delete>✕</u2-ico></button>`;
 }
 

@@ -7,6 +7,6 @@
     "cms.cont.example": {},
     "cms.cont.example.ml": {},
     "cms.cont.my.debug": {},
-    "cms.cont.web_push.test": {}
+    "cms.cont.webpush.test": {}
   }
 }

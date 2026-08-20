@@ -25,7 +25,8 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     channel: "sms",
     direction: "out",
     grpId: 1,
-    data: { text: "Hello" },
+    msg: { title: "Greeting", text: "Hello" },
+    data: { to: { grp: 1 } },
     time: 10,
   }, [
     { usrId: 1, time: 11 },
@@ -40,7 +41,9 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     grp_id: 1,
     grp_name: "Editors",
     log_id: null,
-    data: '{"text":"Hello"}',
+    title: "Greeting",
+    text: "Hello",
+    data: '{"to":{"grp":1}}',
     time: 10,
     recipient_count: 2,
     deliveries: [
@@ -56,7 +59,9 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     grp_id: 1,
     grp_name: "Editors",
     log_id: null,
-    data: '{"text":"Hello"}',
+    title: "Greeting",
+    text: "Hello",
+    data: '{"to":{"grp":1}}',
     time: 10,
     recipient_count: 2,
     deliveries: [

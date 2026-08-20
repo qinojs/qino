@@ -1,11 +1,11 @@
 /**
- * web_push.js — Web Push client
+ * webpush.js — Web Push client
  *
- * import { subscribe, unsubscribe, channels } from "/m/messaging.web_push/pub/web_push.js";
+ * import { subscribe, unsubscribe, channels } from "/m/messaging.webpush/pub/webpush.js";
  */
 import { api } from "@qino/pub/qino.js";
 
-const push = api["messaging.web_push"];
+const push = api["messaging.webpush"];
 
 const current = async () => (await navigator.serviceWorker?.ready)?.pushManager.getSubscription();
 

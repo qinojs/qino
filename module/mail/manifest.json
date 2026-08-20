@@ -2,8 +2,7 @@
   "name": "mail",
   "description": "Creates, delivers, tracks, and stores email messages.",
   "dependencies": [
-    "core",
-    "messaging"
+    "core"
   ],
   "files": [
     "dbschema.json",

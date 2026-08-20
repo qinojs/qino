@@ -10,11 +10,15 @@ the list of ways one person can be reached, and the proof that a contact is real
 delivery is the whole verdict — null means reached.
 
 ```ts
-await record(app, { channel: "sms", direction: "out", grpId: 3, data: { text } }, [
+await record(app, { channel: "sms", direction: "out", grpId: 3, msg, data: { to } }, [
   { usrId: 7 },
   { usrId: 9, error: "rejected" },
 ]);
 ```
+
+`msg` is the channel-neutral part and lands in the `title` and `text` columns, so reading or
+searching the journal needs no knowledge of any channel; `data` stays the channel-native payload
+and routing. A message with no text of its own — a verification code, a link — simply has none.
 
 `messages(app, limit)` and `userMessages(app, usrId, limit)` read it back with the deliveries
 nested. `channel` is a plain string and outlives module renames — it is data, not a reference.
@@ -25,8 +29,20 @@ nested. `channel` is a plain string and outlives module renames — it is data, 
 send(app, to, msg): Promise<number>   // how many destinations were reached
 ```
 
-`to` is `{ grp }`, `{ usr }` or `{ all: true }`, plus whatever the channel alone can address
-(`{ phone }`, `{ chat }`, `{ sub }`, `{ channel }`).
+`to` is `{ grp }`, `{ usr }` or `{ all: true }` everywhere, plus whatever the channel alone can
+address:
+
+| Modul | `to` |
+| --- | --- |
+| messaging.email | `{ grp?, usr?, all?, email? }` |
+| messaging.sms | `{ grp?, usr?, all?, phone? }` |
+| messaging.telegram | `{ grp?, usr?, all?, chat? }` |
+| messaging.webpush | `{ grp?, usr?, all?, channel?, client?, sub?, notClient? }` |
+
+`email` and `phone` are the destination itself — an address, an E.164 number — and reach it whether
+or not anyone verified it. If a verified contact matches, the delivery is journaled as that user's,
+so a mail to a typed-in address still joins their conversation. `chat` and `sub` are rows in the
+channel's own table, because a Telegram chat and a push endpoint exist only once they were linked.
 
 `msg` is `{ text, title?, … }`, and a bare string is the short form of `{ text }`. Only
 `text` is required; `title` is what the channels that need one fall back on — `titleOf(msg)`
@@ -59,8 +75,10 @@ export const messagingChannel: Channel = {
 today: it renders the journal per user and replies over whichever channel is reachable. It
 knows no channel by name, so a fourth one costs no backend code.
 
-Channels today: [messaging.sms](../messaging.sms/), [messaging.telegram](../messaging.telegram/),
-[messaging.web_push](../messaging.web_push/) and [mail](../mail/).
+Channels today: [messaging.email](../messaging.email/), [messaging.sms](../messaging.sms/),
+[messaging.telegram](../messaging.telegram/) and [messaging.webpush](../messaging.webpush/).
+[mail](../mail/) is not one of them any more — `messaging.email` is its successor and owns the
+`email` channel alone.
 
 ## Verifying a contact
 
@@ -73,10 +91,13 @@ const code = await requestCode(app, "sms", usrId, "+41791234567");  // start or 
 await redeemCode(app, "sms", usrId, "+41791234567", code);          // throws unless it proves it
 ```
 
-Pending claims live in `usr_contact_verification` and **nowhere else**, so `usr_phone` and
-`usr_email` hold verified contacts only. That is the point of the separate table: `SELECT *
-FROM usr_phone WHERE usr_id = 22` is always legitimate, instead of `WHERE verified IS NOT
-NULL` being a rule one can forget once and send to a number that was never anyone's.
+Pending claims live in `usr_contact_verification` and **nowhere else**, so `usr_phone` holds
+verified numbers only. That is the point of the separate table: `SELECT * FROM usr_phone WHERE
+usr_id = 22` is always legitimate, instead of `WHERE verified IS NOT NULL` being a rule one can
+forget once and send to a number that was never anyone's.
+
+Email has no such table: `usr.email` is the address, and it is the one the account was created
+with. A second table would be a second truth about where a person reads mail.
 
 The claim is spent when it is redeemed or has expired; a wrong code does not spend it but costs
 the account a growing wait, counted in core next to every other wrong proof of identity. Codes last

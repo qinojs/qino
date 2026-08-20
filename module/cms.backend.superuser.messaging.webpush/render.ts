@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { channels as channelList, publicKey, subscriptions as subscriptionList } from "@qino/qino/messaging.web_push";
+import { channels as channelList, publicKey, subscriptions as subscriptionList } from "@qino/qino/messaging.webpush";
 
 import type { HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -17,7 +17,7 @@ export async function render(node: Node): Promise<HtmlString> {
         ${t`Contact`} <input name=subject value="${subject}" readonly>
         ${t`Public key`} <input name=publicKey value="${key}" readonly>
       </u2-fields>
-      <small>${t`Generated on first use. The contact is a setting of messaging.web_push.`}</small>
+      <small>${t`Generated on first use. The contact is a setting of messaging.webpush.`}</small>
     </div>
   </div>
 
@@ -65,14 +65,14 @@ export async function send(node: Node): Promise<HtmlString> {
     channelList(node.app),
     db.query`
       SELECT g.id, g.name, COUNT(*) AS subs
-      FROM web_push_subscription s
+      FROM webpush_subscription s
       JOIN usr_grp ug ON ug.usr_id = s.usr_id
       JOIN grp g ON g.id = ug.grp_id
       GROUP BY g.id, g.name
       ORDER BY g.name`,
     db.query`
       SELECT s.usr_id, u.email, COUNT(*) AS subs
-      FROM web_push_subscription s
+      FROM webpush_subscription s
       LEFT JOIN usr u ON u.id = s.usr_id
       WHERE s.usr_id IS NOT NULL
       GROUP BY s.usr_id, u.email

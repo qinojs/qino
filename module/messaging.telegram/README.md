@@ -7,7 +7,7 @@ Messages through a Telegram bot. Links a user account to a Telegram chat and del
 A bot cannot write to anyone who has not written to it first. Knowing someone's Telegram id
 or `@username` is not enough — the chat must exist, and the only way to learn its `chat_id`
 is an incoming update. So a chat is linked, not configured, and `/start` is what a browser's
-`pushManager.subscribe()` is to [messaging.web_push](../messaging.web_push/README.md).
+`pushManager.subscribe()` is to [messaging.webpush](../messaging.webpush/README.md).
 
 ## Sending
 

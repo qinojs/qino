@@ -1,0 +1,58 @@
+# messaging.email
+
+Email as a messaging channel: it sends over any [Upyo](https://upyo.dev) transport and receives
+over IMAP, and both directions land in the messaging journal.
+
+This module is the successor of [mail](../mail/), which it replaces step by step. The two run in
+parallel and keep their settings apart — `messaging.email.*` here, `mail.*` there. `mail` no longer
+declares a messaging channel, so `email` is this module's name alone.
+
+## Sending
+
+```ts
+import { send } from "@qino/qino/messaging.email";
+
+await send(app, { usr: 42 }, "Your order shipped.");
+await send(app, { email: "someone@example.com" }, { title: "Invoice", text: "…", html: "<p>…</p>" });
+```
+
+Recipients: `{ grp }`, `{ usr }`, `{ email }` (one address or many), `{ all: true }`. A user
+without an address drops out, and an address that turns out to belong to a user is journaled as
+that user's, so a mail to a literal address still shows up in their conversation.
+
+The subject is the message's `title`, or the first line of its text when it has none — the same
+rule every channel follows. Without `html` the mail goes out as plain text.
+
+## Receiving
+
+`inbound.address` is the address the app receives on, and it is what outgoing mail carries as
+`Reply-To` unless `reply_to` says otherwise. That is the whole point of configuring it: a reply
+comes back to a mailbox this module reads, and lands in the same conversation as everything else.
+
+The cron job `messaging.email.inbox` polls the mailbox every five minutes over IMAP
+([imapflow](https://www.npmjs.com/package/imapflow) + [mailparser](https://www.npmjs.com/package/mailparser),
+both loaded only once a host is configured). Every message it takes over is journaled as
+`direction: "in"`, tied to the user whose address it came from, and marked `\Seen`. Seen is the
+only bookkeeping: a message the app crashed on stays unseen and arrives with the next run.
+
+## Settings
+
+| Key | Meaning |
+| --- | --- |
+| `sender`, `sendername` | Default From |
+| `reply_to` | Overrides the inbound address as Reply-To |
+| `debug_to` | Redirects every outgoing mail here, subject prefixed `Debug!`; the journal marks every delivery as not reached |
+| `inbound.address` | The address the app receives on |
+| `inbound.host`, `.port`, `.secure`, `.user`, `.pass`, `.mailbox` | IMAP access; without a host nothing is received |
+| `transport.type` | `smtp`, `mailgun`, `resend`, `sendgrid`, `ses`, `plunk`, `jmap`, `mock` |
+
+Without a configured transport a dev app falls back to `mock`; a production app refuses to send.
+An app that brings its own transport injects it with `setTransport(app, transport)`, and `receive(app)`
+fetches the mailbox on demand.
+
+## Not here yet
+
+Attachments, HTML templates, cc/bcc, open and click tracking, and a queue with retries all still
+live in [mail](../mail/). They need storage of their own next to the journal, and the queue is a
+messaging-wide question rather than a mail one — a message that should go out but has not yet is
+not specific to email.

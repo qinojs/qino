@@ -1,7 +1,7 @@
 import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { channel, channels, userChannels, userMessages } from "@qino/qino/messaging";
+import { channels, userChannels, userMessages } from "@qino/qino/messaging";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -80,11 +80,11 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const app = ctx.app;
   const search = String(vars.search ?? "").trim();
   const filter = String(vars.channel ?? "");
-  const sh = sqlSearch(search, ["m.data"], { exact: ["m.id", "m.channel"] });
+  const sh = sqlSearch(search, ["m.title", "m.text"], { exact: ["m.id", "m.channel"] });
   const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
   const [rows, view] = await Promise.all([
     app.db.query`
-      SELECT m.id, m.channel, m.direction, m.grp_id, m.data, m.time, g.name AS grp_name,
+      SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
       FROM message m
@@ -105,7 +105,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
-      <td>${cut(readableText(row.data))}${target ? html` <small>${target}</small>` : ""}
+      <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(String(row.text ?? ""))}${target ? html` <small>${target}</small>` : ""}
       <td>${Number(row.recipient_count) || 0}
       <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
   }));
@@ -130,7 +130,8 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
       <table class=u2-table>
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
         <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
-        <tr><td>${app.t`Text`}<td style="white-space:pre-wrap">${readableText(row.data) || "–"}
+        <tr><td>${app.t`Title`}<td>${row.title ?? ""}
+        <tr><td>${app.t`Text`}<td style="white-space:pre-wrap">${row.text ?? ""}
         <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
       </table>
     </div>
@@ -165,13 +166,11 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
       <div class=u2-card><div class=-body>${app.t`User not found.`}</div></div>
     </div>`;
   }
-  const [journal, emails, reachable, view] = await Promise.all([
+  const [rows, reachable, view] = await Promise.all([
     userMessages(app, usrId),
-    channel(app, "email") ? emailMessages(app, user) : [],
     userChannels(app, usrId),
     labels(app),
   ]);
-  const rows = [...journal, ...emails].sort((a, b) => Number(b.time) - Number(a.time));
 
   return html.async`<div class=u2-flex>
     ${userCard(node, url, usrId)}
@@ -251,7 +250,7 @@ function chatBubble(row: Row & { deliveries: Row[] }, view: View): HtmlString {
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
   const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div class=-body>
-    <div class=-text>${readableText(row.data) || "–"}</div>
+    <div class=-text>${row.text ?? ""}</div>
     <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
@@ -299,43 +298,6 @@ type View = Awaited<ReturnType<typeof labels>>;
 
 function readableData(data: unknown): string {
   try { return JSON.stringify(JSON.parse(String(data)), null, 2); } catch { return String(data ?? ""); }
-}
-
-function readableText(data: unknown): string {
-  try {
-    const value = JSON.parse(String(data));
-    const text = value?.msg?.text ?? value?.text ?? [value?.msg?.title, value?.msg?.body].filter(Boolean).join("\n");
-    return [value?.subject, text].filter(Boolean).join("\n\n");
-  } catch {
-    return "";
-  }
-}
-
-async function emailMessages(app: App, user: Row): Promise<(Row & { deliveries: Row[] })[]> {
-  const rows = await app.db.query`
-    SELECT m.id, m.subject, m.text, m.html, r.email, r.sent, r.opened, r.error, l.time AS created,
-      (SELECT COUNT(*) FROM mail_recipient recipients WHERE recipients.mail_id = m.id) AS recipient_count
-    FROM mail_recipient r
-    JOIN mail m ON m.id = r.mail_id
-    LEFT JOIN log l ON l.id = m.log_id
-    WHERE (r.usr_id = ${user.id} OR (r.usr_id IS NULL AND r.email = ${user.email}))
-      AND (r.sent > 0 OR r.error <> ${""})
-    ORDER BY r.sent DESC, m.id DESC`;
-  return rows.map((row) => {
-    const time = Number(row.sent) || Number(row.created) || 0;
-    return {
-      id: "email:" + row.id,
-      channel: "email",
-      direction: "out",
-      grp_id: null,
-      grp_name: null,
-      log_id: null,
-      data: JSON.stringify({ subject: row.subject, text: row.text, html: row.html, opened: row.opened }),
-      time,
-      recipient_count: row.recipient_count,
-      deliveries: [{ usr_id: user.id, email: row.email, time, error: row.error || null }],
-    };
-  });
 }
 
 function userName(user: Row): string {

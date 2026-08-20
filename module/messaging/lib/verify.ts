@@ -6,7 +6,7 @@ import type { App, Row } from "@qino/qino";
 // sms and mail. Telegram and Web Push need none: a chat id comes only from a real update, an
 // endpoint only from the browser itself.
 //
-// Pending claims live here and nowhere else, so `usr_phone` and `usr_email` hold verified contacts
+// Pending claims live here and nowhere else, so `usr_phone` holds verified contacts
 // only and `WHERE verified IS NOT NULL` stops being a rule one can forget.
 //
 // Not a [ticket](../../ticket/): that one is a capability — whoever knows the handle may act. Six

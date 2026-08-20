@@ -15,7 +15,7 @@ export async function send(ctx: Ctx, name: string): Promise<void> {
   const usrId = identified(ctx);
   const target = channel(ctx.app, name);
   // Not to the device that is asking: a code that arrives where it is typed proves nothing beyond
-  // holding this browser, which the request already showed. Only web_push can be that device.
+  // holding this browser, which the request already showed. Only webpush can be that device.
   const notClient = ctx.clientId ?? undefined;
   if (!target || !await target.reach(ctx.app, usrId, notClient)) throw new ApiError(404, "No such way to reach you");
   const code = await requestCode(ctx.app, claim(name), usrId, String(usrId));

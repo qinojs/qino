@@ -1,6 +1,6 @@
 {
   "properties": {
-    "web_push_subscription": {
+    "webpush_subscription": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -50,7 +50,7 @@
         "required": ["id", "endpoint", "endpoint_hash", "p256dh", "auth", "created"]
       }
     },
-    "web_push_channel": {
+    "webpush_channel": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -67,19 +67,19 @@
         "required": ["id", "name"]
       }
     },
-    "web_push_subscription_channel": {
+    "webpush_subscription_channel": {
       "additionalProperties": {
         "properties": {
           "sub_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "web_push_subscription",
+            "x-qg-parent": "webpush_subscription",
             "x-qg-on-parent-delete": "cascade"
           },
           "channel_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "web_push_channel",
+            "x-qg-parent": "webpush_channel",
             "x-qg-on-parent-delete": "cascade"
           }
         },

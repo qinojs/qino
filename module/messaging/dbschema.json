@@ -12,7 +12,7 @@
             "type": "string",
             "maxLength": 32,
             "x-index": true,
-            "description": "Transport channel such as sms, telegram or web_push"
+            "description": "Transport channel such as sms, telegram or webpush"
           },
           "direction": {
             "type": "string",
@@ -31,6 +31,15 @@
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "log"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "The message's own title, as every channel understands it"
+          },
+          "text": {
+            "type": "string",
+            "description": "The message's own text, as every channel understands it"
           },
           "data": {
             "type": "string",

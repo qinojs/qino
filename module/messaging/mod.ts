@@ -28,7 +28,7 @@ export function titleOf(msg: Msg, max = 78): string {
 /** Who a message goes to; every channel understands these and adds its own keys.
  *  `notClient` names the device that must be skipped — a channel that reaches devices honours it,
  *  one that is out of band by nature (sms, mail, telegram) has none and ignores it. */
-export type To = { grp?: number; usr?: number; all?: true; notClient?: string | number };
+type To = { grp?: number; usr?: number; all?: true; notClient?: string | number };
 
 /**
  * A way to reach a person, declared by a module as `export const messagingChannel`.
@@ -61,14 +61,20 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
   return all.filter((_, i) => reach[i] > 0);
 }
 
-/** Store one logical message and one result per recipient. */
+/**
+ * Store one logical message and one result per recipient.
+ *
+ * `msg` is the channel-neutral part and lands in its own columns, so reading and searching the
+ * journal needs no knowledge of any channel; `data` stays the channel-native payload and routing.
+ */
 export async function record(
   app: App,
-  message: { channel: string; direction: "in" | "out"; data?: unknown; grpId?: number; logId?: number; time?: number },
+  message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: unknown; grpId?: number; logId?: number; time?: number },
   deliveries: { usrId?: number; address?: string; error?: string; time?: number }[] = [],
 ): Promise<number> {
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
+  const msg = message.msg == null ? undefined : msgOf(message.msg);
   let id = 0;
   await app.db.transaction(async () => {
     id = Number(await app.db.table("message").insert({
@@ -76,6 +82,8 @@ export async function record(
       direction: message.direction,
       grp_id: message.grpId ?? null,
       log_id: message.logId ?? null,
+      title: msg?.title?.slice(0, 191) ?? null,
+      text: msg?.text ?? null,
       data: JSON.stringify(message.data ?? null),
       time,
     }));
@@ -111,7 +119,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
   const delivery = usrId == null ? sql`` : sql`AND d.usr_id = ${usrId}`;
   const take = limit == null ? sql`` : sql`LIMIT ${limit}`;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.data, m.time,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.title, m.text, m.data, m.time,
       (SELECT COUNT(*) FROM message_delivery md WHERE md.message_id = m.id) AS recipient_count,
       g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.address, d.time AS delivery_time,
       d.error, u.email
@@ -130,6 +138,8 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
       grp_id: row.grp_id,
       grp_name: row.grp_name,
       log_id: row.log_id,
+      title: row.title,
+      text: row.text,
       data: row.data,
       time: row.time,
       recipient_count: row.recipient_count,

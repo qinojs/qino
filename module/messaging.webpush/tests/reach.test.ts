@@ -9,7 +9,7 @@ async function app() {
   await db.migrate(dbSchema);
   await db.loadTables();
   const sub = (id: number, clientId: number) =>
-    db.table("web_push_subscription").insert({
+    db.table("webpush_subscription").insert({
       id,
       usr_id: 7,
       client_id: clientId,
@@ -25,7 +25,7 @@ async function app() {
   return { db } as any;
 }
 
-Deno.test("web_push: the asking device does not count as a way to reach someone", async () => {
+Deno.test("webpush: the asking device does not count as a way to reach someone", async () => {
   const a = await app();
   assertEquals(await messagingChannel.reach(a, 7), 2);
   assertEquals(await messagingChannel.reach(a, 7, 100), 1);

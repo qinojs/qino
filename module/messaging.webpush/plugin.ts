@@ -9,11 +9,11 @@ import type { Channel } from "@qino/qino/messaging";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const messagingChannel: Channel = {
-  name: "web_push",
+  name: "webpush",
   label: "Web Push",
   color: "--purple",
   reach: async (app: App, usrId: number, notClient?: string | number) =>
-    Number(await app.db.one`SELECT COUNT(*) FROM web_push_subscription WHERE usr_id = ${usrId}
+    Number(await app.db.one`SELECT COUNT(*) FROM webpush_subscription WHERE usr_id = ${usrId}
       ${notClient == null ? sql`` : sql`AND client_id <> ${Number(notClient)}`}`),
   send,
 };
@@ -43,9 +43,9 @@ export const api: ApiTree = {
       input: s.object({ endpoint: s.string() }),
       execute: async ({ endpoint }: any) => {
         const db = getCtx().app.db;
-        const rows = await db.query`SELECT c.name FROM web_push_subscription_channel sc
-          JOIN web_push_channel c ON c.id = sc.channel_id
-          JOIN web_push_subscription s ON s.id = sc.sub_id
+        const rows = await db.query`SELECT c.name FROM webpush_subscription_channel sc
+          JOIN webpush_channel c ON c.id = sc.channel_id
+          JOIN webpush_subscription s ON s.id = sc.sub_id
           WHERE s.endpoint_hash = ${await sha256b64url(endpoint)}`;
         return { channels: rows.map((r) => r.name) };
       },
@@ -58,22 +58,22 @@ export const api: ApiTree = {
       execute: async ({ endpoint, p256dh, auth, channels }: any) => {
         const ctx = getCtx();
         const db = ctx.app.db;
-        const table = db.table("web_push_subscription");
+        const table = db.table("webpush_subscription");
         // endpoints are too long to index; their hash is the subscription's identity
         const endpoint_hash = await sha256b64url(endpoint);
         const values = { usr_id: ctx.userId || null, client_id: ctx.clientId, endpoint, endpoint_hash, p256dh, auth };
         // the same browser re-subscribes with the same endpoint — adopt it instead of duplicating
-        const known = await db.one`SELECT id FROM web_push_subscription WHERE endpoint_hash = ${endpoint_hash}`;
+        const known = await db.one`SELECT id FROM webpush_subscription WHERE endpoint_hash = ${endpoint_hash}`;
         const id = known ? (await table.update(known, values), known) : await table.insert({ ...values, created: unixTime() });
 
         if (channels) {
           // the posted list is the whole truth for this browser; names the backend does not know are ignored
           const wanted = [...new Set(channels as string[])];
           const found = wanted.length
-            ? await db.query`SELECT id FROM web_push_channel WHERE name IN (${sql.join(wanted.map((n) => sql`${n}`))})`
+            ? await db.query`SELECT id FROM webpush_channel WHERE name IN (${sql.join(wanted.map((n) => sql`${n}`))})`
             : [];
-          const link = db.table("web_push_subscription_channel");
-          await db.exec`DELETE FROM web_push_subscription_channel WHERE sub_id = ${id}`;
+          const link = db.table("webpush_subscription_channel");
+          await db.exec`DELETE FROM webpush_subscription_channel WHERE sub_id = ${id}`;
           await Promise.all(found.map((c) => link.insert({ sub_id: id, channel_id: c.id })));
         }
         return { ok: true };
@@ -85,7 +85,7 @@ export const api: ApiTree = {
       access: Access.PUBLIC,
       input: s.object({ endpoint: s.string() }),
       execute: async ({ endpoint }: any) => {
-        await getCtx().app.db.exec`DELETE FROM web_push_subscription WHERE endpoint_hash = ${await sha256b64url(endpoint)}`;
+        await getCtx().app.db.exec`DELETE FROM webpush_subscription WHERE endpoint_hash = ${await sha256b64url(endpoint)}`;
         return { ok: true };
       },
     },

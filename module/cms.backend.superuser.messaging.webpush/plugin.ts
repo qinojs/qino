@@ -1,7 +1,7 @@
 import { html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { subscriptions as subscriptionList } from "@qino/qino/messaging.web_push";
+import { subscriptions as subscriptionList } from "@qino/qino/messaging.webpush";
 
 import { channels, render, send, subscriptions } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -24,8 +24,8 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
         SUM(CASE WHEN usr_id IS NULL THEN 1 ELSE 0 END) AS anon,
         SUM(CASE WHEN created > ${week} THEN 1 ELSE 0 END) AS fresh,
         SUM(CASE WHEN error IS NULL THEN 0 ELSE 1 END) AS failing,
-        (SELECT COUNT(*) FROM web_push_channel) AS channels
-      FROM web_push_subscription`.catch(() => undefined),
+        (SELECT COUNT(*) FROM webpush_channel) AS channels
+      FROM webpush_subscription`.catch(() => undefined),
     subscriptionList(app, RECENT),
     Promise.all([app.t`subscriptions`, app.t`anonymous`, app.t`channels`, app.t`new in ${RECENT} days`, app.t`failing`]),
   ]);

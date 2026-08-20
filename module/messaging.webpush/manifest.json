@@ -1,5 +1,5 @@
 {
-  "name": "messaging.web_push",
+  "name": "messaging.webpush",
   "description": "Web Push — stores browser subscriptions and delivers notifications to them.",
   "dependencies": [
     "messaging",
@@ -14,6 +14,6 @@
     "plugin.ts",
     "pub/module.svg",
     "pub/sw.js",
-    "pub/web_push.js"
+    "pub/webpush.js"
   ]
 }
