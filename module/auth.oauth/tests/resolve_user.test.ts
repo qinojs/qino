@@ -19,6 +19,7 @@ function fakeDb({ link, usr }: { link?: number; usr?: number } = {}) {
     table: (name: string) => ({
       insert: (row: Record<string, unknown>) => { inserted.push([name, row]); return Promise.resolve(99); },
     }),
+    transaction: (fn: () => unknown) => Promise.resolve(fn()),
   };
 }
 
@@ -42,6 +43,14 @@ Deno.test("auth.oauth: an unknown sub falls back to the verified e-mail and is r
   const db = fakeDb({ usr: 3 });
   assertEquals(await resolveUser(ctxWith(db), PROVIDER, github()), 3);
   assertEquals(db.inserted, [["oauth_provider_usr", { provider: "github", sub: "4711", usr_id: 3, created: db.inserted[0][1].created, last_used: db.inserted[0][1].last_used }]]);
+});
+
+Deno.test("auth.oauth: a created user keeps the address the provider vouched for as a contact", async () => {
+  const db = fakeDb();
+  assertEquals(await resolveUser(ctxWith(db), PROVIDER, github()), 99);
+  assertEquals(db.inserted.map(([table]) => table), ["usr", "usr_contact", "oauth_provider_usr"]);
+  assertEquals(db.inserted[1][1].address, "kim@example.com");
+  assertEquals(db.inserted[1][1].main, true); // the first address on a channel is the main one
 });
 
 Deno.test("auth.oauth: an unverified e-mail is refused", async () => {

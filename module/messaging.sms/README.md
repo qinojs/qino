@@ -1,6 +1,6 @@
 # messaging.sms
 
-Minimal SMS delivery plus verified phone numbers for users. `usr_phone` stores multiple
+Minimal SMS delivery plus verified phone numbers for users. `usr_contact` stores multiple
 E.164 numbers per user; one number belongs to only one user.
 
 ## Sending
@@ -51,8 +51,8 @@ The authenticated API flow is:
 3. `PUT messagingSms/phone/<id>/main` selects the main number.
 4. `GET messagingSms/phones` lists `{ phones, pending }`; `DELETE messagingSms/phone/<id>` removes one.
 
-The number is the identity until it is verified — a claim has no `usr_phone` row to address,
-because **`usr_phone` holds verified numbers only**. Everything about the pending state, the
+The number is the identity, before and after verification — a claim has no contact row yet, and
+**`usr_contact` holds verified numbers only**. Everything about the pending state, the
 code and its limits belongs to [messaging](../messaging/#verifying-a-contact) and is shared
 with the other channels that need it. Numbers are normalized to E.164 first, so the same
 number written two ways is one claim.

@@ -102,13 +102,13 @@
           },
           "address": {
             "type": "string",
-            "maxLength": 191,
+            "maxLength": 254,
             "x-index": "primary",
-            "description": "The contact being claimed — one open claim per address and channel"
+            "description": "The contact being claimed — one open claim per user, address and channel"
           },
           "usr_id": {
             "type": "integer",
-            "x-index": true,
+            "x-index": "primary",
             "x-qg-parent": "usr",
             "x-qg-on-parent-delete": "cascade"
           },

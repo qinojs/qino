@@ -12,6 +12,7 @@ export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows
 /** The core table that holds what a wrong proof costs the next one — a factor's tests migrate it
  *  next to their own schema, because the count belongs to the account and not to the method. */
 export const authAttemptDbSchema = { properties: { usr_auth_attempt: coreSchema.properties.usr_auth_attempt } };
+export const contactDbSchema = { properties: { usr_contact: coreSchema.properties.usr_contact } };
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";

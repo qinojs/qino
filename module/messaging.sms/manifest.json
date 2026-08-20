@@ -6,7 +6,6 @@
   ],
   "files": [
     "README.md",
-    "dbschema.json",
     "lib/provider.ts",
     "manifest.json",
     "mod.ts",

@@ -57,19 +57,17 @@ export async function send(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   const [groupRows, userRows] = await Promise.all([
     db.query`
-      SELECT g.id, g.name, COUNT(DISTINCT p.usr_id) AS phones
-      FROM usr_phone p
-      JOIN usr_grp ug ON ug.usr_id = p.usr_id
+      SELECT g.id, g.name, COUNT(DISTINCT c.usr_id) AS phones
+      FROM usr_contact c
+      JOIN usr_grp ug ON ug.usr_id = c.usr_id
       JOIN grp g ON g.id = ug.grp_id
-      WHERE p.id = (SELECT other.id FROM usr_phone other WHERE other.usr_id = p.usr_id
-        ORDER BY other.main DESC, other.created, other.id LIMIT 1)
+      WHERE c.channel = ${"sms"}
       GROUP BY g.id, g.name ORDER BY g.name`,
     db.query`
-      SELECT p.usr_id, u.email, COUNT(*) AS phones
-      FROM usr_phone p LEFT JOIN usr u ON u.id = p.usr_id
-      WHERE p.id = (SELECT other.id FROM usr_phone other WHERE other.usr_id = p.usr_id
-        ORDER BY other.main DESC, other.created, other.id LIMIT 1)
-      GROUP BY p.usr_id, u.email ORDER BY u.email`,
+      SELECT c.usr_id, u.email, COUNT(*) AS phones
+      FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
+      WHERE c.channel = ${"sms"}
+      GROUP BY c.usr_id, u.email ORDER BY u.email`,
   ]);
   const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.phones})</option>`);
   const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id}</option>`);
@@ -118,14 +116,14 @@ export async function phones(node: Node): Promise<HtmlString> {
 function phone(p: Row, labels: Record<string, string>): HtmlString {
   return html`<tr>
     <td>${p.email ?? "#" + p.usr_id}
-    <td>${p.number}
+    <td>${p.address}
     <td>${p.main ? "✓" : ""}
     <td>${u2.el.time(p.created)}
     <td>${p.error ? html`<span class=u2-badge title="${p.error}">${String(p.error).slice(0, 24)}</span>` : ""}
     <td>
-      ${p.main ? "" : html`<button type=button class=u2-unstyle data-main="${p.id}" title="${labels.main}">★</button>`}
-      <button type=button class=u2-unstyle data-test="${p.number}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>
-      <button type=button class=u2-unstyle data-delete="${p.id}" u2-confirm="${labels.del}"><u2-ico icon=delete>✕</u2-ico></button>`;
+      ${p.main ? "" : html`<button type=button class=u2-unstyle data-main="${p.address}" title="${labels.main}">★</button>`}
+      <button type=button class=u2-unstyle data-test="${p.address}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>
+      <button type=button class=u2-unstyle data-delete="${p.address}" u2-confirm="${labels.del}"><u2-ico icon=delete>✕</u2-ico></button>`;
 }
 
 /** A number someone claimed but has not proven yet — it belongs to no user until they do. */
@@ -136,5 +134,5 @@ function claim(c: Row, labels: Record<string, string>): HtmlString {
     <td>
     <td><span class=u2-badge>${labels.pending}</span>
     <td>
-    <td><button type=button class=u2-unstyle data-approve="${c.address}" title="${labels.approve}">✓</button>`;
+    <td><button type=button class=u2-unstyle data-approve="${c.usr_id}:${c.address}" title="${labels.approve}">✓</button>`;
 }

@@ -1,18 +1,16 @@
-import { Access, getCtx, s } from "@qino/qino";
+import { Access, countContacts, getCtx, s } from "@qino/qino";
 
-import { addPhone, pendingPhones, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
+import { addPhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
 
 import type { ApiTree, App, Params } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
-
-export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const messagingChannel: Channel = {
   name: "sms",
   label: "SMS",
   color: "--green",
-  reach: async (app: App, usrId: number) =>
-    Number(await app.db.one`SELECT COUNT(*) FROM usr_phone WHERE usr_id = ${usrId}`),
+  normalize: phoneNumber,
+  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "sms"),
   send,
 };
 
@@ -64,7 +62,6 @@ export const api: ApiTree = {
         return addPhone(ctx.app, ctx.userId, String(number));
       },
     },
-    // the number is the identity until it is verified — a pending claim has no phone row to address
     verify: {
       post: {
         description: "Confirm a claimed number with its six-digit SMS code",
@@ -78,15 +75,16 @@ export const api: ApiTree = {
     },
   },
 
+  // the number is the address and the identity, before and after verification — no row id in between
   phone: {
-    ":id": {
-      paramSchema: s.number(),
+    ":number": {
+      paramSchema: s.string(),
       delete: {
         description: "Delete one of the signed-in user's phone numbers",
         access: Access.USER,
-        execute: async ({ id }: Params) => {
+        execute: async ({ number }: Params) => {
           const ctx = getCtx();
-          await removePhone(ctx.app, ctx.userId, Number(id));
+          await removePhone(ctx.app, ctx.userId, String(number));
           return { ok: true };
         },
       },
@@ -94,9 +92,9 @@ export const api: ApiTree = {
         put: {
           description: "Make this phone the signed-in user's preferred SMS number",
           access: Access.USER,
-          execute: ({ id }: Params) => {
+          execute: ({ number }: Params) => {
             const ctx = getCtx();
-            return setMainPhone(ctx.app, ctx.userId, Number(id));
+            return setMainPhone(ctx.app, ctx.userId, String(number));
           },
         },
       },

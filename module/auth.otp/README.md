@@ -19,7 +19,7 @@ swapping, Telegram has neither.
 ## No enrolment of its own
 
 Nothing is set up here. The channel is the enrolment, and verifying a contact is
-[messaging](../messaging/)'s job — `usr_phone` holds verified numbers only, a chat id comes from a
+[messaging](../messaging/)'s job — `usr_contact` holds verified addresses only, a chat id comes from a
 real update, a push endpoint from the browser itself. Which means **adding a contact is an
 enrolment path for a factor** and needs the same protection as one.
 

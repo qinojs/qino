@@ -1,4 +1,4 @@
-import { $item, errMsg } from "@qino/qino";
+import { $item, contactOwner, errMsg } from "@qino/qino";
 import { approvePhone, removePhone, send, setMainPhone } from "@qino/qino/messaging.sms";
 
 import type { Node } from "@qino/qino/cms";
@@ -12,20 +12,21 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true, message: await app.t`Provider saved.` };
     }
     if (vars.approve) {
-      await approvePhone(app, String(vars.approve));
+      const { usr, number } = vars.approve as { usr: string; number: string };
+      await approvePhone(app, Number(usr), String(number));
       return { ok: true, message: await app.t`Phone number approved.` };
     }
     if (vars.main) {
-      const id = Number(vars.main);
-      const usrId = await app.db.one`SELECT usr_id FROM usr_phone WHERE id = ${id}`;
+      const number = String(vars.main);
+      const usrId = await contactOwner(app.db, "sms", number);
       if (!usrId) return { ok: false, message: await app.t`Phone number not found.` };
-      await setMainPhone(app, Number(usrId), id);
+      await setMainPhone(app, usrId, number);
       return { ok: true, message: await app.t`Main number changed.` };
     }
     if (vars.delete) {
-      const id = Number(vars.delete);
-      const usrId = await app.db.one`SELECT usr_id FROM usr_phone WHERE id = ${id}`;
-      if (usrId) await removePhone(app, Number(usrId), id);
+      const number = String(vars.delete);
+      const usrId = await contactOwner(app.db, "sms", number);
+      if (usrId) await removePhone(app, usrId, number);
       return { ok: true, message: await app.t`Phone number deleted.` };
     }
     if (vars.test) {

@@ -91,13 +91,23 @@ const code = await requestCode(app, "sms", usrId, "+41791234567");  // start or 
 await redeemCode(app, "sms", usrId, "+41791234567", code);          // throws unless it proves it
 ```
 
-Pending claims live in `usr_contact_verification` and **nowhere else**, so `usr_phone` holds
-verified numbers only. That is the point of the separate table: `SELECT * FROM usr_phone WHERE
+Pending claims live in `usr_contact_verification` and **nowhere else**; a proven one moves into
+core's `usr_contact`. That is the point of the two tables: `SELECT * FROM usr_contact WHERE
 usr_id = 22` is always legitimate, instead of `WHERE verified IS NOT NULL` being a rule one can
 forget once and send to a number that was never anyone's.
 
-Email has no such table: `usr.email` is the address, and it is the one the account was created
-with. A second table would be a second truth about where a person reads mail.
+`usr_contact` belongs to [core](../core/docs/db.md), not here — where a person can be reached is
+part of the user, and `usr.contacts.add("email", "a@b.ch")` needs no messaging module. What lives
+here is the proof: only a channel can deliver the code that turns a claim into a contact.
+
+A channel whose address can be typed says so with `normalize(address)` — it returns the canonical
+form and throws on anything else. `typedChannels(app)` is that list, and it is what a form
+offering "add a contact" may show. Telegram and Web Push have none: those are linked, not typed.
+
+Storage normalizes on top of that: core keys both tables by `contactKey(address)` — trimmed and
+lowercased — so no notation, no stray space and no capital letter can ever make a second contact
+or a claim that cannot be redeemed. `normalize()` is the part only the channel knows (`0041 79…`
+becoming `+41…`); everything a form or an import hands in passes through it first.
 
 The claim is spent when it is redeemed or has expired; a wrong code does not spend it but costs
 the account a growing wait, counted in core next to every other wrong proof of identity. Codes last

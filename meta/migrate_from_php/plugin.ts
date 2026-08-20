@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { $item, sql } from "@qino/qino";
 
+import { migrateContacts } from "./migrateContacts.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
 import { migrateFiles } from "./moveFiles.ts";
 import { migrateCss } from "./migrateCss.ts";
@@ -18,6 +19,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await prepareForm1Settings(app);
   await migrateLegacyPageSettings(app);
   await migrateAccessLevels(app);
+  await migrateContacts(app); // usr.email is the login handle from here on, usr_contact the address
   await migrateFiles(app); // qg/ → data/ first, the css lives there
   await migrateCss(app); // reads the still-legacy page.module, so before the rename
   await migrateForm1(app);

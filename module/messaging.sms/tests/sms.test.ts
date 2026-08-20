@@ -1,7 +1,6 @@
 import { ApiError, Db } from "@qino/qino";
-import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
-import dbSchema from "../dbschema.json" with { type: "json" };
 import { deliver } from "../lib/provider.ts";
 import { addPhone, approvePhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone } from "../mod.ts";
 
@@ -9,7 +8,7 @@ import type { SmsProvider } from "../mod.ts";
 
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties, ...authAttemptDbSchema.properties } });
+  await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties, ...authAttemptDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
   await db.query`CREATE TABLE usr_grp (usr_id INTEGER NOT NULL, grp_id INTEGER NOT NULL)`;
   await db.loadTables();
@@ -86,7 +85,7 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   setProvider(app, provider);
 
   const first = await addPhone(app, 1, "+41 79 123 45 67");
-  assertEquals(first.number, "+41791234567");
+  assertEquals(first.address, "+41791234567");
   // nothing belongs to the user before the code is redeemed
   assertEquals(await userPhones(app, 1), []);
   assertEquals((await pendingPhones(app, 1)).map((c) => c.address), ["+41791234567"]);
@@ -101,10 +100,12 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   const pending = await addPhone(app, 1, "+41791234568");
   assertEquals((await userPhones(app, 1)).length, 1);
   await assertRejects(() => addPhone(app, 2, "+41791234567"), ApiError, "Phone number is unavailable");
-  await assertRejects(() => addPhone(app, 2, String(pending.number)), ApiError, "being verified by someone else");
-  await db.table("usr_contact_verification").update({ channel: "sms", address: pending.number }, { expires: 1 });
-  assertEquals((await addPhone(app, 2, String(pending.number))).number, "+41791234568");
+  // a stranger may claim the same number: refusing would let anyone lock its owner out of verifying
+  await assertRejects(() => addPhone(app, 2, String(pending.address)), ApiError, "Wait before requesting");
+  await db.table("usr_contact_verification").update({ channel: "sms", address: pending.address, usr_id: 1 }, { sent: 1 });
+  assertEquals((await addPhone(app, 2, String(pending.address))).address, "+41791234568");
   assertEquals((await pendingPhones(app, 2)).length, 1);
+  assertEquals((await pendingPhones(app, 1)).length, 1); // both claims stand, each with its own code
 });
 
 Deno.test("one verified phone becomes main and users can switch or delete the main number", async () => {
@@ -126,13 +127,13 @@ Deno.test("one verified phone becomes main and users can switch or delete the ma
   assertEquals((await userPhones(app, 1)).map((p) => Boolean(p.main)), [true, false]);
 
   assertEquals(await send(app, { usr: 1 }, "first"), 1);
-  await setMainPhone(app, 1, Number(second.id));
+  await setMainPhone(app, 1, String(second.address));
   assertEquals(await send(app, { usr: 1 }, "second"), 1);
   assertEquals(delivered, ["+41791234567", "+41791234568"]);
 
-  await removePhone(app, 1, Number(second.id));
+  await removePhone(app, 1, String(second.address));
   assertEquals(Boolean((await userPhones(app, 1))[0].main), true);
-  assertEquals(Number((await userPhones(app, 1))[0].id), Number(first.id));
+  assertEquals((await userPhones(app, 1))[0].address, first.address);
 });
 
 Deno.test("trusted administration can approve a phone without its code", async () => {
@@ -140,7 +141,7 @@ Deno.test("trusted administration can approve a phone without its code", async (
   const app = makeApp(db);
   setProvider(app, { send: () => Promise.resolve() });
   await addPhone(app, 1, "+41791234567");
-  const approved = await approvePhone(app, "+41791234567");
+  const approved = await approvePhone(app, 1, "+41791234567");
   assert(approved.created);
   assertEquals(Boolean(approved.main), true);
   assertEquals(await pendingPhones(app, 1), []);
@@ -186,7 +187,7 @@ Deno.test("send reaches only verified phones selected by user, group or all", as
   assertEquals(delivered, ["+41791234567", "+41791234568", "+41791234567", "+41791234568"]);
 
   // a number addresses itself: verified ones carry their owner, unknown ones go out anonymous
-  assertEquals(await send(app, { phone: "0041 79 123 45 67" }, "direct"), 1);
+  assertEquals(await send(app, { phone: " 0041 (79) 123-45-67 " }, "direct"), 1); // any notation reaches the same contact
   assertEquals(await send(app, { phone: "+41799999999" }, "stranger"), 1);
   const owners = await db.query`SELECT d.usr_id, d.address FROM message m
     JOIN message_delivery d ON d.message_id = m.id WHERE m.text IN (${"direct"}, ${"stranger"}) ORDER BY m.id`;

@@ -17,13 +17,17 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   const grpId = Number(vars?.grp_id ?? ctx.req.query.grp_id) || null;
 
   const sh = sqlSearch(search, ["lastname", "firstname", "company", "email"]);
+  // an address someone verified finds them too, even when their login handle says something else
+  const byContact = search.trim()
+    ? sql` OR id IN (SELECT usr_id FROM usr_contact WHERE address = ${search.trim().toLowerCase()})`
+    : sql.raw("");
   const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");
   const superFilter = isSuperuser ? sql.raw("") : sql` AND superuser = ${false}`;
 
   const rows = await db.query`SELECT usr.*,
     (SELECT count(*) FROM sess WHERE usr_id = usr.id) AS num_sess,
     (SELECT max(access) FROM sess WHERE usr_id = usr.id) AS last_online
-    FROM usr WHERE ${sh.where}${grpFilter}${superFilter} ORDER BY ${sh.order}, id LIMIT 200`;
+    FROM usr WHERE (${sh.where}${byContact})${grpFilter}${superFilter} ORDER BY ${sh.order}, id LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
 

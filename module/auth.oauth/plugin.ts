@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, ApiError, getCtx, identified, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, addContact, ApiError, contactOwner, getCtx, identified, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
 import { links, unlink } from "./mod.ts";
@@ -142,8 +142,8 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     // Never link/create on an e-mail the provider does not vouch for. A missing claim counts as
     // unconfirmed: a provider whose userinfo mail is editable would otherwise hand over accounts.
     if (!id.email || (id.verified !== true && id.verified !== "true")) return 0;
-    const existing = await db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = ${id.email}`;
-    usrId = Number(existing ?? 0);
+    // whoever owns the address owns the account — the contact is proven, a login handle is not
+    usrId = await contactOwner(db, "email", id.email) ?? 0;
     if (!usrId) {
       if (!p.auto_create) return 0;
       usrId = Number(await db.table("usr").insert({
@@ -151,6 +151,9 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
       }));
     }
   }
+  // The provider confirmed the address, which is the same proof a code of ours would be. One that
+  // already belongs to somebody else stays theirs — connecting a provider cannot take it over.
+  if (id.email && (id.verified === true || id.verified === "true")) await addContact(db, usrId, "email", id.email).catch(() => {});
   if (id.sub) {
     const now = unixTime();
     await db.table("oauth_provider_usr").insert({ provider: p.name, sub: id.sub, usr_id: usrId, created: now, last_used: now });

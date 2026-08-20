@@ -1,4 +1,4 @@
-import { pwHash } from "@qino/qino";
+import { addContact, pwHash } from "@qino/qino";
 
 import type { Seed } from "../seed.ts";
 
@@ -27,6 +27,8 @@ export async function run(s: Seed): Promise<void> {
       superuser: false,
     }));
     if (!id) continue;
+    // the address is the login handle and, for a demo user, their verified contact as well
+    await addContact(s.db, id, "email", email);
     s.usrs.push({ id, email, firstname, lastname });
     s.count("users");
 

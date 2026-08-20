@@ -1,5 +1,6 @@
-import { html, getCtx, pwHash } from "@qino/qino";
+import { addContact, contactOwner, contacts, getCtx, html, pwHash, setMainContact } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import { channel, typedChannels } from "@qino/qino/messaging";
 
 import { list, allowLoginAs } from "./parts/list.ts";
 import api from "./nodeApi.ts";
@@ -27,19 +28,23 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
 
   let addMessage: HtmlString | string = "";
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
-    const email = String(ctx.req.body.email ?? "");
-    const exists = email && await db.one`SELECT id FROM usr WHERE email = ${email}`;
+    const email = String(ctx.req.body.email ?? "").trim();
+    // login compares LOWER(TRIM(email)), so two handles that differ only in case are one account
+    const exists = email && await db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email})`;
     if (exists) {
       addMessage = await html.async`<div class=-body>${t`This e-mail address already exists!`}</div>`;
     } else {
-      await db.table("usr").insert({
+      const usrId = await db.table("usr").insert({
         active: 1,
         email: email || null,
         pw: ctx.req.body.pw ? await pwHash(String(ctx.req.body.pw)) : null,
         firstname: String(ctx.req.body.firstname ?? ""),
         lastname: String(ctx.req.body.lastname ?? ""),
       });
-      ctx.res.headers.set("Location", ctx.req.url.href);
+      await adoptUsername(app, Number(usrId), email);
+      const created = ctx.req.url.toURL(); // keeps cmspid and editmode, adds the new user
+      created.searchParams.set("id", String(usrId));
+      ctx.res.headers.set("Location", created.href);
       ctx.res.status = 302;
       return "";
     }
@@ -64,7 +69,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <table class=u2-table style="white-space:nowrap">
         <tr>
-          <th style="width:6em"> ${t`Email`}:
+          <th style="width:6em"> ${t`Username`}:
           <td> <input type=text name=email class=-new-email>
         <tr>
           <th> ${t`Password`}:
@@ -94,7 +99,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
           <tr>
             <th> ID
             <th> ${t`Name`}
-            <th> ${t`Email`}
+            <th> ${t`Username`}
             <th> ${t`Company`}
             <th> ${t`Active`}
             <th> ${t`Sessions`}
@@ -143,9 +148,64 @@ export const cms = {
     api,
     parts: {
       list,
+      // the part reload arrives at the api endpoint, so the user travels in vars, not in the query
+      contacts: (node: Node, { vars }: { vars?: Record<string, unknown> }) => contactsCard(node, Number(vars?.id)),
     },
   },
 };
+
+
+/** A username that is a mail address is one the administrator vouches for: it becomes the user's
+ *  verified main address. Anything else — "hans" — is a login handle and nothing more. */
+export async function adoptUsername(app: App, usrId: number, username: string): Promise<void> {
+  const address = mailAddressOf(app, username);
+  if (!address) return;
+  const owner = await contactOwner(app.db, "email", address);
+  if (owner && owner !== usrId) return; // it is someone else's — the login handle may still say it
+  await addContact(app.db, usrId, "email", address);
+  await setMainContact(app.db, usrId, "email", address);
+}
+
+/** `normalize` throws on anything that is not an address, which here is an answer, not a failure. */
+function mailAddressOf(app: App, username: string): string | undefined {
+  try { return channel(app, "email")?.normalize?.(username.trim()); } catch { return; }
+}
+
+/** The contacts card of one user: where they can be reached, and how to change it. */
+async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
+  const app = node.app;
+  const t = app.t;
+  const typed = typedChannels(app);
+  const rows = await contacts(app.db, usrId);
+  const label = (name: unknown) => typed.find((c) => c.name === name)?.label ?? String(name ?? "");
+
+  return html.async`<div class=u2-card style="flex:0 1 26rem" cms-part=contacts>
+    <div class=-head>${t`Contacts`}</div>
+    <table class="u2-table -contacts">
+      <thead><tr>
+        <th>${t`Channel`}
+        <th>${t`Address`}
+        <th>${t`Main`}
+        <th>
+      <tbody>${rows.length
+        ? rows.map((row) => html`<tr>
+          <td>${label(row.channel)}
+          <td>${row.address}${row.error ? html` <span class=u2-badge title="${row.error}">!</span>` : ""}
+          <td>${row.main
+            ? "★"
+            : html`<button class=u2-unstyle data-main="${row.channel}:${row.address}" title="${t`Make main`}">☆</button>`}
+          <td><button class=u2-unstyle data-contact-delete="${row.channel}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
+        : html`<tr><td colspan=4>${await t`No verified contact — this user cannot be reached.`}`}
+    </table>
+    ${typed.length ? html.async`<form class=-body data-contact-add>
+      <select name=channel>
+        ${typed.map((c) => html`<option value="${c.name}">${c.label}</option>`)}
+      </select>
+      <input name=address placeholder="${t`Address`}">
+      <button type=button data-contact-save>${t`add`}</button>
+    </form>` : ""}
+  </div>`;
+}
 
 async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const ctx = getCtx();
@@ -183,7 +243,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <input type=hidden name=active value=0>
             <input type=checkbox name=active value=1 ${vs.active ? "checked" : ""}>
         <tr>
-          <th> ${t`Email`}:
+          <th> ${t`Username`}:
           <td> <input name=email value="${vs.email}">
         <tr>
           <th> ${t`Password`}:
@@ -201,6 +261,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       </table>
     </div>
   </div>
+
+  ${contactsCard(node, id)}
 
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Groups`}</div>

@@ -1,4 +1,4 @@
-import { $item, ApiError, beforeProof, proofFailed, proofPassed, randB64, safeEqual, sha256b64url, unixTime } from "@qino/qino";
+import { $item, ApiError, beforeProof, contactKey, proofFailed, proofPassed, randB64, safeEqual, sha256b64url, unixTime } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";
 
@@ -6,7 +6,7 @@ import type { App, Row } from "@qino/qino";
 // sms and mail. Telegram and Web Push need none: a chat id comes only from a real update, an
 // endpoint only from the browser itself.
 //
-// Pending claims live here and nowhere else, so `usr_phone` holds verified contacts
+// Pending claims live here and nowhere else, so core's `usr_contact` holds verified contacts
 // only and `WHERE verified IS NOT NULL` stops being a rule one can forget.
 //
 // Not a [ticket](../../ticket/): that one is a capability — whoever knows the handle may act. Six
@@ -18,16 +18,22 @@ import type { App, Row } from "@qino/qino";
 const CODE_TTL = 10 * 60;
 const RESEND_AFTER = 60;
 
-/** Start or resend a claim on `address`; resolves with the code to deliver. */
-export async function requestCode(app: App, channel: string, usrId: number, address: string): Promise<string> {
+/**
+ * Start or resend a claim on `address`; resolves with the code to deliver.
+ *
+ * Anyone may claim any address — a claim says nothing until it is redeemed, and refusing a second
+ * one would let a stranger lock the owner out of their own verification. What is protected is the
+ * address itself: it receives at most one code per `RESEND_AFTER`, no matter who asks.
+ */
+export async function requestCode(app: App, channel: string, usrId: number, input: string): Promise<string> {
+  const address = contactKey(input); // a claim is keyed like the contact it becomes
   const now = unixTime();
   const table = app.db.table("usr_contact_verification");
   await app.db.exec`DELETE FROM usr_contact_verification WHERE expires < ${now}`; // no cron needed for this
-  const open = await claim(app, channel, address);
-  if (open) {
-    if (Number(open.usr_id) !== usrId) throw new ApiError(409, "That contact is being verified by someone else");
-    if (Number(open.sent) > now - RESEND_AFTER) throw new ApiError(429, "Wait before requesting another verification code");
-  }
+  const recent = await app.db.one`SELECT MAX(sent) FROM usr_contact_verification
+    WHERE channel = ${channel} AND address = ${address}`;
+  if (Number(recent) > now - RESEND_AFTER) throw new ApiError(429, "Wait before requesting another verification code");
+  const open = await claim(app, channel, usrId, address);
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
   await table.ensure({
     channel,
@@ -42,11 +48,13 @@ export async function requestCode(app: App, channel: string, usrId: number, addr
 }
 
 /** Redeem a claim. Throws unless the code proves the contact is the user's; a right one spends it. */
-export async function redeemCode(app: App, channel: string, usrId: number, address: string, code: string): Promise<void> {
-  const open = await claim(app, channel, address);
-  if (!open || Number(open.usr_id) !== usrId) throw new ApiError(404, "Nothing to verify");
+export async function redeemCode(app: App, channel: string, usrId: number, input: string, code: string): Promise<void> {
+  const address = contactKey(input);
+  const open = await claim(app, channel, usrId, address);
+  if (!open) throw new ApiError(404, "Nothing to verify");
   await beforeProof(app, usrId);
-  const drop = () => app.db.exec`DELETE FROM usr_contact_verification WHERE channel = ${channel} AND address = ${address}`;
+  const drop = () => app.db.exec`DELETE FROM usr_contact_verification
+    WHERE channel = ${channel} AND address = ${address} AND usr_id = ${usrId}`;
   if (Number(open.expires) < unixTime()) {
     await drop();
     throw new ApiError(410, "Verification code expired");
@@ -70,15 +78,20 @@ export function pendingContacts(app: App, channel: string, usrId?: number): Prom
         WHERE channel = ${channel} AND usr_id = ${usrId} AND expires >= ${now} ORDER BY created`;
 }
 
-/** Drop a claim without redeeming it — an admin approving it, or the user giving up. */
-export async function dropClaim(app: App, channel: string, address: string): Promise<Row | undefined> {
-  const open = await claim(app, channel, address);
-  if (open) await app.db.exec`DELETE FROM usr_contact_verification WHERE channel = ${channel} AND address = ${address}`;
+/** Drop one user's claim without redeeming it — an admin approving it, or the user giving up. */
+export async function dropClaim(app: App, channel: string, usrId: number, input: string): Promise<Row | undefined> {
+  const address = contactKey(input);
+  const open = await claim(app, channel, usrId, address);
+  if (open) {
+    await app.db.exec`DELETE FROM usr_contact_verification
+      WHERE channel = ${channel} AND address = ${address} AND usr_id = ${usrId}`;
+  }
   return open;
 }
 
-function claim(app: App, channel: string, address: string): Promise<Row | undefined> {
-  return app.db.row`SELECT * FROM usr_contact_verification WHERE channel = ${channel} AND address = ${address}`;
+function claim(app: App, channel: string, usrId: number, address: string): Promise<Row | undefined> {
+  return app.db.row`SELECT * FROM usr_contact_verification
+    WHERE channel = ${channel} AND address = ${address} AND usr_id = ${usrId}`;
 }
 
 function codeHash(app: App, channel: string, address: string, code: string): Promise<string> {

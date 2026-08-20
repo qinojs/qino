@@ -21,7 +21,38 @@ cms.initNode("backend.users", (el) => {
   });
   grpSel?.addEventListener("change", reloadList);
 
+  // detail: contacts — the address is the identity, so channel and address travel together
+  const reloadContacts = () => cms.reloadPart(nid, "contacts", { id: el.querySelector("[itemid]")?.getAttribute("itemid") ?? "" });
+  const contactVars = (button, key) => {
+    const [channel, ...rest] = button.dataset[key].split(":");
+    return { channel, address: rest.join(":") };
+  };
+  const contactResult = (response) => {
+    if (response?.ok) return reloadContacts();
+    if (response?.message) return import("@qino/u2/js/dialog/dialog.js").then((d) => d.alert(response.message));
+  };
+
   el.addEventListener("click", (e) => {
+    const save = e.target.closest("[data-contact-save]");
+    if (save) {
+      const form = save.closest("form");
+      node.api.post({
+        contact_add: itemId(save),
+        channel: form.elements.channel.value,
+        address: form.elements.address.value.trim(),
+      }).then(contactResult);
+      return;
+    }
+    const contactDel = e.target.closest("[data-contact-delete]");
+    if (contactDel) {
+      node.api.post({ contact_delete: itemId(contactDel), ...contactVars(contactDel, "contactDelete") }).then(contactResult);
+      return;
+    }
+    const contactMain = e.target.closest("[data-main]");
+    if (contactMain) {
+      node.api.post({ contact_main: itemId(contactMain), ...contactVars(contactMain, "main") }).then(contactResult);
+      return;
+    }
     const del = e.target.closest(".-delete button");
     if (del) {
       const tr = del.closest("[itemid]");

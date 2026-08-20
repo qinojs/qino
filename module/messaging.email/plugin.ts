@@ -1,18 +1,22 @@
 import { receive, send } from "./mod.ts";
+import { mailAddress } from "./lib/address.ts";
 import { close } from "./lib/transport.ts";
+
+import { countContacts } from "@qino/qino";
 
 import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 import type { Channel } from "@qino/qino/messaging";
 
 export { settingsSchema } from "./lib/settings.ts";
+export { healthChecks } from "./healthChecks.ts";
 
 export const messagingChannel: Channel = {
   name: "email",
   label: "Email",
   color: "--orange",
-  reach: async (app: App, usrId: number) =>
-    await app.db.one`SELECT email FROM usr WHERE id = ${usrId}` ? 1 : 0,
+  normalize: mailAddress,
+  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "email"),
   send,
 };
 

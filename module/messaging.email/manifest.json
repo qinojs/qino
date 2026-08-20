@@ -7,6 +7,7 @@
   ],
   "files": [
     "README.md",
+    "healthChecks.ts",
     "lib/address.ts",
     "lib/inbound.ts",
     "lib/settings.ts",

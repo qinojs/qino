@@ -1,5 +1,5 @@
 import { Db, requestStorage } from "@qino/qino";
-import { assertEquals, assertStringIncludes, fakeT, emailMessagingChannel as email, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
@@ -8,12 +8,13 @@ import type { Node } from "@qino/qino/cms";
 
 Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...messageSchema.properties, ...telegramSchema.properties } });
+  await db.migrate({ properties: { ...messageSchema.properties, ...telegramSchema.properties, ...contactDbSchema.properties } });
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
+  await db.table("usr_contact").insert({ channel: "email", address: "user@qino.test", usr_id: 1, main: true, created: 1 });
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: 1 });
   const linked = {
     "messaging.telegram": { name: "messaging.telegram", plugin: { messagingChannel: telegram } },

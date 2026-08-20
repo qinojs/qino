@@ -4,6 +4,7 @@ import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 
+
 /**
  * What every channel understands. `text` is the message; a bare string is the short form of
  * `{ text }`. Channels add their own fields on top — a push title, a mail subject, a Telegram
@@ -36,14 +37,24 @@ type To = { grp?: number; usr?: number; all?: true; notClient?: string | number 
  * `name` is what lands in the journal's `channel` column, so it outlives module renames.
  * `reach` answers how many destinations one user has, skipping `notClient` as `To` does; `send` is
  * the module's own send() — the declaration is the same function, not a wrapper around it.
+ *
+ * `normalize` exists only where an address can be typed in: it returns the canonical form and
+ * throws on anything else. A Telegram chat and a push endpoint have none — they are linked, never
+ * entered — which is exactly what a form offering "add a contact" needs to know.
  */
 export type Channel = {
   name: string;
   label: string;
   color?: string;
+  normalize?(address: string): string;
   reach(app: App, usrId: number, notClient?: string | number): Promise<number>;
   send(app: App, to: To, msg: string | Msg): Promise<number>;
 };
+
+/** The channels whose addresses a person can type — what a contact form may offer. */
+export function typedChannels(app: App): Channel[] {
+  return channels(app).filter((c) => c.normalize);
+}
 
 /** Every channel a linked module declares. */
 export function channels(app: App): Channel[] {

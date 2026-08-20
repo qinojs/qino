@@ -1,5 +1,5 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
-import { ApiError, errMsg, sql, unixTime } from "@qino/qino";
+import { addContact, ApiError, channelContacts, contactError, contactOwner, contacts, errMsg, removeContact, setMainContact, sql, unixTime } from "@qino/qino";
 import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
@@ -11,7 +11,7 @@ import type { SmsProvider } from "./lib/provider.ts";
 export { setProvider, type SmsProvider };
 
 /**
- * Deliver text to the phones of a group, user, one number, or everyone — `usr_phone` holds
+ * Deliver text to the phones of a group, user, one number, or everyone — `usr_contact` holds
  * verified numbers only, so a group or user selection needs no filtering.
  *
  * `{ phone }` is the number itself and reaches it whether or not anyone verified it; a number
@@ -26,39 +26,39 @@ export async function send(
   const msg = msgOf(message);
   const text = msg.title ? `${msg.title}\n${msg.text}` : msg.text;
   const number = to.phone == null ? "" : phoneNumber(to.phone);
-  const target = to.grp != null ? sql`p.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`p.usr_id = ${to.usr}`
-    : number ? sql`p.number = ${number}`
+  const target = to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
+    : to.usr != null ? sql`c.usr_id = ${to.usr}`
+    : number ? sql`c.address = ${number}`
     : to.all ? sql`${true}`
     : null;
   if (!target) throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
   const time = unixTime();
 
   // one number per user: the preferred one, else the oldest
-  const preferred = number ? sql`` : sql`AND p.id = (
-    SELECT other.id FROM usr_phone other WHERE other.usr_id = p.usr_id
-    ORDER BY other.main DESC, other.created, other.id LIMIT 1)`;
+  const preferred = number ? sql`` : sql`AND c.address = (
+    SELECT other.address FROM usr_contact other
+    WHERE other.channel = ${"sms"} AND other.usr_id = c.usr_id
+    ORDER BY other.main DESC, other.created, other.address LIMIT 1)`;
   const rows = await app.db.query`
-    SELECT p.id, p.usr_id, p.number, p.error FROM usr_phone p
-    WHERE ${target} ${preferred}`;
+    SELECT c.usr_id, c.address, c.error FROM usr_contact c
+    WHERE c.channel = ${"sms"} AND ${target} ${preferred}`;
   // a number nobody verified is still a number — it goes out, without an owner
-  if (number && !rows.length) rows.push({ id: null, usr_id: null, number, error: null });
-  const table = app.db.table("usr_phone");
+  if (number && !rows.length) rows.push({ usr_id: null, address: number, error: null });
   const deliveries = [];
   let sent = 0;
   for (const row of rows) {
-    const address = String(row.number);
+    const address = String(row.address);
     const usrId = Number(row.usr_id) || undefined;
     try {
       await deliver(app, address, text);
       sent++;
       deliveries.push({ usrId, address, time: unixTime() });
-      if (row.error) await table.update(row.id, { error: null });
+      if (row.error) await contactError(app.db, "sms", address);
     } catch (e) {
       const message = errMsg(e);
       deliveries.push({ usrId, address, error: message, time: unixTime() });
       console.warn(`sms: ${address} rejected —`, message);
-      if (row.id) await table.update(row.id, { error: message.slice(0, 255) });
+      if (usrId) await contactError(app.db, "sms", address, message);
     }
   }
   await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time }, deliveries);
@@ -68,9 +68,9 @@ export async function send(
 /** Claim a phone number and send its six-digit code. Nothing is stored on the user until it is verified. */
 export async function addPhone(app: App, usrId: number, input: string): Promise<Row> {
   const number = phoneNumber(input);
-  const owner = await app.db.one`SELECT usr_id FROM usr_phone WHERE number = ${number}`;
-  if (owner != null && Number(owner) !== usrId) throw new ApiError(409, "Phone number is unavailable");
-  if (owner != null) return (await app.db.row`SELECT * FROM usr_phone WHERE number = ${number}`)!;
+  const owner = await contactOwner(app.db, "sms", number);
+  if (owner && owner !== usrId) throw new ApiError(409, "Phone number is unavailable");
+  if (owner) return (await app.db.row`SELECT * FROM usr_contact WHERE channel = ${"sms"} AND address = ${number}`)!;
 
   const time = unixTime();
   const code = await requestCode(app, "sms", usrId, number);
@@ -85,38 +85,26 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
     throw e;
   }
   await journal();
-  return { number };
+  return { address: number };
 }
 
 /** Redeem the code and make the number the user's. */
 export async function verifyPhone(app: App, usrId: number, input: string, code: string): Promise<Row> {
   const number = phoneNumber(input);
   await redeemCode(app, "sms", usrId, number, code);
-  return addVerifiedPhone(app, usrId, number);
+  return addContact(app.db, usrId, "sms", number);
 }
 
-/** Take a claim as proven without its code; intended for trusted administration. */
-export async function approvePhone(app: App, address: string): Promise<Row> {
-  const claimed = await dropClaim(app, "sms", phoneNumber(address));
+/** Take one user's claim as proven without its code; intended for trusted administration. */
+export async function approvePhone(app: App, usrId: number, address: string): Promise<Row> {
+  const claimed = await dropClaim(app, "sms", usrId, phoneNumber(address));
   if (!claimed) throw new ApiError(404, "Nothing to verify");
-  return addVerifiedPhone(app, Number(claimed.usr_id), String(claimed.address));
-}
-
-/** The number becomes the user's; the first one is their main. */
-async function addVerifiedPhone(app: App, usrId: number, number: string): Promise<Row> {
-  const table = app.db.table("usr_phone");
-  await app.db.transaction(async () => {
-    const known = await app.db.one`SELECT id FROM usr_phone WHERE number = ${number}`;
-    if (known) return;
-    const main = !await app.db.one`SELECT id FROM usr_phone WHERE usr_id = ${usrId} AND main = ${true}`;
-    await table.insert({ usr_id: usrId, number, created: unixTime(), main });
-  });
-  return (await app.db.row`SELECT * FROM usr_phone WHERE number = ${number}`)!;
+  return addContact(app.db, Number(claimed.usr_id), "sms", String(claimed.address));
 }
 
 /** The user's verified numbers. */
 export function userPhones(app: App, usrId: number): Promise<Row[]> {
-  return app.db.query`SELECT id, number, created, main FROM usr_phone WHERE usr_id = ${usrId} ORDER BY created`;
+  return contacts(app.db, usrId, "sms");
 }
 
 /** The numbers the user is in the middle of verifying. */
@@ -124,37 +112,19 @@ export function pendingPhones(app: App, usrId?: number): Promise<Row[]> {
   return pendingContacts(app, "sms", usrId);
 }
 
-/** Forget one phone owned by the user. */
-export async function removePhone(app: App, usrId: number, id: number): Promise<void> {
-  await app.db.transaction(async () => {
-    const row = await app.db.row`SELECT main FROM usr_phone WHERE id = ${id} AND usr_id = ${usrId}`;
-    if (!row) return;
-    await app.db.exec`DELETE FROM usr_phone WHERE id = ${id} AND usr_id = ${usrId}`;
-    if (row.main) {
-      const next = await app.db.one`SELECT id FROM usr_phone WHERE usr_id = ${usrId} ORDER BY created LIMIT 1`;
-      if (next) await app.db.table("usr_phone").update(next, { main: true });
-    }
-  });
+/** Forget one number owned by the user. */
+export function removePhone(app: App, usrId: number, number: string): Promise<void> {
+  return removeContact(app.db, usrId, "sms", phoneNumber(number));
 }
 
-/** Make a phone the user's preferred SMS destination. */
-export async function setMainPhone(app: App, usrId: number, id: number): Promise<Row> {
-  const db = app.db;
-  await db.transaction(async () => {
-    const row = await db.row`SELECT id FROM usr_phone WHERE id = ${id} AND usr_id = ${usrId}`;
-    if (!row) throw new ApiError(404, "Phone number not found");
-    await db.exec`UPDATE usr_phone SET main = ${false} WHERE usr_id = ${usrId}`;
-    await db.table("usr_phone").update(id, { main: true });
-  });
-  return (await db.row`SELECT * FROM usr_phone WHERE id = ${id}`)!;
+/** Make a number the user's preferred SMS destination. */
+export function setMainPhone(app: App, usrId: number, number: string): Promise<Row> {
+  return setMainContact(app.db, usrId, "sms", phoneNumber(number));
 }
 
-/** Every verified phone with its owner. */
+/** Every verified number with its owner. */
 export function phones(app: App, limit = 500): Promise<Row[]> {
-  return app.db.query`
-    SELECT p.id, p.usr_id, p.number, p.created, p.main, p.error, u.email
-    FROM usr_phone p LEFT JOIN usr u ON u.id = p.usr_id
-    ORDER BY p.created DESC LIMIT ${limit}`;
+  return channelContacts(app.db, "sms", limit);
 }
 
 /** Normalize common formatting and require an international E.164 number. */

@@ -32,8 +32,10 @@ cms.initNode("backend.superuser.messaging.sms", (el) => {
     } else if (send) {
       const values = fields(send);
       if (values) execute(send, { send: values });
-    } else if (approve) execute(approve, { approve: approve.dataset.approve });
-    else if (main) execute(main, { main: main.dataset.main });
+    } else if (approve) {
+      const [usr, ...rest] = approve.dataset.approve.split(":"); // the claimant, then the number
+      execute(approve, { approve: { usr, number: rest.join(":") } });
+    } else if (main) execute(main, { main: main.dataset.main });
     else if (test) execute(test, { test: test.dataset.test });
     else if (del) execute(del, { delete: del.dataset.delete });
   });

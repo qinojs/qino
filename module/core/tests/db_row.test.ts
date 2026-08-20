@@ -2,6 +2,9 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { DbRow } from "../lib/db/DbRow.ts";
+import { Usr } from "../lib/rows.ts";
+
+import coreSchema from "../dbschema.json" with { type: "json" };
 
 class Order extends DbRow {
   declare id: number;
@@ -301,4 +304,26 @@ Deno.test("DbTable.rowBy: a value with no row is not remembered", async () => {
   assertEquals(await t.rowBy("title", "Later"), undefined);
   await t.insert({ id: 1, title: "Later" }); // whoever missed inserts it — the next lookup has to see it
   assertEquals(String(await t.rowBy("title", "Later")), "1");
+});
+
+Deno.test("usr.contacts is the natural way in and out of usr_contact", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.migrate({ properties: { usr: coreSchema.properties.usr, usr_contact: coreSchema.properties.usr_contact } });
+  await db.loadTables();
+  db.table("usr").rowClass = Usr;
+  const usr = (await db.table("usr").add<Usr>({ email: "one@qino.test" }))!;
+
+  await usr.contacts.add("email", "private@qino.test");
+  await usr.contacts.add("email", "  Work@Qino.Test  "); // whitespace and case never make a second contact
+  assertEquals((await usr.contacts.list("email")).map((c) => [c.address, Boolean(c.main)]), [
+    ["private@qino.test", true], // the first one on a channel becomes the main
+    ["work@qino.test", false],
+  ]);
+
+  await usr.contacts.setMain("email", "WORK@qino.test");
+  assertEquals((await usr.contacts.main("email"))?.address, "work@qino.test");
+
+  await usr.contacts.remove("email", "work@qino.test");
+  assertEquals((await usr.contacts.main("email"))?.address, "private@qino.test"); // the flag moves on
+  await db.close();
 });

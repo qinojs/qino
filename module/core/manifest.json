@@ -53,6 +53,7 @@
     "lib/db/dbScope.ts",
     "lib/fileStream.ts",
     "lib/hono.ts",
+    "lib/contacts.ts",
     "lib/rows.ts",
     "lib/transform/FileTransformer.ts",
     "lib/transform/ffmpeg.ts",

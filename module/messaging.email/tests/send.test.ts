@@ -1,5 +1,5 @@
 import { Db } from "@qino/qino";
-import { assertEquals, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+import { assertEquals, contactDbSchema, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
 import { messages } from "@qino/qino/messaging";
 
@@ -9,12 +9,13 @@ import type { App } from "@qino/qino";
 
 async function makeApp(): Promise<App> {
   const db = new Db("sqlite::memory:");
-  await db.migrate(messageSchema);
+  await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.query`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "one@qino.test", firstname: "One", lastname: "User" });
+  await db.table("usr_contact").insert({ channel: "email", address: "one@qino.test", usr_id: 1, main: true, created: 1 });
   return {
     db,
     settings: { "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} } },

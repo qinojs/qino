@@ -489,6 +489,45 @@
         "required": ["id", "active", "pw", "firstname", "lastname", "superuser"]
       }
     },
+    "usr_contact": {
+      "additionalProperties": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 254,
+            "x-index": "primary",
+            "description": "Number, mail address or handle — proven to be this user's. RFC 5321 allows 254"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "main": {
+            "type": "boolean",
+            "default": false,
+            "description": "Preferred destination for this user on this channel"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true,
+            "description": "When it was verified — a row exists only once it is"
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Why the last delivery failed — null once one succeeds again"
+          }
+        },
+        "required": ["channel", "address", "usr_id", "main", "created"]
+      }
+    },
     "usr_auth_attempt": {
       "additionalProperties": {
         "properties": {

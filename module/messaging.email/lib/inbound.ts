@@ -1,4 +1,4 @@
-import { unixTime } from "@qino/qino";
+import { contactOwner, unixTime } from "@qino/qino";
 import { record } from "@qino/qino/messaging";
 
 import { addressOf } from "./address.ts";
@@ -62,7 +62,7 @@ export async function receive(app: App, { limit = 50 }: { limit?: number } = {})
 /** One incoming mail as a journal entry, tied to the user the address belongs to. */
 async function journal(app: App, mail: Parsed, to: string): Promise<void> {
   const sender = addressOf(mail.from?.value?.[0] ?? "");
-  const usrId = sender ? Number(await app.db.one`SELECT id FROM usr WHERE email = ${sender.address}`) || undefined : undefined;
+  const usrId = sender ? await contactOwner(app.db, "email", sender.address) : undefined;
   const time = mail.date ? Math.floor(mail.date.getTime() / 1000) : unixTime();
   await record(app, {
     channel: "email",

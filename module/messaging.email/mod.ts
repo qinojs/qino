@@ -1,5 +1,5 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
-import { errMsg, sql, unixTime } from "@qino/qino";
+import { contactError, errMsg, sql, unixTime } from "@qino/qino";
 import { msgOf, record, titleOf } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
@@ -48,6 +48,8 @@ export async function send(
     // the transport took it, so it counts as sent — but nothing reached this address, and the
     // journal says so: an error is the absence of a delivery, not only a failure
     if (!error) sent++;
+    // a contact that bounces says so in the panel; the journal keeps the detail
+    if (recipient.usrId) contactError(app.db, "email", recipient.address, error);
     deliveries.push({
       usrId: recipient.usrId,
       address: recipient.address,
@@ -71,22 +73,34 @@ async function deliver(mailer: Awaited<ReturnType<typeof transport>>, message: R
   }
 }
 
-/** Who a `to` means, as addresses; a user without an address simply drops out. */
+/** Who a `to` means, as addresses — `usr_contact` says where a person reads mail, one address each:
+ *  the preferred one, else the oldest. A user without a mail contact simply drops out. */
 async function addresses(app: App, to: { grp?: number; usr?: number; all?: true; email?: string | string[] }) {
   const literals = [to.email ?? []].flat().flatMap((v) => addressOf(v) ?? []);
-  const who = to.grp != null ? sql`id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`id = ${to.usr}`
+  const who = to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
+    : to.usr != null ? sql`c.usr_id = ${to.usr}`
     : to.all ? sql`${true}`
-    // an address is journaled as its owner's when one owns it, so the mail joins their conversation
-    : literals.length ? sql`email IN (${sql.join(literals.map((a) => sql`${a.address}`), ", ")})`
     : null;
-  if (!who) throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
+  if (!who && !literals.length) throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
 
   const found = new Map(literals.map((a) => [a.address, a]));
-  const rows = await app.db.query`SELECT id, email, firstname, lastname FROM usr WHERE ${who}`;
+  // an address that is somebody's is journaled as theirs, so the mail joins their conversation
+  const mine = literals.length
+    ? sql`c.address IN (${sql.join(literals.map((a) => sql`${a.address}`), ", ")})`
+    : null;
+  const pick = who
+    ? sql`(${who}) AND c.address = (
+      SELECT other.address FROM usr_contact other
+      WHERE other.channel = ${"email"} AND other.usr_id = c.usr_id
+      ORDER BY other.main DESC, other.created, other.address LIMIT 1)`
+    : null;
+  const rows = await app.db.query`
+    SELECT c.usr_id, c.address, u.firstname, u.lastname FROM usr_contact c
+    LEFT JOIN usr u ON u.id = c.usr_id
+    WHERE c.channel = ${"email"} AND (${sql.join([pick, mine].flatMap((v) => v ?? []), " OR ")})`;
   for (const row of rows) {
     const name = [row.firstname, row.lastname].filter(Boolean).join(" ");
-    const address = addressOf({ address: String(row.email ?? ""), name, usrId: Number(row.id) });
+    const address = addressOf({ address: String(row.address ?? ""), name, usrId: Number(row.usr_id) });
     if (address) found.set(address.address, address);
   }
   return [...found.values()];

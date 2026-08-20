@@ -1,6 +1,6 @@
 import { basename, extname } from "node:path";
 import { typeByExtension } from "@std/media-types";
-import { hee, unixTime } from "@qino/qino";
+import { hee, mainContact, unixTime } from "@qino/qino";
 
 import { addressOf, attachmentOf, clean, formatAddress, htmlToText, importUpyo, jsonDecode, jsonEncode, listOf, mergeHeaders, renderMarkers, sha1, textToHtml } from "./helpers.ts";
 
@@ -129,13 +129,14 @@ export class MailMessage {
     return Number(await this.manager.app.db.one`SELECT COALESCE(MAX(mail1_track_id),0)+1 FROM mail_recipient`) || 1;
   }
 
+  /** Where the user reads mail — their verified contact, never the login handle `usr.email`. */
   async addUsr(usr: UserInput): Promise<this> {
-    const email = usr?.email ?? await usr?.get?.("email");
+    const usrId = Number(usr?.id ?? await usr?.get?.("id")) || undefined;
+    const email = usrId && (await mainContact(this.manager.app.db, usrId, "email"))?.address;
     const name = [
       usr?.firstname ?? await usr?.get?.("firstname"),
       usr?.lastname ?? await usr?.get?.("lastname"),
     ].filter(Boolean).map(String).join(" ");
-    const usrId = Number(usr?.id ?? await usr?.get?.("id")) || undefined;
     return email ? this.addTo({ email: String(email), usrId }, name) : this;
   }
 

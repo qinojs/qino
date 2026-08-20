@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, login, pwHash } from "@qino/qino";
+import { addContact, errMsg, getCtx, login, pwHash, removeContact, setMainContact } from "@qino/qino";
+import { channel } from "@qino/qino/messaging";
+
+import { adoptUsername } from "./plugin.ts";
 
 import type { Usr } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -17,7 +20,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   };
 
   if ("email_used" in vars) {
-    return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}`;
+    return db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(vars.email_used ?? "").trim()})`;
   }
 
   if ("login_as" in vars) {
@@ -34,6 +37,35 @@ export default async function (node: Node, vars:any): Promise<any> {
     return 1;
   }
 
+  // contacts of one user: the address is the identity, so channel and address address it
+  if ("contact_add" in vars) {
+    const usr = await target(vars.contact_add);
+    if (!usr) return false;
+    const name = String(vars.channel ?? "");
+    try {
+      const address = channel(node.app, name)?.normalize?.(String(vars.address ?? "").trim());
+      if (!address) return { ok: false, message: await node.app.t`Choose a channel whose address can be entered.` };
+      await addContact(db, Number(usr.$id), name, address); // the first one on a channel becomes main
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, message: errMsg(e) };
+    }
+  }
+
+  if ("contact_delete" in vars) {
+    const usr = await target(vars.contact_delete);
+    if (!usr) return false;
+    await removeContact(db, Number(usr.$id), String(vars.channel ?? ""), String(vars.address ?? ""));
+    return { ok: true };
+  }
+
+  if ("contact_main" in vars) {
+    const usr = await target(vars.contact_main);
+    if (!usr) return false;
+    await setMainContact(db, Number(usr.$id), String(vars.channel ?? ""), String(vars.address ?? ""));
+    return { ok: true };
+  }
+
   if ("save" in vars) {
     const targetUsr = await target(vars.save);
     if (!targetUsr) return false;
@@ -44,8 +76,9 @@ export default async function (node: Node, vars:any): Promise<any> {
     const name = String(vars.name ?? "");
     if (!allowed[name] || (name === "superuser" && !isSuperuser)) return false;
     if (name === "pw" && !String(vars.value ?? "")) return false;
-    const value = name === "pw" ? await pwHash(String(vars.value)) : vars.value;
+    const value = name === "pw" ? await pwHash(String(vars.value)) : name === "email" ? String(vars.value ?? "").trim() : vars.value;
     await targetUsr.$set({ [name]: value });
+    if (name === "email") await adoptUsername(node.app, Number(targetUsr.$id), String(value ?? ""));
     return 1;
   }
 

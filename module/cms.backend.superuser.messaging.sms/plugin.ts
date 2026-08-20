@@ -23,7 +23,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     app.db.row`SELECT COUNT(*) AS n,
         SUM(CASE WHEN created > ${week} THEN 1 ELSE 0 END) AS fresh,
         SUM(CASE WHEN error IS NULL THEN 0 ELSE 1 END) AS failing
-      FROM usr_phone`.catch(() => undefined),
+      FROM usr_contact WHERE channel = ${"sms"}`.catch(() => undefined),
     pendingPhones(app).catch(() => []),
     phoneList(app, RECENT),
     Promise.all([app.t`phone numbers`, app.t`pending`, app.t`new in ${RECENT} days`, app.t`failing`]),
@@ -40,7 +40,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     ${failing ? html` · <span class=u2-badge>${failing} ${failingLabel}</span>` : ""}
     ${recent.length ? html`<table class=u2-table>${recent.map((p) => html`<tr>
       <td>${p.email ?? "#" + p.usr_id}
-      <td>${p.number}
+      <td>${p.address}
       <td>${u2.el.time(p.created)}`)}</table>` : ""}
   </div>`;
 }

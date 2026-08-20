@@ -140,6 +140,8 @@ await usr.$set({ lang: "de" });                           // assign and write in
 ```
 
 - Behaviour goes into a subclass, assigned in the module's `init()`: `db.table("usr").rowClass = Usr`.
+  `usr.contacts.add("email", "a@b.ch")` is what that buys — but only where the class was registered,
+  so library code takes the free functions (`addContact(db, …)`) that the class itself calls.
   Columns are data, methods are verbs — `grps()`, `pricesFor()`, never `price()` beside a `price` column.
 - A member that collides with a column throws when the class is registered.
 - A write through the table invalidates the row object; an assigned but unsaved change is flushed at

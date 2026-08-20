@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx } from "@qino/qino";
+import { contactOwner, getCtx } from "@qino/qino";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -50,7 +50,9 @@ export default async function (node: Node, vars: any): Promise<any> {
     if (!grpId) return false;
     const denied = await requireMemberToManageMembers(grpId);
     if (denied) return denied;
-    const usrId = Number(await db.one`SELECT id FROM usr WHERE email = ${String(vars.email ?? "")}` ?? "0");
+    // an account answers to both of its identifiers: the login handle and any verified address
+    const typed = String(vars.email ?? "").trim().toLowerCase();
+    const usrId = await contactOwner(db, "email", typed) ?? Number(await db.one`SELECT id FROM usr WHERE email = ${typed}` ?? 0);
     if (!usrId) return { error: String(getCtx().app.t`No user found with this email address.`) };
     await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
     return 1;

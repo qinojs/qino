@@ -1,17 +1,20 @@
-import { requestStorage } from "@qino/qino";
-import { assertEquals, testContext } from "@qino/qino/tests";
+import { Db, requestStorage } from "@qino/qino";
+import { assertEquals, contactDbSchema, emailMessagingChannel as emailChannel, testContext } from "@qino/qino/tests";
 
 import nodeApi from "../nodeApi.ts";
-import { backendDashboardWidget, cms } from "../plugin.ts";
+import { adoptUsername, backendDashboardWidget, cms } from "../plugin.ts";
+
+import type { App } from "@qino/qino";
 import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.users");
-  assertEquals(dependencies, ["cms.backend"]);
+  assertEquals(dependencies, ["cms.backend", "messaging"]);
   assertEquals(typeof cms.node.api, "function");
   assertEquals(typeof cms.node.parts.list, "function");
+  assertEquals(typeof cms.node.parts.contacts, "function");
 });
 
 Deno.test("cms.backend.users: dashboard widget renders counts and recent logins", async () => {
@@ -48,4 +51,20 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
 
   assertEquals(res, false);
   assertEquals(saved, undefined);
+});
+
+Deno.test("a username that is no address is a login handle, not a failure", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.migrate(contactDbSchema);
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT)`;
+  await db.loadTables();
+  await db.table("usr").insert({ email: "hans" });
+  await db.table("usr").insert({ email: "eva@qino.test" });
+  const app = { db, modules: { linked: () => [{ plugin: { messagingChannel: emailChannel } }] } } as unknown as App;
+
+  await adoptUsername(app, 1, "hans");
+  await adoptUsername(app, 2, "eva@qino.test");
+  assertEquals(await db.col`SELECT usr_id FROM usr_contact WHERE channel = ${"email"}`, [2]);
+  assertEquals(await db.one`SELECT main FROM usr_contact WHERE usr_id = ${2}`, 1);
+  await db.close();
 });

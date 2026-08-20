@@ -1,4 +1,4 @@
-import { ApiError, unixTime } from "@qino/qino";
+import { ApiError, contactOwner, unixTime } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
 import { issue, redeem } from "@qino/qino/ticket";
 
@@ -16,8 +16,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   const app = node.app;
   if (vars.request) {
     const email = String(vars.request).trim().toLowerCase();
-    const usrId = await app.db.one`SELECT id FROM usr WHERE email = ${email} AND active = ${true}`;
-    if (usrId) await sendLink(node, Number(usrId), email);
+    // the address has to be a verified contact: a login handle that looks like one proves nothing
+    const usrId = await contactOwner(app.db, "email", email);
+    const active = usrId && await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND active = ${true}`;
+    if (active) await sendLink(node, usrId, email);
     return { ok: true, message: await app.t`If that address has an account, a link is on its way.` };
   }
   if (vars.reset) {
