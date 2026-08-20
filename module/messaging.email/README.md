@@ -51,9 +51,17 @@ Without a configured transport a dev app falls back to `mock`; a production app 
 An app that brings its own transport injects it with `setTransport(app, transport)`, and `receive(app)`
 fetches the mailbox on demand.
 
-## Not here yet
+## Still missing compared with mail
 
-Attachments, templates, cc/bcc, open and click tracking, and a queue with retries all still
-live in [mail](../mail/). They need storage of their own next to the journal, and the queue is a
-messaging-wide question rather than a mail one — a message that should go out but has not yet is
-not specific to email.
+- **Attachments:** regular MIME files are the priority; inline/CID images can follow later.
+- **Mail options:** cc/bcc, per-message sender and reply-to, headers, tags and priority.
+- **Durable delivery:** save a draft, add recipients and resend pending or failed deliveries.
+  The old module permits this manually; an automatic retry queue does not exist yet and belongs
+  to messaging rather than email.
+- **Tracking:** opens and followed links.
+- **Custom rendering:** recipient data inside subject and body, and programmatic templates.
+
+Templates themselves already live in messaging and are used by this channel. Attachments are not
+channel-neutral today: SMS has none, Telegram currently sends text only, and Web Push accepts image
+URLs for notification presentation rather than attached files. A shared attachment description and
+storage may therefore belong to messaging, while each capable channel decides how to deliver it.
