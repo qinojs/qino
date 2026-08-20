@@ -1,5 +1,6 @@
 {
   "modules": {
+    "cms.backend.demo": {},
     "cms.backend.superuser.score.test": {},
     "cms.cont.apitest": {},
     "cms.cont.cms-image2-test": {},

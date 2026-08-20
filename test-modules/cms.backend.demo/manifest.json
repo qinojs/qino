@@ -1,0 +1,29 @@
+{
+  "name": "cms.backend.demo",
+  "description": "Fills the installation with demo pages, users, groups, mail and traffic, and removes them again.",
+  "dependencies": [
+    "cms.backend",
+    "cms"
+  ],
+  "files": [
+    "README.md",
+    "lib/ledger.ts",
+    "lib/rnd.ts",
+    "lib/seed.ts",
+    "lib/seeders.ts",
+    "lib/seeders/errors.ts",
+    "lib/seeders/groups.ts",
+    "lib/seeders/links.ts",
+    "lib/seeders/mail.ts",
+    "lib/seeders/pages.ts",
+    "lib/seeders/traffic.ts",
+    "lib/seeders/users.ts",
+    "manifest.json",
+    "mod.ts",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}
