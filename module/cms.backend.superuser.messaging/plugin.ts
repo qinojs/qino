@@ -1,5 +1,6 @@
 import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
+import { cms as cmsOf } from "@qino/qino/cms";
 import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels, userMessages } from "@qino/qino/messaging";
 
@@ -16,6 +17,13 @@ const LIST_LIMIT = 100;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
+}
+
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
+  app.on("dbFile:access-fallback", async (e) => {
+    if (e.access || !await app.db.one`SELECT 1 FROM message_attachment WHERE file_id = ${e.file.id} LIMIT 1`) return;
+    if (await (await cmsOf(app).nodeByModule(name))?.isReadable()) e.access = true;
+  }, { signal });
 }
 
 export function render(node: Node): Promise<HtmlString> {
@@ -44,9 +52,9 @@ async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
   ]);
 
   return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex-basis:60rem">
+    <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${app.t`Messages`}</div>
-      <div class=-body>
+      <div>
         <form method=get data-filter>
           ${hidden(url, ["search", "channel", "usr", "msg"])}
           <input type=search name=search value="${search}" placeholder="${app.t`Search...`}">
@@ -64,6 +72,7 @@ async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
             <th>${view.time}
             <th>${app.t`Type`}
             <th>${app.t`Text`}
+            <th>${view.attachments}
             <th>${view.recipients}
             <th>${view.errors}
           <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter } })}
@@ -85,6 +94,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const [rows, view] = await Promise.all([
     app.db.query`
       SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
+        (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
       FROM message m
@@ -94,7 +104,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       LIMIT ${LIST_LIMIT}`,
     labels(app),
   ]);
-  if (!rows.length) return html`<tr><td colspan=6>${search || filter ? view.noMatch : view.noMessages}`;
+  if (!rows.length) return html`<tr><td colspan=7>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
   const msgUrl = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "msg=" + id;
@@ -106,6 +116,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
+      <td data-attachments>${Number(row.attachment_count) || 0}
       <td>${Number(row.recipient_count) || 0}
       <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
   }));
@@ -114,15 +125,20 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 /** One message with its payload and the result per recipient. */
 async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlString> {
   const app = node.app;
-  const [row, deliveries, view] = await Promise.all([
+  const [row, deliveries, files, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
       SELECT d.usr_id, d.address, d.time, d.error, u.email
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.id`,
+    app.db.query`
+      SELECT a.file_id, a.sort, f.name, f.mime, f.size
+      FROM message_attachment a JOIN file f ON f.id = a.file_id
+      WHERE a.message_id = ${id} ORDER BY a.sort, a.file_id`,
     labels(app),
   ]);
   if (!row) return html.async`<div class=u2-card><div class=-body>${app.t`Message does not exist.`}</div></div>`;
+  const attachmentList = await attachments(app, files);
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-basis:50rem">
@@ -133,6 +149,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
         <tr><td>${app.t`Title`}<td>${row.title ?? ""}
         <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
+        ${files.length ? html`<tr><td>${view.attachments}<td>${attachmentList}` : ""}
         <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
       </table>
     </div>
@@ -172,6 +189,7 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
     userChannels(app, usrId),
     labels(app),
   ]);
+  const messages = await Promise.all(rows.toReversed().map((row) => chatMessage(app, row, view)));
 
   return html.async`<div class=u2-flex>
     ${userCard(node, url, usrId)}
@@ -179,7 +197,7 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
       <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
       <div class=-scroll>
         ${rows.length
-          ? html`<table class=-chat><tbody>${rows.toReversed().map((row) => chatMessage(row, view))}</table>`
+          ? html`<table class=-chat><tbody>${messages}</table>`
           : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
       </div>
       <div>
@@ -247,20 +265,38 @@ function paramUrl(url: URL, params: Record<string, string>): string {
   return next.pathname + next.search;
 }
 
-function chatMessage(row: Row & { deliveries: Row[] }, view: View): HtmlString {
-  const bubble = chatBubble(row, view);
+async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
+  const bubble = await chatBubble(app, row, view);
   return html`<tr class="${row.direction === "in" ? "-user" : "-platform"}">
     <td>${row.direction === "in" ? bubble : ""}
     <td>${row.direction === "out" ? bubble : ""}`;
 }
 
-function chatBubble(row: Row & { deliveries: Row[] }, view: View): HtmlString {
+async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
   const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div class=-body>
     <div class=-text>${body(row)}</div>
+    ${await attachments(app, row.attachments, true)}
     <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
+}
+
+async function attachments(app: App, rows: Row[], compact = false): Promise<HtmlString> {
+  if (!rows.length) return html``;
+  const items = await Promise.all(rows.map(async (row) => {
+    const file = await app.dbFiles.file(Number(row.file_id));
+    const download = await file.url({ dl: true });
+    const preview = String(row.mime ?? "").startsWith("image/")
+      ? await file.url({ fmt: "avif", w: compact ? 180 : 320, h: compact ? 120 : 240, max: true })
+      : "";
+    return html`<div class=-attachment>
+      ${preview ? html`<a href="${download}" download><img src="${preview}" alt="${row.name ?? ""}" loading=lazy></a>` : ""}
+      <a href="${download}" download><u2-ico inline icon=download>↓</u2-ico> ${row.name ?? "#" + row.file_id}</a>
+      <small>${row.mime ?? ""}${row.size == null ? "" : html` · <u2-bytes>${row.size}</u2-bytes>`}</small>
+    </div>`;
+  }));
+  return html`<div class=-attachments>${items}</div>`;
 }
 
 function messageTarget(row: Row, view: View): string {
@@ -299,12 +335,12 @@ function cut(text: string, max = 120): string {
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template] = await Promise
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments] = await Promise
     .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`]);
+      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");

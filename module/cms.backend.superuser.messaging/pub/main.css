@@ -21,6 +21,24 @@
   }
   & .-meta { display: block; }
 
+  & .-attachments {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  & .-attachment {
+    max-width: 20rem;
+    overflow-wrap: anywhere;
+  }
+  & .-attachment img {
+    display: block;
+    height: auto;
+    max-height: 15rem;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  & .-chat .-attachment { max-width: 12rem; }
+  & .-chat .-attachment img { max-height: 8rem; }
+
   & .-composer {
     align-items: end;
     display: grid;

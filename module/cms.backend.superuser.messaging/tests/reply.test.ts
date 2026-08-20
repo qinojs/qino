@@ -12,6 +12,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER)`;
+  await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
   await db.table("usr_contact").insert({ type: "email", address: "user@qino.test", usr_id: 1, main: true, created: 1 });
@@ -26,6 +27,11 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     modules: {
       linked: (name?: string) => name === undefined ? Object.values(linked) : linked[name as keyof typeof linked],
       get: (name: string) => linked[name as keyof typeof linked],
+    },
+    dbFiles: {
+      file: (id: number) => Promise.resolve({
+        url: (params: Record<string, unknown>) => Promise.resolve(params.dl ? `/dbFile/${id}/download` : `/dbFile/${id}/preview.avif`),
+      }),
     },
     settings: { "messaging.telegram": { botToken: "123:test", webhookSecret: "secret" } },
   };
@@ -47,6 +53,8 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
       ok: false,
       message: "User not found.",
     });
+    const fileId = await db.table("file").insert({ name: "invoice.png", mime: "image/png", size: 7 });
+    await db.table("message_attachment").insert({ message_id: 1, file_id: fileId, sort: 0 });
 
     const render = async (url: string) => {
       const ctx = await testContext({ url, app });
@@ -66,6 +74,9 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(normal, '<option value="telegram" selected>');
     assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--blue)">Telegram');
     assertStringIncludes(normal, '<option value="email">Email'); // reachable, because the user has an address
+    assertStringIncludes(normal, "invoice.png");
+    assertStringIncludes(normal, "/dbFile/1/preview.avif");
+    assertStringIncludes(normal, "/dbFile/1/download");
 
     const overview = await render("http://qino.test/de/backend/superuser/nachrichten");
     assertStringIncludes(overview, "<table class=u2-table");
@@ -75,9 +86,13 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(overview, "<tbody cms-part=list>");
     assertStringIncludes(overview, "icon=call_made");
     assertStringIncludes(overview, 'href="/de/backend/superuser/nachrichten?msg=1"');
+    assertStringIncludes(overview, "<td data-attachments>1");
     const detail = await render("http://qino.test/de/backend/superuser/nachrichten?msg=1");
     assertStringIncludes(detail, "user@qino.test");
     assertStringIncludes(detail, "<pre>");
+    assertStringIncludes(detail, "invoice.png");
+    assertStringIncludes(detail, "/dbFile/1/preview.avif");
+    assertStringIncludes(detail, "/dbFile/1/download");
 
     const editmode = await render("http://qino.test/?cmspid=410&lang=de&usr=1");
     assertStringIncludes(editmode, 'action="/"');

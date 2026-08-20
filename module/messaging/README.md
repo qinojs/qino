@@ -3,6 +3,21 @@
 Three things nobody wants to build per channel: the journal of what was sent and received,
 the list of ways one person can be reached, and the proof that a contact is really theirs.
 
+## Sending
+
+There is no `send()` here — the channel module has it, and you import the one you mean:
+
+```ts
+import { send } from "@qino/qino/messaging.email";
+
+await send(app, { usr: 42 }, "Danke für die Bestellung.");
+await send(app, { grp: 3 }, { title: "Wartung", text: "**Sonntag** ab 20 Uhr.", format: "md" });
+```
+
+Pick one at runtime instead when the channel is data — `channel(app, "sms")?.send(app, to, msg)`,
+or `userChannels(app, usrId)` for whatever reaches that user at all. Every `send` journals itself;
+you never call `record()` for an outgoing message.
+
 ## Journal
 
 `record(app, message, deliveries)` stores one logical message plus one row per recipient, so
