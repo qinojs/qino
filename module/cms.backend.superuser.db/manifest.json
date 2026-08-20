@@ -6,6 +6,7 @@
   ],
   "files": [
     "lib/analyze.ts",
+    "lib/indexes.ts",
     "lib/tableStatus.ts",
     "manifest.json",
     "mod.ts",

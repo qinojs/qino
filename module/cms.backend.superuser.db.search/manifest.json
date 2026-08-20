@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.db.search",
+  "description": "Searches indexed fields and small tables across the whole database.",
+  "dependencies": [
+    "cms.backend.superuser.db"
+  ],
+  "files": [
+    "lib/search.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

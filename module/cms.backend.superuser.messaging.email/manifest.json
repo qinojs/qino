@@ -1,0 +1,17 @@
+{
+  "name": "cms.backend.superuser.messaging.email",
+  "description": "Configures email sending and receiving, manages address contacts and sends mail.",
+  "dependencies": [
+    "cms.backend.superuser.messaging",
+    "messaging.email",
+    "cron"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}
