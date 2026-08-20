@@ -7,7 +7,6 @@ import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
-export { htmlToText } from "./lib/htmlText.ts";
 export { framed, renderer, saveTemplate, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 

@@ -26,8 +26,8 @@ Deno.test("a channel's main template frames every message, and only that channel
 
   const mail = await renderer(a, { text: "wie gehts" }, "email");
   assertEquals(mail(to).text, "Hallo Ada,\n\nwie gehts");
-  assertEquals(mail(to).html, "<p>Hallo Ada,</p><p>wie gehts</p>");
-  assertEquals(mail().html, "<p>Hallo Kunde,</p><p>wie gehts</p>"); // nobody to greet, so the fallback greets
+  assertEquals(mail(to).html, "<p>Hallo Ada,</p>\n<p>wie gehts</p>");
+  assertEquals(mail().html, "<p>Hallo Kunde,</p>\n<p>wie gehts</p>"); // nobody to greet, so the fallback greets
 
   const telegram = await renderer(a, { text: "wie gehts" }, "telegram");
   assertEquals(telegram(to), { text: "wie gehts", html: undefined }); // no row, no frame
@@ -50,7 +50,7 @@ Deno.test("a message chooses its frame, drops it, or asks for one nobody wrote",
 Deno.test("recipient markers are escaped in markup, the message is not escaped twice", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "html", text: "<p>Hi {{lastname}}</p>{{content}}" });
   const render = await renderer(a, { text: "1 < 2 & **so**", format: "md" }, "email");
-  assertEquals(render(to).html, "<p>Hi Lovelace &lt;&amp;&gt;</p><p>1 &lt; 2 &amp; <b>so</b></p>");
+  assertEquals(render(to).html, "<p>Hi Lovelace &lt;&amp;&gt;</p><p>1 &lt; 2 &amp; <strong>so</strong></p>");
   assertEquals(render(to).text, "Hi Lovelace <&>\n\n1 < 2 & so"); // the frame's <p> ends a paragraph
   await a.db.close();
 });
@@ -64,7 +64,7 @@ Deno.test("a plain message in a markup frame is lifted, and telegram keeps its o
   assertEquals(mail().html, "<div>a &lt; b<br>next line</div>");
 
   const chat = await renderer(a, { text: "a < b" }, "telegram", "telegram");
-  assertEquals(chat(to).html, "<b>Ada</b>\n\na &lt; b");
+  assertEquals(chat(to).html, "<strong>Ada</strong>\n\na &lt; b");
   await a.db.close();
 });
 
@@ -95,6 +95,6 @@ Deno.test("what the frame assembles is tidied; what the message says is not", as
 Deno.test("a frame's paragraph that is only the marker steps aside for the message's own blocks", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "md", text: "Hallo,\n\n{{content}}\n\nTeam" });
   const render = await renderer(a, { text: "one\n\ntwo", format: "md" }, "email");
-  assertEquals(render().html, "<p>Hallo,</p><p>one</p><p>two</p><p>Team</p>");
+  assertEquals(render().html, "<p>Hallo,</p>\n<p>one</p>\n<p>two</p>\n<p>Team</p>");
   await a.db.close();
 });

@@ -146,7 +146,7 @@ async function preview(node: Node, row: Row): Promise<HtmlString> {
   const simulated = channel === "email";
 
   // the markup card stays in the document even with nothing to show: a format switch brings it back
-  return html.async`<div class="u2-card -markup" style="flex:1 1 30rem"${markup ? "" : html.raw(" hidden")}>
+  return html.async`<div class="u2-card -markup" style="flex:1 1 55rem"${markup ? "" : html.raw(" hidden")}>
     <div class=-head>${t`HTML`}
       ${simulated ? html.async`<label>${t`Mail client`} <select class=-client></select></label>` : ""}</div>
     <div class=-body>

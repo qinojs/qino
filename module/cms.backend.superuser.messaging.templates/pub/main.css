@@ -1,7 +1,8 @@
 [qcms-mod="backend.superuser.messaging.templates"] {
   /* u2-code renders its own editor: the host carries the size, its light textarea is only the value */
   & .-editor { display: block; min-height: 18em; padding: .5em; font-family: monospace; border: thin solid; overflow: auto; }
-  & .-frame { width: 100%; height: 25rem; border: none; display: block; background: #fff; }
+  & .-frame { width: 100%; height: 35rem; border: 1px solid; display: block; background: #fff; margin:1rem auto; }
+  & .-notes { display:block; text-align:center; }
   & .-markup .-report { max-height: 12rem; overflow: auto; }
   & .-text { white-space: pre-wrap; overflow: auto; margin: 0; padding: .5em; border: thin solid; }
   & .-actions { display: flex; gap: .5rem; align-items: center; }

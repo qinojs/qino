@@ -72,14 +72,18 @@ Two functions answer for every channel, and no channel converts anything itself:
 | `htmlOf(msg, profile?)` | the markup, or `undefined` when the message is plain text |
 
 `profile` narrows the markup to what a channel accepts: `telegram` has no headings, lists or
-paragraphs, so those arrive as bold lines, bullets and blank lines. Markdown is a small subset —
-headings, lists, quotes, fenced code, `**bold**`, `*italic*`, `` `code` `` and links — and it is
-escaped before any marker is read, so a message can never smuggle markup past its format. Only
-`http`, `https`, `mailto` and `tel` links survive.
+paragraphs, so those arrive as bold lines, bullets and blank lines — a handful of renderer
+overrides on [marked](https://marked.js.org), which does the parsing for both profiles.
 
-`htmlToText()` does the walking, over a real parser: comments (conditional ones included), scripts
-and styles are gone, blocks become line breaks, lists count, table cells keep their columns, and a
-link keeps its address — a plain-text alternative without the URLs is worth nothing.
+Two things stand between a message and the page it lands on. Raw html inside markdown is rendered
+as *text*, not markup, because a message may only say what its markers ask for. And what markdown
+itself emits still passes the sanitizer, so of the addresses a link can carry only `http`, `https`,
+`mailto` and `tel` survive.
+
+The html side walks a real parser: comments (conditional ones included), scripts, styles and
+anything hidden from the reader are gone, blocks become line breaks, lists count, table cells keep
+their columns, and a link keeps its address — a plain-text alternative without the URLs is worth
+nothing.
 
 Nothing sanitizes on the way out: a mail client is not a page. `sanitizeHtml(html)` is for the
 way *in* — a panel that renders journal HTML must pass it through, because a message is written

@@ -79,7 +79,7 @@ Deno.test("a markdown mail carries both parts, a plain one only text", async () 
   setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
 
   await send(app, { usr: 1 }, { text: "Hi **there**", format: "md" });
-  assertEquals((sent[0].content as { html: string; text: string }).html, "<p>Hi <b>there</b></p>");
+  assertEquals((sent[0].content as { html: string; text: string }).html, "<p>Hi <strong>there</strong></p>");
   assertEquals((sent[0].content as { html: string; text: string }).text, "Hi there");
 
   await send(app, { usr: 1 }, "Hi **there**");
