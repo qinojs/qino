@@ -15,7 +15,7 @@ const fakeNode = (access: number) => ({
 const panel = async (access: number) => {
   const ctx = await testContext({
     app: { modules: { linked: () => true }, assertAllowedPath: () => {} },
-    sess: { data: { fileEditor: { key: () => "test-key" } } },
+    sess: { data: { core: { grantKey: () => "test-key" } } },
   });
   return await requestStorage.run(ctx as any, () => layoutOptions(fakeNode(access) as any));
 };

@@ -1,19 +1,15 @@
-import { createHmac } from "node:crypto";
-import { unixTime } from "@qino/qino";
+import { createSessionGrant } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { sign, check } from "../lib/sign.ts";
 
 import type { Ctx } from "@qino/qino";
 
-// deno-lint-ignore no-explicit-any
-type Fake = Record<string, any>;
-
 // One session, with the key slot sign() lazily fills.
 function session(): Record<string, unknown> {
   let key = "";
   const item = (v?: string) => v === undefined ? key : (key = v);
-  return { data: { core: { userId: () => 1 }, fileEditor: { key: item } } };
+  return { data: { core: { userId: () => 1, grantKey: item } } };
 }
 
 const ctxOf = (sess = session()): Promise<Ctx> => testContext({ sess });
@@ -44,15 +40,11 @@ Deno.test("fileEditor: forged, missing and stretched signatures fail", async () 
 });
 
 Deno.test("fileEditor: an expired deadline is refused even with a correct mac", async () => {
-  const sess = session();
-  const ctx = await ctxOf(sess);
-  sign(ctx, FILE); // mints the session key
-  const key = String((sess.data as Fake).fileEditor.key());
-  const mac = (exp: number) => createHmac("sha256", key).update(`${FILE}\n${exp}`).digest("base64url").slice(0, 22);
-
-  const past = unixTime() - 10, future = unixTime() + 10;
-  assertEquals(check(ctx, FILE, String(future), mac(future)), "ok"); // the mac itself is right
-  assertEquals(check(ctx, FILE, String(past), mac(past)), "expired"); // only the deadline says no
+  const ctx = await ctxOf();
+  const fresh = createSessionGrant(ctx, "fileEditor", FILE, 10);
+  const stale = createSessionGrant(ctx, "fileEditor", FILE, -10);
+  assertEquals(check(ctx, FILE, fresh.exp, fresh.sig), "ok"); // the mac itself is right
+  assertEquals(check(ctx, FILE, stale.exp, stale.sig), "expired"); // only the deadline says no
 });
 
 Deno.test("fileEditor: a non-numeric deadline never reaches the mac", async () => {

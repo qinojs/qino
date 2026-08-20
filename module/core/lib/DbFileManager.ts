@@ -4,6 +4,7 @@ import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, readDataUrl, readUploadFile } from "./fileStream.ts";
+import { checkSessionGrant, createSessionGrant } from "./sessionGrant.ts";
 import { header } from "./util.ts";
 
 import type { App } from "./App.ts";
@@ -70,7 +71,11 @@ export class DbFileManager {
 
     const f = await this.file(id);
     if (!await f.exists()) return new Response(null, { status: 404 });
-    if (!await f.access()) return new Response(null, { status: 403 });
+    if (f.vs?.access != "1") {
+      const ctx = getCtx();
+      const granted = checkSessionGrant(ctx, "dbFile", grantResource(id, parts), ctx.req.query.exp, ctx.req.query.sig) === "ok";
+      if (!granted && !await f.access()) return new Response(null, { status: 403 });
+    }
 
     let mime = f.mime || typeByExtension(f.extension) || "application/octet-stream";
 
@@ -178,11 +183,17 @@ export class DbFile extends File {
     }
   }
 
-  async url(params: Record<string, any> = {}): Promise<string> {
+  async url(params: TransformOptions & { grant?: "session" } = {}): Promise<string> {
     const vs = await this.ensureVs();
+    const { grant, ...options } = params;
     const u = `u-${String(vs.md5 ?? "").slice(0, 5)}`;
-    const parts = [u, ...Object.entries(params).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
-    return getCtx().req.appUrl + "dbFile/" + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
+    const parts = [u, ...Object.entries(options).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
+    const ctx = getCtx();
+    const url = ctx.req.appUrl + "dbFile/" + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
+    if (!grant) return url;
+    if (grant !== "session") throw new Error(`Unsupported DbFile grant: ${grant}`);
+    const query = new URLSearchParams(createSessionGrant(ctx, "dbFile", grantResource(this.id, parts)));
+    return url + "?" + query;
   }
 
   async access(set?: any): Promise<boolean> {
@@ -275,6 +286,10 @@ export class DbFile extends File {
 
   override toString(): string { return String(this.id); }
 
+}
+
+function grantResource(id: number, parts: string[]): string {
+  return `${id}/${parts.join("/")}`;
 }
 
 function parseTransformOptions(param: Record<string, unknown>): TransformOptions {

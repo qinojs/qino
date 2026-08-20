@@ -55,6 +55,7 @@
     "lib/hono.ts",
     "lib/contacts.ts",
     "lib/rows.ts",
+    "lib/sessionGrant.ts",
     "lib/transform/FileTransformer.ts",
     "lib/transform/ffmpeg.ts",
     "lib/transform/inkscape.ts",

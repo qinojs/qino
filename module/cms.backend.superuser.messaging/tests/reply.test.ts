@@ -21,6 +21,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     "messaging.telegram": { name: "messaging.telegram", plugin: { messagingChannel: telegram } },
     "messaging.email": { name: "messaging.email", plugin: { messagingChannel: email } },
   };
+  const fileUrls: Record<string, unknown>[] = [];
   const app = {
     db,
     t: fakeT,
@@ -30,7 +31,10 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     },
     dbFiles: {
       file: (id: number) => Promise.resolve({
-        url: (params: Record<string, unknown>) => Promise.resolve(params.dl ? `/dbFile/${id}/download` : `/dbFile/${id}/preview.avif`),
+        url: (params: Record<string, unknown>) => {
+          fileUrls.push(params);
+          return Promise.resolve(params.dl ? `/dbFile/${id}/download` : `/dbFile/${id}/preview.avif`);
+        },
       }),
     },
     settings: { "messaging.telegram": { botToken: "123:test", webhookSecret: "secret" } },
@@ -93,6 +97,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(detail, "invoice.png");
     assertStringIncludes(detail, "/dbFile/1/preview.avif");
     assertStringIncludes(detail, "/dbFile/1/download");
+    assertEquals(fileUrls.every((params) => params.grant === "session"), true);
 
     const editmode = await render("http://qino.test/?cmspid=410&lang=de&usr=1");
     assertStringIncludes(editmode, 'action="/"');

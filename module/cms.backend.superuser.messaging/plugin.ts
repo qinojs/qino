@@ -1,6 +1,5 @@
 import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
-import { cms as cmsOf } from "@qino/qino/cms";
 import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels, userMessages } from "@qino/qino/messaging";
 
@@ -17,13 +16,6 @@ const LIST_LIMIT = 100;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
-}
-
-export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("dbFile:access-fallback", async (e) => {
-    if (e.access || !await app.db.one`SELECT 1 FROM message_attachment WHERE file_id = ${e.file.id} LIMIT 1`) return;
-    if (await (await cmsOf(app).nodeByModule(name))?.isReadable()) e.access = true;
-  }, { signal });
 }
 
 export function render(node: Node): Promise<HtmlString> {
@@ -286,9 +278,9 @@ async function attachments(app: App, rows: Row[], compact = false): Promise<Html
   if (!rows.length) return html``;
   const items = await Promise.all(rows.map(async (row) => {
     const file = await app.dbFiles.file(Number(row.file_id));
-    const download = await file.url({ dl: true });
+    const download = await file.url({ dl: true, grant: "session" });
     const preview = String(row.mime ?? "").startsWith("image/")
-      ? await file.url({ fmt: "avif", w: compact ? 180 : 320, h: compact ? 120 : 240, max: true })
+      ? await file.url({ fmt: "avif", w: compact ? 180 : 320, h: compact ? 120 : 240, max: true, grant: "session" })
       : "";
     return html`<div class=-attachment>
       ${preview ? html`<a href="${download}" download><img src="${preview}" alt="${row.name ?? ""}" loading=lazy></a>` : ""}
