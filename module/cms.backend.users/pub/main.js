@@ -22,13 +22,13 @@ cms.initNode("backend.users", (el) => {
   grpSel?.addEventListener("change", reloadList);
 
   // detail: contacts — the address is the identity, so channel and address travel together
-  const reloadContacts = () => cms.reloadPart(nid, "contacts", { id: el.querySelector("[itemid]")?.getAttribute("itemid") ?? "" });
   const contactVars = (button, key) => {
     const [type, ...rest] = button.dataset[key].split(":");
     return { type, address: rest.join(":") };
   };
-  const contactResult = (response) => {
-    if (response?.ok) return reloadContacts();
+  // the user travels with the reload too — the detail root carries the itemid, so it never comes from a lookup
+  const contactResult = (id) => (response) => {
+    if (response?.ok) return cms.reloadPart(nid, "contacts", { id });
     if (response?.message) return import("@qino/u2/js/dialog/dialog.js").then((d) => d.alert(response.message));
   };
 
@@ -36,22 +36,23 @@ cms.initNode("backend.users", (el) => {
     const form = e.target.closest("[data-contact-add]");
     if (!form) return;
     e.preventDefault();
+    const id = itemId(form);
     node.api.post({
-      contact_add: itemId(form),
+      contact_add: id,
       type: form.elements.type.value,
       address: form.elements.address.value.trim(),
-    }).then(contactResult);
+    }).then(contactResult(id));
   });
 
   el.addEventListener("click", (e) => {
     const contactDel = e.target.closest("[data-contact-delete]");
     if (contactDel) {
-      node.api.post({ contact_delete: itemId(contactDel), ...contactVars(contactDel, "contactDelete") }).then(contactResult);
+      node.api.post({ contact_delete: itemId(contactDel), ...contactVars(contactDel, "contactDelete") }).then(contactResult(itemId(contactDel)));
       return;
     }
     const contactMain = e.target.closest("[data-main]");
     if (contactMain) {
-      node.api.post({ contact_main: itemId(contactMain), ...contactVars(contactMain, "main") }).then(contactResult);
+      node.api.post({ contact_main: itemId(contactMain), ...contactVars(contactMain, "main") }).then(contactResult(itemId(contactMain)));
       return;
     }
     const del = e.target.closest(".-delete button");

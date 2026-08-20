@@ -16,6 +16,7 @@ type Parsed = {
   date?: Date;
   from?: { value: { address?: string; name?: string }[] };
   to?: { text?: string };
+  attachments?: { filename?: string; contentType?: string; content: Uint8Array }[];
 };
 
 /**
@@ -67,7 +68,15 @@ async function journal(app: App, mail: Parsed, to: string): Promise<void> {
   await record(app, {
     channel: "email",
     direction: "in",
-    msg: { title: String(mail.subject ?? ""), text: String(mail.text ?? "") },
+    msg: {
+      title: String(mail.subject ?? ""),
+      text: String(mail.text ?? ""),
+      attachments: mail.attachments?.map((file) => ({
+        name: file.filename || "attachment",
+        type: file.contentType,
+        content: file.content,
+      })),
+    },
     data: { messageId: mail.messageId, from: sender?.address, name: sender?.name, to: mail.to?.text ?? to, html: mail.html || undefined },
     time,
   }, [{ usrId, address: sender?.address, time: unixTime() }]);

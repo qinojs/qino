@@ -63,6 +63,32 @@
         "required": ["id", "channel", "direction", "data", "time"]
       }
     },
+    "message_attachment": {
+      "additionalProperties": {
+        "properties": {
+          "message_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "message",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32767,
+            "default": 0,
+            "x-index": true
+          }
+        },
+        "required": ["message_id", "file_id", "sort"]
+      }
+    },
     "message_template": {
       "additionalProperties": {
         "properties": {

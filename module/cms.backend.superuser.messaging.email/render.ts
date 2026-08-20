@@ -195,6 +195,7 @@ export async function send(node: Node): Promise<HtmlString> {
         <option value=md>Markdown</option>
         <option value=html>HTML</option>
       </select>
+      ${t`Attachments`} <input type=file name=attachments multiple>
       ${t`Text`} <textarea name=text required rows=6></textarea>
     </u2-fields>
     <button type=button data-send>${t`Send`}</button>
@@ -282,7 +283,7 @@ export async function journal(node: Node): Promise<HtmlString> {
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS errors
       FROM message m WHERE m.channel = ${CHANNEL} ORDER BY m.time DESC, m.id DESC LIMIT 25`,
     app.db.row`SELECT
-        SUM(CASE WHEN direction = ${"out"} THEN 1 ELSE 0 END) AS out,
+        SUM(CASE WHEN direction = ${"out"} THEN 1 ELSE 0 END) AS sent,
         SUM(CASE WHEN direction = ${"in"} THEN 1 ELSE 0 END) AS incoming
       FROM message WHERE channel = ${CHANNEL} AND time >= ${week}`.catch(() => undefined),
     messagingUrl(app),
@@ -301,7 +302,7 @@ export async function journal(node: Node): Promise<HtmlString> {
     : html`<tr><td colspan=6>${nothing}`;
 
   return html.async`<div class=-head>${t`Journal`}
-    <span class=u2-badge>${Number(totals?.out ?? 0)} ${outgoing}</span>
+    <span class=u2-badge>${Number(totals?.sent ?? 0)} ${outgoing}</span>
     <span class=u2-badge>${Number(totals?.incoming ?? 0)} ${incoming}</span>
     <small>${t`in ${RECENT} days`}</small></div>
   <table class=u2-table>

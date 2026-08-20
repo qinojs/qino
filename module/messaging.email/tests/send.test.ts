@@ -1,5 +1,5 @@
 import { Db } from "@qino/qino";
-import { assertEquals, contactDbSchema, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+import { assertEquals, contactDbSchema, DbFileManager, fileDbSchema, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
 import { messages } from "@qino/qino/messaging";
 
@@ -9,17 +9,26 @@ import type { App } from "@qino/qino";
 
 async function makeApp(): Promise<App> {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties } });
+  await db.migrate({ properties: { ...fileDbSchema.properties, ...messageSchema.properties, ...contactDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.query`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "one@qino.test", firstname: "One", lastname: "User" });
   await db.table("usr_contact").insert({ type: "email", address: "one@qino.test", usr_id: 1, main: true, created: 1 });
-  return {
+  const dir = await Deno.makeTempDir();
+  const app = {
     db,
+    dir,
     settings: { "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} } },
   } as unknown as App;
+  app.dbFiles = new DbFileManager(app, dir + "/files/");
+  return app;
+}
+
+async function close(app: App): Promise<void> {
+  await app.db.close();
+  await Deno.remove(app.dir, { recursive: true });
 }
 
 Deno.test("a mail to a user reaches their address and lands in the journal", async () => {
@@ -37,7 +46,7 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   assertEquals(journaled.text, "Attached.");
   assertEquals(journaled.deliveries, [{ id: 1, usr_id: 1, address: "one@qino.test", email: "one@qino.test", time: journaled.deliveries[0].time, error: null }]);
 
-  await app.db.close();
+  await close(app);
 });
 
 Deno.test("a debug redirect is journaled as a delivery that never reached the recipient", async () => {
@@ -54,7 +63,7 @@ Deno.test("a debug redirect is journaled as a delivery that never reached the re
   const [journaled] = await messages(app);
   assertEquals(journaled.deliveries.map((d) => [d.address, d.error]), [["one@qino.test", "redirected to debug address dev@qino.test"]]);
 
-  await app.db.close();
+  await close(app);
 });
 
 Deno.test("a literal address finds its owner, an unknown one stays anonymous, and a refusal is journaled", async () => {
@@ -70,7 +79,7 @@ Deno.test("a literal address finds its owner, an unknown one stays anonymous, an
     ["other@qino.test", null, "mailbox full"],
   ]);
 
-  await app.db.close();
+  await close(app);
 });
 
 Deno.test("a markdown mail carries both parts, a plain one only text", async () => {
@@ -88,5 +97,34 @@ Deno.test("a markdown mail carries both parts, a plain one only text", async () 
   const [plain, markdown] = await messages(app); // newest first: the plain mail, then the markdown one
   assertEquals([markdown.text, markdown.format], ["Hi **there**", "md"]); // the journal keeps the source
   assertEquals([plain.text, plain.format], ["Hi **there**", null]);
-  await app.db.close();
+  await close(app);
+});
+
+Deno.test("email carries generic attachments as MIME files", async () => {
+  const app = await makeApp();
+  const sent: Record<string, unknown>[] = [];
+  setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
+
+  await send(app, { usr: 1 }, {
+    text: "Files attached.",
+    attachments: [
+      new File(["invoice"], "invoice.txt", { type: "text/plain" }),
+      { name: "terms.txt", type: "text/plain", content: new TextEncoder().encode("terms") },
+    ],
+  });
+
+  const files = sent[0].attachments as { filename: string; contentType: string; content: Promise<Uint8Array> }[];
+  assertEquals(files.map((file) => [file.filename, file.contentType]), [
+    ["invoice.txt", "text/plain"],
+    ["terms.txt", "text/plain"],
+  ]);
+  assertEquals((await Promise.all(files.map((file) => file.content))).map((bytes) => new TextDecoder().decode(bytes)), ["invoice", "terms"]);
+
+  const [journaled] = await messages(app);
+  assertEquals(journaled.attachments.map((file) => [file.name, file.mime, file.size, file.sort]), [
+    ["invoice.txt", "text/plain", 7, 0],
+    ["terms.txt", "text/plain", 5, 1],
+  ]);
+  assertEquals(await Deno.readTextFile((await app.dbFiles.file(Number(journaled.attachments[0].file_id))).path), "invoice");
+  await close(app);
 });

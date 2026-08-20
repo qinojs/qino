@@ -208,6 +208,9 @@ any. `address` is where it actually went; `usr_id` is set only when that address
 verified contact of that user, so the journal never claims a message reached someone on the
 strength of an unproven address.
 
+`message_attachment` — ordered links from a message to core's `file` table. Content and metadata
+stay in `DbFile`; channels decide whether they can deliver attachments.
+
 `usr_contact_verification` — open claims, keyed by channel and address. No cron job: expired
 rows are swept whenever a code is requested.
 

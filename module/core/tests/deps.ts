@@ -13,8 +13,10 @@ export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows
  *  next to their own schema, because the count belongs to the account and not to the method. */
 export const authAttemptDbSchema = { properties: { usr_auth_attempt: coreSchema.properties.usr_auth_attempt } };
 export const contactDbSchema = { properties: { usr_contact: coreSchema.properties.usr_contact } };
+export const fileDbSchema = { properties: { file: coreSchema.properties.file } };
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
+export { DbFileManager } from "../lib/DbFileManager.ts";
 export { fakeRender } from "./sqlFake.ts";
 // settings plumbing: tests that need a real (not faked) settings tree
 export { createSettingItem } from "../lib/SettingItem.ts";

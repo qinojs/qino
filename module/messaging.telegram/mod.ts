@@ -38,7 +38,7 @@ export async function send(
   ]);
 
   // Telegram has no title of its own; it becomes the first line, bold where markup is on
-  const { text, title, format: _format, template: _template, ...extra } = msg;
+  const { text, title, format: _format, template: _template, attachments: _attachments, ...extra } = msg;
   const own = Boolean(extra.parse_mode); // an own parse_mode owns the text, escaping included
   const params = (to: Row) => {
     const { text: plain, html } = render(to);

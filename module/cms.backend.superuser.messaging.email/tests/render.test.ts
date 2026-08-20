@@ -1,7 +1,8 @@
 import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import manifest from "../manifest.json" with { type: "json" };
-import { isSecret, leaves, sending } from "../render.ts";
+import { attachmentsOf } from "../nodeApi.ts";
+import { isSecret, leaves, send as sendForm, sending } from "../render.ts";
 
 const { name, dependencies } = manifest;
 
@@ -43,4 +44,17 @@ Deno.test("cms.backend.superuser.messaging.email builds its form from the module
   assertStringIncludes(output, "mail.qino.test");
   assertStringIncludes(output, 'name="transport.smtp.password"');
   assert(!output.includes("private"));
+});
+
+Deno.test("cms.backend.superuser.messaging.email adds files to the send form", async () => {
+  const node = { app: { t: fakeT, db: { query: () => Promise.resolve([]) } } } as never;
+  const output = String(await sendForm(node));
+  assertStringIncludes(output, "<input type=file name=attachments multiple>");
+
+  const [file] = await attachmentsOf([{
+    name: "invoice.txt",
+    type: "text/plain",
+    content: "data:text/plain;base64,aW52b2ljZQ==",
+  }]);
+  assertEquals([file.name, file.type, await file.text()], ["invoice.txt", "text/plain", "invoice"]);
 });

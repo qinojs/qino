@@ -15,14 +15,14 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
   const values = (button) => {
     const form = button.closest("form");
     if (!form.reportValidity()) return null;
-    return Object.fromEntries([...form.elements].filter((e) => e.name)
+    return Object.fromEntries([...form.elements].filter((e) => e.name && e.type !== "file")
       .map((e) => [e.name, e.type === "checkbox" ? e.checked : e.value.trim()]));
   };
 
   el.addEventListener("change", (event) => {
     if (event.target.matches("[data-transport-type]")) transportFields();
   });
-  el.addEventListener("click", (event) => {
+  el.addEventListener("click", async (event) => {
     const save = event.target.closest("[data-settings-save]");
     const fetch = event.target.closest("[data-fetch]");
     const send = event.target.closest("[data-send]");
@@ -36,7 +36,22 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
       if (settings) execute(save, { settings });
     } else if (send) {
       const message = values(send);
-      if (message) execute(send, { send: message });
+      if (message) {
+        send.disabled = true;
+        try {
+          const input = send.closest("form").elements.attachments;
+          message.attachments = await Promise.all([...input.files].map(async (file) => ({
+            name: file.name,
+            type: file.type,
+            content: await dataUrl(file),
+          })));
+          await execute(send, { send: message });
+        } catch (e) {
+          await panel.alert(e?.message || String(e));
+        } finally {
+          send.disabled = false;
+        }
+      }
     } else if (add) {
       const contact = values(add);
       if (contact) execute(add, { contactAdd: contact });
@@ -50,4 +65,11 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
   });
 
   transportFields();
+});
+
+const dataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
 });

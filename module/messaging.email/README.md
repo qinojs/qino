@@ -53,7 +53,6 @@ fetches the mailbox on demand.
 
 ## Still missing compared with mail
 
-- **Attachments:** regular MIME files are the priority; inline/CID images can follow later.
 - **Mail options:** cc/bcc, per-message sender and reply-to, headers, tags and priority.
 - **Durable delivery:** save a draft, add recipients and resend pending or failed deliveries.
   The old module permits this manually; an automatic retry queue does not exist yet and belongs
@@ -61,7 +60,11 @@ fetches the mailbox on demand.
 - **Tracking:** opens and followed links.
 - **Custom rendering:** recipient data inside subject and body, and programmatic templates.
 
-Templates themselves already live in messaging and are used by this channel. Attachments are not
-channel-neutral today: SMS has none, Telegram currently sends text only, and Web Push accepts image
-URLs for notification presentation rather than attached files. A shared attachment description and
-storage may therefore belong to messaging, while each capable channel decides how to deliver it.
+Templates themselves already live in messaging and are used by this channel.
+
+## Attachments
+
+Attachments belong to the common message and are currently delivered by email only. Pass a `File`
+or `{ name, type?, content }`, where `content` is text, bytes or a `Blob`. Other channels currently
+do not deliver them. The journal stores attachments as core `DbFile`s; inline/CID images are not
+implemented yet.

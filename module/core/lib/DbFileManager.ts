@@ -3,7 +3,7 @@ import { typeByExtension, sql } from "../deps.ts";
 import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
-import { fetchRemoteFile, readDataUrl } from "./fileStream.ts";
+import { fetchRemoteFile, readDataUrl, readUploadFile } from "./fileStream.ts";
 import { header } from "./util.ts";
 
 import type { App } from "./App.ts";
@@ -49,10 +49,11 @@ export class DbFileManager {
     else cache.clear();
   }
 
-  async add(path?: string): Promise<DbFile> {
+  async add(source?: string | globalThis.File): Promise<DbFile> {
     const id = Number(await this.db.table("file").insert({}) ?? "0");
     const f = await this.file(id);
-    if (path) await f.replaceBy(path);
+    if (typeof source === "string") await f.replaceBy(source);
+    else if (source) await f.replaceFromUpload(await readUploadFile(source));
     return f;
   }
 

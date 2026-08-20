@@ -1,13 +1,13 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, sql, unixTime } from "@qino/qino";
-import { msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
+import { attachmentFile, msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
 import { createMessage, transport } from "./lib/transport.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Msg } from "@qino/qino/messaging";
+import type { Attachment, Msg } from "@qino/qino/messaging";
 
 export { receive } from "./lib/inbound.ts";
 export { setTransport } from "./lib/transport.ts";
@@ -34,6 +34,7 @@ export async function send(
   if (!config.sender) throw new Error("Email has no sender. Set messaging.email.sender.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const from = formatAddress({ address: config.sender, name: config.sendername });
+  const attachments = await attachmentsOf(msg.attachments);
 
   const deliveries = [];
   let sent = 0;
@@ -46,6 +47,7 @@ export async function send(
       replyTo: config.replyTo || undefined,
       subject: debug ? `Debug! ${msg.title}` : msg.title,
       content: html ? { html, text } : { text },
+      attachments,
       headers: debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined,
     });
     // the transport took it, so it counts as sent — but nothing reached this address, and the
@@ -60,8 +62,19 @@ export async function send(
       time: unixTime(),
     });
   }
-  await record(app, { channel: "email", direction: "out", grpId: to.grp, msg, data: { to }, time }, deliveries);
+  await record(app, {
+    channel: "email",
+    direction: "out",
+    grpId: to.grp,
+    msg: attachments ? { ...msg, attachments } : msg,
+    data: { to },
+    time,
+  }, deliveries);
   return sent;
+}
+
+async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> {
+  return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
 }
 
 /** Sends one mail; resolves with the error message instead of throwing, because the journal wants it. */

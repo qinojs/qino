@@ -50,7 +50,7 @@ export async function send(
 
   const table = app.db.table("webpush_subscription");
   const options = { vapidDetails: await vapid(app) };
-  const { text: _text, format: _format, template: _template, ...notification } = msg; // the service worker calls showNotification(title, rest)
+  const { text: _text, format: _format, template: _template, attachments: _attachments, ...notification } = msg; // the service worker calls showNotification(title, rest)
   const gone: number[] = [];
   const outcomes = new Map<string, { usrId?: number; sent: boolean; errors: string[] }>();
   let sent = 0;

@@ -170,14 +170,16 @@ function mailAddressOf(username: string): string | undefined {
   try { return contactKey("email", username); } catch { return; }
 }
 
-/** The contacts card of one user: where they can be reached, and how to change it. */
+/** The contacts of one user: where they can be reached, and how to change it.
+ *  Inner content only — the `cms-part` wrapper stays in `renderDetail`, so a reload replaces this. */
 async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const types = contactTypes();
   const rows = await contacts(app.db, usrId);
+  const makeMain = await t`Make main`;
 
-  return html.async`<div class=u2-card style="flex:0 1 26rem" cms-part=contacts>
+  return html.async`
     <div class=-head>${t`Contacts`}</div>
     <table class="u2-table -contacts">
       <thead><tr>
@@ -191,7 +193,7 @@ async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
           <td>${row.address}${row.error ? html` <span class=u2-badge title="${row.error}">!</span>` : ""}
           <td>${row.main
             ? "★"
-            : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${t`Make main`}">☆</button>`}
+            : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${makeMain}">☆</button>`}
           <td><button class=u2-unstyle data-contact-delete="${row.type}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
         : html`<tr><td colspan=4>${await t`No contact yet — this user cannot be reached.`}`}
     </table>
@@ -201,8 +203,7 @@ async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
       </select>
       <input name=address placeholder="${t`Address`}">
       <button>${t`add`}</button>
-    </form>`}
-  </div>`;
+    </form>`}`;
 }
 
 async function renderDetail(node: Node, id: number): Promise<HtmlString> {
@@ -260,7 +261,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     </div>
   </div>
 
-  ${contactsCard(node, id)}
+  <div class=u2-card style="flex:0 1 26rem" cms-part=contacts>${contactsCard(node, id)}</div>
 
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Groups`}</div>

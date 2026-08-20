@@ -10,6 +10,12 @@ export { htmlOf, textOf } from "./lib/format.ts";
 export { framed, renderer, saveTemplate, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 
+/** A named file carried by channels that support attachments. */
+export type Attachment = File | {
+  name: string;
+  type?: string;
+  content: Uint8Array | Promise<Uint8Array> | Blob | string;
+};
 
 /**
  * What every channel understands. `text` is the message; a bare string is the short form of
@@ -23,7 +29,21 @@ export { sanitizeHtml } from "./lib/sanitize.ts";
  * `template` names the frame around it — the channel's main one when unnamed, none at all when
  * empty. The frame is chrome: it is applied per recipient and never joins the text.
  */
-export type Msg = { text: string; title?: string; format?: "md" | "html"; template?: string };
+export type Msg = {
+  text: string;
+  title?: string;
+  format?: "md" | "html";
+  template?: string;
+  /** Only channels that support attachments deliver them. */
+  attachments?: Attachment[];
+};
+
+/** Materialize the compact attachment form as a Web-standard file. */
+export async function attachmentFile(file: Attachment): Promise<File> {
+  if (!("content" in file)) return file;
+  const content = await file.content;
+  return new File([content instanceof Uint8Array ? new Uint8Array(content) : content], file.name, { type: file.type });
+}
 
 /** The normal form of a message; a bare string is its text. */
 export function msgOf<T extends Msg>(msg: string | T): T {
@@ -95,6 +115,9 @@ export async function record(
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
   const msg = message.msg == null ? undefined : msgOf(message.msg);
+  const files = msg?.attachments?.length
+    ? await Promise.all(msg.attachments.map(async (attachment) => await app.dbFiles.add(await attachmentFile(attachment))))
+    : [];
   let id = 0;
   await app.db.transaction(async () => {
     id = Number(await app.db.table("message").insert({
@@ -109,6 +132,8 @@ export async function record(
       data: JSON.stringify(message.data ?? null),
       time,
     }));
+    const attachments = app.db.table("message_attachment");
+    for (const [sort, file] of files.entries()) await attachments.insert({ message_id: id, file_id: file.id, sort });
     const table = app.db.table("message_delivery");
     for (const delivery of deliveries) {
       await table.insert({
@@ -123,17 +148,19 @@ export async function record(
   return id;
 }
 
-/** Recent logical messages including their recipient detail rows. */
-export function messages(app: App, limit = 100): Promise<(Row & { deliveries: Row[] })[]> {
+type JournalMessage = Row & { deliveries: Row[]; attachments: Row[] };
+
+/** Recent logical messages including their recipient and attachment detail rows. */
+export function messages(app: App, limit = 100): Promise<JournalMessage[]> {
   return read(app, limit);
 }
 
 /** Recent messages sent to or received from one user. */
-export function userMessages(app: App, usrId: number, limit?: number): Promise<(Row & { deliveries: Row[] })[]> {
+export function userMessages(app: App, usrId: number, limit?: number): Promise<JournalMessage[]> {
   return read(app, limit, usrId);
 }
 
-async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { deliveries: Row[] })[]> {
+async function read(app: App, limit?: number, usrId?: number): Promise<JournalMessage[]> {
   const where = usrId == null ? sql`` : sql`WHERE EXISTS (
     SELECT 1 FROM message_delivery selected
     WHERE selected.message_id = m.id AND selected.usr_id = ${usrId}
@@ -150,7 +177,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
     LEFT JOIN message_delivery d ON d.message_id = m.id ${delivery}
     LEFT JOIN usr u ON u.id = d.usr_id
     ORDER BY m.time DESC, m.id DESC, d.id`;
-  const byId = new Map<number, Row & { deliveries: Row[] }>();
+  const byId = new Map<number, JournalMessage>();
   for (const row of rows) {
     const id = Number(row.id);
     const message = byId.getOrInsertComputed(id, () => ({
@@ -168,6 +195,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
       time: row.time,
       recipient_count: row.recipient_count,
       deliveries: [],
+      attachments: [],
     }));
     if (row.delivery_id != null) message.deliveries.push({
       id: row.delivery_id,
@@ -178,5 +206,22 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
       error: row.error,
     });
   }
-  return [...byId.values()];
+  const messages = [...byId.values()];
+  if (!messages.length) return messages;
+  const ids = sql.join(messages.map((message) => sql`${message.id}`), ", ");
+  const links = await app.db.query`
+    SELECT a.message_id, a.file_id, a.sort FROM message_attachment a
+    WHERE a.message_id IN (${ids})
+    ORDER BY a.message_id, a.sort, a.file_id`;
+  if (!links.length) return messages;
+  const fileIds = sql.join(links.map((link) => sql`${link.file_id}`), ", ");
+  const files = new Map((await app.db.query`
+    SELECT id, name, mime, size FROM file WHERE id IN (${fileIds})`
+  ).map((file) => [Number(file.id), file]));
+  for (const link of links) {
+    const file = files.get(Number(link.file_id));
+    if (!file) continue;
+    byId.get(Number(link.message_id))?.attachments.push({ file_id: link.file_id, name: file.name, mime: file.mime, size: file.size, sort: link.sort });
+  }
+  return messages;
 }

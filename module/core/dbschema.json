@@ -526,7 +526,7 @@
             "description": "Why the last delivery failed — null once one succeeds again"
           }
         },
-        "required": ["channel", "address", "usr_id", "main", "created"]
+        "required": ["type", "address", "usr_id", "main", "created"]
       }
     },
     "usr_auth_attempt": {

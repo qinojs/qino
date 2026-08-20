@@ -12,6 +12,7 @@ async function app(): Promise<App> {
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
+  await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
   await db.loadTables();
   db.schema = dbSchema;
   return { db } as App;
@@ -48,6 +49,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     data: '{"to":{"grp":1}}',
     time: 10,
     recipient_count: 2,
+    attachments: [],
     deliveries: [
       { id: 1, usr_id: 1, address: null, email: "one@example.test", time: 11, error: null },
       { id: 2, usr_id: 2, address: null, email: "two@example.test", time: 12, error: "rejected" },
@@ -68,6 +70,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     data: '{"to":{"grp":1}}',
     time: 10,
     recipient_count: 2,
+    attachments: [],
     deliveries: [
       { id: 2, usr_id: 2, address: null, email: "two@example.test", time: 12, error: "rejected" },
     ],
