@@ -193,14 +193,14 @@ async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
             ? "★"
             : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${t`Make main`}">☆</button>`}
           <td><button class=u2-unstyle data-contact-delete="${row.type}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
-        : html`<tr><td colspan=4>${await t`No verified contact — this user cannot be reached.`}`}
+        : html`<tr><td colspan=4>${await t`No contact yet — this user cannot be reached.`}`}
     </table>
     ${html.async`<form class=-body data-contact-add>
       <select name=type>
         ${types.map((type) => html`<option value="${type}">${type}</option>`)}
       </select>
       <input name=address placeholder="${t`Address`}">
-      <button type=button data-contact-save>${t`add`}</button>
+      <button>${t`add`}</button>
     </form>`}
   </div>`;
 }

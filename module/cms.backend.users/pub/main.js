@@ -32,17 +32,18 @@ cms.initNode("backend.users", (el) => {
     if (response?.message) return import("@qino/u2/js/dialog/dialog.js").then((d) => d.alert(response.message));
   };
 
+  el.addEventListener("submit", (e) => {
+    const form = e.target.closest("[data-contact-add]");
+    if (!form) return;
+    e.preventDefault();
+    node.api.post({
+      contact_add: itemId(form),
+      type: form.elements.type.value,
+      address: form.elements.address.value.trim(),
+    }).then(contactResult);
+  });
+
   el.addEventListener("click", (e) => {
-    const save = e.target.closest("[data-contact-save]");
-    if (save) {
-      const form = save.closest("form");
-      node.api.post({
-        contact_add: itemId(save),
-        type: form.elements.type.value,
-        address: form.elements.address.value.trim(),
-      }).then(contactResult);
-      return;
-    }
     const contactDel = e.target.closest("[data-contact-delete]");
     if (contactDel) {
       node.api.post({ contact_delete: itemId(contactDel), ...contactVars(contactDel, "contactDelete") }).then(contactResult);
