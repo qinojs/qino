@@ -120,10 +120,12 @@ send(app, to, msg)
  │   ├ load the template … the one the message names, else the channel's main one
  │   ├ rewriteLinks(msg) … every address absolute, then shortened
  │   ├ rewriteLinks(tmpl)   the template's links are traded with the message's own
- │   └ beacon ……………………… a shortened pixel, where the markup can carry one
+ │   ├ beacon ……………………… a shortened pixel, where the markup can carry one
+ │   └ uses ………………………… which declared placeholders this message names
  ├ render(recipient) …… once per recipient:
+ │   ├ placeholders ……… each declaring module works its own out for this one recipient
  │   ├ textOf / htmlOf …… the message as text and, where it has markup, as html
- │   ├ fill() ……………………… {{content}} into the template, {{firstname}} from the recipient row
+ │   ├ fill() ……………………… every placeholder in, in the form this side needs
  │   └ markers(deliveryId)  `${link}/${marker}` on every shortened address
  ├ deliver ………………………… the channel's own transport, one recipient at a time
  └ delivered(id, error) … only when the attempt has a verdict of its own
@@ -199,12 +201,24 @@ variant, so the same message arrives the way that channel talks:
 | signature | sms | ✓ | | `{{content}}` `Fragen? https://…` |
 | newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
 
-`{{content}}` is the message, already rendered for that channel; every other placeholder is a column
-of the recipient — `firstname`, `lastname`, `company`, `email`, `address`, and no other — escaped
-where the template is markup, and `{{firstname|Kunde}}` says what stands there when nobody is known.
+`{{content}}` is the message, already rendered for that channel. Everything else a template may
+name is declared by a module, keyed by the name written between the braces:
 
-What `fill()` is handed *is* the list: a name it was not given comes out as its fallback, so the set
-is registry and allowlist in one, and widening a query never widens what a template can read.
+```ts
+export const messagingPlaceholders: Record<string, Placeholder> = {
+  ...columns("firstname", "lastname", "company", "email", "address"),
+  unsubscribe: placeholder,
+};
+```
+
+A `Placeholder` answers per recipient and in both forms — `{ text, html }` — because what is a link
+in markup is a bare address in text. Nothing back means the hole stays empty, which is how
+`{{firstname|Kunde}}` falls back to the name it gives.
+
+The registry is the allowlist: a name nobody declared reads as its fallback, so widening a query
+never widens what a template can read. Any module may add its own, and only what a text actually
+names is worked out — a placeholder that costs a signature is not spent on a template that never
+mentions it.
 
 ```ts
 send(app, { grp: 3 }, "wie gehts")                            // the channel's main template, if any
@@ -223,8 +237,10 @@ and never joins the message: the journal keeps the text as it was written plus t
 *name*, so a template can be rewritten without rewriting history, and searching the journal finds
 messages instead of signatures.
 
-Rendering is `renderer(app, msg, channel, profile?)` — it loads the template once and returns a
-function that renders per recipient, so a mail to a thousand people costs one query.
+Rendering is `renderer(app, msg, channel, profile?)` — it loads the template once and hands back
+`{ render, uses }`, so a mail to a thousand people costs one query. `render(to)` renders for one
+recipient; `uses` are the placeholders this message turned out to name, which is how a channel adds
+what one of them needs from it.
 
 ## Unsubscribing
 
@@ -344,7 +360,9 @@ rows are swept whenever a code is requested.
   is a spam relay the moment it is reachable over HTTP.
 - **Placeholders in the message itself.** They work in the template alone today: the message's own
   text goes in as `{{content}}` untouched, and a title never sees `fill()` at all. Both could have
-  them — the recipient's columns only, which the allowlist already takes care of.
+  them, but only the declared ones with no effect of their own — a computed one like
+  `{{unsubscribe}}` has to keep coming from a template, which an administrator wrote, and not from
+  a text that may have been assembled from a web form.
 - **`vars` instead of glued strings.** `send(app, to, { text: "{{name}} asks: {{message}}", vars })`
   — the caller's own values, filled in the same single pass, so a `{{…}}` inside one of them stays
   text. Whoever builds a message out of form input and switches placeholder expansion on has destroyed
