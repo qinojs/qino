@@ -98,3 +98,18 @@ Deno.test("a template's paragraph that is only the placeholder steps aside for t
   assertEquals((await render()).html, "<p>Hallo,</p>\n<p>one</p>\n<p>two</p>\n<p>Team</p>");
   await a.db.close();
 });
+
+Deno.test("a value that reads like a placeholder stays text, and no inherited property is one", async () => {
+  const a = await app(
+    { name: "letter", channel: "email", main: true, text: "Hallo {{firstname}}, {{content}}" },
+    // a recipient row is a bag of columns, not an object whose prototype can be read out
+    { name: "proto", channel: "email", text: "[{{constructor}}{{toString}}{{nothing|—}}]{{content}}" },
+  );
+  const render = await renderer(a, { text: "hi" }, "email");
+  // one round, never a second: what came out of a column is not looked at again
+  assertEquals((await render({ firstname: "{{content}}" })).text, "Hallo {{content}}, hi");
+
+  const proto = await renderer(a, { text: "hi", template: "proto" }, "email");
+  assertEquals((await proto({ firstname: "Ada" })).text, "[—]hi");
+  await a.db.close();
+});

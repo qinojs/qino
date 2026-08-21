@@ -65,8 +65,13 @@ export function templated(template: Msg | undefined, msg: Msg, profile: Profile 
 
   return (to = {}) => ({
     // only what was assembled here is tidied: without a template it goes out exactly as written
-    text: template ? tidy(fill(templateText, text, to, false)) : text,
-    html: markup ? fill(templateHtml ?? textToHtml(templateText, profile), html ?? textToHtml(text, profile), to, true) : undefined,
+    text: template ? tidy(fill(templateText, { ...recipient(to), content: text })) : text,
+    html: markup
+      ? fill(templateHtml ?? textToHtml(templateText, profile), {
+        ...recipient(to, hee),
+        content: html ?? textToHtml(text, profile),
+      })
+      : undefined,
   });
 }
 
@@ -93,11 +98,22 @@ function load(app: App, channel: string, name?: string): Promise<Msg | undefined
     : app.db.row<Msg>`SELECT text, format FROM message_template WHERE channel = ${channel} AND main = ${true}`;
 }
 
-/** The message goes in as it is — it was rendered for this target already; placeholders do not. */
-function fill(template: string, content: string, to: Row, escape: boolean): string {
-  return template.replace(PLACEHOLDER, (_, key, fallback = "") => {
-    if (key === "content") return content;
-    const value = String(to[key] ?? "") || fallback;
-    return escape ? hee(value) : value;
-  });
+/**
+ * Put the placeholders in. Whatever is not among them comes out as what it names after `|`, so
+ * the set handed in is at once the registry and the allowlist — a template reads what it is
+ * given and nothing else.
+ *
+ * They go in as they are, which is why the caller escapes: it is the one that knows whether it is
+ * building text or markup, and `{{content}}` was rendered for this target already. Filling is one
+ * round, never a second, so a value that reads like a placeholder stays text.
+ */
+function fill(template: string, placeholders: Record<string, string>): string {
+  return template.replace(PLACEHOLDER, (_, key, fallback = "") =>
+    (Object.hasOwn(placeholders, key) ? placeholders[key] : "") || fallback);
 }
+
+/** What a message may say about who it is going to — the columns, and no other. */
+const COLUMNS = ["firstname", "lastname", "company", "email", "address"];
+
+const recipient = (to: Row, escape: (v: unknown) => string = String) =>
+  Object.fromEntries(COLUMNS.map((key) => [key, escape(to[key] ?? "")]));

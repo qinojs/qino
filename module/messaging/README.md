@@ -199,9 +199,12 @@ variant, so the same message arrives the way that channel talks:
 | signature | sms | ✓ | | `{{content}}` `Fragen? https://…` |
 | newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
 
-`{{content}}` is the message, already rendered for that channel; every other placeholder is a column of
-the recipient — `firstname`, `lastname`, `company`, `email`, `address` — escaped where the template is
-markup, and `{{firstname|Kunde}}` says what stands there when nobody is known.
+`{{content}}` is the message, already rendered for that channel; every other placeholder is a column
+of the recipient — `firstname`, `lastname`, `company`, `email`, `address`, and no other — escaped
+where the template is markup, and `{{firstname|Kunde}}` says what stands there when nobody is known.
+
+What `fill()` is handed *is* the list: a name it was not given comes out as its fallback, so the set
+is registry and allowlist in one, and widening a query never widens what a template can read.
 
 ```ts
 send(app, { grp: 3 }, "wie gehts")                            // the channel's main template, if any
@@ -345,12 +348,9 @@ rows are swept whenever a code is requested.
   for people who have no account. `message_delivery.address` is there for it; what is
   missing is the channels accepting the short form. Never expose it through an api tree: it
   is a spam relay the moment it is reachable over HTTP.
-- **Markers in the message itself.** They work in the template alone today: the message's own text
-  goes in as `{{content}}` untouched, and a title never sees `fill()` at all. Both could have them,
-  but only for the recipient's columns, and only from an allowlist — `firstname`, `lastname`,
-  `company`, `email`, `address`. Today every column of the recipient row is a placeholder, which is
-  harmless because the query selects those five; the day someone writes `u.*` there, a message text
-  reads out the whole user.
+- **Placeholders in the message itself.** They work in the template alone today: the message's own
+  text goes in as `{{content}}` untouched, and a title never sees `fill()` at all. Both could have
+  them — the recipient's columns only, which the allowlist already takes care of.
 - **`vars` instead of glued strings.** `send(app, to, { text: "{{name}} asks: {{message}}", vars })`
   — the caller's own values, filled in the same single pass, so a `{{…}}` inside one of them stays
   text. Whoever builds a message out of form input and switches placeholder expansion on has destroyed

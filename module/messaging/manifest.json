@@ -14,6 +14,7 @@
     "lib/secret.ts",
     "lib/template.ts",
     "lib/track.ts",
+    "lib/unsubscribe.ts",
     "lib/verify.ts",
     "manifest.json",
     "mod.ts",
