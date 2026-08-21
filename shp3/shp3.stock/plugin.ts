@@ -1,5 +1,5 @@
 import { hee } from "@qino/qino";
-import { mail } from "@qino/qino/mail";
+import { send } from "@qino/qino/messaging.email";
 import { shp3 } from "@qino/qino/shp3";
 
 import type { App } from "@qino/qino";
@@ -46,15 +46,14 @@ async function warn(app: App, order: Order, product: Product, trigger: number) {
   const to = String(await app.settings["shp3.stock"].notification_email ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!to.length) return;
   const title = await app.db.one`SELECT name FROM page WHERE id = ${product.$id}`;
-  const msg = await mail(app).create({
-    subject: `${await app.t`Minimum stock reached`}: ${title ?? product.$id}`,
-    html: `<table>
+  await send(app, { email: to }, {
+    title: `${await app.t`Minimum stock reached`}: ${title ?? product.$id}`,
+    format: "html",
+    text: `<table>
       <tr><td><b>${hee(await app.t`Product`)}</b><td>${hee(title)}
       <tr><td><b>${hee(await app.t`Order`)}</b><td>${hee(order.$id)}
       <tr><td><b>${hee(await app.t`In stock`)}</b><td>${product.stock}
       <tr><td><b>${hee(await app.t`Minimum`)}</b><td>${trigger}
     </table>`,
   });
-  for (const email of to) msg.addTo(email);
-  await msg.send();
 }

@@ -3,7 +3,7 @@
   "description": "Keeps stock per product, caps what can be ordered, and warns when it runs low.",
   "dependencies": [
     "shp3",
-    "mail"
+    "messaging.email"
   ],
   "files": [
     "dbschema.json",

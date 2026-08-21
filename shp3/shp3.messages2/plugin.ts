@@ -1,5 +1,5 @@
 import { hee } from "@qino/qino";
-import { mail } from "@qino/qino/mail";
+import { send } from "@qino/qino/messaging.email";
 import { shp3 } from "@qino/qino/shp3";
 
 import type { App } from "@qino/qino";
@@ -30,12 +30,11 @@ async function confirm(app: App, order: Order) {
   if (await settings.to_client !== false && client) to.push(client);
   if (!to.length) return;
 
-  const msg = await mail(app).create({
-    subject: `${await app.t`Your order`} ${order.$id}`,
-    html: await body(app, order),
+  await send(app, { email: to }, {
+    title: `${await app.t`Your order`} ${order.$id}`,
+    text: await body(app, order),
+    format: "html",
   });
-  for (const email of to) msg.addTo(email);
-  await msg.send();
 }
 
 /** Mail HTML is its own world: no stylesheet reaches it, so the few functional rules are inline. */

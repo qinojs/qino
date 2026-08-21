@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@std/assert";
 import { App, Ctx, requestStorage } from "@qino/qino";
-import { mail } from "@qino/qino/mail";
+import { setTransport } from "@qino/qino/messaging.email";
 
 import { api } from "../api.ts";
 import { cart } from "../mod.ts";
@@ -11,7 +11,7 @@ const call = (path: string[], verb: string, input?: unknown) =>
 
 async function shop(...extra: string[]) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("cron").add("cron").add("locale.country").add("locale.currency");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("messaging").add("messaging.email").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of ["shp3.shipping.pickup", "shp3.payment.invoice", "shp3.payment.advance", "cms.cont.shp3.order.addresses2", ...extra]) {
     app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);
@@ -83,14 +83,12 @@ Deno.test("shp3 backend: an order is paid off, an open cart can still be placed"
 
 Deno.test("shp3: ordering sends the confirmation", async () => {
   await using app = await shop("shp3.messages2");
-  mail(app).setTransport({ send: () => Promise.resolve({ ok: true }) } as never);
+  await app.settings["messaging.email"].sender("shop@example.test");
   const sent: { to: string[]; subject: string; html: string }[] = [];
-  app.db.on("table:insert-before", (e: any) => {
-    if (e.table.name === "mail") sent.push({ to: [], subject: e.data.subject, html: e.data.html ?? "" });
-  });
-  app.db.on("table:insert-before", (e: any) => {
-    if (e.table.name === "mail_recipient") sent.at(-1)?.to.push(e.data.email);
-  });
+  setTransport(app, { send: (m: any) => {
+    sent.push({ to: m.recipients.map((r: any) => r.address), subject: m.subject, html: m.content?.html ?? "" });
+    return Promise.resolve({ successful: true });
+  } } as never);
 
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   await requestStorage.run(ctx, async () => {

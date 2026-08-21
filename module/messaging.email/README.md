@@ -3,9 +3,9 @@
 Email as a messaging channel: it sends over any [Upyo](https://upyo.dev) transport and receives
 over IMAP, and both directions land in the messaging journal.
 
-This module is the successor of [mail](../mail/), which it replaces step by step. The two run in
-parallel and keep their settings apart — `messaging.email.*` here, `mail.*` there. `mail` no longer
-declares a messaging channel, so `email` is this module's name alone.
+This module is the successor of [mail](../mail/): everything that sends mail sends it here, and
+`email` is this module's channel name alone. What is left of `mail` is its own panels over its own
+tables — the settings stay apart, `messaging.email.*` here and `mail.*` there.
 
 ## Sending
 
@@ -23,6 +23,9 @@ that user's, so a mail to a literal address still shows up in their conversation
 The subject is the message's `title`, or the first line of its text when it has none — the same
 rule every channel follows. `format` decides the body: `md` and `html` mails carry an HTML part
 plus the plain-text alternative every mail needs, plain text goes out as text alone.
+
+`replyTo` on the message overrides the setting, for the mails whose answer belongs somewhere other
+than the app's mailbox — a contact form replies to whoever filled it in, not to the site.
 
 ## Receiving
 
@@ -57,7 +60,7 @@ so the client can offer the one-click way to the same link — see
 
 ## Still missing compared with mail
 
-- **Mail options:** per-message sender and reply-to, headers, tags and priority. **cc/bcc are
+- **Mail options:** per-message sender, headers, tags and priority. **cc/bcc are
   not planned**: a message goes to recipients, and a copy that is nobody's delivery has no row
   in the journal to be.
 - **Bounces:** a parser for the rejections that come back, writing the reason onto the delivery

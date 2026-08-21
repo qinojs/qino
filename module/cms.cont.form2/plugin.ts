@@ -1,5 +1,5 @@
 import { hee, html, sql, tableRef, unixTime, isEmptyObject } from "@qino/qino";
-import { mail } from "@qino/qino/mail";
+import { send as sendMail } from "@qino/qino/messaging.email";
 
 import { openForm } from "./mod.ts";
 import options from "./options.ts";
@@ -66,13 +66,17 @@ async function send(node: Node, form: Form): Promise<boolean> {
   }
   body += String(await node.showText("email_after"));
 
-  const msg = await mail(app).create({ subject, html: body, replyTo: form.replyTo || undefined });
-  for (const file of form.attachments) msg.addFile(file);
-
   const settingRecipients = String(node.settings.recipients() ?? "").match(/[^\s,;<>]+@[^\s,;<>]+/g) ?? [];
-  const to = new Set([...settingRecipients, ...form.recipients]);
-  for (const address of to) msg.addTo(address, address);
-  return msg.send();
+  const to = [...new Set([...settingRecipients, ...form.recipients])];
+  if (!to.length) return false; // a form nobody receives is a misconfiguration, not a delivery
+  const attachments = form.attachments.map((file) => ({ name: file.name, content: Deno.readFile(file.path) }));
+  return await sendMail(app, { email: to }, {
+    title: subject,
+    text: body,
+    format: "html",
+    replyTo: form.replyTo || undefined,
+    attachments,
+  }) > 0;
 }
 
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {

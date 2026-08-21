@@ -2,7 +2,8 @@
   "name": "cms.frontend.2",
   "description": "Provides the in-page CMS editing interface and its widgets.",
   "dependencies": [
-    "cms"
+    "cms",
+    "messaging.email"
   ],
   "files": [
     "manifest.json",

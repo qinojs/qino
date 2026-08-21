@@ -369,5 +369,3 @@ rows are swept whenever a code is requested.
   the boundary before `fill()` ever sees it, exactly as string-built SQL does; passing values is the
   way out, and the presence of `vars` is a better switch than a flag. Filling is one round, never
   recursive — that is what makes it safe.
-- **mail through the journal.** `mail` declares itself as a channel but still keeps its own
-  `mail_recipient` history, so the backend reads it separately.

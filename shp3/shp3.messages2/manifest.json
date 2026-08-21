@@ -3,7 +3,7 @@
   "description": "Sends the order confirmation — to the customer, to the shop, or both.",
   "dependencies": [
     "shp3",
-    "mail"
+    "messaging.email"
   ],
   "files": [
     "manifest.json",

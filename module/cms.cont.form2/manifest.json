@@ -3,7 +3,7 @@
   "description": "Mail form: renders its fields, validates them and sends the entries by e-mail.",
   "dependencies": [
     "cms",
-    "mail",
+    "messaging.email",
     "cms.cont.form2.fields1",
     "cms.cont.text"
   ],

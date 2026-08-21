@@ -1,5 +1,5 @@
 import { ApiError, contactOwner, unixTime } from "@qino/qino";
-import { mail } from "@qino/qino/mail";
+import { send } from "@qino/qino/messaging.email";
 import { issue, redeem } from "@qino/qino/ticket";
 
 import type { Node } from "@qino/qino/cms";
@@ -34,20 +34,18 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   return null;
 }
 
+/* todo: ticket will be shortet by shorturl */
 async function sendLink(node: Node, usrId: number, email: string) {
   const app = node.app;
   const handle = await issue(app, PURPOSE, { usrId });
   // the node's own page, not the api endpoint this call arrived at
-  const url = new URL(await node.url(), await mail(app).baseURL());
+  const url = new URL(await node.url(), await app.url());
   url.searchParams.set(TICKET_PARAM, handle);
   const until = new Date((unixTime() + TTL) * 1000).toISOString().slice(0, 16).replace("T", " ");
-  const msg = await mail(app).create({
-    subject: await app.t`Set a new password`,
-    text: await app.t`Open this link to set a new password: ${url.href}
+  const text = await app.t`Open this link to set a new password: ${url.href}
 
-The link is valid until ${until} UTC. If you did not ask for it, ignore this mail.`,
-  });
-  msg.addTo(email);
+The link is valid until ${until} UTC. If you did not ask for it, ignore this mail.`;
   // not awaited: the answer must take the same time whether or not the address has an account
-  msg.send().catch((e) => console.error("[pwReset]", e));
+  send(app, { email }, { title: String(await app.t`Set a new password`), text: String(text) })
+    .catch((e) => console.error("[pwReset]", e));
 }

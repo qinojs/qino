@@ -22,7 +22,7 @@ export { setTransport } from "./lib/transport.ts";
 export async function send(
   app: App,
   to: { grp?: number; usr?: number; all?: true; email?: string | string[] },
-  message: string | Msg,
+  message: string | Msg & { replyTo?: string }, // replyTo: where an answer belongs, overriding the setting
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
@@ -58,7 +58,7 @@ export async function send(
     const error = await deliver(mailer, {
       from,
       to: formatAddress(debug ?? recipient),
-      replyTo: config.replyTo || undefined,
+      replyTo: msg.replyTo || config.replyTo || undefined,
       subject: debug ? `Debug! ${msg.title}` : msg.title,
       content: html ? { html, text } : { text },
       attachments,

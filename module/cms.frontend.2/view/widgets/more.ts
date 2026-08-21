@@ -1,5 +1,5 @@
 import { hee, html, getCtx } from "@qino/qino";
-import { mail } from "@qino/qino/mail";
+import { send } from "@qino/qino/messaging.email";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -16,8 +16,6 @@ export default async function (node: Node, vars: { param?: Record<string, string
   if (vars.param?.msg) {
     const feedbackEmail = String(await app.settings.cms.feedback.email ?? "").trim();
     if (!feedbackEmail) throw new Error("CMS feedback recipient is not configured");
-    const manager = mail.get(app);
-    if (!manager) throw new Error("CMS feedback requires the mail module");
     const data: Record<string, string> = {
       "Message:": vars.param.msg,
       Link:       vars.param.link ?? "",
@@ -29,9 +27,8 @@ export default async function (node: Node, vars: { param?: Record<string, string
     const mailHtml = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
       `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
     ).join("")}</dl>`;
-    const msg = await manager.create({ subject: "CMS feedback", replyTo: email, html: mailHtml });
-    msg.addTo(feedbackEmail);
-    if (!await msg.send()) throw new Error("CMS feedback could not be sent");
+    const sent = await send(app, { email: feedbackEmail }, { title: "CMS feedback", text: mailHtml, format: "html", replyTo: email });
+    if (!sent) throw new Error("CMS feedback could not be sent");
     ctx.settings.cms.feedback.text('');
     feedbackConfirmation = `<br><i style="color:#4c4">Thank you for your feedback. <br>We will get back to you as soon as possible.</i><br>`;
   }

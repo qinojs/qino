@@ -3,7 +3,7 @@
   "description": "Lets users who forgot their password set a new one through a link sent by mail.",
   "dependencies": [
     "cms",
-    "mail",
+    "messaging.email",
     "ticket"
   ],
   "files": [
