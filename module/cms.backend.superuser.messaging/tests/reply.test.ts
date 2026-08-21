@@ -98,6 +98,8 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(detail, "invoice.png");
     assertStringIncludes(detail, "/dbFile/1/preview.avif");
     assertStringIncludes(detail, "/dbFile/1/download");
+    assertStringIncludes(detail, "<div class=-head>Links</div>");
+    assertStringIncludes(detail, "<tr><td colspan=3>No links yet.");
     assertEquals(fileUrls.every((params) => params.grant === "session"), true);
 
     const editmode = await render("http://qino.test/?cmspid=410&lang=de&usr=1");
@@ -117,21 +119,42 @@ Deno.test("the message detail counts opens and clicks, and lists what was reache
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
+  await db.exec`CREATE TABLE shorturl (code TEXT PRIMARY KEY, url TEXT, hits INTEGER)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
+  await db.table("usr").insert({ email: "second@qino.test" });
   await db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
   await db.table("message_delivery").insert({ message_id: 1, usr_id: 1, address: "user@qino.test", time: 1 });
+  await db.table("message_delivery").insert({ message_id: 1, usr_id: 2, address: "second@qino.test", time: 1 });
   await db.table("message_track").insert({ delivery_id: 1, code: "Ab3-x9Qm", kind: "load", time: 2 });
   await db.table("message_track").insert({ delivery_id: 1, code: "Kp7-r2Ls", kind: "click", time: 3 });
   await db.table("message_track").insert({ delivery_id: 1, code: "Kp7-r2Ls", kind: "click", time: 4 });
+  await db.table("message_track").insert({ delivery_id: 2, code: "Kp7-r2Ls", kind: "click", time: 5 });
+  await db.exec`INSERT INTO shorturl (code, url, hits) VALUES (${"Ab3-x9Qm"}, ${"https://qino.test/messaging/open.gif"}, ${1})`;
+  await db.exec`INSERT INTO shorturl (code, url, hits) VALUES (${"Kp7-r2Ls"}, ${"https://target.qino.test/orders"}, ${3})`;
 
   const app = { db, t: fakeT, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => [] } };
+  const node = {
+    app,
+    page: () => Promise.resolve({ children: () => Promise.resolve(new Map()), url: () => Promise.resolve("/backend") }),
+  } as unknown as Node;
   const ctx = await testContext({ url: "http://qino.test/backend?msg=1", app });
-  const html = await requestStorage.run(ctx, () => render({ app } as unknown as Node));
+  const detail = String(await requestStorage.run(ctx, () => render(node)));
 
-  assertStringIncludes(String(html), "Opened");
-  // no shorturl module here, so a code stands for itself; the counts are messaging's own
-  assertStringIncludes(String(html), "Kp7-r2Ls");
-  assertStringIncludes(String(html), "<td>click\n          <td>2");
+  assertStringIncludes(detail, "Opened");
+  assertStringIncludes(detail, "<div class=-head>Links</div>");
+  assertStringIncludes(detail, "<th>Loads\n          <th>Clicks");
+  assertStringIncludes(detail, '<a href="https://qino.test/messaging/open.gif" target=_blank rel=noreferrer>https://qino.test/messaging/open.gif</a>');
+  assertStringIncludes(detail, "<td>1\n            <td>0");
+  assertStringIncludes(detail, '<a href="https://target.qino.test/orders" target=_blank rel=noreferrer>https://target.qino.test/orders</a>');
+  assertStringIncludes(detail, "<td>0\n            <td>3");
+  assertEquals(detail.split("https://target.qino.test/orders").length - 1, 2); // one aggregated row: href and label
+
+  const overviewCtx = await testContext({ url: "http://qino.test/backend", app });
+  const overview = String(await requestStorage.run(overviewCtx, () => render(node)));
+  assertStringIncludes(overview, "<th>Opened");
+  assertStringIncludes(overview, "<th>Clicks");
+  assertStringIncludes(overview, '<td style="white-space:nowrap">1<br><small><u2-time datetime="1970-01-01T00:00:02.000Z"');
+  assertStringIncludes(overview, '<td style="white-space:nowrap">2<br><small><u2-time datetime="1970-01-01T00:00:03.000Z"');
   await db.close();
 });

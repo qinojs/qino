@@ -66,6 +66,8 @@ async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
             <th>${app.t`Text`}
             <th>${view.attachments}
             <th>${view.recipients}
+            <th>${app.t`Opened`}
+            <th>${app.t`Clicks`}
             <th>${view.errors}
           <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter } })}
         </table>
@@ -83,26 +85,25 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const filter = String(vars.channel ?? "");
   const sh = sqlSearch(search, ["m.title", "m.text"], { exact: ["m.id", "m.channel"] });
   const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
-  const [rows, view] = await Promise.all([
-    app.db.query`
-      SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
-        (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
-        (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
-        (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
-      FROM message m
-      LEFT JOIN grp g ON g.id = m.grp_id
-      WHERE ${where}
-      ORDER BY m.time DESC, m.id DESC
-      LIMIT ${LIST_LIMIT}`,
-    labels(app),
-  ]);
-  if (!rows.length) return html`<tr><td colspan=7>${search || filter ? view.noMatch : view.noMessages}`;
+  const rows = await app.db.query`
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
+      (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
+      (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
+      (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
+    FROM message m
+    LEFT JOIN grp g ON g.id = m.grp_id
+    WHERE ${where}
+    ORDER BY m.time DESC, m.id DESC
+    LIMIT ${LIST_LIMIT}`;
+  const [tracked, view] = await Promise.all([trackingStats(app, rows), labels(app)]);
+  if (!rows.length) return html`<tr><td colspan=9>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
   const msgUrl = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "msg=" + id;
   return html.join(rows.map((row) => {
     const errors = Number(row.error_count) || 0;
     const target = messageTarget(row, view);
+    const stats = tracked.get(Number(row.id));
     return html`<tr u2-href>
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
@@ -110,14 +111,38 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
       <td data-attachments>${Number(row.attachment_count) || 0}
       <td>${Number(row.recipient_count) || 0}
+      <td style="white-space:nowrap">${trackedStat(stats?.opened_count, stats?.opened_first)}
+      <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}
       <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
   }));
+}
+
+/** Recipient counts and first hits for the messages currently visible in the journal. */
+async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
+  if (!rows.length) return new Map();
+  const ids = sql.join(rows.map((row) => sql`${row.id}`), ", ");
+  const stats = await app.db.query`
+    SELECT d.message_id,
+      COUNT(DISTINCT CASE WHEN t.kind = ${"load"} THEN t.delivery_id END) AS opened_count,
+      MIN(CASE WHEN t.kind = ${"load"} THEN t.time END) AS opened_first,
+      COUNT(DISTINCT CASE WHEN t.kind = ${"click"} THEN t.delivery_id END) AS clicked_count,
+      MIN(CASE WHEN t.kind = ${"click"} THEN t.time END) AS clicked_first
+    FROM message_delivery d
+    JOIN message_track t ON t.delivery_id = d.id
+    WHERE d.message_id IN (${ids})
+    GROUP BY d.message_id`;
+  return new Map(stats.map((row) => [Number(row.message_id), row]));
+}
+
+function trackedStat(count: unknown, first: unknown): HtmlString {
+  const n = Number(count) || 0;
+  return first == null ? html`${n}` : html`${n}<br><small>${u2.el.time(first, { narrow: true })}</small>`;
 }
 
 /** One message with its payload and the result per recipient. */
 async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlString> {
   const app = node.app;
-  const [row, deliveries, files, tracked, view] = await Promise.all([
+  const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
       SELECT d.usr_id, d.address, d.time, d.error, u.email,
@@ -130,18 +155,22 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
       FROM message_attachment a JOIN file f ON f.id = a.file_id
       WHERE a.message_id = ${id} ORDER BY a.sort, a.file_id`,
     app.db.query`
-      SELECT t.code, t.kind, COUNT(*) AS hits FROM message_track t
+      SELECT t.code,
+        SUM(CASE WHEN t.kind = ${"load"} THEN 1 ELSE 0 END) AS loads,
+        SUM(CASE WHEN t.kind = ${"click"} THEN 1 ELSE 0 END) AS clicks
+      FROM message_track t
       JOIN message_delivery d ON d.id = t.delivery_id
       WHERE d.message_id = ${id}
-      GROUP BY t.code, t.kind ORDER BY COUNT(*) DESC`,
+      GROUP BY t.code
+      ORDER BY t.code`,
     labels(app),
   ]);
   if (!row) return html.async`<div class=u2-card><div class=-body>${app.t`Message does not exist.`}</div></div>`;
   const attachmentList = await attachments(app, files);
   // shorturl knows what a code stands for; without that module the code stands for itself
-  const targets = tracked.length
+  const targets = links.length
     ? await app.db.query`SELECT code, url FROM shorturl WHERE code IN (${
-      sql.join(tracked.map((hit) => sql`${hit.code}`), ", ")
+      sql.join(links.map((link) => sql`${link.code}`), ", ")
     })`.catch(() => [])
     : [];
   const urls = new Map(targets.map((target) => [target.code, target.url]));
@@ -171,9 +200,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
             <th>${app.t`Clicks`}
             <th>${view.error}
           <tbody>${deliveries.map((d) => html`<tr>
-            <td>${d.usr_id
-              ? html`<a href="${paramUrl(url, { usr: String(d.usr_id), msg: "" })}">${d.email ?? "#" + d.usr_id}</a>`
-              : view.anonymous}
+            <td>${recipient(d, url, view)}
             <td>${d.address ?? ""}
             <td>${u2.el.time(d.time)}
             <td>${d.opened ? u2.el.time(d.opened) : ""}
@@ -182,24 +209,29 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
         </table>
       </div>
     </div>
-    ${tracked.length ? trackedLinks(app, tracked, urls) : ""}
+    ${linkTable(app, links, urls)}
   </div>`;
 }
 
-/** What was reached and how often — one row per address, the beacon among them. */
-function trackedLinks(app: App, rows: Row[], urls: Map<unknown, unknown>): Promise<HtmlString> {
+/** Tracked links reached for this message, aggregated across every recipient. */
+async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>): Promise<HtmlString> {
+  const empty = await app.t`No links yet.`;
   return html.async`<div class=u2-card style="flex:1 1 31.25rem">
-    <div class=-head>${app.t`Tracking`}</div>
+    <div class=-head>${app.t`Links`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>
         <thead><tr>
-          <th>${app.t`Address`}
-          <th>${app.t`Kind`}
-          <th>${app.t`Hits`}
-        <tbody>${rows.map((row) => html`<tr>
-          <td>${urls.get(row.code) ?? row.code}
-          <td>${row.kind}
-          <td>${row.hits}`)}
+          <th>${app.t`Link`}
+          <th>${app.t`Loads`}
+          <th>${app.t`Clicks`}
+        <tbody>${rows.length
+          ? rows.map((row) => html`<tr>
+            <td>${urls.has(row.code)
+              ? html`<a href="${urls.get(row.code)}" target=_blank rel=noreferrer>${urls.get(row.code)}</a>`
+              : row.code}
+            <td>${row.loads}
+            <td>${row.clicks}`)
+          : html`<tr><td colspan=3>${empty}`}
       </table>
     </div>
   </div>`;
@@ -293,6 +325,12 @@ function paramUrl(url: URL, params: Record<string, string>): string {
     else next.searchParams.delete(key);
   }
   return next.pathname + next.search;
+}
+
+function recipient(row: Row, url: URL, view: View): HtmlString {
+  return row.usr_id
+    ? html`<a href="${paramUrl(url, { usr: String(row.usr_id), msg: "" })}">${row.email ?? "#" + row.usr_id}</a>`
+    : html`${view.anonymous}`;
 }
 
 async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
