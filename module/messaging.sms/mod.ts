@@ -20,18 +20,18 @@ export { setProvider, type SmsProvider };
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; phone?: string },
+  to: { grp?: number; usr?: number; all?: true; phone?: string | string[] },
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
-  const number = to.phone == null ? "" : contactKey("phone", to.phone);
-  if (to.grp == null && to.usr == null && !to.all && !number) {
+  const numbers = [...new Set([to.phone ?? []].flat().map((number) => contactKey("phone", number)))];
+  if (to.grp == null && to.usr == null && !to.all && !numbers.length) {
     throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
   }
   const time = unixTime();
 
   const [rows, { render }] = await Promise.all([
-    contactRecipients(app, "phone", to, number ? [{ address: number }] : []),
+    contactRecipients(app, "phone", to, numbers.map((address) => ({ address }))),
     renderer(app, msg, "sms"),
   ]);
   // journaled first: a tracked link carries the delivery's own id

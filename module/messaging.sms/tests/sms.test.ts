@@ -191,10 +191,9 @@ Deno.test("send reaches only verified phones selected by user, group or all", as
   assertEquals(await send(app, { all: true }, "all"), 2);
   assertEquals(delivered, ["+41791234567", "+41791234568", "+41791234567", "+41791234568"]);
 
-  // a number addresses itself: verified ones carry their owner, unknown ones go out anonymous
-  assertEquals(await send(app, { phone: " 0041 (79) 123-45-67 " }, "direct"), 1); // any notation reaches the same contact
-  assertEquals(await send(app, { phone: "+41799999999" }, "stranger"), 1);
+  // numbers address themselves: verified ones carry their owner, unknown ones go out anonymous
+  assertEquals(await send(app, { phone: [" 0041 (79) 123-45-67 ", "+41799999999", "+41791234567"] }, "direct"), 2);
   const owners = await db.query`SELECT d.usr_id, d.address FROM message m
-    JOIN message_delivery d ON d.message_id = m.id WHERE m.text IN (${"direct"}, ${"stranger"}) ORDER BY m.id`;
+    JOIN message_delivery d ON d.message_id = m.id WHERE m.text = ${"direct"} ORDER BY d.address`;
   assertEquals(owners.map((r) => [r.address, r.usr_id]), [["+41791234567", 1], ["+41799999999", null]]);
 });

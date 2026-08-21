@@ -10,11 +10,12 @@ import { send } from "@qino/qino/messaging.sms";
 
 await send(app, { usr: 42 }, "Your order shipped.");
 await send(app, { grp: 3 }, { title: "Notice", text: "The building closes at 18:00." });
+await send(app, { phone: ["+41791234567", "+41797654321"] }, "Direct notice");
 ```
 
 An SMS is text and nothing else, so a `title` becomes its first line.
 
-Recipients are `{ grp }`, `{ usr }`, `{ phone }` or `{ all: true }`. User, group and broadcast
+Recipients are `{ grp }`, `{ usr }`, `{ phone }` (one number or many) or `{ all: true }`. User, group and broadcast
 delivery reach one number per person: the main one, or the oldest when none was ever chosen.
 `{ phone }` is the number itself in any common notation and reaches it whether or not anyone
 verified it — a number that is somebody's is journaled as theirs. The result is the number of
