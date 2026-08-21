@@ -1,7 +1,7 @@
 // Public API of messaging.webpush. The qino plugin lives in ./plugin.ts.
 import { sendNotification } from "web-push-neo";
 import { sql, unixTime } from "@qino/qino";
-import { msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
+import { delivered, msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
 
 import { vapid } from "./lib/vapid.ts";
 
@@ -43,7 +43,7 @@ export async function send(
   const time = unixTime();
 
   const [rows, { render }] = await Promise.all([
-    app.db.query`SELECT s.id, s.usr_id, s.endpoint, s.p256dh, s.auth, s.error, u.firstname, u.lastname, u.company, u.email
+    app.db.query`SELECT s.id, s.usr_id, s.endpoint, s.endpoint_hash, s.p256dh, s.auth, s.error, u.firstname, u.lastname, u.company, u.email
       FROM webpush_subscription s LEFT JOIN usr u ON u.id = s.usr_id ${where}`,
     renderer(app, msg, "webpush"),
   ]);
@@ -52,35 +52,26 @@ export async function send(
   const options = { vapidDetails: await vapid(app) };
   const { text: _text, format: _format, template: _template, attachments: _attachments, ...notification } = msg; // the service worker calls showNotification(title, rest)
   const gone: number[] = [];
-  const outcomes = new Map<string, { usrId?: number; sent: boolean; errors: string[] }>();
+  const { ids } = await record(app, { channel: "webpush", direction: "out", grpId: to.grp, msg, data: { to }, time },
+    rows.map((row) => ({ usrId: Number(row.usr_id) || undefined, address: String(row.endpoint_hash), time })));
   let sent = 0;
-  await Promise.all(rows.map(async (row) => {
-    const usrId = row.usr_id == null ? undefined : Number(row.usr_id);
-    const key = usrId == null ? `sub:${row.id}` : `usr:${usrId}`;
-    const outcome = outcomes.getOrInsertComputed(key, () => ({ usrId, sent: false, errors: [] }));
+  await Promise.all(rows.map(async (row, i) => {
     try {
-      const payload = JSON.stringify({ ...notification, body: (await render(row)).text });
+      const payload = JSON.stringify({ ...notification, body: (await render({ ...row, usrId: Number(row.usr_id) || undefined, deliveryId: ids[i], grpId: to.grp })).text });
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
       sent++;
-      outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {
       // 404/410 = the browser dropped the subscription for good; anything else stays for the admin to judge
       const status = (e as { statusCode?: number }).statusCode;
       const error = `${status ?? "no status"}: ${(e as Error).message}`.slice(0, 255);
-      outcome.errors.push(error);
+      await delivered(app, ids[i], error);
       if (status === 404 || status === 410) return gone.push(Number(row.id));
       console.warn(`webpush: subscription ${row.id} rejected —`, error);
       await table.update(row.id, { error });
     }
   }));
   if (gone.length) await app.db.exec`DELETE FROM webpush_subscription WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
-  await record(app, { channel: "webpush", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    Array.from(outcomes.values(), (outcome) => ({
-      usrId: outcome.usrId,
-      error: outcome.sent ? undefined : outcome.errors.join("; "),
-      time: unixTime(),
-    })));
   return sent;
 }
 

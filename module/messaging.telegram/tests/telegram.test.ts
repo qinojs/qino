@@ -171,10 +171,17 @@ Deno.test("send targets one linked chat by row id", async () => {
   const table = db.table("telegram_chat");
   const target = await table.insert({ usr_id: 1, chat_id: 555, created: unixTime() });
   await table.insert({ usr_id: 1, chat_id: 556, created: unixTime() });
-  const bot = fakeTelegram();
+  const bot = fakeTelegram([
+    { ok: true, result: {} },
+    { ok: true, result: {} },
+    { ok: false, error_code: 500, description: "Temporary failure" },
+  ]);
   try {
     assertEquals(await send(app, { chat: Number(target) }, { text: "hi" }), 1);
     assertEquals(bot.calls.map((call) => call.params.chat_id), [555]);
+    assertEquals(await send(app, { usr: 1 }, "both"), 1);
+    const rows = await db.query`SELECT address, error FROM message_delivery WHERE message_id = 2 ORDER BY address`;
+    assertEquals(rows.map((row) => [row.address, row.error]), [["555", null], ["556", "500: Temporary failure"]]);
   } finally {
     bot.restore();
   }

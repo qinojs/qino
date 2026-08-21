@@ -140,7 +140,7 @@
             "x-index": true,
             "x-qg-parent": "usr",
             "x-qg-on-parent-delete": "setnull",
-            "description": "Only when the destination is a verified contact of that user"
+            "description": "User that owns or linked the destination, when known"
           },
           "address": {
             "type": "string",

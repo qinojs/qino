@@ -1,6 +1,6 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql, unixTime } from "@qino/qino";
-import { msgOf, record, renderer } from "@qino/qino/messaging";
+import { delivered, msgOf, record, renderer } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
@@ -40,29 +40,28 @@ export async function send(
   // Telegram has no title of its own; it becomes the first line, bold where markup is on
   const { text, title, format: _format, template: _template, attachments: _attachments, ...extra } = msg;
   const own = Boolean(extra.parse_mode); // an own parse_mode owns the text, escaping included
-  const params = async (to: Row) => {
-    const { text: plain, html } = await render(to);
+  const params = async (recipient: Row, deliveryId: number) => {
+    const { text: plain, html } = await render({ ...recipient, usrId: Number(recipient.usr_id), deliveryId, grpId: to.grp });
     const body = own ? text : html ?? plain;
     const head = title ? (html || extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title) : "";
     return { ...extra, ...(!own && html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
   };
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
-  const outcomes = new Map<number, { sent: boolean; errors: string[] }>();
+  const { ids } = await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },
+    rows.map((row) => ({ usrId: Number(row.usr_id), address: String(row.chat_id), time })));
   let sent = 0;
-  const deliver = async (row: Row) => {
-    const outcome = outcomes.getOrInsertComputed(Number(row.usr_id), () => ({ sent: false, errors: [] }));
+  const deliver = async (row: Row, i: number) => {
     try {
-      await sendMessage(app, { ...await params(row), chat_id: Number(row.chat_id) });
+      await sendMessage(app, { ...await params(row, ids[i]), chat_id: Number(row.chat_id) });
       sent++;
-      outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {
       // 403 = blocked or deactivated, 400 "chat not found" = the chat is gone for good
       const status = e instanceof BotError ? e.status : 0;
       const reason = (e as Error).message;
       const error = `${status || "no status"}: ${reason}`;
-      outcome.errors.push(error);
+      await delivered(app, ids[i], error);
       if (status === 403 || (status === 400 && /chat not found/i.test(reason))) return void gone.push(Number(row.id));
       console.warn(`telegram: chat ${row.id} rejected —`, reason);
       await table.update(row.id, { error: error.slice(0, 255) });
@@ -71,15 +70,9 @@ export async function send(
   // Telegram takes about 30 messages a second across chats — one batch per second stays under that
   for (let i = 0; i < rows.length; i += 25) {
     if (i) await new Promise((r) => setTimeout(r, 1000));
-    await Promise.all(rows.slice(i, i + 25).map(deliver));
+    await Promise.all(rows.slice(i, i + 25).map((row, j) => deliver(row, i + j)));
   }
   if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
-  await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    Array.from(outcomes, ([usrId, outcome]) => ({
-      usrId,
-      error: outcome.sent ? undefined : outcome.errors.join("; "),
-      time: unixTime(),
-    })));
   return sent;
 }
 

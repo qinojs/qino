@@ -185,9 +185,9 @@ rather than a forged one. Nothing about it is stored until it is followed.
 per recipient, and what was reached how often. A code stands for itself unless shorturl is there
 to say what it means.
 
-A message is only tracked when the channel hands the delivery's id to the renderer — email and sms
-do. Telegram and Web Push shorten their links but write no marker: their delivery rows are one per
-*user*, not one per device, so a marker there would say less than it seems to.
+Every outgoing channel hands the delivery's id to the renderer. Email and SMS record one address,
+Telegram one chat, and Web Push one browser subscription, so every tracked link identifies the
+actual destination it was rendered for.
 
 ## Templates
 

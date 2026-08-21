@@ -6,6 +6,7 @@ import { textOf } from "./lib/format.ts";
 import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
+export { contactRecipients } from "./lib/contact.ts";
 export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { asPlaceholders, renderer, saveTemplate, templated, templates } from "./lib/template.ts";

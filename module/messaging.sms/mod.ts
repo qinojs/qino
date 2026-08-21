@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
-import { addContact, ApiError, contactError, contactKey, contactOwner, errMsg, sql, unixTime } from "@qino/qino";
-import { delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode } from "@qino/qino/messaging";
+import { addContact, ApiError, contactError, contactKey, contactOwner, errMsg, unixTime } from "@qino/qino";
+import { contactRecipients, delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
 
@@ -25,36 +25,23 @@ export async function send(
 ): Promise<number> {
   const msg = msgOf(message);
   const number = to.phone == null ? "" : contactKey("phone", to.phone);
-  const target = to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`c.usr_id = ${to.usr}`
-    : number ? sql`c.address = ${number}`
-    : to.all ? sql`${true}`
-    : null;
-  if (!target) throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
+  if (to.grp == null && to.usr == null && !to.all && !number) {
+    throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
+  }
   const time = unixTime();
 
-  // one number per user: the preferred one, else the oldest
-  const preferred = number ? sql`` : sql`AND c.address = (
-    SELECT other.address FROM usr_contact other
-    WHERE other.type = ${"phone"} AND other.usr_id = c.usr_id
-    ORDER BY other.main DESC, other.created, other.address LIMIT 1)`;
   const [rows, { render }] = await Promise.all([
-    app.db.query`
-      SELECT c.usr_id, c.address, c.error, u.firstname, u.lastname, u.company, u.email FROM usr_contact c
-      LEFT JOIN usr u ON u.id = c.usr_id
-      WHERE c.type = ${"phone"} AND ${target} ${preferred}`,
+    contactRecipients(app, "phone", to, number ? [{ address: number }] : []),
     renderer(app, msg, "sms"),
   ]);
-  // a number nobody verified is still a number — it goes out, without an owner
-  if (number && !rows.length) rows.push({ usr_id: null, address: number, error: null });
   // journaled first: a tracked link carries the delivery's own id
   const { ids } = await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    rows.map((row) => ({ usrId: Number(row.usr_id) || undefined, address: String(row.address), time })));
+    rows.map((row) => ({ usrId: row.usrId, address: row.address, time })));
 
   let sent = 0;
   for (const [i, row] of rows.entries()) {
     const address = String(row.address);
-    const usrId = Number(row.usr_id) || undefined;
+    const usrId = row.usrId;
     const body = (await render({ ...row, usrId, deliveryId: ids[i], grpId: to.grp })).text;
     const text = msg.title ? `${msg.title}\n${body}` : body;
     try {
