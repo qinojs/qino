@@ -164,3 +164,18 @@ Deno.test("send delivers, clears a stale error and drops a chat that blocked the
     blocked.restore();
   }
 });
+
+Deno.test("send targets one linked chat by row id", async () => {
+  const db = await makeDb();
+  const app = makeApp(db);
+  const table = db.table("telegram_chat");
+  const target = await table.insert({ usr_id: 1, chat_id: 555, created: unixTime() });
+  await table.insert({ usr_id: 1, chat_id: 556, created: unixTime() });
+  const bot = fakeTelegram();
+  try {
+    assertEquals(await send(app, { chat: Number(target) }, { text: "hi" }), 1);
+    assertEquals(bot.calls.map((call) => call.params.chat_id), [555]);
+  } finally {
+    bot.restore();
+  }
+});

@@ -25,7 +25,7 @@ export async function send(
   const msg = msgOf(message);
   const where = to.grp != null ? sql`WHERE usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
     : to.usr != null ? sql`WHERE usr_id = ${to.usr}`
-    : to.chat != null ? sql`WHERE id = ${to.chat}`
+    : to.chat != null ? sql`WHERE c.id = ${to.chat}`
     : to.all ? sql``
     : null;
   if (!where) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
