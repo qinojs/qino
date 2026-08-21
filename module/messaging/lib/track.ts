@@ -1,8 +1,8 @@
-import { safeEqual, sha256b64url, unixTime } from "@qino/qino";
+import { Output, safeEqual, sha256b64url, unixTime } from "@qino/qino";
 
 import { secret } from "./secret.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Kind, Link } from "./links.ts";
 
 // Who reached which address: the code says which one, the marker behind it which delivery —
@@ -10,6 +10,9 @@ import type { Kind, Link } from "./links.ts";
 // invites walking 1, 2, 3.
 
 const SIG = 3;
+/** Where the open beacon lives; it is shortened like any other address, so nobody ever sees it. */
+export const PIXEL = "messaging/open.gif";
+const GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), (c) => c.charCodeAt(0));
 /** The kinds by the character standing for them in a marker — their own first one. */
 const KIND: Record<string, Kind> = { c: "click", l: "load" };
 
@@ -30,8 +33,15 @@ export function markers(app: App, links: Link[]): (deliveryId: number) => Promis
 
 const quote = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** The beacon itself: a transparent pixel, and never a cached one — each open must ask again. */
+function servePixel(ctx: Ctx): void {
+  if (ctx.req.appPath !== PIXEL) return; // every request passes here; nothing is allocated to say no
+  throw new Output(GIF, { headers: { "Content-Type": "image/gif", "Cache-Control": "no-store" } });
+}
+
 /** Note what was reached. Nothing here delays the redirect the visitor is waiting for. */
 export function trackHits(app: App, signal: AbortSignal): void {
+  app.on("route", ({ ctx }) => servePixel(ctx), { signal });
   // deno-lint-ignore no-explicit-any -- module events carry their own payloads
   app.on("shorturl:hit", async ({ link, tag }: any) => {
     // anyone may shorten: a tag this key cannot read is somebody else's, not a forged one

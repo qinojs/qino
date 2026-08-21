@@ -144,11 +144,20 @@ https://site.test/s/Ab3-x9Qm/1f4c
 client loaded, which is the difference between a reader and a mail client: `load` is systematically
 too high, because Apple Mail and Gmail's proxy fetch images nobody looked at.
 
+Every markup message carries a beacon for that second kind — a transparent pixel appended to the
+html, shortened and marked like any other address, so an open is one `load` row and needs no
+special case. It answers from `messaging/open.gif` and is never cached; a plain-text message and a
+Telegram one carry none, because neither is a page that loads images.
+
 The marker is signed, and that is its whole point: a bare delivery number invites walking 1, 2, 3
 and writing a click for somebody else. Three characters leave one guess in 262 144. A marker that
 does not check out is simply not counted, and nothing is reported: the tag behind a code belongs to
 whoever made the link, every module may shorten, and one this key cannot read is somebody else's
 rather than a forged one. Nothing about it is stored until it is followed.
+
+[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) shows it: opens and clicks
+per recipient, and what was reached how often. A code stands for itself unless shorturl is there
+to say what it means.
 
 A message is only tracked when the channel hands the delivery's id to the renderer — email and sms
 do. Telegram and Web Push shorten their links but write no marker: their delivery rows are one per
@@ -195,8 +204,8 @@ function that renders per recipient, so a mail to a thousand people costs one qu
 **Whether a message can be reproduced.** Today the journal stores the template's name, so a
 rewritten template changes how history looks. The two ways out — fixing the template (an
 immutable version per name) or storing the whole rendered text in `message_delivery.body` —
-are both open. `body` becomes the honest answer the moment recipient markers make every
-delivery a different text.
+are both open and both postponed. `body` becomes the honest answer the moment recipient markers
+make every delivery a different text.
 
 ## Channels
 
@@ -290,8 +299,10 @@ rows are swept whenever a code is requested.
   for people who have no account. `message_delivery.address` is there for it; what is
   missing is the channels accepting the short form. Never expose it through an api tree: it
   is a spam relay the moment it is reachable over HTTP.
-- **Per-recipient markers.** `Hallo {{firstname}}`, as mail already does, for every channel:
-  they all send per recipient anyway. The journal would keep the template, not the copies —
-  and the escaping has to come from the channel, since only mail wants HTML.
+- **Per-recipient markers in the message itself.** Markers work in the frame alone today: the
+  message's own text goes in as `{{content}}` untouched, and a title never sees `fill()` at all.
+  Every channel sends per recipient anyway, so both could have them — the journal would keep the
+  template, not the copies, and the escaping has to come from the channel, since only mail wants
+  HTML.
 - **mail through the journal.** `mail` declares itself as a channel but still keeps its own
   `mail_recipient` history, so the backend reads it separately.

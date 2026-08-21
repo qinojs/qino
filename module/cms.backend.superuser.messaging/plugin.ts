@@ -117,20 +117,34 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 /** One message with its payload and the result per recipient. */
 async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlString> {
   const app = node.app;
-  const [row, deliveries, files, view] = await Promise.all([
+  const [row, deliveries, files, tracked, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
-      SELECT d.usr_id, d.address, d.time, d.error, u.email
+      SELECT d.usr_id, d.address, d.time, d.error, u.email,
+        (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"load"}) AS opened,
+        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.id`,
     app.db.query`
       SELECT a.file_id, a.sort, f.name, f.mime, f.size
       FROM message_attachment a JOIN file f ON f.id = a.file_id
       WHERE a.message_id = ${id} ORDER BY a.sort, a.file_id`,
+    app.db.query`
+      SELECT t.code, t.kind, COUNT(*) AS hits FROM message_track t
+      JOIN message_delivery d ON d.id = t.delivery_id
+      WHERE d.message_id = ${id}
+      GROUP BY t.code, t.kind ORDER BY COUNT(*) DESC`,
     labels(app),
   ]);
   if (!row) return html.async`<div class=u2-card><div class=-body>${app.t`Message does not exist.`}</div></div>`;
   const attachmentList = await attachments(app, files);
+  // shorturl knows what a code stands for; without that module the code stands for itself
+  const targets = tracked.length
+    ? await app.db.query`SELECT code, url FROM shorturl WHERE code IN (${
+      sql.join(tracked.map((hit) => sql`${hit.code}`), ", ")
+    })`.catch(() => [])
+    : [];
+  const urls = new Map(targets.map((target) => [target.code, target.url]));
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-basis:50rem">
@@ -153,6 +167,8 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
             <th>${view.user}
             <th>${app.t`Address`}
             <th>${view.time}
+            <th>${app.t`Opened`}
+            <th>${app.t`Clicks`}
             <th>${view.error}
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${d.usr_id
@@ -160,9 +176,31 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
               : view.anonymous}
             <td>${d.address ?? ""}
             <td>${u2.el.time(d.time)}
+            <td>${d.opened ? u2.el.time(d.opened) : ""}
+            <td>${Number(d.clicks) || ""}
             <td>${d.error ?? ""}`)}
         </table>
       </div>
+    </div>
+    ${tracked.length ? trackedLinks(app, tracked, urls) : ""}
+  </div>`;
+}
+
+/** What was reached and how often — one row per address, the beacon among them. */
+function trackedLinks(app: App, rows: Row[], urls: Map<unknown, unknown>): Promise<HtmlString> {
+  return html.async`<div class=u2-card style="flex:1 1 31.25rem">
+    <div class=-head>${app.t`Tracking`}</div>
+    <div style="overflow:auto; padding:0">
+      <table class=u2-table>
+        <thead><tr>
+          <th>${app.t`Address`}
+          <th>${app.t`Kind`}
+          <th>${app.t`Hits`}
+        <tbody>${rows.map((row) => html`<tr>
+          <td>${urls.get(row.code) ?? row.code}
+          <td>${row.kind}
+          <td>${row.hits}`)}
+      </table>
     </div>
   </div>`;
 }

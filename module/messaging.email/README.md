@@ -53,12 +53,16 @@ fetches the mailbox on demand.
 
 ## Still missing compared with mail
 
-- **Mail options:** cc/bcc, per-message sender and reply-to, headers, tags and priority.
+- **Mail options:** per-message sender and reply-to, headers, tags and priority. **cc/bcc are
+  not planned**: a message goes to recipients, and a copy that is nobody's delivery has no row
+  in the journal to be.
+- **Bounces:** a parser for the rejections that come back, writing the reason onto the delivery
+  it belongs to and marking the address itself. Only worth it for a mailbox whose headers carry
+  the `Return-Path` the message went out with — without it, guessing which delivery bounced is
+  worse than not knowing.
 - **Durable delivery:** save a draft, add recipients and resend pending or failed deliveries.
-  The old module permits this manually; an automatic retry queue does not exist yet and belongs
-  to messaging rather than email.
-- **Opens:** the pixel every mail used to carry. Followed links are tracked
-  ([messaging](../messaging/#tracking)); a mail without images reports no open at all.
+  The old module permits this manually; an automatic retry queue does not exist yet, belongs to
+  messaging rather than email, and is postponed.
 - **Custom rendering:** recipient data inside subject and body, and programmatic templates.
 
 Templates themselves already live in messaging and are used by this channel.

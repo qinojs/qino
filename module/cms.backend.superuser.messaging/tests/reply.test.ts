@@ -2,7 +2,7 @@ import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
-import { cms } from "../plugin.ts";
+import { cms, render } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -109,4 +109,29 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     globalThis.fetch = original;
     await db.close();
   }
+});
+
+Deno.test("the message detail counts opens and clicks, and lists what was reached", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties } });
+  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
+  await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
+  await db.loadTables();
+  await db.table("usr").insert({ email: "user@qino.test" });
+  await db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
+  await db.table("message_delivery").insert({ message_id: 1, usr_id: 1, address: "user@qino.test", time: 1 });
+  await db.table("message_track").insert({ delivery_id: 1, code: "Ab3-x9Qm", kind: "load", time: 2 });
+  await db.table("message_track").insert({ delivery_id: 1, code: "Kp7-r2Ls", kind: "click", time: 3 });
+  await db.table("message_track").insert({ delivery_id: 1, code: "Kp7-r2Ls", kind: "click", time: 4 });
+
+  const app = { db, t: fakeT, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => [] } };
+  const ctx = await testContext({ url: "http://qino.test/backend?msg=1", app });
+  const html = await requestStorage.run(ctx, () => render({ app } as unknown as Node));
+
+  assertStringIncludes(String(html), "Opened");
+  // no shorturl module here, so a code stands for itself; the counts are messaging's own
+  assertStringIncludes(String(html), "Kp7-r2Ls");
+  assertStringIncludes(String(html), "<td>click\n          <td>2");
+  await db.close();
 });

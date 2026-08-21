@@ -1,6 +1,7 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
+import { Output } from "@qino/qino";
 
-import { markers, trackHits } from "../lib/track.ts";
+import { markers, PIXEL, trackHits } from "../lib/track.ts";
 import { renderer } from "../mod.ts";
 import { testApp as app } from "./deps.ts";
 
@@ -58,5 +59,34 @@ Deno.test("a hit writes who reached which address; a tag this key cannot read is
   await new Promise((r) => setTimeout(r, 10)); // the insert never delays the redirect
 
   assertEquals(await a.db.query`SELECT delivery_id, code, kind FROM message_track`, [{ delivery_id: 1, code: "c1", kind: "load" }]);
+  await a.db.close();
+});
+
+Deno.test("html carries an open beacon, plain text and telegram do not", async () => {
+  const a = await app();
+  const mail = await renderer(a, { text: "**hi**", format: "md" }, "email");
+  const html = (await mail({ deliveryId: 3 })).html ?? "";
+  const beacon = html.match(/<img src="([^"]+)" width="1"/)?.[1] ?? "";
+  assertEquals(/\/3l\S{3}$/.test(beacon), true); // delivery 3, marked as a load like any image
+  assertEquals((await mail({ deliveryId: 3 })).text.includes(beacon), false); // no page, no beacon
+
+  const chat = await renderer(a, { text: "**hi**", format: "md" }, "telegram", "telegram");
+  assertEquals((await chat({ deliveryId: 3 })).html?.includes("<img"), false);
+  await a.db.close();
+});
+
+Deno.test("the beacon answers with a transparent gif nobody caches", async () => {
+  const a = await app();
+  // deno-lint-ignore no-explicit-any
+  const handlers = new Map<string, (e: any) => unknown>();
+  // deno-lint-ignore no-explicit-any
+  trackHits({ ...a, on: (name: string, fn: (e: any) => unknown) => handlers.set(name, fn) } as unknown as App, new AbortController().signal);
+  const route = handlers.get("route")!;
+
+  assertEquals(route({ ctx: { req: { appPath: "somewhere/else" } } }), undefined);
+  const out = assertThrows(() => route({ ctx: { req: { appPath: PIXEL } } }), Output);
+  const headers = new Headers(out.headers);
+  assertEquals(headers.get("Content-Type"), "image/gif");
+  assertEquals(headers.get("Cache-Control"), "no-store");
   await a.db.close();
 });

@@ -1,8 +1,8 @@
 import { hee } from "@qino/qino";
 
 import { htmlOf, textOf, textToHtml } from "./format.ts";
-import { rewriteLinks } from "./links.ts";
-import { markers } from "./track.ts";
+import { rewriteLinks, shortenOwn } from "./links.ts";
+import { markers, PIXEL } from "./track.ts";
 
 import type { App, Row } from "@qino/qino";
 import type { Msg } from "../mod.ts";
@@ -35,14 +35,18 @@ export async function renderer(
   // the frame is part of what goes out, so its links are shortened with the message's own
   const [body, chrome] = await Promise.all([rewriteLinks(app, msg), frame ? rewriteLinks(app, frame) : undefined]);
   const render = framed(chrome?.msg, body.msg, profile);
-  const marking = markers(app, [...body.links, ...chrome?.links ?? []]);
+  // only real markup carries a beacon — a telegram message is not a page that loads images
+  const beacon = profile === "html" ? await shortenOwn(app, PIXEL) : undefined;
+  const links = [...body.links, ...chrome?.links ?? [], ...beacon ? [{ url: beacon, kind: "load" as const }] : []];
+  const marking = markers(app, links);
 
   return async (to = {}) => {
     const out = render(to);
     const id = Number(to.deliveryId);
     if (!id) return out; // no delivery to name: the links stay merely short
     const mark = await marking(id);
-    return { text: mark(out.text), html: out.html && mark(out.html) };
+    const html = out.html && mark(out.html + (beacon ? `<img src="${beacon}" width="1" height="1" alt="">` : ""));
+    return { text: mark(out.text), html };
   };
 }
 

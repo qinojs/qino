@@ -23,6 +23,13 @@ const ABSOLUTE = /^https?:\/\//i;
 // Only ever lexes; what renders markdown lives in ./format.ts.
 const markdown = new Marked({ gfm: true, breaks: true });
 
+/** One address of our own, shortened like any other — what the open beacon points at. */
+export async function shortenOwn(app: App, path: string): Promise<string | undefined> {
+  const short = shortener(app);
+  const root = await app.url().catch(() => "");
+  return short && root ? await short.shorten(app, root + path) : undefined;
+}
+
 /** The message with every address absolute and, where a shortener is linked, shortened.
  *  `links` are the shortened ones alone — only they can carry a marker. */
 export async function rewriteLinks(app: App, msg: Msg): Promise<{ msg: Msg; links: Link[] }> {

@@ -233,7 +233,7 @@
             "x-index": true
           }
         },
-        "required": ["channel", "address", "usr_id", "hash", "expires", "created"]
+        "required": ["type", "address", "usr_id", "hash", "expires", "created"]
       }
     }
   }
