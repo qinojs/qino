@@ -228,25 +228,19 @@ function that renders per recipient, so a mail to a thousand people costs one qu
 
 ## Unsubscribing
 
-Not built yet; this is the shape it has to have.
+`{{unsubscribe}}` is a link in the html part and the bare address in the text part. It drops the
+recipient from the group the message went to, and it is signed rather than stored: a newsletter to
+ten thousand people would otherwise be ten thousand rows for a link almost nobody follows, and the
+one in a mail from last year has to keep working.
 
-`{{unsubscribe}}` is a placeholder like `{{content}}`: not a column of the recipient but something
-computed while rendering — a link in the html part, the bare url in the text part, carrying a
-[ticket](../ticket/) that drops the recipient from the group the message went to (`message.grp_id`).
+**A GET only asks — nothing is dropped without a POST.** Mail clients, scanners and link previews
+fetch what they find, and a fetched link must not unsubscribe anyone.
 
-**Whether a message can be unsubscribed from is something the template says.** Not "it went to a
-group": four administrators who must not accidentally throw themselves out of the admin group are
-sent to a group too. So the placeholder *is* the declaration — where it stands, the channel adds what it
-needs, and for mail that is the `List-Unsubscribe` header plus `List-Unsubscribe-Post`. A newsletter
-template makes that decision once for every message that uses it.
-
-That is also why computed placeholders are **template-only**. One with an effect has to come from
-somewhere trustworthy, and a template is written by an administrator in the backend, while a message
-text may have been assembled from a web form. Whoever glues a visitor's text into a message that has
-placeholder expansion switched on would otherwise be handing out an unsubscribe link — and the header
-with it — for a message to the administrators.
-
-The header's own url is never shortened: one-click unsubscribing is a POST, and a redirect loses it.
+**Whether a message can be unsubscribed from is what the template says**, not "it went to a group":
+four administrators who must not throw themselves out of the admin group are sent to a group too.
+Where the placeholder stands, the channel adds what it needs — for mail the `List-Unsubscribe`
+header plus `List-Unsubscribe-Post`, from `uses` (see below). Its url is never shortened: one-click
+unsubscribing is a POST, and a redirect loses it.
 
 ## Not decided yet
 

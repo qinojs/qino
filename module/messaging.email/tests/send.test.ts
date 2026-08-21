@@ -1,5 +1,5 @@
 import { Db } from "@qino/qino";
-import { assertEquals, contactDbSchema, DbFileManager, fileDbSchema, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, messagingDbSchema as messageSchema, messagingPlaceholders } from "@qino/qino/tests";
 
 import { messages } from "@qino/qino/messaging";
 
@@ -20,15 +20,20 @@ async function makeApp(): Promise<App> {
   const app = {
     db,
     dir,
-    settings: { "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} } },
+    settings: {
+      messaging: { _secret: "test-secret" },
+      "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} },
+    },
     url: () => Promise.resolve("https://qino.test/"),
-    modules: { linked: () => [] },
+    modules: { linked: () => [{ plugin: { messagingPlaceholders } }] },
+    t: fakeT,
   } as unknown as App;
   app.dbFiles = new DbFileManager(app, dir + "/files/");
   return app;
 }
 
 async function close(app: App): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0)); // send leaves contact bookkeeping running on purpose
   await app.db.close();
   await Deno.remove(app.dir, { recursive: true });
 }
@@ -128,5 +133,28 @@ Deno.test("email carries generic attachments as MIME files", async () => {
     ["terms.txt", "text/plain", 5, 1],
   ]);
   assertEquals(await Deno.readTextFile((await app.dbFiles.file(Number(journaled.attachments[0].file_id))).path), "invoice");
+  await close(app);
+});
+
+Deno.test("unsubscribe headers ride along only where the message offers the way out", async () => {
+  const app = await makeApp();
+  await app.db.exec`INSERT INTO grp (name) VALUES ('Newsletter')`;
+  await app.db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER)`;
+  await app.db.loadTables();
+  await app.db.table("usr_grp").insert({ usr_id: 1, grp_id: 1 });
+  await app.db.table("message_template").insert({
+    name: "news", channel: "email", main: 1, format: "md", text: "{{content}}\n\n[{{unsubscribe}}]",
+  });
+  const sent: Record<string, unknown>[] = [];
+  setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
+
+  await send(app, { grp: 1 }, { title: "News", text: "Hello.", format: "md" });
+  const headers = sent[0].headers as Headers;
+  assertStringIncludes(headers.get("List-Unsubscribe") ?? "", "messaging/unsubscribe/");
+  assertEquals(headers.get("List-Unsubscribe-Post"), "List-Unsubscribe=One-Click");
+
+  // the same mail without the template: nothing to leave, so the client is offered nothing
+  await send(app, { grp: 1 }, { title: "News", text: "Hello.", format: "md", template: "" });
+  assertEquals((sent[1].headers as Headers).get("List-Unsubscribe"), null);
   await close(app);
 });

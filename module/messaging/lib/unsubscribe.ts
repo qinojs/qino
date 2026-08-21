@@ -86,9 +86,6 @@ export async function headers(app: App, usrId: number, grpId: number): Promise<R
   };
 }
 
-/** Whether a text asks for the link at all — what decides if the headers are sent. */
-export const wanted = (text: string) => text.includes(`{{${NAME}}}`);
-
 /**
  * `{{unsubscribe}}` — a link in markup, the bare address in text.
  *

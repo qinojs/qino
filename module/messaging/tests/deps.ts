@@ -5,6 +5,7 @@ import dbSchema from "../dbschema.json" with { type: "json" };
 import type { App } from "@qino/qino";
 
 export { dbSchema };
+export { messagingPlaceholders } from "../plugin.ts";
 
 /** A shortener that hands out c1, c2 … so what was traded stays readable in the assertions. */
 export function fakeShortener() {

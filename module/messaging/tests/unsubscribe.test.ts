@@ -86,7 +86,7 @@ Deno.test("the placeholder becomes a link in markup and a bare address in text",
     text: "{{content}}\n\n[{{unsubscribe}}]",
   });
 
-  const render = await renderer(a, { text: "hi", format: "md" }, "email");
+  const { render: render } = await renderer(a, { text: "hi", format: "md" }, "email");
   const out = await render({ usrId: 7, grpId: 1 });
   const url = await link(a, 7, 1);
   assertStringIncludes(out.text, url); // plain text gets the address itself

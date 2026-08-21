@@ -31,7 +31,7 @@ export async function send(
   if (!where) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
   const time = unixTime();
 
-  const [rows, render] = await Promise.all([
+  const [rows, { render }] = await Promise.all([
     app.db.query`SELECT c.id, c.usr_id, c.chat_id, c.error, u.firstname, u.lastname, u.company, u.email
       FROM telegram_chat c LEFT JOIN usr u ON u.id = c.usr_id ${where}`,
     renderer(app, msg, "telegram", "telegram"),

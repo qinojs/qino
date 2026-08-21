@@ -30,7 +30,7 @@ export async function renderer(
   msg: Msg,
   channel: string,
   profile: Profile = "html",
-): Promise<(to?: Row) => Promise<{ text: string; html?: string }>> {
+): Promise<{ render: (to?: Row) => Promise<{ text: string; html?: string }>; uses: Set<string> }> {
   const template = msg.template === "" ? undefined : await load(app, channel, msg.template);
   // the template is part of what goes out, so its links are shortened with the message's own
   const [body, chrome] = await Promise.all([rewriteLinks(app, msg), template ? rewriteLinks(app, template) : undefined]);
@@ -45,13 +45,18 @@ export async function renderer(
   const named = names(body.msg.text, chrome?.msg.text);
   const asked = Object.entries(placeholders(app)).filter(([name]) => named.has(name));
 
-  return async (to = {}) => {
-    const out = render(await computeAll(app, asked, to));
-    const id = Number(to.deliveryId);
-    if (!id) return out; // no delivery to name: the links stay merely short
-    const mark = await marking(id);
-    const html = out.html && mark(out.html + (beacon ? `<img src="${beacon}" width="1" height="1" alt="">` : ""));
-    return { text: mark(out.text), html };
+  return {
+    // what the message turned out to name, so a channel can add what a placeholder needs from it —
+    // mail sends unsubscribe headers only where there is something to unsubscribe from
+    uses: new Set(asked.map(([name]) => name)),
+    render: async (to: Row = {}) => {
+      const out = render(await computeAll(app, asked, to));
+      const id = Number(to.deliveryId);
+      if (!id) return out; // no delivery to name: the links stay merely short
+      const mark = await marking(id);
+      const html = out.html && mark(out.html + (beacon ? `<img src="${beacon}" width="1" height="1" alt="">` : ""));
+      return { text: mark(out.text), html };
+    },
   };
 }
 

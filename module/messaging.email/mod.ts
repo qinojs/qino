@@ -1,6 +1,6 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, sql, unixTime } from "@qino/qino";
-import { attachmentFile, delivered, msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
+import { attachmentFile, delivered, msgOf, record, renderer, titleOf, unsubscribeHeaders } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
@@ -30,7 +30,7 @@ export async function send(
   if (!recipients.length) return 0;
 
   const time = unixTime();
-  const [config, mailer, render] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
+  const [config, mailer, { render, uses }] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
   if (!config.sender) throw new Error("Email has no sender. Set messaging.email.sender.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const detour = debug ? `redirected to debug address ${debug.address}` : undefined;
@@ -51,6 +51,10 @@ export async function send(
   for (const [i, recipient] of recipients.entries()) {
     // every mail carries a text part: plain readers and spam filters both want one
     const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId: to.grp });
+    // only where there is something to leave: the client's one-click way to the same link
+    const leaving = uses.has("unsubscribe") && recipient.usrId && to.grp
+      ? await unsubscribeHeaders(app, recipient.usrId, to.grp)
+      : undefined;
     const error = await deliver(mailer, {
       from,
       to: formatAddress(debug ?? recipient),
@@ -58,7 +62,7 @@ export async function send(
       subject: debug ? `Debug! ${msg.title}` : msg.title,
       content: html ? { html, text } : { text },
       attachments,
-      headers: debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined,
+      headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined },
     });
     // the transport took it, so it counts as sent — but nothing reached this address, and the
     // journal says so: an error is the absence of a delivery, not only a failure

@@ -29,7 +29,7 @@ Deno.test("the template's links are shortened with the message's own, and both c
     name: "letter", channel: "email", main: true, format: "md",
     text: "{{content}}\n\n[abmelden](/unsubscribe)",
   });
-  const render = await renderer(a, { text: "[shop](/shop)", format: "md" }, "email");
+  const { render: render } = await renderer(a, { text: "[shop](/shop)", format: "md" }, "email");
   const plain = (await render({ deliveryId: 7 })).text;
   const marker = plain.match(/s\/c1\/(\S+)/)![1];
   assertEquals(plain, `shop: https://qino.test/s/c1/${marker}\n\nabmelden: https://qino.test/s/c2/${marker}`);
@@ -54,13 +54,13 @@ Deno.test("a hit writes who reached which address; a tag this key cannot read is
 
 Deno.test("html carries an open beacon, plain text and telegram do not", async () => {
   const a = await app();
-  const mail = await renderer(a, { text: "**hi**", format: "md" }, "email");
+  const { render: mail } = await renderer(a, { text: "**hi**", format: "md" }, "email");
   const html = (await mail({ deliveryId: 3 })).html ?? "";
   const beacon = html.match(/<img src="([^"]+)" width="1"/)?.[1] ?? "";
   assertEquals(/\/3l\S{3}$/.test(beacon), true); // delivery 3, marked as a load like any image
   assertEquals((await mail({ deliveryId: 3 })).text.includes(beacon), false); // no page, no beacon
 
-  const chat = await renderer(a, { text: "**hi**", format: "md" }, "telegram", "telegram");
+  const { render: chat } = await renderer(a, { text: "**hi**", format: "md" }, "telegram", "telegram");
   assertEquals((await chat({ deliveryId: 3 })).html?.includes("<img"), false);
   await a.db.close();
 });

@@ -23,15 +23,15 @@ Deno.test("a channel's main template goes around every message, and only that ch
     { name: "signature", channel: "sms", main: true, text: "{{content}}\nSupport: https://qino.test" },
     { name: "letter", channel: "email", main: true, format: "md", text: "Hallo {{firstname|Kunde}},\n\n{{content}}" },
   );
-  const sms = await renderer(a, { text: "wie gehts" }, "sms");
+  const { render: sms } = await renderer(a, { text: "wie gehts" }, "sms");
   assertEquals(await sms(to), { text: "wie gehts\nSupport: https://qino.test", html: undefined });
 
-  const mail = await renderer(a, { text: "wie gehts" }, "email");
+  const { render: mail } = await renderer(a, { text: "wie gehts" }, "email");
   assertEquals((await mail(to)).text, "Hallo Ada,\n\nwie gehts");
   assertEquals((await mail(to)).html, "<p>Hallo Ada,</p>\n<p>wie gehts</p>");
   assertEquals((await mail()).html, "<p>Hallo Kunde,</p>\n<p>wie gehts</p>"); // nobody to greet, so the fallback greets
 
-  const telegram = await renderer(a, { text: "wie gehts" }, "telegram");
+  const { render: telegram } = await renderer(a, { text: "wie gehts" }, "telegram");
   assertEquals(await telegram(to), { text: "wie gehts", html: undefined }); // no row, no template
   await a.db.close();
 });
@@ -41,7 +41,7 @@ Deno.test("a message chooses its template, drops it, or asks for one nobody wrot
     { name: "signature", channel: "sms", main: true, text: "{{content}}\n--" },
     { name: "bare", channel: "sms", text: "» {{content}}" },
   );
-  const text = (msg: Parameters<typeof renderer>[1]) => renderer(a, msg, "sms").then(async (render) => (await render()).text);
+  const text = (msg: Parameters<typeof renderer>[1]) => renderer(a, msg, "sms").then(async ({ render }) => (await render()).text);
   assertEquals(await text({ text: "hi" }), "hi\n--");
   assertEquals(await text({ text: "hi", template: "bare" }), "» hi");
   assertEquals(await text({ text: "hi", template: "" }), "hi");
@@ -51,7 +51,7 @@ Deno.test("a message chooses its template, drops it, or asks for one nobody wrot
 
 Deno.test("recipient placeholders are escaped in markup, the message is not escaped twice", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "html", text: "<p>Hi {{lastname}}</p>{{content}}" });
-  const render = await renderer(a, { text: "1 < 2 & **so**", format: "md" }, "email");
+  const { render: render } = await renderer(a, { text: "1 < 2 & **so**", format: "md" }, "email");
   assertEquals((await render(to)).html, "<p>Hi Lovelace &lt;&amp;&gt;</p><p>1 &lt; 2 &amp; <strong>so</strong></p>");
   assertEquals((await render(to)).text, "Hi Lovelace <&>\n\n1 < 2 & so"); // the template's <p> ends a paragraph
   await a.db.close();
@@ -62,10 +62,10 @@ Deno.test("a plain message in a markup template is lifted, and telegram keeps it
     { name: "letter", channel: "email", main: true, format: "html", text: "<div>{{content}}</div>" },
     { name: "chat", channel: "telegram", main: true, format: "md", text: "**{{firstname}}**\n\n{{content}}" },
   );
-  const mail = await renderer(a, { text: "a < b\nnext line" }, "email");
+  const { render: mail } = await renderer(a, { text: "a < b\nnext line" }, "email");
   assertEquals((await mail()).html, "<div>a &lt; b<br>next line</div>");
 
-  const chat = await renderer(a, { text: "a < b" }, "telegram", "telegram");
+  const { render: chat } = await renderer(a, { text: "a < b" }, "telegram", "telegram");
   assertEquals((await chat(to)).html, "<strong>Ada</strong>\n\na &lt; b");
   await a.db.close();
 });
@@ -77,26 +77,26 @@ Deno.test("a channel has one main template — a new one takes the flag over", a
   );
   await saveTemplate(a, { name: "new", channel: "sms", main: true, text: "new {{content}}" });
 
-  const render = await renderer(a, { text: "hi" }, "sms");
+  const { render: render } = await renderer(a, { text: "hi" }, "sms");
   assertEquals((await render()).text, "new hi");
   assertEquals(Number(await a.db.one`SELECT COUNT(*) FROM message_template WHERE channel = ${"sms"} AND main = ${true}`), 1);
-  assertEquals((await (await renderer(a, { text: "hi" }, "email"))()).text, "mail hi"); // another channel keeps its own
+  assertEquals((await (await renderer(a, { text: "hi" }, "email")).render()).text, "mail hi"); // another channel keeps its own
   await a.db.close();
 });
 
 Deno.test("what the template assembles is tidied; what the message says is not", async () => {
   const a = await app({ name: "letter", channel: "sms", main: true, text: "  Hallo {{firstname}},\n\n\n\n{{content}}\n\n\n\n{{company}}  \n" });
-  const render = await renderer(a, { text: "hi" }, "sms");
+  const { render: render } = await renderer(a, { text: "hi" }, "sms");
   assertEquals(await render({ firstname: "Ada" }), { text: "Hallo Ada,\n\nhi", html: undefined }); // no company, no hole
 
-  const bare = await renderer(a, { text: "a\n\n\n\nb ", template: "" }, "sms");
+  const { render: bare } = await renderer(a, { text: "a\n\n\n\nb ", template: "" }, "sms");
   assertEquals((await bare()).text, "a\n\n\n\nb "); // nobody templated it, so nobody touches it
   await a.db.close();
 });
 
 Deno.test("a template's paragraph that is only the placeholder steps aside for the message's own blocks", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "md", text: "Hallo,\n\n{{content}}\n\nTeam" });
-  const render = await renderer(a, { text: "one\n\ntwo", format: "md" }, "email");
+  const { render: render } = await renderer(a, { text: "one\n\ntwo", format: "md" }, "email");
   assertEquals((await render()).html, "<p>Hallo,</p>\n<p>one</p>\n<p>two</p>\n<p>Team</p>");
   await a.db.close();
 });
@@ -107,11 +107,11 @@ Deno.test("a value that reads like a placeholder stays text, and no inherited pr
     // a recipient row is a bag of columns, not an object whose prototype can be read out
     { name: "proto", channel: "email", text: "[{{constructor}}{{toString}}{{nothing|—}}]{{content}}" },
   );
-  const render = await renderer(a, { text: "hi" }, "email");
+  const { render: render } = await renderer(a, { text: "hi" }, "email");
   // one round, never a second: what came out of a column is not looked at again
   assertEquals((await render({ firstname: "{{content}}" })).text, "Hallo {{content}}, hi");
 
-  const proto = await renderer(a, { text: "hi", template: "proto" }, "email");
+  const { render: proto } = await renderer(a, { text: "hi", template: "proto" }, "email");
   assertEquals((await proto({ firstname: "Ada" })).text, "[—]hi");
   await a.db.close();
 });

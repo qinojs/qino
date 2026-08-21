@@ -38,7 +38,7 @@ export async function send(
     SELECT other.address FROM usr_contact other
     WHERE other.type = ${"phone"} AND other.usr_id = c.usr_id
     ORDER BY other.main DESC, other.created, other.address LIMIT 1)`;
-  const [rows, render] = await Promise.all([
+  const [rows, { render }] = await Promise.all([
     app.db.query`
       SELECT c.usr_id, c.address, c.error, u.firstname, u.lastname, u.company, u.email FROM usr_contact c
       LEFT JOIN usr u ON u.id = c.usr_id

@@ -42,7 +42,7 @@ export async function send(
   const where = sql`WHERE ${who} ${notClient(to.notClient)}`;
   const time = unixTime();
 
-  const [rows, render] = await Promise.all([
+  const [rows, { render }] = await Promise.all([
     app.db.query`SELECT s.id, s.usr_id, s.endpoint, s.p256dh, s.auth, s.error, u.firstname, u.lastname, u.company, u.email
       FROM webpush_subscription s LEFT JOIN usr u ON u.id = s.usr_id ${where}`,
     renderer(app, msg, "webpush"),
