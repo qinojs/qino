@@ -76,7 +76,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <button name=create>${t`Create`}</button>
     </form>
   </div>
-  ${markers(node)}
+  ${placeholders(node)}
 </div>`;
 }
 
@@ -129,7 +129,7 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
     </form>
   </div>
   ${preview(node, row)}
-  ${markers(node)}
+  ${placeholders(node)}
 </div>`;
 }
 
@@ -161,19 +161,19 @@ async function preview(node: Node, row: Row): Promise<HtmlString> {
   </div>`;
 }
 
-async function markers(node: Node): Promise<HtmlString> {
+async function placeholders(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const rows = await templates(app);
   const missing = channels(app).filter((c) => !rows.some((row) => row.channel === c.name && row.main));
 
   return html.async`<div class=u2-card style="flex:0 1 20rem">
-    <div class=-head>${t`Markers`}</div>
+    <div class=-head>${t`Placeholders`}</div>
     <div class=-body>
       <p><code>{{content}}</code> — ${t`the message itself, already rendered`}</p>
       <p><code>{{firstname}}</code> <code>{{lastname}}</code> <code>{{company}}</code> <code>{{email}}</code>
         <code>{{address}}</code> — ${t`the recipient; {{firstname|Kunde}} says what stands there when nobody is known`}</p>
-      <p>${t`A message without a wish gets its channel's default. These channels have none and send unframed:`}
+      <p>${t`A message without a wish gets its channel's main one. These channels have none and send without:`}
         ${missing.length ? missing.map((c) => html`<span class=u2-badge>${c.label}</span> `) : t`none`}</p>
     </div>
   </div>`;

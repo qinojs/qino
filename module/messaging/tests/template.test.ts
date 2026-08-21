@@ -47,7 +47,7 @@ Deno.test("a message chooses its template, drops it, or asks for one nobody wrot
   await a.db.close();
 });
 
-Deno.test("recipient markers are escaped in markup, the message is not escaped twice", async () => {
+Deno.test("recipient placeholders are escaped in markup, the message is not escaped twice", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "html", text: "<p>Hi {{lastname}}</p>{{content}}" });
   const render = await renderer(a, { text: "1 < 2 & **so**", format: "md" }, "email");
   assertEquals((await render(to)).html, "<p>Hi Lovelace &lt;&amp;&gt;</p><p>1 &lt; 2 &amp; <strong>so</strong></p>");
@@ -92,7 +92,7 @@ Deno.test("what the template assembles is tidied; what the message says is not",
   await a.db.close();
 });
 
-Deno.test("a template's paragraph that is only the marker steps aside for the message's own blocks", async () => {
+Deno.test("a template's paragraph that is only the placeholder steps aside for the message's own blocks", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "md", text: "Hallo,\n\n{{content}}\n\nTeam" });
   const render = await renderer(a, { text: "one\n\ntwo", format: "md" }, "email");
   assertEquals((await render()).html, "<p>Hallo,</p>\n<p>one</p>\n<p>two</p>\n<p>Team</p>");

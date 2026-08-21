@@ -172,6 +172,8 @@
   "Mails": "Mails",
   "Main": "Main",
   "Main for this channel": "Main for this channel",
+  "Placeholders": "Placeholders",
+  "A message without a wish gets its channel's main one. These channels have none and send without:": "A message without a wish gets its channel's main one. These channels have none and send without:",
   "Maintenance": "Maintenance",
   "Max cache bytes": "Max cache bytes",
   "Maximum 1000 are shown.": "Maximum 1000 are shown.",

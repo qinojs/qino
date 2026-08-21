@@ -172,6 +172,8 @@
   "Mails": "Courriels",
   "Main": "Principal",
   "Main for this channel": "Principal pour ce canal",
+  "Placeholders": "Espaces réservés",
+  "A message without a wish gets its channel's main one. These channels have none and send without:": "Un message sans souhait reçoit celui par défaut de son canal. Ces canaux n'en ont aucun et envoient sans:",
   "Maintenance": "Maintenance",
   "Max cache bytes": "Taille maximale du cache (octets)",
   "Maximum 1000 are shown.": "Un maximum de 1000 est affiché.",

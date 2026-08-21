@@ -172,6 +172,8 @@
   "Mails": "Mails",
   "Main": "Standard",
   "Main for this channel": "Standard für diesen Kanal",
+  "Placeholders": "Platzhalter",
+  "A message without a wish gets its channel's main one. These channels have none and send without:": "Eine Nachricht ohne Wunsch bekommt den Standard ihres Kanals. Diese Kanäle haben keinen und senden ohne:",
   "Maintenance": "Wartung",
   "Max cache bytes": "Max. Cache-Bytes",
   "Maximum 1000 are shown.": "Es werden maximal 1000 angezeigt.",

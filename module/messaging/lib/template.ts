@@ -9,10 +9,10 @@ import type { Msg } from "../mod.ts";
 import type { Profile } from "./format.ts";
 
 // The template a channel puts around every message: `{{content}}` is the message itself, every
-// other marker is what this channel knows about the recipient. It belongs to the channel, so the
-// same message arrives as a signed mail and as a bare line of SMS.
+// other placeholder is what this channel knows about the recipient. It belongs to the channel, so
+// the same message arrives as a signed mail and as a bare line of SMS.
 
-const MARKER = /\{\{\s*(\w+)\s*(?:\|([^}]*))?\}\}/g;
+const PLACEHOLDER = /\{\{\s*(\w+)\s*(?:\|([^}]*))?\}\}/g;
 const CONTENT = "{{content}}";
 /** Markup that opens with a block of its own — it needs no paragraph around it. */
 const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
@@ -22,8 +22,8 @@ const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
  *
  * The template is the one the message names, else the channel's main one, and none at all when the
  * message asks for none. The result has markup whenever the message or its template has any. `to` is
- * the recipient row the channel already holds — its columns are the markers, a missing one falls
- * back to what the marker names after `|`, and its `deliveryId` is what makes the links tracked.
+ * the recipient row the channel already holds — its columns are the placeholders, a missing one
+ * falls back to what it names after `|`, and its `deliveryId` is what makes the links tracked.
  */
 export async function renderer(
   app: App,
@@ -56,7 +56,7 @@ export function templated(template: Msg | undefined, msg: Msg, profile: Profile 
   const text = textOf(msg);
   const html = htmlOf(msg, profile);
   const templateText = template ? textOf(template) : CONTENT;
-  // a paragraph holding nothing but the marker is a placeholder, not a paragraph — but only when the
+  // a paragraph holding nothing but the placeholder is a hole, not a paragraph — but only when the
   // message brings blocks of its own; a lifted line of plain text still wants the template's <p>
   const shell = template && htmlOf(template, profile);
   const templateHtml = shell && BLOCK.test(html ?? "") ? shell.replaceAll(`<p>${CONTENT}</p>`, CONTENT) : shell;
@@ -64,13 +64,13 @@ export function templated(template: Msg | undefined, msg: Msg, profile: Profile 
   const markup = html !== undefined || templateHtml !== undefined;
 
   return (to = {}) => ({
-    // only what was assembled here is tidied: an unframed message goes out exactly as it was written
+    // only what was assembled here is tidied: without a template it goes out exactly as written
     text: template ? tidy(fill(templateText, text, to, false)) : text,
     html: markup ? fill(templateHtml ?? textToHtml(templateText, profile), html ?? textToHtml(text, profile), to, true) : undefined,
   });
 }
 
-/** A template whose markers came up empty leaves holes — and on sms a blank line costs money. */
+/** A template whose placeholders came up empty leaves holes — and on sms a blank line costs money. */
 const tidy = (text: string) => text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
 /** Every template, the channel variants of one name together. */
@@ -93,9 +93,9 @@ function load(app: App, channel: string, name?: string): Promise<Msg | undefined
     : app.db.row<Msg>`SELECT text, format FROM message_template WHERE channel = ${channel} AND main = ${true}`;
 }
 
-/** The message goes in as it is — it was rendered for this target already; markers do not. */
+/** The message goes in as it is — it was rendered for this target already; placeholders do not. */
 function fill(template: string, content: string, to: Row, escape: boolean): string {
-  return template.replace(MARKER, (_, key, fallback = "") => {
+  return template.replace(PLACEHOLDER, (_, key, fallback = "") => {
     if (key === "content") return content;
     const value = String(to[key] ?? "") || fallback;
     return escape ? hee(value) : value;

@@ -95,7 +95,7 @@ paragraphs, so those arrive as bold lines, bullets and blank lines — a handful
 overrides on [marked](https://marked.js.org), which does the parsing for both profiles.
 
 Two things stand between a message and the page it lands on. Raw html inside markdown is rendered
-as *text*, not markup, because a message may only say what its markers ask for. And what markdown
+as *text*, not markup, because a message may only say what its own markup asks for. And what markdown
 itself emits still passes the sanitizer, so of the addresses a link can carry only `http`, `https`,
 `mailto` and `tel` survive.
 
@@ -199,7 +199,7 @@ variant, so the same message arrives the way that channel talks:
 | signature | sms | ✓ | | `{{content}}` `Fragen? https://…` |
 | newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
 
-`{{content}}` is the message, already rendered for that channel; every other marker is a column of
+`{{content}}` is the message, already rendered for that channel; every other placeholder is a column of
 the recipient — `firstname`, `lastname`, `company`, `email`, `address` — escaped where the template is
 markup, and `{{firstname|Kunde}}` says what stands there when nobody is known.
 
@@ -210,7 +210,7 @@ send(app, { grp: 3 }, { text: "…", template: "" })            // none
 ```
 
 What the template assembles is tidied — trailing spaces, and never more than one blank line in a row,
-because a marker that came up empty leaves a hole and on sms a blank line costs money. The message's
+because a placeholder that came up empty leaves a hole and on sms a blank line costs money. The message's
 own text is never touched: without a template, it goes out exactly as it was written.
 
 `main` marks the one a message gets when it names none — one per channel, as `usr_contact.main`
@@ -227,20 +227,20 @@ function that renders per recipient, so a mail to a thousand people costs one qu
 
 Not built yet; this is the shape it has to have.
 
-`{{unsubscribe}}` is a marker like `{{content}}`: not a column of the recipient but something
+`{{unsubscribe}}` is a placeholder like `{{content}}`: not a column of the recipient but something
 computed while rendering — a link in the html part, the bare url in the text part, carrying a
 [ticket](../ticket/) that drops the recipient from the group the message went to (`message.grp_id`).
 
 **Whether a message can be unsubscribed from is something the template says.** Not "it went to a
 group": four administrators who must not accidentally throw themselves out of the admin group are
-sent to a group too. So the marker *is* the declaration — where it stands, the channel adds what it
+sent to a group too. So the placeholder *is* the declaration — where it stands, the channel adds what it
 needs, and for mail that is the `List-Unsubscribe` header plus `List-Unsubscribe-Post`. A newsletter
 template makes that decision once for every message that uses it.
 
-That is also why computed markers are **template-only**. A marker with an effect has to come from
+That is also why computed placeholders are **template-only**. One with an effect has to come from
 somewhere trustworthy, and a template is written by an administrator in the backend, while a message
 text may have been assembled from a web form. Whoever glues a visitor's text into a message that has
-marker expansion switched on would otherwise be handing out an unsubscribe link — and the header
+placeholder expansion switched on would otherwise be handing out an unsubscribe link — and the header
 with it — for a message to the administrators.
 
 The header's own url is never shortened: one-click unsubscribing is a POST, and a redirect loses it.
@@ -250,7 +250,7 @@ The header's own url is never shortened: one-click unsubscribing is a POST, and 
 **Whether a message can be reproduced.** Today the journal stores the template's name, so a
 rewritten template changes how history looks. The two ways out — fixing the template (an
 immutable version per name) or storing the whole rendered text in `message_delivery.body` —
-are both open and both postponed. `body` becomes the honest answer the moment recipient markers
+are both open and both postponed. `body` becomes the honest answer the moment recipient placeholders
 make every delivery a different text.
 
 ## Channels
@@ -348,12 +348,12 @@ rows are swept whenever a code is requested.
 - **Markers in the message itself.** They work in the template alone today: the message's own text
   goes in as `{{content}}` untouched, and a title never sees `fill()` at all. Both could have them,
   but only for the recipient's columns, and only from an allowlist — `firstname`, `lastname`,
-  `company`, `email`, `address`. Today every column of the recipient row is a marker, which is
+  `company`, `email`, `address`. Today every column of the recipient row is a placeholder, which is
   harmless because the query selects those five; the day someone writes `u.*` there, a message text
   reads out the whole user.
 - **`vars` instead of glued strings.** `send(app, to, { text: "{{name}} asks: {{message}}", vars })`
   — the caller's own values, filled in the same single pass, so a `{{…}}` inside one of them stays
-  text. Whoever builds a message out of form input and switches marker expansion on has destroyed
+  text. Whoever builds a message out of form input and switches placeholder expansion on has destroyed
   the boundary before `fill()` ever sees it, exactly as string-built SQL does; passing values is the
   way out, and the presence of `vars` is a better switch than a flag. Filling is one round, never
   recursive — that is what makes it safe.

@@ -172,6 +172,8 @@
   "Mails": "Poste",
   "Main": "Principale",
   "Main for this channel": "Principale per questo canale",
+  "Placeholders": "Segnaposto",
+  "A message without a wish gets its channel's main one. These channels have none and send without:": "Un messaggio senza richiesta riceve quello principale del suo canale. Questi canali non ne hanno e inviano senza:",
   "Maintenance": "Manutenzione",
   "Max cache bytes": "Byte massimi cache",
   "Maximum 1000 are shown.": "Vengono mostrati al massimo 1000.",

@@ -28,7 +28,7 @@ Deno.test("markdown renders to html and flattens to text", () => {
   assertEquals(titleOf(msg), "Order shipped");
 });
 
-Deno.test("markdown escapes what the markers did not ask for, in both directions", () => {
+Deno.test("markdown escapes what the markup did not ask for, in both directions", () => {
   const msg = { text: "<script>alert(1)</script> **safe**", format: "md" as const };
   // markdown's own rule: raw html opens a block, so what follows it stays literal — and escaped
   assertEquals(htmlOf(msg), "&lt;script&gt;alert(1)&lt;/script&gt; **safe**");
