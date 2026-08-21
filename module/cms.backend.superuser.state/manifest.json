@@ -7,7 +7,7 @@
   "files": [
     "manifest.json",
     "plugin.ts",
-    "pub/module.svg",
-    "pub/main.js"
+    "pub/main.js",
+    "pub/module.svg"
   ]
 }

@@ -16,8 +16,8 @@ const RECENT = 7;
 
 export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
-  <div class=u2-card cms-part=sending style="flex:0 1 auto">${sending(node)}</div>
-  <div class=u2-card cms-part=inbound style="flex:0 1 auto">${inbound(node)}</div>
+  <div class=u2-card cms-part=sending style="flex:0 1 25rem;">${sending(node)}</div>
+  <div class=u2-card cms-part=inbound style="flex:0 1 25rem">${inbound(node)}</div>
   <div class=u2-card cms-part=send>${send(node)}</div>
   <div class=u2-card cms-part=contacts>${contacts(node)}</div>
   <div class=u2-card cms-part=journal>${journal(node)}</div>
