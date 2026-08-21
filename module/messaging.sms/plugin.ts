@@ -1,4 +1,5 @@
-import { Access, countContacts, getCtx, s } from "@qino/qino";
+import { Access, contacts, countContacts, getCtx, removeContact, s, setMainContact } from "@qino/qino";
+import { pendingContacts } from "@qino/qino/messaging";
 
 import { addPhone, send, verifyPhone } from "./mod.ts";
 

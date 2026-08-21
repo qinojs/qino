@@ -1,8 +1,10 @@
-import { ApiError, Db } from "@qino/qino";
+import { ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
+import { pendingContacts } from "@qino/qino/messaging";
+
 import { deliver } from "../lib/provider.ts";
-import { addPhone, approvePhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone } from "../mod.ts";
+import { addPhone, approvePhone, send, setProvider, verifyPhone } from "../mod.ts";
 
 import type { SmsProvider } from "../mod.ts";
 
@@ -33,8 +35,8 @@ function codeFrom(text: string): string {
 }
 
 Deno.test("phone numbers normalize to E.164", () => {
-  assertEquals(phoneNumber(" 0041 (79) 123-45-67 "), "+41791234567");
-  assertThrows(() => phoneNumber("079 123 45 67"), ApiError);
+  assertEquals(contactKey("phone", " 0041 (79) 123-45-67 "), "+41791234567");
+  assertThrows(() => contactKey("phone", "079 123 45 67"), ApiError);
 });
 
 Deno.test("built-in Twilio and HTTP providers send their documented request shapes", async () => {
@@ -89,25 +91,25 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   const first = await addPhone(app, 1, "+41 79 123 45 67");
   assertEquals(first.address, "+41791234567");
   // nothing belongs to the user before the code is redeemed
-  assertEquals(await userPhones(app, 1), []);
-  assertEquals((await pendingPhones(app, 1)).map((c) => c.address), ["+41791234567"]);
+  assertEquals(await contacts(app.db, 1, "phone"), []);
+  assertEquals((await pendingContacts(app, "phone", 1)).map((c) => c.address), ["+41791234567"]);
   assertEquals(messages.length, 1);
 
   await assertRejects(() => verifyPhone(app, 1, "+41791234567", "000000"), ApiError, "Verification code is invalid");
   const verified = await verifyPhone(app, 1, "+41791234567", codeFrom(messages[0].text));
   assert(verified.created);
   assertEquals(Boolean(verified.main), true);
-  assertEquals(await pendingPhones(app, 1), []);
+  assertEquals(await pendingContacts(app, "phone", 1), []);
 
   const pending = await addPhone(app, 1, "+41791234568");
-  assertEquals((await userPhones(app, 1)).length, 1);
+  assertEquals((await contacts(app.db, 1, "phone")).length, 1);
   await assertRejects(() => addPhone(app, 2, "+41791234567"), ApiError, "Phone number is unavailable");
   // a stranger may claim the same number: refusing would let anyone lock its owner out of verifying
   await assertRejects(() => addPhone(app, 2, String(pending.address)), ApiError, "Wait before requesting");
   await db.table("usr_contact_verification").update({ type: "phone", address: pending.address, usr_id: 1 }, { sent: 1 });
   assertEquals((await addPhone(app, 2, String(pending.address))).address, "+41791234568");
-  assertEquals((await pendingPhones(app, 2)).length, 1);
-  assertEquals((await pendingPhones(app, 1)).length, 1); // both claims stand, each with its own code
+  assertEquals((await pendingContacts(app, "phone", 2)).length, 1);
+  assertEquals((await pendingContacts(app, "phone", 1)).length, 1); // both claims stand, each with its own code
 });
 
 Deno.test("one verified phone becomes main and users can switch or delete the main number", async () => {
@@ -126,16 +128,16 @@ Deno.test("one verified phone becomes main and users can switch or delete the ma
   const first = await verifyPhone(app, 1, "+41791234567", codes["+41791234567"]);
   await addPhone(app, 1, "+41791234568");
   const second = await verifyPhone(app, 1, "+41791234568", codes["+41791234568"]);
-  assertEquals((await userPhones(app, 1)).map((p) => Boolean(p.main)), [true, false]);
+  assertEquals((await contacts(app.db, 1, "phone")).map((p) => Boolean(p.main)), [true, false]);
 
   assertEquals(await send(app, { usr: 1 }, "first"), 1);
-  await setMainPhone(app, 1, String(second.address));
+  await setMainContact(app.db, 1, "phone", String(second.address));
   assertEquals(await send(app, { usr: 1 }, "second"), 1);
   assertEquals(delivered, ["+41791234567", "+41791234568"]);
 
-  await removePhone(app, 1, String(second.address));
-  assertEquals(Boolean((await userPhones(app, 1))[0].main), true);
-  assertEquals((await userPhones(app, 1))[0].address, first.address);
+  await removeContact(app.db, 1, "phone", String(second.address));
+  assertEquals(Boolean((await contacts(app.db, 1, "phone"))[0].main), true);
+  assertEquals((await contacts(app.db, 1, "phone"))[0].address, first.address);
 });
 
 Deno.test("trusted administration can approve a phone without its code", async () => {
@@ -146,7 +148,7 @@ Deno.test("trusted administration can approve a phone without its code", async (
   const approved = await approvePhone(app, 1, "+41791234567");
   assert(approved.created);
   assertEquals(Boolean(approved.main), true);
-  assertEquals(await pendingPhones(app, 1), []);
+  assertEquals(await pendingContacts(app, "phone", 1), []);
 });
 
 Deno.test("verification resends are limited and wrong attempts buy a growing wait", async () => {

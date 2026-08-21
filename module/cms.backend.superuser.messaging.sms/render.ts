@@ -1,6 +1,7 @@
 import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { pendingPhones, phones as phoneList } from "@qino/qino/messaging.sms";
+import { typeContacts } from "@qino/qino";
+import { pendingContacts } from "@qino/qino/messaging";
 
 import type { HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -88,7 +89,7 @@ export async function send(node: Node): Promise<HtmlString> {
 
 export async function phones(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  const [rows, claims] = await Promise.all([phoneList(node.app), pendingPhones(node.app)]);
+  const [rows, claims] = await Promise.all([typeContacts(node.app.db, "phone"), pendingContacts(node.app, "phone")]);
   const labels = {
     approve: await t`Approve without code`,
     main: await t`Make main number`,

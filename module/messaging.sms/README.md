@@ -58,6 +58,10 @@ code and its limits belongs to [messaging](../messaging/#verifying-a-contact) an
 with the other channels that need it. Numbers are normalized to E.164 first, so the same
 number written two ways is one claim.
 
+Reading and changing them is core's, not this module's: `contacts(db, usrId, "phone")`,
+`setMainContact`, `removeContact`, `contactKey("phone", input)`. There are no sms-flavoured
+aliases for them — the `type` argument is where one sees that `"email"` fits the same call.
+
 [cms.cont.my.phones](../cms.cont.my.phones/) provides this flow to signed-in users.
 [cms.backend.superuser.messaging.sms](../cms.backend.superuser.messaging.sms/) configures providers, sends messages
 and may approve a pending number without its code.

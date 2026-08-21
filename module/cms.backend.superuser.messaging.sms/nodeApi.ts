@@ -1,5 +1,6 @@
 import { $item, contactOwner, errMsg } from "@qino/qino";
-import { approvePhone, removePhone, send, setMainPhone } from "@qino/qino/messaging.sms";
+import { removeContact, setMainContact } from "@qino/qino";
+import { approvePhone, send } from "@qino/qino/messaging.sms";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -20,13 +21,13 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const number = String(vars.main);
       const usrId = await contactOwner(app.db, "phone", number);
       if (!usrId) return { ok: false, message: await app.t`Phone number not found.` };
-      await setMainPhone(app, usrId, number);
+      await setMainContact(app.db, usrId, "phone", number);
       return { ok: true, message: await app.t`Main number changed.` };
     }
     if (vars.delete) {
       const number = String(vars.delete);
       const usrId = await contactOwner(app.db, "phone", number);
-      if (usrId) await removePhone(app, usrId, number);
+      if (usrId) await removeContact(app.db, usrId, "phone", number);
       return { ok: true, message: await app.t`Phone number deleted.` };
     }
     if (vars.test) {
