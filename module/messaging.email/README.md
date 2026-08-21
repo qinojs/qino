@@ -56,6 +56,10 @@ fetches the mailbox on demand.
 - **Mail options:** per-message sender and reply-to, headers, tags and priority. **cc/bcc are
   not planned**: a message goes to recipients, and a copy that is nobody's delivery has no row
   in the journal to be.
+- **Unsubscribing:** the `List-Unsubscribe` header and its `List-Unsubscribe-Post` companion,
+  set where the template declares an unsubscribe way — see
+  [messaging](../messaging/#unsubscribing) for why that is a decision the template makes and not
+  one derived from "it went to a group".
 - **Bounces:** a parser for the rejections that come back, writing the reason onto the delivery
   it belongs to and marking the address itself. Only worth it for a mailbox whose headers carry
   the `Return-Path` the message went out with — without it, guessing which delivery bounced is
