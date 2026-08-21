@@ -41,11 +41,11 @@ export const settingsSchema = {
       properties: {
         address: { type: "string", description: "The address this app receives on — replies land here" },
         host: { type: "string", description: "IMAP host; without it nothing is received" },
-        port: { type: "number", description: "IMAP port, 993 by default" },
-        secure: { type: "boolean", description: "TLS; off means STARTTLS on port 143" },
+        port: { type: "number", default: 993, description: "IMAP port, 993 by default" },
+        secure: { type: "boolean", default: true, description: "TLS; off means STARTTLS on port 143" },
         user: { type: "string", description: "IMAP user; the inbound address by default" },
         pass: { type: "string" },
-        mailbox: { type: "string", description: "Mailbox to read, INBOX by default" },
+        mailbox: { type: "string", default: "INBOX", description: "IMAP folder to read; INBOX only by default" },
       },
     },
     transport: {
