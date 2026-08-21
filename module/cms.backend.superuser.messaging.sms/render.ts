@@ -1,6 +1,5 @@
-import { html } from "@qino/qino";
+import { html, typeContacts } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { typeContacts } from "@qino/qino";
 import { pendingContacts } from "@qino/qino/messaging";
 
 import type { HtmlString, Row } from "@qino/qino";
@@ -48,7 +47,7 @@ export async function provider(node: Node): Promise<HtmlString> {
         placeholder="${httpToken ? "••••••" : ""}">
       ${t`From`} <input name=httpFrom value="${await http.from}">
     </u2-fields>
-    <button type=button data-provider-save>${t`Save`}</button>
+    <button data-provider-save>${t`Save`}</button>
   </form>`;
 }
 
@@ -83,7 +82,7 @@ export async function send(node: Node): Promise<HtmlString> {
       </select>
       ${t`Text`} <textarea name=text required rows=3></textarea>
     </u2-fields>
-    <button type=button data-send>${t`Send`}</button>
+    <button data-send>${t`Send`}</button>
   </form>`;
 }
 

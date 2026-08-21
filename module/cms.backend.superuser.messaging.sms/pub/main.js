@@ -11,28 +11,23 @@ cms.initNode("backend.superuser.messaging.sms", (el) => {
     await panel.execute(button, data);
     providerFields();
   };
-  const fields = (button) => {
-    const form = button.closest("form");
-    return form.reportValidity() ? Object.fromEntries([...form.elements].filter((e) => e.name).map((e) => [e.name, e.value.trim()])) : null;
-  };
+  const fields = (form) => Object.fromEntries([...form.elements].filter((e) => e.name).map((e) => [e.name, e.value.trim()]));
 
   el.addEventListener("change", (event) => {
     if (event.target.matches("[data-provider-type]")) providerFields();
   });
+  el.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const button = event.submitter;
+    const values = fields(event.target);
+    execute(button, button.matches("[data-provider-save]") ? { providerSave: values } : { send: values });
+  });
   el.addEventListener("click", (event) => {
-    const providerSave = event.target.closest("[data-provider-save]");
-    const send = event.target.closest("[data-send]");
     const approve = event.target.closest("[data-approve]");
     const main = event.target.closest("[data-main]");
     const test = event.target.closest("[data-test]");
     const del = event.target.closest("[data-delete]");
-    if (providerSave) {
-      const values = fields(providerSave);
-      if (values) execute(providerSave, { providerSave: values });
-    } else if (send) {
-      const values = fields(send);
-      if (values) execute(send, { send: values });
-    } else if (approve) {
+    if (approve) {
       const [usr, ...rest] = approve.dataset.approve.split(":"); // the claimant, then the number
       execute(approve, { approve: { usr, number: rest.join(":") } });
     } else if (main) execute(main, { main: main.dataset.main });

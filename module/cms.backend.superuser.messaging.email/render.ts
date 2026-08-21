@@ -106,7 +106,7 @@ export async function sending(node: Node): Promise<HtmlString> {
     ${transports.map(([key, sub]) => html`<u2-fields data-transport-fields="${key}"${key === type ? "" : html.raw(" hidden")}>
       ${leaves(sub, `transport.${key}`).map((leaf) => field(leaf.path, leaf.schema, values))}
     </u2-fields>`)}
-    <button type=button data-settings-save>${t`Save`}</button>
+    <button data-settings-save>${t`Save`}</button>
   </form>
   <div class=-body>
     <small>${t`Replies go to`} <b>${replyTo || await t`nowhere — no reply-to and no inbound address`}</b>.
@@ -130,7 +130,7 @@ export async function inbound(node: Node): Promise<HtmlString> {
     <span class=u2-badge>${receiving ? t`polling` : t`off`}</span></div>
   <form class=-body>
     <u2-fields>${own.map((leaf) => field(leaf.path, leaf.schema, values))}</u2-fields>
-    <button type=button data-settings-save>${t`Save`}</button>
+    <button data-settings-save>${t`Save`}</button>
     <button type=button data-fetch>${t`Fetch now`}</button>
   </form>
   <table class=u2-table>
@@ -198,7 +198,7 @@ export async function send(node: Node): Promise<HtmlString> {
       ${t`Attachments`} <input type=file name=attachments multiple>
       ${t`Text`} <textarea name=text required rows=6></textarea>
     </u2-fields>
-    <button type=button data-send>${t`Send`}</button>
+    <button data-send>${t`Send`}</button>
   </form>`;
 }
 
@@ -242,7 +242,7 @@ export async function contacts(node: Node): Promise<HtmlString> {
       ${t`User`} <select name=usr>${users.map((u) => html`<option value="${u.id}">${userName(u)}</option>`)}</select>
       ${t`Address`} <input type=email name=address required placeholder="name@example.com">
     </u2-fields>
-    <button type=button data-contact-add>${t`Add`}</button>
+    <button data-contact-add>${t`Add`}</button>
     <small>${t`An address added here counts as verified.`}</small>
   </form>`;
 }

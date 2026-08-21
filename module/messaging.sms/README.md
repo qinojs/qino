@@ -48,8 +48,8 @@ The authenticated API flow is:
 
 1. `POST messagingSms/phones` with `{ number }` claims it and sends a six-digit code.
 2. `POST messagingSms/phones/verify` with `{ number, code }` turns the claim into a number of theirs.
-3. `PUT messagingSms/phone/<id>/main` selects the main number.
-4. `GET messagingSms/phones` lists `{ phones, pending }`; `DELETE messagingSms/phone/<id>` removes one.
+3. `PUT messagingSms/phone/<number>/main` selects the main number.
+4. `GET messagingSms/phones` lists `{ phones, pending }`; `DELETE messagingSms/phone/<number>` removes one.
 
 The number is the identity, before and after verification — a claim has no contact row yet, and
 **`usr_contact` holds verified numbers only**. They are stored as `type: "phone"`, not as "sms":
@@ -59,7 +59,7 @@ with the other channels that need it. Numbers are normalized to E.164 first, so 
 number written two ways is one claim.
 
 Reading and changing them is core's, not this module's: `contacts(db, usrId, "phone")`,
-`setMainContact`, `removeContact`, `contactKey("phone", input)`. There are no sms-flavoured
+`setMainContact`, `removeContact`, `contactKey("phone", input)`. There are no SMS-flavoured
 aliases for them — the `type` argument is where one sees that `"email"` fits the same call.
 
 [cms.cont.my.phones](../cms.cont.my.phones/) provides this flow to signed-in users.

@@ -207,7 +207,7 @@
             "type": "string",
             "maxLength": 254,
             "x-index": "primary",
-            "description": "The contact being claimed — one open claim per user, address and channel"
+            "description": "The contact being claimed — one open claim per user, address and kind"
           },
           "usr_id": {
             "type": "integer",

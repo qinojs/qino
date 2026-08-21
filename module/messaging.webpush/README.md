@@ -84,14 +84,11 @@ Deliberately not built yet — none of it is needed for the current feature set:
   reached, and who is missing — the people to remind. The send form's number counts
   subscriptions, so a member with two browsers must not count twice
   (`COUNT(DISTINCT usr_id)` against the group's member count).
-- **Delivery history.** Every message sent to a browser and what the push service
-  answered, as a trail. That subsumes the `error` column: the column would stay as the
+- **Per-browser delivery history.** What the push service answered for each subscription.
+  That subsumes the `error` column: the column would stay as the
   "is it broken right now" state, the trail answers "what happened when". Needs a table
   that grows per delivery, so it wants a retention policy from day one — and probably
-  belongs to the future `messaging` layer rather than to this channel alone.
-- **The `messaging` layer.** A channel-neutral `notify(user, msg)` with per-user channel
-  preferences, once a second channel (SMS, Telegram, e-mail) exists — the right shape is
-  only visible with two implementations.
+  belongs to `messaging` rather than to this channel alone.
 - **Auto-dismissing notifications.** Not possible: the Notification API has no expiry.
   Desktop Chrome hides them after ~20 s by itself, and `requireInteraction: true`
   prevents exactly that. Closing them programmatically would need a timer inside the

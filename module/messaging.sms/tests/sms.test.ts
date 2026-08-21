@@ -100,6 +100,7 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   assert(verified.created);
   assertEquals(Boolean(verified.main), true);
   assertEquals(await pendingContacts(app, "phone", 1), []);
+  assertEquals((await addPhone(app, 1, "+41791234567")).address, "+41791234567");
 
   const pending = await addPhone(app, 1, "+41791234568");
   assertEquals((await contacts(app.db, 1, "phone")).length, 1);

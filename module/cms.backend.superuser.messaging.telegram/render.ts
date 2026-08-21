@@ -28,7 +28,7 @@ export async function bot(node: Node): Promise<HtmlString> {
       ${t`Bot token`} <input type=password name=botToken autocomplete=off
         placeholder="123456:…" required>
     </u2-fields>
-    <button type=button data-token-save>${t`Save token`}</button>
+    <button data-token-save>${t`Save token`}</button>
   </form>`;
   const state = await Promise.all([botInfo(node.app), webhookInfo(node.app)]).catch((e: Error) => e.message);
   if (typeof state === "string") {
@@ -97,7 +97,7 @@ export async function send(node: Node): Promise<HtmlString> {
       ${t`Text`} <textarea name=text required rows=3></textarea>
       ${t`HTML`} <input type=checkbox name=html>
     </u2-fields>
-    <div><button type=button data-send>${t`Send`}</button></div>
+    <div><button data-send>${t`Send`}</button></div>
   </form>`;
 }
 

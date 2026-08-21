@@ -1,7 +1,6 @@
-import { html, unixTime } from "@qino/qino";
+import { html, typeContacts, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { typeContacts } from "@qino/qino";
 import { pendingContacts } from "@qino/qino/messaging";
 
 import { phones, provider, render, send } from "./render.ts";

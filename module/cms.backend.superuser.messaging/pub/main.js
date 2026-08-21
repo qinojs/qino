@@ -20,11 +20,12 @@ cms.initNode("backend.superuser.messaging", (el) => {
   if (scroll) scroll.scrollTop = scroll.scrollHeight;
   let busy = false;
 
-  el.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-reply]");
-    if (!button || busy) return;
-    const form = button.closest("form");
-    if (!form.reportValidity()) return;
+  el.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!form.matches(".-composer")) return;
+    event.preventDefault();
+    if (busy) return;
+    const button = form.querySelector("[data-reply]");
     busy = true;
     button.disabled = true;
     try {

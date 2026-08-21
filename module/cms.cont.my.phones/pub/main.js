@@ -27,8 +27,8 @@ cms.initNode("cont.my.phones", async (el) => {
       const { phones, pending } = await sms.phones.get();
       const verified = (p) => {
         const main = p.main || phones.length === 1;
-        return `<div data-phone="${p.id}">
-          <p><strong>${hee(p.number)}</strong>
+        return `<div data-phone="${hee(p.address)}">
+          <p><strong>${hee(p.address)}</strong>
             ${main ? `<span class=u2-badge>${hee(labels.main)}</span>` : ""}
             <small>${hee(labels.verified)} ${hee(fmt(p.created))}</small></p>
           ${main ? "" : `<button type=button data-main>${hee(labels.makeMain)}</button>`}

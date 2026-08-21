@@ -67,7 +67,7 @@ channel's own table, because a Telegram chat and a push endpoint exist only once
 `text` is required; `title` is what the channels that need one fall back on — `titleOf(msg)`
 hands out the first line of the text when none was given, so `send(app, { usr: 42 }, "…")`
 works on all of them. Everything else is the channel's own: `parse_mode` and `reply_markup`
-for Telegram, `tag` and `actions` for Web Push, `cc` for mail.
+for Telegram, `tag` and `actions` for Web Push, `replyTo` for mail.
 
 What a channel cannot express, it degrades instead of refusing: a `title` becomes the first
 line of an SMS, bold in Telegram, the subject of a mail, the heading of a notification.
@@ -115,7 +115,7 @@ journal HTML must pass it through, because a message is written by whoever sent 
 ```
 send(app, to, msg)
  ├ recipients …………………… who the `to` means: addresses, chats, endpoints
- ├ record() ……………………… the message plus one delivery row each, before anything goes out
+ ├ record() ……………………… the message plus its delivery rows; before tracked channels send
  ├ renderer(…) ………………… once per message:
  │   ├ load the template … the one the message names, else the channel's main one
  │   ├ rewriteLinks(msg) … every address absolute, then shortened
@@ -284,9 +284,9 @@ export const messagingChannel: Channel = {
 `channels(app)` lists what linked modules declare, `channel(app, name)` picks one and
 `userChannels(app, usrId)` narrows it to those that can actually reach a user.
 
-[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) is the only consumer
-today: it renders the journal per user and replies over whichever channel is reachable. It
-knows no channel by name, so a fourth one costs no backend code.
+[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) renders the journal per user
+and replies over whichever channel is reachable; `auth.otp` derives its factors from the same
+registry. Neither knows a channel by name.
 
 Channels today: [messaging.email](../messaging.email/), [messaging.sms](../messaging.sms/),
 [messaging.telegram](../messaging.telegram/) and [messaging.webpush](../messaging.webpush/).
@@ -300,8 +300,8 @@ someone else's. Telegram and Web Push need none of this: a `chat_id` comes only 
 update, an endpoint only from the browser itself.
 
 ```ts
-const code = await requestCode(app, "sms", usrId, "+41791234567");  // start or resend
-await redeemCode(app, "sms", usrId, "+41791234567", code);          // throws unless it proves it
+const code = await requestCode(app, "phone", usrId, "+41791234567");  // start or resend
+await redeemCode(app, "phone", usrId, "+41791234567", code);          // throws unless it proves it
 ```
 
 Pending claims live in `usr_contact_verification` and **nowhere else**; a proven one moves into
@@ -326,10 +326,10 @@ redeemed.
 
 The claim is spent when it is redeemed or has expired; a wrong code does not spend it but costs
 the account a growing wait, counted in core next to every other wrong proof of identity. Codes last
-ten minutes, resending is limited to once a minute, and only a keyed hash is stored. One open
-claim per address and channel: a second user asking for the same address is refused until the
-first one lapses. `pendingContacts(app, channel, usrId?)` lists what is open,
-`dropClaim(app, channel, address)` takes one as proven without its code — what an admin does.
+ten minutes, resending is limited to once a minute, and only a keyed hash is stored. One open claim
+exists per user, address and kind; the resend limit applies to the address across users.
+`pendingContacts(app, type, usrId?)` lists what is open, and `dropClaim(app, type, usrId, address)`
+takes one as proven without its code — what an admin does.
 
 ## Storage
 
@@ -347,7 +347,7 @@ stay in `DbFile`; channels decide whether they can deliver attachments.
 `message_track` — one row per hit on a tracked link: which delivery, which code, followed or
 loaded, and when.
 
-`usr_contact_verification` — open claims, keyed by channel and address. No cron job: expired
+`usr_contact_verification` — open claims, keyed by kind, address and user. No cron job: expired
 rows are swept whenever a code is requested.
 
 ## Possible extensions

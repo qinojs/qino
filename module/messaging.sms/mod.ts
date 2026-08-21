@@ -76,7 +76,7 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
   const number = contactKey("phone", input);
   const owner = await contactOwner(app.db, "phone", number);
   if (owner && owner !== usrId) throw new ApiError(409, "Phone number is unavailable");
-  if (owner) return (await app.db.row`SELECT * FROM usr_contact WHERE channel = ${"sms"} AND address = ${number}`)!;
+  if (owner) return (await app.db.row`SELECT * FROM usr_contact WHERE type = ${"phone"} AND address = ${number}`)!;
 
   const time = unixTime();
   const code = await requestCode(app, "phone", usrId, number);
@@ -107,4 +107,3 @@ export async function approvePhone(app: App, usrId: number, address: string): Pr
   if (!claimed) throw new ApiError(404, "Nothing to verify");
   return addContact(app.db, Number(claimed.usr_id), "phone", String(claimed.address));
 }
-

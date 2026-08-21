@@ -53,7 +53,7 @@ export async function channels(node: Node): Promise<HtmlString> {
     <u2-fields>
       ${t`New channel`} <input name=channel required>
     </u2-fields>
-    <div><button type=button data-channel-add>${t`Add`}</button></div>
+    <div><button data-channel-add>${t`Add`}</button></div>
   </form>`;
 }
 
@@ -95,7 +95,7 @@ export async function send(node: Node): Promise<HtmlString> {
       ${t`Text`} <textarea name=body required maxlength=65></textarea>
       ${t`Link`} <input name=url placeholder="/" maxlength=200>
     </u2-fields>
-    <div><button type=button data-send>${t`Send`}</button></div>
+    <div><button data-send>${t`Send`}</button></div>
   </form>`;
 }
 

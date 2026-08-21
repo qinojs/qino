@@ -89,6 +89,3 @@ is a state, not a log: nothing acts on it, an admin decides whether to delete th
   429 once.
 - **`pushsubscriptionchange`'s counterpart** does not exist here — a chat id is stable for
   the lifetime of the account.
-- **The `messaging` layer.** With this second channel, a channel-neutral `notify(user, msg)`
-  with per-user preferences finally has two implementations to generalize from. The shapes
-  differ where it matters: `title` + `url` versus one text with optional markup.

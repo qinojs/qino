@@ -279,7 +279,7 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
               <option value=md>Markdown</option>
             </select>
           </label>
-          <button type=button data-reply>${app.t`Send`}</button>
+          <button data-reply>${app.t`Send`}</button>
         </form>` : html.async`<div class=-body>${app.t`No reachable channel.`}</div>`}
       </div>
     </div>

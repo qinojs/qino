@@ -11,51 +11,42 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
     await panel.execute(button, data);
     transportFields();
   };
-  // the button's own form as {name: value}, validated — null when invalid
-  const values = (button) => {
-    const form = button.closest("form");
-    if (!form.reportValidity()) return null;
-    return Object.fromEntries([...form.elements].filter((e) => e.name && e.type !== "file")
-      .map((e) => [e.name, e.type === "checkbox" ? e.checked : e.value.trim()]));
-  };
+  const values = (form) => Object.fromEntries([...form.elements].filter((e) => e.name && e.type !== "file")
+    .map((e) => [e.name, e.type === "checkbox" ? e.checked : e.value.trim()]));
 
   el.addEventListener("change", (event) => {
     if (event.target.matches("[data-transport-type]")) transportFields();
   });
+  el.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const button = event.submitter;
+    const data = values(form);
+    if (button.matches("[data-settings-save]")) execute(button, { settings: data });
+    else if (button.matches("[data-send]")) {
+      button.disabled = true;
+      try {
+        const input = form.elements.attachments;
+        data.attachments = await Promise.all([...input.files].map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          content: await dataUrl(file),
+        })));
+        await execute(button, { send: data });
+      } catch (e) {
+        await panel.alert(e?.message || String(e));
+      } finally {
+        button.disabled = false;
+      }
+    } else execute(button, { contactAdd: data });
+  });
   el.addEventListener("click", async (event) => {
-    const save = event.target.closest("[data-settings-save]");
     const fetch = event.target.closest("[data-fetch]");
-    const send = event.target.closest("[data-send]");
-    const add = event.target.closest("[data-contact-add]");
     const approve = event.target.closest("[data-approve]");
     const main = event.target.closest("[data-main]");
     const test = event.target.closest("[data-test]");
     const del = event.target.closest("[data-delete]");
-    if (save) {
-      const settings = values(save);
-      if (settings) execute(save, { settings });
-    } else if (send) {
-      const message = values(send);
-      if (message) {
-        send.disabled = true;
-        try {
-          const input = send.closest("form").elements.attachments;
-          message.attachments = await Promise.all([...input.files].map(async (file) => ({
-            name: file.name,
-            type: file.type,
-            content: await dataUrl(file),
-          })));
-          await execute(send, { send: message });
-        } catch (e) {
-          await panel.alert(e?.message || String(e));
-        } finally {
-          send.disabled = false;
-        }
-      }
-    } else if (add) {
-      const contact = values(add);
-      if (contact) execute(add, { contactAdd: contact });
-    } else if (approve) {
+    if (approve) {
       const [usr, ...rest] = approve.dataset.approve.split(":"); // the claimant, then the address
       execute(approve, { approve: { usr, address: rest.join(":") } });
     } else if (fetch) execute(fetch, { fetch: true });
