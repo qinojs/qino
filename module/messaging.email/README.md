@@ -57,7 +57,8 @@ fetches the mailbox on demand.
 - **Durable delivery:** save a draft, add recipients and resend pending or failed deliveries.
   The old module permits this manually; an automatic retry queue does not exist yet and belongs
   to messaging rather than email.
-- **Tracking:** opens and followed links.
+- **Opens:** the pixel every mail used to carry. Followed links are tracked
+  ([messaging](../messaging/#tracking)); a mail without images reports no open at all.
 - **Custom rendering:** recipient data inside subject and body, and programmatic templates.
 
 Templates themselves already live in messaging and are used by this channel.
@@ -66,5 +67,5 @@ Templates themselves already live in messaging and are used by this channel.
 
 Attachments belong to the common message and are currently delivered by email only. Pass a `File`
 or `{ name, type?, content }`, where `content` is text, bytes or a `Blob`. Other channels currently
-do not deliver them. The journal stores attachments as core `DbFile`s; inline/CID images are not
-implemented yet.
+do not deliver them. The journal stores attachments as core `DbFile`s. Inline/CID images are not
+implemented and not planned — an image goes in by its address, which messaging makes absolute.
