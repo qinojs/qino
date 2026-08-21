@@ -44,7 +44,7 @@ const drop = (app: App, usrId: number, grpId: number) =>
  * One-click unsubscribing (RFC 8058) is a POST the mail client sends by itself, carrying
  * `List-Unsubscribe=One-Click`; it gets no page and no confirmation, which is the whole point.
  */
-export async function handle(ctx: Ctx): Promise<void> {
+export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   const path = ctx.req.appPath;
   if (!path.startsWith(PATH + "/")) return; // every request passes here; nothing is allocated to say no
   const app = ctx.app;
@@ -52,27 +52,27 @@ export async function handle(ctx: Ctx): Promise<void> {
   if (!target) throw new Output(await app.t`This unsubscribe link is not valid.`, { status: 404 });
 
   const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
-  if (ctx.req.method !== "POST") throw new Output(await page(app, group), { headers: HTML });
+  if (ctx.req.method !== "POST") throw new Output((await page(app, group)).html, { headers: HTML });
 
   await drop(app, target.usrId, target.grpId);
-  throw new Output(await page(app, group, true), { headers: HTML });
+  throw new Output((await page(app, group, true)).html, { headers: HTML });
 }
 
 const HTML = { "Content-Type": "text/html; charset=utf-8" };
 
 /** Its own small page: an unsubscribe link is followed by people who are done with this site. */
-function page(app: App, group: string | undefined, gone = false) {
-  const name = group ?? "";
+async function page(app: App, group: string | undefined, gone = false) {
+  const t = app.t;
+  const title = await t`Unsubscribe`;
+  const said = gone
+    ? group ? await t`You have been removed from ${group}.` : await t`You have been removed.`
+    : group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`;
   return html.async`<!doctype html>
 <html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<title>${app.t`Unsubscribe`}</title></head>
+<title>${title}</title></head>
 <body>
-  ${gone
-    ? html`<p>${name ? app.t`You have been removed from ${name}.` : app.t`You have been removed.`}</p>`
-    : html`<form method=post>
-      <p>${name ? app.t`Do you want to stop receiving messages sent to ${name}?` : app.t`Do you want to stop receiving these messages?`}</p>
-      <button>${app.t`Unsubscribe`}</button>
-    </form>`}
+  <p>${said}</p>
+  ${gone ? "" : html`<form method=post><button>${title}</button></form>`}
 </body></html>`;
 }
 

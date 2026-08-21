@@ -34,27 +34,24 @@ export function markers(app: App, links: Link[]): (deliveryId: number) => Promis
 const quote = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** The beacon itself: a transparent pixel, and never a cached one — each open must ask again. */
-function servePixel(ctx: Ctx): void {
+export function servePixel(ctx: Ctx): void {
   if (ctx.req.appPath !== PIXEL) return; // every request passes here; nothing is allocated to say no
   throw new Output(GIF, { headers: { "Content-Type": "image/gif", "Cache-Control": "no-store" } });
 }
 
 /** Note what was reached. Nothing here delays the redirect the visitor is waiting for. */
-export function trackHits(app: App, signal: AbortSignal): void {
-  app.on("route", ({ ctx }) => servePixel(ctx), { signal });
-  // deno-lint-ignore no-explicit-any -- module events carry their own payloads
-  app.on("shorturl:hit", async ({ link, tag }: any) => {
-    // anyone may shorten: a tag this key cannot read is somebody else's, not a forged one
-    const hit = tag && await read(app, String(tag));
-    if (!hit) return;
-    // a deleted delivery takes its hits with it — the row finds no parent
-    app.db.table("message_track").insert({
-      delivery_id: hit.deliveryId,
-      code: link.code,
-      kind: hit.kind,
-      time: unixTime(),
-    }).catch(() => {});
-  }, { signal });
+// deno-lint-ignore no-explicit-any -- module events carry their own payloads
+export async function trackHit(app: App, { link, tag }: any): Promise<void> {
+  // anyone may shorten: a tag this key cannot read is somebody else's, not a forged one
+  const hit = tag && await read(app, String(tag));
+  if (!hit) return;
+  // a deleted delivery takes its hits with it — the row finds no parent
+  app.db.table("message_track").insert({
+    delivery_id: hit.deliveryId,
+    code: link.code,
+    kind: hit.kind,
+    time: unixTime(),
+  }).catch(() => {});
 }
 
 /** `<delivery in base36><kind><signature>` — what a made-up number cannot have. */

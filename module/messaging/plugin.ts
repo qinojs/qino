@@ -1,4 +1,5 @@
-import { trackHits } from "./lib/track.ts";
+import { servePixel, trackHit } from "./lib/track.ts";
+import { serveUnsubscribe } from "./lib/unsubscribe.ts";
 
 import type { App } from "@qino/qino";
 
@@ -11,5 +12,6 @@ export const settingsSchema = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  trackHits(app, signal);
+  app.on("route", ({ ctx }) => (servePixel(ctx), serveUnsubscribe(ctx)), { signal });
+  app.on("shorturl:hit", (hit) => trackHit(app, hit), { signal });
 }

@@ -1,11 +1,11 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { Output } from "@qino/qino";
 
-import { markers, PIXEL, trackHits } from "../lib/track.ts";
+import { markers, PIXEL, servePixel, trackHit } from "../lib/track.ts";
 import { renderer } from "../mod.ts";
 import { testApp as app } from "./deps.ts";
 
-import type { App } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 
 Deno.test("every recipient gets their own marker, and a made-up one is not one of ours", async () => {
   const a = await app();
@@ -42,20 +42,10 @@ Deno.test("a hit writes who reached which address; a tag this key cannot read is
   const a = await app();
   await a.db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
   await a.db.table("message_delivery").insert({ message_id: 1, address: "one@qino.test", time: 1 });
-  // deno-lint-ignore no-explicit-any
-  const handlers = new Map<string, (e: any) => Promise<void>>();
-  const emitter = {
-    ...a,
-    // deno-lint-ignore no-explicit-any
-    on: (name: string, fn: (e: any) => Promise<void>) => handlers.set(name, fn),
-  } as unknown as App;
-  trackHits(emitter, new AbortController().signal);
-  const hit = handlers.get("shorturl:hit")!;
-
   const marker = (await markers(a, [{ url: "u", kind: "load" }])(1))("u").slice(2);
-  await hit({ link: { code: "c1" }, tag: marker });
-  await hit({ link: { code: "c1" }, tag: "1lXXX" }); // the id is real, the signature is not
-  await hit({ link: { code: "c1" }, tag: "campaign-7" }); // another module's tag, not a broken marker
+  await trackHit(a, { link: { code: "c1" }, tag: marker });
+  await trackHit(a, { link: { code: "c1" }, tag: "1lXXX" }); // the id is real, the signature is not
+  await trackHit(a, { link: { code: "c1" }, tag: "campaign-7" }); // another module's tag, not a broken marker
   await new Promise((r) => setTimeout(r, 10)); // the insert never delays the redirect
 
   assertEquals(await a.db.query`SELECT delivery_id, code, kind FROM message_track`, [{ delivery_id: 1, code: "c1", kind: "load" }]);
@@ -77,14 +67,8 @@ Deno.test("html carries an open beacon, plain text and telegram do not", async (
 
 Deno.test("the beacon answers with a transparent gif nobody caches", async () => {
   const a = await app();
-  // deno-lint-ignore no-explicit-any
-  const handlers = new Map<string, (e: any) => unknown>();
-  // deno-lint-ignore no-explicit-any
-  trackHits({ ...a, on: (name: string, fn: (e: any) => unknown) => handlers.set(name, fn) } as unknown as App, new AbortController().signal);
-  const route = handlers.get("route")!;
-
-  assertEquals(route({ ctx: { req: { appPath: "somewhere/else" } } }), undefined);
-  const out = assertThrows(() => route({ ctx: { req: { appPath: PIXEL } } }), Output);
+  assertEquals(servePixel({ req: { appPath: "somewhere/else" } } as unknown as Ctx), undefined);
+  const out = assertThrows(() => servePixel({ req: { appPath: PIXEL } } as unknown as Ctx), Output);
   const headers = new Headers(out.headers);
   assertEquals(headers.get("Content-Type"), "image/gif");
   assertEquals(headers.get("Cache-Control"), "no-store");
