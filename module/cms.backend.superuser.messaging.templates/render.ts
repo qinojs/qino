@@ -39,7 +39,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
 
   const rows = await templates(app);
   const url = ctx.req.url.toURL();
-  const [none, main] = await Promise.all([t`No templates yet.`, t`Default`]);
+  const [none, main] = await Promise.all([t`No templates yet.`, t`Main`]);
   const body = rows.length ? rows.map((row) => {
     url.searchParams.set("name", String(row.name));
     url.searchParams.set("channel", String(row.channel));
@@ -118,7 +118,7 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
       <u2-fields>
         ${t`Format`} <select name=format>${FORMATS.map((f) =>
           html`<option value="${f}"${f === (row.format ?? "") ? html.raw(" selected") : ""}>${f || "text"}</option>`)}</select>
-        ${t`Default of this channel`} <input type=checkbox name=main${row.main ? html.raw(" checked") : ""}>
+        ${t`Main for this channel`} <input type=checkbox name=main${row.main ? html.raw(" checked") : ""}>
       </u2-fields>
       <u2-code class=-editor${row.format ? html.raw(` language=${row.format === "html" ? "html" : "markdown"}`) : ""}><textarea name=text>${row.text ?? ""}</textarea></u2-code>
       <div class=-actions>
