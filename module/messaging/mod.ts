@@ -7,8 +7,9 @@ import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
-export { templated, renderer, saveTemplate, templates } from "./lib/template.ts";
+export { asPlaceholders, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
+export type { Placeholder } from "./lib/template.ts";
 
 /** A named file carried by channels that support attachments. */
 export type Attachment = File | {

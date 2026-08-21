@@ -3,6 +3,7 @@ import { hee, html, Output, safeEqual, sha256b64url } from "@qino/qino";
 import { secret } from "./secret.ts";
 
 import type { App, Ctx } from "@qino/qino";
+import type { Placeholder } from "./template.ts";
 
 // Leaving the group a message was sent to. The link says who and which group, and signs it — no
 // row is written for it, because a newsletter to ten thousand people would be ten thousand rows
@@ -11,7 +12,8 @@ import type { App, Ctx } from "@qino/qino";
 // A GET only asks. Nothing is dropped without a POST: mail clients, scanners and link previews
 // fetch what they find, and a fetched link must not unsubscribe anyone.
 
-const PATH = "messaging/unsubscribe";
+const NAME = "unsubscribe";
+const PATH = "messaging/" + NAME;
 const SIG = 8;
 
 /** The link for one recipient, ready to be put where `{{unsubscribe}}` stands. */
@@ -85,10 +87,18 @@ export async function headers(app: App, usrId: number, grpId: number): Promise<R
 }
 
 /** Whether a text asks for the link at all — what decides if the headers are sent. */
-export const wanted = (text: string) => text.includes("{{unsubscribe}}");
+export const wanted = (text: string) => text.includes(`{{${NAME}}}`);
 
-/** The placeholder's two forms: markup gets a link, plain text gets the address. */
-export const forms = (url: string, label: string) => ({
-  text: url,
-  html: `<a href="${hee(url)}">${hee(label)}</a>`,
-});
+/**
+ * `{{unsubscribe}}` — a link in markup, the bare address in text.
+ *
+ * The channel puts `usrId` and `grpId` into the recipient row, the same way it hands over
+ * `deliveryId`; without them there is no group to leave and the placeholder stays empty.
+ */
+export const placeholder: Placeholder = async (app, to) => {
+  const usrId = Number(to.usrId);
+  const grpId = Number(to.grpId);
+  if (!usrId || !grpId) return;
+  const url = await link(app, usrId, grpId);
+  return { text: url, html: `<a href="${hee(url)}">${hee(await app.t`Unsubscribe`)}</a>` };
+};

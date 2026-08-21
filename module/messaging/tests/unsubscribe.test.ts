@@ -2,7 +2,9 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { Db, Output } from "@qino/qino";
 import { fakeT, testContext } from "@qino/qino/tests";
 
+import { renderer } from "../mod.ts";
 import { headers, link, serveUnsubscribe } from "../lib/unsubscribe.ts";
+import { messagingPlaceholders } from "../plugin.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
@@ -18,6 +20,7 @@ async function app(): Promise<App> {
     t: fakeT,
     settings: { messaging: { _secret: "test-secret" } },
     url: () => Promise.resolve("https://qino.test/"),
+    modules: { linked: () => [{ plugin: { messagingPlaceholders } }] },
   } as unknown as App;
 }
 
@@ -71,5 +74,25 @@ Deno.test("the headers carry the same link, and say it may be posted to", async 
   const set = await headers(a, 7, 1);
   assertEquals(set["List-Unsubscribe"], `<${await link(a, 7, 1)}>`);
   assertEquals(set["List-Unsubscribe-Post"], "List-Unsubscribe=One-Click");
+  await a.db.close();
+});
+
+Deno.test("the placeholder becomes a link in markup and a bare address in text", async () => {
+  const a = await app();
+  await a.db.exec`CREATE TABLE message_template (name TEXT, channel TEXT, main INTEGER, format TEXT, text TEXT)`;
+  await a.db.loadTables();
+  await a.db.table("message_template").insert({
+    name: "news", channel: "email", main: 1, format: "md",
+    text: "{{content}}\n\n[{{unsubscribe}}]",
+  });
+
+  const render = await renderer(a, { text: "hi", format: "md" }, "email");
+  const out = await render({ usrId: 7, grpId: 1 });
+  const url = await link(a, 7, 1);
+  assertStringIncludes(out.text, url); // plain text gets the address itself
+  assertStringIncludes(out.html ?? "", `href="${url}"`);
+
+  // nothing to leave: no group in the row, no link — and the placeholder simply stays empty
+  assertEquals((await render({ usrId: 7 })).text.includes(url), false);
   await a.db.close();
 });

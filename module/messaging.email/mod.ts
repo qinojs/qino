@@ -50,7 +50,7 @@ export async function send(
   let sent = 0;
   for (const [i, recipient] of recipients.entries()) {
     // every mail carries a text part: plain readers and spam filters both want one
-    const { text, html } = await render({ ...recipient, deliveryId: ids[i] });
+    const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId: to.grp });
     const error = await deliver(mailer, {
       from,
       to: formatAddress(debug ?? recipient),

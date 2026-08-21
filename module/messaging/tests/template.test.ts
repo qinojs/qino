@@ -3,6 +3,7 @@ import { Db } from "@qino/qino";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { renderer, saveTemplate } from "../mod.ts";
+import { messagingPlaceholders } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
 
@@ -13,10 +14,11 @@ async function app(...rows: Record<string, unknown>[]): Promise<App> {
   await db.migrate(dbSchema);
   await db.loadTables();
   for (const row of rows) await db.table("message_template").insert(row);
-  return { db, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => [] } } as unknown as App;
+  const linked = [{ plugin: { messagingPlaceholders } }]; // what the module itself declares
+  return { db, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => linked } } as unknown as App;
 }
 
-Deno.test("a channel's main template templates every message, and only that channel's", async () => {
+Deno.test("a channel's main template goes around every message, and only that channel's", async () => {
   const a = await app(
     { name: "signature", channel: "sms", main: true, text: "{{content}}\nSupport: https://qino.test" },
     { name: "letter", channel: "email", main: true, format: "md", text: "Hallo {{firstname|Kunde}},\n\n{{content}}" },

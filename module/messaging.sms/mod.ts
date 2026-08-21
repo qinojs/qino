@@ -55,7 +55,7 @@ export async function send(
   for (const [i, row] of rows.entries()) {
     const address = String(row.address);
     const usrId = Number(row.usr_id) || undefined;
-    const body = (await render({ ...row, deliveryId: ids[i] })).text;
+    const body = (await render({ ...row, usrId, deliveryId: ids[i], grpId: to.grp })).text;
     const text = msg.title ? `${msg.title}\n${body}` : body;
     try {
       await deliver(app, address, text);

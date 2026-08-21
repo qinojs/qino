@@ -40,9 +40,13 @@ export async function renderer(
   const beacon = profile === "html" ? await shortenOwn(app, PIXEL) : undefined;
   const links = [...body.links, ...chrome?.links ?? [], ...beacon ? [{ url: beacon, kind: "load" as const }] : []];
   const marking = markers(app, links);
+  // only the ones actually named: working out a value per recipient is not worth spending on
+  // a template that never mentions it
+  const named = names(body.msg.text, chrome?.msg.text);
+  const asked = Object.entries(placeholders(app)).filter(([name]) => named.has(name));
 
   return async (to = {}) => {
-    const out = render(to);
+    const out = render(await computeAll(app, asked, to));
     const id = Number(to.deliveryId);
     if (!id) return out; // no delivery to name: the links stay merely short
     const mark = await marking(id);
@@ -51,8 +55,23 @@ export async function renderer(
   };
 }
 
+/** A placeholder the renderer works out per recipient, in the two forms a message goes out in. */
+export type Computed = Record<string, { text: string; html: string }>;
+
+/**
+ * What a module contributes as `export const messagingPlaceholders`, keyed by the name a template
+ * writes between braces. It answers per recipient and in both forms, because a value that is a
+ * link in markup is a bare address in text. Nothing back means the hole stays empty — a recipient
+ * this placeholder has nothing to say about.
+ */
+export type Placeholder = (app: App, to: Row) => Promise<{ text: string; html: string } | undefined>;
+
 /** The same with the template in hand — what a preview of an unwritten template needs. */
-export function templated(template: Msg | undefined, msg: Msg, profile: Profile = "html"): (to?: Row) => { text: string; html?: string } {
+export function templated(
+  template: Msg | undefined,
+  msg: Msg,
+  profile: Profile = "html",
+): (placeholders?: Computed) => { text: string; html?: string } {
   const text = textOf(msg);
   const html = htmlOf(msg, profile);
   const templateText = template ? textOf(template) : CONTENT;
@@ -63,12 +82,12 @@ export function templated(template: Msg | undefined, msg: Msg, profile: Profile 
   // markup on either side makes it a markup message; the plain side is lifted to match
   const markup = html !== undefined || templateHtml !== undefined;
 
-  return (to = {}) => ({
+  return (computed = {}) => ({
     // only what was assembled here is tidied: without a template it goes out exactly as written
-    text: template ? tidy(fill(templateText, { ...recipient(to), content: text })) : text,
+    text: template ? tidy(fill(templateText, { ...form(computed, "text"), content: text })) : text,
     html: markup
       ? fill(templateHtml ?? textToHtml(templateText, profile), {
-        ...recipient(to, hee),
+        ...form(computed, "html"),
         content: html ?? textToHtml(text, profile),
       })
       : undefined,
@@ -112,8 +131,29 @@ function fill(template: string, placeholders: Record<string, string>): string {
     (Object.hasOwn(placeholders, key) ? placeholders[key] : "") || fallback);
 }
 
-/** What a message may say about who it is going to — the columns, and no other. */
-const COLUMNS = ["firstname", "lastname", "company", "email", "address"];
+/** Which placeholders these texts name at all — the same reading `fill()` does. */
+const names = (...texts: (string | undefined)[]) =>
+  new Set(texts.flatMap((text) => [...(text ?? "").matchAll(PLACEHOLDER)].map((hit) => hit[1])));
 
-const recipient = (to: Row, escape: (v: unknown) => string = String) =>
-  Object.fromEntries(COLUMNS.map((key) => [key, escape(to[key] ?? "")]));
+/** What every linked module offers, by the name a template writes between braces. */
+function placeholders(app: App): Record<string, Placeholder> {
+  return Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.messagingPlaceholders));
+}
+
+/** Work the asked-for ones out for this recipient; one that has nothing to say leaves its hole. */
+async function computeAll(app: App, asked: [string, Placeholder][], to: Row): Promise<Computed> {
+  const values: Computed = {};
+  for (const [name, make] of asked) {
+    const value = await make(app, to);
+    if (value) values[name] = value;
+  }
+  return values;
+}
+
+/** Plain values as placeholders — what a preview hands in, having no real recipient to ask. */
+export const asPlaceholders = (row: Row): Computed =>
+  Object.fromEntries(Object.entries(row).map(([key, value]) => [key, { text: String(value ?? ""), html: hee(value) }]));
+
+/** A placeholder is already markup or already text — pick the side being built. */
+const form = (computed: Computed, side: "text" | "html") =>
+  Object.fromEntries(Object.entries(computed).map(([key, both]) => [key, both[side]]));

@@ -1,6 +1,6 @@
 import { getCtx, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { channels, saveTemplate, templated, templates } from "@qino/qino/messaging";
+import { asPlaceholders, channels, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -142,7 +142,7 @@ async function preview(node: Node, row: Row): Promise<HtmlString> {
   const format = (row.format || undefined) as "md" | "html" | undefined;
   const template = { text: String(row.text ?? ""), format };
   const render = templated(template, await sampleMsg(app, format), channel === "telegram" ? "telegram" : "html");
-  const { text, html: markup } = render(SAMPLE);
+  const { text, html: markup } = render(asPlaceholders(SAMPLE));
   const simulated = channel === "email";
 
   // the markup card stays in the document even with nothing to show: a format switch brings it back
