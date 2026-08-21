@@ -1,9 +1,8 @@
 /** Signing in: the form, the password, the session. What may prove an identity is factors.ts. */
-import { timingSafeEqual } from "node:crypto";
-
 import { proofFailed, proofPassed, proofWait } from "./attempts.ts";
 import { bcrypt } from "../../deps.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
+import { safeEqual } from "../crypto.ts";
 import { unixTime } from "../util.ts";
 
 import type { App } from "../App.ts";
@@ -141,11 +140,4 @@ export async function pwVerify(pw: string, hash: string) {
 
 function pwNeedsRehash(hash: string) {
   return !/^\$2[aby]\$/.test(hash);
-}
-
-const enc = new TextEncoder();
-/** Constant-time token compare (CSRF etc.); coerces untrusted input to string. */
-export function safeEqual(a: unknown, b: string): boolean {
-  const ab = enc.encode(String(a ?? "")), bb = enc.encode(b);
-  return ab.byteLength === bb.byteLength && timingSafeEqual(ab, bb);
 }

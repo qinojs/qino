@@ -11,12 +11,8 @@ function session() {
   } } };
 }
 
-function app() {
-  let value = "";
-  const setting = Object.assign((next: string) => void (value = next), {
-    then: (resolve: (value: string) => void) => resolve(value),
-  });
-  return { settings: { core: { _secret: setting } } } as unknown as App;
+function app(secret: string) {
+  return { settings: { core: { _secret: secret } } } as unknown as App;
 }
 
 Deno.test("session grants belong to one session and resource", async () => {
@@ -37,11 +33,11 @@ Deno.test("session grants distinguish unsigned, forged and expired values", asyn
 });
 
 Deno.test("permanent grants belong to one app and resource", async () => {
-  const own = app();
+  const own = app("one");
   const proof = await grant.sign(own, "example\0one");
   assertEquals(proof.sig.length, 22);
   assertEquals(await grant.verify(own, "example\0one", proof), "ok");
   assertEquals(await grant.verify(own, "example\0two", proof), "forged");
-  assertEquals(await grant.verify(app(), "example\0one", proof), "forged");
+  assertEquals(await grant.verify(app("two"), "example\0one", proof), "forged");
   assertEquals(await grant.verify(own, "example\0one", {}), "unsigned");
 });

@@ -41,23 +41,24 @@ export async function receive(app: App, { limit = 50 }: { limit?: number } = {})
 
   await client.connect();
   const lock = await client.getMailboxLock(config.mailbox);
-  let taken = 0;
+  const done: number[] = [];
   try {
+    // No other IMAP command may run while a fetch streams — flag the uids once the loop is closed.
     for await (const message of client.fetch({ seen: false }, { uid: true, source: true })) {
-      if (taken >= limit) break;
+      if (done.length >= limit) break;
       try {
         await journal(app, await simpleParser(message.source), config.address);
-        await client.messageFlagsAdd({ uid: String(message.uid) }, ["\\Seen"], { uid: true });
-        taken++;
+        done.push(message.uid);
       } catch (e) {
         console.error("[email] inbound message failed —", e);
       }
     }
+    if (done.length) await client.messageFlagsAdd(done.join(","), ["\\Seen"], { uid: true });
   } finally {
     lock.release();
     await client.logout();
   }
-  return taken;
+  return done.length;
 }
 
 /** One incoming mail as a journal entry, tied to the user the address belongs to. */

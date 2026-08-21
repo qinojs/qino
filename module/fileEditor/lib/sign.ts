@@ -14,9 +14,7 @@ export function sign(ctx: Ctx, file: string): { exp: string; sig: string } {
 
 /** "expired" is a stale link someone kept; "forged" means the mac never matched
  *  this session's key — nobody produces that by waiting or bookmarking. */
-export type Check = grant.SessionState;
-
-export function check(ctx: Ctx, file: string, exp: unknown, sig: unknown): Check {
+export function check(ctx: Ctx, file: string, exp: unknown, sig: unknown) {
   return grant.verify(ctx.sess, resource(file), { exp, sig });
 }
 

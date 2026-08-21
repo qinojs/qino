@@ -1,5 +1,6 @@
 import { bildJsonItem } from "../deps.ts";
-import { header, cookiePrefix, uid, unixTime } from "./util.ts";
+import { uid } from "./crypto.ts";
+import { header, cookiePrefix, unixTime } from "./util.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { Ctx } from "./ctx/Ctx.ts";

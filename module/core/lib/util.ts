@@ -132,24 +132,6 @@ export function moduleIcon(mod: { manifest: Manifest; modUrl: string } | undefin
   if (url) return html`<use href="${url}#main" />`;
 }
 
-/** base64url (RFC 4648) — no padding, URL-safe alphabet. */
-export const b64url = (bytes: Uint8Array): string => bytes.toBase64({ alphabet: "base64url", omitPadding: true });
-export const unb64url = (str: string): Uint8Array<ArrayBuffer> => Uint8Array.fromBase64(str, { alphabet: "base64url" });
-
-/** n random bytes as base64url. */
-export const randB64 = (n: number): string => b64url(crypto.getRandomValues(new Uint8Array(n)));
-
-const digest = async (str: string): Promise<Uint8Array> =>
-  new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)));
-
-/** SHA-256 of a string as base64 — 44 chars. What CSP hash-sources and SRI `integrity` expect. */
-export const sha256b64 = async (str: string): Promise<string> => (await digest(str)).toBase64();
-
-/** SHA-256 as base64url — 43 chars, safe as a column key or URL parameter. Required for PKCE. */
-export const sha256b64url = async (str: string): Promise<string> => b64url(await digest(str));
-
-export const uid = (length?: number): string => randB64(16).slice(0, length);
-
 /* Control flow signals */
 export class Output extends Error {
   body: BodyInit | undefined;

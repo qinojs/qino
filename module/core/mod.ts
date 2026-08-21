@@ -11,10 +11,10 @@ export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { Emitter } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
-export * as grant from "./lib/crypto/grant.ts";
+export { b64url, grant, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";
 
 // HTML & general utilities
-export { hee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, uid, b64url, unb64url, randB64, sha256b64url, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";
+export { hee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";
 // HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
 export type { HtmlString } from "./lib/util.ts";
 
@@ -58,7 +58,7 @@ export { isModuleName, Module } from "./lib/ModuleManager.ts";
 export { Store } from "./lib/StoreManager.ts";
 
 // Auth
-export { authFactors, beforeProof, identified, login, loginProof, proofFailed, proofPassed, pwHash, pwVerify, requireStepUp, safeEqual, userFactors } from "./lib/auth/mod.ts";
+export { authFactors, beforeProof, identified, login, loginProof, proofFailed, proofPassed, pwHash, pwVerify, requireStepUp, userFactors } from "./lib/auth/mod.ts";
 export type { AuthFactor, Offer } from "./lib/auth/factors.ts";
 
 // File transforms

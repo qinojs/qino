@@ -55,9 +55,11 @@ function renderTable(app: App, result: TableSearch, terms: string[]): Promise<Ht
 
   return html.async`<div class=u2-card>
     <div class=-head>${result.table} <small>${result.rows.length} ${t`rows`}${more}</small></div>
-    <div class=-body><small>${how}</small></div>
     ${body}
-    <div class=-body><small>${result.ms.toFixed(1)} ms</small></div>
+    <div>
+      <small>${result.ms.toFixed(1)} ms</small>
+      <small>${how}</small>
+    </div>
   </div>`;
 }
 

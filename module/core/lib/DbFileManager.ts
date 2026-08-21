@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { typeByExtension, sql } from "../deps.ts";
-import * as grant from "./crypto/grant.ts";
+import { grant } from "./crypto.ts";
 import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
@@ -73,10 +73,11 @@ export class DbFileManager {
     if (!await f.exists()) return new Response(null, { status: 404 });
     if (f.vs?.access != "1") {
       const ctx = getCtx();
+      const query = ctx.req.query;
       const resource = grantResource(id, parts);
-      const granted = ctx.req.query.exp
-        ? grant.verify(ctx.sess, resource, ctx.req.query) === "ok"
-        : await grant.verify(ctx.app, permanentResource(resource, f.vs?.md5), ctx.req.query) === "ok";
+      const granted = query.exp
+        ? grant.verify(ctx.sess, resource, query) === "ok"
+        : await grant.verify(ctx.app, permanentResource(resource, f.vs?.md5), query) === "ok";
       if (!granted && !await f.access()) return new Response(null, { status: 403 });
     }
 

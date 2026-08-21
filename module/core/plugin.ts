@@ -1,5 +1,6 @@
 // qino-module manifest for core. The public library API lives in ./mod.ts.
-import { isOn, Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
+import { randB64, sha256b64 } from "./lib/crypto.ts";
+import { isOn, Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
@@ -45,7 +46,7 @@ export const settingsSchema = {
         },
         _secret: {
             type: "string",
-            description: "Key for permanent app grants — generated on first use.",
+            description: "Key for permanent app grants — generated automatically.",
         },
         HSTS: {
             description: "Settings for the Strict-Transport-Security header.",
@@ -119,6 +120,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     registerRows(app.db);
 
     const settings = app.settings.core;
+    if (!await settings._secret) await settings._secret(randB64(32));
 
     app.on("html-ready", ({ ctx }) => {
         // a login owed another factor asks for it wherever it lands, not only on the login page
