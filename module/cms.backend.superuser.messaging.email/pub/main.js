@@ -5,7 +5,11 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
   // re-rendered parts lose the shown/hidden state of the transport fields
   const transportFields = () => {
     const type = el.querySelector("[data-transport-type]")?.value;
-    for (const fields of el.querySelectorAll("[data-transport-fields]")) fields.hidden = fields.dataset.transportFields !== type;
+    for (const fields of el.querySelectorAll("[data-transport-fields]")) {
+      const hidden = fields.dataset.transportFields !== type;
+      fields.hidden = hidden;
+      fields.style.display = hidden ? "none" : "";
+    }
   };
   const execute = async (button, data) => {
     await panel.execute(button, data);

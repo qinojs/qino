@@ -25,16 +25,16 @@ The subject is the message's `title`, or the first line of its text when it has 
 rule every channel follows. `format` decides the body: `md` and `html` mails carry an HTML part
 plus the plain-text alternative every mail needs, plain text goes out as text alone.
 
-`replyTo` on the message overrides the setting, for the mails whose answer belongs somewhere other
+`replyTo` on the message overrides the inbound address, for the mails whose answer belongs somewhere other
 than the app's mailbox — a contact form replies to whoever filled it in, not to the site.
 
 ## Receiving
 
-`inbound.address` is the address the app receives on, and it is what outgoing mail carries as
-`Reply-To` unless `reply_to` says otherwise. That is the whole point of configuring it: a reply
-comes back to a mailbox this module reads, and lands in the same conversation as everything else.
+`address` is the system address and outgoing sender. `inbound.address` defaults to it; when it
+differs, outgoing mail carries it as `Reply-To`. A reply therefore comes back to a mailbox this
+module reads and lands in the same conversation as everything else.
 
-The cron job `messaging.email.inbox` polls the mailbox every five minutes over IMAP
+With `inbound.enabled`, the cron job `messaging.email.inbox` polls the mailbox every five minutes over IMAP
 ([imapflow](https://www.npmjs.com/package/imapflow) + [mailparser](https://www.npmjs.com/package/mailparser),
 both loaded only once a host is configured). Every message it takes over is journaled as
 `direction: "in"`, tied to the user whose address it came from, and marked `\Seen`. Seen is the
@@ -44,14 +44,13 @@ only bookkeeping: a message the app crashed on stays unseen and arrives with the
 
 | Key | Meaning |
 | --- | --- |
-| `sender`, `sendername` | Default From |
-| `reply_to` | Overrides the inbound address as Reply-To |
-| `debug_to` | Redirects every outgoing mail here, subject prefixed `Debug!`; the journal marks every delivery as not reached |
-| `inbound.address` | The address the app receives on |
-| `inbound.host`, `.port`, `.secure`, `.user`, `.pass`, `.mailbox` | IMAP access; without a host nothing is received |
-| `transport.type` | `smtp`, `mailgun`, `resend`, `sendgrid`, `ses`, `plunk`, `jmap`, `mock` |
+| `address`, `name` | Required system address and optional From display name |
+| `debugTo` | Redirects every outgoing mail here, subject prefixed `Debug!`; the journal marks every delivery as not reached |
+| `inbound.enabled` | Enables mailbox polling |
+| `inbound.address` | The address the app receives on; defaults to the system address |
+| `inbound.host`, `.port`, `.secure`, `.user`, `.pass`, `.mailbox` | IMAP access; host, user and password inherit from SMTP where possible; defaults are 993, TLS and INBOX |
+| `transport.type` | Defaults to `smtp`; alternatives are `mailgun`, `resend`, `sendgrid`, `ses`, `plunk`, `jmap` and `mock`; SMTP defaults to port 465 |
 
-Without a configured transport a dev app falls back to `mock`; a production app refuses to send.
 An app that brings its own transport injects it with `setTransport(app, transport)`, and `receive(app)`
 fetches the mailbox on demand.
 

@@ -22,7 +22,7 @@ export { setTransport } from "./lib/transport.ts";
 export async function send(
   app: App,
   to: { grp?: number; usr?: number; all?: true; email?: string | string[] },
-  message: string | Msg & { replyTo?: string }, // replyTo: where an answer belongs, overriding the setting
+  message: string | Msg & { replyTo?: string }, // replyTo: where an answer belongs, overriding the inbox
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
@@ -31,10 +31,10 @@ export async function send(
 
   const time = unixTime();
   const [config, mailer, { render, uses }] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
-  if (!config.sender) throw new Error("Email has no sender. Set messaging.email.sender.");
+  if (!config.address) throw new Error("Email has no system address. Set messaging.email.address.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const detour = debug ? `redirected to debug address ${debug.address}` : undefined;
-  const from = formatAddress({ address: config.sender, name: config.sendername });
+  const from = formatAddress({ address: config.address, name: config.name });
   const attachments = await attachmentsOf(msg.attachments);
 
   // journaled first: a tracked link carries the delivery's own id

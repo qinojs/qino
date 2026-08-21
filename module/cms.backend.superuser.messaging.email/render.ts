@@ -16,8 +16,8 @@ const RECENT = 7;
 
 export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
-  <div class=u2-card cms-part=sending>${sending(node)}</div>
-  <div class=u2-card cms-part=inbound>${inbound(node)}</div>
+  <div class=u2-card cms-part=sending style="flex:0 1 auto">${sending(node)}</div>
+  <div class=u2-card cms-part=inbound style="flex:0 1 auto">${inbound(node)}</div>
   <div class=u2-card cms-part=send>${send(node)}</div>
   <div class=u2-card cms-part=contacts>${contacts(node)}</div>
   <div class=u2-card cms-part=journal>${journal(node)}</div>
@@ -27,7 +27,7 @@ export function render(node: Node): Promise<HtmlString> {
 // --- settings, straight from the module's own schema -----------------------------------------
 
 /** What the form builder reads of a settings schema node. */
-type Schema = { type?: string; enum?: string[]; description?: string; properties?: Record<string, Schema> };
+type Schema = { type?: string; enum?: string[]; description?: string; advanced?: boolean; default?: unknown; properties?: Record<string, Schema> };
 
 /** The module's own schema — the forms follow it, so a new transport needs no change here. */
 export function schema(app: App): Schema {
@@ -55,22 +55,26 @@ async function read(app: App, paths: string[]): Promise<Map<string, unknown>> {
 }
 
 /** One label and one control per leaf, named after its dotted path. */
-function field(path: string, node: Schema, values: Map<string, unknown>): HtmlString {
+function field(path: string, node: Schema, values: Map<string, unknown>, transport = "", hidden = false): HtmlString {
   const name = path.split(".").at(-1);
-  const value = values.get(path);
+  const stored = values.get(path);
+  const value = stored === "" || stored == null ? undefined : stored;
   const title = node.description ?? "";
   const control = node.enum
     ? html`<select name="${path}" title="${title}">${node.enum.map((option) =>
       html`<option value="${option}"${option === String(value ?? "") ? html.raw(" selected") : ""}>${option || "—"}</option>`)}</select>`
     : node.type === "boolean"
-    ? html`<input type=checkbox name="${path}" title="${title}"${bool(value) ? html.raw(" checked") : ""}>`
+    ? html`<input type=checkbox name="${path}" title="${title}"${bool(value ?? node.default) ? html.raw(" checked") : ""}>`
     : node.type === "number"
-    ? html`<input type=number name="${path}" title="${title}" value="${value ?? ""}">`
+    ? html`<input type=number name="${path}" title="${title}" value="${value ?? ""}" placeholder="${node.default ?? ""}">`
     : isSecret(path)
     ? html`<input type=password name="${path}" autocomplete=off title="${title}" placeholder="${value ? "••••••" : ""}">`
     : html`<input name="${path}" title="${title}" value="${value ?? ""}">`;
-  return html`${name} ${control}`;
+  return html`<div${transport ? html` data-transport-fields="${transport}"` : ""}${hidden ? html.raw(' hidden style="display:none"') : ""}><label><span>${name}</span><span>${control}</span></label></div>`;
 }
+
+const fields = (nodes: ReturnType<typeof leaves>, values: Map<string, unknown>, advanced = false, transport = "", active = "") =>
+  nodes.filter((leaf) => Boolean(leaf.schema.advanced) === advanced).map((leaf) => field(leaf.path, leaf.schema, values, transport, transport !== active));
 
 const bool = (v: unknown): boolean => v === true || v === 1 || v === "1" || v === "true";
 
@@ -83,33 +87,41 @@ export async function sending(node: Node): Promise<HtmlString> {
   const values = await read(app, all.map((leaf) => leaf.path));
   const own = all.filter((leaf) => !leaf.path.includes("."));
   const transports = Object.entries(root.properties?.transport?.properties ?? {}).filter(([key]) => key !== "type");
-  const type = String(values.get("transport.type") ?? "");
-  const sender = String(values.get("sender") ?? "");
-  const debug = String(values.get("debug_to") ?? "");
-  const replyTo = String(values.get("reply_to") || values.get("inbound.address") || "");
+  const type = String(values.get("transport.type") || root.properties?.transport?.properties?.type?.default || "smtp");
+  const address = String(values.get("address") ?? "");
+  const debug = String(values.get("debugTo") ?? "");
+  const replyTo = String(values.get("inbound.address") || address);
   // what send() would do right now, in the same order it decides it
-  const state = type ? type : app.dev ? await t`mock (dev)` : await t`nothing goes out`;
-  const [noSender, debugLabel, redirected] = await Promise.all([t`no sender`, t`debug`,
+  const state = type;
+  const [noAddress, debugLabel, redirected] = await Promise.all([t`no system address`, t`debug`,
     debug ? t`Every mail is redirected to ${debug}; the journal marks each delivery as not reached.` : ""]);
 
   return html.async`<div class=-head>${t`Sending`} <span class=u2-badge>${state}</span>
-    ${sender ? "" : html`<span class=u2-badge>${noSender}</span>`}
+    ${address ? "" : html`<span class=u2-badge>${noAddress}</span>`}
     ${debug ? html`<span class=u2-badge>${debugLabel}</span>` : ""}</div>
   <form class=-body>
-    <u2-fields>
-      ${own.map((leaf) => field(leaf.path, leaf.schema, values))}
-      ${t`transport`} <select name="transport.type" data-transport-type title="${await t`Without one a dev app falls back to mock, a production app refuses to send.`}">
-        ${(root.properties?.transport?.properties?.type?.enum ?? []).map((option) =>
-          html`<option value="${option}"${option === type ? html.raw(" selected") : ""}>${option || "—"}</option>`)}
-      </select>
-    </u2-fields>
-    ${transports.map(([key, sub]) => html`<u2-fields data-transport-fields="${key}"${key === type ? "" : html.raw(" hidden")}>
-      ${leaves(sub, `transport.${key}`).map((leaf) => field(leaf.path, leaf.schema, values))}
-    </u2-fields>`)}
+    <div class="u2-table -Fields -NoSideGaps">
+      ${fields(own, values)}
+      ${transports.map(([key, sub]) => fields(leaves(sub, `transport.${key}`), values, false, key, type))}
+    </div>
+    <details style="margin-block:.5em; border:0">
+      <summary>${t`Advanced`}</summary>
+      <div class="u2-table -Fields">
+        ${fields(own, values, true)}
+        <div><label>
+          <span>${t`transport`}</span>
+          <span><select name="transport.type" data-transport-type>
+            ${(root.properties?.transport?.properties?.type?.enum ?? []).map((option) =>
+              html`<option value="${option}"${option === type ? html.raw(" selected") : ""}>${option}</option>`)}
+          </select></span>
+        </label></div>
+        ${transports.map(([key, sub]) => fields(leaves(sub, `transport.${key}`), values, true, key, type))}
+      </div>
+    </details>
     <button data-settings-save>${t`Save`}</button>
   </form>
-  <div class=-body>
-    <small>${t`Replies go to`} <b>${replyTo || await t`nowhere — no reply-to and no inbound address`}</b>.
+  <div class=-foot>
+    <small>${t`Replies go to`} <b>${replyTo || await t`nowhere — no system address`}</b>.
     ${debug ? html`<br>${redirected}` : ""}</small>
   </div>`;
 }
@@ -124,12 +136,16 @@ export async function inbound(node: Node): Promise<HtmlString> {
     status(app).catch(() => []),
   ]);
   const job = jobs.find((v) => v.id === `${MODULE}:inbox`);
-  const receiving = Boolean(values.get("inbound.host")) && Boolean(values.get("inbound.pass"));
+  const receiving = bool(values.get("inbound.enabled"));
 
   return html.async`<div class=-head>${t`Receiving`}
     <span class=u2-badge>${receiving ? t`polling` : t`off`}</span></div>
   <form class=-body>
-    <u2-fields>${own.map((leaf) => field(leaf.path, leaf.schema, values))}</u2-fields>
+    <div class="u2-table -Fields -NoSideGaps">${fields(own, values)}</div>
+    <details style="margin-block:.5em; border:0">
+      <summary>${t`Advanced`}</summary>
+      <div class="u2-table -Fields">${fields(own, values, true)}</div>
+    </details>
     <button data-settings-save>${t`Save`}</button>
     <button type=button data-fetch>${t`Fetch now`}</button>
   </form>
@@ -147,7 +163,7 @@ export async function inbound(node: Node): Promise<HtmlString> {
       <td>${t`Failures`}
       <td>${job?.failures ?? 0}${job?.lastError ? html` <small>${job.lastError}</small>` : ""}
   </table>
-  <div class=-body><small>${t`Every message taken over is marked \\Seen — that is the whole bookkeeping, so a message the app crashed on arrives again.`}</small></div>`;
+  <div class=-foot><small>${t`Every message taken over is marked \\Seen`}</small></div>`;
 }
 
 /** Only groups and users that have an address are offered; a literal address always works. */

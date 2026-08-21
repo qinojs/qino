@@ -7,64 +7,68 @@ const str = async (value: unknown) => String(await value ?? "");
 /** Who outgoing mail comes from, and where it goes while debugging. */
 export async function defaults(app: App) {
   const s = root(app);
-  const [sender, sendername, replyTo, debugTo, inbox] = await Promise.all([
-    str(s.sender), str(s.sendername), str(s.reply_to), str(s.debug_to), str(s.inbound.address),
+  const [address, name, debugTo, inbox] = await Promise.all([
+    str(s.address), str(s.name), str(s.debugTo), str(s.inbound.address),
   ]);
-  // a reply belongs where it can be read: the inbound mailbox, unless a reply-to is configured
-  return { sender, sendername, replyTo: replyTo || inbox, debugTo };
+  return { address, name, replyTo: inbox && inbox !== address ? inbox : undefined, debugTo };
 }
 
-/** Where replies and inbound mail arrive; an empty host means the module only sends. */
+/** Effective mailbox settings, inherited from SMTP where the protocols commonly share them. */
 export async function inbound(app: App) {
-  const s = root(app).inbound;
-  const [address, host, port, secure, user, pass, mailbox] = await Promise.all([
-    str(s.address), str(s.host), s.port, s.secure, str(s.user), str(s.pass), str(s.mailbox),
+  const email = root(app);
+  const s = email.inbound;
+  const smtp = email.transport.smtp;
+  const [enabled, systemAddress, address, host, smtpHost, port, secure, user, smtpUser, pass, smtpPass, mailbox] = await Promise.all([
+    s.enabled, str(email.address), str(s.address), str(s.host), str(smtp.host), s.port, s.secure,
+    str(s.user), str(smtp.user), str(s.pass), str(smtp.pass), str(s.mailbox),
   ]);
   return {
-    address,
-    host,
-    port: Number(port) || undefined,
+    enabled: enabled === true || enabled === "true" || enabled === 1 || enabled === "1",
+    address: address || systemAddress,
+    host: host || smtpHost,
+    port: Number(port) || 993,
     secure: secure == null || secure === "" ? Number(port) !== 143 : secure === true || secure === "true" || secure === 1,
-    user: user || address,
-    pass,
+    user: user || smtpUser || systemAddress,
+    pass: pass || smtpPass,
     mailbox: mailbox || "INBOX",
   };
 }
 
 export const settingsSchema = {
+  required: ["address"],
   properties: {
-    sender: { type: "string", description: "Default From email address" },
-    sendername: { type: "string", description: "Default From display name" },
-    reply_to: { type: "string", description: "Default Reply-To; defaults to the inbound address" },
-    debug_to: { type: "string", description: "Redirect all outgoing mail to this address" },
+    address: { type: "string", description: "System email address and default From" },
+    name: { type: "string", advanced: true, description: "Optional From display name" },
+    debugTo: { type: "string", advanced: true, description: "Redirect all outgoing mail to this address" },
     inbound: {
       properties: {
-        address: { type: "string", description: "The address this app receives on — replies land here" },
-        host: { type: "string", description: "IMAP host; without it nothing is received" },
-        port: { type: "number", default: 993, description: "IMAP port, 993 by default" },
-        secure: { type: "boolean", default: true, description: "TLS; off means STARTTLS on port 143" },
-        user: { type: "string", description: "IMAP user; the inbound address by default" },
-        pass: { type: "string" },
-        mailbox: { type: "string", default: "INBOX", description: "IMAP folder to read; INBOX only by default" },
+        enabled: { type: "boolean", description: "Fetch incoming mail" },
+        address: { type: "string", advanced: true, description: "Address receiving replies; the system address by default" },
+        host: { type: "string", advanced: true, description: "IMAP host; the SMTP host by default" },
+        port: { type: "number", advanced: true, default: 993, description: "IMAP port, 993 by default" },
+        secure: { type: "boolean", advanced: true, default: true, description: "TLS; off means STARTTLS on port 143" },
+        user: { type: "string", advanced: true, description: "IMAP user; the SMTP user, then system address by default" },
+        pass: { type: "string", advanced: true, description: "IMAP password; the SMTP password by default" },
+        mailbox: { type: "string", advanced: true, default: "INBOX", description: "IMAP folder to read; INBOX only by default" },
       },
     },
     transport: {
       properties: {
-        type: { type: "string", enum: ["", "smtp", "mailgun", "resend", "sendgrid", "ses", "plunk", "jmap", "mock"] },
+        type: { type: "string", enum: ["smtp", "mailgun", "resend", "sendgrid", "ses", "plunk", "jmap", "mock"], default: "smtp" },
         smtp: {
           properties: {
             host: { type: "string" },
-            port: { type: "number" },
-            secure: { type: "boolean" },
-            username: { type: "string" },
-            password: { type: "string" },
+            port: { type: "number", advanced: true, default: 465, description: "SMTP port, 465 by default" },
+            secure: { type: "boolean", advanced: true, default: true },
+            user: { type: "string", advanced: true, description: "SMTP user; the system address by default" },
+            pass: { type: "string" },
           },
         },
-        mailgun: { properties: { apiKey: { type: "string" }, domain: { type: "string" }, baseUrl: { type: "string" } } },
-        resend: { properties: { apiKey: { type: "string" }, baseUrl: { type: "string" } } },
-        sendgrid: { properties: { apiKey: { type: "string" }, baseUrl: { type: "string" } } },
-        ses: { properties: { region: { type: "string" }, accessKeyId: { type: "string" }, secretAccessKey: { type: "string" }, sessionToken: { type: "string" } } },
-        plunk: { properties: { apiKey: { type: "string" }, baseUrl: { type: "string" } } },
+        mailgun: { properties: { apiKey: { type: "string" }, domain: { type: "string" }, baseUrl: { type: "string", advanced: true } } },
+        resend: { properties: { apiKey: { type: "string" }, baseUrl: { type: "string", advanced: true } } },
+        sendgrid: { properties: { apiKey: { type: "string" }, baseUrl: { type: "string", advanced: true } } },
+        ses: { properties: { region: { type: "string" }, accessKeyId: { type: "string" }, secretAccessKey: { type: "string" }, sessionToken: { type: "string", advanced: true } } },
+        plunk: { properties: { apiKey: { type: "string" }, baseUrl: { type: "string", advanced: true } } },
         jmap: { properties: { sessionUrl: { type: "string" }, bearerToken: { type: "string" }, accountId: { type: "string" }, identityId: { type: "string" } } },
       },
     },

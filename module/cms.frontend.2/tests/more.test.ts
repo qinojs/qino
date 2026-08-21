@@ -20,7 +20,7 @@ async function makeApp(): Promise<App> {
     settings: {
       cms: { feedback: { email: "support@example.test" } },
       messaging: { _secret: "test-secret" },
-      "messaging.email": { sender: "app@example.test", sendername: "", inbound: {}, transport: {} },
+      "messaging.email": { address: "app@example.test", name: "", inbound: {}, transport: { smtp: {} } },
     },
     languages: { all: [] },
     url: () => Promise.resolve("https://example.test/"),

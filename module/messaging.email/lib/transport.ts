@@ -64,19 +64,17 @@ export async function createMessage(message: Record<string, unknown>): Promise<u
 
 async function config(app: App): Promise<{ type: string; options: Record<string, unknown> }> {
   const root = app.settings["messaging.email"].transport;
-  let type = String(await root.type ?? "").toLowerCase();
-  if (!type && app.dev) type = "mock";
-  if (!type) throw new Error("No email transport configured. Set messaging.email.transport.type.");
+  const type = String(await root.type || "smtp").toLowerCase();
   const get = (key: string) => root[type][key];
   const options: Record<string, unknown> = {};
 
   if (type === "smtp") {
     const host = await get("host");
     if (!host) throw new Error("SMTP transport needs messaging.email.transport.smtp.host");
-    const port = Number(await get("port")) || undefined;
-    const user = await get("username");
-    const pass = await get("password");
-    Object.assign(options, { host, port, secure: toBool(await get("secure")) ?? port === 465 });
+    const port = Number(await get("port")) || 465;
+    const user = await get("user") || await app.settings["messaging.email"].address;
+    const pass = await get("pass");
+    Object.assign(options, { host, port, secure: toBool(await get("secure")) ?? true });
     if (user || pass) options.auth = { user, pass };
   } else {
     for (const key of UPYO[type]?.keys ?? []) options[key] = await get(key);

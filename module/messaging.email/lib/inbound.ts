@@ -22,18 +22,19 @@ type Parsed = {
 /**
  * Read what is new in the configured mailbox into the journal and mark it seen.
  *
- * Resolves with the number of messages taken over; 0 when no mailbox is configured. Seen is the
+ * Resolves with the number of messages taken over; 0 while receiving is disabled. Seen is the
  * only bookkeeping — a message the app crashed on stays unseen and arrives with the next run.
  */
 export async function receive(app: App, { limit = 50 }: { limit?: number } = {}): Promise<number> {
   const config = await inbound(app);
-  if (!config.host || !config.pass) return 0;
+  if (!config.enabled) return 0;
+  if (!config.host || !config.pass) throw new Error("Inbound email needs an IMAP host and password");
 
   const { ImapFlow } = await import("npm:imapflow@^1") as { ImapFlow: new (options: unknown) => ImapClient };
   const { simpleParser } = await import("npm:mailparser@^3") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
   const client = new ImapFlow({
     host: config.host,
-    port: config.port ?? (config.secure ? 993 : 143),
+    port: config.port,
     secure: config.secure,
     auth: { user: config.user, pass: config.pass },
     logger: false,

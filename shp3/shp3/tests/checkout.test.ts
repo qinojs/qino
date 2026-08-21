@@ -83,7 +83,7 @@ Deno.test("shp3 backend: an order is paid off, an open cart can still be placed"
 
 Deno.test("shp3: ordering sends the confirmation", async () => {
   await using app = await shop("shp3.messages2");
-  await app.settings["messaging.email"].sender("shop@example.test");
+  await app.settings["messaging.email"].address("shop@example.test");
   const sent: { to: string[]; subject: string; html: string }[] = [];
   setTransport(app, { send: (m: any) => {
     sent.push({ to: m.recipients.map((r: any) => r.address), subject: m.subject, html: m.content?.html ?? "" });

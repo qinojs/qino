@@ -3,6 +3,7 @@ import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fil
 
 import { messages } from "@qino/qino/messaging";
 
+import { inbound } from "../lib/settings.ts";
 import { send, setTransport } from "../mod.ts";
 
 import type { App } from "@qino/qino";
@@ -22,7 +23,7 @@ async function makeApp(): Promise<App> {
     dir,
     settings: {
       messaging: { _secret: "test-secret" },
-      "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} },
+      "messaging.email": { address: "app@qino.test", name: "Qino", inbound: {}, transport: { smtp: {} } },
     },
     url: () => Promise.resolve("https://qino.test/"),
     modules: { linked: () => [{ plugin: { messagingPlaceholders } }] },
@@ -45,6 +46,8 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
 
   assertEquals(await send(app, { usr: 1 }, { title: "Invoice", text: "Attached." }), 1);
   assertEquals(String(sent[0].subject), "Invoice");
+  assertEquals(String((sent[0].sender as { address: string }).address), "app@qino.test");
+  assertEquals(sent[0].replyRecipients, []);
   assertEquals(String((sent[0].recipients as { address: string }[])[0].address), "one@qino.test");
 
   const [journaled] = await messages(app);
@@ -56,10 +59,30 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   await close(app);
 });
 
+Deno.test("an inbound address becomes Reply-To unless the message overrides it", async () => {
+  const app = await makeApp();
+  const settings = (app.settings as unknown as Record<string, Record<string, unknown>>)["messaging.email"];
+  settings.inbound = { enabled: true, address: "inbox@qino.test" };
+  settings.transport = { smtp: { user: "mailbox", host: "mail.qino.test", pass: "secret" } };
+  const sent: Record<string, unknown>[] = [];
+  setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
+
+  assertEquals(await inbound(app), {
+    enabled: true, address: "inbox@qino.test", host: "mail.qino.test", port: 993,
+    secure: true, user: "mailbox", pass: "secret", mailbox: "INBOX",
+  });
+  await send(app, { usr: 1 }, "First");
+  await send(app, { usr: 1 }, { text: "Second", replyTo: "person@qino.test" });
+  assertEquals((sent[0].replyRecipients as { address: string }[])[0].address, "inbox@qino.test");
+  assertEquals((sent[1].replyRecipients as { address: string }[])[0].address, "person@qino.test");
+
+  await close(app);
+});
+
 Deno.test("a debug redirect is journaled as a delivery that never reached the recipient", async () => {
   const app = await makeApp();
   const settings = (app.settings as unknown as Record<string, Record<string, unknown>>)["messaging.email"];
-  settings.debug_to = "dev@qino.test";
+  settings.debugTo = "dev@qino.test";
   const sent: Record<string, unknown>[] = [];
   setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
 
