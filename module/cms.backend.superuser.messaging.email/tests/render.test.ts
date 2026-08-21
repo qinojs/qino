@@ -2,6 +2,7 @@ import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/te
 
 import manifest from "../manifest.json" with { type: "json" };
 import { attachmentsOf } from "../nodeApi.ts";
+import { backendDashboardWidget } from "../plugin.ts";
 import { isSecret, leaves, send as sendForm, sending } from "../render.ts";
 
 const { name, dependencies } = manifest;
@@ -57,4 +58,26 @@ Deno.test("cms.backend.superuser.messaging.email adds files to the send form", a
     content: "data:text/plain;base64,aW52b2ljZQ==",
   }]);
   assertEquals([file.name, file.type, await file.text()], ["invoice.txt", "text/plain", "invoice"]);
+});
+
+Deno.test("cms.backend.superuser.messaging.email dashboard uses portable traffic aliases", async () => {
+  const queries: string[] = [];
+  const app = {
+    db: {
+      row: (strings: TemplateStringsArray) => {
+        const query = strings.join("?");
+        queries.push(query);
+        return Promise.resolve(query.includes("usr_contact")
+          ? { n: 2, failing: 0 }
+          : { outgoing: 3, incoming: 1 });
+      },
+      query: () => Promise.resolve([]),
+    },
+    t: fakeT,
+  } as unknown as Parameters<typeof backendDashboardWidget>[0];
+
+  const output = String(await backendDashboardWidget(app));
+  assertStringIncludes(output, "3 sent");
+  assert(queries.some((query) => query.includes("AS outgoing")));
+  assert(!queries.some((query) => query.includes("AS out,")));
 });

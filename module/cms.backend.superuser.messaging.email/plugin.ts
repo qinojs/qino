@@ -23,7 +23,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
         SUM(CASE WHEN error IS NULL THEN 0 ELSE 1 END) AS failing
       FROM usr_contact WHERE type = ${"email"}`.catch(() => undefined),
     app.db.row`SELECT
-        SUM(CASE WHEN direction = ${"out"} THEN 1 ELSE 0 END) AS out,
+        SUM(CASE WHEN direction = ${"out"} THEN 1 ELSE 0 END) AS outgoing,
         SUM(CASE WHEN direction = ${"in"} THEN 1 ELSE 0 END) AS incoming
       FROM message WHERE channel = ${"email"} AND time >= ${week}`.catch(() => undefined),
     app.db.query`SELECT m.id, m.direction, m.title, m.time FROM message m
@@ -35,7 +35,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
   return html.async`<div class=-body>
     <b>${Number(totals?.n ?? 0)}</b> ${addressesLabel}
-    · ${Number(traffic?.out ?? 0)} ${sentLabel}
+    · ${Number(traffic?.outgoing ?? 0)} ${sentLabel}
     · ${Number(traffic?.incoming ?? 0)} ${receivedLabel}
     ${failing ? html` · <span class=u2-badge>${failing} ${failingLabel}</span>` : ""}
     ${recent.length ? html`<table class=u2-table>${recent.map((m) => html`<tr>
