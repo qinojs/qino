@@ -43,6 +43,10 @@ export const settingsSchema = {
             description: "Maximum file size for uploads and remote file imports in bytes.",
             default: 100 * 1024 * 1024,
         },
+        _secret: {
+            type: "string",
+            description: "Key for permanent app grants — generated on first use.",
+        },
         HSTS: {
             description: "Settings for the Strict-Transport-Security header.",
             properties: {

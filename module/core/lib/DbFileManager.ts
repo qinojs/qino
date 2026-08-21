@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { typeByExtension, sql } from "../deps.ts";
+import * as grant from "./crypto/grant.ts";
 import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, readDataUrl, readUploadFile } from "./fileStream.ts";
-import { checkSessionGrant, createSessionGrant } from "./sessionGrant.ts";
 import { header } from "./util.ts";
 
 import type { App } from "./App.ts";
@@ -73,7 +73,10 @@ export class DbFileManager {
     if (!await f.exists()) return new Response(null, { status: 404 });
     if (f.vs?.access != "1") {
       const ctx = getCtx();
-      const granted = checkSessionGrant(ctx, "dbFile", grantResource(id, parts), ctx.req.query.exp, ctx.req.query.sig) === "ok";
+      const resource = grantResource(id, parts);
+      const granted = ctx.req.query.exp
+        ? grant.verify(ctx.sess, resource, ctx.req.query) === "ok"
+        : await grant.verify(ctx.app, permanentResource(resource, f.vs?.md5), ctx.req.query) === "ok";
       if (!granted && !await f.access()) return new Response(null, { status: 403 });
     }
 
@@ -183,16 +186,19 @@ export class DbFile extends File {
     }
   }
 
-  async url(params: TransformOptions & { grant?: "session" } = {}): Promise<string> {
+  async url(params: TransformOptions & { grant?: "session" | "permanent" } = {}): Promise<string> {
     const vs = await this.ensureVs();
-    const { grant, ...options } = params;
+    const { grant: mode, ...options } = params;
     const u = `u-${String(vs.md5 ?? "").slice(0, 5)}`;
     const parts = [u, ...Object.entries(options).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
     const ctx = getCtx();
     const url = ctx.req.appUrl + "dbFile/" + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
-    if (!grant) return url;
-    if (grant !== "session") throw new Error(`Unsupported DbFile grant: ${grant}`);
-    const query = new URLSearchParams(createSessionGrant(ctx, "dbFile", grantResource(this.id, parts)));
+    if (!mode) return url;
+    if (mode !== "session" && mode !== "permanent") throw new Error(`Unsupported DbFile grant: ${mode}`);
+    const resource = grantResource(this.id, parts);
+    const query = new URLSearchParams(mode === "session"
+      ? grant.sign(ctx.sess, resource)
+      : await grant.sign(ctx.app, permanentResource(resource, vs.md5)));
     return url + "?" + query;
   }
 
@@ -289,7 +295,11 @@ export class DbFile extends File {
 }
 
 function grantResource(id: number, parts: string[]): string {
-  return `${id}/${parts.join("/")}`;
+  return `dbFile\0${id}/${parts.join("/")}`;
+}
+
+function permanentResource(resource: string, md5: unknown): string {
+  return `${resource}\0${String(md5 ?? "")}`;
 }
 
 function parseTransformOptions(param: Record<string, unknown>): TransformOptions {

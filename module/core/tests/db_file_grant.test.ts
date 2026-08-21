@@ -9,13 +9,14 @@ function session() {
   } } };
 }
 
-Deno.test("DbFile session grants allow only the signed file variant", async () => {
+Deno.test("DbFile grants allow only their session or content version", async () => {
   const dir = await Deno.makeTempDir();
   const vs = { id: 7, name: "private file.txt", mime: "text/plain", md5: "abcdef0123456789", access: 0 };
   await Deno.writeTextFile(dir + "/" + vs.md5, "private");
   const app = {
     db: { row: () => Promise.resolve(vs) },
     fire: (_name: string, event: unknown) => Promise.resolve(event),
+    settings: { core: { _secret: "test-secret" } },
     fileTransformer: {
       transform: (path: string, _options: unknown, mime: string) => Promise.resolve({ path, mime, transformed: false }),
     },
@@ -52,6 +53,23 @@ Deno.test("DbFile session grants allow only the signed file variant", async () =
       grantKey: () => { throw new Error("Public files must not check grants"); },
     } } };
     assertEquals((await serve(changed, publicSession)).status, 200);
+
+    vs.access = 0;
+    const permanentCtx = await testContext({ url: "http://qino.test/cms2/page", app, appUrl: "/cms2/" });
+    const permanent = await requestStorage.run(permanentCtx, async () =>
+      await (await dbFiles.file(vs.id, vs)).url({ grant: "permanent" })
+    );
+    const permanentUrl = new URL(permanent, "http://qino.test");
+    assertEquals(permanentUrl.searchParams.has("exp"), false);
+    assertEquals(permanentUrl.searchParams.get("sig")?.length, 22);
+    assertEquals((await serve(permanentUrl, session())).status, 200);
+
+    const replacement = { ...vs, md5: "fedcba9876543210" };
+    await Deno.writeTextFile(dir + "/" + replacement.md5, "replacement");
+    (await dbFiles.file(vs.id)).setLocalVs(replacement);
+    assertEquals((await serve(permanentUrl)).status, 403);
+    const current = await serve(url);
+    assertEquals([current.status, await current.text()], [200, "replacement"]);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

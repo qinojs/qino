@@ -1,4 +1,4 @@
-import { createSessionGrant } from "@qino/qino";
+import { grant } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { sign, check } from "../lib/sign.ts";
@@ -41,8 +41,9 @@ Deno.test("fileEditor: forged, missing and stretched signatures fail", async () 
 
 Deno.test("fileEditor: an expired deadline is refused even with a correct mac", async () => {
   const ctx = await ctxOf();
-  const fresh = createSessionGrant(ctx, "fileEditor", FILE, 10);
-  const stale = createSessionGrant(ctx, "fileEditor", FILE, -10);
+  const resource = `fileEditor\0${FILE}`;
+  const fresh = grant.sign(ctx.sess, resource, { ttl: 10 });
+  const stale = grant.sign(ctx.sess, resource, { ttl: -10 });
   assertEquals(check(ctx, FILE, fresh.exp, fresh.sig), "ok"); // the mac itself is right
   assertEquals(check(ctx, FILE, stale.exp, stale.sig), "expired"); // only the deadline says no
 });
