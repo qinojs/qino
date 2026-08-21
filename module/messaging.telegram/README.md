@@ -18,8 +18,9 @@ await send(app, { usr: 42 }, "Your order shipped.");
 await send(app, { grp: 3 }, { text: "**Deploy done** — [log](https://…)", format: "md" });
 ```
 
-Recipients: `{ grp }`, `{ usr }`, `{ chat }`, `{ all: true }` — no channel, because a chat
-belongs to a person, not to a device; that question is what groups answer.
+Recipients: `{ grp }`, `{ usr }`, `{ chat }` (one row id or many), `{ all: true }` — no channel,
+because a chat belongs to a person, not to a device; that question is what groups answer. Selectors
+are additive and overlapping matches still reach a chat only once.
 
 A `title` has no place of its own here and becomes the first line, bold wherever markup is on.
 Text is plain by default, so `<` in user data is safe until a `format` asks for markup; the

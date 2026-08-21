@@ -24,22 +24,31 @@ export async function send(
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
-  const numbers = [...new Set([to.phone ?? []].flat().map((number) => contactKey("phone", number)))];
-  if (to.grp == null && to.usr == null && !to.all && !numbers.length) {
+  const direct = [to.phone ?? []].flat().map((input) => {
+    try { return { address: contactKey("phone", input) }; }
+    catch (e) { return { address: input.trim().slice(0, 191), addressError: errMsg(e) }; }
+  });
+  if (to.grp == null && to.usr == null && !to.all && !direct.length) {
     throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
   }
   const time = unixTime();
 
-  const [rows, { render }] = await Promise.all([
-    contactRecipients(app, "phone", to, numbers.map((address) => ({ address }))),
+  const [recipients, { render }] = await Promise.all([
+    contactRecipients(app, "phone", to, direct),
     renderer(app, msg, "sms"),
   ]);
+  const rows = recipients.map((row) => {
+    if (row.addressError) return row;
+    try { return { ...row, address: contactKey("phone", String(row.address)) }; }
+    catch (e) { return { ...row, addressError: errMsg(e) }; }
+  });
   // journaled first: a tracked link carries the delivery's own id
   const { ids } = await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    rows.map((row) => ({ usrId: row.usrId, address: row.address, time })));
+    rows.map((row) => ({ usrId: row.usrId, address: row.address, error: row.addressError, time })));
 
   let sent = 0;
   for (const [i, row] of rows.entries()) {
+    if (row.addressError) continue;
     const address = String(row.address);
     const usrId = row.usrId;
     const body = (await render({ ...row, usrId, deliveryId: ids[i], grpId: to.grp })).text;

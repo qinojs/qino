@@ -45,10 +45,11 @@ export async function send(
     msg: attachments ? { ...msg, attachments } : msg,
     data: { to },
     time,
-  }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, time })));
+  }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, error: recipient.addressError, time })));
 
   let sent = 0;
   for (const [i, recipient] of recipients.entries()) {
+    if (recipient.addressError) continue;
     // every mail carries a text part: plain readers and spam filters both want one
     const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId: to.grp });
     // only where there is something to leave: the client's one-click way to the same link
@@ -94,13 +95,15 @@ async function deliver(mailer: Awaited<ReturnType<typeof transport>>, message: R
 /** Who a `to` means, as addresses — `usr_contact` says where a person reads mail, one address each:
  *  the preferred one, else the oldest. A user without a mail contact simply drops out. */
 async function addresses(app: App, to: { grp?: number; usr?: number; all?: true; email?: string | string[] }) {
-  const literals = [to.email ?? []].flat().flatMap((v) => addressOf(v) ?? []);
+  const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
+    address: value.trim().slice(0, 191), addressError: "Use an email address such as name@example.com",
+  });
   if (to.grp == null && to.usr == null && !to.all && !literals.length) {
     throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
   }
-  return (await contactRecipients(app, "email", to, literals)).flatMap((row) => {
+  return (await contactRecipients(app, "email", to, literals)).map((row) => {
     const name = [row.firstname, row.lastname].filter(Boolean).join(" ");
     const address = addressOf({ ...row, name: name || row.name, usrId: row.usrId });
-    return address ? [{ ...row, ...address }] : [];
+    return address ? { ...row, ...address } : { ...row, addressError: "Use an email address such as name@example.com" };
   });
 }

@@ -352,6 +352,9 @@ rows are swept whenever a code is requested.
 
 ## Possible extensions
 
+- **Contact fan-out policy.** Email and SMS currently choose one preferred contact per person,
+  while Telegram and Web Push reach every linked chat or browser. Revisit whether contact channels
+  should also reach every verified address before this becomes a user-visible preference.
 - **`notify(app, usrId, msg)`** across the user's channels, with per-user preferences — the
   registry is what it would need; the preference table is what is missing.
 - **Raw destinations.** `send(app, "+41791234567", msg)` — a bare string as the recipient,

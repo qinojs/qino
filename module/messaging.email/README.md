@@ -18,7 +18,8 @@ await send(app, { email: "someone@example.com" }, { title: "Invoice", text: "…
 
 Recipients: `{ grp }`, `{ usr }`, `{ email }` (one address or many), `{ all: true }`. A user
 without an address drops out, and an address that turns out to belong to a user is journaled as
-that user's, so a mail to a literal address still shows up in their conversation.
+that user's, so a mail to a literal address still shows up in their conversation. Selectors add
+up; an invalid literal is journaled as failed without blocking the other recipients.
 
 The subject is the message's `title`, or the first line of its text when it has none — the same
 rule every channel follows. `format` decides the body: `md` and `html` mails carry an HTML part

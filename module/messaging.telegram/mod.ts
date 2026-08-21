@@ -9,7 +9,7 @@ import type { App, Row } from "@qino/qino";
 import type { Msg } from "@qino/qino/messaging";
 
 /**
- * Deliver a message to a group, a user, one chat, or everyone who linked their account.
+ * Deliver a message to groups, users, chats, or everyone who linked their account.
  *
  * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
  * way. A `format` becomes Telegram's own HTML subset — no headings, no lists, so those arrive as
@@ -19,16 +19,19 @@ import type { Msg } from "@qino/qino/messaging";
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; chat?: number },
+  to: { grp?: number; usr?: number; all?: true; chat?: number | number[] },
   message: string | Msg & Record<string, unknown>,
 ): Promise<number> {
   const msg = msgOf(message);
-  const where = to.grp != null ? sql`WHERE usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`WHERE usr_id = ${to.usr}`
-    : to.chat != null ? sql`WHERE c.id = ${to.chat}`
-    : to.all ? sql``
-    : null;
-  if (!where) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
+  const chats = [to.chat ?? []].flat();
+  const who = [
+    to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
+    to.usr != null ? sql`c.usr_id = ${to.usr}` : null,
+    chats.length ? sql`c.id IN (${sql.join(chats.map((id) => sql`${id}`), ", ")})` : null,
+    to.all ? sql`${true}` : null,
+  ].flatMap((term) => term ?? []);
+  if (!who.length) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
+  const where = sql`WHERE ${sql.join(who, " OR ")}`;
   const time = unixTime();
 
   const [rows, { render }] = await Promise.all([

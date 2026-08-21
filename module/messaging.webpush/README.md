@@ -12,10 +12,11 @@ await send(app, { channel: "news" }, { title: "New article", text: "…", url: "
 await send(app, { usr: 42 }, "Your order shipped.");
 ```
 
-Recipients: `{ channel }`, `{ grp }`, `{ usr }`, `{ client }`, `{ sub }`, `{ all: true }`. Add
-`notClient` to any of them to skip one device — `reach()` takes it too, so a caller asking "can I
-reach this person elsewhere?" gets an honest count. That is how a one-time code stays out of the
-browser it would be typed into.
+Recipients: `{ channel }`, `{ grp }`, `{ usr }`, `{ client }`, `{ sub }`, `{ all: true }`; `client`
+and `sub` accept one id or many. Selectors are additive and overlapping matches still reach a
+browser only once. Add `notClient` to skip one device — `reach()` takes it too, so a caller asking
+"can I reach this person elsewhere?" gets an honest count. That is how a one-time code stays out
+of the browser it would be typed into.
 Resolves with the number of browsers reached. Subscriptions the push service reports as
 gone (404/410) are deleted on the way, so the table stays clean without a cleanup job.
 

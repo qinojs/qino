@@ -73,16 +73,17 @@ Deno.test("a debug redirect is journaled as a delivery that never reached the re
   await close(app);
 });
 
-Deno.test("a literal address finds its owner, an unknown one stays anonymous, and a refusal is journaled", async () => {
+Deno.test("literal addresses find owners, keep sending past invalid ones, and journal every result", async () => {
   const app = await makeApp();
   setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["mailbox full"] }) });
 
-  assertEquals(await send(app, { email: ["one@qino.test", "other@qino.test"] }, "Hello"), 0);
+  assertEquals(await send(app, { email: ["one@qino.test", "invalid", "other@qino.test"] }, "Hello"), 0);
 
   const [journaled] = await messages(app);
   assertEquals(journaled.text, "Hello");
   assertEquals(journaled.deliveries.map((d) => [d.address, d.usr_id, d.error]), [
     ["one@qino.test", 1, "mailbox full"],
+    ["invalid", null, "Use an email address such as name@example.com"],
     ["other@qino.test", null, "mailbox full"],
   ]);
 

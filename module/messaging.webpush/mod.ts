@@ -9,7 +9,7 @@ import type { App, Row } from "@qino/qino";
 import type { Msg } from "@qino/qino/messaging";
 
 /**
- * Deliver a notification to a channel, a group, a user, a client, one subscription, or
+ * Deliver a notification to channels, groups, users, clients, subscriptions, or
  * everyone. Channels are per browser, groups per user — the two answer different
  * questions and can be used side by side.
  *
@@ -24,22 +24,25 @@ const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`
 
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; channel?: string; client?: string | number; sub?: number; notClient?: string | number },
+  to: { grp?: number; usr?: number; all?: true; channel?: string; client?: string | number | (string | number)[]; sub?: number | number[]; notClient?: string | number },
   message: string | Msg & { url?: string } & Record<string, unknown>,
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
-  const who = to.channel != null ? sql`s.id IN (
+  const clients = [to.client ?? []].flat().map(Number);
+  const subs = [to.sub ?? []].flat();
+  const who = [
+    to.channel != null ? sql`s.id IN (
       SELECT sc.sub_id FROM webpush_subscription_channel sc
-      JOIN webpush_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})`
-    : to.grp != null ? sql`s.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`s.usr_id = ${to.usr}`
-    : to.client != null ? sql`s.client_id = ${Number(to.client)}`
-    : to.sub != null ? sql`s.id = ${to.sub}`
-    : to.all ? sql`${true}`
-    : null;
-  if (!who) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
-  const where = sql`WHERE ${who} ${notClient(to.notClient)}`;
+      JOIN webpush_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})` : null,
+    to.grp != null ? sql`s.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
+    to.usr != null ? sql`s.usr_id = ${to.usr}` : null,
+    clients.length ? sql`s.client_id IN (${sql.join(clients.map((id) => sql`${id}`), ", ")})` : null,
+    subs.length ? sql`s.id IN (${sql.join(subs.map((id) => sql`${id}`), ", ")})` : null,
+    to.all ? sql`${true}` : null,
+  ].flatMap((term) => term ?? []);
+  if (!who.length) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
+  const where = sql`WHERE (${sql.join(who, " OR ")}) ${notClient(to.notClient)}`;
   const time = unixTime();
 
   const [rows, { render }] = await Promise.all([
