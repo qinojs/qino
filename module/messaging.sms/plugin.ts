@@ -1,6 +1,6 @@
 import { Access, countContacts, getCtx, s } from "@qino/qino";
 
-import { addPhone, pendingPhones, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
+import { addPhone, send, verifyPhone } from "./mod.ts";
 
 import type { ApiTree, App, Params } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
@@ -49,7 +49,10 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async () => {
         const ctx = getCtx();
-        const [phones, pending] = await Promise.all([userPhones(ctx.app, ctx.userId), pendingPhones(ctx.app, ctx.userId)]);
+        const [phones, pending] = await Promise.all([
+          contacts(ctx.app.db, ctx.userId, "phone"),
+          pendingContacts(ctx.app, "phone", ctx.userId),
+        ]);
         return { phones, pending };
       },
     },
@@ -84,7 +87,7 @@ export const api: ApiTree = {
         access: Access.USER,
         execute: async ({ number }: Params) => {
           const ctx = getCtx();
-          await removePhone(ctx.app, ctx.userId, String(number));
+          await removeContact(ctx.app.db, ctx.userId, "phone", String(number));
           return { ok: true };
         },
       },
@@ -94,7 +97,7 @@ export const api: ApiTree = {
           access: Access.USER,
           execute: ({ number }: Params) => {
             const ctx = getCtx();
-            return setMainPhone(ctx.app, ctx.userId, String(number));
+            return setMainContact(ctx.app.db, ctx.userId, "phone", String(number));
           },
         },
       },

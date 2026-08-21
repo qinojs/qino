@@ -25,7 +25,11 @@ app.on("shorturl:hit", ({ ctx, link, tag }) => record(...));
 ```
 
 So counting clicks per campaign needs nothing (`shorturl.hits`), and counting clicks per person
-is a listener plus a marker the sender already had.
+is a listener plus a marker the sender already had — [messaging](../messaging/) is the one that
+does it, and signs its marker so nobody can walk 1, 2, 3.
+
+A module that shortens declares itself as `export const shortener = { shorten }`, so consumers
+find it without depending on it.
 
 ## SMS pays for this
 

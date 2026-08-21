@@ -1,11 +1,15 @@
 import { Output, Redirect, unixTime } from "@qino/qino";
 
 import { LEN, PATH, valid } from "./lib/code.ts";
+import { shorten } from "./mod.ts";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+/** What a module declares that can trade a long address for a short one. */
+export const shortener = { shorten };
 
 export const settingsSchema = {
   properties: {

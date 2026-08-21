@@ -21,6 +21,8 @@ async function makeApp(): Promise<App> {
     db,
     dir,
     settings: { "messaging.email": { sender: "app@qino.test", sendername: "Qino", inbound: {}, transport: {} } },
+    url: () => Promise.resolve("https://qino.test/"),
+    modules: { linked: () => [] },
   } as unknown as App;
   app.dbFiles = new DbFileManager(app, dir + "/files/");
   return app;

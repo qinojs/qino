@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
-import { addContact, ApiError, contactError, contactKey, contactOwner, contacts, errMsg, removeContact, setMainContact, sql, typeContacts, unixTime } from "@qino/qino";
-import { dropClaim, msgOf, pendingContacts, record, redeemCode, renderer, requestCode } from "@qino/qino/messaging";
+import { addContact, ApiError, contactError, contactKey, contactOwner, errMsg, sql, unixTime } from "@qino/qino";
+import { delivered, dropClaim, msgOf, pendingContacts, record, redeemCode, renderer, requestCode } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
 
@@ -24,7 +24,7 @@ export async function send(
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
-  const number = to.phone == null ? "" : phoneNumber(to.phone);
+  const number = to.phone == null ? "" : contactKey("phone", to.phone);
   const target = to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
     : to.usr != null ? sql`c.usr_id = ${to.usr}`
     : number ? sql`c.address = ${number}`
@@ -47,32 +47,33 @@ export async function send(
   ]);
   // a number nobody verified is still a number — it goes out, without an owner
   if (number && !rows.length) rows.push({ usr_id: null, address: number, error: null });
-  const deliveries = [];
+  // journaled first: a tracked link carries the delivery's own id
+  const { ids } = await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time },
+    rows.map((row) => ({ usrId: Number(row.usr_id) || undefined, address: String(row.address), time })));
+
   let sent = 0;
-  for (const row of rows) {
+  for (const [i, row] of rows.entries()) {
     const address = String(row.address);
     const usrId = Number(row.usr_id) || undefined;
-    const body = render(row).text;
+    const body = (await render({ ...row, deliveryId: ids[i] })).text;
     const text = msg.title ? `${msg.title}\n${body}` : body;
     try {
       await deliver(app, address, text);
       sent++;
-      deliveries.push({ usrId, address, time: unixTime() });
       if (row.error) await contactError(app.db, "phone", address);
     } catch (e) {
       const message = errMsg(e);
-      deliveries.push({ usrId, address, error: message, time: unixTime() });
+      await delivered(app, ids[i], message);
       console.warn(`sms: ${address} rejected —`, message);
       if (usrId) await contactError(app.db, "phone", address, message);
     }
   }
-  await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time }, deliveries);
   return sent;
 }
 
 /** Claim a phone number and send its six-digit code. Nothing is stored on the user until it is verified. */
 export async function addPhone(app: App, usrId: number, input: string): Promise<Row> {
-  const number = phoneNumber(input);
+  const number = contactKey("phone", input);
   const owner = await contactOwner(app.db, "phone", number);
   if (owner && owner !== usrId) throw new ApiError(409, "Phone number is unavailable");
   if (owner) return (await app.db.row`SELECT * FROM usr_contact WHERE channel = ${"sms"} AND address = ${number}`)!;
@@ -95,7 +96,7 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
 
 /** Redeem the code and make the number the user's. */
 export async function verifyPhone(app: App, usrId: number, input: string, code: string): Promise<Row> {
-  const number = phoneNumber(input);
+  const number = contactKey("phone", input);
   await redeemCode(app, "phone", usrId, number, code);
   return addContact(app.db, usrId, "phone", number);
 }
@@ -107,30 +108,3 @@ export async function approvePhone(app: App, usrId: number, address: string): Pr
   return addContact(app.db, Number(claimed.usr_id), "phone", String(claimed.address));
 }
 
-/** The user's verified numbers. */
-export function userPhones(app: App, usrId: number): Promise<Row[]> {
-  return contacts(app.db, usrId, "phone");
-}
-
-/** The numbers the user is in the middle of verifying. */
-export function pendingPhones(app: App, usrId?: number): Promise<Row[]> {
-  return pendingContacts(app, "phone", usrId);
-}
-
-/** Forget one number owned by the user. */
-export function removePhone(app: App, usrId: number, number: string): Promise<void> {
-  return removeContact(app.db, usrId, "phone", number);
-}
-
-/** Make a number the user's preferred SMS destination. */
-export function setMainPhone(app: App, usrId: number, number: string): Promise<Row> {
-  return setMainContact(app.db, usrId, "phone", number);
-}
-
-/** Every verified number with its owner. */
-export function phones(app: App, limit = 500): Promise<Row[]> {
-  return typeContacts(app.db, "phone", limit);
-}
-
-/** Normalize common formatting and require an international E.164 number. */
-export const phoneNumber = (input: string): string => contactKey("phone", input);

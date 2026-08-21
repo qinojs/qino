@@ -21,6 +21,8 @@ const makeApp = (db: Db) => ({
   db,
   t: fakeT,
   settings: { messaging: { _secret: "test-secret" }, "messaging.sms": { provider: {} } },
+  url: () => Promise.resolve("https://qino.test/"),
+  modules: { linked: () => [] },
   // deno-lint-ignore no-explicit-any
 }) as any;
 

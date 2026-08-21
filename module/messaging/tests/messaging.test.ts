@@ -22,7 +22,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
   const testApp = await app();
   await testApp.db.exec`INSERT INTO usr (email) VALUES ('one@example.test'), ('two@example.test')`;
   await testApp.db.exec`INSERT INTO grp (name) VALUES ('Editors')`;
-  const id = await record(testApp, {
+  const { id, ids } = await record(testApp, {
     channel: "sms",
     direction: "out",
     grpId: 1,
@@ -35,6 +35,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
   ]);
 
   assertEquals(id, 1);
+  assertEquals(ids, [1, 2]); // a tracked link needs the delivery's own id before anything is sent
   assertEquals(await messages(testApp), [{
     id: 1,
     channel: "sms",

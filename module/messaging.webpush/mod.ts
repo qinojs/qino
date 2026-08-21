@@ -59,7 +59,7 @@ export async function send(
     const key = usrId == null ? `sub:${row.id}` : `usr:${usrId}`;
     const outcome = outcomes.getOrInsertComputed(key, () => ({ usrId, sent: false, errors: [] }));
     try {
-      const payload = JSON.stringify({ ...notification, body: render(row).text });
+      const payload = JSON.stringify({ ...notification, body: (await render(row)).text });
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
       sent++;
       outcome.sent = true;

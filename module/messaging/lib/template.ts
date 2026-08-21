@@ -1,6 +1,8 @@
 import { hee } from "@qino/qino";
 
 import { htmlOf, textOf, textToHtml } from "./format.ts";
+import { rewriteLinks } from "./links.ts";
+import { markers } from "./track.ts";
 
 import type { App, Row } from "@qino/qino";
 import type { Msg } from "../mod.ts";
@@ -16,20 +18,32 @@ const CONTENT = "{{content}}";
 const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
 
 /**
- * Load the message's frame once, then render the message for each recipient.
+ * Load the message's frame and shorten its addresses once, then render it for each recipient.
  *
  * The frame is the one the message names, else the channel's main one, and none at all when the
  * message asks for none. The result has markup whenever the message or its frame has any. `to` is
- * the recipient row the channel already holds — its columns are the markers, and a missing one
- * falls back to what the marker names after `|`.
+ * the recipient row the channel already holds — its columns are the markers, a missing one falls
+ * back to what the marker names after `|`, and its `deliveryId` is what makes the links tracked.
  */
 export async function renderer(
   app: App,
   msg: Msg,
   channel: string,
   profile: Profile = "html",
-): Promise<(to?: Row) => { text: string; html?: string }> {
-  return framed(msg.template === "" ? undefined : await load(app, channel, msg.template), msg, profile);
+): Promise<(to?: Row) => Promise<{ text: string; html?: string }>> {
+  const frame = msg.template === "" ? undefined : await load(app, channel, msg.template);
+  // the frame is part of what goes out, so its links are shortened with the message's own
+  const [body, chrome] = await Promise.all([rewriteLinks(app, msg), frame ? rewriteLinks(app, frame) : undefined]);
+  const render = framed(chrome?.msg, body.msg, profile);
+  const marking = markers(app, [...body.links, ...chrome?.links ?? []]);
+
+  return async (to = {}) => {
+    const out = render(to);
+    const id = Number(to.deliveryId);
+    if (!id) return out; // no delivery to name: the links stay merely short
+    const mark = await marking(id);
+    return { text: mark(out.text), html: out.html && mark(out.html) };
+  };
 }
 
 /** The same with the frame in hand — what a preview of an unwritten template needs. */

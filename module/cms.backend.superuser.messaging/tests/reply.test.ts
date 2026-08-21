@@ -25,6 +25,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   const app = {
     db,
     t: fakeT,
+    url: () => Promise.resolve("https://qino.test/"),
     modules: {
       linked: (name?: string) => name === undefined ? Object.values(linked) : linked[name as keyof typeof linked],
       get: (name: string) => linked[name as keyof typeof linked],

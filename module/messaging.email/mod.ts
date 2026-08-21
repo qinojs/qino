@@ -1,6 +1,6 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, sql, unixTime } from "@qino/qino";
-import { attachmentFile, msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
+import { attachmentFile, delivered, msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
@@ -33,14 +33,24 @@ export async function send(
   const [config, mailer, render] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
   if (!config.sender) throw new Error("Email has no sender. Set messaging.email.sender.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
+  const detour = debug ? `redirected to debug address ${debug.address}` : undefined;
   const from = formatAddress({ address: config.sender, name: config.sendername });
   const attachments = await attachmentsOf(msg.attachments);
 
-  const deliveries = [];
+  // journaled first: a tracked link carries the delivery's own id
+  const { ids } = await record(app, {
+    channel: "email",
+    direction: "out",
+    grpId: to.grp,
+    msg: attachments ? { ...msg, attachments } : msg,
+    data: { to },
+    time,
+  }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, time })));
+
   let sent = 0;
-  for (const recipient of recipients) {
+  for (const [i, recipient] of recipients.entries()) {
     // every mail carries a text part: plain readers and spam filters both want one
-    const { text, html } = render(recipient);
+    const { text, html } = await render({ ...recipient, deliveryId: ids[i] });
     const error = await deliver(mailer, {
       from,
       to: formatAddress(debug ?? recipient),
@@ -55,21 +65,9 @@ export async function send(
     if (!error) sent++;
     // a contact that bounces says so in the panel; the journal keeps the detail
     if (recipient.usrId) contactError(app.db, "email", recipient.address, error);
-    deliveries.push({
-      usrId: recipient.usrId,
-      address: recipient.address,
-      error: error ?? (debug ? `redirected to debug address ${debug.address}` : undefined),
-      time: unixTime(),
-    });
+    // a plain success is already what the journal says
+    if (error || detour) await delivered(app, ids[i], error ?? detour);
   }
-  await record(app, {
-    channel: "email",
-    direction: "out",
-    grpId: to.grp,
-    msg: attachments ? { ...msg, attachments } : msg,
-    data: { to },
-    time,
-  }, deliveries);
   return sent;
 }
 

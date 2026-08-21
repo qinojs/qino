@@ -40,8 +40,8 @@ export async function send(
   // Telegram has no title of its own; it becomes the first line, bold where markup is on
   const { text, title, format: _format, template: _template, attachments: _attachments, ...extra } = msg;
   const own = Boolean(extra.parse_mode); // an own parse_mode owns the text, escaping included
-  const params = (to: Row) => {
-    const { text: plain, html } = render(to);
+  const params = async (to: Row) => {
+    const { text: plain, html } = await render(to);
     const body = own ? text : html ?? plain;
     const head = title ? (html || extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title) : "";
     return { ...extra, ...(!own && html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
@@ -53,7 +53,7 @@ export async function send(
   const deliver = async (row: Row) => {
     const outcome = outcomes.getOrInsertComputed(Number(row.usr_id), () => ({ sent: false, errors: [] }));
     try {
-      await sendMessage(app, { ...params(row), chat_id: Number(row.chat_id) });
+      await sendMessage(app, { ...await params(row), chat_id: Number(row.chat_id) });
       sent++;
       outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again

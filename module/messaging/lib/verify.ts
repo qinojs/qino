@@ -1,4 +1,6 @@
-import { $item, ApiError, beforeProof, contactKey, proofFailed, proofPassed, randB64, safeEqual, sha256b64url, unixTime } from "@qino/qino";
+import { ApiError, beforeProof, contactKey, proofFailed, proofPassed, safeEqual, sha256b64url, unixTime } from "@qino/qino";
+
+import { secret } from "./secret.ts";
 
 import type { App, Row } from "@qino/qino";
 
@@ -99,21 +101,4 @@ function claim(app: App, type: string, usrId: number, address: string): Promise<
 
 function codeHash(app: App, type: string, address: string, code: string): Promise<string> {
   return secret(app).then((key) => sha256b64url(`${key}\0${type}\0${address}\0${code}`));
-}
-
-// One in-flight generation per app — two parallel first requests must not make two secrets,
-// or the code hashed with the first one can never be redeemed.
-const secrets = new WeakMap<App, Promise<string>>();
-
-function secret(app: App): Promise<string> {
-  return secrets.getOrInsertComputed(app, () => loadSecret(app).catch((e) => { secrets.delete(app); throw e; }));
-}
-
-async function loadSecret(app: App) {
-  const stored = String(await app.settings["messaging"]._secret ?? "");
-  if (stored) return stored;
-  const fresh = randB64(32);
-  // writing goes through the raw item — on the proxy, .set would read as a child key
-  await app.settings[$item].sub(["messaging"]).item("_secret").set(fresh);
-  return fresh;
 }

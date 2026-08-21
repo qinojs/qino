@@ -160,6 +160,40 @@
         "required": ["id", "message_id", "time"]
       }
     },
+    "message_track": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "delivery_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "message_delivery",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": true,
+            "description": "The short code that was reached; it stands for the address"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["click", "load"],
+            "maxLength": 5,
+            "description": "Followed by the recipient, or loaded by their client"
+          },
+          "time": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id", "delivery_id", "code", "kind", "time"]
+      }
+    },
     "usr_contact_verification": {
       "additionalProperties": {
         "properties": {

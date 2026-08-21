@@ -25,11 +25,15 @@ you never call `record()` for an outgoing message.
 delivery is the whole verdict — null means reached.
 
 ```ts
-await record(app, { channel: "sms", direction: "out", grpId: 3, msg, data: { to } }, [
+const { id, ids } = await record(app, { channel: "sms", direction: "out", grpId: 3, msg, data: { to } }, [
   { usrId: 7 },
   { usrId: 9, error: "rejected" },
 ]);
 ```
+
+Journal first, send after: `ids` are the delivery rows in the order they were given, and a tracked
+link needs one before it can be written into the message. `delivered(app, ids[i], error)` fills in
+how each attempt went — a plain success is already what the row says, so nothing is written back.
 
 `msg` is the channel-neutral part and lands in the `title` and `text` columns, so reading or
 searching the journal needs no knowledge of any channel; `data` stays the channel-native payload
@@ -103,6 +107,52 @@ nothing.
 Nothing sanitizes on the way out: a mail client is not a page. `sanitizeHtml(html)` is for the
 way *in* — a panel that renders journal HTML must pass it through, because a message is written
 by whoever sent it.
+
+## Links
+
+Every address a message points at is made absolute and, where [shorturl](../shorturl/) is linked,
+traded for a short code — once per message, never per recipient. Three links to ten thousand people
+are three rows.
+
+```
+[shop](/shop)  →  [shop](https://site.test/s/Ab3-x9Qm/1f4c)
+```
+
+Absolute means what a browser means: `/shop` is the host's, `shop` is the page's. An address that
+is already absolute is left exactly as it was written, and what is not a web address — `mailto:`,
+`tel:`, `cid:`, a bare `#anchor` — is not touched at all. Which addresses a message names is read
+by the parser of its format, not by a pattern, so one inside a code block is being *shown*, not
+offered. The frame is part of what goes out, so its links are traded with the message's own.
+
+One address is deliberately left long: a link of our own that carries a `sig` — what
+`grant.sign()` puts on a `dbFile.url({ grant })` — *is* the secret. Trading a hundred-odd bits for
+the eight characters of a short code would make the code the weaker of the two, and every guessed
+code hits *some* document. Only our own: on a foreign host a `sig` means whatever that host
+decided it means.
+
+## Tracking
+
+What follows the code says which delivery got there; the code itself says which address:
+
+```
+https://site.test/s/Ab3-x9Qm/1f4c
+                   └ address    └ delivery 1704 · c=click · signature
+```
+
+`message_track` keeps one row per hit — `delivery_id`, `code`, `kind`, `time` — so "who clicked",
+"which link pulls" and "how often" are one query. `kind` tells a followed link from an image the
+client loaded, which is the difference between a reader and a mail client: `load` is systematically
+too high, because Apple Mail and Gmail's proxy fetch images nobody looked at.
+
+The marker is signed, and that is its whole point: a bare delivery number invites walking 1, 2, 3
+and writing a click for somebody else. Three characters leave one guess in 262 144. A marker that
+does not check out is simply not counted, and nothing is reported: the tag behind a code belongs to
+whoever made the link, every module may shorten, and one this key cannot read is somebody else's
+rather than a forged one. Nothing about it is stored until it is followed.
+
+A message is only tracked when the channel hands the delivery's id to the renderer — email and sms
+do. Telegram and Web Push shorten their links but write no marker: their delivery rows are one per
+*user*, not one per device, so a marker there would say less than it seems to.
 
 ## Templates
 
@@ -225,6 +275,9 @@ strength of an unproven address.
 
 `message_attachment` — ordered links from a message to core's `file` table. Content and metadata
 stay in `DbFile`; channels decide whether they can deliver attachments.
+
+`message_track` — one row per hit on a tracked link: which delivery, which code, followed or
+loaded, and when.
 
 `usr_contact_verification` — open claims, keyed by channel and address. No cron job: expired
 rows are swept whenever a code is requested.

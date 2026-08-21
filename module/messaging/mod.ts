@@ -102,16 +102,19 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
 }
 
 /**
- * Store one logical message and one result per recipient.
+ * Store one logical message and one row per recipient.
  *
  * `msg` is the channel-neutral part and lands in its own columns, so reading and searching the
  * journal needs no knowledge of any channel; `data` stays the channel-native payload and routing.
+ *
+ * Journal first, send after: `ids` are the delivery rows in the order they were given — a tracked
+ * link needs one before it is written into the message, and `delivered()` says how it went.
  */
 export async function record(
   app: App,
   message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: unknown; grpId?: number; logId?: number; time?: number },
   deliveries: { usrId?: number; address?: string; error?: string; time?: number }[] = [],
-): Promise<number> {
+): Promise<{ id: number; ids: number[] }> {
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
   const msg = message.msg == null ? undefined : msgOf(message.msg);
@@ -119,6 +122,7 @@ export async function record(
     ? await Promise.all(msg.attachments.map(async (attachment) => await app.dbFiles.add(await attachmentFile(attachment))))
     : [];
   let id = 0;
+  const ids: number[] = [];
   await app.db.transaction(async () => {
     id = Number(await app.db.table("message").insert({
       channel: message.channel,
@@ -136,16 +140,21 @@ export async function record(
     for (const [sort, file] of files.entries()) await attachments.insert({ message_id: id, file_id: file.id, sort });
     const table = app.db.table("message_delivery");
     for (const delivery of deliveries) {
-      await table.insert({
+      ids.push(Number(await table.insert({
         message_id: id,
         usr_id: delivery.usrId ?? null,
         address: delivery.address ?? null,
         time: delivery.time ?? unixTime(),
         error: delivery.error ?? null,
-      });
+      })));
     }
   });
-  return id;
+  return { id, ids };
+}
+
+/** How one attempt went, written back to the row a tracked link points at. */
+export function delivered(app: App, id: number, error?: string): Promise<unknown> {
+  return app.db.table("message_delivery").update(id, { error: error ?? null, time: unixTime() });
 }
 
 type JournalMessage = Row & { deliveries: Row[]; attachments: Row[] };
