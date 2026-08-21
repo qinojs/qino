@@ -82,16 +82,15 @@ export function templated(
   // markup on either side makes it a markup message; the plain side is lifted to match
   const markup = html !== undefined || templateHtml !== undefined;
 
-  return (computed = {}) => ({
-    // only what was assembled here is tidied: without a template it goes out exactly as written
-    text: template ? tidy(fill(templateText, { ...form(computed, "text"), content: text })) : text,
-    html: markup
-      ? fill(templateHtml ?? textToHtml(templateText, profile), {
-        ...form(computed, "html"),
-        content: html ?? textToHtml(text, profile),
-      })
-      : undefined,
-  });
+  return (computed = {}) => {
+    // `content` is a placeholder like any other, in both forms like any other
+    const all = { ...computed, content: { text, html: html ?? textToHtml(text, profile) } };
+    return {
+      // only what was assembled here is tidied: without a template it goes out exactly as written
+      text: template ? tidy(fill(templateText, all, "text")) : text,
+      html: markup ? fill(templateHtml ?? textToHtml(templateText, profile), all, "html") : undefined,
+    };
+  };
 }
 
 /** A template whose placeholders came up empty leaves holes — and on sms a blank line costs money. */
@@ -118,17 +117,15 @@ function load(app: App, channel: string, name?: string): Promise<Msg | undefined
 }
 
 /**
- * Put the placeholders in. Whatever is not among them comes out as what it names after `|`, so
- * the set handed in is at once the registry and the allowlist — a template reads what it is
- * given and nothing else.
+ * Put the placeholders in, each in the form this side needs. A name that was not handed in comes
+ * out as what it says after `|`, so the set given is at once the registry and the allowlist — and
+ * an inherited name like `toString` has no `text` to read, so it is none either.
  *
- * They go in as they are, which is why the caller escapes: it is the one that knows whether it is
- * building text or markup, and `{{content}}` was rendered for this target already. Filling is one
- * round, never a second, so a value that reads like a placeholder stays text.
+ * Values go in as they are: whoever made them knew which side they were for. Filling is one round,
+ * never a second, so a value that reads like a placeholder stays text.
  */
-function fill(template: string, placeholders: Record<string, string>): string {
-  return template.replace(PLACEHOLDER, (_, key, fallback = "") =>
-    (Object.hasOwn(placeholders, key) ? placeholders[key] : "") || fallback);
+function fill(template: string, placeholders: Computed, side: "text" | "html"): string {
+  return template.replace(PLACEHOLDER, (_, key, fallback = "") => placeholders[key]?.[side] || fallback);
 }
 
 /** Which placeholders these texts name at all — the same reading `fill()` does. */
@@ -140,20 +137,16 @@ function placeholders(app: App): Record<string, Placeholder> {
   return Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.messagingPlaceholders));
 }
 
-/** Work the asked-for ones out for this recipient; one that has nothing to say leaves its hole. */
+/** Work the asked-for ones out for this recipient; one with nothing to say comes out empty,
+ *  which is what makes `{{firstname|Kunde}}` fall back to the name it gives. */
 async function computeAll(app: App, asked: [string, Placeholder][], to: Row): Promise<Computed> {
   const values: Computed = {};
-  for (const [name, make] of asked) {
-    const value = await make(app, to);
-    if (value) values[name] = value;
-  }
+  for (const [name, make] of asked) values[name] = await make(app, to) ?? EMPTY;
   return values;
 }
+
+const EMPTY = { text: "", html: "" };
 
 /** Plain values as placeholders — what a preview hands in, having no real recipient to ask. */
 export const asPlaceholders = (row: Row): Computed =>
   Object.fromEntries(Object.entries(row).map(([key, value]) => [key, { text: String(value ?? ""), html: hee(value) }]));
-
-/** A placeholder is already markup or already text — pick the side being built. */
-const form = (computed: Computed, side: "text" | "html") =>
-  Object.fromEntries(Object.entries(computed).map(([key, both]) => [key, both[side]]));
