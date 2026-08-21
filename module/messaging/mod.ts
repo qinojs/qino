@@ -7,7 +7,7 @@ import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
-export { framed, renderer, saveTemplate, templates } from "./lib/template.ts";
+export { templated, renderer, saveTemplate, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 
 /** A named file carried by channels that support attachments. */
@@ -26,8 +26,8 @@ export type Attachment = File | {
  * channel accepts, html degrades to plain text where none is possible, and the default — plain
  * text — goes out exactly as it was written. `title` is always plain text.
  *
- * `template` names the frame around it — the channel's main one when unnamed, none at all when
- * empty. The frame is chrome: it is applied per recipient and never joins the text.
+ * `template` names the template around it — the channel's main one when unnamed, none at all when
+ * empty. The template is chrome: it is applied per recipient and never joins the text.
  */
 export type Msg = {
   text: string;

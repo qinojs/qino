@@ -47,3 +47,12 @@ Deno.test("html degrades to readable text and is sanitized before it reaches a p
   assertEquals(htmlToText("a &amp; b<br>c"), "a & b\nc");
   assert(!sanitizeHtml('<img src=x onerror="alert(1)"><script>alert(1)</script>ok').includes("onerror"));
 });
+
+Deno.test("telegram gets only what it renders — an unknown tag is refused, not ignored", () => {
+  const doc = { text: `<h1>Sale</h1><table><tr><td>a</td></tr></table><b>bold</b><img src="x.gif">`, format: "html" as const };
+  assertEquals(htmlOf(doc, "telegram"), "Salea<b>bold</b>");
+  assertEquals(htmlOf(doc), doc.text); // a mail client renders the document as it was written
+
+  // markdown reaches the same subset through the renderer overrides plus this policy
+  assertEquals(htmlOf({ text: "# Sale\n\n![pic](p.png)", format: "md" }, "telegram"), "<b>Sale</b>\n\npic");
+});

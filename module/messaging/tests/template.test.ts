@@ -16,7 +16,7 @@ async function app(...rows: Record<string, unknown>[]): Promise<App> {
   return { db, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => [] } } as unknown as App;
 }
 
-Deno.test("a channel's main template frames every message, and only that channel's", async () => {
+Deno.test("a channel's main template templates every message, and only that channel's", async () => {
   const a = await app(
     { name: "signature", channel: "sms", main: true, text: "{{content}}\nSupport: https://qino.test" },
     { name: "letter", channel: "email", main: true, format: "md", text: "Hallo {{firstname|Kunde}},\n\n{{content}}" },
@@ -30,11 +30,11 @@ Deno.test("a channel's main template frames every message, and only that channel
   assertEquals((await mail()).html, "<p>Hallo Kunde,</p>\n<p>wie gehts</p>"); // nobody to greet, so the fallback greets
 
   const telegram = await renderer(a, { text: "wie gehts" }, "telegram");
-  assertEquals(await telegram(to), { text: "wie gehts", html: undefined }); // no row, no frame
+  assertEquals(await telegram(to), { text: "wie gehts", html: undefined }); // no row, no template
   await a.db.close();
 });
 
-Deno.test("a message chooses its frame, drops it, or asks for one nobody wrote", async () => {
+Deno.test("a message chooses its template, drops it, or asks for one nobody wrote", async () => {
   const a = await app(
     { name: "signature", channel: "sms", main: true, text: "{{content}}\n--" },
     { name: "bare", channel: "sms", text: "» {{content}}" },
@@ -51,11 +51,11 @@ Deno.test("recipient markers are escaped in markup, the message is not escaped t
   const a = await app({ name: "letter", channel: "email", main: true, format: "html", text: "<p>Hi {{lastname}}</p>{{content}}" });
   const render = await renderer(a, { text: "1 < 2 & **so**", format: "md" }, "email");
   assertEquals((await render(to)).html, "<p>Hi Lovelace &lt;&amp;&gt;</p><p>1 &lt; 2 &amp; <strong>so</strong></p>");
-  assertEquals((await render(to)).text, "Hi Lovelace <&>\n\n1 < 2 & so"); // the frame's <p> ends a paragraph
+  assertEquals((await render(to)).text, "Hi Lovelace <&>\n\n1 < 2 & so"); // the template's <p> ends a paragraph
   await a.db.close();
 });
 
-Deno.test("a plain message in a markup frame is lifted, and telegram keeps its own line breaks", async () => {
+Deno.test("a plain message in a markup template is lifted, and telegram keeps its own line breaks", async () => {
   const a = await app(
     { name: "letter", channel: "email", main: true, format: "html", text: "<div>{{content}}</div>" },
     { name: "chat", channel: "telegram", main: true, format: "md", text: "**{{firstname}}**\n\n{{content}}" },
@@ -68,7 +68,7 @@ Deno.test("a plain message in a markup frame is lifted, and telegram keeps its o
   await a.db.close();
 });
 
-Deno.test("a channel has one main frame — a new one takes the flag over", async () => {
+Deno.test("a channel has one main template — a new one takes the flag over", async () => {
   const a = await app(
     { name: "old", channel: "sms", main: true, text: "old {{content}}" },
     { name: "other", channel: "email", main: true, text: "mail {{content}}" },
@@ -82,17 +82,17 @@ Deno.test("a channel has one main frame — a new one takes the flag over", asyn
   await a.db.close();
 });
 
-Deno.test("what the frame assembles is tidied; what the message says is not", async () => {
+Deno.test("what the template assembles is tidied; what the message says is not", async () => {
   const a = await app({ name: "letter", channel: "sms", main: true, text: "  Hallo {{firstname}},\n\n\n\n{{content}}\n\n\n\n{{company}}  \n" });
   const render = await renderer(a, { text: "hi" }, "sms");
   assertEquals(await render({ firstname: "Ada" }), { text: "Hallo Ada,\n\nhi", html: undefined }); // no company, no hole
 
   const bare = await renderer(a, { text: "a\n\n\n\nb ", template: "" }, "sms");
-  assertEquals((await bare()).text, "a\n\n\n\nb "); // nobody framed it, so nobody touches it
+  assertEquals((await bare()).text, "a\n\n\n\nb "); // nobody templated it, so nobody touches it
   await a.db.close();
 });
 
-Deno.test("a frame's paragraph that is only the marker steps aside for the message's own blocks", async () => {
+Deno.test("a template's paragraph that is only the marker steps aside for the message's own blocks", async () => {
   const a = await app({ name: "letter", channel: "email", main: true, format: "md", text: "Hallo,\n\n{{content}}\n\nTeam" });
   const render = await renderer(a, { text: "one\n\ntwo", format: "md" }, "email");
   assertEquals((await render()).html, "<p>Hallo,</p>\n<p>one</p>\n<p>two</p>\n<p>Team</p>");

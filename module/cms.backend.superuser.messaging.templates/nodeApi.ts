@@ -1,5 +1,5 @@
 import { errMsg } from "@qino/qino";
-import { framed } from "@qino/qino/messaging";
+import { templated } from "@qino/qino/messaging";
 
 import { SAMPLE, sampleMsg } from "./render.ts";
 
@@ -12,7 +12,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   try {
     const { text, format, channel } = vars.preview as Record<string, string>;
     const wanted = format === "md" || format === "html" ? format : undefined;
-    const render = framed({ text: String(text ?? ""), format: wanted }, await sampleMsg(app, wanted),
+    const render = templated({ text: String(text ?? ""), format: wanted }, await sampleMsg(app, wanted),
       channel === "telegram" ? "telegram" : "html");
     return { ok: true, ...render(SAMPLE) };
   } catch (e) {

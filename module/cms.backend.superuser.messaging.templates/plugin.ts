@@ -16,12 +16,12 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const rows = await templates(app).catch(() => []);
-  const framed = channels(app).filter((c) => rows.some((row) => row.channel === c.name && row.main));
+  const withMain = channels(app).filter((c) => rows.some((row) => row.channel === c.name && row.main));
 
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${app.t`templates`}
-    · ${framed.length}/${channels(app).length} ${app.t`channels with a default`}
-    ${framed.map((c) => html` <span class=u2-badge>${c.label}</span>`)}
+    · ${withMain.length}/${channels(app).length} ${app.t`channels with a default`}
+    ${withMain.map((c) => html` <span class=u2-badge>${c.label}</span>`)}
   </div>`;
 }
 

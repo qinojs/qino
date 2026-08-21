@@ -1,6 +1,6 @@
 import { getCtx, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { channels, framed, saveTemplate, templates } from "@qino/qino/messaging";
+import { channels, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -9,7 +9,7 @@ const FORMATS = ["", "md", "html"];
 /** Who the preview greets — a template says nothing about a real recipient. */
 export const SAMPLE = { firstname: "Ada", lastname: "Lovelace", company: "Analytical Engines", email: "ada@example.test", address: "ada@example.test" };
 
-/** What the preview puts inside the frame, in the frame's own format. */
+/** What the preview puts inside the template, in the template's own format. */
 export async function sampleMsg(app: App, format?: "md" | "html"): Promise<{ text: string; format?: "md" | "html" }> {
   return { text: await app.t`This is where the message goes. It shows here as this channel would show it.`, format };
 }
@@ -21,7 +21,7 @@ export function render(node: Node): Promise<HtmlString | string> {
   return name && channel ? detail(node, name, channel) : overview(node);
 }
 
-/** Every frame that exists, and the form that writes the next. */
+/** Every template that exists, and the form that writes the next. */
 export async function overview(node: Node): Promise<HtmlString | string> {
   const app = node.app;
   const t = app.t;
@@ -80,7 +80,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
 </div>`;
 }
 
-/** One frame: what it says, and what a message looks like inside it. */
+/** One template: what it says, and what a message looks like inside it. */
 async function detail(node: Node, name: string, channel: string): Promise<HtmlString | string> {
   const app = node.app;
   const t = app.t;
@@ -133,15 +133,15 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
 </div>`;
 }
 
-/** The saved frame around a sample message, in the forms this channel really sends: a text-only
+/** The saved template around a sample message, in the forms this channel really sends: a text-only
  *  template has no markup to show, and only mail is worth running past the client simulator. */
 async function preview(node: Node, row: Row): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const channel = String(row.channel);
   const format = (row.format || undefined) as "md" | "html" | undefined;
-  const frame = { text: String(row.text ?? ""), format };
-  const render = framed(frame, await sampleMsg(app, format), channel === "telegram" ? "telegram" : "html");
+  const template = { text: String(row.text ?? ""), format };
+  const render = templated(template, await sampleMsg(app, format), channel === "telegram" ? "telegram" : "html");
   const { text, html: markup } = render(SAMPLE);
   const simulated = channel === "email";
 

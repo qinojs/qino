@@ -23,7 +23,7 @@ Deno.test("every recipient gets their own marker, and a made-up one is not one o
   await a.db.close();
 });
 
-Deno.test("the frame's links are shortened with the message's own, and both carry the marker", async () => {
+Deno.test("the template's links are shortened with the message's own, and both carry the marker", async () => {
   const a = await app();
   await a.db.table("message_template").insert({
     name: "letter", channel: "email", main: true, format: "md",

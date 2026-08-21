@@ -104,9 +104,33 @@ anything hidden from the reader are gone, blocks become line breaks, lists count
 their columns, and a link keeps its address — a plain-text alternative without the URLs is worth
 nothing.
 
-Nothing sanitizes on the way out: a mail client is not a page. `sanitizeHtml(html)` is for the
-way *in* — a panel that renders journal HTML must pass it through, because a message is written
-by whoever sent it.
+A mail client is not a page, so a document goes out as it was written. A narrower target is
+sanitized on the way out all the same, for a different reason: `sanitizeHtml(html, "telegram")`
+keeps its documented subset, because an unknown tag there is *refused*, not ignored — one `<img>`
+and the message never goes out. `sanitizeHtml(html)` is also for the way *in*: a panel that renders
+journal HTML must pass it through, because a message is written by whoever sent it.
+
+## The way out
+
+```
+send(app, to, msg)
+ ├ recipients …………………… who the `to` means: addresses, chats, endpoints
+ ├ record() ……………………… the message plus one delivery row each, before anything goes out
+ ├ renderer(…) ………………… once per message:
+ │   ├ load the template … the one the message names, else the channel's main one
+ │   ├ rewriteLinks(msg) … every address absolute, then shortened
+ │   ├ rewriteLinks(tmpl)   the template's links are traded with the message's own
+ │   └ beacon ……………………… a shortened pixel, where the markup can carry one
+ ├ render(recipient) …… once per recipient:
+ │   ├ textOf / htmlOf …… the message as text and, where it has markup, as html
+ │   ├ fill() ……………………… {{content}} into the template, {{firstname}} from the recipient row
+ │   └ markers(deliveryId)  `${link}/${marker}` on every shortened address
+ ├ deliver ………………………… the channel's own transport, one recipient at a time
+ └ delivered(id, error) … only when the attempt has a verdict of its own
+```
+
+Everything above the recipient line happens once, however many people are written to; everything
+below it is what a single delivery costs.
 
 ## Links
 
@@ -122,7 +146,7 @@ Absolute means what a browser means: `/shop` is the host's, `shop` is the page's
 is already absolute is left exactly as it was written, and what is not a web address — `mailto:`,
 `tel:`, `cid:`, a bare `#anchor` — is not touched at all. Which addresses a message names is read
 by the parser of its format, not by a pattern, so one inside a code block is being *shown*, not
-offered. The frame is part of what goes out, so its links are traded with the message's own.
+offered. The template is part of what goes out, so its links are traded with the message's own.
 
 One address is deliberately left long: a link of our own that carries a `sig` — what
 `grant.sign()` puts on a `dbFile.url({ grant })` — *is* the secret. Trading a hundred-odd bits for
@@ -165,9 +189,9 @@ do. Telegram and Web Push shorten their links but write no marker: their deliver
 
 ## Templates
 
-A template is the frame a channel puts around every message — the signature under a mail, the
+A template is what a channel puts around every message — the signature under a mail, the
 support line after an SMS. The message asks for it by name, and each channel keeps its own
-variant, so the same message arrives framed the way that channel talks:
+variant, so the same message arrives the way that channel talks:
 
 | `name` | `channel` | `main` | `format` | `text` |
 | --- | --- | --- | --- | --- |
@@ -176,27 +200,27 @@ variant, so the same message arrives framed the way that channel talks:
 | newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
 
 `{{content}}` is the message, already rendered for that channel; every other marker is a column of
-the recipient — `firstname`, `lastname`, `company`, `email`, `address` — escaped where the frame is
+the recipient — `firstname`, `lastname`, `company`, `email`, `address` — escaped where the template is
 markup, and `{{firstname|Kunde}}` says what stands there when nobody is known.
 
 ```ts
-send(app, { grp: 3 }, "wie gehts")                            // the channel's main frame, if it has one
+send(app, { grp: 3 }, "wie gehts")                            // the channel's main template, if any
 send(app, { grp: 3 }, { text: "…", template: "newsletter" })  // this one
 send(app, { grp: 3 }, { text: "…", template: "" })            // none
 ```
 
-What the frame assembles is tidied — trailing spaces, and never more than one blank line in a row,
+What the template assembles is tidied — trailing spaces, and never more than one blank line in a row,
 because a marker that came up empty leaves a hole and on sms a blank line costs money. The message's
-own text is never touched: unframed, it goes out exactly as it was written.
+own text is never touched: without a template, it goes out exactly as it was written.
 
 `main` marks the one a message gets when it names none — one per channel, as `usr_contact.main`
 marks the address a user is written to; `saveTemplate()` hands the flag over. A channel without a
-main frame sends unframed — that is how SMS stays one segment. The frame is
-applied per recipient and never joins the message: the journal keeps the text as it was written
-plus the template's *name*, so the frame can be rewritten without rewriting history, and searching
-the journal finds messages instead of signatures.
+main template sends without one — that is how SMS stays one segment. It is applied per recipient
+and never joins the message: the journal keeps the text as it was written plus the template's
+*name*, so a template can be rewritten without rewriting history, and searching the journal finds
+messages instead of signatures.
 
-Rendering is `renderer(app, msg, channel, profile?)` — it loads the frame once and returns a
+Rendering is `renderer(app, msg, channel, profile?)` — it loads the template once and returns a
 function that renders per recipient, so a mail to a thousand people costs one query.
 
 ## Not decided yet
@@ -299,7 +323,7 @@ rows are swept whenever a code is requested.
   for people who have no account. `message_delivery.address` is there for it; what is
   missing is the channels accepting the short form. Never expose it through an api tree: it
   is a spam relay the moment it is reachable over HTTP.
-- **Per-recipient markers in the message itself.** Markers work in the frame alone today: the
+- **Per-recipient markers in the message itself.** Markers work in the template alone today: the
   message's own text goes in as `{{content}}` untouched, and a title never sees `fill()` at all.
   Every channel sends per recipient anyway, so both could have them — the journal would keep the
   template, not the copies, and the escaping has to come from the channel, since only mail wants

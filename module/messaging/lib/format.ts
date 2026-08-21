@@ -48,14 +48,15 @@ export function textOf(msg: Msg): string {
 
 /** The message as markup, or undefined when it is plain text and has none to give. */
 export function htmlOf(msg: Msg, profile: Profile = "html"): string | undefined {
-  if (msg.format === "html") return msg.text;
+  // a document goes to a mail client as it was written; a narrower target only gets what it renders
+  if (msg.format === "html") return profile === "html" ? msg.text : sanitizeHtml(msg.text, profile);
   if (msg.format !== "md") return;
   return render(msg.text, profile);
 }
 
 function render(text: string, profile: Profile): string {
   const parser = profile === "telegram" ? markdownTelegram : markdown;
-  return sanitizeHtml(parser.parse(text, { async: false })).trim();
+  return sanitizeHtml(parser.parse(text, { async: false }), profile).trim();
 }
 
 /** Plain text as markup: escaped, and its line breaks kept in the way the target keeps them. */
