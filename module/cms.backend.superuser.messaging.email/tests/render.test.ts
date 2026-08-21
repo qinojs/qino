@@ -49,12 +49,12 @@ Deno.test("cms.backend.superuser.messaging.email builds its form from the module
   assertStringIncludes(output, "post@qino.test");
   assertStringIncludes(output, "mail.qino.test");
   assertStringIncludes(output, '<div class="u2-table -Fields">');
-  assertEquals(output.match(/<div class="u2-table -Fields">/g)?.length, 2);
+  assertEquals(output.match(/<div class="u2-table -Fields[^"]*">/g)?.length, 2);
   assertStringIncludes(output, '<label><span>address</span><span><input name="address"');
   assertStringIncludes(output, 'data-transport-fields="mock" hidden style="display:none"');
   assert(!output.includes("<u2-fields>"));
   assertStringIncludes(output, 'name="transport.smtp.pass"');
-  const advanced = output.indexOf("<details>");
+  const advanced = output.indexOf("<details");
   assert(output.indexOf('name="transport.smtp.host"') < advanced);
   assert(output.indexOf('name="name"') > advanced);
   assert(output.indexOf('name="debugTo"') > advanced);

@@ -2,7 +2,7 @@ import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
-import { cms, render } from "../plugin.ts";
+import { backendDashboardWidget, cms, render } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -92,6 +92,13 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(overview, "icon=call_made");
     assertStringIncludes(overview, 'href="/de/backend/superuser/nachrichten?msg=1"');
     assertStringIncludes(overview, "<td data-attachments>1");
+    const widget = String(await backendDashboardWidget(app as never, {
+      url: () => Promise.resolve("/de/backend/superuser/nachrichten"),
+    } as never));
+    assertStringIncludes(widget, "messages in 7 days");
+    assertStringIncludes(widget, 'class=u2-badge style="--color-dark:var(--blue)">Telegram');
+    assertStringIncludes(widget, 'href="/de/backend/superuser/nachrichten?msg=1"');
+    assertStringIncludes(widget, "Hello");
     const detail = await render("http://qino.test/de/backend/superuser/nachrichten?msg=1");
     assertStringIncludes(detail, "user@qino.test");
     assertStringIncludes(detail, "<pre>");

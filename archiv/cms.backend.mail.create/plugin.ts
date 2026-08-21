@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { mail, addressOf } from "@qino/qino/mail";
+import { mail, addressOf } from "../mail/mod.ts";
 
 import manifest from "./manifest.json" with { type: "json" };
 

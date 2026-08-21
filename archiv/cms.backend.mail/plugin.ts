@@ -1,5 +1,5 @@
 import { basename, extname } from "node:path";
-import { mail } from "@qino/qino/mail";
+import { mail } from "../mail/mod.ts";
 import { typeByExtension } from "@std/media-types";
 import { getCtx, html, sqlSearch, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";

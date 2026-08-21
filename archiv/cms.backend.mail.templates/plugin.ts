@@ -1,7 +1,7 @@
 import { getCtx, hee, html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { mail } from "@qino/qino/mail";
+import { mail } from "../mail/mod.ts";
 
 import manifest from "./manifest.json" with { type: "json" };
 

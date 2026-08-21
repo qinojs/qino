@@ -433,18 +433,39 @@ function userName(user: Row): string {
   return name ? `${name}${user.email ? " · " + user.email : ""}` : String(user.email ?? "#" + user.id);
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const since = unixTime() - 7 * 86400;
-  const totals = await app.db.row`
-    SELECT COUNT(*) AS n,
-      SUM(CASE WHEN direction = ${"in"} THEN 1 ELSE 0 END) AS incoming,
-      (SELECT COUNT(*) FROM message_delivery WHERE error IS NOT NULL AND time >= ${since}) AS errors
-    FROM message WHERE time >= ${since}`.catch(() => undefined);
+  const [totals, recent, view, pageUrl] = await Promise.all([
+    app.db.row`
+      SELECT COUNT(*) AS n,
+        SUM(CASE WHEN direction = ${"in"} THEN 1 ELSE 0 END) AS incoming,
+        (SELECT COUNT(*) FROM message_delivery WHERE error IS NOT NULL AND time >= ${since}) AS errors
+      FROM message WHERE time >= ${since}`.catch(() => undefined),
+    app.db.query`
+      SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.format, m.time, g.name AS grp_name,
+        (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
+        (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
+      FROM message m LEFT JOIN grp g ON g.id = m.grp_id
+      ORDER BY m.time DESC, m.id DESC LIMIT 5`.catch(() => []),
+    labels(app),
+    page?.url() ?? "",
+  ]);
   return html.async`<div class=-body>
     <b>${Number(totals?.n ?? 0)}</b> ${app.t`messages in 7 days`}
     · ${Number(totals?.incoming ?? 0)} ${app.t`incoming`}
     ${Number(totals?.errors ?? 0) ? html` · <span class=u2-badge>${totals!.errors} ${await app.t`errors`}</span>` : ""}
-  </div>`;
+  </div>
+  ${recent.length ? html`<div style="overflow:auto;padding:0"><table class=u2-table>${recent.map((row) => {
+    const errors = Number(row.error_count) || 0;
+    const target = messageTarget(row, view);
+    const title = cut(String(row.title || plain(row) || "#" + row.id), 70);
+    const href = pageUrl ? pageUrl + (pageUrl.includes("?") ? "&" : "?") + "msg=" + row.id : "";
+    return html`<tr${href ? html.raw(" u2-href") : ""}>
+      <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
+      <td>${href ? html`<a href="${href}">${title}</a>` : title}${target ? html` <small>${target}</small>` : ""}
+      <td style="white-space:nowrap">${u2.el.time(row.time, { narrow: true })}
+      <td>${errors ? html`<span class=u2-badge>${errors} ${view.errors}</span>` : ""}`;
+  })}</table></div>` : ""}`;
 }
 
 export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { list }, api } };
