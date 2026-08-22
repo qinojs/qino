@@ -1,0 +1,30 @@
+/* Page-side editing affordances; panel chrome stays in the Shadow DOM. */
+[qcms-id] {
+  min-width: .75rem;
+  min-height: .75rem;
+  outline-offset: 1px;
+  transition: box-shadow .12s, opacity .12s;
+}
+
+:hover [qcms-edit]:not([qcms-mod^="layout."]) { outline: 1px solid var(--cms-color, #a06aef); }
+[qcms-id][data-cms-active] { outline: .1875rem solid var(--cms-color, #a06aef); }
+[qcms-id][qcms-offline] { opacity: .6; }
+[qcms-id][data-cms-cut] { opacity: .3; }
+a.cmsOffline { text-decoration: line-through !important; }
+
+a[cmstxt][contenteditable]:empty,
+span[cmstxt][contenteditable]:empty { display: inline-block; }
+:hover [cmstxt][contenteditable] { min-width: 1em; min-height: .8em; }
+:hover :not([qcms-id])[cmstxt][contenteditable] { outline: 1px solid #ff32004d; }
+:hover :not([qcms-id])[cmstxt][contenteditable]:hover { outline-color: #ff320080; }
+:hover :not([qcms-id])[cmstxt][contenteditable]:focus { outline: .125rem solid #ff3200cc; }
+:hover [qcms-id][cmstxt][contenteditable] { box-shadow: 0 0 0 1px #ff32004d; }
+:hover [qcms-id][cmstxt][contenteditable]:hover { box-shadow: 0 0 0 1px #ff320080; }
+:hover [qcms-id][cmstxt][contenteditable]:focus { box-shadow: 0 0 0 .125rem #ff3200cc; }
+
+[cmstxt][cmstxt-placeholder]:empty::before { content: "\00a0"; }
+[cmstxt][cmstxt-placeholder]:empty:hover::before {
+  content: attr(cmstxt-placeholder);
+  text-transform: capitalize;
+  opacity: .4;
+}

@@ -46,6 +46,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     };
 
     html.styles.add(moduleUrl + "cms.frontend.3/pub/panel.css");
+    if (current.editmode) html.styles.add(moduleUrl + "cms.frontend.3/pub/frontend.css");
     html.scripts.add(moduleUrl + "cms.frontend.3/pub/init.js");
   }, { signal });
 }

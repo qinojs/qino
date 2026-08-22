@@ -1,13 +1,11 @@
-import { confirm } from "@qino/u2/js/dialog/dialog.js";
-
 import { api, h, t } from "../cms.js";
 
 export const css = `
 qino-cms .-media > summary { display:flex; gap:.5rem; }
 qino-cms .-media > summary output { margin-left:auto; }
 qino-cms .-media .-tools { display:flex; flex-wrap:wrap; gap:.5rem; margin-block:.75rem; }
-qino-cms .-media ul { list-style:none; padding:0; }
-qino-cms .-media li { display:grid; grid-template-columns:3.5rem 1fr auto; gap:.5rem; align-items:center; }
+qino-cms .-media ul { list-style:none; margin:0; padding:0; }
+qino-cms .-media li { display:grid; grid-template-columns:3.5rem 1fr auto; gap:.5rem; align-items:center; padding:.5rem 0; border-bottom:1px solid var(--cms-light); }
 qino-cms .-media img { max-width:3.5rem; max-height:3.5rem; }
 qino-cms .-media .-file { min-width:0; overflow-wrap:anywhere; }
 `;
@@ -21,7 +19,7 @@ const inline = file => new Promise((resolve, reject) => {
 
 const size = value => value ? `${Math.ceil(value / 1024)} KB` : "";
 
-export default async function (el, { node, signal }) {
+export default async function (el, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
   const files = await ref.files.get({}, { signal });
   const entries = Object.entries(files);
@@ -54,7 +52,7 @@ export default async function (el, { node, signal }) {
       : h("a", { href: file.url, target: "_blank", class: "-file" }, file.name || slot, size(file.size) && ` · ${size(file.size)}`);
     const remove = h("button", { type: "button", title: await t`Delete` }, "×");
     remove.addEventListener("click", async () => {
-      if (!await confirm(await t`Really delete this file?`)) return;
+      if (!await dialogs.confirm(t`Really delete this file?`)) return;
       await ref.files(slot).delete();
       el.reload();
     }, { signal });
@@ -80,11 +78,11 @@ export default async function (el, { node, signal }) {
     el.reload();
   }, { signal });
   all.addEventListener("click", async () => {
-    if (!await confirm(await t`Really delete all files?`)) return;
+    if (!await dialogs.confirm(t`Really delete all files?`)) return;
     await ref.files.all.delete();
     el.reload();
   }, { signal });
 
-  details.append(summary, tools, list);
+  details.append(summary, h("div", { class: "-body" }, tools, list));
   el.replaceChildren(details);
 }

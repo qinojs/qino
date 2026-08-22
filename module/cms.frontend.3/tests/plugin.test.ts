@@ -41,5 +41,8 @@ Deno.test("cms.frontend.3: lets the browser build the panel in edit mode", async
   await listener({ ctx });
 
   assertEquals([...scripts], ["/site/m/cms.frontend.3/pub/init.js"]);
-  assertEquals([...styles], ["/site/m/cms.frontend.3/pub/panel.css"]);
+  assertEquals([...styles], [
+    "/site/m/cms.frontend.3/pub/panel.css",
+    "/site/m/cms.frontend.3/pub/frontend.css",
+  ]);
 });

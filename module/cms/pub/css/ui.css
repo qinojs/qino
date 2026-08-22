@@ -11,7 +11,7 @@ Inline page-editing styles live in cms.frontend.2/pub/css/inline.css instead. */
 
 qino-cms:not(:defined) { display:none; }
 
-:root, qino-cms {
+:root, :host, qino-cms {
   --cms-color: #a06aef;
   --cms-dark: #222;
   --cms-light: #e8e8e8;

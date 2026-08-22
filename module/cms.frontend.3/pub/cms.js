@@ -58,7 +58,7 @@ export function widgetScope(root) {
       if (run !== state.run) return;
       if (typeof mod.default !== "function") throw new TypeError(`Widget has no default export: ${state.url}`);
       addCss(state.url, mod.css);
-      const cleanup = await mod.default(state.el, { ...state.context, signal: abort.signal });
+      const cleanup = await mod.default(state.el, { ...state.context, dialogs: cms.dialogs, signal: abort.signal });
       if (run !== state.run) await cleanup?.();
       else {
         state.cleanup = typeof cleanup === "function" ? cleanup : null;

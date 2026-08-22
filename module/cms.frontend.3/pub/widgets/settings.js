@@ -22,7 +22,7 @@ export default async function (el, { node, signal }) {
     h("label", {}, await t`Module`, h("code", {}, current.module)),
   );
   const moduleSettings = h("div");
-  details.append(summary, general, moduleSettings);
+  details.append(summary, h("div", { class: "-body" }, general, moduleSettings));
   el.replaceChildren(details);
 
   title.addEventListener("change", () => api.cms.node(current.id).title.put({ value: title.value }), { signal });
