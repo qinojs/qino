@@ -48,7 +48,7 @@ only bookkeeping: a message the app crashed on stays unseen and arrives with the
 | `debugTo` | Redirects every outgoing mail here, subject prefixed `Debug!`; the journal marks every delivery as not reached |
 | `inbound.enabled` | Enables mailbox polling |
 | `inbound.address` | The address the app receives on; defaults to the system address |
-| `inbound.host`, `.port`, `.secure`, `.user`, `.pass`, `.mailbox` | IMAP access; host, user and password inherit from SMTP where possible; defaults are 993, TLS and INBOX |
+| `inbound.host`, `.port`, `.secure`, `.user`, `.pass`, `.mailbox` | IMAP access; host, user and password inherit from SMTP where possible; defaults are 993, direct TLS and INBOX |
 | `transport.type` | Defaults to `smtp`; alternatives are `mailgun`, `resend`, `sendgrid`, `ses`, `plunk`, `jmap` and `mock`; SMTP defaults to port 465 |
 
 An app that brings its own transport injects it with `setTransport(app, transport)`, and `receive(app)`

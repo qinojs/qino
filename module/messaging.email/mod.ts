@@ -17,12 +17,14 @@ export { setTransport } from "./lib/transport.ts";
  *
  * Resolves with the number of addresses reached. A mail needs a subject, so an absent title is
  * the first line of the text. `format` decides the body: markdown and html mails carry both an
- * HTML and a plain-text part, plain text goes out as text alone.
+ * HTML and a plain-text part, plain text goes out as text alone. `onError` observes rejected
+ * deliveries without changing the numeric result.
  */
 export async function send(
   app: App,
   to: { grp?: number; usr?: number; all?: true; email?: string | string[] },
   message: string | Msg & { replyTo?: string }, // replyTo: where an answer belongs, overriding the inbox
+  { onError }: { onError?: (message: string) => void } = {},
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
@@ -49,7 +51,10 @@ export async function send(
 
   let sent = 0;
   for (const [i, recipient] of recipients.entries()) {
-    if (recipient.addressError) continue;
+    if (recipient.addressError) {
+      onError?.(recipient.addressError);
+      continue;
+    }
     // every mail carries a text part: plain readers and spam filters both want one
     const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId: to.grp });
     // only where there is something to leave: the client's one-click way to the same link
@@ -65,6 +70,7 @@ export async function send(
       attachments,
       headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined },
     });
+    if (error) onError?.(error);
     // the transport took it, so it counts as sent — but nothing reached this address, and the
     // journal says so: an error is the absence of a delivery, not only a failure
     if (!error) sent++;
@@ -85,10 +91,10 @@ async function deliver(mailer: Awaited<ReturnType<typeof transport>>, message: R
   try {
     const receipt = await mailer.send(await createMessage(message));
     if (receipt?.successful) return;
-    return receipt?.errorMessages?.join("\n") ?? "mail sending failed";
+    return receipt?.errorMessages?.join("\n").trim() || "mail sending failed";
   } catch (e) {
     console.warn("email: sending failed —", errMsg(e));
-    return errMsg(e);
+    return errMsg(e).trim() || "mail sending failed";
   }
 }
 

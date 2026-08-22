@@ -99,8 +99,9 @@ Deno.test("a debug redirect is journaled as a delivery that never reached the re
 Deno.test("literal addresses find owners, keep sending past invalid ones, and journal every result", async () => {
   const app = await makeApp();
   setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["mailbox full"] }) });
+  const errors: string[] = [];
 
-  assertEquals(await send(app, { email: ["one@qino.test", "invalid", "other@qino.test"] }, "Hello"), 0);
+  assertEquals(await send(app, { email: ["one@qino.test", "invalid", "other@qino.test"] }, "Hello", { onError: (error) => errors.push(error) }), 0);
 
   const [journaled] = await messages(app);
   assertEquals(journaled.text, "Hello");
@@ -109,6 +110,10 @@ Deno.test("literal addresses find owners, keep sending past invalid ones, and jo
     ["invalid", null, "Use an email address such as name@example.com"],
     ["other@qino.test", null, "mailbox full"],
   ]);
+  assertEquals(errors, ["mailbox full", "Use an email address such as name@example.com", "mailbox full"]);
+  setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: [] }) });
+  await send(app, { email: "other@qino.test" }, "Test", { onError: (error) => errors.push(error) });
+  assertEquals(errors.at(-1), "mail sending failed");
 
   await close(app);
 });

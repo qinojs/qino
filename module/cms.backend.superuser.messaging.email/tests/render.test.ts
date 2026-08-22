@@ -1,22 +1,23 @@
 import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import manifest from "../manifest.json" with { type: "json" };
-import { attachmentsOf } from "../nodeApi.ts";
+import api, { attachmentsOf } from "../nodeApi.ts";
 import { backendDashboardWidget } from "../plugin.ts";
-import { isSecret, leaves, send as sendForm, sending } from "../render.ts";
+import { inbound as inboundForm, isSecret, leaves, send as sendForm, sending } from "../render.ts";
 
 const { name, dependencies } = manifest;
 
 const schema = {
   properties: {
     address: { type: "string" },
-    name: { type: "string", advanced: true },
-    debugTo: { type: "string", advanced: true },
+    name: { type: "string" },
+    debugTo: { type: "string" },
+    inbound: { properties: { enabled: { type: "boolean" }, host: { type: "string" } } },
     transport: {
       properties: {
         type: { type: "string", enum: ["smtp", "mock"], default: "smtp" },
         smtp: { properties: {
-          host: { type: "string" }, secure: { type: "boolean", advanced: true, default: true }, pass: { type: "string" },
+          host: { type: "string" }, secure: { type: "boolean", default: true }, pass: { type: "string" },
         } },
         mock: { properties: { result: { type: "string" } } },
       },
@@ -27,7 +28,7 @@ const schema = {
 Deno.test("cms.backend.superuser.messaging.email builds its form from the module's schema", async () => {
   assertEquals(name, "cms.backend.superuser.messaging.email");
   assertEquals(dependencies, ["cms.backend.superuser.messaging", "messaging.email", "cron"]);
-  assertEquals(leaves(schema).map((leaf) => leaf.path), ["address", "name", "debugTo", "transport.type", "transport.smtp.host", "transport.smtp.secure", "transport.smtp.pass", "transport.mock.result"]);
+  assertEquals(leaves(schema).map((leaf) => leaf.path), ["address", "name", "debugTo", "inbound.enabled", "inbound.host", "transport.type", "transport.smtp.host", "transport.smtp.secure", "transport.smtp.pass", "transport.mock.result"]);
   assert(isSecret("transport.smtp.pass") && isSecret("inbound.pass") && isSecret("transport.mailgun.apiKey"));
   assert(!isSecret("inbound.host"));
 
@@ -60,8 +61,21 @@ Deno.test("cms.backend.superuser.messaging.email builds its form from the module
   assert(output.indexOf('name="debugTo"') > advanced);
   assertStringIncludes(output.slice(advanced), '<option value="smtp" selected>smtp</option>');
   assert(output.indexOf('name="transport.smtp.secure"') > advanced);
+  assertStringIncludes(output, "<span>secure <small>(direct TLS)</small></span>");
   assertStringIncludes(output.slice(advanced), 'name="transport.smtp.secure" title="" checked');
   assert(!output.includes("private"));
+  assertStringIncludes(output, "<form class=-body data-settings>");
+  assert(!output.includes("data-settings-save"));
+  assertStringIncludes(output, "data-test>Test</button>");
+
+  const incoming = String(await inboundForm(node));
+  assertStringIncludes(incoming, "data-inbound-test>Test</button>");
+  assertStringIncludes(incoming, "data-fetch>Fetch now</button>");
+  assert(!incoming.includes("data-settings-save"));
+});
+
+Deno.test("cms.backend.superuser.messaging.email explains an empty sending test", async () => {
+  assertEquals(await api({ app: { t: fakeT } } as never, { test: "" }), { ok: false, message: "A system address is required." });
 });
 
 Deno.test("cms.backend.superuser.messaging.email adds files to the send form", async () => {

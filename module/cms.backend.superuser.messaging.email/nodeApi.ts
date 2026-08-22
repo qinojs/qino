@@ -14,12 +14,16 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   const app = node.app;
   try {
     if (vars.settings) {
-      const saved = await saveSettings(app, vars.settings as Record<string, unknown>);
-      return { ok: true, message: await app.t`${saved} settings saved.` };
+      await saveSettings(app, vars.settings as Record<string, unknown>);
+      return { ok: true, message: await app.t`Saved.` };
     }
     if (vars.fetch) {
       const taken = await receive(app);
       return { ok: true, message: await app.t`${taken} messages taken over.` };
+    }
+    if (vars.inboundTest) {
+      await receive(app, { probe: true });
+      return { ok: true, message: await app.t`Connected.` };
     }
     if (vars.contactAdd) {
       const { usr, address } = vars.contactAdd as { usr: string; address: string };
@@ -46,11 +50,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       if (usrId) await removeContact(app.db, usrId, CONTACT, address);
       return { ok: true, message: await app.t`Address deleted.` };
     }
-    if (vars.test) {
-      const sent = await send(app, { email: String(vars.test) }, await app.t`Test message`);
-      return sent
-        ? { ok: true, message: await app.t`Sent.` }
-        : { ok: false, message: await app.t`Not delivered.` };
+    if (vars.test != null) {
+      if (!vars.test) return { ok: false, message: await app.t`A system address is required.` };
+      let error = "";
+      await send(app, { email: String(vars.test) }, await app.t`Test message`, { onError: (message) => error ||= message });
+      return error ? { ok: false, message: error } : { ok: true, message: await app.t`Sent.` };
     }
     if (vars.send) {
       const { to, address, title, text, format, template, attachments } = vars.send as Record<string, unknown>;
@@ -72,7 +76,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     return null;
   } catch (e) {
-    return { ok: false, message: errMsg(e) };
+    return { ok: false, message: errMsg((e as { responseText?: unknown })?.responseText || e).trim() || "Email operation failed." };
   }
 }
 
@@ -94,9 +98,8 @@ export async function attachmentsOf(input: unknown): Promise<File[]> {
 }
 
 /** Writes what the schema knows and nothing else; an empty secret keeps what is stored. */
-async function saveSettings(app: App, values: Record<string, unknown>): Promise<number> {
+async function saveSettings(app: App, values: Record<string, unknown>) {
   const known = new Map(leaves(schema(app)).map((leaf) => [leaf.path, leaf.schema]));
-  let saved = 0;
   for (const [path, input] of Object.entries(values)) {
     const leaf = known.get(path);
     if (!leaf) throw new ApiError(422, `Unknown setting ${path}`);
@@ -107,7 +110,5 @@ async function saveSettings(app: App, values: Record<string, unknown>): Promise<
       : String(raw);
     const keys = path.split(".");
     await app.settings[$item].sub(["messaging.email", ...keys.slice(0, -1)]).item(keys.at(-1)!).set(value);
-    saved++;
   }
-  return saved;
 }

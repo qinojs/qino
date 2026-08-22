@@ -13,6 +13,7 @@ const MODULE = "messaging.email";
 const CHANNEL = "email";
 const CONTACT = "email";
 const RECENT = 7;
+const ADVANCED_NAMES = new Set(["port", "secure", "user", "baseUrl", "sessionToken"]);
 
 export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
@@ -27,7 +28,7 @@ export function render(node: Node): Promise<HtmlString> {
 // --- settings, straight from the module's own schema -----------------------------------------
 
 /** What the form builder reads of a settings schema node. */
-type Schema = { type?: string; enum?: string[]; description?: string; advanced?: boolean; default?: unknown; properties?: Record<string, Schema> };
+type Schema = { type?: string; enum?: string[]; description?: string; default?: unknown; properties?: Record<string, Schema> };
 
 /** The module's own schema — the forms follow it, so a new transport needs no change here. */
 export function schema(app: App): Schema {
@@ -57,6 +58,7 @@ async function read(app: App, paths: string[]): Promise<Map<string, unknown>> {
 /** One label and one control per leaf, named after its dotted path. */
 function field(path: string, node: Schema, values: Map<string, unknown>, transport = "", hidden = false): HtmlString {
   const name = path.split(".").at(-1);
+  const note = path === "inbound.secure" || path === "transport.smtp.secure" ? "direct TLS" : "";
   const stored = values.get(path);
   const value = stored === "" || stored == null ? undefined : stored;
   const title = node.description ?? "";
@@ -68,13 +70,15 @@ function field(path: string, node: Schema, values: Map<string, unknown>, transpo
     : node.type === "number"
     ? html`<input type=number name="${path}" title="${title}" value="${value ?? ""}" placeholder="${node.default ?? ""}">`
     : isSecret(path)
-    ? html`<input type=password name="${path}" autocomplete=off title="${title}" placeholder="${value ? "••••••" : ""}">`
+    ? html`<input type=password name="${path}" autocomplete=new-password title="${title}" placeholder="${value ? "••••••" : ""}">`
     : html`<input name="${path}" title="${title}" value="${value ?? ""}">`;
-  return html`<div${transport ? html` data-transport-fields="${transport}"` : ""}${hidden ? html.raw(' hidden style="display:none"') : ""}><label><span>${name}</span><span>${control}</span></label></div>`;
+  return html`<div${transport ? html` data-transport-fields="${transport}"` : ""}${hidden ? html.raw(' hidden style="display:none"') : ""}><label><span>${name}${note ? html` <small>(${note})</small>` : ""}</span><span>${control}</span></label></div>`;
 }
 
+const isAdvanced = (path: string) => path === "name" || path === "debugTo" ||
+  path.startsWith("inbound.") && path !== "inbound.enabled" || ADVANCED_NAMES.has(path.split(".").at(-1)!);
 const fields = (nodes: ReturnType<typeof leaves>, values: Map<string, unknown>, advanced = false, transport = "", active = "") =>
-  nodes.filter((leaf) => Boolean(leaf.schema.advanced) === advanced).map((leaf) => field(leaf.path, leaf.schema, values, transport, transport !== active));
+  nodes.filter((leaf) => isAdvanced(leaf.path) === advanced).map((leaf) => field(leaf.path, leaf.schema, values, transport, transport !== active));
 
 const bool = (v: unknown): boolean => v === true || v === 1 || v === "1" || v === "true";
 
@@ -91,15 +95,13 @@ export async function sending(node: Node): Promise<HtmlString> {
   const address = String(values.get("address") ?? "");
   const debug = String(values.get("debugTo") ?? "");
   const replyTo = String(values.get("inbound.address") || address);
-  // what send() would do right now, in the same order it decides it
-  const state = type;
   const [noAddress, debugLabel, redirected] = await Promise.all([t`no system address`, t`debug`,
     debug ? t`Every mail is redirected to ${debug}; the journal marks each delivery as not reached.` : ""]);
 
-  return html.async`<div class=-head>${t`Sending`} <span class=u2-badge>${state}</span>
+  return html.async`<div class=-head>${t`Sending`} <span class=u2-badge>${type}</span>
     ${address ? "" : html`<span class=u2-badge>${noAddress}</span>`}
     ${debug ? html`<span class=u2-badge>${debugLabel}</span>` : ""}</div>
-  <form class=-body>
+  <form class=-body data-settings>
     <div class="u2-table -Fields -NoSideGaps">
       ${fields(own, values)}
       ${transports.map(([key, sub]) => fields(leaves(sub, `transport.${key}`), values, false, key, type))}
@@ -118,7 +120,8 @@ export async function sending(node: Node): Promise<HtmlString> {
         ${transports.map(([key, sub]) => fields(leaves(sub, `transport.${key}`), values, true, key, type))}
       </div>
     </details>
-    <button data-settings-save>${t`Save`}</button>
+    <button type=button data-test>${t`Test`}</button>
+    <small data-settings-state aria-live=polite></small>
   </form>
   <div class=-foot>
     <small>${t`Replies go to`} <b>${replyTo || await t`nowhere — no system address`}</b>.
@@ -133,26 +136,29 @@ export async function inbound(node: Node): Promise<HtmlString> {
   const own = leaves(schema(app).properties?.inbound, "inbound");
   const [values, jobs] = await Promise.all([
     read(app, own.map((leaf) => leaf.path)),
-    status(app).catch(() => []),
+    Promise.resolve().then(() => status(app)).catch(() => []),
   ]);
   const job = jobs.find((v) => v.id === `${MODULE}:inbox`);
   const receiving = bool(values.get("inbound.enabled"));
 
   return html.async`<div class=-head>${t`Receiving`}
     <span class=u2-badge>${receiving ? t`polling` : t`off`}</span></div>
-  <form class=-body>
+  <form class=-body data-settings>
     <div class="u2-table -Fields -NoSideGaps">${fields(own, values)}</div>
     <details style="margin-block:.5em; border:0">
       <summary>${t`Advanced`}</summary>
       <div class="u2-table -Fields">${fields(own, values, true)}</div>
     </details>
-    <button data-settings-save>${t`Save`}</button>
-    <button type=button data-fetch>${t`Fetch now`}</button>
+    <button type=button data-inbound-test>${t`Test`}</button>
+    <small data-settings-state aria-live=polite></small>
   </form>
   <table class=u2-table>
     <tr>
       <td>${t`Interval`}
-      <td>${job?.every ? html`${job.every}s` : "-"}
+      <td>
+        ${job?.every ? html`${job.every}s` : "-"}
+        &nbsp;&nbsp;
+        <button type=button data-fetch>${t`Fetch now`}</button>
     <tr>
       <td>${t`Next run`}
       <td>${u2.el.time(job?.nextRun)}

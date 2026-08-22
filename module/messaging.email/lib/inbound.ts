@@ -22,12 +22,13 @@ type Parsed = {
 /**
  * Read what is new in the configured mailbox into the journal and mark it seen.
  *
- * Resolves with the number of messages taken over; 0 while receiving is disabled. Seen is the
- * only bookkeeping — a message the app crashed on stays unseen and arrives with the next run.
+ * Resolves with the number of messages taken over; 0 while receiving is disabled. A probe only
+ * connects and opens the mailbox. Seen is the only bookkeeping — a message the app crashed on
+ * stays unseen and arrives with the next run.
  */
-export async function receive(app: App, { limit = 50 }: { limit?: number } = {}): Promise<number> {
+export async function receive(app: App, { limit = 50, probe }: { limit?: number; probe?: boolean } = {}): Promise<number> {
   const config = await inbound(app);
-  if (!config.enabled) return 0;
+  if (!config.enabled && !probe) return 0;
   if (!config.host || !config.pass) throw new Error("Inbound email needs an IMAP host and password");
 
   const { ImapFlow } = await import("npm:imapflow@^1") as { ImapFlow: new (options: unknown) => ImapClient };
@@ -44,6 +45,7 @@ export async function receive(app: App, { limit = 50 }: { limit?: number } = {})
   const lock = await client.getMailboxLock(config.mailbox);
   const done: number[] = [];
   try {
+    if (probe) return 0;
     // No other IMAP command may run while a fetch streams — flag the uids once the loop is closed.
     for await (const message of client.fetch({ seen: false }, { uid: true, source: true })) {
       if (done.length >= limit) break;
