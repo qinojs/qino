@@ -1,3 +1,6 @@
+import './Placer.mjs';
+import './fix/contextMenu.mjs';
+
 let cnt = 0;
 c1.contextMenu = function(root){
   const id = 'qgContextMenu_'+(cnt++);
