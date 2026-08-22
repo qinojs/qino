@@ -11,6 +11,7 @@
     "pub/edit.mjs",
     "pub/main.css",
     "pub/module.svg",
+    "pub/settings.js",
     "sortedIds.ts"
   ]
 }

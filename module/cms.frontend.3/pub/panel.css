@@ -1,0 +1,40 @@
+.qino-cms-toggle {
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  z-index: 2147483646;
+}
+
+:host {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 2147483645;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: min(46.25rem, 100vw);
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 0 .875rem #0008;
+  overscroll-behavior: none;
+}
+
+qino-cms[aria-label="CMS"]:not(:defined) { display: grid; }
+
+:host > header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem .8rem;
+  color: #fff;
+  background: var(--cms-color);
+}
+
+:host > header > strong { flex: 1; }
+:host > header form { display: flex; }
+:host > header input { width: 5rem; }
+:host > main { overflow: auto; padding: .75rem; }
+:host details { border: 1px solid var(--cms-light); margin-block: .5rem; }
+:host details > summary { cursor: pointer; padding: .6em .8em; background: var(--cms-light); font-size: 16px; }
+:host details[open] > summary { color: #fff; background: var(--cms-dark); }
+:host details > :not(summary) { margin-inline: .75rem; }
+[data-cms-active] { outline: .15rem solid var(--cms-color, Highlight); }

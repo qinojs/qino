@@ -1,0 +1,18 @@
+{
+  "name": "cms.frontend.3",
+  "description": "Provides the browser-built in-page CMS interface.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/cms.js",
+    "pub/init.js",
+    "pub/module.svg",
+    "pub/panel.css",
+    "pub/panel.js",
+    "pub/widgets/media.js",
+    "pub/widgets/settings.js"
+  ]
+}
