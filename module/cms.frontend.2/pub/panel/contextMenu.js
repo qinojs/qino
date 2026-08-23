@@ -2,7 +2,7 @@
 import '@qino/pub/c1/contextMenu.mjs';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
-import { showSettings } from '../inline/host.js';
+import { showSettings } from './contentMenu.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;

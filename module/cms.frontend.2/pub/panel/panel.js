@@ -1,28 +1,14 @@
 import { itemJs } from "@qino/pub/SettingsEditor.mjs";
 import { api, t, ctx } from "@qino/pub/qino.js";
 
-import { host, isolateDialog, useDialogs } from "../inline/host.js";
+import { root, addStyle } from "../js/root.js";
+import { dialogs } from "../js/dialogs.js";
+import "./contentMenu.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
-const PANEL_STYLES = [
-  import.meta.resolve("@qino/u2/css/norm/norm.css"),
-  import.meta.resolve("@qino/u2/css/base/base.css"),
-  "cms/pub/css/ui.css",
-  "cms.frontend.2/pub/css/off.css",
-  "cms.frontend.2/pub/panel/panel.css",
-  "cms.frontend.2/pub/panel/tree.css",
-];
-
-customElements.define("qino-cms", class extends HTMLElement {
-  connectedCallback() {
-    if (this.shadowRoot) return;
-    const root = this.attachShadow({ mode: "open" });
-    for (const href of PANEL_STYLES) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : ctx.moduleUrl + href }));
-    while (this.firstChild) root.append(this.firstChild);
-    requestAnimationFrame(() => this.hidden = false);
-  }
-});
+addStyle("cms.frontend.2/pub/panel/panel.css");
+addStyle("cms.frontend.2/pub/panel/tree.css");
 
 const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListener(e, fn));
 const sel = s => s[0] === ">" ? ":scope " + s : s;
@@ -44,20 +30,11 @@ const widgets = uiState.item("widget");
 if (!widgets.filled) widgets.set({});
 
 cms.panel = { state: uiState, sidebar, widgets };
-const el = document.querySelector("qino-cms").shadowRoot.getElementById("panel");
+cms.panelRoot = root;
+const el = root.getElementById("panel");
 el.showPopover();
-const root = cms.panelRoot = el.getRootNode();
-const [
-  { SelectorObserver },
-  { scope: dialogScope },
-] = await Promise.all([
-  import("@qino/u2/js/SelectorObserver/SelectorObserver.js"),
-  import("@qino/u2/js/dialog/dialog.js"),
-]);
-// re-register inline's dialogs scoped to the panel shadow root
-const { alert, confirm } = useDialogs(dialogScope({ root, init: isolateDialog }));
-
-host.showSettings = () => sidebar.set("settings");
+const { SelectorObserver } = await import("@qino/u2/js/SelectorObserver/SelectorObserver.js");
+const { alert, confirm } = dialogs;
 
 // A failed <img> fires no bubbling event, so the media list is listened to at the root.
 root.addEventListener("error", (e) => {
@@ -211,10 +188,7 @@ cms.cont.prototype.showWidget = function (what, reload) {
 !document.querySelector("[qcms-edit][qcms-drop]") &&
   findEl(el, "> .-sidebar > [itemid=add]").setAttribute("hidden", "hidden");
 
-const switches = [
-  ...document.querySelectorAll(".qgCMS_editmode_switch"),
-  ...root.querySelectorAll(".qgCMS_editmode_switch"),
-];
+const switches = root.querySelectorAll(".qgCMS_editmode_switch");
 function enter() {
   el.classList.add("-open", "-sidebar-open");
 }

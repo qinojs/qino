@@ -2,37 +2,29 @@ import '@qino/pub/c1/contextMenu.mjs';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
 import '../../../cms/pub/js/cms.mjs';
-import { host, showSettings } from './host.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
-const BLOCK_SELECTOR = '[qcms-edit], #qgCmsContPosMenu';
 
-const menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
+/** The block submenu and its selector, so a host can add its own entries. */
+export const blockSelector = '[qcms-edit], #qgCmsContPosMenu';
+
+export const blockMenu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
   icon: moduleUrl+'cms.frontend.2/pub/img/module_default.svg',
-  selector: BLOCK_SELECTOR,
+  selector: blockSelector,
 });
-menu.addItem(t`Settings`, {
-  icon: moduleUrl+'cms.frontend.2/pub/img/settings.svg',
-  selector: BLOCK_SELECTOR,
-  onshow() {
-    this.activePid = cms.contPos.active.pid;
-    this.disabled = !host.showSettings || !cms.contPos.active.el.hasAttribute('qcms-edit');
-  },
-  onclick() { showSettings(this.activePid); }
-});
-menu.addItem(t`Move`, {
+blockMenu.addItem(t`Move`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/move.svg',
-  selector: BLOCK_SELECTOR,
+  selector: blockSelector,
   onshow() {
     this.activeEl = cms.contPos.active.el;
     this.disabled = !cms.contPos.active.isDraggable();
   },
   onclick() { cms.contPos.dd.start(this.activeEl);  }
 });
-menu.addItem(t`Copy`, {
+blockMenu.addItem(t`Copy`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/copy.svg',
-  selector: BLOCK_SELECTOR,
+  selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -43,9 +35,9 @@ menu.addItem(t`Copy`, {
     });
   }
 });
-menu.addItem(t`Cut`, {
+blockMenu.addItem(t`Cut`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/cut.svg',
-  selector: BLOCK_SELECTOR,
+  selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -58,9 +50,9 @@ menu.addItem(t`Cut`, {
     });
   }
 });
-menu.addItem(t`Delete`, {
+blockMenu.addItem(t`Delete`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/delete.svg',
-  selector: BLOCK_SELECTOR,
+  selector: blockSelector,
   onshow() {
     this.activeEl = cms.contPos.active.el;
     this.disabled = !cms.contPos.active.isDraggable();

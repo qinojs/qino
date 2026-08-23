@@ -1,6 +1,8 @@
 import '@qino/pub/c1.js';
 import { api, ctx } from '@qino/pub/qino.js';
 
+import { root } from './root.js';
+
 const editable = globalThis.qino?.cms?.editmode !== undefined; // not available if in backend but no edit-access
 function qgCmsToggleEdit(){
   if (!editable) return;
@@ -43,7 +45,7 @@ if (savedScroll) {
 
 if (editable) {
   const editToggle = c1.dom.el('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Edit (E)"><div><i></i></div></a>');
-  document.body.append(editToggle);
+  root.append(editToggle);
   editToggle.addEventListener('click', e => {
     qgCmsToggleEdit();
     e.currentTarget.classList.toggle('-active');

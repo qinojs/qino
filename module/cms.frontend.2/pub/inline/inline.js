@@ -6,7 +6,8 @@ import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import { t, api } from '@qino/pub/qino.js';
 
-import { host, showSettings } from './host.js';
+import { root, addStyle } from '../js/root.js';
+import { dialogs } from '../js/dialogs.js';
 
 import './rte.js';
 import './contextMenu.js';
@@ -16,7 +17,12 @@ import './dropPaste.js';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
+addStyle('cms.frontend.2/pub/inline/chrome.css');
 cms.frontend2 = {};
+cms.dialogs = dialogs;
+
+/** Buttons a host adds to the content menu; `show(contPos)` decides visibility per marked content. */
+export const contMenuButtons = [];
 
 /* cms.element? */
 cms.contPos = function(el) {
@@ -121,19 +127,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   const p = cms.contPos;
   const menu = c1.dom.el(
     '<div id=qgCmsContPosMenu popover=manual>'+
-    '  <div class=-opts title=Settings>'+
-    '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z"></path></svg>'+
-    '  </div>'+
     '  <div class=-drag title=Verschieben>'+
     '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2s.9-2 2-2s2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2s-2 .9-2 2s.9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2z"></path></svg>'+
     '  </div>'+
     '  <div class=-mod  title=Module></div>'+
     '</div>');
-  document.body.append(menu);
+  root.append(menu);
   menu.drag = menu.querySelector('.-drag');
   menu.mod  = menu.querySelector('.-mod');
-  menu.opts = menu.querySelector('.-opts')
-  menu.opts.addEventListener('click', () => showSettings(p.active.pid));
   menu.addEventListener('mouseenter', e => p.active?.mark(e) )
   menu.addEventListener('mouseleave', e => p.active?.unmarkDelay(e) )
   menu.addEventListener('click',     e => e.stopPropagation() );
@@ -146,7 +147,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     '    <path d="M3.83 21.988c0 1.97 1.612 3.582 3.583 3.582H18.16c1.97 0 3.58-1.612 3.58-3.582V6.466H3.83v15.522zm12.537-11.94c0-.66.535-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.193 1.193s-1.193-.534-1.193-1.192v-11.94zm-4.775 0c0-.66.534-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193s-1.194-.534-1.194-1.192v-11.94zm-4.777 0c0-.66.534-1.194 1.193-1.194.66 0 1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193-.66 0-1.193-.534-1.193-1.192v-11.94z"/>'+
     '  </svg>'+
     '</div>', 'text/html');
-  document.body.append(trash);
+  root.append(trash);
 
   /* drag drop */
   const dd = new cms.contDrag();
@@ -213,7 +214,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     menu.mod.innerHTML = mod.replace(/^cont\./,'');
     menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
     menu.drag.style.display = isDraggable ? 'block' : 'none';
-    menu.opts.style.display = host.showSettings && obj.el.hasAttribute('qcms-edit') ? 'block' : 'none';
+    for (const btn of contMenuButtons) {
+      if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a fresh c1.dom.el still hangs on its template fragment
+      btn.el.style.display = btn.show(obj) ? 'block' : 'none';
+    }
     menu.style.cursor = (isDraggable?'move':'default');
 
     if (obj.el.hasAttribute('qcms-offline')) {
@@ -239,11 +243,10 @@ cms.console = {
     setTimeout(()=>el.classList.remove('-new'), 100);
   },
   el() {
-    let el = document.getElementById('cmsConsole');
+    let el = root.getElementById('cmsConsole');
     if (!el) {
-      document.body.insertAdjacentHTML('beforeend',
-        '<div id=cmsConsole class=qgCMS popover=manual><div class=-msg></div></div>');
-      el = document.getElementById('cmsConsole');
+      root.append(c1.dom.el('<div id=cmsConsole class=qgCMS popover=manual><div class=-msg></div></div>'));
+      el = root.getElementById('cmsConsole');
     }
     return el;
   }
@@ -252,7 +255,7 @@ cms.console = {
 api.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`API call failed`, 'error'));
 
 cms.frontend2.dialog = (title,body,buttons) =>
-  cms.dialogs.modal({
+  dialogs.modal({
     body: (title ? '<p>'+title+'</p>' : '') + body,
     buttons: buttons?.map(b => ({ ...b, action: b.then })), // c1 used `then`, u2 uses `action`, todo: use action everywhere and remove this mapping
   });
