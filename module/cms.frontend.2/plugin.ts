@@ -80,7 +80,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         const url = ctx.req.url;
         settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
         (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
-        html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/init.mjs");
+        html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/init.js");
       }
     }
 
@@ -115,7 +115,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
       html.styles.add(moduleUrl + "cms.frontend.2/pub/inline/inline.css");
       html.scripts.add(moduleUrl + "cms.frontend.2/pub/inline/inline.js");
-      html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/panel.mjs");
+//      html.scripts.add(moduleUrl + "cms.frontend.2/pub/panel/panel.js");
     }
   }, { signal });
 }

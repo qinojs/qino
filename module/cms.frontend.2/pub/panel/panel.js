@@ -1,7 +1,7 @@
 import { itemJs } from "@qino/pub/SettingsEditor.mjs";
 import { api, t, ctx } from "@qino/pub/qino.js";
 
-//import "./inline.js";
+import { host, isolateDialog, useDialogs } from "../inline/host.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
@@ -10,8 +10,8 @@ const PANEL_STYLES = [
   import.meta.resolve("@qino/u2/css/base/base.css"),
   "cms/pub/css/ui.css",
   "cms.frontend.2/pub/css/off.css",
-  "cms.frontend.2/pub/css/panel.css",
-  "cms.frontend.2/pub/css/tree.css",
+  "cms.frontend.2/pub/panel/panel.css",
+  "cms.frontend.2/pub/panel/tree.css",
 ];
 
 customElements.define("qino-cms", class extends HTMLElement {
@@ -54,18 +54,10 @@ const [
   import("@qino/u2/js/SelectorObserver/SelectorObserver.js"),
   import("@qino/u2/js/dialog/dialog.js"),
 ]);
-// isolate dialog interactions (incl. backdrop) from page-level handlers: content marking, context menu, …
-const isolate = el => ['click','mousedown','touchstart'].forEach(type =>
-  el.addEventListener(type, e => e.stopPropagation()));
-const scoped = dialogScope({ root, init: isolate }); // central scoped dialogs (panel shadow root)
-// t`` returns a thenable -> await text, else u2 treats the promise as the options object (body becomes "undefined")
-cms.dialogs = {
-  ...scoped,
-  alert:   async (text)          => scoped.alert(await text),
-  confirm: async (text)          => scoped.confirm(await text),
-  prompt:  async (text, initial) => scoped.prompt(await text, initial),
-};
-const { alert, confirm } = cms.dialogs;
+// re-register inline's dialogs scoped to the panel shadow root
+const { alert, confirm } = useDialogs(dialogScope({ root, init: isolateDialog }));
+
+host.showSettings = () => sidebar.set("settings");
 
 // A failed <img> fires no bubbling event, so the media list is listened to at the root.
 root.addEventListener("error", (e) => {
@@ -242,7 +234,7 @@ api.on("POST cms/node/:id/redirects",   () => loadWidget("urls.head"));
 api.on("DELETE cms/node/:id/redirects", () => loadWidget("urls.head"));
 
 onEl(".tree-manager", async (el) => {
-  await import("./tree.mjs");
+  await import("./tree.js");
   // add Page
   const inp = root.getElementById("page-add");
   function add() {
@@ -538,7 +530,7 @@ onEl(".seo-manager", (el) => {
   });
 });
 onEl(".more-manager", (el) => {
-  findEl(el, ".-tour").onclick = () => import("./intro.mjs").then(({ start }) => start());
+  findEl(el, ".-tour").onclick = () => import("./intro.js").then(({ start }) => start());
   // feedback-formular
   findEl(el, ".-feedbackform").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -633,5 +625,5 @@ onEl(".superuser-manager", (el) => {
 });
 
 if (!await ctx.settings["cms.frontend.2"].tour_seen) {
-  import("./intro.mjs").then(({ start }) => start());
+  import("./intro.js").then(({ start }) => start());
 }

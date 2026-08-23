@@ -6,11 +6,13 @@ import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import { t, api } from '@qino/pub/qino.js';
 
-import './rte.mjs';
-import './contextMenu.mjs';
-import './ddConts.mjs';
-import './dropPasteHelper.mjs';
-import './dropPaste.mjs';
+import { showSettings } from './host.js';
+
+import './rte.js';
+import './contextMenu.js';
+import './ddConts.js';
+import './dropPasteHelper.js';
+import './dropPaste.js';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
@@ -131,10 +133,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   menu.drag = menu.querySelector('.-drag');
   menu.mod  = menu.querySelector('.-mod');
   menu.opts = menu.querySelector('.-opts')
-  menu.opts.addEventListener('click', () => {
-    cms.cont.active = p.active.pid;
-    cms.panel.sidebar.set('settings');
-  })
+  menu.opts.addEventListener('click', () => showSettings(p.active.pid));
   menu.addEventListener('mouseenter', e => p.active?.mark(e) )
   menu.addEventListener('mouseleave', e => p.active?.unmarkDelay(e) )
   menu.addEventListener('click',     e => e.stopPropagation() );
@@ -224,7 +223,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
   setTimeout(() => document.activeElement.blur());
-  globalThis.qino?.cms?.clipboard && import('./frontend2/clipboard.mjs').then(()=>cms.frontend2.clipboard(globalThis.qino.cms.clipboard));
+  globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(()=>cms.frontend2.clipboard(globalThis.qino.cms.clipboard));
 });
 
 cms.console = {
@@ -266,4 +265,4 @@ api.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
 
-import("./browserCheck.js");
+import("../js/browserCheck.js");
