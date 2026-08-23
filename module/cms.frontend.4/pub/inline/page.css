@@ -1,0 +1,67 @@
+/* Editing decoration on customer markup — outlines, editable text fields, drop targets.
+These style the page itself, so they must stay a document-level stylesheet. */
+
+/* text-fields */
+a[cmstxt][contenteditable]:empty, span[cmstxt][contenteditable]:empty { display:inline-block; } /* new, 8.8.18, ok? */
+:hover [cmstxt][contenteditable] { min-height:.8em; min-width:1em; }
+:hover :not([qcms-id])[cmstxt][contenteditable]      { outline:1px solid rgba(255,50,0,.3); }
+:hover :not([qcms-id])[cmstxt][contenteditable]:hover { outline:1px solid rgba(255,50,0,.5); }
+:hover :not([qcms-id])[cmstxt][contenteditable]:focus { outline:.125rem solid rgba(255,50,0,.8); }
+:hover [qcms-id][cmstxt][contenteditable]       { box-shadow:0 0 0 1px rgba(255,50,0,.3); }
+:hover [qcms-id][cmstxt][contenteditable]:hover { box-shadow:0 0 0 1px rgba(255,50,0,.5); }
+:hover [qcms-id][cmstxt][contenteditable]:focus { box-shadow:0 0 0 .125rem rgba(255,50,0,.8); }
+
+
+/* text-fields placeholder */
+[cmstxt][cmstxt-placeholder]:empty::before { content: '\00a0'; }
+[cmstxt][cmstxt-placeholder]:empty:hover::before { /* :not(:focus)? */
+  content: attr(cmstxt-placeholder);
+  text-transform: capitalize;
+  opacity:.4;
+}
+
+
+/* Cont */
+[qcms-id] {
+  outline-offset:1px;
+  min-height:.75rem;
+  min-width:.75rem;
+  transition:min-height .5s linear;
+  transition-property:box-shadow, min-height, background-color;
+}
+
+a.cmsOffline { text-decoration: line-through !important; }
+
+:hover [qcms-edit]:not([qcms-mod^="layout."]) { outline: 1px solid var(--cms-color); }
+:hover [qcms-drop] { outline:none; }
+
+
+[qcms-id].qgCmsMarked.qgCmsMarked { outline:.1875rem solid var(--cms-color); }
+[qcms-id][qcms-offline] { opacity:.6; }
+[qcms-id].qgCmsMarked.qgCmsMarked[qcms-offline] { outline-color:var(--cms-access-2); }
+
+
+[qcms-id].-moving {
+  display: block;
+  padding:.375rem;
+  width:auto;
+  max-width:30vw;
+  min-height:1.875rem;
+  min-width:6.25rem;
+  background-color:#fff;
+  pointer-events:none;
+  box-shadow:0 0 .625rem rgba(0,0,0,.9);
+  opacity:.8;
+}
+
+[qcms-id].dropTarget[qcms-edit] {
+  outline:.1875rem solid red;
+  min-width:3.125rem;
+}
+[qcms-id].-moving [qcms-id].dropTarget[qcms-edit] {
+  outline-width:0;
+}
+
+
+/* rte */
+img::selection { background: rgba(0,0,0,.2); }

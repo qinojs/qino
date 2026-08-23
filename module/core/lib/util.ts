@@ -1,4 +1,7 @@
 import { sql } from "../deps.ts";
+// html`` is shared verbatim with the browser (SSR): one implementation, two runtimes.
+import { hee, html, HtmlString } from "../pub/js/html.js";
+export { hee, html, HtmlString };
 
 import type { Sql } from "../deps.ts";
 import type { Manifest } from "./ModuleManager.ts";
@@ -75,56 +78,6 @@ export function isEmptyObject(o: object): boolean {
 export const errMsg = (e: unknown): string => e instanceof Error ? e.message : String(e);
 
 /** HTML utilities */
-const HEE: Record<string, string> = {"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"};
-export function hee(str: unknown): string {
-  return String(str ?? "").replace(/[&"'<>]/g, c => HEE[c]);
-}
-
-export class HtmlString {
-  #html: string;
-  constructor(html: unknown) { this.#html = String(html ?? ""); }
-  get html(): string { return this.#html; }
-  escaped(): HtmlString { return new HtmlString(hee(this.#html)); }
-  toString(): string { return this.#html; }
-}
-
-// An array renders as its concatenated elements, so a row list needs no wrapper:
-// `<table>${rows.map((r) => html`<tr>…`)}</table>`. html.join() is for a separator.
-function htmlValue(v: unknown): string {
-  if (v instanceof HtmlString) return v.html;
-  if (Array.isArray(v)) return v.map(htmlValue).join("");
-  return hee(v);
-}
-
-// Like htmlValue but awaits promises and renders "renderable" values (anything
-// with an async html() method, e.g. a cms Node) recursively. Lets templates
-// embed conts directly: html.async`<div>${node.cont("main")}</div>`.
-async function htmlValueAsync(v: unknown): Promise<string> {
-  v = await v;
-  if (Array.isArray(v)) return (await Promise.all(v.map(htmlValueAsync))).join("");
-  const r = v as { html?: unknown };
-  if (typeof r?.html === "function") return htmlValueAsync((r.html as () => unknown)());
-  return htmlValue(v);
-}
-
-function joinHtml(strings: TemplateStringsArray, parts: string[]): HtmlString {
-  return new HtmlString(strings.reduce((acc, str, i) => i < parts.length ? acc + str + parts[i] : acc + str, ""));
-}
-
-export function html(strings: TemplateStringsArray, ...values: unknown[]): HtmlString {
-  return joinHtml(strings, values.map(htmlValue));
-}
-
-html.async = async function(strings: TemplateStringsArray, ...values: unknown[]): Promise<HtmlString> {
-  return joinHtml(strings, await Promise.all(values.map(htmlValueAsync)));
-};
-
-// Mirrors sql.raw/sql.join: raw() trusts a string as-is, join() combines
-// pre-built fragments (plain parts escaped, HtmlString kept) into one HtmlString.
-html.raw = (v: unknown): HtmlString => new HtmlString(v);
-html.join = (parts: Iterable<unknown>, separator = ""): HtmlString =>
-  new HtmlString(Array.from(parts, htmlValue).join(separator));
-
 /** An SVG `<use>` for a module-declared icon. */
 export function moduleIcon(mod: { manifest: Manifest; modUrl: string } | undefined, fallback?: string): HtmlString | undefined {
   const file = "pub/module.svg";
