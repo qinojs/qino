@@ -161,7 +161,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
         ctx.res.html.jsData.cmsFrontend = frontend;
-        ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/js/frontend.mjs");
+        ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
         ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/vers.mjs");
     }, { signal });
 

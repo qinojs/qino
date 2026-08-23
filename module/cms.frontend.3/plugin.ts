@@ -44,9 +44,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
       requestedNodeId: current.requestedNodeId,
       editmode: current.editmode,
     };
+    if (current.editmode) qino.cms.clipboard = Number(ctx.settings.cms.clipboard() ?? "0");
 
-    html.styles.add(moduleUrl + "cms.frontend.3/pub/panel.css");
-    if (current.editmode) html.styles.add(moduleUrl + "cms.frontend.3/pub/frontend.css");
+    html.styles.add(moduleUrl + "cms.frontend.3/pub/init.css");
+    if (current.editmode) {
+      html.styles.add(moduleUrl + "cms.frontend.3/pub/frontend.css");
+      html.scripts.add(moduleUrl + "cms.frontend.3/pub/js/frontend.mjs");
+    }
     html.scripts.add(moduleUrl + "cms.frontend.3/pub/init.js");
   }, { signal });
 }

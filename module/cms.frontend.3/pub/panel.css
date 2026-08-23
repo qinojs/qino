@@ -1,16 +1,3 @@
-.qino-cms-toggle {
-  position: fixed;
-  inset: auto 1rem 1rem auto;
-  z-index: 2147483646;
-  padding: .6em 1.1em;
-  border: 0;
-  border-radius: .2rem;
-  color: #fff;
-  background: #a06aef;
-  box-shadow: 0 0 .625rem #0006;
-  cursor: pointer;
-}
-
 :host {
   position: fixed;
   inset: 0 0 0 auto;
@@ -19,8 +6,6 @@
   width: 2.75rem;
   overflow: visible;
 }
-
-qino-cms[aria-label="CMS"]:not(:defined) { display: grid; }
 
 :host .-panel {
   position: relative;
@@ -153,7 +138,6 @@ qino-cms[aria-label="CMS"]:not(:defined) { display: grid; }
 :host details[open] > summary { color: #fff; background: var(--cms-dark); }
 :host details[open] > summary::after { content: "\e801"; }
 :host details > .-body { padding: .9375rem; border: 1px solid var(--cms-light); border-top: 0; }
-[data-cms-active] { outline: .15rem solid var(--cms-color, Highlight); }
 
 @media (max-width: 40rem) {
   :host main { padding: .75rem; }

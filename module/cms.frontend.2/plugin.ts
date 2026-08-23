@@ -108,12 +108,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     const editmode = access > 1 && Number(settings.cms.editmode());
     if (editmode) {
+
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
-      html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/frontend.mjs");
-      html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/panel.mjs");
       html.styles.add(moduleUrl + "core/pub/js/Rte/main.css");
       html.styles.add(moduleUrl + "cms/pub/css/ui.css");
-      html.styles.add(moduleUrl + "cms.frontend.2/pub/css/inline.css");
+
+      html.styles.add(moduleUrl + "cms.frontend.2/pub/inline/inline.css");
+      html.scripts.add(moduleUrl + "cms.frontend.2/pub/inline/inline.js");
+      html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/panel.mjs");
     }
   }, { signal });
 }

@@ -11,21 +11,18 @@ cms.frontend2.clipboard = pid => {
     cms.frontend2.dialog(
       'Paste from clipboard',
       '<table>'+
-                '<tr><th> Title: &nbsp;<td> '+hee(res.title)+
-                '<tr><th> Module: &nbsp;<td> '+hee(res.module)+
-                '<tr><th> Id: &nbsp;<td> '+hee(pid)+
-            '</table>',
+        '<tr><th> Title: &nbsp;<td> '+hee(res.title)+
+        '<tr><th> Module: &nbsp;<td> '+hee(res.module)+
+        '<tr><th> Id: &nbsp;<td> '+hee(pid)+
+      '</table>',
       [{
         title: 'Paste on this page', then() {
           cms.cont(pid).addPosition();
           els().forEach(el => el.remove());
           close();
         }
-      },{
-        title: 'Keep in place', then: close
-      },{
-        title: 'Close'
-      }]
+      },{ title: 'Keep in place', then: close 
+      },{ title: 'Close' }]
     );
   });
 };

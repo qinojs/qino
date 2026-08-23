@@ -1,0 +1,12 @@
+.qino-cms-toggle {
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  z-index: 2147483646;
+  padding: .6em 1.1em;
+  border: 0;
+  border-radius: .2rem;
+  color: #fff;
+  background: #a06aef;
+  box-shadow: 0 0 .625rem #0006;
+  cursor: pointer;
+}

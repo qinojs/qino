@@ -4,6 +4,25 @@ import { cms } from "@qino/m/cms/pub/js/cms.mjs";
 export { api, ctx, t };
 export { cms };
 
+let dialogScope;
+cms.dialogs = {
+  alert: async text => (dialogScope ?? await import("@qino/u2/js/dialog/dialog.js")).alert(await text),
+  confirm: async text => (dialogScope ?? await import("@qino/u2/js/dialog/dialog.js")).confirm(await text),
+  prompt: async (text, initial) => (dialogScope ?? await import("@qino/u2/js/dialog/dialog.js")).prompt(await text, initial),
+};
+cms.select = id => {
+  id = Number(id);
+  if (!id) return;
+  cms.selected = id;
+  if (cms.cont) cms.cont.active = id;
+  document.dispatchEvent(new CustomEvent("cms:select", { detail: { id } }));
+};
+
+export const setDialogScope = scope => {
+  dialogScope = scope;
+  return cms.dialogs;
+};
+
 export function h(name, attrs = {}, ...children) {
   const el = document.createElement(name);
   for (const [key, value] of Object.entries(attrs)) {
@@ -15,6 +34,13 @@ export function h(name, attrs = {}, ...children) {
   el.append(...children.flat(Infinity).filter(v => v != null && v !== false));
   return el;
 }
+
+export const fileData = file => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onerror = () => reject(reader.error);
+  reader.onload = () => resolve(String(reader.result).replace(";base64,", `;name=${file.name.replace(/[;,]/g, "_")};base64,`));
+  reader.readAsDataURL(file);
+});
 
 const moduleUrl = src => {
   const url = new URL(src, location.href);

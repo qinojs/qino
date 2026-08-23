@@ -1,16 +1,11 @@
-import { cms, h, t, widgetScope } from "./cms.js";
-import { initContextMenu } from "./context-menu.js";
+import { cms, h, setDialogScope, t, widgetScope } from "./cms.js";
+import { addStyle, shell } from "./shell.js";
 
 const current = globalThis.qino?.cms?.nodeId;
 if (current) {
-  const host = h("qino-cms", { "aria-label": "CMS", "data-open": true, hidden: true });
-  const root = host.attachShadow({ mode: "open" });
-  const styles = [
-    import.meta.resolve("@qino/u2/css/norm/norm.css"),
-    import.meta.resolve("@qino/u2/css/base/base.css"),
-    new URL("../../cms/pub/css/ui.css", import.meta.url),
-    new URL("./panel.css", import.meta.url),
-  ];
+  const { host, root } = shell();
+  host.setAttribute("data-open", "");
+  addStyle(root, new URL("./panel.css", import.meta.url));
   const [openLabel, exitLabel, settingsLabel] = await Promise.all([t`Open`, t`Exit CMS`, t`Settings`]);
   const nodeInput = h("input", { type: "number", min: 1, value: current, title: "Node ID" });
   const title = h("strong", {}, `CMS · ${current}`);
@@ -29,27 +24,18 @@ if (current) {
     tab,
   );
   const panel = h("div", { class: "-panel" }, h("section", { class: "-content" }, head, body), rail);
-  root.append(...styles.map(href => h("link", { rel: "stylesheet", href })), panel);
-  document.body.append(host);
-  requestAnimationFrame(() => host.hidden = false);
+  root.append(panel);
 
   const { scope: dialogScope } = await import("@qino/u2/js/dialog/dialog.js");
   const isolate = el => ["click", "mousedown", "touchstart"].forEach(type => el.addEventListener(type, event => event.stopPropagation()));
   const scoped = dialogScope({ root, init: isolate });
-  cms.dialogs = {
-    ...scoped,
-    alert: async text => scoped.alert(await text),
-    confirm: async text => scoped.confirm(await text),
-    prompt: async (text, initial) => scoped.prompt(await text, initial),
-  };
+  setDialogScope(scoped);
 
   const widget = widgetScope(root);
   const settings = widget(new URL("./widgets/settings.js", import.meta.url), { node: { id: current } });
   const media = widget(new URL("./widgets/media.js", import.meta.url), { node: { id: current } });
   body.append(settings, media);
 
-  let active = document.querySelector(`[qcms-id="${CSS.escape(String(current))}"]`);
-  active?.setAttribute("data-cms-active", "");
   let activeId = Number(current);
   const open = value => {
     host.toggleAttribute("data-open", value);
@@ -64,16 +50,27 @@ if (current) {
     activeId = id;
     nodeInput.value = id;
     title.textContent = `CMS · ${id}`;
-    active?.removeAttribute("data-cms-active");
-    active = document.querySelector(`[qcms-id="${CSS.escape(String(id))}"]`);
-    active?.setAttribute("data-cms-active", "");
     settings.reload({ node: { id } });
     media.reload({ node: { id } });
   };
 
   form.addEventListener("submit", event => {
     event.preventDefault();
-    select(nodeInput.value);
+    cms.select(nodeInput.value);
+  });
+  document.addEventListener("cms:select", event => select(event.detail.id));
+  document.addEventListener("mousedown", event => {
+    if (event.button === 0 && !event.composedPath().includes(host)) open(false);
+  });
+  document.addEventListener("keydown", event => {
+    const target = event.composedPath()[0];
+    if (target.getRootNode() !== document || target.isContentEditable || target.form !== undefined ||
+      event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+    if (event.key === "Escape") open(false);
+    if (event.key === " ") {
+      cms.select(cms.contents?.active?.getAttribute("qcms-id") || activeId);
+      event.preventDefault();
+    }
   });
   tab.addEventListener("click", () => open(!host.hasAttribute("data-open")));
   exit.addEventListener("click", () => {
@@ -81,14 +78,8 @@ if (current) {
     url.searchParams.set("cms_editmode", "0");
     location.href = url;
   });
-  document.addEventListener("click", event => {
-    if (event.composedPath().includes(host)) return;
-    const node = event.target.closest?.("[qcms-id]");
-    if (node) select(node.getAttribute("qcms-id"));
-  });
-
-  const menu = initContextMenu({ dialogs: cms.dialogs, select });
-
   cms.panelRoot = root;
-  cms.panel = { host, root, el: panel, contextMenu: menu, open, select };
+  cms.panel = { host, root, el: panel, open, select: cms.select, widgets: { media, settings } };
+  document.dispatchEvent(new Event("cms:panel-ready"));
+  if (cms.selected && cms.selected !== Number(current)) select(cms.selected);
 }

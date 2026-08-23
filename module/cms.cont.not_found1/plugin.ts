@@ -53,7 +53,7 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<HtmlString | string>
   if (cmsCtx(ctx).mainNode === await node.cms.nodeFromRequest()) return "";
 
   ctx.res.html.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
-  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.2/pub/js/frontend.mjs");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.2/pub/inline/inline.js");
 
   let savedMsg: HtmlString | string = "";
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "setRedirect" in ctx.req.body) {
