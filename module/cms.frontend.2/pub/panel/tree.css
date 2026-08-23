@@ -6,7 +6,7 @@
   /* Hidden root: only a shared container (single active/selection) – hide its own row
   * and take back the base indent of the top-level nodes (-1 * --indent). */
   & > u2-tree.-root::part(row) { display: none; }
-  & > u2-tree.-root { margin-inline-start: -1rem; }
+  & > u2-tree.-root { margin-inline-start: calc(var(--rem) * -1); }
 
   & input { color:#000; border:0; background:transparent; padding:0; margin:0; font:inherit; }
   & .-title {

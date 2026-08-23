@@ -3,6 +3,7 @@ import { api, t, ctx } from "@qino/pub/qino.js";
 
 import { root, addStyle } from "../js/root.js";
 import { dialogs } from "../js/dialogs.js";
+import { onShortcut } from "../js/shortcut.js";
 import "./contentMenu.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -45,8 +46,12 @@ root.addEventListener("error", (e) => {
   }));
 }, true);
 
+// widget controllers get the node their markup carries
 function onEl(selector, fn) {
-  new SelectorObserver({ on: el => requestAnimationFrame(() => fn(el)) }).observe(selector, { root });
+  new SelectorObserver({ on: el => requestAnimationFrame(() => {
+    const pid = el.getAttribute("pid");
+    fn(el, pid, pid && api.cms.node(pid));
+  }) }).observe(selector, { root });
 }
 
 /* sidebar */
@@ -122,25 +127,20 @@ on(document, "mousedown touchstart", e => {
 });
 
 // shortcuts
-document.addEventListener("keydown", (e) => {
-  const target = e.composedPath()[0]; // real element even inside shadow DOM (e.target would be the host)
-  if (target.getRootNode() !== document) return; // from shadow DOM = a component (tree/panel/…) owns the key
-  if (target.isContentEditable || target.form !== undefined) return; // inputs/contenteditable in the light DOM (page content)
-  if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
-
-  if (e.key == "t") {
+onShortcut((key, e) => {
+  if (key == "t") {
     cms.cont.active = cms.contPos.active?.pid;
     sidebar.set("tree");
     e.preventDefault();
   }
-  if (e.key == " ") {
+  if (key == " ") {
     cms.cont.active = cms.contPos.active?.pid;
     sidebar.set("settings");
     e.preventDefault();
   }
-  if (e.key == "v") sidebar.set(sidebar.value === "add" ? "" : "add");
-  if (e.key == "Escape") sidebar.set("");
-  if (e.key == "n") { // n
+  if (key == "v") sidebar.set(sidebar.value === "add" ? "" : "add");
+  if (key == "Escape") sidebar.set("");
+  if (key == "n") { // n
     sidebar.set("tree");
     setTimeout(() => {
       const inp = findEl(el, "#page-add");
@@ -197,15 +197,17 @@ for (const switc of switches) {
 }
 
 /* update accordion-heads */
+for (const [route, head] of [
+  ["PUT cms/node/:id/access", "access.grp.head"],
+  ["PUT cms/node/:id/access/groups/*", "access.grp.head"],
+  ["PUT cms/node/:id/access/users/*", "access.usr.head"],
+  ["DELETE cms/node/:id/files/*", "media.head"],
+  ["DELETE cms/node/:id/files/doubles", "media.head"],
+  ["DELETE cms/node/:id/files/all", "media.head"],
+  ["POST cms/node/:id/redirects", "urls.head"],
+  ["DELETE cms/node/:id/redirects", "urls.head"],
+]) api.on(route, () => loadWidget(head));
 api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time.head"); });
-api.on("PUT cms/node/:id/access",       () => loadWidget("access.grp.head"));
-api.on("PUT cms/node/:id/access/groups/*", () => loadWidget("access.grp.head"));
-api.on("PUT cms/node/:id/access/users/*",  () => loadWidget("access.usr.head"));
-api.on("DELETE cms/node/:id/files/*",   () => loadWidget("media.head"));
-api.on("DELETE cms/node/:id/files/doubles", () => loadWidget("media.head"));
-api.on("DELETE cms/node/:id/files/all", () => loadWidget("media.head"));
-api.on("POST cms/node/:id/redirects",   () => loadWidget("urls.head"));
-api.on("DELETE cms/node/:id/redirects", () => loadWidget("urls.head"));
 
 onEl(".tree-manager", async (el) => {
   await import("./tree.js");
@@ -234,9 +236,7 @@ onEl(".tree-manager", async (el) => {
   };
 });
 
-onEl(".file-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = api.cms.node(pid);
+onEl(".file-manager", (el, pid, node) => {
   import("@qino/pub/c1/form.mjs").then(() => {
     findEl(el, ".-uploadBtn").addEventListener("click", async () => {
       const files = await c1.form.fileDialog();
@@ -358,9 +358,7 @@ onEl(".module-manager", (el) => {
     e.preventDefault();
   });
 });
-onEl(".access-groups-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = api.cms.node(pid);
+onEl(".access-groups-manager", (el, pid, node) => {
   findEl(el, ".-inherit").addEventListener("change", (e) => {
     const value = e.currentTarget.checked ? null : parseInt(e.currentTarget.value); // not inherit ? set it to what it was inherited
     node.access.put({ value });
@@ -382,9 +380,7 @@ onEl(".access-groups-manager", (el) => {
       : node.access.groups(inp.name.replace("g_", "")).put({ access: parseInt(inp.value) });
   });
 });
-onEl(".access-users-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = api.cms.node(pid);
+onEl(".access-users-manager", (el, pid, node) => {
   const searchInp = findEl(el, ".-search");
   searchInp?.addEventListener(
     "keyup",
@@ -399,8 +395,7 @@ onEl(".access-users-manager", (el) => {
     node.access.users(inp.name.replace("u_", "")).put({ access: parseInt(inp.value) });
   });
 });
-onEl(".access-time-manager", (el) => {
-  const node = api.cms.node(el.getAttribute("pid"));
+onEl(".access-time-manager", (el, _pid, node) => {
   const reload = () => widgets.item("access.time").set(1);
 
   for (const [edge, field] of [["start", "onlineStart"], ["end", "onlineEnd"]]) {
@@ -415,9 +410,7 @@ onEl(".access-time-manager", (el) => {
     now.style.display = inp.value ? "none" : "block";
   }
 });
-onEl(".url-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = api.cms.node(pid);
+onEl(".url-manager", (el, _pid, node) => {
   findEl(el, "> .-urls").addEventListener("change", (e) => {
     const tr = e.target.closest("[data-lang]");
     const lang = tr.getAttribute("data-lang");
@@ -463,9 +456,7 @@ onEl(".url-manager", (el) => {
     widgets.item("urls").set(1);
   }
 });
-onEl(".advanced-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = api.cms.node(pid);
+onEl(".advanced-manager", (el, pid, node) => {
   findEl(el, ".-visible").addEventListener("change", (e) => {
     node.patch({ visible: e.currentTarget.checked });
   });
@@ -550,9 +541,7 @@ onEl(".more-manager", (el) => {
 
 });
 
-onEl(".content-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = api.cms.node(pid);
+onEl(".content-manager", (el, pid, node) => {
   // change module
   findEl(el, ".-changemodule").addEventListener("change", (e) => {
     const val = e.currentTarget.options[e.currentTarget.selectedIndex].value;
@@ -577,8 +566,7 @@ onEl(".content-manager", (el) => {
     }
   });
 });
-onEl(".superuser-manager", (el) => {
-  const pid = el.getAttribute("pid");
+onEl(".superuser-manager", (el, pid) => {
   el.addEventListener("keyup", (e) => {
     if (e.key !== "Enter") return;
     const create = e.target.closest(".-create");

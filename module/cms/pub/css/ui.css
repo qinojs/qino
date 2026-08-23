@@ -27,7 +27,8 @@ qino-cms:not(:defined) { display:none; }
   color: var(--cms-dark);
   accent-color: var(--color);
   font-family: Arial, sans-serif;
-  font-size:13px;
+  --rem: 13px; /* our own root unit: rem would follow the customer page's html font-size */
+  font-size: var(--rem);
   text-align:left;
 
   & a { color: var(--cms-color); text-decoration:none; }

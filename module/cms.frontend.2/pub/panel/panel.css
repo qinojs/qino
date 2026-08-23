@@ -16,18 +16,18 @@
   }
   & > .-sidebar {
     background:var(--cms-color);
-    box-shadow:0 0 .625rem rgba(0,0,0,.4);
+    box-shadow:0 0 calc(var(--rem) * .63) rgba(0,0,0,.4);
     height:100%;
     overflow:auto;
   }
   & > .-sidebar > .-sensor {
     position:absolute;
     top:0; bottom:0; left:0;
-    transform:translateX(-1.25rem);
-    width:1.25rem;
+    transform:translateX(calc(var(--rem) * -1.25));
+    width:calc(var(--rem) * 1.25);
   }
   & > .-sidebar > .-item {
-    border-bottom:.125rem solid #fff;
+    border-bottom:calc(var(--rem) * .13) solid #fff;
   }
   & > .-sidebar > .-item > .-title {
     white-space:nowrap; /* fixes chrome bug */
@@ -46,12 +46,12 @@
   & > .-sidebar > .-item > .-title:before {
     content:'';
     position:absolute;
-    left:-.75rem;
-    border-top: .75rem solid transparent;
-    border-bottom: .75rem solid transparent;
+    left:calc(var(--rem) * -.72);
+    border-top: calc(var(--rem) * .75) solid transparent;
+    border-bottom: calc(var(--rem) * .75) solid transparent;
     opacity:0;
     will-change:opacity;
-    border-right: .75rem solid var(--cms-color);
+    border-right: calc(var(--rem) * .75) solid var(--cms-color);
   }
   & > .-sidebar > .-item.-open > .-title:before {
     opacity:1;
@@ -64,12 +64,12 @@
     right:100%;
     top:0;
     bottom:0;
-    box-shadow:0 0 .875rem 0 rgba(0,0,0,.5);
+    box-shadow:0 0 calc(var(--rem) * .875) 0 rgba(0,0,0,.5);
     transform:translateX(120%);
     transition:transform .13s;
     z-index:-2;
-    width:46.25rem; /* min-width => bigger if content bigger (not working with max-width) */
-    padding:1.875rem;
+    width:calc(var(--rem) * 50); /* min-width => bigger if content bigger (not working with max-width) */
+    padding:calc(var(--rem) * 1.875);
     box-sizing:border-box;
     max-width:calc(100vw - 100%);
     overflow:auto;
@@ -91,9 +91,9 @@
     display:flex;
     padding:.6em .8em .5em .8em;
     cursor:pointer;
-    margin-top:.1875rem;
+    margin-top:calc(var(--rem) * .22);
     transition:all .1s;
-    font-size:16px;
+    font-size:calc(var(--rem) * 1.2);
     background-color:var(--cms-light);
   }
   & .-widgetHead > .-title {
@@ -123,12 +123,12 @@
     transition-duration: .13s;
     transition-property: max-height, padding;
     max-height:0;
-    padding:0 .9375rem;
+    padding:0 calc(var(--rem) * .9375);
     overflow:hidden;
   }
   & .-widgetHead.-open + div {
     max-height:90vh;
-    padding:.9375rem;
+    padding:calc(var(--rem) * .9375);
     overflow:auto;
   }
   & .-widgetHead + div[widget=options] { /* phpfile */
@@ -137,8 +137,8 @@
   & .-info {
     font-size:11px;
     border-radius:50%;
-    min-width:1.125rem;
-    margin-left:.3125rem;
+    min-width:calc(var(--rem) * 1.4);
+    margin-left:calc(var(--rem) * .3125);
     color:#fff;
     line-height:1.3;
     box-sizing: border-box;
@@ -152,7 +152,7 @@
   & tr.-vertical > * {
     text-align: center;
     vertical-align: bottom;
-    width:1.5rem;
+    width:calc(var(--rem) * 1.5);
   }
   & tr.-vertical > * > span {
     white-space:nowrap;
@@ -160,14 +160,14 @@
   }
   & .-module-boxes {
     display: grid;
-    grid-gap: .1875rem;
-    grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr) ) ;
+    grid-gap: calc(var(--rem) * .2);
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--rem) * 10), 1fr) ) ;
   }
   & .-module-boxes > div {
     display:flex;
     flex-direction: column;
     cursor:move;
-    padding:.625rem;
+    padding:calc(var(--rem) * .625);
     color:#fff;
     text-transform:uppercase;
     font-size:10px;
@@ -175,15 +175,15 @@
     color:var(--cms-dark);
   }
   & .-module-boxes > div:hover {
-    box-shadow:0 0 .375rem rgba(0,0,0,.4);
+    box-shadow:0 0 calc(var(--rem) * .375) rgba(0,0,0,.4);
     background-color:var(--cms-dark);
     color:#fff;
   }
   & .-module-boxes .-img {
-    width:3rem;
-    height:3rem;
+    width:calc(var(--rem) * 3);
+    height:calc(var(--rem) * 3);
     display:block;
-    margin:1.25rem auto 1.25rem auto;
+    margin:calc(var(--rem) * 1.4) auto calc(var(--rem) * 1.4) auto;
     flex:auto;
     fill:currentColor;
   }
@@ -192,12 +192,12 @@
   }
   & .-cmsFileList {
     width:100%;
-    margin-bottom:.4375rem;
+    margin-bottom:calc(var(--rem) * .4375);
     table-layout:fixed;
   }
   & .-cmsFileList .-preview {
-    width:4.375rem;
-    height:2.5rem;
+    width:calc(var(--rem) * 4.375);
+    height:calc(var(--rem) * 2.5);
     vertical-align:middle;
     cursor:pointer;
   }
@@ -215,20 +215,20 @@
   }
   & .-cmsFileList .-size {
     text-align:right;
-    width:4rem;
+    width:calc(var(--rem) * 4);
     font-size:12px;
     vertical-align:middle;
     white-space: nowrap;
   }
   & .-cmsFileList .-handle {
-    width:1.375rem;
+    width:calc(var(--rem) * 1.375);
     background:center no-repeat url(../img/drag1.svg);
     cursor:n-resize;
   }
   & .-cmsFileList .-delete {
     cursor:pointer;
-    width:1.375rem;
-    padding-right:.375rem;
+    width:calc(var(--rem) * 1.375);
+    padding-right:calc(var(--rem) * .375);
     background:center no-repeat url(../img/delete.svg);
   }
 
@@ -247,19 +247,19 @@
     padding:0;
   }
   #panel .-standalone {
-    padding:.625rem;
+    padding:calc(var(--rem) * .625);
   }
   #panel > .-sidebar > .-item {
-    width:2.5rem;
+    width:calc(var(--rem) * 2.5);
   }
   #panel > .-sidebar > .-item > .-title > .-text {
     font-size:1em;
   }
   #panel .-module-boxes > div {
-    flex-basis:6.25rem;
+    flex-basis:calc(var(--rem) * 6.25);
   }
   #panel .-module-boxes .-img {
-    width:3rem;
-    height:3rem;
+    width:calc(var(--rem) * 3);
+    height:calc(var(--rem) * 3);
   }
 }
