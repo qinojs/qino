@@ -31,6 +31,7 @@ class AiChat extends HTMLElement {
         id: globalThis.qino?.cms?.nodeId ?? null,
       },
     };
+    const [placeholder, buttonText] = await Promise.all([t`Ask a question…`, t`Send`]);
     this.innerHTML = `<style>
       ai-chat { display: flex; flex-direction: column; height: 100%; font-family: sans-serif; }
       ai-chat .msgs { flex: 1; overflow-y: auto; padding: 8px; display: none; flex-direction: column; gap: 6px; }
@@ -50,8 +51,8 @@ class AiChat extends HTMLElement {
     </style>
     <div class=msgs></div>
     <form>
-      <input type=text placeholder="${await t`Ask a question…`}" autocomplete=off>
-      <button type=submit>${await t`Send`}</button>
+      <input type=text placeholder="${placeholder}" autocomplete=off>
+      <button type=submit>${buttonText}</button>
     </form>`;
 
     this.#messages = this.querySelector('.msgs');

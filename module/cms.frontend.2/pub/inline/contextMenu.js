@@ -2,7 +2,7 @@ import '@qino/pub/c1/contextMenu.mjs';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
 import '../../../cms/pub/js/cms.mjs';
-import { showSettings } from './host.js';
+import { host, showSettings } from './host.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -17,7 +17,7 @@ menu.addItem(t`Settings`, {
   selector: BLOCK_SELECTOR,
   onshow() {
     this.activePid = cms.contPos.active.pid;
-    this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
+    this.disabled = !host.showSettings || !cms.contPos.active.el.hasAttribute('qcms-edit');
   },
   onclick() { showSettings(this.activePid); }
 });

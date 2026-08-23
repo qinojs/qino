@@ -4,10 +4,12 @@ import { cms } from '../../../cms/pub/js/cms.mjs';
 
 export const host = {};
 
-/** Select a content and let the host open its settings. */
+/** Select a content and let the host open its settings. Callers hide their affordance while
+  * `host.showSettings` is unset — without a host there is nowhere to show them. */
 export const showSettings = pid => {
+  if (!host.showSettings) return;
   cms.cont.active = pid;
-  host.showSettings?.(pid);
+  host.showSettings(pid);
 };
 
 /** Page-level handlers (content marking, context menu) must not see clicks inside a dialog. */

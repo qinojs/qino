@@ -6,7 +6,7 @@ import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import { t, api } from '@qino/pub/qino.js';
 
-import { showSettings } from './host.js';
+import { host, showSettings } from './host.js';
 
 import './rte.js';
 import './contextMenu.js';
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     menu.mod.innerHTML = mod.replace(/^cont\./,'');
     menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
     menu.drag.style.display = isDraggable ? 'block' : 'none';
-    menu.opts.style.display = obj.el.hasAttribute('qcms-edit') ? 'block' : 'none';
+    menu.opts.style.display = host.showSettings && obj.el.hasAttribute('qcms-edit') ? 'block' : 'none';
     menu.style.cursor = (isDraggable?'move':'default');
 
     if (obj.el.hasAttribute('qcms-offline')) {

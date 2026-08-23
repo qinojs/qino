@@ -115,7 +115,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
       html.styles.add(moduleUrl + "cms.frontend.2/pub/inline/inline.css");
       html.scripts.add(moduleUrl + "cms.frontend.2/pub/inline/inline.js");
-//      html.scripts.add(moduleUrl + "cms.frontend.2/pub/panel/panel.js");
+      html.scripts.add(moduleUrl + "cms.frontend.2/pub/panel/panel.js");
     }
   }, { signal });
 }
