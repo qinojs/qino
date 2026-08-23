@@ -6,8 +6,7 @@ import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import { t, api } from '@qino/pub/qino.js';
 
-import { root, addStyle } from '../js/root.js';
-import { dialogs } from '../js/dialogs.js';
+import { root } from '../js/root.js';
 
 import './rte.js';
 import './contextMenu.js';
@@ -17,9 +16,9 @@ import './dropPaste.js';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
-addStyle('cms.frontend.2/pub/inline/chrome.css');
+root.host.addStyle('cms.frontend.2/pub/inline/chrome.css');
 cms.frontend2 = {};
-cms.dialogs = dialogs;
+cms.dialogs = root;
 
 /** Buttons a host adds to the content menu; `show(contPos)` decides visibility per marked content. */
 export const contMenuButtons = [];
@@ -255,7 +254,7 @@ cms.console = {
 api.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`API call failed`, 'error'));
 
 cms.frontend2.dialog = (title,body,buttons) =>
-  dialogs.modal({
+  root.modal({
     body: (title ? '<p>'+title+'</p>' : '') + body,
     buttons: buttons?.map(b => ({ ...b, action: b.then })), // c1 used `then`, u2 uses `action`, todo: use action everywhere and remove this mapping
   });

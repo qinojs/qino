@@ -5,6 +5,7 @@
     "core"
   ],
   "files": [
+    "manifest.json",
     "ACCESS.md",
     "README.md",
     "api-exports.ts",
@@ -27,12 +28,12 @@
     "locale/it.json",
     "locale/pl.json",
     "locale/zh.json",
-    "manifest.json",
     "mod.ts",
     "plugin.ts",
     "pub/css/ui.css",
     "pub/font/cms.woff",
     "pub/js/cms.mjs",
+    "pub/js/styles.js",
     "pub/module.svg"
   ]
 }

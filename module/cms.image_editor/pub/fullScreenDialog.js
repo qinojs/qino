@@ -1,16 +1,8 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { ctx } from '@qino/pub/qino.js';
+import { addCmsStyles, addCss } from '../../cms/pub/js/styles.js';
 
 const TAG = 'qino-image-editor';
 if (!customElements.get(TAG)) customElements.define(TAG, class extends HTMLElement {});
-
-// Shared CMS chrome (buttons, inputs, --cms-* tokens, icon font) loaded into the
-// shadow root, so the editor is styled consistently but isolated from the website.
-const STYLE_HREFS = [
-  import.meta.resolve('@qino/u2/css/norm/norm.css'),
-  import.meta.resolve('@qino/u2/css/base/base.css'),
-  'cms/pub/css/ui.css',
-];
 
 // Full-screen layout; overrides ui.css's centered-box dialog rule (`:host dialog`),
 // hence the higher-specificity `dialog.qgCMS` selectors.
@@ -40,11 +32,8 @@ export class FullScreenDialog {
     constructor() {
       this.#host = document.createElement(TAG);
       this.#shadow = this.#host.attachShadow({ mode: 'open' });
-      for (const href of STYLE_HREFS) {
-        const url = /^https?:/.test(href) ? href : ctx.moduleUrl + href;
-        this.#shadow.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: url }));
-      }
-      this.#shadow.append(Object.assign(document.createElement('style'), { textContent: BASE_CSS }));
+      addCmsStyles(this.#shadow);          // shared chrome: tokens, buttons, inputs, icon font
+      addCss(this.#shadow, BASE_CSS);      // same queue -> stays after ui.css in the cascade
 
       this.#dialog = document.createElement('dialog');
       this.#dialog.className = 'qgCMS';

@@ -1,15 +1,14 @@
 import { itemJs } from "@qino/pub/SettingsEditor.mjs";
 import { api, t, ctx } from "@qino/pub/qino.js";
 
-import { root, addStyle } from "../js/root.js";
-import { dialogs } from "../js/dialogs.js";
+import { root } from "../js/root.js";
 import { onShortcut } from "../js/shortcut.js";
 import "./contentMenu.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
-addStyle("cms.frontend.2/pub/panel/panel.css");
-addStyle("cms.frontend.2/pub/panel/tree.css");
+root.host.addStyle("cms.frontend.2/pub/panel/panel.css");
+root.host.addStyle("cms.frontend.2/pub/panel/tree.css");
 
 const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListener(e, fn));
 const sel = s => s[0] === ">" ? ":scope " + s : s;
@@ -35,7 +34,7 @@ cms.panelRoot = root;
 const el = root.getElementById("panel");
 el.showPopover();
 const { SelectorObserver } = await import("@qino/u2/js/SelectorObserver/SelectorObserver.js");
-const { alert, confirm } = dialogs;
+const { alert, confirm } = root;
 
 // A failed <img> fires no bubbling event, so the media list is listened to at the root.
 root.addEventListener("error", (e) => {

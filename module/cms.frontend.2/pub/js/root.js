@@ -1,6 +1,9 @@
 /* The one shadow root all CMS chrome lives in: panel, inline overlays, dialogs.
-  * Page markup stays in the document — it is styled by inline/page.css, never from here. */
-import { ctx } from '@qino/pub/qino.js';
+  * Page markup stays in the document — it is styled by inline/page.css, never from here.
+  * Dialogs hang on the root itself: root.alert(), root.confirm(), root.modal(). */
+import { scope } from '@qino/u2/js/dialog/dialog.js';
+
+import { addCmsStyles, addStyle } from '../../../cms/pub/js/styles.js';
 
 customElements.define('qino-cms', class extends HTMLElement {
   connectedCallback() {
@@ -8,39 +11,24 @@ customElements.define('qino-cms', class extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' });
     while (this.firstChild) shadow.append(this.firstChild); // server-rendered panel markup
   }
+  /** Anything mounting into the CMS root adds its stylesheet through here. */
+  addStyle(href) { return addStyle(this.shadowRoot, href); }
 });
 
 export const root = (document.querySelector('qino-cms') ?? document.body.appendChild(document.createElement('qino-cms'))).shadowRoot;
 
-// A constructed sheet resolves url() against the document, so rebase it onto the css file.
-const rebase = (css, base) =>
-  css.replace(/url\((["']?)(?!data:|https?:|\/)([^"')]+)\1\)/g, (_, _q, path) => `url("${new URL(path, base)}")`);
+addCmsStyles(root);
+root.host.addStyle('cms.frontend.2/pub/css/off.css').then(() => root.host.hidden = false);
 
-const sheets = new Map();
-const sheet = (href) => {
-  if (!sheets.has(href)) {
-    sheets.set(href, fetch(href).then((r) => r.text()).then((css) => {
-      const s = new CSSStyleSheet();
-      s.replaceSync(rebase(css, href));
-      return s;
-    }));
-  }
-  return sheets.get(href);
-};
+// Page-level handlers (content marking, context menu) must not see clicks inside a dialog.
+const isolate = (el) => ['click', 'mousedown', 'touchstart'].forEach((type) =>
+  el.addEventListener(type, (e) => e.stopPropagation()));
 
-// moduleUrl is root-relative; rebase() needs an absolute base
-const url = (href) => new URL(ctx.moduleUrl + href, location.href).href;
+const scoped = scope({ root, init: isolate });
 
-// serialised, so the cascade follows call order
-let pending = Promise.resolve();
-/** Each layer adopts its own stylesheet; the base below is shared. */
-export const addStyle = (href) =>
-  pending = pending.then(async () => root.adoptedStyleSheets.push(await sheet(url(href))));
-
-// u2 ships from a CDN — fetching it would need connect-src for that origin, so it stays a link.
-// Tree stylesheets cascade before adopted ones, which keeps u2's base below ours.
-for (const href of ['@qino/u2/css/norm/norm.css', '@qino/u2/css/base/base.css']) {
-  root.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: import.meta.resolve(href) }));
-}
-addStyle('cms/pub/css/ui.css');
-addStyle('cms.frontend.2/pub/css/off.css').then(() => root.host.hidden = false);
+// t`` returns a thenable -> await the text, else u2 treats the promise as the options object.
+Object.assign(root, scoped, {
+  alert:   async (text)          => scoped.alert(await text),
+  confirm: async (text)          => scoped.confirm(await text),
+  prompt:  async (text, initial) => scoped.prompt(await text, initial),
+});
