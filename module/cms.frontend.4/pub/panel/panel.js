@@ -42,7 +42,7 @@ root.addEventListener("error", (e) => {
   const src = e.target?.dataset?.audio;
   if (!src) return;
   e.target.replaceWith(Object.assign(document.createElement("audio"), {
-    src, controls: true, draggable: true, style: "min-width:4.4rem; width:100%",
+    src, controls: true, draggable: true, style: "min-width:calc(var(--rem) * 4.4); width:100%",
   }));
 }, true);
 

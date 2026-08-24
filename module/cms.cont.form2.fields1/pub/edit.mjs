@@ -36,7 +36,8 @@ document.addEventListener('pointerdown', e => {
   const handle = e.composedPath()[0].closest?.('.-handle');
   if (!handle) return;
   const field = handle.closest('.-field');
-  const list = field.parentNode;
+  const list = field?.parentNode;
+  if (!list?.dataset.node) return; // markup this controller does not own (a widget brings its own dnd)
   e.preventDefault();
 
   const root = field.getRootNode(); // the options panel lives in a shadow root, which document.elementFromPoint cannot see into

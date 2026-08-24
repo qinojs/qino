@@ -3,15 +3,22 @@ import { html } from '@qino/pub/html.js';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
 export const css = `
-.-media .-list { width:100%; }
-.-media .-preview { width:calc(var(--rem) * 4.375); height:calc(var(--rem) * 2.5); cursor:pointer; vertical-align:middle; }
-.-media .-preview > * { display:block; background:#ddd; }
-.-media .-link { vertical-align:middle; white-space:nowrap; }
-.-media .-link > a { overflow:hidden; text-overflow:ellipsis; display:block; }
+/* fixed: the columns keep their declared width whatever the preview measures */
+.-media .-list { width:100%; table-layout:fixed; }
+.-media td { height:calc(var(--rem) * 3.8); vertical-align:middle; } /* room for the slot line, present or not */
+.-media .-preview { width:calc(var(--rem) * 5.4); cursor:pointer; }
+.-media .-preview > * { display:block; width:100%; height:calc(var(--rem) * 3.4); object-fit:contain; background:var(--cms-light); }
+.-media .-link { white-space:nowrap; }
+.-media .-link > a { display:block; overflow:hidden; text-overflow:ellipsis; }
 .-media .-slot { font-size:calc(var(--rem) * .7); color:#999; font-style:italic; }
-.-media .-size { text-align:right; width:calc(var(--rem) * 4); vertical-align:middle; white-space:nowrap; }
-.-media .-handle { width:calc(var(--rem) * 1.375); cursor:n-resize; }
-.-media .-delete { width:calc(var(--rem) * 1.375); cursor:pointer; }
+.-media .-size { width:calc(var(--rem) * 5); text-align:right; white-space:nowrap; }
+/* u2 sizes icons in rem — pin them to our own anchor instead.
+   The cell path is spelled out to outweigh .-styled's own padding rule */
+.-media .-list > * > tr > :is(.-handle, .-delete) {
+  width:calc(var(--rem) * 1.7); padding-inline:0; text-align:center; --size:calc(var(--rem) * 1.4); }
+.-media .-list u2-ico { --size: calc(var(--rem) * 1.5); }
+.-media .-handle { cursor:n-resize; }
+.-media .-delete { cursor:pointer; }
 .-media .-tools { display:flex; flex-wrap:wrap; gap:.5em; margin-bottom:.8em; }
 .-media .-foot { text-align:right; }
 `;
@@ -28,7 +35,7 @@ const fileData = (file) => new Promise((ok, fail) => {
 
 const preview = (file) => file.thumb
   ? html`<img src="${file.thumb}" alt="" draggable=true ${file.ext === 'svg' ? 'height=40' : ''}>`
-  : html`<svg width=70 height=40><rect width=70 height=40 fill="var(--cms-color)"></rect>
+  : html`<svg viewBox="0 0 70 40"><rect width=70 height=40 fill="var(--cms-color)"></rect>
       <text x=35 y=24 fill=#fff text-anchor=middle>${file.placeholder ? 'upload' : file.ext}</text></svg>`;
 
 // dynamic: draghandle pulls a cdn dependency that `deno check --all` cannot follow
@@ -55,8 +62,8 @@ export default async function (el, { node, dialogs, signal }) {
       : html`<a href="${file.url}" target=_blank title="${file.name}">${file.name}</a>`
     }${slot[0] === '_' ? '' : html`<div class=-slot>(${slot})</div>`}
     <td class=-size>${kb(file.size)}
-    <td class=-handle u2-draghandle>
-    <td class=-delete>✕`;
+    <td class=-handle u2-draghandle><u2-ico icon=drag1>⠿</u2-ico>
+    <td class=-delete><u2-ico icon=delete>✕</u2-ico>`;
 
   await el.html`<div class=-media>
     <div class=-tools>

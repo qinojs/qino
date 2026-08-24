@@ -12,6 +12,7 @@ export const css = `
 .-fields1 .-field { padding:.15em 0; }
 .-fields1 .-head { display:flex; align-items:center; gap:.2em; }
 .-fields1 .-head > input { flex:80 1 auto; }
+.-fields1 .-head > button { padding:0 .2em; --size:calc(var(--rem) * 1.4); } /* u2 sizes icons in rem */
 .-fields1 .-more { max-height:0; overflow:hidden; box-sizing:border-box;
   transition:max-height .2s linear, padding .2s linear; padding:0 .6em; }
 .-fields1 .-field:focus-within .-more { max-height:31em; padding:.6em; }
@@ -62,8 +63,8 @@ export default async function (el, { node, signal }) {
       <div class=-head>
         <select setting="inputs.${id}.type">${options(TYPES, inp.type ?? 'text')}</select>
         <input value="${title.value}" cmstxt=${title.id}>
-        <button type=button class=-handle u2-draghandle title="${t`Reorder`}">↕</button>
-        <button type=button class=-remove title="${t`Delete`}">✕</button>
+        <button type=button class=-handle u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag1>⠿</u2-ico></button>
+        <button type=button class=-remove title="${t`Delete`}"><u2-ico icon=delete>✕</u2-ico></button>
       </div>
       <div class=-more>
         <label><input type=checkbox setting="inputs.${id}.required" ${inp.required ? 'checked' : ''}> ${t`Required`}</label>

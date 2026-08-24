@@ -3,7 +3,7 @@
 /* trash */
 #qgCmsContTrash {
   position:fixed;
-  inset:.5rem auto auto .625rem; /* top/left; cancels [popover] UA inset:0 */
+  inset:calc(var(--rem) * .5) auto auto calc(var(--rem) * .625); /* top/left; cancels [popover] UA inset:0 */
   margin:0; padding:0;      /* reset [popover] UA box */
   display:none;
   overflow:hidden;
@@ -24,7 +24,7 @@
     transform:rotate(0deg);
     transition:transform .5s;
   }
-  &.-full > svg .-lis { transform:rotate(-20deg) translateX(-.125rem); }
+  &.-full > svg .-lis { transform:rotate(-20deg) translateX(calc(var(--rem) * -.125)); }
 }
 
 /* contpos-menu */
@@ -33,10 +33,10 @@
   display:none;
   inset:auto;               /* cancel [popover] UA inset:0; Placer sets top/left */
   margin:0; border:0;       /* reset [popover] UA box */
-  overflow:visible;         /* don't clip the ::after hit-area (inset:-.3125rem) */
+  overflow:visible;         /* don't clip the ::after hit-area (inset:calc(var(--rem) * -.3125)) */
   align-items:center;
-  padding:.25rem .4375rem .125rem .4375rem;
-  border-radius:.25rem;
+  padding:calc(var(--rem) * .25) calc(var(--rem) * .4375) calc(var(--rem) * .125) calc(var(--rem) * .4375);
+  border-radius:calc(var(--rem) * .25);
   scale:1.001;
   font-size:13px;
   background:var(--cms-color);
@@ -45,8 +45,8 @@
   &:popover-open { display:flex; }
 
   & > div {
-    width:1.125rem;
-    margin:1px 1px .125rem 1px;
+    width:calc(var(--rem) * 1.125);
+    margin:1px 1px calc(var(--rem) * .125) 1px;
     & > svg {
       display:block;
       fill:currentColor;
@@ -54,12 +54,12 @@
     }
   }
   & > .-opts { cursor:pointer; }
-  & > .-mod  { width:auto; margin:1px .3125rem 0 .1875rem; }
+  & > .-mod  { width:auto; margin:1px calc(var(--rem) * .3125) 0 calc(var(--rem) * .1875); }
 
   &::after {
     content:'';
     position:absolute;
-    inset:-.3125rem;
+    inset:calc(var(--rem) * -.3125);
     background:#0000;
     z-index:-1;
   }
