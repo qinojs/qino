@@ -155,6 +155,7 @@ export const cms = {
   node: {
     render,
     options,
+    widget: "pub/settings.js", // settings widget for the CMS panel (content + css + behaviour)
     settingsSchema,
     css: ["pub/main.css"],
   },

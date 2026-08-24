@@ -106,6 +106,7 @@ const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
 const OPEN = new Set([
   "cms.frontend.ai/bots/cmsHelper.ts -> cms/api.ts",           // toTools() at module scope, no app yet
   "cms.frontend.2/view/widgets/tree.ts -> cms/api-exports.ts", // calls the fn instead of going via api
+  "cms.frontend.4/view/widgets/tree.ts -> cms/api-exports.ts", // temporary widget-system spike
 ]);
 
 /** The module folders below a store directory, as `<store dir><module>/`. */
@@ -242,11 +243,13 @@ const OPTIONAL = new Set([
   "cms.backend.superuser.db.query/lib/ai.ts -> ai", // "explain this query" is a bonus, not the console
   "cms.backend.superuser.db.query/render.ts -> ai",
   "cms.frontend.2/view/widgets/more.ts -> mail", // a dashboard widget per module is the pattern itself
+  "cms.frontend.4/view/widgets/more.ts -> mail", // temporary widget-system spike
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
   "cms.backend.superuser.module/detail.ts -> fileEditor",
   "cms.cont.html/options.ts -> fileEditor",
   "cms.cont.ts/options.ts -> fileEditor",
   "cms.frontend.2/view/widgets/superuser.ts -> fileEditor",
+  "cms.frontend.4/view/widgets/superuser.ts -> fileEditor", // temporary widget-system spike
   "cms.templateParser/moduleTemplate.ts -> fileEditor",
 ]);
 

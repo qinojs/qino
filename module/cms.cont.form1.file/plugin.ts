@@ -38,6 +38,7 @@ export const cms = {
   node: {
     render,
     options,
+    widget: "pub/settings.js", // settings widget for the CMS panel (markup + css + behaviour)
     settingsSchema,
     js: ["pub/main.mjs"],
   },

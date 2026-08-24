@@ -33,6 +33,7 @@
     "pub/css/ui.css",
     "pub/font/cms.woff",
     "pub/js/cms.mjs",
+    "pub/js/settings.js",
     "pub/js/styles.js",
     "pub/module.svg"
   ]

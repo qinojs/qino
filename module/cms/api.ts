@@ -1,4 +1,4 @@
-import { $item, s, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
+import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
@@ -26,6 +26,34 @@ const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g
 /** Standalone render (no page request behind it): the rendered node is this request's main node. */
 const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
 
+const ACCESS_LIST = {
+  usr: { table: "usr", link: "page_access_usr", key: "usr_id", cols: ["usr.firstname", "usr.lastname", "usr.email"], label: sql`usr.email`, where: sql`true` },
+  grp: { table: "grp", link: "page_access_grp", key: "grp_id", cols: ["grp.name"], label: sql`grp.name`, where: sql`cms_access` },
+} as const;
+
+/** Users or groups with their access level here. Without a search only granted ones, unless the list is short.
+  * Groups inherit, so a node without its own setting reports the ancestor the levels come from. */
+async function accessList(node: Node, kind: "usr" | "grp", search: string) {
+  const c = ACCESS_LIST[kind];
+  const db = node.app.db;
+  const inheritsFrom = kind === "grp" && node.vs.access === null ? await node.accessInheritParent() : null;
+  if (inheritsFrom) node = inheritsFrom;
+  const total = Number(await db.one`SELECT count(*) FROM ${sql.id(c.table)} WHERE ${c.where}`);
+  let tail;
+  if (total <= 10) tail = sql` ORDER BY a.access DESC`;
+  else if (!search) tail = sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC`;
+  else {
+    const sh = sqlSearch(search, [...c.cols]);
+    tail = sql` AND ${sh.where} ORDER BY ${sh.order}`;
+  }
+  const rows = await db.query`
+    SELECT ${sql.id(c.table)}.id, ${c.label} AS label, a.access
+    FROM ${sql.id(c.table)}
+    LEFT JOIN ${sql.id(c.link)} a ON ${sql.id(c.table)}.id = a.${sql.id(c.key)} AND a.page_id = ${node.id}
+    WHERE ${c.where} ${tail}, ${c.label} LIMIT 100`;
+  return { total, rows, inheritsFrom: inheritsFrom ? { id: inheritsFrom.id, title: String(await inheritsFrom.showTitle()) } : null };
+}
+
 /** GET and POST of a render route differ only in how `vars` arrives. */
 const renderVerb = (description: string, vars: any, run: (a: any) => Promise<string>) => ({
   description,
@@ -46,8 +74,13 @@ const contentsJson = (node: Node) => fns.treeToJson({
     title: String(await n.showTitle()).trim() || undefined,
   }),
 });
-const textsJson = async (node: Node) =>
-  Object.fromEntries((await node.texts()).entries().map(([name, text]) => [name, text.id]));
+const textsJson = async (node: Node, lang?: string) => {
+  const texts = (await node.texts()).entries();
+  if (!lang) return Object.fromEntries(texts.map(([name, text]) => [name, text.id]));
+  return Object.fromEntries(await Promise.all(
+    [...texts].map(async ([name, text]) => [name, { id: text.id, value: await text.lang(lang).get() }]),
+  ));
+};
 
 /** What a node holds. Only meaningful after a render: modules create conts and texts lazily. */
 const shape = async (node: Node) => ({
@@ -172,7 +205,12 @@ const node = {
     get: {
       description: "Text field names with their text id. Only fields already written or rendered exist.",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => textsJson(node),
+      query: s.object({
+        values: s.optional(s.boolean()).describe("Also return each field's html, so a form needs one request instead of one per field"),
+        lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language."),
+      }),
+      execute: ({ node, values, lang }: any, ctx: Ctx) =>
+        values ? textsJson(node, lang ?? ctx.lang) : textsJson(node),
     },
   },
 
@@ -329,6 +367,13 @@ const node = {
     },
 
     users: {
+      get: {
+        description: "Users with their access level on this node. A long list returns only the granted ones — compare `total` with the rows to see whether a search is needed.",
+        ...nodeAdmin,
+        query: s.object({ search: s.optional(s.string()) }),
+        execute: ({ node, search }: any) => accessList(node, "usr", String(search ?? "")),
+      },
+
       ":user": {
         paramSchema: s.number(),
         put: {
@@ -356,6 +401,13 @@ const node = {
     },
 
     groups: {
+      get: {
+        description: "Groups with their access level on this node. A long list returns only the granted ones — compare `total` with the rows to see whether a search is needed.",
+        ...nodeAdmin,
+        query: s.object({ search: s.optional(s.string()) }),
+        execute: ({ node, search }: any) => accessList(node, "grp", String(search ?? "")),
+      },
+
       ":group": {
         paramSchema: s.number(),
         put: {
@@ -375,7 +427,8 @@ const node = {
     get: {
       description: "List all files of the node, keyed by slot name, including empty placeholder slots",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => fns.nodeFilesJson(node),
+      query: s.object({ thumb: s.optional(s.string()).describe("Preview size as \"WxH\", e.g. \"70x40\" — omit for no preview") }),
+      execute: ({ node, thumb }: any) => fns.nodeFilesJson(node, String(thumb ?? "")),
     },
 
     post: {
@@ -449,6 +502,15 @@ const node = {
   },
 
   urls: {
+    get: {
+      description: "Custom URLs per language and the direct links pointing here",
+      ...nodeRead,
+      execute: async ({ node }: { node: Node }) => ({
+        urls: await node.app.db.query`SELECT lang, url, custom, target FROM page_url WHERE page_id = ${node.id}`,
+        redirects: await node.app.db.query`SELECT request FROM page_redirect WHERE redirect = ${node.id} ORDER BY request`,
+      }),
+    },
+
     ":lang": {
       paramSchema: s.string().describe("Language code, e.g. \"de\""),
       put: {

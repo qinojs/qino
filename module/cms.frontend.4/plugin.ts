@@ -43,7 +43,36 @@ async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any
   return html;
 }
 
+/** Widget modules for a node's settings: the core ones plus whatever its module ships.
+  * A module declares one as `cms.node.widget = "pub/settings.js"` in its plugin. */
+async function settingsWidgets(ctx: Ctx, pid: number): Promise<{ name: string; src: string; title?: string }[]> {
+  const node = await cms(ctx.app).node(pid);
+  if (await node.access() < 2) throw new AccessError();
+  const list = [];
+  const own = (name: string) => ({ name, src: ctx.req.moduleUrl + "cms.frontend.4/pub/panel/widgets/" + name + ".js" });
+  // A module's own widget fills the "options" slot — same name and title as the server-rendered one,
+  // so it keeps its place, its open state and its label whatever module the node holds.
+  const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
+  const modWidget = mod?.plugin?.cms?.node?.widget;
+  if (modWidget && mod?.modUrl) list.push({ name: "options", title: await ctx.app.t`Settings`, src: mod.modUrl + modWidget });
+  list.push(own("media"));
+  if (await ctx.app.settings["cms.frontend.4"]["show access.time"]) list.push(own("access.time"));
+  if (await node.access() > 2) list.push(own("access.grp"), own("access.usr"));
+  if (node.vs.type === "p") list.push(own("seo"));
+  if (await ctx.app.settings["cms.frontend.4"]["show urls"]) list.push(own("urls"));
+  return list;
+}
+
 export const api: ApiTree = {
+  widgets: {
+    ":pid": {
+      get: {
+        description: "Widget module urls for the settings of a node, in display order.",
+        access: Access.USER,
+        execute: ({ pid }: any, ctx: Ctx) => settingsWidgets(ctx, Number(pid)),
+      },
+    },
+  },
   widget: {
     ":widget": {
       post: {

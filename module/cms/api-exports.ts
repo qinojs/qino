@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, hee, Output, sql, unixTime } from "@qino/qino";
+import { FileTransformer, getCtx, hee, Output, sql, unixTime } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { ADMIN } from "./lib/access.ts";
@@ -24,6 +24,11 @@ export async function nodeToJson(node: Node, type = "*"): Promise<any> {
         type:        node.vs.type,
         module:      node.vs.module,
         name:        String(node.vs.name ?? ""),
+        // what PATCH accepts, it also returns: null = inherited, 0 = always
+        searchable:  Number(node.vs?.searchable ?? 0),
+        onlineStart: node.vs.online_start === null ? null : Number(node.vs.online_start),
+        onlineEnd:   node.vs.online_end === null ? null : Number(node.vs.online_end),
+        basis:       String(node.vs.basis ?? ""),
     };
 }
 
@@ -69,6 +74,8 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
 
 // Assignable modules, same source and gate as the backend's add widget. cms.cont.flexible stays
 // in — the widget hides it because it is the drop target, not because it cannot be created.
+const MODULE_SVG = "pub/module.svg";
+
 export async function modules(schema = false): Promise<any[]> {
     const ctx = getCtx();
     const c = cms(ctx.app);
@@ -77,11 +84,12 @@ export async function modules(schema = false): Promise<any[]> {
         for (const [name, mod] of Object.entries(mods)) {
             const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
             if (Number(e.access) < ADMIN) continue;
-            const description = mod.description.trim();
             res.push({
                 name,
                 kind,
-                description,
+                description: mod.description.trim(),
+                // the icon a module declares, so a client can show it without knowing the manifest
+                ...(mod.manifest?.files?.includes(MODULE_SVG) && { icon: mod.modUrl + MODULE_SVG }),
                 ...(schema && { settings: mod.plugin.cms?.node?.settingsSchema ?? {} }),
             });
         }
@@ -141,14 +149,39 @@ async function nodeRestoreTx(node: any): Promise<{ url: string }> {
 }
 
 /** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order. */
-export async function nodeFilesJson(node: Node): Promise<Record<string, any>> {
+/** A preview at the requested size, if the tools for that file type are installed. */
+const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool: "magick" | "ffmpeg" }> = {
+    jpg: { page: 1, tool: "magick" }, jpeg: { page: 1, tool: "magick" }, gif: { page: 1, tool: "magick" },
+    png: { page: 1, tool: "magick" }, svg: { page: 1, tool: "magick" }, webp: { page: 1, tool: "magick" },
+    pdf: { page: 1, tool: "magick" },
+    mp4: { fmt: "jpg", frame: 1, tool: "ffmpeg" }, webm: { fmt: "jpg", frame: 1, tool: "ffmpeg" },
+    mov: { fmt: "jpg", frame: 1, tool: "ffmpeg" }, avi: { fmt: "jpg", frame: 1, tool: "ffmpeg" },
+    mkv: { fmt: "jpg", frame: 1, tool: "ffmpeg" },
+    mp3: { tool: "ffmpeg" }, flac: { tool: "ffmpeg" }, ogg: { tool: "ffmpeg" },
+    aac: { tool: "ffmpeg" }, wav: { tool: "ffmpeg" }, m4a: { tool: "ffmpeg" },
+};
+
+async function thumbUrl(file: any, size: string): Promise<string | undefined> {
+    const spec = THUMB[String(file.extension)];
+    if (!spec || !await FileTransformer.capabilities[spec.tool]) return;
+    const [w, h] = size.split("x").map(Number);
+    if (!w || !h) return;
+    const { tool: _tool, ...opt } = spec;
+    return await file.url({ w, h, max: true, ...opt });
+}
+
+/** `thumb` is a "WxH" the caller wants a preview in; without it none is built. */
+export async function nodeFilesJson(node: Node, thumbSize = ""): Promise<Record<string, any>> {
     const files = await node.files();
     const all = await node.filesAndPlaceholders();
     const res: Record<string, any> = {};
     for (const [slot, file] of all) {
-        res[slot] = files.has(slot)
-            ? { name: file.name, mime: file.mime, size: file.vs?.size, url: await file.url() }
-            : { placeholder: true };
+        if (!files.has(slot)) { res[slot] = { placeholder: true }; continue; }
+        const info: Record<string, any> = { name: file.name, mime: file.mime, size: file.vs?.size, url: await file.url() };
+        if (file.extension) info.ext = file.extension;
+        const thumb = thumbSize && await thumbUrl(file, thumbSize);
+        if (thumb) info.thumb = thumb;
+        res[slot] = info;
     }
     return res;
 }

@@ -2,6 +2,7 @@ import { itemJs } from "@qino/pub/SettingsEditor.mjs";
 import { api, t, ctx } from "@qino/pub/qino.js";
 
 import { root } from "../js/root.js";
+import { widget as mountWidget } from "./widget.js";
 import { onShortcut } from "../js/shortcut.js";
 import "./contentMenu.js";
 
@@ -54,9 +55,19 @@ function onEl(selector, fn) {
 }
 
 /* sidebar */
+const SIDEBAR_WIDGETS = { add: "./widgets/add.js" };
+
 const loadWidget = (widget, params, cb) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
   if (!widgetEl) return;
+  if (widgetEl.localName === "qcms-widget") return widgetEl.reload();
+  // sidebar items are placed by view/panel.ts, so the client ones are named here
+  const src = SIDEBAR_WIDGETS[widget];
+  if (src) {
+    const mounted = widgetEl.firstElementChild;
+    if (mounted?.reload) return mounted.reload();
+    return widgetEl.replaceChildren(mountWidget(src, { node: { id: cms.cont.active || nodeId }, dialogs: root }));
+  }
   import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
     params ||= {};
@@ -92,6 +103,7 @@ function syncSidebar(value = sidebar.value) {
   }
 }
 sidebar.addEventListener("set", e => syncSidebar(e.value)); // load only on change; initial state comes from SSR
+if (SIDEBAR_WIDGETS[sidebar.value]) loadWidget(sidebar.value); // …except a client widget, which has no SSR
 
 el.addEventListener("click", (e) => {
   const titelEl = e.target.closest(".-sidebar > .-item > .-title");
@@ -197,16 +209,16 @@ for (const switc of switches) {
 
 /* update accordion-heads */
 for (const [route, head] of [
-  ["PUT cms/node/:id/access", "access.grp.head"],
-  ["PUT cms/node/:id/access/groups/*", "access.grp.head"],
-  ["PUT cms/node/:id/access/users/*", "access.usr.head"],
-  ["DELETE cms/node/:id/files/*", "media.head"],
-  ["DELETE cms/node/:id/files/doubles", "media.head"],
-  ["DELETE cms/node/:id/files/all", "media.head"],
-  ["POST cms/node/:id/redirects", "urls.head"],
-  ["DELETE cms/node/:id/redirects", "urls.head"],
+  ["PUT cms/node/:id/access", "access.grp"],
+  ["PUT cms/node/:id/access/groups/*", "access.grp"],
+  ["PUT cms/node/:id/access/users/*", "access.usr"],
+  ["DELETE cms/node/:id/files/*", "media"],
+  ["DELETE cms/node/:id/files/doubles", "media"],
+  ["DELETE cms/node/:id/files/all", "media"],
+  ["POST cms/node/:id/redirects", "urls"],
+  ["DELETE cms/node/:id/redirects", "urls"],
 ]) api.on(route, () => loadWidget(head));
-api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time.head"); });
+api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time"); });
 
 onEl(".tree-manager", async (el) => {
   await import("./tree.js");
@@ -235,264 +247,6 @@ onEl(".tree-manager", async (el) => {
   };
 });
 
-onEl(".file-manager", (el, pid, node) => {
-  import("@qino/pub/c1/form.mjs").then(() => {
-    findEl(el, ".-uploadBtn").addEventListener("click", async () => {
-      const files = await c1.form.fileDialog();
-      upload(files);
-    });
-  });
-  const tbody = findEl(el, "tbody");
-  if (tbody) {
-    for (const tr of tbody.children) {
-      const img = tr.querySelector(".-preview > img");
-      let f = 1, oW, oH;
-      if (!img) continue;
-      img.parentNode.addEventListener("wheel", (e) => {
-        if (f === 1) {
-          oW = img.offsetWidth;
-          oH = img.offsetHeight;
-        }
-        e.preventDefault();
-        const newf = e.wheelDelta < 0 ? f / 0.6666 : f * 0.6666;
-        if (newf >= 1 && newf <= 15) {
-          f = newf;
-          const w = parseInt(f * oW);
-          const h = parseInt(f * oH);
-          new dbFile(img).set("h", h).set("w", w).write();
-          img.height = h;
-          img.width = w;
-        }
-      });
-    }
-
-    // DnD sorting via u2-dropzone: tbody[u2-dropzone] + tr[draggable] (template).
-    // u2-draghandle (on td.-handle) makes only the handle draggable. After the drop
-    // the DOM order is the new sort order -> send to server.
-    import("@qino/u2/attr/dropzone/dropzone.js");
-    import("@qino/u2/attr/draghandle/draghandle.js");
-    tbody.addEventListener("u2-dropzone-drop", (e) => {
-      if (!e.detail?.add) return; // the same zone fires remove+add -> react only once
-      requestAnimationFrame(() => {
-        const sort = [...tbody.children].map((el) => el.getAttribute("itemid"));
-        node.files.put({ sort });
-      });
-    });
-    tbody.addEventListener("click", async (e) => {
-      const del = e.target.closest(".-delete");
-      if (del) {
-        const tr = del.closest("tr");
-        if (await confirm(t`Really delete this file?`)) node.files(tr.getAttribute("itemid")).delete().then(() => tr.remove());
-        return;
-      }
-      const preview = e.target.closest(".-preview");
-      if (preview) {
-        const replaces = preview.closest("tr").getAttribute("itemid");
-        c1.form.fileDialog({ multiple: false }).then((files) => upload(files, replaces));
-      }
-    });
-    tbody.addEventListener("dragstart", (e) => {
-      const link = e.target.closest(".-preview > [draggable], .-link > a");
-      if (link) sidebar.set("");
-      if (e.target.matches("audio")) {
-        e.dataTransfer.effectAllowed = "copy";
-        e.dataTransfer.setData("text/html", e.target.outerHTML);
-      }
-    });
-  }
-
-  const upload = (files, replaces) => {
-    for (const file of files) cms.cont(pid).upload(file, reload, replaces);
-  };
-  const reload = () => {
-    cms.reloadNode(pid);
-    widgets.item("media").set(1);
-  };
-  findEl(el, ".-addExistingFile").addEventListener(
-    "select_by_pointer",
-    (e) => e.currentTarget.value && node.files.post({ file: e.currentTarget.value }),
-  );
-  if (findEl(el, ".-sortFilesSelect")) {
-    findEl(el, ".-sortFilesSelect").addEventListener("change", (e) => {
-      e.currentTarget.value && node.files.order.post({ by: e.currentTarget.value }).then(reload);
-    });
-    findEl(el, ".-deleteFilesSelect").addEventListener("change", async (e) => {
-      const val = e.currentTarget.options[e.currentTarget.selectedIndex].value;
-      if (val === "double") node.files.doubles.delete().then(reload);
-      if (val === "all" && await confirm(t`Really delete all files?`)) node.files.all.delete().then(reload);
-    });
-  }
-});
-onEl(".module-manager", (el) => {
-  import("@qino/pub/c1/loading.mjs"); // preload
-
-  const searchInp = findEl(el, "input");
-  searchInp.focus();
-  searchInp.addEventListener("input", (e) => {
-    for (const box of findAll(el, ".-module-boxes > *")) {
-      box.style.display =
-        box.textContent.toLowerCase().match(e.currentTarget.value.toLowerCase())
-          ? "flex"
-          : "none";
-    }
-  });
-
-  /* add module */
-  el.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return;
-    const box = e.target.closest(".-module-boxes > [itemid]");
-    if (!box) return;
-    const itemid = box.getAttribute("itemid");
-    import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
-      loading.mark(box);
-      if (box.closest(".add-models")) {
-        api.cms.node(itemid).copy.post().then(({ id }) => {
-          sidebar.set("");
-          cms.cont(id).addPosition();
-        });
-      } else {
-        cms.cont.add(itemid);
-      }
-    });
-    e.preventDefault();
-  });
-});
-onEl(".access-groups-manager", (el, pid, node) => {
-  findEl(el, ".-inherit").addEventListener("change", (e) => {
-    const value = e.currentTarget.checked ? null : parseInt(e.currentTarget.value); // not inherit ? set it to what it was inherited
-    node.access.put({ value });
-    widgets.item("access.grp").set(1);
-  });
-  const searchInp = findEl(el, ".-search");
-  searchInp?.addEventListener(
-    "keyup",
-    c1.debounce((e) => {
-      loadWidget("access.grp.list", { pid, search: e.target.value });
-    }, 150),
-  );
-  // change grp access
-  el.addEventListener("change", (e) => {
-    const inp = e.target;
-    if (!inp.closest('[widget="access.grp.list"]')) return;
-    inp.name === "public"
-      ? node.access.put({ value: parseInt(inp.value) })
-      : node.access.groups(inp.name.replace("g_", "")).put({ access: parseInt(inp.value) });
-  });
-});
-onEl(".access-users-manager", (el, pid, node) => {
-  const searchInp = findEl(el, ".-search");
-  searchInp?.addEventListener(
-    "keyup",
-    c1.debounce((e) => {
-      loadWidget("access.usr.list", { pid, search: e.target.value });
-    }, 150),
-  );
-  // change usr access
-  el.addEventListener("change", (e) => {
-    const inp = e.target;
-    if (!inp.closest('[widget="access.usr.list"]')) return;
-    node.access.users(inp.name.replace("u_", "")).put({ access: parseInt(inp.value) });
-  });
-});
-onEl(".access-time-manager", (el, _pid, node) => {
-  const reload = () => widgets.item("access.time").set(1);
-
-  for (const [edge, field] of [["start", "onlineStart"], ["end", "onlineEnd"]]) {
-    const set = (value) => { node.patch({ [field]: value }); reload(); };
-    const inp = findEl(el, `.-${edge}`);
-    const now = findEl(el, `.-${edge}_now`);
-    inp.addEventListener("blur", () => set(inp.value));
-    findEl(el, `.-${edge}_always`).addEventListener("click", () => set("0"));
-    now.addEventListener("click", () => set(String(Math.ceil(Date.now() / 1000))));
-    findEl(el, `.-${edge}_inherit`).addEventListener("click", () => set(""));
-    inp.style.display = inp.value ? "block" : "none";
-    now.style.display = inp.value ? "none" : "block";
-  }
-});
-onEl(".url-manager", (el, _pid, node) => {
-  findEl(el, "> .-urls").addEventListener("change", (e) => {
-    const tr = e.target.closest("[data-lang]");
-    const lang = tr.getAttribute("data-lang");
-
-    let inp = e.target.closest(".-target");
-    if (inp) {
-      node.urls(lang).target.put({ value: inp.checked ? "_blank" : "" });
-    }
-    inp = e.target.closest(".-url");
-    if (inp) {
-      node.urls(lang).put({ url: inp.value });
-      findEl(tr, ".-custom").checked = true;
-    }
-    inp = e.target.closest(".-custom");
-    if (inp) {
-      node.urls(lang).custom.delete().then(url => {
-        findEl(tr, ".-url").value = url;
-      });
-    }
-  });
-  findEl(el, "> .-directlinks").addEventListener("click", (e) => {
-    const del = e.target.closest(".-delete");
-    if (!del) return;
-    const tr = del.closest("[itemid]");
-    const v = tr.getAttribute("itemid");
-    tr.remove();
-    node.redirects.delete({ url: v });
-  });
-
-  const addInp = findEl(el, ".-add_inp");
-  addInp.addEventListener("keyup", c1.debounce((e) => {
-    api.cms["request-used"].get({ url: e.target.value }).then(({ used }) => {
-      e.target.style.border = used ? "1px solid red" : "1px solid green";
-    });
-  }, 200),
-  );
-  addInp.addEventListener("keydown", (e) => e.key === "Enter" && cmsRequestSet() );
-  findEl(el, ".-add").addEventListener("click", cmsRequestSet);
-
-  function cmsRequestSet() {
-    const v = addInp.value;
-    node.redirects.post({ url: v });
-    widgets.item("urls").set(1);
-  }
-});
-onEl(".advanced-manager", (el, pid, node) => {
-  findEl(el, ".-visible").addEventListener("change", (e) => {
-    node.patch({ visible: e.currentTarget.checked });
-  });
-  findEl(el, ".-searchable").addEventListener("change", (e) => {
-    node.patch({ searchable: e.currentTarget.checked });
-  });
-  findEl(el, ".-name").addEventListener(
-    "input",
-    c1.debounce((e) => {
-      node.patch({ name: e.target.value });
-    }, 400),
-  );
-  findEl(el, ".-name").addEventListener("change", (e) => {
-    node.patch({ name: e.currentTarget.value });
-  });
-  findEl(el, ".-model").addEventListener("change", (e) => {
-    setSetting(e.currentTarget.value, e.currentTarget.name);
-    loadWidget("divers", { pid });
-  });
-  findEl(el, ".-basis").addEventListener("blur", (e) => {
-    e.currentTarget.value && api.cms.node(String(e.currentTarget.value))["insert-before"].put({ id: String(pid) });
-  });
-  findEl(el, ".-childXML").addEventListener("change", (e) => {
-    node.settings.childXML.put({ value: e.currentTarget.value });
-  });
-});
-onEl(".seo-manager", (el) => {
-  const desc = findEl(el, ".-desc");
-  function checkTextarea(el) {
-    el.classList.toggle("-invalid", !/^.{60,156}$/.test(el.value));
-  }
-  desc.addEventListener("input", (e) => checkTextarea(e.target));
-  checkTextarea(desc);
-  findEl(el, ".-seo-prio").addEventListener("change", (e) => {
-    api.cms.node(e.currentTarget.dataset.pid).settings._seo_priority.put({ value: e.currentTarget.value });
-  });
-});
 onEl(".more-manager", (el) => {
   findEl(el, ".-tour").onclick = () => import("./intro.js").then(({ start }) => start());
   // feedback-formular
@@ -540,6 +294,60 @@ onEl(".more-manager", (el) => {
 
 });
 
+onEl(".advanced-manager", (el, pid, node) => {
+  findEl(el, ".-visible").addEventListener("change", (e) => {
+    node.patch({ visible: e.currentTarget.checked });
+  });
+  findEl(el, ".-searchable").addEventListener("change", (e) => {
+    node.patch({ searchable: e.currentTarget.checked });
+  });
+  findEl(el, ".-name").addEventListener(
+    "input",
+    c1.debounce((e) => {
+      node.patch({ name: e.target.value });
+    }, 400),
+  );
+  findEl(el, ".-name").addEventListener("change", (e) => {
+    node.patch({ name: e.currentTarget.value });
+  });
+  findEl(el, ".-model").addEventListener("change", (e) => {
+    setSetting(e.currentTarget.value, e.currentTarget.name);
+    loadWidget("divers", { pid });
+  });
+  findEl(el, ".-basis").addEventListener("blur", (e) => {
+    e.currentTarget.value && api.cms.node(String(e.currentTarget.value))["insert-before"].put({ id: String(pid) });
+  });
+  findEl(el, ".-childXML").addEventListener("change", (e) => {
+    node.settings.childXML.put({ value: e.currentTarget.value });
+  });
+});
+// The placeholder makes way for the widgets: an extra dom level would break
+// `.-widgetHead:first-child`, which spaces the accordions apart.
+onEl(".-widgets", async (el, pid) => {
+  const list = await api["cms.frontend.4"].widgets(pid).get();
+  const nodes = [];
+  for (const { name, src, title } of list) {
+    const head = c1.dom.el('<div class=-widgetHead><span class=-title></span></div>');
+    head.classList.toggle("-open", !!widgets.has(name)?.get({ silent: true }));
+    const w = mountWidget(src, { node: { id: pid }, dialogs: root });
+    w.className = "-content";
+    w.setAttribute("widget", name); // the accordion click handler and the reload table find it by name
+    w.addEventListener("qcms-widget-head", ({ detail }) => {
+      findEl(head, ".-title").textContent = detail.head ?? title ?? name;
+      for (const old of findAll(head, ".-info")) old.remove();
+      const badges = Array.isArray(detail.badge) ? detail.badge : [{ text: detail.badge }];
+      for (const b of badges) {
+        if (!b?.text && b?.text !== 0) continue;
+        const info = c1.dom.el("<span class=-info></span>");
+        if (b.class) info.classList.add(b.class);
+        info.textContent = b.text;
+        head.append(info);
+      }
+    });
+    nodes.push(head, w);
+  }
+  el.replaceWith(...nodes);
+});
 onEl(".content-manager", (el, pid, node) => {
   // change module
   findEl(el, ".-changemodule").addEventListener("change", (e) => {

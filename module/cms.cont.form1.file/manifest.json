@@ -11,6 +11,7 @@
     "plugin.ts",
     "pub/edit.mjs",
     "pub/main.mjs",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/settings.js"
   ]
 }

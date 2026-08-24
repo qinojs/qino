@@ -87,6 +87,8 @@
   }
 
   /* accordion */
+  & qcms-widget { display:block; }
+  & .-widgetHead > .-icon { font-family:'qg_cms'; }
   & .-widgetHead {
     display:flex;
     padding:.6em .8em .5em .8em;
@@ -118,7 +120,7 @@
     content:'\e801';
   }
 
-  & .-widgetHead + div {
+  & .-widgetHead + :is(div, qcms-widget) {
     border:1px solid var(--cms-light);
     transition-duration: .13s;
     transition-property: max-height, padding;
@@ -126,12 +128,12 @@
     padding:0 calc(var(--rem) * .9375);
     overflow:hidden;
   }
-  & .-widgetHead.-open + div {
+  & .-widgetHead.-open + :is(div, qcms-widget) {
     max-height:90vh;
     padding:calc(var(--rem) * .9375);
     overflow:auto;
   }
-  & .-widgetHead + div[widget=options] { /* phpfile */
+  & .-widgetHead + [widget=options] { /* phpfile */
     position:relative;
   }
   & .-info {

@@ -40,23 +40,15 @@ export default async function (node: Node): Promise<HtmlString> {
     </div>`;
   }
 
-  const showAccessTime = await app.settings["cms.frontend.4"]["show access.time"] ?? false;
-  const showUrls       = await app.settings["cms.frontend.4"]["show urls"] ?? false;
-
-  let accordions = "";
-
+  // A module that ships a widget takes the options slot itself, mounted into .-widgets below;
+  // otherwise the server renders its options, or the generic settings editor.
+  const hasWidget = typeof node.module?.plugin?.cms?.node?.widget === "string";
   const hasOptions = typeof node.module?.plugin?.cms?.node?.options === "function";
   const hasPageSettings = !!node.settings[$item].keys?.length;
-  if (hasOptions || hasPageSettings) accordions += await accordion("options", node, await app.t`Settings`);
+  let accordions = "";
+  if (!hasWidget && (hasOptions || hasPageSettings)) accordions += await accordion("options", node, await app.t`Settings`);
 
-  accordions += await accordion("media", node);
-  if (showAccessTime) accordions += await accordion("access.time", node);
-  if (await node.access() > 2) {
-    accordions += await accordion("access.grp", node);
-    accordions += await accordion("access.usr", node);
-  }
-  if (node.vs.type === "p") accordions += await accordion("seo", node);
-  if (showUrls)    accordions += await accordion("urls", node);
+  accordions += `<div class=-widgets pid="${node.id}"></div>`;
   accordions += await accordion("extended", node, await app.t`Advanced`);
   if (ctx.user?.superuser) accordions += await accordion("superuser", node, "Superuser");
 

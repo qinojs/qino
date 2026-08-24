@@ -24,13 +24,14 @@ export async function widget(
 ): Promise<string> {
   let inner = "";
   if (open) {
-    const mod = await import(widgetUrl(name));
-    inner = String(await mod.default?.(node, { param }) ?? "");
+    // a widget without a server renderer is a client widget: leave the container empty for it
+    const mod = await import(widgetUrl(name)).catch(() => null);
+    inner = String(await mod?.default?.(node, { param }) ?? "");
   }
   return `<div class="${cls}" widget=${name}>${inner}</div>`;
 }
 
-/** Widget as an accordion. */
+/** Widget as an accordion. Without a `<name>.head` renderer the plain title is shown. */
 export async function accordion(
   name: string,
   node: Node,
@@ -42,8 +43,10 @@ export async function accordion(
   const open = !!await ctx.settings["cms.frontend.4"].ui.widget[name];
   const cls = "-widgetHead " + (open ? "-open" : "");
 
-  const headHtml = await widget(name + ".head", true, node, cls, param)
-    .catch(() => `<div class="${cls}"><span class=-title>${title ?? name}</span></div>`);
+  const headMod = await import(widgetUrl(name + ".head")).catch(() => null);
+  const headHtml = headMod
+    ? `<div class="${cls}">${String(await headMod.default?.(node, { param }) ?? "")}</div>`
+    : `<div class="${cls}"><span class=-title>${title ?? name}</span></div>`;
   return headHtml + await widget(name, open, node, "-content", param);
 }
 
