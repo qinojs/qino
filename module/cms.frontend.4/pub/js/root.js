@@ -1,15 +1,20 @@
 /* The one shadow root all CMS chrome lives in: panel, inline overlays, dialogs.
   * Page markup stays in the document — it is styled by inline/page.css, never from here.
-  * Dialogs hang on the root itself: root.alert(), root.confirm(), root.modal(). */
+  * Dialogs hang on the root itself: root.alert(), root.confirm(), root.modal().
+  *
+  * u2 runs scoped in here: its own registry, its own version. Whatever the customer page
+  * loads stays out, and u2-elements in the panel resolve against ours. */
 import { scope } from '@qino/u2/js/dialog/dialog.js';
+import { attachShadow } from '@qino/u2/u2/enhance.js';
 import { ctx } from '@qino/pub/qino.js';
 
-import { addCmsStyles, addStyle } from '../../../cms/pub/js/styles.js';
+import { addCss, addStyle } from '../../../cms/pub/js/styles.js';
 
 customElements.define('qino-cms', class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
-    const shadow = this.attachShadow({ mode: 'open' });
+    // enhance() watches from here on: u2-elements in the markup below load and register themselves
+    const shadow = attachShadow(this, { mode: 'open' });
     while (this.firstChild) shadow.append(this.firstChild); // server-rendered panel markup
   }
   /** Anything mounting into the CMS root adds its stylesheet through here. */
@@ -18,14 +23,12 @@ customElements.define('qino-cms', class extends HTMLElement {
 
 export const root = (document.querySelector('qino-cms') ?? document.body.appendChild(document.createElement('qino-cms'))).shadowRoot;
 
-// A page layout may already load u2 via auto.js; a second define throws, and a static import
-// would take this module — and everything importing it — down with it.
-if (!customElements.get('u2-ico')) import('@qino/u2/el/ico/ico.js').catch(() => {});
+// u2-ico takes its svgs from this module's own img folder — no icon cdn, so no connect-src for one.
+// The path carries the app's mount point, so it cannot be a literal in a css file.
+addCss(root, `:host { --u2-ico-dir: '${ctx.moduleUrl}cms.frontend.4/pub/img/{icon_name}.svg' }`);
 
-// u2-ico takes its svgs from this module's own img folder — no icon cdn involved
-root.host.style.setProperty('--u2-ico-dir', `'${ctx.moduleUrl}cms.frontend.4/pub/img/{icon_name}.svg'`);
-
-addCmsStyles(root);
+// norm.css and base.css come with enhance(); this is the cms layer on top
+addStyle(root, 'cms/pub/css/ui.css');
 root.host.addStyle('cms.frontend.4/pub/css/off.css').then(() => root.host.hidden = false);
 
 // Page-level handlers (content marking, context menu) must not see clicks inside a dialog.

@@ -188,6 +188,13 @@ Deno.test("browser itemRoot matches the pinned item.js version", async () => {
   assertEquals(itemRoot, `https://cdn.jsdelivr.net/gh/nuxodin/item.js@v${pinned}/`);
 });
 
+// Two pins, one version: the import map serves deno, u2Root serves the browser. Bump one and
+// the other keeps silently serving the old files.
+Deno.test("browser u2Root matches the import map", async () => {
+  const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
+  assertEquals(u2Root, config.imports["@qino/u2/"]);
+});
+
 // A browser must be able to load them as modules: right MIME type, and CORS for a cross-origin
 // import. That is exactly what jsr.io does not do, and why these are jsDelivr URLs.
 Deno.test({

@@ -54,8 +54,8 @@ async function fieldRow(node: Node, id: string): Promise<HtmlString> {
   <div class=-head>
     <select${set(`inputs.${id}.type`)} data-reload-options>${typeOptions}</select>
     <input value="${await title.string()}" cmstxt="${title.id}">
-    <button type=button class=-handle title="${await t`Reorder`}">↕</button>
-    <button type=button class=-remove data-node="${node.id}" data-id="${id}">✕</button>
+    <button type=button class="-handle u2-unstyle" title="${await t`Reorder`}">↕</button>
+    <button type=button class="-remove u2-unstyle" data-node="${node.id}" data-id="${id}">✕</button>
   </div>
   ${
     type === "flexible" ? "" : html.async`
