@@ -36,6 +36,23 @@
     max-width: 100%;
     object-fit: contain;
   }
+  & .-reached {
+    align-items: center;
+    display: flex;
+    gap: .25rem;
+  }
+  & .-reached progress { width: 5rem; }
+
+  & .-thumbs {
+    display: flex;
+    align-items: center;
+    gap: .125rem;
+  }
+  & .-thumbs img {
+    height: 1.5rem;
+    width: 1.5rem;
+    object-fit: cover;
+  }
   & .-chat .-attachment { max-width: 12rem; }
   & .-chat .-attachment img { max-height: 8rem; }
 

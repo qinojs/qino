@@ -91,7 +91,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(overview, "<tbody cms-part=list>");
     assertStringIncludes(overview, "icon=call_made");
     assertStringIncludes(overview, 'href="/de/backend/superuser/nachrichten?msg=1"');
-    assertStringIncludes(overview, "<td data-attachments>1");
+    assertStringIncludes(overview, "<td data-attachments><span class=-thumbs>");
     const widget = String(await backendDashboardWidget(app as never, {
       url: () => Promise.resolve("/de/backend/superuser/nachrichten"),
     } as never));
@@ -131,8 +131,8 @@ Deno.test("the message detail counts opens and clicks, and lists what was reache
   await db.table("usr").insert({ username: "user@qino.test" });
   await db.table("usr").insert({ username: "second@qino.test" });
   await db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
-  await db.table("message_delivery").insert({ message_id: 1, usr_id: 1, address: "user@qino.test", time: 1 });
-  await db.table("message_delivery").insert({ message_id: 1, usr_id: 2, address: "second@qino.test", time: 1 });
+  await db.table("message_delivery").insert({ message_id: 1, usr_id: 1, address: "user@qino.test", sent: 1 });
+  await db.table("message_delivery").insert({ message_id: 1, usr_id: 2, address: "second@qino.test", sent: 1 });
   await db.table("message_track").insert({ delivery_id: 1, code: "Ab3-x9Qm", kind: "load", time: 2 });
   await db.table("message_track").insert({ delivery_id: 1, code: "Kp7-r2Ls", kind: "click", time: 3 });
   await db.table("message_track").insert({ delivery_id: 1, code: "Kp7-r2Ls", kind: "click", time: 4 });
@@ -161,7 +161,7 @@ Deno.test("the message detail counts opens and clicks, and lists what was reache
   const overview = String(await requestStorage.run(overviewCtx, () => render(node)));
   assertStringIncludes(overview, "<th>Opened");
   assertStringIncludes(overview, "<th>Clicks");
-  assertStringIncludes(overview, '<td style="white-space:nowrap">1<br><small><u2-time datetime="1970-01-01T00:00:02.000Z"');
-  assertStringIncludes(overview, '<td style="white-space:nowrap">2<br><small><u2-time datetime="1970-01-01T00:00:03.000Z"');
+  assertStringIncludes(overview, '<td style="white-space:nowrap">2 <small><u2-time datetime="1970-01-01T00:00:02.000Z"'); // the second was only clicked
+  assertStringIncludes(overview, '<td style="white-space:nowrap">2 <small><u2-time datetime="1970-01-01T00:00:03.000Z"');
   await db.close();
 });

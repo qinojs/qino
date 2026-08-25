@@ -1,7 +1,9 @@
 import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { channels, htmlOf, sanitizeHtml, textOf, userChannels, userMessages } from "@qino/qino/messaging";
+import { channels, htmlOf, sanitizeHtml, textOf, userChannels } from "@qino/qino/messaging";
+
+import { userMessages } from "./lib/journal.ts";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -12,6 +14,7 @@ import type { Channel, Msg } from "@qino/qino/messaging";
 
 const { name } = manifest;
 
+const PREVIEWS = 3; // enough to recognise a message, few enough to keep the row a row
 const LIST_LIMIT = 100;
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -89,13 +92,15 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
       (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
+      (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.sent IS NOT NULL) AS sent_count,
+      (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.due IS NOT NULL) AS owed_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
     FROM message m
     LEFT JOIN grp g ON g.id = m.grp_id
     WHERE ${where}
     ORDER BY m.time DESC, m.id DESC
     LIMIT ${LIST_LIMIT}`;
-  const [tracked, view] = await Promise.all([trackingStats(app, rows), labels(app)]);
+  const [tracked, thumbs, view] = await Promise.all([trackingStats(app, rows), previews(app, rows), labels(app)]);
   if (!rows.length) return html`<tr><td colspan=9>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
@@ -109,22 +114,57 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
-      <td data-attachments>${Number(row.attachment_count) || 0}
-      <td>${Number(row.recipient_count) || 0}
+      <td data-attachments>${thumbs.get(Number(row.id)) ?? html`${Number(row.attachment_count) || 0}`}
+      <td style="white-space:nowrap">${reached(row, view)}
       <td style="white-space:nowrap">${trackedStat(stats?.opened_count, stats?.opened_first)}
       <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}
       <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
   }));
 }
 
-/** Recipient counts and first hits for the messages currently visible in the journal. */
+/** How far a message got: how many of its recipients it reached, and what is still owed. */
+function reached(row: Row, view: View): HtmlString {
+  const all = Number(row.recipient_count) || 0;
+  const sent = Number(row.sent_count) || 0;
+  const owed = Number(row.owed_count) || 0;
+  if (!all) return html`0`;
+  return html`<span class=-reached><progress value="${sent}" max="${all}"></progress> ${sent}/${all}${owed
+    ? html` <span class=u2-badge title="${view.due}">${owed}</span>`
+    : ""}</span>`;
+}
+
+/** Thumbnails of the first attachments, for the messages currently visible in the journal. One
+ *  query for all of them; the file rows ride along, so building a URL costs no further read. */
+async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>> {
+  if (!rows.length) return new Map();
+  const ids = sql.join(rows.map((row) => sql`${row.id}`), ", ");
+  const files = await app.db.query`
+    SELECT a.message_id, f.* FROM message_attachment a JOIN file f ON f.id = a.file_id
+    WHERE a.message_id IN (${ids}) ORDER BY a.message_id, a.sort, a.file_id`;
+  const byMessage = new Map<number, Row[]>();
+  for (const file of files) byMessage.getOrInsertComputed(Number(file.message_id), () => []).push(file);
+
+  const out = new Map<number, HtmlString>();
+  for (const [id, all] of byMessage) {
+    const shown = await Promise.all(all.slice(0, PREVIEWS).map(async (file) => {
+      if (!previewable(file.mime)) return html`<u2-ico icon=file title="${file.name ?? ""}">•</u2-ico>`;
+      const src = await (await app.dbFiles.file(Number(file.id), file)).url({ fmt: "avif", w: 64, h: 64, max: true, grant: "session" });
+      return html`<img src="${src}" alt="${file.name ?? ""}" title="${file.name ?? ""}" loading=lazy>`;
+    }));
+    out.set(id, html`<span class=-thumbs>${shown}${all.length > PREVIEWS ? html`<small>+${all.length - PREVIEWS}</small>` : ""}</span>`);
+  }
+  return out;
+}
+
+/** Recipient counts and first hits for the messages currently visible in the journal.
+ *  A click is an open too — the pixel is what a mail client blocks, not the link. */
 async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
   if (!rows.length) return new Map();
   const ids = sql.join(rows.map((row) => sql`${row.id}`), ", ");
   const stats = await app.db.query`
     SELECT d.message_id,
-      COUNT(DISTINCT CASE WHEN t.kind = ${"load"} THEN t.delivery_id END) AS opened_count,
-      MIN(CASE WHEN t.kind = ${"load"} THEN t.time END) AS opened_first,
+      COUNT(DISTINCT t.delivery_id) AS opened_count,
+      MIN(t.time) AS opened_first,
       COUNT(DISTINCT CASE WHEN t.kind = ${"click"} THEN t.delivery_id END) AS clicked_count,
       MIN(CASE WHEN t.kind = ${"click"} THEN t.time END) AS clicked_first
     FROM message_delivery d
@@ -136,7 +176,7 @@ async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
 
 function trackedStat(count: unknown, first: unknown): HtmlString {
   const n = Number(count) || 0;
-  return first == null ? html`${n}` : html`${n}<br><small>${u2.el.time(first, { narrow: true })}</small>`;
+  return first == null ? html`${n}` : html`${n} <small>${u2.el.time(first, { narrow: true })}</small>`;
 }
 
 /** One message with its payload and the result per recipient. */
@@ -146,7 +186,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
       SELECT d.usr_id, d.address, d.sent, d.due, d.attempts, d.error, u.username,
-        (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"load"}) AS opened,
+        (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.id`,
@@ -350,12 +390,15 @@ async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments:
   </div></div>`;
 }
 
+/** What the transformer can turn into an image: pictures, and a PDF's first page. */
+const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") || mime === "application/pdf";
+
 async function attachments(app: App, rows: Row[], compact = false): Promise<HtmlString> {
   if (!rows.length) return html``;
   const items = await Promise.all(rows.map(async (row) => {
     const file = await app.dbFiles.file(Number(row.file_id));
     const download = await file.url({ dl: true, grant: "session" });
-    const preview = String(row.mime ?? "").startsWith("image/")
+    const preview = previewable(row.mime)
       ? await file.url({ fmt: "avif", w: compact ? 180 : 320, h: compact ? 120 : 240, max: true, grant: "session" })
       : "";
     return html`<div class=-attachment>
@@ -439,7 +482,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     app.db.row`
       SELECT COUNT(*) AS n,
         SUM(CASE WHEN direction = ${"in"} THEN 1 ELSE 0 END) AS incoming,
-        (SELECT COUNT(*) FROM message_delivery WHERE error IS NOT NULL AND time >= ${since}) AS errors
+        (SELECT COUNT(*) FROM message_delivery WHERE error IS NOT NULL AND sent >= ${since}) AS errors
       FROM message WHERE time >= ${since}`.catch(() => undefined),
     app.db.query`
       SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.format, m.time, g.name AS grp_name,

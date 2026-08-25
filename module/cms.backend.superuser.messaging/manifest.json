@@ -6,6 +6,7 @@
     "messaging"
   ],
   "files": [
+    "lib/journal.ts",
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",

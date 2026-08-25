@@ -1,7 +1,6 @@
 import { Db } from "@qino/qino";
-import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, messagingDbSchema as messageSchema, messagingPlaceholders } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, messagingPlaceholders } from "@qino/qino/tests";
 
-import { messages } from "@qino/qino/messaging";
 
 import { inbound } from "../lib/settings.ts";
 import { send, setTransport } from "../mod.ts";
@@ -50,7 +49,7 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   assertEquals(sent[0].replyRecipients, []);
   assertEquals(String((sent[0].recipients as { address: string }[])[0].address), "one@qino.test");
 
-  const [journaled] = await messages(app);
+  const [journaled] = await journal(app);
   assertEquals(journaled.channel, "email");
   assertEquals(journaled.title, "Invoice");
   assertEquals(journaled.text, "Attached.");
@@ -90,7 +89,7 @@ Deno.test("a debug redirect is journaled as a delivery that never reached the re
   assertEquals(String((sent[0].recipients as { address: string }[])[0].address), "dev@qino.test");
   assertEquals(String(sent[0].subject), "Debug! Invoice");
 
-  const [journaled] = await messages(app);
+  const [journaled] = await journal(app);
   assertEquals(journaled.deliveries.map((d) => [d.address, d.error]), [["one@qino.test", "redirected to debug address dev@qino.test"]]);
 
   await close(app);
@@ -103,7 +102,7 @@ Deno.test("literal addresses find owners, keep sending past invalid ones, and jo
 
   assertEquals(await send(app, { email: ["one@qino.test", "invalid", "other@qino.test"] }, "Hello", { onError: (error) => errors.push(error) }), 0);
 
-  const [journaled] = await messages(app);
+  const [journaled] = await journal(app);
   assertEquals(journaled.text, "Hello");
   assertEquals(journaled.deliveries.map((d) => [d.address, d.usr_id, d.error]), [
     ["one@qino.test", 1, "mailbox full"],
@@ -130,7 +129,7 @@ Deno.test("a markdown mail carries both parts, a plain one only text", async () 
   await send(app, { usr: 1 }, "Hi **there**");
   assertEquals(sent[1].content, { text: "Hi **there**" });
 
-  const [plain, markdown] = await messages(app); // newest first: the plain mail, then the markdown one
+  const [plain, markdown] = await journal(app); // newest first: the plain mail, then the markdown one
   assertEquals([markdown.text, markdown.format], ["Hi **there**", "md"]); // the journal keeps the source
   assertEquals([plain.text, plain.format], ["Hi **there**", null]);
   await close(app);
@@ -156,7 +155,7 @@ Deno.test("email carries generic attachments as MIME files", async () => {
   ]);
   assertEquals((await Promise.all(files.map((file) => file.content))).map((bytes) => new TextDecoder().decode(bytes)), ["invoice", "terms"]);
 
-  const [journaled] = await messages(app);
+  const [journaled] = await journal(app);
   assertEquals(journaled.attachments.map((file) => [file.name, file.mime, file.size, file.sort]), [
     ["invoice.txt", "text/plain", 7, 0],
     ["terms.txt", "text/plain", 5, 1],

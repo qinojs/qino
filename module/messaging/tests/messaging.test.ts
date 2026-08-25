@@ -1,8 +1,9 @@
 import { assertEquals } from "@std/assert";
+import { journal, userJournal } from "@qino/qino/tests";
 import { Db } from "@qino/qino";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { messages, msgOf, record, titleOf, userMessages } from "../mod.ts";
+import { msgOf, record, titleOf } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -36,7 +37,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
 
   assertEquals(id, 1);
   assertEquals(ids, [1, 2]); // a tracked link needs the delivery's own id before anything is sent
-  assertEquals(await messages(testApp), [{
+  assertEquals(await journal(testApp), [{
     id: 1,
     channel: "sms",
     direction: "out",
@@ -57,7 +58,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     ],
   }]);
 
-  assertEquals(await userMessages(testApp, 2), [{
+  assertEquals(await userJournal(testApp, 2), [{
     id: 1,
     channel: "sms",
     direction: "out",
@@ -76,7 +77,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
       { id: 2, usr_id: 2, address: null, username: "two@example.test", sent: 12, due: null, attempts: 0, error: "rejected" },
     ],
   }]);
-  assertEquals(await userMessages(testApp, 3), []);
+  assertEquals(await userJournal(testApp, 3), []);
 });
 
 Deno.test("a bare string is a message, and a missing title is its first line", () => {

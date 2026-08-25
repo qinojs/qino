@@ -1,7 +1,7 @@
 import { Access, getCtx } from "@qino/qino";
 
 import { webhook } from "./lib/webhook.ts";
-import { linkUrl, send, userChats } from "./mod.ts";
+import { linkUrl, deliver, send, userChats } from "./mod.ts";
 
 import type { ApiTree, App } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
@@ -15,6 +15,7 @@ export const messagingChannel: Channel = {
   reach: async (app: App, usrId: number) =>
     Number(await app.db.one`SELECT COUNT(*) FROM telegram_chat WHERE usr_id = ${usrId}`),
   send,
+  deliver,
 };
 
 export const settingsSchema = {

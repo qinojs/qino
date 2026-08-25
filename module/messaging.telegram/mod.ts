@@ -1,6 +1,6 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql, unixTime } from "@qino/qino";
-import { delivered, msgOf, record, renderer, unsubscribeGroup } from "@qino/qino/messaging";
+import { ChannelError, delivered, msgOf, record, renderer, unsubscribeGroup } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
@@ -57,7 +57,7 @@ export async function send(
   const { ids } = await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },
     rows.map((row) => ({ usrId: Number(row.usr_id), address: String(row.chat_id), due: time })));
   let sent = 0;
-  const deliver = async (row: Row, i: number) => {
+  const one = async (row: Row, i: number) => {
     try {
       await sendMessage(app, { ...await params(row, ids[i]), chat_id: Number(row.chat_id) });
       await delivered(app, ids[i]);
@@ -68,7 +68,7 @@ export async function send(
       const status = e instanceof BotError ? e.status : 0;
       const reason = (e as Error).message;
       const error = `${status || "no status"}: ${reason}`;
-      await delivered(app, ids[i], error);
+      await delivered(app, ids[i], e instanceof ChannelError ? e : error);
       if (status === 403 || (status === 400 && /chat not found/i.test(reason))) return void gone.push(Number(row.id));
       console.warn(`telegram: chat ${row.id} rejected —`, reason);
       await table.update(row.id, { error: error.slice(0, 255) });
@@ -77,10 +77,29 @@ export async function send(
   // Telegram takes about 30 messages a second across chats — one batch per second stays under that
   for (let i = 0; i < rows.length; i += 25) {
     if (i) await new Promise((r) => setTimeout(r, 1000));
-    await Promise.all(rows.slice(i, i + 25).map((row, j) => deliver(row, i + j)));
+    await Promise.all(rows.slice(i, i + 25).map((row, j) => one(row, i + j)));
   }
   if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
   return sent;
+}
+
+/** One journalled delivery, sent again — the outbox's way in. Channel-native extras of the original
+ *  send (a `parse_mode` of its own) are not journalled and do not come back with it. */
+export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
+  const usrId = Number(delivery.usr_id) || undefined;
+  const [{ render }, leavable] = await Promise.all([
+    renderer(app, msg, "telegram", "telegram"),
+    unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
+  ]);
+  const { text: plain, html } = await render({ ...delivery, usrId, deliveryId: Number(delivery.id), grpId: leavable(usrId) });
+  const body = html ?? plain;
+  const head = msg.title ? (html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
+  await sendMessage(app, {
+    ...(html ? { parse_mode: "HTML" } : {}),
+    text: head ? `${head}\n${body}` : body,
+    chat_id: Number(delivery.address),
+  });
+  await delivered(app, Number(delivery.id));
 }
 
 /** One retry on 429 — the answer carries how long to wait, and waiting is the documented fix. */
