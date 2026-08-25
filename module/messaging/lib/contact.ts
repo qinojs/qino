@@ -8,12 +8,13 @@ type Recipient = Row & { address: string; usrId?: number; addressError?: string 
 export async function contactRecipients(
   app: App,
   type: string,
-  to: { grp?: number; usr?: number; all?: true },
+  to: { grp?: number; usr?: number | number[]; all?: true },
   direct: Recipient[] = [],
 ): Promise<Recipient[]> {
+  const usrs = [to.usr ?? []].flat();
   const who = [
     to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
-    to.usr != null ? sql`c.usr_id = ${to.usr}` : null,
+    usrs.length ? sql`c.usr_id IN (${sql.join(usrs.map((id) => sql`${id}`), ", ")})` : null,
     to.all ? sql`${true}` : null,
   ].flatMap((term) => term ?? []);
   if (!who.length && !direct.length) throw new Error("contact recipients need a selection or direct address");

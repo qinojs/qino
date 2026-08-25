@@ -1,6 +1,6 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql, unixTime } from "@qino/qino";
-import { delivered, msgOf, record, renderer } from "@qino/qino/messaging";
+import { delivered, msgOf, record, renderer, unsubscribeGroup } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
@@ -19,14 +19,15 @@ import type { Msg } from "@qino/qino/messaging";
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; chat?: number | number[] },
+  to: { grp?: number; usr?: number | number[]; all?: true; chat?: number | number[] },
   message: string | Msg & Record<string, unknown>,
 ): Promise<number> {
   const msg = msgOf(message);
   const chats = [to.chat ?? []].flat();
+  const usrs = [to.usr ?? []].flat();
   const who = [
     to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
-    to.usr != null ? sql`c.usr_id = ${to.usr}` : null,
+    usrs.length ? sql`c.usr_id IN (${sql.join(usrs.map((id) => sql`${id}`), ", ")})` : null,
     chats.length ? sql`c.id IN (${sql.join(chats.map((id) => sql`${id}`), ", ")})` : null,
     to.all ? sql`${true}` : null,
   ].flatMap((term) => term ?? []);
@@ -44,11 +45,13 @@ export async function send(
   const { text, title, format: _format, template: _template, attachments: _attachments, ...extra } = msg;
   const own = Boolean(extra.parse_mode); // an own parse_mode owns the text, escaping included
   const params = async (recipient: Row, deliveryId: number) => {
-    const { text: plain, html } = await render({ ...recipient, usrId: Number(recipient.usr_id), deliveryId, grpId: to.grp });
+    const usrId = Number(recipient.usr_id);
+    const { text: plain, html } = await render({ ...recipient, usrId, deliveryId, grpId: leavable(usrId) });
     const body = own ? text : html ?? plain;
     const head = title ? (html || extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title) : "";
     return { ...extra, ...(!own && html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
   };
+  const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => Number(row.usr_id)));
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
   const { ids } = await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },

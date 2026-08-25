@@ -1,6 +1,6 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, unixTime } from "@qino/qino";
-import { attachmentFile, contactRecipients, delivered, msgOf, record, renderer, titleOf, unsubscribeHeaders } from "@qino/qino/messaging";
+import { attachmentFile, contactRecipients, delivered, msgOf, record, renderer, titleOf, unsubscribeGroup, unsubscribeHeaders } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
@@ -22,7 +22,7 @@ export { setTransport } from "./lib/transport.ts";
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; email?: string | string[] },
+  to: { grp?: number; usr?: number | number[]; all?: true; email?: string | string[] },
   message: string | Msg & { replyTo?: string }, // replyTo: where an answer belongs, overriding the inbox
   { onError }: { onError?: (message: string) => void } = {},
 ): Promise<number> {
@@ -49,6 +49,7 @@ export async function send(
     time,
   }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, error: recipient.addressError, time })));
 
+  const leavable = await unsubscribeGroup(app, to.grp, recipients.map((recipient) => recipient.usrId));
   let sent = 0;
   for (const [i, recipient] of recipients.entries()) {
     if (recipient.addressError) {
@@ -56,10 +57,11 @@ export async function send(
       continue;
     }
     // every mail carries a text part: plain readers and spam filters both want one
-    const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId: to.grp });
+    const grpId = leavable(recipient.usrId); // only where the group is really theirs to leave
+    const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId });
     // only where there is something to leave: the client's one-click way to the same link
-    const leaving = uses.has("unsubscribe") && recipient.usrId && to.grp
-      ? await unsubscribeHeaders(app, recipient.usrId, to.grp)
+    const leaving = uses.has("unsubscribe") && recipient.usrId && grpId
+      ? await unsubscribeHeaders(app, recipient.usrId, grpId)
       : undefined;
     const error = await deliver(mailer, {
       from,
@@ -115,7 +117,7 @@ async function deliver(
 
 /** Who a `to` means, as addresses — `usr_contact` says where a person reads mail, one address each:
  *  the preferred one, else the oldest. A user without a mail contact simply drops out. */
-async function addresses(app: App, to: { grp?: number; usr?: number; all?: true; email?: string | string[] }) {
+async function addresses(app: App, to: { grp?: number; usr?: number | number[]; all?: true; email?: string | string[] }) {
   const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
     address: value.trim().slice(0, 191), addressError: "Use an email address such as name@example.com",
   });

@@ -167,6 +167,7 @@ Deno.test("email carries generic attachments as MIME files", async () => {
 
 Deno.test("unsubscribe headers ride along only where the message offers the way out", async () => {
   const app = await makeApp();
+  const db = app.db;
   await app.db.exec`INSERT INTO grp (name) VALUES ('Newsletter')`;
   await app.db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER)`;
   await app.db.loadTables();
@@ -185,6 +186,17 @@ Deno.test("unsubscribe headers ride along only where the message offers the way 
   // the same mail without the template: nothing to leave, so the client is offered nothing
   await send(app, { grp: 1 }, { title: "News", text: "Hello.", format: "md", template: null });
   assertEquals((sent[1].headers as Headers).get("List-Unsubscribe"), null);
+
+  // a selection is a union: someone named beside the group is not in it, and has nothing to leave
+  await db.table("usr").insert({ email: "two@qino.test", firstname: "Two" });
+  await db.table("usr_contact").insert({ type: "email", address: "two@qino.test", usr_id: 2, main: true, created: 1 });
+  await send(app, { grp: 1, usr: [2] }, { title: "News", text: "Hello.", format: "md" });
+  const address = (mail: Record<string, unknown>) => String((mail.recipients as { address: string }[])[0].address);
+  const both = new Map(sent.slice(2).map((mail) => [address(mail), mail]));
+  assertEquals(both.size, 2);
+  assertStringIncludes((both.get("one@qino.test")!.headers as Headers).get("List-Unsubscribe") ?? "", "unsubscribe/");
+  assertEquals((both.get("two@qino.test")!.headers as Headers).get("List-Unsubscribe"), null);
+  assertStringIncludes((both.get("two@qino.test")!.content as { text: string }).text, "[]"); // the placeholder stays empty too
   await close(app);
 });
 

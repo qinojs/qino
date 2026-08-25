@@ -7,7 +7,7 @@ import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { contactRecipients } from "./lib/contact.ts";
-export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
+export { headers as unsubscribeHeaders, unsubscribeGroup } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { placeholderName, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";

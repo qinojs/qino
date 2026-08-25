@@ -49,7 +49,9 @@ send(app, to, msg): Promise<number>   // how many destinations were reached
 ```
 
 `to` is `{ grp }`, `{ usr }` or `{ all: true }` everywhere, plus whatever the channel alone can
-address:
+address. Selectors are a union, not a filter: `{ grp: 3, usr: [7, 9] }` reaches the group *and* those
+two, once each. `usr` takes one or many; `grp` stays a single one, because an unsubscribe link says
+which group it leaves.
 
 | Modul | `to` |
 | --- | --- |
@@ -255,6 +257,11 @@ one in a mail from last year has to keep working.
 
 **A GET only asks — nothing is dropped without a POST.** Mail clients, scanners and link previews
 fetch what they find, and a fetched link must not unsubscribe anyone.
+
+**Only those the group really reached get one.** `{ grp: 3, usr: 7 }` reaches user 7 whether or not
+they are in group 3; for them the placeholder stays empty and no header rides along, because leaving
+a group they were never in is a promise nothing can keep. `unsubscribeGroup()` asks that once per
+send.
 
 **Whether a message can be unsubscribed from is what the template says**, not "it went to a group":
 four administrators who must not throw themselves out of the admin group are sent to a group too.

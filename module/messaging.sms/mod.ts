@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 import { addContact, ApiError, contactError, contactKey, contactOwner, errMsg, unixTime } from "@qino/qino";
-import { contactRecipients, delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode } from "@qino/qino/messaging";
+import { contactRecipients, delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode, unsubscribeGroup } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
 
@@ -20,7 +20,7 @@ export { setProvider, type SmsProvider };
  */
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; phone?: string | string[] },
+  to: { grp?: number; usr?: number | number[]; all?: true; phone?: string | string[] },
   message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
@@ -46,12 +46,13 @@ export async function send(
   const { ids } = await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time },
     rows.map((row) => ({ usrId: row.usrId, address: row.address, error: row.addressError, time })));
 
+  const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => row.usrId));
   let sent = 0;
   for (const [i, row] of rows.entries()) {
     if (row.addressError) continue;
     const address = String(row.address);
     const usrId = row.usrId;
-    const body = (await render({ ...row, usrId, deliveryId: ids[i], grpId: to.grp })).text;
+    const body = (await render({ ...row, usrId, deliveryId: ids[i], grpId: leavable(usrId) })).text;
     const text = msg.title ? `${msg.title}\n${body}` : body;
     try {
       await deliver(app, address, text);

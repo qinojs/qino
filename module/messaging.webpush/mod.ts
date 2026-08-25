@@ -1,7 +1,7 @@
 // Public API of messaging.webpush. The qino plugin lives in ./plugin.ts.
 import { sendNotification } from "web-push-neo";
 import { sql, unixTime } from "@qino/qino";
-import { delivered, msgOf, record, renderer, titleOf } from "@qino/qino/messaging";
+import { delivered, msgOf, record, renderer, titleOf, unsubscribeGroup } from "@qino/qino/messaging";
 
 import { vapid } from "./lib/vapid.ts";
 
@@ -24,19 +24,20 @@ const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`
 
 export async function send(
   app: App,
-  to: { grp?: number; usr?: number; all?: true; channel?: string; client?: string | number | (string | number)[]; sub?: number | number[]; notClient?: string | number },
+  to: { grp?: number; usr?: number | number[]; all?: true; channel?: string; client?: string | number | (string | number)[]; sub?: number | number[]; notClient?: string | number },
   message: string | Msg & { url?: string } & Record<string, unknown>,
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
   const clients = [to.client ?? []].flat().map(Number);
   const subs = [to.sub ?? []].flat();
+  const usrs = [to.usr ?? []].flat();
   const who = [
     to.channel != null ? sql`s.id IN (
       SELECT sc.sub_id FROM webpush_subscription_channel sc
       JOIN webpush_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})` : null,
     to.grp != null ? sql`s.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
-    to.usr != null ? sql`s.usr_id = ${to.usr}` : null,
+    usrs.length ? sql`s.usr_id IN (${sql.join(usrs.map((id) => sql`${id}`), ", ")})` : null,
     clients.length ? sql`s.client_id IN (${sql.join(clients.map((id) => sql`${id}`), ", ")})` : null,
     subs.length ? sql`s.id IN (${sql.join(subs.map((id) => sql`${id}`), ", ")})` : null,
     to.all ? sql`${true}` : null,
@@ -55,12 +56,14 @@ export async function send(
   const options = { vapidDetails: await vapid(app) };
   const { text: _text, format: _format, template: _template, attachments: _attachments, ...notification } = msg; // the service worker calls showNotification(title, rest)
   const gone: number[] = [];
+  const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => Number(row.usr_id) || undefined));
   const { ids } = await record(app, { channel: "webpush", direction: "out", grpId: to.grp, msg, data: { to }, time },
     rows.map((row) => ({ usrId: Number(row.usr_id) || undefined, address: String(row.endpoint_hash), time })));
   let sent = 0;
   await Promise.all(rows.map(async (row, i) => {
     try {
-      const payload = JSON.stringify({ ...notification, body: (await render({ ...row, usrId: Number(row.usr_id) || undefined, deliveryId: ids[i], grpId: to.grp })).text });
+      const usrId = Number(row.usr_id) || undefined;
+      const payload = JSON.stringify({ ...notification, body: (await render({ ...row, usrId, deliveryId: ids[i], grpId: leavable(usrId) })).text });
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
       sent++;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again

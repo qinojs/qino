@@ -1,4 +1,4 @@
-import { hee, html, Output, safeEqual, sha256b64url } from "@qino/qino";
+import { hee, html, Output, safeEqual, sha256b64url, sql } from "@qino/qino";
 
 import { secret } from "./secret.ts";
 
@@ -72,6 +72,22 @@ async function page(ctx: Ctx, said: string, ask = false, status = 200): Promise<
 </main>`).html;
   ctx.res.status = status;
   throw new Output(); // stop the route here — the document on ctx.res is the response
+}
+
+/** Which of these recipients may really leave the group. A selection is a union: `{ grp, usr }`
+ *  reaches someone besides the group too, and offering them the way out of a group they are not in
+ *  would be a lie. One query for the whole send; without a group there is nothing to ask. */
+export async function unsubscribeGroup(
+  app: App,
+  grpId: number | undefined,
+  usrIds: (number | undefined)[],
+): Promise<(usrId?: number) => number | undefined> {
+  const ids = [...new Set(usrIds.filter((id): id is number => !!id))];
+  if (grpId == null || !ids.length) return () => undefined;
+  const rows = await app.db.col<number>`
+    SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId} AND usr_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")})`;
+  const members = new Set(rows.map(Number));
+  return (usrId) => usrId && members.has(usrId) ? grpId : undefined;
 }
 
 /** What a mail carries so the client can offer the one-click way — the url is never shortened. */
