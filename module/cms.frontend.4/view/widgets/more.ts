@@ -27,8 +27,11 @@ export default async function (node: Node, vars: { param?: Record<string, string
     const mailHtml = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
       `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
     ).join("")}</dl>`;
-    const sent = await send(app, { email: feedbackEmail }, { title: "CMS feedback", text: mailHtml, format: "html", replyTo: email });
-    if (!sent) throw new Error("CMS feedback could not be sent");
+    let failed = "";
+    const sent = await send(app, { email: feedbackEmail }, { title: "CMS feedback", text: mailHtml, format: "html", replyTo: email }, {
+      onError: (message) => failed ||= message, // send() reports the reason here and nowhere else
+    });
+    if (!sent) throw new Error("CMS feedback could not be sent" + (failed ? ": " + failed : ""));
     ctx.settings.cms.feedback.text('');
     feedbackConfirmation = `<br><i style="color:#4c4">Thank you for your feedback. <br>We will get back to you as soon as possible.</i><br>`;
   }

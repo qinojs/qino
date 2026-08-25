@@ -79,6 +79,9 @@ export async function send(
     // a plain success is already what the journal says
     if (error || detour) await delivered(app, ids[i], error ?? detour);
   }
+  // the pool serves this batch and nothing after it: a connection left open until the next mail is
+  // one the server has long closed, and sending over it fails without saying why
+  await mailer.closeAllConnections?.().catch(() => {});
   return sent;
 }
 
@@ -86,12 +89,24 @@ async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> 
   return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
 }
 
-/** Sends one mail; resolves with the error message instead of throwing, because the journal wants it. */
-async function deliver(mailer: Awaited<ReturnType<typeof transport>>, message: Record<string, unknown>): Promise<string | undefined> {
+/** Sends one mail; resolves with the error message instead of throwing, because the journal wants it.
+ *  A failure that names no reason is a broken connection, never a refusal — the server that says no
+ *  says why. Upyo keeps only `error.message` of what it caught, so an empty one is all that is left
+ *  of it: worth one more mail on a fresh connection, and worth saying so when that fails too. */
+async function deliver(
+  mailer: Awaited<ReturnType<typeof transport>>,
+  message: Record<string, unknown>,
+  retry = true,
+): Promise<string | undefined> {
   try {
     const receipt = await mailer.send(await createMessage(message));
     if (receipt?.successful) return;
-    return receipt?.errorMessages?.join("\n").trim() || "mail sending failed";
+    const reason = receipt?.errorMessages?.join("\n").trim();
+    if (!reason && retry) {
+      await mailer.closeAllConnections?.().catch(() => {});
+      return deliver(mailer, message, false);
+    }
+    return reason || `mail sending failed: ${JSON.stringify(receipt)}`;
   } catch (e) {
     console.warn("email: sending failed —", errMsg(e));
     return errMsg(e).trim() || "mail sending failed";

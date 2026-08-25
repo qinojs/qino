@@ -74,8 +74,14 @@ export function isEmptyObject(o: object): boolean {
   return true;
 }
 
-/** The message of whatever was thrown — an Error or anything else. */
-export const errMsg = (e: unknown): string => e instanceof Error ? e.message : String(e);
+/** The message of whatever was thrown — an Error or anything else. An AggregateError carries its
+ *  message in the errors it collected: a failed connection says nothing at all without them. */
+export const errMsg = (e: unknown): string => {
+  if (!(e instanceof Error)) return String(e);
+  if (e.message) return e.message;
+  const inner = e instanceof AggregateError ? e.errors.map(errMsg).filter(Boolean).join("; ") : e.cause ? errMsg(e.cause) : "";
+  return inner || e.name;
+};
 
 /** HTML utilities */
 /** An SVG `<use>` for a module-declared icon. */

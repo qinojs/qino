@@ -43,3 +43,14 @@ Deno.test("an address inside a code block is being shown, not offered", async ()
   assertEquals(msg.text, "run this:\n\n    curl https://example.test/a\n");
   await a.db.close();
 });
+
+Deno.test("an address that is still a placeholder is left for the renderer to fill", async () => {
+  const a = await app();
+  const { msg, links } = await rewriteLinks(a, {
+    text: `<a href="{{brandUrl|#}}"><img src="{{logoUrl}}"></a>`,
+    format: "html",
+  });
+  assertEquals(msg.text, `<a href="{{brandUrl|#}}"><img src="{{logoUrl}}"></a>`);
+  assertEquals(links, []); // nothing to shorten, and nothing per-recipient can be
+  await a.db.close();
+});

@@ -19,6 +19,8 @@ const BARE = /\bhttps?:\/\/[^\s<>"']+/gi;
 const TAIL = /[.,;:!?)\]]+$/;
 /** Already absolute — normalising it would edit what was written. */
 const ABSOLUTE = /^https?:\/\//i;
+/** An address still holding a placeholder is no address yet: it is filled per recipient. */
+const UNFILLED = /\{\{/;
 
 // Only ever lexes; what renders markdown lives in ./format.ts.
 const markdown = new Marked({ gfm: true, breaks: true });
@@ -91,7 +93,7 @@ function fromMarkdown(md: string): Link[] {
 /** Absolute as a browser would read it; what is not a web address stays as written. */
 function absolute(url: string, root: string): URL | undefined {
   const trimmed = url.trim();
-  if (!trimmed || trimmed.startsWith("#")) return;
+  if (!trimmed || trimmed.startsWith("#") || UNFILLED.test(trimmed)) return;
   const target = URL.parse(trimmed, root) ?? undefined;
   if (target?.protocol !== "http:" && target?.protocol !== "https:") return;
   return target;

@@ -1,13 +1,23 @@
-import { getCtx, html } from "@qino/qino";
+import { getCtx, html, isEmptyObject } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { asPlaceholders, channels, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
 import type { App, HtmlString, Row } from "@qino/qino";
+import type { Placeholder } from "@qino/qino/messaging";
 import type { Node } from "@qino/qino/cms";
 
 const FORMATS = ["", "md", "html"];
-/** Who the preview greets — a template says nothing about a real recipient. */
-export const SAMPLE = { firstname: "Ada", lastname: "Lovelace", company: "Analytical Engines", email: "ada@example.test", address: "ada@example.test" };
+/** Who the preview greets — a template says nothing about a real recipient. The ids make the
+ *  unsubscribe link a real one: following it only ever asks, and dropping anyone needs a POST. */
+export const SAMPLE = {
+  firstname: "Ada",
+  lastname: "Lovelace",
+  company: "Analytical Engines",
+  email: "ada@example.test",
+  address: "ada@example.test",
+  usrId: 1,
+  grpId: 1,
+};
 
 /** What the preview puts inside the template, in the template's own format. */
 export async function sampleMsg(app: App, format?: "md" | "html"): Promise<{ text: string; format?: "md" | "html" }> {
@@ -142,7 +152,8 @@ async function preview(node: Node, row: Row): Promise<HtmlString> {
   const format = (row.format || undefined) as "md" | "html" | undefined;
   const template = { text: String(row.text ?? ""), format };
   const render = templated(template, await sampleMsg(app, format), channel === "telegram" ? "telegram" : "html");
-  const { text, html: markup } = render(asPlaceholders(SAMPLE));
+  // what the modules really answer for the sample recipient, so the preview shows the mail itself
+  const { text, html: markup } = render({ ...asPlaceholders(SAMPLE), ...await computed(app) });
   const simulated = channel === "email";
 
   // the markup card stays in the document even with nothing to show: a format switch brings it back
@@ -164,20 +175,46 @@ async function preview(node: Node, row: Row): Promise<HtmlString> {
 async function placeholders(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
+  const offered = new Map([...contributed(app)].map(([mod, made]) => [mod, Object.keys(made).sort()]));
   const rows = await templates(app);
   const missing = channels(app).filter((c) => !rows.some((row) => row.channel === c.name && row.main));
 
-  return html.async`<div class=u2-card style="flex:0 1 20rem">
+  return html.async`<div class=u2-card style="flex:0 1 24rem">
     <div class=-head>${t`Placeholders`}</div>
     <div class=-body>
       <p><code>{{content}}</code> — ${t`the message itself, already rendered`}</p>
-      <p><code>{{firstname}}</code> <code>{{lastname}}</code> <code>{{company}}</code> <code>{{email}}</code>
-        <code>{{address}}</code> — ${t`the recipient; {{firstname|Kunde}} says what stands there when nobody is known`}</p>
+      <p>${codes(offered.get("messaging"))}</p>
+      <p>${t`Whatever a placeholder has nothing to say about stays empty; {{firstname|Kunde}} says what stands there instead.`}</p>
+      ${[...offered].filter(([mod]) => mod !== "messaging").map(([mod, names]) =>
+        html`<details><summary>${mod}</summary><p>${codes(names)}</p></details>`)}
       <p>${t`A message without a wish gets its channel's main one. These channels have none and send without:`}
         ${missing.length ? missing.map((c) => html`<span class=u2-badge>${c.label}</span> `) : t`none`}</p>
     </div>
   </div>`;
 }
+
+const codes = (names: string[] = []) => names.map((name) => html`<code>{{${name}}}</code> `);
+
+/** What the modules offer, each under the name of whoever offers it. */
+function contributed(app: App): Map<string, Record<string, Placeholder>> {
+  return new Map(app.modules.linked().flatMap((mod) => {
+    const made = mod.plugin.messagingPlaceholders as Record<string, Placeholder> | undefined;
+    return made && !isEmptyObject(made) ? [[mod.name, made] as const] : [];
+  }));
+}
+
+/** Every offered placeholder worked out for the sample recipient — the preview asks the modules
+ *  themselves, so an unset logo or a missing address shows here as it would in the mail. */
+async function computed(app: App) {
+  const made = [...contributed(app)].flatMap(([, made]) => Object.entries(made));
+  // a preview is not a send: one placeholder that cannot answer must not take the page down
+  const values = await Promise.all(made.map(async ([name, make]) =>
+    [name, await make(app, SAMPLE).catch(() => EMPTY) ?? EMPTY] as const
+  ));
+  return Object.fromEntries(values);
+}
+
+const EMPTY = { text: "", html: "" };
 
 function redirect(to: string): string {
   const ctx = getCtx();

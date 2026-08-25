@@ -113,7 +113,7 @@ Deno.test("literal addresses find owners, keep sending past invalid ones, and jo
   assertEquals(errors, ["mailbox full", "Use an email address such as name@example.com", "mailbox full"]);
   setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: [] }) });
   await send(app, { email: "other@qino.test" }, "Test", { onError: (error) => errors.push(error) });
-  assertEquals(errors.at(-1), "mail sending failed");
+  assertEquals(errors.at(-1), `mail sending failed: {"successful":false,"errorMessages":[]}`); // silent failure, said out loud
 
   await close(app);
 });
@@ -185,5 +185,35 @@ Deno.test("unsubscribe headers ride along only where the message offers the way 
   // the same mail without the template: nothing to leave, so the client is offered nothing
   await send(app, { grp: 1 }, { title: "News", text: "Hello.", format: "md", template: "" });
   assertEquals((sent[1].headers as Headers).get("List-Unsubscribe"), null);
+  await close(app);
+});
+
+Deno.test("the connection pool serves the batch and is closed after it", async () => {
+  const app = await makeApp();
+  let closed = 0;
+  setTransport(app, {
+    send: () => Promise.resolve({ successful: true }),
+    closeAllConnections: () => (closed++, Promise.resolve()),
+  });
+
+  assertEquals(await send(app, { email: ["one@qino.test", "other@qino.test"] }, "Hello"), 2);
+  assertEquals(closed, 1); // once for the batch, not once per mail
+  await close(app);
+});
+
+Deno.test("a failure that names no reason is tried once more on a fresh connection", async () => {
+  const app = await makeApp();
+  let sends = 0, closed = 0;
+  setTransport(app, {
+    send: () => Promise.resolve(++sends === 1 ? { successful: false, errorMessages: [""] } : { successful: true }),
+    closeAllConnections: () => (closed++, Promise.resolve()),
+  });
+  assertEquals(await send(app, { email: "one@qino.test" }, "Hello"), 1);
+  assertEquals([sends, closed], [2, 2]); // once more after the silent failure, and once for the batch
+
+  const errors: string[] = [];
+  setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["mailbox full"] }) });
+  await send(app, { email: "one@qino.test" }, "Hello", { onError: (error) => errors.push(error) });
+  assertEquals(errors, ["mailbox full"]); // a server that says why is believed the first time
   await close(app);
 });
