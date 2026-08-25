@@ -1,6 +1,6 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, unixTime } from "@qino/qino";
-import { attachmentFile, contactRecipients, delivered, msgOf, record, renderer, titleOf, unsubscribeGroup, unsubscribeHeaders } from "@qino/qino/messaging";
+import { attachmentFile, ChannelError, contactRecipients, delivered, msgOf, record, renderer, titleOf, unsubscribeGroup, unsubscribeHeaders } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
@@ -33,7 +33,7 @@ export async function send(
 
   const time = unixTime();
   const [config, mailer, { render, uses }] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
-  if (!config.address) throw new Error("Email has no system address. Set messaging.email.address.");
+  if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const detour = debug ? `redirected to debug address ${debug.address}` : undefined;
   const from = formatAddress({ address: config.address, name: config.name });
@@ -63,7 +63,7 @@ export async function send(
     const leaving = uses.has("unsubscribe") && recipient.usrId && grpId
       ? await unsubscribeHeaders(app, recipient.usrId, grpId)
       : undefined;
-    const error = await deliver(mailer, {
+    const failure = await deliver(mailer, {
       from,
       to: formatAddress(debug ?? recipient),
       replyTo: msg.replyTo || config.replyTo || undefined,
@@ -72,12 +72,14 @@ export async function send(
       attachments,
       headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined },
     });
+    const error = failure && errMsg(failure);
     if (error) onError?.(error);
     // the transport took it, so it counts as sent — but nothing reached this address, and the
     // journal says so: an error is the absence of a delivery, not only a failure
     if (!error) sent++;
-    // a contact that bounces says so in the panel; the journal keeps the detail
-    if (recipient.usrId) contactError(app.db, "email", recipient.address, error);
+    // a contact that bounces says so in the panel; the journal keeps the detail. A failure of ours
+    // says nothing about the address, so it neither marks it nor clears an older mark.
+    if (recipient.usrId && !(failure instanceof ChannelError)) contactError(app.db, "email", recipient.address, error);
     // a plain success is already what the journal says
     if (error || detour) await delivered(app, ids[i], error ?? detour);
   }
@@ -99,7 +101,7 @@ async function deliver(
   mailer: Awaited<ReturnType<typeof transport>>,
   message: Record<string, unknown>,
   retry = true,
-): Promise<string | undefined> {
+): Promise<Error | undefined> {
   try {
     const receipt = await mailer.send(await createMessage(message));
     if (receipt?.successful) return;
@@ -108,10 +110,11 @@ async function deliver(
       await mailer.closeAllConnections?.().catch(() => {});
       return deliver(mailer, message, false);
     }
-    return reason || `mail sending failed: ${JSON.stringify(receipt)}`;
+    // a server that refuses says why, and what it says is about this address
+    return reason ? new Error(reason) : new ChannelError(`mail sending failed: ${JSON.stringify(receipt)}`);
   } catch (e) {
     console.warn("email: sending failed —", errMsg(e));
-    return errMsg(e).trim() || "mail sending failed";
+    return new ChannelError(errMsg(e).trim() || "mail sending failed");
   }
 }
 

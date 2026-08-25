@@ -1,4 +1,5 @@
 import { $item, randB64 } from "@qino/qino";
+import { ChannelError } from "@qino/qino/messaging";
 
 import type { App } from "@qino/qino";
 
@@ -17,7 +18,7 @@ export class BotError extends Error {
 
 export async function botToken(app: App): Promise<string> {
   const token = String(await app.settings["messaging.telegram"].botToken ?? "");
-  if (!token) throw new Error("messaging.telegram: set botToken to the token @BotFather handed you");
+  if (!token) throw new ChannelError("messaging.telegram: set botToken to the token @BotFather handed you");
   return token;
 }
 

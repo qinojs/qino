@@ -13,6 +13,15 @@ export { placeholderName, renderer, saveTemplate, templated, templates } from ".
 export { sanitizeHtml } from "./lib/sanitize.ts";
 export type { Computed, Placeholder } from "./lib/template.ts";
 
+/**
+ * A failure that is ours, not the address's: no provider configured, no connection, refused
+ * credentials, a rate limit. It belongs in the journal and is worth trying again — but it must
+ * never be written to the contact, because the address may be perfectly good.
+ *
+ * Everything else a channel throws or reports is about the address itself, and marks it.
+ */
+export class ChannelError extends Error {}
+
 /** A named file carried by channels that support attachments. */
 export type Attachment = File | {
   name: string;

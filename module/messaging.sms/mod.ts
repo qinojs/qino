@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 import { addContact, ApiError, contactError, contactKey, contactOwner, errMsg, unixTime } from "@qino/qino";
-import { contactRecipients, delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode, unsubscribeGroup } from "@qino/qino/messaging";
+import { ChannelError, contactRecipients, delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode, unsubscribeGroup } from "@qino/qino/messaging";
 
 import { deliver, setProvider } from "./lib/provider.ts";
 
@@ -62,7 +62,8 @@ export async function send(
       const message = errMsg(e);
       await delivered(app, ids[i], message);
       console.warn(`sms: ${address} rejected —`, message);
-      if (usrId) await contactError(app.db, "phone", address, message);
+      // our own failure says nothing about the number — the journal has it, the contact stays clean
+      if (usrId && !(e instanceof ChannelError)) await contactError(app.db, "phone", address, message);
     }
   }
   return sent;

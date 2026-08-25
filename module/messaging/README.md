@@ -304,6 +304,21 @@ Channels today: [messaging.email](../messaging.email/), [messaging.sms](../messa
 [mail](../mail/) is not one of them any more — `messaging.email` is its successor and owns the
 `email` channel alone.
 
+### Whose fault a failure was
+
+A delivery can fail for two unrelated reasons, and they must not end up in the same place. The
+address may be gone — a bounced mailbox, a disconnected number — and that belongs on the contact,
+where [cms.backend.users](../cms.backend.users/) shows it as a warning. Or *we* could not send: no
+provider configured, no connection, refused credentials, a rate limit. That says nothing about the
+address, so a channel throws `ChannelError` for it and the contact is left alone.
+
+```ts
+if (!type) throw new ChannelError("messaging.sms: configure provider.type or call setProvider()");
+```
+
+Either way the reason lands in the journal, which is where the detail belongs. The distinction is
+also what an outbox needs: only our own failures are worth trying again.
+
 ## Verifying a contact
 
 A phone number or mail address is a claim until the owner proves it — anyone can type

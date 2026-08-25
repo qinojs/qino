@@ -1,7 +1,7 @@
-import { ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
+import { addContact, ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
-import { pendingContacts } from "@qino/qino/messaging";
+import { ChannelError, pendingContacts } from "@qino/qino/messaging";
 
 import { deliver } from "../lib/provider.ts";
 import { addPhone, approvePhone, send, setProvider, verifyPhone } from "../mod.ts";
@@ -199,4 +199,48 @@ Deno.test("send reaches only verified phones selected by user, group or all", as
     ["+41791234567", 1, null], ["+41791234568", 2, null], ["+41799999999", null, null],
     ["079 12", null, "Use an international phone number such as +41791234567"],
   ]);
+});
+
+Deno.test("a failure of ours never marks the number", async () => {
+  const db = await makeDb();
+  const app = makeApp(db);
+  await addContact(db, 1, "phone", "+41791234567");
+
+  // no provider configured: the installation is at fault, the number is fine
+  assertEquals(await send(app, { usr: 1 }, "Hi"), 0);
+  assertEquals((await contacts(db, 1, "phone"))[0].error, null);
+  const [delivery] = await db.query`SELECT error FROM message_delivery`;
+  assert(String(delivery.error).includes("configure provider.type"), "the journal keeps the reason");
+
+  // the provider refusing the number is about the number, and says so on the contact
+  setProvider(app, { send: () => Promise.reject(new Error("unreachable handset")) });
+  assertEquals(await send(app, { usr: 1 }, "Hi"), 0);
+  assertEquals((await contacts(db, 1, "phone"))[0].error, "unreachable handset");
+
+  // and a delivery that works again clears it
+  setProvider(app, { send: () => Promise.resolve() });
+  assertEquals(await send(app, { usr: 1 }, "Hi"), 1);
+  assertEquals((await contacts(db, 1, "phone"))[0].error, null);
+});
+
+Deno.test("only a plain refusal from an http provider blames the number", async () => {
+  const status = (code: number) => new Response("no", { status: code });
+  const original = globalThis.fetch;
+  const app = {
+    t: fakeT,
+    settings: { "messaging.sms": { provider: { type: "http", http: { url: "https://sms.qino.test/send" } } } },
+    // deno-lint-ignore no-explicit-any
+  } as any;
+  try {
+    for (const code of [500, 401, 429]) {
+      globalThis.fetch = () => Promise.resolve(status(code));
+      const e = await deliver(app, "+41791234567", "Hi").catch((e) => e);
+      assert(e instanceof ChannelError, `${code} is ours`);
+    }
+    globalThis.fetch = () => Promise.resolve(status(400));
+    const e = await deliver(app, "+41791234567", "Hi").catch((e) => e);
+    assert(e instanceof Error && !(e instanceof ChannelError), "400 is about the number");
+  } finally {
+    globalThis.fetch = original;
+  }
 });
