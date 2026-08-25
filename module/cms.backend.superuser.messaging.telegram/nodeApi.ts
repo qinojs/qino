@@ -49,7 +49,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const recipient = kind === "grp" ? { grp: Number(value) }
         : kind === "usr" ? { usr: Number(value) }
         : { all: true } as const;
-      const sent = await send(app, recipient, html ? { text, parse_mode: "HTML" } : { text });
+      const sent = await send(app, recipient, html ? { text, format: "html" as const } : { text });
       return { ok: true, message: await app.t`Delivered to ${sent} chats.` };
     }
     return null;

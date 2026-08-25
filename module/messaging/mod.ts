@@ -23,8 +23,9 @@ export type Attachment = File | {
 
 /**
  * What every channel understands. `text` is the message; a bare string is the short form of
- * `{ text }`. Channels add their own fields on top — a push title, a mail subject, a Telegram
- * `parse_mode` — and degrade what they cannot express instead of refusing it.
+ * `{ text }`. Channels add their own fields on top — a push tag, a mail `replyTo` — and degrade
+ * what they cannot express instead of refusing it. What is on the wire is never one of them:
+ * a caller says `format`, and the channel derives its own switches from that.
  *
  * `format` says what the text *is*, not how it is delivered: markdown renders to the markup a
  * channel accepts, html degrades to plain text where none is possible, and the default — plain

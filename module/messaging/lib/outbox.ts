@@ -3,7 +3,7 @@ import { errMsg, unixTime } from "@qino/qino";
 import { channels } from "../mod.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Msg } from "../mod.ts";
+import type { Attachment, Msg } from "../mod.ts";
 
 /**
  * A failure that is ours, not the address's: no provider configured, no connection, refused
@@ -32,6 +32,17 @@ export async function delivered(app: App, id: number, error?: unknown): Promise<
 export const owed = (addressError: string | undefined, time: number): { error: string; sent: number } | { due: number } =>
   addressError ? { error: addressError, sent: time } : { due: time };
 
+/** What hangs on the message, read back as the files a channel sends. */
+async function attachments(app: App, messageId: number): Promise<Attachment[] | undefined> {
+  const ids = await app.db.col`SELECT file_id FROM message_attachment WHERE message_id = ${messageId} ORDER BY sort, file_id`;
+  if (!ids.length) return;
+  return await Promise.all(ids.map(async (id) => {
+    const file = await app.dbFiles.file(Number(id));
+    const vs = await file.ensureVs();
+    return { name: String(vs.name ?? id), type: String(vs.mime ?? ""), content: Deno.readFile(file.path) };
+  }));
+}
+
 /** Deliveries that are owed now, oldest first, each carrying its message's channel and group. */
 export function due(app: App, limit = 100): Promise<Row[]> {
   return app.db.query`
@@ -56,6 +67,7 @@ export async function run(app: App, limit = 100): Promise<number> {
         title: m.title == null ? undefined : String(m.title),
         format: m.format as Msg["format"],
         template: m.template as Msg["template"],
+        attachments: await attachments(app, Number(row.message_id)),
       });
       sent++;
     } catch (e) {

@@ -13,14 +13,12 @@ import type { Msg } from "@qino/qino/messaging";
  *
  * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
  * way. A `format` becomes Telegram's own HTML subset — no headings, no lists, so those arrive as
- * bold lines and bullets. Everything besides `title`, `text` and `format` reaches sendMessage()
- * as is: `reply_markup`, `disable_notification` and friends, and an explicit `parse_mode` still
- * hands the text over untouched. A `title` becomes the first line, bold when markup is on.
+ * bold lines and bullets. A `title` becomes the first line, bold when markup is on.
  */
 export async function send(
   app: App,
   to: { grp?: number; usr?: number | number[]; all?: true; chat?: number | number[] },
-  message: string | Msg & Record<string, unknown>,
+  message: string | Msg,
 ): Promise<number> {
   const msg = msgOf(message);
   const chats = [to.chat ?? []].flat();
@@ -41,15 +39,9 @@ export async function send(
     renderer(app, msg, "telegram", "telegram"),
   ]);
 
-  // Telegram has no title of its own; it becomes the first line, bold where markup is on
-  const { text, title, format: _format, template: _template, attachments: _attachments, ...extra } = msg;
-  const own = Boolean(extra.parse_mode); // an own parse_mode owns the text, escaping included
   const params = async (recipient: Row, deliveryId: number) => {
     const usrId = Number(recipient.usr_id);
-    const { text: plain, html } = await render({ ...recipient, usrId, deliveryId, grpId: leavable(usrId) });
-    const body = own ? text : html ?? plain;
-    const head = title ? (html || extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title) : "";
-    return { ...extra, ...(!own && html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
+    return telegramText(msg, await render({ ...recipient, usrId, deliveryId, grpId: leavable(usrId) }));
   };
   const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => Number(row.usr_id)));
   const table = app.db.table("telegram_chat");
@@ -83,22 +75,23 @@ export async function send(
   return sent;
 }
 
-/** One journalled delivery, sent again — the outbox's way in. Channel-native extras of the original
- *  send (a `parse_mode` of its own) are not journalled and do not come back with it. */
+/** Telegram has no title of its own; it becomes the first line, bold where the body is markup.
+ *  `parse_mode` follows from what the renderer produced — a caller says `format`, never the wire. */
+function telegramText(msg: Msg, rendered: { text: string; html?: string }): { text: string; parse_mode?: string } {
+  const body = rendered.html ?? rendered.text;
+  const head = msg.title ? (rendered.html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
+  return { ...(rendered.html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
+}
+
+/** One journalled delivery, sent again — the outbox's way in. */
 export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
   const usrId = Number(delivery.usr_id) || undefined;
   const [{ render }, leavable] = await Promise.all([
     renderer(app, msg, "telegram", "telegram"),
     unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
   ]);
-  const { text: plain, html } = await render({ ...delivery, usrId, deliveryId: Number(delivery.id), grpId: leavable(usrId) });
-  const body = html ?? plain;
-  const head = msg.title ? (html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
-  await sendMessage(app, {
-    ...(html ? { parse_mode: "HTML" } : {}),
-    text: head ? `${head}\n${body}` : body,
-    chat_id: Number(delivery.address),
-  });
+  const rendered = await render({ ...delivery, usrId, deliveryId: Number(delivery.id), grpId: leavable(usrId) });
+  await sendMessage(app, { ...telegramText(msg, rendered), chat_id: Number(delivery.address) });
   await delivered(app, Number(delivery.id));
 }
 

@@ -68,8 +68,9 @@ channel's own table, because a Telegram chat and a push endpoint exist only once
 `msg` is `{ text, title?, format?, … }`, and a bare string is the short form of `{ text }`. Only
 `text` is required; `title` is what the channels that need one fall back on — `titleOf(msg)`
 hands out the first line of the text when none was given, so `send(app, { usr: 42 }, "…")`
-works on all of them. Everything else is the channel's own: `parse_mode` and `reply_markup`
-for Telegram, `tag` and `actions` for Web Push, `replyTo` for mail.
+works on all of them. Everything else is the channel's own: `tag` and `actions` for Web Push,
+`replyTo` for mail. Wire-level switches are not among them — Telegram's `parse_mode` follows from
+`format`, so a caller never names it.
 
 What a channel cannot express, it degrades instead of refusing: a `title` becomes the first
 line of an SMS, bold in Telegram, the subject of a mail, the heading of a notification.

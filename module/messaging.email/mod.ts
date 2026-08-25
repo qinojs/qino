@@ -88,16 +88,16 @@ export async function send(
   return sent;
 }
 
-/** One journalled delivery, sent again — the outbox's way in. Attachments stay behind: they hang
- *  on the message, and a retry of one recipient is not the place to load them all again. */
+/** One journalled delivery, sent again — the outbox's way in. */
 export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
   const usrId = Number(delivery.usr_id) || undefined;
   const address = String(delivery.address);
-  const [config, mailer, { render, uses }, leavable] = await Promise.all([
+  const [config, mailer, { render, uses }, leavable, attachments] = await Promise.all([
     defaults(app),
     transport(app),
     renderer(app, msg, "email"),
     unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
+    attachmentsOf(msg.attachments),
   ]);
   if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
   const grpId = leavable(usrId);
@@ -109,6 +109,7 @@ export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> 
     replyTo: config.replyTo || undefined,
     subject: msg.title,
     content: html ? { html, text } : { text },
+    attachments,
     headers: leaving,
   });
   await mailer.closeAllConnections?.().catch(() => {});

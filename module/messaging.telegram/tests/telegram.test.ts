@@ -148,9 +148,9 @@ Deno.test("send delivers, clears a stale error and drops a chat that blocked the
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: unixTime(), error: "500: earlier" });
   const bot = fakeTelegram([{ ok: true, result: {} }]);
   try {
-    assertEquals(await send(app, { usr: 1 }, { text: "hi", parse_mode: "HTML" }), 1);
+    assertEquals(await send(app, { usr: 1 }, { text: "<b>hi</b>", format: "html" }), 1);
     assertEquals(bot.calls[0].method, "sendMessage");
-    assertEquals(bot.calls[0].params, { text: "hi", parse_mode: "HTML", chat_id: 555 });
+    assertEquals(bot.calls[0].params, { text: "<b>hi</b>", parse_mode: "HTML", chat_id: 555 });
     assertEquals((await db.row`SELECT error FROM telegram_chat`)?.error, null);
   } finally {
     bot.restore();
