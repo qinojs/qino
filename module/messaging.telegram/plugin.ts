@@ -1,7 +1,7 @@
 import { Access, getCtx } from "@qino/qino";
 
 import { webhook } from "./lib/webhook.ts";
-import { linkUrl, deliver, send, userChats } from "./mod.ts";
+import { deliver, linkUrl, send, userChats } from "./mod.ts";
 
 import type { ApiTree, App } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
