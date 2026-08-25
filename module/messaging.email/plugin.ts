@@ -1,7 +1,7 @@
 import { countContacts } from "@qino/qino";
 
 import { close } from "./lib/transport.ts";
-import { receive, send } from "./mod.ts";
+import { deliver, receive, send } from "./mod.ts";
 
 import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
@@ -17,6 +17,7 @@ export const messagingChannel: Channel = {
   contact: "email",
   reach: (app: App, usrId: number) => countContacts(app.db, usrId, "email"),
   send,
+  deliver,
 };
 
 // Mail arrives by being fetched, so the channel is only as live as this interval.

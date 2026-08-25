@@ -316,8 +316,30 @@ address, so a channel throws `ChannelError` for it and the contact is left alone
 if (!type) throw new ChannelError("messaging.sms: configure provider.type or call setProvider()");
 ```
 
-Either way the reason lands in the journal, which is where the detail belongs. The distinction is
-also what an outbox needs: only our own failures are worth trying again.
+Either way the reason lands in the journal, which is where the detail belongs — and it decides
+whether the outbox tries again.
+
+## Outbox
+
+A delivery is owed until it went out. `message_delivery` says so itself, no second table:
+
+| `due` | `time` | `attempts` | |
+| --- | --- | --- | --- |
+| `null` | `null` | `0` | held back — something has to release it |
+| `n` | `null` | | owed from `n` on |
+| `null` | `n` | | went out |
+| `null` | `null` | `> 0` | given up |
+
+Releasing is nobody's business but the caller's: a backend button writes `now` into `due`, a
+schedule writes a timestamp, an approval rule writes it when it is satisfied. `messaging` only ever
+asks what is owed.
+
+`delivered()` closes one attempt. A `ChannelError` puts the delivery back with a growing wait — a
+minute, four, sixteen — and gives up after five tries; anything else is final. The `outbox` cron job
+picks up what is due and calls the channel's `deliver()`, which sends one journalled delivery again,
+rendering it from the journal so a message held for a week still says "today". A channel without
+`deliver` cannot be retried and is skipped — `email` and `sms` have it, `telegram` and `webpush`
+report every failure as final.
 
 ## Verifying a contact
 

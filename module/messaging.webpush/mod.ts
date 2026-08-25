@@ -58,13 +58,14 @@ export async function send(
   const gone: number[] = [];
   const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => Number(row.usr_id) || undefined));
   const { ids } = await record(app, { channel: "webpush", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    rows.map((row) => ({ usrId: Number(row.usr_id) || undefined, address: String(row.endpoint_hash), time })));
+    rows.map((row) => ({ usrId: Number(row.usr_id) || undefined, address: String(row.endpoint_hash), due: time })));
   let sent = 0;
   await Promise.all(rows.map(async (row, i) => {
     try {
       const usrId = Number(row.usr_id) || undefined;
       const payload = JSON.stringify({ ...notification, body: (await render({ ...row, usrId, deliveryId: ids[i], grpId: leavable(usrId) })).text });
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
+      await delivered(app, ids[i]);
       sent++;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {

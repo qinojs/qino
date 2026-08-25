@@ -1,7 +1,7 @@
 import { Access, contacts, countContacts, getCtx, removeContact, s, setMainContact } from "@qino/qino";
 import { pendingContacts } from "@qino/qino/messaging";
 
-import { addPhone, send, verifyPhone } from "./mod.ts";
+import { addPhone, deliver, send, verifyPhone } from "./mod.ts";
 
 import type { ApiTree, App, Params } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
@@ -13,6 +13,7 @@ export const messagingChannel: Channel = {
   contact: "phone",
   reach: (app: App, usrId: number) => countContacts(app.db, usrId, "phone"),
   send,
+  deliver,
 };
 
 export const settingsSchema = {

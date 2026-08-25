@@ -7,20 +7,12 @@ import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { contactRecipients } from "./lib/contact.ts";
+export { ChannelError, delivered, owed, run as outbox } from "./lib/outbox.ts";
 export { headers as unsubscribeHeaders, unsubscribeGroup } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { placeholderName, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 export type { Computed, Placeholder } from "./lib/template.ts";
-
-/**
- * A failure that is ours, not the address's: no provider configured, no connection, refused
- * credentials, a rate limit. It belongs in the journal and is worth trying again — but it must
- * never be written to the contact, because the address may be perfectly good.
- *
- * Everything else a channel throws or reports is about the address itself, and marks it.
- */
-export class ChannelError extends Error {}
 
 /** A named file carried by channels that support attachments. */
 export type Attachment = File | {
@@ -94,6 +86,8 @@ export type Channel = {
   contact?: string;
   reach(app: App, usrId: number, notClient?: string | number): Promise<number>;
   send(app: App, to: To, msg: string | Msg): Promise<number>;
+  /** One journalled delivery, sent again. Without it a channel cannot hold or retry anything. */
+  deliver?(app: App, delivery: Row, msg: Msg): Promise<void>;
 };
 
 
@@ -125,7 +119,7 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
 export async function record(
   app: App,
   message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: unknown; grpId?: number; logId?: number; time?: number },
-  deliveries: { usrId?: number; address?: string; error?: string; time?: number }[] = [],
+  deliveries: { usrId?: number; address?: string; error?: string; time?: number; due?: number }[] = [],
 ): Promise<{ id: number; ids: number[] }> {
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
@@ -156,17 +150,13 @@ export async function record(
         message_id: id,
         usr_id: delivery.usrId ?? null,
         address: delivery.address ?? null,
-        time: delivery.time ?? unixTime(),
+        due: delivery.due ?? null,
+        time: delivery.time ?? null,
         error: delivery.error ?? null,
       })));
     }
   });
   return { id, ids };
-}
-
-/** How one attempt went, written back to the row a tracked link points at. */
-export function delivered(app: App, id: number, error?: string): Promise<unknown> {
-  return app.db.table("message_delivery").update(id, { error: error ?? null, time: unixTime() });
 }
 
 type JournalMessage = Row & { deliveries: Row[]; attachments: Row[] };

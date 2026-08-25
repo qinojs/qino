@@ -1,10 +1,10 @@
 import { addContact, ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
-import { ChannelError, pendingContacts } from "@qino/qino/messaging";
+import { ChannelError, outbox, pendingContacts } from "@qino/qino/messaging";
 
-import { deliver } from "../lib/provider.ts";
-import { addPhone, approvePhone, send, setProvider, verifyPhone } from "../mod.ts";
+import { deliver as transmit } from "../lib/provider.ts";
+import { addPhone, approvePhone, deliver, send, setProvider, verifyPhone } from "../mod.ts";
 
 import type { SmsProvider } from "../mod.ts";
 
@@ -64,7 +64,7 @@ Deno.test("built-in Twilio and HTTP providers send their documented request shap
   } as any;
 
   try {
-    await deliver(app, "+41791234567", "Hello");
+    await transmit(app, "+41791234567", "Hello");
     assertEquals(calls[0].url, "https://api.twilio.com/2010-04-01/Accounts/AC123/Messages.json");
     assertEquals(new Headers(calls[0].init?.headers).get("authorization"), `Basic ${btoa("SK123:secret")}`);
     assertEquals(String(calls[0].init?.body), "To=%2B41791234567&Body=Hello&From=%2B41000000000");
@@ -73,7 +73,7 @@ Deno.test("built-in Twilio and HTTP providers send their documented request shap
       type: "http",
       http: { url: "https://sms.qino.test/send", token: "bearer", from: "Qino" },
     };
-    await deliver(app, "+41791234567", "Hello");
+    await transmit(app, "+41791234567", "Hello");
     assertEquals(new Headers(calls[1].init?.headers).get("authorization"), "Bearer bearer");
     assertEquals(JSON.parse(String(calls[1].init?.body)), { to: "+41791234567", text: "Hello", from: "Qino" });
   } finally {
@@ -234,13 +234,38 @@ Deno.test("only a plain refusal from an http provider blames the number", async 
   try {
     for (const code of [500, 401, 429]) {
       globalThis.fetch = () => Promise.resolve(status(code));
-      const e = await deliver(app, "+41791234567", "Hi").catch((e) => e);
+      const e = await transmit(app, "+41791234567", "Hi").catch((e) => e);
       assert(e instanceof ChannelError, `${code} is ours`);
     }
     globalThis.fetch = () => Promise.resolve(status(400));
-    const e = await deliver(app, "+41791234567", "Hi").catch((e) => e);
+    const e = await transmit(app, "+41791234567", "Hi").catch((e) => e);
     assert(e instanceof Error && !(e instanceof ChannelError), "400 is about the number");
   } finally {
     globalThis.fetch = original;
   }
+});
+
+Deno.test("what our own failure held back goes out on the next run", async () => {
+  const db = await makeDb();
+  const app = makeApp(db);
+  const sms: SmsProvider = { send: () => Promise.resolve() };
+  app.modules = { linked: () => [{ plugin: { messagingChannel: { name: "sms", deliver } } }] };
+  await addContact(db, 1, "phone", "+41791234567");
+
+  // no provider: nothing goes out, and the delivery stays owed
+  assertEquals(await send(app, { usr: 1 }, "Hi"), 0);
+  const [held] = await db.query`SELECT * FROM message_delivery`;
+  assertEquals(held.time, null);
+  assertEquals(held.attempts, 1);
+  assert(Number(held.due) > 0, "owed again");
+
+  // due, and this time there is a provider
+  await db.exec`UPDATE message_delivery SET due = ${1}`;
+  setProvider(app, sms);
+  assertEquals(await outbox(app), 1);
+
+  const [done] = await db.query`SELECT * FROM message_delivery`;
+  assertEquals(done.due, null);
+  assertEquals(done.error, null);
+  assert(Number(done.time) > 0, "went out");
 });

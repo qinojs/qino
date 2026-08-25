@@ -148,16 +148,27 @@
             "x-index": true,
             "description": "Where it went: number, mail address, chat or endpoint hash"
           },
+          "due": {
+            "type": "integer",
+            "x-index": true,
+            "description": "Release: null = none, n = owed from n on — whoever holds it back sets it"
+          },
           "time": {
             "type": "integer",
-            "x-index": true
+            "x-index": true,
+            "description": "When it went out; null while it has not"
+          },
+          "attempts": {
+            "type": "integer",
+            "default": 0,
+            "description": "With due and time both null: 0 is held back, more is given up"
           },
           "error": {
             "type": "string",
             "description": "Delivery error; null means the recipient was reached"
           }
         },
-        "required": ["id", "message_id", "time"]
+        "required": ["id", "message_id"]
       }
     },
     "message_track": {

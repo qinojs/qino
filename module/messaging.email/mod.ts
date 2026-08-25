@@ -1,12 +1,12 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { contactError, errMsg, unixTime } from "@qino/qino";
-import { attachmentFile, ChannelError, contactRecipients, delivered, msgOf, record, renderer, titleOf, unsubscribeGroup, unsubscribeHeaders } from "@qino/qino/messaging";
+import { attachmentFile, ChannelError, contactRecipients, delivered, msgOf, owed, record, renderer, titleOf, unsubscribeGroup, unsubscribeHeaders } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
 import { createMessage, transport } from "./lib/transport.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Row } from "@qino/qino";
 import type { Attachment, Msg } from "@qino/qino/messaging";
 
 export { receive } from "./lib/inbound.ts";
@@ -47,7 +47,7 @@ export async function send(
     msg: attachments ? { ...msg, attachments } : msg,
     data: { to },
     time,
-  }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, error: recipient.addressError, time })));
+  }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, ...owed(recipient.addressError, time) })));
 
   const leavable = await unsubscribeGroup(app, to.grp, recipients.map((recipient) => recipient.usrId));
   let sent = 0;
@@ -63,7 +63,7 @@ export async function send(
     const leaving = uses.has("unsubscribe") && recipient.usrId && grpId
       ? await unsubscribeHeaders(app, recipient.usrId, grpId)
       : undefined;
-    const failure = await deliver(mailer, {
+    const failure = await transmit(mailer, {
       from,
       to: formatAddress(debug ?? recipient),
       replyTo: msg.replyTo || config.replyTo || undefined,
@@ -80,13 +80,41 @@ export async function send(
     // a contact that bounces says so in the panel; the journal keeps the detail. A failure of ours
     // says nothing about the address, so it neither marks it nor clears an older mark.
     if (recipient.usrId && !(failure instanceof ChannelError)) contactError(app.db, "email", recipient.address, error);
-    // a plain success is already what the journal says
-    if (error || detour) await delivered(app, ids[i], error ?? detour);
+    await delivered(app, ids[i], failure ?? detour);
   }
   // the pool serves this batch and nothing after it: a connection left open until the next mail is
   // one the server has long closed, and sending over it fails without saying why
   await mailer.closeAllConnections?.().catch(() => {});
   return sent;
+}
+
+/** One journalled delivery, sent again — the outbox's way in. Attachments stay behind: they hang
+ *  on the message, and a retry of one recipient is not the place to load them all again. */
+export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
+  const usrId = Number(delivery.usr_id) || undefined;
+  const address = String(delivery.address);
+  const [config, mailer, { render, uses }, leavable] = await Promise.all([
+    defaults(app),
+    transport(app),
+    renderer(app, msg, "email"),
+    unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
+  ]);
+  if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
+  const grpId = leavable(usrId);
+  const { text, html } = await render({ ...delivery, usrId, deliveryId: Number(delivery.id), grpId });
+  const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId) : undefined;
+  const failure = await transmit(mailer, {
+    from: formatAddress({ address: config.address, name: config.name }),
+    to: address,
+    replyTo: config.replyTo || undefined,
+    subject: msg.title,
+    content: html ? { html, text } : { text },
+    headers: leaving,
+  });
+  await mailer.closeAllConnections?.().catch(() => {});
+  if (failure) throw failure;
+  await delivered(app, Number(delivery.id));
+  if (usrId) await contactError(app.db, "email", address);
 }
 
 async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> {
@@ -97,7 +125,7 @@ async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> 
  *  A failure that names no reason is a broken connection, never a refusal — the server that says no
  *  says why. Upyo keeps only `error.message` of what it caught, so an empty one is all that is left
  *  of it: worth one more mail on a fresh connection, and worth saying so when that fails too. */
-async function deliver(
+async function transmit(
   mailer: Awaited<ReturnType<typeof transport>>,
   message: Record<string, unknown>,
   retry = true,
@@ -108,7 +136,7 @@ async function deliver(
     const reason = receipt?.errorMessages?.join("\n").trim();
     if (!reason && retry) {
       await mailer.closeAllConnections?.().catch(() => {});
-      return deliver(mailer, message, false);
+      return transmit(mailer, message, false);
     }
     // a server that refuses says why, and what it says is about this address
     return reason ? new Error(reason) : new ChannelError(`mail sending failed: ${JSON.stringify(receipt)}`);

@@ -1,8 +1,8 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 import { addContact, ApiError, contactError, contactKey, contactOwner, errMsg, unixTime } from "@qino/qino";
-import { ChannelError, contactRecipients, delivered, dropClaim, msgOf, record, redeemCode, renderer, requestCode, unsubscribeGroup } from "@qino/qino/messaging";
+import { ChannelError, contactRecipients, delivered, dropClaim, msgOf, owed, record, redeemCode, renderer, requestCode, unsubscribeGroup } from "@qino/qino/messaging";
 
-import { deliver, setProvider } from "./lib/provider.ts";
+import { deliver as transmit, setProvider } from "./lib/provider.ts";
 
 import type { App, Row } from "@qino/qino";
 import type { Msg } from "@qino/qino/messaging";
@@ -44,7 +44,7 @@ export async function send(
   });
   // journaled first: a tracked link carries the delivery's own id
   const { ids } = await record(app, { channel: "sms", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    rows.map((row) => ({ usrId: row.usrId, address: row.address, error: row.addressError, time })));
+    rows.map((row) => ({ usrId: row.usrId, address: row.address, ...owed(row.addressError, time) })));
 
   const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => row.usrId));
   let sent = 0;
@@ -52,21 +52,37 @@ export async function send(
     if (row.addressError) continue;
     const address = String(row.address);
     const usrId = row.usrId;
-    const body = (await render({ ...row, usrId, deliveryId: ids[i], grpId: leavable(usrId) })).text;
-    const text = msg.title ? `${msg.title}\n${body}` : body;
     try {
-      await deliver(app, address, text);
+      await transmit(app, address, await text(render, msg, { ...row, usrId, deliveryId: ids[i], grpId: leavable(usrId) }));
+      await delivered(app, ids[i]);
       sent++;
       if (row.error) await contactError(app.db, "phone", address);
     } catch (e) {
-      const message = errMsg(e);
-      await delivered(app, ids[i], message);
-      console.warn(`sms: ${address} rejected —`, message);
+      await delivered(app, ids[i], e);
+      console.warn(`sms: ${address} rejected —`, errMsg(e));
       // our own failure says nothing about the number — the journal has it, the contact stays clean
-      if (usrId && !(e instanceof ChannelError)) await contactError(app.db, "phone", address, message);
+      if (usrId && !(e instanceof ChannelError)) await contactError(app.db, "phone", address, errMsg(e));
     }
   }
   return sent;
+}
+
+/** One journalled delivery, sent again — the outbox's way in. */
+export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
+  const usrId = Number(delivery.usr_id) || undefined;
+  const [{ render }, leavable] = await Promise.all([
+    renderer(app, msg, "sms"),
+    unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
+  ]);
+  const body = await text(render, msg, { ...delivery, usrId, deliveryId: Number(delivery.id), grpId: leavable(usrId) });
+  await transmit(app, String(delivery.address), body);
+  await delivered(app, Number(delivery.id));
+}
+
+/** The message as SMS: one plain body, the title as its first line. */
+async function text(render: (to?: Row) => Promise<{ text: string }>, msg: Msg, to: Row): Promise<string> {
+  const body = (await render(to)).text;
+  return msg.title ? `${msg.title}\n${body}` : body;
 }
 
 /** Claim a phone number and send its six-digit code. Nothing is stored on the user until it is verified. */
@@ -83,7 +99,7 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
       { usrId, address: number, error, time: unixTime() },
     ]);
   try {
-    await deliver(app, number, await app.t`Your verification code is ${code}.`);
+    await transmit(app, number, await app.t`Your verification code is ${code}.`);
   } catch (e) {
     await journal(errMsg(e));
     throw e;

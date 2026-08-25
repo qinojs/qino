@@ -55,11 +55,12 @@ export async function send(
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
   const { ids } = await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    rows.map((row) => ({ usrId: Number(row.usr_id), address: String(row.chat_id), time })));
+    rows.map((row) => ({ usrId: Number(row.usr_id), address: String(row.chat_id), due: time })));
   let sent = 0;
   const deliver = async (row: Row, i: number) => {
     try {
       await sendMessage(app, { ...await params(row, ids[i]), chat_id: Number(row.chat_id) });
+      await delivered(app, ids[i]);
       sent++;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {

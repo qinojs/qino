@@ -2,11 +2,18 @@ import { hee } from "@qino/qino";
 
 import { servePixel, trackHit } from "./lib/track.ts";
 import { placeholder, serveUnsubscribe } from "./lib/unsubscribe.ts";
+import { outbox } from "./mod.ts";
 
 import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 import type { Placeholder } from "./mod.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+// What is owed goes out here: held back until something released it, or waiting after a failure of ours.
+export const cron = {
+  outbox: { every: 60, timeout: 120, run: (app: App) => outbox(app) },
+} satisfies Jobs;
 
 /** Every placeholder a message may name — what a template reads, and all any module has to
  *  look at to know what is on offer. Another module adds its own the same way. */
