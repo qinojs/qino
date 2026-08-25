@@ -1,5 +1,3 @@
-import { hee } from "@qino/qino";
-
 import { htmlOf, textOf, textToHtml } from "./format.ts";
 import { rewriteLinks, shortenOwn } from "./links.ts";
 import { markers, PIXEL } from "./track.ts";
@@ -12,7 +10,7 @@ import type { Profile } from "./format.ts";
 // other placeholder is what this channel knows about the recipient. It belongs to the channel, so
 // the same message arrives as a signed mail and as a bare line of SMS.
 
-const PLACEHOLDER = /\{\{\s*(\w+)\s*(?:\|([^}]*))?\}\}/g;
+const PLACEHOLDER = /\{\{\s*([\w.]+)\s*(?:\|([^}]*))?\}\}/g;
 const CONTENT = "{{content}}";
 /** Markup that opens with a block of its own — it needs no paragraph around it. */
 const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
@@ -137,13 +135,23 @@ function fill(template: string, placeholders: Computed, side: "text" | "html"): 
 const names = (...texts: (string | undefined)[]) =>
   new Set(texts.flatMap((text) => [...(text ?? "").matchAll(PLACEHOLDER)].map((hit) => hit[1])));
 
+/** What a template writes for a module's placeholder. Messaging's own are the message's base
+ *  vocabulary and stay bare; everything else is named after whoever offers it, so two modules can
+ *  both know an `email` and a reader can tell whose it is. */
+export const placeholderName = (mod: string, name: string): string => mod === "messaging" ? name : `${mod}.${name}`;
+
 /** What every linked module offers, by the name a template writes between braces. */
 function placeholders(app: App): Record<string, Placeholder> {
-  return Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.messagingPlaceholders));
+  const all: Record<string, Placeholder> = {};
+  for (const mod of app.modules.linked()) {
+    const made = mod.plugin.messagingPlaceholders as Record<string, Placeholder> | undefined;
+    for (const [name, make] of Object.entries(made ?? {})) all[placeholderName(mod.name, name)] = make;
+  }
+  return all;
 }
 
 /** Work the asked-for ones out for this recipient; one with nothing to say comes out empty,
- *  which is what makes `{{firstname|Kunde}}` fall back to the name it gives. */
+ *  which is what makes `{{givenName|Kunde}}` fall back to the name it gives. */
 async function computeAll(app: App, asked: [string, Placeholder][], to: Row): Promise<Computed> {
   const values: Computed = {};
   for (const [name, make] of asked) values[name] = await make(app, to) ?? EMPTY;
@@ -151,7 +159,3 @@ async function computeAll(app: App, asked: [string, Placeholder][], to: Row): Pr
 }
 
 const EMPTY = { text: "", html: "" };
-
-/** Plain values as placeholders — what a preview hands in, having no real recipient to ask. */
-export const asPlaceholders = (row: Row): Computed =>
-  Object.fromEntries(Object.entries(row).map(([key, value]) => [key, { text: String(value ?? ""), html: hee(value) }]));

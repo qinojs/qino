@@ -26,7 +26,7 @@ async function makeApp(): Promise<App> {
       "messaging.email": { address: "app@qino.test", name: "Qino", inbound: {}, transport: { smtp: {} } },
     },
     url: () => Promise.resolve("https://qino.test/"),
-    modules: { linked: () => [{ plugin: { messagingPlaceholders } }] },
+    modules: { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }] },
     t: fakeT,
   } as unknown as App;
   app.dbFiles = new DbFileManager(app, dir + "/files/");

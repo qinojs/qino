@@ -197,7 +197,7 @@ variant, so the same message arrives the way that channel talks:
 
 | `name` | `channel` | `main` | `format` | `text` |
 | --- | --- | --- | --- | --- |
-| letter | email | ✓ | md | `Hallo {{firstname\|Kunde}},`<br>`{{content}}`<br>`Ihr Team` |
+| letter | email | ✓ | md | `Hallo {{givenName\|Kunde}},`<br>`{{content}}`<br>`Ihr Team` |
 | signature | sms | ✓ | | `{{content}}` `Fragen? https://…` |
 | newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
 
@@ -206,14 +206,18 @@ name is declared by a module, keyed by the name written between the braces:
 
 ```ts
 export const messagingPlaceholders: Record<string, Placeholder> = {
-  ...columns("firstname", "lastname", "company", "email", "address"),
+  ...columns({ givenName: "firstname", familyName: "lastname", company: "company", email: "email", address: "address" }),
   unsubscribe: placeholder,
 };
 ```
 
+A template writes messaging's own bare — they are the message's base vocabulary — and every other
+module's under the module's name: `{{identity.brand}}`, `{{identity.contactEmail}}`. That is what
+keeps the site's address apart from the recipient's `{{email}}`, and two modules may both know one.
+
 A `Placeholder` answers per recipient and in both forms — `{ text, html }` — because what is a link
 in markup is a bare address in text. Nothing back means the hole stays empty, which is how
-`{{firstname|Kunde}}` falls back to the name it gives.
+`{{givenName|Kunde}}` falls back to the name it gives.
 
 The registry is the allowlist: a name nobody declared reads as its fallback, so widening a query
 never widens what a template can read. Any module may add its own, and only what a text actually

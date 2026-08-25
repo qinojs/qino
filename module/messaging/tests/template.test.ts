@@ -14,14 +14,14 @@ async function app(...rows: Record<string, unknown>[]): Promise<App> {
   await db.migrate(dbSchema);
   await db.loadTables();
   for (const row of rows) await db.table("message_template").insert(row);
-  const linked = [{ plugin: { messagingPlaceholders } }]; // what the module itself declares
+  const linked = [{ name: "messaging", plugin: { messagingPlaceholders } }]; // what the module itself declares
   return { db, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => linked } } as unknown as App;
 }
 
 Deno.test("a channel's main template goes around every message, and only that channel's", async () => {
   const a = await app(
     { name: "signature", channel: "sms", main: true, text: "{{content}}\nSupport: https://qino.test" },
-    { name: "letter", channel: "email", main: true, format: "md", text: "Hallo {{firstname|Kunde}},\n\n{{content}}" },
+    { name: "letter", channel: "email", main: true, format: "md", text: "Hallo {{givenName|Kunde}},\n\n{{content}}" },
   );
   const { render: sms } = await renderer(a, { text: "wie gehts" }, "sms");
   assertEquals(await sms(to), { text: "wie gehts\nSupport: https://qino.test", html: undefined });
@@ -51,7 +51,7 @@ Deno.test("a message chooses its template, drops it, or asks for one nobody wrot
 });
 
 Deno.test("recipient placeholders are escaped in markup, the message is not escaped twice", async () => {
-  const a = await app({ name: "letter", channel: "email", main: true, format: "html", text: "<p>Hi {{lastname}}</p>{{content}}" });
+  const a = await app({ name: "letter", channel: "email", main: true, format: "html", text: "<p>Hi {{familyName}}</p>{{content}}" });
   const { render: render } = await renderer(a, { text: "1 < 2 & **so**", format: "md" }, "email");
   assertEquals((await render(to)).html, "<p>Hi Lovelace &lt;&amp;&gt;</p><p>1 &lt; 2 &amp; <strong>so</strong></p>");
   assertEquals((await render(to)).text, "Hi Lovelace <&>\n\n1 < 2 & so"); // the template's <p> ends a paragraph
@@ -61,7 +61,7 @@ Deno.test("recipient placeholders are escaped in markup, the message is not esca
 Deno.test("a plain message in a markup template is lifted, and telegram keeps its own line breaks", async () => {
   const a = await app(
     { name: "letter", channel: "email", main: true, format: "html", text: "<div>{{content}}</div>" },
-    { name: "chat", channel: "telegram", main: true, format: "md", text: "**{{firstname}}**\n\n{{content}}" },
+    { name: "chat", channel: "telegram", main: true, format: "md", text: "**{{givenName}}**\n\n{{content}}" },
   );
   const { render: mail } = await renderer(a, { text: "a < b\nnext line" }, "email");
   assertEquals((await mail()).html, "<div>a &lt; b<br>next line</div>");
@@ -86,7 +86,7 @@ Deno.test("a channel has one main template — a new one takes the flag over", a
 });
 
 Deno.test("what the template assembles is tidied; what the message says is not", async () => {
-  const a = await app({ name: "letter", channel: "sms", main: true, text: "  Hallo {{firstname}},\n\n\n\n{{content}}\n\n\n\n{{company}}  \n" });
+  const a = await app({ name: "letter", channel: "sms", main: true, text: "  Hallo {{givenName}},\n\n\n\n{{content}}\n\n\n\n{{company}}  \n" });
   const { render: render } = await renderer(a, { text: "hi" }, "sms");
   assertEquals(await render({ firstname: "Ada" }), { text: "Hallo Ada,\n\nhi", html: undefined }); // no company, no hole
 
@@ -104,7 +104,7 @@ Deno.test("a template's paragraph that is only the placeholder steps aside for t
 
 Deno.test("a value that reads like a placeholder stays text, and no inherited property is one", async () => {
   const a = await app(
-    { name: "letter", channel: "email", main: true, text: "Hallo {{firstname}}, {{content}}" },
+    { name: "letter", channel: "email", main: true, text: "Hallo {{givenName}}, {{content}}" },
     // a recipient row is a bag of columns, not an object whose prototype can be read out
     { name: "proto", channel: "email", text: "[{{constructor}}{{toString}}{{nothing|—}}]{{content}}" },
   );

@@ -19,6 +19,18 @@ export class Usr extends DbRow {
   declare lang: string;
   declare settings: string;
 
+  /** The standard spellings — `given_name`/`family_name` as OIDC, SCIM and vCard name them. The
+   *  columns still carry the old ones, so this is where the two meet until they are renamed. */
+  get given_name(): string { return super.$get("firstname"); }
+  set given_name(value: string) { super.$set("firstname", value); }
+  get family_name(): string { return super.$get("lastname"); }
+  set family_name(value: string) { super.$set("lastname", value); }
+
+  override $get(name: string): unknown {
+    if (name === "firstname" || name === "lastname") warnOld(name);
+    return super.$get(name);
+  }
+
   #contacts?: Contacts;
   /** The verified ways to reach this person — `usr.contacts.add("email", "a@b.ch")`. */
   get contacts(): Contacts { return this.#contacts ??= new Contacts(this); }
@@ -28,6 +40,15 @@ export class Usr extends DbRow {
   async grps(): Promise<number[]> {
     return this.#grps ??= [0, ...(await this.$table.db.col`SELECT grp_id FROM usr_grp WHERE usr_id = ${this.$id}`).map(Number)];
   }
+}
+
+/** Once per name per process: a reminder, not a stream. */
+const warned = new Set<string>();
+function warnOld(name: string): void {
+  if (warned.has(name)) return;
+  warned.add(name);
+  const now = name === "firstname" ? "given_name" : "family_name";
+  console.warn(`usr.${name} is the old spelling — use usr.${now}`);
 }
 
 /** One user's contacts, as a small namespace on the row rather than five methods beside it. */

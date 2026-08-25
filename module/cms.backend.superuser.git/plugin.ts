@@ -51,7 +51,7 @@ async function summary(holds: Holds[], t: App["t"]): Promise<string> {
 /** The backend user is the author: a commit that says "the server" answers nobody's question. */
 async function author(): Promise<string[]> {
   const user = getCtx().user;
-  const parts = [user?.firstname, user?.lastname].filter(Boolean).join(" ");
+  const parts = [user?.given_name, user?.family_name].filter(Boolean).join(" ");
   const email = String(user?.email ?? "");
   if (!parts && !email) return [];
   return ["-c", `user.name=${parts || email}`, "-c", `user.email=${email}`];

@@ -1,6 +1,6 @@
 import { getCtx, html, isEmptyObject } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { asPlaceholders, channels, saveTemplate, templated, templates } from "@qino/qino/messaging";
+import { channels, placeholderName, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Computed, Placeholder } from "@qino/qino/messaging";
@@ -176,7 +176,8 @@ async function preview(node: Node, row: Row, values: Computed): Promise<HtmlStri
 async function placeholders(node: Node, values: Computed): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const offered = new Map([...contributed(app)].map(([mod, made]) => [mod, Object.keys(made).sort()]));
+  const offered = new Map([...contributed(app)].map(([mod, made]) =>
+    [mod, Object.keys(made).map((name) => placeholderName(mod, name)).sort()]));
   const rows = await templates(app);
   const missing = channels(app).filter((c) => !rows.some((row) => row.channel === c.name && row.main));
   const [copy, textLabel, htmlLabel] = await Promise.all([t`Click to copy`, t`Text`, t`HTML`]);
@@ -201,7 +202,7 @@ async function placeholders(node: Node, values: Computed): Promise<HtmlString> {
     <div class=-body>
       <p>${codes(["content"], copy)}— ${t`the message itself, already rendered`}</p>
       ${table(offered.get("messaging"))}
-      <p>${t`A placeholder with no value for this recipient leaves an empty gap. Write {{firstname|Kunde}} to say what stands there instead.`}</p>
+      <p>${t`A placeholder with no value for this recipient leaves an empty gap. Write {{givenName|Kunde}} to say what stands there instead.`}</p>
       ${[...offered].filter(([mod]) => mod !== "messaging").map(([mod, names]) =>
         html`<details><summary>${mod}</summary>${table(names)}</details>`)}
       <p>${t`A message that names no template gets its channel's main one. Where a channel has none, the message goes out unwrapped:`}
@@ -223,13 +224,14 @@ function contributed(app: App): Map<string, Record<string, Placeholder>> {
 
 /** Every placeholder worked out for the sample recipient — the preview asks the modules themselves,
  *  so an unset logo or a missing address shows here as it would in the mail. */
-async function sampleValues(app: App): Promise<Computed> {
-  const made = [...contributed(app)].flatMap(([, made]) => Object.entries(made));
+export async function sampleValues(app: App): Promise<Computed> {
+  const made = [...contributed(app)].flatMap(([mod, made]) =>
+    Object.entries(made).map(([name, make]) => [placeholderName(mod, name), make] as const));
   // a preview is not a send: one placeholder that cannot answer must not take the page down
   const values = await Promise.all(made.map(async ([name, make]) =>
     [name, await make(app, SAMPLE).catch(() => EMPTY) ?? EMPTY] as const
   ));
-  return { ...asPlaceholders(SAMPLE), ...Object.fromEntries(values) };
+  return Object.fromEntries(values);
 }
 
 const EMPTY = { text: "", html: "" };

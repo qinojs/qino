@@ -8,8 +8,8 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const ctx = getCtx();
   const app = node.app;
   const u = ctx.user;
-  const firstname = u!.firstname ?? "";
-  const lastname  = u!.lastname  ?? "";
+  const firstname = u!.given_name  ?? "";
+  const lastname  = u!.family_name ?? "";
   const email     = u!.email     ?? "";
 
   let feedbackConfirmation = "";

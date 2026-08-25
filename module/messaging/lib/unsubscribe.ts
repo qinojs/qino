@@ -50,32 +50,28 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   const path = ctx.req.appPath;
   if (!path.startsWith(PATH + "/")) return; // every request passes here; nothing is allocated to say no
   const app = ctx.app;
+  const t = app.t;
   const target = await read(app, path.slice(PATH.length + 1));
-  if (!target) throw new Output(await app.t`This unsubscribe link is not valid.`, { status: 404 });
+  if (!target) return page(ctx, await t`This unsubscribe link is not valid.`, false, 404);
 
   const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
-  if (ctx.req.method !== "POST") throw new Output((await page(app, group)).html, { headers: HTML });
-
+  if (ctx.req.method !== "POST") {
+    return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
+  }
   await drop(app, target.usrId, target.grpId);
-  throw new Output((await page(app, group, true)).html, { headers: HTML });
+  return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
 }
 
-const HTML = { "Content-Type": "text/html; charset=utf-8" };
-
 /** Its own small page: an unsubscribe link is followed by people who are done with this site. */
-async function page(app: App, group: string | undefined, gone = false) {
-  const t = app.t;
-  const title = await t`Unsubscribe`;
-  const said = gone
-    ? group ? await t`You have been removed from ${group}.` : await t`You have been removed.`
-    : group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`;
-  return html.async`<!doctype html>
-<html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<title>${title}</title></head>
-<body>
+async function page(ctx: Ctx, said: string, ask = false, status = 200): Promise<never> {
+  const title = await ctx.app.t`Unsubscribe`;
+  ctx.res.html.title = title;
+  ctx.res.html.content = (await html.async`<main>
   <p>${said}</p>
-  ${gone ? "" : html`<form method=post><button>${title}</button></form>`}
-</body></html>`;
+  ${ask ? html`<form method=post><button>${title}</button></form>` : ""}
+</main>`).html;
+  ctx.res.status = status;
+  throw new Output(); // stop the route here — the document on ctx.res is the response
 }
 
 /** What a mail carries so the client can offer the one-click way — the url is never shortened. */

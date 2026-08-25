@@ -20,20 +20,20 @@ async function app(): Promise<App> {
     t: fakeT,
     settings: { messaging: { _secret: "test-secret" } },
     url: () => Promise.resolve("https://qino.test/"),
-    modules: { linked: () => [{ plugin: { messagingPlaceholders } }] },
+    modules: { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }] },
   } as unknown as App;
 }
 
 const members = (a: App) => a.db.one<number>`SELECT COUNT(*) FROM usr_grp WHERE usr_id = ${7} AND grp_id = ${1}`;
 
-/** What the route does with one request, as the caller sees it: an Output, or nothing at all. */
-async function call(a: App, path: string, method = "GET"): Promise<Output | undefined> {
+/** What the route leaves on the context, or nothing at all when the path was not ours. */
+async function call(a: App, path: string, method = "GET"): Promise<{ status: number; body: string } | undefined> {
   const ctx = await testContext({ url: "https://qino.test/" + path, method, app: a });
   try {
     await serveUnsubscribe(ctx as Ctx);
   } catch (e) {
-    if (e instanceof Output) return e;
-    throw e;
+    if (!(e instanceof Output)) throw e;
+    return { status: ctx.res.status, body: ctx.res.html.content };
   }
 }
 

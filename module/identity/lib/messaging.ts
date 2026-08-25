@@ -56,7 +56,7 @@ function settings(names: Record<string, string>): Record<string, Placeholder> {
 }
 
 /**
- * An uploaded asset: `{{logo}}` is the image ready to place, `{{logoUrl}}` its address alone —
+ * An uploaded asset: `{{identity.logo}}` is the image ready to place, `{{identity.logoUrl}}` its address alone —
  * for a template that wants its own size or a background. In text there is no image to show, so
  * the name stands there — an address nobody can follow is not what a letterhead says.
  *

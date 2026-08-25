@@ -9,7 +9,7 @@ export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verif
 export { contactRecipients } from "./lib/contact.ts";
 export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
-export { asPlaceholders, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
+export { placeholderName, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 export type { Computed, Placeholder } from "./lib/template.ts";
 
