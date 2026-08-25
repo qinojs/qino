@@ -35,7 +35,3 @@ Deno.test("identity: an asset nobody uploaded stays empty", async () => {
   assertEquals(await value("logo"), undefined);
   assertEquals(await value("logoUrl"), undefined);
 });
-
-Deno.test("identity: without a logo the letterhead falls back to the name", async () => {
-  assertEquals(await value("brandmark"), { text: "Qino & Co", html: "Qino &amp; Co" });
-});

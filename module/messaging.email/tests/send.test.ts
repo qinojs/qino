@@ -183,7 +183,7 @@ Deno.test("unsubscribe headers ride along only where the message offers the way 
   assertEquals(headers.get("List-Unsubscribe-Post"), "List-Unsubscribe=One-Click");
 
   // the same mail without the template: nothing to leave, so the client is offered nothing
-  await send(app, { grp: 1 }, { title: "News", text: "Hello.", format: "md", template: "" });
+  await send(app, { grp: 1 }, { title: "News", text: "Hello.", format: "md", template: null });
   assertEquals((sent[1].headers as Headers).get("List-Unsubscribe"), null);
   await close(app);
 });

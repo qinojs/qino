@@ -44,7 +44,8 @@ Deno.test("a message chooses its template, drops it, or asks for one nobody wrot
   const text = (msg: Parameters<typeof renderer>[1]) => renderer(a, msg, "sms").then(async ({ render }) => (await render()).text);
   assertEquals(await text({ text: "hi" }), "hi\n--");
   assertEquals(await text({ text: "hi", template: "bare" }), "» hi");
-  assertEquals(await text({ text: "hi", template: "" }), "hi");
+  assertEquals(await text({ text: "hi", template: null }), "hi");
+  assertEquals(await text({ text: "hi", template: "" }), "hi\n--"); // out of a variable, not a wish: the main one
   assertEquals(await text({ text: "hi", template: "gibtsnicht" }), "hi");
   await a.db.close();
 });
@@ -89,7 +90,7 @@ Deno.test("what the template assembles is tidied; what the message says is not",
   const { render: render } = await renderer(a, { text: "hi" }, "sms");
   assertEquals(await render({ firstname: "Ada" }), { text: "Hallo Ada,\n\nhi", html: undefined }); // no company, no hole
 
-  const { render: bare } = await renderer(a, { text: "a\n\n\n\nb ", template: "" }, "sms");
+  const { render: bare } = await renderer(a, { text: "a\n\n\n\nb ", template: null }, "sms");
   assertEquals((await bare()).text, "a\n\n\n\nb "); // nobody templated it, so nobody touches it
   await a.db.close();
 });

@@ -223,7 +223,7 @@ mentions it.
 ```ts
 send(app, { grp: 3 }, "wie gehts")                            // the channel's main template, if any
 send(app, { grp: 3 }, { text: "…", template: "newsletter" })  // this one
-send(app, { grp: 3 }, { text: "…", template: "" })            // none
+send(app, { grp: 3 }, { text: "…", template: null })          // none, and it has to say so
 ```
 
 What the template assembles is tidied — trailing spaces, and never more than one blank line in a row,

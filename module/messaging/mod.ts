@@ -11,7 +11,7 @@ export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { asPlaceholders, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
-export type { Placeholder } from "./lib/template.ts";
+export type { Computed, Placeholder } from "./lib/template.ts";
 
 /** A named file carried by channels that support attachments. */
 export type Attachment = File | {
@@ -29,14 +29,14 @@ export type Attachment = File | {
  * channel accepts, html degrades to plain text where none is possible, and the default — plain
  * text — goes out exactly as it was written. `title` is always plain text.
  *
- * `template` names the template around it — the channel's main one when unnamed, none at all when
- * empty. The template is chrome: it is applied per recipient and never joins the text.
+ * `template` names the template around it — the channel's main one when unnamed, and `null` for a
+ * message that goes out bare. The template is chrome: applied per recipient, never part of the text.
  */
 export type Msg = {
   text: string;
   title?: string;
   format?: "md" | "html";
-  template?: string;
+  template?: string | null;
   /** Only channels that support attachments deliver them. */
   attachments?: Attachment[];
 };

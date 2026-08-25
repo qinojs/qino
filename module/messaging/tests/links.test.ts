@@ -54,3 +54,31 @@ Deno.test("an address that is still a placeholder is left for the renderer to fi
   assertEquals(links, []); // nothing to shorten, and nothing per-recipient can be
   await a.db.close();
 });
+
+Deno.test("an address written out in markup is one too, label or not", async () => {
+  const a = await app();
+  const { msg, links } = await rewriteLinks(a, {
+    text: `<dd>https://example.test/a?x=1&amp;y=2</dd><a href="https://example.test/b">https://example.test/b</a>`,
+    format: "html",
+  });
+  // the label is the same address, so it is the same code — plain text then has one link to show
+  assertEquals(
+    msg.text,
+    `<dd>https://qino.test/s/c1</dd><a href="https://qino.test/s/c2">https://qino.test/s/c2</a>`,
+  );
+  assertEquals(links, [{ url: "https://qino.test/s/c1", kind: "click" }, { url: "https://qino.test/s/c2", kind: "click" }]);
+  await a.db.close();
+});
+
+Deno.test("what markup only shows is not offered, and an entity is where an address ends", async () => {
+  const a = await app();
+  const { msg } = await rewriteLinks(a, {
+    text: `<p>see https://example.test/a?x=1&amp;y=2&nbsp;now</p><pre>curl https://example.test/b</pre>`,
+    format: "html",
+  });
+  assertEquals(
+    msg.text,
+    `<p>see https://qino.test/s/c1&nbsp;now</p><pre>curl https://example.test/b</pre>`,
+  );
+  await a.db.close();
+});

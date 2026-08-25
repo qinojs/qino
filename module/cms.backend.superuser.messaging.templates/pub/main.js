@@ -28,6 +28,15 @@ function report(el, entries) {
 }
 
 cms.initNode("backend.superuser.messaging.templates", (el) => {
+  el.addEventListener("click", (event) => { // a placeholder is meant to be pasted into the template
+    const code = event.target.closest("code[data-copy]");
+    if (!code) return;
+    navigator.clipboard.writeText(code.textContent).then(() => {
+      code.dataset.copy = "done";
+      setTimeout(() => code.dataset.copy = "", 1000);
+    }, () => {});
+  });
+
   const frame = el.querySelector(".-frame");
   if (!frame) return; // the overview has no preview
   const card = el.querySelector(".-markup");

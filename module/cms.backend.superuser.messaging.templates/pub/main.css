@@ -6,4 +6,8 @@
   & .-markup .-report { max-height: 12rem; overflow: auto; }
   & .-text { white-space: pre-wrap; overflow: auto; margin: 0; padding: .5em; border: thin solid; }
   & .-actions { display: flex; gap: .5rem; align-items: center; }
+  & code[data-copy] { cursor: pointer; }
+  & .-values { width: 100%; table-layout: fixed; }
+  & .-values td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  & code[data-copy=done]::after { content: " ✓"; }
 }

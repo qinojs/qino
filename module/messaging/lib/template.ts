@@ -20,8 +20,8 @@ const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
 /**
  * Load the message's template and shorten its addresses once, then render it for each recipient.
  *
- * The template is the one the message names, else the channel's main one, and none at all when the
- * message asks for none. The result has markup whenever the message or its template has any. `to` is
+ * The template is the one the message names, else the channel's main one; `null` asks for none.
+ * A name nobody wrote a template under is none either — the message still goes out. The result has markup whenever the message or its template has any. `to` is
  * the recipient row the channel already holds — its columns are the placeholders, a missing one
  * falls back to what it names after `|`, and its `deliveryId` is what makes the links tracked.
  */
@@ -31,7 +31,7 @@ export async function renderer(
   channel: string,
   profile: Profile = "html",
 ): Promise<{ render: (to?: Row) => Promise<{ text: string; html?: string }>; uses: Set<string> }> {
-  const template = msg.template === "" ? undefined : await load(app, channel, msg.template);
+  const template = msg.template === null ? undefined : await load(app, channel, msg.template);
   // the template is part of what goes out, so its links are shortened with the message's own
   const [body, chrome] = await Promise.all([rewriteLinks(app, msg), template ? rewriteLinks(app, template) : undefined]);
   const render = templated(chrome?.msg, body.msg, profile);

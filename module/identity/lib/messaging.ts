@@ -34,12 +34,6 @@ export const messagingPlaceholders: Record<string, Placeholder> = {
     backgroundColor: "brand.backgroundColor",
   }),
   ...asset("logo", { h: LOGO_HEIGHT * 2 }, LOGO_HEIGHT),
-  // what a letterhead wants: the mark if there is one, the name if there is not — as the layouts do
-  // it. In text there is no image to show, so the name stands there either way.
-  brandmark: async (app, to) => {
-    const [name, logo] = await Promise.all([messagingPlaceholders.brand(app, to), messagingPlaceholders.logo(app, to)]);
-    return logo ? { text: name?.text ?? logo.text, html: logo.html } : name;
-  },
   ...asset("icon", { w: ICON_SIZE * 2, h: ICON_SIZE * 2 }, ICON_SIZE),
   orgAddress: async (app) => {
     const address = app.settings.identity.organization.address;
@@ -63,7 +57,8 @@ function settings(names: Record<string, string>): Record<string, Placeholder> {
 
 /**
  * An uploaded asset: `{{logo}}` is the image ready to place, `{{logoUrl}}` its address alone —
- * for a template that wants its own size or a background. In text there is only the address.
+ * for a template that wants its own size or a background. In text there is no image to show, so
+ * the name stands there — an address nobody can follow is not what a letterhead says.
  *
  * A message sent outside a request has no url to build from, and then there is simply no image:
  * a mail whose logo is missing still goes out.
@@ -82,7 +77,7 @@ function asset(name: string, transform: Record<string, number>, height: number):
       const url = await address(app);
       if (!url) return;
       const alt = await line(app.settings.identity.name);
-      return { text: url, html: `<img src="${hee(url)}" alt="${hee(alt)}" height="${height}">` };
+      return { text: alt, html: `<img src="${hee(url)}" alt="${hee(alt)}" height="${height}">` };
     },
     [name + "Url"]: async (app: App) => {
       const url = await address(app);

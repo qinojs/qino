@@ -69,7 +69,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         text: String(text),
         title: title ? String(title) : undefined,
         format: format === "md" || format === "html" ? format : undefined,
-        template: template === "-" ? "" : template ? String(template) : undefined,
+        template: template === "-" ? null : template ? String(template) : undefined,
         attachments: await attachmentsOf(attachments),
       });
       return { ok: true, message: await app.t`Delivered to ${sent} addresses.` };

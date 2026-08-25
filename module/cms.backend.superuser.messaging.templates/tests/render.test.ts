@@ -54,6 +54,6 @@ Deno.test("the preview asks the modules themselves, so a template shows the real
   const output = String(await requestStorage.run(ctx, () => render({ app } as never)));
   assertStringIncludes(output, "&lt;h1&gt;Qino Demo&lt;/h1&gt;"); // inside the preview iframe's srcdoc
   assertStringIncludes(output, "Hallo Ada");
-  assertStringIncludes(output, "<code>{{brand}}</code>"); // and it is offered under its module
+  assertStringIncludes(output, `<code data-copy title="Click to copy">{{brand}}</code>`); // offered under its module, ready to paste
   await db.close();
 });

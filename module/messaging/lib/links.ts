@@ -42,17 +42,25 @@ export async function rewriteLinks(app: App, msg: Msg): Promise<{ msg: Msg; link
   const short = shortener(app);
   const trades = new Map<string, string>(); // what stands there → what goes out
   const links = new Map<string, Link>(); // by what goes out: two spellings may reach the same link
-  for (const { url, kind } of found(msg)) {
-    if (trades.has(url)) continue;
-    const target = absolute(url, root);
-    if (!target) continue; // mailto, tel, cid, an anchor: nothing to trade
+  const swap = async ({ url, kind }: Link): Promise<string> => {
+    const known = trades.get(url);
+    if (known !== undefined) return known;
+    const target = absolute(url, root); // mailto, tel, cid, an anchor: nothing to trade
     // our own grant is the secret itself; a foreign `sig` means whatever that host decided
-    const grant = target.href.startsWith(root) && target.searchParams.has("sig");
-    const link = short && !grant ? await short.shorten(app, target.href) : undefined;
-    trades.set(url, link ?? (ABSOLUTE.test(url.trim()) ? url : target.href));
+    const grant = target?.href.startsWith(root) && target.searchParams.has("sig");
+    const link = target && short && !grant ? await short.shorten(app, target.href) : undefined;
+    const to = link ?? (!target || ABSOLUTE.test(url.trim()) ? url : target.href);
+    trades.set(url, to);
     if (link) links.set(link, { url: link, kind }); // only a short link is worth a marker
+    return to;
+  };
+  let text: string;
+  if (msg.format === "md") { // the lexer says which addresses, not where they stand
+    for (const link of fromMarkdown(msg.text)) await swap(link);
+    text = trade(msg.text, trades);
+  } else {
+    text = await spliced(msg.text, msg.format === "html" ? fromHtml(msg.text) : bare(msg.text), swap, msg.format === "html");
   }
-  const text = trade(msg.text, trades);
   return { msg: text === msg.text ? msg : { ...msg, text }, links: [...links.values()] };
 }
 
@@ -62,22 +70,56 @@ function shortener(app: App) {
   return mod?.plugin.shortener as { shorten(app: App, url: string): Promise<string> } | undefined;
 }
 
-/** Every address the message points at, in the order it names them. */
-function found(msg: Msg): Link[] {
-  if (msg.format === "html") return fromHtml(msg.text);
-  if (msg.format === "md") return fromMarkdown(msg.text);
-  return [...msg.text.matchAll(BARE)].map((m) => ({ url: m[0].replace(TAIL, ""), kind: "click" }));
+/** An address and where it stands, so it can be traded without touching what surrounds it. */
+type Span = Link & { at: number; end: number };
+
+/** Where an address stands in a tag; which tags name one is the parser's business. */
+const ATTR = /\b(?:href|src)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/i;
+/** Text these wrap is being shown, not offered — the same rule markdown's code blocks get. */
+const QUIET = new Set(["code", "pre", "script", "style"]);
+
+/** Entity forms an address is written in when it stands in markup. */
+const ENTITY = /&(?:amp|#38|#x26);/gi;
+/** Any other entity is where the address ends: `&amp;` is part of it, `&nbsp;` is what follows. */
+const BOUNDARY = /&(?!amp;|#38;|#x26;)[a-z#][a-z0-9]*;/i;
+const decode = (url: string) => url.replace(ENTITY, "&");
+
+/** Bare addresses in a text, wherever they stand. */
+function bare(text: string, offset = 0, markup = false): Span[] {
+  return [...text.matchAll(BARE)].map((m) => {
+    const url = (markup ? m[0].split(BOUNDARY)[0] : m[0]).replace(TAIL, "");
+    return { url: decode(url), kind: "click" as const, at: offset + m.index, end: offset + m.index + url.length };
+  });
 }
 
-function fromHtml(html: string): Link[] {
-  const links: Link[] = [];
-  new Parser({
-    onopentag(name, attribs) {
-      if (name === "a" && attribs.href) links.push({ url: attribs.href, kind: "click" });
-      else if (name === "img" && attribs.src) links.push({ url: attribs.src, kind: "load" });
+/** Every address the markup points at: what a tag names, and what merely stands there written out.
+ *  A link whose label is its own address is traded on both sides — the same address, so the same
+ *  code, and plain text has one link to show instead of a long one beside a short one. */
+function fromHtml(html: string): Span[] {
+  const spans: Span[] = [];
+  let quiet = 0;
+  const parser = new Parser({
+    onopentag(name) {
+      if (QUIET.has(name)) quiet++;
+      if (name !== "a" && name !== "img") return;
+      const m = html.slice(parser.startIndex, parser.endIndex + 1).match(ATTR);
+      if (!m) return;
+      const quoted = /^["']/.test(m[1]);
+      const raw = quoted ? m[1].slice(1, -1) : m[1];
+      const at = parser.startIndex + m.index! + m[0].length - m[1].length + (quoted ? 1 : 0);
+      spans.push({ url: decode(raw), kind: name === "a" ? "click" : "load", at, end: at + raw.length });
     },
-  }).end(html);
-  return links;
+    ontext() {
+      if (quiet) return;
+      spans.push(...bare(html.slice(parser.startIndex, parser.endIndex + 1), parser.startIndex, true));
+    },
+    onclosetag(name) {
+      if (QUIET.has(name) && quiet) quiet--;
+    },
+    // raw, or an entity would cut a text into pieces and an address with it
+  }, { decodeEntities: false });
+  parser.end(html);
+  return spans;
 }
 
 /** The parser, not a pattern: an address inside a code block is being shown, not offered. */
@@ -104,4 +146,18 @@ function trade(text: string, trades: Map<string, string>): string {
   const changed = [...trades].filter(([from, to]) => from !== to).sort((a, b) => b[0].length - a[0].length);
   for (const [from, to] of changed) text = text.replaceAll(from, to);
   return text;
+}
+
+/** Trade each address where it stands, and leave every other character as it was written. */
+async function spliced(text: string, spans: Span[], swap: (link: Link) => Promise<string>, markup: boolean): Promise<string> {
+  let out = "";
+  let at = 0;
+  for (const span of spans.sort((a, b) => a.at - b.at)) {
+    if (span.at < at) continue; // it stands inside one already traded
+    const to = await swap(span);
+    out += text.slice(at, span.at) +
+      (to === span.url ? text.slice(span.at, span.end) : markup ? to.replaceAll("&", "&amp;") : to);
+    at = span.end;
+  }
+  return out + text.slice(at);
 }
