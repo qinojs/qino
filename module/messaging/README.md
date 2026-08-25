@@ -130,7 +130,7 @@ send(app, to, msg)
  │   ├ textOf / htmlOf …… the message as text and, where it has markup, as html
  │   ├ fill() ……………………… every placeholder in, in the form this side needs
  │   └ markers(deliveryId)  `${link}/${marker}` on every shortened address
- ├ deliver ………………………… the channel's own transport, one recipient at a time
+ ├ deliver ………………………… the channel's own transport, one batch at a time
  └ delivered(id, error) … only when the attempt has a verdict of its own
 ```
 
@@ -337,10 +337,14 @@ asks what is owed.
 
 `delivered()` closes one attempt. A `ChannelError` puts the delivery back with a growing wait — a
 minute, then four — and gives up after three tries; anything else is final. The `outbox` cron job
-picks up what is due and calls the channel's `deliver()`, which sends one journalled delivery again,
-rendering it from the journal so a message held for a week still says "today". A channel without
-`deliver` cannot be retried and is skipped — `email` and `sms` have it, `telegram` and `webpush`
-report every failure as final.
+picks up what is due and walks the very same way out as `send()` — the diagram above, from
+`recipients` onward. There is no second path, so nothing a channel does when sending can go missing
+when it sends again, and a batch shares its connection and its rate limit either way.
+
+`deliver()` gets the message back whole, not the part that fits in columns. `record()` puts what
+every channel understands into its own columns and whatever is left of `msg` into `data.msg` — a
+mail's `replyTo`, a push `url` or `icon` — and the outbox puts the two together again. A channel
+adds a field and it survives the wait; none of them has to think about it.
 
 ## Verifying a contact
 

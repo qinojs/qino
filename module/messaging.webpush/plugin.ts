@@ -1,22 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
 import { Access, getCtx, s, sha256b64url, sql, unixTime } from "@qino/qino";
 
-import { publicKey, send } from "./mod.ts";
+import { publicKey } from "./mod.ts";
 
-import type { ApiTree, App } from "@qino/qino";
-import type { Channel } from "@qino/qino/messaging";
+import type { ApiTree } from "@qino/qino";
+
+export { messagingChannel } from "./mod.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
-
-export const messagingChannel: Channel = {
-  name: "webpush",
-  label: "Web Push",
-  color: "--purple",
-  reach: async (app: App, usrId: number, notClient?: string | number) =>
-    Number(await app.db.one`SELECT COUNT(*) FROM webpush_subscription WHERE usr_id = ${usrId}
-      ${notClient == null ? sql`` : sql`AND client_id <> ${Number(notClient)}`}`),
-  send,
-};
 
 export const settingsSchema = {
   properties: {

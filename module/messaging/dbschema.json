@@ -53,7 +53,7 @@
           },
           "data": {
             "type": "string",
-            "description": "Channel-native JSON payload and routing data"
+            "description": "Routing data, and under `msg` whatever of the message only its channel understands"
           },
           "time": {
             "type": "integer",

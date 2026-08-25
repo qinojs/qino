@@ -1,26 +1,15 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
-import { hee, sql, unixTime } from "@qino/qino";
-import { ChannelError, delivered, msgOf, record, renderer, unsubscribeGroup } from "@qino/qino/messaging";
+import { hee, sql } from "@qino/qino";
+import { ChannelError, delivered, send as dispatch } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Msg } from "@qino/qino/messaging";
+import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
 
-/**
- * Deliver a message to groups, users, chats, or everyone who linked their account.
- *
- * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
- * way. A `format` becomes Telegram's own HTML subset — no headings, no lists, so those arrive as
- * bold lines and bullets. A `title` becomes the first line, bold when markup is on.
- */
-export async function send(
-  app: App,
-  to: { grp?: number; usr?: number | number[]; all?: true; chat?: number | number[] },
-  message: string | Msg,
-): Promise<number> {
-  const msg = msgOf(message);
+/** Who a `to` means as chats — a chat exists only where someone linked their account. */
+async function recipients(app: App, to: To & { chat?: number | number[] }): Promise<Recipient[]> {
   const chats = [to.chat ?? []].flat();
   const usrs = [to.usr ?? []].flat();
   const who = [
@@ -30,50 +19,19 @@ export async function send(
     to.all ? sql`${true}` : null,
   ].flatMap((term) => term ?? []);
   if (!who.length) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
-  const where = sql`WHERE ${sql.join(who, " OR ")}`;
-  const time = unixTime();
-
-  const [rows, { render }] = await Promise.all([
-    app.db.query`SELECT c.id, c.usr_id, c.chat_id, c.error, u.given_name, u.family_name, u.organization, u.username
-      FROM telegram_chat c LEFT JOIN usr u ON u.id = c.usr_id ${where}`,
-    renderer(app, msg, "telegram", "telegram"),
-  ]);
-
-  const params = async (recipient: Row, deliveryId: number) => {
-    const usrId = Number(recipient.usr_id);
-    return telegramText(msg, await render({ ...recipient, usrId, deliveryId, grpId: leavable(usrId) }));
-  };
-  const leavable = await unsubscribeGroup(app, to.grp, rows.map((row) => Number(row.usr_id)));
-  const table = app.db.table("telegram_chat");
-  const gone: number[] = [];
-  const { ids } = await record(app, { channel: "telegram", direction: "out", grpId: to.grp, msg, data: { to }, time },
-    rows.map((row) => ({ usrId: Number(row.usr_id), address: String(row.chat_id), due: time })));
-  let sent = 0;
-  const one = async (row: Row, i: number) => {
-    try {
-      await sendMessage(app, { ...await params(row, ids[i]), chat_id: Number(row.chat_id) });
-      await delivered(app, ids[i]);
-      sent++;
-      if (row.error) await table.update(row.id, { error: null }); // it delivers again
-    } catch (e) {
-      // 403 = blocked or deactivated, 400 "chat not found" = the chat is gone for good
-      const status = e instanceof BotError ? e.status : 0;
-      const reason = (e as Error).message;
-      const error = `${status || "no status"}: ${reason}`;
-      await delivered(app, ids[i], e instanceof ChannelError ? e : error);
-      if (status === 403 || (status === 400 && /chat not found/i.test(reason))) return void gone.push(Number(row.id));
-      console.warn(`telegram: chat ${row.id} rejected —`, reason);
-      await table.update(row.id, { error: error.slice(0, 255) });
-    }
-  };
-  // Telegram takes about 30 messages a second across chats — one batch per second stays under that
-  for (let i = 0; i < rows.length; i += 25) {
-    if (i) await new Promise((r) => setTimeout(r, 1000));
-    await Promise.all(rows.slice(i, i + 25).map((row, j) => one(row, i + j)));
-  }
-  if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
-  return sent;
+  const rows = await app.db.query`SELECT c.usr_id, c.chat_id FROM telegram_chat c WHERE ${sql.join(who, " OR ")}`;
+  return rows.map((row) => ({ ...row, address: String(row.chat_id), usrId: Number(row.usr_id) || undefined }));
 }
+
+/**
+ * Message groups, users, chats, or everyone who linked their account.
+ *
+ * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
+ * way. A `format` becomes Telegram's own HTML subset — no headings, no lists, so those arrive as
+ * bold lines and bullets. A `title` becomes the first line, bold when markup is on.
+ */
+export const send = (app: App, to: To & { chat?: number | number[] }, message: string | Msg): Promise<number> =>
+  dispatch(app, messagingChannel, to, message);
 
 /** Telegram has no title of its own; it becomes the first line, bold where the body is markup.
  *  `parse_mode` follows from what the renderer produced — a caller says `format`, never the wire. */
@@ -83,16 +41,39 @@ function telegramText(msg: Msg, rendered: { text: string; html?: string }): { te
   return { ...(rendered.html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
 }
 
-/** One journalled delivery, sent again — the outbox's way in. */
-export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
-  const usrId = Number(delivery.usr_id) || undefined;
-  const [{ render }, leavable] = await Promise.all([
-    renderer(app, msg, "telegram", "telegram"),
-    unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
-  ]);
-  const rendered = await render({ ...delivery, usrId, deliveryId: Number(delivery.id), grpId: leavable(usrId) });
-  await sendMessage(app, { ...telegramText(msg, rendered), chat_id: Number(delivery.address) });
-  await delivered(app, Number(delivery.id));
+/** One batch of messages, paced: Telegram takes about 30 a second across chats. */
+async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
+  const table = app.db.table("telegram_chat");
+  const known = new Map((await app.db.query`SELECT id, chat_id, error FROM telegram_chat
+    WHERE chat_id IN (${sql.join(rows.map((row) => sql`${Number(row.address)}`), ", ")})`).map((chat) => [String(chat.chat_id), chat]));
+  const gone: number[] = [];
+  let sent = 0;
+  const one = async (row: Row) => {
+    const chat = known.get(String(row.address));
+    try {
+      await sendMessage(app, { ...telegramText(msg, await render(row)), chat_id: Number(row.address) });
+      await delivered(app, Number(row.id));
+      sent++;
+      if (chat?.error) await table.update(chat.id, { error: null }); // it delivers again
+    } catch (e) {
+      // 403 = blocked or deactivated, 400 "chat not found" = the chat is gone for good
+      const status = e instanceof BotError ? e.status : 0;
+      const reason = (e as Error).message;
+      const error = `${status || "no status"}: ${reason}`;
+      await delivered(app, Number(row.id), e instanceof ChannelError ? e : error);
+      if (!chat) return;
+      if (status === 403 || (status === 400 && /chat not found/i.test(reason))) return void gone.push(Number(chat.id));
+      console.warn(`telegram: chat ${chat.id} rejected —`, reason);
+      await table.update(chat.id, { error: error.slice(0, 255) });
+    }
+  };
+  // one batch per second stays under Telegram's rate
+  for (let i = 0; i < rows.length; i += 25) {
+    if (i) await new Promise((r) => setTimeout(r, 1000));
+    await Promise.all(rows.slice(i, i + 25).map(one));
+  }
+  if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
+  return sent;
 }
 
 /** One retry on 429 — the answer carries how long to wait, and waiting is the documented fix. */
@@ -153,3 +134,15 @@ export async function deleteWebhook(app: App): Promise<void> {
 export function webhookInfo(app: App): Promise<any> {
   return call(app, "getWebhookInfo");
 }
+
+/** The channel this module is. */
+export const messagingChannel: Channel = {
+  name: "telegram",
+  label: "Telegram",
+  color: "--blue",
+  profile: "telegram",
+  reach: async (app: App, usrId: number) => Number(await app.db.one`SELECT COUNT(*) FROM telegram_chat WHERE usr_id = ${usrId}`),
+  recipients,
+  send,
+  deliver,
+};

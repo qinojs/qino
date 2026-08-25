@@ -1,4 +1,4 @@
-import { hee } from "@qino/qino";
+import { hee, mainContact } from "@qino/qino";
 
 import { servePixel, trackHit } from "./lib/track.ts";
 import { placeholder, serveUnsubscribe } from "./lib/unsubscribe.ts";
@@ -17,8 +17,16 @@ export const cron = {
 
 /** Every placeholder a message may name — what a template reads, and all any module has to
  *  look at to know what is on offer. Another module adds its own the same way. */
+/** A contact of the recipient — looked up only where a template really names it. */
+const contact = (type: string): Placeholder => async (app, to) => {
+  const usrId = Number(to.usrId);
+  const row = usrId ? await mainContact(app.db, usrId, type) : undefined;
+  return row ? { text: String(row.address), html: hee(String(row.address)) } : undefined;
+};
+
 export const messagingPlaceholders: Record<string, Placeholder> = {
-  ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", email: "email", address: "address" }),
+  ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", address: "address" }),
+  email: contact("email"),
   unsubscribe: placeholder,
 };
 

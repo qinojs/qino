@@ -1,14 +1,20 @@
 // Public API of messaging. The qino plugin lives in ./plugin.ts.
 import { unixTime } from "@qino/qino";
 
+import { dispatch } from "./lib/dispatch.ts";
 import { textOf } from "./lib/format.ts";
+import { owed } from "./lib/outbox.ts";
+
+import type { Profile } from "./lib/format.ts";
+import type { Rendering } from "./lib/dispatch.ts";
 
 import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { contactRecipients } from "./lib/contact.ts";
-export { ChannelError, delivered, owed, run as outbox } from "./lib/outbox.ts";
-export { headers as unsubscribeHeaders, unsubscribeGroup } from "./lib/unsubscribe.ts";
+export { ChannelError, delivered, run as outbox } from "./lib/outbox.ts";
+export type { Rendering } from "./lib/dispatch.ts";
+export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { placeholderName, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
@@ -67,29 +73,62 @@ export function titleOf(msg: Msg, max = 78): string {
 /** Who a message goes to; every channel understands these and adds its own keys.
  *  `notClient` names the device that must be skipped — a channel that reaches devices honours it,
  *  one that is out of band by nature (sms, mail, telegram) has none and ignores it. */
-type To = { grp?: number; usr?: number; all?: true; notClient?: string | number };
+export type To = { grp?: number; usr?: number | number[]; all?: true; notClient?: string | number };
+
+/** One destination a `To` turned out to mean. An address nobody can deliver to says why instead. */
+export type Recipient = Row & { address: string; usrId?: number; addressError?: string };
 
 /**
  * A way to reach a person, declared by a module as `export const messagingChannel`.
  *
- * `name` is what lands in the journal's `channel` column, so it outlives module renames.
- * `reach` answers how many destinations one user has, skipping `notClient` as `To` does; `send` is
- * the module's own send() — the declaration is the same function, not a wrapper around it.
+ * `name` is what lands in the journal's `channel` column, so it outlives module renames. `reach`
+ * answers how many destinations one user has, skipping `notClient` as `To` does.
  *
  * `contact` names the kind of address it delivers to — `usr_contact.type`, not the channel's own
  * name: sms, whatsapp and signal all reach a `phone`, and nobody proves the same number three
  * times. A Telegram chat and a push endpoint have none; those are linked, never entered.
+ *
+ * Sending has two halves: `recipients` — who a `to` means, the one question only the channel can
+ * answer — and `deliver`, a batch on the wire. Everything between them is `send()`, for all of them.
  */
 export type Channel = {
   name: string;
   label: string;
   color?: string;
   contact?: string;
+  /** The markup this channel accepts; `html` unless it has a subset of its own. */
+  profile?: Profile;
   reach(app: App, usrId: number, notClient?: string | number): Promise<number>;
+  recipients(app: App, to: To): Promise<Recipient[]>;
   send(app: App, to: To, msg: string | Msg): Promise<number>;
-  /** One journalled delivery, sent again. Without it a channel cannot hold or retry anything. */
-  deliver?(app: App, delivery: Row, msg: Msg): Promise<void>;
+  /** Each row closed with `delivered()`, resolving with how many went out. Handles of its own —
+   *  a chat, a subscription — the channel looks up by `address`. */
+  deliver(app: App, rows: Row[], msg: Msg, rendering: Rendering): Promise<number>;
 };
+
+/** Journal a message, then send it — a tracked link needs its delivery's id before it is written
+ *  into the text. What is owed goes to the channel at once, the way the outbox hands it over later. */
+export async function send(
+  app: App,
+  channel: Channel,
+  to: To,
+  message: string | Msg,
+  { onError }: { onError?: (message: string) => void } = {},
+): Promise<number> {
+  const msg = msgOf(message);
+  const time = unixTime();
+  const recipients = await channel.recipients(app, to);
+  if (!recipients.length) return 0;
+  const { ids } = await record(app, { channel: channel.name, direction: "out", grpId: to.grp, msg, data: { to }, time },
+    recipients.map((r) => ({ usrId: r.usrId, address: r.address, ...owed(r.addressError, time) })));
+  return dispatch(app, channel, ids, msg, onError);
+}
+
+/** The message with the title its channel needs: the text's first line where none was given. */
+export function titled<T extends Msg>(message: string | T): T {
+  const msg = msgOf(message);
+  return { ...msg, title: titleOf(msg) };
+}
 
 
 /** Every channel a linked module declares. */
@@ -109,6 +148,16 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
 }
 
 /**
+ * The journal's free-form side: the caller's routing data, and beside it whatever of the message
+ * only its channel understands — a push `url`, a mail `replyTo`. The columns hold what every
+ * channel understands, this holds the rest, and together they are the whole message again.
+ */
+function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
+  const { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...rest } = msg ?? {} as Msg;
+  return Object.keys(rest).length ? { ...data, msg: rest } : data ?? null;
+}
+
+/**
  * Store one logical message and one row per recipient.
  *
  * `msg` is the channel-neutral part and lands in its own columns, so reading and searching the
@@ -119,7 +168,7 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
  */
 export async function record(
   app: App,
-  message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: unknown; grpId?: number; logId?: number; time?: number },
+  message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: Record<string, unknown>; grpId?: number; logId?: number; time?: number },
   deliveries: { usrId?: number; address?: string; error?: string; sent?: number; due?: number }[] = [],
 ): Promise<{ id: number; ids: number[] }> {
   if (!message.channel) throw new Error("message channel is required");
@@ -140,7 +189,7 @@ export async function record(
       text: msg?.text ?? null,
       format: msg?.format ?? null,
       template: msg?.template ?? null,
-      data: JSON.stringify(message.data ?? null),
+      data: JSON.stringify(journalData(message.data, msg)),
       time,
     }));
     const attachments = app.db.table("message_attachment");

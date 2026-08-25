@@ -1,9 +1,9 @@
 import { errMsg, unixTime } from "@qino/qino";
 
-import { channels } from "../mod.ts";
+import { channel } from "../mod.ts";
+import { dispatch } from "./dispatch.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Attachment, Msg } from "../mod.ts";
 
 /**
  * A failure that is ours, not the address's: no provider configured, no connection, refused
@@ -32,47 +32,23 @@ export async function delivered(app: App, id: number, error?: unknown): Promise<
 export const owed = (addressError: string | undefined, time: number): { error: string; sent: number } | { due: number } =>
   addressError ? { error: addressError, sent: time } : { due: time };
 
-/** What hangs on the message, read back as the files a channel sends. */
-async function attachments(app: App, messageId: number): Promise<Attachment[] | undefined> {
-  const ids = await app.db.col`SELECT file_id FROM message_attachment WHERE message_id = ${messageId} ORDER BY sort, file_id`;
-  if (!ids.length) return;
-  return await Promise.all(ids.map(async (id) => {
-    const file = await app.dbFiles.file(Number(id));
-    const vs = await file.ensureVs();
-    return { name: String(vs.name ?? id), type: String(vs.mime ?? ""), content: Deno.readFile(file.path) };
-  }));
-}
-
-/** Deliveries that are owed now, oldest first, each carrying its message's channel and group. */
+/** Deliveries that are owed now, oldest first, each carrying the message it belongs to. */
 export function due(app: App, limit = 100): Promise<Row[]> {
   return app.db.query`
-    SELECT d.*, m.channel, m.grp_id FROM message_delivery d
+    SELECT d.id, d.message_id, m.channel FROM message_delivery d
     JOIN message m ON m.id = d.message_id
     WHERE d.sent IS NULL AND d.due IS NOT NULL AND d.due <= ${unixTime()}
     ORDER BY d.due LIMIT ${limit}`;
 }
 
-/** Send what is owed. Channels without `deliver` cannot be retried and are left alone. */
+/** Send what is owed, one batch per message: a connection, a rate limit and one render pass are
+ *  worth sharing, and that is what a batch is. */
 export async function run(app: App, limit = 100): Promise<number> {
+  const batches = Map.groupBy(await due(app, limit), (row) => `${row.channel}\0${row.message_id}`);
   let sent = 0;
-  for (const row of await due(app, limit)) {
-    const channel = channels(app).find((c) => c.name === row.channel);
-    if (!channel?.deliver) continue;
-    // rendered again, not stored: a held message says "today" on the day it goes out
-    const m = await app.db.row`SELECT title, text, format, template FROM message WHERE id = ${row.message_id}`;
-    if (!m) continue;
-    try {
-      await channel.deliver(app, row, {
-        text: String(m.text ?? ""),
-        title: m.title == null ? undefined : String(m.title),
-        format: m.format as Msg["format"],
-        template: m.template as Msg["template"],
-        attachments: await attachments(app, Number(row.message_id)),
-      });
-      sent++;
-    } catch (e) {
-      await delivered(app, Number(row.id), e);
-    }
+  for (const rows of batches.values()) {
+    const c = channel(app, String(rows[0].channel));
+    if (c) sent += await dispatch(app, c, rows.map((row) => Number(row.id))).catch(() => 0);
   }
   return sent;
 }

@@ -3,7 +3,9 @@ import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fil
 
 
 import { inbound } from "../lib/settings.ts";
-import { send, setTransport } from "../mod.ts";
+import { outbox } from "@qino/qino/messaging";
+
+import { messagingChannel, send, setTransport } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -74,6 +76,33 @@ Deno.test("an inbound address becomes Reply-To unless the message overrides it",
   await send(app, { usr: 1 }, { text: "Second", replyTo: "person@qino.test" });
   assertEquals((sent[0].replyRecipients as { address: string }[])[0].address, "inbox@qino.test");
   assertEquals((sent[1].replyRecipients as { address: string }[])[0].address, "person@qino.test");
+
+  await close(app);
+});
+
+Deno.test("what only email understands survives the queue", async () => {
+  const app = await makeApp();
+  app.modules = { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }, { plugin: { messagingChannel } }] } as unknown as App["modules"];
+  const sent: Record<string, unknown>[] = [];
+  let up = false;
+  setTransport(app, {
+    send: (message) => {
+      if (!up) throw new Error("connection refused"); // ours, not the address's
+      sent.push(message as Record<string, unknown>);
+      return Promise.resolve({ successful: true });
+    },
+  });
+
+  assertEquals(await send(app, { usr: 1 }, { text: "Answer me", replyTo: "person@qino.test" }), 0);
+  const [held] = await app.db.query`SELECT * FROM message_delivery`;
+  assertEquals(held.sent, null);
+  assertEquals(held.attempts, 1);
+
+  up = true;
+  await app.db.exec`UPDATE message_delivery SET due = ${1}`;
+  assertEquals(await outbox(app), 1);
+  // the column holds the text, the journal's data the rest — together they are the same mail again
+  assertEquals((sent[0].replyRecipients as { address: string }[])[0].address, "person@qino.test");
 
   await close(app);
 });

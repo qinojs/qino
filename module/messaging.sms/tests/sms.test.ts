@@ -4,7 +4,7 @@ import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema,
 import { ChannelError, outbox, pendingContacts } from "@qino/qino/messaging";
 
 import { deliver as transmit } from "../lib/provider.ts";
-import { addPhone, approvePhone, deliver, send, setProvider, verifyPhone } from "../mod.ts";
+import { addPhone, approvePhone, messagingChannel, send, setProvider, verifyPhone } from "../mod.ts";
 
 import type { SmsProvider } from "../mod.ts";
 
@@ -249,7 +249,7 @@ Deno.test("what our own failure held back goes out on the next run", async () =>
   const db = await makeDb();
   const app = makeApp(db);
   const sms: SmsProvider = { send: () => Promise.resolve() };
-  app.modules = { linked: () => [{ plugin: { messagingChannel: { name: "sms", deliver } } }] };
+  app.modules = { linked: () => [{ plugin: { messagingChannel } }] };
   await addContact(db, 1, "phone", "+41791234567");
 
   // no provider: nothing goes out, and the delivery stays owed

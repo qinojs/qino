@@ -30,14 +30,9 @@ export async function contactRecipients(
     : null;
   const found = new Map(direct.map((recipient) => [recipient.address, recipient]));
   const terms = [preferred, literal].flatMap((v) => v ?? []);
-  const rows = terms.length ? await app.db.query`
-      SELECT c.*, u.given_name, u.family_name, u.organization,
-        (SELECT mail.address FROM usr_contact mail
-         WHERE mail.usr_id = c.usr_id AND mail.type = ${"email"}
-         ORDER BY mail.main DESC, mail.created, mail.address LIMIT 1) AS email
-      FROM usr_contact c
-      LEFT JOIN usr u ON u.id = c.usr_id
-      WHERE c.type = ${type} AND (${sql.join(terms, " OR ")})` : [];
+  const rows = terms.length
+    ? await app.db.query`SELECT c.* FROM usr_contact c WHERE c.type = ${type} AND (${sql.join(terms, " OR ")})`
+    : [];
   for (const row of rows) {
     const address = String(row.address);
     found.set(address, { ...row, address, usrId: Number(row.usr_id) || undefined });

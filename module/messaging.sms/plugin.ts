@@ -1,20 +1,11 @@
-import { Access, contacts, countContacts, getCtx, removeContact, s, setMainContact } from "@qino/qino";
+import { Access, contacts, getCtx, removeContact, s, setMainContact } from "@qino/qino";
 import { pendingContacts } from "@qino/qino/messaging";
 
-import { addPhone, deliver, send, verifyPhone } from "./mod.ts";
+import { addPhone, verifyPhone } from "./mod.ts";
 
-import type { ApiTree, App, Params } from "@qino/qino";
-import type { Channel } from "@qino/qino/messaging";
+import type { ApiTree, Params } from "@qino/qino";
 
-export const messagingChannel: Channel = {
-  name: "sms",
-  label: "SMS",
-  color: "--green",
-  contact: "phone",
-  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "phone"),
-  send,
-  deliver,
-};
+export { messagingChannel } from "./mod.ts";
 
 export const settingsSchema = {
   properties: {

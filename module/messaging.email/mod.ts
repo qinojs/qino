@@ -1,86 +1,78 @@
 // Public API of messaging.email. The qino plugin lives in ./plugin.ts.
-import { contactError, errMsg, unixTime } from "@qino/qino";
-import { attachmentFile, ChannelError, contactRecipients, delivered, msgOf, owed, record, renderer, titleOf, unsubscribeGroup, unsubscribeHeaders } from "@qino/qino/messaging";
+import { countContacts, errMsg } from "@qino/qino";
+import { attachmentFile, ChannelError, contactRecipients, delivered, send as dispatch, titled, unsubscribeHeaders } from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
 import { createMessage, transport } from "./lib/transport.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Attachment, Msg } from "@qino/qino/messaging";
+import type { Attachment, Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
 
 export { receive } from "./lib/inbound.ts";
 export { setTransport } from "./lib/transport.ts";
 
+/** Who a `to` means as mail addresses — `usr_contact` says where a person reads mail, one address
+ *  each: the preferred one, else the oldest. A user without a mail contact simply drops out. */
+async function recipients(app: App, to: To & { email?: string | string[] }): Promise<Recipient[]> {
+  const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
+    address: value.trim().slice(0, 191), addressError: BAD_ADDRESS,
+  });
+  if (to.grp == null && to.usr == null && !to.all && !literals.length) {
+    throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
+  }
+  return (await contactRecipients(app, "email", to, literals)).map((row) => {
+    const address = addressOf(row);
+    return address ? { ...row, ...address } : { ...row, addressError: BAD_ADDRESS };
+  });
+}
+
+const BAD_ADDRESS = "Use an email address such as name@example.com";
+
 /**
- * Deliver a mail to a group, a user, literal addresses, or everyone with an address.
+ * Mail a group, a user, literal addresses, or everyone with an address.
  *
  * Resolves with the number of addresses reached. A mail needs a subject, so an absent title is
  * the first line of the text. `format` decides the body: markdown and html mails carry both an
  * HTML and a plain-text part, plain text goes out as text alone. `onError` observes rejected
  * deliveries without changing the numeric result.
  */
-export async function send(
+export const send = (
   app: App,
-  to: { grp?: number; usr?: number | number[]; all?: true; email?: string | string[] },
-  message: string | Msg & { replyTo?: string }, // replyTo: where an answer belongs, overriding the inbox
+  to: To & { email?: string | string[] },
+  message: string | Msg & { replyTo?: string },
   { onError }: { onError?: (message: string) => void } = {},
-): Promise<number> {
-  const given = msgOf(message);
-  const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
-  const recipients = await addresses(app, to);
-  if (!recipients.length) return 0;
+): Promise<number> => dispatch(app, messagingChannel, to, titled(message), { onError });
 
-  const time = unixTime();
-  const [config, mailer, { render, uses }] = await Promise.all([defaults(app), transport(app), renderer(app, msg, "email")]);
+/** One batch of mails, over one connection. */
+async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, { render, uses, group }: Rendering): Promise<number> {
+  const [config, mailer, attachments] = await Promise.all([defaults(app), transport(app), attachmentsOf(msg.attachments)]);
   if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const detour = debug ? `redirected to debug address ${debug.address}` : undefined;
   const from = formatAddress({ address: config.address, name: config.name });
-  const attachments = await attachmentsOf(msg.attachments);
-
-  // journaled first: a tracked link carries the delivery's own id
-  const { ids } = await record(app, {
-    channel: "email",
-    direction: "out",
-    grpId: to.grp,
-    msg: attachments ? { ...msg, attachments } : msg,
-    data: { to },
-    time,
-  }, recipients.map((recipient) => ({ usrId: recipient.usrId, address: recipient.address, ...owed(recipient.addressError, time) })));
-
-  const leavable = await unsubscribeGroup(app, to.grp, recipients.map((recipient) => recipient.usrId));
   let sent = 0;
-  for (const [i, recipient] of recipients.entries()) {
-    if (recipient.addressError) {
-      onError?.(recipient.addressError);
-      continue;
-    }
+  for (const row of rows) {
+    const address = String(row.address);
+    const usrId = Number(row.usr_id) || undefined;
+    const grpId = group(row);
     // every mail carries a text part: plain readers and spam filters both want one
-    const grpId = leavable(recipient.usrId); // only where the group is really theirs to leave
-    const { text, html } = await render({ ...recipient, deliveryId: ids[i], grpId });
+    const { text, html } = await render(row);
     // only where there is something to leave: the client's one-click way to the same link
-    const leaving = uses.has("unsubscribe") && recipient.usrId && grpId
-      ? await unsubscribeHeaders(app, recipient.usrId, grpId)
-      : undefined;
+    const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId) : undefined;
     const failure = await transmit(mailer, {
       from,
-      to: formatAddress(debug ?? recipient),
+      to: formatAddress(debug ?? { address, name: nameOf(row) }),
       replyTo: msg.replyTo || config.replyTo || undefined,
       subject: debug ? `Debug! ${msg.title}` : msg.title,
       content: html ? { html, text } : { text },
       attachments,
-      headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": recipient.address } : undefined },
+      headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": address } : undefined },
     });
-    const error = failure && errMsg(failure);
-    if (error) onError?.(error);
     // the transport took it, so it counts as sent — but nothing reached this address, and the
     // journal says so: an error is the absence of a delivery, not only a failure
-    if (!error) sent++;
-    // a contact that bounces says so in the panel; the journal keeps the detail. A failure of ours
-    // says nothing about the address, so it neither marks it nor clears an older mark.
-    if (recipient.usrId && !(failure instanceof ChannelError)) contactError(app.db, "email", recipient.address, error);
-    await delivered(app, ids[i], failure ?? detour);
+    if (!failure) sent++;
+    await delivered(app, Number(row.id), failure ?? detour);
   }
   // the pool serves this batch and nothing after it: a connection left open until the next mail is
   // one the server has long closed, and sending over it fails without saying why
@@ -88,35 +80,7 @@ export async function send(
   return sent;
 }
 
-/** One journalled delivery, sent again — the outbox's way in. */
-export async function deliver(app: App, delivery: Row, msg: Msg): Promise<void> {
-  const usrId = Number(delivery.usr_id) || undefined;
-  const address = String(delivery.address);
-  const [config, mailer, { render, uses }, leavable, attachments] = await Promise.all([
-    defaults(app),
-    transport(app),
-    renderer(app, msg, "email"),
-    unsubscribeGroup(app, Number(delivery.grp_id) || undefined, [usrId]),
-    attachmentsOf(msg.attachments),
-  ]);
-  if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
-  const grpId = leavable(usrId);
-  const { text, html } = await render({ ...delivery, usrId, deliveryId: Number(delivery.id), grpId });
-  const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId) : undefined;
-  const failure = await transmit(mailer, {
-    from: formatAddress({ address: config.address, name: config.name }),
-    to: address,
-    replyTo: config.replyTo || undefined,
-    subject: msg.title,
-    content: html ? { html, text } : { text },
-    attachments,
-    headers: leaving,
-  });
-  await mailer.closeAllConnections?.().catch(() => {});
-  if (failure) throw failure;
-  await delivered(app, Number(delivery.id));
-  if (usrId) await contactError(app.db, "email", address);
-}
+const nameOf = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || undefined;
 
 async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> {
   return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
@@ -147,18 +111,14 @@ async function transmit(
   }
 }
 
-/** Who a `to` means, as addresses — `usr_contact` says where a person reads mail, one address each:
- *  the preferred one, else the oldest. A user without a mail contact simply drops out. */
-async function addresses(app: App, to: { grp?: number; usr?: number | number[]; all?: true; email?: string | string[] }) {
-  const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
-    address: value.trim().slice(0, 191), addressError: "Use an email address such as name@example.com",
-  });
-  if (to.grp == null && to.usr == null && !to.all && !literals.length) {
-    throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
-  }
-  return (await contactRecipients(app, "email", to, literals)).map((row) => {
-    const name = [row.given_name, row.family_name].filter(Boolean).join(" ");
-    const address = addressOf({ ...row, name: name || row.name, usrId: row.usrId });
-    return address ? { ...row, ...address } : { ...row, addressError: "Use an email address such as name@example.com" };
-  });
-}
+/** The channel this module is. */
+export const messagingChannel: Channel = {
+  name: "email",
+  label: "Email",
+  color: "--orange",
+  contact: "email",
+  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "email"),
+  recipients,
+  send,
+  deliver,
+};

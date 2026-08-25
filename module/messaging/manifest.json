@@ -9,6 +9,7 @@
     "README.md",
     "dbschema.json",
     "lib/contact.ts",
+    "lib/dispatch.ts",
     "lib/format.ts",
     "lib/htmlText.ts",
     "lib/links.ts",

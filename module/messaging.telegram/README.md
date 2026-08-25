@@ -85,6 +85,11 @@ is a state, not a log: nothing acts on it, an admin decides whether to delete th
 - **Group and channel targets.** Adding the bot to a Telegram group yields a negative
   `chat_id` that `send()` would deliver to unchanged; only the linking flow assumes a
   private chat.
+- **Attachments.** `msg.attachments` is dropped: `sendMessage` carries no files. Delivering
+  them means a `FormData` branch in `call()`, `sendPhoto` / `sendDocument` by mime and
+  `sendMediaGroup` from two files on, and the message moving into the file's `caption` — which
+  holds 1024 characters where a text holds 4096, so a longer one needs its own `sendMessage`
+  first. A delivery then counts as reached only once every call went through.
 - **Rate limiting per chat.** Batches keep the global ~30/s ceiling; the per-chat limit of
   about one message a second is only handled reactively, by honouring the `retry_after` of a
   429 once.
