@@ -27,7 +27,7 @@ export function healthChecks(app: App) {
       if (await settings.mail.debug_to) return;
       const usr = requestStorage.getStore()?.user;
       if (!usr?.superuser) return;
-      const email = String(usr.email ?? "");
+      const email = String(usr.username ?? "");
       return { solutions: { [`set it to: ${hee(email)}`]: { solve: async () => { await settings.mail.debug_to(email); } } } };
     },
 

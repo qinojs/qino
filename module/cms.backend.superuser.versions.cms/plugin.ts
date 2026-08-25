@@ -33,10 +33,10 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── recently edited nodes ──────────────────────────────────────────────────
   // Derived from node_changed (one row per mutation) joined to log for time+editor.
-  // ROW_NUMBER picks the latest edit per node to carry its editor email.
+  // ROW_NUMBER picks the latest edit per node to carry its editor handle.
   const recent = await db.query`
-    SELECT x.page_id, x.time AS last, x.email FROM (
-      SELECT nc.page_id, l.time, u.email, ROW_NUMBER() OVER (PARTITION BY nc.page_id ORDER BY l.time DESC) rn
+    SELECT x.page_id, x.time AS last, x.username FROM (
+      SELECT nc.page_id, l.time, u.username, ROW_NUMBER() OVER (PARTITION BY nc.page_id ORDER BY l.time DESC) rn
       FROM node_changed nc
       JOIN log l ON l.id = nc.log_id
       LEFT JOIN sess s ON l.sess_id = s.id
@@ -49,7 +49,7 @@ async function render(node: Node): Promise<HtmlString> {
     recentParts.push(html`<tr>
       <td>${anchor}
       <td><u2-time datetime="${iso}" type=relative></u2-time>
-      <td>${r.email ?? "guest"}`);
+      <td>${r.username ?? "guest"}`);
   }
   const recentBox = html.async`
 <div class=u2-card>

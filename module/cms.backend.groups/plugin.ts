@@ -102,16 +102,16 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const canManage = await canManageMembers(id);
 
   const members = await db.query`
-    SELECT usr.id, usr.email, usr.firstname, usr.lastname
+    SELECT usr.id, usr.username, usr.given_name, usr.family_name
     FROM usr JOIN usr_grp ON usr.id = usr_grp.usr_id
-    WHERE usr_grp.grp_id = ${id} ORDER BY usr.lastname, usr.firstname`;
+    WHERE usr_grp.grp_id = ${id} ORDER BY usr.family_name, usr.given_name`;
 
   const memberRows = [];
   for (const m of members) {
-    const label = [m.firstname, m.lastname].filter(Boolean).join(" ") || m.email || m.id;
+    const label = [m.given_name, m.family_name].filter(Boolean).join(" ") || m.username || m.id;
     memberRows.push(html`<tr>
       <td>${usersUrl ? html`<a href="${usersUrl}?id=${m.id}">${label}</a>` : label}
-      <td>${m.email}
+      <td>${m.username}
       <td>${canManage ? html`<button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`);
   }
 

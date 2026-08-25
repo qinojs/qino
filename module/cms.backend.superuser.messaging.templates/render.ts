@@ -10,9 +10,9 @@ const FORMATS = ["", "md", "html"];
 /** Who the preview greets — a template says nothing about a real recipient. The ids make the
  *  unsubscribe link a real one: following it only ever asks, and dropping anyone needs a POST. */
 export const SAMPLE = {
-  firstname: "Ada",
-  lastname: "Lovelace",
-  company: "Analytical Engines",
+  given_name: "Ada",
+  family_name: "Lovelace",
+  organization: "Analytical Engines",
   email: "ada@example.test",
   address: "ada@example.test",
   usrId: 1,

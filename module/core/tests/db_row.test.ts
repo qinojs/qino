@@ -311,7 +311,7 @@ Deno.test("usr.contacts is the natural way in and out of usr_contact", async () 
   await db.migrate({ properties: { usr: coreSchema.properties.usr, usr_contact: coreSchema.properties.usr_contact } });
   await db.loadTables();
   db.table("usr").rowClass = Usr;
-  const usr = (await db.table("usr").add<Usr>({ email: "one@qino.test" }))!;
+  const usr = (await db.table("usr").add<Usr>({ username: "one@qino.test" }))!;
 
   await usr.contacts.add("email", "private@qino.test");
   await usr.contacts.add("email", "  Work@Qino.Test  "); // whitespace and case never make a second contact

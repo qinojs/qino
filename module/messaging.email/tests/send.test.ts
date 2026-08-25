@@ -11,11 +11,11 @@ import type { App } from "@qino/qino";
 async function makeApp(): Promise<App> {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...fileDbSchema.properties, ...messageSchema.properties, ...contactDbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.query`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "one@qino.test", firstname: "One", lastname: "User" });
+  await db.table("usr").insert({ username: "one@qino.test", given_name: "One", family_name: "User" });
   await db.table("usr_contact").insert({ type: "email", address: "one@qino.test", usr_id: 1, main: true, created: 1 });
   const dir = await Deno.makeTempDir();
   const app = {
@@ -54,7 +54,7 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   assertEquals(journaled.channel, "email");
   assertEquals(journaled.title, "Invoice");
   assertEquals(journaled.text, "Attached.");
-  assertEquals(journaled.deliveries, [{ id: 1, usr_id: 1, address: "one@qino.test", email: "one@qino.test", time: journaled.deliveries[0].time, error: null }]);
+  assertEquals(journaled.deliveries, [{ id: 1, usr_id: 1, address: "one@qino.test", username: "one@qino.test", time: journaled.deliveries[0].time, error: null }]);
 
   await close(app);
 });
@@ -188,7 +188,7 @@ Deno.test("unsubscribe headers ride along only where the message offers the way 
   assertEquals((sent[1].headers as Headers).get("List-Unsubscribe"), null);
 
   // a selection is a union: someone named beside the group is not in it, and has nothing to leave
-  await db.table("usr").insert({ email: "two@qino.test", firstname: "Two" });
+  await db.table("usr").insert({ username: "two@qino.test", given_name: "Two" });
   await db.table("usr_contact").insert({ type: "email", address: "two@qino.test", usr_id: 2, main: true, created: 1 });
   await send(app, { grp: 1, usr: [2] }, { title: "News", text: "Hello.", format: "md" });
   const address = (mail: Record<string, unknown>) => String((mail.recipients as { address: string }[])[0].address);

@@ -21,7 +21,7 @@ export class Seed {
 
   /** Handed on between seeders. */
   grps = new Map<string, number>();
-  usrs: { id: number; email: string; firstname: string; lastname: string }[] = [];
+  usrs: { id: number; email: string; given_name: string; family_name: string }[] = [];
   pages: Node[] = [];
   root?: Node;
 

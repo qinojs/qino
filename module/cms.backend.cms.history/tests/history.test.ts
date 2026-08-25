@@ -45,9 +45,9 @@ function fixture() {
   };
   // newest first; page mutation (node 20) and text mutation (node 21) are two events
   const rows = [
-    { id: 5, log_id: 2, node_id: 20, page_id: 20, data: JSON.stringify({ table: "page", op: "update", cols: ["visible"] }), time: 1000, client_id: 7, ip: "1.2.3.4", ua: CHROME, usr_id: 9, email: "a@b.c", firstname: "Al", lastname: "Ice" },
-    { id: 4, log_id: 2, node_id: 21, page_id: 20, data: JSON.stringify({ table: "page_text", op: "update", name: "body", lang: "de" }), time: 1000, client_id: 7, ip: "1.2.3.4", ua: CHROME, usr_id: 9, email: "a@b.c", firstname: "Al", lastname: "Ice" },
-    { id: 3, log_id: 1, node_id: 30, page_id: 30, data: JSON.stringify({ table: "page_text", op: "update", name: "title" }), time: 900, client_id: 8, ip: "9.9.9.9", ua: "", usr_id: null, email: null, firstname: null, lastname: null },
+    { id: 5, log_id: 2, node_id: 20, page_id: 20, data: JSON.stringify({ table: "page", op: "update", cols: ["visible"] }), time: 1000, client_id: 7, ip: "1.2.3.4", ua: CHROME, usr_id: 9, email: "a@b.c", given_name: "Al", family_name: "Ice" },
+    { id: 4, log_id: 2, node_id: 21, page_id: 20, data: JSON.stringify({ table: "page_text", op: "update", name: "body", lang: "de" }), time: 1000, client_id: 7, ip: "1.2.3.4", ua: CHROME, usr_id: 9, email: "a@b.c", given_name: "Al", family_name: "Ice" },
+    { id: 3, log_id: 1, node_id: 30, page_id: 30, data: JSON.stringify({ table: "page_text", op: "update", name: "title" }), time: 900, client_id: 8, ip: "9.9.9.9", ua: "", usr_id: null, email: null, given_name: null, family_name: null },
   ];
   return { rows, reg };
 }
@@ -121,10 +121,10 @@ Deno.test("history: render wires the toolbar and column headers around the list"
 
 Deno.test("history widget: latest change per user, newest first, access-filtered", async () => {
   const rows = [ // newest first (node_id == page_id here: page-level changes)
-    { id: 9, node_id: 20, page_id: 20, time: 300, usr_id: 1, email: "a@b.c", firstname: "Al", lastname: "Ice" },
-    { id: 8, node_id: 30, page_id: 30, time: 250, usr_id: 2, email: "bob@x.y", firstname: "", lastname: "" }, // page 30: no access
-    { id: 7, node_id: 20, page_id: 20, time: 200, usr_id: 1, email: "a@b.c", firstname: "Al", lastname: "Ice" }, // older, same user
-    { id: 6, node_id: 20, page_id: 20, time: 100, usr_id: 3, email: "cara@x.y", firstname: "Cara", lastname: "" },
+    { id: 9, node_id: 20, page_id: 20, time: 300, usr_id: 1, email: "a@b.c", given_name: "Al", family_name: "Ice" },
+    { id: 8, node_id: 30, page_id: 30, time: 250, usr_id: 2, email: "bob@x.y", given_name: "", family_name: "" }, // page 30: no access
+    { id: 7, node_id: 20, page_id: 20, time: 200, usr_id: 1, email: "a@b.c", given_name: "Al", family_name: "Ice" }, // older, same user
+    { id: 6, node_id: 20, page_id: 20, time: 100, usr_id: 3, email: "cara@x.y", given_name: "Cara", family_name: "" },
   ];
   const access: Record<number, number> = { 20: 2, 30: 0 };
   const app: any = {

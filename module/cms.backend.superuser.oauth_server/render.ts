@@ -57,13 +57,13 @@ async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
 
 export async function grants(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  const rows = await node.app.db.query`SELECT t.client_id, c.name, t.usr_id, u.email,
+  const rows = await node.app.db.query`SELECT t.client_id, c.name, t.usr_id, u.username,
       MIN(t.created) AS since, MAX(t.expires) AS until
     FROM oauth_token t
     LEFT JOIN oauth_client c ON c.id = t.client_id
     LEFT JOIN usr u ON u.id = t.usr_id
     WHERE t.kind <> ${"code"}
-    GROUP BY t.client_id, c.name, t.usr_id, u.email ORDER BY since DESC`;
+    GROUP BY t.client_id, c.name, t.usr_id, u.username ORDER BY since DESC`;
   const body = rows.length
     ? html.join(await Promise.all(rows.map((r) => grantRow(node.app, r))))
     : html`<tr><td colspan=5>${await t`Nobody has authorized a client yet.`}`;
@@ -83,7 +83,7 @@ export async function grants(node: Node): Promise<HtmlString> {
 async function grantRow(app: App, g: Row): Promise<HtmlString> {
   return html.async`<tr>
     <td>${g.name ?? g.client_id}
-    <td>${g.email ?? "#" + g.usr_id}
+    <td>${g.username ?? "#" + g.usr_id}
     <td>${u2.el.time(g.since)}
     <td>${u2.el.time(g.until)}
     <td><button type=button class=u2-unstyle data-revoke="${g.client_id}" data-usr="${g.usr_id}"

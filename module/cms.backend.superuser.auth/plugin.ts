@@ -55,12 +55,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // Every signed-in session carries its own record, so the same structure read across the table is
   // the log of how everyone got in — no second place to write it.
   const sessions = await node.app.db.query`
-    SELECT s.usr_id, s.data, s.access, u.email FROM sess s LEFT JOIN usr u ON u.id = s.usr_id
+    SELECT s.usr_id, s.data, s.access, u.username FROM sess s LEFT JOIN usr u ON u.id = s.usr_id
     WHERE s.usr_id IS NOT NULL ORDER BY s.access DESC LIMIT 50`;
   const sessionRows = sessions.map((s) => {
     const ways = Object.entries(viaOf(String(s.data ?? ""))).sort((a, b) => b[1] - a[1]);
     return html`<tr>
-      <td>${s.email ?? `#${s.usr_id}`}
+      <td>${s.username ?? `#${s.usr_id}`}
       <td>${ways.length ? html.join(ways.map(([name, at]) => html`<code>${name}</code> ${when(at)}`), ", ") : "—"}
       <td>${when(Number(s.access))}`;
   });

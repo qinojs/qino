@@ -183,7 +183,7 @@ class CmsTextService {
         if (!await this.textAccess(txt_id)) return false;
         const SPACE = 0; // cms_vers::$space — cms.versions not ported yet
         const rows = await this.#app.db.query`
-            SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email
+            SELECT text.text, log.id as log_id, log.time as log_time, usr.username as email
             FROM
              _vers_text text
              LEFT JOIN log ON text._vers_log = log.id

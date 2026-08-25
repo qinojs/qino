@@ -129,13 +129,13 @@ export class MailMessage {
     return Number(await this.manager.app.db.one`SELECT COALESCE(MAX(mail1_track_id),0)+1 FROM mail_recipient`) || 1;
   }
 
-  /** Where the user reads mail — their verified contact, never the login handle `usr.email`. */
+  /** Where the user reads mail — their verified contact, never the login handle `usr.username`. */
   async addUsr(usr: UserInput): Promise<this> {
     const usrId = Number(usr?.id ?? await usr?.get?.("id")) || undefined;
     const email = usrId && (await mainContact(this.manager.app.db, usrId, "email"))?.address;
     const name = [
-      usr?.firstname ?? await usr?.get?.("firstname"),
-      usr?.lastname ?? await usr?.get?.("lastname"),
+      usr?.given_name ?? await usr?.get?.("given_name"),
+      usr?.family_name ?? await usr?.get?.("family_name"),
     ].filter(Boolean).map(String).join(" ");
     return email ? this.addTo({ email: String(email), usrId }, name) : this;
   }

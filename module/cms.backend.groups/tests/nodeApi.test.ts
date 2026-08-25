@@ -12,7 +12,7 @@ function makeDb(opts: { emailUserId?: number }) {
   const db = {
     one: (strings: TemplateStringsArray) => {
       const sql = strings.join("?");
-      if (sql.includes("FROM usr WHERE email")) return opts.emailUserId ?? null;
+      if (sql.includes("FROM usr WHERE username")) return opts.emailUserId ?? null;
       return null;
     },
     table: (name: string) => {

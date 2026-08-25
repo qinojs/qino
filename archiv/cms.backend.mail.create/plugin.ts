@@ -54,14 +54,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       };
 
       for (const uid of toUsers) {
-        const usr = await db.row`SELECT email, firstname, lastname FROM usr WHERE id=${uid} AND active=${true}`;
-        if (usr?.email) add(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
+        const usr = await db.row`SELECT username, given_name, family_name FROM usr WHERE id=${uid} AND active=${true}`;
+        if (usr?.username) add(String(usr.username), `${usr.given_name ?? ""} ${usr.family_name ?? ""}`.trim() || undefined);
       }
 
       for (const gid of toGroups) {
-        const members = await db.query`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=${true}`;
+        const members = await db.query`SELECT u.username, u.given_name, u.family_name FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=${true}`;
         for (const usr of members) {
-          if (usr.email) add(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
+          if (usr.username) add(String(usr.username), `${usr.given_name ?? ""} ${usr.family_name ?? ""}`.trim() || undefined);
         }
       }
 
@@ -82,11 +82,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const defaults = await mail(app).defaults().catch(() => ({} as Record<string, unknown>));
   const defaultSender = defaults.sender ? (defaults.sendername ? `${defaults.sendername} <${defaults.sender}>` : defaults.sender) : "";
 
-  const users = await db.query`SELECT id, email, firstname, lastname FROM usr WHERE active=${true} ORDER BY lastname, firstname, email`;
+  const users = await db.query`SELECT id, username, given_name, family_name FROM usr WHERE active=${true} ORDER BY family_name, given_name, username`;
   const groups = await db.query`SELECT id, name FROM grp ORDER BY name`;
 
   const userOptions = users.length
-    ? users.map((u) => html`<option value="${u.id}">${[u.firstname, u.lastname].filter(Boolean).join(" ") || u.email} &lt;${u.email}&gt;`)
+    ? users.map((u) => html`<option value="${u.id}">${[u.given_name, u.family_name].filter(Boolean).join(" ") || u.username} &lt;${u.username}&gt;`)
     : await html.async`<option disabled>${t`No users found`}`;
 
   const groupOptions = groups.length

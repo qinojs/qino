@@ -450,21 +450,22 @@
             "type": "boolean",
             "default": false
           },
-          "email": {
+          "username": {
             "type": "string",
             "maxLength": 191,
-            "x-index": "unique"
+            "x-index": "unique",
+            "description": "The login handle. Where to reach the person is usr_contact, never this"
           },
           "pw": {
             "type": "string",
             "maxLength": 127
           },
-          "firstname": {
+          "given_name": {
             "type": "string",
             "maxLength": 191,
             "x-index": true
           },
-          "lastname": {
+          "family_name": {
             "type": "string",
             "maxLength": 191,
             "x-index": true
@@ -477,16 +478,17 @@
             "type": "string",
             "maxLength": 8
           },
-          "company": {
+          "organization": {
             "type": "string",
             "maxLength": 191,
-            "x-index": true
+            "x-index": true,
+            "description": "Who the person belongs to — a firm, an association, a school"
           },
           "settings": {
             "type": "string"
           }
         },
-        "required": ["id", "active", "pw", "firstname", "lastname", "superuser"]
+        "required": ["id", "active", "pw", "given_name", "family_name", "superuser"]
       }
     },
     "usr_contact": {

@@ -145,7 +145,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
-      SELECT d.usr_id, d.address, d.time, d.error, u.email,
+      SELECT d.usr_id, d.address, d.time, d.error, u.username,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"load"}) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
@@ -239,7 +239,7 @@ async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>): Pr
 
 async function renderConversation(node: Node, usrId: number, url: URL): Promise<HtmlString> {
   const app = node.app;
-  const user = await app.db.row`SELECT id, email, firstname, lastname FROM usr WHERE id = ${usrId}`;
+  const user = await app.db.row`SELECT id, username, given_name, family_name FROM usr WHERE id = ${usrId}`;
   if (!user) {
     return html.async`<div class=u2-flex>
       ${userCard(node, url, 0)}
@@ -295,9 +295,9 @@ function selectedChannel(rows: Row[], reachable: Channel[]): string | undefined 
 async function userCard(node: Node, url: URL, usrId: number): Promise<HtmlString> {
   const app = node.app;
   const users = await app.db.query`
-    SELECT u.id, u.email, u.firstname, u.lastname
+    SELECT u.id, u.username, u.given_name, u.family_name
     FROM usr u
-    ORDER BY u.lastname, u.firstname, u.email, u.id`;
+    ORDER BY u.family_name, u.given_name, u.username, u.id`;
   return html.async`<div class=u2-card style="flex-grow:0">
     <div class=-head>${app.t`User`}</div>
     <form class=-body method=get action="${url.pathname}">
@@ -329,7 +329,7 @@ function paramUrl(url: URL, params: Record<string, string>): string {
 
 function recipient(row: Row, url: URL, view: View): HtmlString {
   return row.usr_id
-    ? html`<a href="${paramUrl(url, { usr: String(row.usr_id), msg: "" })}">${row.email ?? "#" + row.usr_id}</a>`
+    ? html`<a href="${paramUrl(url, { usr: String(row.usr_id), msg: "" })}">${row.username ?? "#" + row.usr_id}</a>`
     : html`${view.anonymous}`;
 }
 
@@ -429,8 +429,8 @@ function readableData(data: unknown): string {
 }
 
 function userName(user: Row): string {
-  const name = [user.firstname, user.lastname].filter(Boolean).join(" ");
-  return name ? `${name}${user.email ? " · " + user.email : ""}` : String(user.email ?? "#" + user.id);
+  const name = [user.given_name, user.family_name].filter(Boolean).join(" ");
+  return name ? `${name}${user.username ? " · " + user.username : ""}` : String(user.username ?? "#" + user.id);
 }
 
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {

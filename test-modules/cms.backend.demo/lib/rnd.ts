@@ -59,8 +59,8 @@ export class Rnd {
   title(n = this.int(1, 3)): string { const s = this.words(n); return s[0].toUpperCase() + s.slice(1); }
   topic(i: number): string { return `${this.pick(TOPIC)}: ${this.title(2)} ${i}`; }
 
-  person(): { firstname: string; lastname: string; company: string; city: string } {
-    return { firstname: this.pick(FIRST), lastname: this.pick(LAST), company: this.pick(COMPANY), city: this.pick(CITY) };
+  person(): { given_name: string; family_name: string; organization: string; city: string } {
+    return { given_name: this.pick(FIRST), family_name: this.pick(LAST), organization: this.pick(COMPANY), city: this.pick(CITY) };
   }
   subject(n: number): string { return this.pick(SUBJECT).replace("{n}", String(n)); }
   ua(): string { return this.pick(UA); }

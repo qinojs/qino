@@ -10,7 +10,7 @@ import type { App, Ctx } from "@qino/qino";
 async function makeApp(): Promise<App> {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...fileDbSchema.properties, ...messagingDbSchema.properties, ...contactDbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.loadTables();
   const dir = await Deno.makeTempDir();
@@ -40,7 +40,7 @@ Deno.test("cms.frontend.4 more: sends escaped feedback over the email channel", 
   let draft = "draft";
   const ctx = {
     req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },
-    user: { firstname: "Ada", lastname: "Lovelace", email: "ada@example.test" },
+    user: { given_name: "Ada", family_name: "Lovelace", username: "ada", contacts: { main: () => Promise.resolve({ address: "ada@example.test" }) } },
     settings: {
       cms: {
         feedback: { text: (value?: string) => value === undefined ? draft : draft = value },
@@ -73,7 +73,7 @@ Deno.test("cms.frontend.4 more: keeps feedback draft when sending fails", async 
   let draft = "Please help";
   const ctx = {
     req: { header: () => undefined },
-    user: { get: () => "" },
+    user: { get: () => "", contacts: { main: () => Promise.resolve(undefined) } },
     settings: {
       cms: { feedback: { text: (value?: string) => value === undefined ? draft : draft = value } },
       core: { lang_ns: { cms: () => "" } },

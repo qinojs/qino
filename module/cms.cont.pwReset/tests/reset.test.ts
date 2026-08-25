@@ -11,10 +11,10 @@ import type { Node } from "@qino/qino/cms";
 async function app() {
   const db = new Db("sqlite::memory:");
   await db.migrate(ticketSchema);
-  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, pw TEXT, active INTEGER)`;
+  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, pw TEXT, active INTEGER)`;
   await db.exec`CREATE TABLE sess (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "one@qino.test", pw: "old", active: 1 });
+  await db.table("usr").insert({ username: "one@qino.test", pw: "old", active: 1 });
   await db.table("sess").insert({ usr_id: 1 });
   return {
     db,

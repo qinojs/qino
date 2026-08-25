@@ -34,8 +34,8 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
   if (!ctx.userId && ctx.clientId) {
     const uid = Number(ctx.client.usr_id) || 0;
     if (uid) {
-      const row = await ctx.app.db.row`SELECT email FROM usr WHERE id = ${uid}`;
-      if (row?.email) await tryLogin(ctx, row.email);
+      const row = await ctx.app.db.row`SELECT username FROM usr WHERE id = ${uid}`;
+      if (row?.username) await tryLogin(ctx, row.username);
     }
   }
 }
@@ -43,7 +43,7 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
 /** Log in whoever holds this e-mail — by what the client remembers, else by password.
  *  Resolves with why no session was opened, or "" when one was. */
 export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
-  const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
+  const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(username)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
   const usrId = Number(user.id);

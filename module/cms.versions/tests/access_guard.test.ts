@@ -16,7 +16,7 @@ async function setup(access: Record<number, number>, changed: Array<{ node_id: n
         if (text.includes("FROM node_changed")) return Promise.resolve(changed.map((c) => ({ ...c, data: JSON.stringify(c.data ?? {}) })));
         return Promise.resolve([]);
       },
-      row: () => Promise.resolve({ time: 1, ip: "1.2.3.4", user_agent: "UA", email: "a@b.c" }),
+      row: () => Promise.resolve({ time: 1, ip: "1.2.3.4", user_agent: "UA", username: "a@b.c" }),
     },
   } });
   fakeCms(ctx.app, {

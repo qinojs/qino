@@ -80,7 +80,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   let cond = sql.raw("");
   if (search) {
     const s = search.trim();
-    const emailSub = (col: string) => sql`f.${sql.id(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.email=${s})`;
+    const emailSub = (col: string) => sql`f.${sql.id(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.username=${s})`;
     if (/^\d+$/.test(s)) cond = sql` AND f.id = ${Number(s)}`;
     else if (/^[0-9a-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
     else if (s.includes("@")) cond = sql` AND (${emailSub("log_id")} OR ${emailSub("log_id_ch")})`;
@@ -89,7 +89,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   }
 
   const rows = await db.query`
-    SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.email AS usr_init_email,ue.email AS usr_edit_email${relSubs}
+    SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.username AS usr_init_username,ue.username AS usr_edit_username${relSubs}
     FROM file f
       LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
       LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
@@ -112,8 +112,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td><a href="${u.search}">${row.name}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
   ${cells}
-  <td>${u2.el.time(row.init_time)}<br><small>${row.usr_init_email}</small>
-  <td>${u2.el.time(row.edit_time)}<br><small>${row.usr_edit_email}</small>
+  <td>${u2.el.time(row.init_time)}<br><small>${row.usr_init_username}</small>
+  <td>${u2.el.time(row.edit_time)}<br><small>${row.usr_edit_username}</small>
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>

@@ -17,12 +17,12 @@ export async function eventInfo(node: Node): Promise<Record<string, unknown>> {
 export async function eventPerformers(node: Node): Promise<string[]> {
   try {
     const rows = await node.db.query`
-      SELECT u.firstname, u.lastname
+      SELECT u.given_name, u.family_name
       FROM ${sql.id("event2_performer")} ep
       JOIN ${sql.id("usr")} u ON u.id = ep.usr_id
       WHERE ep.event_id = ${node.id}
       ORDER BY ep.sort`;
-    return rows.map((row) => [row.firstname, row.lastname].filter(Boolean).join(" "));
+    return rows.map((row) => [row.given_name, row.family_name].filter(Boolean).join(" "));
   } catch { return []; }
 }
 

@@ -1,7 +1,7 @@
 import type { App } from "@qino/qino";
 
 /** A user without a mail contact cannot be reached — no password reset, no code, no notification.
- *  `usr.email` is the login handle and deliberately not consulted for it. */
+ *  `usr.username` is the login handle and deliberately not consulted for it. */
 export function healthChecks(app: App) {
   return { notice: {
 

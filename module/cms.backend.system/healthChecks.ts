@@ -37,13 +37,13 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
 
   // ── superuser default password ──────────────────────────────────────────
   error["superuser default password"] = async () => {
-    const usrs = await db.query`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20`;
+    const usrs = await db.query`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, username = 'su' DESC, id LIMIT 20`;
     const found: typeof usrs = [];
     let info = "";
     for (const row of usrs) {
       if (!await pwVerify("su", row.pw)) continue;
       found.push(row);
-      info += hee(row.email) + "<br>";
+      info += hee(row.username) + "<br>";
     }
     if (!found.length) return;
     return {
@@ -72,7 +72,7 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
 
   // ── users ────────────────────────────────────────────────────────────────
   warning["users with old password-hash"] = async () => {
-    const usrs = await db.col<string>`SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
+    const usrs = await db.col<string>`SELECT username FROM usr WHERE active AND username != '' AND username IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
     if (!usrs.length) return;
     return { info: usrs.map(hee).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
   };

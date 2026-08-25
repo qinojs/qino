@@ -71,16 +71,16 @@ export async function send(node: Node): Promise<HtmlString> {
       GROUP BY g.id, g.name
       ORDER BY g.name`,
     db.query`
-      SELECT s.usr_id, u.email, COUNT(*) AS subs
+      SELECT s.usr_id, u.username, COUNT(*) AS subs
       FROM webpush_subscription s
       LEFT JOIN usr u ON u.id = s.usr_id
       WHERE s.usr_id IS NOT NULL
-      GROUP BY s.usr_id, u.email
-      ORDER BY u.email`,
+      GROUP BY s.usr_id, u.username
+      ORDER BY u.username`,
   ]);
   const channelOptions = channelRows.map((c) => html`<option value="channel:${c.name}">${c.name} (${c.subs})</option>`);
   const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.subs})</option>`);
-  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id} (${u.subs})</option>`);
+  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.username ?? "#" + u.usr_id} (${u.subs})</option>`);
 
   return html.async`<div class=-head>${t`Send notification`}</div>
   <form class=-body>
@@ -125,7 +125,7 @@ export async function subscriptions(node: Node): Promise<HtmlString> {
 function subscription(s: Row, labels: Record<string, string>): HtmlString {
   const host = String(s.endpoint).split("/")[2] ?? "?";
   return html`<tr>
-    <td>${s.email ?? (s.usr_id ? "#" + s.usr_id : labels.anonymous)}
+    <td>${s.username ?? (s.usr_id ? "#" + s.usr_id : labels.anonymous)}
     <td>${s.client_id ?? "-"}
     <td>${s.channels.join(", ") || "-"}
     <td title="${s.endpoint}">${host}

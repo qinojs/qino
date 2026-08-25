@@ -36,7 +36,7 @@ export async function send(
   const time = unixTime();
 
   const [rows, { render }] = await Promise.all([
-    app.db.query`SELECT c.id, c.usr_id, c.chat_id, c.error, u.firstname, u.lastname, u.company, u.email
+    app.db.query`SELECT c.id, c.usr_id, c.chat_id, c.error, u.given_name, u.family_name, u.organization, u.username
       FROM telegram_chat c LEFT JOIN usr u ON u.id = c.usr_id ${where}`,
     renderer(app, msg, "telegram", "telegram"),
   ]);
@@ -114,7 +114,7 @@ export function userChats(app: App, usrId: number): Promise<Row[]> {
 /** Every linked chat with its user's e-mail. */
 export function chats(app: App, limit = 500): Promise<Row[]> {
   return app.db.query`
-    SELECT c.*, u.email
+    SELECT c.*, u.username
     FROM telegram_chat c
     LEFT JOIN usr u ON u.id = c.usr_id
     ORDER BY c.created DESC LIMIT ${limit}`;

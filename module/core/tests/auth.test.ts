@@ -32,7 +32,7 @@ async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
   app.stores.add(import.meta.resolve("../../store.json"));
   await app.init();
   try {
-    await app.db.table("usr").insert({ id: 7, email: "ann@example.test", active: true });
+    await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
     await app.db.table("client").insert({ id: 1 });
     const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
     ctx.clientId = "1";

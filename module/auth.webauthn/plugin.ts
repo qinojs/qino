@@ -121,15 +121,15 @@ export const api: ApiTree = {
           const { rpId, rpName } = await getRp(ctx.app);
           const challenge = randB64(32);
           const token     = await storeChallenge(db, challenge, ctx.userId, "register");
-          const usr       = await db.row`SELECT email, firstname, lastname FROM usr WHERE id = ${ctx.userId}`;
+          const usr       = await db.row`SELECT username, given_name, family_name FROM usr WHERE id = ${ctx.userId}`;
           return {
             token,
             publicKey: {
               rp: { id: rpId, name: rpName },
               user: {
                 id: b64url(new TextEncoder().encode(String(ctx.userId))),
-                name: String(usr?.email ?? ctx.userId),
-                displayName: [usr?.firstname, usr?.lastname].filter(Boolean).join(" ") || String(usr?.email ?? ctx.userId),
+                name: String(usr?.username ?? ctx.userId),
+                displayName: [usr?.given_name, usr?.family_name].filter(Boolean).join(" ") || String(usr?.username ?? ctx.userId),
               },
               challenge,
               pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
@@ -223,7 +223,7 @@ export const api: ApiTree = {
           const allowCredentials = [];
 
           if (email) {
-            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = ${true}`;
+            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(username)) = LOWER(${String(email).trim()}) AND active = ${true}`;
             if (usr) {
               usrId = Number(usr.id);
               const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;

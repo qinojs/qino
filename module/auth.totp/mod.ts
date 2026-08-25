@@ -16,7 +16,7 @@ const pending = (ctx: Ctx) => ctx.sess.data["auth.totp"].pending;
 export function enrol(ctx: Ctx): { secret: string; uri: string } {
   const fresh = secret();
   pending(ctx)(fresh);
-  return { secret: fresh, uri: uri(fresh, String(ctx.user?.email || ctx.userId), ctx.req.url.host) };
+  return { secret: fresh, uri: uri(fresh, String(ctx.user?.username || ctx.userId), ctx.req.url.host) };
 }
 
 /** Finish setting one up — the code is what proves the app really holds the secret. */

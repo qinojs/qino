@@ -76,7 +76,7 @@ export async function redeemCode(app: App, type: string, usrId: number, input: s
 export function pendingContacts(app: App, type: string, usrId?: number): Promise<Row[]> {
   const now = unixTime();
   return usrId == null
-    ? app.db.query`SELECT v.type, v.address, v.usr_id, v.expires, v.sent, v.created, u.email
+    ? app.db.query`SELECT v.type, v.address, v.usr_id, v.expires, v.sent, v.created, u.username
         FROM usr_contact_verification v LEFT JOIN usr u ON u.id = v.usr_id
         WHERE v.type = ${type} AND v.expires >= ${now} ORDER BY v.created DESC`
     : app.db.query`SELECT type, address, usr_id, expires, sent, created FROM usr_contact_verification

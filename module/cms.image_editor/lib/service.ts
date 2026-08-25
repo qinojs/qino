@@ -53,7 +53,7 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
     const app = ctx.app;
     const space = getCmsVers(ctx).space;
     const rows = await app.db.query`
-        SELECT file.*, log.time AS log_time, usr.firstname AS usr_firstname, usr.lastname AS usr_lastname
+        SELECT file.*, log.time AS log_time, usr.given_name AS usr_given_name, usr.family_name AS usr_family_name
         FROM _vers_file file
           LEFT JOIN log  ON file._vers_log = log.id
           LEFT JOIN sess ON log.sess_id = sess.id
@@ -67,7 +67,7 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
         const thumb = await versionThumb(app, fileId, row);
         if (!thumb) continue;
         const log = String(row._vers_log); // restore token = this capture's version log (log-table join is display-only)
-        const usr = [row.usr_firstname, row.usr_lastname].filter(Boolean).join(" ");
+        const usr = [row.usr_given_name, row.usr_family_name].filter(Boolean).join(" ");
         trs.push(html`<tr>
         <td style="padding:.1875rem .25rem .1875rem 0; width:3.75rem"><img log="${log}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">
         <td style="padding:.1875rem 0 .1875rem 0;">${niceDate(Number(row.log_time))}${usr ? html`<br>${usr}` : ""}`);

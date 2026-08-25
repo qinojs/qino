@@ -137,7 +137,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   if (!ids.length) return [];
   const t = node.app.t;
   const rows = await node.app.db.query`
-    SELECT nc.log_id, nc.node_id, nc.data, l.time, u.email, u.firstname, u.lastname
+    SELECT nc.log_id, nc.node_id, nc.data, l.time, u.username, u.given_name, u.family_name
       FROM node_changed nc
       JOIN log l ON l.id = nc.log_id
       LEFT JOIN sess s ON l.sess_id = s.id
@@ -157,7 +157,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   const guest = await t`guest`;
   const out = [];
   for (const { row: r, labels } of events.values()) {
-    const who = r.email ? (`${r.firstname ?? ""} ${r.lastname ?? ""}`.trim() || r.email) : guest;
+    const who = r.username ? (`${r.given_name ?? ""} ${r.family_name ?? ""}`.trim() || r.username) : guest;
     out.push(html`<tr>
       <td data-value="${r.time}">${time(r.time)}
       <td>${who}

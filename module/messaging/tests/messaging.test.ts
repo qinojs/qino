@@ -9,7 +9,7 @@ import type { App } from "@qino/qino";
 async function app(): Promise<App> {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
-  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
+  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
@@ -20,7 +20,7 @@ async function app(): Promise<App> {
 
 Deno.test("messaging stores one logical message with recipient deliveries", async () => {
   const testApp = await app();
-  await testApp.db.exec`INSERT INTO usr (email) VALUES ('one@example.test'), ('two@example.test')`;
+  await testApp.db.exec`INSERT INTO usr (username) VALUES ('one@example.test'), ('two@example.test')`;
   await testApp.db.exec`INSERT INTO grp (name) VALUES ('Editors')`;
   const { id, ids } = await record(testApp, {
     channel: "sms",
@@ -52,8 +52,8 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     recipient_count: 2,
     attachments: [],
     deliveries: [
-      { id: 1, usr_id: 1, address: null, email: "one@example.test", time: 11, error: null },
-      { id: 2, usr_id: 2, address: null, email: "two@example.test", time: 12, error: "rejected" },
+      { id: 1, usr_id: 1, address: null, username: "one@example.test", time: 11, error: null },
+      { id: 2, usr_id: 2, address: null, username: "two@example.test", time: 12, error: "rejected" },
     ],
   }]);
 
@@ -73,7 +73,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     recipient_count: 2,
     attachments: [],
     deliveries: [
-      { id: 2, usr_id: 2, address: null, email: "two@example.test", time: 12, error: "rejected" },
+      { id: 2, usr_id: 2, address: null, username: "two@example.test", time: 12, error: "rejected" },
     ],
   }]);
   assertEquals(await userMessages(testApp, 3), []);

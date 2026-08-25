@@ -15,10 +15,10 @@ const CHALLENGE = b64url(new Uint8Array(createHash("sha256").update(VERIFIER).di
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL,
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
     active INTEGER NOT NULL, superuser INTEGER NOT NULL, pw TEXT NOT NULL)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "user@qino.test", active: 1, superuser: 0, pw: "" });
+  await db.table("usr").insert({ username: "user@qino.test", active: 1, superuser: 0, pw: "" });
   await db.table("oauth_client").insert({ id: "1", name: "Demo Client", redirect_uris: REDIRECT, created: unixTime() });
   return db;
 }

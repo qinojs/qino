@@ -47,7 +47,7 @@ export async function send(
   const time = unixTime();
 
   const [rows, { render }] = await Promise.all([
-    app.db.query`SELECT s.id, s.usr_id, s.endpoint, s.endpoint_hash, s.p256dh, s.auth, s.error, u.firstname, u.lastname, u.company, u.email
+    app.db.query`SELECT s.id, s.usr_id, s.endpoint, s.endpoint_hash, s.p256dh, s.auth, s.error, u.given_name, u.family_name, u.organization, u.username
       FROM webpush_subscription s LEFT JOIN usr u ON u.id = s.usr_id ${where}`,
     renderer(app, msg, "webpush"),
   ]);
@@ -110,7 +110,7 @@ export async function removeChannel(app: App, id: number): Promise<void> {
 export async function subscriptions(app: App, limit = 500): Promise<Row[]> {
   const [rows, memberships] = await Promise.all([
     app.db.query`
-      SELECT s.*, u.email
+      SELECT s.*, u.username
       FROM webpush_subscription s
       LEFT JOIN usr u ON u.id = s.usr_id
       ORDER BY s.created DESC LIMIT ${limit}`,

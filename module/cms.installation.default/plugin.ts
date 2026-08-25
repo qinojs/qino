@@ -82,7 +82,7 @@ async function installTx(app: App): Promise<void> {
 
   if (!await db.one`SELECT id FROM usr WHERE active AND NOT superuser`) {
     const adminGrp = await db.table('grp').insert({ name: 'admin', cms_access: 3 });
-    const usr = await db.table('usr').insert({ email: 'admin', pw: '', active: true, firstname: 'Client', lastname: 'Client' });
+    const usr = await db.table('usr').insert({ username: 'admin', pw: '', active: true, given_name: 'Client', family_name: 'Client' });
     await db.table('usr_grp').insert({ usr_id: usr, grp_id: adminGrp });
 
     await (await cm.node(1)).changeGroup(Number(adminGrp), 2);
@@ -91,7 +91,7 @@ async function installTx(app: App): Promise<void> {
   if (!await db.one`SELECT id FROM usr WHERE superuser = ${true}`) {
     const PW_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
     const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => PW_CHARS[b % PW_CHARS.length]).join("");
-    await db.table('usr').insert({ email: 'su', pw: await pwHash(suPw), superuser: true, active: true, firstname: 'Superuser', lastname: 'Superuser' });
+    await db.table('usr').insert({ username: 'su', pw: await pwHash(suPw), superuser: true, active: true, given_name: 'Superuser', family_name: 'Superuser' });
     console.log(`\n\x1b[33m[qino] Superuser created — email: su  password: ${suPw}\x1b[0m\n`);
   }
 

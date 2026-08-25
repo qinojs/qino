@@ -19,7 +19,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   };
 
   if ("email_used" in vars) {
-    return db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(vars.email_used ?? "").trim()})`;
+    return db.one`SELECT id FROM usr WHERE LOWER(TRIM(username)) = LOWER(${String(vars.email_used ?? "").trim()})`;
   }
 
   if ("login_as" in vars) {
@@ -66,8 +66,8 @@ export default async function (node: Node, vars:any): Promise<any> {
     const targetUsr = await target(vars.save);
     if (!targetUsr) return false;
     const allowed: Record<string, boolean> = {
-      active: true, email: true, firstname: true, lastname: true,
-      company: true, superuser: true, pw: true,
+      active: true, username: true, given_name: true, family_name: true,
+      organization: true, superuser: true, pw: true,
     };
     const name = String(vars.name ?? "");
     if (!allowed[name] || (name === "superuser" && !isSuperuser)) return false;

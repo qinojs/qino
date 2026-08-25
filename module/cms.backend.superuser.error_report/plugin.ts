@@ -153,7 +153,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       g.time,
       g.num_bot,
       g.num_unsupported,
-      usr.email AS usr_email
+      usr.username AS usr_username
     FROM (
       SELECT source, file, line, col,
         max(id)                    AS max_id,
@@ -215,7 +215,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td>
     ${msgCell}<br>
     <small>${u2.el.time(row.time)}</small>
-    <div>${row.usr_email}</div>
+    <div>${row.usr_username}</div>
   <td>
     <button class=u2-unstyle type=button
       data-delete-group
@@ -241,7 +241,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   const where = groupWhere(node.app.db, get);
 
   const rows = await db.query`
-    SELECT e.*, usr.email
+    SELECT e.*, usr.username
     FROM m_error_report e
       LEFT JOIN log  ON e.log_id   = log.id
       LEFT JOIN sess ON log.sess_id = sess.id
@@ -282,7 +282,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <a href="${row.referer}" target=_blank>${row.referer}</a><br>
     <small>${row.browser}</small>
     <br>${row.ip}
-    <br>${row.email}
+    <br>${row.username}
   <td>${fileCell}
   <td>${bt.length ? html`<table>${btTrs}</table>` : ""}`);
   }

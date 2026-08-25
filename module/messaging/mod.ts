@@ -183,7 +183,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<JournalMe
     SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.title, m.text, m.format, m.template, m.data, m.time,
       (SELECT COUNT(*) FROM message_delivery md WHERE md.message_id = m.id) AS recipient_count,
       g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.address, d.time AS delivery_time,
-      d.error, u.email
+      d.error, u.username
     FROM (SELECT m.* FROM message m ${where} ORDER BY m.time DESC, m.id DESC ${take}) m
     LEFT JOIN grp g ON g.id = m.grp_id
     LEFT JOIN message_delivery d ON d.message_id = m.id ${delivery}
@@ -213,7 +213,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<JournalMe
       id: row.delivery_id,
       usr_id: row.usr_id,
       address: row.address,
-      email: row.email,
+      username: row.username,
       time: row.delivery_time,
       error: row.error,
     });

@@ -33,12 +33,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const { note, codes } = await act(ctx);
   const remaining = ctx.userId ? await left(ctx.app, ctx.userId) : 0;
   const all = await node.app.db.query`
-    SELECT f.usr_id, COUNT(*) AS unspent, MIN(f.created) AS created, u.email
+    SELECT f.usr_id, COUNT(*) AS unspent, MIN(f.created) AS created, u.username
     FROM usr_auth_factor f LEFT JOIN usr u ON u.id = f.usr_id
-    WHERE f.type = ${"backup_codes"} GROUP BY f.usr_id, u.email ORDER BY unspent`;
+    WHERE f.type = ${"backup_codes"} GROUP BY f.usr_id, u.username ORDER BY unspent`;
 
   const rows = all.map((r) => html`<tr>
-    <td>${r.email ?? `#${r.usr_id}`}
+    <td>${r.username ?? `#${r.usr_id}`}
     <td>${r.unspent}
     <td><u2-time datetime="${new Date(Number(r.created) * 1000).toISOString()}" type=relative></u2-time>`);
 

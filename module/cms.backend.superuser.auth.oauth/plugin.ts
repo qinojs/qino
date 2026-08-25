@@ -126,14 +126,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
  *  this account open" — and unlinking here is the only way to break it. */
 async function links(app: App, csrf: string): Promise<HtmlString> {
   const rows = await app.db.query`
-    SELECT l.provider, l.sub, l.usr_id, l.created, l.last_used, u.email
+    SELECT l.provider, l.sub, l.usr_id, l.created, l.last_used, u.username
     FROM oauth_provider_usr l LEFT JOIN usr u ON u.id = l.usr_id
     ORDER BY l.last_used DESC LIMIT 500`;
 
   const when = (at: unknown) => at ? html`<u2-time datetime="${new Date(Number(at) * 1000).toISOString()}" type=relative></u2-time>` : "—";
   const list = rows.map((r) => html`<tr>
     <td>${r.provider}
-    <td>${r.email ?? `#${r.usr_id}`}
+    <td>${r.username ?? `#${r.usr_id}`}
     <td><code>${r.sub}</code>
     <td>${when(r.created)}
     <td>${when(r.last_used)}
@@ -141,7 +141,7 @@ async function links(app: App, csrf: string): Promise<HtmlString> {
       <input type=hidden name=csrfToken value="${csrf}">
       <input type=hidden name=provider value="${r.provider}">
       <input type=hidden name=sub value="${r.sub}">
-      <button class=u2-unstyle name=oauth_unlink value=1 u2-confirm="Unlink ${r.email ?? r.provider}?"><u2-ico icon=delete>✕</u2-ico></button>
+      <button class=u2-unstyle name=oauth_unlink value=1 u2-confirm="Unlink ${r.username ?? r.provider}?"><u2-ico icon=delete>✕</u2-ico></button>
     </form>`);
 
   return html`<div class=u2-card style="flex:1 1 100%">

@@ -3,7 +3,7 @@ import type { MailMessage } from "./MailMessage.ts";
 
 export type Dict = Record<string, unknown>;
 export type AddressInput = string | { address?: string; email?: string; name?: string; data?: Dict; usrId?: number; mail1_track_id?: number };
-export type UserInput = { id?: unknown; email?: unknown; firstname?: unknown; lastname?: unknown; get?: (key: string) => unknown | Promise<unknown> };
+export type UserInput = { id?: unknown; username?: unknown; given_name?: unknown; family_name?: unknown; get?: (key: string) => unknown | Promise<unknown> };
 export type RecipientType = "to" | "cc" | "bcc";
 export type Template = string | ((data: TemplateData) => string | Promise<string>);
 export type Transport = { send(message: unknown, options?: unknown): Promise<unknown>; sendMany?: (messages: unknown, options?: unknown) => AsyncIterable<unknown>; close?(): Promise<void>; closeAllConnections?(): Promise<void> };

@@ -185,10 +185,10 @@ export async function send(node: Node): Promise<HtmlString> {
       WHERE c.type = ${CONTACT}
       GROUP BY g.id, g.name ORDER BY g.name`,
     db.query`
-      SELECT c.usr_id, u.email, COUNT(*) AS addresses
+      SELECT c.usr_id, u.username, COUNT(*) AS addresses
       FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
       WHERE c.type = ${CONTACT}
-      GROUP BY c.usr_id, u.email ORDER BY u.email`,
+      GROUP BY c.usr_id, u.username ORDER BY u.username`,
     templates(node.app),
   ]);
   const own = frames.filter((f) => f.channel === CHANNEL);
@@ -203,7 +203,7 @@ export async function send(node: Node): Promise<HtmlString> {
         <optgroup label="${await t`Groups`}">${groupRows.map((g) =>
           html`<option value="grp:${g.id}">${g.name} (${g.users})</option>`)}</optgroup>
         <optgroup label="${await t`Users`}">${userRows.map((u) =>
-          html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id} (${u.addresses})</option>`)}</optgroup>
+          html`<option value="usr:${u.usr_id}">${u.username ?? "#" + u.usr_id} (${u.addresses})</option>`)}</optgroup>
       </select>
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
       ${t`Subject`} <input name=title placeholder="${await t`the first line of the text`}">
@@ -233,7 +233,7 @@ export async function contacts(node: Node): Promise<HtmlString> {
     pendingContacts(app, CONTACT),
     app.db.one`SELECT COUNT(*) FROM usr u WHERE NOT EXISTS (
       SELECT 1 FROM usr_contact c WHERE c.usr_id = u.id AND c.type = ${CONTACT})`.catch(() => 0),
-    app.db.query`SELECT id, email, firstname, lastname FROM usr ORDER BY lastname, firstname, email, id`,
+    app.db.query`SELECT id, username, given_name, family_name FROM usr ORDER BY family_name, given_name, username, id`,
   ]);
   const labels = {
     approve: await t`Approve without code`,
@@ -271,7 +271,7 @@ export async function contacts(node: Node): Promise<HtmlString> {
 
 function contact(c: Row, labels: Record<string, string>): HtmlString {
   return html`<tr>
-    <td>${c.email ?? "#" + c.usr_id}
+    <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}
     <td>${c.main ? "✓" : ""}
     <td>${u2.el.time(c.created)}
@@ -285,7 +285,7 @@ function contact(c: Row, labels: Record<string, string>): HtmlString {
 /** An address someone claimed but has not proven yet — it belongs to no user until they do. */
 function claim(c: Row, labels: Record<string, string>): HtmlString {
   return html`<tr>
-    <td>${c.email ?? "#" + c.usr_id}
+    <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}
     <td>
     <td><span class=u2-badge>${labels.pending}</span>
@@ -350,8 +350,8 @@ async function messagingUrl(app: App): Promise<string> {
 }
 
 function userName(user: Row): string {
-  const name = [user.firstname, user.lastname].filter(Boolean).join(" ");
-  return name ? `${name}${user.email ? " · " + user.email : ""}` : String(user.email ?? "#" + user.id);
+  const name = [user.given_name, user.family_name].filter(Boolean).join(" ");
+  return name ? `${name}${user.username ? " · " + user.username : ""}` : String(user.username ?? "#" + user.id);
 }
 
 function cut(text: string, max = 90): string {

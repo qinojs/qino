@@ -96,11 +96,11 @@ export async function run(s: Seed): Promise<void> {
   const team = await page(about, "Team");
   await contents(s, team, prose(s));
   for (let i = 0; i < s.many(8); i++) {
-    const { firstname, lastname, city } = s.rnd.person();
-    const person = await page(team, `${firstname} ${lastname}`);
+    const { given_name, family_name, city } = s.rnd.person();
+    const person = await page(team, `${given_name} ${family_name}`);
     await contents(s, person, [
-      { module: "cms.cont.image2", image: `${firstname} ${lastname}` },
-      { module: "cms.cont.text", text: `<p><b>${firstname} ${lastname}</b>, ${city}</p>\n${s.rnd.richText(2)}` },
+      { module: "cms.cont.image2", image: `${given_name} ${family_name}` },
+      { module: "cms.cont.text", text: `<p><b>${given_name} ${family_name}</b>, ${city}</p>\n${s.rnd.richText(2)}` },
     ]);
   }
   await contents(s, await page(about, "History"), prose(s));

@@ -114,7 +114,7 @@ export async function setMainContact(db: Db, usrId: number, type: string, input:
 /** Every verified address of one kind, with its owner — for the backend panels. */
 export function typeContacts(db: Db, type: string, limit = 500): Promise<Row[]> {
   return db.query`
-    SELECT c.*, u.email FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
+    SELECT c.*, u.username FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
     WHERE c.type = ${type} ORDER BY c.created DESC LIMIT ${limit}`;
 }
 

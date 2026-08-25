@@ -125,7 +125,7 @@ async function addresses(app: App, to: { grp?: number; usr?: number | number[]; 
     throw new Error("send needs a recipient: { grp }, { usr }, { email } or { all: true }");
   }
   return (await contactRecipients(app, "email", to, literals)).map((row) => {
-    const name = [row.firstname, row.lastname].filter(Boolean).join(" ");
+    const name = [row.given_name, row.family_name].filter(Boolean).join(" ");
     const address = addressOf({ ...row, name: name || row.name, usrId: row.usrId });
     return address ? { ...row, ...address } : { ...row, addressError: "Use an email address such as name@example.com" };
   });

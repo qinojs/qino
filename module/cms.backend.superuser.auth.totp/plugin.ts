@@ -43,14 +43,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const { note, started } = await act(ctx);
   const mine = ctx.userId ? await stored(ctx.app, ctx.userId, "totp") : [];
   const all = await node.app.db.query`
-    SELECT f.id, f.usr_id, f.label, f.created, f.last_used, u.email
+    SELECT f.id, f.usr_id, f.label, f.created, f.last_used, u.username
     FROM usr_auth_factor f LEFT JOIN usr u ON u.id = f.usr_id
     WHERE f.type = ${"totp"} ORDER BY f.created DESC LIMIT 500`;
 
   const when = (at: unknown) => at ? html`<u2-time datetime="${new Date(Number(at) * 1000).toISOString()}" type=relative></u2-time>` : "—";
 
   const rows = all.map((r) => html`<tr>
-    <td>${r.email ?? `#${r.usr_id}`}
+    <td>${r.username ?? `#${r.usr_id}`}
     <td>${r.label || "—"}
     <td>${when(r.created)}
     <td>${when(r.last_used)}

@@ -2,7 +2,7 @@
 import type { Seed } from "../seed.ts";
 
 const TEMPLATES: [string, string, string][] = [
-  ["demo-welcome", "Welcome", "<h1>Welcome, {{firstname}}</h1><p>Your account is ready.</p>"],
+  ["demo-welcome", "Welcome", "<h1>Welcome, {{given_name}}</h1><p>Your account is ready.</p>"],
   ["demo-order", "Order confirmation", "<h1>Thank you</h1><p>Order {{order}} is on its way.</p>"],
   ["demo-newsletter", "Newsletter", "<h1>{{subject}}</h1><p>{{body}}</p><p><a href=\"{{unsubscribe}}\">Unsubscribe</a></p>"],
   ["demo-reset", "Password reset", "<p>Follow <a href=\"{{link}}\">this link</a> to choose a new password.</p>"],
@@ -38,7 +38,7 @@ export async function run(s: Seed): Promise<void> {
         mail_id: id,
         email: usr.email,
         usr_id: usr.id,
-        name: `${usr.firstname} ${usr.lastname}`,
+        name: `${usr.given_name} ${usr.family_name}`,
         type: "to",
         sent,
         opened: sent && s.rnd.chance(0.5) ? sent + s.rnd.int(60, 86400) : 0,

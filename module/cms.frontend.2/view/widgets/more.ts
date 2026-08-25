@@ -8,9 +8,10 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const ctx = getCtx();
   const app = node.app;
   const u = ctx.user;
-  const firstname = u!.given_name  ?? "";
-  const lastname  = u!.family_name ?? "";
-  const email     = u!.email     ?? "";
+  const givenName  = u!.given_name  ?? "";
+  const familyName = u!.family_name ?? "";
+  // where an answer belongs: the verified contact, never the login handle
+  const email      = String((await u!.contacts.main("email"))?.address ?? "");
 
   let feedbackConfirmation = "";
   if (vars.param?.msg) {
@@ -21,8 +22,8 @@ export default async function (node: Node, vars: { param?: Record<string, string
       Link:       vars.param.link ?? "",
       Browser:    ctx.req.header("user-agent") ?? "",
       "E-Mail:":  email,
-      Firstname:   firstname,
-      Lastname:    lastname,
+      Firstname:  givenName,
+      Lastname:   familyName,
     };
     const mailHtml = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
       `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
@@ -42,7 +43,7 @@ export default async function (node: Node, vars: { param?: Record<string, string
   return html.async`<div class=more-manager>
   <div class=-standalone>
     <div class=-h1>
-      <span>${app.t`Logged in as:`} ${firstname + " " + lastname}</span>
+      <span>${app.t`Logged in as:`} ${givenName + " " + familyName}</span>
       <div>
         <button class=-tour>${app.t`Start CMS tour`}</button>
         <form method=post style="display:inline"><input type=hidden name=csrfToken value="${ctx.csrfToken}"><button name=core_logout>${app.t`log out`}</button></form>

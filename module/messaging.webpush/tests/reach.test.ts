@@ -11,7 +11,7 @@ import type { App } from "@qino/qino";
 async function app() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messagingDbSchema.properties, ...dbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.query`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER)`;
   await db.loadTables();
   const key = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);

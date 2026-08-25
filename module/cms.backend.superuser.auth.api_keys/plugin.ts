@@ -20,17 +20,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const rows = await db.query`
     SELECT k.id, k.name, k.prefix, k.created, k.expires,
-           u.id AS usr_id, u.email, u.firstname, u.lastname
+           u.id AS usr_id, u.username, u.given_name, u.family_name
     FROM api_key k
     LEFT JOIN usr u ON u.id = k.usr_id
     ORDER BY k.created DESC LIMIT 500`;
 
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const trs = rows.map((r) => {
-    const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
+    const userName = [r.given_name, r.family_name].filter(Boolean).join(" ") || r.username || `#${r.usr_id}`;
     return html`<tr>
       <td>${r.id}
-      <td>${userName}<br><small>${r.email}</small>
+      <td>${userName}<br><small>${r.username}</small>
       <td>${r.name}
       <td><code>${r.prefix}…</code>
       <td>${fmt(r.created)}

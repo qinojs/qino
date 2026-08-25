@@ -118,7 +118,7 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
             from:   String(parent ?? ""),
             before: String(before ?? ""),
             time:   String(unixTime()),
-            by:     String(ctx.user?.email ?? ""),
+            by:     String(ctx.user?.username ?? ""),
         });
         const bough = await node.bough();
         for (const child of bough.values()) {

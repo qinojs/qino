@@ -16,7 +16,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   const search = String(vars?.search ?? "");
   const grpId = Number(vars?.grp_id ?? ctx.req.query.grp_id) || null;
 
-  const sh = sqlSearch(search, ["lastname", "firstname", "company", "email"]);
+  const sh = sqlSearch(search, ["family_name", "given_name", "organization", "username"]);
   // an address someone verified finds them too, even when their login handle says something else
   const byContact = search.trim()
     ? sql` OR id IN (SELECT usr_id FROM usr_contact WHERE address = ${search.trim().toLowerCase()})`
@@ -36,10 +36,10 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
     const lastOnlineIso = vs.last_online ? new Date(Number(vs.last_online) * 1000).toISOString() : "";
 
     const detailUrl = pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + vs.id;
-    const isEmail = vs.email && /@/.test(vs.email);
+    const isEmail = vs.username && /@/.test(vs.username);
     const emailCell = isEmail
-      ? html`<a href="mailto:${vs.email}">${vs.email}</a>`
-      : vs.email;
+      ? html`<a href="mailto:${vs.username}">${vs.username}</a>`
+      : vs.username;
 
     const loginAsTd = canLoginAs
       ? html.raw('<td class=-loginAs><u2-ico icon=switch_account aria-label="Login as user">⇄</u2-ico>')
@@ -49,9 +49,9 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
 <tr itemid=${vs.id} u2-href>
   <td> ${vs.id}
   <td>
-    <a href="${detailUrl}">${(vs.firstname ?? "") + " " + (vs.lastname ?? "")}</a>
+    <a href="${detailUrl}">${(vs.given_name ?? "") + " " + (vs.family_name ?? "")}</a>
   <td> ${emailCell}
-  <td> ${vs.company}
+  <td> ${vs.organization}
   <td> ${vs.active ? "yes" : "no"}
   <td> ${vs.num_sess ?? 0}
   <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>

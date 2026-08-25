@@ -7,7 +7,7 @@ import { messagingPlaceholders } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
 
-const to = { firstname: "Ada", lastname: "Lovelace <&>" };
+const to = { given_name: "Ada", family_name: "Lovelace <&>" };
 
 async function app(...rows: Record<string, unknown>[]): Promise<App> {
   const db = new Db("sqlite::memory:");
@@ -86,9 +86,9 @@ Deno.test("a channel has one main template — a new one takes the flag over", a
 });
 
 Deno.test("what the template assembles is tidied; what the message says is not", async () => {
-  const a = await app({ name: "letter", channel: "sms", main: true, text: "  Hallo {{givenName}},\n\n\n\n{{content}}\n\n\n\n{{company}}  \n" });
+  const a = await app({ name: "letter", channel: "sms", main: true, text: "  Hallo {{givenName}},\n\n\n\n{{content}}\n\n\n\n{{organization}}  \n" });
   const { render: render } = await renderer(a, { text: "hi" }, "sms");
-  assertEquals(await render({ firstname: "Ada" }), { text: "Hallo Ada,\n\nhi", html: undefined }); // no company, no hole
+  assertEquals(await render({ given_name: "Ada" }), { text: "Hallo Ada,\n\nhi", html: undefined }); // no organization, no hole
 
   const { render: bare } = await renderer(a, { text: "a\n\n\n\nb ", template: null }, "sms");
   assertEquals((await bare()).text, "a\n\n\n\nb "); // nobody templated it, so nobody touches it
@@ -110,9 +110,9 @@ Deno.test("a value that reads like a placeholder stays text, and no inherited pr
   );
   const { render: render } = await renderer(a, { text: "hi" }, "email");
   // one round, never a second: what came out of a column is not looked at again
-  assertEquals((await render({ firstname: "{{content}}" })).text, "Hallo {{content}}, hi");
+  assertEquals((await render({ given_name: "{{content}}" })).text, "Hallo {{content}}, hi");
 
   const { render: proto } = await renderer(a, { text: "hi", template: "proto" }, "email");
-  assertEquals((await proto({ firstname: "Ada" })).text, "[—]hi");
+  assertEquals((await proto({ given_name: "Ada" })).text, "[—]hi");
   await a.db.close();
 });

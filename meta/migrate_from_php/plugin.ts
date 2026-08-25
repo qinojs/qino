@@ -19,7 +19,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await prepareForm1Settings(app);
   await migrateLegacyPageSettings(app);
   await migrateAccessLevels(app);
-  await migrateContacts(app); // usr.email is the login handle from here on, usr_contact the address
+  await migrateContacts(app); // usr.username is the login handle from here on, usr_contact the address
   await migrateFiles(app); // qg/ → data/ first, the css lives there
   await migrateCss(app); // reads the still-legacy page.module, so before the rename
   await migrateForm1(app);

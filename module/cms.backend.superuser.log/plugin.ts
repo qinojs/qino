@@ -72,7 +72,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const rows = await db.query`
     SELECT log.id, log.client_id, log.sess_id, log.time, log.post,
             ip.ip AS ip, url.url AS url, referer.url AS referer,
-            usr.id AS usr_id, usr.email, usr.firstname, usr.lastname, ua.user_agent
+            usr.id AS usr_id, usr.username, usr.given_name, usr.family_name, ua.user_agent
      FROM log
         LEFT JOIN log_url url        ON log.url_id        = url.id
         LEFT JOIN log_url referer    ON log.referer_id    = referer.id
@@ -106,7 +106,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
           : html`<span style="color:${uniqueColor(row.client_id)}">${row.client_id}</span>`}<br>
         <small style="color:${uniqueColor(info.browser)}">${info.browser} ${info.version}</small>
         ${info.bot ? html`<br><small class=u2-badge>bot</small>` : ""}
-    <td>${row.usr_id ? html`<span style="color:${uniqueColor(row.usr_id)}">${(row.firstname ?? "") + " " + (row.lastname ?? "")}</span><br><small>${row.email}</small>` : html`<small>guest</small>`}
+    <td>${row.usr_id ? html`<span style="color:${uniqueColor(row.usr_id)}">${(row.given_name ?? "") + " " + (row.family_name ?? "")}</span><br><small>${row.username}</small>` : html`<small>guest</small>`}
     <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${row.ip}
     <td>${post ? html`<pre style="max-width:25rem; max-height:6rem; overflow:auto">${post}</pre>` : "-"}
     <td>${row.id}`);
@@ -333,8 +333,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <tr><th>${t`Session`}<td><a href="${searchLink(log.sess_id)}">${log.sess_id}</a>
             <tr>
               <th>${t`User`}
-              <td>${usr ? html`${(usr.firstname ?? "") + " " + (usr.lastname ?? "")} <small>#${usr.id}</small>
-                  <br><small>${usr.email}</small>` : "guest"}
+              <td>${usr ? html`${(usr.given_name ?? "") + " " + (usr.family_name ?? "")} <small>#${usr.id}</small>
+                  <br><small>${usr.username}</small>` : "guest"}
             <tr><th>POST<td><div style="max-width:40rem; max-height:30rem; overflow:auto">${dumpData(log.post)}</div>
         </table>
     </div>

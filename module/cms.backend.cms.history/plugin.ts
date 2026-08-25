@@ -39,12 +39,12 @@ function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Reco
     where.push(sql`l.ip_id = (SELECT id FROM log_ip WHERE ip = ${s})`);
   } else if (s) {
     const like = "%" + s + "%";
-    where.push(sql`(u.email LIKE ${like} OR u.firstname LIKE ${like} OR u.lastname LIKE ${like})`);
+    where.push(sql`(u.username LIKE ${like} OR u.given_name LIKE ${like} OR u.family_name LIKE ${like})`);
   }
   return db.query`
     SELECT nc.id, nc.log_id, nc.node_id, nc.page_id, nc.data,
            l.time, l.client_id, ip.ip AS ip, ua.user_agent AS ua,
-           u.id AS usr_id, u.email, u.firstname, u.lastname
+           u.id AS usr_id, u.username, u.given_name, u.family_name
       FROM node_changed nc
       JOIN log l ON l.id = nc.log_id
       LEFT JOIN log_ip ip         ON l.ip_id         = ip.id
@@ -123,8 +123,8 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
 
 async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
   if (!r.usr_id) return html`<small>${await t`guest`}</small>`;
-  const name = `${r.firstname ?? ""} ${r.lastname ?? ""}`.trim();
-  return html.async`<b>${name || r.email}</b>${name && r.email ? html`<br><small>${r.email}</small>` : ""}`;
+  const name = `${r.given_name ?? ""} ${r.family_name ?? ""}`.trim();
+  return html.async`<b>${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 export async function backendDashboardWidget(app: App): Promise<HtmlString | string> {
   const t = app.t;
   const rows = await app.db.query`
-    SELECT nc.id, nc.node_id, nc.page_id, l.time, u.id AS usr_id, u.email, u.firstname, u.lastname
+    SELECT nc.id, nc.node_id, nc.page_id, l.time, u.id AS usr_id, u.username, u.given_name, u.family_name
       FROM node_changed nc
       JOIN log l ON l.id = nc.log_id
       LEFT JOIN sess s ON l.sess_id = s.id
@@ -184,7 +184,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString | str
     if (await (await cmsOf(app).node(Number(r.node_id))).access() < WRITE) continue;
     const uid = r.usr_id ? "u" + r.usr_id : "guest";
     if (latest.has(uid)) continue; // rows are newest-first → first hit is this user's latest
-    const name = r.usr_id ? (`${r.firstname ?? ""} ${r.lastname ?? ""}`.trim() || r.email || "#" + r.usr_id) : await t`guest`;
+    const name = r.usr_id ? (`${r.given_name ?? ""} ${r.family_name ?? ""}`.trim() || r.username || "#" + r.usr_id) : await t`guest`;
     latest.set(uid, { time: Number(r.time), name, pageId: Number(r.page_id) });
     if (latest.size >= 12) break;
   }

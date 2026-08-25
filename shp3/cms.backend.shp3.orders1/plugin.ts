@@ -31,7 +31,7 @@ async function renderList(node: Node): Promise<HtmlString> {
   const open = getCtx().req.query.shp3_open !== undefined;
   const currency = await shp3(app).mainCurrency();
 
-  const rows = await app.db.query`SELECT o.*, u.email FROM shp3_order o
+  const rows = await app.db.query`SELECT o.*, u.username FROM shp3_order o
     LEFT JOIN usr u ON u.id = o.usr_id
     WHERE ${open ? sql`o.time_ordered = ${0}` : sql`o.time_ordered > ${0}`}
     ORDER BY o.id DESC LIMIT 200`;
@@ -39,7 +39,7 @@ async function renderList(node: Node): Promise<HtmlString> {
   const trs = rows.map((vs) => html`<tr itemid=${vs.id}>
     <td><a href="?shp3_orderId=${vs.id}">${vs.id}</a>
     <td>${showTime(Number(vs.time_ordered))}
-    <td>${vs.email ?? ""}
+    <td>${vs.username ?? ""}
     <td>${vs.payment ?? ""}
     <td>${vs.shipping ?? ""}
     <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency ?? ""}
@@ -95,7 +95,7 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
       <td align=right>${money(g.price)}`);
   }
 
-  const email = await app.db.one`SELECT email FROM usr WHERE id = ${order.usr_id}`;
+  const email = await app.db.one`SELECT username FROM usr WHERE id = ${order.usr_id}`;
 
   return html.async`<div class=u2-card style="flex-grow:0;">
   <div class=-head><a href="?">${t`Orders`}</a> — ${t`Order`} ${order.id}</div>
@@ -129,14 +129,14 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const url = page ? await page.url() : "";
   const currency = await shp3.get(app)?.mainCurrency();
 
-  const rows = await db.query`SELECT o.id, o.time_ordered, o.cost, o.currency, o.paid, u.email
+  const rows = await db.query`SELECT o.id, o.time_ordered, o.cost, o.currency, o.paid, u.username
     FROM shp3_order o LEFT JOIN usr u ON u.id = o.usr_id
     WHERE o.time_ordered > ${0} ORDER BY o.id DESC LIMIT 5`.catch(() => []);
 
   const trs = rows.map((vs) => html`<tr>
     <td><a href="${url}?shp3_orderId=${vs.id}">${vs.id}</a>
     <td>${showTime(Number(vs.time_ordered))}
-    <td>${vs.email ?? ""}
+    <td>${vs.username ?? ""}
     <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency ?? ""}
     <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}`);
 

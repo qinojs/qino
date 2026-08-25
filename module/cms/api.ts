@@ -27,7 +27,7 @@ const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g
 const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
 
 const ACCESS_LIST = {
-  usr: { table: "usr", link: "page_access_usr", key: "usr_id", cols: ["usr.firstname", "usr.lastname", "usr.email"], label: sql`usr.email`, where: sql`true` },
+  usr: { table: "usr", link: "page_access_usr", key: "usr_id", cols: ["usr.given_name", "usr.family_name", "usr.username"], label: sql`usr.username`, where: sql`true` },
   grp: { table: "grp", link: "page_access_grp", key: "grp_id", cols: ["grp.name"], label: sql`grp.name`, where: sql`cms_access` },
 } as const;
 

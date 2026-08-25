@@ -22,7 +22,7 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
   const app = {
     db: {
       one: () => oneValues.shift(),
-      query: () => Promise.resolve([{ email: "user@example.test", access: 1700000000 }]),
+      query: () => Promise.resolve([{ username: "user@example.test", access: 1700000000 }]),
     },
     t: (s: TemplateStringsArray) => s.join(""),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];
@@ -56,10 +56,10 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
 Deno.test("a username that is no address is a login handle, not a failure", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate(contactDbSchema);
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "hans" });
-  await db.table("usr").insert({ email: "eva@qino.test" });
+  await db.table("usr").insert({ username: "hans" });
+  await db.table("usr").insert({ username: "eva@qino.test" });
   const app = { db } as unknown as App;
 
   await adoptUsername(app, 1, "hans");

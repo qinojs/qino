@@ -64,13 +64,13 @@ export async function send(node: Node): Promise<HtmlString> {
       WHERE c.type = ${"phone"}
       GROUP BY g.id, g.name ORDER BY g.name`,
     db.query`
-      SELECT c.usr_id, u.email, COUNT(*) AS phones
+      SELECT c.usr_id, u.username, COUNT(*) AS phones
       FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
       WHERE c.type = ${"phone"}
-      GROUP BY c.usr_id, u.email ORDER BY u.email`,
+      GROUP BY c.usr_id, u.username ORDER BY u.username`,
   ]);
   const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.phones})</option>`);
-  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id}</option>`);
+  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.username ?? "#" + u.usr_id}</option>`);
 
   return html.async`<div class=-head>${t`Send message`}</div>
   <form class=-body>
@@ -115,7 +115,7 @@ export async function phones(node: Node): Promise<HtmlString> {
 
 function phone(p: Row, labels: Record<string, string>): HtmlString {
   return html`<tr>
-    <td>${p.email ?? "#" + p.usr_id}
+    <td>${p.username ?? "#" + p.usr_id}
     <td>${p.address}
     <td>${p.main ? "✓" : ""}
     <td>${u2.el.time(p.created)}
@@ -129,7 +129,7 @@ function phone(p: Row, labels: Record<string, string>): HtmlString {
 /** A number someone claimed but has not proven yet — it belongs to no user until they do. */
 function claim(c: Row, labels: Record<string, string>): HtmlString {
   return html`<tr>
-    <td>${c.email ?? "#" + c.usr_id}
+    <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}
     <td>
     <td><span class=u2-badge>${labels.pending}</span>

@@ -198,7 +198,7 @@ async function renderAttachments(node: Node, id: number): Promise<HtmlString | s
 
 async function renderRecipients(node: Node, id: number): Promise<HtmlString> {
   const t = node.app.t;
-  const rows = await node.app.db.query`SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.email WHERE r.mail_id=${id} ORDER BY r.email`;
+  const rows = await node.app.db.query`SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.username WHERE r.mail_id=${id} ORDER BY r.email`;
   const trs = html.join(rows.map(r => {
     const data = parseData(r.data);
     const dataHtml = html.join(Object.entries(data).map(([k, v]) => html`${k}: ${String(v)}<br>`));

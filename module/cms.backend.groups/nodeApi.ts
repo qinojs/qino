@@ -52,7 +52,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     if (denied) return denied;
     // an account answers to both of its identifiers: the login handle and any verified address
     const typed = String(vars.email ?? "").trim().toLowerCase();
-    const usrId = await contactOwner(db, "email", typed) ?? Number(await db.one`SELECT id FROM usr WHERE email = ${typed}` ?? 0);
+    const usrId = await contactOwner(db, "email", typed) ?? Number(await db.one`SELECT id FROM usr WHERE username = ${typed}` ?? 0);
     if (!usrId) return { error: String(getCtx().app.t`No user found with this email address.`) };
     await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
     return 1;

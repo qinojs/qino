@@ -97,15 +97,15 @@ async function provider(app: App, name: string): Promise<any> {
 }
 
 /** Distill an id_token / userinfo response into canonical identity fields (providers vary in naming). */
-export function identity(c: any): { sub: string; email: string; verified: unknown; firstname: string; lastname: string } {
+export function identity(c: any): { sub: string; email: string; verified: unknown; given_name: string; family_name: string } {
   const full = String(c.name ?? c.global_name ?? c.username ?? c.login ?? "").trim();
   const [first, ...rest] = full.split(/\s+/);
   return {
     sub: String(c.sub ?? c.id ?? ""), // OIDC calls it sub, plain OAuth2 userinfos usually id
     email: String(c.email ?? "").trim().toLowerCase(),
     verified: c.email_verified ?? c.verified, // may be undefined — that counts as unconfirmed
-    firstname: String(c.given_name ?? first ?? ""),
-    lastname: String(c.family_name ?? rest.join(" ")),
+    given_name: String(c.given_name ?? first ?? ""),
+    family_name: String(c.family_name ?? rest.join(" ")),
   };
 }
 
@@ -147,7 +147,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     if (!usrId) {
       if (!p.auto_create) return 0;
       usrId = Number(await db.table("usr").insert({
-        email: id.email, active: 1, pw: "", superuser: 0, firstname: id.firstname, lastname: id.lastname,
+        username: id.email, active: 1, pw: "", superuser: 0, given_name: id.given_name, family_name: id.family_name,
       }));
     }
   }

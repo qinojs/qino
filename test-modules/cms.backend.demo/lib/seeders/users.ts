@@ -14,14 +14,14 @@ export async function run(s: Seed): Promise<void> {
   const groups = [...s.grps.values()];
 
   for (let i = 0; i < s.many(40); i++) {
-    const { firstname, lastname, company } = s.rnd.person();
-    let email = `${firstname}.${lastname}`.toLowerCase() + DOMAIN;
-    while (taken.has(email)) email = `${firstname}.${lastname}${taken.size}`.toLowerCase() + DOMAIN;
+    const { given_name, family_name, organization } = s.rnd.person();
+    let email = `${given_name}.${family_name}`.toLowerCase() + DOMAIN;
+    while (taken.has(email)) email = `${given_name}.${family_name}${taken.size}`.toLowerCase() + DOMAIN;
     taken.add(email);
 
     const id = Number(await s.db.table("usr").insert({
-      email, pw, firstname, lastname,
-      company: s.rnd.chance(0.4) ? company : "",
+      username: email, pw, given_name, family_name,
+      organization: s.rnd.chance(0.4) ? organization : "",
       lang: s.rnd.pick(langs),
       active: s.rnd.chance(0.9),
       superuser: false,
@@ -29,7 +29,7 @@ export async function run(s: Seed): Promise<void> {
     if (!id) continue;
     // the address is the login handle and, for a demo user, their verified contact as well
     await addContact(s.db, id, "email", email);
-    s.usrs.push({ id, email, firstname, lastname });
+    s.usrs.push({ id, email, given_name, family_name });
     s.count("users");
 
     for (const grp of s.rnd.some(groups, s.rnd.int(0, 3))) {

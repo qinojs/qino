@@ -29,16 +29,16 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
     const email = String(ctx.req.body.email ?? "").trim();
     // login compares LOWER(TRIM(email)), so two handles that differ only in case are one account
-    const exists = email && await db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email})`;
+    const exists = email && await db.one`SELECT id FROM usr WHERE LOWER(TRIM(username)) = LOWER(${email})`;
     if (exists) {
       addMessage = await html.async`<div class=-body>${t`This e-mail address already exists!`}</div>`;
     } else {
       const usrId = await db.table("usr").insert({
         active: 1,
-        email: email || null,
+        username: email || null,
         pw: ctx.req.body.pw ? await pwHash(String(ctx.req.body.pw)) : null,
-        firstname: String(ctx.req.body.firstname ?? ""),
-        lastname: String(ctx.req.body.lastname ?? ""),
+        given_name: String(ctx.req.body.given_name ?? ""),
+        family_name: String(ctx.req.body.family_name ?? ""),
       });
       await adoptUsername(app, Number(usrId), email);
       const created = ctx.req.url.toURL(); // keeps cmspid and editmode, adds the new user
@@ -75,10 +75,10 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
           <td> <input type=password name=pw autocomplete=new-password>
         <tr>
           <th> ${t`First name`}:
-          <td> <input type=text name=firstname>
+          <td> <input type=text name=given_name>
         <tr>
           <th> ${t`Last name`}:
-          <td> <input type=text name=lastname>
+          <td> <input type=text name=family_name>
         <tr>
           <th>
           <td> <button name=add>${t`add`}</button>
@@ -119,7 +119,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
 
   const loginRows = db.query`
-    SELECT usr.email, sess.access
+    SELECT usr.username, sess.access
      FROM sess
      LEFT JOIN usr ON sess.usr_id = usr.id
      WHERE sess.usr_id IS NOT NULL AND sess.access IS NOT NULL
@@ -127,7 +127,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
     logins.length
       ? html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${t`Recent logins`}<th>
-  <tbody>${logins.map((row) => html`<tr><td>${row.email ?? "–"}<td><u2-time datetime="${new Date(Number(row.access) * 1000).toISOString()}" type=relative></u2-time>`)}
+  <tbody>${logins.map((row) => html`<tr><td>${row.username ?? "–"}<td><u2-time datetime="${new Date(Number(row.access) * 1000).toISOString()}" type=relative></u2-time>`)}
 </table>`
       : html.raw(""));
 
@@ -243,19 +243,19 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <input type=checkbox name=active value=1 ${vs.active ? "checked" : ""}>
         <tr>
           <th> ${t`Username`}:
-          <td> <input name=email value="${vs.email}">
+          <td> <input name=email value="${vs.username}">
         <tr>
           <th> ${t`Password`}:
           <td> <input name=pw autocomplete=new-password type=password>
         <tr>
           <th> ${t`First name`}:
-          <td> <input name=firstname value="${vs.firstname}">
+          <td> <input name=given_name value="${vs.given_name}">
         <tr>
           <th> ${t`Last name`}:
-          <td> <input name=lastname value="${vs.lastname}">
+          <td> <input name=family_name value="${vs.family_name}">
         <tr>
           <th> ${t`Company`}:
-          <td> <input name=company value="${vs.company}">
+          <td> <input name=organization value="${vs.organization}">
         ${superuserRow}
       </table>
     </div>

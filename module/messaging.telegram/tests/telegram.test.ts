@@ -13,9 +13,9 @@ const SECRET = "test-secret";
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "user@qino.test" });
+  await db.table("usr").insert({ username: "user@qino.test" });
   return db;
 }
 
@@ -103,7 +103,7 @@ Deno.test("/start links the chat, links again, and /stop unlinks it", async () =
     assertEquals([linked?.usr_id, Number(linked?.chat_id), linked?.username], [1, 555, "someone"]);
 
     // an expired link is answered, not stored
-    await db.table("usr").insert({ email: "second@qino.test" });
+    await db.table("usr").insert({ username: "second@qino.test" });
     assertEquals(await run(update(db, startMessage("42-1-nope", 556))), 200);
     assertEquals((await db.query`SELECT id FROM telegram_chat`).length, 1);
 
@@ -171,7 +171,7 @@ Deno.test("chat arrays and user selectors add up without duplicate deliveries", 
   const table = db.table("telegram_chat");
   const target = await table.insert({ usr_id: 1, chat_id: 555, created: unixTime() });
   await table.insert({ usr_id: 1, chat_id: 556, created: unixTime() });
-  await db.table("usr").insert({ email: "second@qino.test" });
+  await db.table("usr").insert({ username: "second@qino.test" });
   const outside = await table.insert({ usr_id: 2, chat_id: 557, created: unixTime() });
   const other = await table.insert({ usr_id: 2, chat_id: 558, created: unixTime() });
   const bot = fakeTelegram([

@@ -124,7 +124,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
           </ul>
         </nav>
         <div shape=circle size=32>
-          ${ctx.user ? ctx.user.email : "Guest"}
+          ${ctx.user ? ctx.user.username : "Guest"}
         </div>
       </div>
     </div>

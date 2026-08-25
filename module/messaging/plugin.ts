@@ -11,12 +11,12 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 /** Every placeholder a message may name — what a template reads, and all any module has to
  *  look at to know what is on offer. Another module adds its own the same way. */
 export const messagingPlaceholders: Record<string, Placeholder> = {
-  ...columns({ givenName: "firstname", familyName: "lastname", company: "company", email: "email", address: "address" }),
+  ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", email: "email", address: "address" }),
   unsubscribe: placeholder,
 };
 
-/** A column of the recipient, as it stands in text and escaped in markup. The name a template
- *  writes is the standard one — `usr` still spells two of them the old way. */
+/** A field of the recipient, as it stands in text and escaped in markup. The name a template
+ *  writes is camelCase, the column it reads is the column. */
 function columns(names: Record<string, string>): Record<string, Placeholder> {
   return Object.fromEntries(Object.entries(names).map(([name, column]) => [name, (_app, to) => {
     const value = String(to[column] ?? "");

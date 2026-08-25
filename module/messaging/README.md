@@ -208,7 +208,7 @@ name is declared by a module, keyed by the name written between the braces:
 
 ```ts
 export const messagingPlaceholders: Record<string, Placeholder> = {
-  ...columns({ givenName: "firstname", familyName: "lastname", company: "company", email: "email", address: "address" }),
+  ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", email: "email", address: "address" }),
   unsubscribe: placeholder,
 };
 ```

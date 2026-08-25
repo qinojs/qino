@@ -56,7 +56,7 @@ export const cmsHelper: Bot = {
     const { user } = ctx as { user?: Usr };
     const lines = [CMS_CONTEXT];
     if (user) {
-      const name = user.firstname;
+      const name = user.given_name;
       if (name) lines.push(`\nCurrent user: ${name}`);
     }
     if (clientContext.page) {

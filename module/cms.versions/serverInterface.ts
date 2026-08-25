@@ -34,7 +34,7 @@ export async function getForNode(ctx: any, pid: any): Promise<any[]> {
 export async function logDetails(ctx: any, id: any): Promise<any> {
     id = Number(id);
     const row = await ctx.app.db.row`
-        SELECT log.time, log_ip.ip, log_user_agent.user_agent, usr.email
+        SELECT log.time, log_ip.ip, log_user_agent.user_agent, usr.username
         FROM log
           LEFT JOIN log_ip           ON log.ip_id         = log_ip.id
           LEFT JOIN log_user_agent   ON log.user_agent_id = log_user_agent.id
@@ -68,7 +68,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 
     return {
         messages,
-        usr:     row.email ?? "guest",
+        usr:     row.username ?? "guest",
         ip:      row.ip ?? "",
         browser: row.user_agent ?? "",
         time:    Number(row.time ?? 0),
@@ -105,7 +105,7 @@ async function versProtocol(ctx: any, table: string, where: Sql): Promise<any[]>
     const db = ctx.app.db;
     if (!versedTables(db)[table]) return [];
     const rows = await db.query`
-        SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.email
+        SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.username
         FROM ${sql.id("_vers_" + table)} t
         LEFT JOIN log l ON t._vers_log = l.id
         LEFT JOIN sess  ON l.sess_id = sess.id
@@ -115,6 +115,6 @@ async function versProtocol(ctx: any, table: string, where: Sql): Promise<any[]>
     return rows.map((r: any) => ({
         vers: r._vers_log,
         time: Number(r.time ?? 0),
-        usr:  r.usr_id ? r.email : "guest",
+        usr:  r.usr_id ? r.username : "guest",
     }));
 }

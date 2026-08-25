@@ -9,12 +9,12 @@ import type { Node } from "@qino/qino/cms";
 Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...telegramSchema.properties, ...contactDbSchema.properties } });
-  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER)`;
   await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "user@qino.test" });
+  await db.table("usr").insert({ username: "user@qino.test" });
   await db.table("usr_contact").insert({ type: "email", address: "user@qino.test", usr_id: 1, main: true, created: 1 });
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: 1 });
   const linked = {
@@ -123,13 +123,13 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
 Deno.test("the message detail counts opens and clicks, and lists what was reached", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties } });
-  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, firstname TEXT, lastname TEXT, company TEXT)`;
+  await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mime TEXT, size INTEGER)`;
   await db.exec`CREATE TABLE shorturl (code TEXT PRIMARY KEY, url TEXT, hits INTEGER)`;
   await db.loadTables();
-  await db.table("usr").insert({ email: "user@qino.test" });
-  await db.table("usr").insert({ email: "second@qino.test" });
+  await db.table("usr").insert({ username: "user@qino.test" });
+  await db.table("usr").insert({ username: "second@qino.test" });
   await db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
   await db.table("message_delivery").insert({ message_id: 1, usr_id: 1, address: "user@qino.test", time: 1 });
   await db.table("message_delivery").insert({ message_id: 1, usr_id: 2, address: "second@qino.test", time: 1 });
