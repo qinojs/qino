@@ -323,7 +323,7 @@ whether the outbox tries again.
 
 A delivery is owed until it went out. `message_delivery` says so itself, no second table:
 
-| `due` | `time` | `attempts` | |
+| `due` | `sent` | `attempts` | |
 | --- | --- | --- | --- |
 | `null` | `null` | `0` | held back — something has to release it |
 | `n` | `null` | | owed from `n` on |
@@ -335,7 +335,7 @@ schedule writes a timestamp, an approval rule writes it when it is satisfied. `m
 asks what is owed.
 
 `delivered()` closes one attempt. A `ChannelError` puts the delivery back with a growing wait — a
-minute, four, sixteen — and gives up after five tries; anything else is final. The `outbox` cron job
+minute, then four — and gives up after three tries; anything else is final. The `outbox` cron job
 picks up what is due and calls the channel's `deliver()`, which sends one journalled delivery again,
 rendering it from the journal so a message held for a week still says "today". A channel without
 `deliver` cannot be retried and is skipped — `email` and `sms` have it, `telegram` and `webpush`

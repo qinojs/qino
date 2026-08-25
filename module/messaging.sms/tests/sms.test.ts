@@ -255,7 +255,7 @@ Deno.test("what our own failure held back goes out on the next run", async () =>
   // no provider: nothing goes out, and the delivery stays owed
   assertEquals(await send(app, { usr: 1 }, "Hi"), 0);
   const [held] = await db.query`SELECT * FROM message_delivery`;
-  assertEquals(held.time, null);
+  assertEquals(held.sent, null);
   assertEquals(held.attempts, 1);
   assert(Number(held.due) > 0, "owed again");
 
@@ -267,5 +267,5 @@ Deno.test("what our own failure held back goes out on the next run", async () =>
   const [done] = await db.query`SELECT * FROM message_delivery`;
   assertEquals(done.due, null);
   assertEquals(done.error, null);
-  assert(Number(done.time) > 0, "went out");
+  assert(Number(done.sent) > 0, "went out");
 });

@@ -145,7 +145,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
-      SELECT d.usr_id, d.address, d.time, d.error, u.username,
+      SELECT d.usr_id, d.address, d.sent, d.due, d.attempts, d.error, u.username,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"load"}) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
@@ -202,10 +202,10 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${recipient(d, url, view)}
             <td>${d.address ?? ""}
-            <td>${u2.el.time(d.time)}
+            <td>${d.sent ? u2.el.time(d.sent) : d.due ? html`${view.due} ${u2.el.time(d.due)}` : ""}
             <td>${d.opened ? u2.el.time(d.opened) : ""}
             <td>${Number(d.clicks) || ""}
-            <td>${d.error ?? ""}`)}
+            <td>${d.error ?? ""}${Number(d.attempts) ? ` (${d.attempts}\u00d7)` : ""}`)}
         </table>
       </div>
     </div>
@@ -403,12 +403,12 @@ function cut(text: string, max = 120): string {
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments] = await Promise
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due] = await Promise
     .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`]);
+      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");

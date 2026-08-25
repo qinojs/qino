@@ -12,8 +12,8 @@ import type { Msg } from "../mod.ts";
  */
 export class ChannelError extends Error {}
 
-const ATTEMPTS = 5;
-/** A minute, then four, sixteen… — long enough for an outage, short enough to still be today. */
+const ATTEMPTS = 3;
+/** A minute, then four — long enough for a hiccup, short enough to still be today. */
 const backoff = (attempts: number) => 60 * 4 ** (attempts - 1);
 
 /**
@@ -23,21 +23,21 @@ const backoff = (attempts: number) => 60 * 4 ** (attempts - 1);
 export async function delivered(app: App, id: number, error?: unknown): Promise<void> {
   const table = app.db.table("message_delivery");
   const message = error == null ? null : errMsg(error);
-  if (!(error instanceof ChannelError)) return void await table.update(id, { error: message, time: unixTime(), due: null });
+  if (!(error instanceof ChannelError)) return void await table.update(id, { error: message, sent: unixTime(), due: null });
   const attempts = Number(await app.db.one`SELECT attempts FROM message_delivery WHERE id = ${id}` ?? 0) + 1;
   await table.update(id, { error: message, attempts, due: attempts < ATTEMPTS ? unixTime() + backoff(attempts) : null });
 }
 
 /** A new delivery's timing: an address that will never be tried is finished, the rest is owed now. */
-export const owed = (addressError: string | undefined, time: number): { error: string; time: number } | { due: number } =>
-  addressError ? { error: addressError, time } : { due: time };
+export const owed = (addressError: string | undefined, time: number): { error: string; sent: number } | { due: number } =>
+  addressError ? { error: addressError, sent: time } : { due: time };
 
 /** Deliveries that are owed now, oldest first, each carrying its message's channel and group. */
 export function due(app: App, limit = 100): Promise<Row[]> {
   return app.db.query`
     SELECT d.*, m.channel, m.grp_id FROM message_delivery d
     JOIN message m ON m.id = d.message_id
-    WHERE d.time IS NULL AND d.due IS NOT NULL AND d.due <= ${unixTime()}
+    WHERE d.sent IS NULL AND d.due IS NOT NULL AND d.due <= ${unixTime()}
     ORDER BY d.due LIMIT ${limit}`;
 }
 

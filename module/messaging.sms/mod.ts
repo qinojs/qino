@@ -96,7 +96,7 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
   const code = await requestCode(app, "phone", usrId, number);
   const journal = (error?: string) =>
     record(app, { channel: "sms", direction: "out", data: { kind: "phone_verification" }, time }, [
-      { usrId, address: number, error, time: unixTime() },
+      { usrId, address: number, error, sent: unixTime() },
     ]);
   try {
     await transmit(app, number, await app.t`Your verification code is ${code}.`);

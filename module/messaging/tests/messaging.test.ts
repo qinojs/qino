@@ -30,8 +30,8 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     data: { to: { grp: 1 } },
     time: 10,
   }, [
-    { usrId: 1, time: 11 },
-    { usrId: 2, error: "rejected", time: 12 },
+    { usrId: 1, sent: 11 },
+    { usrId: 2, error: "rejected", sent: 12 },
   ]);
 
   assertEquals(id, 1);
@@ -52,8 +52,8 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     recipient_count: 2,
     attachments: [],
     deliveries: [
-      { id: 1, usr_id: 1, address: null, username: "one@example.test", time: 11, error: null },
-      { id: 2, usr_id: 2, address: null, username: "two@example.test", time: 12, error: "rejected" },
+      { id: 1, usr_id: 1, address: null, username: "one@example.test", sent: 11, due: null, attempts: 0, error: null },
+      { id: 2, usr_id: 2, address: null, username: "two@example.test", sent: 12, due: null, attempts: 0, error: "rejected" },
     ],
   }]);
 
@@ -73,7 +73,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     recipient_count: 2,
     attachments: [],
     deliveries: [
-      { id: 2, usr_id: 2, address: null, username: "two@example.test", time: 12, error: "rejected" },
+      { id: 2, usr_id: 2, address: null, username: "two@example.test", sent: 12, due: null, attempts: 0, error: "rejected" },
     ],
   }]);
   assertEquals(await userMessages(testApp, 3), []);

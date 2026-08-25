@@ -153,7 +153,7 @@
             "x-index": true,
             "description": "Release: null = none, n = owed from n on — whoever holds it back sets it"
           },
-          "time": {
+          "sent": {
             "type": "integer",
             "x-index": true,
             "description": "When it went out; null while it has not"

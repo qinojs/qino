@@ -83,7 +83,7 @@ async function journal(app: App, mail: Parsed, to: string): Promise<void> {
     },
     data: { messageId: mail.messageId, from: sender?.address, name: sender?.name, to: mail.to?.text ?? to, html: mail.html || undefined },
     time,
-  }, [{ usrId, address: sender?.address, time: unixTime() }]);
+  }, [{ usrId, address: sender?.address, sent: unixTime() }]);
 }
 
 type ImapClient = {
