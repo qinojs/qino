@@ -320,12 +320,12 @@ Deno.test("usr.contacts is the natural way in and out of usr_contact", async () 
     ["private@qino.test", true], // the first one of a kind becomes the main
     ["work@qino.test", false],
   ]);
-  assertEquals((await usr.contacts.main("phone"))?.address, "+41791234567");
+  assertEquals(await usr.contact("phone"), "+41791234567");
 
   await usr.contacts.setMain("email", "WORK@qino.test");
-  assertEquals((await usr.contacts.main("email"))?.address, "work@qino.test");
+  assertEquals(await usr.contact("email"), "work@qino.test");
 
   await usr.contacts.remove("email", "work@qino.test");
-  assertEquals((await usr.contacts.main("email"))?.address, "private@qino.test"); // the flag moves on
+  assertEquals(await usr.contact("email"), "private@qino.test"); // the flag moves on
   await db.close();
 });

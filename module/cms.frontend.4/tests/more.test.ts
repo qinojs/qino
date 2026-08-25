@@ -40,7 +40,7 @@ Deno.test("cms.frontend.4 more: sends escaped feedback over the email channel", 
   let draft = "draft";
   const ctx = {
     req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },
-    user: { given_name: "Ada", family_name: "Lovelace", username: "ada", contacts: { main: () => Promise.resolve({ address: "ada@example.test" }) } },
+    user: { given_name: "Ada", family_name: "Lovelace", username: "ada", contact: () => Promise.resolve("ada@example.test") },
     settings: {
       cms: {
         feedback: { text: (value?: string) => value === undefined ? draft : draft = value },
@@ -73,7 +73,7 @@ Deno.test("cms.frontend.4 more: keeps feedback draft when sending fails", async 
   let draft = "Please help";
   const ctx = {
     req: { header: () => undefined },
-    user: { get: () => "", contacts: { main: () => Promise.resolve(undefined) } },
+    user: { get: () => "", contact: () => Promise.resolve(undefined) },
     settings: {
       cms: { feedback: { text: (value?: string) => value === undefined ? draft : draft = value } },
       core: { lang_ns: { cms: () => "" } },

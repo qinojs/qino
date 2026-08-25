@@ -11,7 +11,7 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const givenName  = u!.given_name  ?? "";
   const familyName = u!.family_name ?? "";
   // where an answer belongs: the verified contact, never the login handle
-  const email      = String((await u!.contacts.main("email"))?.address ?? "");
+  const email      = await u!.contact("email") ?? "";
 
   let feedbackConfirmation = "";
   if (vars.param?.msg) {

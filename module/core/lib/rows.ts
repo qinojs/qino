@@ -24,6 +24,12 @@ export class Usr extends DbRow {
   /** The verified ways to reach this person — `usr.contacts.add("email", "a@b.ch")`. */
   get contacts(): Contacts { return this.#contacts ??= new Contacts(this); }
 
+  /** Where to reach them of one kind, bare: the main address, else the oldest — `usr.contact("email")`. */
+  async contact(type: string): Promise<string | undefined> {
+    const row = await this.contacts.main(type);
+    return row && String(row.address);
+  }
+
   #grps: number[] | null = null;
   /** The groups the user is in; 0 is the group everyone is in. */
   async grps(): Promise<number[]> {

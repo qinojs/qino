@@ -52,7 +52,7 @@ async function summary(holds: Holds[], t: App["t"]): Promise<string> {
 async function author(): Promise<string[]> {
   const user = getCtx().user;
   const parts = [user?.given_name, user?.family_name].filter(Boolean).join(" ");
-  const email = String((await user?.contacts.main("email"))?.address ?? ""); // an address, not the login handle
+  const email = await user?.contact("email") ?? ""; // an address, not the login handle
   const name = parts || String(user?.username ?? "") || email;
   if (!name && !email) return [];
   return ["-c", `user.name=${name}`, "-c", `user.email=${email}`];
