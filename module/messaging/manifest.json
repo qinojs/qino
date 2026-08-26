@@ -15,7 +15,6 @@
     "lib/links.ts",
     "lib/outbox.ts",
     "lib/sanitize.ts",
-    "lib/secret.ts",
     "lib/template.ts",
     "lib/track.ts",
     "lib/unsubscribe.ts",

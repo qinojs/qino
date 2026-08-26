@@ -66,15 +66,13 @@ async function read(app: App, limit?: number, usrId?: number): Promise<JournalMe
   }
   const messages = [...byId.values()];
   if (!messages.length) return messages;
-  const ids = sql.join(messages.map((message) => sql`${message.id}`), ", ");
   const links = await app.db.query`
     SELECT a.message_id, a.file_id, a.sort FROM message_attachment a
-    WHERE a.message_id IN (${ids})
+    WHERE ${sql.in("a.message_id", messages.map((message) => message.id))}
     ORDER BY a.message_id, a.sort, a.file_id`;
   if (!links.length) return messages;
-  const fileIds = sql.join(links.map((link) => sql`${link.file_id}`), ", ");
   const files = new Map((await app.db.query`
-    SELECT id, name, mime, size FROM file WHERE id IN (${fileIds})`
+    SELECT id, name, mime, size FROM file WHERE ${sql.in("id", links.map((link) => link.file_id))}`
   ).map((file) => [Number(file.id), file]));
   for (const link of links) {
     const file = files.get(Number(link.file_id));

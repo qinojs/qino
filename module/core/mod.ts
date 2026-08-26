@@ -11,7 +11,7 @@ export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { Emitter } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
-export { b64url, grant, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";
+export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";
 
 // HTML & general utilities
 export { hee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";

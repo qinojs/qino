@@ -27,7 +27,7 @@ export async function validateTable(db: Db, tableName: string) {
     const rules = [];
     if (required.has(field) && !nullable(props.type)) rules.push(["required", sql`${ref} IS NULL`]);
     if (Array.isArray(props.enum) && props.enum.length) {
-      rules.push(["enum", sql`${ref} IS NOT NULL AND ${ref} NOT IN (${sql.join(props.enum.map((value) => sql`${value}`))})`]);
+      rules.push(["enum", sql`${ref} IS NOT NULL AND ${sql.notIn(ref, props.enum)}`]);
     }
     if (hasOwn(props, "minLength")) rules.push([`minLength ${props.minLength}`, sql`${ref} IS NOT NULL AND ${lengthSql(db, field)} < ${props.minLength}`]);
     if (hasOwn(props, "maxLength")) rules.push([`maxLength ${props.maxLength}`, sql`${ref} IS NOT NULL AND ${lengthSql(db, field)} > ${props.maxLength}`]);

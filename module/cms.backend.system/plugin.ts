@@ -278,7 +278,7 @@ async function mysqlBox(node: Node): Promise<HtmlString> {
 async function postgresBox(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   const NAMES = ["server_version", "max_connections", "shared_buffers", "work_mem"];
-  const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(NAMES.map((n) => sql`${n}`))}) ORDER BY name`;
+  const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE ${sql.in("name", NAMES)} ORDER BY name`;
   const body = rows.map((r: Record<string, string>) => html`<tr><td>${r.name}<td>${r.setting + (r.unit ? " " + r.unit : "")}`);
   return dbCard("PostgreSQL", html.join(body));
 }

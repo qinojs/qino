@@ -151,7 +151,7 @@ export class Node {
         return Number(await this.db.one`
             SELECT max(access) AS access FROM page_access_grp
             WHERE page_id = ${this.id}
-                AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`) || 0;
+                AND ${sql.in("grp_id", grps)}`) || 0;
     }
     async #accessUserLevel(user?: Usr | null): Promise<number> {
         if (!user?.$exists) return 0;

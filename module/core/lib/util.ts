@@ -10,7 +10,7 @@ import type { Manifest } from "./ModuleManager.ts";
 export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.3/";
 // jsr.io serves packages to Deno, not to browsers (no CORS, text/html) — the git tag behind the
 // same pin does. Keeps the browser working without uncdn proxying it.
-export const itemRoot = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.10/"; // pin lives in deno.json; a test keeps this in step
+export const itemRoot = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/"; // pin lives in deno.json; a test keeps this in step
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
@@ -160,7 +160,7 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
     ...like.map(f => sql`${low(f)} = ${trimmed.toLowerCase()} DESC`),
     ...words.flatMap(w => like.map(f => sql`${low(f)} LIKE ${esc(w) + "%"} ESCAPE '!' DESC`)),
   ];
-  return { where: sql`(${sql.join(ors, " OR ")})`, order: sql.join(orders, ", ") };
+  return { where: sql`(${sql.join(ors, " OR ")})`, order: sql.join(orders) };
 }
 
 /**

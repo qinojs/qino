@@ -60,9 +60,7 @@ export const api: ApiTree = {
         if (channels) {
           // the posted list is the whole truth for this browser; names the backend does not know are ignored
           const wanted = [...new Set(channels as string[])];
-          const found = wanted.length
-            ? await db.query`SELECT id FROM webpush_channel WHERE name IN (${sql.join(wanted.map((n) => sql`${n}`))})`
-            : [];
+          const found = await db.query`SELECT id FROM webpush_channel WHERE ${sql.in("name", wanted)}`;
           const link = db.table("webpush_subscription_channel");
           await db.exec`DELETE FROM webpush_subscription_channel WHERE sub_id = ${id}`;
           await Promise.all(found.map((c) => link.insert({ sub_id: id, channel_id: c.id })));

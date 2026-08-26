@@ -1,6 +1,4 @@
-import { Output, safeEqual, sha256b64url, unixTime } from "@qino/qino";
-
-import { secret } from "./secret.ts";
+import { keyed, Output, safeEqual, unixTime } from "@qino/qino";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Kind, Link } from "./links.ts";
@@ -60,7 +58,7 @@ async function marker(app: App, deliveryId: number, kind: Kind): Promise<string>
   return stem + await sign(app, stem);
 }
 
-const sign = async (app: App, stem: string) => (await sha256b64url(`${await secret(app)}\0track\0${stem}`)).slice(0, SIG);
+const sign = (app: App, stem: string) => keyed(app, ["messaging.track", stem], SIG);
 
 /** What a marker says, or nothing at all when it is not one we handed out. */
 async function read(app: App, tag: string): Promise<{ deliveryId: number; kind: Kind } | undefined> {

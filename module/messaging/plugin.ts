@@ -39,12 +39,6 @@ function columns(names: Record<string, string>): Record<string, Placeholder> {
   }]));
 }
 
-export const settingsSchema = {
-  properties: {
-    _secret: { type: "string", description: "Key for verification code hashes and tracking markers — generated on first use" },
-  },
-};
-
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => (servePixel(ctx), serveUnsubscribe(ctx)), { signal });
   app.on("shorturl:hit", (hit) => trackHit(app, hit), { signal });

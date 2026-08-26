@@ -32,7 +32,7 @@ async function app() {
   const vapid = await generateVAPIDKeys();
   return {
     db,
-    settings: { messaging: { _secret: "test-secret" }, "messaging.webpush": { subject: "mailto:admin@qino.test", ...vapid } },
+    settings: { core: { _secret: "test-secret" }, "messaging.webpush": { subject: "mailto:admin@qino.test", ...vapid } },
     url: () => Promise.resolve("https://qino.test/"),
     modules: { linked: () => [] },
   } as unknown as App;

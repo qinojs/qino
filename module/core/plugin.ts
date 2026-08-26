@@ -130,8 +130,12 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // browser-only: the core's client api, and any module's pub files — relative paths break across stores
         ctx.res.html.importMap.set("@qino/pub/", ctx.req.moduleUrl + "core/pub/js/");
         ctx.res.html.importMap.set("@qino/m/", ctx.req.moduleUrl); // core's own files keep @qino/pub/
-        // core's own qino.js imports item.js — allow the origin, and let uncdn proxy it when installed
+        // what the map points at has to be reachable, or the map is a promise the policy breaks:
+        // core's own qino.js imports item.js, and anything resolving @qino/u2/ fetches from u2's base
         ctx.res.csp["script-src"][itemRoot] = true;
+        ctx.res.csp["script-src"][u2Root] = true;
+        ctx.res.csp["style-src"][u2Root] = true;
+        ctx.res.csp["connect-src"][u2Root] = true;
         // A remote store covers the assets of all its modules, so their own declarations collapse into it
         for (const store of app.stores.all()) {
             if (!store.base.startsWith("https://")) continue;

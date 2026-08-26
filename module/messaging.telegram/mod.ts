@@ -1,6 +1,6 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql } from "@qino/qino";
-import { ChannelError, delivered, send as dispatch } from "@qino/qino/messaging";
+import { ChannelError, delivered, send as dispatch, selectors } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
@@ -11,13 +11,10 @@ import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messagin
 /** Who a `to` means as chats — a chat exists only where someone linked their account. */
 async function recipients(app: App, to: To & { chat?: number | number[] }): Promise<Recipient[]> {
   const chats = [to.chat ?? []].flat();
-  const usrs = [to.usr ?? []].flat();
   const who = [
-    to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
-    usrs.length ? sql`c.usr_id IN (${sql.join(usrs.map((id) => sql`${id}`), ", ")})` : null,
-    chats.length ? sql`c.id IN (${sql.join(chats.map((id) => sql`${id}`), ", ")})` : null,
-    to.all ? sql`${true}` : null,
-  ].flatMap((term) => term ?? []);
+    ...selectors(to, "c.usr_id"),
+    ...chats.length ? [sql.in("c.id", chats)] : [],
+  ];
   if (!who.length) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
   const rows = await app.db.query`SELECT c.usr_id, c.chat_id FROM telegram_chat c WHERE ${sql.join(who, " OR ")}`;
   return rows.map((row) => ({ ...row, address: String(row.chat_id), usrId: Number(row.usr_id) || undefined }));
@@ -45,7 +42,7 @@ function telegramText(msg: Msg, rendered: { text: string; html?: string }): { te
 async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
   const table = app.db.table("telegram_chat");
   const known = new Map((await app.db.query`SELECT id, chat_id, error FROM telegram_chat
-    WHERE chat_id IN (${sql.join(rows.map((row) => sql`${Number(row.address)}`), ", ")})`).map((chat) => [String(chat.chat_id), chat]));
+    WHERE ${sql.in("chat_id", rows.map((row) => Number(row.address)))}`).map((chat) => [String(chat.chat_id), chat]));
   const gone: number[] = [];
   let sent = 0;
   const one = async (row: Row) => {
@@ -72,7 +69,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
     if (i) await new Promise((r) => setTimeout(r, 1000));
     await Promise.all(rows.slice(i, i + 25).map(one));
   }
-  if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
+  if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE ${sql.in("id", gone)}`;
   return sent;
 }
 

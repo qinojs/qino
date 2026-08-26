@@ -64,7 +64,7 @@ export async function pruneHistory(
         if (kept && check.checked_at < before && !diffResults(kept, result).length) stale.push(sql`${check.id}`);
         else kept = result;
       }
-      if (stale.length) await app.db.exec`DELETE FROM monitor_domain_check WHERE id IN (${sql.join(stale, ",")})`;
+      if (stale.length) await app.db.exec`DELETE FROM monitor_domain_check WHERE ${sql.in("id", stale)}`;
       removed += stale.length;
       if (page.length < PAGE) break;
     }

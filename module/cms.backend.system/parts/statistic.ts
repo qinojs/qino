@@ -31,7 +31,7 @@ async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
     SELECT COALESCE(m.tbl_name, d.name) AS name, SUM(d.pgsize) AS bytes
     FROM dbstat d
       LEFT JOIN sqlite_master m ON m.name = d.name
-    WHERE COALESCE(m.tbl_name, d.name) IN (${sql.join(tables.map((t) => sql`${t}`))})
+    WHERE ${sql.in(sql`COALESCE(m.tbl_name, d.name)`, tables)}
     GROUP BY COALESCE(m.tbl_name, d.name)`.catch(() => new Map());
   return tables.map((name) => ({ name, bytes: Number(stats.get(name) ?? 0) }));
 }

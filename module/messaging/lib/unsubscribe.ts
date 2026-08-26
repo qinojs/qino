@@ -1,6 +1,4 @@
-import { hee, html, Output, safeEqual, sha256b64url, sql } from "@qino/qino";
-
-import { secret } from "./secret.ts";
+import { hee, html, keyed, Output, safeEqual, sql } from "@qino/qino";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Placeholder } from "./template.ts";
@@ -22,8 +20,7 @@ export async function link(app: App, usrId: number, grpId: number): Promise<stri
   return `${await app.url()}${PATH}/${stem}-${await sign(app, stem)}`;
 }
 
-const sign = async (app: App, stem: string) =>
-  (await sha256b64url(`${await secret(app)}\0unsubscribe\0${stem}`)).slice(0, SIG);
+const sign = (app: App, stem: string) => keyed(app, ["messaging.unsubscribe", stem], SIG);
 
 /** Who and which group a token stands for, or nothing when it is not one we handed out. */
 async function read(app: App, token: string): Promise<{ usrId: number; grpId: number } | undefined> {
@@ -85,7 +82,7 @@ export async function unsubscribeGroup(
   const ids = [...new Set(usrIds.filter((id): id is number => !!id))];
   if (grpId == null || !ids.length) return () => undefined;
   const rows = await app.db.col<number>`
-    SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId} AND usr_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")})`;
+    SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId} AND ${sql.in("usr_id", ids)}`;
   const members = new Set(rows.map(Number));
   return (usrId) => usrId && members.has(usrId) ? grpId : undefined;
 }

@@ -142,7 +142,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
       JOIN log l ON l.id = nc.log_id
       LEFT JOIN sess s ON l.sess_id = s.id
       LEFT JOIN usr u  ON s.usr_id  = u.id
-     WHERE nc.node_id IN (${sql.join(ids.map((id) => sql`${id}`), ",")})
+     WHERE ${sql.in("nc.node_id", ids)}
      ORDER BY nc.id DESC LIMIT 200`.catch(() => []);
 
   const events = new Map<string, { row: Record<string, unknown>; labels: Set<string> }>();

@@ -97,7 +97,7 @@
     "@qino/qino/uncdn": "./module/uncdn/mod.ts",
     "@qino/qino/webapp": "./module/webapp/mod.ts",
     "@qino/qino/tests": "./tests/mod.ts",
-    "@qino/item/": "jsr:/@nuxodin/item@^0.6.10/",
+    "@qino/item/": "jsr:/@nuxodin/item@^0.6.11/",
     "@qino/m/": "./module/",
     "@qino/pub/": "./module/core/pub/js/",
     "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.3/",

@@ -24,7 +24,7 @@ export async function testApp(short = true): Promise<App> {
   const linked = short ? [{ plugin: { shortener: fakeShortener() } }] : [];
   return {
     db,
-    settings: { messaging: { _secret: "test-secret" } },
+    settings: { core: { _secret: "test-secret" } },
     url: () => Promise.resolve("https://qino.test/cms2/"),
     modules: { linked: () => linked },
   } as unknown as App;

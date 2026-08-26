@@ -15,8 +15,6 @@ export type Rendering = {
   group(row: Row): number | undefined;
 };
 
-const ids = (rows: number[]) => sql.join(rows.map((id) => sql`${id}`), ", ");
-
 /** The deliveries, with what a recipient's placeholders read and the message they belong to. */
 const load = (app: App, batch: number[]) =>
   app.db.query`
@@ -25,7 +23,7 @@ const load = (app: App, batch: number[]) =>
     FROM message_delivery d
     JOIN message m ON m.id = d.message_id
     LEFT JOIN usr u ON u.id = d.usr_id
-    WHERE d.id IN (${ids(batch)})`;
+    WHERE ${sql.in("d.id", batch)}`;
 
 /** What hangs on the message, read back as the files a channel sends. */
 async function attachments(app: App, messageId: number): Promise<Attachment[] | undefined> {
@@ -74,7 +72,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
     });
   } catch (e) {
     // the batch fell over as a whole; what the channel never got to says so too
-    for (const row of await app.db.query`SELECT id, attempts FROM message_delivery WHERE sent IS NULL AND id IN (${ids(batch)})`) {
+    for (const row of await app.db.query`SELECT id, attempts FROM message_delivery WHERE sent IS NULL AND ${sql.in("id", batch)}`) {
       if (attempts.get(Number(row.id)) === Number(row.attempts)) await delivered(app, Number(row.id), e);
     }
     throw e;
@@ -90,7 +88,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
  */
 async function bookkeeping(app: App, channel: Channel, batch: number[], onError?: (message: string) => void): Promise<void> {
   if (!onError && !channel.contact) return;
-  const rows = await app.db.query`SELECT usr_id, address, error, sent FROM message_delivery WHERE id IN (${ids(batch)})`;
+  const rows = await app.db.query`SELECT usr_id, address, error, sent FROM message_delivery WHERE ${sql.in("id", batch)}`;
   for (const row of rows) {
     if (row.error) onError?.(String(row.error));
     if (channel.contact && row.usr_id && row.sent != null) {

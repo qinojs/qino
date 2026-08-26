@@ -11,12 +11,6 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 /** What a module declares that can trade a long address for a short one. */
 export const shortener = { shorten };
 
-export const settingsSchema = {
-  properties: {
-    _secret: { type: "string", description: "Key the codes are signed with — generated on first use" },
-  },
-};
-
 const PREFIX = PATH + "/";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

@@ -137,10 +137,9 @@ function reached(row: Row, view: View): HtmlString {
  *  query for all of them; the file rows ride along, so building a URL costs no further read. */
 async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>> {
   if (!rows.length) return new Map();
-  const ids = sql.join(rows.map((row) => sql`${row.id}`), ", ");
   const files = await app.db.query`
     SELECT a.message_id, f.* FROM message_attachment a JOIN file f ON f.id = a.file_id
-    WHERE a.message_id IN (${ids}) ORDER BY a.message_id, a.sort, a.file_id`;
+    WHERE ${sql.in("a.message_id", rows.map((row) => row.id))} ORDER BY a.message_id, a.sort, a.file_id`;
   const byMessage = new Map<number, Row[]>();
   for (const file of files) byMessage.getOrInsertComputed(Number(file.message_id), () => []).push(file);
 
@@ -160,7 +159,6 @@ async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>>
  *  A click is an open too — the pixel is what a mail client blocks, not the link. */
 async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
   if (!rows.length) return new Map();
-  const ids = sql.join(rows.map((row) => sql`${row.id}`), ", ");
   const stats = await app.db.query`
     SELECT d.message_id,
       COUNT(DISTINCT t.delivery_id) AS opened_count,
@@ -169,7 +167,7 @@ async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
       MIN(CASE WHEN t.kind = ${"click"} THEN t.time END) AS clicked_first
     FROM message_delivery d
     JOIN message_track t ON t.delivery_id = d.id
-    WHERE d.message_id IN (${ids})
+    WHERE ${sql.in("d.message_id", rows.map((row) => row.id))}
     GROUP BY d.message_id`;
   return new Map(stats.map((row) => [Number(row.message_id), row]));
 }
@@ -209,9 +207,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
   const attachmentList = await attachments(app, files);
   // shorturl knows what a code stands for; without that module the code stands for itself
   const targets = links.length
-    ? await app.db.query`SELECT code, url FROM shorturl WHERE code IN (${
-      sql.join(links.map((link) => sql`${link.code}`), ", ")
-    })`.catch(() => [])
+    ? await app.db.query`SELECT code, url FROM shorturl WHERE ${sql.in("code", links.map((link) => link.code))}`.catch(() => [])
     : [];
   const urls = new Map(targets.map((target) => [target.code, target.url]));
 

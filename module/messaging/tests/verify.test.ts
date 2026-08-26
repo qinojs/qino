@@ -11,7 +11,7 @@ async function app() {
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();
   // deno-lint-ignore no-explicit-any
-  return { db, settings: { messaging: { _secret: "test-secret" } } } as any;
+  return { db, settings: { core: { _secret: "test-secret" } } } as any;
 }
 
 Deno.test("a claim is proven by its code and spent either way it ends", async () => {

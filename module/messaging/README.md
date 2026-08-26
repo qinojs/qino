@@ -288,8 +288,12 @@ export const messagingChannel: Channel = {
   name: "sms",          // what lands in the journal's channel column
   label: "SMS",
   color: "--green",     // badge colour, optional
+  contact: "phone",     // the kind of address it delivers to, where one is entered at all
+  profile: "telegram",  // only where the channel's markup is a subset of its own
   reach: (app, usrId) => Promise<number>,   // how many destinations this user has
-  send,                 // the module's own send() — the declaration is not a wrapper
+  recipients,           // who a `to` means here — the one question only this module can answer
+  send,                 // the module's own send() — typed, and two lines over messaging's
+  deliver,              // a batch on the wire; everything before it is the same for all channels
 };
 ```
 

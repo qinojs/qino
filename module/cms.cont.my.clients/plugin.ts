@@ -20,7 +20,7 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<Re
   // the log is the only link between a device and its sessions; usr_id keeps it to my own
   const sessIds = await db.col<number>`SELECT DISTINCT sess_id FROM log WHERE client_id = ${id} AND sess_id IS NOT NULL`;
   if (sessIds.length) {
-    await db.exec`DELETE FROM sess WHERE usr_id = ${ctx.userId} AND id IN (${sql.join(sessIds.map((sessId) => sql`${sessId}`))})`;
+    await db.exec`DELETE FROM sess WHERE usr_id = ${ctx.userId} AND ${sql.in("id", sessIds)}`;
   }
   await link.$remove();
   const client = await db.table("client").get(id);

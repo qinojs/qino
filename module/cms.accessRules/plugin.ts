@@ -48,7 +48,7 @@ async function moduleCap(app: App, module: string, user?: Usr | null): Promise<n
     const rows = await app.db.query`
       SELECT grp.cms_access AS cap, mag.access AS override
       FROM grp LEFT JOIN cms_module_access_grp mag ON mag.grp_id = grp.id AND mag.module = ${module}
-      WHERE grp.id IN (${sql.join(grps.map((x) => sql`${x}`))})`;
+      WHERE ${sql.in("grp.id", grps)}`;
     for (const r of rows) {
       const g = Number(r.cap) || 0; // 0/null = group irrelevant for the module axis
       if (!g) continue;

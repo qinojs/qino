@@ -1,5 +1,5 @@
 // Public API of messaging. The qino plugin lives in ./plugin.ts.
-import { unixTime } from "@qino/qino";
+import { sql, unixTime } from "@qino/qino";
 
 import { dispatch } from "./lib/dispatch.ts";
 import { textOf } from "./lib/format.ts";
@@ -8,7 +8,7 @@ import { owed } from "./lib/outbox.ts";
 import type { Profile } from "./lib/format.ts";
 import type { Rendering } from "./lib/dispatch.ts";
 
-import type { App, Row } from "@qino/qino";
+import type { App, Row, Sql } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { contactRecipients } from "./lib/contact.ts";
@@ -74,6 +74,14 @@ export function titleOf(msg: Msg, max = 78): string {
  *  `notClient` names the device that must be skipped — a channel that reaches devices honours it,
  *  one that is out of band by nature (sms, mail, telegram) has none and ignores it. */
 export type To = { grp?: number; usr?: number | number[]; all?: true; notClient?: string | number };
+
+/** What a `To` selects on any table with a user column — the part every channel means the same
+ *  way. A channel adds its own terms (a chat, a subscription) and ORs the lot together. */
+export const selectors = (to: To, usr: string): Sql[] => [
+  to.grp != null ? sql`${sql.raw(usr)} IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
+  to.usr != null ? sql.in(usr, [to.usr].flat()) : null,
+  to.all ? sql`${true}` : null,
+].flatMap((term) => term ?? []);
 
 /** One destination a `To` turned out to mean. An address nobody can deliver to says why instead. */
 export type Recipient = Row & { address: string; usrId?: number; addressError?: string };

@@ -1,6 +1,4 @@
-import { ApiError, beforeProof, contactKey, proofFailed, proofPassed, safeEqual, sha256b64url, unixTime } from "@qino/qino";
-
-import { secret } from "./secret.ts";
+import { ApiError, beforeProof, contactKey, keyed, proofFailed, proofPassed, safeEqual, unixTime } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";
 
@@ -100,5 +98,5 @@ function claim(app: App, type: string, usrId: number, address: string): Promise<
 }
 
 function codeHash(app: App, type: string, address: string, code: string): Promise<string> {
-  return secret(app).then((key) => sha256b64url(`${key}\0${type}\0${address}\0${code}`));
+  return keyed(app, [`messaging.${type}`, address, code]);
 }

@@ -1,5 +1,7 @@
 import { sql } from "@qino/qino";
 
+import { selectors } from "../mod.ts";
+
 import type { App, Row } from "@qino/qino";
 
 type Recipient = Row & { address: string; usrId?: number; addressError?: string };
@@ -11,12 +13,7 @@ export async function contactRecipients(
   to: { grp?: number; usr?: number | number[]; all?: true },
   direct: Recipient[] = [],
 ): Promise<Recipient[]> {
-  const usrs = [to.usr ?? []].flat();
-  const who = [
-    to.grp != null ? sql`c.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
-    usrs.length ? sql`c.usr_id IN (${sql.join(usrs.map((id) => sql`${id}`), ", ")})` : null,
-    to.all ? sql`${true}` : null,
-  ].flatMap((term) => term ?? []);
+  const who = selectors(to, "c.usr_id");
   if (!who.length && !direct.length) throw new Error("contact recipients need a selection or direct address");
   const preferred = who.length
     ? sql`(${sql.join(who, " OR ")}) AND c.address = (
@@ -26,7 +23,7 @@ export async function contactRecipients(
     : null;
   const valid = direct.filter((recipient) => !recipient.addressError);
   const literal = valid.length
-    ? sql`c.address IN (${sql.join(valid.map(({ address }) => sql`${address}`), ", ")})`
+    ? sql.in("c.address", valid.map(({ address }) => address))
     : null;
   const found = new Map(direct.map((recipient) => [recipient.address, recipient]));
   const terms = [preferred, literal].flatMap((v) => v ?? []);

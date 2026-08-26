@@ -19,7 +19,7 @@ async function makeApp(): Promise<App> {
     dir,
     settings: {
       cms: { feedback: { email: "support@example.test" } },
-      messaging: { _secret: "test-secret" },
+      core: { _secret: "test-secret" },
       "messaging.email": { address: "app@example.test", name: "", inbound: {}, transport: { smtp: {} } },
     },
     languages: { all: [] },

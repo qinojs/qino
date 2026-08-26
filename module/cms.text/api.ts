@@ -204,7 +204,7 @@ class CmsTextService {
         const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number).filter(Number.isFinite);
         if (!ids.length) return Array.isArray(txt_ids) ? {} : false;
         lang ??= this.ctx.lang;
-        const rows = await this.#app.db.query`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
+        const rows = await this.#app.db.query`SELECT id, text FROM text WHERE ${sql.in("id", ids)} AND lang = ${lang}`;
         const map: Record<number, boolean> = {};
         for (const row of rows) map[row.id] = !!row.text;
         if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;

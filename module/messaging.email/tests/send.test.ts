@@ -23,7 +23,7 @@ async function makeApp(): Promise<App> {
     db,
     dir,
     settings: {
-      messaging: { _secret: "test-secret" },
+      core: { _secret: "test-secret" },
       "messaging.email": { address: "app@qino.test", name: "Qino", inbound: {}, transport: { smtp: {} } },
     },
     url: () => Promise.resolve("https://qino.test/"),

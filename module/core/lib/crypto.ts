@@ -28,6 +28,16 @@ export const sha256b64url = async (str: string): Promise<string> => b64url(await
 export const uid = (length?: number): string => randB64(16).slice(0, length);
 
 /** Constant-time token compare (CSRF etc.); coerces untrusted input to string. */
+/**
+ * A signature over `parts`, keyed by the app's secret — the key is the app's, the parts are what is
+ * being signed. They are joined with a separator none of them can contain, so `["ab", "c"]` and
+ * `["a", "bc"]` never sign the same; name the first one `module.what` and what is signed after it
+ * can never pass somewhere else. Verify by signing again and comparing with `safeEqual`, always at
+ * the length *you* chose — never the length of what arrived.
+ */
+export const keyed = async (app: App, parts: string[], len?: number): Promise<string> =>
+  mac(await appSecret(app), parts.join("\0"), len);
+
 export function safeEqual(a: unknown, b: string): boolean {
   const ab = ENCODER.encode(String(a ?? "")), bb = ENCODER.encode(b);
   return ab.byteLength === bb.byteLength && timingSafeEqual(ab, bb);
@@ -42,7 +52,7 @@ function sign(app: App, resource: string): Promise<{ sig: string }>;
 function sign(owner: Session | App, resource: string, options: { ttl?: number } = {}) {
   if (!isSession(owner)) return appSecret(owner).then(secret => ({ sig: mac(secret, resource) }));
   const exp = unixTime() + (options.ttl ?? TTL);
-  return { exp: String(exp), sig: mac(sessionSecret(owner), resource, exp) };
+  return { exp: String(exp), sig: mac(sessionSecret(owner), `${resource}\0${exp}`) };
 }
 
 function verify(sess: Session, resource: string, params: Params): SessionState;
@@ -67,7 +77,7 @@ function sessionSecret(sess: Session): string {
 function verifySession(sess: Session, resource: string, { exp, sig }: Params): SessionState {
   const raw = String(exp ?? ""), given = String(sig ?? "");
   if (!raw && !given) return "unsigned";
-  if (!/^\d{1,12}$/.test(raw) || !safeEqual(given, mac(sessionSecret(sess), resource, Number(raw)))) return "forged";
+  if (!/^\d{1,12}$/.test(raw) || !safeEqual(given, mac(sessionSecret(sess), `${resource}\0${raw}`))) return "forged";
   return Number(raw) < unixTime() ? "expired" : "ok";
 }
 
@@ -77,13 +87,13 @@ async function verifyPermanent(app: App, resource: string, { sig }: Params): Pro
   return safeEqual(given, mac(await appSecret(app), resource)) ? "ok" : "forged";
 }
 
+/** The one key everything of this app's is signed with — core makes it on first init. */
 async function appSecret(app: App): Promise<string> {
   const secret = String(await app.settings.core._secret ?? "");
   if (!secret) throw new Error("Core secret is not initialized");
   return secret;
 }
 
-function mac(secret: string, resource: string, exp?: number): string {
-  return createHmac("sha256", secret).update(exp === undefined ? resource : `${resource}\0${exp}`)
-    .digest("base64url").slice(0, SIGNATURE_LENGTH);
+function mac(secret: string, resource: string, len = SIGNATURE_LENGTH): string {
+  return createHmac("sha256", secret).update(resource).digest("base64url").slice(0, len);
 }

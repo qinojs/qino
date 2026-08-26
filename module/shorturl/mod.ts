@@ -1,6 +1,6 @@
 import { requestStorage } from "@qino/qino";
 
-import { keyed, PATH, sign, STEM } from "./lib/code.ts";
+import { PATH, sign, stemOf } from "./lib/code.ts";
 
 import type { App } from "@qino/qino";
 
@@ -24,7 +24,7 @@ export async function shorten(app: App, url: string, opt: { expires?: number } =
   // a code taken by another target gives way to the next round, which the link finds again the
   // same way when it is made once more — so codes stay one length instead of growing
   for (let round = 0; round < 8; round++) {
-    const code = await sign(app, (await keyed(app, "url", `${target}\n${round}`)).slice(0, STEM));
+    const code = await sign(app, await stemOf(app, `${target}\n${round}`));
     const known = await app.db.row`SELECT url, expires FROM shorturl WHERE code = ${code}`;
     if (known && known.url !== target) continue;
     if (!known) {

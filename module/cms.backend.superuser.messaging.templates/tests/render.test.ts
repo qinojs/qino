@@ -48,7 +48,7 @@ Deno.test("the preview asks the modules themselves, so a template shows the real
       },
     },
   ];
-  const app = { db, t: fakeT, url: () => Promise.resolve("http://qino.test/"), settings: { messaging: { _secret: "s" } }, modules: { linked: () => linked } };
+  const app = { db, t: fakeT, url: () => Promise.resolve("http://qino.test/"), settings: { core: { _secret: "test-secret" } }, modules: { linked: () => linked } };
   const ctx = await testContext({ url: "http://qino.test/backend/templates?name=letter&channel=email", app, set: { csrfToken: "test" } });
 
   const output = String(await requestStorage.run(ctx, () => render({ app } as never)));

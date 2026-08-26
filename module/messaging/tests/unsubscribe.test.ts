@@ -18,7 +18,7 @@ async function app(): Promise<App> {
   return {
     db,
     t: fakeT,
-    settings: { messaging: { _secret: "test-secret" } },
+    settings: { core: { _secret: "test-secret" } },
     url: () => Promise.resolve("https://qino.test/"),
     modules: { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }] },
   } as unknown as App;

@@ -1,7 +1,7 @@
 // Public API of messaging.webpush. The qino plugin lives in ./plugin.ts.
 import { sendNotification } from "web-push-neo";
 import { sql } from "@qino/qino";
-import { ChannelError, delivered, send as dispatch, titled } from "@qino/qino/messaging";
+import { ChannelError, delivered, send as dispatch, selectors, titled } from "@qino/qino/messaging";
 
 import { vapid } from "./lib/vapid.ts";
 
@@ -34,16 +34,13 @@ async function recipients(
 ): Promise<Recipient[]> {
   const clients = [to.client ?? []].flat().map(Number);
   const subs = [to.sub ?? []].flat();
-  const usrs = [to.usr ?? []].flat();
   const who = [
+    ...selectors(to, "s.usr_id"),
     to.channel != null ? sql`s.id IN (
       SELECT sc.sub_id FROM webpush_subscription_channel sc
       JOIN webpush_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})` : null,
-    to.grp != null ? sql`s.usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
-    usrs.length ? sql`s.usr_id IN (${sql.join(usrs.map((id) => sql`${id}`), ", ")})` : null,
-    clients.length ? sql`s.client_id IN (${sql.join(clients.map((id) => sql`${id}`), ", ")})` : null,
-    subs.length ? sql`s.id IN (${sql.join(subs.map((id) => sql`${id}`), ", ")})` : null,
-    to.all ? sql`${true}` : null,
+    clients.length ? sql.in("s.client_id", clients) : null,
+    subs.length ? sql.in("s.id", subs) : null,
   ].flatMap((term) => term ?? []);
   if (!who.length) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
   const rows = await app.db.query`SELECT s.usr_id, s.endpoint_hash FROM webpush_subscription s
@@ -69,7 +66,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
   const options = pushOptions(msg as PushMsg);
   const [subs, vapidDetails] = await Promise.all([
     app.db.query`SELECT * FROM webpush_subscription
-      WHERE endpoint_hash IN (${sql.join(rows.map((row) => sql`${String(row.address)}`), ", ")})`,
+      WHERE ${sql.in("endpoint_hash", rows.map((row) => String(row.address)))}`,
     vapid(app),
   ]);
   const known = new Map(subs.map((sub) => [String(sub.endpoint_hash), sub]));
@@ -97,7 +94,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
       await table.update(sub.id, { error });
     }
   }));
-  if (gone.length) await app.db.exec`DELETE FROM webpush_subscription WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
+  if (gone.length) await app.db.exec`DELETE FROM webpush_subscription WHERE ${sql.in("id", gone)}`;
   return sent;
 }
 

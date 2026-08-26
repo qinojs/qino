@@ -50,7 +50,7 @@ export const api: ApiTree = {
         if (list.length > T_WARN) ctx.app.fire("suspicious", { ctx, reason: "oversized translation batch" }).catch(() => {});
         if (list.length > T_MAX) throw new ApiError(422, "too much to translate at once");
         const hashes = list.map((text) => createHash("md5").update(text).digest("hex"));
-        const rows = await ctx.app.db.indexCol<string>`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND hash IN (${sql.join(hashes.map((h: string) => sql`${h}`))})`;
+        const rows = await ctx.app.db.indexCol<string>`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND ${sql.in("hash", hashes)}`;
         // keys are caller-supplied: on a plain object `__proto__` is swallowed and `toString` is inherited
         const result: Record<string, string> = Object.create(null);
         for (let i = 0; i < list.length; i++) {
