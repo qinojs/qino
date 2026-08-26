@@ -1,8 +1,8 @@
-import { Db, requestStorage } from "@qino/qino";
+import { Db, invoke, requestStorage } from "@qino/qino";
 import { setTransport } from "@qino/qino/messaging.email";
 import { assert, assertEquals, assertRejects, contactDbSchema, DbFileManager, fakeT, fileDbSchema, messagingDbSchema } from "@qino/qino/tests";
 
-import more from "../view/widgets/more.ts";
+import { api } from "../plugin.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
@@ -31,66 +31,60 @@ async function makeApp(): Promise<App> {
   return app;
 }
 
+/** The panel's context: a logged-in user and the feedback draft in the session. */
+function makeCtx(app: App, draft: { value: string }, user: Record<string, unknown>): Ctx {
+  return {
+    app,
+    req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },
+    user,
+    settings: { cms: { feedback: { text: (value?: string) => value === undefined ? draft.value : draft.value = value } } },
+  } as unknown as Ctx;
+}
+
 async function close(app: App): Promise<void> {
   await app.db.close();
   await Deno.remove(app.dir, { recursive: true });
 }
 
-Deno.test("cms.frontend.4 more: sends escaped feedback over the email channel", async () => {
-  let draft = "draft";
-  const ctx = {
-    req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },
-    user: { given_name: "Ada", family_name: "Lovelace", username: "ada", contact: () => Promise.resolve("ada@example.test") },
-    settings: {
-      cms: {
-        feedback: { text: (value?: string) => value === undefined ? draft : draft = value },
-      },
-      core: { lang_ns: { cms: () => "" } },
-      "cms.frontend.4": { ui: { tree_show_c: () => false } },
-    },
-  } as unknown as Ctx;
+Deno.test("cms.frontend.4 feedback: sends escaped feedback over the email channel", async () => {
   const app = await makeApp();
+  const draft = { value: "draft" };
+  const ctx = makeCtx(app, draft, {
+    given_name: "Ada",
+    family_name: "Lovelace",
+    superuser: true,
+    contact: () => Promise.resolve("ada@example.test"),
+  });
   const posted: Record<string, unknown>[] = [];
   setTransport(app, { send: (message) => (posted.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
-  const node = { app };
 
-  const html = String(await requestStorage.run(ctx, () => more(node as never, {
-    param: { msg: "<b>Hello</b>\nWorld", link: "https://example.test/?a=<b>" },
-  })));
+  await requestStorage.run(ctx, () => invoke(api, "POST", "/feedback", {
+    msg: "<b>Hello</b>\nWorld",
+    link: "https://example.test/?a=<b>",
+  }));
 
   assertEquals(String((posted[0].recipients as { address: string }[])[0].address), "support@example.test");
   assertEquals(String((posted[0].replyRecipients as { address: string }[])[0].address), "ada@example.test");
   assertEquals(String(posted[0].subject), "CMS feedback");
-  assertEquals(draft, "");
+  assertEquals(draft.value, "");
   assert(String((posted[0].content as { html: string }).html).includes("&lt;b&gt;Hello&lt;/b&gt;<br>World"));
-  assert(html.includes("Thank you for your feedback."));
-  assert(html.includes("class=-tour"));
 
   await close(app);
 });
 
-Deno.test("cms.frontend.4 more: keeps feedback draft when sending fails", async () => {
-  let draft = "Please help";
-  const ctx = {
-    req: { header: () => undefined },
-    user: { get: () => "", contact: () => Promise.resolve(undefined) },
-    settings: {
-      cms: { feedback: { text: (value?: string) => value === undefined ? draft : draft = value } },
-      core: { lang_ns: { cms: () => "" } },
-      "cms.frontend.4": { ui: { tree_show_c: () => false } },
-    },
-  } as unknown as Ctx;
+Deno.test("cms.frontend.4 feedback: keeps the draft when sending fails", async () => {
   const app = await makeApp();
+  const draft = { value: "Please help" };
+  const ctx = makeCtx(app, draft, { superuser: true, contact: () => Promise.resolve(undefined) });
   setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["refused"] }) });
-  const node = { app };
 
   await assertRejects(
-    () => requestStorage.run(ctx, () => more(node as never, { param: { msg: draft } })),
+    () => requestStorage.run(ctx, () => invoke(api, "POST", "/feedback", { msg: draft.value })),
     Error,
     "CMS feedback could not be sent",
   );
 
-  assertEquals(draft, "Please help");
+  assertEquals(draft.value, "Please help");
 
   await close(app);
 });

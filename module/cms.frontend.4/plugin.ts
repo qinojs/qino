@@ -1,8 +1,9 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
-import { Access, AccessError, ValidationError, s } from "@qino/qino";
+import { Access, AccessError, ValidationError, hee, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
+import { send } from "@qino/qino/messaging.email";
 
 import { widgetUrl } from "./view/widget.ts";
 
@@ -117,7 +118,51 @@ async function moduleFiles(ctx: Ctx, pid: number) {
   return { ...list, settings: module && module in ctx.app.settings ? module : null };
 }
 
+
+/** Feedback from the panel: goes to the address the site configured, answers go to the sender. */
+async function sendFeedback(ctx: Ctx, msg: string, link: string) {
+  const app = ctx.app;
+  const to = String(await app.settings.cms.feedback.email ?? "").trim();
+  if (!to) throw new Error("CMS feedback recipient is not configured");
+  // where an answer belongs: the verified contact, never the login handle
+  const email = await ctx.user?.contact("email") ?? "";
+  const data: Record<string, string> = {
+    "Message:": msg,
+    Link: link,
+    Browser: ctx.req.header("user-agent") ?? "",
+    "E-Mail:": email,
+    Firstname: ctx.user?.given_name ?? "",
+    Lastname: ctx.user?.family_name ?? "",
+  };
+  const body = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
+    `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
+  ).join("")}</dl>`;
+  let failed = "";
+  const sent = await send(app, { email: to }, { title: "CMS feedback", text: body, format: "html", replyTo: email }, {
+    onError: (message: string) => failed ||= message, // send() reports the reason here and nowhere else
+  });
+  if (!sent) throw new Error("CMS feedback could not be sent" + (failed ? ": " + failed : ""));
+  ctx.settings.cms.feedback.text(""); // the draft is gone with it
+  return { ok: true };
+}
+
 export const api: ApiTree = {
+  feedback: {
+    get: {
+      description: "Who is logged in, and where feedback goes.",
+      access: Access.USER,
+      execute: async (_a: unknown, ctx: Ctx) => ({
+        name: [ctx.user?.given_name, ctx.user?.family_name].filter(Boolean).join(" "),
+        email: String(await ctx.app.settings.cms.feedback.email ?? ""),
+      }),
+    },
+    post: {
+      description: "Send panel feedback by email.",
+      access: Access.USER,
+      input: s.object({ msg: s.string(), link: s.optional(s.string()) }),
+      execute: ({ msg, link }: any, ctx: Ctx) => sendFeedback(ctx, msg, link ?? ""),
+    },
+  },
   files: {
     ":pid": {
       paramSchema: s.number(),

@@ -55,7 +55,7 @@ function onEl(selector, fn) {
 }
 
 /* sidebar */
-const SIDEBAR_WIDGETS = { add: "./widgets/add.js" };
+const SIDEBAR_WIDGETS = { add: "./widgets/add.js", more: "./widgets/more.js" };
 
 const loadWidget = (widget, params, cb) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
@@ -245,53 +245,6 @@ onEl(".tree-manager", async (el) => {
   cms.Tree.onActivate = (node) => {
     inp.placeholder = inp.placeholder.replace(/"([^"]*)"/, `"${node.data.title}"`);
   };
-});
-
-onEl(".more-manager", (el) => {
-  findEl(el, ".-tour").onclick = () => import("./intro.js").then(({ start }) => start());
-  // feedback-formular
-  findEl(el, ".-feedbackform").addEventListener("submit", (e) => {
-    e.preventDefault();
-    loadWidget("more", {
-      pid: nodeId,
-      msg: findEl(e.currentTarget, "[name=msg]").value,
-      link: location.href,
-    });
-  });
-  findEl(el, ".-feedbackform [name=msg]").addEventListener(
-    "input",
-    c1.debounce((e) => {
-      setSetting(e.target.value, ["cms", "feedback", "text"]);
-    }, 200),
-  );
-  // change password
-  findEl(el, ".-pwchange").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const oldpw = findEl(e.currentTarget, "[name=old]").value;
-    const pw = findEl(e.currentTarget, "[name=new]").value;
-    const pw2 = findEl(e.currentTarget, "[name=new2]").value;
-    if (pw2 !== pw) await alert(t`Passwords do not match`);
-    else {
-      try {
-        await api.core.password.put({ oldpw, pw });
-        await alert(t`Password changed successfully.`);
-      } catch (err) { await alert(err.message); }
-    }
-  });
-  findEl(el, ".-changelang").addEventListener("change", (e) => {
-    const val = e.currentTarget.options[e.currentTarget.selectedIndex].value;
-    const path = JSON.parse(e.currentTarget.name);
-    setSetting(val, path).then(() => {
-      location.href = location.href.replace(/#.*$/, "");
-    });
-  });
-  findEl(el, ".-tree-show-c").addEventListener("change", (e) => {
-    setSetting(e.currentTarget.checked, ["cms.frontend.4", "ui", "tree_show_c"])
-      .then(() => {
-        location.href = location.href.replace(/#.*$/, "");
-      });
-  });
-
 });
 
 // The placeholder makes way for the widgets: an extra dom level would break

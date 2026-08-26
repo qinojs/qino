@@ -47,6 +47,7 @@
     "pub/panel/widgets/add.js",
     "pub/panel/widgets/extended.js",
     "pub/panel/widgets/media.js",
+    "pub/panel/widgets/more.js",
     "pub/panel/widgets/seo.js",
     "pub/panel/widgets/sets.js",
     "pub/panel/widgets/superuser.js",
@@ -54,7 +55,6 @@
     "pub/panel/widgets/urls.js",
     "view/panel.ts",
     "view/widget.ts",
-    "view/widgets/more.ts",
     "view/widgets/options.ts",
     "view/widgets/settings.ts",
     "view/widgets/tree.ts"

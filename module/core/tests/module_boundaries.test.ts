@@ -255,7 +255,6 @@ const OPTIONAL = new Set([
   "cms.backend.superuser.db.query/lib/ai.ts -> ai", // "explain this query" is a bonus, not the console
   "cms.backend.superuser.db.query/render.ts -> ai",
   "cms.frontend.2/view/widgets/more.ts -> mail", // a dashboard widget per module is the pattern itself
-  "cms.frontend.4/view/widgets/more.ts -> mail", // temporary widget-system spike
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
   "cms.backend.superuser.module/detail.ts -> fileEditor",
   "cms.cont.html/options.ts -> fileEditor",
