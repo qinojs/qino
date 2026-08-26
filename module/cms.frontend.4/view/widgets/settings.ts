@@ -49,8 +49,11 @@ export default async function (node: Node): Promise<HtmlString> {
   if (!hasWidget && (hasOptions || hasPageSettings)) accordions += await accordion("options", node, await app.t`Settings`);
 
   accordions += `<div class=-widgets pid="${node.id}"></div>`;
-  accordions += await accordion("extended", node, await app.t`Advanced`);
-  if (ctx.user?.superuser) accordions += await accordion("superuser", node, "Superuser");
+  if (ctx.user?.superuser) {
+    accordions += await accordion("txts", node, "Texts");
+    accordions += await accordion("sets", node, "Settings");
+    accordions += await accordion("superuser", node, "Superuser");
+  }
 
   return html.async`<div class="-standalone content-manager" pid="${node.id}" page-type="${node.vs.type}"
     style="font-size:1.2em;margin-bottom:1em">

@@ -45,7 +45,7 @@ async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any
 
 /** Widget modules for a node's settings: the core ones plus whatever its module ships.
   * A module declares one as `cms.node.widget = "pub/settings.js"` in its plugin. */
-async function settingsWidgets(ctx: Ctx, pid: number): Promise<{ name: string; src: string; title?: string }[]> {
+async function settingsWidgets(ctx: Ctx, pid: number) {
   const node = await cms(ctx.app).node(pid);
   if (await node.access() < 2) throw new AccessError();
   const list = [];
@@ -60,6 +60,7 @@ async function settingsWidgets(ctx: Ctx, pid: number): Promise<{ name: string; s
   if (await node.access() > 2) list.push(own("access.grp"), own("access.usr"));
   if (node.vs.type === "p") list.push(own("seo"));
   if (await ctx.app.settings["cms.frontend.4"]["show urls"]) list.push(own("urls"));
+  list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
   return list;
 }
 

@@ -294,42 +294,15 @@ onEl(".more-manager", (el) => {
 
 });
 
-onEl(".advanced-manager", (el, pid, node) => {
-  findEl(el, ".-visible").addEventListener("change", (e) => {
-    node.patch({ visible: e.currentTarget.checked });
-  });
-  findEl(el, ".-searchable").addEventListener("change", (e) => {
-    node.patch({ searchable: e.currentTarget.checked });
-  });
-  findEl(el, ".-name").addEventListener(
-    "input",
-    c1.debounce((e) => {
-      node.patch({ name: e.target.value });
-    }, 400),
-  );
-  findEl(el, ".-name").addEventListener("change", (e) => {
-    node.patch({ name: e.currentTarget.value });
-  });
-  findEl(el, ".-model").addEventListener("change", (e) => {
-    setSetting(e.currentTarget.value, e.currentTarget.name);
-    loadWidget("divers", { pid });
-  });
-  findEl(el, ".-basis").addEventListener("blur", (e) => {
-    e.currentTarget.value && api.cms.node(String(e.currentTarget.value))["insert-before"].put({ id: String(pid) });
-  });
-  findEl(el, ".-childXML").addEventListener("change", (e) => {
-    node.settings.childXML.put({ value: e.currentTarget.value });
-  });
-});
 // The placeholder makes way for the widgets: an extra dom level would break
 // `.-widgetHead:first-child`, which spaces the accordions apart.
 onEl(".-widgets", async (el, pid) => {
   const list = await api["cms.frontend.4"].widgets(pid).get();
   const nodes = [];
-  for (const { name, src, title } of list) {
+  for (const { name, src, title, context } of list) {
     const head = c1.dom.el('<div class=-widgetHead><span class=-title></span></div>');
     head.classList.toggle("-open", !!widgets.has(name)?.get({ silent: true }));
-    const w = mountWidget(src, { node: { id: pid }, dialogs: root });
+    const w = mountWidget(src, { node: { id: pid }, dialogs: root, ...context });
     w.className = "-content";
     w.setAttribute("widget", name); // the accordion click handler and the reload table find it by name
     w.addEventListener("qcms-widget-head", ({ detail }) => {
