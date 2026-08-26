@@ -48,7 +48,11 @@ export function htmlToText(html: string): string {
       if (name === "pre") pre++;
       if (name === "br") return write("\n"); // <br><br> is how mail writes a blank line, so they add up
       if (name === "hr") { breaks(2); write("---"); return breaks(2); }
-      if (name === "img") return void (attribs.alt && write(attribs.alt));
+      if (name === "img") {
+        // alt skips the usual text path — normalize it here or line breaks leak straight through
+        const alt = attribs.alt?.replace(/\s+/g, " ").trim();
+        return void (alt && write(alt));
+      }
       if (name === "a") { href = (attribs.href ?? "").trim(); linked = ""; return; }
       if (name === "ul" || name === "ol") { breaks(1); return void lists.push({ ordered: name === "ol", n: 0 }); }
       if (name === "li") {
@@ -72,9 +76,12 @@ export function htmlToText(html: string): string {
       if (hide) return void hide--;
       if (name === "a") {
         // the address is the message in plain text: keep it unless the text already is the address
-        const text = linked.trim();
+        // zero-width padding is invisible to trim(), yet would spoil both comparisons
+        const text = linked.replace(PADDING, "").trim();
         // a link whose text ended on its own line takes the address plain — no colon dangling behind it
-        if (href && !MUTE.test(href) && href !== text && href !== `mailto:${text}`) {
+        // compare the mailto form loosely — but only compare; print the address as sent
+        if (href && !MUTE.test(href) &&
+            href !== text && href.toLowerCase() !== `mailto:${text}`.toLowerCase()) {
           write(text && !out.endsWith("\n") ? `: ${href}` : href);
           address = true;
         }
@@ -88,7 +95,8 @@ export function htmlToText(html: string): string {
     },
   }, { decodeEntities: true });
 
-  parser.write(html);
+  // strip CR first: CRLF and lone CR would otherwise survive <pre> verbatim
+  parser.write(html.replace(/\r\n?/g, "\n"));
   parser.end();
   // a non-breaking space is a layout trick, not a character anyone wants in plain text
   return out.replace(/\u00a0/g, " ").replace(PADDING, "")
