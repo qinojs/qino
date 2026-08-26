@@ -1,5 +1,8 @@
-import { Access, AccessError, s } from "@qino/qino";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+
+import { Access, AccessError, ValidationError, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
+import { editorUrl } from "@qino/qino/fileEditor";
 
 import { widgetUrl } from "./view/widget.ts";
 
@@ -62,10 +65,89 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   if (await ctx.app.settings["cms.frontend.4"]["show urls"]) list.push(own("urls"));
   // sets and txts hang inside extended, mounted by it
   list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
+  if (ctx.user?.superuser) list.push(own("superuser"));
   return list; 
 }
 
+/* The two file roots behind a node's module: what the site added, and what the module ships. */
+const ROOTS = ["data", "app"] as const;
+
+async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string> {
+  const node = await cms(ctx.app).node(pid);
+  const mod = node.module as { data?: string; dir?: string } | undefined;
+  const root = scope === "app" ? mod?.dir : mod?.data;
+  if (!root) throw new ValidationError([{ message: "unknown file root", path: ["in"] }]);
+  return root;
+}
+
+/** Resolve a path inside a root. Anything that escapes it is a bad request, not a file. */
+function inRoot(root: string, path: string): string {
+  const file = resolve(root, path);
+  const rel = relative(resolve(root), file);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new ValidationError([{ message: "invalid path", path: ["path"] }]);
+  return file;
+}
+
+async function* walkDir(dir: string): AsyncGenerator<string> {
+  const entries = [];
+  try {
+    for await (const entry of Deno.readDir(dir)) entries.push(entry);
+  } catch { return; }
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (entry.isDirectory) yield* walkDir(dir + entry.name + "/");
+    else yield dir + entry.name;
+  }
+}
+
+async function moduleFiles(ctx: Ctx, pid: number) {
+  const node = await cms(ctx.app).node(pid);
+  const module = String(node.vs.module ?? "");
+  const list: Record<string, { path: string; name: string; mtime: number; editor?: string }[]> = {};
+  for (const scope of ROOTS) {
+    const root = await moduleRoot(ctx, pid, scope);
+    const files = [];
+    for await (const path of walkDir(root)) {
+      const info = await Deno.stat(path).catch(() => null);
+      if (!info?.isFile) continue;
+      files.push({ path, name: path.slice(root.length), mtime: Number(info.mtime ?? 0), editor: editorUrl(path) });
+    }
+    list[scope] = files;
+  }
+  // the module's app settings, if it has any — shown below the files
+  return { ...list, settings: module && module in ctx.app.settings ? module : null };
+}
+
 export const api: ApiTree = {
+  files: {
+    ":pid": {
+      paramSchema: s.number(),
+      get: {
+        description: "Files of the node module's two roots, plus the module's app settings name.",
+        access: Access.SUPERUSER,
+        execute: ({ pid }: any, ctx: Ctx) => moduleFiles(ctx, Number(pid)),
+      },
+      post: {
+        description: "Create an empty file in one of the roots.",
+        access: Access.SUPERUSER,
+        input: s.object({ in: s.string(), path: s.string() }),
+        execute: async ({ pid, in: scope, path }: any, ctx: Ctx) => {
+          const file = inRoot(await moduleRoot(ctx, Number(pid), scope), path);
+          await Deno.mkdir(dirname(file), { recursive: true }).catch(() => {});
+          await Deno.writeTextFile(file, "");
+          return { ok: true };
+        },
+      },
+      delete: {
+        description: "Delete a file from one of the roots.",
+        access: Access.SUPERUSER,
+        input: s.object({ in: s.string(), path: s.string() }),
+        execute: async ({ pid, in: scope, path }: any, ctx: Ctx) => {
+          await Deno.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
+          return { ok: true };
+        },
+      },
+    },
+  },
   widgets: {
     ":pid": {
       get: {

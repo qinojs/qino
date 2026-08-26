@@ -261,7 +261,7 @@ const OPTIONAL = new Set([
   "cms.cont.html/options.ts -> fileEditor",
   "cms.cont.ts/options.ts -> fileEditor",
   "cms.frontend.2/view/widgets/superuser.ts -> fileEditor",
-  "cms.frontend.4/view/widgets/superuser.ts -> fileEditor", // temporary widget-system spike
+  "cms.frontend.4/plugin.ts -> fileEditor", // editorUrl: "open this file", if an editor is configured
   "cms.templateParser/moduleTemplate.ts -> fileEditor",
 ]);
 

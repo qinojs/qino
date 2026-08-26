@@ -346,26 +346,6 @@ onEl(".content-manager", (el, pid, node) => {
     }
   });
 });
-onEl(".superuser-manager", (el, pid) => {
-  el.addEventListener("keyup", (e) => {
-    if (e.key !== "Enter") return;
-    const create = e.target.closest(".-create");
-    if (!create) return;
-    const scope = e.target.closest("[scope]").getAttribute("scope");
-    loadWidget("superuser", { pid, create: create.value, in: scope });
-  });
-  el.addEventListener("click", async (e) => {
-    const scopeEl = e.target.closest("[scope]");
-    if (!scopeEl) return;
-    const scope = scopeEl.getAttribute("scope");
-    const remove = e.target.closest(".-remove");
-    if (remove) {
-      const file = remove.parentNode.getAttribute("itemid");
-      if (await confirm(t`Really delete this file?`)) loadWidget("superuser", { pid, delete: file, in: scope });
-    }
-  });
-});
-
 if (!await ctx.settings["cms.frontend.4"].tour_seen) {
   import("./intro.js").then(({ start }) => start());
 }
