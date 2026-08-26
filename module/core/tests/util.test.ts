@@ -106,7 +106,8 @@ Deno.test("util: ctx.urlToLocalPath maps module and data public files", async ()
     },
   });
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/main.css"), "/sys/cms.foo/pub/main.css");
-  assertEquals(ctx.urlToLocalPath("http://h/app/m/local.foo/pub/main.css"), "/app/m/local.foo/pub/main.css");
+  // no directory of its own: what was mirrored into its cache on import
+  assertEquals(ctx.urlToLocalPath("http://h/app/m/local.foo/pub/main.css"), "/app/cache/local.foo/remote/pub/main.css");
   assertEquals(ctx.urlToLocalPath("http://h/app/d/custom/pub/main.css"), "/app/data/custom/pub/main.css");
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../mod.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../../deps.ts"), null);

@@ -104,7 +104,9 @@ function appRequestPathToLocalPath(appRequestPath: string, app: App) {
   const matchM = appRequestPath.match(/^m\/([^/]+)\/pub\/(.*)/);
   if (matchM && safeSeg(matchM[1])) {
     const mod = app.modules.get(matchM[1]);
-    return pubPath(mod?.dir ?? (app.dir + "m/" + matchM[1] + "/"), matchM[2]);
+    // A module without a directory of its own serves what was mirrored into its cache — under a
+    // roof of its own, so it does not mix with what the module caches for itself.
+    return pubPath(mod?.dir ?? (app.dir + "cache/" + matchM[1] + "/remote/"), matchM[2]);
   }
   const matchD = appRequestPath.match(/^d\/([^/]+)\/pub\/(.*)/);
   return matchD && safeSeg(matchD[1]) ? pubPath(app.dir + "data/" + matchD[1] + "/", matchD[2]) : null;

@@ -38,6 +38,14 @@ const TONE: Record<string, string> = {
 };
 
 // Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
+/** The icon of a module that is only offered, not imported — served by its store, so the page has
+ *  to allow that origin for images. */
+function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string }): HtmlString | undefined {
+  if (!iconMod.manifest.files?.includes("pub/module.svg")) return;
+  getCtx().res.csp["img-src"][iconMod.modUrl] = true;
+  return html`<img src="${iconMod.modUrl}pub/module.svg" width=20 height=20 alt="" style="display:block">`;
+}
+
 const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared(mod);
 
 type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
@@ -150,7 +158,15 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
       (manifest) => ({ manifest, modUrl: new URL(".", store.moduleUrl(mod)).href }),
       () => undefined,
     );
-  const icon = moduleIcon(iconMod);
+  // An imported module serves its own files; a catalog entry has none here yet and still points at
+  // the store, where a cross-origin `<use>` would never load. An `<img>` does, and this icon is
+  // decoration — nothing the row styles.
+  const use = iconMod === known ? moduleIcon(known) : undefined;
+  const icon = use
+    ? html`<svg style="display:block" width=20 height=20 aria-hidden=true>${use}</svg>`
+    : iconMod && iconMod !== known
+    ? remoteIcon(iconMod)
+    : undefined;
   const manifest = known?.manifest ?? iconMod?.manifest;
   const dependencies = manifest?.dependencies?.length ?? 0;
   const neededBy = [...all.values()].filter((other) => other.dependencies.includes(mod)).length;
@@ -173,7 +189,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
   return html`<tr data-mod="${mod}" data-store="${store?.url ?? ""}" data-state=${st}>
-    <td style="padding-right:0">${icon ? html`<svg style="display:block" width=20 height=20 aria-hidden=true>${icon}</svg>` : ""}
+    <td style="padding-right:0">${icon ?? ""}
     <td data-value="${mod}" title="${why ?? description}">${known ? html`<a href="${detail.search}">${mod}</a>` : mod}
     <td title="${store?.url}"><small>${store ? label(store.url) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}

@@ -2,6 +2,8 @@
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults, errMsg, isEmptyObject, unixTime } from "./util.ts";
+import { safeFetch } from "./fileStream.ts";
+import { uid } from "./crypto.ts";
 
 import type { App } from "./App.ts";
 
@@ -89,8 +91,9 @@ export class Module {
   get cache(): string { return `${this.#app.dir}cache/${this.name}/`; }
   /** Scratch space for a single operation — droppable when nothing runs, no backup. */
   get tmp(): string { return `${this.#app.dir}tmp/${this.name}/`; }
-  /** The module dir as a URL; only pub/ below it is reachable. Remote modules serve from their source. */
-  get modUrl(): string { return this.dir ? `${getCtx().req.moduleUrl}${this.name}/` : new URL(".", this.#source).href; }
+  /** The module dir as a URL; only pub/ below it is reachable. A remote module's public files are
+   *  mirrored into its cache when it is imported, so this address is the app's own either way. */
+  get modUrl(): string { return `${getCtx().req.moduleUrl}${this.name}/`; }
   /** data/ as a URL; only pub/ below it is reachable. */
   get dataUrl(): string { return `${getCtx().req.appUrl}d/${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
@@ -174,6 +177,7 @@ export class ModuleManager {
 
     const plugin = await import(source);
     const mod = new Module(this.#app, name, plugin, manifest, source);
+    if (!mod.dir) await mirrorPub(mod);
     this.#modules.set(name, mod);
     return mod;
   }
@@ -433,4 +437,42 @@ export class ModuleManager {
     return order;
   }
 
+}
+
+/**
+ * A remote module's public files, once, into `remote/` in its cache — where the static route already
+ * looks for a module without a directory of its own, and clear of whatever the module caches for
+ * itself. Only what the manifest lists, only from the module's own source,
+ * and only what is not there yet — a store address carries its release, so a file never changes
+ * under it. Without this, every asset of such a module would come from a foreign origin: slower,
+ * a source to declare in the policy, and for an svg behind `<use>` refused outright.
+ *
+ * A file that will not come stays missing, exactly as it is today. It must not stop the module.
+ */
+async function mirrorPub(mod: Module): Promise<void> {
+  const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
+  if (!files.length) return;
+  const dir = `${mod.cache}remote/`;
+  // One read says whether this release is already here, however many files it has. A store address
+  // carries its release, so nothing below it changes — and a different address is a different mirror.
+  const stamp = dir + ".source";
+  if (await Deno.readTextFile(stamp).catch(() => "") === mod.source) return;
+  await Deno.mkdir(dir + "pub", { recursive: true }).catch(() => {});
+  const got = await Promise.all(files.map(async (file: string) => {
+    const target = dir + file;
+    try {
+      const res = await safeFetch(new URL(file, mod.source).href);
+      if (!res.ok) throw new Error(`${res.status}`);
+      // named for this attempt, then moved: a half-written file is never served
+      const tmp = `${target}.${uid(8)}.part`;
+      await Deno.writeFile(tmp, new Uint8Array(await res.arrayBuffer()));
+      await Deno.rename(tmp, target).catch(() => Deno.remove(tmp).catch(() => {}));
+      return true;
+    } catch (e) {
+      console.warn(`module ${mod.name}: ${file} could not be fetched —`, errMsg(e));
+      return false;
+    }
+  }));
+  // only a complete mirror is stamped, so what did not come is tried again next time
+  if (got.every(Boolean)) await Deno.writeTextFile(stamp, mod.source).catch(() => {});
 }

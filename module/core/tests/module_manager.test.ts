@@ -5,6 +5,7 @@ import { Module, ModuleManager } from "../lib/ModuleManager.ts";
 import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";
 import { moduleIcon } from "../lib/util.ts";
+import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 // The managers read their `module` and `store` rows on init; these tests have no database.
 const fakeDb = () => ({
@@ -12,14 +13,18 @@ const fakeDb = () => ({
   table: () => ({ ensure: () => Promise.resolve(), delete: () => Promise.resolve() }),
 });
 
-Deno.test("moduleIcon trusts the manifest and resolves remote module URLs", () => {
+Deno.test("moduleIcon trusts the manifest, and a remote module serves from the app's own url", () => {
   const source = "https://cdn.example/modules/remote.icon/plugin.ts";
   const remote = new Module({} as any, "remote.icon", {}, { files: ["pub/module.svg"] }, source);
   const plain = new Module({} as any, "plain", {}, {}, source);
+  const ctx = { req: { moduleUrl: "https://site.test/m/" } } as any;
 
-  assertEquals(String(moduleIcon(remote)), `<use href="https://cdn.example/modules/remote.icon/pub/module.svg#main" />`);
-  assertEquals(moduleIcon(plain), undefined);
-  assertEquals(String(moduleIcon(plain, "/fallback.svg")), `<use href="/fallback.svg#main" />`);
+  requestStorage.run(ctx, () => {
+    // the file was mirrored on import, so `<use>` reaches it — across origins it never would
+    assertEquals(String(moduleIcon(remote)), `<use href="https://site.test/m/remote.icon/pub/module.svg#main" />`);
+    assertEquals(moduleIcon(plain), undefined);
+    assertEquals(String(moduleIcon(plain, "/fallback.svg")), `<use href="/fallback.svg#main" />`);
+  });
 });
 
 Deno.test({
