@@ -55,7 +55,7 @@ function onEl(selector, fn) {
 }
 
 /* sidebar */
-const SIDEBAR_WIDGETS = { add: "./widgets/add.js", more: "./widgets/more.js" };
+const SIDEBAR_WIDGETS = { add: "./widgets/add.js", more: "./widgets/more.js", settings: "./widgets/settings.js" };
 
 const loadWidget = (widget, params, cb) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
@@ -64,9 +64,10 @@ const loadWidget = (widget, params, cb) => {
   // sidebar items are placed by view/panel.ts, so the client ones are named here
   const src = SIDEBAR_WIDGETS[widget];
   if (src) {
+    const context = { node: { id: cms.cont.active || nodeId }, dialogs: root };
     const mounted = widgetEl.firstElementChild;
-    if (mounted?.reload) return mounted.reload();
-    return widgetEl.replaceChildren(mountWidget(src, { node: { id: cms.cont.active || nodeId }, dialogs: root }));
+    if (mounted?.reload) return mounted.reload(context); // the active node may have changed
+    return widgetEl.replaceChildren(mountWidget(src, context));
   }
   import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
@@ -247,58 +248,6 @@ onEl(".tree-manager", async (el) => {
   };
 });
 
-// The placeholder makes way for the widgets: an extra dom level would break
-// `.-widgetHead:first-child`, which spaces the accordions apart.
-onEl(".-widgets", async (el, pid) => {
-  const list = await api["cms.frontend.4"].widgets(pid).get();
-  const nodes = [];
-  for (const { name, src, title, context } of list) {
-    const head = c1.dom.el('<div class=-widgetHead><span class=-title></span></div>');
-    head.classList.toggle("-open", !!widgets.has(name)?.get({ silent: true }));
-    const w = mountWidget(src, { node: { id: pid }, dialogs: root, ...context });
-    w.className = "-content";
-    w.setAttribute("widget", name); // the accordion click handler and the reload table find it by name
-    w.addEventListener("qcms-widget-head", ({ detail }) => {
-      findEl(head, ".-title").textContent = detail.head ?? title ?? name;
-      for (const old of findAll(head, ".-info")) old.remove();
-      const badges = Array.isArray(detail.badge) ? detail.badge : [{ text: detail.badge }];
-      for (const b of badges) {
-        if (!b?.text && b?.text !== 0) continue;
-        const info = c1.dom.el("<span class=-info></span>");
-        if (b.class) info.classList.add(b.class);
-        info.textContent = b.text;
-        head.append(info);
-      }
-    });
-    nodes.push(head, w);
-  }
-  el.replaceWith(...nodes);
-});
-onEl(".content-manager", (el, pid, node) => {
-  // change module
-  findEl(el, ".-changemodule").addEventListener("change", (e) => {
-    const val = e.currentTarget.options[e.currentTarget.selectedIndex].value;
-    const type = el.getAttribute("page-type");
-    node.module.put({ module: val }).then(() => {
-      if (type === "p") location.href = location.href.replace(/#.*$/, "");
-    });
-    if (type !== "p") {
-      node.html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; });
-      sidebar.set("settings");
-    }
-  });
-  // parent
-  const editparent = findEl(el, ".-editparent");
-  editparent?.addEventListener("click", (e) => {
-    const pid = e.currentTarget.getAttribute("parent");
-    const type = e.currentTarget.getAttribute("page-type");
-    if (type !== "p") {
-      e.preventDefault();
-      cms.cont.active = pid;
-      sidebar.set("settings");
-    }
-  });
-});
 if (!await ctx.settings["cms.frontend.4"].tour_seen) {
   import("./intro.js").then(({ start }) => start());
 }

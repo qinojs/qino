@@ -1,6 +1,6 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
-import { Access, AccessError, ValidationError, hee, s } from "@qino/qino";
+import { $item, Access, AccessError, ValidationError, hee, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
@@ -8,6 +8,7 @@ import { send } from "@qino/qino/messaging.email";
 import { widgetUrl } from "./view/widget.ts";
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export const settingsSchema = {
   properties: {
@@ -47,6 +48,12 @@ async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any
   return html;
 }
 
+/** A module renders its own options, or the node carries settings the generic editor can show. */
+function hasOptions(node: Node): boolean {
+  const mod = node.module as { plugin?: { cms?: { node?: { options?: unknown } } } } | undefined;
+  return typeof mod?.plugin?.cms?.node?.options === "function" || !!node.settings[$item].keys?.length;
+}
+
 /** Widget modules for a node's settings: the core ones plus whatever its module ships.
   * A module declares one as `cms.node.widget = "pub/settings.js"` in its plugin. */
 async function settingsWidgets(ctx: Ctx, pid: number) {
@@ -58,7 +65,10 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   // so it keeps its place, its open state and its label whatever module the node holds.
   const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
   const modWidget = mod?.plugin?.cms?.node?.widget;
-  if (modWidget && mod?.modUrl) list.push({ name: "options", title: await ctx.app.t`Settings`, src: mod.modUrl + modWidget });
+  // The options slot: the module's own widget, else its server-rendered options — an entry without
+  // `src` is a container the widget endpoint fills, until that renderer is gone too.
+  const options = modWidget && mod?.modUrl ? { src: mod.modUrl + modWidget } : hasOptions(node) ? {} : null;
+  if (options) list.push({ name: "options", title: await ctx.app.t`Settings`, ...options });
   list.push(own("media"));
   if (await ctx.app.settings["cms.frontend.4"]["show access.time"]) list.push(own("access.time"));
   if (await node.access() > 2) list.push(own("access.grp"), own("access.usr"));

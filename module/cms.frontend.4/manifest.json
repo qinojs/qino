@@ -50,13 +50,13 @@
     "pub/panel/widgets/more.js",
     "pub/panel/widgets/seo.js",
     "pub/panel/widgets/sets.js",
+    "pub/panel/widgets/settings.js",
     "pub/panel/widgets/superuser.js",
     "pub/panel/widgets/txts.js",
     "pub/panel/widgets/urls.js",
     "view/panel.ts",
     "view/widget.ts",
     "view/widgets/options.ts",
-    "view/widgets/settings.ts",
     "view/widgets/tree.ts"
   ]
 }
