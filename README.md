@@ -32,7 +32,7 @@ Use only what your application needs. Modules work with sensible defaults, decla
 ## Quick start
 
 ```ts
-import { Access, App } from "jsr:@qino/qino";
+import { Access, App } from "jsr:@qino/qino@^0.6";
 
 const app = new App(); // SQLite by default
 

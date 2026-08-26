@@ -89,10 +89,14 @@ async function installTx(app: App): Promise<void> {
   }
   // Superuser
   if (!await db.one`SELECT id FROM usr WHERE superuser = ${true}`) {
-    const PW_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
-    const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => PW_CHARS[b % PW_CHARS.length]).join("");
+    // lookalikes (0/O, 1/l/I) are out, and of the symbols only those that mean nothing to a shell
+    // and survive being copied out of a terminal — no ! # $ % & ? * ~, which do
+    const PW_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789-_.+=@";
+    const suPw = Array.from(crypto.getRandomValues(new Uint8Array(14)), b => PW_CHARS[b % PW_CHARS.length]).join("");
     await db.table('usr').insert({ username: 'su', pw: await pwHash(suPw), superuser: true, active: true, given_name: 'Superuser', family_name: 'Superuser' });
-    console.log(`\n\x1b[33m[qino] Superuser created — email: su  password: ${suPw}\x1b[0m\n`);
+    // the colour ends before the password and nothing follows it: a selection cannot drag an
+    // escape sequence along, which is what makes the line uncopyable from a log
+    console.log(`\n\x1b[33m[qino] Superuser created — email: su  password:\x1b[0m ${suPw}\n`);
   }
 
   const adminGrp = Number(await db.one`SELECT id FROM grp WHERE name = 'admin'`);
