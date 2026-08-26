@@ -144,6 +144,21 @@ Deno.test("cms api: text fields are listed and read back without being created",
   assertEquals(Object.keys(node.textValues), ["main"]); // the read did not create "unknown"
 });
 
+Deno.test("cms api: text reads pass the output allowlist", async () => {
+  const { ctx, nodes } = await setup();
+  nodes.get(1)!.textValues.main = '<strong>Title</strong><img src=x onerror="alert(1)"><script>alert(2)</script>';
+
+  await requestStorage.run(ctx, async () => {
+    const texts: any = await invoke(api, "GET", "/node/1/texts", { values: true, lang: "de" });
+    const one = await invoke(api, "GET", "/node/1/text/main", { lang: "de" });
+    for (const value of [texts.main.value, one]) {
+      assertEquals(String(value).includes("<strong>Title</strong>"), true);
+      assertEquals(String(value).includes("onerror"), false);
+      assertEquals(String(value).includes("<script"), false);
+    }
+  });
+});
+
 Deno.test("cms api: html and html parts render through node helpers", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {

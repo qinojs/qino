@@ -50,7 +50,6 @@ export default async function (node: Node): Promise<HtmlString> {
 
   accordions += `<div class=-widgets pid="${node.id}"></div>`;
   if (ctx.user?.superuser) {
-    accordions += await accordion("txts", node, "Texts");
     accordions += await accordion("superuser", node, "Superuser");
   }
 

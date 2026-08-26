@@ -3,6 +3,7 @@ import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundE
 import { cms } from "./lib/CMS.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
 import { ADMIN } from "./lib/access.ts";
+import { sanitizeHtml } from "./lib/sanitize.ts";
 import * as fns from "./api-exports.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -74,11 +75,14 @@ const contentsJson = (node: Node) => fns.treeToJson({
     title: String(await n.showTitle()).trim() || undefined,
   }),
 });
+// Reads run through the output allowlist. The store keeps what the editor sent; nobody reading
+// a text needs the parts that may not be shown, and the inline editor round-trips through the
+// same filter anyway. Unresolved on purpose: cmspid:// links must survive editing.
 const textsJson = async (node: Node, lang?: string) => {
   const texts = (await node.texts()).entries();
   if (!lang) return Object.fromEntries(texts.map(([name, text]) => [name, text.id]));
   return Object.fromEntries(await Promise.all(
-    [...texts].map(async ([name, text]) => [name, { id: text.id, value: await text.lang(lang).get() }]),
+    [...texts].map(async ([name, text]) => [name, { id: text.id, value: sanitizeHtml(await text.lang(lang).get()) }]),
   ));
 };
 
@@ -218,12 +222,12 @@ const node = {
     ":name": {
       paramSchema: s.string().describe("Text field name from the module, e.g. \"main\"; unknown names are created."),
       get: {
-        description: "Read a text field as raw HTML, null if unset",
+        description: "Read a text field as html, null if unset",
         ...nodeRead,
         query: s.object({ lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         execute: async ({ node, name, lang }: any, ctx: Ctx) => {
           const text = (await node.texts()).get(name);
-          return text ? await text.lang(lang ?? ctx.lang).get() : null;
+          return text ? sanitizeHtml(await text.lang(lang ?? ctx.lang).get()) : null;
         },
       },
       put: {

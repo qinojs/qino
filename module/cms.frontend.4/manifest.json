@@ -45,19 +45,18 @@
     "pub/panel/widgets/access.time.js",
     "pub/panel/widgets/access.usr.js",
     "pub/panel/widgets/add.js",
+    "pub/panel/widgets/extended.js",
     "pub/panel/widgets/media.js",
     "pub/panel/widgets/seo.js",
+    "pub/panel/widgets/sets.js",
+    "pub/panel/widgets/txts.js",
     "pub/panel/widgets/urls.js",
     "view/panel.ts",
     "view/widget.ts",
-    "view/widgets/extended.ts",
     "view/widgets/more.ts",
     "view/widgets/options.ts",
-    "view/widgets/preview.ts",
-    "view/widgets/sets.ts",
     "view/widgets/settings.ts",
     "view/widgets/superuser.ts",
-    "view/widgets/tree.ts",
-    "view/widgets/txts.ts"
+    "view/widgets/tree.ts"
   ]
 }

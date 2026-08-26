@@ -61,7 +61,8 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   if (node.vs.type === "p") list.push(own("seo"));
   if (await ctx.app.settings["cms.frontend.4"]["show urls"]) list.push(own("urls"));
   list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
-  if (ctx.user?.superuser) list.push(own("sets"));
+  list.push(own("sets"));
+  list.push(own("txts"));
   return list;
 }
 
