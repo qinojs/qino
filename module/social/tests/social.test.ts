@@ -63,6 +63,21 @@ Deno.test("social retries an explicitly temporary failure without adding another
   assertEquals(rows.map((row) => [row.remote_id, row.attempts, row.error]), [["remote-a", 1, null]]);
 });
 
+Deno.test("social applies default backoff and ignores sent outbox rows", async () => {
+  let calls = 0;
+  const provider: Provider = {
+    name: "fake",
+    targets: () => Promise.resolve([{ id: "a", label: "A" }]),
+    publish: () => (++calls, Promise.reject(new ProviderError("Later"))),
+  };
+  const app = await testApp(provider);
+  const [pending] = await publish(app, await targets(app), "Hello");
+  assertEquals([calls, pending.attempts, Number(pending.due) > 0], [1, 1, true]);
+  await app.db.table("social_post").update(pending.id, { sent: 1, due: 1 });
+  assertEquals(await outbox(app), 0);
+  assertEquals(calls, 1);
+});
+
 Deno.test("social imports remote posts idempotently without marking them sent", async () => {
   const provider: Provider = { name: "fake", targets: () => Promise.resolve([]), publish: () => Promise.reject() };
   const app = await testApp(provider);

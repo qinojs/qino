@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser.social.x",
+  "description": "Configures and checks the X account used for public posts.",
+  "dependencies": [
+    "cms.backend.superuser.social",
+    "social.x"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

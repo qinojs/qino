@@ -4,6 +4,7 @@ import { errMsg, requestStorage, sha256b64url, sql, unixTime } from "@qino/qino"
 import type { App, Row } from "@qino/qino";
 
 const MAX_ATTEMPTS = 3;
+const retryAfter = (attempts: number) => 60 * 4 ** (attempts - 1);
 
 export type Target = { provider: string; id: string; label: string; url?: string };
 
@@ -26,7 +27,7 @@ export type Provider = {
   sync?(app: App, target: string): Promise<Post[]>;
 };
 
-/** A provider failure worth retrying. Without `retryAfter` it is final. */
+/** A provider failure worth retrying. `retryAfter` overrides the default backoff. */
 export class ProviderError extends Error {
   retryAfter: number | undefined;
   constructor(message: string, retryAfter?: number) {
@@ -121,7 +122,7 @@ export function posts(app: App, filter: { provider?: string; target?: string; se
 /** Publish due rows. */
 export async function outbox(app: App, limit = 100): Promise<number> {
   const ids = await app.db.col`SELECT id FROM social_post
-    WHERE due IS NOT NULL AND due <= ${unixTime()}
+    WHERE sent IS NULL AND due IS NOT NULL AND due <= ${unixTime()}
     ORDER BY due, id LIMIT ${limit}`;
   const done = await Promise.all(ids.map((id) => send(app, Number(id))));
   return done.filter(Boolean).length;
@@ -156,12 +157,11 @@ async function attach(app: App, row: Row, post: Post): Promise<void> {
 
 async function failed(app: App, id: number, error: unknown): Promise<void> {
   const attempts = Number(await app.db.one`SELECT attempts FROM social_post WHERE id = ${id}` ?? 0) + 1;
-  const wait = error instanceof ProviderError ? error.retryAfter : undefined;
-  const retry = wait != null && attempts < MAX_ATTEMPTS;
+  const retry = error instanceof ProviderError && attempts < MAX_ATTEMPTS;
   await app.db.table("social_post").update(id, {
     attempts,
     error: errMsg(error),
-    due: retry ? unixTime() + wait : null,
+    due: retry ? unixTime() + (error.retryAfter ?? retryAfter(attempts)) : null,
   });
 }
 

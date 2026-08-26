@@ -10,9 +10,7 @@ import type { Provider, Target } from "@qino/qino/social";
 // deno-lint-ignore no-explicit-any
 type Account = any;
 
-const known = new WeakMap<App, { source: string; account: Promise<Account> }>();
-
-async function config(app: App): Promise<{ base: URL; token: string; source: string }> {
+async function config(app: App): Promise<{ base: URL; token: string }> {
   const url = String(await app.settings["social.mastodon"].url ?? "").trim();
   const token = String(await app.settings["social.mastodon"].accessToken ?? "").trim();
   if (!url || !token) throw new ProviderError("social.mastodon: configure url and accessToken");
@@ -21,7 +19,7 @@ async function config(app: App): Promise<{ base: URL; token: string; source: str
   if (base.username || base.password) throw new ProviderError("social.mastodon: url must not contain credentials");
   base.pathname = "/";
   base.search = base.hash = "";
-  return { base, token, source: `${base.origin}\0${token}` };
+  return { base, token };
 }
 
 // deno-lint-ignore no-explicit-any
@@ -41,16 +39,10 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
 }
 
 async function account(app: App): Promise<Account> {
-  const cfg = await config(app);
-  let cached = known.get(app);
-  if (cached?.source === cfg.source) return cached.account;
-  cached = { source: cfg.source, account: call(app, "/api/v1/accounts/verify_credentials") };
-  cached.account.catch(() => known.delete(app));
-  known.set(app, cached);
-  return cached.account;
+  return call(app, "/api/v1/accounts/verify_credentials");
 }
 
-const targetId = (base: URL, account: Account) => `${base.origin}#${account.id}`;
+const targetId = (account: Account) => String(account.uri ?? account.url ?? account.acct ?? account.id);
 
 /** The account belonging to the configured Mastodon user token. */
 async function targets(app: App): Promise<Omit<Target, "provider">[]> {
@@ -59,7 +51,7 @@ async function targets(app: App): Promise<Omit<Target, "provider">[]> {
   if (!url && !token) return [];
   const [cfg, user] = await Promise.all([config(app), account(app)]);
   return [{
-    id: targetId(cfg.base, user),
+    id: targetId(user),
     label: String(user.display_name ?? user.acct ?? user.username ?? user.id),
     url: String(user.url ?? cfg.base.origin),
   }];
@@ -69,9 +61,9 @@ export const socialProvider: Provider = {
   name: "mastodon",
   targets,
   async publish(app, target, text, key) {
-    if (!text) throw new ProviderError("social.mastodon: text is empty");
-    const [cfg, user] = await Promise.all([config(app), account(app)]);
-    if (target !== targetId(cfg.base, user)) throw new ProviderError(`social.mastodon: unknown target ${target}`);
+    if (!text) throw new Error("social.mastodon: text is empty");
+    const user = await account(app);
+    if (target !== targetId(user)) throw new Error(`social.mastodon: unknown target ${target}`);
     const body = new URLSearchParams({ status: text });
     const status = await call(app, "/api/v1/statuses", {
       method: "POST",
@@ -82,8 +74,8 @@ export const socialProvider: Provider = {
     return postOf(target, status, String(user.id));
   },
   async sync(app, target) {
-    const [cfg, user] = await Promise.all([config(app), account(app)]);
-    if (target !== targetId(cfg.base, user)) throw new ProviderError(`social.mastodon: unknown target ${target}`);
+    const user = await account(app);
+    if (target !== targetId(user)) throw new Error(`social.mastodon: unknown target ${target}`);
     const [own, notifications] = await Promise.all([
       call(app, `/api/v1/accounts/${encodeURIComponent(user.id)}/statuses?limit=40&exclude_reblogs=true`),
       call(app, "/api/v1/notifications?types%5B%5D=mention&limit=40"),

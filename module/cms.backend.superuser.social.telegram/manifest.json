@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser.social.telegram",
+  "description": "Configures and checks Telegram targets for public posts.",
+  "dependencies": [
+    "cms.backend.superuser.social",
+    "social.telegram"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

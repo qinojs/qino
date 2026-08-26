@@ -6,24 +6,12 @@ import { ingest, ProviderError } from "@qino/qino/social";
 import type { App } from "@qino/qino";
 import type { Post, Provider, Target } from "@qino/qino/social";
 
-const known = new WeakMap<App, { source: string; targets: Promise<Omit<Target, "provider">[]> }>();
-
 async function configured(app: App): Promise<Omit<Target, "provider">[]> {
   const source = String(await app.settings["social.telegram"].targets ?? "").trim();
-  let cached = known.get(app);
-  if (cached?.source === source) return cached.targets;
   const ids = [...new Set(source.split(/[\s,]+/).filter(Boolean))];
-  let failed = false;
-  const targets = Promise.all(ids.map((id) => target(app, id).catch((e) => {
-    failed = true;
+  return (await Promise.all(ids.map((id) => target(app, id).catch((e) => {
     console.warn(`social.telegram: target ${id} failed —`, errMsg(e));
-  }))).then((all) => {
-    if (failed && known.get(app)?.source === source) known.delete(app);
-    return all.flatMap((target) => target ? [target] : []);
-  });
-  cached = { source, targets };
-  known.set(app, cached);
-  return cached.targets;
+  })))).flatMap((target) => target ? [target] : []);
 }
 
 // deno-lint-ignore no-explicit-any
@@ -49,9 +37,9 @@ export async function receive(app: App, up: any): Promise<void> {
 }
 
 // deno-lint-ignore no-explicit-any
-function postOf(target: Omit<Target, "provider">, msg: any, botId: number): Post {
+function postOf(target: Omit<Target, "provider">, msg: any, botId?: number): Post {
   const sender = msg.sender_chat ?? msg.from ?? {};
-  const own = msg.chat.type === "channel" || Number(sender.id) === Number(msg.chat.id) || Number(sender.id) === botId;
+  const own = botId == null || msg.chat?.type === "channel" || Number(sender.id) === Number(msg.chat?.id) || Number(sender.id) === botId;
   const id = String(msg.message_id);
   return {
     target: target.id,
@@ -70,15 +58,17 @@ export const socialProvider: Provider = {
   name: "telegram",
   targets: configured,
   async publish(app, target, text) {
-    if (!text || text.length > 4096) throw new ProviderError("social.telegram: text must contain 1–4096 characters");
+    if (!text || text.length > 4096) throw new Error("social.telegram: text must contain 1–4096 characters");
+    let msg;
     try {
-      const msg = await call(app, "sendMessage", { chat_id: Number(target), text });
-      const configuredTarget = (await configured(app)).find((item) => item.id === String(msg.chat.id));
-      if (!configuredTarget) throw new Error(`social.telegram: unknown target ${msg.chat.id}`);
-      return postOf(configuredTarget, msg, Number((await bot(app)).id));
+      msg = await call(app, "sendMessage", { chat_id: Number(target), text });
     } catch (e) {
+      const status = Number((e as { status?: number }).status);
+      if (status && status < 500 && status !== 429) throw e;
       const retryAfter = Number((e as { retryAfter?: number }).retryAfter) || undefined;
-      throw new ProviderError((e as Error).message, retryAfter);
+      throw new ProviderError(errMsg(e), retryAfter);
     }
+    const username = String(msg.chat?.username ?? "");
+    return postOf({ id: target, label: String(msg.chat?.title ?? (username || target)), ...(username ? { url: `https://t.me/${username}` } : {}) }, msg);
   },
 };

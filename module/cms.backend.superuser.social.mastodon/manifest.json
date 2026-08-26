@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser.social.mastodon",
+  "description": "Configures and checks the Mastodon account used for public posts.",
+  "dependencies": [
+    "cms.backend.superuser.social",
+    "social.mastodon"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}
