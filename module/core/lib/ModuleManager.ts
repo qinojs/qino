@@ -457,7 +457,9 @@ async function mirrorPub(mod: Module): Promise<void> {
   // carries its release, so nothing below it changes — and a different address is a different mirror.
   const stamp = dir + ".source";
   if (await Deno.readTextFile(stamp).catch(() => "") === mod.source) return;
-  await Deno.mkdir(dir + "pub", { recursive: true }).catch(() => {});
+  // one mkdir per directory the list names, not one per file — pub/ has subdirectories
+  const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
+  await Promise.all([...dirs].map((d) => Deno.mkdir(d, { recursive: true }).catch(() => {})));
   const got = await Promise.all(files.map(async (file: string) => {
     const target = dir + file;
     try {
