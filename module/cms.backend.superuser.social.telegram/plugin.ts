@@ -39,6 +39,7 @@ async function render(node: Node): Promise<HtmlString> {
     <form class=-body method=post>
       ${node.cms.formFields(node)}
       ${note ? html`<p>${note}</p>` : ""}
+      <p><small><a href="https://t.me/BotFather" target=_blank rel=noopener>${node.app.t`Open BotFather`}</a></small>
       <u2-fields>
         ${node.app.t`Targets`} <input name=targets value="${targets}" placeholder="-1001234567890, @channel" required>
       </u2-fields>

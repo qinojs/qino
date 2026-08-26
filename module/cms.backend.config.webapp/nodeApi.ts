@@ -1,4 +1,3 @@
-import { $item } from "@qino/qino";
 import { APPLE_STATUS_BAR_STYLES, DISPLAY_MODES, ORIENTATIONS } from "@qino/qino/webapp";
 
 import type { Node } from "@qino/qino/cms";
@@ -27,9 +26,9 @@ function normalized(path: string, value: unknown): string | boolean {
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (vars.save && typeof vars.save === "object") {
-    const settings = node.app.settings[$item].sub(["webapp"]);
+    const settings = node.app.settings.webapp;
     for (const [path, value] of Object.entries(vars.save as Record<string, unknown>)) {
-      if (FIELDS.has(path)) await settings.sub(path).set(normalized(path, value));
+      if (FIELDS.has(path)) await settings[path](normalized(path, value));
     }
     return { done: true };
   }

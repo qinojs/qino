@@ -1,4 +1,4 @@
-import { $item, contactOwner, errMsg, removeContact, setMainContact } from "@qino/qino";
+import { contactOwner, errMsg, removeContact, setMainContact } from "@qino/qino";
 import { approvePhone, send } from "@qino/qino/messaging.sms";
 
 import type { Node } from "@qino/qino/cms";
@@ -54,11 +54,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
 async function saveProvider(app: Node["app"], values: Record<string, unknown>): Promise<void> {
   const type = String(values.type ?? "");
   if (type !== "twilio" && type !== "http") throw new Error("Choose an SMS provider");
-  const root = app.settings[$item].sub(["messaging.sms", "provider"]);
-  await root.item("type").set(type);
+  const settings = app.settings["messaging.sms"].provider;
+  await settings.type(type);
   const save = async (provider: string, name: string, value: unknown, secret = false) => {
     const text = String(value ?? "").trim();
-    if (!secret || text) await root.sub([provider]).item(name).set(text);
+    if (!secret || text) await settings[provider][name](text);
   };
   await save("twilio", "accountSid", values.accountSid);
   await save("twilio", "apiKeySid", values.apiKeySid);

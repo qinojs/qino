@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { $item, App } from "@qino/qino";
+import { App } from "@qino/qino";
 import { file } from "@qino/qino/identity";
 
 import api from "../nodeApi.ts";
@@ -15,7 +15,7 @@ Deno.test("cms.backend.config.identity saves settings and owns its DbFiles", asy
   await using app = await testApp();
   const node = { app } as never;
   await api(node, { save: { name: " Portal ", "organization.address.addressCountry": " ch " } });
-  assertEquals(await app.settings[$item].sub(["identity", "name"]).proxy, "Portal");
+  assertEquals(await app.settings.identity.name, "Portal");
   assertEquals(await app.settings.identity.organization.address.addressCountry, "CH");
   await assertRejects(() => api(node, { save: { alternateName: "x".repeat(65) } }));
 

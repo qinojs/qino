@@ -1,0 +1,13 @@
+{
+  "name": "social.threads",
+  "description": "Publishes plain-text Threads posts.",
+  "dependencies": [
+    "social"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

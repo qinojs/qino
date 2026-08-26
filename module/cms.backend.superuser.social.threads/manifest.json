@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser.social.threads",
+  "description": "Configures and checks the Threads account used for public posts.",
+  "dependencies": [
+    "cms.backend.superuser.social",
+    "social.threads"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

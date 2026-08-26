@@ -1,4 +1,4 @@
-import { $item, App } from "@qino/qino";
+import { App } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
@@ -15,10 +15,10 @@ Deno.test("cms.backend.config.webapp saves normalized and typed settings", async
       telephoneDetection: false,
       categories: " Business, productivity\nBUSINESS ",
     } });
-    const settings = app.settings[$item].sub(["webapp"]);
-    assertEquals(await settings.sub("display").proxy, "standalone");
-    assertEquals(await settings.sub("telephoneDetection").proxy, false);
-    assertEquals(await settings.sub("categories").proxy, "business\nproductivity");
+    const settings = app.settings.webapp;
+    assertEquals(await settings.display, "standalone");
+    assertEquals(await settings.telephoneDetection, false);
+    assertEquals(await settings.categories, "business\nproductivity");
     await assertRejects(() => api(node, { save: { display: "windowed" } }), Error, "Invalid display mode");
   } finally {
     await app.db.close();

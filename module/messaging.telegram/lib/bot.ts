@@ -1,4 +1,4 @@
-import { $item, randB64 } from "@qino/qino";
+import { randB64 } from "@qino/qino";
 import { ChannelError } from "@qino/qino/messaging";
 
 import type { App } from "@qino/qino";
@@ -64,7 +64,6 @@ async function loadSecret(app: App) {
   const stored = String(await app.settings["messaging.telegram"].webhookSecret ?? "");
   if (stored) return stored;
   const fresh = randB64(24); // base64url is exactly the alphabet Telegram accepts here
-  // writing goes through the raw item — on the proxy, .set would read as a child key
-  await app.settings[$item].sub(["messaging.telegram"]).item("webhookSecret").set(fresh);
+  await app.settings["messaging.telegram"].webhookSecret(fresh);
   return fresh;
 }

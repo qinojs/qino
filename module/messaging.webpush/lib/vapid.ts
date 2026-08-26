@@ -1,5 +1,4 @@
 import { generateVAPIDKeys } from "web-push-neo";
-import { $item } from "@qino/qino";
 
 import type { App } from "@qino/qino";
 
@@ -22,8 +21,6 @@ async function load(app: App) {
   if (publicKey && privateKey) return { publicKey, privateKey };
 
   const fresh = await generateVAPIDKeys();
-  // writing goes through the raw item — on the proxy, .set would read as a child key
-  const node = app.settings[$item].sub(["messaging.webpush"]);
-  await Promise.all([node.item("publicKey").set(fresh.publicKey), node.item("privateKey").set(fresh.privateKey)]);
+  await Promise.all([settings.publicKey(fresh.publicKey), settings.privateKey(fresh.privateKey)]);
   return fresh;
 }

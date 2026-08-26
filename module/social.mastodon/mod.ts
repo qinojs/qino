@@ -64,7 +64,7 @@ export const socialProvider: Provider = {
     if (!text) throw new Error("social.mastodon: text is empty");
     const user = await account(app);
     if (target !== targetId(user)) throw new Error(`social.mastodon: unknown target ${target}`);
-    const body = new URLSearchParams({ status: text });
+    const body = new URLSearchParams({ status: text, visibility: "public" });
     const status = await call(app, "/api/v1/statuses", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded", "idempotency-key": key },

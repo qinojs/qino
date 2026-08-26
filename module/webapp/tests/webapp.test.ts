@@ -24,10 +24,10 @@ async function close(app: App, dir: string): Promise<void> {
 Deno.test("webapp serves an extensible manifest with identity defaults and validators", async () => {
   const { app, dir } = await testApp();
   try {
-    const settings = app.settings[$item].sub(["webapp"]);
-    await settings.sub("display").set("standalone");
-    await settings.sub("orientation").set("portrait");
-    await settings.sub("categories").set("Business\nProductivity\nbusiness");
+    const settings = app.settings.webapp;
+    await settings.display("standalone");
+    await settings.orientation("portrait");
+    await settings.categories("Business\nProductivity\nbusiness");
     app.on("webapp:manifest", ({ manifest }) => { manifest.shortcuts = [{ name: "Inbox", url: "inbox" }]; });
 
     const res = await app.fetch(new Request("https://qino.test/site/manifest.webmanifest"));
@@ -63,10 +63,10 @@ Deno.test("webapp serves an extensible manifest with identity defaults and valid
 Deno.test("webapp adds browser metadata and conventional icon routes", async () => {
   const { app, dir } = await testApp();
   try {
-    const settings = app.settings[$item].sub(["webapp"]);
-    await settings.sub("telephoneDetection").set(false);
-    await settings.sub("display").set("standalone");
-    await settings.sub("appleStatusBarStyle").set("black-translucent");
+    const settings = app.settings.webapp;
+    await settings.telephoneDetection(false);
+    await settings.display("standalone");
+    await settings.appleStatusBarStyle("black-translucent");
     const icon = await app.dbFiles.add("data:image/svg+xml;name=icon.svg;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=");
     await icon.access(true);
     await app.db.table("identity_file").ensure({ name: "icon", file_id: icon.id });
