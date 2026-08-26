@@ -45,8 +45,9 @@ class Widget extends HTMLElement {
   get badge() { return this.#badge; }
 
   #announce() {
+    // Not bubbling: the frame listens on the element it mounted, so a widget nested inside
+    // another one announces its head to its own frame, never to the one above it.
     this.dispatchEvent(new CustomEvent('qcms-widget-head', {
-      bubbles: true,
       detail: { head: this.#head, badge: this.#badge },
     }));
   }

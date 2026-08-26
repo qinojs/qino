@@ -60,10 +60,9 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   if (await node.access() > 2) list.push(own("access.grp"), own("access.usr"));
   if (node.vs.type === "p") list.push(own("seo"));
   if (await ctx.app.settings["cms.frontend.4"]["show urls"]) list.push(own("urls"));
+  // sets and txts hang inside extended, mounted by it
   list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
-  list.push(own("sets"));
-  list.push(own("txts"));
-  return list;
+  return list; 
 }
 
 export const api: ApiTree = {
