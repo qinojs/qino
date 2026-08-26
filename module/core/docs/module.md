@@ -108,8 +108,9 @@ directory nor derived: the app's own `server.ts`, a store folder, and with SQLit
 which sits directly in `app.dir`. Copying that file while the app runs gives a torn copy, hence the
 dump — `VACUUM INTO` for SQLite, `mysqldump` / `pg_dump` otherwise.
 
-**The invariant that carries it:** everything in `cache/` must be reproducible from `data/` alone.
-Otherwise "deletable" is not safe — so originals belong in `data/`, only derivatives in `cache/`.
+**The invariant that carries it:** everything in `cache/` must be reproducible without the backup —
+from `data/`, or from wherever it was fetched. Otherwise "deletable" is not safe. Originals belong in
+`data/`; a remote module's mirrored files are copies of a release and belong in `cache/`.
 `tmp/` is separate from `cache/` because of *when* it may go: `cache/` can be cleared mid-request
 without breaking anything, `tmp/` cannot — a running upload or zip build dies with it.
 

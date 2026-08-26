@@ -178,6 +178,37 @@ item.js checkout, uncomment `patch` in the workspace root `deno.json`.
 `import.meta.resolve("jsr:…")` returns an opaque specifier. It loads fine but is not a hierarchical
 asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
 
+### One release, one graph
+
+**A store's files and the `@qino/qino` its modules import must be the same files.** Otherwise both
+exist twice, and module-level state — `cmsInstances` and every other per-app registry — belongs to
+the copy that wrote it. A module registered in one is missing in the other:
+
+```
+Error: module "cms" is not loaded
+```
+
+Nothing warns; it fails at runtime, thrown from a file that looks perfectly loaded.
+
+So point the store at the same place the specifier resolves to. A local checkout is consistent
+because everything is `file:`. For a published release, a registry that serves its files under
+stable URLs satisfies both at once: `jsr:@qino/qino@^0.6` resolves to
+`https://jsr.io/@qino/qino/<version>/…`, and a store at
+`https://jsr.io/@qino/qino/<version>/module/store.json` hands out modules from those same URLs.
+
+Worth naming because the broken variant — a local core plus modules from a remote store — looks
+like the natural way to try a store out.
+
+### Public files of a remote module
+
+A module without a directory of its own gets the `pub/` part of its `manifest.files` fetched once on
+import, into `cache/<name>/remote/`, where the static route already looks. `Module.modUrl` is
+therefore this app's own address for every module — which is what makes an SVG `<use>` work at all,
+since that never loads across origins.
+
+Only a complete mirror is stamped with its source, so missing files are fetched again on the next
+start, and a health check names the modules still incomplete.
+
 ## Not there yet
 
 - **Integrity pinning.** Installing a module from a URL is remote code execution with full database
@@ -188,21 +219,16 @@ asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
   is no substitute — a process flag applies to every tenant of the runtime. A second factor in front
 of install/uninstall would cover the rest — `auth` collects the factors, `auth.webauthn` has a
 ceremony, and what is missing is the step-up guard on the api verb.
-- **Everything a remote module is besides its code.** The manifest is there and is read before the
-  import, but nothing lists a module's *files* yet: `/m/<module>/pub/…` still serves from a local
-  `Module.dir`, and locales are discovered with `Deno.readDir(<module>/locale/)`. Both fail for the
-  same reason — HTTP cannot list a directory — and both are answered by one more manifest field:
+- **Locales of a remote module.** `manifest.files` lists what a module is besides its code, and the
+  public half of it is mirrored on import (see *Public files* below). Locales are still discovered
+  with `Deno.readDir(<module>/locale/)`, which fails for a remote module for the same reason the
+  assets did — HTTP cannot list a directory. The same list already answers it.
 
-  ```json
-  { "files": ["plugin.ts", "pub/main.css", "pub/module.svg", "locale/de.json"] }
-  ```
-
-  With it, one operation covers three features: fetch a module's files and write them somewhere.
-  Into `app.dir` + `remote/<name>/` it is the **mirror** that makes `Module.dir` always defined; into
-  the own store under a new name it is the **fork** (copying a remote module, which
-  [cms.backend.superuser.module.ownStore](../../cms.backend.superuser.module.ownStore/plugin.ts) refuses
-  today); generated from the folder on the way out it is **publishing**. A publishing app writes no
-  file at all — it has the directory. Only a static host (CDN, pages) has to keep one.
+  The other two uses of that list are open: copying a remote module into the own store under a new
+  name is the **fork** ([cms.backend.superuser.module.ownStore](../../cms.backend.superuser.module.ownStore/plugin.ts)
+  refuses it today), and generating the list from the folder on the way out is **publishing**. A
+  publishing app writes no file at all — it has the directory. Only a static host (CDN, pages) has
+  to keep one.
 
 - **Module versions and going back.** Every comparable format has a version, and the store page
   cannot offer updates without one. But a version alone is a label: rolling *back* needs whoever

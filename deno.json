@@ -1,6 +1,11 @@
 {
   "name": "@qino/qino",
-  "version": "0.6.14",
+  "// minimumDependencyAge": "stays here: in the published repo this file is the root and Deno reads it. Inside the monorepo it is a workspace member, where the root wins and Deno warns about this line — that warning is the cheaper price.",
+  "minimumDependencyAge": {
+    "age": "P1D",
+    "exclude": ["jsr:@nuxodin/item"]
+  },
+  "version": "0.6.15",
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",

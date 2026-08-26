@@ -30,5 +30,17 @@ export function healthChecks(app: App) {
       return { info: `${hee(url)} — ${hee(reason)}`, solutions: current && current !== url ? setTo(current) : {} };
     },
 
+    "a remote module is missing public files": async () => {
+      // only a complete mirror is stamped with the source it came from, so a stamp that does not
+      // match is the whole signal — the file that stayed away is otherwise a line in the console
+      const partial = [];
+      for (const mod of app.modules.all().values()) {
+        if (mod.dir || !(mod.manifest.files ?? []).some((file: string) => file.startsWith("pub/"))) continue;
+        if (await Deno.readTextFile(`${mod.cache}remote/.source`).catch(() => "") !== mod.source) partial.push(mod.name);
+      }
+      if (!partial.length) return;
+      return { info: `${hee(partial.join(", "))} — what did not arrive is fetched again on the next start` };
+    },
+
   } };
 }
