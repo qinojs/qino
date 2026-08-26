@@ -90,6 +90,9 @@ export class App extends Emitter<AppEvents> {
         const dir = cfg.dir.startsWith("file:") ? fromFileUrl(cfg.dir) : cfg.dir;
 
         this.dir   = ensureSlash(dir);
+        // before the database opens: a sqlite file in a directory nobody made says only
+        // "unable to open database file", and that is the first thing a new installation sees
+        Deno.mkdirSync(this.dir, { recursive: true });
         this.appUrl    = ensureSlash(cfg.appUrl || "/");
         this.https     = cfg.https;
         this.dev       = cfg.dev;

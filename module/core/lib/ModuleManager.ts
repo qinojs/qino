@@ -272,6 +272,9 @@ export class ModuleManager {
       await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
     }
     await this.#app.db.table("module").delete(name);
+    // derived files go, `data/` stays: what is reproducible costs nothing to lose, and a mirrored
+    // remote module would otherwise leave its files behind for a name that may come back as another
+    if (mod) await Deno.remove(mod.cache, { recursive: true }).catch(() => {});
     this.#installed.delete(name);
     this.#failed.delete(name);
     this.#modules.delete(name);

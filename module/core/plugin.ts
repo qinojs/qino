@@ -136,12 +136,13 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         ctx.res.csp["script-src"][u2Root] = true;
         ctx.res.csp["style-src"][u2Root] = true;
         ctx.res.csp["connect-src"][u2Root] = true;
-        // A remote store covers the assets of all its modules, so their own declarations collapse into it
-        for (const store of app.stores.all()) {
-            if (!store.base.startsWith("https://")) continue;
-            ctx.res.csp["script-src"][store.base] = true;
-            ctx.res.csp["style-src"][store.base] = true;
-        }
+        // A remote store used to cover the assets of all its modules. Since a remote module's public
+        // files are mirrored and served from here, nothing should load from a store origin any more.
+        // for (const store of app.stores.all()) {
+        //     if (!store.base.startsWith("https://")) continue;
+        //     ctx.res.csp["script-src"][store.base] = true;
+        //     ctx.res.csp["style-src"][store.base] = true;
+        // }
     }, { signal });
 
     const langsRaw = String(await settings.langs ?? "");

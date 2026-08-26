@@ -1,10 +1,6 @@
 {
   "name": "@qino/qino",
   "version": "0.6.14",
-  "minimumDependencyAge": {
-    "age": "P1D",
-    "exclude": ["jsr:@nuxodin/item"]
-  },
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",
