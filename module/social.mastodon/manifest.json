@@ -1,0 +1,15 @@
+{
+  "name": "social.mastodon",
+  "description": "Publishes and synchronizes plain-text Mastodon statuses and mentions.",
+  "dependencies": [
+    "social",
+    "messaging"
+  ],
+  "files": [
+    "README.md",
+    "lib/status.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

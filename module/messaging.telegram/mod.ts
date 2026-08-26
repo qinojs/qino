@@ -8,6 +8,8 @@ import { linkToken } from "./lib/link.ts";
 import type { App, Row } from "@qino/qino";
 import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
 
+export { call } from "./lib/bot.ts";
+
 /** Who a `to` means as chats — a chat exists only where someone linked their account. */
 async function recipients(app: App, to: To & { chat?: number | number[] }): Promise<Recipient[]> {
   const chats = [to.chat ?? []].flat();
@@ -118,7 +120,11 @@ export async function removeChat(app: App, id: number): Promise<void> {
 
 /** Point Telegram at this app's webhook route — `url` must be public HTTPS. */
 export async function setWebhook(app: App, url: string): Promise<void> {
-  await call(app, "setWebhook", { url, secret_token: await webhookSecret(app), allowed_updates: ["message"] });
+  await call(app, "setWebhook", {
+    url,
+    secret_token: await webhookSecret(app),
+    allowed_updates: ["message", "edited_message", "channel_post", "edited_channel_post"],
+  });
 }
 
 /** Stop Telegram from delivering updates. Linked chats keep working — only `/start` stops arriving. */

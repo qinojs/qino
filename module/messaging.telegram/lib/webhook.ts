@@ -11,7 +11,11 @@ export async function webhook(ctx: Ctx): Promise<never> {
   if (ctx.req.method !== "POST") throw new Output("Method Not Allowed", { status: 405, headers: { Allow: "POST" } });
   // the shared secret is the only authentication Telegram offers, and it is enough
   if (!safeEqual(ctx.req.header("x-telegram-bot-api-secret-token"), await webhookSecret(ctx.app))) throw new Output("Forbidden", { status: 403 });
-  await update(ctx.app, ctx.req.body).catch((e) => console.error("[telegram]", e));
+  const updateBody = ctx.req.body;
+  await update(ctx.app, updateBody).catch((e) => console.error("[telegram]", e));
+  if (typeof ctx.app.fire === "function") {
+    await ctx.app.fire("telegram:update", { update: updateBody }).catch((e) => console.error("[telegram]", e));
+  }
   throw new Output(undefined, { status: 200 });
 }
 

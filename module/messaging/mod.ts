@@ -16,6 +16,7 @@ export { ChannelError, delivered, run as outbox } from "./lib/outbox.ts";
 export type { Rendering } from "./lib/dispatch.ts";
 export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
+export { htmlToText } from "./lib/htmlText.ts";
 export { placeholderName, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 export type { Computed, Placeholder } from "./lib/template.ts";
@@ -216,4 +217,3 @@ export async function record(
   });
   return { id, ids };
 }
-

@@ -1,0 +1,86 @@
+{
+  "properties": {
+    "social_post": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": true
+          },
+          "target": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 43,
+            "x-index": "unique",
+            "description": "Hash of provider, target and remote id; set once the provider supplies an id"
+          },
+          "remote_id": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "parent_id": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "own": {
+            "type": "boolean",
+            "default": false,
+            "description": "Authored by the connected target, regardless of where it was created"
+          },
+          "text": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "author_id": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "author_name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "time": {
+            "type": "integer",
+            "x-index": true,
+            "description": "Publication time reported by the provider"
+          },
+          "due": {
+            "type": "integer",
+            "x-index": true
+          },
+          "sent": {
+            "type": "integer",
+            "x-index": true,
+            "description": "When Qino successfully published the post; null for posts observed remotely"
+          },
+          "attempts": {
+            "type": "integer",
+            "default": 0
+          },
+          "error": {
+            "type": "string"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log"
+          }
+        },
+        "required": ["id", "provider", "target", "own", "text", "attempts"]
+      }
+    }
+  }
+}

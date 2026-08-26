@@ -1,0 +1,14 @@
+{
+  "name": "social.telegram",
+  "description": "Publishes to Telegram channels and groups and mirrors their posts and replies.",
+  "dependencies": [
+    "social",
+    "messaging.telegram"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}
