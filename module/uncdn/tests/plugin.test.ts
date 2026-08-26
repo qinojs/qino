@@ -34,6 +34,20 @@ Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () =
   assertEquals(csp["style-src"][remote], undefined);
 });
 
+Deno.test("uncdn: a url mapped to itself is the handle for an import nothing can rewrite", () => {
+  // qino.js imports item.js by its url; core maps that url to itself so this pass can take it over
+  const html = new ResHtml();
+  const remote = "https://cdn.example/item/";
+  html.importMap.set(remote, remote);
+
+  const csp = new ResCsp();
+  csp["script-src"][remote] = true;
+  rewriteHtml(html, "/app/", csp);
+
+  assertEquals(html.importMap.get(remote), "/app/uncdn/cdn.example/item/");
+  assertEquals(csp["script-src"][remote], undefined); // the browser resolves it same-origin now
+});
+
 Deno.test("uncdn: a sheet in html.link is proxied, keeping its attributes", () => {
   const html = new ResHtml();
   const remote = "https://cdn.example/lib/";

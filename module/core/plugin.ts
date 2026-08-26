@@ -125,24 +125,22 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("html-ready", ({ ctx }) => {
         // a login owed another factor asks for it wherever it lands, not only on the login page
         if (pendingLogin(ctx)) ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
-        ctx.res.html.importMap.set("@qino/item/", itemRoot);
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
         // browser-only: the core's client api, and any module's pub files — relative paths break across stores
         ctx.res.html.importMap.set("@qino/pub/", ctx.req.moduleUrl + "core/pub/js/");
         ctx.res.html.importMap.set("@qino/m/", ctx.req.moduleUrl); // core's own files keep @qino/pub/
-        // what the map points at has to be reachable, or the map is a promise the policy breaks:
-        // core's own qino.js imports item.js, and anything resolving @qino/u2/ fetches from u2's base
+        // Published browser files carry these two urls outright — `@qino/item/` because qino.js has
+        // to name it, `@qino/u2/` because publishing rewrites the bare specifier into the url the
+        // map pointed at. Neither import can be rewritten afterwards. Mapping each url to itself
+        // changes nothing on its own, but it is the one handle a proxy can take hold of: uncdn
+        // rewrites map values, and the browser then resolves the baked url to the proxy.
+        ctx.res.html.importMap.set(itemRoot, itemRoot);
+        ctx.res.html.importMap.set(u2Root, u2Root);
+        // What the map points at has to be reachable, or the map is a promise the policy breaks.
         ctx.res.csp["script-src"][itemRoot] = true;
         ctx.res.csp["script-src"][u2Root] = true;
         ctx.res.csp["style-src"][u2Root] = true;
         ctx.res.csp["connect-src"][u2Root] = true;
-        // A remote store used to cover the assets of all its modules. Since a remote module's public
-        // files are mirrored and served from here, nothing should load from a store origin any more.
-        // for (const store of app.stores.all()) {
-        //     if (!store.base.startsWith("https://")) continue;
-        //     ctx.res.csp["script-src"][store.base] = true;
-        //     ctx.res.csp["style-src"][store.base] = true;
-        // }
     }, { signal });
 
     const langsRaw = String(await settings.langs ?? "");

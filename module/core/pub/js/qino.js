@@ -11,7 +11,11 @@
 //
 // ctx.settings == server-side ctx.settings (NOT app.settings — those are server-only).
 // Backed by the existing api endpoint  core/ctx-settings/:path*  (Access.USER).
-import { Item } from "@qino/item/item.js";
+// Absolute on purpose: a bare specifier is rewritten to a `jsr:` url when this package is
+// published, and no browser can load that. The static import needs a literal, so the url stands
+// twice — a test keeps both in step with the pin in deno.json.
+import { Item } from "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/item.js";
+export const ITEM_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/";
 
 import { ApiClient } from "./ApiClient.js";
 import { t } from "./t.mjs";

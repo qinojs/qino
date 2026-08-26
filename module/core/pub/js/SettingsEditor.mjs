@@ -1,10 +1,10 @@
 import { confirm } from "@qino/u2/js/dialog/dialog.js";
 
-import { api } from "./qino.js";
+import { api, ITEM_ROOT } from "./qino.js";
 
 const opened = new Set();
-export const itemJs = import("@qino/item/item.js");
-const itemJsHtmlRenderer = import("@qino/item/tools/schema/render/html.js").then((mod) => mod.toInput);
+export const itemJs = import(ITEM_ROOT + "item.js");
+const itemJsHtmlRenderer = import(ITEM_ROOT + "tools/schema/render/html.js").then((mod) => mod.toInput);
 
 const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ESCAPES[c]);
