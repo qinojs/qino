@@ -134,16 +134,13 @@ globalThis.cmsTreeInit = async (json) => {
         : parent?.data?.myaccess > 1; // before/after: access on the target parent node
     if (!ok) e.preventDefault();
   });
-  rootNode.addEventListener("u2-tree-drop", (e) => { // server-first: PUT first, move after success
+  rootNode.addEventListener("u2-tree-drop", (e) => { // server-first: PUT first, the route listener moves the node
     e.preventDefault();
     const target = e.target, { source, parent, next, region } = e.detail;
     const parentId = region === "into" ? target.dataset.id : parent.dataset.id;
     api.cms.node(parentId)["insert-before"]
       .put({ id: source.dataset.id, before: next?.dataset.id })
-      .then(() => {
-        parent.insertBefore(source, next);
-        region === "into" && target.toggleExpand?.(true);
-      });
+      .then(() => region === "into" && target.toggleExpand?.(true));
   });
 
   function editNode(node) { // u2-tree has no inline edit

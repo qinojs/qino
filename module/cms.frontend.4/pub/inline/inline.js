@@ -267,4 +267,10 @@ api.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
 
+// The pattern above needs a segment after the id, so the node's own routes are listed apart.
+// DELETE stays out: the node is gone, there is nothing left to render.
+api.on('PATCH cms/node/:id', ({ params: { id } }) => {
+  cms.reloadNode(id);
+});
+
 import("../js/browserCheck.js");

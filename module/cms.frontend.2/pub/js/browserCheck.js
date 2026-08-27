@@ -1,6 +1,6 @@
 function run() {
   if (globalThis.CSS && CSS.supports('selector(&)')) return;
-  if (document.cookie.includes('qcms_browserCheck_ignore')) return;
+  if (document.cookie.includes('qcms_browserCheck_ignore')) return; // todo: test for scoped customElements
 
   globalThis.error_report_count = 1000; // dont send errors
 
