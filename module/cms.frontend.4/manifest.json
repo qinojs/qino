@@ -52,11 +52,11 @@
     "pub/panel/widgets/sets.js",
     "pub/panel/widgets/settings.js",
     "pub/panel/widgets/superuser.js",
+    "pub/panel/widgets/tree.js",
     "pub/panel/widgets/txts.js",
     "pub/panel/widgets/urls.js",
     "view/panel.ts",
     "view/widget.ts",
-    "view/widgets/options.ts",
-    "view/widgets/tree.ts"
+    "view/widgets/options.ts"
   ]
 }

@@ -34,8 +34,6 @@ cms.panel = { state: uiState, sidebar, widgets };
 cms.panelRoot = root;
 const el = root.getElementById("panel");
 el.showPopover();
-const { SelectorObserver } = await import("@qino/u2/js/SelectorObserver/SelectorObserver.js");
-const { alert, confirm } = root;
 
 // A failed <img> fires no bubbling event, so the media list is listened to at the root.
 root.addEventListener("error", (e) => {
@@ -46,16 +44,13 @@ root.addEventListener("error", (e) => {
   }));
 }, true);
 
-// widget controllers get the node their markup carries
-function onEl(selector, fn) {
-  new SelectorObserver({ on: el => requestAnimationFrame(() => {
-    const pid = el.getAttribute("pid");
-    fn(el, pid, pid && api.cms.node(pid));
-  }) }).observe(selector, { root });
-}
-
 /* sidebar */
-const SIDEBAR_WIDGETS = { add: "./widgets/add.js", more: "./widgets/more.js", settings: "./widgets/settings.js" };
+const SIDEBAR_WIDGETS = {
+  add: "./widgets/add.js",
+  more: "./widgets/more.js",
+  settings: "./widgets/settings.js",
+  tree: "./widgets/tree.js",
+};
 
 const loadWidget = (widget, params, cb) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
@@ -220,33 +215,6 @@ for (const [route, head] of [
   ["DELETE cms/node/:id/redirects", "urls"],
 ]) api.on(route, () => loadWidget(head));
 api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time"); });
-
-onEl(".tree-manager", async (el) => {
-  await import("./tree.js");
-  // add Page
-  const inp = root.getElementById("page-add");
-  function add() {
-    const v = inp.value.trim();
-    v && cms.Tree.addPage(v);
-    inp.value = "";
-  }
-  inp.addEventListener("blur", async (e) => {
-    if (e.currentTarget.value && await confirm(t`Create page "${e.currentTarget.value}"?`)) add();
-  });
-  inp.addEventListener("keydown", (e) => {
-    e.key === "Enter" && add();
-    if (e.key === "Escape") {
-      e.currentTarget.value = "";
-      e.currentTarget.blur();
-    }
-  });
-  const tree = JSON.parse(el.getAttribute("data"));
-  await cmsTreeInit(tree);
-  // change placeholder
-  cms.Tree.onActivate = (node) => {
-    inp.placeholder = inp.placeholder.replace(/"([^"]*)"/, `"${node.data.title}"`);
-  };
-});
 
 if (!await ctx.settings["cms.frontend.4"].tour_seen) {
   import("./intro.js").then(({ start }) => start());
