@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.test.cmd-widget",
+  "description": "Test block whose settings widget mounts another module's widget inside itself.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.mjs",
+    "pub/settings.js"
+  ]
+}
