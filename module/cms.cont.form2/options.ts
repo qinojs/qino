@@ -14,7 +14,7 @@ export default async function (node: Node, _vars: unknown): Promise<HtmlString> 
     html.async`<label><input type=checkbox${set(key)}${on ? html.raw(" checked") : ""}> ${label}</label>`;
 
   return html.async`
-<table class="u2-table -Fields -NoSideGaps">
+<table class="u2-table -Fields -Flex -NoSideGaps">
   <tr>
     <td>${t`On success go to page`}
     <td><input type=number min=1 value="${node.settings.redirect()}"${set("redirect")}>
