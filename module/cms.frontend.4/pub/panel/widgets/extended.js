@@ -2,8 +2,6 @@
 import { html } from '@qino/pub/html.js';
 import { api, t } from '@qino/pub/qino.js';
 
-import { widget } from '../widget.js';
-
 const MODELS = ['cms', 'models'];
 
 export const css = `
@@ -48,7 +46,7 @@ export default async function (el, { node, superuser, signal }) {
   for (const [name, title] of [['sets', await t`Settings`], ['txts', await t`Texts`]]) {
     const open = cms.panel.widgets.has(name)?.get({ silent: true });
     el.insertAdjacentHTML('beforeend', `<div class="-widgetHead ${open ? '-open' : ''}"><span class=-title>${title}</span></div>`);
-    const child = widget(new URL(`./${name}.js`, import.meta.url), { node });
+    const child = el.widget(new URL(`./${name}.js`, import.meta.url), { node });
     child.className = '-content';
     child.setAttribute('widget', name); // the click handler remembers the open state under this name
     el.append(child);

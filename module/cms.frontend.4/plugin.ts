@@ -264,7 +264,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");
-        const panelHtml = String(await panel.default?.(node, {}) ?? "");
+        const panelHtml = String(await panel.default?.() ?? "");
         app.languages.nsStop();
         html.content += panelHtml;
       }

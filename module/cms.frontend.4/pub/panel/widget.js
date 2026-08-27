@@ -65,6 +65,10 @@ class Widget extends HTMLElement {
     return html.async(strings, ...values).then((h) => { this.innerHTML = h; return this; });
   }
 
+  /** A widget inside this one: same factory, so a module nests widgets without importing the
+    * kernel. The caller places it and frames it; removing this one takes the child with it. */
+  widget(src, context = {}) { return widget(src, context); }
+
   /** Listener on the content, dropped automatically on reload and disconnect.
     * With a selector it is delegated: `on(type, selector, fn)`; without: `on(type, fn)`. */
   on(type, selector, fn) {
