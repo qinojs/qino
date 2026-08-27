@@ -19,7 +19,7 @@ export async function render(node: Node): Promise<HtmlString> {
   const terms = words(term);
   const tables = await Promise.all(results.map((result) => renderTable(app, result, terms)));
   const summary = !term
-    ? html.async`<small>${t`Indexed fields are searched by word prefix (fulltext where available); tables with fewer than ${String(SMALL_ROWS)} rows are scanned for substrings.`}</small>`
+    ? html.async`<small>${t`Indexed fields are searched by word prefix (fulltext where available); tables with fewer than ${SMALL_ROWS} rows are scanned for substrings.`}</small>`
     : html.async`<small>${results.length} ${t`tables with hits`} · ${total.toFixed(1)} ms</small>`;
 
   return html.async`<div>
@@ -43,7 +43,7 @@ function renderTable(app: App, result: TableSearch, terms: string[]): Promise<Ht
   const fields = result.parts.flatMap((part) => part.fields);
   const head = html.join(Object.keys(result.rows[0] ?? {}).map((field) => html`<th>${field}`));
   const rows = html.join(result.rows.map((row) => renderRow(row, fields, terms)));
-  const more = result.more ? html.async` · ${t`showing first`} ${String(LIMIT)}` : "";
+  const more = result.more ? html.async` · ${t`showing first`} ${LIMIT}` : "";
   const body = result.error
     ? html.async`<u2-alert open variant=danger>${result.error}</u2-alert>`
     : html.async`<u2-table style="padding:0;max-height:60vh;overflow:auto">

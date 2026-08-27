@@ -363,9 +363,9 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
       <td data-g=dns data-value="${lines(row.dns_ttl).map((l) => Number(l.split("=")[1]) || 0).reduce((a, b) => Math.min(a, b), Infinity)}">${ttlCell(row)}
       <td data-g=dns data-value="${rank(row.dnssec)}">${dnssecCell(row)}
       <td data-g=mail data-value="${row.spf_error ? 1 : rank(row.spf_policy)}|${row.spf_lookups ?? 0}">${spfCell(row)}
-      <td data-g=mail data-value="${row.dmarc_policy ?? ""}">${dmarcCell(row)}
+      <td data-g=mail data-value="${row.dmarc_policy}">${dmarcCell(row)}
       <td data-g=mail data-value="${rank(dkim.length ? true : null)}">${flag(dkim.length ? true : null, dkim.length ? `DKIM selectors: ${dkim.join(", ")}` : "no DKIM key found under the known selectors")}
-      <td data-g=mail data-value="${row.mta_sts_mode ?? ""}">${row.mta_sts_mode ? html`${dot(row.mta_sts_mode === "enforce" ? "green" : "orange", `MTA-STS ${row.mta_sts_mode}`)} <small>${row.mta_sts_mode}</small>` : html`${dot("gray", row.mta_sts ? "MTA-STS record, but no policy fetched" : "no MTA-STS")}`}
+      <td data-g=mail data-value="${row.mta_sts_mode}">${row.mta_sts_mode ? html`${dot(row.mta_sts_mode === "enforce" ? "green" : "orange", `MTA-STS ${row.mta_sts_mode}`)} <small>${row.mta_sts_mode}</small>` : html`${dot("gray", row.mta_sts ? "MTA-STS record, but no policy fetched" : "no MTA-STS")}`}
       <td data-g=mail data-value="${rank(row.mail_starttls)}">${smtpCell(row)}
       <td data-value="${row.checked ?? 0}">${u2.el.time(row.checked, { narrow: true })}
       <td>${frequencySelect(row)}

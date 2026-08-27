@@ -61,7 +61,7 @@ async function render(node: Node): Promise<HtmlString> {
   for (const [type, checks] of Object.entries(types)) {
     for (const [name, checkFn] of Object.entries(checks)) {
       items.push(html`<div class=healty_item data-type="${type}" data-item="${name}">
-  <small>${checkFn.mod ?? ""}</small><br>
+  <small>${checkFn.mod}</small><br>
   <strong>${cap(name)}</strong>
 </div>`);
     }
@@ -279,7 +279,7 @@ async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> 
   try { data = await checkFn(); } catch { return html.raw(""); }
   if (!data) return html.raw("");
 
-  return html`<small>${checkFn.mod ?? ""}</small><br>
+  return html`<small>${checkFn.mod}</small><br>
   <strong>${cap(item)}</strong>
   ${data.info ? html`<p>${html.raw(data.info)}</p>` : ""}
   <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(type, item, data)}</div>`;

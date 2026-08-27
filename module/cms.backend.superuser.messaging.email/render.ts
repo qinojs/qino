@@ -68,10 +68,10 @@ function field(path: string, node: Schema, values: Map<string, unknown>, transpo
     : node.type === "boolean"
     ? html`<input type=checkbox name="${path}" title="${title}"${bool(value ?? node.default) ? html.raw(" checked") : ""}>`
     : node.type === "number"
-    ? html`<input type=number name="${path}" title="${title}" value="${value ?? ""}" placeholder="${node.default ?? ""}">`
+    ? html`<input type=number name="${path}" title="${title}" value="${value}" placeholder="${node.default}">`
     : isSecret(path)
     ? html`<input type=password name="${path}" autocomplete=new-password title="${title}" placeholder="${value ? "••••••" : ""}">`
-    : html`<input name="${path}" title="${title}" value="${value ?? ""}">`;
+    : html`<input name="${path}" title="${title}" value="${value}">`;
   return html`<div${transport ? html` data-transport-fields="${transport}"` : ""}${hidden ? html.raw(' hidden style="display:none"') : ""}><label><span>${name}${note ? html` <small>(${note})</small>` : ""}</span><span>${control}</span></label></div>`;
 }
 

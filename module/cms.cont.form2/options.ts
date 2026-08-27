@@ -29,10 +29,10 @@ export default async function (node: Node, _vars: unknown): Promise<HtmlString> 
     <td><input cmstxt="${subject.id}" value="${await subject.string()}">
   <tr>
     <td>${t`E-Mail above`}
-    <td><div class=-input contenteditable cmstxt="${before.id}">${html.raw(String(await before.string()))}</div>
+    <td><div class=-input contenteditable cmstxt="${before.id}">${html.raw(await before.string())}</div>
   <tr>
     <td>${t`E-Mail below`}
-    <td><div class=-input contenteditable cmstxt="${after.id}">${html.raw(String(await after.string()))}</div>
+    <td><div class=-input contenteditable cmstxt="${after.id}">${html.raw(await after.string())}</div>
   <tr>
     <td>${t`Buttons`}
     <td>

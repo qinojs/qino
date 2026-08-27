@@ -40,7 +40,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     ${failing ? html` · <span class=u2-badge>${failing} ${failingLabel}</span>` : ""}
     ${recent.length ? html`<table class=u2-table>${recent.map((m) => html`<tr>
       <td>${m.direction === "out" ? "→" : "←"}
-      <td>${m.title ?? ""}
+      <td>${m.title}
       <td>${u2.el.time(m.time)}`)}</table>` : ""}
   </div>`;
 }

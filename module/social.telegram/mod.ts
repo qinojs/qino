@@ -14,9 +14,8 @@ async function configured(app: App): Promise<Omit<Target, "provider">[]> {
   })))).flatMap((target) => target ? [target] : []);
 }
 
-// deno-lint-ignore no-explicit-any
 async function target(app: App, id: string): Promise<Omit<Target, "provider">> {
-  const chat: any = await call(app, "getChat", { chat_id: /^-?\d+$/.test(id) ? Number(id) : id });
+  const chat = await call(app, "getChat", { chat_id: /^-?\d+$/.test(id) ? Number(id) : id });
   const label = String(chat.title ?? chat.username ?? chat.id);
   return {
     id: String(chat.id),

@@ -40,7 +40,7 @@ async function methods(node: Node): Promise<HtmlString> {
     const trs = entries.map(([id, m]) => html`<tr itemid=${id} draggable class="${m?.enabled ?? true ? "-on" : ""}">
       <td><input class=-method data-kind=${kind} data-field=enabled type=checkbox ${m?.enabled ?? true ? html.raw("checked") : ""}>
       <td>${id}
-      <td><input class=-method data-kind=${kind} data-field=description value="${m?.description ?? ""}">
+      <td><input class=-method data-kind=${kind} data-field=description value="${m?.description}">
       <td class=-handle u2-draghandle><u2-ico icon=drag_indicator>⠿</u2-ico>`);
     // The row order is the sort order — dragging writes it back, so there is no number to type.
     return html.async`<table class=u2-table>

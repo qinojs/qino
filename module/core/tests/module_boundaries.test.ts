@@ -71,7 +71,7 @@ function targetPath(spec: string, file: string): string | undefined {
 
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
 function exports(source: string): Set<string> | undefined {
-  if (/^export\s+\*\s+from/m.test(source)) return undefined;
+  if (/^export\s+\*\s+from/m.test(source)) return;
   const names = new Set<string>();
   for (const m of source.matchAll(/^export\s+(?:declare\s+)?(?:abstract\s+)?(?:const|let|var|function|async\s+function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
   for (const m of source.matchAll(/^export\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from/gm)) names.add(m[1]);

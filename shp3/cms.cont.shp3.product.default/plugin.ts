@@ -23,7 +23,7 @@ async function render(node: Node): Promise<HtmlString> {
   // A plain [shp3-add] form: the shared client script picks it up wherever it sits, and
   // [shp3-price] follows the amount live.
   return html.async`<div>
-  <div class=-price>${currency?.id ?? ""} <span shp3-price=gross>${currency ? currency.format(prices.gross) : prices.gross}</span></div>
+  <div class=-price>${currency?.id} <span shp3-price=gross>${currency ? currency.format(prices.gross) : prices.gross}</span></div>
   ${errors.length
     ? html`<div class=-errors>${html.join(errors.map((e) => html`<div>${e}</div>`))}</div>`
     : html`<form shp3-add class=-add>

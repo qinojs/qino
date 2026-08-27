@@ -21,7 +21,7 @@ export const cron = {
 const contact = (type: string): Placeholder => async (app, to) => {
   const usrId = Number(to.usrId);
   const row = usrId ? await mainContact(app.db, usrId, type) : undefined;
-  return row ? { text: String(row.address), html: hee(String(row.address)) } : undefined;
+  return row ? { text: String(row.address), html: hee(row.address) } : undefined;
 };
 
 export const messagingPlaceholders: Record<string, Placeholder> = {

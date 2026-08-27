@@ -132,7 +132,7 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
           html`<option value="${f}"${f === (row.format ?? "") ? html.raw(" selected") : ""}>${f || "text"}</option>`)}</select>
         ${t`Main for this channel`} <input type=checkbox name=main${row.main ? html.raw(" checked") : ""}>
       </u2-fields>
-      <u2-code class=-editor${row.format ? html.raw(` language=${row.format === "html" ? "html" : "markdown"}`) : ""}><textarea name=text>${row.text ?? ""}</textarea></u2-code>
+      <u2-code class=-editor${row.format ? html.raw(` language=${row.format === "html" ? "html" : "markdown"}`) : ""}><textarea name=text>${row.text}</textarea></u2-code>
       <div class=-actions>
         <button name=save>${t`Save`}</button>
         <button name=delete formnovalidate u2-confirm="${t`Really delete this template?`}">${t`Delete`}</button>
@@ -162,7 +162,7 @@ async function preview(node: Node, row: Row, values: Computed): Promise<HtmlStri
     <div class=-head>${t`HTML`}
       ${simulated ? html.async`<label>${t`Mail client`} <select class=-client></select></label>` : ""}</div>
     <div class=-body>
-      <iframe sandbox srcdoc="${markup ?? ""}" class=-frame></iframe>
+      <iframe sandbox srcdoc="${markup}" class=-frame></iframe>
       ${simulated ? html`<small class=-notes></small>` : ""}
     </div>
     ${simulated ? html`<div class=-report></div>` : ""}
@@ -192,8 +192,8 @@ async function placeholders(node: Node, values: Computed): Promise<HtmlString> {
       </tr>
       ${names.map((name) => html`<tr>
         <td>${codes([name], copy)}</td>
-        <td title="${values[name]?.text ?? ""}">${values[name]?.text ?? ""}</td>
-        <td title="${values[name]?.html ?? ""}"><code>${values[name]?.html ?? ""}</code></td>
+        <td title="${values[name]?.text}">${values[name]?.text}</td>
+        <td title="${values[name]?.html}"><code>${values[name]?.html}</code></td>
       </tr>`)}
     </table>`;
 

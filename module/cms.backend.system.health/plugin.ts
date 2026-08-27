@@ -18,7 +18,7 @@ const ms = (n: number) => n.toFixed(n < 10 ? 1 : 0) + " ms";
 /** What is known without running the check; the remaining cells arrive through the `check` part.
  *  The type sorts by severity, not alphabetically — hence its rank as sort value. */
 const knownCells = (type: string, rank: number, check: string, mod?: string, passed = false) =>
-  html`<td>${mod ?? ""}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(check)}`;
+  html`<td>${mod}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(check)}`;
 
 // Every check as an empty row — the client fills them in one by one.
 async function table(node: Node): Promise<HtmlString> {

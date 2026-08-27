@@ -394,7 +394,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
         <a href="${error.request}">${error.request}</a><br>
         <small>${t`Referer`} <a href="${error.referer}">${error.referer}</a></small>
       <tr><th>${t`Browser`}<td><small>${error.browser}</small>
-      <tr><th>${t`Time`}<td>${u2.el.time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+      <tr><th>${t`Time`}<td>${u2.el.time(error.time)} <small>(Log-ID ${error.log_id})</small>
       <tr><th>${t`IP`}<td>${error.ip}
     </table>
     <div class=-body>

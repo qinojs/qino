@@ -40,9 +40,9 @@ async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
   <div class=-head>${isNew ? t`Add client` : client.name}</div>
   <div class=-body>
     <u2-fields>
-      ${t`client_id`} <input name=id value="${client.id ?? ""}" ${isNew ? "required" : "readonly"}>
-      ${t`Name`} <input name=name value="${client.name ?? ""}">
-      ${t`Redirect URIs`} <textarea name=redirect_uris rows=3 required>${client.redirect_uris ?? ""}</textarea>
+      ${t`client_id`} <input name=id value="${client.id}" ${isNew ? "required" : "readonly"}>
+      ${t`Name`} <input name=name value="${client.name}">
+      ${t`Redirect URIs`} <textarea name=redirect_uris rows=3 required>${client.redirect_uris}</textarea>
     </u2-fields>
     <small>${t`One per line, compared exactly. https, or http on localhost.`}</small>
     ${isNew ? "" : html`<div><small>${await t`Registered`} ${u2.el.time(client.created)} · ${client.tokens} ${await t`active tokens`}</small></div>`}

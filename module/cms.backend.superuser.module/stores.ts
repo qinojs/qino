@@ -188,12 +188,12 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
       ...(st === "active" ? [btn("repair"), ...(known?.plugin.uninstall ? [btn("reset")] : [])] : []),
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
-  return html`<tr data-mod="${mod}" data-store="${store?.url ?? ""}" data-state=${st}>
-    <td style="padding-right:0">${icon ?? ""}
+  return html`<tr data-mod="${mod}" data-store="${store?.url}" data-state=${st}>
+    <td style="padding-right:0">${icon}
     <td data-value="${mod}" title="${why ?? description}">${known ? html`<a href="${detail.search}">${mod}</a>` : mod}
     <td title="${store?.url}"><small>${store ? label(store.url) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
-    <td data-value="${rank.get(mod) ?? ""}" style="text-align:center"><small>${rank.get(mod) ?? ""}</small>
+    <td data-value="${rank.get(mod)}" style="text-align:center"><small>${rank.get(mod)}</small>
     <td data-value="${dependencies}" style="text-align:center">${dependencies}
     <td data-value="${neededBy}" style="text-align:center">${neededBy}
     <td title="${description}" style="max-width:30rem;overflow:hidden;text-overflow:ellipsis">${description}

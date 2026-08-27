@@ -52,7 +52,7 @@ export async function bot(node: Node): Promise<HtmlString> {
       ${t`Bot`} <input value="@${me.username}" readonly>
       ${t`Webhook`} <input value="${url}" readonly>
     </u2-fields>
-    <p><span class=u2-badge>${status}</span> ${registered ? "" : hook.url ?? ""}
+    <p><span class=u2-badge>${status}</span> ${registered ? "" : hook.url}
       ${hook.pending_update_count ? html` · ${hook.pending_update_count} ${pending}` : ""}
       ${hook.last_error_message ? html`<br><small>${hook.last_error_message}</small>` : ""}
     </p>

@@ -39,10 +39,10 @@ async function renderList(node: Node): Promise<HtmlString> {
   const trs = rows.map((vs) => html`<tr itemid=${vs.id}>
     <td><a href="?shp3_orderId=${vs.id}">${vs.id}</a>
     <td>${showTime(Number(vs.time_ordered))}
-    <td>${vs.username ?? ""}
-    <td>${vs.payment ?? ""}
-    <td>${vs.shipping ?? ""}
-    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency ?? ""}
+    <td>${vs.username}
+    <td>${vs.payment}
+    <td>${vs.shipping}
+    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}
     <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}
     <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
 
@@ -101,7 +101,7 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
   <div class=-head><a href="?">${t`Orders`}</a> — ${t`Order`} ${order.id}</div>
   <table class=u2-table>
     <tr><th>${t`Ordered`}<td>${showTime(order.time_ordered)}
-    <tr><th>${t`Customer`}<td>${email ?? ""}
+    <tr><th>${t`Customer`}<td>${email}
     <tr><th>${t`Payment`}<td>${order.payment}
     <tr><th>${t`Shipping`}<td>${order.shipping}
     <tr><th>${t`Paid`}<td>
@@ -136,8 +136,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const trs = rows.map((vs) => html`<tr>
     <td><a href="${url}?shp3_orderId=${vs.id}">${vs.id}</a>
     <td>${showTime(Number(vs.time_ordered))}
-    <td>${vs.username ?? ""}
-    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency ?? ""}
+    <td>${vs.username}
+    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}
     <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}`);
 
   return html.async`<div style="overflow:auto; padding:0">

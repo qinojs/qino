@@ -146,9 +146,9 @@ async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>>
   const out = new Map<number, HtmlString>();
   for (const [id, all] of byMessage) {
     const shown = await Promise.all(all.slice(0, PREVIEWS).map(async (file) => {
-      if (!previewable(file.mime)) return html`<u2-ico icon=file title="${file.name ?? ""}">•</u2-ico>`;
+      if (!previewable(file.mime)) return html`<u2-ico icon=file title="${file.name}">•</u2-ico>`;
       const src = await (await app.dbFiles.file(Number(file.id), file)).url({ fmt: "avif", w: 64, h: 64, max: true, grant: "session" });
-      return html`<img src="${src}" alt="${file.name ?? ""}" title="${file.name ?? ""}" loading=lazy>`;
+      return html`<img src="${src}" alt="${file.name}" title="${file.name}" loading=lazy>`;
     }));
     out.set(id, html`<span class=-thumbs>${shown}${all.length > PREVIEWS ? html`<small>+${all.length - PREVIEWS}</small>` : ""}</span>`);
   }
@@ -217,7 +217,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
       <table class=u2-table>
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
         <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
-        <tr><td>${app.t`Title`}<td>${row.title ?? ""}
+        <tr><td>${app.t`Title`}<td>${row.title}
         <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
         ${files.length ? html`<tr><td>${view.attachments}<td>${attachmentList}` : ""}
@@ -237,11 +237,11 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
             <th>${view.error}
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${recipient(d, url, view)}
-            <td>${d.address ?? ""}
+            <td>${d.address}
             <td>${d.sent ? u2.el.time(d.sent) : d.due ? html`${view.due} ${u2.el.time(d.due)}` : ""}
             <td>${d.opened ? u2.el.time(d.opened) : ""}
             <td>${Number(d.clicks) || ""}
-            <td>${d.error ?? ""}${Number(d.attempts) ? ` (${d.attempts}\u00d7)` : ""}`)}
+            <td>${d.error}${Number(d.attempts) ? ` (${d.attempts}\u00d7)` : ""}`)}
         </table>
       </div>
     </div>
@@ -398,9 +398,9 @@ async function attachments(app: App, rows: Row[], compact = false): Promise<Html
       ? await file.url({ fmt: "avif", w: compact ? 180 : 320, h: compact ? 120 : 240, max: true, grant: "session" })
       : "";
     return html`<div class=-attachment>
-      ${preview ? html`<a href="${download}" download><img src="${preview}" alt="${row.name ?? ""}" loading=lazy></a>` : ""}
+      ${preview ? html`<a href="${download}" download><img src="${preview}" alt="${row.name}" loading=lazy></a>` : ""}
       <a href="${download}" download><u2-ico inline icon=download>↓</u2-ico> ${row.name ?? "#" + row.file_id}</a>
-      <small>${row.mime ?? ""}${row.size == null ? "" : html` · <u2-bytes>${row.size}</u2-bytes>`}</small>
+      <small>${row.mime}${row.size == null ? "" : html` · <u2-bytes>${row.size}</u2-bytes>`}</small>
     </div>`;
   }));
   return html`<div class=-attachments>${items}</div>`;
@@ -428,7 +428,7 @@ function plain(row: Row): string {
  *  otherwise. A message is written by whoever sent it, so nothing here is trusted. */
 function body(row: Row): HtmlString {
   const markup = htmlOf(rowMsg(row));
-  return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text ?? ""}`;
+  return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text}`;
 }
 
 function rowMsg(row: Row): Msg {
