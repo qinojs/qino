@@ -1,0 +1,13 @@
+[qcms-mod="backend.system.health"] {
+  td, th { vertical-align:baseline; }
+  .-time { text-align:right; white-space:nowrap; }
+  .-failed { color:var(--red); }
+  .-ok { color:var(--green); }
+  .u2-badge {
+    &.-error   { background:var(--red); }
+    &.-warning { background:var(--orange); }
+    &.-notice  { background:var(--blue); }
+    &.-passed  { background:var(--gray-light); }
+  }
+  form, button { margin:0; }
+}

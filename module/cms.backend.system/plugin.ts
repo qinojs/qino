@@ -2,6 +2,7 @@ import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { getHealthChecks } from "./lib/healthRegistry.ts";
+import { cap, solutionsHtml } from "./lib/solutions.ts";
 import { markInstance } from "./lib/instanceMarker.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
 import api from "./nodeApi.ts";
@@ -53,56 +54,29 @@ async function render(node: Node): Promise<HtmlString> {
 </div>`;
 
   // ── health checks ──────────────────────────────────────────────────────
+  // Placeholders only — the client runs the checks one by one through the `health-item` part.
   const types = await getHealthChecks(app);
 
-  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  const healthCards: HtmlString[] = [];
+  const items: HtmlString[] = [];
   for (const [type, checks] of Object.entries(types)) {
-    const items: HtmlString[] = [];
     for (const [name, checkFn] of Object.entries(checks)) {
-      let data: CheckResult;
-      try { data = await checkFn(); } catch { continue; }
-      if (!data) continue;
-
-      const solutions = Object.entries(data.solutions ?? {});
-      let solutionsHtml: HtmlString | string = "";
-      if (solutions.length === 1) {
-        const [solution, solveData] = solutions[0];
-        const formFields: HtmlString[] = [];
-        for (const [fname, field] of Object.entries(solveData.form ?? {})) {
-          const inputType = typeof field.type === "string" ? field.type : "text";
-          formFields.push(html`<tr><td>${cap(fname)}:<td><input name="${fname}" type="${inputType}">`);
-        }
-        solutionsHtml = html`<form>
-  ${formFields.length ? html`<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
-  <button data-type="${type}" data-item="${name}" data-solution="${solution}">${cap(solution)}</button>
-</form>`;
-      } else if (solutions.length > 1) {
-        const menuItems = solutions.map(([solution]) =>
-          html`<li><button data-type="${type}" data-item="${name}" data-solution="${solution}">${cap(solution)}</button>`
-        );
-        solutionsHtml = html`<form><u2-menubutton>
-  <button type=button>solve ▾</button>
-  <menu>${menuItems}</menu>
-</u2-menubutton></form>`;
-      }
-
-      items.push(html`<div class="healty_item -${type}" data-type="${type}" data-item="${name}">
-  ${checkFn.mod ? html` <small>${checkFn.mod}</small><br>` : ""}
+      items.push(html`<div class=healty_item data-type="${type}" data-item="${name}">
+  <small>${checkFn.mod ?? ""}</small><br>
   <strong>${cap(name)}</strong>
-  ${data.info ? html`<p>${html.raw(data.info)}</p>` : ""}
-  <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml}</div>
 </div>`);
     }
-    if (!items.length) continue;
-    healthCards.push(html`<div class=u2-card>
-  <div class=-head>${cap(type)}</div>
-  <div class=-body style="max-height:43.75rem;overflow:auto">
-    <div class=healty_container>${items}</div>
-  </div>
-</div>`);
   }
+
+  const healthBox = html.async`
+<div class=u2-card>
+  <div class=-head>${t`Health`}</div>
+  <div class=-body style="max-height:43.75rem;overflow:auto">
+    <div class=healty_container>
+      ${items}
+      <span class=-allok hidden style="color:green">&#10003; ${t`All OK`}</span>
+    </div>
+  </div>
+</div>`;
 
   // ── db config (per dialect) ──────────────────────────────────────────────
   const dbBox = await renderDbBox(node);
@@ -134,7 +108,7 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── storage ───────────────────────────────────────────────────────────
   const statsBox = html.async`
-<div class=u2-card style="flex-grow:0">
+<div class=u2-card>
   <div class=-head>${t`Storage`}</div>
   ${statistic(node)}
 </div>`;
@@ -144,6 +118,7 @@ async function render(node: Node): Promise<HtmlString> {
   <style>
     .u2-card {
       flex-basis:28rem;
+      flex-grow:0;
     }
     .healty_container {
       display:grid; gap:.5rem;
@@ -159,7 +134,7 @@ async function render(node: Node): Promise<HtmlString> {
     }
   </style>
   ${serverInfoHtml}
-  ${healthCards}
+  ${healthBox}
   ${dbBox}
   ${localesBox}
   ${statsBox}
@@ -294,6 +269,23 @@ async function sqliteBox(node: Node): Promise<HtmlString> {
   return dbCard("SQLite", html.join(rows));
 }
 
+// One health box, run on demand: nothing when the check passes.
+async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
+  const type = String(vars.type);
+  const item = String(vars.item);
+  const checkFn = (await getHealthChecks(node.app))[type]?.[item];
+  if (!checkFn) return html.raw("");
+
+  let data: CheckResult;
+  try { data = await checkFn(); } catch { return html.raw(""); }
+  if (!data) return html.raw("");
+
+  return html`<small>${checkFn.mod ?? ""}</small><br>
+  <strong>${cap(item)}</strong>
+  ${data.info ? html`<p>${html.raw(data.info)}</p>` : ""}
+  <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(type, item, data)}</div>`;
+}
+
 async function dbDetails(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   if (db.dialect === "postgres") {
@@ -319,6 +311,7 @@ export const cms = {
       statistic,
       "statistic-details": statisticDetails,
       "db-details": dbDetails,
+      "health-item": healthItem,
     },
   },
 };

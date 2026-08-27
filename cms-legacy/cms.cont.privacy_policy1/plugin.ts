@@ -1,5 +1,6 @@
 import { html, sql } from "@qino/qino";
 
+import { identityOwner } from "../lib/identity.ts";
 import { cmsText } from "../lib/text.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -27,14 +28,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (!texts.has("title_" + key)) continue;
     let owner: HtmlString | string = "";
     if (key === "accountable_body") {
-      const fields = ["company", "name", "address"];
-      const lines = [];
-      for (const field of fields) {
-        const value = String(await node.app.settings.app1.owner[field] ?? "").trim();
-        if (value) lines.push(value);
-      }
-      const place = [String(await node.app.settings.app1.owner.zip ?? "").trim(), String(await node.app.settings.app1.owner.city ?? "").trim()].filter(Boolean).join(" ");
-      if (place) lines.push(place);
+      const identity = await identityOwner(node.app);
+      const place = [identity.zip, identity.city].filter(Boolean).join(" ");
+      const lines = [identity.company, identity.name, identity.address, place].filter(Boolean);
       if (lines.length) owner = html`<p style="margin:1em 0">${html.join(lines.map((line) => html`${line}<br>`))}</p>`;
     }
     if (key === "logs" && await node.app.settings["cms.cont.privacy_policy1"]["anonymize IP"])

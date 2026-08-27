@@ -3,7 +3,8 @@
   "description": "Legacy imprint using persisted contact settings and legal texts.",
   "dependencies": [
     "cms",
-    "cms.text"
+    "cms.text",
+    "identity"
   ],
   "files": [
     "manifest.json",

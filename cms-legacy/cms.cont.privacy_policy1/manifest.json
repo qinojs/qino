@@ -3,7 +3,8 @@
   "description": "Legacy generated privacy policy using its persisted texts.",
   "dependencies": [
     "cms",
-    "cms.text"
+    "cms.text",
+    "identity"
   ],
   "files": [
     "manifest.json",

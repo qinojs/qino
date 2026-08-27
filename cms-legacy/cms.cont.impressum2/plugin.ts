@@ -1,12 +1,13 @@
 import { html } from "@qino/qino";
 
+import { identityOwner } from "../lib/identity.ts";
 import { cmsText } from "../lib/text.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const workers = ["Kontaktadresse", "Technische Umsetzung", "Konzept", "Design", "Fotografie"];
-const fields = ["company", "name", "address", "city", "phone", "email", "website"];
+const fields = ["company", "name", "address", "zip", "city", "phone", "email", "website"];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const heading = [1, 2, 3, 4].includes(Number(await node.settings.Heading)) ? Number(await node.settings.Heading) : 2;
@@ -15,11 +16,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const data: Record<string, string> = {};
     for (const field of fields) data[field] = String(await node.settings[worker][field] ?? "");
     if (worker === "Kontaktadresse" && !data.company && !data.name) {
-      for (const field of fields) data[field] = String(await node.app.settings.app1.owner[field] ?? "");
+      const owner = await identityOwner(node.app);
+      for (const field of fields) data[field] = owner[field] ?? "";
       data.website ||= ctx.req.url.origin;
     }
     if (!data.company && !data.name) continue;
-    const city = [String(await node.settings[worker].zip ?? ""), data.city].filter(Boolean).join(" ");
+    const city = [data.zip, data.city].filter(Boolean).join(" ");
     const website = data.website ? (data.website.startsWith("http") ? data.website : "http://" + data.website) : "";
     blocks.push(await html.async`<div class=-block>
   <h${heading}>${worker}</h${heading}>

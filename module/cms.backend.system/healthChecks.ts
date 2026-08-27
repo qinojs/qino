@@ -36,21 +36,14 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
   }
 
   // ── superuser default password ──────────────────────────────────────────
+  // Only projects migrated from the PHP CMS can still have the "su"/"su" default.
   error["superuser default password"] = async () => {
-    const usrs = await db.query`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, username = 'su' DESC, id LIMIT 20`;
-    const found: typeof usrs = [];
-    let info = "";
-    for (const row of usrs) {
-      if (!await pwVerify("su", row.pw)) continue;
-      found.push(row);
-      info += hee(row.username) + "<br>";
-    }
-    if (!found.length) return;
+    const usr = await db.row`SELECT * FROM usr WHERE username = 'su'`;
+    if (!usr || !await pwVerify("su", String(usr.pw))) return;
     return {
-      info: info + (usrs.length === 20 ? " only the first 20 were checked" : ""),
       solutions: {
-        "remove pw":   { solve: async () => { for (const r of found) await db.table("usr").update(r.id, { pw: "" }); } },
-        "remove user": { solve: async () => { for (const r of found) await db.table("usr").delete(r.id); } },
+        "remove pw":   { solve: () => db.table("usr").update(usr.id, { pw: "" }) },
+        "remove user": { solve: () => db.table("usr").delete(usr.id) },
       },
     };
   };

@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.system.health",
+  "description": "Lists every health check with its message, solutions and run time.",
+  "dependencies": [
+    "cms.backend.system"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

@@ -8,6 +8,7 @@
     "healthChecks.ts",
     "lib/healthRegistry.ts",
     "lib/instanceMarker.ts",
+    "lib/solutions.ts",
     "manifest.json",
     "mod.ts",
     "nodeApi.ts",
