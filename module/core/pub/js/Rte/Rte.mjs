@@ -197,8 +197,7 @@ document.addEventListener('mousedown', e =>
 /* force li's in contenteditable uls */
 {
   const check = () => {
-    let child;
-    for (child of Rte.active.childNodes) {
+    for (const child of Rte.active.childNodes) {
       if (child.tagName === 'LI') continue;
       if (child.nodeType === 3 && !child.textContent.trim()) continue;
       if (child.nodeName === 'UL') {

@@ -18,7 +18,7 @@ class ShopRow extends DbRow {
 // A rounding step carries float noise: the legacy column was FLOAT, so 0.01 comes back as
 // 0.009999999776482582 once widened to DOUBLE. Six significant digits are more than any
 // currency's smallest unit needs, and they wash the noise out.
-const step = (v: number) => Number(Number(v).toPrecision(6));
+const step = (v: number) => Number(v.toPrecision(6));
 const decimals = (s: number) => String(s).split(".")[1]?.length ?? 0;
 const snap = (price: number, s: number) => Number((Math.round(price / s) * s).toFixed(decimals(s)));
 
@@ -350,7 +350,7 @@ export class Order extends ShopRow {
     if (config !== null) this.config = JSON.stringify(config);
     for (const item of await this.items()) await item.setQuantity(item.quantity); // let stock and friends look again
     const e = { order: this, errors: await this.errors(), redirect: "", prevent: false };
-    e.prevent = Object.keys(e.errors).length > 0;
+    e.prevent = !!Object.keys(e.errors).length;
     if (!e.prevent) await this.$shop.fire("order-try", e);
     if (!e.prevent) await this.place();
     return { success: !e.prevent, errors: e.errors, redirect: e.redirect };

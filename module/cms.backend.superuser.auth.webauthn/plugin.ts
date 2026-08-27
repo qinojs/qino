@@ -48,7 +48,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       </form>`;
   });
 
-  const empty = rows.length === 0
+  const empty = !rows.length
     ? html`<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.`
     : "";
 

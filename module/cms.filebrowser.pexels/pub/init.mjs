@@ -29,8 +29,7 @@ customElements.whenDefined('qino-cms').then(async () => {
       const hasPixabay = el.querySelector('.-pixabay');
       const items = await api['cms.filebrowser.pexels'].search.get({ s: search.value });
       list.innerHTML = '';
-      let item;
-      for (item of items) {
+      for (const item of items) {
         if (hasPixabay && item.photographer === 'Pixabay') continue;
         const el = c1.dom.el(
           '<label data-type=url>'+
@@ -43,7 +42,7 @@ customElements.whenDefined('qino-cms').then(async () => {
         el.style.backgroundImage = 'url("'+item.medium+'")';
         list.append(el);
       }
-      container.hidden = !item;
+      container.hidden = !list.childElementCount;
     }, 1500));
 
   }}).observe('.cmsFileBrowser', { root });

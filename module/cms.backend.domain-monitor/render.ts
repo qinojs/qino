@@ -290,7 +290,7 @@ function dmarcCell(row: DomainRow): HtmlString {
 function smtpCell(row: DomainRow): HtmlString {
   if (row.mail_null_mx) return html`${dot("gray", "null MX — this domain receives no mail on purpose")} <small>none</small>`;
   if (!lines(row.mail_hosts).length) return html`${dot("gray", "no MX record")}`;
-  const dane = lines(row.mail_dane).length > 0;
+  const dane = !!lines(row.mail_dane).length;
   const level = no(row.mail_hosts_ok) || no(row.mail_tls_valid) ? "red"
     : no(row.mail_starttls) ? "orange"
     : row.mail_starttls == null ? "gray"

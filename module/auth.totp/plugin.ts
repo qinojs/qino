@@ -11,7 +11,7 @@ export const authFactors: Factor[] = [{
   label: "Authenticator app",
   stepUp: true,
   order: 20,
-  has: async (app: App, usrId: number) => (await stored(app, usrId, "totp")).length > 0,
+  has: async (app: App, usrId: number) => !!(await stored(app, usrId, "totp")).length,
 }];
 
 export const api: ApiTree = {

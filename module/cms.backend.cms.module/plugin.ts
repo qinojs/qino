@@ -216,7 +216,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
     targets.push(m);
   }
 
-  const canReplace = access >= ADMIN && editable > 0 && targets.length > 0;
+  const canReplace = access >= ADMIN && editable > 0 && !!targets.length;
   // the code/plugin view of the same module, if that backend page is installed and readable
   const codePage = await (await node.cms.nodeByModule("cms.backend.superuser.module"))?.page();
   const codeUrl = codePage && await codePage.access() ? await codePage.url() : "";

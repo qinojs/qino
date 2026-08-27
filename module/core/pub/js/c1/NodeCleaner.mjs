@@ -158,31 +158,31 @@ function removeUnusedAttributes(el) {
   el.getAttribute('class')?.trim() === '' && el.removeAttribute('class');
   /* bugs ie8/9/10? */
   if (el.tagName === 'IMG') {
-    if (!/^[0-9]+/.test(el.getAttribute('height'))) { el.removeAttribute('height'); }
-    if (!/^[0-9]+/.test(el.getAttribute('width')))  { el.removeAttribute('width');  }
+    if (!/^[0-9]+/.test(el.getAttribute('height'))) el.removeAttribute('height');
+    if (!/^[0-9]+/.test(el.getAttribute('width'))) el.removeAttribute('width');
   }
 }
 function removeEmptyInlineSpans(el) {
   if (el.attributes.length) return;
-  const display = getComputedStyle(el).getPropertyValue('display');
-  if (display === 'inline' && el.tagName === 'SPAN') unwrap(el);
+  if (el.tagName === 'SPAN' && getComputedStyle(el).getPropertyValue('display') === 'inline') unwrap(el);
 }
 function removeUnusedElements(el) {
   if (el.tagName === 'A' && el.innerHTML.trim().length) {
     //unwrap(el); return;
   }
   // divs containing only block-likes
-  if (el.attributes.length === 0 && el.tagName === 'DIV') {
+  if (!el.attributes.length && el.tagName === 'DIV') {
     let onlyBlocks = true;
     for (const child of el.childNodes) {
       //if (child.nodeType === 2) continue; // comment
       if (child.nodeType === 3) {
         if (child.data.trim() === '') continue;
-        else { onlyBlocks = false; break; }
+        onlyBlocks = false;
+        break;
       }
       if (!BLOCK_LIKE_TAGS[child.tagName]) { onlyBlocks = false; break; }
     }
-    if (onlyBlocks) { unwrap(el); return; };
+    if (onlyBlocks) { unwrap(el); return; }
   }
   // single col tables
   if (el.tagName === 'TABLE') {
@@ -201,11 +201,9 @@ function removeUnusedElements(el) {
     }
   }
   // remove Ps inside LIs, todo:better solution?
-  if (el.tagName === 'P') {
-    if (el.parentNode.tagName === 'LI') {
-      unwrap(el);
-      return;
-    }
+  if (el.tagName === 'P' && el.parentNode.tagName === 'LI') {
+    unwrap(el);
+    return;
   }
 }
 const NOT_INLINE = {block:1,table:1,flex:1,grid:1,'list-item':1,'table-cell':1};

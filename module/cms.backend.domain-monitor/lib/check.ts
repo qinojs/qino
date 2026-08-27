@@ -156,7 +156,7 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
     ds: ds?.values.join("\n") ?? "",
     // The parent has the last word on whether a zone is signed. A DS with no key behind it is
     // worse than no DS at all, so that stays unknown rather than being reported as unsigned.
-    dnssec: !ds ? null : !ds.values.length ? false : dnskey ? dnskey.values.length > 0 : null,
+    dnssec: !ds ? null : !ds.values.length ? false : dnskey ? !!dnskey.values.length : null,
     parent: (delegated ?? []).map(bare).sort().join("\n"),
   };
 }

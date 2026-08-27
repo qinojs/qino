@@ -41,7 +41,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 
       const bytes = status?.bytes != null ? html`<u2-bytes>${status.bytes}</u2-bytes>` : "?";
       const primaries = [...fields.values()].filter((f: any) => f.isPrimary());
-      const primaryBadge = primaries.length === 0
+      const primaryBadge = !primaries.length
         ? html.async`<small class=u2-badge style="background:var(--red)">${t`none`}</small>`
         : primaries.length === 1
         ? html`<small class=u2-badge style="background:var(--yellow)">${primaries[0]}</small>`

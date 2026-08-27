@@ -62,7 +62,7 @@ export class DbRow {
   get $id(): string { return this.#id; }
   /** Values arrived at least once — an io statement, unlike $exists. */
   get $loaded(): boolean { return this.#loadedAt > 0; }
-  get $changed(): boolean { return this.#dirty.size > 0; }
+  get $changed(): boolean { return !!this.#dirty.size; }
   /** Milliseconds since the values came from the database. */
   get $age(): number { return this.#loadedAt ? Date.now() - this.#loadedAt : Infinity; }
   /** Someone wrote this row through the table — the values may no longer match. */

@@ -10,7 +10,7 @@ const MAX_CELL = 200; // longer values are shown as a snippet around the first h
 
 export async function render(node: Node): Promise<HtmlString> {
   const app = node.app, t = app.t;
-  const term = String(getCtx().req.query.db_search ?? "").trim();
+  const term = (getCtx().req.query.db_search ?? "").trim();
 
   const t0 = performance.now();
   const results = term ? await search(app.db, term) : [];
