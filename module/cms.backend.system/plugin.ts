@@ -83,8 +83,7 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── locales / time ─────────────────────────────────────────────────────
   const osIso   = new Date().toISOString();
-  const dbRaw   = await db.one`${sql.raw(dbUtcNowSql(db.dialect))}`;
-  const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
+  const dbIso   = String(await db.one`${sql.raw(dbUtcNowSql(db.dialect))}`);
   const localesBox = html.async`
 <div class=u2-card>
   <div class=-head>${t`Time`}</div>
@@ -210,11 +209,11 @@ function systemInfoRows(app: App): Promise<HtmlString> {
   <tr><td>${t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>`;
 }
 
-// SQL for "now in UTC" per dialect (MySQL gives 'YYYY-MM-DD HH:MM:SS', others ISO).
+// SQL for "now in UTC" as an ISO string, independent of driver date parsing.
 function dbUtcNowSql(dialect: string): string {
-  if (dialect === "postgres") return "SELECT now() AT TIME ZONE 'UTC'";
+  if (dialect === "postgres") return `SELECT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
   if (dialect === "sqlite") return "SELECT strftime('%Y-%m-%dT%H:%M:%SZ','now')";
-  return "SELECT UTC_TIMESTAMP()";
+  return "SELECT DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')";
 }
 
 const kvTable = (rows: [string, string][]) =>
