@@ -111,7 +111,7 @@ class MysqlDriver extends DbDriver {
   }
   // ALTER TABLE implicitly commits an open transaction — MySQL offers no other way to move the counter.
   override async syncAutoIncrement(table: string, _field: string, value: number) {
-    await this.exec(`ALTER TABLE ${this.quoteId(table)} AUTO_INCREMENT=${String(value + 1)}`);
+    await this.exec(`ALTER TABLE ${this.quoteId(table)} AUTO_INCREMENT=${value + 1}`);
   }
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);

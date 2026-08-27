@@ -53,7 +53,7 @@ export default async function (node: Node): Promise<HtmlString> {
     }
     const nameLabel = name[0] !== "_" ? html`<div style="font-size:11px;color:#999;font-style:italic">(${name})</div>` : "";
     const size = exists ? await F.size() : 0;
-    const sizeStr = size ? String(Math.round(size / 1024)) + " KB" : "";
+    const sizeStr = size ? Math.round(size / 1024) + " KB" : "";
 
     trs.push(html`<tr itemid="${name}" draggable>
       <td class=-preview title="${await app.t`Click to replace the file`}">${preview}

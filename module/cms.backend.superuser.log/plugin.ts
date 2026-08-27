@@ -193,7 +193,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     ages.map((a, i) => html`<option value="${a[0]}"${i === sel ? " selected" : ""}>${a[1]}`);
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
-  const initSearch = String(ctx.req.query.search ?? "");
+  const initSearch = ctx.req.query.search ?? "";
   const initialList = await list(node, { ctx, vars: { filter: { search: initSearch } } });
 
   // single root element — the CMS injects qcms-id/qcms-mod into the first tag, so the

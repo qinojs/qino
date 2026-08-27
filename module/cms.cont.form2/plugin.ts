@@ -39,17 +39,17 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
     app.fire("suspicious", { ctx, weight: 3, reason: "form2 honeypot filled" });
-    return String(await app.t`Your entry looks like spam. Please try again or contact us directly.`);
+    return await app.t`Your entry looks like spam. Please try again or contact us directly.`;
   }
   const age = await clientAge(ctx);
   if (age < 3) {
     app.fire("suspicious", { ctx, weight: 2, reason: "form2 submit from a brand-new client" });
-    return String(await app.t`Your entry could not be sent. Please try again.`);
+    return await app.t`Your entry could not be sent. Please try again.`;
   }
   if (age < 10) {
     app.fire("suspicious", { ctx, reason: "form2 submit from a very young client" });
     const note = await app.t`This was probably sent by a web robot. Please do NOT move it to the spam folder — that would harm our sender reputation. When in doubt, do not click any link.`;
-    form.values = { Attention: String(note), ...form.values };
+    form.values = { Attention: note, ...form.values };
   }
   return "";
 }

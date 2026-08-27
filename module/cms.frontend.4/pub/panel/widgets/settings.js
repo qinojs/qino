@@ -43,7 +43,7 @@ export default async function (el, { node, dialogs, signal }) {
   el.head = t`Settings`;
 
   await el.html`<div class=-standalone style="font-size:1.2em;margin-bottom:1em">
-    <div title="Nr.${String(vs.id)}">
+    <div title="Nr.${vs.id}">
       <div class=u2-flex style="align-items:baseline; margin-bottom:1em">
         <h1>${isPage ? t`Page` : t`Content`}:</h1>
         <input ${editmode ? html.raw(`cmstxt=${vs.title_id}`) : ''} value="${vs.title}" placeholder="no title"

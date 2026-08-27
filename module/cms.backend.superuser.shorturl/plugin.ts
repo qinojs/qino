@@ -86,7 +86,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     }
   }
 
-  const search = String(ctx.req.query.search ?? "");
+  const search = ctx.req.query.search ?? "";
 
   return html.async`<div class=u2-flex>
     <style>

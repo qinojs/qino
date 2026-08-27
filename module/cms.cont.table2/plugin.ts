@@ -36,7 +36,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const bottomUp = !!node.settings.direction();
 
   if (
-    ctx.req.query.export_table && String(ctx.req.query.export_table) === String(node)
+    ctx.req.query.export_table && ctx.req.query.export_table === String(node)
   ) {
     const titleStr = String(await node.showTitle());
     const d = new Date();

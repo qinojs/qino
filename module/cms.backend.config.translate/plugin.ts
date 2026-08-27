@@ -84,7 +84,7 @@ async function render(node: Node): Promise<HtmlString> {
   const langs = app.languages.all;
   const counterActive = !!(await app.settings.core.smalltext.counter);
   const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
-  const search = String(ctx.req.query.search ?? "").trim();
+  const search = (ctx.req.query.search ?? "").trim();
   const missingWhere = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ");
   const missing = missingWhere.parts.length ? Number(await app.db.one`SELECT count(*) FROM smalltext WHERE ${missingWhere}`) : 0;
 

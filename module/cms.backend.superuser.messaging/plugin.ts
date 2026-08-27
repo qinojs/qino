@@ -39,8 +39,8 @@ function intParam(url: URL, key: string): number {
 async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app;
   const ctx = getCtx();
-  const search = String(url.searchParams.get("search") ?? "");
-  const filter = String(url.searchParams.get("channel") ?? "");
+  const search = url.searchParams.get("search") ?? "";
+  const filter = url.searchParams.get("channel") ?? "";
   const [used, view] = await Promise.all([
     app.db.col<string>`SELECT DISTINCT channel FROM message ORDER BY channel`,
     labels(app),

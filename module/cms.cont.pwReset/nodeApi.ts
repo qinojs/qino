@@ -46,6 +46,6 @@ async function sendLink(node: Node, usrId: number, email: string) {
 
 The link is valid until ${until} UTC. If you did not ask for it, ignore this mail.`;
   // not awaited: the answer must take the same time whether or not the address has an account
-  send(app, { email }, { title: String(await app.t`Set a new password`), text: String(text) })
+  send(app, { email }, { title: await app.t`Set a new password`, text })
     .catch((e) => console.error("[pwReset]", e));
 }

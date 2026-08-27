@@ -532,7 +532,7 @@ export async function backendDashboardWidget(app: App, node: Node): Promise<Html
 }
 
 export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
-  const domain = String(ctx.req.query.domain ?? "");
+  const domain = ctx.req.query.domain ?? "";
   if (domain) return renderDetail(node, ctx, domain);
 
   const app = node.app;

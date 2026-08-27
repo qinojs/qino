@@ -117,8 +117,8 @@ async function replace(node: Node, vars: Record<string, unknown>): Promise<strin
   const target = String(vars.replace ?? "");
   const ids = String(vars.ids ?? "").split(",").map(Number).filter(Boolean);
   if (!target || !ids.length) return "";
-  if (!isContent(app, target)) return String(await t`Unknown module`);
-  if (await modAccess(app, target) < ADMIN) return String(await t`No access to this module`);
+  if (!isContent(app, target)) return await t`Unknown module`;
+  if (await modAccess(app, target) < ADMIN) return await t`No access to this module`;
 
   let done = 0, skipped = 0;
   for (const id of ids) {

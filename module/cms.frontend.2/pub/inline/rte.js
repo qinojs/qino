@@ -28,7 +28,8 @@ const end = () => {
     unwrap(el);
     Rte.trigger('input');
     return;
-  } else if (!isNaN(v)) {
+  }
+  if (!isNaN(v)) {
     v = 'cmspid://'+v;
   } else if (MAIL_RE.test(v)) {
     v = 'mailto:'+v;
