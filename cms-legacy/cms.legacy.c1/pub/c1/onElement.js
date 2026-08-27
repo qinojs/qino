@@ -25,7 +25,7 @@ c1.onElement = function(selector, options/*, disconnectedCallback*/) {
 	}
 	try {
 	    var els = root.querySelectorAll(listener.selector), i=0, el;
-	} catch(e) {
+  } catch {
 		console.error('invalid selector: "'+listener.selector+'"');
 		return;
 	}

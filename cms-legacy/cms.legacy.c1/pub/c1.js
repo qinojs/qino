@@ -186,7 +186,7 @@ c1Use = function (use) {
 c1Use = function (use) {
 	var fn = function (props,cb) {
         var scope = this;
-        var p = new Promise(function(resolve, reject) {
+        var p = new Promise(function(resolve) {
             use.call(scope, props, function(){
                 cb && cb.apply(scope, arguments);
                 resolve(arguments);
