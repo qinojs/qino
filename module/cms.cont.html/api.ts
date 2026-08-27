@@ -27,7 +27,7 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
     },
   },
   put: {
-    description: `Replace or create the ${label} source of a cms.cont.html node and return its rendered HTML`,
+    description: `Write the ${label} of a cms.cont.html node, returns its rendered HTML. Read it first — a new node is scaffolded with its qcms-id selector and wiring.`,
     ...NODE_WRITE,
     input: content,
     output: rendered,

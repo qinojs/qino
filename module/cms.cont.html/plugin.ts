@@ -12,7 +12,9 @@ const { name } = manifest;
 export const api = nodeApi(name);
 
 // Commented out on purpose: the parser strips comments, so nothing is created before you want it.
-const INITIAL_SRC = `<div>
+const INITIAL_SRC = `<div><!-- 
+
+  at render time the cms adds qcms-id=385 qcms-mod=cont.html to this root element; css and js target it
 
   <!-- editable text — the tag becomes the wrapper, the inner html is the initial content
   <h2 cms-text=title>Title</h2>
