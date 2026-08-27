@@ -63,7 +63,7 @@ async function render(node: Node): Promise<HtmlString> {
       .map((s) => html.async`<tr>
         <td>${s.space}
         <td>${s.time_created}
-        <td><button class=-del-space data-space="${s.space}" u2-confirm="${t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
+        <td><button class=-del-space data-space="${s.space}" u2-confirm="${t`Delete space ${s.space} (draft + its history)?`}">✕</button>`)
   );
   const spacesBox = html.async`
 <div class=u2-card style="flex-grow:0">

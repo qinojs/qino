@@ -1,8 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, hee, html } from "@qino/qino";
+import { getCtx, hee } from "@qino/qino";
 import { ADMIN } from "@qino/qino/cms";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export function widgetUrl(widget: string): string {

@@ -4,7 +4,6 @@ import { api, ctx, t } from '@qino/pub/qino.js';
 import '../../../cms/pub/js/cms.mjs';
 
 const moduleUrl = ctx.moduleUrl;
-const nodeId = globalThis.qino?.cms?.nodeId;
 
 /** The block submenu and its selector, so a host can add its own entries. */
 export const blockSelector = '[qcms-edit], #qgCmsContPosMenu';

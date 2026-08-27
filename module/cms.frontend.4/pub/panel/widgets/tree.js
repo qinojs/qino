@@ -1,5 +1,4 @@
 /* The page tree with its legend. The tree engine itself lives in tree.js; this mounts it. */
-import { html } from '@qino/pub/html.js';
 import { api, t } from '@qino/pub/qino.js';
 
 export default async function (el, { node, dialogs, signal }) {

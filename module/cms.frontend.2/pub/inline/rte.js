@@ -41,7 +41,7 @@ const end = () => {
   if (/^https?:\/\//.test(v)) {
     el.setAttribute('rel','noopener');
   } else {
-    el.removeAttribute('rel','noopener');
+    el.removeAttribute('rel');
   }
 
 

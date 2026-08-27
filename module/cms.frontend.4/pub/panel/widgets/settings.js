@@ -101,7 +101,7 @@ export default async function (el, { node, dialogs, signal }) {
     el.reload();
   });
   // a content parent is edited in here, a page parent is a link like any other
-  el.on('click', '.-editparent', (div, e) => {
+  el.on('click', '.-editparent', (_, e) => {
     if (parent?.type === 'p') return;
     e.preventDefault();
     cms.cont.active = parent.id;

@@ -82,7 +82,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
       // the target is written by a superuser, so anything the runtime accepts as a URL is theirs to make
       message = await shorten(node.app, url, { expires })
         .then((link) => html`<a href="${link}" target=_blank>${link}</a>`)
-        .catch((e) => html`<span style="color:var(--red)">${String(e.message ?? e)}</span>`);
+        .catch((e) => html`<span style="color:var(--red)">${e.message ?? e}</span>`);
     }
   }
 
