@@ -5,6 +5,7 @@ cms.initNode("backend.system.health", (el) => {
 
   const loadRow = async (row) => {
     row.innerHTML = await node.html.part("check").post({ vars: { type: row.dataset.type, item: row.dataset.item } });
+    row.classList.toggle("-passed", !!row.querySelector(".u2-badge.-passed"));
   };
 
   // one after another: every check re-collects the registry, so parallel runs only pile up load
@@ -17,6 +18,12 @@ cms.initNode("backend.system.health", (el) => {
     }
   };
   loadAll();
+
+  el.addEventListener("change", (e) => {
+    if (e.target.closest("input[data-all]")) {
+      el.querySelector("[cms-part=table]").classList.toggle("-only-issues", !e.target.checked);
+    }
+  });
 
   el.addEventListener("click", async (e) => {
     if (e.target.closest("button[data-refresh]")) {

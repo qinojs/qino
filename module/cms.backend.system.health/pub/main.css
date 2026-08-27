@@ -10,4 +10,5 @@
     &.-passed  { background:var(--gray-light); }
   }
   form, button { margin:0; }
+  .-only-issues tr.-passed { display:none; }
 }

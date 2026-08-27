@@ -43,7 +43,7 @@ export type { DbScope } from "./lib/db/dbScope.ts";
 export { DbRow } from "./lib/db/DbRow.ts";
 export { DbField } from "./lib/db/DbField.ts";
 
-export { DbFile } from "./lib/DbFileManager.ts";
+export { DbFile, deleteUnlinkedDbFiles } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export { Usr } from "./lib/rows.ts";
 export { addContact, contactError, contactKey, contactOwner, contacts, contactTypes, countContacts, mainContact, removeContact, setMainContact, typeContacts } from "./lib/contacts.ts";

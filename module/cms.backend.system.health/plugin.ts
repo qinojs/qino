@@ -81,11 +81,12 @@ function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`
 <div class=u2-card style="flex:0 1 auto">
-  <div class=-head>
-    ${t`Health`}
+  <div class=-head>${t`Health`}</div>
+  <div class=-body>
+    <label><input type=checkbox data-all> ${t`All checks`}</label>
     <button data-refresh type=button>${t`Refresh`}</button>
   </div>
-  <div class=-body cms-part=table style="padding:0;overflow:auto">${table(node)}</div>
+  <div class="-body -only-issues" cms-part=table style="padding:0;overflow:auto">${table(node)}</div>
 </div>`;
 }
 

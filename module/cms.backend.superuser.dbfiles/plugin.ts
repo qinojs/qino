@@ -1,16 +1,13 @@
-import { getCtx, html, sql, FileTransformer } from "@qino/qino";
+import { getCtx, html, sql, FileTransformer, deleteUnlinkedDbFiles } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
-import { deleteUnlinkedDb } from "./cleanup.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { HtmlString, App, DbField, DbFile, Ctx, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
-
-export { healthChecks } from "./healthChecks.ts";
 
 export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "DB Files", de: "DB Dateien" });
@@ -142,7 +139,7 @@ async function runAction(node: Node, doName: string): Promise<HtmlString | strin
     return html.async`${r.deleted} ${node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;
   }
   if (doName === "delete_unlinked_db") {
-    const r = await deleteUnlinkedDb(node.app);
+    const r = await deleteUnlinkedDbFiles(node.app);
     return html.async`${r.deleted} ${node.app.t`DB entries deleted`}`;
   }
   return "";

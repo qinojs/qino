@@ -5,8 +5,6 @@
     "cms.backend"
   ],
   "files": [
-    "cleanup.ts",
-    "healthChecks.ts",
     "manifest.json",
     "plugin.ts",
     "pub/main.css",

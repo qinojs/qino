@@ -5,12 +5,29 @@ import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, readDataUrl, readUploadFile } from "./fileStream.ts";
-import { header } from "./util.ts";
+import { header, unixTime } from "./util.ts";
 
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
 import type { UploadedFile } from "./fileStream.ts";
 import type { TransformOptions } from "./transform/mod.ts";
+
+/** Remove file rows no child table links to, older than a week. */
+export async function deleteUnlinkedDbFiles(app: App): Promise<{ deleted: number }> {
+  const { db, dbFiles: fm } = app;
+  const ago = unixTime() - 60 * 60 * 24 * 7;
+  const notLinked = db.table("file").children.map((dbFile) =>
+    sql`NOT EXISTS (SELECT 1 FROM ${sql.id(dbFile.table.name)} c WHERE c.${sql.id(dbFile.name)}=file.id)`);
+  const rows = await db.query`SELECT file.id FROM file
+    LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id
+    WHERE (log_i.id IS NULL OR log_i.time<${ago}) AND (log_e.id IS NULL OR log_e.time<${ago})${notLinked.length ? sql` AND ${sql.join(notLinked, " AND ")}` : sql.raw("")}`;
+  let deleted = 0;
+  for (const row of rows) {
+    const f = await fm.file(row.id);
+    if (!await f.used() && !await f.access()) { await f.remove(); deleted++; }
+  }
+  return { deleted };
+}
 
 /** Move a file, falling back to copy+remove when rename fails (e.g. across filesystems). */
 async function moveFile(from: string, to: string) {
