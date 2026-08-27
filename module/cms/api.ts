@@ -11,10 +11,12 @@ import type { Node } from "./lib/Node.ts";
 
 // deno-lint-ignore-file no-explicit-any
 
-// Static gate PUBLIC (a node read is reachable for anyone); the per-call level is checked against the resolved node in guard.
+// Static gate: a node read is reachable for anyone, everything above read needs a user — without one
+// neither page_access_usr nor groups are consulted and page.access tops out at 1 (read).
+// The per-call level is checked against the resolved node in guard.
 const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 1) };
-const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
-const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
+const nodeWrite = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
+const nodeAdmin = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
 
 // Adding/assigning a module needs ADMIN ("insertable") on the module axis — an editorial
 // add-gate, not security. cms.accessRules lowers e.access; without it everything is insertable.
