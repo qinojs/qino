@@ -48,6 +48,7 @@
     "pub/panel/widgets/add.js",
     "pub/panel/widgets/extended.js",
     "pub/panel/widgets/media.js",
+    "pub/panel/widgets/modules.js",
     "pub/panel/widgets/more.js",
     "pub/panel/widgets/seo.js",
     "pub/panel/widgets/sets.js",

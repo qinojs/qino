@@ -68,12 +68,18 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   // The options slot: the module's own widget, else its server-rendered options — an entry without
   // `src` is a container the widget endpoint fills, until that renderer is gone too.
   const options = modWidget && mod?.modUrl ? { src: mod.modUrl + modWidget } : hasOptions(node) ? {} : null;
-  if (options) list.push({ name: "options", title: await ctx.app.t`Settings`, ...options });
+  const [settingsTitle, showTime, showUrls, access] = await Promise.all([
+    ctx.app.t`Settings`,
+    ctx.app.settings["cms.frontend.4"]["show access.time"],
+    ctx.app.settings["cms.frontend.4"]["show urls"],
+    node.access(),
+  ]);
+  if (options) list.push({ name: "options", title: settingsTitle, ...options });
   list.push(own("media"));
-  if (await ctx.app.settings["cms.frontend.4"]["show access.time"]) list.push(own("access.time"));
-  if (await node.access() > 2) list.push(own("access.grp"), own("access.usr"));
+  if (showTime) list.push(own("access.time"));
+  if (access > 2) list.push(own("access.grp"), own("access.usr"));
   if (node.vs.type === "p") list.push(own("seo"));
-  if (await ctx.app.settings["cms.frontend.4"]["show urls"]) list.push(own("urls"));
+  if (showUrls) list.push(own("urls"));
   // sets and txts hang inside extended, mounted by it
   list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
   if (ctx.user?.superuser) list.push(own("superuser"));
@@ -113,17 +119,17 @@ async function* walkDir(dir: string): AsyncGenerator<string> {
 async function moduleFiles(ctx: Ctx, pid: number) {
   const node = await cms(ctx.app).node(pid);
   const module = String(node.vs.module ?? "");
-  const list: Record<string, { path: string; name: string; mtime: number; editor?: string }[]> = {};
-  for (const scope of ROOTS) {
+  const filesIn = async (scope: string) => {
     const root = await moduleRoot(ctx, pid, scope);
-    const files = [];
-    for await (const path of walkDir(root)) {
-      const info = await Deno.stat(path).catch(() => null);
-      if (!info?.isFile) continue;
-      files.push({ path, name: path.slice(root.length), mtime: Number(info.mtime ?? 0), editor: editorUrl(path) });
-    }
-    list[scope] = files;
-  }
+    const paths = await Array.fromAsync(walkDir(root));
+    const stats = await Promise.all(paths.map((p) => Deno.stat(p).catch(() => null)));
+    return paths
+      .map((path, i) => ({ path, info: stats[i] }))
+      .filter(({ info }) => info?.isFile)
+      .map(({ path, info }) => ({ path, name: path.slice(root.length), mtime: Number(info!.mtime ?? 0), editor: editorUrl(path) }));
+  };
+  const [data, app] = await Promise.all(ROOTS.map(filesIn));
+  const list = { data, app };
   // the module's app settings, if it has any — shown below the files
   return { ...list, settings: module && module in ctx.app.settings ? module : null };
 }

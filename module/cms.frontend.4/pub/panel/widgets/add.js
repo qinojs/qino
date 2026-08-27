@@ -2,6 +2,8 @@
 import { html } from '@qino/pub/html.js';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
+import { modules as moduleList } from './modules.js';
+
 const FALLBACK = () => ctx.moduleUrl + 'cms.frontend.4/pub/img/module_default.svg';
 
 const label = (name) => {
@@ -21,7 +23,7 @@ async function templates(signal) {
 
 export default async function (el, { signal }) {
   const [modules, models] = await Promise.all([
-    api.cms.modules.get({}, { signal }),
+    moduleList(),
     templates(signal),
   ]);
   const icons = Object.fromEntries(modules.map((m) => [m.name, m.icon]));

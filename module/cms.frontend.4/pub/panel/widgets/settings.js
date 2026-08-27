@@ -3,6 +3,7 @@ import { html } from '@qino/pub/html.js';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
 import { widget as mount } from '../widget.js';
+import { modules as moduleList } from './modules.js';
 
 const FALLBACK_ICON = () => ctx.moduleUrl + 'cms.frontend.4/pub/img/module_default.svg';
 
@@ -31,7 +32,7 @@ export default async function (el, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
   const [vs, modules, widgets] = await Promise.all([
     ref.get({}, { signal }),
-    api.cms.modules.get({}, { signal }),
+    moduleList(),
     api['cms.frontend.4'].widgets(node.id).get({}, { signal }),
   ]);
   const parent = vs.basis ? await api.cms.node(vs.basis).get({}, { signal }).catch(() => null) : null;
