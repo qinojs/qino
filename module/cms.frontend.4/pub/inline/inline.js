@@ -17,7 +17,6 @@ import './dropPaste.js';
 const nodeId = globalThis.qino?.cms?.nodeId;
 
 root.host.addStyle('cms.frontend.4/pub/inline/chrome.css');
-cms.frontend2 = {};
 cms.dialogs = root;
 
 /** Buttons a host adds to the content menu; `show(contPos)` decides visibility per marked content. */
@@ -226,7 +225,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
   setTimeout(() => document.activeElement.blur());
-  globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(()=>cms.frontend2.clipboard(globalThis.qino.cms.clipboard));
+  globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(({ default: clipboard }) => clipboard(globalThis.qino.cms.clipboard));
 });
 
 cms.console = {
@@ -253,7 +252,8 @@ cms.console = {
 
 api.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`API call failed`, 'error'));
 
-cms.frontend2.dialog = (title,body,buttons) =>
+/** A modal with a title line and buttons — c1's dialog shape, on u2's modal. */
+export const dialog = (title,body,buttons) =>
   root.modal({
     body: (title ? '<p>'+title+'</p>' : '') + body,
     buttons: buttons?.map(b => ({ ...b, action: b.then })), // c1 used `then`, u2 uses `action`, todo: use action everywhere and remove this mapping

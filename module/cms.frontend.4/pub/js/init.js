@@ -5,7 +5,7 @@ import { root } from './root.js';
 import { onShortcut } from './shortcut.js';
 
 const editable = globalThis.qino?.cms?.editmode !== undefined; // not available if in backend but no edit-access
-function qgCmsToggleEdit(){
+function toggleEdit() {
   if (!editable) return;
   const url = new URL(location.href);
   url.searchParams.set('cms_editmode', globalThis.qino.cms.editmode?0:1);
@@ -21,7 +21,7 @@ function qgCmsToggleEdit(){
 onShortcut(key => {
   switch (key) {
     case 'e':
-      qgCmsToggleEdit();
+      toggleEdit();
       break;
     case 'd':
       api.core['ctx-settings']('core', 'dev').put({value: !ctx.dev}).then(() => location.reload());
@@ -44,7 +44,7 @@ if (editable) {
   const editToggle = c1.dom.el('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Edit (E)"><div><i></i></div></a>');
   root.append(editToggle);
   editToggle.addEventListener('click', e => {
-    qgCmsToggleEdit();
+    toggleEdit();
     e.currentTarget.classList.toggle('-active');
   });
 }

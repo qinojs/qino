@@ -7,6 +7,7 @@ import { onShortcut } from "../js/shortcut.js";
 import "./contentMenu.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
+const activeId = () => cms.cont.active || nodeId;
 
 root.host.addStyle("cms.frontend.4/pub/panel/panel.css");
 root.host.addStyle("cms.frontend.4/pub/panel/tree.css");
@@ -25,7 +26,7 @@ function setSetting(value, path) {
 }
 
 const { item } = await itemJs;
-const uiState = item(cmsFrontend2Data ?? {});
+const uiState = item(globalThis.qino?.cms?.ui ?? {});
 const sidebar = uiState.item("sidebar");
 const widgets = uiState.item("widget");
 if (!widgets.filled) widgets.set({});
@@ -59,7 +60,7 @@ const loadWidget = (widget, params, cb) => {
   // sidebar items are placed by view/panel.ts, so the client ones are named here
   const src = SIDEBAR_WIDGETS[widget];
   if (src) {
-    const context = { node: { id: cms.cont.active || nodeId }, dialogs: root };
+    const context = { node: { id: activeId() }, dialogs: root };
     const mounted = widgetEl.firstElementChild;
     if (mounted?.reload) return mounted.reload(context); // the active node may have changed
     return widgetEl.replaceChildren(mountWidget(src, context));
@@ -67,7 +68,7 @@ const loadWidget = (widget, params, cb) => {
   import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
     params ||= {};
-    params.pid ||= cms.cont.active || nodeId;
+    params.pid ||= activeId();
     api['cms.frontend.4'].widget(widget).post({ params }).then((res) => {
       loading.done(widgetEl);
       setHtml(widgetEl, res);
@@ -91,9 +92,7 @@ function syncSidebar(value = sidebar.value) {
     item.focus();
 
     el.classList.add("-open");
-    const content = findEl(el, '> .-sidebar > [itemid="' + value + '"] > .-content');
-    if (!content) return;
-    loadWidget(value, { pid: cms.cont.active || nodeId });
+    loadWidget(value);
   } else {
     el.classList.remove("-open");
   }
@@ -111,7 +110,7 @@ el.addEventListener("click", (e) => {
 /* widgets */
 widgets.addEventListener("setIn", e => {
   if (e.target.parent !== widgets) return;
-  if (e.value) loadWidget(e.target.key, { pid: cms.cont.active || nodeId });
+  if (e.value) loadWidget(e.target.key);
 });
 el.addEventListener("click", (e) => {
   if (e.button !== 0) return;
@@ -160,47 +159,37 @@ api.on("POST cms/node/:id/contents", () => sidebar.set(""));
 
 cms.cont.on("upload", (ev) => {
   cms.cont(ev.pid).showWidget("media");
+  // the widget's own upload button doubles as the progress bar
   ev.on("progress", (e) => {
+    const button = findEl(el, '[widget=media] .-upload');
+    if (!button) return;
     const percent = Math.round(e.loaded * 100 / e.total);
-    const button = findEl(el, '[cmsconf="contMedia_overview"] button');
-    if (button) {
-      button.innerHTML = percent + "%";
-      button.style.minWidth = "150px";
-      button.style.backgroundImage =
-        "linear-gradient(to right, var(--cms-color); 0%, var(--cms-color); " +
-        percent + "%, transparent " + percent + "%, transparent)";
-    }
+    button.textContent = percent + "%";
+    button.style.minWidth = "calc(var(--rem) * 9)";
+    button.style.backgroundImage = `linear-gradient(to right, var(--cms-color) ${percent}%, transparent ${percent}%)`;
   });
   ev.on("complete", () => {
     cms.console.show(t`File uploaded`);
-    cms.cont(ev.pid).showWidget("media", true);
+    loadWidget("media"); // the file did not come through the widget, so it has to re-read
   });
 });
 
 api.on("POST cms/node/:id/files", ({ params: { id } }) => {
-  cms.cont(id).showWidget("media", true);
+  cms.cont(id).showWidget("media");
+  loadWidget("media");
 });
-cms.cont.prototype.showWidget = function (what, reload) {
-  if (!reload) {
-    if (
-      cms.cont.active == this.id && what === widgets.has(what)?.get({ silent: true })
-    ) return;
-  }
+cms.cont.prototype.showWidget = function (what) {
   cms.cont.active = this.id;
   widgets.item(what).set(1);
   sidebar.set("settings");
   cms.Tree?.goTo(this.id);
 };
 
-!document.querySelector("[qcms-edit][qcms-drop]") &&
-  findEl(el, "> .-sidebar > [itemid=add]").setAttribute("hidden", "hidden");
+// nothing on the page takes content: no point offering modules
+if (!document.querySelector("[qcms-edit][qcms-drop]")) findEl(el, "> .-sidebar > [itemid=add]").hidden = true;
 
-const switches = root.querySelectorAll(".qgCMS_editmode_switch");
-function enter() {
-  el.classList.add("-open", "-sidebar-open");
-}
-for (const switc of switches) {
-  on(switc, "mouseenter touchstart", enter);
+for (const switc of root.querySelectorAll(".qgCMS_editmode_switch")) {
+  on(switc, "mouseenter touchstart", () => el.classList.add("-open", "-sidebar-open"));
 }
 
 /* update accordion-heads */

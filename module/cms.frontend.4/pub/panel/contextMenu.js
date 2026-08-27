@@ -2,6 +2,7 @@
 import '@qino/pub/c1/contextMenu.mjs';
 import { api, ctx, t } from '@qino/pub/qino.js';
 
+import { dialog } from '../inline/inline.js';
 import { showSettings } from './contentMenu.js';
 
 const moduleUrl = ctx.moduleUrl;
@@ -42,7 +43,7 @@ treeMenu.addItem(t`Copy`, {
   },
   onclick() {
     const node = cms.Tree.getNodeById(this.lastPid);
-    cms.frontend2.dialog(t`Copy page "${node.data.title}"?`,'',[
+    dialog(t`Copy page "${node.data.title}"?`,'',[
       {
         title:t`Copy page`,then(){
           api.cms.node(node.data.id).copy.post().then(() => {

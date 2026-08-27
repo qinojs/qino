@@ -3,10 +3,7 @@ import { getCtx } from "@qino/qino";
 import { sidebar } from "./widget.ts";
 
 export default async function (): Promise<string> {
-  const ctx = getCtx();
-  const t = ctx.app.t;
-
-  ctx.res.html.jsData.cmsFrontend2Data = (await ctx.settings["cms.frontend.4"].ui) ?? {};
+  const t = getCtx().app.t;
 
   const tree     = await sidebar("tree",     await t`Structure`,    await t`Overview. Create, move, delete pages...`);
   const settings = await sidebar("settings", await t`Settings`,     await t`Settings, files, permissions of the current page`);

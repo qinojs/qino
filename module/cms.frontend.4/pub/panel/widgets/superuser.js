@@ -18,7 +18,7 @@ export default async function (el, { node, dialogs, signal }) {
   const ref = api['cms.frontend.4'].files(node.id);
   const list = await ref.get({}, { signal });
 
-  el.head = 'Superuser';
+  el.head = t`Superuser`;
 
   const row = (file) => html`<tr itemid="${file.path}">
     <td>${file.editor ? html`<a href="${file.editor}" target="${encodeURIComponent(file.path)}">${file.name}</a>` : file.name}

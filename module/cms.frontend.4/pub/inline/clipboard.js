@@ -1,6 +1,9 @@
 import { api, hee } from '@qino/pub/qino.js';
 
-cms.frontend2.clipboard = pid => {
+import { dialog } from './inline.js';
+
+/** Offer the cut content for pasting on this page. */
+export default function (pid) {
   const els = () => document.querySelectorAll('[qcms-id="'+pid+'"]');
   function close() {
     api.cms.clipboard.put({ value: 0 });
@@ -8,7 +11,7 @@ cms.frontend2.clipboard = pid => {
   }
   els().forEach(el => el.style.opacity = 0.4);
   api.cms.node(pid).get().then(res => {
-    cms.frontend2.dialog(
+    dialog(
       'Paste from clipboard',
       '<table>'+
         '<tr><th> Title: &nbsp;<td> '+hee(res.title)+

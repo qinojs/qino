@@ -1,6 +1,6 @@
 /* Every text field of this node, editable in place. */
 import { html } from '@qino/pub/html.js';
-import { api } from '@qino/pub/qino.js';
+import { api, t } from '@qino/pub/qino.js';
 
 export const css = `
 .-txts { width:100%; }
@@ -13,7 +13,7 @@ export const css = `
 export default async function (el, { node, signal }) {
   const texts = await api.cms.node(node.id).texts.get({ values: true }, { signal });
 
-  el.head = 'Texts';
+  el.head = t`Texts`;
   el.badge = Object.keys(texts).length;
 
   await el.html`<table class=-txts>

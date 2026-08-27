@@ -194,7 +194,7 @@ globalThis.cmsTreeInit = async (json) => {
 
   function goTo(pid) {
     pid = String(pid);
-    return api.cms.tree.get({ filter: showContents() ? "*" : "p" }).then((json) => {
+    return api.cms.tree.get({ filter: showContents() ? "*" : "p", expandTo: pid }).then((json) => {
       rootNode.replaceChildren();
       for (const n of json) rootNode.append(makeNode(n));
       activate(cms.Tree.getNodeById(pid));
@@ -202,7 +202,7 @@ globalThis.cmsTreeInit = async (json) => {
   }
 
   cms.Tree = {
-    onActivate: null, // set by panel.mjs
+    onActivate: null, // set by the tree widget
     get activeNode() { return activeNode; },
     getNodeById: (id) => treeEl.querySelector(`u2-tree[data-id="${id}"]`),
     activate, // ignores null/root itself

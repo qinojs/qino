@@ -239,6 +239,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     const html = ctx.res.html;
     const moduleUrl = ctx.req.moduleUrl;
     const qino = html.jsData.qino ??= {};
+    qino.cms ??= {};
 
     if (access > 1 || inBackend) {
       const pageNotFound = await app.settings.cms.pageNotFound ?? 0;
@@ -247,14 +248,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         const url = ctx.req.url;
         settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
-        (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
+        qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
         html.scripts.add(moduleUrl + "cms.frontend.4/pub/js/init.js");
       }
     }
 
     if (access > 1) {
       ctx.res.csp["img-src"]["blob:"] = true;
-      qino.cms ??= {};
       qino.cms.nodeId = node.id;
       qino.cms.requestedNodeId = cmsCtx(ctx).requestedNodeId;
       qino.dev = ctx.dev;
@@ -262,6 +262,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
       if (cmsCtx(ctx).editmode) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
+        qino.cms.ui = await settings["cms.frontend.4"].ui ?? {};
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.() ?? "");
@@ -273,9 +274,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (access < 2) return;
     html.legacyScripts.add(moduleUrl + "core/pub/js/c1.js");
 
-    const editmode = access > 1 && Number(settings.cms.editmode());
-    if (editmode) {
-
+    if (cmsCtx(ctx).editmode) {
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
       html.styles.add(moduleUrl + "core/pub/js/Rte/main.css");
       html.styles.add(moduleUrl + "cms/pub/css/ui.css");
