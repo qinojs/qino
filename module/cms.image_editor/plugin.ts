@@ -83,7 +83,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
     const dbFile = await app.dbFiles.file(fileId);
-    upload.name = await dbFile.get("name"); // dont change file-name
+    upload.name = await dbFile.get("name"); // preserve file name
     await dbFile.replaceFromUpload(upload);
 
     throw new Output({ id: String(dbFile), url: await dbFile.url() });

@@ -2,7 +2,7 @@ function run() {
   if (globalThis.CSS && CSS.supports('selector(&)')) return;
   if (document.cookie.includes('qcms_browserCheck_ignore')) return;
 
-  globalThis.error_report_count = 1000; // dont send errors
+  globalThis.error_report_count = 1000; // suppress errors
 
   const ua = navigator.userAgent;
   let os = '';

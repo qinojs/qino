@@ -1,6 +1,6 @@
 {
   "name": "mcp",
-  "description": "Exposes the application Api API through an MCP endpoint.",
+  "description": "Exposes the application API through an MCP endpoint.",
   "dependencies": [
     "core"
   ],

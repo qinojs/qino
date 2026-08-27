@@ -3,9 +3,8 @@
 Email as a messaging channel: it sends over any [Upyo](https://upyo.dev) transport and receives
 over IMAP, and both directions land in the messaging journal.
 
-This module is the successor of [mail](../mail/): everything that sends mail sends it here, and
-`email` is this module's channel name alone. What is left of `mail` is its own panels over its own
-tables — the settings stay apart, `messaging.email.*` here and `mail.*` there.
+This module supersedes the archived [mail](../../archiv/mail/) module; everything that sends mail
+sends it here, and `email` is this module's channel name.
 
 ## Sending
 

@@ -30,7 +30,7 @@ Deno.test("cms.versions: parked draft space stays inactive", async () => {
   assertEquals(getCmsVers(ctx as never).space, 0);
 });
 
-Deno.test("cms.versions: api API exposes publish/page/log endpoints", () => {
+Deno.test("cms.versions: API exposes publish/page/log endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "post_publishNode",

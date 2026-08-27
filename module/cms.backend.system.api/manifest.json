@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.system.api",
-  "description": "Documents and interactively tests the application Api API.",
+  "description": "Documents and interactively tests the application API.",
   "dependencies": [
     "cms.backend.system"
   ],

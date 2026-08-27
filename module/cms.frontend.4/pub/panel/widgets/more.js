@@ -40,7 +40,7 @@ export default async function (el, { dialogs, signal }) {
     <div class="-widgetHead -open"><span class=-title>${t`Feedback / Support`}</span></div>
     <div>
       <form class=-feedbackform>
-        <textarea name=msg required placeholder="${t`Message to:`} ${me.email}">${draft ?? ''}</textarea>
+        <textarea name=msg required placeholder="${t`Message to:`} ${me.email}">${draft}</textarea>
         <button>${t`send`}</button>
       </form>
     </div>

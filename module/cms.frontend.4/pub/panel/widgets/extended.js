@@ -38,7 +38,7 @@ export default async function (el, { node, superuser, signal }) {
         <td><input class=-basis type=qgcms-page value="${vs.basis}">
     </table>
     ${t`Subpage definition`}
-    <textarea class=-childXML rows=4>${settings?.childXML ?? ''}</textarea>
+    <textarea class=-childXML rows=4>${settings?.childXML}</textarea>
   </div>`;
 
   // Nested widgets: the panel frames the widgets it mounts, this one frames the two it mounts.

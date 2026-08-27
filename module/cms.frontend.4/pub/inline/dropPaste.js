@@ -10,7 +10,7 @@ const dragOver = e => {
   if (!el) return;
   e.stopImmediatePropagation();
   if (internalDrag) return;
-  e.preventDefault(); // firefox dont need this to access droped data!
+  e.preventDefault(); // Needed outside Firefox to access dropped data
   const range = document.caretRangeFromPoint(e.clientX, e.clientY);
   const sel = getSelection();
   sel.removeAllRanges();
@@ -105,7 +105,7 @@ root.addEventListener('dragend',    () => internalDrag = false );
 root.addEventListener('input', e => {
   if (internalDrag) {
     // input while drop from drag inside;
-    // chrome dont fire drop if dragover is not canceled
+    // Chrome needs a canceled dragover to fire drop
     const el = e.target.closest('[cmstxt]');
     if (!el) return;
     const tid = el.getAttribute('cmstxt');

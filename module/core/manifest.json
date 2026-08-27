@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "description": "Provides the application runtime, database, requests, settings, and Api API.",
+  "description": "Provides the application runtime, database, requests, settings, and API.",
   "files": [
     "api.ts",
     "dbschema.json",
