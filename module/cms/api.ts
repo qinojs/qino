@@ -634,9 +634,10 @@ export const api = {
       query: s.object({
         filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
+        expandTo: s.optional(s.number()).describe("Node to open the tree down to; every other branch stays closed and reports no children"),
       }),
-      execute: ({ filter, level }: any) =>
-        fns.tree(0, { filter: filter ?? "*", level: level ?? 0 }),
+      execute: ({ filter, level, expandTo }: any) =>
+        fns.tree(0, { filter: filter ?? "*", level: level ?? 0, in: expandTo }),
     },
   },
 
