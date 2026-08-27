@@ -25,12 +25,12 @@ export function renderTables(app: App, db: any, modules: Map<string, any>, table
 
 async function tableOverview(app: App, db: any): Promise<HtmlString> {
   const t = app.t;
-  const tables: any[] = Object.values(db.tables ?? {});
+  const tables = Object.values<any>(db.tables ?? {});
   const schemaProps = db.schema?.properties ?? {};
 
   const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables");
   const rows = await Promise.all(
-    [...tables].sort((a, b) => {
+    tables.sort((a, b) => {
       const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
       return (sa ? 1 : 0) - (sb ? 1 : 0) || a.name.localeCompare(b.name);
     }).map(async (table: any) => {

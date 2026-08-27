@@ -89,7 +89,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 
   // Empty vars mean a plain page view; a JS-free form post and an api render with vars both arrive filled.
   const form = openForm(node);
-  if (!isEmptyObject(vars ?? {})) form.posted = vars;
+  if (!isEmptyObject(vars)) form.posted = vars;
 
   const error = form.sent ? await spamCheck(node, form, ctx) : "";
   if (error) form.errors++;

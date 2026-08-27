@@ -10,7 +10,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const titleText = await node.text("_title");
   const descrText  = await node.text("_meta_description");
 
-  const prioVal = (node.settings._seo_priority()) ?? 0.5;
+  const prioVal = node.settings._seo_priority() ?? 0.5;
 
   return html.async`<div class=seo-manager pid=${node.id}>
   ${app.t`Title`}:

@@ -446,7 +446,7 @@ Rte.ui.config = {
     click() {
       Rte.range.deleteContents();
       Rte.range.insertNode(document.createTextNode('\u00AD'));
-      console.warn('needed? shoud it be deprecated?');
+      console.warn('needed? should this be deprecated?');
     },
     el: c1.dom.el('<div class="-item -button">Insert soft hyphen</div>')
   });

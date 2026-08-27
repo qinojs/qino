@@ -143,7 +143,7 @@ function removeUnusedStyles(el) {
   let i=0, style;
   while ((style = el.style[i++])) {
     beforeOriginal[style] = el.style.getPropertyValue(style);
-    if ({IMG:1,VIDEO:1}[el.tagName] && {width:1,'max-width':1,height:1}[style]) continue; // reponsive, leave this styles
+    if ({IMG:1,VIDEO:1}[el.tagName] && {width:1,'max-width':1,height:1}[style]) continue; // responsive styles
     beforeComputed[style] = computed.getPropertyValue(style);
   }
   el.style.cssText = '';
@@ -220,7 +220,7 @@ const COMBINING_CHARS = [
   ['Ä','A\u0308'],
   ['ö','o\u0308'],
   ['Ö','O\u0308'],
-  ['⚫','\x1D'], // can not be showed, found on pdf text it was "ff"
+  ['⚫','\x1D'], // unrenderable; found as "ff" in PDF text
 ].map(data => [data[0], new RegExp(data[1], 'g')] );
 function nodeReplaceCombiningDiaeresis(textNode){
 
@@ -228,7 +228,7 @@ function nodeReplaceCombiningDiaeresis(textNode){
 
   const string = textNode.data
   for (const [char,regexp] of COMBINING_CHARS) {
-    if (string.match(regexp)) { // only replace string if found => otherways cursor position will no be restored
+    if (string.match(regexp)) { // avoid resetting the cursor when unchanged
       textNode.data = string.replace(regexp, char);
     }
   }

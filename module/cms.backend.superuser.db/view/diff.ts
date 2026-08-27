@@ -30,7 +30,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
     }
   }
 
-  const badges: Record<Row["status"], HtmlString> = {
+  const badges = {
     "no-schema-table":      await html.async`<small class=u2-badge style="background:var(--red)">${t`table without schema`}</small>`,
     "field-missing-db":     await html.async`<small class=u2-badge style="background:var(--orange)">${t`missing in DB`}</small>`,
     "field-missing-schema": await html.async`<small class=u2-badge>${t`missing in schema`}</small>`,
@@ -45,7 +45,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
             <th>${t`Status`}
         <tbody>${rows.map(({ table, field, status }) => html`<tr>
           <td>${table}
-          <td>${field ? field : ""}
+          <td>${field ?? ""}
           <td>${badges[status]}`)}
       </table>`
     : html`<div class=-body>Schema and DB match.</div>`;
@@ -60,14 +60,14 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
       ([t]) => !(t in (current.properties ?? {}))
     )
   );
-  const txtDescructive = await t`destructive`;
+  const destructive = await t`destructive`;
 
   const schemaRows = diffs.map((d: { path: string[]; prev?: unknown; next?: unknown; destructive?: unknown }) =>
     html`<tr>
       <td>${d.path.join(".")}
       <td>${d.prev ?? "–"}
       <td>${d.next ?? "–"}
-      <td>${d.destructive ? html`<span class=u2-badge style="background:var(--red)">${txtDescructive}</span>` : ""}`
+      <td>${d.destructive ? html`<span class=u2-badge style="background:var(--red)">${destructive}</span>` : ""}`
   );
 
   return html.async`
