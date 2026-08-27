@@ -41,7 +41,6 @@ qino-cms:not(:defined) { display:none; }
     color:var(--cms-dark);
     border:1px solid;
     border-radius:0;
-    margin: .2em 0;
     padding: .5em .8em;
     font-size: 12px;
     background-color:var(--cms-light);
