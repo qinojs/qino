@@ -44,18 +44,18 @@ export default async function (el, { node, dialogs, signal }) {
 
   await el.html`<div class=-standalone style="font-size:1.2em;margin-bottom:1em">
     <div title="Nr.${String(vs.id)}">
-      <div class=-h1>
-        ${isPage ? t`Page` : t`Content`}:&nbsp;
+      <div class=u2-flex style="align-items:baseline; margin-bottom:1em">
+        <h1>${isPage ? t`Page` : t`Content`}:</h1>
         <input ${editmode ? html.raw(`cmstxt=${vs.title_id}`) : ''} value="${vs.title}" placeholder="no title"
-               style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit">
-        <div style="margin-top:-.9375rem">
+               style="background:transparent;flex:1;padding:0;border:none;font-size:20px">
+        <div style="margin-top:-.9em">
           <svg class=-img fill="var(--cms-dark)" width=46 height=46 style="display:block">
             <use href="${(icon ?? FALLBACK_ICON()) + '#main'}" />
           </svg>
         </div>
       </div>
-      <div style="display:flex;margin-bottom:.25rem">
-        <span title="${vs.module}">${isPage ? 'Layout' : 'Module'}: </span>
+      <div class=u2-flex>
+        <span style="flex:0 1 3.6em" title="${vs.module}">${isPage ? 'Layout' : 'Module'}: </span>
         <select class=-changemodule
                 style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-.25rem;margin-bottom:-.1875rem;background:transparent">
           ${modules.filter((m) => m.kind === (isPage ? 'layout' : 'cont') || m.name === vs.module)
@@ -64,7 +64,8 @@ export default async function (el, { node, dialogs, signal }) {
       </div>
     </div>
     ${parent
-      ? html.async`<div class=-editparent>${t`parent:`}
+      ? html.async`<div class="-editparent u2-flex">
+          <span style="flex:0 1 3.6em">${t`Parent:`}</span>
           <a href="${parent.url}" style="font-weight:bold">${parent.title}${parent.type === 'c'
             ? html` ${parent.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-.125rem">✎</span>`
             : ''}</a></div>`

@@ -37,7 +37,8 @@ qino-cms:not(:defined) { display:none; }
   & button, & .btn,
     & input:not([type=checkbox], [type=radio]),
     & textarea,
-    & select {
+    & select,
+    & .-input {
     color:var(--cms-dark);
     border:1px solid;
     border-radius:0;
@@ -59,7 +60,7 @@ qino-cms:not(:defined) { display:none; }
   & table { font-size:inherit; }
   & input[type=number] { padding-right:0; }
   & input[type=color] { padding:0; }
-  & :is(input, textarea, select):focus { border-bottom-color:var(--cms-color); }
+  & :is(input, textarea, select, .-input):focus { border-bottom-color:var(--cms-color); }
   & :is(input, textarea, select):invalid { border-bottom-color:var(--cms-access-3); }
   & :is(button, .btn):hover , & :is(button, .btn):focus {
     background:var(--cms-dark);
@@ -85,7 +86,7 @@ qino-cms:not(:defined) { display:none; }
   & .-access-3-bg { background-color:var(--cms-access-3); }
 
   & .-h1 {
-    letter-spacing: .1em;
+    letter-spacing: .08em;
     font-size: 18px;
     border-bottom: 1px solid var(--cms-light);
     margin-bottom: 1em;

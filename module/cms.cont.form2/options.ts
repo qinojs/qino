@@ -9,42 +9,34 @@ export default async function (node: Node, _vars: unknown): Promise<HtmlString> 
   const subject = await node.text("mailSubject");
   const before = await node.text("email_before");
   const after = await node.text("email_after");
+  const set = (key: string) => html.raw(` data-node="${node.id}" data-key="${key}" data-form2-setting`);
+  const check = (key: string, on: unknown, label: unknown) =>
+    html.async`<label><input type=checkbox${set(key)}${on ? html.raw(" checked") : ""}> ${label}</label>`;
 
   return html.async`
-<label>
-  ${t`On success go to page:`}
-  <input type=qcms-page value="${node.settings.redirect()}" data-node="${node.id}" data-key=redirect data-form2-setting>
-</label>
-
-<label>
-  ${t`…or the content shown after sending:`}
-  <div class=-preview>${await success.html()}</div>
-</label>
-
-<h2>${t`E-Mail`}</h2>
-
-<label>
-  ${t`Recipients:`}
-  <input value="${node.settings.recipients()}" data-node="${node.id}" data-key=recipients data-form2-setting>
-</label>
-
-<label>
-  ${t`Subject`} <small>${t`(the page title is used when empty)`}</small>
-  <input cmstxt="${subject.id}" value="${await subject.string()}">
-</label>
-
-<label>
-  ${t`E-Mail content above the entries:`}
-  <div contenteditable cmstxt="${before.id}" class=-preview>${html.raw(String(await before.string()))}</div>
-</label>
-
-<label>
-  ${t`E-Mail content below the entries:`}
-  <div contenteditable cmstxt="${after.id}" class=-preview>${html.raw(String(await after.string()))}</div>
-</label>
-
-<label>
-  <input type=checkbox data-node="${node.id}" data-key=button data-form2-setting${(node.settings.button() ?? true) ? html.raw(" checked") : ""}>
-  ${t`Show submit button`}
-</label>`;
+<table class="u2-table -Fields -NoSideGaps">
+  <tr>
+    <td>${t`On success go to page`}
+    <td><input type=number min=1 value="${node.settings.redirect()}"${set("redirect")}>
+  <tr>
+    <td>${t`…or show this content`}
+    <td>${await success.html()}
+  <tr>
+    <td>${t`Recipients`}
+    <td><textarea rows=2${set("recipients")}>${node.settings.recipients()}</textarea>
+  <tr>
+    <td>${t`Subject`}<br><small>${t`(the page title is used when empty)`}</small>
+    <td><input cmstxt="${subject.id}" value="${await subject.string()}">
+  <tr>
+    <td>${t`E-Mail above`}
+    <td><div class=-input contenteditable cmstxt="${before.id}">${html.raw(String(await before.string()))}</div>
+  <tr>
+    <td>${t`E-Mail below`}
+    <td><div class=-input contenteditable cmstxt="${after.id}">${html.raw(String(await after.string()))}</div>
+  <tr>
+    <td>${t`Buttons`}
+    <td>
+      ${check("button", node.settings.button() ?? true, t`Submit`)}
+      ${check("reset", node.settings.reset(), t`Reset`)}
+</table>`;
 }

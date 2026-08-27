@@ -30,7 +30,7 @@ async function init(node: Node): Promise<void> {
 /** Seconds since this client was first seen — brand-new clients are almost always bots. Infinity when unknown. */
 async function clientAge(ctx: Ctx): Promise<number> {
   if (!ctx.clientId) return Infinity;
-  const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY time ASC LIMIT 1`;
+  const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
   return first ? unixTime() - Number(first) : Infinity;
 }
 

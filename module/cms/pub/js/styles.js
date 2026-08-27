@@ -34,7 +34,8 @@ export const addCss = (root, css) => pending = pending.then(() => {
 /** The shared CMS look. u2 ships from a CDN — fetching it would need connect-src for that
   * origin, so it stays a link. Tree sheets cascade before adopted ones, keeping u2 below ours. */
 export const addCmsStyles = (root) => {
-  for (const href of ['@qino/u2/css/norm/norm.css', '@qino/u2/css/base/base.css', '@qino/u2/el/ico/ico.css']) {
+  const u2 = ['css/norm/norm.css', 'css/base/base.css', 'class/table/table.css', 'el/ico/ico.css'];
+  for (const href of u2.map((p) => '@qino/u2/' + p)) {
     root.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: import.meta.resolve(href) }));
   }
   return addStyle(root, 'cms/pub/css/ui.css');
