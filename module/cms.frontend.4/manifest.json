@@ -6,6 +6,7 @@
     "messaging.email"
   ],
   "files": [
+    "README.md",
     "manifest.json",
     "plugin.ts",
     "pub/css/off.css",
