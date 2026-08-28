@@ -11,9 +11,10 @@ async function field(app: App, path: string, label: string, required = false): P
   <td>${html.raw(toInput(item.schema ?? {}, { name: path, value: String(await item.proxy ?? "").trim(), required }))}`;
 }
 
-const card = (title: string, fields: Array<HtmlString | Promise<HtmlString>>) => html.async`<div class=u2-card style="flex-grow:auto">
+const card = (title: string, fields: Array<HtmlString | Promise<HtmlString>>) => 
+  html.async`<div class=u2-card style="flex-grow:25rem">
   <div class=-head>${title} <small data-status aria-live=polite></small></div>
-  <table class=u2-table>${fields}</table>
+  <table class="u2-table -Fields -Flex">${fields}</table>
 </div>`;
 
 export async function render(node: Node): Promise<HtmlString> {
