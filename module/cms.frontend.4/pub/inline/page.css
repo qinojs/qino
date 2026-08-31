@@ -63,5 +63,22 @@ a.cmsOffline { text-decoration: line-through !important; }
 }
 
 
-/* rte */
+/* rte — which fields are rich, and what their toolbar offers */
+[cmstxt][contenteditable] {
+  --u2-rte: true;
+  --u2-rte-toolbar: block style bold italic link bullets unstyle;
+  --u2-rte-toolbar-unavailable: hide;
+}
 img::selection { background: rgba(0,0,0,.2); }
+
+[contenteditable]:focus td {
+  outline:1px dashed #F4E2DC;
+  outline-offset:0;
+}
+[contenteditable] td {
+  min-width:1em;
+}
+[contenteditable]:focus table {
+  outline:1px dashed #F4E2DC;
+  outline-offset:1px;
+}

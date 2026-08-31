@@ -87,6 +87,25 @@ Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
   assertEquals(csp["style-src"]["https://fonts.googleapis.com/"], true); // kept, still referenced
 });
 
+// The proxy path carries no scheme and is fetched back as https, so an http source
+// rewritten into it could never be served — a local dev root stays where it is.
+Deno.test("uncdn: an http source stays external", () => {
+  const html = new ResHtml();
+  html.scripts.add("http://localhost/u2/js/rte/rte.js");
+  html.styles.add("http://localhost/u2/css/base/base.css");
+  html.importMap.set("@qino/u2/", "http://localhost/u2/");
+
+  const csp = new ResCsp();
+  csp["script-src"]["http://localhost/u2/"] = true;
+  csp["style-src"]["http://localhost/u2/"] = true;
+  rewriteHtml(html, "/app/", csp);
+
+  assertEquals([...html.scripts], ["http://localhost/u2/js/rte/rte.js"]);
+  assertEquals([...html.styles], ["http://localhost/u2/css/base/base.css"]);
+  assertEquals(html.importMap.get("@qino/u2/"), "http://localhost/u2/");
+  assertEquals(csp["script-src"]["http://localhost/u2/"], true);
+});
+
 Deno.test("uncdn: lookalike origin is not covered by a declared source", async () => {
   const { ctx, route } = await routeFor(
     "https://qino.test/uncdn/cdn.example.attacker.test/a.js",

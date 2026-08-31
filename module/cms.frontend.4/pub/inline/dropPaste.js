@@ -75,7 +75,7 @@ const paste = e => {
   const tid = txtEl.getAttribute('cmstxt');
   const addHtml = html => {
     const s = getSelection();
-    const r = s.c1GetRange();
+    const r = s.getRangeAt(0);
     html = html.replace(/[^]*<!--StartFragment-->/i, '');
     html = html.replace(/<!--EndFragment-->[^]*/i, '');
     html = html.replace(/<\/body>[\s\S]*$/i, '</body>'); // needed?
@@ -84,7 +84,8 @@ const paste = e => {
     r.deleteContents();
     r.insertNode(fragment);
     r.collapse(false); // curser at the end, (todo: not allways working...)
-    s.c1SetRange(r);
+    s.removeAllRanges();
+    s.addRange(r);
     txtEl.dispatchEvent(new Event('input',{bubbles:true, cancelable: true})); // NEU 9.4.18
   };
   const items = e.clipboardData.items ?? [];

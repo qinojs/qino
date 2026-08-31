@@ -282,7 +282,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     if (cmsCtx(ctx).editmode) {
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
-      html.styles.add(moduleUrl + "core/pub/js/Rte/main.css");
       html.styles.add(moduleUrl + "cms/pub/css/ui.css");
 
       html.styles.add(moduleUrl + "cms.frontend.4/pub/inline/page.css");

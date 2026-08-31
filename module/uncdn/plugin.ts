@@ -84,7 +84,10 @@ async function fetchAndCache(url: string, filePath: string, cacheDir: string, me
 }
 
 type CspSources = Record<string, true>;
-const origins = (s: CspSources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
+// https only: the proxy path carries no scheme and is fetched back as https, so an
+// http source rewritten into it could never be served — and a plain-http origin is
+// a local one anyway, which this proxy has no reason to stand in front of.
+const origins = (s: CspSources) => Object.keys(s).filter(k => /^https:\/\//.test(k));
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set(set.values().map(fn));
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
@@ -127,7 +130,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
   const rewritten = new Set<string>();
   const rewriter = (allow: string[]) => (url: string): string => {
-    if (!/^https?:\/\//.test(url) || /[?#]/.test(url)) return url;
+    if (!/^https:\/\//.test(url) || /[?#]/.test(url)) return url;
     const hit = allow.find(p => url.startsWith(p));
     if (!hit) return url;
     rewritten.add(hit);

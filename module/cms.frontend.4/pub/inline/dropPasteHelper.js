@@ -1,6 +1,15 @@
 import '@qino/pub/c1/NodeCleaner.mjs';
 import { api, ctx } from '@qino/pub/qino.js';
 
+/** Select one element, so the editor's tools address it. */
+const selectNode = el => {
+  const range = document.createRange();
+  range.selectNode(el);
+  const selection = getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
 // txt-id to page-id
 const txtIds = {};
 cms.txtIdToPid = async function(tid) {
@@ -49,7 +58,7 @@ cms.txtAddFile = async function(txtEl, f) {
           const h = max / this.width * this.height;
           file.set('w',max); file.set('h',h); file.write();
         }
-        qgSelection.toElement(this);
+        selectNode(this);
         img.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); // why
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
         img.onload = null;

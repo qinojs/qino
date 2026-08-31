@@ -1,109 +1,142 @@
-// todo? // externe Seiten http://github.com/codepo8/GooHooBi/blob/master/multisearch.html
-//import '@qino/pub/Rte/Rte.ui.items.mjs';
-import '@qino/pub/Rte/index.mjs';
-import { api } from '@qino/pub/qino.js';
+// Inline rich text editing: the u2 editor, configured for this CMS, plus the tools
+// that only make sense here — CMS addresses, dbFile images, external media on paste.
+import { editor, selectedElement } from '@qino/u2/js/rte/rte.js';
+import '@qino/u2/js/rte/classes.js';
+import '@qino/u2/js/rte/images.js';
+import '@qino/u2/js/rte/source.js';
+import '@qino/u2/js/rte/tables.js';
+import '@qino/u2/js/rte/unstyle.js';
+import { blockStyles } from '@qino/u2/js/rte/src/client/blocks.js';
+import { linkEditor } from '@qino/u2/js/rte/src/client/link.js';
+import '@qino/pub/Rte/helpers.mjs'; // getPossibleClasses, until the old editor is gone
+import { api, ctx } from '@qino/pub/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
-const unwrap  = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
+/* Headings: this CMS offers all six. */
+editor.add(blockStyles([
+  { name: 'paragraph', label: 'Paragraph', selector: 'p', tag: 'p' },
+  ...[1,2,3,4,5,6].map(n => ({ name: 'h'+n, label: 'Heading '+n, selector: 'h'+n, tag: 'h'+n })),
+]));
+
+/* Content classes come from the site's own stylesheets — a capitalised class name
+   is the convention for "meant for the editor". The property is inherited, so one
+   declaration reaches every field, and it also tells the sanitizer and the
+   presentation cleanup which classes are content rather than decoration. */
+const contentClasses = () => Object.keys(getPossibleClasses(null)).filter(cl => /^[A-Z]/.test(cl));
+addEventListener('load', () =>
+  document.documentElement.style.setProperty('--u2-rte-classes', contentClasses().join(', ')));
+
+/* Links. What an address means is the CMS's business: a number is a page, a bare
+   domain or mail address gets its scheme, and where a link opens follows from it. */
 const URL_RE = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 const MAIL_RE = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
-const inp = c1.dom.el('<input placeholder=url spellcheck=false type=qgcms-page>');
-const end = () => {
-  const el = Rte.element.closest('a');
-  if (!el) return;
-
-  const selection = getSelection(); // todo: WebKit has a bug where links forces the caret to go after the link when typing
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  selection.removeAllRanges();
-  selection.addRange(range);
-  selection.collapseToEnd();
-
-  let v = inp.value;
-  if (v.trim() === '') {
-    unwrap(el);
-    Rte.trigger('input');
-    return;
-  }
-  if (!isNaN(v)) {
-    v = 'cmspid://'+v;
-  } else if (MAIL_RE.test(v)) {
-    v = 'mailto:'+v;
-  } else if (URL_RE.test(v)) {
-    v = 'http://'+v;
-  }
-  inp.value = v;
-  el.setAttribute('href',v);
-
-  if (/^https?:\/\//.test(v)) {
-    el.setAttribute('rel','noopener');
-  } else {
-    el.removeAttribute('rel');
-  }
-
-
-  if (!el.hasAttribute('target')) {
-    el.setAttribute('target', /^(cmspid|mailto)/.test(v) || v[0] === '#' ? '_self' : '_blank');
-  }
-  Rte.active?.focus(); // always false? needed?
-  Rte.trigger('input');
+const address = href => {
+  if (href !== '' && !isNaN(href)) return 'cmspid://'+href;
+  if (MAIL_RE.test(href)) return 'mailto:'+href;
+  if (URL_RE.test(href)) return 'https://'+href;
+  return href;
 };
-inp.addEventListener('blur',end);
-inp.addEventListener('keyup',e => e.key === 'Enter' && inp.blur() ); // todo, focus is still in the input
 
-Rte.ui.setItem('LinkInput', {
-  el: inp,
-  enable: 'a, a > *',
-  check(el) {
-    el = el.closest('a');
-    const v = el.getAttribute('href');
-    if (v) inp.value = v;
-  }
-});
+/** Wants a tab of its own: somewhere else on the web, or one of our files — a pdf
+ *  or an image is not a page, and taking the reader off the site to show it loses
+ *  where they were. */
+const ownTab = href => {
+  if (href.includes('/dbFile/')) return true;
+  if (/^(cmspid|mailto|tel):/.test(href) || href[0] === '#') return false;
+  try { return new URL(href, location.href).host !== location.host; } catch { return false; }
+};
 
-Rte.ui.setItem('Link', {
-  click() {
-    const cEl = Rte.element;
-    const exists = cEl?.closest('a');
-    if (exists) {
-      unwrap(exists);
-    } else {
-      //let el = qgSelection.surroundContents(document.createElement('a')); // todo: selection on multiple elements
-      const range = getSelection().c1GetRange();
-      const el = document.createElement('a');
-      el.append(range.extractContents());
-      range.insertNode(el);
-      qgSelection.toChildren(el);
-
-      Rte.element = 0; // force rte-event "elementchange"!
-      // set initial value
-      inp.value = '';
-      const txt = el.textContent.trim();
-      if (/^http[^\s]+$/.test(txt) || URL_RE.test(txt) || MAIL_RE.test(txt)) {
-        inp.value = txt;
-        el.setAttribute('href',txt);
-      } else {
-        api.cms.nodes.get({ q: txt }).then(res => {
-          if (!res[0]) return;
-          inp.value = txt;
-          inp.dispatchEvent(new Event('input'));
-        });
-      }
-      setTimeout(()=>{
-        el.classList.add('qgRte_fakeSelection');
-        inp.addEventListener('blur', () => el.classList.remove('qgRte_fakeSelection'), {once:true})
-        inp.focus();
-      },1); // todo: why timeout?
-    }
+editor.add(linkEditor({
+  fields: ['href'],
+  // Where a link opens follows from where it goes: a page of this site stays in
+  // the tab, anywhere else and every file gets its own. Nobody has to tick that.
+  normalize(value) {
+    if (!value) return null;
+    const href = address(value.href);
+    return ownTab(href) ? { href, rel: 'noopener', target: '_blank' } : { href };
   },
-  check(el) { return el?.matches?.('a, a > *'); },
-  shortcut: 'k'
-});
+  // A new link on text that is already an address takes it; anything else is
+  // looked up as a page title.
+  async suggest(text) {
+    text = text.trim();
+    if (!text) return null;
+    if (/^https?:\/\/\S+$/.test(text) || URL_RE.test(text) || MAIL_RE.test(text)) return { href: text };
+    const [node] = await search(text);
+    return node ? { href: node.value } : null;
+  },
+  // Typing offers the site's own pages and files, so neither a page id nor a file
+  // path ever has to be typed out.
+  complete: search,
+}));
 
+/** What a link can point at here: this site's pages and its files. The api renders
+ *  each hit itself — title, kind, the path above it, a thumbnail for an image —
+ *  and the form sanitizes that markup. */
+async function search(q) {
+  const [nodes, files] = await Promise.all([
+    api.cms.nodes.get({ q }).catch(() => []),
+    api.cms.files.get({ q }).catch(() => []),
+  ]);
+  return [
+    ...nodes.map(node => ({ value: 'cmspid://'+node.value, html: node.html })),
+    ...files.map(file => ({ value: ctx.appUrl+'dbFile/'+file.value+'/'+encodeURIComponent(file.text), html: file.html })),
+  ];
+}
+
+/* dbFile images. The editor writes width and height attributes; the server is the
+   one that scales the file, so the size has to reach the url as well. Both ways go
+   through the existing qgResize event, which the drop and zoom tools also use. */
+const dbImage = edit => {
+  const el = selectedElement(edit, el => el.matches('img'));
+  return el?.src.includes('dbFile/') ? el : null;
+};
+const sizes = {};
+const measure = url => sizes[url] ??= new Promise(resolve => {
+  const img = new Image();
+  img.addEventListener('load', () => resolve([img.width, img.height]), { once: true });
+  img.src = url;
+});
+const toOriginal = async img => {
+  const url = img.getAttribute('src').replace(/\/(w|h|zoom|vpos|hpos|dpr)-[^\/]+/g, '');
+  const [width, height] = await measure(url);
+  img.setAttribute('src', url);
+  img.style.width = '';
+  img.style.maxWidth = '100%';
+  img.style.height = 'auto';
+  img.setAttribute('width',  width  / 2); // the server is told by cookie to deliver double resolution
+  img.setAttribute('height', height / 2);
+  img.dispatchEvent(new Event('qgResize', { bubbles: true }));
+};
+
+editor.add({
+  name: 'cms.images',
+  commands: () => ({
+    imageFull: {
+      transaction: false,
+      enabled: edit => !!dbImage(edit),
+      run: edit => { toOriginal(dbImage(edit)); },
+    },
+  }),
+  attach({ surface }) {
+    const controller = new AbortController();
+    surface.addEventListener('u2-rte-change', () => {
+      for (const img of surface.element.querySelectorAll('img[src*="dbFile/"]')) {
+        const file = new dbFile(img);
+        // the url spells the size w/h, the element width/height
+        const same = (attr, part) => !img.hasAttribute(attr) || Number(img.getAttribute(attr)) === Number(file.get(part));
+        if (!img.hasAttribute('width') && !img.hasAttribute('height')) continue;
+        if (same('width', 'w') && same('height', 'h')) continue;
+        img.dispatchEvent(new Event('qgResize', { bubbles: true }));
+      }
+    }, { signal: controller.signal });
+    return { dispose: () => controller.abort() };
+  },
+  toolbar: [{ command: 'imageFull', label: 'Original image', text: '⤢' }],
+});
 
 const externMediaDialog = async function(txtEl,medias) {
   const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
@@ -172,8 +205,10 @@ document.addEventListener('qgResize',e=>{
   const el = e.target;
   if (!el.isContentEditable) return;
   if (el.tagName === 'IMG' && el.src.includes('dbFile/')) {
-    const width = el.width;
-    const height = el.height;
+    // The editor states a size as width/height attributes, which an inline style
+    // would override — so the attribute leads and the style follows it here.
+    const width = Number(el.getAttribute('width')) || el.width;
+    const height = Number(el.getAttribute('height')) || el.height;
 
     el.setAttribute('loading','lazy');
     el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
