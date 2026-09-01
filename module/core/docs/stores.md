@@ -13,12 +13,12 @@ listing is what stops it from becoming a mandatory central service.
 ## API
 
 ```ts
-app.modules.add(url("./local/hello.world/plugin.ts"));      // one module, by URL
+app.modules.add(import.meta.resolve("./local/hello.world/plugin.ts")); // one module, by URL
 
-const store = app.stores.add(url("./vendor/store.json"));
-store.add("hello.analytics");                               // one module, by name
-await app.stores.add(url("./other/store.json")).addAll();   // the whole catalog
-await app.stores.add(url("./module/")).addAll();            // a plain folder is a store too
+const store = app.stores.add(import.meta.resolve("./vendor/store.json"));
+store.add("hello.analytics"); // one module, by name
+await app.stores.add(import.meta.resolve("./other/store.json")).addAll(); // the whole catalog
+await app.stores.add(import.meta.resolve("./module/")).addAll(); // a plain folder is a store too
 
 await app.init();
 ```
@@ -151,11 +151,14 @@ alike.
 
 A function that receives `"../module/plugin.ts"` cannot know which source file called it. Relative
 strings are therefore resolved against `app.dir`. Call sites meaning "relative to this source
-file" resolve while that context still exists — `add()` takes a `URL` as well as a string:
+file" resolve while that context still exists:
 
 ```ts
-app.modules.add(new URL("../modules/example/plugin.ts", import.meta.url));
+app.modules.add(import.meta.resolve("../modules/example/plugin.ts"));
 ```
+
+`new URL("../modules/example/plugin.ts", import.meta.url)` is equivalent when a `URL` object is
+more useful to the caller; `add()` accepts both forms.
 
 ## Local source and JSR
 

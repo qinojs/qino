@@ -1,0 +1,9 @@
+/* The grid is u2's; the module only says how wide an entry wants to be. items2 shipped the same
+   two lines, disabled with an `x-` prefix — here they are the default, overridable per site the
+   way any u2 grid is. The inner div is there only when a width class wraps the grid. */
+[qcms-mod="cont.items"] {
+  .u2-grid {
+    --u2-Items-width: 20rem;
+    --u2-Gap: 3rem;
+  }
+}

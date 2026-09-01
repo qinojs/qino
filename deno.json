@@ -111,7 +111,7 @@
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.11/",
     "@qino/m/": "./module/",
     "@qino/pub/": "./module/core/pub/js/",
-    "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.3/",
+    "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.4/",
     "@nuxodin/dump": "jsr:@nuxodin/dump@^1.5.2",
     "@simplewebauthn/server": "npm:@simplewebauthn/server@13",
     "@std/assert": "jsr:@std/assert@^1",
@@ -129,6 +129,8 @@
     "sanitize-html": "npm:sanitize-html@^2",
     "web-push-neo": "npm:web-push-neo@0.1.2"
   },
+  "// exclude": "migrate_from_php/tools are dev helpers for migration test runs — bash plus a server.ts template with placeholders, which is not valid TypeScript.",
+  "exclude": ["meta/migrate_from_php/tools"],
   "lint": {
     "rules": {
       "exclude": ["require-await", "no-control-regex", "no-import-prefix", "no-slow-types"]
