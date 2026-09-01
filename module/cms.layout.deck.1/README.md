@@ -28,7 +28,7 @@ render in edit mode, and both files are edited from the options panel. The
 mechanism lives in
 [cms.templateParser/moduleTemplate.ts](../cms.templateParser/moduleTemplate.ts).
 
-Ported from the seiler-spiess.ch layout in `php/qino-seiler/`, which needed
+Ported from the seiler-spiess.ch layout of the PHP CMS, which needed
 ~1100 lines of css and js for the same result: smooth scrolling is
 `scroll-behavior`, the stack is `position: sticky`, the mobile menu is
 `flex-wrap`, and normalize is u2's. What is left is one template and 80 lines of

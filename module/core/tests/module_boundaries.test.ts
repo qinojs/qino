@@ -329,7 +329,6 @@ Deno.test("the qino layer never imports from the cms layer", async () => {
 const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
   "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
-  "core/mod.ts mainContact", // archiv/mail consumes this public helper
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
 ]);
 

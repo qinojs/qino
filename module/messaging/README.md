@@ -306,8 +306,7 @@ registry. Neither knows a channel by name.
 
 Channels today: [messaging.email](../messaging.email/), [messaging.sms](../messaging.sms/),
 [messaging.telegram](../messaging.telegram/) and [messaging.webpush](../messaging.webpush/).
-[mail](../../archiv/mail/) is not one of them any more — `messaging.email` is its successor and owns the
-`email` channel alone.
+`messaging.email` owns the `email` channel alone.
 
 ### Whose fault a failure was
 
