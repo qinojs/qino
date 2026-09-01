@@ -1,5 +1,6 @@
 /** Thin wrapper around ImageMagick (IM6: convert/identify, IM7: magick) */
 import { tryCommand } from "./tryCommand.ts";
+import { limited } from './limit.ts';
 
 let _checked = false;
 let _available: boolean | null = null;
@@ -54,12 +55,12 @@ export async function avifSupported(): Promise<boolean> {
 
 /** Runs convert/magick [...preArgs, input, ...args, output]. preArgs are input-settings that must precede the file (e.g. -density for PDF rasterization). */
 export async function run(input: string, args: string[], output: string, opts: { preArgs?: string[]; signal?: AbortSignal } = {}): Promise<void> {
-  const { code, stderr, stdout } = await new Deno.Command(_convertCmd, {
+  const { code, stderr, stdout } = await limited(() => new Deno.Command(_convertCmd, {
     args: [...opts.preArgs ?? [], input, ...args, output],
     signal: opts.signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output();
+  }).output());
   if (code !== 0) {
     const dec = new TextDecoder();
     const msg = dec.decode(stderr).trim() || dec.decode(stdout).trim() || `exit code ${code}`;

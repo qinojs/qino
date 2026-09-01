@@ -59,6 +59,7 @@
     "lib/transform/FileTransformer.ts",
     "lib/transform/ffmpeg.ts",
     "lib/transform/inkscape.ts",
+    "lib/transform/limit.ts",
     "lib/transform/magick.ts",
     "lib/transform/mod.ts",
     "lib/transform/ocr.ts",

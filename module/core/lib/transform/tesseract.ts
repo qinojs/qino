@@ -1,5 +1,6 @@
 /** Thin wrapper around Tesseract OCR */
 import { probe } from "./tryCommand.ts";
+import { limited } from './limit.ts';
 
 let _langs: Promise<string> | null = null;
 
@@ -19,12 +20,12 @@ function tesseractLangs(): Promise<string> {
 /** Runs OCR on an image, returns the extracted plain text */
 export async function run(input: string, signal?: AbortSignal): Promise<string> {
   const langs = await tesseractLangs();
-  const { code, stdout, stderr } = await new Deno.Command('tesseract', {
+  const { code, stdout, stderr } = await limited(() => new Deno.Command('tesseract', {
     args: [input, 'stdout', ...(langs ? ['-l', langs] : [])],
     signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output();
+  }).output());
   if (code !== 0) throw new Error(`tesseract error: ${new TextDecoder().decode(stderr).trim() || `exit code ${code}`}`);
   return new TextDecoder().decode(stdout);
 }
