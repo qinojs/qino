@@ -1,13 +1,13 @@
 // Client-side counterpart of the server-side `app`/`ctx`.
 //
-//   import { getCtx } from "./qino.js";
-//   const ctx = getCtx();
+//   import { ctx } from "./qino.js";
 //
 //   await ctx.app.api.core.user.me.get();   // RPC         (like server-side ctx.app.api.…)
 //   await ctx.app.t`Hallo ${name}`;         // translation (like server-side app.t`…`)
 //   ctx.lang / ctx.csrfToken / ctx.appUrl / ctx.moduleUrl / ctx.dev
 //
-// Visitor settings are not here but in ./settings.js — on the client they are not request state.
+// Only what the server calls ctx lives here. Its parts have their own modules and are imported from
+// there: ./api.js, ./t.js, and ./settings.js — visitor settings are not request state on the client.
 
 import { api } from "./api.js";
 import { t } from "./t.js";
@@ -25,6 +25,3 @@ export const ctx = {
 
 // server-side: import { getCtx } ... — client-side there is only the one ctx
 export function getCtx() { return ctx; }
-
-export { api };
-export { t };
