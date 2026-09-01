@@ -54,11 +54,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       }
       lines.push(row.map((f) => `"${f.replace(/"/g, '""')}"`).join(","));
     }
-    const csv = lines.join("\r\n");
+    const csv = "\uFEFF" + lines.join("\r\n"); // BOM: Excel reads UTF-8 CSV correctly with it
 
     const headers = ctx.res.headers;
-    headers.set("Content-Type", "application/x-msdownload");
-    headers.set(...header.contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
+    headers.set("Content-Type", "text/csv; charset=utf-8");
+    headers.set(...header.contentDisposition("attachment", `${titleStr}_${dateStr}.csv`));
     headers.set("Cache-Control", "no-cache");
     throw new Output(csv);
   }
