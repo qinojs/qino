@@ -37,9 +37,14 @@ await app.init();
 
 ## Werkzeuge
 
-`tools/` sind Wegwerf-Helfer für Testläufe, kein Produktionscode. Sie sind heute MySQL-only
-(bash + python3 + `mysql`-CLI) und verlangen `MYSQL_PASS` in der Umgebung. Arbeitsordner ist
-`migration-work/` im Monorepo-Root, überschreibbar mit `MIGRATE_WORK` — er muss innerhalb des
+`tools/` sind Wegwerf-Helfer für Testläufe, kein Produktionscode. Sie sind MySQL-only
+(bash + python3 + `mysql`-CLI) und verlangen `MYSQL_PASS` in der Umgebung.
+
+**Das ist Absicht, keine Lücke:** portiert werden ausschliesslich PHP-Installationen auf MySQL.
+Eine Legacy-Datenbank kommt nie als SQLite oder Postgres an, die Vorbereitung braucht also keinen
+Dialekt-Zweig. Was qino *nach* der Migration für andere Dialekte tut, ist davon unberührt.
+
+Arbeitsordner ist `migration-work/` im Monorepo-Root, überschreibbar mit `MIGRATE_WORK` — er muss innerhalb des
 Repos liegen, weil das erzeugte Projekt `@qino/qino` nur als Deno-Workspace-Mitglied auflöst.
 
 ## Wo Module landen

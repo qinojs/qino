@@ -97,28 +97,26 @@ export class CMS {
 
   // deno-lint-ignore no-explicit-any
   async filter(pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
-    const tags = Array.isArray(filter) ? filter : undefined;
-    filter = tags ?? { ...filter };
-    if (!tags) filter.type ||= "p";
+    const parts = Array.isArray(filter) ? filter : [filter];
+    const tags = parts.filter((part): part is string => typeof part === "string");
+    filter = Object.assign({}, ...parts.filter((part) => part && typeof part === "object"));
+    filter.type ??= "p";
     const ret = new Map<number, Node>();
     for (const [id, c] of pages) {
       const vs = c.vs;
-      if (tags) {
-        if (tags.includes("navi")) {
-          const titleObj = await c.title();
-          if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || c.edit)) continue;
-        }
-        if (tags.includes("access") && !(await c.access())) continue;
-        if (tags.includes("readable") && !(await c.isReadable())) continue;
-      } else {
-        if (filter.type && filter.type !== "*" && vs.type !== filter.type) continue;
-        if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
-        if (filter.module) {
-          const modules = Array.isArray(filter.module) ? filter.module : [filter.module];
-          if (!modules.includes(vs.module)) continue;
-        }
-        if (filter.access !== undefined && (await c.access()) < filter.access) continue;
+      if (filter.type && filter.type !== "*" && vs.type !== filter.type) continue;
+      if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
+      if (filter.module) {
+        const modules = Array.isArray(filter.module) ? filter.module : [filter.module];
+        if (!modules.includes(vs.module)) continue;
       }
+      if (filter.access !== undefined && (await c.access()) < filter.access) continue;
+      if (tags.includes("navi")) {
+        const titleObj = await c.title();
+        if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || c.edit)) continue;
+      }
+      if (tags.includes("access") && !(await c.access())) continue;
+      if (tags.includes("readable") && !(await c.isReadable())) continue;
       ret.set(id, c);
     }
     return ret;
