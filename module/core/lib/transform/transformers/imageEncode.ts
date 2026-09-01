@@ -34,38 +34,28 @@ export const imageEncode: TransformerDef = {
       return;
     }
 
-    // Check alpha channel
+    // AVIF carries alpha and beats JPEG on size at comparable quality, so it needs no contender.
+    // Comparing their file sizes would compare two different quality scales anyway: `-quality 77`
+    // means something else in each codec, so the smaller file is not the better one.
+    if (await magick.avifSupported()) {
+      const out = nodePath.join(ctx.tmpDir, 'out.avif');
+      await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
+      ctx.currentPath = out;
+      ctx.mime = 'image/avif';
+      return;
+    }
+
+    // Only the fallback formats care about transparency: PNG carries it, JPEG does not.
     ctx.meta.hasAlpha = await magick.identify(ctx.currentPath, '%A', ctx.signal) === 'True';
 
-    const avifSupported = await magick.avifSupported();
-
-    if (avifSupported) {
-      // AVIF carries alpha, JPEG does not — so JPEG only competes for opaque images.
-      // Otherwise a mostly transparent image (a logo) picks the smaller JPEG and
-      // silently loses its alpha. Both are encoded from the source, never from each other.
-      const src = ctx.currentPath;
-      const avif = nodePath.join(ctx.tmpDir, 'out.avif');
-      const jpg = ctx.meta.hasAlpha ? '' : nodePath.join(ctx.tmpDir, 'out.jpg');
-      await Promise.all([
-        magick.run(src, ['-quality', String(q)], avif, { signal: ctx.signal }),
-        jpg && magick.run(src, ['-quality', String(q)], jpg, { signal: ctx.signal }),
-      ]);
-      const [sizeAvif, sizeJpg] = await Promise.all([fileSize(avif), jpg ? fileSize(jpg) : Infinity]);
-      if (jpg && sizeJpg < sizeAvif) {
-        ctx.currentPath = jpg;
-        ctx.mime = 'image/jpeg';
-      } else {
-        ctx.currentPath = avif;
-        ctx.mime = 'image/avif';
-      }
-    } else if (ctx.meta.hasAlpha) {
-      // No AVIF, alpha present → PNG
+    if (ctx.meta.hasAlpha) {
       const out = nodePath.join(ctx.tmpDir, 'out.png');
       await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;
       ctx.mime = 'image/png';
     } else {
-      // No AVIF, no alpha → JPEG vs PNG, the smaller one wins
+      // Photo or flat graphic is not cheaply knowable, and here the sizes are comparable: PNG is
+      // lossless, so whichever is smaller is genuinely the better pick.
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       const png = nodePath.join(ctx.tmpDir, 'out.png');
       await Promise.all([
