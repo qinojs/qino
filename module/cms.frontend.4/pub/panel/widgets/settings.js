@@ -28,7 +28,7 @@ function announce(head, { head: title, badge }) {
   }
 }
 
-export default async function (el, { node, dialogs, signal }) {
+export default async function (widget, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
   const [vs, modules, widgets] = await Promise.all([
     ref.get({}, { signal }),
@@ -40,9 +40,9 @@ export default async function (el, { node, dialogs, signal }) {
   const editmode = !!globalThis.qino?.cms?.editmode;
   const icon = modules.find((m) => m.name === vs.module)?.icon;
 
-  el.head = t`Settings`;
+  widget.head = t`Settings`;
 
-  await el.html`<div class=-standalone style="font-size:1.2em;margin-bottom:1em">
+  await widget.html`<div class=-standalone style="font-size:1.2em;margin-bottom:1em">
     <div title="Nr.${vs.id}">
       <div class=u2-flex style="align-items:baseline; margin-bottom:1em">
         <h1>${isPage ? t`Page` : t`Content`}:</h1>
@@ -77,34 +77,34 @@ export default async function (el, { node, dialogs, signal }) {
   for (const w of widgets) {
     const h = head(w.title ?? w.name);
     h.classList.toggle('-open', !!cms.panel.widgets.has(w.name)?.get({ silent: true }));
-    el.append(h);
+    widget.append(h);
     if (w.src) {
       const child = mount(w.src, { node: { id: node.id }, dialogs, ...w.context });
       child.className = '-content';
       child.setAttribute('widget', w.name);
       child.addEventListener('qcms-widget-head', ({ detail }) => announce(h, detail));
-      el.append(child);
+      widget.append(child);
     } else {
       const box = document.createElement('div');
       box.className = '-content';
       box.setAttribute('widget', w.name);
-      el.append(box);
+      widget.append(box);
       api['cms.frontend.4'].widget(w.name).post({ params: { pid: node.id } }, { signal })
         .then((res) => box.innerHTML = res);
     }
   }
 
-  el.on('change', '.-changemodule', async (sel) => {
+  widget.on('change', '.-changemodule', async (sel) => {
     await ref.module.put({ module: sel.value });
     if (isPage) return location.href = location.href.replace(/#.*$/, '');
     document.querySelector(`[qcms-id="${node.id}"]`).outerHTML = await ref.html.get();
-    el.reload();
+    widget.reload();
   });
   // a content parent is edited in here, a page parent is a link like any other
-  el.on('click', '.-editparent', (_, e) => {
+  widget.on('click', '.-editparent', (_, e) => {
     if (parent?.type === 'p') return;
     e.preventDefault();
     cms.cont.active = parent.id;
-    el.reload({ node: { id: parent.id }, dialogs });
+    widget.reload({ node: { id: parent.id }, dialogs });
   });
 }

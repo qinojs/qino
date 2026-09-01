@@ -13,7 +13,7 @@ export const css = `
 const setting = (path) => api.core['ctx-settings'](path);
 const reload = () => location.href = location.href.replace(/#.*$/, '');
 
-export default async function (el, { dialogs, signal }) {
+export default async function (widget, { dialogs, signal }) {
   const [me, langs, draft, lang, treeShowC] = await Promise.all([
     api['cms.frontend.4'].feedback.get({}, { signal }),
     api.core.languages.get({}, { signal }),
@@ -22,9 +22,9 @@ export default async function (el, { dialogs, signal }) {
     setting(['cms.frontend.4', 'ui', 'tree_show_c']).get({}, { signal }).catch(() => false),
   ]);
 
-  el.head = t`More`;
+  widget.head = t`More`;
 
-  await el.html`<div class=-more>
+  await widget.html`<div class=-more>
     <div class=-standalone>
       <div class=-h1>
         <span>${t`Logged in as:`} ${me.name}</span>
@@ -76,9 +76,9 @@ export default async function (el, { dialogs, signal }) {
     </div>
   </div>`;
 
-  el.on('click', '.-tour', () => import('../intro.js').then(({ start }) => start()));
+  widget.on('click', '.-tour', () => import('../intro.js').then(({ start }) => start()));
 
-  el.on('submit', '.-feedbackform', async (form, e) => {
+  widget.on('submit', '.-feedbackform', async (form, e) => {
     e.preventDefault();
     const msg = form.querySelector('[name=msg]');
     try {
@@ -92,12 +92,12 @@ export default async function (el, { dialogs, signal }) {
   });
   // the draft survives a closed panel; the send clears it server-side
   let draftTimer;
-  el.on('input', '[name=msg]', (inp) => {
+  widget.on('input', '[name=msg]', (inp) => {
     clearTimeout(draftTimer);
     draftTimer = setTimeout(() => setting(['cms', 'feedback', 'text']).put({ value: inp.value }), 300);
   });
 
-  el.on('submit', '.-pwchange', async (form, e) => {
+  widget.on('submit', '.-pwchange', async (form, e) => {
     e.preventDefault();
     const [oldpw, pw, pw2] = ['old', 'new', 'new2'].map((n) => form.querySelector(`[name=${n}]`).value);
     if (pw !== pw2) return dialogs.alert(t`Passwords do not match`);
@@ -108,6 +108,6 @@ export default async function (el, { dialogs, signal }) {
     } catch (err) { await dialogs.alert(err.message); }
   });
 
-  el.on('change', '.-changelang', (sel) => setting(['core', 'lang_ns', 'cms']).put({ value: sel.value }).then(reload));
-  el.on('change', '.-treeShowC', (inp) => setting(['cms.frontend.4', 'ui', 'tree_show_c']).put({ value: inp.checked }).then(reload));
+  widget.on('change', '.-changelang', (sel) => setting(['core', 'lang_ns', 'cms']).put({ value: sel.value }).then(reload));
+  widget.on('change', '.-treeShowC', (inp) => setting(['cms.frontend.4', 'ui', 'tree_show_c']).put({ value: inp.checked }).then(reload));
 }

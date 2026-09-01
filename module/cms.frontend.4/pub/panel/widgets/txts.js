@@ -10,13 +10,13 @@ export const css = `
 .-txts .-txt:focus { max-height:30em; border-color:var(--cms-color); }
 `;
 
-export default async function (el, { node, signal }) {
+export default async function (widget, { node, signal }) {
   const texts = await api.cms.node(node.id).texts.get({ values: true }, { signal });
 
-  el.head = t`Texts`;
-  el.badge = Object.keys(texts).length;
+  widget.head = t`Texts`;
+  widget.badge = Object.keys(texts).length;
 
-  await el.html`<table class=-txts>
+  await widget.html`<table class=-txts>
     ${Object.entries(texts).map(([name, text]) => html`<tr>
       <td>${name}
       <td style="width:70%"><div class=-txt cmstxt=${text.id} contenteditable>${html.raw(text.value)}</div>`)}

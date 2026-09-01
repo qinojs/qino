@@ -11,7 +11,7 @@ export const css = `
 .-advanced .-childXML { display:block; width:100%; height:7.5rem; }
 `;
 
-export default async function (el, { node, superuser, signal }) {
+export default async function (widget, { node, superuser, signal }) {
   const ref = api.cms.node(node.id);
   const [vs, settings, models] = await Promise.all([
     ref.get({}, { signal }),
@@ -21,9 +21,9 @@ export default async function (el, { node, superuser, signal }) {
   ]);
   const modelIds = String(models ?? '').split(',').map((v) => v.trim()).filter(Boolean);
 
-  el.head = t`Advanced`;
+  widget.head = t`Advanced`;
 
-  await el.html`<div class=-advanced>
+  await widget.html`<div class=-advanced>
     <label><input class=-visible type=checkbox ${vs.visible ? 'checked' : ''}> ${t`Visible in navigation`}</label>
     <label><input class=-searchable type=checkbox ${vs.searchable ? 'checked' : ''}> ${t`Searchable`}</label>
     ${superuser
@@ -45,26 +45,26 @@ export default async function (el, { node, superuser, signal }) {
   // Same markup, so the panel's delegated click handler opens and closes them like any other.
   for (const [name, title] of [['sets', await t`Settings`], ['txts', await t`Texts`]]) {
     const open = cms.panel.widgets.has(name)?.get({ silent: true });
-    el.insertAdjacentHTML('beforeend', `<div class="-widgetHead ${open ? '-open' : ''}"><span class=-title>${title}</span></div>`);
-    const child = el.widget(new URL(`./${name}.js`, import.meta.url), { node });
+    widget.insertAdjacentHTML('beforeend', `<div class="-widgetHead ${open ? '-open' : ''}"><span class=-title>${title}</span></div>`);
+    const child = widget.widget(new URL(`./${name}.js`, import.meta.url), { node });
     child.className = '-content';
     child.setAttribute('widget', name); // the click handler remembers the open state under this name
-    el.append(child);
+    widget.append(child);
   }
 
-  el.on('change', '.-visible', (inp) => ref.patch({ visible: inp.checked }));
-  el.on('change', '.-searchable', (inp) => ref.patch({ searchable: inp.checked }));
-  el.on('change', '.-name', (inp) => ref.patch({ name: inp.value }));
-  el.on('change', '.-childXML', (inp) => ref.settings.childXML.put({ value: inp.value }));
+  widget.on('change', '.-visible', (inp) => ref.patch({ visible: inp.checked }));
+  widget.on('change', '.-searchable', (inp) => ref.patch({ searchable: inp.checked }));
+  widget.on('change', '.-name', (inp) => ref.patch({ name: inp.value }));
+  widget.on('change', '.-childXML', (inp) => ref.settings.childXML.put({ value: inp.value }));
   // "base" is the parent: moving there is the edit. The picker fills the field without firing
   // change, so focusout — but only on a real change, an unchanged value would reorder the siblings.
-  el.on('focusout', '.-basis', (inp) => {
+  widget.on('focusout', '.-basis', (inp) => {
     if (!inp.value || inp.value === String(vs.basis)) return;
-    api.cms.node(inp.value)['insert-before'].put({ id: String(node.id) }).then(() => el.reload());
+    api.cms.node(inp.value)['insert-before'].put({ id: String(node.id) }).then(() => widget.reload());
   });
-  el.on('change', '.-model', (inp) => {
+  widget.on('change', '.-model', (inp) => {
     const next = modelIds.filter((id) => id !== String(node.id));
     if (inp.checked) next.push(String(node.id));
-    api.core.settings(MODELS).put({ value: next.join(',') }).then(() => el.reload());
+    api.core.settings(MODELS).put({ value: next.join(',') }).then(() => widget.reload());
   });
 }

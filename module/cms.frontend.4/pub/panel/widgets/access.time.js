@@ -11,13 +11,13 @@ export const css = `
 const toLocal = (ts) => new Date((ts - new Date(ts * 1000).getTimezoneOffset() * 60) * 1000).toISOString().slice(0, 16);
 const toTs = (v) => String(Math.floor(new Date(v).getTime() / 1000));
 
-export default async function (el, { node, signal }) {
+export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
   const vs = await ref.get({}, { signal });
   const edges = [['onlineStart', t`from`], ['onlineEnd', t`until`]];
 
-  el.head = t`Schedule`;
-  el.badge = vs.online ? '' : '!';
+  widget.head = t`Schedule`;
+  widget.badge = vs.online ? '' : '!';
 
   const edge = (field, label) => html.async`<div>
     <div class=-label>${t`visible`} ${label}:</div>
@@ -28,14 +28,14 @@ export default async function (el, { node, signal }) {
     </u2-buttongroup>
   </div>`;
 
-  await el.html`<div class=-onlineTime>${edges.map(([f, l]) => edge(f, l))}</div>`;
+  await widget.html`<div class=-onlineTime>${edges.map(([f, l]) => edge(f, l))}</div>`;
 
   const set = (inner, value) => {
     ref.patch({ [inner.closest('[data-edge]').dataset.edge]: value });
-    el.reload();
+    widget.reload();
   };
-  el.on('click', '.-always', (b) => set(b, '0'));
-  el.on('click', '.-inherit', (b) => set(b, ''));
-  el.on('click', '.-now', (b) => set(b, String(Math.ceil(Date.now() / 1000))));
-  el.on('focusout', 'input', (i) => set(i, toTs(i.value))); // blur does not bubble
+  widget.on('click', '.-always', (b) => set(b, '0'));
+  widget.on('click', '.-inherit', (b) => set(b, ''));
+  widget.on('click', '.-now', (b) => set(b, String(Math.ceil(Date.now() / 1000))));
+  widget.on('focusout', 'input', (i) => set(i, toTs(i.value))); // blur does not bubble
 }

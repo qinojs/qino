@@ -19,16 +19,18 @@ bleibt tot.
 
 [pub/panel/widget.js](pub/panel/widget.js):
 
-- `widget(src, context)` erzeugt das aktivierte Element; es laeuft bei connect.
-- `el.reload(context?)`, Abort + Cleanup bei reload und disconnect, Generationszaehler gegen spaet
-  eintreffende Laeufe, Fehlerzustand als `u2-alert`.
-- `el.html` als Tagged Template, `el.on(type, selector?, fn)` mit automatischem Abmelden.
-- `el.head` / `el.badge` melden per `qcms-widget-head`, was der Rahmen anzeigen soll. Das Event
-  bubbelt bewusst nicht: der Rahmen hoert auf dem Element, das er selbst gemountet hat, sonst
+- `widget(src, context)` erzeugt das aktivierte Element; es laeuft bei connect. Das Modul bekommt
+  es als ersten Parameter — `widget`, nicht `el`: es ist mehr als ein Element, es rendert, hoert zu
+  und laedt sich selbst neu.
+- `widget.reload(context?)`, Abort + Cleanup bei reload und disconnect, Generationszaehler gegen
+  spaet eintreffende Laeufe, Fehlerzustand als `u2-alert`.
+- `widget.html` als Tagged Template, `widget.on(type, selector?, fn)` mit automatischem Abmelden.
+- `widget.head` / `widget.badge` melden per `qcms-widget-head`, was der Rahmen anzeigen soll. Das
+  Event bubbelt bewusst nicht: der Rahmen hoert auf dem Element, das er selbst gemountet hat, sonst
   uebernaehme der aeussere Rahmen den Kopf eines verschachtelten Widgets.
 - `mod.css` wird pro Root einmal adoptiert — Panel-Shadow-Root, Dialog oder Dokument.
-- `el.widget(src, context)` erzeugt ein Kind-Widget, ohne den Kernel zu importieren. Ein Kind stirbt
-  mit seinem Elternteil.
+- `widget.widget(src, context)` erzeugt ein Kind-Widget, ohne den Kernel zu importieren. Ein Kind
+  stirbt mit seinem Elternteil.
 
 Der Kernel rendert **keinen** Rahmen. Den Akkordeon-Kopf baut, wer mountet:
 [settings.js](pub/panel/widgets/settings.js) fuer die Settings-Liste,
@@ -41,11 +43,11 @@ delegierte Klick-Handler des Panels verschachtelte Koepfe genauso findet und den
 ```js
 export const css = `.-thing { … }`;               // optional, einmal pro Root adoptiert
 
-export default async function (el, { node, dialogs, signal }) {
+export default async function (widget, { node, dialogs, signal }) {
   const data = await api.cms.node(node.id).get({}, { signal });
-  el.head = t`Titel`;
-  await el.html`<div class=-thing>…</div>`;
-  el.on('change', 'input', (inp) => …);
+  widget.head = t`Titel`;
+  await widget.html`<div class=-thing>…</div>`;
+  widget.on('change', 'input', (inp) => …);
   return () => …;                                  // optional, Cleanup vor reload/remove
 }
 ```

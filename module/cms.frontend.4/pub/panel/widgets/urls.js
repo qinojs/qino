@@ -13,13 +13,13 @@ export const css = `
 .-urls .-delete { cursor:pointer; width:1.25em; }
 `;
 
-export default async function (el, { node, signal }) {
+export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
   const { urls = [], redirects = [] } = await ref.urls.get({}, { signal }) ?? {};
   const base = location.host + ctx.appUrl;
 
-  el.head = t`Urls`;
-  el.badge = redirects.length;
+  widget.head = t`Urls`;
+  widget.badge = redirects.length;
 
   const urlRow = (row) => html.async`<tr itemid="${row.lang}">
     <td>${row.lang}
@@ -27,7 +27,7 @@ export default async function (el, { node, signal }) {
     <td><input class=-custom type=checkbox ${row.custom ? 'checked' : ''} title="${t`custom`}">
     <td><input class=-target type=checkbox ${row.target ? 'checked' : ''} title="${t`New window`}">`;
 
-  await el.html`<div class=-urls>
+  await widget.html`<div class=-urls>
     <table class="-styled -noborder">${urls.map(urlRow)}</table>
     <br><b>${t`Direct links`}</b>
     <table class="-styled -noborder -links">
@@ -42,20 +42,20 @@ export default async function (el, { node, signal }) {
   </div>`;
 
   const lang = (inner) => inner.closest('[itemid]').getAttribute('itemid');
-  el.on('change', '.-url', (inp) => {
+  widget.on('change', '.-url', (inp) => {
     ref.urls(lang(inp)).put({ url: inp.value });
     inp.closest('tr').querySelector('.-custom').checked = true;
   });
-  el.on('change', '.-target', (inp) => ref.urls(lang(inp)).target.put({ value: inp.checked ? '_blank' : '' }));
-  el.on('change', '.-custom', (inp) =>
+  widget.on('change', '.-target', (inp) => ref.urls(lang(inp)).target.put({ value: inp.checked ? '_blank' : '' }));
+  widget.on('change', '.-custom', (inp) =>
     ref.urls(lang(inp)).custom.delete().then((url) => inp.closest('tr').querySelector('.-url').value = url));
 
-  el.on('submit', '.-addForm', (form, e) => {
+  widget.on('submit', '.-addForm', (form, e) => {
     e.preventDefault();
     const add = form.querySelector('.-add');
     add.value && ref.redirects.post({ url: add.value });
   });
-  el.on('input', '.-add', (inp) =>
+  widget.on('input', '.-add', (inp) =>
     api.cms['request-used'].get({ url: inp.value }).then(({ used }) => inp.style.borderColor = used ? 'red' : 'green'));
-  el.on('click', '.-delete', (td) => ref.redirects.delete({ url: td.closest('tr').getAttribute('itemid') }));
+  widget.on('click', '.-delete', (td) => ref.redirects.delete({ url: td.closest('tr').getAttribute('itemid') }));
 }

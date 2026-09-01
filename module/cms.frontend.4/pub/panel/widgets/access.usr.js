@@ -6,10 +6,10 @@ import { levelBadges, partial, row, searchable, table } from './access.js';
 
 export { css } from './access.js';
 
-export default async function (el, { node, signal }) {
+export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
 
-  el.head = t`User access`;
+  widget.head = t`User access`;
 
   const rows = async (search) => {
     const { total, rows } = await ref.access.users.get({ search }, { signal });
@@ -17,13 +17,13 @@ export default async function (el, { node, signal }) {
   };
 
   const first = await rows('');
-  el.badge = levelBadges(first.rows);
-  await el.html`<div class=-access>
+  widget.badge = levelBadges(first.rows);
+  await widget.html`<div class=-access>
     ${partial(first) ? html.async`<input class=-search placeholder="${t`Search`}">` : ''}
     <div class=-rows>${first.html}</div>
   </div>`;
 
-  searchable(el, async (search) => (await rows(search)).html);
-  el.on('change', 'input[type=radio]', (inp) =>
+  searchable(widget, async (search) => (await rows(search)).html);
+  widget.on('change', 'input[type=radio]', (inp) =>
     ref.access.users(inp.name.slice(2)).put({ access: Number(inp.value) }));
 }

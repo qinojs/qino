@@ -1,7 +1,7 @@
 /* The page tree with its legend. The tree engine itself lives in tree.js; this mounts it. */
 import { api, t } from '@qino/pub/qino.js';
 
-export default async function (el, { node, dialogs, signal }) {
+export default async function (widget, { node, dialogs, signal }) {
   const showContents = !!cms.panel.state.has('tree_show_c')?.get({ silent: true });
   const [data, vs] = await Promise.all([
     // open the branch down to what the panel is on — a content block, not just its page
@@ -9,9 +9,9 @@ export default async function (el, { node, dialogs, signal }) {
     api.cms.node(node.id).get({}, { signal }),
   ]);
 
-  el.head = t`Structure`;
+  widget.head = t`Structure`;
 
-  await el.html`<div class="-standalone" style="flex:1; margin-bottom:2em">
+  await widget.html`<div class="-standalone" style="flex:1; margin-bottom:2em">
     <div class=-h1>
       <span>${t`Structure`}</span>
       <input id=page-add type=text style="width:50%"
@@ -35,16 +35,16 @@ export default async function (el, { node, dialogs, signal }) {
   await import('../tree.js');
   await cmsTreeInit(data);
 
-  const inp = el.querySelector('#page-add');
+  const inp = widget.querySelector('#page-add');
   const add = () => {
     const title = inp.value.trim();
     title && cms.Tree.addPage(title);
     inp.value = '';
   };
-  el.on('focusout', '#page-add', async (i) => {
+  widget.on('focusout', '#page-add', async (i) => {
     if (i.value && await dialogs.confirm(t`Create page "${i.value}"?`)) add();
   });
-  el.on('keydown', '#page-add', (i, e) => {
+  widget.on('keydown', '#page-add', (i, e) => {
     if (e.key === 'Enter') add();
     if (e.key === 'Escape') { i.value = ''; i.blur(); }
   });

@@ -22,8 +22,8 @@ export const levelBadges = (rows) => [1, 2, 3]
   .filter((b) => b.text);
 
 /** Search field plus the table it refills. `load` returns the rendered rows. */
-export const searchable = (el, load) =>
-  el.on('input', '.-search', async (inp) => el.querySelector('.-rows').innerHTML = await load(inp.value));
+export const searchable = (widget, load) =>
+  widget.on('input', '.-search', async (inp) => widget.querySelector('.-rows').innerHTML = await load(inp.value));
 
 export const radios = (name, access) => [0, 1, 2, 3].map((v) =>
   html`<td><input type=radio name=${name} value=${v} ${(v ? access == v : !access) ? 'checked' : ''}>`);

@@ -21,7 +21,7 @@ async function templates(signal) {
   return nodes.filter((n) => n && n.type === 'c' && n.myaccess >= 2);
 }
 
-export default async function (el, { signal }) {
+export default async function (widget, { signal }) {
   const [modules, models] = await Promise.all([
     moduleList(),
     templates(signal),
@@ -29,7 +29,7 @@ export default async function (el, { signal }) {
   const icons = Object.fromEntries(modules.map((m) => [m.name, m.icon]));
   const conts = modules.filter((m) => m.kind === 'cont' && m.name !== 'cms.cont.flexible');
 
-  await el.html`<div class="-add -standalone">
+  await widget.html`<div class="-add -standalone">
     <div class=-h1>
       <span>${t`Modules`}</span>
       <input class=-search placeholder="${t`Search`}..." style="width:50%">
@@ -50,15 +50,15 @@ export default async function (el, { signal }) {
       </div>` : ''}
   </div>`;
 
-  el.querySelector('.-search').focus();
-  el.on('input', '.-search', (inp) => {
+  widget.querySelector('.-search').focus();
+  widget.on('input', '.-search', (inp) => {
     const q = inp.value.toLowerCase();
-    for (const b of el.querySelectorAll('.-module-boxes > *')) {
+    for (const b of widget.querySelectorAll('.-module-boxes > *')) {
       b.style.display = b.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
     }
   });
 
-  el.on('mousedown', '.-module-boxes > [itemid]', async (b, e) => {
+  widget.on('mousedown', '.-module-boxes > [itemid]', async (b, e) => {
     if (e.button !== 0) return;
     e.preventDefault();
     const { default: loading } = await import('@qino/pub/c1/loading.mjs');

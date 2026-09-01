@@ -14,18 +14,18 @@ export const css = `
 
 const SCOPES = [['data', 'Custom Files'], ['app', 'App Files']];
 
-export default async function (el, { node, dialogs, signal }) {
+export default async function (widget, { node, dialogs, signal }) {
   const ref = api['cms.frontend.4'].files(node.id);
   const list = await ref.get({}, { signal });
 
-  el.head = t`Superuser`;
+  widget.head = t`Superuser`;
 
   const row = (file) => html`<tr itemid="${file.path}">
     <td>${file.editor ? html`<a href="${file.editor}" target="${encodeURIComponent(file.path)}">${file.name}</a>` : file.name}
     <td>${new Date(file.mtime).toLocaleDateString()}
     <td class=-remove><u2-ico inline icon=delete>✕</u2-ico>`;
 
-  await el.html`<div class=-files>
+  await widget.html`<div class=-files>
     ${SCOPES.map(([scope, title]) => html`<div scope="${scope}">
       <div class="-widgetHead -open"><span class=-title>${title}</span></div>
       <div class=-content>
@@ -42,13 +42,13 @@ export default async function (el, { node, dialogs, signal }) {
     : ''}`;
 
   const scopeOf = (inner) => inner.closest('[scope]').getAttribute('scope');
-  el.on('keyup', '.-create', (inp, e) => {
+  widget.on('keyup', '.-create', (inp, e) => {
     if (e.key !== 'Enter' || !inp.value) return;
-    ref.post({ in: scopeOf(inp), path: inp.value }).then(() => el.reload());
+    ref.post({ in: scopeOf(inp), path: inp.value }).then(() => widget.reload());
   });
-  el.on('click', '.-remove', async (td) => {
+  widget.on('click', '.-remove', async (td) => {
     if (!await dialogs.confirm(t`Really delete this file?`)) return;
     await ref.delete({ in: scopeOf(td), path: td.closest('tr').getAttribute('itemid') });
-    el.reload();
+    widget.reload();
   });
 }

@@ -44,7 +44,7 @@ const dnd = () => Promise.all([
   import('@qino/u2/attr/draghandle/draghandle.js'),
 ]);
 
-export default async function (el, { node, dialogs, signal }) {
+export default async function (widget, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
   const [files] = await Promise.all([
     ref.files.get({ thumb: '70x40' }, { signal }).then((f) => Object.entries(f ?? {})),
@@ -52,8 +52,8 @@ export default async function (el, { node, dialogs, signal }) {
   ]);
   const real = files.filter(([, f]) => !f.placeholder);
 
-  el.head = t`Files`;
-  el.badge = real.length;
+  widget.head = t`Files`;
+  widget.badge = real.length;
 
   const row = ([slot, file]) => html.async`<tr itemid="${slot}" draggable>
     <td class=-preview title="${t`Click to replace the file`}">${preview(file)}
@@ -65,7 +65,7 @@ export default async function (el, { node, dialogs, signal }) {
     <td class=-handle u2-draghandle><u2-ico icon=drag1>⠿</u2-ico>
     <td class=-delete><u2-ico icon=delete>✕</u2-ico>`;
 
-  await el.html`<div class=-media>
+  await widget.html`<div class=-media>
     <div class=-tools>
       <button type=button class=-upload>${t`upload`}</button>
       ${files.length > 1 ? html.async`
@@ -91,7 +91,7 @@ export default async function (el, { node, dialogs, signal }) {
 
   const upload = async (list, replace) => {
     for (const file of list) await ref.files.post({ file: await fileData(file), replace });
-    el.reload();
+    widget.reload();
   };
   const pick = (multiple) => new Promise((ok) => {
     const inp = Object.assign(document.createElement('input'), { type: 'file', multiple });
@@ -100,17 +100,17 @@ export default async function (el, { node, dialogs, signal }) {
     inp.click();
   });
 
-  el.on('click', '.-upload', async () => upload(await pick(true)));
-  el.on('click', '.-preview', async (td) => upload(await pick(false), td.closest('tr').getAttribute('itemid')));
-  el.on('click', '.-delete', async (td) => {
+  widget.on('click', '.-upload', async () => upload(await pick(true)));
+  widget.on('click', '.-preview', async (td) => upload(await pick(false), td.closest('tr').getAttribute('itemid')));
+  widget.on('click', '.-delete', async (td) => {
     if (await dialogs.confirm(t`Really delete this file?`)) ref.files(td.closest('tr').getAttribute('itemid')).delete();
   });
-  el.on('change', '.-sort', (sel) => sel.value && ref.files.order.post({ by: sel.value }).then(() => el.reload()));
-  el.on('change', '.-purge', async (sel) => {
+  widget.on('change', '.-sort', (sel) => sel.value && ref.files.order.post({ by: sel.value }).then(() => widget.reload()));
+  widget.on('change', '.-purge', async (sel) => {
     if (sel.value === 'double') await ref.files.doubles.delete();
     if (sel.value === 'all' && await dialogs.confirm(t`Really delete all files?`)) await ref.files.all.delete();
   });
-  el.on('u2-dropzone-drop', 'tbody', (body, e) => {
+  widget.on('u2-dropzone-drop', 'tbody', (body, e) => {
     if (!e.detail?.add) return; // the same zone fires remove+add -> react only once
     requestAnimationFrame(() => ref.files.put({ sort: [...body.children].map((r) => r.getAttribute('itemid')) }));
   });
