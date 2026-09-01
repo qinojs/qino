@@ -89,6 +89,7 @@
   /* accordion */
   & .-widgetHead {
     display:flex;
+    align-items:center;
     padding:.6em .8em .5em .8em;
     cursor:pointer;
     margin-top:calc(var(--rem) * .22);

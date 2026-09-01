@@ -148,8 +148,6 @@ onShortcut((key, e) => {
   }
 });
 
-api.on("POST cms/node/:id/contents", () => sidebar.set(""));
-
 cms.cont.on("upload", (ev) => {
   cms.cont(ev.pid).showWidget("media");
   ev.on("progress", (e) => {

@@ -151,12 +151,22 @@ document.addEventListener('DOMContentLoaded',()=>{
   /* drag drop */
   const dd = new cms.contDrag();
   cms.contPos.dd = dd;
+
+  // The drop targets are on the page, and an open sidebar covers them. So the panel steps aside
+  // while something is being placed and comes back the way it was — a new block from the module
+  // picker and an existing one being moved are the same gesture, and both need the room. It hangs
+  // on the drag and not on "a block was created": creating one places nothing, and a list that
+  // adds an entry in place — or a bot doing the same — must not move the user's panel.
+  let sidebarBefore = null;
+
   dd.on('start',e=>{
     const el = e.target;
     dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
     document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
     p.moving = true;
     if (menu.matches(':popover-open')) menu.hidePopover();
+    sidebarBefore = cms.panel?.sidebar.value || null;
+    if (sidebarBefore) cms.panel.sidebar.set('');
     el.classList.add('-moving');
     trash.classList.add('-dropTarget');
     if (!trash.matches(':popover-open')) trash.showPopover();
@@ -174,6 +184,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
     trash.classList.remove('-dropTarget');
     if (trash.matches(':popover-open')) trash.hidePopover();
+    // Back to whatever was open: whoever placed three teasers in a row wants the picker again.
+    if (sidebarBefore) cms.panel?.sidebar.set(sidebarBefore);
+    sidebarBefore = null;
   })
 
   let startX, startY, ddEl;
