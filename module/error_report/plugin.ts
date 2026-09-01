@@ -128,14 +128,27 @@ async function addReport(app: App, vs: Report): Promise<void> {
   await app.db.table("m_error_report").insert(row).catch(() => {});
 }
 
+/** Console wrapping is process-wide — there is one console. So the hook is installed once and
+ *  routes to the app of the running request; only outside a request does it fall back. */
+const apps = new Set<App>();
+
+function reportingApp(): App | undefined {
+  try { return getCtx().app; } catch { return [...apps][0]; } // no request: first app still running
+}
+
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   const reporter = (globalThis as any).reporterJsOptions;
-  reporter.onError = async (data: Report) => {
+  apps.add(app);
+  reporter.onError ??= async (data: Report) => {
     data.source ??= "deno";
-    await addReport(app, data);
+    const target = reportingApp();
+    if (target) await addReport(target, data);
   };
-  signal.addEventListener("abort", () => { delete reporter.onError; }, { once: true });
+  signal.addEventListener("abort", () => {
+    apps.delete(app);
+    if (!apps.size) delete reporter.onError;
+  }, { once: true });
 
   app.on("route", async ({ ctx }) => {
     const path = ctx.req.appPath;
