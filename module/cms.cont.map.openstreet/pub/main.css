@@ -1,0 +1,22 @@
+/* The block itself is the figure — cms puts qcms-mod on the element the module returns,
+   so there is no wrapper to address. */
+[qcms-mod="cont.map.openstreet"] {
+  margin: 0;
+
+  > iframe {
+    display: block;
+    width: 100%;
+    height: var(--map-height, 22rem);
+    border: var(--line-width, 1px) solid color-mix(in srgb, var(--color-line, currentColor), transparent 65%);
+    border-radius: var(--radius, 0);
+    box-sizing: border-box;
+  }
+
+  > figcaption { margin-top: .6rem }
+
+  &.-empty {
+    padding: 1.5rem;
+    border: var(--line-width, 1px) dashed currentColor;
+    text-align: center;
+  }
+}
