@@ -40,20 +40,23 @@ export const imageEncode: TransformerDef = {
     const avifSupported = await magick.avifSupported();
 
     if (avifSupported) {
-      // AVIF supports alpha natively – AVIF vs JPEG, smaller file wins
+      // AVIF carries alpha, JPEG does not — so JPEG only competes for opaque images.
+      // Otherwise a mostly transparent image (a logo) picks the smaller JPEG and
+      // silently loses its alpha. Both are encoded from the source, never from each other.
+      const src = ctx.currentPath;
       const avif = nodePath.join(ctx.tmpDir, 'out.avif');
-      const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
+      const jpg = ctx.meta.hasAlpha ? '' : nodePath.join(ctx.tmpDir, 'out.jpg');
       await Promise.all([
-        magick.run(ctx.currentPath, ['-quality', String(q)], avif, { signal: ctx.signal }),
-        magick.run(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
+        magick.run(src, ['-quality', String(q)], avif, { signal: ctx.signal }),
+        jpg && magick.run(src, ['-quality', String(q)], jpg, { signal: ctx.signal }),
       ]);
-      const [sizeAvif, sizeJpg] = await Promise.all([fileSize(avif), fileSize(jpg)]);
-      if (sizeAvif <= sizeJpg) {
-        ctx.currentPath = avif;
-        ctx.mime = 'image/avif';
-      } else {
+      const [sizeAvif, sizeJpg] = await Promise.all([fileSize(avif), jpg ? fileSize(jpg) : Infinity]);
+      if (jpg && sizeJpg < sizeAvif) {
         ctx.currentPath = jpg;
         ctx.mime = 'image/jpeg';
+      } else {
+        ctx.currentPath = avif;
+        ctx.mime = 'image/avif';
       }
     } else if (ctx.meta.hasAlpha) {
       // No AVIF, alpha present → PNG

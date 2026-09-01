@@ -1,0 +1,18 @@
+{
+  "name": "cms.layout.luca",
+  "description": "Editorial layout for image-led sites: sticky header with a call to action, full-bleed content, a footer built from the identity data.",
+  "dependencies": [
+    "cms",
+    "cms.templateParser",
+    "identity",
+    "u2"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg",
+    "template.html"
+  ]
+}

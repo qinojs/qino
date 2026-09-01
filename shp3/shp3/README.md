@@ -1,6 +1,6 @@
 # shp3
 
-Shop core: products, cart, orders. Ported from `php-legacy/m/shp3`, built on `DbRow`.
+Shop core: products, cart, orders. Ported from the PHP original `m/shp3`, built on `DbRow`.
 
 ## Rows
 

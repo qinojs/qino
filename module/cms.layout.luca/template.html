@@ -1,0 +1,29 @@
+<div id=container>
+
+  <header id=head>
+    <div class="u2-width head-bar">
+      <a cms-link=parent(1) class=head-logo><cms-image name=logo node=layout height=34 fit=contain /></a>
+      <cms-cont name=nav module=cms.cont.nav3 node=layout />
+      <cms-cont name=action module=cms.cont.text node=layout />
+    </div>
+  </header>
+
+  <main id=content><cms-cont name=main /></main>
+
+  <footer id=foot>
+    <div class="u2-width foot-grid">
+      <div class=foot-brand>
+        <a cms-link=parent(1)><cms-image name=logo node=layout height=44 fit=contain /></a>
+        <cms-cont name=address module=cms.cont.text node=layout />
+      </div>
+      <cms-cont name=footA node=layout />
+      <cms-cont name=footB node=layout />
+      <cms-image name=footImage node=layout width=420 fit=contain />
+    </div>
+    <div class="u2-width foot-bottom">
+      <cms-cont name=footNote module=cms.cont.text node=layout />
+      <cms-cont name=footNav module=cms.cont.nav3 node=layout />
+    </div>
+  </footer>
+
+</div>
