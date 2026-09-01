@@ -1,7 +1,7 @@
-for (const el of document.querySelectorAll("[qcms-mod='cont.text_and_slider.cd']")) {
+cms.initNode("cont.text_and_slider.cd", (el) => {
   const slides = [...el.querySelectorAll(".-slides > [data-id]")];
   const texts = [...el.querySelectorAll(".-content > [data-id]")];
-  if (!slides.length) continue;
+  if (!slides.length) return;
   let active = 0, timer;
   const show = (index) => {
     active = (index + slides.length) % slides.length;
@@ -17,6 +17,6 @@ for (const el of document.querySelectorAll("[qcms-mod='cont.text_and_slider.cd']
   el.querySelector(".-prev")?.addEventListener("click", () => { show(active - 1); play(); });
   show(0);
   play();
-}
+});
 
 export {};
