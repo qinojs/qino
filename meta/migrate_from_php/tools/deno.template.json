@@ -1,0 +1,8 @@
+{
+  "imports": { "@qino/pub/": "../../qino/module/core/pub/js/" },
+  "lint": { "rules": { "exclude": ["no-import-prefix"] } },
+  "tasks": {
+    "start": "deno run --allow-net --allow-read --allow-write --allow-env --allow-sys --allow-run --allow-import server.ts",
+    "dev":   "deno run --allow-net --allow-read --allow-write --allow-env --allow-sys --allow-run --allow-import --watch server.ts"
+  }
+}
