@@ -34,6 +34,8 @@ export type TransformContext = {
   mime: string;
   options: TransformOptions;
   meta: TransformMeta;
+  /** Media types the client accepts (raw `Accept` header); undefined = no constraint. */
+  readonly accept?: string;
   tmpDir: string;
   /** Kills external commands when the pipeline exceeds `transformer.timeout` */
   readonly signal: AbortSignal;

@@ -107,7 +107,9 @@ export class DbFileManager {
     const maxAge = 60 * 60 * 24 * 180;
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
 
-    const { path: outputPath, mime: outputMime, key, transformed, error } = await f.transform(params);
+    // The chosen format may depend on what the client accepts, so caches must key on it too.
+    headers.append("Vary", "Accept");
+    const { path: outputPath, mime: outputMime, key, transformed, error } = await f.transform(params, req.headers.get("accept") ?? undefined);
     if (error && isTransformRequest(params)) return new Response(error.message, {
       status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
@@ -300,11 +302,11 @@ export class DbFile extends File {
     return this.#manager.file(to, data);
   }
 
-  async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string; key?: string; transformed?: boolean; error?: Error }> {
+  async transform(param: Record<string, unknown>, accept?: string): Promise<{ path: string; mime: string; key?: string; transformed?: boolean; error?: Error }> {
     await this.ensureVs();
     if (!this.path) return { path: this.path, mime: this.mime };
     const dbMime = this.mime;
-    const result = await this.#manager.app.fileTransformer.transform(this.path, parseTransformOptions(param), dbMime);
+    const result = await this.#manager.app.fileTransformer.transform(this.path, parseTransformOptions(param), dbMime, accept);
     return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed, error: result.error };
   }
 

@@ -3,7 +3,10 @@ import * as nodePath from 'node:path';
 import * as magick from '../magick.ts';
 import { typeByExtension } from '../../../deps.ts';
 
-import type { TransformerDef } from '../types.ts';
+import type { TransformContext, TransformerDef } from '../types.ts';
+
+/** True unless the client listed its accepted types and this one is not among them. */
+const canSend = (ctx: TransformContext, type: string) => !ctx.accept || ctx.accept.includes(type);
 
 /** File size in bytes; a missing file is `Infinity` so it loses the smaller-output comparison. */
 const fileSize = async (path: string): Promise<number> => (await Deno.stat(path).catch(() => null))?.size ?? Infinity;
@@ -37,7 +40,7 @@ export const imageEncode: TransformerDef = {
     // AVIF carries alpha and beats JPEG on size at comparable quality, so it needs no contender.
     // Comparing their file sizes would compare two different quality scales anyway: `-quality 77`
     // means something else in each codec, so the smaller file is not the better one.
-    if (await magick.avifSupported()) {
+    if (canSend(ctx, 'image/avif') && await magick.avifSupported()) {
       const out = nodePath.join(ctx.tmpDir, 'out.avif');
       await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;

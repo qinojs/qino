@@ -121,6 +121,8 @@ export class FileTransformer {
     options: TransformOptions,
     /** Known MIME type of the source file (e.g. from DB) – fallback to extension detection */
     knownMime?: string,
+    /** Media types the client accepts, from its `Accept` header. Omitted = no constraint. */
+    accept?: string,
   ): Promise<TransformResult> {
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
@@ -143,7 +145,7 @@ export class FileTransformer {
     const fingerprint = `${sourcePath}-${stat.size}`;
     const knownProps = new Set(this.#transformers.flatMap((t) => t.props));
     const optParts = [...knownProps].sort().flatMap((k) => opts[k] !== undefined ? `${k}=${opts[k]}` : []);
-    const cacheKey = await hashKey([fingerprint, ...optParts, await this.#toolchain()]);
+    const cacheKey = await hashKey([fingerprint, ...optParts, await this.#toolchain(), accepts(accept, opts)]);
     const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
     const metaPath = `${cachePath}.mime`;
 
@@ -165,6 +167,7 @@ export class FileTransformer {
       currentPath: sourcePath,
       mime,
       options: opts,
+      accept,
       meta: {},
       tmpDir,
       signal: AbortSignal.timeout(this.timeout * 1000),
@@ -194,6 +197,19 @@ export class FileTransformer {
     }
   }
 }
+
+/** What the client rules out, keyed alongside the options — a browser without AVIF must not be
+ *  served the AVIF entry. Only an explicit type token counts: `image/*` and `*​/*` say nothing about
+ *  a specific codec, and a navigation or plain `fetch()` sends no image types at all. An absent
+ *  header is no constraint (an unknown client is not evidence against anything), so it must not
+ *  split the cache either — hence the empty string. */
+function accepts(accept: string | undefined, opts: TransformOptions): string {
+  if (opts.fmt || !accept) return ''; // an explicit format was asked for, or nothing is known
+  return NEGOTIATED.filter((type) => !accept.includes(type)).join(',');
+}
+
+/** Types the pipeline may choose on its own, and that a client can therefore rule out. */
+const NEGOTIATED = ['image/avif'];
 
 /** Sorts transformers by phase order + `after` dependencies within a phase */
 function sortTransformers(transformers: TransformerDef[]): TransformerDef[] {
