@@ -103,6 +103,19 @@ export class FileTransformer {
     for (const engine of this.#transcriptEngines) if (await engine.available(ctx)) return engine;
   }
 
+  /** What the machine can do decides what the pipeline produces: AVIF or JPEG, rsvg or inkscape,
+   *  svgo or scour, quantized PNG or not, which OCR engine wrote the text. None of that is an
+   *  option, so none of it would reach the cache key — two servers with different tools, or the
+   *  same server after installing one, would silently share entries. Every entry of
+   *  `capabilities` counts, so adding a tool there covers it here without a second edit.
+   *  Engines carry their priority: the one that wins is what shaped the output. */
+  async #toolchain(): Promise<string> {
+    const caps = FileTransformer.capabilities as Readonly<Record<string, Promise<boolean>>>;
+    const tools = await Promise.all(Object.keys(caps).sort().map(async (k) => `${k}=${await caps[k] ? 1 : 0}`));
+    const engines = [...this.#ocrEngines, ...this.#transcriptEngines].map((e) => `${e.name}@${e.priority}`).sort();
+    return [...tools, ...engines].join(',');
+  }
+
   async transform(
     sourcePath: string,
     options: TransformOptions,
@@ -119,7 +132,7 @@ export class FileTransformer {
     const ext = nodePath.extname(sourcePath).slice(1).toLowerCase();
     const mime = knownMime || typeByExtension(ext) || 'application/octet-stream';
 
-    // Cache key: source path + size + all set options consumed by any registered transformer
+    // Cache key: source path + size + all set options consumed by any registered transformer + toolchain
     // (no mtime: it may be touched on access for LRU tracking; no mime: derivable from path/content)
     // Content fingerprint: for db-files covered by the path (md5 content-addressed).
     // For generic use (mutable paths) something is still to be found (> 1.0).
@@ -130,7 +143,7 @@ export class FileTransformer {
     const fingerprint = `${sourcePath}-${stat.size}`;
     const knownProps = new Set(this.#transformers.flatMap((t) => t.props));
     const optParts = [...knownProps].sort().flatMap((k) => opts[k] !== undefined ? `${k}=${opts[k]}` : []);
-    const cacheKey = await hashKey([fingerprint, ...optParts]);
+    const cacheKey = await hashKey([fingerprint, ...optParts, await this.#toolchain()]);
     const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
     const metaPath = `${cachePath}.mime`;
 
