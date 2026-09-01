@@ -21,7 +21,7 @@ const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"
 // `core.t` is public and unauthenticated. The client never sends more than T_WARN in one call,
 // so anything above it is nobody we know.
 // T_MAX stays under the tightest binding limit any backend brings (sqlite before 3.32 caps
-// variables at 999). Keep T_WARN in step with MAX in core/pub/js/t.mjs.
+// variables at 999). Keep T_WARN in step with MAX in core/pub/js/t.js.
 const T_WARN = 400;
 const T_MAX = 420;
 

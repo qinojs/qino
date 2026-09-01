@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 document.addEventListener("change", async (event) => {
   const select = event.target.closest('[qcms-mod="cont.shp3.currency_chooser"] select[name=shp3_currency]');

@@ -1,8 +1,8 @@
 // The dialog that answers a `step_up_required`, and the form its handlers share. It knows no
 // factor: each one ships a `pub/stepup.js` exporting `prove(root, factor)`, and the error says
 // which module to load it from.
-import { t } from "./t.mjs";
-import { hee } from "./util/hee.mjs";
+import { t } from "./t.js";
+import { html } from "./html.js";
 
 /** Ask for a fresh proof. Resolves true when one was given, false when the user gave up. */
 export async function stepUp({ factors = [] } = {}) {
@@ -15,11 +15,11 @@ export async function stepUp({ factors = [] } = {}) {
   };
 
   // No form around this: a factor brings its own, and a form inside a form is dropped by the parser.
-  dialog.innerHTML = `<h2>${hee(labels.title)}</h2>
+  dialog.innerHTML = html`<h2>${labels.title}</h2>
     <div data-body style="display:flex; flex-direction:column;"></div>
     <menu>
-      <button type=button data-back hidden>${hee(labels.back)}</button>
-      <button type=button data-cancel>${hee(labels.cancel)}</button>
+      <button type=button data-back hidden>${labels.back}</button>
+      <button type=button data-cancel>${labels.cancel}</button>
     </menu>`;
   const body = dialog.querySelector("[data-body]");
   const back = dialog.querySelector("[data-back]");
@@ -33,8 +33,8 @@ export async function stepUp({ factors = [] } = {}) {
     const list = () => {
       back.hidden = true;
       body.innerHTML = factors.length
-        ? factors.map((factor, i) => `<button type=button data-pick=${i}>${hee(factor.label)}</button>`).join("")
-        : hee(labels.none);
+        ? html`${factors.map((factor, i) => html`<button type=button data-pick=${i}>${factor.label}</button>`)}`
+        : labels.none;
     };
 
     const choose = async (factor) => {

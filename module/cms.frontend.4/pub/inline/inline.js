@@ -3,7 +3,8 @@ import '@qino/pub/qg/c1Combobox.mjs';
 import '@qino/pub/qg/fileHelpers.mjs';
 import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
-import { t, api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 import { root } from '../js/root.js';
 

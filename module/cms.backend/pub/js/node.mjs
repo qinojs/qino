@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 /**
  * The loop every backend panel runs: post to the node api, re-render the named cms-parts,

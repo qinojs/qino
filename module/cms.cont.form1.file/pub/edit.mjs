@@ -1,4 +1,4 @@
-import { api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
 
 document.addEventListener('input', e => {
   const input = e.composedPath()[0].closest?.('[data-file-setting]');

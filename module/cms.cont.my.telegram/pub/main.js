@@ -1,4 +1,6 @@
-import { api, hee, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const telegram = api["messaging.telegram"];
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
@@ -18,10 +20,10 @@ cms.initNode("cont.my.telegram", async (el) => {
 
   const draw = (url, chats) => {
     state.innerHTML = chats.length
-      ? chats.map((c) => `<p>${hee(labels.connected)} ${hee(fmt(c.created))}${c.username ? ` · @${hee(c.username)}` : ""}
-          <button type=button data-disconnect>${hee(labels.disconnect)}</button></p>`).join("")
-      : `<p><a href="${hee(url)}" target=_blank rel=noopener data-connect>${hee(labels.connect)}</a>
-          <small>${hee(labels.hint)}</small></p>`;
+      ? html`${chats.map((c) => html`<p>${labels.connected} ${fmt(c.created)}${c.username ? html` · @${c.username}` : ""}
+          <button type=button data-disconnect>${labels.disconnect}</button></p>`)}`
+      : html`<p><a href="${url}" target=_blank rel=noopener data-connect>${labels.connect}</a>
+          <small>${labels.hint}</small></p>`;
   };
 
   /** Redraw from the server — also renews the deep link, since every answer carries a fresh one. */

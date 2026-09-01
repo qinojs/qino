@@ -1,4 +1,4 @@
-import { api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
 
 import { cms } from '../../cms/pub/js/cms.mjs';
 

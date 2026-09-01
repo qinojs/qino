@@ -1,4 +1,6 @@
-import { api, hee, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const totp = api["auth.totp"];
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
@@ -32,13 +34,13 @@ cms.initNode("cont.my.totp", async (el) => {
     try {
       const apps = await totp.get();
       list.innerHTML = apps.length
-        ? apps.map((app) => `<div data-app="${app.id}">
-            <p><strong>${hee(app.label || labels.unnamed)}</strong>
-              <small>${hee(labels.added)} ${hee(fmt(app.created))} ·
-                ${app.lastUsed ? `${hee(labels.lastUsed)} ${hee(fmt(app.lastUsed))}` : hee(labels.never)}</small></p>
-            <button type=button data-delete>${hee(labels.del)}</button>
-          </div>`).join("")
-        : hee(labels.empty);
+        ? html`${apps.map((app) => html`<div data-app="${app.id}">
+            <p><strong>${app.label || labels.unnamed}</strong>
+              <small>${labels.added} ${fmt(app.created)} ·
+                ${app.lastUsed ? html`${labels.lastUsed} ${fmt(app.lastUsed)}` : labels.never}</small></p>
+            <button type=button data-delete>${labels.del}</button>
+          </div>`)}`
+        : labels.empty;
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));
@@ -49,14 +51,14 @@ cms.initNode("cont.my.totp", async (el) => {
     show();
     try {
       const { secret, uri } = await totp.enrol.post();
-      setup.innerHTML = `<form>
-        <p>${hee(labels.scan)}</p>
-        <u2-qrcode>${hee(uri)}</u2-qrcode>
-        <p>${hee(labels.byHand)} <code>${hee(secret)}</code></p>
-        <p><input name=label placeholder="${hee(labels.name)}"></p>
-        <p><input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" maxlength=6 placeholder="${hee(labels.code)}" required></p>
-        <button>${hee(labels.confirm)}</button>
-        <button type=button data-cancel>${hee(labels.cancel)}</button>
+      setup.innerHTML = html`<form>
+        <p>${labels.scan}</p>
+        <u2-qrcode>${uri}</u2-qrcode>
+        <p>${labels.byHand} <code>${secret}</code></p>
+        <p><input name=label placeholder="${labels.name}"></p>
+        <p><input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" maxlength=6 placeholder="${labels.code}" required></p>
+        <button>${labels.confirm}</button>
+        <button type=button data-cancel>${labels.cancel}</button>
       </form>`;
       setup.hidden = false;
       start.hidden = true;

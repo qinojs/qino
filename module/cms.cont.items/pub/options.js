@@ -4,7 +4,8 @@
  * block already knows what an entry is — "Add entry" creates it without a module picker, and
  * nothing foreign can be dropped in between two entries. */
 import { html } from '@qino/pub/html.js';
-import { api, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 export const css = `
 .-items {

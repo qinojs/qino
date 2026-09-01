@@ -1,4 +1,5 @@
-import { api, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 import { alert } from "@qino/u2/js/dialog/dialog.js";
 
 cms.initNode("backend.config.webapp", (el) => {

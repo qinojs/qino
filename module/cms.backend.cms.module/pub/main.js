@@ -1,4 +1,4 @@
-import { ctx } from "@qino/pub/qino.js";
+import { settings } from "@qino/pub/settings.js";
 
 cms.initNode("backend.cms.module", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -20,7 +20,7 @@ cms.initNode("backend.cms.module", (el) => {
     search.addEventListener("input", filter);
     typeFilter.addEventListener("change", () => {
       filter();
-      ctx.settings["cms.backend.cms.module"].filter.type(typeFilter.value); // remembered for the session
+      settings["cms.backend.cms.module"].filter.type(typeFilter.value); // remembered for the session
     });
     if (typeFilter.value) filter(); // restored selection
   }

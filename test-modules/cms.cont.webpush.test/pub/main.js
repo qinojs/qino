@@ -1,5 +1,5 @@
 import { subscribe, unsubscribe, channels } from "@qino/m/messaging.webpush/pub/webpush.js";
-import { t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
 
 cms.initNode("cont.webpush.test", async (el) => {
   const boxes = [...el.querySelectorAll("[name=channel]")];

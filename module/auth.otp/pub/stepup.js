@@ -1,7 +1,8 @@
 // Step-up with a code sent over one of the user's channels. One handler for all of them: the
 // factor's name is the channel's name.
 import { proveForm } from "@qino/pub/stepUpDialog.js";
-import { api, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 
 export async function prove(root, factor) {
   const otp = api["auth.otp"](factor.name);

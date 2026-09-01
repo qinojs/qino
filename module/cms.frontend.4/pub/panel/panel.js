@@ -1,5 +1,7 @@
 import { itemJs } from "@qino/pub/SettingsEditor.mjs";
-import { api, t, ctx } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { settings } from "@qino/pub/settings.js";
 
 import { root } from "../js/root.js";
 import { widget as mountWidget } from "./widget.js";
@@ -203,6 +205,6 @@ for (const [route, head] of [
 ]) api.on(route, () => loadWidget(head));
 api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time"); });
 
-if (!await ctx.settings["cms.frontend.4"].tour_seen) {
+if (!await settings["cms.frontend.4"].tour_seen) {
   import("./intro.js").then(({ start }) => start());
 }

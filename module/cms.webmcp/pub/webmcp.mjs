@@ -1,6 +1,6 @@
 // Expose the app's api action tree to the user's AI agent as WebMCP tools.
 // https://webmachinelearning.github.io/webmcp/
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 const mc = document.modelContext;
 mc && register();

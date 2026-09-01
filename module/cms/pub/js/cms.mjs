@@ -1,6 +1,7 @@
 import '@qino/pub/c1.js';
 import '@qino/pub/c1/onElement.mjs';
-import { api, ctx } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
 
 export const cms = {};
 //Object.assign(cms, c1.Eventer);

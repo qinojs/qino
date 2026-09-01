@@ -1,4 +1,6 @@
-import { api, hee, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const apiKeys = api["auth.api_keys"];
 
@@ -17,12 +19,12 @@ cms.initNode("cont.my.api_keys", async (el) => {
     try {
       const keys = await apiKeys.get();
       list.innerHTML = keys.length
-        ? keys.map((k) => `<div data-key>
-            <code>${hee(k.prefix)}…</code> <strong>${hee(k.name)}</strong>
-            <small>${fmt(k.created)}${k.expires ? ` · ${labels.expires} ${fmt(k.expires)}` : ""}</small>
+        ? html`${keys.map((k) => html`<div data-key>
+            <code>${k.prefix}…</code> <strong>${k.name}</strong>
+            <small>${fmt(k.created)}${k.expires ? html` · ${labels.expires} ${fmt(k.expires)}` : ""}</small>
             <button data-del="${k.id}"><u2-ico icon=delete>✕</u2-ico></button>
-          </div>`).join("")
-        : hee(labels.empty);
+          </div>`)}`
+        : labels.empty;
     } catch { list.textContent = await t`Error loading.`; }
   };
 

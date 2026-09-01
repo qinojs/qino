@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 cms.initNode("cont.shp3.order.cart.small", (el) => {
   const nid = Number(cms.el.nid(el));

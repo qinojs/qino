@@ -1,5 +1,6 @@
 import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
-import { hee, t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
@@ -27,13 +28,13 @@ cms.initNode("cont.my.webauthn", async (el) => {
     try {
       const keys = await wa.listCredentials();
       list.innerHTML = keys.length
-        ? keys.map((key) => `<div data-key="${key.id}">
-            <p><strong>${hee(key.name || labels.unnamed)}</strong>
-              <small>${hee(labels.added)} ${hee(fmt(key.created))} ·
-                ${key.lastUsed ? `${hee(labels.lastUsed)} ${hee(fmt(key.lastUsed))}` : hee(labels.never)}</small></p>
-            <button type=button data-delete>${hee(labels.del)}</button>
-          </div>`).join("")
-        : hee(labels.empty);
+        ? html`${keys.map((key) => html`<div data-key="${key.id}">
+            <p><strong>${key.name || labels.unnamed}</strong>
+              <small>${labels.added} ${fmt(key.created)} ·
+                ${key.lastUsed ? html`${labels.lastUsed} ${fmt(key.lastUsed)}` : labels.never}</small></p>
+            <button type=button data-delete>${labels.del}</button>
+          </div>`)}`
+        : labels.empty;
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));

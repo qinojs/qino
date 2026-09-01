@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 import { remove, resolve, setQuantity } from "../../shp3/pub/shp3.js";
 

@@ -1,4 +1,4 @@
-import { t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { EmailClientSimulator, clients } from "./emailClientSimulator.js";
 

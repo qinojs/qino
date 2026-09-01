@@ -1,6 +1,8 @@
 /* Custom URLs per language and the direct links that redirect here. */
 import { html } from '@qino/pub/html.js';
-import { api, ctx, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
+import { ctx } from '@qino/pub/qino.js';
 
 export const css = `
 .-urls table { width:100%; }

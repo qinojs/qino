@@ -1,4 +1,5 @@
-import { api, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 
 cms.initNode("backend.superuser.module.ownStore", (el) => {
   const nid = Number(cms.el.nid(el));

@@ -1,4 +1,4 @@
-import { api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
 
 // Submit without leaving the page: the api renders the same node with the entered values as vars,
 // so the result is byte-identical to the JS-free POST. File uploads stay on the native path.

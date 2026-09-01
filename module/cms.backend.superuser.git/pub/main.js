@@ -1,4 +1,5 @@
-import { api, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 
 /** Wait out the gap: the answer came from a process that is ending, so every request until the
  *  supervisor has the next one up fails at the connection — a failure here means "not yet". */

@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 cms.initNode("backend.config.translate", (el) => {
   const nid = cms.el.nid(el);

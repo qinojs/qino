@@ -1,4 +1,6 @@
-import { api, hee, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const codes = api["auth.backup_codes"];
 
@@ -40,9 +42,9 @@ cms.initNode("cont.my.backup_codes", async (el) => {
     show();
     try {
       const fresh = (await codes.generate.post()).codes;
-      shown.innerHTML = `<p>${hee(labels.once)}</p>
-        <ul>${fresh.map((code) => `<li><code>${hee(code)}</code>`).join("")}</ul>
-        <button type=button data-copy>${hee(labels.copy)}</button>`;
+      shown.innerHTML = html`<p>${labels.once}</p>
+        <ul>${fresh.map((code) => html`<li><code>${code}</code>`)}</ul>
+        <button type=button data-copy>${labels.copy}</button>`;
       shown.hidden = false;
       shown.querySelector("[data-copy]").addEventListener("click", async () => {
         await navigator.clipboard.writeText(fresh.join("\n"));

@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 cms.initNode("backend.shp3.settings", (el) => {
   const nid = Number(cms.el.nid(el));

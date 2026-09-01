@@ -1,5 +1,6 @@
 import '@qino/pub/c1/NodeCleaner.mjs';
-import { api, ctx } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
 
 /** Select one element, so the editor's tools address it. */
 const selectNode = el => {

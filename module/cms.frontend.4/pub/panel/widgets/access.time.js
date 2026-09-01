@@ -1,6 +1,7 @@
 /* When a node is online. Each edge is either inherited (null), unlimited (0) or a moment. */
 import { html } from '@qino/pub/html.js';
-import { api, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 export const css = `
 .-onlineTime > div { display:flex; flex-wrap:wrap; align-items:baseline; margin:.5rem 0; }

@@ -5,52 +5,12 @@
 //
 //   await ctx.app.api.core.user.me.get();   // RPC         (like server-side ctx.app.api.…)
 //   await ctx.app.t`Hallo ${name}`;         // translation (like server-side app.t`…`)
-//   await ctx.settings.foo.bar;             // user/session settings (like ctx.settings)
-//   await ctx.settings.foo.bar.set("x");
 //   ctx.lang / ctx.csrfToken / ctx.appUrl / ctx.moduleUrl / ctx.dev
 //
-// ctx.settings == server-side ctx.settings (NOT app.settings — those are server-only).
-// Backed by the existing api endpoint  core/ctx-settings/:path*  (Access.USER).
-// Absolute on purpose: a bare specifier is rewritten to a `jsr:` url when this package is
-// published, and no browser can load that. The static import needs a literal, so the url stands
-// twice — a test keeps both in step with the pin in deno.json.
-import { Item } from "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/item.js";
-export const ITEM_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/";
+// Visitor settings are not here but in ./settings.js — on the client they are not request state.
 
-import { ApiClient } from "./ApiClient.js";
-import { t } from "./t.mjs";
-
-function defaultBase() {
-  const el = document.querySelector('#qino-data');
-  let appUrl = globalThis.qino?.appUrl;
-  if (!appUrl && el?.textContent) try { appUrl = JSON.parse(el.textContent)?.qino?.appUrl; } catch { /* not json */ }
-  return new URL("api/", location.origin + (appUrl ?? "/"));
-}
-
-export const api = new ApiClient(defaultBase());
-// The one thing worth retrying: a demand for a fresh proof, answered by the user. The dialog is
-// loaded the first time that happens — a page that never hits one never fetches it.
-api.recover = async (error) =>
-  error.code === "step_up_required" && await (await import("./stepUpDialog.js")).stepUp(error.data);
-export { ApiError } from "./ApiClient.js";
-
-class CtxSetting extends Item {
-
-  reader = async () => {
-    const value = await api.core["ctx-settings"](this.path).get();
-    if (value && typeof value === "object") {
-      // we get the whole subtree → cache the values directly, no re-fetch.
-      // { local: true } = don't write back via writer (it just came from the server).
-      for (const k in value) this.item(k).set(value[k], { local: true });
-      return; // node is an object
-    }
-    return value; // leaf value
-  };
-
-  writer = async (value) => {
-    await api.core["ctx-settings"](this.path).put({ value });
-  };
-}
+import { api } from "./api.js";
+import { t } from "./t.js";
 
 const appUrl = globalThis.qino?.appUrl ?? "/";
 
@@ -59,7 +19,6 @@ export const ctx = {
   lang: document.documentElement.getAttribute("lang"),
   appUrl,
   moduleUrl: appUrl + "m/",   // same as server-side: appUrl + "m/"
-  settings: new CtxSetting().proxy,
   dev: !!globalThis.qino?.dev,
   csrfToken: globalThis.qino?.csrfToken,
 };
@@ -67,5 +26,5 @@ export const ctx = {
 // server-side: import { getCtx } ... — client-side there is only the one ctx
 export function getCtx() { return ctx; }
 
+export { api };
 export { t };
-export { hee } from "./util/hee.mjs";

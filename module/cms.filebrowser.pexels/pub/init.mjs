@@ -1,5 +1,5 @@
 // add files
-import { api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
 
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);

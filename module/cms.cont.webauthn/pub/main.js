@@ -1,6 +1,6 @@
 import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
 import { stepUp } from "@qino/pub/stepUpDialog.js";
-import { t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
 
 cms.initNode("cont.webauthn", (el) => {
   const { apiBase, redirectUrl } = el.dataset;

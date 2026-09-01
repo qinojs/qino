@@ -1,6 +1,7 @@
 /* Every text field of this node, editable in place. */
 import { html } from '@qino/pub/html.js';
-import { api, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 export const css = `
 .-txts { width:100%; }

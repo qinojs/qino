@@ -1,4 +1,6 @@
-import { api, hee, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const sms = api["messaging.sms"];
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
@@ -27,23 +29,23 @@ cms.initNode("cont.my.phones", async (el) => {
       const { phones, pending } = await sms.phones.get();
       const verified = (p) => {
         const main = p.main || phones.length === 1;
-        return `<div data-phone="${hee(p.address)}">
-          <p><strong>${hee(p.address)}</strong>
-            ${main ? `<span class=u2-badge>${hee(labels.main)}</span>` : ""}
-            <small>${hee(labels.verified)} ${hee(fmt(p.created))}</small></p>
-          ${main ? "" : `<button type=button data-main>${hee(labels.makeMain)}</button>`}
-          <button type=button data-delete>${hee(labels.del)}</button>
+        return html`<div data-phone="${p.address}">
+          <p><strong>${p.address}</strong>
+            ${main ? html`<span class=u2-badge>${labels.main}</span>` : ""}
+            <small>${labels.verified} ${fmt(p.created)}</small></p>
+          ${main ? "" : html`<button type=button data-main>${labels.makeMain}</button>`}
+          <button type=button data-delete>${labels.del}</button>
         </div>`;
       };
-      const claimed = (p) => `<div data-pending="${hee(p.address)}">
-        <p><strong>${hee(p.address)}</strong></p>
-        <label>${hee(labels.pending)} <input inputmode=numeric pattern="[0-9]{6}" maxlength=6 data-code required></label>
-        <button type=button data-verify>${hee(labels.confirm)}</button>
-        <button type=button data-resend>${hee(labels.resend)}</button>
+      const claimed = (p) => html`<div data-pending="${p.address}">
+        <p><strong>${p.address}</strong></p>
+        <label>${labels.pending} <input inputmode=numeric pattern="[0-9]{6}" maxlength=6 data-code required></label>
+        <button type=button data-verify>${labels.confirm}</button>
+        <button type=button data-resend>${labels.resend}</button>
       </div>`;
       list.innerHTML = phones.length || pending.length
-        ? phones.map(verified).join("") + pending.map(claimed).join("")
-        : hee(labels.empty);
+        ? html`${phones.map(verified)}${pending.map(claimed)}`
+        : labels.empty;
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));

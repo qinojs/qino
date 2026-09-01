@@ -1,4 +1,4 @@
-import { api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
 import { dataTransferToUrl, readClipboardHtml } from '@qino/pub/util/transfer.mjs';
 
 // an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged

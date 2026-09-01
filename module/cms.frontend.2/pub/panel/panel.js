@@ -1,5 +1,7 @@
 import { itemJs } from "@qino/pub/SettingsEditor.mjs";
-import { api, t, ctx } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { settings } from "@qino/pub/settings.js";
 
 import { root } from "../js/root.js";
 import { onShortcut } from "../js/shortcut.js";
@@ -583,6 +585,6 @@ onEl(".superuser-manager", (el, pid) => {
   });
 });
 
-if (!await ctx.settings["cms.frontend.2"].tour_seen) {
+if (!await settings["cms.frontend.2"].tour_seen) {
   import("./intro.js").then(({ start }) => start());
 }

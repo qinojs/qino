@@ -1,4 +1,4 @@
-import { api } from "./qino.js";
+import { api } from "./api.js";
 
 const cache = new Map();
 const pending = new Map();

@@ -1,6 +1,7 @@
 // Step-up with a code from the authenticator app.
 import { proveForm } from "@qino/pub/stepUpDialog.js";
-import { api, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 
 export async function prove(root) {
   const { done } = await proveForm(

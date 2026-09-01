@@ -1,5 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { api, ctx } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
 import '@qino/pub/qg/fileHelpers.mjs';
 
 import { ImageEditor } from './imageEditor.js';

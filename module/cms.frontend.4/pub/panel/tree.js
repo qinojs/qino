@@ -1,7 +1,8 @@
 /* CMS page tree based on u2-tree.
   * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.js
   * and server listeners. */
-import { t, api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 
 import "./contextMenu.js";
 

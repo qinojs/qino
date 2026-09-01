@@ -1,4 +1,6 @@
-import { api, hee, t } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
+import { html } from "@qino/pub/html.js";
 
 const oauth = api["auth.oauth"];
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
@@ -35,13 +37,13 @@ cms.initNode("cont.my.oauth", async (el) => {
     try {
       const rows = await oauth.get();
       list.innerHTML = rows.length
-        ? rows.map((row) => `<div data-provider="${hee(row.provider)}" data-sub="${hee(row.sub)}">
-            <p><strong>${hee(row.provider)}</strong>
-              <small>${hee(labels.connected)} ${hee(fmt(row.created))} ·
-                ${row.lastUsed ? `${hee(labels.lastUsed)} ${hee(fmt(row.lastUsed))}` : hee(labels.never)}</small></p>
-            <button type=button data-delete>${hee(labels.del)}</button>
-          </div>`).join("")
-        : hee(labels.empty);
+        ? html`${rows.map((row) => html`<div data-provider="${row.provider}" data-sub="${row.sub}">
+            <p><strong>${row.provider}</strong>
+              <small>${labels.connected} ${fmt(row.created)} ·
+                ${row.lastUsed ? html`${labels.lastUsed} ${fmt(row.lastUsed)}` : labels.never}</small></p>
+            <button type=button data-delete>${labels.del}</button>
+          </div>`)}`
+        : labels.empty;
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));

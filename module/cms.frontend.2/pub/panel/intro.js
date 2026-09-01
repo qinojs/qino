@@ -1,4 +1,5 @@
-import { ctx, t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
+import { settings } from "@qino/pub/settings.js";
 
 const root = cms.panelRoot;
 const find = selector => root.querySelector(selector);
@@ -75,7 +76,7 @@ export async function start() {
     }] : []),
   ];
   tour = new Tour(steps);
-  const remember = () => ctx.settings["cms.frontend.2"].tour_seen.set(true);
+  const remember = () => settings["cms.frontend.2"].tour_seen(true);
   tour.addEventListener("complete", remember, { once: true });
   tour.addEventListener("close", remember, { once: true });
 

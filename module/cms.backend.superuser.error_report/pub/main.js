@@ -1,4 +1,4 @@
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 cms.initNode("backend.superuser.error_report", (el) => {
   const pid = Number(cms.el.nid(el));

@@ -1,5 +1,6 @@
 // Step-up with a passkey. The authenticator is the whole dialog, so this only starts it.
-import { ctx, t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
+import { ctx } from "@qino/pub/qino.js";
 
 import { WebAuthn } from "./webauthn.js";
 

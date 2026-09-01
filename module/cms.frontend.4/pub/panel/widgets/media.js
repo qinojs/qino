@@ -1,6 +1,8 @@
 /* Files of a node: upload, replace, reorder, delete. */
 import { html } from '@qino/pub/html.js';
-import { api, ctx, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
+import { ctx } from '@qino/pub/qino.js';
 
 export const css = `
 /* fixed: the columns keep their declared width whatever the preview measures */

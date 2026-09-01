@@ -4,9 +4,8 @@
 
 const HEE = { "&": "&amp;", '"': "&quot;", "'": "&#039;", "<": "&lt;", ">": "&gt;" };
 
-export function hee(str) {
-  return String(str ?? "").replace(/[&"'<>]/g, (c) => HEE[c]);
-}
+/** Escape for HTML. Rarely needed on its own — html`` escapes every value it interpolates. */
+export const hee = (str) => String(str ?? "").replace(/[&"'<>]/g, (c) => HEE[c]);
 
 export class HtmlString {
   #html;

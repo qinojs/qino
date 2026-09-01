@@ -1,4 +1,4 @@
-import { api } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
 import { TableHandles } from '@qino/pub/c1/tableHandles.mjs';
 
 const handles = new TableHandles();

@@ -2,7 +2,9 @@ import '@qino/pub/c1.js';
 import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import '@qino/pub/c1/onElement.mjs';
-import { api, ctx } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
+import { hee } from '@qino/pub/html.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -161,11 +163,6 @@ setTimeout(() => {
   });
 },100);
 
-
-function hee(str){
-  const HEE = { '&': '&amp;', '"': '&quot;', "'": '&#039;', '<': '&lt;', '>': '&gt;' };
-  return String(str ?? '').replace(/[&"'<>]/g, c => HEE[c]);
-}
 
 
 /* translate hole page */

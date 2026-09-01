@@ -1,5 +1,5 @@
 // @ts-expect-error Browser imports resolve in the flattened /m/<module>/ namespace.
-import { api } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
 
 cms.initNode("backend.superuser.score.test", (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));

@@ -1,5 +1,6 @@
 /* SEO widget: title, description and crawl priority of a node. */
-import { api, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 import { bindSettings } from '../../../../cms/pub/js/settings.js';
 

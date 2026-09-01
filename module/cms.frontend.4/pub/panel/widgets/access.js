@@ -1,6 +1,6 @@
 /* Shared parts of the group and user access widgets: the level table and its rows. */
 import { html } from '@qino/pub/html.js';
-import { t } from '@qino/pub/qino.js';
+import { t } from '@qino/pub/t.js';
 
 export const css = `
 .-access table { width:100%; }

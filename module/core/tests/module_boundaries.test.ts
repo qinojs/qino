@@ -188,9 +188,9 @@ Deno.test("browser itemRoot matches the pinned item.js version", async () => {
   const root = `https://cdn.jsdelivr.net/gh/nuxodin/item.js@v${pinned}/`;
   assertEquals(itemRoot, root);
   // the browser files name the url outright: a bare specifier would be published as a `jsr:` one
-  const qinoJs = await Deno.readTextFile(moduleDir + "core/pub/js/qino.js");
-  assertEquals(qinoJs.includes(`from "${root}item.js"`), true, "qino.js imports the pinned url");
-  assertEquals(qinoJs.includes(`ITEM_ROOT = "${root}"`), true, "qino.js exports the pinned url");
+  const settingsJs = await Deno.readTextFile(moduleDir + "core/pub/js/settings.js");
+  assertEquals(settingsJs.includes(`from "${root}item.js"`), true, "settings.js imports the pinned url");
+  assertEquals(settingsJs.includes(`ITEM_ROOT = "${root}"`), true, "settings.js exports the pinned url");
 });
 
 // Two pins, one version: the import map serves deno, u2Root serves the browser. Bump one and

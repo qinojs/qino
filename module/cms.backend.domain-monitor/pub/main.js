@@ -1,4 +1,5 @@
-import { api, ctx } from "@qino/pub/qino.js";
+import { api } from "@qino/pub/api.js";
+import { settings } from "@qino/pub/settings.js";
 
 cms.initNode("backend.domain-monitor", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -110,7 +111,7 @@ cms.initNode("backend.domain-monitor", (el) => {
   const setCols = (group, show) => {
     table?.classList.toggle("-no-" + group, !show);
     const hidden = [...el.querySelectorAll("[data-col]")].filter((box) => !box.checked).map((box) => box.dataset.col);
-    ctx.settings["cms.backend.domain-monitor"].cols(hidden.join(","));
+    settings["cms.backend.domain-monitor"].cols(hidden.join(","));
   };
 
   el.addEventListener("change", (event) => {

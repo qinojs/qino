@@ -2,7 +2,8 @@
   * Content, style and behaviour in one place: no global listeners, no data-node/data-key
   * attributes carrying state through the html, no full reload after every change. */
 import { html } from '@qino/pub/html.js';
-import { api, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 import { bindSettings } from '../../cms/pub/js/settings.js';
 

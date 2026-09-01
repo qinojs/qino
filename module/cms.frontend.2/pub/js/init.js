@@ -1,5 +1,6 @@
 import '@qino/pub/c1.js';
-import { api, ctx } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
 
 import { root } from './root.js';
 import { onShortcut } from './shortcut.js';

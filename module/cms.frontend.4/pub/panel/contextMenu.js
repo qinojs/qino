@@ -1,6 +1,8 @@
 /* Context menu on the page tree (panel shadow root). Block-level items live in inline/contextMenu.js. */
 import '@qino/pub/c1/contextMenu.mjs';
-import { api, ctx, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
+import { ctx } from '@qino/pub/qino.js';
 
 import { dialog } from '../inline/inline.js';
 import { showSettings } from './contentMenu.js';

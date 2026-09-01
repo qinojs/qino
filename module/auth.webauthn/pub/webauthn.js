@@ -3,7 +3,7 @@
  *
  * import { WebAuthn } from "/m/auth.webauthn/pub/webauthn.js";
  */
-import { t } from "@qino/pub/qino.js";
+import { t } from "@qino/pub/t.js";
 
 const csrfHeaders = (method) =>
   method === "GET" || !globalThis.qino?.csrfToken ? {} : { "X-CSRF-Token": globalThis.qino.csrfToken };

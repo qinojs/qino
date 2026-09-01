@@ -9,7 +9,8 @@ import '@qino/u2/js/rte/unstyle.js';
 import { blockStyles } from '@qino/u2/js/rte/src/client/blocks.js';
 import { linkEditor } from '@qino/u2/js/rte/src/client/link.js';
 import '@qino/pub/Rte/helpers.mjs'; // getPossibleClasses, until the old editor is gone
-import { api, ctx } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);

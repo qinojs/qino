@@ -1,6 +1,8 @@
 /* The panel's "more" sidebar: who is logged in, feedback, password, cms settings. */
 import { html } from '@qino/pub/html.js';
-import { api, ctx, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
+import { ctx } from '@qino/pub/qino.js';
 
 export const css = `
 .-more .-feedbackform textarea { width:100%; height:12.5rem; }

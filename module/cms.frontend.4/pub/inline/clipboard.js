@@ -1,4 +1,5 @@
-import { api, hee } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { html } from '@qino/pub/html.js';
 
 import { dialog } from './inline.js';
 
@@ -13,11 +14,11 @@ export default function (pid) {
   api.cms.node(pid).get().then(res => {
     dialog(
       'Paste from clipboard',
-      '<table>'+
-        '<tr><th> Title: &nbsp;<td> '+hee(res.title)+
-        '<tr><th> Module: &nbsp;<td> '+hee(res.module)+
-        '<tr><th> Id: &nbsp;<td> '+hee(pid)+
-      '</table>',
+      html`<table>
+        <tr><th> Title: &nbsp;<td> ${res.title}
+        <tr><th> Module: &nbsp;<td> ${res.module}
+        <tr><th> Id: &nbsp;<td> ${pid}
+      </table>`,
       [{
         title: 'Paste on this page', then() {
           cms.cont(pid).addPosition();

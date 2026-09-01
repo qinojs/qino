@@ -1,7 +1,8 @@
 /* Settings widget for the file field — shipped by this module, mounted by the CMS panel.
   * Content, style and behaviour in one place; no global listener piercing the shadow root. */
 import { html } from '@qino/pub/html.js';
-import { api, t } from '@qino/pub/qino.js';
+import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 import { bindSettings } from '../../cms/pub/js/settings.js';
 
