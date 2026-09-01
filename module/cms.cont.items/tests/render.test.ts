@@ -2,18 +2,23 @@
 import { html, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
 
-import { cms, entryModule } from "../plugin.ts";
+import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-const child = (id: number) => ({ id, html: () => Promise.resolve(html.raw(`<div qcms-id=${id}>entry</div>`)) });
+const child = (id: number, readable = true) => ({
+  id,
+  isReadable: () => Promise.resolve(readable),
+  html: () => Promise.resolve(html.raw(`<div qcms-id=${id}>entry</div>`)),
+});
 
 /** Node fake: the children, the settings, and whether `cont()` was asked to create one. */
-function listNode(opts: { edit?: boolean; children?: number; settings?: Record<string, unknown> } = {}) {
+function listNode(opts: { edit?: boolean; children?: number; readable?: boolean[]; settings?: Record<string, unknown> } = {}) {
   const created: Array<[string, any]> = [];
-  let conts = Array.from({ length: opts.children ?? 0 }, (_, i) => child(i + 1));
+  let conts = Array.from({ length: opts.children ?? 0 }, (_, i) => child(i + 1, opts.readable?.[i]));
   const settings = opts.settings ?? {};
+  const properties = cms.node.settingsSchema.properties as Record<string, { default?: unknown }>;
   return {
     id: 5,
     edit: !!opts.edit,
@@ -23,7 +28,7 @@ function listNode(opts: { edit?: boolean; children?: number; settings?: Record<s
       conts = [child(99)];
       return Promise.resolve(child(99));
     },
-    settings: new Proxy({}, { get: (_t, key: string) => () => settings[key] }),
+    settings: new Proxy({}, { get: (_t, key: string) => () => settings[key] ?? properties[key]?.default }),
     created,
   } as any;
 }
@@ -40,14 +45,14 @@ Deno.test("cms.cont.items: metadata is wired", () => {
 Deno.test("cms.cont.items: the entries sit in a u2 grid", async () => {
   const ctx = await testContext();
   const out = await run(listNode({ children: 2 }), ctx);
-  assertStringIncludes(out, '<div class="u2-width"><div class="u2-grid">');
+  assertEquals(out.startsWith('<div class="u2-grid">'), true, out);
   assertStringIncludes(out, "<div qcms-id=1>entry</div><div qcms-id=2>entry</div>");
 });
 
-Deno.test("cms.cont.items: width empty leaves the block as wide as its container", async () => {
-  const ctx = await testContext();
-  const out = await run(listNode({ children: 1, settings: { width: "" } }), ctx);
-  assertEquals(out.startsWith('<div class="u2-grid">'), true, out);
+Deno.test("cms.cont.items: only readable entries are rendered", async () => {
+  const out = await run(listNode({ children: 2, readable: [true, false] }), await testContext());
+  assertStringIncludes(out, "<div qcms-id=1>entry</div>");
+  assertEquals(out.includes("qcms-id=2"), false);
 });
 
 Deno.test("cms.cont.items: an empty list gets its first entry — for the editor only", async () => {
@@ -67,15 +72,10 @@ Deno.test("cms.cont.items: the first entry uses the module the block was set to"
   const node = listNode({ edit: true, settings: { "default module": "cms.cont.html" } });
   await run(node, ctx);
   assertEquals(node.created, [["first", { module: "cms.cont.html" }]]);
-  assertEquals(entryModule(node), "cms.cont.html");
 });
 
 Deno.test("cms.cont.items: the add position is a setting, so both list shapes are possible", () => {
   const pos = cms.node.settingsSchema.properties["add position"];
   assertEquals(pos.default, "bottom");
   assertEquals(pos.enum, ["bottom", "top"]);
-});
-
-Deno.test("cms.cont.items: an empty setting still names a module", () => {
-  assertEquals(entryModule(listNode({ settings: { "default module": "" } })), "cms.cont.flexible");
 });

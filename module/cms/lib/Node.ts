@@ -1,4 +1,4 @@
-import { $item, bildJsonItem, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
+import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -65,6 +65,7 @@ export class Node {
             const schema = this.module?.plugin.cms?.node?.settingsSchema;
             if (schema) this.settings[$item].setSchema(schema);
         } catch {/**/}
+        enableItemSchemaDefaults(this.settings[$item]);
 
         if (!this.vs.title_id) {
             const text = await this.app.dbTexts.generate();

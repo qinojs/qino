@@ -25,43 +25,20 @@ const settingsSchema = {
       default: "bottom",
       description: "Where a new entry appears. A menu grows at the end, a list of news at the beginning.",
     },
-    width: {
-      type: "string",
-      enum: ["u2-width", ""],
-      default: "u2-width",
-      description: "u2-width: the site's content width, like items2 always did. Empty: as wide as whatever contains it.",
-    },
   },
 };
-
-type SettingKey = keyof typeof settingsSchema.properties;
-/** The schema is the only place a default is written down — panel and render read the same one. */
-const declared = (key: SettingKey): string =>
-  String((settingsSchema.properties[key] as { default?: string }).default ?? "");
-/** What is stored, or undefined when the setting was never touched. */
-const stored = (node: Node, key: SettingKey): string | undefined => {
-  const value = node.settings[key]();
-  return value == null ? undefined : String(value);
-};
-
-// `||` and `??` differ on purpose: an empty module means "not set", an empty width is the
-// editor's choice to let the list run as wide as whatever contains it.
-export const entryModule = (node: Node): string => stored(node, "default module") || declared("default module");
 
 async function render(node: Node): Promise<HtmlString> {
   let conts = await node.conts();
 
-  // An empty list has nothing to click on. The first entry is created for the editor, the way
-  // items2 did it — but only in edit mode: a visitor's page view must not write to the database.
-  if (!conts.length && node.edit) {
-    // createChild clears the tree cache, so the fresh child is in the next read.
-    await node.cont("first", { module: entryModule(node) });
+  if (!conts.length && node.edit) { // Seed editable lists; cont() invalidates the cached children.
+    await node.cont("first", { module: node.settings["default module"]() });
     conts = await node.conts();
   }
 
-  const width = stored(node, "width") ?? declared("width");
-  const grid = html.async`<div class="u2-grid">${conts}</div>`;
-  return width ? html.async`<div class="${width}">${grid}</div>` : grid;
+  const readable: Node[] = [];
+  for (const cont of conts) if (await cont.isReadable()) readable.push(cont);
+  return html.async`<div class="u2-grid">${readable}</div>`;
 }
 
 export const cms = {

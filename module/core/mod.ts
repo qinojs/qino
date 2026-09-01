@@ -14,7 +14,7 @@ export { ResCsp } from "./lib/ctx/ResCsp.ts";
 export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";
 
 // HTML & general utilities
-export { hee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";
+export { hee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, enableItemSchemaDefaults, u2Root, header, isFile } from "./lib/util.ts";
 // HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
 export type { HtmlString } from "./lib/util.ts";
 
