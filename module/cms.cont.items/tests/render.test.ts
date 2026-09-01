@@ -7,16 +7,12 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-const child = (id: number, readable = true) => ({
-  id,
-  isReadable: () => Promise.resolve(readable),
-  html: () => Promise.resolve(html.raw(`<div qcms-id=${id}>entry</div>`)),
-});
+const child = (id: number) => ({ id, html: () => Promise.resolve(html.raw(`<div qcms-id=${id}>entry</div>`)) });
 
 /** Node fake: the children, the settings, and whether `cont()` was asked to create one. */
-function listNode(opts: { edit?: boolean; children?: number; readable?: boolean[]; settings?: Record<string, unknown> } = {}) {
+function listNode(opts: { edit?: boolean; children?: number; settings?: Record<string, unknown> } = {}) {
   const created: Array<[string, any]> = [];
-  let conts = Array.from({ length: opts.children ?? 0 }, (_, i) => child(i + 1, opts.readable?.[i]));
+  let conts = Array.from({ length: opts.children ?? 0 }, (_, i) => child(i + 1));
   const settings = opts.settings ?? {};
   const properties = cms.node.settingsSchema.properties as Record<string, { default?: unknown }>;
   return {
@@ -47,12 +43,6 @@ Deno.test("cms.cont.items: the entries sit in a u2 grid", async () => {
   const out = await run(listNode({ children: 2 }), ctx);
   assertEquals(out.startsWith('<div class="u2-grid">'), true, out);
   assertStringIncludes(out, "<div qcms-id=1>entry</div><div qcms-id=2>entry</div>");
-});
-
-Deno.test("cms.cont.items: only readable entries are rendered", async () => {
-  const out = await run(listNode({ children: 2, readable: [true, false] }), await testContext());
-  assertStringIncludes(out, "<div qcms-id=1>entry</div>");
-  assertEquals(out.includes("qcms-id=2"), false);
 });
 
 Deno.test("cms.cont.items: an empty list gets its first entry — for the editor only", async () => {

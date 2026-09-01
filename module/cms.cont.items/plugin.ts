@@ -36,9 +36,7 @@ async function render(node: Node): Promise<HtmlString> {
     conts = await node.conts();
   }
 
-  const readable: Node[] = [];
-  for (const cont of conts) if (await cont.isReadable()) readable.push(cont);
-  return html.async`<div class="u2-grid">${readable}</div>`;
+  return html.async`<div class="u2-grid">${conts}</div>`;
 }
 
 export const cms = {

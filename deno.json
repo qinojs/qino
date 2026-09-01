@@ -64,6 +64,7 @@
     "@qino/qino/auth": "./module/auth/mod.ts",
     "@qino/qino/auth.backup_codes": "./module/auth.backup_codes/mod.ts",
     "@qino/qino/auth.oauth": "./module/auth.oauth/mod.ts",
+    "@qino/qino/auth.otp": "./module/auth.otp/mod.ts",
     "@qino/qino/auth.totp": "./module/auth.totp/mod.ts",
     "@qino/qino/cms": "./module/cms/mod.ts",
     "@qino/qino/cms.accessRules": "./module/cms.accessRules/mod.ts",
