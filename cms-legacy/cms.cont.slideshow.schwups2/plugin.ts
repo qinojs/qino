@@ -40,7 +40,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   return html`<div data-type="${node.settings.mode() || "slide"}">
   <div class=c1-aspectRatio>
-    <div class="-inner b1_slideshow"><div class=-slides>${html.join(slides)}</div></div>
+    <div class="-inner b1_slideshow"><div class=-slides>${slides}</div></div>
     <div class=-spacer></div>
   </div>
   ${controls}

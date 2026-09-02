@@ -49,7 +49,7 @@ async function methods(node: Node): Promise<HtmlString> {
         <th> ${t`Module`}
         <th> ${t`Label for the customer`}
         <th>
-      <tbody data-kind=${kind} u2-dropzone>${html.join(trs)}
+      <tbody data-kind=${kind} u2-dropzone>${trs}
     </table>`;
   };
 
@@ -102,7 +102,7 @@ async function address(node: Node): Promise<HtmlString> {
     <table class=u2-table>
       <tr>
         <th>${t`Country`}
-        <td><select class=-set data-setting=location.country><option value="">${html.join(options)}</select>
+        <td><select class=-set data-setting=location.country><option value="">${options}</select>
       <tr>
         <th>${t`City`}
         <td><input class=-set data-setting=location.city value="${await set.location.city}">
@@ -174,7 +174,7 @@ async function currencies(node: Node): Promise<HtmlString> {
             <th> ${t`Smallest total`}
             <th> ${t`Active`}
             <th> ${t`Main`}
-        <tbody>${html.join(trs)}
+        <tbody>${trs}
       </table>
     </div>
   </div>`;
@@ -209,7 +209,7 @@ async function countries(node: Node): Promise<HtmlString> {
           <tr>
             <th> ${t`Delivers to`}
             <th width=60> ${t`VAT`} %
-        <tbody>${html.join(trs)}
+        <tbody>${trs}
       </table>
     </div>
   </div>`;

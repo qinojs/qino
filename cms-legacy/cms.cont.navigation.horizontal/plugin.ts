@@ -22,7 +22,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       const sub = await active.in(child) ? await branch(child, level + 1) : undefined;
       items.push(await html.async`<li>${node.cms.link(child)}${sub}</li>`);
     }
-    return html`<div class=level><ul class="cmsChilds${parent.id}">${html.join(items)}<div class=clear></div></ul></div>`;
+    return html`<div class=level><ul class="cmsChilds${parent.id}">${items}<div class=clear></div></ul></div>`;
   };
 
   return await branch(start, 0) ?? html`<div class=level></div>`;

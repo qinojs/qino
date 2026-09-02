@@ -57,7 +57,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): HtmlString {
     <thead><tr>
       <th class=-route>route
       <th class=-cells>
-    <tbody>${html.join(rows)}</tbody>
+    <tbody>${rows}</tbody>
   </table>
 </div>`;
 }

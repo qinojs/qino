@@ -20,7 +20,7 @@ async function render(node: Node): Promise<HtmlString> {
     })}</a>`);
     titles.push(html`<a href="${url}"><div>${await product.showTitle()}</div></a>`);
   }
-  return html`<div><div class=-image>${html.join(images)}</div><div class=-title>${html.join(titles)}</div></div>`;
+  return html`<div><div class=-image>${images}</div><div class=-title>${titles}</div></div>`;
 }
 
 export const cms = { node: { render, css: ["pub/main.css"] } };

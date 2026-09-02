@@ -43,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ${parent ? await html.async`<p class=-category><a href="${await parent.url()}">${parent.showTitle()}</a></p>` : ""}
   ${await cmsText(node, "title", "h1")}
   ${await cmsText(node, "subtitle")}
-  ${facts.length ? html`<dl class=-facts>${html.join(facts)}</dl>` : ""}
+  ${facts.length ? html`<dl class=-facts>${facts}</dl>` : ""}
   ${external ? html`<p><a href="${target}">${target}</a></p>` : ""}
   ${await cmsText(node, "main")}
   ${image ? html`<p><img src="${await image.url({ w: 1400, q: 82 })}" alt=""></p>` : ""}

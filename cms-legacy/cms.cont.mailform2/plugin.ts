@@ -24,7 +24,7 @@ async function render(node: Node): Promise<HtmlString> {
     else input = html`<input type="${["email", "url"].includes(type) ? type : "text"}" name="${id}"${required}>`;
     rows.push(html`<tr><td><label>${label}${field?.obl ? "*" : ""}</label></td><td>${input}</td></tr>`);
   }
-  return html`<div><fieldset disabled><table class=mailform>${html.join(rows)}<tr><td></td><td><button>${await node.showText("sendButton")}</button></td></tr></table></fieldset></div>`;
+  return html`<div><fieldset disabled><table class=mailform>${rows}<tr><td></td><td><button>${await node.showText("sendButton")}</button></td></tr></table></fieldset></div>`;
 }
 
 export const cms = { node: { render } };

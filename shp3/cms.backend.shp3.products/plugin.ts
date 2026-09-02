@@ -80,7 +80,7 @@ async function renderList(node: Node): Promise<HtmlString> {
             <th> ${t`Weight`}
             ${hasStock ? html`<th> ${await t`Stock`}` : ""}
             <th width=20>
-        <tbody>${html.join(trs)}
+        <tbody>${trs}
       </table>
     </div>
   </div>
@@ -113,7 +113,7 @@ async function renderProduct(node: Node, id: number): Promise<HtmlString> {
   <div class=u2-card style="flex:1">
     <div class=-head><a href="?">${t`Products`}</a> — ${await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id}</div>
     <div style="padding:0">
-      <table class=u2-table itemid=${id}>${html.join(rows)}</table>
+      <table class=u2-table itemid=${id}>${rows}</table>
     </div>
   </div>
 
@@ -121,7 +121,7 @@ async function renderProduct(node: Node, id: number): Promise<HtmlString> {
     <div class=-head>${t`VAT rate per country`}</div>
     <div style="padding:0">
       <table class=u2-table itemid=${id}>
-        ${html.join(vatRows)}
+        ${vatRows}
         <tr class=-new>
           <td><input name=country maxlength=2 size=2 placeholder=CH>
           <td><input name=rate type=number step=any>

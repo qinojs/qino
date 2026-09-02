@@ -39,7 +39,7 @@ export async function list(node: Node): Promise<HtmlString> {
       <th>${node.app.t`Half-life`}
       <th>${node.app.t`Scored rows`}
       <th>${node.app.t`Last hit`}
-    <tbody>${html.join(rows)}
+    <tbody>${rows}
   </table>
   ${renderPages(node.app)}`;
 }
@@ -62,7 +62,7 @@ async function renderPages(app: App): Promise<HtmlString> {
       <th><code>score</code> <small>db</small>
       <th>${app.t`Strength`} <small>${app.t`computed`}</small>
       <th><code>time</code> <small>db</small>
-    <tbody>${html.join(rows)}
+    <tbody>${rows}
   </table>`;
 }
 

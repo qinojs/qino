@@ -50,8 +50,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     legal.push(await html.async`<div class=-block>${cmsText(node, key + "_h", "h" + heading)}${cmsText(node, name, "p")}</div>`);
   }
   return html`<div><div thm1-width class=u1-width>
-  <div class=-contact>${html.join(blocks)}</div>
-  <div class=-texts>${html.join(legal)}</div>
+  <div class=-contact>${blocks}</div>
+  <div class=-texts>${legal}</div>
 </div></div>`;
 }
 

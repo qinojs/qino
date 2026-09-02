@@ -94,7 +94,7 @@ async function countryField(node: Node, name: string, value: string, autocomplet
   options.sort((a, b) => new Intl.Collator(lang).compare(a.title, b.title));
   return html`<select name=${name} autocomplete="${autocomplete}" ${required ? html.raw("required") : html.raw("")}>
       <option value="">
-      ${html.join(options.map((c) => html`<option value=${c.id} ${c.id === value ? html.raw("selected") : ""}>${c.title}`))}
+      ${options.map((c) => html`<option value=${c.id} ${c.id === value ? html.raw("selected") : ""}>${c.title}`)}
     </select>`;
 }
 

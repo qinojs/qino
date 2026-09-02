@@ -25,7 +25,7 @@ async function render(node: Node): Promise<HtmlString> {
   return html.async`<div>
   <div class=-price>${currency?.id} <span shp3-price=gross>${currency ? currency.format(prices.gross) : prices.gross}</span></div>
   ${errors.length
-    ? html`<div class=-errors>${html.join(errors.map((e) => html`<div>${e}</div>`))}</div>`
+    ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}</div>`
     : html`<form shp3-add class=-add>
     <input type=hidden name=product_id value=${product.id}>
     ${await node.settings.quantity() === false ? "" : html`<input type=number name=quantity min=1 step=1 value=1>`}

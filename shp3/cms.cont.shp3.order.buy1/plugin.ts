@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const back = backId ? await node.cms.node(backId) : await page.parent();
 
   return html.async`<div>
-  ${errors.length ? html`<ul class=-errors>${html.join(errors.map((e) => html`<li>${e}</li>`))}</ul>` : ""}
+  ${errors.length ? html`<ul class=-errors>${errors.map((e) => html`<li>${e}</li>`)}</ul>` : ""}
   ${back?.exists() ? html`<a class=-back href="${await back.url()}">${await t`Back`}</a>` : ""}
   <form class=-buy data-success=${success ? await success.url() : ""}>
     <button ${errors.length ? html.raw("disabled") : html.raw("")}>${t`Buy`}</button>

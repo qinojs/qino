@@ -48,7 +48,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   }
 
   return html`<div>
-  <div class=-items style="--c1-items-width:${width}px" itemscope itemtype="http://schema.org/ImageGallery">${html.join(figures)}</div>
+  <div class=-items style="--c1-items-width:${width}px" itemscope itemtype="http://schema.org/ImageGallery">${figures}</div>
   <div class=pswp tabindex=-1 role=dialog aria-hidden=true>
     <div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container>
       <div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div>

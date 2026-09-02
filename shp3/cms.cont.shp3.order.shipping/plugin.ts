@@ -35,7 +35,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   return html.async`<div>
   <h2>${t`Shipping method`}</h2>
-  <form class=-shipping>${html.join(options)}</form>
+  <form class=-shipping>${options}</form>
 </div>`;
 }
 

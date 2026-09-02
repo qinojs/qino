@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ${preview ? html`<div>${child.showText("preview")}</div>` : ""}
   ${branch(child, level + 1)}</li>`);
     }
-    return html`<ul class="cmsChilds${parent.id}">${html.join(items)}</ul>`;
+    return html`<ul class="cmsChilds${parent.id}">${items}</ul>`;
   };
 
   return html`<nav>${await branch(start, 0)}</nav>`;

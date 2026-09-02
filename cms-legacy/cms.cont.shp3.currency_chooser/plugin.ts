@@ -21,15 +21,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   if (await node.settings.type() !== "links") {
     return html`<label><span class=-label>${label}:</span>
-      <select name=shp3_currency>${html.join(currencies.map((c) =>
+      <select name=shp3_currency>${currencies.map((c) =>
         html`<option value=${c.id} ${c.id === active?.id ? html.raw("selected") : ""}>${c.id}</option>`
-      ))}</select>
+      )}</select>
     </label>`;
   }
 
-  return html`<label><span class=-label>${label}:</span>${html.join(currencies
+  return html`<label><span class=-label>${label}:</span>${currencies
     .filter((c) => !hide || c.id !== active?.id)
-    .map((c) => html`<button type=button data-currency=${c.id} class="${c.id === active?.id ? "-active" : ""}">${c.id}</button>`))}</label>`;
+    .map((c) => html`<button type=button data-currency=${c.id} class="${c.id === active?.id ? "-active" : ""}">${c.id}</button>`)}</label>`;
 }
 
 export const cms = { node: { render, js: ["pub/main.js"], settingsSchema } };

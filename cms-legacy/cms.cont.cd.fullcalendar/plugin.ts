@@ -22,7 +22,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (Number.isNaN(+startDate)) continue;
     events.push(await html.async`<li><time datetime="${startDate.toISOString()}">${date.format(startDate)}</time> <a href="${url}?cmscid=${event.id}">${event.showTitle()}</a></li>`);
   }
-  return html`<div>${await cmsText(node, "title", "h2")}<div class=-wrapper><ul class=-calendar>${html.join(events)}</ul></div></div>`;
+  return html`<div>${await cmsText(node, "title", "h2")}<div class=-wrapper><ul class=-calendar>${events}</ul></div></div>`;
 }
 
 export const cms = { node: { render } };

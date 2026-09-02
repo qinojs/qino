@@ -35,12 +35,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const options = String(task.options ?? "").split(";").map((value) => value.trim()).filter(Boolean);
     let input: HtmlString;
     if (String(task.type) === "bool") input = html`<label><input required type=radio name="task_${task.id}" value=1> Ja</label> <label><input required type=radio name="task_${task.id}" value=0> Nein</label>`;
-    else if (options.length) input = html`<span>${html.join(options.map((value) => html`<label><input required type=radio name="task_${task.id}" value="${value}"> ${value}</label><br>`))}</span>`;
+    else if (options.length) input = html`<span>${options.map((value) => html`<label><input required type=radio name="task_${task.id}" value="${value}"> ${value}</label><br>`)}</span>`;
     else input = html`<input required name="task_${task.id}">`;
     fields.push(html`<div class=-task><h2 class=-question>${String(task.question)}</h2><div class=-answer>${input}</div></div>`);
   }
   return html`<div><form method=post><input type=hidden name=csrfToken value="${ctx.csrfToken}"><input type=hidden name=exam_node value="${node.id}">
-  <h1>${String(exam.title)}</h1><div class=-contents>${await (await node.cont(String(exam.id))).html()}</div>${html.join(fields)}
+  <h1>${String(exam.title)}</h1><div class=-contents>${await (await node.cont(String(exam.id))).html()}</div>${fields}
   <br>${await node.showText("text_" + exam.id)}<br><button>Tag abschliessen!</button></form></div>`;
 }
 

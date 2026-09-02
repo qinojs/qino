@@ -30,13 +30,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   return html`<div>
   <div class=-slideshow>
     ${floating}
-    <div class=b1_slideshow><div class=-slides>${html.join(slides)}</div></div>
+    <div class=b1_slideshow><div class=-slides>${slides}</div></div>
     ${slides.length > 1
       ? html`<button class="-arrow -prev" type=button><span class=-img><svg viewBox="0 0 40 80"><use href="${arrow}"></use></svg></span></button>
         <button class="-arrow -next" type=button><span class=-img><svg viewBox="0 0 40 80"><use href="${arrow}"></use></svg></span></button>`
       : ""}
   </div>
-  <div class=-body><div class=-content>${html.join(texts)}</div></div>
+  <div class=-body><div class=-content>${texts}</div></div>
 </div>`;
 }
 

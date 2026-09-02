@@ -34,7 +34,7 @@ async function render(node: Node): Promise<HtmlString> {
   const responsive = minWidth
     ? html`<style>@media(max-width:${minWidth}px){[qcms-id="${node.id}"]{display:block;width:auto}[qcms-id="${node.id}"]>*{display:block;min-width:100%}}</style>`
     : "";
-  return html`<div>${responsive}${html.join(items)}</div>`;
+  return html`<div>${responsive}${items}</div>`;
 }
 
 export const cms = { node: { render, settingsSchema, css: ["pub/main.css"] } };

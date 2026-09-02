@@ -25,10 +25,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const url = pageId ? await (await node.cms.node(pageId)).url() : "";
 
   const body = mode === "lines"
-    ? html`<table>${html.join(items.map((item) => html`<tr itemid=${item.id}>
+    ? html`<table>${items.map((item) => html`<tr itemid=${item.id}>
         <td class=-title>${item.title}
         <td class=-quantity>${item.quantity}
-        <td class=-cost>${money(item.rowPrice())}`))}
+        <td class=-cost>${money(item.rowPrice())}`)}
       <tfoot><tr class=-total>
         <th colspan=2>${await t`Total`}
         <td>${money(costs.gross)}

@@ -32,7 +32,7 @@ async function render(node: Node, ctx: Ctx, type: keyof typeof labels): Promise<
   if (done || saved) return html`<div><h2>${type === "twopoint" ? "Bravo! Das Training für heute ist abgeschlossen." : `Sie haben das ${labels[type].title} für heute erfüllt.`}</h2></div>`;
 
   const count = type === "twopoint" ? html`<label>Anzahl Punkte <select name=count><option>16<option>18<option>20</select></label>` : "";
-  const distance = type === "twopoint" ? html`<label>Abstände <select name=distance>${html.join([90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25].map((n) => html`<option>${n} mm`))}</select></label>` : "";
+  const distance = type === "twopoint" ? html`<label>Abstände <select name=distance>${[90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25].map((n) => html`<option>${n} mm`)}</select></label>` : "";
   return html`<div data-sensory="${type}" data-total="${labels[type].total}"><form method=post>
   <input type=hidden name=csrfToken value="${ctx.csrfToken}"><input type=hidden name=sensory_node value="${node.id}"><input type=hidden name=value>
   <div class=-setup><h2>${labels[type].title}</h2>${count}${distance}<button type=button class=-start>los</button></div>

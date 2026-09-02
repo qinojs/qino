@@ -35,14 +35,12 @@ function badge(text: string, color = "", cls = ""): HtmlString {
 
 // Kind <option>s with an empty (unassigned) first entry.
 function kindOptions(selected = ""): HtmlString {
-  return html`<option value=""${selected ? "" : " selected"}>${
-    html.join(KINDS.map((k) => html`<option value="${k}"${k === selected ? " selected" : ""}>${k}`))}`;
+  return html`<option value=""${selected ? "" : " selected"}>${KINDS.map((k) => html`<option value="${k}"${k === selected ? " selected" : ""}>${k}`)}`;
 }
 
 // Kind <option>s for the model filter, with an "all kinds" first entry.
 function filterKindOptions(selected = ""): HtmlString {
-  return html`<option value=""${selected ? "" : " selected"}>all kinds${
-    html.join(KINDS.map((k) => html`<option value="${k}"${k === selected ? " selected" : ""}>${k}`))}`;
+  return html`<option value=""${selected ? "" : " selected"}>all kinds${KINDS.map((k) => html`<option value="${k}"${k === selected ? " selected" : ""}>${k}`)}`;
 }
 
 // Insert a catalog model, becoming the kind's default only if none exists yet.

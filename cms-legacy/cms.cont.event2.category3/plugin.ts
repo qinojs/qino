@@ -40,7 +40,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   return html`<div>
   ${await cmsText(node, "title", "h1")}
   ${await (await node.cont("before")).html()}
-  <div style="overflow:auto"><table><tbody>${html.join(rows)}</tbody></table></div>
+  <div style="overflow:auto"><table><tbody>${rows}</tbody></table></div>
   ${await (await node.cont("after")).html()}
 </div>`;
 }

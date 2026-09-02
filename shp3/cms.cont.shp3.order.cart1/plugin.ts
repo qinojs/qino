@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     rows.push(html`<tr itemid=${item.id}>
       <td class=-title>${item.title}<div class=-options>${await item.calcDescription()}</div>
         ${errors.length
-          ? html`<div class=-errors>${html.join(errors.map((e) => html`<div>${e}</div>`))}
+          ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}
             <button class=-resolve>${await t`Fix`}</button></div>`
           : ""}
       <td class=-quantity>${editable
@@ -62,14 +62,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         <th>${t`Price`}
         <th>${t`Total`}
         ${editable ? html`<th width=20>` : ""}
-    <tbody class=-items>${html.join(rows)}
-    <tbody class=-generated>${html.join(generated)}
+    <tbody class=-items>${rows}
+    <tbody class=-generated>${generated}
     <tfoot>
       <tr class=-net>
         <th colspan=3>${t`Subtotal`}
         <td>${money(costs.net)}
         ${editable ? html`<td>` : ""}
-  	  ${html.join(taxes)}
+  	  ${taxes}
       <tr class=-gross>
         <th colspan=3>${t`Total`}
         <td class=-sum>${money(costs.gross)}

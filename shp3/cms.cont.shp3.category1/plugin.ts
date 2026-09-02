@@ -51,7 +51,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     </div>`);
   }
 
-  return html.async`<div class=-items>${html.join(items)}</div>`;
+  return html.async`<div class=-items>${items}</div>`;
 }
 
 /** The page's first image, if it has one. */

@@ -63,7 +63,7 @@ async function renderList(node: Node): Promise<HtmlString> {
           <th> ${t`Total`}
           <th width=20> ${t`Paid`}
           <th width=20>
-      <tbody>${html.join(trs)}
+      <tbody>${trs}
     </table>
   </div>
 </div>`;
@@ -115,7 +115,7 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
       <th align=right>${t`Quantity`}
       <th align=right>${t`Price`}
       <th align=right>${t`Total`}
-    <tbody>${html.join(lines)}
+    <tbody>${lines}
     <tfoot><tr>
       <th colspan=3>${t`Total`}
       <td><strong>${money(costs.gross)}</strong>
@@ -154,7 +154,7 @@ ${trs.length
     <th> ${t`Customer`}
     <th> ${t`Total`}
     <th>
-  <tbody>${html.join(trs)}
+  <tbody>${trs}
 </table>`
     : ""}
 </div>`;

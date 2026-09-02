@@ -38,7 +38,7 @@ async function render(node: Node): Promise<HtmlString> {
   }
 
   const controls = await node.settings.controlNav
-    ? html`<div class=-controls>${html.join(slides.map((_, i) => html`<button type=button data-slide="${i}" aria-label="Slide ${i + 1}"></button>`))}</div>`
+    ? html`<div class=-controls>${slides.map((_, i) => html`<button type=button data-slide="${i}" aria-label="Slide ${i + 1}"></button>`)}</div>`
     : "";
 
   return html`<div class=nivoSlider tabindex=0 style="width:${width}px;height:${height}px"
@@ -49,7 +49,7 @@ async function render(node: Node): Promise<HtmlString> {
     data-keyboard="${!!await node.settings.keyboardNav}"
     data-hover="${!!await node.settings.pauseOnHover}"
     data-hide-direction="${!!await node.settings.directionNavHide}">
-    <div class=-slides>${html.join(slides)}</div>
+    <div class=-slides>${slides}</div>
     ${await node.settings.directionNav ? html`<button class="-direction -prev" type=button aria-label="${await node.settings.prevText || "Prev"}"></button>
       <button class="-direction -next" type=button aria-label="${await node.settings.nextText || "Next"}"></button>` : ""}
     ${controls}

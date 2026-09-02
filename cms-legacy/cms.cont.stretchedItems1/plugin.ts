@@ -25,7 +25,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   return html.async`<div class=c1StretchedItems style="--c1-items-width:${minWidth}" data-items-gap="${
     await node.settings.gap ?? ""
-  }" data-items-row-gap="${await node.settings["row-gap"] ?? ""}">${html.join(items)}</div>`;
+  }" data-items-row-gap="${await node.settings["row-gap"] ?? ""}">${items}</div>`;
 }
 
 export const cms = {

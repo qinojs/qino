@@ -31,7 +31,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       const identity = await identityOwner(node.app);
       const place = [identity.zip, identity.city].filter(Boolean).join(" ");
       const lines = [identity.company, identity.name, identity.address, place].filter(Boolean);
-      if (lines.length) owner = html`<p style="margin:1em 0">${html.join(lines.map((line) => html`${line}<br>`))}</p>`;
+      if (lines.length) owner = html`<p style="margin:1em 0">${lines.map((line) => html`${line}<br>`)}</p>`;
     }
     if (key === "logs" && await node.app.settings["cms.cont.privacy_policy1"]["anonymize IP"])
       owner = html`<p>IP-Adressen sind anonymisiert.</p>`;
@@ -43,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   }
   return html`<div><div thm1-width class="u1-width u2-width">
   ${await cmsText(node, "title", "h1")}
-  ${html.join(sections)}
+  ${sections}
   <p><small>Quelle: Datenschutz-Konfigurator von <a href="http://www.mein-datenschutzbeauftragter.de" target=_blank>mein-datenschutzbeauftragter.de</a></small></p>
 </div></div>`;
 }

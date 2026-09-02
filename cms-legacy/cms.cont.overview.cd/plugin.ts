@@ -31,7 +31,7 @@ async function render(node: Node): Promise<HtmlString> {
   <span class=-text><a href="${url}">${item.showTitle()}</a><br></span>
 </div></div>`);
   }
-  return html`<div class=cd-overview>${html.join(items)}</div>`;
+  return html`<div class=cd-overview>${items}</div>`;
 }
 
 export const cms = { node: { render } };
