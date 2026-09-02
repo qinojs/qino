@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>ImageEditor — standalone</title>
+<!-- The editor without any cms: no qino-cms root, no ui.css, browser alert/confirm.
+     Served from pub/, so open it at <appUrl>m/cms.image_editor/pub/test/imageEditor.html -->
+
+<h1>ImageEditor standalone</h1>
+<p>
+  <button id=btn>edit sample image</button>
+  <input id=pick type=file accept="image/*">
+  <label><input id=styled type=checkbox> load cms ui.css</label>
+<p>result: <br><img id=out style="max-width:20rem; border:1px solid #888">
+
+<script type=module>
+import { ImageEditor } from '../imageEditor.js';
+
+// a sample image, so the page needs nothing from the outside
+const sample = () => {
+  const c = Object.assign(document.createElement('canvas'), { width: 600, height: 400 });
+  const ctx = c.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 600, 400);
+  grad.addColorStop(0, '#2b6cb0');
+  grad.addColorStop(1, '#f6ad55');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 600, 400);
+  ctx.fillStyle = '#fff';
+  ctx.font = '48px sans-serif';
+  ctx.fillText('600 × 400', 40, 220);
+  return c.toDataURL();
+};
+
+const edit = (src) => {
+  const editor = new ImageEditor();  // nobody places it → own shadow root in the body
+  if (styled.checked) editor.addStyle('../../../cms/pub/css/ui.css');
+  editor.show(src, {
+    onsave: async () => {
+      out.src = URL.createObjectURL(await editor.img.toBlob('image/png'));
+      editor.hide();
+    },
+  });
+};
+
+btn.onclick = () => edit(sample());
+pick.onchange = () => pick.files[0] && edit(URL.createObjectURL(pick.files[0]));
+</script>

@@ -3,14 +3,14 @@ import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 import '@qino/pub/qg/fileHelpers.mjs';
 
-import { ImageEditor } from './imageEditor.js';
+import { debounce, ImageEditor } from './imageEditor.js';
 
 // globalThis.qgfileUpload
 
 const meta = id => api['cms.image_editor'].meta(id);
 const loadingMjs = () => import('@qino/pub/c1/loading.mjs');
 
-// accordion + hotspot styles, scoped to the editor's shadow root
+// accordion + hotspot styles, scoped to the editor by css()
 const EDITOR_CSS = `
 .-accordion {
     position: relative;
@@ -21,39 +21,47 @@ const EDITOR_CSS = `
     margin-top: 1em;
     transition: all .1s;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
+    &::after {
+        font-family: 'qg_cms';
+        content: '\\e800';
+        position: absolute;
+        display: flex;
+        align-items: center;
+        right: .8em;
+        top: .7em;
+        bottom: .7em;
+        padding-left: .625rem;
+        transition: opacity .2s;
+    }
+    &:hover::after { opacity: 1; }
+    &:first-child { margin-top: 0; }
+    &:focus {
+        color: #fff;
+        background-color: var(--cms-dark);
+        &::after { content: '\\e801'; }
+    }
+    &.-title:first-child {
+        background-color: rgb(60, 60, 60);
+        color: #fff;
+        &::after { content: '\\e902'; }
+    }
+
+    & + div {
+        border: 1px solid var(--cms-light);
+        transition-duration: .2s;
+        transition-property: max-height, padding;
+        max-height: 0;
+        padding: 0 .9375rem;
+        overflow: hidden;
+    }
+    & + div:focus-within,
+    &:focus + div {
+        max-height: 90vh;
+        padding: .9375rem;
+        overflow: auto;
+    }
 }
-.-accordion::after {
-    font-family: 'qg_cms';
-    content: '\\e800';
-    position: absolute;
-    display: flex;
-    align-items: center;
-    right: .8em;
-    top: .7em;
-    bottom: .7em;
-    padding-left: .625rem;
-    transition: opacity .2s;
-}
-.-accordion:hover::after { opacity: 1; }
-.-accordion:first-child { margin-top: 0; }
-.-accordion:focus { color: #fff; background-color: var(--cms-dark); }
-.-accordion:focus::after { content: '\\e801'; }
-.-accordion + div {
-    border: 1px solid var(--cms-light);
-    transition-duration: .2s;
-    transition-property: max-height, padding;
-    max-height: 0;
-    padding: 0 .9375rem;
-    overflow: hidden;
-}
-.-accordion + div:focus-within,
-.-accordion:focus + div {
-    max-height: 90vh;
-    padding: .9375rem;
-    overflow: auto;
-}
-.-accordion.-title:first-child { background-color: rgb(60, 60, 60); color: #fff; }
-.-accordion.-title:first-child::after { content: '\\e902'; }
 .-hotspot {
     position: absolute;
     width: 1.25rem;
@@ -62,38 +70,35 @@ const EDITOR_CSS = `
     background: #f00;
     pointer-events: none;
     opacity: .2;
+
+    & > div {
+        position: absolute;
+        bottom: -1.25rem;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        color: #fff;
+        text-shadow: 0 0 .625rem #000;
+    }
 }
-.-viewport:hover > .-hotspot { opacity: .6; }
-.-hotspot > div {
-    position: absolute;
-    bottom: -1.25rem;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    color: #fff;
-    text-shadow: 0 0 .625rem #000;
-}`;
+.-viewport:hover > .-hotspot { opacity: .6; }`;
 
 export class DbFileImageEditor extends ImageEditor {
   show(src) {
     const eSrc = src.replace(/(dbFile\/[0-9]+\/).*/, '$1');
-    const uniqueMatch = src.match(/\/(u-[^/]+\/)/);
-    const unique = uniqueMatch ? uniqueMatch[1] : '';
+    const unique = src.match(/\/(u-[^/]+\/)/)?.[1] ?? '';
     this.file_id = eSrc.match(/dbFile\/([0-9]+)\//)[1];
 
-    this.shadow.append(Object.assign(document.createElement('style'), { textContent: EDITOR_CSS }));
+    this.css(EDITOR_CSS);
 
     super.show(eSrc + unique + 'img.jpg', {
       onload: this.loading(() => {
-        let width = src.match(/\/w-([0-9]+)(\/|$)/);
-        let height = src.match(/\/h-([0-9]+)(\/|$)/);
-        width = width && width[1];
-        height = height && height[1];
+        const width = src.match(/\/w-([0-9]+)(\/|$)/)?.[1];
+        const height = src.match(/\/h-([0-9]+)(\/|$)/)?.[1];
 
         // "max" means the image is scaled to fit width/height; without it the server crops.
         const maxMatch = src.match(/\/max-?([^/]*)(\/|$)/);
-        let max = false;
-        if (maxMatch) max = maxMatch[1] === '' ? true : !!parseInt(maxMatch[1]);
+        const max = !!maxMatch && (maxMatch[1] === '' || !!parseInt(maxMatch[1]));
 
         if (width) this.minWidth = width * 2;   // *2 => retina
         if (height) this.minHeight = height * 2;
@@ -130,7 +135,7 @@ export class DbFileImageEditor extends ImageEditor {
     this.el('.-tools').insertAdjacentHTML('beforeend',
       '<div class=-accordion tabindex=-1>Meta-Daten</div>' +
             '<div class=-meta><input name=name placeholder="Dateiname" style="width:100%"><br></div>');
-    const saveName = c1.debounce(name => { this.meta.name = name; meta(this.file_id).put({ name }); }, 500);
+    const saveName = debounce(name => { this.meta.name = name; meta(this.file_id).put({ name }); }, 500);
     this.el('.-meta [name=name]').addEventListener('input', e => saveName(e.target.value));
 
     // hotspot: click/tap the canvas to set the focus point
@@ -213,10 +218,12 @@ export class DbFileImageEditor extends ImageEditor {
     this.el('.-history').onclick = async e => {
       const log = parseInt(e.target.getAttribute('log'), 10);
       if (!Number.isFinite(log)) return;
-      if (!await cms.dialogs.confirm('Möchten Sie das Bild wiederherstellen?')) return;
+      if (!await this.confirm('Möchten Sie das Bild wiederherstellen?')) return;
       api['cms.image_editor'].restore(this.file_id).post({ log: log + 1 })
         .then(() => { location.href = location.href.replace(/#.*$/, ''); })
-        .catch(err => cms.dialogs.alert('Wiederherstellen fehlgeschlagen: ' + err.message));
+        .catch(err => this.alert('Wiederherstellen fehlgeschlagen: ' + err.message));
     };
   }
 }
+
+customElements.define('qino-dbfile-image-editor', DbFileImageEditor);

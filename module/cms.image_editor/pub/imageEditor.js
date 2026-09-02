@@ -1,11 +1,85 @@
+/* Standalone by design: this file and the ones it imports pull in nothing else and use no
+ * globals, so the editor runs on any page — see test/imageEditor.html.
+ * Anything that needs the cms (api, upload, styles) belongs in DbFileImageEditor. */
 import { FullScreenDialog } from './fullScreenDialog.js';
 import { ImageCropper } from './imageCropper.js';
 import { ImageCanvas } from './imageCanvas.js';
 
-const checkerboard =
-    'background-color:#fff; ' +
-    'background-image: linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%, #d8d8d8), linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%, #d8d8d8); ' +
-    'background-size:1.25rem 1.25rem; background-position:0 0, .625rem .625rem; ';
+/** Trailing debounce, but never quiet for longer than 2×ms — a slider drag keeps updating. */
+export const debounce = (fn, ms) => {
+  let args, min, max;
+  const run = () => { clearTimeout(min); clearTimeout(max); max = 0; fn(...args); };
+  return (...a) => {
+    args = a;
+    clearTimeout(min);
+    min = setTimeout(run, ms);
+    max ||= setTimeout(run, ms * 2);
+  };
+};
+
+const pickFile = (accept) => new Promise((resolve) => {
+  const input = Object.assign(document.createElement('input'), { type: 'file', accept });
+  input.style.cssText = 'position:absolute; left:-999px; opacity:.01';
+  input.addEventListener('change', () => { resolve(input.files[0]); input.remove(); }, { once: true });
+  document.body.append(input);
+  input.click();
+});
+
+const CHECKERBOARD = 'linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%, #d8d8d8)';
+
+const CSS = `
+dialog {
+    .-main { display: flex; flex: 1 1 auto; }
+
+    .-viewport {
+        position: relative;
+        flex: 1 1 auto;
+        background: #000;
+    }
+    .-stage {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        justify-content: center;
+        overflow: auto;
+        padding: 1.25rem;
+    }
+    .-canvas, .-img { margin: auto; max-height: 100%; max-width: 100%; }
+    .-canvas {
+        display: block;
+        box-shadow: 0 0 2.5rem #888;
+        background-color: #fff;
+        background-image: ${CHECKERBOARD}, ${CHECKERBOARD};
+        background-size: 1.25rem 1.25rem;
+        background-position: 0 0, .625rem .625rem;
+    }
+    .-img { display: none; }
+
+    .-sidebar { min-width: 17.5rem; padding: 1.25rem; display: flex; flex-flow: column; }
+    .-tools, .-toolsCrop { flex: auto; overflow: auto; }
+    .-brightness, .-contrast { width: 100%; }
+
+    .-cropBtns {
+        display: flex;
+        gap: .5rem;
+        & > button { flex: 1; }
+    }
+    .-autocrop { width: 100%; margin-top: .5rem; }
+    .-cropValues {
+        table { width: 100%; }
+        tbody { vertical-align: middle; }
+        input { width: 100%; }
+    }
+
+    .-btns {
+        flex: 0;
+        display: flex;
+        gap: 1.25rem;
+        & > button { flex: 1; }
+    }
+    .-cancel { display: none; }
+}
+`;
 
 export class ImageEditor extends FullScreenDialog {
     minHeight = 0;
@@ -26,7 +100,7 @@ export class ImageEditor extends FullScreenDialog {
             URL.revokeObjectURL(img.src);
       };
       img.onerror = async () => {
-        await cms.dialogs.alert('Das Bild konnte nicht geladen werden, oder ist nicht vorhanden. Klicken Sie auf "hochladen" um ein Bild von Ihrem Computer auszuwählen.');
+        await this.alert('Das Bild konnte nicht geladen werden, oder ist nicht vorhanden. Klicken Sie auf "hochladen" um ein Bild von Ihrem Computer auszuwählen.');
             options.onerror?.();
       };
       img.src = src;
@@ -40,17 +114,13 @@ export class ImageEditor extends FullScreenDialog {
 
     #initCropper() {
       this.cropper = new ImageCropper(this.el('.-canvas'), this.el());
-      this.cropper.addEventListener('show', () => {
-        this.el('.-tools').style.display = 'none';
-        this.el('.-btns').style.display = 'none';
-        this.el('.-toolsCrop').style.display = 'block';
-        this.cropper.positionizeSvg();
-      });
-      this.cropper.addEventListener('hide', () => {
-        this.el('.-tools').style.display = 'block';
-        this.el('.-btns').style.display = 'block';
-        this.el('.-toolsCrop').style.display = 'none';
-      });
+      const cropping = (on) => {
+        this.el('.-tools').hidden = on;
+        this.el('.-btns').hidden = on;
+        this.el('.-toolsCrop').hidden = !on;
+      };
+      this.cropper.addEventListener('show', () => { cropping(true); this.cropper.positionizeSvg(); });
+      this.cropper.addEventListener('hide', () => cropping(false));
       this.cropper.addEventListener('crop', () => {
         for (const prop of ['top', 'left', 'width', 'height']) {
           const el = this.el(`.-cropValues [name=${prop}]`);
@@ -64,7 +134,7 @@ export class ImageEditor extends FullScreenDialog {
       // brightness / contrast — live adjustments.
       // Read the value synchronously: event.target is unreliable in a deferred (debounced) callback (Firefox).
       const adjust = prop => {
-        const apply = c1.debounce(v => { this.img[prop] = v; this.img.render(); this.changed = true; }, 10);
+        const apply = debounce(v => { this.img[prop] = v; this.img.render(); this.changed = true; }, 10);
         return e => apply(+e.target.value);
       };
       this.el('.-brightness').addEventListener('input', adjust('brightness'));
@@ -96,7 +166,7 @@ export class ImageEditor extends FullScreenDialog {
           this.el().focus(); // prevent the activated button from re-triggering click
         }
       });
-      const applyCropValue = c1.debounce((name, value) => { this.cropper[name] = value / this.scale; }, 200);
+      const applyCropValue = debounce((name, value) => { this.cropper[name] = value / this.scale; }, 200);
       this.el('.-cropValues').addEventListener('input', e => applyCropValue(e.target.name, +e.target.value));
     }
 
@@ -107,30 +177,30 @@ export class ImageEditor extends FullScreenDialog {
     }
 
     async hide() {
-      if (this.changed && !await cms.dialogs.confirm('Möchten Sie die Änderungen verwerfen?')) return;
+      if (this.changed && !await this.confirm('Möchten Sie die Änderungen verwerfen?')) return;
       this.cropper.hide();
       removeEventListener('resize', this);
       super.hide();
     }
 
     async uploadDialog() {
-      await import('@qino/pub/c1/form.mjs');
-      const [file] = await c1.form.fileDialog({ multiple: false, accept: 'image/*' });
+      const file = await pickFile('image/*');
       if (!file?.type.match('image.*')) return;
       this.el('.-img').src = URL.createObjectURL(file);
     }
 
     init() {
+      this.css(CSS);
       this.el().innerHTML = `
-            <div style="display:flex; flex:1 1 auto;">
-                <div class=-viewport style="position:relative; flex:1 1 auto; background:#000">
-                    <div style="display:flex; justify-content:center; position:absolute; inset:0; overflow:auto; padding:1.25rem;">
-                        <canvas class=-canvas style="background:#bbb; display:block; box-shadow:0 0 2.5rem #888; margin:auto; max-height:100%; max-width:100%; ${checkerboard}"></canvas>
-                        <img class=-img style="display:none; margin:auto; max-height:100%; max-width:100%">
+            <div class=-main>
+                <div class=-viewport>
+                    <div class=-stage>
+                        <canvas class=-canvas></canvas>
+                        <img class=-img>
                     </div>
                 </div>
-                <div class=-sidebar style="min-width:17.5rem; padding:1.25rem; display:flex; flex-flow:column">
-                    <div class=-tools style="flex:auto; overflow:auto">
+                <div class=-sidebar>
+                    <div class=-tools>
                         <div class=-title>Bild bearbeiten</div>
                         <br>
                         <button class=-rotate>90° drehen</button>
@@ -139,35 +209,32 @@ export class ImageEditor extends FullScreenDialog {
                         <div class=-accordion tabindex=-1>Einstellen</div>
                         <div>
                             <div>Helligkeit</div>
-                            <input class=-brightness type=range style="width:100%" min=".4" max=2 step=any value=1>
+                            <input class=-brightness type=range min=".4" max=2 step=any value=1>
                             <div>Kontrast</div>
-                            <input class=-contrast type=range style="width:100%" min=".4" max=2 step=any value=1>
+                            <input class=-contrast type=range min=".4" max=2 step=any value=1>
                         </div>
                     </div>
-                    <div class=-toolsCrop style="flex:auto; overflow:auto" hidden>
+                    <div class=-toolsCrop hidden>
                         <div class=-title>Bild zuschneiden</div>
                         <br>
-                        <div style="display:flex;">
-                            <button class=-cancelCrop style="flex:1">abbrechen</button>
-                            <span style="flex:.1 1 .5rem;"></span>
-                            <button class=-cropit style="flex:1">zuschneiden</button>
+                        <div class=-cropBtns>
+                            <button class=-cancelCrop>abbrechen</button>
+                            <button class=-cropit>zuschneiden</button>
                         </div>
-                        <button class=-autocrop style="width:100%; margin-top:.5rem">automatisch</button>
+                        <button class=-autocrop>automatisch</button>
                         <br>
                         <form class=-cropValues>
-                            <table style="width:100%"><tbody style="vertical-align:middle">
-                                <tr> <td> X:      <td> <input name=left   type=number style="width:100%">
-                                <tr> <td> Y:      <td> <input name=top    type=number style="width:100%">
-                                <tr> <td> Breite: <td> <input name=width  type=number style="width:100%">
-                                <tr> <td> Höhe:   <td> <input name=height type=number style="width:100%">
+                            <table><tbody>
+                                <tr> <td> X:      <td> <input name=left   type=number>
+                                <tr> <td> Y:      <td> <input name=top    type=number>
+                                <tr> <td> Breite: <td> <input name=width  type=number>
+                                <tr> <td> Höhe:   <td> <input name=height type=number>
                             </table>
                         </form>
                     </div>
-                    <div class=-btns style="flex:0">
-                        <div style="display:flex; margin:-.625rem">
-                            <button style="flex:1; margin:.625rem" class=-save>Speichern</button>
-                            <button style="display:none; flex:1; margin:.625rem" class=-cancel>Abbrechen</button>
-                        </div>
+                    <div class=-btns>
+                        <button class=-save>Speichern</button>
+                        <button class=-cancel>Abbrechen</button>
                     </div>
                 </div>
             </div>`;
@@ -188,3 +255,5 @@ export class ImageEditor extends FullScreenDialog {
       this.cropper.minWidth = this.minWidth / this.scale;
     }
 }
+
+customElements.define('qino-image-editor', ImageEditor);
