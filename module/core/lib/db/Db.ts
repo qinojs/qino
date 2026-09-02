@@ -80,11 +80,6 @@ export class Db extends Emitter<DbEvents> {
     }
   }
 
-
-
-
-
-
   get dialect(): DbDialect { return this.#driver.dialect; }
   get emptyInsert(): string { return this.#dialect.emptyInsert; }
   get insertSyncsAutoIncrement(): boolean { return this.#driver.insertSyncsAutoIncrement; }

@@ -140,7 +140,7 @@ export async function preview(node: Node, ctx: Ctx): Promise<HtmlString> {
     </div>
     <article class=-content>
       <h1>${name}</h1>
-      ${description ? html`<p>${description}</p>` : html`<p>${t`This is a simulated page inside the installed application.`}</p>`}
+      ${description ? html`<p>${description}</p>` : html.async`<p>${t`This is a simulated page inside the installed application.`}</p>`}
       <div class=-contact>
         <strong>${t`Call us`}</strong>
         <div class=-phone><span class=-detected>${telephone}</span><span class=-plain>${telephone}</span></div>

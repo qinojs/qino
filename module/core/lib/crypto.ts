@@ -27,7 +27,6 @@ export const sha256b64url = async (str: string): Promise<string> => b64url(await
 
 export const uid = (length?: number): string => randB64(16).slice(0, length);
 
-/** Constant-time token compare (CSRF etc.); coerces untrusted input to string. */
 /**
  * A signature over `parts`, keyed by the app's secret — the key is the app's, the parts are what is
  * being signed. They are joined with a separator none of them can contain, so `["ab", "c"]` and
@@ -38,6 +37,7 @@ export const uid = (length?: number): string => randB64(16).slice(0, length);
 export const keyed = async (app: App, parts: string[], len?: number): Promise<string> =>
   mac(await appSecret(app), parts.join("\0"), len);
 
+/** Constant-time token compare (CSRF etc.); coerces untrusted input to string. */
 export function safeEqual(a: unknown, b: string): boolean {
   const ab = ENCODER.encode(String(a ?? "")), bb = ENCODER.encode(b);
   return ab.byteLength === bb.byteLength && timingSafeEqual(ab, bb);

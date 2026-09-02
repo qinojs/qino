@@ -34,10 +34,10 @@ export function render(node: Node): Promise<HtmlString> {
           <th>${t`Creates`}
         <tbody>${seeders.map((seeder) => {
           const gone = missing(seeder.needs);
-          return html`<tr>
+          return html.async`<tr>
             <td><input type=checkbox name=seeder value="${seeder.name}" checked ${gone.length ? html.raw("disabled") : ""}>
             <td><label><code>${seeder.name}</code></label>
-            <td>${seeder.title}${gone.length ? html` <small class=u2-badge>${t`needs`} ${gone.join(", ")}</small>` : ""}`;
+            <td>${seeder.title}${gone.length ? html.async` <small class=u2-badge>${t`needs`} ${gone.join(", ")}</small>` : ""}`;
         })}
       </table>
     </div>

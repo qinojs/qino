@@ -2,8 +2,6 @@ import { sql } from "@qino/qino";
 
 import type { Db } from "@qino/qino";
 
-const hasOwn = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);
-
 function nullable(type: unknown): boolean {
   return Array.isArray(type) && type.includes("null");
 }
@@ -29,10 +27,10 @@ export async function validateTable(db: Db, tableName: string) {
     if (Array.isArray(props.enum) && props.enum.length) {
       rules.push(["enum", sql`${ref} IS NOT NULL AND ${sql.notIn(ref, props.enum)}`]);
     }
-    if (hasOwn(props, "minLength")) rules.push([`minLength ${props.minLength}`, sql`${ref} IS NOT NULL AND ${lengthSql(db, field)} < ${props.minLength}`]);
-    if (hasOwn(props, "maxLength")) rules.push([`maxLength ${props.maxLength}`, sql`${ref} IS NOT NULL AND ${lengthSql(db, field)} > ${props.maxLength}`]);
-    if (hasOwn(props, "minimum")) rules.push([`minimum ${props.minimum}`, sql`${ref} IS NOT NULL AND ${ref} < ${props.minimum}`]);
-    if (hasOwn(props, "maximum")) rules.push([`maximum ${props.maximum}`, sql`${ref} IS NOT NULL AND ${ref} > ${props.maximum}`]);
+    if (Object.hasOwn(props, "minLength")) rules.push([`minLength ${props.minLength}`, sql`${ref} IS NOT NULL AND ${lengthSql(db, field)} < ${props.minLength}`]);
+    if (Object.hasOwn(props, "maxLength")) rules.push([`maxLength ${props.maxLength}`, sql`${ref} IS NOT NULL AND ${lengthSql(db, field)} > ${props.maxLength}`]);
+    if (Object.hasOwn(props, "minimum")) rules.push([`minimum ${props.minimum}`, sql`${ref} IS NOT NULL AND ${ref} < ${props.minimum}`]);
+    if (Object.hasOwn(props, "maximum")) rules.push([`maximum ${props.maximum}`, sql`${ref} IS NOT NULL AND ${ref} > ${props.maximum}`]);
     for (const [rule, where] of rules) {
       const count = Number(await db.one`SELECT COUNT(*) FROM ${sql.id(tableName)} WHERE ${where}`);
       if (count) issues.push({ field, rule, count });
