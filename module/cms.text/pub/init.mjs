@@ -195,10 +195,11 @@ const addTranslateWidget = el=>{
     done();
   });
 };
-c1.onElement('.qgCmsFront1MoreManager', addTranslateWidget);
 customElements.whenDefined('qino-cms').then(async () => {
   const root = document.querySelector('qino-cms')?.shadowRoot;
   if (!root) return;
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
+  new SelectorObserver({ on: addTranslateWidget }).observe('.-more', { root });
+  // cms.frontend.2 — drop this line together with that module
   new SelectorObserver({ on: addTranslateWidget }).observe('.more-manager', { root });
 });

@@ -4,23 +4,34 @@ import { cms } from '../../cms/pub/js/cms.mjs';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
-// The CMS panel (cms.frontend.2) lives in the shadow DOM of <qino-cms>.
+// The CMS panel lives in the shadow DOM of <qino-cms>.
 const panelRoot = customElements.whenDefined('qino-cms').then(() => document.querySelector('qino-cms').shadowRoot);
+
+const pid = () => cms.cont.active || nodeId;
+const browse = (options, onSelect) => {
+  const fB = new cms.fileBrowser(options);
+  fB.show();
+  fB.on('select', onSelect);
+};
+// the panel reloads its media widget on the POST itself
+const addFiles = async (e) => {
+  for (const item of [...e.dbFiles, ...e.urls]) await api.cms.node(pid()).files.post({ file: String(item) });
+};
 
 panelRoot.then(async root => {
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
+
+  new SelectorObserver({ on: tools => {
+    const button = c1.dom.el('<button>existing file');
+    button.addEventListener('click', () => browse({ multiple: true }, addFiles));
+    tools.querySelector('.-upload').after(button);
+  }}).observe('.-media .-tools', { root });
+
+  // ─── cms.frontend.2 — drop this block together with that module ───
   new SelectorObserver({ on: el => {
     const button = c1.dom.el('<button>select');
     el.after(button);
-    button.addEventListener('click', () => {
-      const fB = new cms.fileBrowser({ multiple:true });
-      fB.show();
-      fB.on('select', async e => {
-        const pid = cms.cont.active || nodeId;
-        for (const id of e.dbFiles) await api.cms.node(pid).files.post({ file: String(id) });
-        for (const url of e.urls) await api.cms.node(pid).files.post({ file: url });
-      });
-    });
+    button.addEventListener('click', () => browse({ multiple: true }, addFiles));
     el.style.display = 'none';
   }}).observe('.file-manager .-addExistingFile', { root });
 
@@ -29,16 +40,13 @@ panelRoot.then(async root => {
     el.addEventListener('click', e => {
       e.stopImmediatePropagation();
       const replace = e.target.closest('tr').getAttribute('itemid');
-      const fB = new cms.fileBrowser({ multiple:false, local:1 });
-      fB.show();
-      fB.on('select', async e => {
-        const pid = cms.cont.active || nodeId;
+      browse({ multiple: false, local: 1 }, async e => {
         const item = e.dbFiles[0] || e.urls[0];
         if (item) {
-          await api.cms.node(pid).files.post({ file: String(item), replace });
-          cms.reloadNode(pid);
+          await api.cms.node(pid()).files.post({ file: String(item), replace });
+          cms.reloadNode(pid());
         }
-        if (e.files) cms.cont(pid).upload(e.files[0], () => cms.reloadNode(pid), replace);
+        if (e.files) cms.cont(pid()).upload(e.files[0], () => cms.reloadNode(pid()), replace);
       });
     });
   }}).observe('.file-manager .-preview', { root });
