@@ -4,7 +4,8 @@ import '@qino/pub/c1/contextMenu.mjs';
 import '@qino/pub/c1/onElement.mjs';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
-import { hee } from '@qino/pub/html.js';
+import { html } from '@qino/pub/html.js';
+import { t } from '@qino/pub/t.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -23,7 +24,7 @@ const showEditor = async el => {
   const data = await api['cms.text'].text(tid).get();
   const dialog = document.createElement('dialog');
   dialog.className = 'qgCMS';
-  let body = '<div style="display:flex">';
+  const parts = [];
   for (const row of data) {
     let source_lang = null;
     for (const item of data) {
@@ -35,23 +36,21 @@ const showEditor = async el => {
     const text = (row.text===false?'':row.text);
     const style = 'border:2px solid var(--cms-dark); padding:.2rem; display:block; '+(row.lang===activeLang?'border-color:var(--cms-access-2)':'');
     const tag = el.tagName === 'TD' ? 'div' : el.tagName;
-    body +=
-        '<div class=-language style="padding:1rem; min-width:20rem; border-right:1px solid">'+
-            '<div style="display:flex; align-items:center; margin-bottom:.5rem">'+
-                '<h2 style="text-transform:uppercase; margin:0 auto 0 0;'+(row.lang===activeLang?'color:var(--cms-access-2)':'')+'">'+row.lang+'</h2> '+
-                (source_lang?
-                  '<button class=-translate source_lang="'+source_lang+'">translate from '+source_lang+'</button>':'')+
-                '<button class=-history style="margin-left:.2em">history</button>'+
-        //'<button class=-continueAi style="margin-left:.2em" title="Is this useful? Feedback welcome!">AI extend (beta)</button>'+
-            '</div>'+
-      (tag === 'INPUT'
-        ? '<'+tag+' cmstxt='+tid+' cmslang="'+row.lang+'" style="'+style+'" value="'+hee(text)+'">'
-        : '<'+tag+' cmstxt='+tid+' cmslang="'+row.lang+'" contenteditable style="'+style+'">'+text+'</'+tag+'>'
-      )+
-        '</div>';
+    parts.push(html.async`
+        <div class=-language style="padding:1rem; min-width:20rem; border-right:1px solid">
+            <div style="display:flex; align-items:center; margin-bottom:.5rem">
+                <h2 style="text-transform:uppercase; margin:0 auto 0 0;${row.lang===activeLang?'color:var(--cms-access-2)':''}">${row.lang}</h2>
+                ${source_lang ? html.async`<button class=-translate source_lang="${source_lang}">${t`translate from ${source_lang}`}</button>` : ''}
+                <button class=-history style="margin-left:.2em">${t`history`}</button>
+                <!--button class=-continueAi style="margin-left:.2em" title="Is this useful? Feedback welcome!">AI extend (beta)</button-->
+            </div>
+            ${tag === 'INPUT'
+              ? html`<input cmstxt=${tid} cmslang="${row.lang}" style="${style}" value="${text}">`
+              : html.raw(`<${tag} cmstxt=${tid} cmslang="${row.lang}" contenteditable style="${style}">${text}</${tag}>`)}
+        </div>`);
   }
-  body += '</div>';
-  dialog.innerHTML = body;
+  // the t`` calls above are queued in one microtask, so they travel in a single request
+  dialog.innerHTML = await html.async`<div style="display:flex">${parts}</div>`;
   dialog.style.cssText = 'inset: auto 0 0 0; box-shadow:0 0 1rem #0008; border:0; padding:0';
   dialog.addEventListener('click', e => e.target === dialog && dialog.close() );
   dialog.addEventListener('click',async e=>{
@@ -77,22 +76,19 @@ const showEditor = async el => {
     const hDialog = document.createElement('dialog');
 
     hDialog.className = 'qgCMS';
-    let body = '<div style="display:flex;">';
+    const parts = [];
     for (const row of history) {
       const date = new Date(row.log_time*1000).toLocaleString(false, {dateStyle: 'short', timeStyle: 'short'});
-      body +=
-            '<div class=-language style="padding:1rem; min-width:15rem; border-right:1px solid">'+
-                '<div style="display:flex; align-items:end; margin-bottom:.5rem">'+
-                    '<h2 style="margin:0 auto 0 0" title="'+hee(row.email)+'">'+date+'</h2> '+
-                    '<button class=-restore style="white-space:nowrap">restore</button>'+
-                '</div>'+
-                '<div cmstxt='+tid+' cmslang="'+lang+'" style="min-height:2em; flex:1; border:.125rem solid var(--cms-dark); overflow:auto; padding:.2rem; max-height:70vh;">'+
-                    (row.text===false?'':row.text)+
-                '</div>'+
-            '</div>';
+      parts.push(html.async`
+            <div class=-language style="padding:1rem; min-width:15rem; border-right:1px solid">
+                <div style="display:flex; align-items:end; margin-bottom:.5rem">
+                    <h2 style="margin:0 auto 0 0" title="${row.email}">${date}</h2>
+                    <button class=-restore style="white-space:nowrap">${t`restore`}</button>
+                </div>
+                <div cmstxt=${tid} cmslang="${lang}" style="min-height:2em; flex:1; border:.125rem solid var(--cms-dark); overflow:auto; padding:.2rem; max-height:70vh;">${html.raw(row.text === false ? '' : row.text)}</div>
+            </div>`);
     }
-    body += '</div>';
-    hDialog.innerHTML = body;
+    hDialog.innerHTML = await html.async`<div style="display:flex">${parts}</div>`;
     hDialog.style.cssText = 'inset: 0 0 0 0; box-shadow:0 0 1rem #0008; border:0; padding:0';
     document.body.append(hDialog);
     hDialog.addEventListener('click', e => e.target === hDialog && hDialog.close() );
@@ -166,15 +162,15 @@ setTimeout(() => {
 
 
 /* translate hole page */
-const addTranslateWidget = el=>{
+const addTranslateWidget = async el=>{
   const lang = document.documentElement.getAttribute('lang');
-  el.insertAdjacentHTML('beforeend', `
-        <div class="-widgetHead -open" tabindex=0><span class=-title>Translate</span></div>
+  el.insertAdjacentHTML('beforeend', await html.async`
+        <div class="-widgetHead -open" tabindex=0><span class=-title>${t`Translate`}</span></div>
         <div>
             <form class=-content>
-        <b>${lang}</b> texts on this page: <br>
-                <button name=auto>Auto-translate</button><br>
-                <button name=clean>Delete translations</button><br>
+        <b>${lang}</b> ${t`texts on this page:`} <br>
+                <button name=auto>${t`Auto-translate`}</button><br>
+                <button name=clean>${t`Delete translations`}</button><br>
                 <!--input name=subpages type=checkbox> including subpages<br-->
             </form>
         </div>
@@ -186,8 +182,8 @@ const addTranslateWidget = el=>{
     const done = c1.loading.mark(e.target);
     try {
       const result = await api['cms.text'].page(nodeId).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
-      await cms.dialogs.alert('translated texts: '+result.count);
-      if (result.fail) await cms.dialogs.alert('not allowed on '+result.fail+' pages');
+      await cms.dialogs.alert(t`translated texts: ${result.count}`);
+      if (result.fail) await cms.dialogs.alert(t`not allowed on ${result.fail} pages`);
       result.count && location.reload();
     } catch (err) {
       await cms.dialogs.alert(err.message);

@@ -1,4 +1,5 @@
 import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
 
 import { cms } from '../../cms/pub/js/cms.mjs';
 
@@ -17,12 +18,21 @@ const browse = (options, onSelect) => {
 const addFiles = async (e) => {
   for (const item of [...e.dbFiles, ...e.urls]) await api.cms.node(pid()).files.post({ file: String(item) });
 };
+// the frontend calls this instead of its own local-file picker
+cms.replaceFile = (node, replace) => browse({ multiple: false, local: 1 }, async e => {
+  const item = e.dbFiles[0] || e.urls[0];
+  if (item) {
+    await api.cms.node(node).files.post({ file: String(item), replace });
+    cms.reloadNode(node);
+  }
+  if (e.files) cms.cont(node).upload(e.files[0], () => cms.reloadNode(node), replace);
+});
 
 panelRoot.then(async root => {
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 
-  new SelectorObserver({ on: tools => {
-    const button = c1.dom.el('<button>existing file');
+  new SelectorObserver({ on: async tools => {
+    const button = c1.dom.el('<button>' + await t`existing file`);
     button.addEventListener('click', () => browse({ multiple: true }, addFiles));
     tools.querySelector('.-upload').after(button);
   }}).observe('.-media .-tools', { root });
@@ -35,21 +45,10 @@ panelRoot.then(async root => {
     el.style.display = 'none';
   }}).observe('.file-manager .-addExistingFile', { root });
 
-  // replace file placeholders
-  new SelectorObserver({ on: el => {
-    el.addEventListener('click', e => {
-      e.stopImmediatePropagation();
-      const replace = e.target.closest('tr').getAttribute('itemid');
-      browse({ multiple: false, local: 1 }, async e => {
-        const item = e.dbFiles[0] || e.urls[0];
-        if (item) {
-          await api.cms.node(pid()).files.post({ file: String(item), replace });
-          cms.reloadNode(pid());
-        }
-        if (e.files) cms.cont(pid()).upload(e.files[0], () => cms.reloadNode(pid()), replace);
-      });
-    });
-  }}).observe('.file-manager .-preview', { root });
+  new SelectorObserver({ on: el => el.addEventListener('click', e => {
+    e.stopImmediatePropagation();
+    cms.replaceFile(pid(), e.target.closest('tr').getAttribute('itemid'));
+  })}).observe('.file-manager .-preview', { root });
 });
 
 

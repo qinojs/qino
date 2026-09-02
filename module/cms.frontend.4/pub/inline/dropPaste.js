@@ -37,6 +37,7 @@ const drop = async e => {
         range.insertNode(img);
         img.addEventListener('load', () => cms.txtCleanElement(img, tid), { once: true });
       }
+      txtEl.dispatchEvent(new Event('input', { bubbles: true })); // we placed it ourselves -> no native input event
     }
     return;
   }

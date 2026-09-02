@@ -102,7 +102,7 @@ customElements.whenDefined('qino-cms').then(async () => {
   if (!root) return;
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 
-  new SelectorObserver({ on: (tr) => editColumn(tr, '<u2-ico icon=pencil>\u270e</u2-ico>') })
+  new SelectorObserver({ on: (tr) => editColumn(tr, '<button class=u2-unstyle title="Edit image"><u2-ico icon=pencil>\u270e</u2-ico></button>') })
     .observe('.-media tr[itemid]', { root });
 
   // cms.frontend.2 — drop this together with that module

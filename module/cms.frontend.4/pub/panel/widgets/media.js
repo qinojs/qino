@@ -8,6 +8,7 @@ export const css = `
 /* fixed: the columns keep their declared width whatever the preview measures */
 .-media .-list { width:100%; table-layout:fixed; }
 .-media td { height:calc(var(--rem) * 3.8); vertical-align:middle; } /* room for the slot line, present or not */
+/* no button around the preview: that breaks dragging the image into a text field */
 .-media .-preview { width:calc(var(--rem) * 5.4); cursor:pointer; }
 .-media .-preview > * { display:block; width:100%; height:calc(var(--rem) * 3.4); object-fit:contain; background:var(--cms-light); }
 .-media .-link { white-space:nowrap; }
@@ -65,7 +66,7 @@ export default async function (widget, { node, dialogs, signal }) {
     }${slot[0] === '_' ? '' : html`<div class=-slot>(${slot})</div>`}
     <td class=-size>${kb(file.size)}
     <td class=-handle u2-draghandle><u2-ico icon=drag1>⠿</u2-ico>
-    <td class=-delete><u2-ico icon=delete>✕</u2-ico>`;
+    <td class=-delete><button class=u2-unstyle title="${t`delete`}"><u2-ico icon=delete>✕</u2-ico></button>`;
 
   await widget.html`<div class=-media>
     <div class=-tools>
@@ -103,7 +104,12 @@ export default async function (widget, { node, dialogs, signal }) {
   });
 
   widget.on('click', '.-upload', async () => upload(await pick(true)));
-  widget.on('click', '.-preview', async (td) => upload(await pick(false), td.closest('tr').getAttribute('itemid')));
+  widget.on('click', '.-preview', async (td) => {
+    const slot = td.closest('tr').getAttribute('itemid');
+    // a module may take this over — cms.filebrowser offers the file library instead of a local file
+    if (cms.replaceFile) return cms.replaceFile(node.id, slot);
+    upload(await pick(false), slot);
+  });
   widget.on('click', '.-delete', async (td) => {
     if (await dialogs.confirm(t`Really delete this file?`)) ref.files(td.closest('tr').getAttribute('itemid')).delete();
   });

@@ -22,7 +22,7 @@ export const recommended = [
   "fileEditor",
   "identity",
   "webapp",
-  "cms.frontend.2",
+  "cms.frontend.4",
   "cms.text",
   "cms.image2",
   "cms.filebrowser",
@@ -169,6 +169,6 @@ async function installTx(app: App): Promise<void> {
   }
 
   // define the frontend-module
-  if (!await settings.cms.frontend) settings.cms.frontend("cms.frontend.2");
+  if (!await settings.cms.frontend) settings.cms.frontend("cms.frontend.4");
 
 }
