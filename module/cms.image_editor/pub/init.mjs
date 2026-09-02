@@ -83,11 +83,11 @@ const showEditor = async el => {
 
 // ─── edit column in the media list (lives in the cms panel shadow DOM) ──────
 // One <td> per row (kept empty on non-images so the table columns stay aligned).
-const editColumn = (tr, style, icon) => {
+const editColumn = (tr, icon) => {
   if (tr.querySelector(':scope > .-editImage')) return;
   const td = document.createElement('td');
   td.className = '-editImage';
-  td.style.cssText = style;
+  td.style.cssText = 'width:1.4em; padding-inline:0; text-align:center';
   tr.lastElementChild.before(td);
   const img = tr.querySelector('.-preview img');
   if (!img || !img.src.match(/dbFile\/[0-9]+\/.*\.(jpg|jpeg|png)/i)) return;
@@ -102,11 +102,10 @@ customElements.whenDefined('qino-cms').then(async () => {
   if (!root) return;
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 
-  // sized like the handle/delete cells beside it, which the media widget styles itself
-  new SelectorObserver({ on: (tr) => editColumn(tr, 'width:calc(var(--rem) * 1.7); text-align:center', '<u2-ico icon=pencil>\u270e</u2-ico>') })
+  new SelectorObserver({ on: (tr) => editColumn(tr, '<u2-ico icon=pencil>\u270e</u2-ico>') })
     .observe('.-media tr[itemid]', { root });
 
   // cms.frontend.2 — drop this together with that module
-  new SelectorObserver({ on: (tr) => editColumn(tr, 'width:1.81rem', EDIT_SVG) })
+  new SelectorObserver({ on: (tr) => editColumn(tr, EDIT_SVG) })
     .observe('.file-manager tr[itemid]', { root });
 });
