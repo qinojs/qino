@@ -20,9 +20,9 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   // an address someone verified finds them too, even when their login handle says something else
   const byContact = search.trim()
     ? sql` OR id IN (SELECT usr_id FROM usr_contact WHERE address = ${search.trim().toLowerCase()})`
-    : sql.raw("");
-  const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");
-  const superFilter = isSuperuser ? sql.raw("") : sql` AND superuser = ${false}`;
+    : sql``;
+  const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql``;
+  const superFilter = isSuperuser ? sql`` : sql` AND superuser = ${false}`;
 
   const rows = await db.query`SELECT usr.*,
     (SELECT count(*) FROM sess WHERE usr_id = usr.id) AS num_sess,

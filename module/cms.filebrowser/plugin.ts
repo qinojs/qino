@@ -64,10 +64,10 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
 
   const cond = s_
     ? sql` AND ( f.id = ${s_} OR f.name LIKE ${"%" + s_ + "%"} OR f.text LIKE ${s_ + "%"} )`
-    : sql.raw("");
+    : sql``;
   const order = s_
     ? sql` f.id = ${s_} DESC, f.name = ${s_} DESC, f.name LIKE ${s_ + "%"} DESC, f.name LIKE ${"% " + s_ + "%"} DESC, f.text = ${s_} DESC, f.text LIKE ${s_ + "%"} DESC, f.name ASC,`
-    : sql.raw("");
+    : sql``;
 
   const rows = await db.query`
     SELECT f.*, pf.page_id AS pid

@@ -147,7 +147,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 
   if (doName === "clean_data") {
     // blank stored POST bodies, keep the request rows
-    const r = await db.exec`UPDATE log SET post = '' WHERE post != ''${before ? sql` AND time < ${before}` : sql.raw("")}`;
+    const r = await db.exec`UPDATE log SET post = '' WHERE post != ''${before ? sql` AND time < ${before}` : sql``}`;
     msg = `${r.affectedRows} ${await t`entries processed`}`;
   } else if (doName === "clean_items") {
     const cond = [sql`${true}`];
@@ -159,7 +159,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
         cond.push(sql`log.id NOT IN (${union})`);
       }
     }
-    const inner = sql`SELECT id FROM log WHERE ${sql.join(cond, " AND ")} ORDER BY id DESC${limit ? sql` LIMIT ${limit}` : sql.raw("")}`;
+    const inner = sql`SELECT id FROM log WHERE ${sql.join(cond, " AND ")} ORDER BY id DESC${limit ? sql` LIMIT ${limit}` : sql``}`;
     const r = await db.exec`DELETE FROM log WHERE id IN (SELECT id FROM (${inner}) x)`;
     msg = `${r.affectedRows} ${await t`entries processed`}`;
   } else if (doName === "optimize") {

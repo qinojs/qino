@@ -345,7 +345,7 @@ export class DbTable {
   all<T extends DbRow = DbRow>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
   all<T extends DbRow = DbRow>(tail?: Sql): Promise<T[]>;
   async all<T extends DbRow = DbRow>(a?: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<T[]> {
-    const tail = a == null ? sql.raw("") : isTemplate(a) ? sql(a, ...rest) : a;
+    const tail = a == null ? sql`` : isTemplate(a) ? sql(a, ...rest) : a;
     const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} ${tail}`;
     return rows.map((vs) => this.row<T>(vs).$receive(vs));
   }

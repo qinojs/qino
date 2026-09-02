@@ -33,7 +33,7 @@ async function renderList(node: Node): Promise<HtmlString> {
   // instead of asking each node, which would be one query per row. An untranslated language is
   // an empty string, not NULL, so COALESCE alone would stop at it.
   const lang = getCtx().lang;
-  const rows = await app.db.query`SELECT page.id, page.name, p.price, p.weight ${hasStock ? sql`, p.stock` : sql.raw("")},
+  const rows = await app.db.query`SELECT page.id, page.name, p.price, p.weight ${hasStock ? sql`, p.stock` : sql``},
       COALESCE(NULLIF(t.text, ''), NULLIF(tf.text, ''), page.name) AS title
     FROM page
     LEFT JOIN shp3_product p ON p.id = page.id

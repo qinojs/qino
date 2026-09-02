@@ -20,7 +20,7 @@ export function markers(app: App, links: Link[]): (deliveryId: number) => Promis
   if (!links.length) return () => Promise.resolve((text: string) => text);
   const kinds = new Map(links.map(({ url, kind }) => [url, kind]));
   // longest first — one link may be the beginning of another
-  const any = new RegExp([...kinds.keys()].sort((a, b) => b.length - a.length).map(quote).join("|"), "g");
+  const any = new RegExp([...kinds.keys()].sort((a, b) => b.length - a.length).map(RegExp.escape).join("|"), "g");
   return async (deliveryId) => {
     const byKind = new Map<Kind, string>();
     for (const kind of new Set(kinds.values())) byKind.set(kind, await marker(app, deliveryId, kind));
@@ -28,8 +28,6 @@ export function markers(app: App, links: Link[]): (deliveryId: number) => Promis
     return (text) => text.replace(any, (url) => marked.get(url) ?? url);
   };
 }
-
-const quote = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** The beacon itself: a transparent pixel, and never a cached one — each open must ask again. */
 export function servePixel(ctx: Ctx): void {

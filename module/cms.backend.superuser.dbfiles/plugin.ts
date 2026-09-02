@@ -74,7 +74,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   // one indexed path per input shape (never an OR across joined tables, which would full-scan):
   // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name fulltext
-  let cond = sql.raw("");
+  let cond = sql``;
   if (search) {
     const s = search.trim();
     const emailSub = (col: string) => sql`f.${sql.id(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.username=${s})`;

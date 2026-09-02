@@ -34,7 +34,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   if (vars.ignore) await db.table("m_security_event").update(vars.ignore, { state: "ignore" });
   const buckets = await db.query`SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80`;
   const where = eventWhere(ctx.req.query);
-  const events = await db.query`SELECT * FROM m_security_event ${where.parts.length ? sql`WHERE ${where}` : sql.raw("")} ORDER BY id DESC LIMIT 120`;
+  const events = await db.query`SELECT * FROM m_security_event ${where.parts.length ? sql`WHERE ${where}` : sql``} ORDER BY id DESC LIMIT 120`;
   const topIps = await db.query`SELECT ip, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ip!='' GROUP BY ip ORDER BY num DESC,last DESC LIMIT 10`;
   const topPaths = await db.query`SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10`;
   const topKinds = await db.query`SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10`;

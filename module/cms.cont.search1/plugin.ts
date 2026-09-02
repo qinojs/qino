@@ -33,14 +33,13 @@ const settingsSchema = {
   },
 };
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 4);
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
 function snippet(text: string, words: string[], parts = 7, before = 30, after = 10): HtmlString {
   const plain = text.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
   if (!words.length) return html`${plain.slice(0, before + after)}`;
-  const out = plain.split(new RegExp(`(${words.map(escapeRe).join("|")})`, "i")).slice(0, parts).map((piece) =>
+  const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i")).slice(0, parts).map((piece) =>
     words.includes(piece.toLowerCase())
       ? html`<mark>${piece}</mark>`
       : html`${piece.length > before + after + 3 ? `${piece.slice(0, after)}… ${piece.slice(-before)}` : piece}`
@@ -54,7 +53,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   const words = terms(search);
   const { where } = sqlSearch(search, ["t.text"]);
   const pattern = String(node.settings.module() ?? "");
-  const scope = pattern ? sql`AND p.module LIKE ${pattern}` : sql.raw("");
+  const scope = pattern ? sql`AND p.module LIKE ${pattern}` : sql``;
   const startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
 

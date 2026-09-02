@@ -24,7 +24,7 @@ export async function migrateCss(app: App): Promise<void> {
     let after = before;
     for (const [legacy, current] of pairs) {
       // not followed by a name character — ".-m-cms-cont-form1" must not eat "…-fields2"
-      after = after.replaceAll(new RegExp(escapeRe(legacy) + "(?![\\w-])", "g"), current);
+      after = after.replaceAll(new RegExp(RegExp.escape(legacy) + "(?![\\w-])", "g"), current);
     }
     after = after.replaceAll(/\.-pid(\d+)(?![\w-])/g, '[qcms-id="$1"]');
     after = after.replaceAll(/\/qg\/([A-Za-z0-9._-]+)\//g, (_match, module) =>
@@ -37,8 +37,6 @@ export async function migrateCss(app: App): Promise<void> {
   }
   if (files) console.log(`[migrate_from_php] css: ${hits} legacy selectors in ${files} files → qcms attributes`);
 }
-
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function relativeDir(from: string, to: string): string {
   const fromParts = from.split("/");

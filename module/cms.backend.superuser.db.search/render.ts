@@ -86,11 +86,9 @@ function snippet(text: string, terms: string[]): string {
   return (from ? "…" : "") + text.slice(from, from + MAX_CELL) + "…";
 }
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 /** Wrap every search word in <mark>; the parts stay escaped by html``. */
 function mark(text: string, terms: string[]): HtmlString {
   if (!terms.length) return html`${text}`;
-  const parts = text.split(new RegExp(`(${terms.map(escapeRe).join("|")})`, "ig"));
+  const parts = text.split(new RegExp(`(${terms.map(RegExp.escape).join("|")})`, "ig"));
   return html.join(parts.map((part, i) => i % 2 ? html`<mark>${part}</mark>` : html`${part}`));
 }

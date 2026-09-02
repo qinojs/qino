@@ -148,7 +148,7 @@ export async function healthChecks(app: App) {
   };
 
   // MySQL-only fragments; other dialects run without cap/optimize.
-  const limit1M  = db.dialect === "mysql" ? sql.raw(" LIMIT 1000000") : sql.raw("");
+  const limit1M  = db.dialect === "mysql" ? sql.raw(" LIMIT 1000000") : sql``;
   const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
   // "no row references this table" condition, built from x-qg-parent child columns
   const notLinked = (table: string) => sql.join(db.table(table).children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");

@@ -28,7 +28,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const like = `%${search}%`;
   const where = search
     ? sql`WHERE (${sql.join(["namespace", "original", ...langs].map(c => sql`${sql.id(c)} LIKE ${like}`), " OR ")})`
-    : sql.raw("");
+    : sql``;
 
   const missingExpr = sql.join(langs.map(l => sql`CASE WHEN COALESCE(${sql.id(l)}, '') = '' THEN 1 ELSE 0 END`), " + ");
   const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);

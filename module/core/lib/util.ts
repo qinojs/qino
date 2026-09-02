@@ -127,7 +127,7 @@ const TRANSLIT: Record<string, string> = {
 };
 // longest first: "&amp;" must win over "&"
 const TRANSLIT_RE = new RegExp(
-  Object.keys(TRANSLIT).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
+  Object.keys(TRANSLIT).sort((a, b) => b.length - a.length).map(RegExp.escape).join("|"), "g");
 export function urlize(str: string): string {
   return str
     .replace(TRANSLIT_RE, m => TRANSLIT[m])
