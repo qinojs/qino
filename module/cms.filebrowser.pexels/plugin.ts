@@ -17,7 +17,7 @@ export const api: ApiTree = {
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
-    if (!await app.settings["cms.filebrowser.pexels"].key) return; // no key, no Pexels UI
+    if (!await app.settings.core.keys["api.pexels.com"]) return; // no key, no Pexels UI
     ctx.res.csp["img-src"]["https://*.pexels.com"] = true;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser.pexels/pub/init.mjs");
   }, { signal });
@@ -26,7 +26,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 const pexelsImg = (u: unknown) => typeof u === "string" && u.startsWith("https://images.pexels.com/");
 
 async function search(needle: string, ctx: Ctx) {
-  const key = String(await ctx.app.settings["cms.filebrowser.pexels"].key ?? "");
+  const key = String(await ctx.app.settings.core.keys["api.pexels.com"] ?? "");
   if (!key || !needle) return [];
   const url = "https://api.pexels.com/v1/search?per_page=50&page=1&query=" + encodeURIComponent(needle);
   const res = await fetch(url, { headers: { Authorization: key } }).catch(() => null);

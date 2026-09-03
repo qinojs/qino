@@ -111,10 +111,9 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
     settings: {
       "cms.text": {
         "translation service": "google",
-        google: { key: "" },
         "translate char count": setting(0),
       },
-      "cms.backend.webmaster": { "google.api.key": "" },
+      core: { keys: { "googleapis.com": "" } },
     },
   });
 

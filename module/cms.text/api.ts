@@ -140,7 +140,7 @@ class CmsTextService {
             tag_handling: "xml",
             split_sentences: "1",
             preserve_formatting: "0",
-            auth_key: String(await st.deepl.key ?? ""),
+            auth_key: String(await this.#app.settings.core.keys["api.deepl.com"] ?? ""),
         });
         const resp = await fetch("https://api.deepl.com/v2/translate", {
             method: "POST",
@@ -156,9 +156,7 @@ class CmsTextService {
 
     async googleTranslate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         const st = this.#app.settings["cms.text"];
-        const key =
-            String(await st.google.key ?? "") ||
-            String(await this.#app.settings["cms.backend.webmaster"]["google.api.key"] ?? "");
+        const key = String(await this.#app.settings.core.keys["googleapis.com"] ?? "");
         const params = new URLSearchParams({
             q: text,
             target: target_lang,

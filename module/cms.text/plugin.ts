@@ -9,22 +9,6 @@ export const settingsSchema = {
       enum: ["", "google", "deepl"],
       description: "Which translation service is used for automatic translations",
     },
-    deepl: {
-      properties: {
-        key: {
-          type: "string",
-          description: "API key for DeepL",
-        },
-      },
-    },
-    google: {
-      properties: {
-        key: {
-          type: "string",
-          description: "API key for Google Translate",
-        },
-      },
-    },
     "translate char count": {
       type: "integer",
       description: "Counter for automatically translated characters",

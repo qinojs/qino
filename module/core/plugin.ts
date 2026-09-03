@@ -76,6 +76,10 @@ export const settingsSchema = {
                 },
             },
         },
+        keys: {
+            description: "API keys per provider host, shared by all modules talking to that provider.",
+            additionalProperties: { type: "string" },
+        },
         smalltext: {
             properties: {
                 counter: {
