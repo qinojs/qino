@@ -14,7 +14,7 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
   };
   fakeAi(app, { registerBot: (bot: Bot) => bots.push(bot) } as never);
   init(app as never, { signal: new AbortController().signal });
-  assertEquals(bots.map((b) => b.id), ["cms-helper"]);
+  assertEquals(bots.map((b) => b.id), ["cms-helper", "rte"]);
 
   const scripts: string[] = [];
   const ctx = {

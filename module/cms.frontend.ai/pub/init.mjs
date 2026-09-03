@@ -1,4 +1,5 @@
 import "../../ai/pub/chat.js";
+import "./rte.js";
 
 // registers <ai-chat>
 

@@ -6,9 +6,11 @@
   ],
   "files": [
     "bots/cmsHelper.ts",
+    "bots/textEditor.ts",
     "manifest.json",
     "plugin.ts",
     "pub/init.mjs",
+    "pub/rte.js",
     "pub/module.svg"
   ]
 }
