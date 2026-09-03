@@ -2,8 +2,10 @@ import { cms } from "./CMS.ts";
 
 import type { App } from "@qino/qino";
 
-export async function resolveText(app: App, value: string): Promise<string> {
-  value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
+/** `links`: resolve `cmspid://` too. Off in edit mode — the editor saves the html back, where a fixed
+ *  url would break once the page url changes. File urls are a cache buster and always resolved. */
+export async function resolveText(app: App, value: string, links = true): Promise<string> {
+  if (links) value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
   value = await replaceAsync(value, /\/dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(app, id));
   return value;
 }

@@ -340,7 +340,7 @@ export class Node {
         const textLang = lang == null ? await dbText.orFallback(ctx.lang) : dbText.lang(lang);
         let text = await textLang.get();
         if (text !== "") { // an empty text has nothing to resolve and nothing to sanitize
-            if (!this.edit) text = await resolveText(this.app, text); // edit mode keeps cmspid:// etc. unresolved
+            text = await resolveText(this.app, text, !this.edit);
             text = sanitizeHtml(text); // last step: nothing may touch the string after sanitizing
         }
         return {
