@@ -1,5 +1,5 @@
 import { api } from '@qino/pub/api.js';
-import { dataTransferToUrl, readClipboardHtml } from '@qino/pub/util/transfer.mjs';
+import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
 
 // an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
 let internalDrag = false;
@@ -70,30 +70,34 @@ const drop = async e => {
   r.insertNode(img);
   img.addEventListener('load', () => cms.txtCleanElement(img, tid), {once:true});
 }
+// Inserting and cleaning the pasted html is the editor's job (--u2-rte fields, see page.css).
+// Ours is what it cannot know: files in the clipboard go to the server, and what landed in the
+// field gets the cms treatment — data urls uploaded, dbFile images sized, foreign attributes off.
 const paste = e => {
   const txtEl = e.target.closest('[cmstxt][contenteditable]');
   if (!txtEl) return;
   const tid = txtEl.getAttribute('cmstxt');
-  const addHtml = html => {
-    const s = getSelection();
-    const r = s.getRangeAt(0);
-    html = html.replace(/[^]*<!--StartFragment-->/i, '');
-    html = html.replace(/<!--EndFragment-->[^]*/i, '');
-    html = html.replace(/<\/body>[\s\S]*$/i, '</body>'); // needed?
-    const fragment = r.createContextualFragment(html);
-    onPasteFormatNode(fragment);
-    r.deleteContents();
-    r.insertNode(fragment);
-    r.collapse(false); // curser at the end, (todo: not allways working...)
-    s.removeAllRanges();
-    s.addRange(r);
-    txtEl.dispatchEvent(new Event('input',{bubbles:true, cancelable: true})); // NEU 9.4.18
-  };
-  const items = e.clipboardData.items ?? [];
-  for (const item of items) {
-    item.kind === 'file' && cms.txtAddFile(txtEl, item.getAsFile());
+  // A file with no html beside it: the browser would inline a data url, and the field saves before the
+  // upload is through. So we place it ourselves. With html the editor inserts, and rte's checkMedia
+  // then offers to copy what points at a foreign server.
+  if (!e.clipboardData.types.includes('text/html')) {
+    for (const item of e.clipboardData.items ?? []) {
+      if (item.kind !== 'file') continue;
+      e.preventDefault();
+      cms.txtAddFile(txtEl, item.getAsFile());
+    }
   }
-  readClipboardHtml(e.clipboardData, addHtml) && e.preventDefault();
+  // A pdf viewer labels its plain selection text/html: no tags, and html eats the line breaks that
+  // are all the structure it has. The flavor is escaped text already, so it only needs the breaks.
+  const html = e.clipboardData.getData('text/html').replace(/\s+$/, '');
+  if (html.includes('\n') && !html.includes('<')) {
+    e.preventDefault();
+    const range = getSelection().getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(range.createContextualFragment(html.replace(/\r?\n/g, '<br>\n')));
+    range.collapse(false);
+    txtEl.dispatchEvent(new Event('input', { bubbles: true })); // we inserted, so no native input event
+  }
   setTimeout(()=>cms.txtClean(txtEl, tid), 1);
 };
 const root = document.documentElement;

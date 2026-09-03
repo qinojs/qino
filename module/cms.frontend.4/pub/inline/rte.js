@@ -182,7 +182,7 @@ const checkMedia = root => {
     for (const attr of ['src','href']) {
       if (!el.hasAttribute(attr)) continue;
       const uri = new URL(el[attr]);
-      if (location.host === uri.host) continue;
+      if (!uri.host || location.host === uri.host) continue; // no host: data:/blob:, nothing foreign to copy
       const ext = uri.pathname.replace(/.*\./,'');
       if (!ext) continue;
       if (el.tagName === 'IMG' || ['pdf','doc','xls','jpg','png','gif'].includes(ext)) {

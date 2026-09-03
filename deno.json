@@ -112,7 +112,7 @@
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.11/",
     "@qino/m/": "./module/",
     "@qino/pub/": "./module/core/pub/js/",
-    "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.10/",
+    "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.13/",
     "@nuxodin/dump": "jsr:@nuxodin/dump@^1.5.2",
     "@simplewebauthn/server": "npm:@simplewebauthn/server@13",
     "@std/assert": "jsr:@std/assert@^1",
