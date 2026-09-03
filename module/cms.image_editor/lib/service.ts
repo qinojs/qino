@@ -1,4 +1,4 @@
-import { html, isEmptyObject } from "@qino/qino";
+import { DbFile, html, isEmptyObject } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
@@ -72,7 +72,6 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
         <td style="padding:.1875rem .25rem .1875rem 0; width:3.75rem"><img log="${log}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">
         <td style="padding:.1875rem 0 .1875rem 0;">${niceDate(Number(row.log_time))}${usr ? html`<br>${usr}` : ""}`);
     }
-    app.dbFiles.clearCache(fileId);
     return html`<table style="width:100%">${trs}</table>`.toString(); // api endpoint: plain string output
 }
 
@@ -80,7 +79,7 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
 async function versionThumb(app: App, fileId: number, row: any): Promise<string | undefined> {
     if (!row.md5) return;
     try {
-        const dbFile = await app.dbFiles.file(fileId, row); // setLocalVs → path points at this version's md5
+        const dbFile = new DbFile(app.dbFiles, fileId, row); // detached: path points at this version's md5, live cache untouched
         if (!dbFile.path) return;
         const { path, mime } = await dbFile.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
         const buf = await Deno.readFile(path);

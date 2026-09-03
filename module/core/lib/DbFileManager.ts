@@ -54,10 +54,10 @@ export class DbFileManager {
     return scopeCache<Map<string, DbFile>>(this.#cache, "dbFiles", () => new Map());
   }
 
+  /** The cached object for this file; `vs` preloads a new one and is ignored on a cache hit. */
   async file(id: number | string, vs?: any): Promise<DbFile> {
-    const file = this.#files().getOrInsertComputed(String(id), () => new DbFile(this, id));
-    if (vs) file.setLocalVs(vs);
-    else await file.ensureVs();
+    const file = this.#files().getOrInsertComputed(String(id), () => new DbFile(this, id, vs));
+    if (!file.vs) await file.ensureVs();
     return file;
   }
 
@@ -164,10 +164,12 @@ export class DbFile extends File {
   id: number;
   vs?: Record<string, any>;
 
-  constructor(manager: DbFileManager, id: number | string) {
+  /** `vs` makes this a detached view of that row (e.g. a historical one) — pass it only outside the manager cache. */
+  constructor(manager: DbFileManager, id: number | string, vs?: Record<string, any>) {
     super("");
     this.#manager = manager;
     this.id = Number(id);
+    if (vs) this.setLocalVs(vs);
   }
 
   override get extension(): string { return String(this.vs?.name ?? "").replace(/.*\./, "").toLowerCase(); }
@@ -299,6 +301,7 @@ export class DbFile extends File {
     }
     data.id = String(to);
     await this.#manager.db.table("file").update(to, data);
+    this.#manager.clearCache(to); // the update went past the manager
     return this.#manager.file(to, data);
   }
 
