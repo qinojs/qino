@@ -120,126 +120,129 @@ function loadCallback(res){
 }
 
 /* element menu */
-document.addEventListener('DOMContentLoaded',()=>{
+const p = cms.contPos;
+const menu = c1.dom.el(
+  '<div id=qgCmsContPosMenu popover=manual>'+
+  '  <div class=-drag title=Move>'+
+  '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2s.9-2 2-2s2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2s-2 .9-2 2s.9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2z"></path></svg>'+
+  '  </div>'+
+  '  <div class=-mod  title=Module></div>'+
+  '</div>');
+root.append(menu);
+menu.drag = menu.querySelector('.-drag');
+menu.mod  = menu.querySelector('.-mod');
+menu.addEventListener('mouseenter', e => p.active?.mark(e) )
+menu.addEventListener('mouseleave', e => p.active?.unmarkDelay(e) )
+menu.addEventListener('click',     e => e.stopPropagation() );
+menu.addEventListener('mousedown', e => e.stopPropagation() );
 
-  const p = cms.contPos;
-  const menu = c1.dom.el(
-    '<div id=qgCmsContPosMenu popover=manual>'+
-    '  <div class=-drag title=Move>'+
-    '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2s.9-2 2-2s2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2s-2 .9-2 2s.9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2z"></path></svg>'+
-    '  </div>'+
-    '  <div class=-mod  title=Module></div>'+
-    '</div>');
-  root.append(menu);
-  menu.drag = menu.querySelector('.-drag');
-  menu.mod  = menu.querySelector('.-mod');
-  menu.addEventListener('mouseenter', e => p.active?.mark(e) )
-  menu.addEventListener('mouseleave', e => p.active?.unmarkDelay(e) )
-  menu.addEventListener('click',     e => e.stopPropagation() );
-  menu.addEventListener('mousedown', e => e.stopPropagation() );
+const trash = c1.dom.el(
+  '<div id=qgCmsContTrash popover=manual>'+
+  '  <svg width="50" height="60" viewBox="0 -5 26 30">'+
+  '    <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
+  '    <path d="M3.83 21.988c0 1.97 1.612 3.582 3.583 3.582H18.16c1.97 0 3.58-1.612 3.58-3.582V6.466H3.83v15.522zm12.537-11.94c0-.66.535-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.193 1.193s-1.193-.534-1.193-1.192v-11.94zm-4.775 0c0-.66.534-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193s-1.194-.534-1.194-1.192v-11.94zm-4.777 0c0-.66.534-1.194 1.193-1.194.66 0 1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193-.66 0-1.193-.534-1.193-1.192v-11.94z"/>'+
+  '  </svg>'+
+  '</div>', 'text/html');
+root.append(trash);
 
-  const trash = c1.dom.el(
-    '<div id=qgCmsContTrash popover=manual>'+
-    '  <svg width="50" height="60" viewBox="0 -5 26 30">'+
-    '    <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
-    '    <path d="M3.83 21.988c0 1.97 1.612 3.582 3.583 3.582H18.16c1.97 0 3.58-1.612 3.58-3.582V6.466H3.83v15.522zm12.537-11.94c0-.66.535-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.193 1.193s-1.193-.534-1.193-1.192v-11.94zm-4.775 0c0-.66.534-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193s-1.194-.534-1.194-1.192v-11.94zm-4.777 0c0-.66.534-1.194 1.193-1.194.66 0 1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193-.66 0-1.193-.534-1.193-1.192v-11.94z"/>'+
-    '  </svg>'+
-    '</div>', 'text/html');
-  root.append(trash);
+/* drag drop */
+const dd = new cms.contDrag();
+cms.contPos.dd = dd;
 
-  /* drag drop */
-  const dd = new cms.contDrag();
-  cms.contPos.dd = dd;
+// The drop targets are on the page, and an open sidebar covers them. So the panel steps aside
+// while something is being placed and comes back the way it was — a new block from the module
+// picker and an existing one being moved are the same gesture, and both need the room. It hangs
+// on the drag and not on "a block was created": creating one places nothing, and a list that
+// adds an entry in place — or a bot doing the same — must not move the user's panel.
+let sidebarBefore = null;
 
-  // The drop targets are on the page, and an open sidebar covers them. So the panel steps aside
-  // while something is being placed and comes back the way it was — a new block from the module
-  // picker and an existing one being moved are the same gesture, and both need the room. It hangs
-  // on the drag and not on "a block was created": creating one places nothing, and a list that
-  // adds an entry in place — or a bot doing the same — must not move the user's panel.
-  let sidebarBefore = null;
-
-  dd.on('start',e=>{
-    const el = e.target;
-    dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
-    document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
-    p.moving = true;
-    if (menu.matches(':popover-open')) menu.hidePopover();
-    sidebarBefore = cms.panel?.sidebar.value || null;
-    if (sidebarBefore) cms.panel.sidebar.set('');
-    el.classList.add('-moving');
-    trash.classList.add('-dropTarget');
-    if (!trash.matches(':popover-open')) trash.showPopover();
-  })
-  dd.on('change', e => trash.classList.toggle('-full', e.target.id === 'qgCmsContTrash'));
-  dd.on('stop',el=>{
-    document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.remove('dropTarget'))
-    p.moving = null;
-    el.classList.remove('-moving');
-    if (!cms.el.nid(el.parentNode)) { // trash
-      api.cms.node(cms.el.nid(el)).delete();
-    } else {
-      const next = el.nextElementSibling ? cms.el.nid(el.nextElementSibling) : null;
-      api.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
-    }
-    trash.classList.remove('-dropTarget');
-    if (trash.matches(':popover-open')) trash.hidePopover();
-    // Back to whatever was open: whoever placed three teasers in a row wants the picker again.
-    if (sidebarBefore) cms.panel?.sidebar.set(sidebarBefore);
-    sidebarBefore = null;
-  })
-
-  let startX, startY, ddEl;
-  function move(e) {
-    if (e.ctrlKey) {
-      const pid = cms.el.nid(ddEl);
-      api.cms.node(pid).copy.post().then(({ id }) => {
-        cms.cont(id).addPosition();
-      });
-    } else {
-      if (Math.max( Math.abs(startX-e.clientX), Math.abs(startY-e.clientY) ) < 6) return;
-      dd.start(ddEl, e);
-    }
-    up();
+dd.on('start',e=>{
+  const el = e.target;
+  dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
+  document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
+  p.moving = true;
+  if (menu.matches(':popover-open')) menu.hidePopover();
+  sidebarBefore = cms.panel?.sidebar.value || null;
+  if (sidebarBefore) cms.panel.sidebar.set('');
+  el.classList.add('-moving');
+  trash.classList.add('-dropTarget');
+  if (!trash.matches(':popover-open')) trash.showPopover();
+})
+dd.on('change', e => trash.classList.toggle('-full', e.target.id === 'qgCmsContTrash'));
+dd.on('stop',el=>{
+  document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.remove('dropTarget'))
+  p.moving = null;
+  el.classList.remove('-moving');
+  if (!cms.el.nid(el.parentNode)) { // trash
+    api.cms.node(cms.el.nid(el)).delete();
+  } else {
+    const next = el.nextElementSibling ? cms.el.nid(el.nextElementSibling) : null;
+    api.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
   }
-  function up() {
-    document.removeEventListener('mousemove', move);
-    document.removeEventListener('mouseup', up);
+  trash.classList.remove('-dropTarget');
+  if (trash.matches(':popover-open')) trash.hidePopover();
+  // Back to whatever was open: whoever placed three teasers in a row wants the picker again.
+  if (sidebarBefore) cms.panel?.sidebar.set(sidebarBefore);
+  sidebarBefore = null;
+})
+
+let startX, startY, ddEl;
+function move(e) {
+  if (e.ctrlKey) {
+    const pid = cms.el.nid(ddEl);
+    api.cms.node(pid).copy.post().then(({ id }) => {
+      cms.cont(id).addPosition();
+    });
+  } else {
+    if (Math.max( Math.abs(startX-e.clientX), Math.abs(startY-e.clientY) ) < 6) return;
+    dd.start(ddEl, e);
   }
-  menu.addEventListener('mousedown', e=>{
-    if (!cms.contPos.active.isDraggable()) return;
-    ddEl   = cms.contPos.active.el;
-    startX = e.clientX;
-    startY = e.clientY;
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-    e.preventDefault();
-  })
-  //let placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
-  const placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
-  cms.contPos.on('mark', obj=>{
-    if (!menu.matches(':popover-open')) menu.showPopover();
-    const isDraggable = obj.isDraggable(),
-      mod     = obj.el.getAttribute('qcms-mod') ?? '';
-    placer.follow(obj.el);
+  up();
+}
+function up() {
+  document.removeEventListener('mousemove', move);
+  document.removeEventListener('mouseup', up);
+}
+menu.addEventListener('mousedown', e=>{
+  if (!cms.contPos.active.isDraggable()) return;
+  ddEl   = cms.contPos.active.el;
+  startX = e.clientX;
+  startY = e.clientY;
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+  e.preventDefault();
+})
+//let placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
+const placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
+cms.contPos.on('mark', obj=>{
+  if (!menu.matches(':popover-open')) menu.showPopover();
+  const isDraggable = obj.isDraggable(),
+    mod     = obj.el.getAttribute('qcms-mod') ?? '';
+  placer.follow(obj.el);
 
-    menu.mod.innerHTML = mod.replace(/^cont\./,'');
-    menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
-    menu.drag.style.display = isDraggable ? 'block' : 'none';
-    for (const btn of contMenuButtons) {
-      if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a fresh c1.dom.el still hangs on its template fragment
-      btn.el.style.display = btn.show(obj) ? 'block' : 'none';
-    }
-    menu.style.cursor = (isDraggable?'move':'default');
+  menu.mod.innerHTML = mod.replace(/^cont\./,'');
+  menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
+  menu.drag.style.display = isDraggable ? 'block' : 'none';
+  for (const btn of contMenuButtons) {
+    if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a fresh c1.dom.el still hangs on its template fragment
+    btn.el.style.display = btn.show(obj) ? 'block' : 'none';
+  }
+  menu.style.cursor = (isDraggable?'move':'default');
 
-    if (obj.el.hasAttribute('qcms-offline')) {
-      menu.mod.insertAdjacentHTML('beforeend', '<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>')
-    }
-    menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
-  });
-  cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
-  setTimeout(() => document.activeElement.blur());
-  globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(({ default: clipboard }) => clipboard(globalThis.qino.cms.clipboard));
+  if (obj.el.hasAttribute('qcms-offline')) {
+    menu.mod.insertAdjacentHTML('beforeend', '<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>')
+  }
+  menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
 });
+
+cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
+
+// // The pointer can already rest on a block at load — no mouseover follows, and :hover lands a few frames later.
+// const el = [...document.querySelectorAll('[qcms-edit]:hover')].pop(); // innermost, document order
+// el && !p.active && cms.contPos(el).mark();
+
+setTimeout(() => document.activeElement.blur());
+globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(({ default: clipboard }) => clipboard(globalThis.qino.cms.clipboard));
 
 cms.console = {
   show(msg, type) {
