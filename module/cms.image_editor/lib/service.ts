@@ -45,7 +45,7 @@ export async function setMeta(ctx: Ctx, fileId: number, data: Record<string, any
 export async function restore(ctx: Ctx, fileId: number, log: number): Promise<void> {
     const space = getCmsVers(ctx).space;
     await tableEntriesCopyTo(ctx.app.db, "file", { id: fileId }, space, log, space);
-    ctx.app.dbFiles.clearCache(fileId);
+    await (await ctx.app.dbFiles.file(fileId)).reload(); // the copy wrote past the manager
 }
 
 /** HTML table of the file's version history with restore-on-click thumbnails. */

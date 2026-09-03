@@ -191,10 +191,13 @@ export class DbFile extends File {
   async ensureVs(): Promise<Record<string, any>> {
     if (this.id && !this.vs) {
       this.vs = await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` ?? {};
-      if (this.vs.md5) this.path = this.#manager.directory + this.vs.md5;
+      this.path = this.vs.md5 ? this.#manager.directory + this.vs.md5 : "";
     }
     return this.vs!;
   }
+
+  /** Re-read the row after a write that went past the manager; keeps the object identity consumers hold. */
+  async reload(): Promise<this> { this.vs = undefined; await this.ensureVs(); return this; }
 
   async get(field: string): Promise<any> { return (await this.ensureVs())[field]; }
 
@@ -301,8 +304,7 @@ export class DbFile extends File {
     }
     data.id = String(to);
     await this.#manager.db.table("file").update(to, data);
-    this.#manager.clearCache(to); // the update went past the manager
-    return this.#manager.file(to, data);
+    return (await this.#manager.file(to)).reload(); // the update went past the manager
   }
 
   async transform(param: Record<string, unknown>, accept?: string): Promise<{ path: string; mime: string; key?: string; transformed?: boolean; error?: Error }> {
