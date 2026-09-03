@@ -269,6 +269,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
       if (cmsCtx(ctx).editmode) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
         qino.cms.ui = await settings["cms.frontend.4"].ui ?? {};
+        qino.cms.tourSeen = !!await settings["cms.frontend.4"].tour_seen;
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.() ?? "");

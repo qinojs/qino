@@ -5,11 +5,11 @@ import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 export const css = `
-.-more .-feedbackform textarea { width:100%; height:12.5rem; }
-.-more .-feedbackform button { width:100%; padding:.625rem 3.125rem; }
-.-more .-pwchange table { width:13.4375rem; }
-.-more .-pwchange input { width:100%; }
-.-more .-thanks { color:#4c4; display:block; margin:.5em 0; }
+.-moreWidget .-feedbackform textarea { width:100%; height:12.5rem; }
+.-moreWidget .-feedbackform button { width:100%; padding:.625rem 3.125rem; }
+.-moreWidget .-pwchange table { width:13.4375rem; }
+.-moreWidget .-pwchange input { width:100%; }
+.-moreWidget .-thanks { color:#4c4; display:block; margin:.5em 0; }
 `;
 
 const setting = (path) => api.core['ctx-settings'](path);
@@ -26,7 +26,7 @@ export default async function (widget, { dialogs, signal }) {
 
   widget.head = t`More`;
 
-  await widget.html`<div class=-more>
+  await widget.html`<div class=-moreWidget>
     <div class=-standalone>
       <div class=-h1>
         <span>${t`Logged in as:`} ${me.name}</span>
