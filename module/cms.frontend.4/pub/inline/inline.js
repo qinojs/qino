@@ -217,7 +217,7 @@ const placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4
 cms.contPos.on('mark', obj=>{
   if (!menu.matches(':popover-open')) menu.showPopover();
   const isDraggable = obj.isDraggable(),
-    mod     = obj.el.getAttribute('qcms-mod') ?? '';
+  mod = obj.el.getAttribute('qcms-mod') ?? '';
   placer.follow(obj.el);
 
   menu.mod.innerHTML = mod.replace(/^cont\./,'');
@@ -237,9 +237,11 @@ cms.contPos.on('mark', obj=>{
 
 cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
 
-// // The pointer can already rest on a block at load — no mouseover follows, and :hover lands a few frames later.
-// const el = [...document.querySelectorAll('[qcms-edit]:hover')].pop(); // innermost, document order
-// el && !p.active && cms.contPos(el).mark();
+// The pointer can already rest on a block at load: no mouseover follows, and :hover lands a few frames later.
+setTimeout(() => {
+  const el = [...document.querySelectorAll('[qcms-edit]:hover')].pop(); // innermost, document order
+  el && cms.contPos(el).mark();
+}, 100);
 
 setTimeout(() => document.activeElement.blur());
 globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(({ default: clipboard }) => clipboard(globalThis.qino.cms.clipboard));
