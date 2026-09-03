@@ -48,14 +48,15 @@ cms.contPos.prototype = {
     if (_.moving || _.active === this /*|| this.el.classList.contains('qgCMS-dropTarget')*/) { _.active = null; return; }
     _.active = this;
     this.el.classList.add('qgCmsMarked');
-    cms.contPos.trigger('mark', this);
+    _.trigger('mark', this);
   },
   unmark() {
-    clearTimeout(cms.contPos.outTimer);
-    if (!cms.contPos.active) return;
-    cms.contPos.active.el.classList.remove('qgCmsMarked');
-    cms.contPos.active = null;
-    cms.contPos.trigger('unmark', this);
+    const _ = cms.contPos;
+    clearTimeout(_.outTimer);
+    if (!_.active) return;
+    _.active.el.classList.remove('qgCmsMarked');
+    _.active = null;
+    _.trigger('unmark', this);
   },
   unmarkDelay() {
     clearTimeout(cms.contPos.outTimer);
@@ -147,7 +148,7 @@ root.append(trash);
 
 /* drag drop */
 const dd = new cms.contDrag();
-cms.contPos.dd = dd;
+p.dd = dd;
 
 // The drop targets are on the page, and an open sidebar covers them. So the panel steps aside
 // while something is being placed and comes back the way it was — a new block from the module
@@ -161,12 +162,12 @@ dd.on('start',e=>{
   dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
   document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
   p.moving = true;
-  if (menu.matches(':popover-open')) menu.hidePopover();
+  menu.togglePopover(false);
   sidebarBefore = cms.panel?.sidebar.value || null;
   if (sidebarBefore) cms.panel.sidebar.set('');
   el.classList.add('-moving');
   trash.classList.add('-dropTarget');
-  if (!trash.matches(':popover-open')) trash.showPopover();
+  trash.togglePopover(true);
 })
 dd.on('change', e => trash.classList.toggle('-full', e.target.id === 'qgCmsContTrash'));
 dd.on('stop',el=>{
@@ -180,7 +181,7 @@ dd.on('stop',el=>{
     api.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
   }
   trash.classList.remove('-dropTarget');
-  if (trash.matches(':popover-open')) trash.hidePopover();
+  trash.togglePopover(false);
   // Back to whatever was open: whoever placed three teasers in a row wants the picker again.
   if (sidebarBefore) cms.panel?.sidebar.set(sidebarBefore);
   sidebarBefore = null;
@@ -204,8 +205,8 @@ function up() {
   document.removeEventListener('mouseup', up);
 }
 menu.addEventListener('mousedown', e=>{
-  if (!cms.contPos.active.isDraggable()) return;
-  ddEl   = cms.contPos.active.el;
+  if (!p.active?.isDraggable()) return;
+  ddEl   = p.active.el;
   startX = e.clientX;
   startY = e.clientY;
   document.addEventListener('mousemove', move);
@@ -214,8 +215,8 @@ menu.addEventListener('mousedown', e=>{
 })
 //let placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
 const placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
-cms.contPos.on('mark', obj=>{
-  if (!menu.matches(':popover-open')) menu.showPopover();
+p.on('mark', obj=>{
+  menu.togglePopover(true);
   const isDraggable = obj.isDraggable(),
   mod = obj.el.getAttribute('qcms-mod') ?? '';
   placer.follow(obj.el);
@@ -235,7 +236,7 @@ cms.contPos.on('mark', obj=>{
   menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
 });
 
-cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
+p.on('unmark', () => menu.togglePopover(false) );
 
 // The pointer can already rest on a block at load: no mouseover follows, and :hover lands a few frames later.
 setTimeout(() => {
@@ -249,7 +250,7 @@ globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(({ default: cli
 cms.console = {
   show(msg, type) {
     const el = this.el();
-    if (!el.matches(':popover-open')) el.showPopover();
+    el.togglePopover(true);
     el.classList.add('-active');
     el.setAttribute('data-type',type);
     el.firstElementChild.textContent = msg;
@@ -260,10 +261,7 @@ cms.console = {
   },
   el() {
     let el = root.getElementById('cmsConsole');
-    if (!el) {
-      root.append(c1.dom.el('<div id=cmsConsole class=qgCMS popover=manual><div class=-msg></div></div>'));
-      el = root.getElementById('cmsConsole');
-    }
+    if (!el) root.append(el = c1.dom.el('<div id=cmsConsole class=qgCMS popover=manual><div class=-msg></div></div>'));
     return el;
   }
 };
