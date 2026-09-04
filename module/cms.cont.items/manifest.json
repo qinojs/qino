@@ -2,7 +2,8 @@
   "name": "cms.cont.items",
   "description": "A list of equal entries: the block holds the children, its setting says what an entry is.",
   "dependencies": [
-    "cms"
+    "cms",
+    "cms.cont.flexible"
   ],
   "files": [
     "README.md",

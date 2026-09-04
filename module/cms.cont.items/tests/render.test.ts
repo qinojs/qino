@@ -33,7 +33,7 @@ const run = (node: any, ctx: any) => requestStorage.run(ctx, () => cms.node.rend
 
 Deno.test("cms.cont.items: metadata is wired", () => {
   assertEquals(name, "cms.cont.items");
-  assertEquals(dependencies, ["cms"]);
+  assertEquals(dependencies, ["cms", "cms.cont.flexible"]); // the list panel lives there
   assertEquals(cms.node.widget, "pub/options.js");
   assertEquals(cms.node.settingsSchema.properties["default module"].default, "cms.cont.flexible");
 });

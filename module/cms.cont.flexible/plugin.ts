@@ -11,6 +11,23 @@ export const settingsSchema = {
   },
 };
 
+// What the shared list panel writes: per container, not site-wide like init-child-module above.
+const nodeSettingsSchema = {
+  properties: {
+    "default module": {
+      type: "string",
+      default: "cms.cont.flexible",
+      description: "Module of a new entry.",
+    },
+    "add position": {
+      type: "string",
+      enum: ["bottom", "top"],
+      default: "bottom",
+      description: "Where a new entry appears.",
+    },
+  },
+};
+
 async function render(node: Node, { vars }: any = {}): Promise<string> {
   let conts = await node.conts();
 
@@ -33,5 +50,7 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
 export const cms = {
   node: {
     render,
+    settingsSchema: nodeSettingsSchema,
+    widget: "pub/options.js",
   },
 };

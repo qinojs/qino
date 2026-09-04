@@ -1,9 +1,15 @@
 {
   "name": "cms.cont.flexible",
   "description": "Open-ended sequence of child content blocks.",
+  "dependencies": [
+    "cms"
+  ],
   "files": [
+    "README.md",
     "manifest.json",
     "plugin.ts",
-    "pub/module.svg"
+    "pub/list.js",
+    "pub/module.svg",
+    "pub/options.js"
   ]
 }
