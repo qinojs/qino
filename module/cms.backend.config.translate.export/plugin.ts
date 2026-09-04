@@ -61,7 +61,7 @@ function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<div class=u2-card>
   <div class=-head>${t`Export translations`}</div>
-  <div class=-body>
+  <div>
     <p>${t`Write current translations into each module's locale folder.`}
     <button data-action=preview>${t`Preview changes`}</button>
     <button data-action=export>${t`Export to locale files`}</button>

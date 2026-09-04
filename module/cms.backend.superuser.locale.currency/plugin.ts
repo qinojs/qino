@@ -59,7 +59,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=-head>
     ${t`Exchange rates`}
   </div>
-  <div class=-body>
+  <div>
     <label>
       ${t`Fetch the rates`}
       <select class=-every>${options}</select>

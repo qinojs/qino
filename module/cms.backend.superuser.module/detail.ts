@@ -33,7 +33,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   if (!modObj) {
     return html.async`<div class=u2-card>
       <div class=-head><a href="${backHref}">← Module</a></div>
-      <div class=-body>${t`Module`} ${modName} ${t`not found.`}</div>
+      <div>${t`Module`} ${modName} ${t`not found.`}</div>
     </div>`;
   }
 
@@ -133,7 +133,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head><a href="${backHref}">← Module</a> ${modName} <small>${linked ? t`active` : t`disabled`}</small></div>
-    <div class=-body>${toggleBtn}${error ? html` <strong>${error}</strong>` : ""}</div>
+    <div>${toggleBtn}${error ? html` <strong>${error}</strong>` : ""}</div>
     <table class=u2-table>
       <tr><th>${t`Description`}<td>${modObj.description}
       <tr><th>${t`Source`}<td>${sourceHtml}
@@ -157,11 +157,11 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
           <td>${v?.title}`)}
     </table>
   </div>` : ""}
-  ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div class=-body><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
+  ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
   <div class=u2-card>
     <div class=-head>${t`Files`}${hasEditorLinks ? html.async` (${t`with editor links`})` : ""}</div>
     ${filesHtml}
-    ${modDir && isSuperuser ? html.async`<div class=-body><button data-new-file="${modName}">${t`New file`}</button></div>` : ""}
+    ${modDir && isSuperuser ? html.async`<div><button data-new-file="${modName}">${t`New file`}</button></div>` : ""}
   </div>
 </div>`;
 }

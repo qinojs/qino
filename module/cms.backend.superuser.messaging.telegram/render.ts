@@ -33,7 +33,7 @@ export async function bot(node: Node): Promise<HtmlString> {
   const state = await Promise.all([botInfo(node.app), webhookInfo(node.app)]).catch((e: Error) => e.message);
   if (typeof state === "string") {
     return html.async`<div class=-head>${t`Bot`}</div>
-    <div class=-body>
+    <div>
       ${token}
       <p>${state}</p>
       ${configured ? "" : html`<small>${await t`Create a bot with @BotFather and enter its token above.`}</small>`}
@@ -46,7 +46,7 @@ export async function bot(node: Node): Promise<HtmlString> {
   const status = await (registered ? t`registered` : hook.url ? t`registered elsewhere` : t`not registered`);
   const [pending, remove] = await Promise.all([t`pending`, t`Remove`]);
   return html.async`<div class=-head>${t`Bot`}</div>
-  <div class=-body>
+  <div>
     ${token}
     <u2-fields>
       ${t`Bot`} <input value="@${me.username}" readonly>

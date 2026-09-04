@@ -62,7 +62,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <tr><th style="width:8em">Relying Party ID<td>${rpId}
     <tr><th>RP Name<td>${rpName}
   </table>
-  <div class=-body>
+  <div>
     <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → auth.webauthn</code>.</p>
   </div>
 </div>

@@ -112,7 +112,7 @@ async function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head>${t`Create module`}</div>
-    <div class=-body>
+    <div>
       <form data-create>
         <label>${t`Name`} <input name=name value="cms.cont." required autofocus></label>
         <label>${t`Template`}

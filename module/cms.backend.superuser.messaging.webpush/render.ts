@@ -12,7 +12,7 @@ export async function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head>${t`VAPID`}</div>
-    <div class=-body>
+    <div>
       <u2-fields>
         ${t`Contact`} <input name=subject value="${subject}" readonly>
         ${t`Public key`} <input name=publicKey value="${key}" readonly>

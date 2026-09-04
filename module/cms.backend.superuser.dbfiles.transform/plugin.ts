@@ -317,7 +317,7 @@ async function renderCache(app: App): Promise<HtmlString> {
     <tr><th>${t`Files`}<td>${stats.count}
     <tr><th>${t`Size`}<td>${fmtBytes(stats.size)}
   </table>
-  <div class=-body>
+  <div>
     <u2-menubutton>
       <button><u2-ico icon=delete_sweep>✕</u2-ico> ${t`Clear cache`} ▾</button>
       <menu>
@@ -362,7 +362,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
     <div class=u2-card>
       <div class=-head>${t`Transform Binaries`}</div>
-      <div class=-body>${rootHint}</div>
+      <div>${rootHint}</div>
       <table class="u2-table -transform-table">
         <thead>
           <tr>

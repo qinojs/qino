@@ -95,7 +95,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const db = app.db;
 
   const vs = await db.row`SELECT * FROM grp WHERE id = ${id}`;
-  if (!vs) return html.async`<div class=u2-card><div class=-body>${t`Group not found.`}</div></div>`;
+  if (!vs) return html.async`<div class=u2-card><div>${t`Group not found.`}</div></div>`;
 
   const usersNode = await node.cms.nodeByModule("cms.backend.users");
   const usersUrl = usersNode ? await (await usersNode.page()).url() : "";

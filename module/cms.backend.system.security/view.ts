@@ -56,7 +56,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
 }
 
 function statusBox(app: App, stats: Record<string, unknown>) {
-  return html.async`<div class="u2-card -kpi"><div class=-head>${app.t`Status`}</div><div class=-body>
+  return html.async`<div class="u2-card -kpi"><div class=-head>${app.t`Status`}</div><div>
     <b>${stats.events ?? 0}</b> ${app.t`Events`}<br><b>${stats.fresh ?? 0}</b> ${app.t`new`}<br><b>${stats.blocked ?? 0}</b> ${app.t`Blocked`}<br>
     <button data-action=clearEvents u2-confirm>${app.t`Clear events`}</button>
     <button data-action=clearBuckets u2-confirm>${app.t`Clear buckets`}</button>

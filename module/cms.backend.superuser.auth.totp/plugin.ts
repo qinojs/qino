@@ -75,11 +75,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       </form>`;
 
   return html`<div class=u2-flex>
-${note ? html`<div class=u2-card style="flex:1 1 100%"><div class=-body>${note}</div></div>` : ""}
+${note ? html`<div class=u2-card style="flex:1 1 100%"><div>${note}</div></div>` : ""}
 <div class=u2-card style="flex:1 1 20rem">
   <div class=-head>Yours (${mine.length})</div>
-  <div class=-body>${setup}</div>
-  <div class=-body>
+  <div>${setup}</div>
+  <div>
     <form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <input name=code inputmode=numeric placeholder="Try a code" required>

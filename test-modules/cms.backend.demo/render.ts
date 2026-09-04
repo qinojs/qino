@@ -24,7 +24,7 @@ export function render(node: Node): Promise<HtmlString> {
       <button type=button data-fill>${t`Fill in demo data`}</button>
       <button type=button data-wipe u2-confirm="${t`Remove everything the last run created?`}">${t`Remove`}</button>
     </div>
-    <div class=-body>
+    <div>
       <p>${t`Fills the installation with pages, users, groups, mail, visits and more — enough to see how the backend behaves with real amounts of data. Only what a run created is written; a new run removes the previous data first and leaves everything else untouched.`}
       <p><small>${t`A test fixture. Demo accounts are real accounts with a known password — never seed a production site.`}</small>
       <table class=u2-table>

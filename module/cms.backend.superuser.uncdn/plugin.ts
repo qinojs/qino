@@ -97,7 +97,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   return html`<div class=u2-flex>
   <div class="u2-card -sidebar" style="flex:0 0 auto">
     <div class=-head>${tInfo}</div>
-    <div class=-body>
+    <div>
       <table class=u2-table>
         <tr><td>${tCacheSize}<td><u2-bytes>${totalSize}</u2-bytes>
         <tr><td>${tMaxCacheBytes}<td><u2-bytes>${maxCacheBytes}</u2-bytes>
@@ -105,17 +105,17 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       </table>
     </div>
     <div class=-head>${tAllowList}</div>
-    <div class=-body>
+    <div>
       ${origins.length ? html`<table class=u2-table>${origins.map(o => html`<tr><td><small><code>${o}</code></small>`)}</table>` : html`<em>${tNoOrigins}</em>`}
     </div>
     <div class=-head>${tActions}</div>
-    <div class=-body>
+    <div>
       <button data-reload='{"deleteAll":1}' u2-confirm><u2-ico icon=delete>✕</u2-ico> ${tDeleteAll}</button>
     </div>
   </div>
   <div class=u2-card style="flex:1">
     <div class=-head>${tCachedFiles}</div>
-    <div class=-body>
+    <div>
       ${tree.html ? html`<u2-tree aria-expanded=true><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : html`<em>${tNoCached}</em>`}
     </div>
   </div>

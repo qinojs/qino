@@ -92,7 +92,7 @@ async function renderProduct(node: Node, id: number): Promise<HtmlString> {
   const { app } = node;
   const t = app.t;
   const page = await node.cms.node(id);
-  if (!page.exists()) return html.async`<div class=u2-card><div class=-body>${t`Product not found.`}</div></div>`;
+  if (!page.exists()) return html.async`<div class=u2-card><div>${t`Product not found.`}</div></div>`;
 
   const vs = await app.db.row`SELECT * FROM shp3_product WHERE id = ${id}` ?? {};
   const rates = await app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`;

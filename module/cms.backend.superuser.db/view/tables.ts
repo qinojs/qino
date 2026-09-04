@@ -59,7 +59,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 
   return html.async`<div class="u2-card">
     <div class=-head>${t`Tables`} (${tables.length})</div>
-    <div class=-body><input type=search data-table-search placeholder="${t`Search`}..." style="width:18.75rem;max-width:100%"></div>
+    <div><input type=search data-table-search placeholder="${t`Search`}..." style="width:18.75rem;max-width:100%"></div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead>
@@ -79,7 +79,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 async function tableDetail(app: App, db: any, modules: Map<string, any>, tableName: string): Promise<HtmlString> {
   const t = app.t;
   const table = db.tables?.[tableName];
-  if (!table) return html.async`<div class=u2-card><div class=-body>${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;
+  if (!table) return html.async`<div class=u2-card><div>${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;
 
   const fields = await table.init();
   const schemaFields: Record<string, any> = table.schema?.additionalProperties?.properties ?? {};

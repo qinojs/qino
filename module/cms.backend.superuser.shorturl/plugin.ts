@@ -96,7 +96,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
     <div class=u2-card style="flex:1 1 100%">
         <div class=-head>${t`New short link`}</div>
-        <div class=-body>
+        <div>
             <form data-create class=u2-flex style="gap:.5em 1em; align-items:end">
                 <label style="flex:1 1 25rem">${t`Target URL`}<br><input type=url name=url required placeholder="https://…" style="width:100%"></label>
                 <label>${t`Expires`}<br><input type=date name=expires></label>
@@ -108,7 +108,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
     <div class=u2-card style="flex:1 1 60rem; max-height:88vh; overflow:auto">
         <div class=-head>${t`Short links`}</div>
-        <div class=-body style="flex-grow:0">
+        <div style="flex-grow:0">
             <input type=search data-search value="${search}" placeholder="${t`Code or URL`}">
         </div>
         <table class=u2-table cms-part=list>${await list(node, { vars: { search } })}</table>

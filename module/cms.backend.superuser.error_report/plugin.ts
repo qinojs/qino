@@ -93,7 +93,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   return html.async`
 <div class=u2-card>
   <div class=-head>${t`Errors`}</div>
-  <div class=-body>
+  <div>
     ${filterForm}
     <div>
       <button data-delete-matching u2-confirm="${t`Really delete all matching entries?`}">${t`Delete matching`}</button>
@@ -381,7 +381,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
 <div class=u2-flex style="font-size:.95em">
   <div class=u2-card style="overflow:auto; width:auto; flex:1 1 20rem">
     <div class=-head>${t`Error`}</div>
-    <div class=-body>
+    <div>
       <p>
         <span style="color:var(--red)">${error.source} ${error.prio}:</span>
         ${error.message}
@@ -397,7 +397,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
       <tr><th>${t`Time`}<td>${u2.el.time(error.time)} <small>(Log-ID ${error.log_id})</small>
       <tr><th>${t`IP`}<td>${error.ip}
     </table>
-    <div class=-body>
+    <div>
       ${sess ? html`<b>Sess</b><pre>${JSON.stringify(sess, null, 2)}</pre>` : ""}
       <button data-delete="${error.id}">delete</button>
     </div>
@@ -416,14 +416,14 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
 
   <div class=u2-card style="overflow:auto;">
     <div class=-head>${t`User`}</div>
-    <div class=-body>
+    <div>
       ${usr ? html`<pre>${JSON.stringify(usr, null, 2)}</pre>` : html`(${await t`no user`})`}
     </div>
   </div>
 
   <div class=u2-card style="overflow:auto;">
     <div class=-head>${t`History`}</div>
-    <div class=-body style="flex-grow:0">${t`History of:`} ${historyLinks}</div>
+    <div style="flex-grow:0">${t`History of:`} ${historyLinks}</div>
     <table class=u2-table>
       <thead><tr>
         <th>${t`Time / Session`}

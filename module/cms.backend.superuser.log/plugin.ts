@@ -202,7 +202,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     <style>[cms-part=list] .-url { display:block; max-width:40rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden }</style>
     <div class=u2-card style="flex:1 1 100%">
         <div class=-head>${t`Filter`}</div>
-        <div class=-body>
+        <div>
             <form data-filter class=u2-flex style="gap:.5em 1em; align-items:end">
                 <label>${t`Search`}<br><input name=search value="${initSearch}" placeholder="${t`URL, IP, ID`}"></label>
                 <label>ID<br><input type=number name=id></label>
@@ -216,7 +216,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
     <div class=u2-card style="flex:0 0 auto; max-height:88vh; overflow:auto">
         <div class=-head>${t`Tools`}</div>
-        <div class=-body style="flex-grow:0">
+        <div style="flex-grow:0">
             ${message ? html`<p>${message}</p><hr>` : ""}
             <table class=u2-table>
                 <tr><td>${t`Entries`}<td style="text-align:right">${int(stats.rows)}

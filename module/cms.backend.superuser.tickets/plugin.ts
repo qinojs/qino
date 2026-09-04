@@ -53,14 +53,14 @@ export async function render(node: Node): Promise<HtmlString> {
               u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`}`)
         : html`<tr><td colspan=6>${await t`No tickets yet.`}`}
     </table>
-    <div class=-body>
+    <div>
       <small>${t`A ticket cannot be opened from here — only its holder knows the handle, the database keeps a hash of it. Spent and expired ones stay for a year as a record.`}</small>
     </div>
   </div>
 
   <div class=u2-card style="flex-grow:0">
     <div class=-head>${t`Open by kind`}</div>
-    <div class=-body>
+    <div>
       ${byPurpose.size
         ? Array.from(byPurpose, ([purpose, n]) => html`<div>${purpose}: <b>${n}</b></div>`)
         : html`<div>${await t`None`}</div>`}

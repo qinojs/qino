@@ -48,7 +48,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
           <td>${field ?? ""}
           <td>${badges[status]}`)}
       </table>`
-    : html`<div class=-body>Schema and DB match.</div>`;
+    : html`<div>Schema and DB match.</div>`;
 
   // --- schema from db ---
   const fromDb = await schemaFromDb((text: string) => db.query`${sql.raw(text)}`);
@@ -78,7 +78,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
   ${!isEmptyObject(missingTables) ? html.async`
   <div class="u2-card">
     <div class=-head>${t`Missing tables as schema JSON`}</div>
-    <div class=-body><textarea style="width:100%;height:18.75rem;font-family:monospace;font-size:.85em" readonly>${JSON.stringify({ properties: missingTables }, null, 2)}</textarea></div>
+    <div><textarea style="width:100%;height:18.75rem;font-family:monospace;font-size:.85em" readonly>${JSON.stringify({ properties: missingTables }, null, 2)}</textarea></div>
   </div>` : ""}
   ${diffs.length ? html.async`
   <div class="u2-card">

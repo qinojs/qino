@@ -11,7 +11,7 @@ function render(_node: unknown, { ctx }: { ctx: Ctx }): HtmlString {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/SettingsEditor.mjs");
   return html`<div class=u2-card>
   <div class=-head>Settings</div>
-  <div class=-body>
+  <div>
     <settings-editor source="/api/core/settings"></settings-editor>
   </div>
 </div>`;

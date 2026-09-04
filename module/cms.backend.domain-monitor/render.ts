@@ -381,8 +381,9 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
   const row = await node.app.db.row<DomainRow>`SELECT * FROM monitor_domain WHERE domain = ${domain}`;
   const back = ctx.req.url.toURL();
   back.searchParams.delete("domain");
-  if (!row) return html`<div class=u2-card><div class=-head>Domain monitor</div><div class=-body>
-    <a href="${back.search || "?"}">← Domains</a><p>Domain not found.</div></div>`;
+  if (!row) return html`<div class=u2-card>
+    <div class=-head>Domain monitor</div>
+    <div><a href="${back.search || "?"}">← Domains</a><p>Domain not found.</div></div>`;
 
   const checks = await node.app.db.query<{ id: number; checked_at: number; result: string }>`
     SELECT id, checked_at, result FROM monitor_domain_check

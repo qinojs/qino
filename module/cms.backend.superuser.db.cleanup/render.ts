@@ -174,7 +174,7 @@ export async function render(node: Node): Promise<HtmlString> {
   const freeBytes = await sqliteFreeBytes(node.app.db);
   return html`<div class=u2-card style="flex-grow:0">
     <div class=-head>Database cleanup</div>
-    <div class=-body>
+    <div>
       <small>Maintenance can take a long time, lock tables and require additional disk space. Tables outside the schema can belong to modules that are currently not loaded.${freeBytes ? html` SQLite has <u2-bytes>${freeBytes}</u2-bytes> reusable free pages.` : ""}</small>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.5rem">
         <input type=search data-table-search placeholder="Search tables…">

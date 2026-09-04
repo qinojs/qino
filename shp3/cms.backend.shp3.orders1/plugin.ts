@@ -73,7 +73,7 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
   const { app } = node;
   const t = app.t;
   const order = await app.db.table("shp3_order").get<Order>(id);
-  if (!order) return html.async`<div class=u2-card><div class=-body>${t`Order not found.`}</div></div>`;
+  if (!order) return html.async`<div class=u2-card><div>${t`Order not found.`}</div></div>`;
 
   const currency = await order.currencyRow();
   const money = (v: number) => currency?.format(v) ?? v;

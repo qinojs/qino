@@ -168,7 +168,7 @@ function renderHelper(app: App, tables: Table[]): Promise<HtmlString> {
 
   return html.async`<div class="u2-card -helper">
     <div class=-head>${app.t`Tables & fields`} (${tables.length})</div>
-    <div class=-body>
+    <div>
       <input type=search class=-tsearch placeholder="${app.t`Filter`}…">
       <div class=-tables>${items}</div>
     </div>

@@ -11,7 +11,7 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   return html.async`<div>
   <div class=u2-card>
     <div class=-head>${t`Discovery`}</div>
-    <div class=-body>
+    <div>
       <p>${t`Clients that support it discover everything from this URL:`}
       <p><code>${base}/.well-known/oauth-authorization-server</code>
       <p><small>${t`Such clients register themselves. Clients with a fixed client_id are added below.`}</small>
@@ -38,7 +38,7 @@ async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
   const isNew = !client.id;
   return html.async`<form class=u2-card>
   <div class=-head>${isNew ? t`Add client` : client.name}</div>
-  <div class=-body>
+  <div>
     <u2-fields>
       ${t`client_id`} <input name=id value="${client.id}" ${isNew ? "required" : "readonly"}>
       ${t`Name`} <input name=name value="${client.name}">

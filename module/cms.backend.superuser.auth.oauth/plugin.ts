@@ -49,7 +49,7 @@ function providerForm(csrf: string, selfBase: string, p: any = {}): HtmlString {
   // saved one; `new-password` says this is not that form.
   return html`<form method=post class=u2-card autocomplete=off>
   <div class=-head>${isNew ? "Add provider" : v("name")}</div>
-  <div class=-body>
+  <div>
     <input type=hidden name=csrfToken value="${csrf}">
     <input type=hidden name=id value="${v("id")}">
     <u2-fields>
@@ -146,7 +146,7 @@ async function links(app: App, csrf: string): Promise<HtmlString> {
 
   return html`<div class=u2-card style="flex:1 1 100%">
   <div class=-head>Connected accounts (${rows.length})</div>
-  <div class=-body><small>A login follows the provider's own id, not the e-mail. Unlinking makes the
+  <div><small>A login follows the provider's own id, not the e-mail. Unlinking makes the
     next login fall back to matching by verified e-mail again.</small></div>
   <div style="overflow:auto; padding:0">
     <table class=u2-table>

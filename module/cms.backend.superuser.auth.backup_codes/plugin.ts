@@ -43,17 +43,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <td><u2-time datetime="${new Date(Number(r.created) * 1000).toISOString()}" type=relative></u2-time>`);
 
   return html`<div class=u2-flex>
-${note ? html`<div class=u2-card style="flex:1 1 100%"><div class=-body>${note}</div></div>` : ""}
+${note ? html`<div class=u2-card style="flex:1 1 100%"><div>${note}</div></div>` : ""}
 <div class=u2-card style="flex:1 1 20rem">
   <div class=-head>Yours (${remaining} unspent)</div>
-  ${codes ? html`<div class=-body><pre>${codes.join("\n")}</pre></div>` : ""}
-  <div class=-body>
+  ${codes ? html`<div><pre>${codes.join("\n")}</pre></div>` : ""}
+  <div>
     <form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <button name=generate value=1 u2-confirm="This replaces any codes you still have. Continue?">Generate a new set</button>
     </form>
   </div>
-  <div class=-body>
+  <div>
     <form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <input name=code placeholder="Spend one" required>
@@ -70,8 +70,10 @@ ${note ? html`<div class=u2-card style="flex:1 1 100%"><div class=-body>${note}<
       <th>Generated
     <tbody>${rows.length ? html.join(rows, "\n") : html`<tr><td colspan=3>Nobody has generated any yet.`}
   </table>
-  <div class=-body>A code is deleted the moment it is spent, so this count is what is really left.
-  Backup codes declare no <code>login</code>: they stand in for a second factor, never for the first.</div>
+  <div>
+    A code is deleted the moment it is spent, so this count is what is really left.
+    Backup codes declare no <code>login</code>: they stand in for a second factor, never for the first.
+  </div>
 </div>
 </div>`;
 }

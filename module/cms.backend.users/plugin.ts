@@ -88,7 +88,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
 
   <div class=u2-card style="flex:1">
     <div class=-head> ${t`Search users`} </div>
-    <div class=-body>
+    <div>
       <input type=search placeholder="${t`search`}..." id=usrSearch style="width:18.75rem; max-width:100%">
       <select id=usrGrp>${grpOpts}</select>
     </div>
@@ -213,7 +213,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const db = app.db;
 
   const vs = await db.row`SELECT * FROM usr WHERE id = ${id}`;
-  if (!vs) return html.async`<div class=u2-card><div class=-body>${t`User not found.`}</div></div>`;
+  if (!vs) return html.async`<div class=u2-card><div>${t`User not found.`}</div></div>`;
 
   const isSuperuser = !!ctx.user?.superuser;
   const superuserRow = isSuperuser ? html`

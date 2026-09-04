@@ -10,7 +10,7 @@ export function renderConflicts(app: App, modules: Map<string, any>): Promise<Ht
   const conflicts = collectConflicts(modules);
 
   if (!conflicts.length) {
-    return html.async`<div class=u2-card><div class=-body>${t`No schema conflicts found.`}</div></div>`;
+    return html.async`<div class=u2-card><div>${t`No schema conflicts found.`}</div></div>`;
   }
 
   const rows = conflicts.map(({ table, field, prop, values }) => {

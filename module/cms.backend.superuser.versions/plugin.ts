@@ -85,7 +85,7 @@ async function render(node: Node): Promise<HtmlString> {
   const maintenanceBox = html.async`
 <div class=u2-card style="flex-grow:0">
   <div class=-head>${t`Maintenance`}</div>
-  <div class=-body>
+  <div>
     <p>${t`Thinnable entries`}: <strong>${thinnable}</strong></p>
     <p><small>${t`Old bursts are collapsed (fine while fresh, coarser with age).`}</small></p>
     <button class=-thin ${thinnable ? "" : "disabled"}>${t`Thin out`}</button>

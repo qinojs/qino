@@ -203,7 +203,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
       ORDER BY t.code`,
     labels(app),
   ]);
-  if (!row) return html.async`<div class=u2-card><div class=-body>${app.t`Message does not exist.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div>${app.t`Message does not exist.`}</div></div>`;
   const attachmentList = await attachments(app, files);
   // shorturl knows what a code stands for; without that module the code stands for itself
   const targets = links.length
@@ -279,7 +279,7 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
   if (!user) {
     return html.async`<div class=u2-flex>
       ${userCard(node, url, 0)}
-      <div class=u2-card><div class=-body>${app.t`User not found.`}</div></div>
+      <div class=u2-card><div>${app.t`User not found.`}</div></div>
     </div>`;
   }
   const [rows, reachable, view] = await Promise.all([
@@ -296,10 +296,10 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
       <div class=-scroll>
         ${rows.length
           ? html`<table class=-chat><tbody>${messages}</table>`
-          : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
+          : html`<div>${await app.t`No messages yet.`}</div>`}
       </div>
       <div>
-        ${reachable.length ? html.async`<form class="-body -composer">
+        ${reachable.length ? html.async`<form class=-composer>
           <input type=hidden name=usr value="${user.id}">
           <label>
             ${app.t`Channel`}:
@@ -316,7 +316,7 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
             </select>
           </label>
           <button data-reply>${app.t`Send`}</button>
-        </form>` : html.async`<div class=-body>${app.t`No reachable channel.`}</div>`}
+        </form>` : html.async`<div>${app.t`No reachable channel.`}</div>`}
       </div>
     </div>
   </div>`;
@@ -379,7 +379,7 @@ async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments
 async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
   const target = messageTarget(row, view);
-  return html`<div class="u2-card -bubble"><div class=-body>
+  return html`<div class="u2-card -bubble"><div>
     <div class=-text>${body(row)}</div>
     ${await attachments(app, row.attachments, true)}
     <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>

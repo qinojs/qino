@@ -25,7 +25,7 @@ export async function render(node: Node): Promise<HtmlString> {
   return html.async`<div>
   <div class=u2-card style="flex-grow:0">
     <div class=-head>${t`Search database`}</div>
-    <div class=-body>
+    <div>
       <form>
         <input type=search name=db_search value="${term}" placeholder="${t`Search all tables`}…" autofocus>
         <button>${t`Search`}</button>

@@ -15,7 +15,7 @@ export function render(node: Node): Promise<HtmlString> {
       <button type=button data-clear u2-confirm="${t`Delete all scores collected here?`}">${t`Clear`}</button>
       <button type=button data-refresh>${t`Refresh`}</button>
     </div>
-    <div class=-body>
+    <div>
       <p>${t`This module feeds the score tables from two hooks that already exist — nothing else in qino writes scores yet.`}
       <ul>
         <li><code>cms:page-ready</code> → <code>page</code>:

@@ -118,7 +118,7 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
   }
 
   const row = await app.db.row`SELECT * FROM message_template WHERE name = ${name} AND channel = ${channel}`;
-  if (!row) return html.async`<div class=u2-card><div class=-body>${t`Template not found.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div>${t`Template not found.`}</div></div>`;
   // worked out once: the preview puts them in the template, the list beside it shows what they are
   const values = await sampleValues(app);
 
@@ -161,7 +161,7 @@ async function preview(node: Node, row: Row, values: Computed): Promise<HtmlStri
   return html.async`<div class="u2-card -markup" style="flex:1 1 55rem"${markup ? "" : html.raw(" hidden")}>
     <div class=-head>${t`HTML`}
       ${simulated ? html.async`<label>${t`Mail client`} <select class=-client></select></label>` : ""}</div>
-    <div class=-body>
+    <div>
       <iframe sandbox srcdoc="${markup}" class=-frame></iframe>
       ${simulated ? html`<small class=-notes></small>` : ""}
     </div>
@@ -169,7 +169,7 @@ async function preview(node: Node, row: Row, values: Computed): Promise<HtmlStri
   </div>
   <div class=u2-card style="flex:1 1 20rem">
     <div class=-head>${t`Text`}</div>
-    <div class=-body><pre class=-text>${text}</pre></div>
+    <div><pre class=-text>${text}</pre></div>
   </div>`;
 }
 
@@ -199,7 +199,7 @@ async function placeholders(node: Node, values: Computed): Promise<HtmlString> {
 
   return html.async`<div class=u2-card style="flex:1 1 32rem">
     <div class=-head>${t`Placeholders`}</div>
-    <div class=-body>
+    <div>
       <p>${codes(["content"], copy)}— ${t`the message itself, already rendered`}</p>
       ${table(offered.get("messaging"))}
       <p>${t`A placeholder with no value for this recipient leaves an empty gap. Write {{givenName|Kunde}} to say what stands there instead.`}</p>

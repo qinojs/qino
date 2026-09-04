@@ -14,12 +14,12 @@ export async function render(node: Node): Promise<HtmlString> {
   if (!supportsProcesses(app.db))
     return html.async`<div class=u2-card>
       <div class=-head>${t`Processes`}</div>
-      <div class=-body><u2-alert open>${t`Not available for the`} ${app.db.dialect} ${t`backend`}.</u2-alert></div>
+      <div><u2-alert open>${t`Not available for the`} ${app.db.dialect} ${t`backend`}.</u2-alert></div>
     </div>`;
 
   return html.async`<div class="u2-card">
     <div class=-head>${t`Processes`}</div>
-    <div class=-body>
+    <div>
       <label><input type=checkbox data-live checked> ${t`Live`}</label>
       <label><input type=checkbox data-keep> ${t`Keep old`}</label>
     </div>

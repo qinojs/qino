@@ -98,7 +98,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <tbody>${guardedRows.length ? html.join(guardedRows, "\n") : html`<tr><td colspan=3>No verb demands one.`}
     </table>
   </div>
-  <div class=-body>Read out of the api tree: these carry <code>requireStepUp</code>, and
+  <div>Read out of the api tree: these carry <code>requireStepUp</code>, and
   <code>invoke()</code> asks before running them. They are the ways a factor is handed out or taken
   away. A demand that depends on the call (<code>guard</code>) cannot appear
   here — being listable is what the declared form is for.</div>
@@ -112,7 +112,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>
     <tbody>${viaRows.length ? html.join(viaRows, "\n") : html`<tr><td colspan=3>Nothing recorded — this session was never authenticated.`}
   </table>
-  <div class=-body>Every way in is written to <code>sess.data.core.via</code>. A
+  <div>Every way in is written to <code>sess.data.core.via</code>. A
   <em>record only</em> entry proves nothing and can never satisfy a step-up: <code>remember</code>
   is a login the stored client was handed, <code>login_as</code> one an administrator took over.</div>
 </div>
@@ -127,7 +127,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <tbody>${sessionRows.length ? html.join(sessionRows, "\n") : html`<tr><td colspan=3>Nobody is signed in.`}
     </table>
   </div>
-  <div class=-body>The same record read across the session table — no separate log to keep, and a
+  <div>The same record read across the session table — no separate log to keep, and a
   session that ends takes its own with it.</div>
 </div>
 </div>`;

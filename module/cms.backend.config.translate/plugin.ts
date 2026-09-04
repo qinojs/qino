@@ -90,7 +90,7 @@ async function render(node: Node): Promise<HtmlString> {
 
   return html.async`<div class=u2-card>
   <div class=-head>${t`Translate`}</div>
-  <div class=-body>
+  <div>
     <input data-search value="${search}" placeholder="${t`Search`}…">
     <label><input type=checkbox data-set=toggle_counter ${counterActive ? "checked" : ""}> ${t`Counter`}</label>
     &nbsp;

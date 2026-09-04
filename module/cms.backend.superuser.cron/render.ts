@@ -32,7 +32,7 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
   const { active, running, failed } = counts(jobs);
   const rows = await Promise.all(jobs.map((job) => renderRow(app, job)));
 
-  return html.async`<div class=-body>
+  return html.async`<div>
     <b>${active}</b> ${app.t`active jobs`}
     · ${running} ${app.t`running`}
     · ${failed} ${app.t`failed`}

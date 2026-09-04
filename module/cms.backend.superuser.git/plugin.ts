@@ -116,7 +116,7 @@ function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
   const dirty = repo.files.length;
   return html.async`<div class=u2-card data-repo="${repo.root}">
   <div class=-head><code>${repo.root}</code></div>
-  <div class=-body>
+  <div>
     <div><b>${repo.branch || "?"}</b>
       ${repo.ahead ? html`<span class=-ahead>↑${repo.ahead}</span>` : ""}
       ${repo.behind ? html`<span class=-behind>↓${repo.behind}</span>` : ""}
@@ -147,7 +147,7 @@ function serverCard(t: App["t"]): Promise<HtmlString> {
   const can = supervised();
   return html.async`<div class=u2-card>
   <div class=-head>${t`Server`}</div>
-  <div class=-body>
+  <div>
     <small>${can ? t`Pulled code is loaded on the next start.` : t`No service manager: nothing would start the process again.`}</small>
     <button data-act=restart data-confirm="${t`Restart the server now? The site is unreachable for a moment.`}"${can ? "" : html` disabled`}>${t`Restart`}</button>
   </div>
@@ -157,7 +157,7 @@ function serverCard(t: App["t"]): Promise<HtmlString> {
 async function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   const found = await repos(node.app);
-  const cards = found.length ? found.map((repo) => repoCard(repo, t)) : [html.async`<div class=u2-card><div class=-body>${t`No git repository found.`}</div></div>`];
+  const cards = found.length ? found.map((repo) => repoCard(repo, t)) : [html.async`<div class=u2-card><div>${t`No git repository found.`}</div></div>`];
   return html.async`<div class="u2-flex git-repos">${cards}${serverCard(t)}</div>`;
 }
 

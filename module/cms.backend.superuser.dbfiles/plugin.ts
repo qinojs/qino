@@ -35,12 +35,12 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
     inner = html`<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
     inner = html`<iframe src="${url}" style="width:100%;height:37.5rem;border:0"></iframe>`;
-  return inner ? html`<div class=u2-card style="flex:0 1 auto"><div class=-body>${inner}</div></div>` : "";
+  return inner ? html`<div class=u2-card style="flex:0 1 auto"><div>${inner}</div></div>` : "";
 }
 
 async function textView(f: DbFile): Promise<HtmlString | string> {
   if (!TXT.has(f.extension)) return "";
-  return html`<div class=u2-card style="flex:0 1 auto"><div class=-body><u2-code trim><textarea>${await
+  return html`<div class=u2-card style="flex:0 1 auto"><div><u2-code trim><textarea>${await
     Deno.readTextFile(f.path)}</textarea></u2-code></div></div>`;
 }
 
@@ -172,14 +172,14 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 <div class=u2-flex>
   <div class="u2-card -sidebar">
     <div class=-head>${app.t`Filter`}</div>
-    <div class=-body>
+    <div>
       <form data-filter>
         <label>${app.t`Search`}<br><input name=search></label><br><br>
         <label>${app.t`Order`}<br><select name=order>${orderOpts}</select></label>
       </form>
     </div>
     <div class=-head>${app.t`Actions`}</div>
-    <div class=-body>
+    <div>
       ${message ? html`<p>${message}</p>` : ""}
       <button data-reload='{"do":"delete_unlinked"}'>${app.t`Delete files without DB entry`}</button><br>
       <small>${app.t`Files in version history will not be deleted.`}</small><br><br>
