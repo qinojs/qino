@@ -3,7 +3,7 @@ import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundE
 import { cms } from "./lib/CMS.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
 import { ADMIN } from "./lib/access.ts";
-import { sanitizeHtml } from "./lib/sanitize.ts";
+import { policyOf, sanitizeHtml } from "./lib/sanitize.ts";
 import * as fns from "./api-exports.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -84,7 +84,7 @@ const textsJson = async (node: Node, lang?: string) => {
   const texts = (await node.texts()).entries();
   if (!lang) return Object.fromEntries(texts.map(([name, text]) => [name, text.id]));
   return Object.fromEntries(await Promise.all(
-    [...texts].map(async ([name, text]) => [name, { id: text.id, value: sanitizeHtml(await text.lang(lang).get()) }]),
+    [...texts].map(async ([name, text]) => [name, { id: text.id, value: sanitizeHtml(await text.lang(lang).get(), policyOf(node.app)) }]),
   ));
 };
 
@@ -229,7 +229,7 @@ const node = {
         query: s.object({ lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         execute: async ({ node, name, lang }: any, ctx: Ctx) => {
           const text = (await node.texts()).get(name);
-          return text ? sanitizeHtml(await text.lang(lang ?? ctx.lang).get()) : null;
+          return text ? sanitizeHtml(await text.lang(lang ?? ctx.lang).get(), policyOf(ctx.app)) : null;
         },
       },
       put: {

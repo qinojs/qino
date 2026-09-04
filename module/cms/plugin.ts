@@ -14,6 +14,13 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
     properties: {
+        sanitize: {
+            properties: {
+                elements: { type: "string", description: "Elements rich text may carry, e.g. \"p h2 a img\". Empty = what qino ships with." },
+                attributes: { type: "string", description: "Attributes, in the editor's grammar: \"class title, a(href target)\"." },
+                protocols: { type: "string", description: "Url protocols: \"href: http https, img(src: http https data)\"." },
+            },
+        },
         backend: {
             type: "integer",
             description: "Page ID of the central backend entry point.",

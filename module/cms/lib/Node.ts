@@ -2,7 +2,7 @@ import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urliz
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
-import { sanitizeHtml } from "./sanitize.ts";
+import { policyOf, sanitizeHtml } from "./sanitize.ts";
 import { parseXml } from "./parseXml.ts";
 import { postedVars } from "./postedVars.ts";
 
@@ -341,7 +341,7 @@ export class Node {
         let text = await textLang.get();
         if (text !== "") { // an empty text has nothing to resolve and nothing to sanitize
             text = await resolveText(this.app, text, !this.edit);
-            text = sanitizeHtml(text); // last step: nothing may touch the string after sanitizing
+            text = sanitizeHtml(text, policyOf(this.app)); // last step: nothing may touch the string after sanitizing
         }
         return {
             lang: textLang.lang,

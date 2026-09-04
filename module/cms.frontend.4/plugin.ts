@@ -1,7 +1,7 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { $item, Access, AccessError, ValidationError, hee, s } from "@qino/qino";
-import { cms, cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
 
@@ -285,6 +285,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
       html.styles.add(moduleUrl + "cms/pub/css/ui.css");
 
+      html.inlineStyles.add(policyCss(policyOf(ctx.app))); // what the site allows, so the editor and the output agree
       html.styles.add(moduleUrl + "cms.frontend.4/pub/inline/page.css");
       html.scripts.add(moduleUrl + "cms.frontend.4/pub/inline/inline.js");
       html.scripts.add(moduleUrl + "cms.frontend.4/pub/panel/panel.js");

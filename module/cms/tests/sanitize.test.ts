@@ -1,6 +1,6 @@
 import { assertEquals } from "@qino/qino/tests";
 
-import { imageStyles, policy, sanitizeHtml } from "../lib/sanitize.ts";
+import { imageStyles, policy, policyCss, policyOf, sanitizeHtml } from "../lib/sanitize.ts";
 
 Deno.test("sanitizeHtml keeps the presentation an editor set and drops what executes", () => {
   assertEquals(
@@ -30,4 +30,28 @@ Deno.test("sanitizeHtml: a site may narrow the css properties a style carries", 
   );
   // An element the list does not name keeps its style: only what is listed is restricted.
   assertEquals(sanitizeHtml('<p style="color:red">t</p>', narrowed), '<p style="color:red">t</p>');
+});
+
+// The editor reads the same list the output enforces, in the grammar the rte parses.
+Deno.test("policyCss renders the policy for the editor", () => {
+  const css = policyCss();
+  assertEquals(css.startsWith(":root{--u2-rte-elements:h1 h2 h3"), true);
+  assertEquals(css.includes("--u2-rte-attributes:class dir lang style title, a(href target), img(src alt width height loading)"), true);
+  assertEquals(css.includes("--u2-rte-protocols:href: http https mailto tel cmspid, img(src: http https data)"), true);
+});
+
+// Settings decide, but every consumer here is synchronous: a resolved policy is kept and refreshed
+// behind the call, so a change shows up on the next render rather than turning the path async.
+Deno.test("policyOf resolves the site's own policy in the background", async () => {
+  const app = {
+    dev: true,
+    settings: { cms: { sanitize: { elements: "p a", attributes: "class, a(href)", protocols: "href: https" } } },
+  };
+  assertEquals(policyOf(app as never).elements, policy.elements, "The first call answers with what qino ships");
+  await new Promise(resolve => setTimeout(resolve, 5));
+  const site = policyOf(app as never);
+  assertEquals(site.elements, ["p", "a"]);
+  assertEquals(site.attributes, { "*": ["class"], a: ["href"] });
+  assertEquals(site.protocols, { "*": { href: ["https"] } });
+  assertEquals(sanitizeHtml('<p class="x" title="t">t</p><div>d</div>', site), '<p class="x">t</p>d');
 });

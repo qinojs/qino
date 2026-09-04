@@ -2,7 +2,8 @@
   "name": "cms.frontend.ai",
   "description": "Adds an AI assistant to the in-page CMS editor.",
   "dependencies": [
-    "ai"
+    "ai",
+    "cms"
   ],
   "files": [
     "bots/cmsHelper.ts",

@@ -27,8 +27,13 @@ editor.add(blockStyles([
    declaration reaches every field, and it also tells the sanitizer and the
    presentation cleanup which classes are content rather than decoration. */
 const contentClasses = () => Object.keys(getPossibleClasses(null)).filter(cl => /^[A-Z]/.test(cl));
-addEventListener('load', () =>
-  document.documentElement.style.setProperty('--u2-rte-classes', contentClasses().join(', ')));
+// Scanning the stylesheets is the fallback, not the rule: a site that declares its own list — with
+// groups, or with names the scan cannot guess — keeps it.
+addEventListener('load', () => {
+  const root = document.documentElement;
+  if (getComputedStyle(root).getPropertyValue('--u2-rte-classes').trim()) return;
+  root.style.setProperty('--u2-rte-classes', contentClasses().join(' '));
+});
 
 /* Links. What an address means is the CMS's business: a number is a page, a bare
    domain or mail address gets its scheme, and where a link opens follows from it. */
