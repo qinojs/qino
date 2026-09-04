@@ -31,7 +31,6 @@ export class Node {
     #urls: Map<string, Record<string, string>> | null = null;
 
     #children: Promise<Map<number, Node>> | null = null;
-    #named = new Map<string, Map<string, Node>>();
     #conts: Node[] | null = null;
 
     constructor(cms: CMS, id = 0, vs?: Record<string, string | number>) {
@@ -77,7 +76,7 @@ export class Node {
     exists(): this | undefined { return this.#is ? this : undefined; }
 
     /* Cache invalidation */
-    #clearTreeCache(): void { this.#children = this.#conts = null; this.#named.clear(); }
+    #clearTreeCache(): void { this.#children = this.#conts = null; }
     #clearFileCache(): void { this.#files = this.#filesAll = null; }
     #clearUrlCache(): void { this.#urls = null; }
 
@@ -292,10 +291,6 @@ export class Node {
                 const child = await this.cms.node(id, row);
                 if (!child.exists() || Number(child.vs.basis) !== this.id) continue;
                 map.set(id, child);
-                if (child.vs.name) {
-                    this.#named.getOrInsertComputed(String(child.vs.type), () => new Map())
-                        .set(String(child.vs.name), child);
-                }
             }
             return map;
         })();
@@ -736,17 +731,13 @@ export class Node {
         return true;
     }
 
+    /** The cont of that name, created when it is not there yet. */
     async cont(name: string, attris: any = {}): Promise<Node> {
         const conts = await this.conts();
-        const named = this.#named.getOrInsertComputed("c", () => new Map());
-        let cont = named.get(name);
-        if (!cont) {
-            if (typeof attris !== "object") attris = { module: attris };
-            attris.name = name;
-            attris.sort = conts.length + 1;
-            named.set(name, cont = await this.createCont(attris));
-        }
-        return cont;
+        const cont = conts.find((c) => c.vs.name === name);
+        if (cont) return cont;
+        if (typeof attris !== "object") attris = { module: attris };
+        return this.createCont({ ...attris, name, sort: conts.length + 1 });
     }
 
     /* Access */

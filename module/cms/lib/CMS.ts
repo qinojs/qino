@@ -47,15 +47,34 @@ export class CMS {
     id === undefined ? this.#nodes.clear() : this.#nodes.delete(Number(id));
   }
 
-  async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
-    const ret: Record<string, Node> = {};
-    for (const vs of await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE module = ${moduleName}`)
-      ret[vs.id] = await this.node(vs.id, vs);
+  /** Slow: a query per call, nothing cached — only the Nodes it builds are. Both columns are
+    * indexed, so it is the round trip that costs. For setup and links, not a hot path. */
+  async #nodesBy(col: string, value: string): Promise<Map<number, Node>> {
+    const ret = new Map<number, Node>();
+    for (const vs of await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE ${sql.id(col)} = ${value}`)
+      ret.set(Number(vs.id), await this.node(vs.id, vs));
     return ret;
   }
 
+  /** Slow, see #nodesBy. */
+  nodesByModule(moduleName: string): Promise<Map<number, Node>> {
+    return this.#nodesBy("module", moduleName);
+  }
+
+  /** Slow, see #nodesBy. */
   async nodeByModule(moduleName: string): Promise<Node | undefined> {
-    return Object.values(await this.nodesByModule(moduleName))[0];
+    return (await this.nodesByModule(moduleName)).values().next().value;
+  }
+
+  /** Slow, see #nodesBy. A name is a slot in its parent, so it is unique across the tree only
+    * by convention — hence the plural, and hence nodeByName returning the first. */
+  nodesByName(name: string): Promise<Map<number, Node>> {
+    return this.#nodesBy("name", name);
+  }
+
+  /** Slow, see #nodesBy. */
+  async nodeByName(name: string): Promise<Node | undefined> {
+    return (await this.nodesByName(name)).values().next().value;
   }
 
   /** Global page of a layout module (child of the system page), created if missing */

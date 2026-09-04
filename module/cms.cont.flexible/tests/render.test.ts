@@ -10,9 +10,13 @@ const { name } = manifest;
 const appWith = (initModule: string) => ({ settings: { [name]: { "init-child-module": initModule } } });
 
 // node.settings is an item.js proxy: a leaf reads when called bare and writes when given a value.
-const nodeSettings = (inited?: boolean) => ({
-  __inited: (value?: boolean) => value === undefined ? inited : (inited = value),
-});
+const nodeSettings = (inited?: boolean) => {
+  let module: string | undefined;
+  return {
+    __inited: (value?: boolean) => value === undefined ? inited : (inited = value),
+    "default module": (value?: string) => value === undefined ? module : (module = value),
+  };
+};
 
 Deno.test("cms.cont.flexible: metadata is wired", () => {
   assertEquals(name, "cms.cont.flexible");
@@ -45,6 +49,7 @@ Deno.test("cms.cont.flexible: render initializes default child when empty", asyn
   assertEquals(await cms.node.render(node as any, { vars: {} }), "<div><p>Init</p></div>");
   assertEquals(calls, ["cms.cont.text"]);
   assertEquals(settings.__inited(), true); // remembered, so the next render does not start over
+  assertEquals(settings["default module"](), "cms.cont.text"); // the panel's picker starts there
 });
 
 Deno.test("cms.cont.flexible: an emptied container stays empty", async () => {

@@ -54,6 +54,7 @@ stays out of the list panel.
 | `default module`    | node  | module of a new entry added in the panel                     |
 | `add position`      | node  | `bottom` (default) or `top`                                  |
 
-The site-wide seed and the per-container default are two different things: the first fills a
-fresh container once (`__inited` remembers it, so emptying the container does not bring it back),
-the second is what the "Add entry" button makes.
+The site-wide seed fills a fresh container once — `__inited` remembers it, so emptying the
+container does not bring it back — and writes the same module into the container's own
+`default module` on the way, which is what the panel's picker then offers. Born with the site's
+module, free to diverge afterwards.

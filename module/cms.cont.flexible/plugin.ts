@@ -37,6 +37,8 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
     const initModule = vars["init-child-module"] ?? defaultModule;
     if (initModule) {
       node.settings.__inited(true);
+      // The container is born with the site's module; from here the panel's picker owns it.
+      node.settings["default module"](initModule);
       await node.cont("init", initModule);
       conts = await node.conts();
     }
