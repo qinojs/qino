@@ -30,7 +30,7 @@ Deno.test("CMS.linkAttributes describes the target state", async () => {
   ctx.lang = "de";
   const cms = new CMS(ctx.app);
   const page = {
-    edit: true,
+    edit: () => true,
     toString: () => "7",
     urlSeo: () => {},
     urls: () => new Map([["de", { target: 'x" onclick="alert(1)' }]]),

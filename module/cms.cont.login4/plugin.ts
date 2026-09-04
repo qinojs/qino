@@ -16,7 +16,7 @@ const settingsSchema = {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
   const app = node.app;
-  const edit = node.edit;
+  const edit = await node.edit();
   const cms = node.cms;
   const settings = node.settings;
   const csrfToken = ctx.csrfToken;

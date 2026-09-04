@@ -16,9 +16,10 @@ const settingsSchema = {
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const more = ctx.app.t`mehr`;
   const items = [];
+  const edit = await node.edit();
   for (const nr of boxes) {
     const url = await node.cms.url(node.settings[`link_${nr}`]()) ?? "";
-    const image = await cms_image2(await node.file(`bild_${nr}`), { width: 550, if: 1, editable: node.edit });
+    const image = await cms_image2(await node.file(`bild_${nr}`), { width: 550, if: 1, editable: edit });
     items.push(html.async`<a class=-item href="${url}">
       <div class=-image>${image}</div>
       <div class=-text>

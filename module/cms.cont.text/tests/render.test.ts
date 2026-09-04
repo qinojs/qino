@@ -12,7 +12,7 @@ Deno.test("cms.cont.text: metadata is wired", () => {
 
 Deno.test("cms.cont.text: render outputs main text", async () => {
   const node = {
-    edit: false,
+    edit: () => false,
     showText: () => ({ id: 12, toString: () => "Hello" }),
   };
   assertEquals(await cms.node.render(node as never), "<div>Hello</div>");
@@ -20,7 +20,7 @@ Deno.test("cms.cont.text: render outputs main text", async () => {
 
 Deno.test("cms.cont.text: render marks editable text", async () => {
   const node = {
-    edit: true,
+    edit: () => true,
     showText: () => ({ id: 12, toString: () => "Hello" }),
   };
   assertEquals(await cms.node.render(node as never), "<div contenteditable cmstxt=12>Hello</div>");

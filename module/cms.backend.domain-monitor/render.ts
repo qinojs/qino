@@ -410,7 +410,7 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
   return html`<div class="u2-flex -detail">
     <div class=u2-card>
       <div class=-head><a href="${back.search || "?"}">← Domains</a> · ${domain}</div>
-      <div class=-body>
+      <div>
         <p>${dot(current.level, current.title)} <b>${current.title}</b></p>
         <p><button data-action=check data-domain="${domain}">Check now</button> <button data-action=expect data-domain="${domain}" data-expect="${row.expect}">Expected text</button> ${frequencySelect(row)} <a href="https://${domain}/" target=_blank>Open website ↗</a></p>
       </div>

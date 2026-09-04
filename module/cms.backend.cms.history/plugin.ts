@@ -134,7 +134,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   return html.async`
 <div class=u2-flex>
   <div class=u2-card>
-    <div class=-body>
+    <div>
       <form class=-filter>
         <label>${t`Search`}<br><input name=search placeholder="${t`User or IP`}"></label>
         <label>${t`Type`}<br><select name=type>

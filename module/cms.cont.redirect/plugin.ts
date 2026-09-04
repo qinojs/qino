@@ -47,7 +47,8 @@ function isSelf(url: string, ctx: Ctx): boolean {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
   // The posted form only, not the render vars: those may come from an api caller.
-  const posted = node.edit ? postedVars(node.id) : undefined;
+  const edit = await node.edit();
+  const posted = edit ? postedVars(node.id) : undefined;
   if (posted && "save" in posted) await store(node, ctx, posted);
 
   const text = (await node.texts()).get("_redirect"); // read-only: an unconfigured node stays row-free
@@ -55,7 +56,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const { url, node: target } = value ? await resolve(node, value, ctx) : {};
   const loop = !!url && isSelf(url, ctx);
 
-  if (!node.edit) {
+  if (!edit) {
     if (loop) console.warn(`[cms.cont.redirect] node ${node.id} points at its own page`);
     else if (url) {
       ctx.res.headers.set("Location", url);

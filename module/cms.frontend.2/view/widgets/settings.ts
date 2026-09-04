@@ -14,7 +14,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   const title = await node.title();
   const titleVal = await title.string();
-  const titleEdit = node.edit ? html` cmstxt=${title.id}` : "";
+  const titleEdit = await node.edit() ? html` cmstxt=${title.id}` : "";
 
   const svgIcon = moduleIcon(node.module, ctx.req.moduleUrl + "cms.frontend.2/pub/img/module_default.svg");
 

@@ -44,11 +44,11 @@ async function ownWhere(ctx: Ctx): Promise<Sql> {
 async function sessionDetail(ctx: Ctx, id: number): Promise<HtmlString> {
   const app = ctx.app;
   const s = await app.db.row`SELECT * FROM ai_session WHERE id = ${id} AND ${await ownWhere(ctx)}`;
-  if (!s) return html`<div class=u2-card><div class=-body>Session not found.</div></div>`;
+  if (!s) return html`<div class=u2-card><div>Session not found.</div></div>`;
   const messages = await app.db.query`SELECT * FROM ai_message WHERE session_id = ${id} ORDER BY id`;
   return html`<div class=u2-card style="flex:1 1 40rem;">
     <div class=-head>Session #${id} · bot ${s.bot} · user ${s.user_id}</div>
-    <div class=-body>${messages.length ? html.join(messages.map(messageHtml)) : html`<em>No messages.</em>`}</div>
+    <div>${messages.length ? html.join(messages.map(messageHtml)) : html`<em>No messages.</em>`}</div>
   </div>`;
 }
 

@@ -22,7 +22,7 @@ async function render(node: Node): Promise<HtmlString> {
   <a href="${link}" class=-body target=_blank>
     ${cmsText(node, "title", "h2")}
     ${cmsText(node, "price", "h3")}
-    <div class=-image>${cms_image2(await node.file("Bild"), { width: 470, editable: node.edit })}</div>
+    <div class=-image>${cms_image2(await node.file("Bild"), { width: 470, editable: await node.edit() })}</div>
     ${cmsText(node, "nr", "p")}
   </a>
 </div>`;

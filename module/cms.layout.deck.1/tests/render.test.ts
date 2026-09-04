@@ -10,7 +10,7 @@ const { name } = manifest;
 function fakeNode(dir: string, app: any, edit = false) {
   const node: any = {
     id: 3,
-    edit,
+    edit: () => edit,
     app,
     module: { name, source: new URL("../plugin.ts", import.meta.url).href, data: `${dir}data/${name}/` },
     page: () => node,

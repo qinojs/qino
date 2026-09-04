@@ -34,7 +34,6 @@ export async function render(ctx: Ctx): Promise<void> {
   cmsCtx(ctx).mainNode = page;
   cmsCtx(ctx).requestedNode = page;
 
-  // Set editmode early so Node.edit (sync getter) works during render
   const access = await page.access();
 
   if (!access) {

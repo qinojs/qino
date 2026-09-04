@@ -45,7 +45,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   return html.async`<div class=u2-card style="flex:0 1 75rem">
   <div class=-head>${t`Access`}</div>
-  <div class=-body style="display:flex; justify-content:space-between; align-items:center">
+  <div style="display:flex; justify-content:space-between; align-items:center">
     <div>
       <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
       <div>${pathParts}</div>

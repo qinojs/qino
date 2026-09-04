@@ -6,6 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const slides: HtmlString[] = [], texts: HtmlString[] = [];
+  const edit = await node.edit();
   for (const [name, file] of await node.files()) {
     if (!file.mime.startsWith("image/")) continue;
     if (name.startsWith("_")) {
@@ -13,7 +14,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         width: 2000,
         height: 2000,
         style: "max-width:none",
-        editable: node.edit,
+        editable: edit,
       })}</div>`);
     }
     texts.push(await html.async`<div data-id="${name}">${node.showText("file_" + name)}</div>`);
@@ -23,7 +24,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     class: "-floating_img",
     fit: "contain",
     if: 1,
-    editable: node.edit,
+    editable: edit,
   });
   const arrow = ctx.req.moduleUrl + "cms.cont.slideshow.schwups2/pub/arrow.svg#main";
 

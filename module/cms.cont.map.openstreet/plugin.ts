@@ -71,7 +71,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   // Without a position there is nothing to show — but an editor has to learn why.
   if (found === undefined || found === "unfound") {
-    if (!node.edit) return html``;
+    if (!await node.edit()) return html``;
     return html.async`<div class="-empty">${
       found === "unfound"
         ? t`This address was not found. Correct it, or set latitude and longitude in the options of this content.`

@@ -17,7 +17,7 @@ function contNode(value: string, opt: { edit?: boolean; permanent?: boolean; par
   const urlCalls: string[] = [];
   const node: any = {
     id: 9,
-    edit: !!opt.edit,
+    edit: () => !!opt.edit,
     app: { t: fakeT },
     settings: { permanent: () => !!opt.permanent },
     texts: () => new Map([["_redirect", { string: () => value }]]),

@@ -6,9 +6,10 @@ import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node): Promise<HtmlString> {
   const images: HtmlString[] = [];
+  const edit = await node.edit();
   for (const file of (await node.files()).values()) {
     if (!file.mime.startsWith("image/")) continue;
-    images.push(html`<div>${await cms_image2(file, { width: 200, height: 200, fit: "contain", editable: node.edit })}</div>`);
+    images.push(html`<div>${await cms_image2(file, { width: 200, height: 200, fit: "contain", editable: edit })}</div>`);
   }
   return html`<div><div class=l1_width><div class=c1-flex-grid>${images}</div></div></div>`;
 }

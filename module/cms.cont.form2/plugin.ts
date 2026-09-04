@@ -81,10 +81,10 @@ async function send(node: Node, form: Form): Promise<boolean> {
 
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {
   await init(node);
-  if (node.edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
+  const edit = await node.edit();
+  if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
   const t = node.app.t;
   const cms = node.cms;
-  const edit = node.edit;
   const redirectId = node.settings.redirect();
 
   // Empty vars mean a plain page view; a JS-free form post and an api render with vars both arrive filled.

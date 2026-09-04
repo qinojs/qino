@@ -17,21 +17,21 @@ export async function renderNodes(nodes: TNode[], node: Node): Promise<string> {
 async function renderElement(el: El, node: Node): Promise<string> {
   if (el.tag === "cms-image") return renderCmsImage(el, node);
   if (el.tag === "cms-cont")  return renderCmsCont(el, node);
-  if (el.tag.startsWith("cms-")) warn(node, `unknown element <${el.tag}>`);
+  if (el.tag.startsWith("cms-")) await warn(node, `unknown element <${el.tag}>`);
   const linkTarget = attrValue(el, "cms-link");
   if (linkTarget) return renderCmsLink(el, linkTarget, node);
   const textName = attrValue(el, "cms-text");
   if (textName) return renderCmsText(el, textName, node);
   for (const a of el.attrs) {
     if (!a.name.startsWith("cms-")) continue;
-    warn(node, a.name === "cms-text" || a.name === "cms-link" ? `${a.name} without value on <${el.tag}>` : `unknown attribute ${a.name} on <${el.tag}>`);
+    await warn(node, a.name === "cms-text" || a.name === "cms-link" ? `${a.name} without value on <${el.tag}>` : `unknown attribute ${a.name} on <${el.tag}>`);
   }
   return tagHtml(el, el.self ? "" : await renderNodes(el.children, node));
 }
 
 /** Typos in templates must be visible: warn in dev and edit mode */
-function warn(node: Node, msg: string): void {
-  if (node.app.dev || node.edit) console.warn(`templateParser: ${msg} (module ${node.module?.name})`);
+async function warn(node: Node, msg: string): Promise<void> {
+  if (node.app.dev || await node.edit()) console.warn(`templateParser: ${msg} (module ${node.module?.name})`);
 }
 
 /** Resolve node= — a node id, "page", "parent"/"parent(2)" or "layout" (default: current node) */
@@ -39,7 +39,7 @@ async function targetNode(el: El, node: Node): Promise<Node | undefined> {
   const spec = attrValue(el, "node");
   if (spec === undefined) return node;
   const target = await resolveNodeSpec(spec, node);
-  if (!target) warn(node, `unresolvable node="${spec}" on <${el.tag}>`);
+  if (!target) await warn(node, `unresolvable node="${spec}" on <${el.tag}>`);
   return target;
 }
 
@@ -61,7 +61,7 @@ async function resolveNodeSpec(spec: string, node: Node): Promise<Node | undefin
 async function renderCmsLink(el: El, spec: string, node: Node): Promise<string> {
   const target = await resolveNodeSpec(spec, node);
   if (!target) {
-    warn(node, `unresolvable cms-link="${spec}" on <${el.tag}>`);
+    await warn(node, `unresolvable cms-link="${spec}" on <${el.tag}>`);
     return renderElement({ ...el, attrs: el.attrs.filter(a => a.name !== "cms-link") }, node);
   }
   const linkAttrs = await target.cms.linkAttributes(target);
@@ -128,13 +128,13 @@ async function renderCmsText(el: El, name: string, node: Node): Promise<string> 
 
 async function renderCmsImage(el: El, node: Node): Promise<string> {
   const name = attrValue(el, "name");
-  if (!name) { warn(node, "<cms-image> without name"); return ""; }
+  if (!name) { await warn(node, "<cms-image> without name"); return ""; }
   const target = await targetNode(el, node);
   if (!target) return "";
   const file = hasAttr(el, "localized") ? await target.cms.fileLang(target, name) : await target.file(name);
   if (!file) return "";
   const opts: Record<string, unknown> = { if: 1 };
-  if (target.edit) opts.editable = await file.url();
+  if (await target.edit()) opts.editable = await file.url();
   for (const a of el.attrs) {
     if (a.name === "name" || a.name === "localized" || a.name === "node") continue;
     opts[a.name] = a.value ?? true;
@@ -150,7 +150,7 @@ async function renderCmsImage(el: El, node: Node): Promise<string> {
 
 async function renderCmsCont(el: El, node: Node): Promise<string> {
   const name = attrValue(el, "name");
-  if (!name) { warn(node, "<cms-cont> without name"); return ""; }
+  if (!name) { await warn(node, "<cms-cont> without name"); return ""; }
   const target = await targetNode(el, node);
   if (!target) return "";
   const module = attrValue(el, "module") ?? attrValue(el, "default-module") ?? "cms.cont.flexible";

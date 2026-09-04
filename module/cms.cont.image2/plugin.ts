@@ -35,7 +35,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   }
   img ??= await node.file("image_" + ctx.lang);
 
-  const tag = !node.edit && url ? "a" : "div";
+  const edit = await node.edit();
+  const tag = !edit && url ? "a" : "div";
   const hrefAttr = url ? html` href="${url}"` : "";
 
   // Style
@@ -54,13 +55,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if: 1,
     style,
     quality: Number(await settings.quality) || null,
-    editable: node.edit ? await img.url() : null,
+    editable: edit ? await img.url() : null,
   };
 
   const imgHtml = await cms_image2(img, options);
 
   let editHtml: HtmlString | string = "";
-  if (node.edit) {
+  if (edit) {
     editHtml = await html.async`
         <div class="-alt-edit qgCMS">
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${String(text)}">

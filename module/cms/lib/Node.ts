@@ -164,7 +164,7 @@ export class Node {
 
         const renderPath = cmsCtx(ctx).renderPath;
         if (renderPath.has(this.id)) {
-            return html.raw(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
+            return html.raw(await this.edit() ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
         }
         const mod = this.module;
         const nodeExports = mod?.plugin.cms?.node;
@@ -186,7 +186,7 @@ export class Node {
         let attr = "";
         const moduleName = this.module?.name ?? "";
         attr += ` qcms-id=${this.id} qcms-mod="${hee(moduleName.replace(/^cms\./, ""))}"`;
-        if (this.edit) {
+        if (await this.edit()) {
             attr += " qcms-edit";
             if (moduleName.startsWith("cms.cont.flexible")) attr += " qcms-drop";
             if (!(await this.isOnline())) attr += " qcms-offline";
@@ -227,7 +227,7 @@ export class Node {
             return String(await run());
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : '<div></div>';
+            return await this.edit() ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : '<div></div>';
         }
     }
 
@@ -251,7 +251,7 @@ export class Node {
         return (start === 0 || now > start) && (end === 0 || now < end);
     }
     async isReadable(): Promise<boolean> {
-        return this.edit || ((await this.access()) > 0 && (await this.isOnline()));
+        return (await this.edit()) || ((await this.access()) > 0 && (await this.isOnline()));
     }
     async isPublic(): Promise<boolean> {
         const p = await this.parent();
@@ -262,12 +262,8 @@ export class Node {
         return this.vs.access === null && p ? p.accessInheritParent() : this;
     }
 
-    get edit(): boolean {
-        const ctx = getCtx();
-        const usrId = Number(ctx.user);
-        const cache = cmsCtx(ctx).accessCache;
-        const cachedAccess = cache.get(`${this.id}:${usrId}`) ?? 0;
-        return cachedAccess > 1 && !!cmsCtx(ctx).editmode;
+    async edit(): Promise<boolean> {
+        return !!cmsCtx(getCtx()).editmode && (await this.access()) > 1; // editmode first: outside it, no access lookup at all
     }
 
     async page(): Promise<Node> {
@@ -335,7 +331,7 @@ export class Node {
         const textLang = lang == null ? await dbText.orFallback(ctx.lang) : dbText.lang(lang);
         let text = await textLang.get();
         if (text !== "") { // an empty text has nothing to resolve and nothing to sanitize
-            text = await resolveText(this.app, text, !this.edit);
+            text = await resolveText(this.app, text, !(await this.edit()));
             text = sanitizeHtml(text, policyOf(this.app)); // last step: nothing may touch the string after sanitizing
         }
         return {
@@ -499,8 +495,7 @@ export class Node {
         const ctx = getCtx();
         lang ??= ctx.lang;
         const hash = this.vs.type === "c" ? await this.urlSeo(lang) : "";
-        await this.access(); // hack: `edit` reads the access cache synchronously — fill it, whatever the caller did before
-        if (this.edit) return ctx.req.appUrl + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
+        if (await this.edit()) return ctx.req.appUrl + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
         return ctx.req.appUrl + (await (await this.page()).urlSeo(lang)) + hash;
     }
 

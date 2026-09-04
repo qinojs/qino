@@ -132,7 +132,7 @@ export class CMS {
       if (filter.access !== undefined && (await c.access()) < filter.access) continue;
       if (tags.includes("navi")) {
         const titleObj = await c.title();
-        if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || c.edit)) continue;
+        if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || await c.edit())) continue;
       }
       if (tags.includes("access") && !(await c.access())) continue;
       if (tags.includes("readable") && !(await c.isReadable())) continue;
@@ -167,7 +167,7 @@ export class CMS {
     return {
       href,
       class: `cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}`,
-      ...(page.edit ? { cmstxt: String(titleObj?.id ?? "") } : {}),
+      ...(await page.edit() ? { cmstxt: String(titleObj?.id ?? "") } : {}),
       ...(mainNode === page ? { "aria-current": "page" } : {}),
       ...(target ? { target } : {}),
     };
@@ -198,8 +198,9 @@ export class CMS {
     const node = await this.node(Number(pid));
     const textObj = name === "title" ? await node.title() : await node.text(name);
     const tag = options.tag ?? "div";
-    options.contenteditable ??= node.edit;
-    if (node.edit) options["cmstxt-placeholder"] ||= name;
+    const edit = await node.edit();
+    options.contenteditable ??= edit;
+    if (edit) options["cmstxt-placeholder"] ||= name;
     if (options.contenteditable || tag === "input" || tag === "textarea") options.cmstxt = textObj.id;
     let text = await textObj.string();
     if (text === "" && options.initial !== undefined) {
@@ -222,7 +223,7 @@ export class CMS {
     //     options.lang = shown.lang;
     // }
 
-    if (options.if && !node.edit && !text.replace(/<[^>]*>/g, "").trim()) return "";
+    if (options.if && !edit && !text.replace(/<[^>]*>/g, "").trim()) return "";
     delete options.if;
     delete options.tag;
     delete options.initial;

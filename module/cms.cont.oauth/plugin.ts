@@ -7,10 +7,11 @@ import type { Node } from "@qino/qino/cms";
 /** Renders one "Log in with …" link per configured login provider. */
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
-  if (ctx.user && !node.edit) return html.raw(""); // nothing to offer once logged in
+  const edit = await node.edit();
+  if (ctx.user && !edit) return html.raw(""); // nothing to offer once logged in
 
   const list = await providers(app);
-  if (!list.length) return node.edit ? html`<em>${await app.t`No login providers configured.`}</em>` : html.raw("");
+  if (!list.length) return edit ? html`<em>${await app.t`No login providers configured.`}</em>` : html.raw("");
 
   const base = ctx.req.appUrl;
   const returnTo = ctx.req.url.pathname + ctx.req.url.search;

@@ -85,7 +85,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   return html.async`
 <div class="u2-card -main" style="max-height:90vh; overflow:auto; flex-grow:0">
   <div class=-head>${t`Node render modules`}</div>
-  <div class=-body>
+  <div>
     <input type=search data-search placeholder="${t`Search`}…" autofocus>
     <label>${t`Type`}
       <select data-type-filter>
@@ -176,7 +176,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
   if (!isContent(app, modName)) {
     return html.async`<div class=u2-card>
       <div class=-head><a href="${back.search}">← ${t`Modules`}</a></div>
-      <div class=-body>${t`Module`} ${modName} ${t`not found.`}</div>
+      <div>${t`Module`} ${modName} ${t`not found.`}</div>
     </div>`;
   }
 

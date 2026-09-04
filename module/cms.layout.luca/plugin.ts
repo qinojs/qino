@@ -36,7 +36,7 @@ html {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const template = moduleTemplate(node.module!);
-  if (node.edit) await template.create(INITIAL_CSS);
+  if (await node.edit()) await template.create(INITIAL_CSS);
 
   await u2.assets(ctx, U2_CSS, U2_VERSION);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));

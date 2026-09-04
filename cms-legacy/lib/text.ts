@@ -7,6 +7,6 @@ import type { Node } from "@qino/qino/cms";
  *  `title` is the node title there, not a text of that name. */
 export async function cmsText(node: Node, name: string, tag = "div", attrs = ""): Promise<HtmlString> {
   const text = name === "title" ? await node.showTitle() : await node.showText(name);
-  const edit = node.edit ? ` contenteditable cmstxt=${text.id}` : "";
+  const edit = await node.edit() ? ` contenteditable cmstxt=${text.id}` : "";
   return html.raw(`<${tag}${attrs}${edit}>${text}</${tag}>`);
 }

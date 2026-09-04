@@ -17,10 +17,11 @@ const settingsSchema = {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const slides: HtmlString[] = [];
+  const edit = await node.edit();
   for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const caption = await node.showText("file_" + file.id);
-    const captionHtml = node.edit || String(caption).replace(/<[^>]*>/g, "").trim()
+    const captionHtml = edit || String(caption).replace(/<[^>]*>/g, "").trim()
       ? html`<div class=-caption>${caption}</div>`
       : "";
     slides.push(html`<div>${await cms_image2(file, {

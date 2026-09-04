@@ -152,7 +152,7 @@ Variable meist `Cont` oder `node`, ausserhalb meist `Node`/`Page`.
 | `$Page->SET['key']->v`                      | `await Page.settings.key` (item.js — siehe [Item.js-Pattern](#itemjs-pattern)) |
 | `$Page->SET['key'] = x`                     | `Page.settings.key(x)`                                                         |
 | `$Page->SET->has('key')`                    | `(await Page.settings).key` (autovivifiziert)                                  |
-| `$Page->edit`                               | `Page.edit` (sync)                                                             |
+| `$Page->edit`                               | `await Page.edit()`                                                            |
 | `$Page->vs['module']`                       | `Page.vs.module`                                                               |
 | `$Page->app`                                | `Page.app` (Zugriff auf App)                                                   |
 | `$Page->url()`                              | `await Page.url()`                                                             |
@@ -229,7 +229,7 @@ export const name = "cms.cont.foo";
 async function render(Cont: Page, { ctx }: any): Promise<string> {
   const text = await Cont.showText("main");
   return `<div${
-    Cont.edit ? ` contenteditable cmstxt=${text.id}` : ""
+    await Cont.edit() ? ` contenteditable cmstxt=${text.id}` : ""
   }>${text}</div>`;
 }
 

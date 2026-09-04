@@ -16,7 +16,7 @@ async function render(node: Node): Promise<HtmlString> {
       height: 500,
       fit: "contain",
       if: 1,
-      editable: product.edit,
+      editable: await product.edit(),
     })}</a>`);
     titles.push(html`<a href="${url}"><div>${await product.showTitle()}</div></a>`);
   }

@@ -26,6 +26,7 @@ async function render(node: Node): Promise<HtmlString> {
   const width = Math.max(1, Number(await node.settings.width) || 500);
   const height = Math.max(1, Number(await node.settings.height) || 250);
   const slides: HtmlString[] = [];
+  const edit = await node.edit();
   for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const caption = await node.showText("file_" + file.id);
@@ -34,7 +35,7 @@ async function render(node: Node): Promise<HtmlString> {
       height,
       style: "max-width:none;width:100%;height:100%",
       if: 1,
-    })}${node.edit || String(caption).replace(/<[^>]*>/g, "").trim() ? html`<div class=-caption>${caption}</div>` : ""}</div>`);
+    })}${edit || String(caption).replace(/<[^>]*>/g, "").trim() ? html`<div class=-caption>${caption}</div>` : ""}</div>`);
   }
 
   const controls = await node.settings.controlNav

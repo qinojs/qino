@@ -134,7 +134,8 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  if (node.edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
+  const edit = await node.edit();
+  if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
   // start usable: one field
   if (isEmptyObject(node.settings.inputs)) node.settings.inputs["1"]({});
@@ -143,7 +144,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const fields = [];
   for (const id of sortedIds(node)) fields.push(await field(node, id, form));
 
-  const warning = node.edit && !form
+  const warning = edit && !form
     ? html`<u2-alert open variant=warning>${await node.app.t`This module belongs inside a "cms.cont.form2" module.`}</u2-alert>`
     : "";
 

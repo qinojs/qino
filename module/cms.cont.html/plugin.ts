@@ -46,7 +46,7 @@ const INITIAL_SRC = `<div><!--
 
 async function render(node: Node): Promise<string> {
   const code = codeFiles(node);
-  if (node.edit) await code.create(INITIAL_SRC);
+  if (await node.edit()) await code.create(INITIAL_SRC);
   await code.addAssets();
   return await renderTemplateFile(code.src, node) ?? "<div></div>";
 }

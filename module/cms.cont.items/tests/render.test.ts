@@ -17,7 +17,7 @@ function listNode(opts: { edit?: boolean; children?: number; settings?: Record<s
   const properties = cms.node.settingsSchema.properties as Record<string, { default?: unknown }>;
   return {
     id: 5,
-    edit: !!opts.edit,
+    edit: () => !!opts.edit,
     conts: () => Promise.resolve(conts),
     cont: (name: string, attrs: any) => {
       created.push([name, attrs]);

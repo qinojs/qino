@@ -31,7 +31,7 @@ const settingsSchema = {
 async function render(node: Node): Promise<HtmlString> {
   let conts = await node.conts();
 
-  if (!conts.length && node.edit) { // Seed editable lists; cont() invalidates the cached children.
+  if (!conts.length && await node.edit()) { // Seed editable lists; cont() invalidates the cached children.
     await node.cont("first", { module: node.settings["default module"]() });
     conts = await node.conts();
   }

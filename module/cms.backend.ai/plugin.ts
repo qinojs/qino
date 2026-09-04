@@ -300,7 +300,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   <div class=u2-card style="min-width:40rem">
     <div class=-head>AI Provider</div>
-    <div class="-body u2-flex -Col">
+    <div class="u2-flex -Col">
       ${emptyHint}
       ${providerBoxes}
       <form class="ai-add-provider u2-flex">
@@ -313,7 +313,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   <div class=u2-card style="min-width:40rem">
     <div class=-head>Models</div>
-    <div class=-body>
+    <div>
       <div class="u2-flex ai-model-filters">
         <select id=ai-filter-provider>
           <option value=""${fprovider ? "" : " selected"}>all providers

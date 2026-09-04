@@ -8,7 +8,7 @@ import { renderNodes } from "../render.ts";
 function fakeNode(over: Record<string, any> = {}): any {
   const node: any = {
     app: { dev: false },
-    edit: false,
+    edit: () => false,
     module: { name: "cms.cont.test" },
     calls: [] as any[],
     ...over,

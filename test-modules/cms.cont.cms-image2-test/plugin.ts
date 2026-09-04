@@ -109,7 +109,7 @@ async function data(node: Node) {
   const h = Number(await settings["height"]) || 220;
   const delay = Number(await settings["delay"]) || 1800;
   const quality = Number(await settings["quality"]) || null;
-  const editable = node.edit ? await file.url() : null;
+  const editable = await node.edit() ? await file.url() : null;
   return { file, w, h, delay, quality, editable };
 }
 

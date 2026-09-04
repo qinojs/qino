@@ -49,6 +49,7 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
     trustedProxyHops: 0,
     db: { one: () => null, table: () => ({ get: () => undefined }) }, // an app with an empty database
     dbFiles: { file: () => undefined },
+    fire: (_name: string, e: unknown) => Promise.resolve(e), // no listeners: an event passes through unchanged
     ...app,
     settings: fakeSettings({ core: {}, ...app.settings }),
   };

@@ -13,7 +13,7 @@ function contNode(settings: Record<string, unknown>, opt: { edit?: boolean } = {
   const item = bildJsonItem(JSON.stringify(settings), (json: string) => saved.push(json));
   return {
     id: 9,
-    edit: !!opt.edit,
+    edit: () => !!opt.edit,
     app: { t: fakeT },
     settings: item.proxy,
     cms: { text: () => "" },

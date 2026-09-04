@@ -20,7 +20,7 @@ export const cms = {
 };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  if (ctx.user && !node.edit) return html.raw(""); // nothing to offer once logged in
+  if (ctx.user && !await node.edit()) return html.raw(""); // nothing to offer once logged in
   const app = node.app;
   const settings = node.settings;
   const showPw = !!settings.showPasswordFallback();

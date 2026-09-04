@@ -12,7 +12,7 @@ const fakeCtx = () => ({ req: { appUrl: "/app/" }, res: { html: { styles: new Se
 function fakeNode(dir: string, edit: boolean) {
   return {
     id: 7,
-    edit,
+    edit: () => edit,
     app: { dir: dir, dev: false },
     module: { name, data: `${dir}data/${name}/`, dataUrl: `/app/d/${name}/` },
     cms: { text: (_n: any, part: string) => `<p>${part}</p>` },

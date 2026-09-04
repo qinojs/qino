@@ -28,7 +28,7 @@ export default render;
 
 async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown> }): Promise<string> {
   const code = codeFiles(node);
-  if (node.edit) await code.create(initialSrc(node.id));
+  if (await node.edit()) await code.create(initialSrc(node.id));
   await code.addAssets();
 
   // mtime busts the ESM cache, so a saved file takes effect with the next request

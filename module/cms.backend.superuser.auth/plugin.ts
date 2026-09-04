@@ -78,7 +78,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>has(you)
     <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=6>No module declares a factor.`}
   </table>
-  <div class=-body>The columns are the fields a module exports as <code>authFactors</code>:
+  <div>The columns are the fields a module exports as <code>authFactors</code>:
   <code>second</code> can only finish a login, <code>stepUp</code> also refreshes an open session,
   <code>order</code> sorts the offer, <code>has()</code> is unanswered where a factor cannot tell.
   <p>Second factor demanded: <strong>${twoFactor ? "yes" : "no"}</strong>

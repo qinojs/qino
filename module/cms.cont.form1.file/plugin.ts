@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     else if (settings.required()) form.errors++;
   }
 
-  if (node.edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
+  if (await node.edit()) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
   return html.async`<div>
   <input type=file name="${fieldName}" accept="${String(settings.accept() ?? "").trim()}"${settings.multiple() ? html.raw(" multiple") : ""}${settings.required() ? html.raw(" required") : ""}>

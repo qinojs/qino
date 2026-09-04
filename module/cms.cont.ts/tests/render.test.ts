@@ -9,7 +9,7 @@ const { name } = manifest;
 
 const fakeCtx = () => ({ req: { appUrl: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
 const fakeModule = (dir: string) => ({ name, data: `${dir}data/${name}/`, dataUrl: `/app/d/${name}/` });
-const fakeNode = (dir: string, edit: boolean) => ({ id: 7, edit, app: { dir: dir, dev: false }, module: fakeModule(dir) });
+const fakeNode = (dir: string, edit: boolean) => ({ id: 7, edit: () => edit, app: { dir: dir, dev: false }, module: fakeModule(dir) });
 
 const render = (node: any, ctx: any) => requestStorage.run(ctx, () => cms.node.render(node, { ctx, vars: {} }));
 

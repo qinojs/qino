@@ -45,7 +45,7 @@ Deno.test("cms.cont.login4: metadata is wired", () => {
 Deno.test("cms.cont.login4: render shows login form for guests", async () => {
   const ctx = await makeCtx(false);
   const node = {
-    edit: false,
+    edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => "Anmelden" },
     cms: {
       text: (_node: unknown, name: string) => `[${name}]`,
@@ -66,7 +66,7 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
 Deno.test("cms.cont.login4: render redirects logged-in users when configured", async () => {
   const ctx = await makeCtx(true);
   const node = {
-    edit: false,
+    edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => "x" },
     cms: {
       node: () => ({ exists() { return this; }, url: () => "/target" }),
@@ -84,7 +84,7 @@ Deno.test("cms.cont.login4: render redirects logged-in users when configured", a
 Deno.test("cms.cont.login4: render shows logout form for logged-in users", async () => {
   const ctx = await makeCtx(true);
   const node = {
-    edit: false,
+    edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => "Abmelden" },
     cms: {},
     settings: settings({}),
@@ -99,7 +99,7 @@ Deno.test("cms.cont.login4: render shows logout form for logged-in users", async
 Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async () => {
   const guestCtx = await makeCtx(false);
   const guestNode = {
-    edit: false,
+    edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => "Anmelden" },
     cms: { text: (_node: unknown, name: string) => `[${name}]` },
     settings: settings({ "fix user": `a"><script>alert(1)</script>` }),
@@ -113,7 +113,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   const userCtx = await makeCtx(true);
   userCtx.sess = { data: { core: { userId: () => 7, csrfToken: () => `t"><script>x</script>` } } } as any;
   const userNode = {
-    edit: false,
+    edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => "Abmelden" },
     cms: {},
     settings: settings({}),
