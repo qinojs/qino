@@ -1,5 +1,111 @@
+import '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
+import { ctx } from '@qino/pub/qino.js';
 import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
+
+// What the cms does to content that lands in a text field: data urls uploaded, dbFile images
+// sized, foreign attributes stripped — and the drag, drop and paste handlers that trigger it.
+
+/** Select one element, so the editor's tools address it. */
+const selectNode = el => {
+  const range = document.createRange();
+  range.selectNode(el);
+  const selection = getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+// txt-id to page-id
+const txtIds = {};
+cms.txtIdToPid = async function(tid) {
+  if (txtIds[tid]) return txtIds[tid];
+  return txtIds[tid] = await api.cms['node-id-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
+};
+// clean texts
+function cleanElement(el, tid) {
+  if (el.tagName === 'IMG') {
+    el.setAttribute('loading','lazy');
+    if (el.src.startsWith('data:')) cms.txtIdToPid(tid).then(pid => imgToDbFile(el, pid));
+    if (el.src.includes('dbFile/')) {
+      const dim = () => {
+        el.style.maxWidth = '100%';
+        el.style.width = el.offsetWidth+'px';
+        el.style.height = 'auto';
+        el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
+        el.setAttribute('width', el.offsetWidth);
+        el.setAttribute('height', el.offsetHeight);
+      };
+      if (el.offsetWidth) dim();
+      else if (el.complete) requestAnimationFrame(dim);
+      else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
+    }
+  }
+  if (el.src?.includes('dbFile/')  && el.src .includes(location.host)) { el.src  = ctx.appUrl+el.src .replace(/.*dbFile\//,'dbFile/'); }
+  if (el.href?.includes('dbFile/') && el.href.includes(location.host)) { el.href = ctx.appUrl+el.href.replace(/.*dbFile\//,'dbFile/'); }
+  el.removeAttribute('cmstxt');
+  for (const a of ['qcms-id', 'qcms-mod', 'qcms-edit', 'qcms-drop', 'qcms-offline', 'qcms-name']) el.removeAttribute(a);
+}
+function cleanText(el, tid) {
+  el = el.data ? el.parentNode : el;
+  el.querySelectorAll('*').forEach(el => cleanElement(el, tid));
+}
+// text add file from fs
+async function addFile(txtEl, f) {
+  const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
+  const ph = fileGetPreview(f);
+  const complete = r => {
+    if (f.c1IsImage()) {
+      const load = function() {
+        const file = new dbFile(this);
+        const max = txtEl.offsetWidth;
+        ph.replaceWith(this);
+        if (this.width > max) {
+          const h = max / this.width * this.height;
+          file.set('w',max); file.set('h',h); file.write();
+        }
+        selectNode(this);
+        img.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); // why
+        img.dispatchEvent(new Event('qgResize',{bubbles:true}));
+        img.onload = null;
+      };
+      const img = document.createElement('img');
+      img.src = r.url;
+      img.onload = load;
+    } else {
+      ph.style.opacity = '';
+      ph.firstElementChild.href = r.url;
+      ph.firstElementChild.innerHTML = r.url.replace(/.*\//,'');
+    }
+    txtEl.focus();
+  };
+  cms.cont(pid).upload(f,complete);
+}
+
+// img to dbfile
+function imgToDbFile(img, pid, cb) {
+  const complete = r => {
+    const load = () => {
+      img.removeEventListener('load',load);
+      cb?.(img);
+    };
+    img.addEventListener('load',load);
+    img.src = r.url;
+  };
+  img.c1ToBlob().then(blob => cms.cont(pid).upload(blob, complete));
+}
+
+function fileGetPreview(f) {
+  let ph = null;
+  if (f.c1IsImage()) {
+    ph = c1.dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
+    f.c1ToImage(ph);
+  } else {
+    ph = c1.dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
+  }
+  const range = getSelection().getRangeAt(0);
+  range.insertNode(ph);
+  return ph;
+}
 
 // an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
 let internalDrag = false;
@@ -22,7 +128,7 @@ const drop = async e => {
   if (!txtEl) return;
   const tid = txtEl.getAttribute('cmstxt');
   e.stopImmediatePropagation();
-  setTimeout(() => cms.txtClean(e.target, tid));
+  setTimeout(() => cleanText(e.target, tid));
   if (internalDrag) {
     // firefox turns any image dropped/moved into a contenteditable into a link, so we place it
     // ourselves. draggedEl is the real dragged element (composedPath sees through the shadow panel).
@@ -35,7 +141,7 @@ const drop = async e => {
       } else {
         const img = Object.assign(document.createElement('img'), { src: dragImg.getAttribute('src') });
         range.insertNode(img);
-        img.addEventListener('load', () => cms.txtCleanElement(img, tid), { once: true });
+        img.addEventListener('load', () => cleanElement(img, tid), { once: true });
       }
       txtEl.dispatchEvent(new Event('input', { bubbles: true })); // we placed it ourselves -> no native input event
     }
@@ -45,7 +151,7 @@ const drop = async e => {
     e.preventDefault();
     for (const file of e.dataTransfer.files) {
       if (/[a-z0-9]{8}\.bmp/.test(file.name)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
-      cms.txtAddFile(txtEl, file);
+      addFile(txtEl, file);
     }
   }
   const fileUrl = dataTransferToUrl(e.dataTransfer);
@@ -68,7 +174,7 @@ const drop = async e => {
   img.src = res.url+'/'+res.name;
   const r = getSelection().getRangeAt(0);
   r.insertNode(img);
-  img.addEventListener('load', () => cms.txtCleanElement(img, tid), {once:true});
+  img.addEventListener('load', () => cleanElement(img, tid), {once:true});
 }
 // Inserting and cleaning the pasted html is the editor's job (--u2-rte fields, see page.css).
 // Ours is what it cannot know: files in the clipboard go to the server, and what landed in the
@@ -84,7 +190,7 @@ const paste = e => {
     for (const item of e.clipboardData.items ?? []) {
       if (item.kind !== 'file') continue;
       e.preventDefault();
-      cms.txtAddFile(txtEl, item.getAsFile());
+      addFile(txtEl, item.getAsFile());
     }
   }
   // A pdf viewer labels its plain selection text/html: no tags, and html eats the line breaks that
@@ -98,7 +204,7 @@ const paste = e => {
     range.collapse(false);
     txtEl.dispatchEvent(new Event('input', { bubbles: true })); // we inserted, so no native input event
   }
-  setTimeout(()=>cms.txtClean(txtEl, tid), 1);
+  setTimeout(()=>cleanText(txtEl, tid), 1);
 };
 const root = document.documentElement;
 root.addEventListener('dragover', dragOver);
@@ -115,7 +221,7 @@ root.addEventListener('input', e => {
     const el = e.target.closest('[cmstxt]');
     if (!el) return;
     const tid = el.getAttribute('cmstxt');
-    cms.txtClean(e.target, tid);
+    cleanText(e.target, tid);
   }
   internalDrag = false;
 });

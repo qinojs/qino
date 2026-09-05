@@ -7,7 +7,6 @@ import { root } from '../js/root.js';
 
 import './contextMenu.js';
 import './ddConts.js';
-import './dropPasteHelper.js';
 import './dropPaste.js';
 
 // The editor is the heaviest thing on the page and nothing here waits for it, so it comes
