@@ -5,11 +5,14 @@ import { t } from '@qino/pub/t.js';
 import { qgfileUpload } from '../../../cms/pub/js/fileHelpers.mjs';
 import { root } from '../js/root.js';
 
-import './rte.js';
 import './contextMenu.js';
 import './ddConts.js';
 import './dropPasteHelper.js';
 import './dropPaste.js';
+
+// The editor is the heaviest thing on the page and nothing here waits for it, so it comes
+// alongside instead of ahead: the panel and the block tools are usable while it arrives.
+import('./rte.js');
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 

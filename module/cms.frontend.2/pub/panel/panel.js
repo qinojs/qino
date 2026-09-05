@@ -1,4 +1,4 @@
-import { itemJs } from "@qino/pub/SettingsEditor.mjs";
+import { item } from "@qino/pub/settings.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { settings } from "@qino/pub/settings.js";
@@ -26,7 +26,6 @@ function setSetting(value, path) {
   return api.core["ctx-settings"](p).put({ value });
 }
 
-const { item } = await itemJs;
 const uiState = item(cmsFrontend2Data ?? {});
 const sidebar = uiState.item("sidebar");
 const widgets = uiState.item("widget");

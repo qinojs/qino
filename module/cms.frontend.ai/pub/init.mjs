@@ -1,5 +1,8 @@
+import '@qino/pub/c1.js';
 import "../../ai/pub/chat.js";
-import "./rte.js";
+
+// Registers a toolbar entry on the shared editor — which inline.js also fetches alongside.
+import("./rte.js");
 
 // registers <ai-chat>
 

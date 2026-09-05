@@ -1,7 +1,14 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
-import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
-import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
+
+// ~90 KB of markdown and sanitizer, needed the moment a message is rendered and not before.
+// Awaited once per flow, so the render paths below stay synchronous.
+let render;
+let renderLoad;
+const loadRender = () => renderLoad ??= Promise.all([
+  import('https://cdn.jsdelivr.net/npm/marked@18/+esm'),
+  import('https://cdn.jsdelivr.net/npm/dompurify@3/+esm'),
+]).then(([{ marked }, { default: DOMPurify }]) => render = md => DOMPurify.sanitize(marked.parse(md)));
 
 const apiBase = new URL("api/", location.origin + (globalThis.qino?.appUrl ?? "/"));
 
@@ -90,11 +97,11 @@ class AiChat extends HTMLElement {
       const id = Number(sessionStorage.getItem(this.#storeKey));
       if (!id) return;
       try {
-        const { messages } = await api.ai.sessions(id).get();
+        const [{ messages }] = await Promise.all([api.ai.sessions(id).get(), loadRender()]);
         this.#sessionId = id;
         for (const { role, content } of messages) {
           const el = this.#addMessage(role, content);
-          if (role === 'assistant') el.innerHTML = DOMPurify.sanitize(marked.parse(content));
+          if (role === 'assistant') el.innerHTML = render(content);
         }
       } catch {
         sessionStorage.removeItem(this.#storeKey);
@@ -124,7 +131,7 @@ class AiChat extends HTMLElement {
     let acc = '';
 
     try {
-      const id = await this.#session();
+      const [id] = await Promise.all([this.#session(), loadRender()]);
       const res = await fetch(new URL(`ai/sessions/${id}/stream`, apiBase), {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'X-CSRF-Token': globalThis.qino?.csrfToken },
@@ -134,7 +141,7 @@ class AiChat extends HTMLElement {
         if (ev.delta != null) {
           acc += ev.delta;
           out.classList.remove('loading');
-          out.innerHTML = DOMPurify.sanitize(marked.parse(acc));
+          out.innerHTML = render(acc);
           out.scrollIntoView({ block: 'nearest' });
         } else if ('done' in ev) {
           finish(out, ev.done, acc);
@@ -174,7 +181,7 @@ customElements.define('ai-chat', AiChat);
 
 function finish(out, done, acc) {
   out.classList.remove('loading');
-  out.innerHTML = DOMPurify.sanitize(marked.parse(done || acc));
+  out.innerHTML = render(done || acc);
 }
 
 async function readStream(res, onEvent) {

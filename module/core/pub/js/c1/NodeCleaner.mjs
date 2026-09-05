@@ -1,3 +1,4 @@
+import '../c1.js';
 const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
 const DEFAULT_CONF = {

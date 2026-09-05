@@ -1,3 +1,4 @@
+import '../c1.js';
 c1.form = {
   serializeObject: function(element) {
     const els = element instanceof Element

@@ -1,3 +1,4 @@
+import '@qino/pub/c1.js';
 import { ctx } from '@qino/pub/qino.js';
 
 const { appUrl } = ctx;

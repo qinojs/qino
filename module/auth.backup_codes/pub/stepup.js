@@ -7,7 +7,7 @@ export async function prove(root) {
   const { done } = await proveForm(
     root,
     `<label>${await t`Backup code`} <input name=code autocomplete=off required></label>`,
-    async (form) => (await api["auth.backup_codes"].verify.post({ code: form.elements.code.value.trim() })).ok,
+    async (form) => (await api["auth.backup_codes"].verify.post({ code: form.elements.code.value })).ok,
   );
   return done;
 }

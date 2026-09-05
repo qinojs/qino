@@ -1,3 +1,4 @@
+import '../c1.js';
 // better known as scrollRestoration: https://www.chromestatus.com/feature/5657284784947200
 
 c1.scrollSync = {

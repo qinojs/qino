@@ -1,6 +1,18 @@
 import { api } from '@qino/pub/api.js';
 import { TableHandles } from '@qino/pub/c1/tableHandles.mjs';
 
+// Pasted tables come from Word, Excel or a foreign page. 10 KB of cleaner, fetched on the first such paste.
+const FOREIGN_CONTENT = {
+  tags: {H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,A:1,BR:1,HR:1,P:1,B:1,STRONG:1,IMG:1,DIV:1,TABLE:1,TR:1,TD:1,TH:1,TBODY:1,THEAD:1,SPAN:1,LI:1,UL:1,OL:1},
+  tagsRemove: {'O:P':1,STYLE:1,SCRIPT:1,META:1,LINK:1,TITLE:1},
+  attributes: {src:1,target:1,href:1,alt:1,colspan:1,rowspan:1},
+  removeEmptyElements: 1,
+  removeUnusedElements: 1,
+  removeNbsp: 1,
+};
+let cleanerLoad;
+const foreignCleaner = () => cleanerLoad ??= import('@qino/pub/c1/NodeCleaner.mjs').then(() => new c1.NodeCleaner(FOREIGN_CONTENT));
+
 const handles = new TableHandles();
 let active, pid;
 document.addEventListener('input', e => {
@@ -40,14 +52,15 @@ cms.initNode('cont.table2', function(el) {
     const table = c1.dom.el(html);
     if (table && table.tagName !== 'TABLE') return;
     e.preventDefault(); // not working!
-    setTimeout(() => {
+    setTimeout(async () => {
+      const cleaner = await foreignCleaner();
       let targetTd = e.target.closest('[qcms-id] > table > * > tr > td');
       const startCellIndex = targetTd.cellIndex;
       for (const tbody of table.children) {
         for (const tr of tbody.children) {
           for (const td of tr.children) {
             targetTd.innerHTML = td.innerHTML;
-            onPasteFormatNode(targetTd);
+            cleaner.cleanContents(targetTd, true);
             targetTd.dispatchEvent(new Event('blur', {bubbles:true, cancelable:true}));
             targetTd.blur();
             if (!targetTd.nextElementSibling) break;

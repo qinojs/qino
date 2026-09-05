@@ -1,3 +1,4 @@
+import '../c1.js';
 import '../c1/Placer.mjs';
 
 const doc = document;

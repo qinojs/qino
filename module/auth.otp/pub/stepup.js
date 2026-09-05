@@ -9,8 +9,8 @@ export async function prove(root, factor) {
   const { form, done } = await proveForm(
     root,
     `<button type=button data-send>${await t`Send code`}</button>
-    <label>${await t`Code`} <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" maxlength=6 required></label>`,
-    async (form) => (await otp.verify.post({ code: form.elements.code.value.trim() })).ok,
+    <label>${await t`Code`} <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" required></label>`,
+    async (form) => (await otp.verify.post({ code: form.elements.code.value })).ok,
   );
   const out = form.querySelector("output");
 

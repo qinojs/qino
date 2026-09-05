@@ -1,4 +1,4 @@
-import { itemJs } from "@qino/pub/SettingsEditor.mjs";
+import { item } from "@qino/pub/settings.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 
@@ -21,7 +21,6 @@ function setHtml(el, html) {
   for (const s of el.querySelectorAll("script")) console.warn("Script tag in CMS widget HTML", s);
 }
 
-const { item } = await itemJs;
 const uiState = item(globalThis.qino?.cms?.ui ?? {});
 const sidebar = uiState.item("sidebar");
 const widgets = uiState.item("widget");

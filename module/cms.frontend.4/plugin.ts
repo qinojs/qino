@@ -285,7 +285,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     }
 
     if (access < 2) return;
-    html.scripts.add(moduleUrl + "core/pub/js/c1.js");
 
     if (cmsCtx(ctx).editmode) {
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");

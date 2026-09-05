@@ -1,3 +1,4 @@
+import '../c1.js';
 c1.loading = {
   mark(el, opt) {
     if (!el) return ()=>{};

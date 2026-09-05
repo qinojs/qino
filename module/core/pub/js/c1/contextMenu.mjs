@@ -1,3 +1,4 @@
+import '../c1.js';
 import './Placer.mjs';
 import './fix/contextMenu.mjs';
 

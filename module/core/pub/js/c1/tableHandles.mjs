@@ -1,3 +1,4 @@
+import '../c1.js';
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);
 

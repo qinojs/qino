@@ -1,3 +1,4 @@
+import '../c1.js';
 
 const listeners = [];
 const root = document;

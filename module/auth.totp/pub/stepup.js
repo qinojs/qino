@@ -6,8 +6,8 @@ import { t } from "@qino/pub/t.js";
 export async function prove(root) {
   const { done } = await proveForm(
     root,
-    `<label>${await t`6-digit code`} <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" maxlength=6 required></label>`,
-    async (form) => (await api["auth.totp"].verify.post({ code: form.elements.code.value.trim() })).ok,
+    `<label>${await t`6-digit code`} <input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" required></label>`,
+    async (form) => (await api["auth.totp"].verify.post({ code: form.elements.code.value })).ok,
   );
   return done;
 }

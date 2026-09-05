@@ -1,3 +1,4 @@
+import '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 

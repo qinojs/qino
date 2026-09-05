@@ -1,3 +1,4 @@
+import '../../c1.js';
 document.addEventListener('DOMContentLoaded', () => {
   if (document.body.contextMenu !== undefined) return;
 

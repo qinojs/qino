@@ -74,6 +74,14 @@ export async function proveForm(root, fields, check) {
   const out = form.querySelector("output");
   form.querySelector("input")?.focus();
 
+  // Clean what is pasted instead of cutting it: a leading space in the clipboard must not cost
+  // the last character of the code.
+  for (const el of form.querySelectorAll("input[name=code]")) {
+    el.addEventListener("input", () => {
+      el.value = el.inputMode === "numeric" ? el.value.replace(/\D/g, "").slice(0, 6) : el.value.trim();
+    });
+  }
+
   const done = new Promise((resolve) => {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();

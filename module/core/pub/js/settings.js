@@ -11,7 +11,8 @@
 // Absolute on purpose: a bare specifier is rewritten to a `jsr:` url when this package is published,
 // and no browser can load that. The static import needs a literal, so the url stands twice — a test
 // keeps both in step with the pin in deno.json.
-import { Item } from "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/item.js";
+import { Item, item } from "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/item.js";
+export { item }; // the pin lives here, so whoever needs the factory takes it from here
 export const ITEM_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/";
 
 import { api } from "./api.js";

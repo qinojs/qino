@@ -4,7 +4,7 @@ import { api } from "./api.js";
 import { ITEM_ROOT } from "./settings.js";
 
 const opened = new Set();
-export const itemJs = import(ITEM_ROOT + "item.js");
+const itemJs = import(ITEM_ROOT + "item.js");
 const itemJsHtmlRenderer = import(ITEM_ROOT + "tools/schema/render/html.js").then((mod) => mod.toInput);
 
 const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
