@@ -7,18 +7,20 @@ import type { App, Ctx } from "@qino/qino";
 
 export * as el from "./lib/el.ts";
 
-// Qino names the cdn, once, through its own pin; a caller names the version it wants on it.
-// Cutting the version off the pin keeps a host's spelling of it — jsdelivr `@1.5.16`, gcdn `@v1.5.16`.
+// Two u2 releases live on a page and never meet:
+//
+//   `@qino/u2/` in the import map is the one qino's own modules are written against — the panel, the
+//   editor, the backend. It is the pin in deno.json, and a site does not get to move it.
+//
+//   A layout asks for its own with `assets(ctx, files, "1.4.6")`. That one is written into the page as
+//   a finished url and never touches the import map, so the two versions cannot collide.
+//
+// Both come from the same host: cutting the version off the pin keeps its spelling — jsdelivr
+// `@1.5.16`, gcdn `@v1.5.16`. Qino names the cdn, the caller names the version on it.
 const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 
-/** Where a u2 release lives: the version the caller pinned — a layout's css is written against one —
- *  else the release qino ships with. `u2.root` is the exception: one copy for everything, versions
- *  included, which is what a working copy or a mirror is. */
-export async function root(app: App, version?: string): Promise<string> {
-  const base = String(await app.settings.u2.root ?? "");
-  if (base) return base.endsWith("/") ? base : base + "/";
-  return version ? `${CDN}${version}/` : u2Root;
-}
+/** Where a u2 release lives: the version the caller pinned, else the one qino ships with. */
+export const root = (version?: string): string => version ? `${CDN}${version}/` : u2Root;
 
 // What an element fetches on its own once it upgrades — its dependency, declared where it is known.
 // Paths end in "/", so a version bump inside u2 needs no change here.
@@ -38,8 +40,8 @@ export function elements(ctx: Ctx, ...names: string[]): void {
 
 /** Link u2 files (paths below the root) into the document and allow the origin. `u2/auto.js` is one of
  *  them: it fetches whatever the markup turns out to need, which a layout with a settled design can drop. */
-export async function assets(ctx: Ctx, files: string[], version?: string): Promise<void> {
-  const base = await root(ctx.app, version);
+export function assets(ctx: Ctx, files: string[], version?: string): void {
+  const base = root(version);
   for (const directive of ["style-src", "script-src", "connect-src"] as const) ctx.res.csp[directive][base] = true;
   for (const f of files) (f.endsWith(".js") ? ctx.res.html.scripts : ctx.res.html.styles).add(base + f);
 }

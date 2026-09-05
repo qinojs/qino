@@ -9,7 +9,7 @@ export default async function codemirrorView(file: string): Promise<string> {
   const ctx = getCtx();
   const resHtml = ctx.res.html;
 
-  await u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css"]);
+  u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css"]);
 
   resHtml.scripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
 

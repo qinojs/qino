@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   const resHtml = ctx.res.html;
-  await u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);
+  u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
   resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");

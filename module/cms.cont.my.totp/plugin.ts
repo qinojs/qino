@@ -10,7 +10,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
-  await u2.assets(ctx, ["el/qrcode/qrcode.js"]);
+  u2.assets(ctx, ["el/qrcode/qrcode.js"]);
   return html.async`<div>
   <div data-apps>${t`Loading…`}</div>
   <div data-setup hidden></div>

@@ -12,7 +12,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   resHtml.class.add("qgCMS");
   resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
-  await u2.assets(ctx, [
+  u2.assets(ctx, [
     "css/norm/norm.css",
     "css/base/base.css",
     "css/classless/variables.css",
