@@ -6,7 +6,7 @@ import type { App } from "@qino/qino";
 
 export const settingsSchema = {
   properties: {
-    root: { type: "string", format: "uri", description: "Base url of the u2 release this site uses. Empty = the version qino ships with." },
+    root: { type: "string", format: "uri", description: "One u2 copy for the whole site — a working copy or a mirror. Overrides every version a layout pinned. Empty = the cdn and pin qino ships with." },
   },
 };
 

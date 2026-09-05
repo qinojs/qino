@@ -7,10 +7,13 @@ import type { App, Ctx } from "@qino/qino";
 
 export * as el from "./lib/el.ts";
 
-const CDN = "https://cdn.jsdelivr.net/gh/u2ui/u2@";
+// Qino names the cdn, once, through its own pin; a caller names the version it wants on it.
+// Cutting the version off the pin keeps a host's spelling of it — jsdelivr `@1.5.16`, gcdn `@v1.5.16`.
+const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 
-/** Where a u2 release lives: the site's own base (mirror, self-hosted) wins, then the version the
- *  caller pinned — a layout's css is written against one — else the release qino ships with. */
+/** Where a u2 release lives: the version the caller pinned — a layout's css is written against one —
+ *  else the release qino ships with. `u2.root` is the exception: one copy for everything, versions
+ *  included, which is what a working copy or a mirror is. */
 export async function root(app: App, version?: string): Promise<string> {
   const base = String(await app.settings.u2.root ?? "");
   if (base) return base.endsWith("/") ? base : base + "/";

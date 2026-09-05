@@ -1,4 +1,5 @@
 import { sql } from "../deps.ts";
+import denoJson from "../../../deno.json" with { type: "json" };
 // html`` is shared verbatim with the browser (SSR): one implementation, two runtimes.
 import { hee, html, HtmlString } from "../pub/js/html.js";
 export { hee, html, HtmlString };
@@ -7,7 +8,7 @@ import type { Sql } from "../deps.ts";
 import type { Manifest } from "./ModuleManager.ts";
 
 /** Single source of truth for CDN roots (version pin). */
-export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.15/";
+export const u2Root: string = denoJson.imports["@qino/u2/"];
 // jsr.io serves packages to Deno, not to browsers (no CORS, text/html) — the git tag behind the
 // same pin does. Keeps the browser working without uncdn proxying it.
 export const itemRoot = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/"; // pin lives in deno.json; a test keeps this in step

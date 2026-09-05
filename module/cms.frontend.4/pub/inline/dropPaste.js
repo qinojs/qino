@@ -56,8 +56,7 @@ function cleanElement(el, tid) {
   }
   if (el.src?.includes('dbFile/')  && el.src .includes(location.host)) { el.src  = ctx.appUrl+el.src .replace(/.*dbFile\//,'dbFile/'); }
   if (el.href?.includes('dbFile/') && el.href.includes(location.host)) { el.href = ctx.appUrl+el.href.replace(/.*dbFile\//,'dbFile/'); }
-  el.removeAttribute('cmstxt');
-  for (const a of ['qcms-id', 'qcms-mod', 'qcms-edit', 'qcms-drop', 'qcms-offline', 'qcms-name']) el.removeAttribute(a);
+  for (const a of ['cmstxt', 'qcms-id', 'qcms-mod', 'qcms-edit', 'qcms-drop', 'qcms-offline', 'qcms-name']) el.removeAttribute(a);
 }
 function cleanText(el, tid) {
   el = el.data ? el.parentNode : el;
@@ -68,22 +67,19 @@ async function addFile(txtEl, f) {
   const ph = fileGetPreview(f);
   const complete = r => {
     if (isImage(f)) {
-      const load = function() {
-        const file = new dbFile(this);
+      const img = document.createElement('img');
+      img.onload = () => {
         const max = txtEl.offsetWidth;
-        ph.replaceWith(this);
-        if (this.width > max) {
-          const h = max / this.width * this.height;
-          file.set('w',max); file.set('h',h); file.write();
+        ph.replaceWith(img);
+        if (img.width > max) {
+          new dbFile(img).set('w', max).set('h', max / img.width * img.height).write();
         }
-        selectNode(this);
+        selectNode(img);
         img.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); // why
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
         img.onload = null;
       };
-      const img = document.createElement('img');
       img.src = r.url;
-      img.onload = load;
     } else {
       ph.style.opacity = '';
       ph.firstElementChild.href = r.url;
@@ -94,20 +90,12 @@ async function addFile(txtEl, f) {
   cms.cont(pid).upload(f,complete);
 }
 
-function imgToDbFile(img, pid, cb) {
-  const complete = r => {
-    const load = () => {
-      img.removeEventListener('load',load);
-      cb?.(img);
-    };
-    img.addEventListener('load',load);
-    img.src = r.url;
-  };
-  toBlob(img).then(blob => cms.cont(pid).upload(blob, complete));
+function imgToDbFile(img, pid) {
+  toBlob(img).then(blob => cms.cont(pid).upload(blob, r => img.src = r.url));
 }
 
 function fileGetPreview(f) {
-  let ph = null;
+  let ph;
   if (isImage(f)) {
     ph = c1.dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
     toImage(f, ph);
@@ -223,8 +211,7 @@ root.addEventListener('input', e => {
     // Chrome needs a canceled dragover to fire drop
     const el = e.target.closest('[cmstxt]');
     if (!el) return;
-    const tid = el.getAttribute('cmstxt');
-    cleanText(e.target, tid);
+    cleanText(e.target, el.getAttribute('cmstxt'));
   }
   internalDrag = false;
 });
