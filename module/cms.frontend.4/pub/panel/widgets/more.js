@@ -5,8 +5,8 @@ import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 export const css = `
-.-moreWidget .-feedbackform textarea { width:100%; height:12.5rem; }
-.-moreWidget .-feedbackform button { width:100%; padding:.625rem 3.125rem; }
+.-moreWidget .-feedbackform textarea { width:100%; height:12.5rem; margin-bottom:.5em; }
+.-moreWidget .-feedbackform button { width:100%; }
 .-moreWidget .-pwchange table { width:13.4375rem; }
 .-moreWidget .-pwchange input { width:100%; }
 .-moreWidget .-thanks { color:#4c4; display:block; margin:.5em 0; }

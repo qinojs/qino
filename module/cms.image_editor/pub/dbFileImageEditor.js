@@ -1,11 +1,9 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
-import '@qino/pub/qg/fileHelpers.mjs';
 
+import { qgfileUpload } from '../../cms/pub/js/fileHelpers.mjs';
 import { debounce, ImageEditor } from './imageEditor.js';
-
-// globalThis.qgfileUpload
 
 const meta = id => api['cms.image_editor'].meta(id);
 const loadingMjs = () => import('@qino/pub/c1/loading.mjs');
@@ -23,8 +21,8 @@ const EDITOR_CSS = `
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 
     &::after {
-        font-family: 'qg_cms';
-        content: '\\e800';
+        font-family: 'Material Icons';
+        content: 'expand_more';
         position: absolute;
         display: flex;
         align-items: center;
@@ -39,12 +37,12 @@ const EDITOR_CSS = `
     &:focus {
         color: #fff;
         background-color: var(--cms-dark);
-        &::after { content: '\\e801'; }
+        &::after { content: 'expand_less'; }
     }
     &.-title:first-child {
         background-color: rgb(60, 60, 60);
         color: #fff;
-        &::after { content: '\\e902'; }
+        &::after { content: 'close'; }
     }
 
     & + div {

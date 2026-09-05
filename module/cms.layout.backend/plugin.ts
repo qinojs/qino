@@ -33,10 +33,10 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
     "el/code/code.css",
     "el/menubutton/menubutton.css",
     "el/tree/tree.css",
-    // "el/ico/ico.js",
-    // "el/breadcrumb/breadcrumb.js",
+    "el/ico/ico.js",
+    "el/breadcrumb/breadcrumb.js",
+    "el/time/time.js",
     // "attr/href/href.js",
-    // "el/time/time.js",
     // "attr/confirm/confirm.js",
     // "el/buttongroup/buttongroup.js",
     // "el/accordion/accordion.js",
@@ -45,14 +45,10 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
     // "el/bytes/bytes.js",
     // "attr/movable/movable.js",
     // "el/menubutton/menubutton.js",
-    "u2/auto.js", // fetches what the markup needs, instead of the list above
+    "u2/auto.js", // fetches additional elements used by backend modules
   ]);
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
-
-  // main.css picks the material set for --u2-ico-dir; u2-ico fetches the svgs, so connect-src needs its origin
-  ctx.res.csp["connect-src"]["https://cdn.jsdelivr.net/npm/@material-icons/svg@1.0.33/"] = true;
-
   const page = await node.page();
 
   // Create default cont if none exists
@@ -74,7 +70,10 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       const mod = level === 1 ? app.modules.get(String((await child.conts())[0]?.vs?.module ?? "")) : undefined;
       const use = moduleIcon(mod);
       const icon = use ? html`<svg width=24 height=24 style="flex-shrink:0; height:1.5em; vertical-align:-23.8%">${use}</svg> ` : "";
-      const item = html`<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${await child.url()}">${icon}${await (await child.title()).string()}</a>${sub}`;
+      const subIcon = subs.length
+        ? html`<u2-ico class=-subIcon icon="${active ? "expand_less" : "expand_more"}" aria-hidden=true>${active ? "⌃" : "⌄"}</u2-ico>`
+        : "";
+      const item = html`<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${await child.url()}">${icon}${await (await child.title()).string()}${subIcon}</a>${sub}`;
       out.push(level === 1 ? item : html`<ul>${item}</ul>`);
     }
     return html.join(out);

@@ -64,7 +64,7 @@ export default async function (el, { node, signal }) {
       <div class=-head>
         <select setting="inputs.${id}.type">${options(TYPES, inp.type ?? 'text')}</select>
         <input value="${title.value}" cmstxt=${title.id}>
-        <button type=button class="-handle u2-unstyle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag1>⠿</u2-ico></button>
+        <button type=button class="-handle u2-unstyle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
         <button type=button class="-remove u2-unstyle" title="${t`Delete`}"><u2-ico icon=delete>✕</u2-ico></button>
       </div>
       <div class=-more>

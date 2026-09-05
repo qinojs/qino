@@ -113,15 +113,15 @@ body {
       &:after {
         content:'';
         display: block;
-        font-family: 'qg_cms';
+        font-family:'Material Icons';
         line-height: 1;
         font-size: 20px;
         text-align: center;
       }
     }
   }
-  & tr.-email > th:after { content: "\e600"; }
-  & tr.-pw    > th:after { content: "\e900"; }
+  & tr.-email > th:after { content:'email'; }
+  & tr.-pw    > th:after { content:'lock'; }
 
   & button {
     padding:.625rem .5625rem .5625rem;

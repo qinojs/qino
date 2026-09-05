@@ -18,6 +18,7 @@ customElements.define('qino-cms', class extends HTMLElement {
 export const root = (document.querySelector('qino-cms') ?? document.body.appendChild(document.createElement('qino-cms'))).shadowRoot;
 
 addCmsStyles(root);
+root.host.addStyle('cms.frontend.2/pub/css/icons.css');
 root.host.addStyle('cms.frontend.2/pub/css/off.css').then(() => root.host.hidden = false);
 
 // Page-level handlers (content marking, context menu) must not see clicks inside a dialog.

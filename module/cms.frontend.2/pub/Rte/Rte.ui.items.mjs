@@ -1,6 +1,9 @@
-// scoped query helpers
+import { TableHandles } from '@qino/pub/c1/tableHandles.mjs';
+
+import { domCodeIndent, possibleClasses } from './helpers.mjs';
 import './Rte.ui.mjs';
-import {TableHandles} from '../c1/tableHandles.mjs';
+
+// scoped query helpers
 
 const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
@@ -71,7 +74,7 @@ Rte.ui.setItem('Strikethrough', {cmd:'strikethrough', xenable:':not(img)'});
   const useClass = cl => /^[A-Z]/.test(cl);
   let hasClasses; /* check if this-handle is used */
   const check = c1.debounce(el => {
-    const classes = getPossibleClasses(el);
+    const classes = possibleClasses(el);
     for (const cl of Object.keys(classes)) {
       hasClasses ||= useClass(cl);
     }
@@ -88,7 +91,7 @@ Rte.ui.setItem('Strikethrough', {cmd:'strikethrough', xenable:':not(img)'});
       sopts.innerHTML = '';
       let el = qgSelection.isElement() || getSelection().isCollapsed ? Rte.element : null;
       // if (el === Rte.active) return;
-      const classes = getPossibleClasses(el);
+      const classes = possibleClasses(el);
       for (const sty of Object.keys(classes)) {
         if (!useClass(sty)) return;
         const has = el?.classList?.contains(sty);

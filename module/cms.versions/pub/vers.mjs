@@ -7,7 +7,6 @@ const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
-const cmsFrontend = globalThis.cmsFrontend || 'cms.frontend.2';
 
 const body = document.body;
 const htmlEl = document.documentElement;
@@ -225,7 +224,7 @@ document.addEventListener('keydown',e=>{
 });
 
 cms.contextMenueContent.addItem('Verlauf', {
-  icon: moduleUrl+cmsFrontend+'/pub/img/undo.svg',
+  icon: moduleUrl+'cms.versions/pub/undo.svg',
   selector: '[qcms-edit], #qgCmsContPosMenu',
   onshow() {
     this.activePid = cms.contPos.active.pid;
@@ -291,8 +290,8 @@ function css(){
     padding:12.8px 19.2px 11.2px 10px;
 
     &:after {
-      font-family:qg_cms;
-      content:"\\e902";
+      font-family:'Material Icons';
+      content:'close';
       position:absolute;
       right:.8em;
       border-left:1px solid;
@@ -402,12 +401,12 @@ function css(){
       }
     }
     .-date:before, .-usr:before, .-device:before {
-      font-family:qg_cms;
+      font-family:'Material Icons';
       padding-right:7px;
     }
-    .-date:before { content:"\\e901"; }
-    .-usr:before { content:"\\e600"; }
-    .-device:before { content:"\\e601"; }
+    .-date:before { content:'schedule'; }
+    .-usr:before { content:'person'; }
+    .-device:before { content:'devices'; }
   }
   .-pointer {
     position:absolute;

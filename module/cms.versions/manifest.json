@@ -19,6 +19,7 @@
     "pub/comparer.mjs",
     "pub/draftmode.mjs",
     "pub/module.svg",
+    "pub/undo.svg",
     "pub/vers.mjs",
     "serverInterface.ts"
   ]

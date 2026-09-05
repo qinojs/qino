@@ -146,7 +146,7 @@ async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>>
   const out = new Map<number, HtmlString>();
   for (const [id, all] of byMessage) {
     const shown = await Promise.all(all.slice(0, PREVIEWS).map(async (file) => {
-      if (!previewable(file.mime)) return html`<u2-ico icon=file title="${file.name}">•</u2-ico>`;
+      if (!previewable(file.mime)) return html`<u2-ico icon=insert_drive_file title="${file.name}">•</u2-ico>`;
       const src = await (await app.dbFiles.file(Number(file.id), file)).url({ fmt: "avif", w: 64, h: 64, max: true, grant: "session" });
       return html`<img src="${src}" alt="${file.name}" title="${file.name}" loading=lazy>`;
     }));

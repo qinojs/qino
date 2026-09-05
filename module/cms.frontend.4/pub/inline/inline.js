@@ -1,11 +1,10 @@
 import '@qino/pub/c1/Placer.mjs';
-import '@qino/pub/qg/c1Combobox.mjs';
-import '@qino/pub/qg/fileHelpers.mjs';
 import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
+import { qgfileUpload } from '../../../cms/pub/js/fileHelpers.mjs';
 import { root } from '../js/root.js';
 
 import './rte.js';
@@ -231,7 +230,7 @@ p.on('mark', obj=>{
   menu.style.cursor = (isDraggable?'move':'default');
 
   if (obj.el.hasAttribute('qcms-offline')) {
-    menu.mod.insertAdjacentHTML('beforeend', '<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>')
+    menu.mod.insertAdjacentHTML('beforeend', '<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:\'Material Icons\'; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em">schedule</span>')
   }
   menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
 });

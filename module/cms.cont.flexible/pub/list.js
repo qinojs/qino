@@ -13,11 +13,11 @@ import { t } from '@qino/pub/t.js';
 
 export const css = `
 .-items {
-  .-list { display:flex; flex-direction:column; gap:calc(var(--rem) * .25); }
+  .-list { display:flex; flex-direction:column; gap:.2em; }
 
   .-row {
-    display:flex; align-items:center; gap:calc(var(--rem) * .25);
-    padding:calc(var(--rem) * .15) calc(var(--rem) * .25);
+    display:flex; align-items:center; gap:.2em;);
+    padding:.4em;
     border:1px solid var(--cms-light);
 
     > input {
@@ -82,15 +82,15 @@ export default async function (widget, { node, dialogs, signal, module: fixedMod
   widget.badge = rows.length;
 
   const row = (r) => html.async`<div class=-row itemid="${r.id}" draggable>
-    <button type=button class="-handle u2-unstyle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag1>⠿</u2-ico></button>
+    <button type=button class="u2-unstyle -handle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
     <input value="${r.title ?? ''}" placeholder="${short(r.module)}" title="${t`Title`}">
     <span class=-mod title="${r.module}">${short(r.module)}</span>
-    <button type=button class="-settings u2-unstyle" title="${t`Settings`}"><u2-ico inline icon=settings>⚙</u2-ico></button>
-    <button type=button class="-copy u2-unstyle" title="${t`Copy`}"><u2-ico inline icon=copy>⧉</u2-ico></button>
-    <button type=button class="-remove u2-unstyle" title="${t`Delete`}"><u2-ico inline icon=delete>✕</u2-ico></button>
+    <button type=button class="u2-unstyle -settings" title="${t`Settings`}"><u2-ico icon=settings>⚙</u2-ico></button>
+    <button type=button class="u2-unstyle -copy" title="${t`Copy`}"><u2-ico icon=content_copy>⧉</u2-ico></button>
+    <button type=button class="u2-unstyle -remove" title="${t`Delete`}"><u2-ico icon=delete>✕</u2-ico></button>
   </div>`;
 
-  const addButton = html`<button type=button class="-add u2-button">${t`Add entry`}</button>`;
+  const addButton = html`<button type=button class="-add">${t`Add entry`}</button>`;
   const list = rows.length
     ? html.async`<div class=-list u2-dropzone>${rows.map(row)}</div>`
     : html`<div class=-empty>${t`No entries yet.`}</div>`;

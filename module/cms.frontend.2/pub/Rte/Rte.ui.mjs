@@ -1,4 +1,4 @@
-//import '../c1/Placer.mjs';
+//import '@qino/pub/c1/Placer.mjs';
 import './Rte.mjs';
 
 globalThis.Rte.ui = {
@@ -134,7 +134,7 @@ Rte.on('selectionchange', async ()=>{
   if (!Rte.active) return;
   if (Rte.ui.mouseover) return;
   const margin = getSelection().isCollapsed ? 100 : 20;
-  await import('./../c1/Placer.mjs');
+  await import('@qino/pub/c1/Placer.mjs');
   const placer = new c1.Placer(Rte.ui.div, {
     x:'center',
     y:'after',

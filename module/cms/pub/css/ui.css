@@ -2,14 +2,27 @@
 Generic CMS look: tokens, form elements, tables, modal box, console toast.
 Inline page-editing styles live in cms.frontend.2/pub/css/inline.css instead. */
 
+/* Material Icons v145, Apache-2.0; see ../font/material-icons.LICENSE. */
 @font-face {
-  font-family: 'qg_cms';
-  src:url('../font/cms.woff') format('woff');
+  font-family: 'Material Icons';
+  src:url('../font/material-icons.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
+  font-display: block;
 }
 
-qino-cms:not(:defined) { display:none; }
+u2-ico[icon] {
+  --size: calc(var(--rem) * 1.5);
+}
+u2-ico[icon]:not(:has(> svg)) {
+    font-size:0;
+    &::before {
+        content: attr(icon);
+        display:block;
+        font-size: var(--size);
+    }
+}
+
 
 :root, :host, qino-cms {
   --cms-color: #a06aef;
@@ -23,6 +36,8 @@ qino-cms:not(:defined) { display:none; }
 }
 
 :host, .qgCMS {
+  --u2-ico-dir:;
+  --u2-ico-font: 'Material Icons';
   --color: var(--cms-color);
   color: var(--cms-dark);
   accent-color: var(--color);

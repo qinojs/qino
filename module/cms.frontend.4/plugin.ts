@@ -10,6 +10,12 @@ import { widgetUrl } from "./view/widget.ts";
 import type { Ctx, ApiTree, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+type FeedbackInput = { msg: string; link?: string };
+type FileInput = { pid: number; in: string; path: string };
+type PidInput = { pid: number };
+type WidgetParams = Record<string, unknown> & { pid?: number };
+type WidgetInput = { widget: string; params?: WidgetParams };
+
 export const settingsSchema = {
   properties: {
     "show urls": {
@@ -36,7 +42,7 @@ export const ctxSettingsSchema = {
   },
 };
 
-async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
+async function renderWidget(ctx: Ctx, widget: string, params: WidgetParams = {}): Promise<string | null> {
   const page = await cms(ctx.app).node(params.pid);
   if (await page.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
@@ -176,7 +182,7 @@ export const api: ApiTree = {
       description: "Send panel feedback by email.",
       access: Access.USER,
       input: s.object({ msg: s.string(), link: s.optional(s.string()) }),
-      execute: ({ msg, link }: any, ctx: Ctx) => sendFeedback(ctx, msg, link ?? ""),
+      execute: ({ msg, link }: FeedbackInput, ctx: Ctx) => sendFeedback(ctx, msg, link ?? ""),
     },
   },
   files: {
@@ -185,13 +191,13 @@ export const api: ApiTree = {
       get: {
         description: "Files of the node module's two roots, plus the module's app settings name.",
         access: Access.SUPERUSER,
-        execute: ({ pid }: any, ctx: Ctx) => moduleFiles(ctx, Number(pid)),
+        execute: ({ pid }: PidInput, ctx: Ctx) => moduleFiles(ctx, Number(pid)),
       },
       post: {
         description: "Create an empty file in one of the roots.",
         access: Access.SUPERUSER,
         input: s.object({ in: s.string(), path: s.string() }),
-        execute: async ({ pid, in: scope, path }: any, ctx: Ctx) => {
+        execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
           const file = inRoot(await moduleRoot(ctx, Number(pid), scope), path);
           await Deno.mkdir(dirname(file), { recursive: true }).catch(() => {});
           await Deno.writeTextFile(file, "");
@@ -202,7 +208,7 @@ export const api: ApiTree = {
         description: "Delete a file from one of the roots.",
         access: Access.SUPERUSER,
         input: s.object({ in: s.string(), path: s.string() }),
-        execute: async ({ pid, in: scope, path }: any, ctx: Ctx) => {
+        execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
           await Deno.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
           return { ok: true };
         },
@@ -214,7 +220,7 @@ export const api: ApiTree = {
       get: {
         description: "Widget module urls for the settings of a node, in display order.",
         access: Access.USER,
-        execute: ({ pid }: any, ctx: Ctx) => settingsWidgets(ctx, Number(pid)),
+        execute: ({ pid }: PidInput, ctx: Ctx) => settingsWidgets(ctx, Number(pid)),
       },
     },
   },
@@ -224,7 +230,7 @@ export const api: ApiTree = {
         description: "Render CMS frontend widget.",
         access: Access.USER,
         input: s.object({ params: s.optional(s.record()) }),
-        execute: ({ widget, params }: any, ctx: Ctx) =>
+        execute: ({ widget, params }: WidgetInput, ctx: Ctx) =>
           renderWidget(ctx, widget, params ?? {}),
       },
     },

@@ -5,7 +5,6 @@
   right:0;
   min-width:calc(var(--rem) * 2.7);
   text-align:center;
-  xopacity:0;
   transition:opacity .3s;
 
   html:hover & { opacity:1; }

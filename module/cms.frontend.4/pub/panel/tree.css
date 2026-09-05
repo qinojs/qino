@@ -36,13 +36,13 @@
   & .-type-c { font-size:10px; }
   & .-private::after,
     & .-offline::after {
-    font-family: 'qg_cms';
+    font-family:'Material Icons';
     font-style: normal;
     font-weight: normal;
     margin-left: .2em;
   }
-  & .-private::after { content:'\e900'; }
-  & .-offline::after { content:'\e901'; }
+  & .-private::after { content:'lock'; }
+  & .-offline::after { content:'schedule'; }
   & .-col1, & .-col2 {
     font-size:11px;
     opacity:.7;

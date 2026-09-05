@@ -49,7 +49,7 @@ Deno.test("ResHtml: a script-free page carries no import map and no data block",
   assertEquals(html.render().includes("qino-data"), false);
 
   // any kind of script can resolve against it — a classic one via dynamic import()
-  html.legacyScripts.add("/c1.js");
+  html.scripts.add("/c1.js");
   assertEquals(html.render().includes('<script type="importmap">'), true);
 });
 

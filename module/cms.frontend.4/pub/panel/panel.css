@@ -88,7 +88,7 @@
 
   /* accordion */
   & qcms-widget { display:block; }
-  & .-widgetHead > .-icon { font-family:'qg_cms'; }
+  & .-widgetHead > .-icon { font-family:'Material Icons'; }
   & .-widgetHead {
     display:flex;
     align-items:center;
@@ -103,12 +103,12 @@
     flex:1;
   }
   & .-widgetHead::after {
-    font-family:'qg_cms';
-    content:'\e800';
+    font-family:'Material Icons';
+    content:'expand_more';
     display: flex;
     align-items: center;
-    padding-left:1.2em;
-    font-size:11px;
+    padding-left:.5em;
+    font-size:15px;
   }
   & .-widgetHead:first-child {
     margin-top:0;
@@ -118,7 +118,7 @@
     background-color: var(--cms-dark);
   }
   & .-widgetHead.-open::after {
-    content:'\e801';
+    content:'expand_less';
   }
 
   & .-widgetHead + :is(div, qcms-widget) {
@@ -140,7 +140,6 @@
   & .-info {
     font-size:11px;
     min-height:1.8em;
-    min-width:1.8em;
     margin:-.5em 0;
     border-radius:50%;
     min-width:calc(var(--rem) * 1.4);
@@ -154,16 +153,6 @@
     background:var(--cms-color);
   }
 
-  /* vertical */
-  & tr.-vertical > * {
-    text-align: center;
-    vertical-align: bottom;
-    width:calc(var(--rem) * 1.5);
-  }
-  & tr.-vertical > * > span {
-    white-space:nowrap;
-    writing-mode: vertical-rl;
-  }
   & .-module-boxes {
     display: grid;
     grid-gap: calc(var(--rem) * .2);
@@ -174,7 +163,6 @@
     flex-direction: column;
     cursor:move;
     padding:calc(var(--rem) * .625);
-    color:#fff;
     text-transform:uppercase;
     font-size:10px;
     background-color:var(--cms-light);
@@ -195,47 +183,6 @@
   }
   & .-module-boxes .-title {
     hyphens: auto;
-  }
-  & .-cmsFileList {
-    width:100%;
-    margin-bottom:calc(var(--rem) * .4375);
-    table-layout:fixed;
-  }
-  & .-cmsFileList .-preview {
-    width:calc(var(--rem) * 4.375);
-    height:calc(var(--rem) * 2.5);
-    vertical-align:middle;
-    cursor:pointer;
-  }
-  & .-cmsFileList .-preview > img {
-    background:#ddd;
-  }
-  & .-cmsFileList .-link {
-    vertical-align:middle;
-    white-space:nowrap;
-  }
-  & .-cmsFileList .-link > a {
-    overflow:hidden;
-    text-overflow:ellipsis;
-    display:block;
-  }
-  & .-cmsFileList .-size {
-    text-align:right;
-    width:calc(var(--rem) * 4);
-    font-size:12px;
-    vertical-align:middle;
-    white-space: nowrap;
-  }
-  & .-cmsFileList .-handle {
-    width:calc(var(--rem) * 1.375);
-    background:center no-repeat url(../img/drag1.svg);
-    cursor:n-resize;
-  }
-  & .-cmsFileList .-delete {
-    cursor:pointer;
-    width:calc(var(--rem) * 1.375);
-    padding-right:calc(var(--rem) * .375);
-    background:center no-repeat url(../img/delete.svg);
   }
 
 }
@@ -260,12 +207,5 @@
   }
   #panel > .-sidebar > .-item > .-title > .-text {
     font-size:1em;
-  }
-  #panel .-module-boxes > div {
-    flex-basis:calc(var(--rem) * 6.25);
-  }
-  #panel .-module-boxes .-img {
-    width:calc(var(--rem) * 3);
-    height:calc(var(--rem) * 3);
   }
 }

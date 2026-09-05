@@ -28,8 +28,8 @@ export default async function (widget, { node, dialogs, signal }) {
       <tr><td><span class=-access-1 style="font-size:1.7em">&#x2B24;</span><td>${t`View page`}
       <tr><td><span class=-access-2 style="font-size:1.7em">&#x2B24;</span><td>${t`Edit page`}
       <tr><td><span class=-access-3 style="font-size:1.7em">&#x2B24;</span><td>${t`Edit page and manage permissions`}
-      <tr><td style="padding-left:.125rem"><span style="font-family:'qg_cms';font-size:1.7em">&#xe900;</span><td>${t`The page is not publicly accessible`}
-      <tr><td style="padding-left:.125rem"><span style="font-family:'qg_cms';font-size:1.7em">&#xe901;</span><td>${t`The page is scheduled and currently not online`}
+      <tr><td style="padding-left:.125rem"><span style="font-family:'Material Icons';font-size:1.7em">lock</span><td>${t`The page is not publicly accessible`}
+      <tr><td style="padding-left:.125rem"><span style="font-family:'Material Icons';font-size:1.7em">schedule</span><td>${t`The page is scheduled and currently not online`}
     </table>
   </div>`;
 

@@ -32,8 +32,10 @@
     "plugin.ts",
     "pub/beta-api-node.js",
     "pub/css/ui.css",
-    "pub/font/cms.woff",
+    "pub/font/material-icons.LICENSE",
+    "pub/font/material-icons.woff2",
     "pub/js/cms.mjs",
+    "pub/js/fileHelpers.mjs",
     "pub/js/settings.js",
     "pub/js/styles.js",
     "pub/module.svg"

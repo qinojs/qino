@@ -1,12 +1,10 @@
 import '@qino/pub/c1/Placer.mjs';
-import '@qino/pub/qg/c1Combobox.mjs';
-import '@qino/pub/qg/fileHelpers.mjs';
-import '@qino/pub/Rte/index.mjs';
 import '@qino/pub/c1/fix/contextMenu.mjs';
 import '@qino/pub/c1/contextMenu.mjs';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
+import { qgfileUpload } from '../../../cms/pub/js/fileHelpers.mjs';
 import { root } from '../js/root.js';
 
 import './rte.js';

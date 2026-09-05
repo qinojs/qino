@@ -1,5 +1,6 @@
 import '@qino/pub/c1.js';
 import '@qino/pub/c1/onElement.mjs';
+import '@qino/pub/qg/c1Combobox.mjs';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 

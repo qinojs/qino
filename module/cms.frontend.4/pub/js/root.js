@@ -23,9 +23,6 @@ customElements.define('qino-cms', class extends HTMLElement {
 
 export const root = (document.querySelector('qino-cms') ?? document.body.appendChild(document.createElement('qino-cms'))).shadowRoot;
 
-// u2-ico takes its svgs from this module's own img folder — no icon cdn, so no connect-src for one.
-// The path carries the app's mount point, so it cannot be a literal in a css file.
-addCss(root, `:host { --u2-ico-dir: '${ctx.moduleUrl}cms.frontend.4/pub/img/{icon_name}.svg' }`);
 
 // norm.css and base.css come with enhance(); this is the cms layer on top
 addStyle(root, 'cms/pub/css/ui.css');

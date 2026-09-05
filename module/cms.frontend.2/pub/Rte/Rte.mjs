@@ -1,4 +1,4 @@
-import '../c1/NodeCleaner.mjs';
+import '@qino/pub/c1/NodeCleaner.mjs';
 import './crossbrowser.mjs';
 
 const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children

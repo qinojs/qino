@@ -5,6 +5,9 @@ import { widgetUrl } from "./view/widget.ts";
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
 
+type WidgetParams = Record<string, unknown> & { pid?: number };
+type WidgetInput = { widget: string; params?: WidgetParams };
+
 export const settingsSchema = {
   properties: {
     "show urls": {
@@ -31,7 +34,7 @@ export const ctxSettingsSchema = {
   },
 };
 
-async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
+async function renderWidget(ctx: Ctx, widget: string, params: WidgetParams = {}): Promise<string | null> {
   const page = await cms(ctx.app).node(params.pid);
   if (await page.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
@@ -50,7 +53,7 @@ export const api: ApiTree = {
         description: "Render CMS frontend widget.",
         access: Access.USER,
         input: s.object({ params: s.optional(s.record()) }),
-        execute: ({ widget, params }: any, ctx: Ctx) =>
+        execute: ({ widget, params }: WidgetInput, ctx: Ctx) =>
           renderWidget(ctx, widget, params ?? {}),
       },
     },
@@ -109,8 +112,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (editmode) {
 
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
-      html.styles.add(moduleUrl + "core/pub/js/Rte/main.css");
+      html.styles.add(moduleUrl + "cms.frontend.2/pub/Rte/main.css");
       html.styles.add(moduleUrl + "cms/pub/css/ui.css");
+      html.styles.add(moduleUrl + "cms.frontend.2/pub/css/icons.css");
 
       html.styles.add(moduleUrl + "cms.frontend.2/pub/inline/page.css");
       html.scripts.add(moduleUrl + "cms.frontend.2/pub/inline/inline.js");

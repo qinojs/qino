@@ -1,3 +1,4 @@
+import '../c1.js';
 
 c1.Placer = class {
   constructor(el, options={}){

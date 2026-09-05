@@ -19,7 +19,6 @@ export const css = `
    The cell path is spelled out to outweigh .-styled's own padding rule */
 .-media .-list > * > tr > :is(.-handle, .-delete) {
   width:calc(var(--rem) * 1.7); padding-inline:0; text-align:center; --size:calc(var(--rem) * 1.4); }
-.-media .-list u2-ico { --size: calc(var(--rem) * 1.5); }
 .-media .-handle { cursor:n-resize; }
 .-media .-delete { cursor:pointer; }
 .-media .-tools { display:flex; flex-wrap:wrap; gap:.5em; margin-bottom:.8em; }
@@ -65,7 +64,7 @@ export default async function (widget, { node, dialogs, signal }) {
       : html`<a href="${file.url}" target=_blank title="${file.name}">${file.name}</a>`
     }${slot[0] === '_' ? '' : html`<div class=-slot>(${slot})</div>`}
     <td class=-size>${kb(file.size)}
-    <td class=-handle u2-draghandle><u2-ico icon=drag1>⠿</u2-ico>
+    <td class=-handle u2-draghandle><u2-ico icon=drag_indicator>⠿</u2-ico>
     <td class=-delete><button class=u2-unstyle title="${t`delete`}"><u2-ico icon=delete>✕</u2-ico></button>`;
 
   await widget.html`<div class=-media>

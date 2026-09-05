@@ -1,6 +1,6 @@
 import {HTMLParser} from './htmlparser.mjs';
 
-globalThis.domCodeIndent = function(str) {
+export function domCodeIndent(str) {
   let res = '';
   let ind = '';
   let pre = false;
@@ -39,9 +39,10 @@ globalThis.domCodeIndent = function(str) {
     }
   });
   return res;
-};
+}
 
-globalThis.getPossibleClasses = function (el) { /* eventuell better performance? */
+/** Finds simple class selectors available to an element in same-origin stylesheets. */
+export function possibleClasses(el) {
   const ret = {};
   function test(sel) {
     sel = sel.trim();
@@ -49,8 +50,8 @@ globalThis.getPossibleClasses = function (el) { /* eventuell better performance?
     if (!/\.[A-Z]/.test(sel)) return;
     const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
     if (reg.test(sel)) {
-      const x = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
-      ret[x] = sel;
+      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
+      ret[name] = sel;
     }
   }
   for (const sheet of document.styleSheets) {
@@ -61,12 +62,13 @@ globalThis.getPossibleClasses = function (el) { /* eventuell better performance?
       } catch { /* ignore */ }
     }
     try { // (not same domain) security error in ff
-      if (sheet.cssRules)
+      if (sheet.cssRules) {
         for (const rule of sheet.cssRules) {
           if (!rule.selectorText) continue;
           rule.selectorText.split(',').forEach(test);
         }
+      }
     } catch(e) { console.log(e); }
   }
   return ret;
-};
+}

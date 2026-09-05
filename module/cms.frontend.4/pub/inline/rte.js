@@ -8,13 +8,44 @@ import '@qino/u2/js/rte/tables.js';
 import '@qino/u2/js/rte/unstyle.js';
 import { blockStyles } from '@qino/u2/js/rte/src/client/blocks.js';
 import { linkEditor } from '@qino/u2/js/rte/src/client/link.js';
-import '@qino/pub/Rte/helpers.mjs'; // getPossibleClasses, until the old editor is gone
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
+
+/** Finds simple class selectors available to an element in same-origin stylesheets. */
+function possibleClasses(el) {
+  const ret = {};
+  function test(sel) {
+    sel = sel.trim();
+    if (!sel.includes('.')) return;
+    if (!/\.[A-Z]/.test(sel)) return;
+    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
+    if (reg.test(sel)) {
+      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
+      ret[name] = sel;
+    }
+  }
+  for (const sheet of document.styleSheets) {
+    if (sheet.href && !sheet.href.includes(location.host)) continue; // only inline and same domain
+    if (sheet.href === null) {
+      try {
+        if (sheet.ownerNode.innerHTML === '') continue; // adblock chrome
+      } catch { /* ignore */ }
+    }
+    try { // (not same domain) security error in ff
+      if (sheet.cssRules) {
+        for (const rule of sheet.cssRules) {
+          if (!rule.selectorText) continue;
+          rule.selectorText.split(',').forEach(test);
+        }
+      }
+    } catch(e) { console.log(e); }
+  }
+  return ret;
+}
 
 /* Headings: this CMS offers all six. */
 editor.add(blockStyles([
@@ -26,7 +57,7 @@ editor.add(blockStyles([
    is the convention for "meant for the editor". The property is inherited, so one
    declaration reaches every field, and it also tells the sanitizer and the
    presentation cleanup which classes are content rather than decoration. */
-const contentClasses = () => Object.keys(getPossibleClasses(null)).filter(cl => /^[A-Z]/.test(cl));
+const contentClasses = () => Object.keys(possibleClasses(null)).filter(cl => /^[A-Z]/.test(cl));
 // Scanning the stylesheets is the fallback, not the rule: a site that declares its own list — with
 // groups, or with names the scan cannot guess — keeps it.
 addEventListener('load', () => {
