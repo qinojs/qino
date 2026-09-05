@@ -7,26 +7,35 @@ import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 // What the cms does to content that lands in a text field: data urls uploaded, dbFile images
 // sized, foreign attributes stripped — and the drag, drop and paste handlers that trigger it.
 
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+const root = document.documentElement;
+
 const setRange = range => {
   const sel = getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
 };
 
-/** Select one element, so the editor's tools address it. */
 const selectNode = el => {
   const range = document.createRange();
   range.selectNode(el);
   setRange(range);
 };
 
-// txt-id to page-id
+// Chrome adds a bmp when a html image is dragged — the url beside it is the better source
+const dropFiles = dt => [...dt.files].filter(f => !/[a-z0-9]{8}\.bmp/.test(f.name));
+
+/** The dbFile id when the url is one of ours: dropping our own file must not copy it. */
+const dbFileId = url => url.includes(location.host) && url.match(/dbFile\/([0-9]+)\//)?.[1];
+
+// ─── text fields — [cmstxt][contenteditable] ────────────────────────────────
+
 const txtIds = {};
 cms.txtIdToPid = async function(tid) {
   if (txtIds[tid]) return txtIds[tid];
   return txtIds[tid] = await api.cms['node-id-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
 };
-// clean texts
 function cleanElement(el, tid) {
   if (el.tagName === 'IMG') {
     el.setAttribute('loading','lazy');
@@ -54,7 +63,6 @@ function cleanText(el, tid) {
   el = el.data ? el.parentNode : el;
   el.querySelectorAll('*').forEach(el => cleanElement(el, tid));
 }
-// text add file from fs
 async function addFile(txtEl, f) {
   const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
   const ph = fileGetPreview(f);
@@ -86,7 +94,6 @@ async function addFile(txtEl, f) {
   cms.cont(pid).upload(f,complete);
 }
 
-// img to dbfile
 function imgToDbFile(img, pid, cb) {
   const complete = r => {
     const load = () => {
@@ -112,13 +119,7 @@ function fileGetPreview(f) {
   return ph;
 }
 
-// Chrome adds a bmp when a html image is dragged — the url beside it is the better source
-const dropFiles = dt => [...dt.files].filter(f => !/[a-z0-9]{8}\.bmp/.test(f.name));
-
-/** The dbFile id when the url is one of ours: dropping our own file must not copy it. */
-const dbFileId = url => url.includes(location.host) && url.match(/dbFile\/([0-9]+)\//)?.[1];
-
-// an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
+// set on dragstart, cleared on dragend
 let internalDrag = false;
 let draggedEl = null;
 
@@ -209,7 +210,6 @@ const paste = e => {
   }
   setTimeout(()=>cleanText(txtEl, tid), 1);
 };
-const root = document.documentElement;
 root.addEventListener('dragover', dragOver);
 root.addEventListener('drop',     drop);
 root.addEventListener('paste',    paste);
@@ -229,7 +229,8 @@ root.addEventListener('input', e => {
   internalDrag = false;
 });
 
-// contents
+// ─── nodes (content blocks) — [qcms-id] ─────────────────────────────────────
+
 root.addEventListener('dragover', e=>{
   const el = e.target.closest('[qcms-id]');
   if (!el) return;
