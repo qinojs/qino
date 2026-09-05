@@ -1,6 +1,7 @@
 import '@qino/pub/c1/NodeCleaner.mjs';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
+import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 
 // txt-id to page-id
 const txtIds = {};
@@ -41,7 +42,7 @@ cms.txtAddFile = async function(txtEl, f) {
   const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
   const ph = fileGetPreview(f);
   const complete = r => {
-    if (f.c1IsImage()) {
+    if (isImage(f)) {
       const load = function() {
         const file = new dbFile(this);
         const max = txtEl.offsetWidth;
@@ -78,14 +79,14 @@ cms.imgToDbFile = function(img, pid, cb) {
     img.addEventListener('load',load);
     img.src = r.url;
   };
-  img.c1ToBlob().then(blob => cms.cont(pid).upload(blob, complete));
+  toBlob(img).then(blob => cms.cont(pid).upload(blob, complete));
 };
 
 function fileGetPreview(f) {
   let ph = null;
-  if (f.c1IsImage()) {
+  if (isImage(f)) {
     ph = c1.dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
-    f.c1ToImage(ph);
+    toImage(f, ph);
   } else {
     ph = c1.dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
   }
