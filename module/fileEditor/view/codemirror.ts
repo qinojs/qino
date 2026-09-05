@@ -11,7 +11,7 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   await u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css"]);
 
-  resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
+  resHtml.scripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
 
   const CDN = "https://cdn.jsdelivr.net/npm/codemirror@5.65.5";
   const MIN = "min.";

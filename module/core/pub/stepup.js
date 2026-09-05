@@ -1,6 +1,7 @@
 // Step-up with the password. Core's own factor, so core's own handler.
 import { proveForm } from "./js/stepUpDialog.js";
-import { api, t } from "./js/qino.js";
+import { api } from "./js/api.js";
+import { t } from "./js/t.js";
 
 export async function prove(root) {
   const { done } = await proveForm(

@@ -1,8 +1,6 @@
 // The app's RPC client, one instance for the tab — server-side counterpart: `app.api`.
 //
 //   await api.core.user.me.get();
-//
-// Its own module so `t.js` can use it without importing the `qino.js` barrel that exports them both.
 import { ApiClient } from "./ApiClient.js";
 
 function defaultBase() {

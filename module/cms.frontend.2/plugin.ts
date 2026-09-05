@@ -103,7 +103,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     }
 
     if (access < 2) return;
-    html.legacyScripts.add(moduleUrl + "core/pub/js/c1.js");
+    html.scripts.add(moduleUrl + "core/pub/js/c1.js");
 
     const editmode = access > 1 && Number(settings.cms.editmode());
     if (editmode) {
