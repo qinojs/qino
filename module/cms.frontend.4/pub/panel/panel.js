@@ -11,7 +11,6 @@ const nodeId = globalThis.qino?.cms?.nodeId;
 const activeId = () => cms.cont.active || nodeId;
 
 root.host.addStyle("cms.frontend.4/pub/panel/panel.css");
-root.host.addStyle("cms.frontend.4/pub/panel/tree.css");
 
 const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListener(e, fn));
 const sel = s => s[0] === ">" ? ":scope " + s : s;
@@ -20,10 +19,6 @@ const findAll = (el, s) => el.querySelectorAll(sel(s));
 function setHtml(el, html) {
   el.innerHTML = html;
   for (const s of el.querySelectorAll("script")) console.warn("Script tag in CMS widget HTML", s);
-}
-function setSetting(value, path) {
-  const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);
-  return api.core["ctx-settings"](p).put({ value });
 }
 
 const { item } = await itemJs;
@@ -80,7 +75,7 @@ const loadWidget = (widget, params, cb) => {
 
 
 uiState.addEventListener("changeIn", () => {
-  setSetting(uiState.get({ silent: true }), ["cms.frontend.4", "ui"]); // why silent? should we debounce?
+  api.core["ctx-settings"](["cms.frontend.4", "ui"]).put({ value: uiState.get({ silent: true }) }); // why silent? should we debounce?
 });
 
 function syncSidebar(value = sidebar.value) {
@@ -102,10 +97,10 @@ sidebar.addEventListener("set", e => syncSidebar(e.value)); // load only on chan
 if (SIDEBAR_WIDGETS[sidebar.value]) loadWidget(sidebar.value); // …except a client widget, which has no SSR
 
 el.addEventListener("click", (e) => {
-  const titelEl = e.target.closest(".-sidebar > .-item > .-title");
-  if (!titelEl) return;
+  const titleEl = e.target.closest(".-sidebar > .-item > .-title");
+  if (!titleEl) return;
   cms.cont.active = nodeId;
-  sidebar.set(titelEl.closest("[itemid]").getAttribute("itemid"));
+  sidebar.set(titleEl.closest("[itemid]").getAttribute("itemid"));
 });
 
 /* widgets */

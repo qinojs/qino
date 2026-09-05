@@ -10,6 +10,7 @@ import { blockStyles } from '@qino/u2/js/rte/src/client/blocks.js';
 import { linkEditor } from '@qino/u2/js/rte/src/client/link.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
+import '@qino/pub/c1.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);

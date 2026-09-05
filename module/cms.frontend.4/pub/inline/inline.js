@@ -1,6 +1,4 @@
-import '@qino/pub/c1/Placer.mjs';
-import '@qino/pub/c1/fix/contextMenu.mjs';
-import '@qino/pub/c1/contextMenu.mjs';
+import '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
@@ -288,4 +286,4 @@ api.on('PATCH cms/node/:id', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
 
-import("../js/browserCheck.js");
+if (!globalThis.CSS?.supports('selector(&)')) import('../js/browserCheck.js');

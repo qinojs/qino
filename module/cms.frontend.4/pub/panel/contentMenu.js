@@ -1,4 +1,5 @@
 /* What the panel adds to inline's menus on the page. Inline itself knows nothing about settings. */
+import '@qino/pub/c1.js';
 import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
 

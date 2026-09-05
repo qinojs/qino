@@ -33,7 +33,7 @@ export default async function (widget, { node, dialogs, signal }) {
     </table>
   </div>`;
 
-  await import('../tree.js');
+  const { cmsTreeInit } = await import('../tree.js');
   await cmsTreeInit(data);
 
   const inp = widget.querySelector('#page-add');

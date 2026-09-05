@@ -6,9 +6,8 @@
   * loads stays out, and u2-elements in the panel resolve against ours. */
 import { scope } from '@qino/u2/js/dialog/dialog.js';
 import { attachShadow } from '@qino/u2/u2/enhance.js';
-import { ctx } from '@qino/pub/qino.js';
 
-import { addCss, addStyle } from '../../../cms/pub/js/styles.js';
+import { addStyle } from '../../../cms/pub/js/styles.js';
 
 customElements.define('qino-cms', class extends HTMLElement {
   connectedCallback() {

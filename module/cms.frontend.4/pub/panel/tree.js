@@ -1,5 +1,5 @@
 /* CMS page tree based on u2-tree.
-  * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.js
+  * cms.Tree is the facade for panel, contextMenu.js
   * and server listeners. */
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
@@ -10,11 +10,15 @@ const nodeId = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // tree node or null (skip icon/anchor)
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const root = cms.panelRoot;
+const ready = Promise.all([
+  import("@qino/u2/el/tree/tree.js"),
+  root.host.addStyle("cms.frontend.4/pub/panel/tree.css"),
+]);
 
-globalThis.cmsTreeInit = async (json) => {
-  await import("@qino/u2/el/tree/tree.js");
+export async function cmsTreeInit(json) {
+  await ready;
 
-  const root = cms.panelRoot;
   if (!root.querySelector("link[data-u2tree]")) {
     const u2css = Object.assign(document.createElement("link"), { rel: "stylesheet", href: import.meta.resolve("@qino/u2/el/tree/tree.css") });
     u2css.dataset.u2tree = "";
@@ -215,7 +219,7 @@ globalThis.cmsTreeInit = async (json) => {
   for (const n of json) rootNode.append(makeNode(n));
   treeEl.append(rootNode);
   activate(cms.Tree.getNodeById(String(cms.cont.active || nodeId)));
-};
+}
 
 /* Live updates via the cms.Tree facade */
 const onNode = (route, fn) => api.on(route, (ctx) => { const n = cms.Tree?.getNodeById(ctx.params.id); n && fn(n, ctx); });
