@@ -1,3 +1,4 @@
+// A generic RPC client over an api tree — no qino, no app, just a base url.
 const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
 const csrfHeaders = () => globalThis.qino?.csrfToken ? { "X-CSRF-Token": globalThis.qino.csrfToken } : {};
 
