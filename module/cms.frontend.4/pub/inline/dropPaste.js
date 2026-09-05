@@ -2,17 +2,22 @@ import '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
+import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 
 // What the cms does to content that lands in a text field: data urls uploaded, dbFile images
 // sized, foreign attributes stripped — and the drag, drop and paste handlers that trigger it.
+
+const setRange = range => {
+  const sel = getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+};
 
 /** Select one element, so the editor's tools address it. */
 const selectNode = el => {
   const range = document.createRange();
   range.selectNode(el);
-  const selection = getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
+  setRange(range);
 };
 
 // txt-id to page-id
@@ -54,7 +59,7 @@ async function addFile(txtEl, f) {
   const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
   const ph = fileGetPreview(f);
   const complete = r => {
-    if (f.c1IsImage()) {
+    if (isImage(f)) {
       const load = function() {
         const file = new dbFile(this);
         const max = txtEl.offsetWidth;
@@ -91,14 +96,14 @@ function imgToDbFile(img, pid, cb) {
     img.addEventListener('load',load);
     img.src = r.url;
   };
-  img.c1ToBlob().then(blob => cms.cont(pid).upload(blob, complete));
+  toBlob(img).then(blob => cms.cont(pid).upload(blob, complete));
 }
 
 function fileGetPreview(f) {
   let ph = null;
-  if (f.c1IsImage()) {
+  if (isImage(f)) {
     ph = c1.dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
-    f.c1ToImage(ph);
+    toImage(f, ph);
   } else {
     ph = c1.dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
   }
@@ -106,6 +111,12 @@ function fileGetPreview(f) {
   range.insertNode(ph);
   return ph;
 }
+
+// Chrome adds a bmp when a html image is dragged — the url beside it is the better source
+const dropFiles = dt => [...dt.files].filter(f => !/[a-z0-9]{8}\.bmp/.test(f.name));
+
+/** The dbFile id when the url is one of ours: dropping our own file must not copy it. */
+const dbFileId = url => url.includes(location.host) && url.match(/dbFile\/([0-9]+)\//)?.[1];
 
 // an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
 let internalDrag = false;
@@ -117,10 +128,7 @@ const dragOver = e => {
   e.stopImmediatePropagation();
   if (internalDrag) return;
   e.preventDefault(); // Needed outside Firefox to access dropped data
-  const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-  const sel = getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
+  setRange(document.caretRangeFromPoint(e.clientX, e.clientY));
 };
 
 const drop = async e => {
@@ -149,10 +157,7 @@ const drop = async e => {
   }
   if (e.dataTransfer.files.length) {
     e.preventDefault();
-    for (const file of e.dataTransfer.files) {
-      if (/[a-z0-9]{8}\.bmp/.test(file.name)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
-      addFile(txtEl, file);
-    }
+    for (const file of dropFiles(e.dataTransfer)) addFile(txtEl, file);
   }
   const fileUrl = dataTransferToUrl(e.dataTransfer);
   if (!fileUrl) return;
@@ -161,12 +166,10 @@ const drop = async e => {
   // todo: intern file
   // Add file to awoid access problems, but its a copy!!!!
   // we only get here if its on other winodw!! (if internalDrag return)
-  if (fileUrl.includes(location.host)) {
-    const intern = fileUrl.match(/dbFile\/([0-9]+)\//)[1];
-    if (intern) {
-      api.cms.node(pid).files.post({ file: intern });
-      return;
-    }
+  const intern = dbFileId(fileUrl);
+  if (intern) {
+    api.cms.node(pid).files.post({ file: intern });
+    return;
   }
   const res = await api.cms.node(pid).files.post({ file: fileUrl });
   if (!/(jpg|jpeg|gif|png)$/i.test(fileUrl)) return;
@@ -239,23 +242,10 @@ root.addEventListener('drop', e=>{
   e.stopPropagation();
   e.preventDefault();
   function complete() { api.cms.node(pid).html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; }); }
-  if (e.dataTransfer.files.length) {
-    let hasOne = false;
-    for (const file of e.dataTransfer.files) {
-      if (/[a-z0-9]{8}\.bmp/.test(file.name)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
-      hasOne = true;
-      cms.cont(pid).upload(file,complete);
-    }
-    if (hasOne) return;
-  }
+  const files = dropFiles(e.dataTransfer);
+  for (const file of files) cms.cont(pid).upload(file, complete);
+  if (files.length) return;
   const fileUrl = dataTransferToUrl(e.dataTransfer);
   if (!fileUrl) return;
-  if (fileUrl.includes(location.host)) {
-    const match = fileUrl.match(/dbFile\/([0-9]+)\//);
-    if (match) {
-      api.cms.node(pid).files.post({ file: match[1] }).then(complete);
-      return;
-    }
-  }
-  api.cms.node(pid).files.post({ file: fileUrl }).then(complete);
+  api.cms.node(pid).files.post({ file: dbFileId(fileUrl) || fileUrl }).then(complete);
 });

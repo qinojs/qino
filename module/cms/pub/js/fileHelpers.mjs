@@ -23,11 +23,11 @@ export async function qgfileUpload(file, name, options) {
 }
 qgfileUpload.clientResizeSize = 6000000;
 
-function isImage(blob) {
+export function isImage(blob) {
   return blob.type ? blob.type.startsWith('image/') : /(jpg|jpeg|gif|png)$/i.test(blob.name);
 }
 
-function toImage(blob, img = document.createElement('img')) {
+export function toImage(blob, img = document.createElement('img')) {
   const url = URL.createObjectURL(blob);
   return new Promise(resolve => {
     img.onload = () => {
@@ -39,7 +39,7 @@ function toImage(blob, img = document.createElement('img')) {
   });
 }
 
-function toBlob(img, type, quality) {
+export function toBlob(img, type, quality) {
   const canvas = new OffscreenCanvas(img.width, img.height);
   canvas.getContext('2d').drawImage(img, 0, 0);
   return canvas.convertToBlob({ type, quality });
