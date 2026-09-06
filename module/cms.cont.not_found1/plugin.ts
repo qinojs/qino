@@ -53,7 +53,7 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<HtmlString | string>
   if (cmsCtx(ctx).mainNode === await node.cms.nodeFromRequest()) return "";
 
   ctx.res.html.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
-  const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
+  const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.4");
   ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
 
   let savedMsg: HtmlString | string = "";

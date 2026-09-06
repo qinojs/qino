@@ -27,7 +27,7 @@ export const settingsSchema = {
         },
         frontend: {
             type: "string",
-            description: "Name of the active frontend module, e.g. cms.frontend.2.",
+            description: "Name of the active frontend module, e.g. cms.frontend.4.",
         },
         models: {
             type: "string",

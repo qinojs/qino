@@ -562,7 +562,7 @@ ergibt eine Session mit „Log out", falsches den Fehlertext.
 | Module nachinstallieren | — | ✓ `/en/backend/superuser/module-stores` |
 
 `cms.frontend` stand nach der Migration auf `cms.frontend.1`, dem PHP-Modul — dadurch lud die
-Editier-UI nie. `migrate_from_php` bildet den Namen jetzt auf `cms.frontend.2` ab; weitere
+Editier-UI nie. `migrate_from_php` bildet den Namen jetzt auf `cms.frontend.4` ab; weitere
 Umbenennungen kommen in dieselbe Tabelle.
 
 Beim ersten Rendern nennt qino selbst fehlende Module; diese Meldungen sind zuverlässiger als ein

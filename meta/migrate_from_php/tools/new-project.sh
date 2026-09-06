@@ -96,7 +96,7 @@ qino = os.environ["QINO"]
 renames = dict(re.findall(r"\"([^\"]+)\": \"([^\"]+)\"", open(qino + "/meta/migrate_from_php/renamedModules.ts").read()))
 # already in the template, they must not appear twice
 std = {"core", "cms", "cms.text", "cms.image2", "cms.cont.flexible", "cms.cont.text",
-       "cms.cont.image2", "cms.frontend.2", "cms.filebrowser", "fileEditor"}
+       "cms.cont.image2", "cms.frontend.4", "cms.filebrowser", "fileEditor"}
 fixed, legacy, missing = set(std), {"cms.legacy.c1"}, set()
 def needs(mod):
     """what the module declares it needs, so the list stays startable"""

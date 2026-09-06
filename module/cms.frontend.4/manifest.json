@@ -55,7 +55,6 @@
     "pub/panel/widgets/txts.js",
     "pub/panel/widgets/urls.js",
     "view/panel.ts",
-    "view/widget.ts",
     "view/widgets/options.ts"
   ]
 }

@@ -5,7 +5,7 @@
 // Deliberately absent, check before adding: cms.filebrowser.pixabay is a different provider than
 // cms.filebrowser.pexels.
 export const renamedModules: Record<string, string> = {
-  "cms.frontend.1": "cms.frontend.2",
+  "cms.frontend.1": "cms.frontend.4",
   "cms.cont.notFound1": "cms.cont.not_found1", // both render the "main" text
   "cms.cont.notFound": "cms.cont.not_found1", // older spelling, same public purpose
   "cms.cont.lang.choose1": "cms.cont.lang.choose2", // no content, unknown settings fall back
