@@ -7,7 +7,6 @@
   ],
   "files": [
     "manifest.json",
-    "options.ts",
     "plugin.ts",
     "pub/edit.mjs",
     "pub/main.mjs",

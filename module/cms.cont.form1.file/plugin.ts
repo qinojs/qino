@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { formOf } from "@qino/qino/cms.cont.form2";
 
-import options from "./options.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -37,7 +36,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 export const cms = {
   node: {
     render,
-    options,
     widget: "pub/settings.js", // settings widget for the CMS panel (markup + css + behaviour)
     settingsSchema,
     js: ["pub/main.mjs"],
