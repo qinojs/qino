@@ -17,7 +17,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
 
-      - run: deno check --all
+      # `--all` follows the browser files under pub/ too, and those import u2 and item.js from a cdn.
+      # Naming any host replaces deno's default allowlist, so jsr.io has to be listed as well.
+      - run: deno check --all --allow-import=jsr.io:443,gcdn.li:443,cdn.jsdelivr.net:443
       - run: deno task test
 
       - name: Version lesen
