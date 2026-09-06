@@ -59,6 +59,12 @@
     "./tests": "./tests/mod.ts"
   },
   "imports": {
+    "@qino/item-cdn-alt/": "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/",
+    "@qino/item-cdn/": "https://gcdn.li/nuxodin/item.js@0.6.11/",
+    "@qino/u2-alt/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.16/",
+    "@qino/u2/": "https://gcdn.li/u2ui/u2@1.5.16/",
+    "@qino/m/": "./module/",
+    "@qino/pub/": "./module/core/pub/js/",
     "@qino/qino": "./module/core/mod.ts",
     "@qino/qino/ai": "./module/ai/mod.ts",
     "@qino/qino/auth": "./module/auth/mod.ts",
@@ -110,10 +116,6 @@
     "@qino/qino/webapp": "./module/webapp/mod.ts",
     "@qino/qino/tests": "./tests/mod.ts",
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.11/",
-    "@qino/m/": "./module/",
-    "@qino/pub/": "./module/core/pub/js/",
-    "@qino/u2-alt/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.16/",
-    "@qino/u2/": "https://gcdn.li/u2ui/u2@v1.5.16/",
     "@nuxodin/dump": "jsr:@nuxodin/dump@^1.5.2",
     "@simplewebauthn/server": "npm:@simplewebauthn/server@13",
     "@std/assert": "jsr:@std/assert@^1",

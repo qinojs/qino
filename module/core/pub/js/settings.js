@@ -8,12 +8,10 @@
 // is one visitor for the lifetime of the tab. It also keeps item.js — the heaviest thing core ships
 // to the browser — out of every page that only wants `api` or `t`.
 //
-// Absolute on purpose: a bare specifier is rewritten to a `jsr:` url when this package is published,
-// and no browser can load that. The static import needs a literal, so the url stands twice — a test
-// keeps both in step with the pin in deno.json.
-import { Item, item } from "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/item.js";
-export { item }; // the pin lives here, so whoever needs the factory takes it from here
-export const ITEM_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/";
+// `@qino/item-cdn/`, not `@qino/item/`: the latter is the jsr specifier this package is published
+// with, and no browser can load a `jsr:` url. Both pins live in deno.json; a test keeps them in step.
+import { Item, item } from "@qino/item-cdn/item.js";
+export { item }; // whoever needs the factory takes it from here
 
 import { api } from "./api.js";
 

@@ -180,16 +180,15 @@ Deno.test("module stores list every plugin directory", async () => {
   await assertStore(testModuleDir);
 });
 
-// `itemRoot` derives the CDN url from the deno.json pin, but the browser files name it outright:
-// a bare specifier would be published as a `jsr:` one, which no browser can fetch.
-Deno.test("browser files name the pinned item.js url", async () => {
-  const settingsJs = await Deno.readTextFile(moduleDir + "core/pub/js/settings.js");
-  assertEquals(settingsJs.includes(`from "${itemRoot}item.js"`), true, "settings.js imports the pinned url");
-  assertEquals(settingsJs.includes(`ITEM_ROOT = "${itemRoot}"`), true, "settings.js exports the pinned url");
+// item.js is pinned twice: `@qino/item/` (jsr) serves deno, `@qino/item-cdn/` serves the browser,
+// because no browser can load a `jsr:` url. Bump one and the other keeps serving the old files.
+Deno.test("the two item.js pins name the same version", async () => {
+  const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
+  const version = (s: string) => s.match(/@[\^~v]?([\d.]+)\//)?.[1];
+  assertEquals(version(config.imports["@qino/item-cdn/"]), version(config.imports["@qino/item/"]));
+  assertEquals(itemRoot, config.imports["@qino/item-cdn/"]);
 });
 
-// Two pins, one version: the import map serves deno, u2Root serves the browser. Bump one and
-// the other keeps silently serving the old files.
 Deno.test("browser u2Root matches the import map", async () => {
   const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
   assertEquals(u2Root, config.imports["@qino/u2/"]);
@@ -205,7 +204,8 @@ Deno.test({
       const res = await fetch(url);
       assertEquals(res.ok, true, url);
       assertEquals(res.headers.get("access-control-allow-origin"), "*", url);
-      assertEquals(res.headers.get("content-type")?.startsWith("application/javascript"), true, url);
+      const mime = res.headers.get("content-type")?.split(";")[0];
+      assertEquals(mime === "text/javascript" || mime === "application/javascript", true, `${url} → ${mime}`);
       await res.body?.cancel();
     }
   },

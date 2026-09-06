@@ -129,15 +129,18 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("html-ready", ({ ctx }) => {
         // a login owed another factor asks for it wherever it lands, not only on the login page
         if (pendingLogin(ctx)) ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
+        
+        // wird das noch gebraucht? die importMap sollte doch bei aufrufen von u2.asset definiert werden!?
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
+        ctx.res.html.importMap.set("@qino/item-cdn/", itemRoot);
+
         // browser-only: the core's client api, and any module's pub files — relative paths break across stores
         ctx.res.html.importMap.set("@qino/pub/", ctx.req.moduleUrl + "core/pub/js/");
         ctx.res.html.importMap.set("@qino/m/", ctx.req.moduleUrl); // core's own files keep @qino/pub/
-        // Published browser files carry these two urls outright — `@qino/item/` because qino.js has
-        // to name it, `@qino/u2/` because publishing rewrites the bare specifier into the url the
-        // map pointed at. Neither import can be rewritten afterwards. Mapping each url to itself
-        // changes nothing on its own, but it is the one handle a proxy can take hold of: uncdn
-        // rewrites map values, and the browser then resolves the baked url to the proxy.
+        // Publishing rewrites the bare specifiers above into the urls the map pointed at, and those
+        // baked imports can never be rewritten again. Mapping each url to itself changes nothing on
+        // its own, but it is the one handle a proxy can take hold of: uncdn rewrites map values, and
+        // the browser then resolves the baked url to the proxy.
         ctx.res.html.importMap.set(itemRoot, itemRoot);
         ctx.res.html.importMap.set(u2Root, u2Root);
         // What the map points at has to be reachable, or the map is a promise the policy breaks.
