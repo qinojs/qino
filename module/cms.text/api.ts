@@ -15,6 +15,12 @@ class CmsTextService {
     get ctx(): Ctx { return this.#ctx; }
     get #app() { return this.#ctx.app; }
 
+    /** Only configured language codes may reach the text table. "auto"/"clean" are internal source modes. */
+    #lang(code: string, ...modes: string[]): string {
+        if (modes.includes(code) || this.#app.languages.all.includes(code)) return code;
+        throw new ApiError(400, `Unknown language "${code}"`);
+    }
+
     async textAccess(text_id: any): Promise<boolean> {
         text_id = Number(text_id);
         const pid = await this.#app.api.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
@@ -39,6 +45,8 @@ class CmsTextService {
 
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
+        target_lang = this.#lang(target_lang);
+        source_lang = this.#lang(source_lang);
         if (!await this.textAccess(txt_id)) throw new ApiError(403, "No access to this text");
         const db = this.#app.db;
         const input = String(await db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${source_lang}` ?? "");
@@ -69,6 +77,8 @@ class CmsTextService {
         ifNeeded = true,
         subpages = false
     ): Promise<{ count: number; fail: number }> {
+        target_lang = this.#lang(target_lang);
+        source_lang = this.#lang(source_lang, "auto", "clean");
         const stats = { count: 0, fail: 0 };
         const done = await this.translateCont(pid, target_lang, source_lang, ifNeeded);
         if (done === false) ++stats.fail;

@@ -56,6 +56,12 @@ export async function healthChecks(app: App) {
   };
 
   // ── settings ─────────────────────────────────────────────────────────────
+  // qg_setting is a tree over `basis` — dropping a row alone would leave its children pointing at nothing
+  const deleteSetting = async (id: unknown) => {
+    for (const child of await db.query`SELECT id FROM qg_setting WHERE basis = ${id}`) await deleteSetting(child.id);
+    await db.table("qg_setting").delete(id);
+  };
+
   const dupRows = await db.query`SELECT ${sql.id("offset")}, basis, count(id) as count FROM qg_setting GROUP BY basis, ${sql.id("offset")} HAVING count(id) > 1`;
   for (const row of dupRows) {
     const { basis, offset } = row;
@@ -63,7 +69,8 @@ export async function healthChecks(app: App) {
       const solutions: Record<string, { solve: () => Promise<unknown> }> = {
         "remove all without value": {
           solve: async () => {
-            await db.exec`DELETE FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset} AND value = ''`;
+            const empty = await db.query`SELECT id FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset} AND value = ''`;
+            for (const r of empty) await deleteSetting(r.id);
           },
         },
       };
@@ -71,7 +78,7 @@ export async function healthChecks(app: App) {
       for (const r of rows) {
         const countChilds = await db.one`SELECT count(*) FROM qg_setting WHERE basis=${r.id}`;
         solutions[`remove ${r.id} value:"${r.value}" childs:${countChilds}`] = {
-          solve: async () => { await db.table("qg_setting").delete(r.id); },
+          solve: () => deleteSetting(r.id),
         };
       }
       return { solutions };

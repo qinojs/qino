@@ -16,12 +16,9 @@
     background: var(--color-bg);
     border-bottom: var(--line-width) solid var(--line);
 
-    /* sticky only where the menu stays a slim row — an open menu must scroll away */
-    @media (width >= 48rem) {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-    }
+    position: sticky;
+    top: 0;
+    z-index: 2;
 
     .head-bar {
       display: flex;
@@ -37,8 +34,118 @@
     }
 
     /* the call to action sits at the far end, the menu takes the space between */
-    > .head-bar > nav {
+    #head-nav > nav {
       margin-inline: auto;
+    }
+
+    /* Narrow: the menu is a panel behind a button — a popover, so it opens in the top
+       layer, closes on Esc or a tap beside it, and needs no script. Wide: the panel is
+       display:contents, which beats the UA rule that keeps a closed popover hidden, and
+       the nav is a plain flex item of the bar again. */
+    .head-burger {
+      flex: none;
+      margin-inline-start: auto;
+      /* The root font is fluid, so 2.75rem alone can land near 37px on a phone —
+         under the 44px a fingertip reliably hits. The px floor is the guarantee. */
+      width: max(2.75rem, 44px);
+      height: max(2.75rem, 44px);
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    /* three rules, the outer two placed by shadow — they take currentColor */
+    .head-burger::before {
+      content: '';
+      display: block;
+      width: 1.4rem;
+      height: var(--line-width);
+      margin: auto;
+      background: currentColor;
+      box-shadow: 0 -.45rem, 0 .45rem;
+    }
+
+    /* The panel is a sheet at the bottom edge, where the thumb is — not a curtain from
+       the top, which would put the first entry furthest from the hand. */
+    #head-nav {
+      position: fixed;
+      inset: auto 0 0;
+      width: auto;
+      max-height: 80dvh;
+      overflow: auto;
+      overscroll-behavior: contain; /* scrolling the panel must not scroll the page behind it */
+      margin: 0;
+      /* the safe area is the iOS home bar: without it the last row sits under it */
+      padding: .5rem max(var(--gap), env(safe-area-inset-right))
+               max(var(--gap), 1.25rem, env(safe-area-inset-bottom))
+               max(var(--gap), env(safe-area-inset-left));
+      border: 0;
+      border-top: var(--line-width) solid var(--line);
+      border-radius: .9rem .9rem 0 0;
+      background: var(--color-bg);
+      color: var(--color-text);
+      box-shadow: 0 -.5rem 1.5rem rgb(0 0 0 / .18);
+    }
+
+    /* The close button is inside the panel because the burger that opened it lies under
+       the backdrop and reads as disabled. A tap beside the sheet still dismisses. */
+    .head-nav-close {
+      display: block;
+      margin-inline-start: auto;
+      width: max(2.75rem, 44px);
+      height: max(2.75rem, 44px);
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+    }
+    .head-nav-close::before {
+      content: '';
+      display: block;
+      width: 1.1rem;
+      height: 1.1rem;
+      margin: auto;
+      background: currentColor;
+      /* two crossed rules, drawn with a mask so they take currentColor like the burger */
+      mask: linear-gradient(45deg, transparent calc(50% - 1px), #000 calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+            linear-gradient(-45deg, transparent calc(50% - 1px), #000 calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+    }
+
+    /* ::backdrop is outside the cascade of the page — a plain dim, no site variable */
+    #head-nav::backdrop {
+      background: rgb(0 0 0 / .45);
+    }
+
+    /* The sheet slides in from the edge it belongs to. `allow-discrete` on display and
+       overlay is what lets a popover animate at all — without it it is simply there.
+       Scoped to the narrow layout: above 48rem the panel is display:contents and must
+       never be translated or faded. */
+    @media (width < 48rem) and (prefers-reduced-motion: no-preference) {
+      #head-nav {
+        translate: 0 100%;
+        transition: translate .25s ease, overlay .25s allow-discrete, display .25s allow-discrete;
+      }
+      #head-nav:popover-open { translate: 0 0 }
+      @starting-style {
+        #head-nav:popover-open { translate: 0 100% }
+      }
+
+      #head-nav::backdrop {
+        background: rgb(0 0 0 / 0);
+        transition: background .25s ease, overlay .25s allow-discrete, display .25s allow-discrete;
+      }
+      #head-nav:popover-open::backdrop { background: rgb(0 0 0 / .45) }
+      @starting-style {
+        #head-nav:popover-open::backdrop { background: rgb(0 0 0 / 0) }
+      }
+    }
+
+    @media (width >= 48rem) {
+      .head-burger, .head-nav-close { display: none }
+      #head-nav { display: contents }
     }
 
     nav {
@@ -48,11 +155,21 @@
         list-style: none;
       }
 
-      /* narrow: the whole menu is one column, sub-levels open and thumb-reachable */
+      /* narrow: the whole menu is one column, sub-levels open and thumb-reachable.
+         No gap between the rows — a hairline separates them instead, so the tappable
+         area of one row reaches the next and there is no dead strip to miss into.
+         The separator is stated inside the narrow query, not reset in the wide one:
+         once the column turns into a row, a border-top is a line above every entry. */
       > ul {
         display: flex;
         flex-direction: column;
-        gap: var(--gap);
+        gap: 0;
+
+        @media (width < 48rem) {
+          > li + li {
+            border-top: var(--line-width) solid var(--line);
+          }
+        }
 
         ul {
           padding-left: .8rem;
@@ -84,10 +201,29 @@
         }
       }
 
+      /* The row itself is the target, not just the word: a link the width of "Home" is
+         four characters wide and misses more often than it hits. 44px is the smallest
+         target the platform guidelines call comfortable, and it has to be a px floor:
+         the fluid root font puts 3rem below it on a narrow screen. */
       a {
+        display: flex;
+        align-items: center;
+        min-height: max(3rem, 44px);
+        padding-block: .4em;
         color: inherit;
         text-decoration: none;
         border-bottom: 2px solid transparent;
+        -webkit-tap-highlight-color: transparent;
+      }
+      a:active { background: color-mix(in srgb, var(--color-text), transparent 92%) }
+
+      @media (width >= 48rem) {
+        a {
+          display: inline-block;
+          min-height: 0;
+          padding-block: 0;
+        }
+        a:active { background: none }
       }
       a:hover { border-color: var(--line); }
       .cmsActive > a { border-color: currentColor; }

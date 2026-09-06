@@ -3,7 +3,11 @@
   <header id=head>
     <div class="u2-width head-bar">
       <a cms-link=parent(1) class=head-logo><cms-image name=logo node=layout height=34 fit=contain /></a>
-      <cms-cont name=nav module=cms.cont.nav3 node=layout />
+      <button class=head-burger popovertarget=head-nav aria-label=Menu></button>
+      <div id=head-nav popover>
+        <button class=head-nav-close popovertarget=head-nav popovertargetaction=hide aria-label=Close></button>
+        <cms-cont name=nav module=cms.cont.nav3 node=layout />
+      </div>
       <cms-cont name=action module=cms.cont.text node=layout />
     </div>
   </header>
