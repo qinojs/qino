@@ -11,7 +11,8 @@ import type { Manifest } from "./ModuleManager.ts";
 export const u2Root: string = denoJson.imports["@qino/u2/"];
 // jsr.io serves packages to Deno, not to browsers (no CORS, text/html) — the git tag behind the
 // same pin does. Keeps the browser working without uncdn proxying it.
-export const itemRoot = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/"; // pin lives in deno.json; a test keeps this in step
+const itemVersion = denoJson.imports["@qino/item/"].match(/@[\^~]?([\d.]+)\//)?.[1];
+export const itemRoot = `https://cdn.jsdelivr.net/gh/nuxodin/item.js@v${itemVersion}/`;
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 

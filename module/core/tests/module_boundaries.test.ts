@@ -180,17 +180,12 @@ Deno.test("module stores list every plugin directory", async () => {
   await assertStore(testModuleDir);
 });
 
-// The browser gets item.js from a CDN URL, which no import map can derive from the server pin
-// (import.meta.resolve returns an opaque jsr: specifier). So the two are kept in step by hand.
-Deno.test("browser itemRoot matches the pinned item.js version", async () => {
-  const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
-  const pinned = config.imports["@qino/item/"].match(/@(?:\^|~)?([\d.]+)\//)?.[1];
-  const root = `https://cdn.jsdelivr.net/gh/nuxodin/item.js@v${pinned}/`;
-  assertEquals(itemRoot, root);
-  // the browser files name the url outright: a bare specifier would be published as a `jsr:` one
+// `itemRoot` derives the CDN url from the deno.json pin, but the browser files name it outright:
+// a bare specifier would be published as a `jsr:` one, which no browser can fetch.
+Deno.test("browser files name the pinned item.js url", async () => {
   const settingsJs = await Deno.readTextFile(moduleDir + "core/pub/js/settings.js");
-  assertEquals(settingsJs.includes(`from "${root}item.js"`), true, "settings.js imports the pinned url");
-  assertEquals(settingsJs.includes(`ITEM_ROOT = "${root}"`), true, "settings.js exports the pinned url");
+  assertEquals(settingsJs.includes(`from "${itemRoot}item.js"`), true, "settings.js imports the pinned url");
+  assertEquals(settingsJs.includes(`ITEM_ROOT = "${itemRoot}"`), true, "settings.js exports the pinned url");
 });
 
 // Two pins, one version: the import map serves deno, u2Root serves the browser. Bump one and

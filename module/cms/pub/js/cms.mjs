@@ -1,6 +1,6 @@
 import '@qino/pub/c1.js';
 import '@qino/pub/c1/onElement.mjs';
-import '@qino/pub/qg/c1Combobox.mjs';
+import { Combobox } from '@qino/pub/qg/combobox.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 
@@ -71,7 +71,7 @@ Object.assign(DbFileUrl.prototype, proto);
 
 // api: special inputs
 function abortableCombobox(input, apiFn) {
-  const box = new c1Combobox(input);
+  const box = new Combobox(input);
   let last;
   box.searchOptions = () => {
     last?.abort();

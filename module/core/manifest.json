@@ -109,7 +109,7 @@
     "pub/js/c1/tableHandles.mjs",
     "pub/js/finishLogin.mjs",
     "pub/js/html.js",
-    "pub/js/qg/c1Combobox.mjs",
+    "pub/js/qg/combobox.js",
     "pub/js/qino.js",
     "pub/js/settings.js",
     "pub/js/stepUpDialog.js",

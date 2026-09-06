@@ -1,3 +1,7 @@
+/* A classic script on purpose, not a module: it measures and starts loading images, and every
+   millisecond before the first paint counts. `type=module` is deferred by default and adds a
+   fetch waterfall, so this runs synchronously in document order instead. Hence the IIFE and the
+   `globalThis.cms_image2` handle — it is loaded via `html.legacyScripts`, not the import map. */
 !function(){
   'use strict';
   if (globalThis.cms_image2) return;

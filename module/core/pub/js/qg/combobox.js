@@ -13,16 +13,16 @@ dialog.addEventListener('mousedown', e=>{
 dialog.addEventListener('touchstart', e => e.stopPropagation()); // prevent closing cms-panel
 const placer = new c1.Placer(dialog);
 
-globalThis.c1Combobox = function(input){
-  if (input.c1Combobox) return input.c1Combobox;
-  input.c1Combobox = this;
+export function Combobox(input){
+  if (input.combobox) return input.combobox;
+  input.combobox = this;
   input.setAttribute('autocomplete','off');
   input.addEventListener('input', this);
   input.addEventListener('keydown', this);
   input.addEventListener('blur', this);
   this.input = input;
 };
-c1Combobox.prototype = {
+Combobox.prototype = {
   showDialog(){
     if (dialog.parentNode !== doc.body) doc.body.append(dialog);
     if (!dialog.matches(':popover-open')) dialog.showPopover(); // top-layer statt z-index, sonst hinter dem panel-popover
@@ -92,11 +92,11 @@ c1Combobox.prototype = {
         this.hideDialog();
         this.input.dispatchEvent(new CustomEvent('select_by_pointer')); // new
       };
-      dialog.c1Combobox = this;
+      dialog.combobox = this;
     });
   },
   onblur(){
-    dialog.c1Combobox = false;
+    dialog.combobox = false;
     this.hideDialog();
   },
   oninput(){
