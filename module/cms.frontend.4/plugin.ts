@@ -5,8 +5,6 @@ import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
 
-import { widgetUrl } from "./view/widget.ts";
-
 import type { Ctx, ApiTree, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
@@ -48,7 +46,7 @@ async function renderWidget(ctx: Ctx, widget: string, params: WidgetParams = {})
   if (widget.includes("/")) return null;
   ctx.state.cmsWidgetCont = page;
   await ctx.app.languages.nsStart("cms");
-  const mod = await import(widgetUrl(widget));
+  const mod = await import(new URL("./view/widgets/" + widget + ".ts", import.meta.url).href);
   const html = String(await mod.default?.(page, { param: params }) ?? "");
   ctx.app.languages.nsStop();
   return html;

@@ -48,7 +48,7 @@ const SIDEBAR_WIDGETS = {
   tree: "./widgets/tree.js",
 };
 
-const loadWidget = (widget, params, cb) => {
+const loadWidget = (widget) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
   if (!widgetEl) return;
   if (widgetEl.localName === "qcms-widget") return widgetEl.reload();
@@ -62,12 +62,9 @@ const loadWidget = (widget, params, cb) => {
   }
   import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
-    params ||= {};
-    params.pid ||= activeId();
-    api['cms.frontend.4'].widget(widget).post({ params }).then((res) => {
+    api['cms.frontend.4'].widget(widget).post({ params: { pid: activeId() } }).then((res) => {
       loading.done(widgetEl);
       setHtml(widgetEl, res);
-      cb?.({ target: widgetEl });
     });
   });
 };
@@ -77,7 +74,7 @@ uiState.addEventListener("changeIn", () => {
   api.core["ctx-settings"](["cms.frontend.4", "ui"]).put({ value: uiState.get({ silent: true }) }); // why silent? should we debounce?
 });
 
-function syncSidebar(value = sidebar.value) {
+function syncSidebar(value) {
   findAll(el, "> .-sidebar > .-item").forEach((el) => el.classList.remove("-open"));
 
   if (value) {
@@ -92,8 +89,9 @@ function syncSidebar(value = sidebar.value) {
     el.classList.remove("-open");
   }
 }
-sidebar.addEventListener("set", e => syncSidebar(e.value)); // load only on change; initial state comes from SSR
-if (SIDEBAR_WIDGETS[sidebar.value]) loadWidget(sidebar.value); // …except a client widget, which has no SSR
+sidebar.addEventListener("set", e => syncSidebar(e.value));
+// The item the panel ships open is a frame only — no widget renders on the server, so fill it here.
+if (SIDEBAR_WIDGETS[sidebar.value]) loadWidget(sidebar.value);
 
 el.addEventListener("click", (e) => {
   const titleEl = e.target.closest(".-sidebar > .-item > .-title");
