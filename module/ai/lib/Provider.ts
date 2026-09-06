@@ -27,7 +27,8 @@ export class Provider {
         signal: AbortSignal.timeout(this.#timeout()),
       });
       if (res.status !== 429) return res;
-      const retryAfter = parseFloat(res.headers.get("retry-after") ?? "1");
+      // Retry-After may be an HTTP-date instead of seconds; NaN would wait 0 ms and hammer the limit.
+      const retryAfter = parseFloat(res.headers.get("retry-after") ?? "1") || 1;
       if (res.headers.get("x-should-retry") === "false" || retryAfter > 30) return res;
       await new Promise((r) => setTimeout(r, Math.ceil(retryAfter * 1000) + 100));
     }

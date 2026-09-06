@@ -16,7 +16,7 @@ export const css = `
   .-list { display:flex; flex-direction:column; gap:.2em; }
 
   .-row {
-    display:flex; align-items:center; gap:.2em;);
+    display:flex; align-items:center; gap:.2em;
     padding:.4em;
     border:1px solid var(--cms-light);
 
