@@ -74,7 +74,8 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
     FROM file f
     LEFT JOIN page_file pf ON pf.file_id = f.id
     WHERE true${cond}
-    ORDER BY${order} f.id DESC`;
+    ORDER BY${order} f.id DESC
+    LIMIT 500`; // the join yields a row per page, so this is a worst-case guard, not the result count
 
   const res: Record<string, any> = {};
 
