@@ -11,7 +11,7 @@
     "manifest.json",
     "plugin.ts",
     "pub/init.mjs",
-    "pub/rte.js",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/rte.js"
   ]
 }

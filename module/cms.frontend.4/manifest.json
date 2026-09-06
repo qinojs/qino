@@ -22,7 +22,6 @@
     "pub/inline/contextMenu.js",
     "pub/inline/ddConts.js",
     "pub/inline/dropPaste.js",
-    "pub/inline/dropPasteHelper.js",
     "pub/inline/inline.js",
     "pub/inline/page.css",
     "pub/inline/rte.js",
