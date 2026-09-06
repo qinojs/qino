@@ -130,17 +130,20 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // a login owed another factor asks for it wherever it lands, not only on the login page
         if (pendingLogin(ctx)) ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
         
-        // wird das noch gebraucht? die importMap sollte doch bei aufrufen von u2.asset definiert werden!?
+        // These have to be here, not in the u2 module: `deno publish` never analyzes pub/, so browser
+        // files ship with their bare specifiers intact and nothing but this map resolves them — and the
+        // files that write `@qino/u2/` are backend and editor modules, not callers of `u2.assets()`.
+        // Still open: a page that loads no u2 pays for it anyway, and the csp below widens for nothing.
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
         ctx.res.html.importMap.set("@qino/item-cdn/", itemRoot);
 
         // browser-only: the core's client api, and any module's pub files — relative paths break across stores
         ctx.res.html.importMap.set("@qino/pub/", ctx.req.moduleUrl + "core/pub/js/");
         ctx.res.html.importMap.set("@qino/m/", ctx.req.moduleUrl); // core's own files keep @qino/pub/
-        // Publishing rewrites the bare specifiers above into the urls the map pointed at, and those
-        // baked imports can never be rewritten again. Mapping each url to itself changes nothing on
-        // its own, but it is the one handle a proxy can take hold of: uncdn rewrites map values, and
-        // the browser then resolves the baked url to the proxy.
+        // For files that name a cdn url outright rather than a bare specifier — u2 and item both did
+        // until the specifiers above replaced them, and a module in another store still may. Mapping a
+        // url to itself changes nothing on its own, but it is the one handle a proxy can take hold of:
+        // uncdn rewrites map values, and the browser then resolves the literal url to the proxy.
         ctx.res.html.importMap.set(itemRoot, itemRoot);
         ctx.res.html.importMap.set(u2Root, u2Root);
         // What the map points at has to be reachable, or the map is a promise the policy breaks.

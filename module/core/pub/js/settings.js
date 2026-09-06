@@ -8,8 +8,9 @@
 // is one visitor for the lifetime of the tab. It also keeps item.js — the heaviest thing core ships
 // to the browser — out of every page that only wants `api` or `t`.
 //
-// `@qino/item-cdn/`, not `@qino/item/`: the latter is the jsr specifier this package is published
-// with, and no browser can load a `jsr:` url. Both pins live in deno.json; a test keeps them in step.
+// `@qino/item-cdn/`, not `@qino/item/`: the latter is the jsr specifier the server resolves, and no
+// browser can load a `jsr:` url. Publishing ships this file verbatim — `deno publish` never analyzes
+// pub/, so the specifier survives and core's import map is what resolves it. Pins live in deno.json.
 import { Item, item } from "@qino/item-cdn/item.js";
 export { item }; // whoever needs the factory takes it from here
 
