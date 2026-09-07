@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.cms.tree.urls",
+  "description": "Edits page URLs per language in the CMS tree.",
+  "dependencies": [
+    "cms.backend",
+    "cms.backend.cms.tree"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.cms.redirects",
+  "description": "Lists every direct link in one place: which request goes where, which ones are orphaned or shadowed, and makes new ones.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "render.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

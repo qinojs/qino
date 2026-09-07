@@ -1,0 +1,14 @@
+{
+  "name": "emailguard",
+  "description": "Hides email addresses in the public pages from harvesters, without hiding them from visitors.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

@@ -1,6 +1,7 @@
 .cmsBeTree {
 
   white-space: nowrap;
+  & :is(input, button) { font:inherit; }
 
   & .-toggle {
     display:inline-block;
