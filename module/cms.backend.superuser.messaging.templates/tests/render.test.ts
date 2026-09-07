@@ -1,5 +1,5 @@
 import { Db, requestStorage } from "@qino/qino";
-import { assertEquals, assertStringIncludes, fakeT, messagingDbSchema, messagingPlaceholders, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, fakeT, messagingDbSchema, templatePlaceholders, testContext } from "@qino/qino/tests";
 
 import manifest from "../manifest.json" with { type: "json" };
 import { overview, render } from "../render.ts";
@@ -38,11 +38,11 @@ Deno.test("the preview asks the modules themselves, so a template shows the real
     text: `<h1>{{identity.brand}}</h1><p>Hallo {{givenName}}</p>{{content}}`,
   });
   const linked = [
-    { name: "messaging", plugin: { messagingChannel: { name: "email", label: "Email" }, messagingPlaceholders } },
+    { name: "messaging", plugin: { messagingChannel: { name: "email", label: "Email" }, templatePlaceholders } },
     {
       name: "identity",
       plugin: {
-        messagingPlaceholders: {
+        templatePlaceholders: {
           brand: () => Promise.resolve({ text: "Qino Demo", html: "Qino Demo" }),
         },
       },

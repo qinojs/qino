@@ -13,7 +13,7 @@ function fakeNode(dir: string, edit: boolean) {
   return {
     id: 7,
     edit: () => edit,
-    app: { dir: dir, dev: false },
+    app: { dir: dir, dev: false, modules: { linked: () => [] } },
     module: { name, data: `${dir}data/${name}/`, dataUrl: `/app/d/${name}/` },
     cms: { text: (_n: any, part: string) => `<p>${part}</p>` },
   };

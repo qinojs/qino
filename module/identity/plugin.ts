@@ -1,5 +1,5 @@
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
-export { messagingPlaceholders } from "./lib/messaging.ts";
+export { templatePlaceholders } from "./lib/template.ts";
 
 const text = (description: string, maxLength = 191, format?: string) => ({
   type: "string",

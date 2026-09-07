@@ -22,6 +22,7 @@
     "lib/SettingItem.ts",
     "lib/StandardSchema.ts",
     "lib/StoreManager.ts",
+    "lib/templatePlaceholder.ts",
     "lib/api/access.ts",
     "lib/api/client.ts",
     "lib/api/errors.ts",

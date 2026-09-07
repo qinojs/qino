@@ -1,4 +1,4 @@
-import { hee, mainContact } from "@qino/qino";
+import { mainContact } from "@qino/qino";
 
 import { servePixel, trackHit } from "./lib/track.ts";
 import { placeholder, serveUnsubscribe } from "./lib/unsubscribe.ts";
@@ -21,10 +21,10 @@ export const cron = {
 const contact = (type: string): Placeholder => async (app, to) => {
   const usrId = Number(to.usrId);
   const row = usrId ? await mainContact(app.db, usrId, type) : undefined;
-  return row ? { text: String(row.address), html: hee(row.address) } : undefined;
+  return row ? { text: String(row.address) } : undefined;
 };
 
-export const messagingPlaceholders: Record<string, Placeholder> = {
+export const templatePlaceholders: Record<string, Placeholder> = {
   ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", address: "address" }),
   email: contact("email"),
   unsubscribe: placeholder,
@@ -35,7 +35,7 @@ export const messagingPlaceholders: Record<string, Placeholder> = {
 function columns(names: Record<string, string>): Record<string, Placeholder> {
   return Object.fromEntries(Object.entries(names).map(([name, column]) => [name, (_app, to) => {
     const value = String(to[column] ?? "");
-    return Promise.resolve(value ? { text: value, html: hee(value) } : undefined);
+    return Promise.resolve(value ? { text: value } : undefined);
   }]));
 }
 

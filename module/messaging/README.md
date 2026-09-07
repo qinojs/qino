@@ -208,18 +208,18 @@ variant, so the same message arrives the way that channel talks:
 name is declared by a module, keyed by the name written between the braces:
 
 ```ts
-export const messagingPlaceholders: Record<string, Placeholder> = {
+export const templatePlaceholders: Record<string, Placeholder> = {
   ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", email: "email", address: "address" }),
   unsubscribe: placeholder,
 };
 ```
 
 A template writes messaging's own bare — they are the message's base vocabulary — and every other
-module's under the module's name: `{{identity.brand}}`, `{{identity.contactEmail}}`. That is what
+module's under the module's name: `{{identity.name}}`, `{{identity.contact.telephone}}`. That is what
 keeps the site's address apart from the recipient's `{{email}}`, and two modules may both know one.
 
-A `Placeholder` answers per recipient and in both forms — `{ text, html }` — because what is a link
-in markup is a bare address in text. Nothing back means the hole stays empty, which is how
+A `Placeholder` answers per recipient. `{ text }` is escaped by the renderer; a trusted `html` form
+is only needed where markup differs, such as a link. Nothing back means the hole stays empty, which is how
 `{{givenName|Kunde}}` falls back to the name it gives.
 
 The registry is the allowlist: a name nobody declared reads as its fallback, so widening a query

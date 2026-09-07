@@ -3,7 +3,7 @@ import { Db } from "@qino/qino";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { renderer, saveTemplate } from "../mod.ts";
-import { messagingPlaceholders } from "../plugin.ts";
+import { templatePlaceholders } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
 
@@ -14,7 +14,7 @@ async function app(...rows: Record<string, unknown>[]): Promise<App> {
   await db.migrate(dbSchema);
   await db.loadTables();
   for (const row of rows) await db.table("message_template").insert(row);
-  const linked = [{ name: "messaging", plugin: { messagingPlaceholders } }]; // what the module itself declares
+  const linked = [{ name: "messaging", plugin: { templatePlaceholders } }]; // what the module itself declares
   return { db, url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => linked } } as unknown as App;
 }
 

@@ -1,8 +1,10 @@
+import { fillPlaceholders, hee, html as htmlTag, modulePlaceholders, placeholderNames } from "@qino/qino";
+
 import { htmlOf, textOf, textToHtml } from "./format.ts";
 import { rewriteLinks, shortenOwn } from "./links.ts";
 import { markers, PIXEL } from "./track.ts";
 
-import type { App, Row } from "@qino/qino";
+import type { App, Row, TemplatePlaceholder, TemplateValue } from "@qino/qino";
 import type { Msg } from "../mod.ts";
 import type { Profile } from "./format.ts";
 
@@ -10,7 +12,6 @@ import type { Profile } from "./format.ts";
 // other placeholder is what this channel knows about the recipient. It belongs to the channel, so
 // the same message arrives as a signed mail and as a bare line of SMS.
 
-const PLACEHOLDER = /\{\{\s*([\w.]+)\s*(?:\|([^}]*))?\}\}/g;
 const CONTENT = "{{content}}";
 /** Markup that opens with a block of its own — it needs no paragraph around it. */
 const BLOCK = /^\s*<(?:p|h[1-6]|ul|ol|blockquote|pre|table|div|figure|hr)\b/i;
@@ -59,15 +60,15 @@ export async function renderer(
 }
 
 /** A placeholder the renderer works out per recipient, in the two forms a message goes out in. */
-export type Computed = Record<string, { text: string; html: string }>;
+export type Computed = Record<string, TemplateValue>;
 
 /**
- * What a module contributes as `export const messagingPlaceholders`, keyed by the name a template
+ * What a module contributes as `export const templatePlaceholders`, keyed by the name a template
  * writes between braces. It answers per recipient and in both forms, because a value that is a
  * link in markup is a bare address in text. Nothing back means the hole stays empty — a recipient
  * this placeholder has nothing to say about.
  */
-export type Placeholder = (app: App, to: Row) => Promise<{ text: string; html: string } | undefined>;
+export type Placeholder = TemplatePlaceholder<Row>;
 
 /** The same with the template in hand — what a preview of an unwritten template needs. */
 export function templated(
@@ -87,7 +88,7 @@ export function templated(
 
   return (computed = {}) => {
     // `content` is a placeholder like any other, in both forms like any other
-    const all = { ...computed, content: { text, html: html ?? textToHtml(text, profile) } };
+    const all = { ...computed, content: { text, html: htmlTag.raw(html ?? textToHtml(text, profile)) } };
     return {
       // only what was assembled here is tidied: without a template it goes out exactly as written
       text: template ? tidy(fill(templateText, all, "text")) : text,
@@ -128,26 +129,22 @@ function load(app: App, channel: string, name?: string): Promise<Msg | undefined
  * never a second, so a value that reads like a placeholder stays text.
  */
 function fill(template: string, placeholders: Computed, side: "text" | "html"): string {
-  return template.replace(PLACEHOLDER, (_, key, fallback = "") => placeholders[key]?.[side] || fallback);
+  return fillPlaceholders(template, (name) => side === "text"
+    ? placeholders[name]?.text
+    : String(placeholders[name]?.html ?? hee(placeholders[name]?.text ?? "")));
 }
 
 /** Which placeholders these texts name at all — the same reading `fill()` does. */
-const names = (...texts: (string | undefined)[]) =>
-  new Set(texts.flatMap((text) => [...(text ?? "").matchAll(PLACEHOLDER)].map((hit) => hit[1])));
+const names = placeholderNames;
 
 /** What a template writes for a module's placeholder. Messaging's own are the message's base
  *  vocabulary and stay bare; everything else is named after whoever offers it, so two modules can
  *  both know an `email` and a reader can tell whose it is. */
-export const placeholderName = (mod: string, name: string): string => mod === "messaging" ? name : `${mod}.${name}`;
+export { placeholderName } from "@qino/qino";
 
 /** What every linked module offers, by the name a template writes between braces. */
 function placeholders(app: App): Record<string, Placeholder> {
-  const all: Record<string, Placeholder> = {};
-  for (const mod of app.modules.linked()) {
-    const made = mod.plugin.messagingPlaceholders as Record<string, Placeholder> | undefined;
-    for (const [name, make] of Object.entries(made ?? {})) all[placeholderName(mod.name, name)] = make;
-  }
-  return all;
+  return modulePlaceholders<Row>(app, "messaging");
 }
 
 /** Work the asked-for ones out for this recipient; one with nothing to say comes out empty,
@@ -158,4 +155,4 @@ async function computeAll(app: App, asked: [string, Placeholder][], to: Row): Pr
   return values;
 }
 
-const EMPTY = { text: "", html: "" };
+const EMPTY = { text: "" };

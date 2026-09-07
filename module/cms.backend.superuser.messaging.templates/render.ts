@@ -217,7 +217,7 @@ const codes = (names: string[] = [], copy = "") =>
 /** What the modules offer, each under the name of whoever offers it. */
 function contributed(app: App): Map<string, Record<string, Placeholder>> {
   return new Map(app.modules.linked().flatMap((mod) => {
-    const made = mod.plugin.messagingPlaceholders as Record<string, Placeholder> | undefined;
+    const made = mod.plugin.templatePlaceholders as Record<string, Placeholder> | undefined;
     return made && !isEmptyObject(made) ? [[mod.name, made] as const] : [];
   }));
 }
@@ -234,7 +234,7 @@ export async function sampleValues(app: App): Promise<Computed> {
   return Object.fromEntries(values);
 }
 
-const EMPTY = { text: "", html: "" };
+const EMPTY = { text: "" };
 
 function redirect(to: string): string {
   const ctx = getCtx();

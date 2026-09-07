@@ -1,5 +1,5 @@
 import { Db } from "@qino/qino";
-import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, messagingPlaceholders } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, templatePlaceholders } from "@qino/qino/tests";
 
 
 import { inbound } from "../lib/settings.ts";
@@ -27,7 +27,7 @@ async function makeApp(): Promise<App> {
       "messaging.email": { address: "app@qino.test", name: "Qino", inbound: {}, transport: { smtp: {} } },
     },
     url: () => Promise.resolve("https://qino.test/"),
-    modules: { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }] },
+    modules: { linked: () => [{ name: "messaging", plugin: { templatePlaceholders } }] },
     t: fakeT,
   } as unknown as App;
   app.dbFiles = new DbFileManager(app, dir + "/files/");
@@ -82,7 +82,7 @@ Deno.test("an inbound address becomes Reply-To unless the message overrides it",
 
 Deno.test("what only email understands survives the queue", async () => {
   const app = await makeApp();
-  app.modules = { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }, { plugin: { messagingChannel } }] } as unknown as App["modules"];
+  app.modules = { linked: () => [{ name: "messaging", plugin: { templatePlaceholders } }, { plugin: { messagingChannel } }] } as unknown as App["modules"];
   const sent: Record<string, unknown>[] = [];
   let up = false;
   setTransport(app, {

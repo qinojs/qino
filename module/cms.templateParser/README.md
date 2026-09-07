@@ -9,9 +9,9 @@ templates are cached for the lifetime of the process like their imported plugin.
 `renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
 other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.
 
-Deliberately minimal: static HTML plus four constructs — no expressions, no
-logic. Simple and safe, but built to be extended (`cms-if`, `cms-each`,
-`{expr}` may come later).
+Deliberately minimal: static HTML plus four constructs and declared
+`{{placeholders}}` — no expressions or logic. Simple and safe, but built to be
+extended (`cms-if`, `cms-each` may come later).
 
 The rule: a `cms-*` **attribute** (`cms-text`) keeps your tag as the wrapper;
 a `<cms-*>` **element** (`<cms-image>`, `<cms-cont>`) is replaced by its output.
@@ -134,10 +134,25 @@ return html.async`
 - Typos don't fail silently: unknown `cms-*` elements/attributes and missing
   `name=` log a warning in dev and edit mode.
 
+## `{{placeholder|fallback}}`
+
+A linked module may explicitly export `templatePlaceholders`; its module
+name prefixes each key. The renderer resolves only those names, once per node.
+Values work in static text and attribute values; attributes always use escaped
+text, while text nodes may use a module's declared safe HTML form. CMS content
+rendered by `cms-text`, `cms-cont` or other elements is never parsed again.
+Unknown names warn in development and edit mode. A module returns `{ text }` for
+ordinary values; only an `html.raw()` value may additionally be returned as
+`html`, which is inserted only in text nodes.
+
+```html
+<a href="tel:{{identity.contact.telephone}}">
+  {{identity.contact.telephone|Telephone}}
+</a>
+```
+
 ## Ideas (not implemented)
 
-- `{setting.color}` / `{lang}` / `{url}` — plain dot-path lookups in text and
-  attributes; no JS expressions, just escaped property access.
 - `<a cms-file=flyer>` — download links, editable in edit mode like images.
 - `cms-if` / `cms-each` — only once a real module needs them.
 

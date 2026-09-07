@@ -4,7 +4,7 @@ import { fakeT, testContext } from "@qino/qino/tests";
 
 import { renderer } from "../mod.ts";
 import { headers, link, serveUnsubscribe } from "../lib/unsubscribe.ts";
-import { messagingPlaceholders } from "../plugin.ts";
+import { templatePlaceholders } from "../plugin.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
@@ -20,7 +20,7 @@ async function app(): Promise<App> {
     t: fakeT,
     settings: { core: { _secret: "test-secret" } },
     url: () => Promise.resolve("https://qino.test/"),
-    modules: { linked: () => [{ name: "messaging", plugin: { messagingPlaceholders } }] },
+    modules: { linked: () => [{ name: "messaging", plugin: { templatePlaceholders } }] },
   } as unknown as App;
 }
 

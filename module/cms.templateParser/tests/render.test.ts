@@ -7,7 +7,7 @@ import { renderNodes } from "../render.ts";
 /** Minimal Node stand-in; cms/text/cont record their calls */
 function fakeNode(over: Record<string, any> = {}): any {
   const node: any = {
-    app: { dev: false },
+    app: { dev: false, modules: { linked: () => [] } },
     edit: () => false,
     module: { name: "cms.cont.test" },
     calls: [] as any[],
@@ -38,6 +38,41 @@ Deno.test("render: static html passes through, void and bare attrs kept", async 
 Deno.test("render: attribute values are escaped", async () => {
   const out = await render(`<div title='say "hi"'>x</div>`, fakeNode());
   assertEquals(out, `<div title="say &quot;hi&quot;">x</div>`);
+});
+
+Deno.test("render: linked modules fill static text and attributes once", async () => {
+  const node = fakeNode({
+    app: {
+      dev: false,
+      modules: { linked: () => [{ name: "identity", plugin: { templatePlaceholders: {
+        "contact.telephone": async () => ({ text: `<+41>` }),
+      } } }] },
+    },
+  });
+  const out = await render(`<p title="{{identity.contact.telephone|Phone}}">{{identity.contact.telephone|Phone}}</p>`, node);
+  assertEquals(out, `<p title="&lt;+41&gt;">&lt;+41&gt;</p>`);
+});
+
+Deno.test("render: CMS output is not parsed as a template", async () => {
+  const node = fakeNode({
+    app: { dev: false, modules: { linked: () => [{ name: "identity", plugin: { templatePlaceholders: {
+      name: async () => ({ text: "Portal" }),
+    } } }] } },
+    cms: { text: () => "{{identity.name}}" },
+  });
+  assertEquals(await render(`<p cms-text=main></p>`, node), "{{identity.name}}");
+});
+
+Deno.test("render: unknown placeholders warn in dev", async () => {
+  const seen: string[] = [];
+  const log = console.warn;
+  console.warn = (msg: string) => seen.push(msg);
+  try {
+    assertEquals(await render(`<p>{{identity.contact.telephone|Phone}}</p>`, fakeNode({ app: { dev: true, modules: { linked: () => [] } } })), `<p>Phone</p>`);
+    assertEquals(seen.length, 1);
+  } finally {
+    console.warn = log;
+  }
 });
 
 Deno.test("cms-text: tag, options passthrough, inner html as initial", async () => {
