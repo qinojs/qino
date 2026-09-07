@@ -13,7 +13,7 @@ Deno.test("cms.templateParser: a remote module resolves template.html beside plu
   };
   try {
     init({ on: (_name: string, fn: typeof listener) => listener = fn } as never, { signal: new AbortController().signal });
-    const event: any = { node: { module: { source: base + "plugin.ts" } }, render: null };
+    const event: any = { node: { app: { modules: { linked: () => [] } }, module: { source: base + "plugin.ts" } }, render: null };
     await listener(event);
     assertEquals(await event.render(event.node), "<div>remote</div>");
   } finally {
