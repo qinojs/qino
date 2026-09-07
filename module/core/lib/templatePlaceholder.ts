@@ -23,9 +23,8 @@ export const placeholderName = (mod: string, name: string, bare?: string) => mod
 /** What linked modules deliberately offer to templates, optionally leaving one module's names bare. */
 export function modulePlaceholders<Subject>(app: App, bare?: string): Record<string, TemplatePlaceholder<Subject>> {
   const all: Record<string, TemplatePlaceholder<Subject>> = {};
-  for (const mod of app.modules.linked()) {
-    const made = mod.plugin.templatePlaceholders as Record<string, TemplatePlaceholder<Subject>> | undefined;
-    for (const [name, make] of Object.entries(made ?? {})) all[placeholderName(mod.name, name, bare)] = make;
-  }
+  for (const mod of app.modules.linked())
+    for (const [name, make] of Object.entries(mod.plugin.templatePlaceholders ?? {}))
+      all[placeholderName(mod.name, name, bare)] = make as TemplatePlaceholder<Subject>;
   return all;
 }

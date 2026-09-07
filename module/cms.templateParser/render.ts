@@ -9,24 +9,19 @@ import type { TNode, TAttr } from "./parse.ts";
 
 type El = Extract<TNode, { type: "element" }>;
 
-/** One template run: the node it renders for, and the placeholder values its text may name.
- *  A template that names none has no values at all — then every string is already its own answer. */
+/** One template run: the node it renders for, and how its text reads a placeholder. */
 class Tpl {
   node: Node;
-  #values?: Record<string, TemplateValue>;
+  /** In an attribute value: plain text, escaped by whoever writes it out. */
+  text: (source: string) => string;
+  /** In a text node: a module's trusted html form, otherwise its text, escaped. */
+  html: (source: string) => string;
+  /** No values means the template named none — then every string is already its own answer. */
   constructor(node: Node, values?: Record<string, TemplateValue>) {
     this.node = node;
-    this.#values = values;
-  }
-  /** As plain text — an attribute value, escaped by whoever writes it out. */
-  text(source: string): string {
-    const values = this.#values;
-    return values ? fillPlaceholders(source, (name) => values[name]?.text) : source;
-  }
-  /** In a text node: a module's trusted html form, otherwise its text, escaped. */
-  html(source: string): string {
-    const values = this.#values;
-    return values ? fillPlaceholders(source, (name) => String(values[name]?.html ?? hee(values[name]?.text ?? ""))) : source;
+    const same = (source: string) => source;
+    this.text = values ? (source) => fillPlaceholders(source, (name) => values[name]?.text) : same;
+    this.html = values ? (source) => fillPlaceholders(source, (name) => String(values[name]?.html ?? hee(values[name]?.text ?? ""))) : same;
   }
 }
 
@@ -121,8 +116,8 @@ function attrsHtml(attrs: TAttr[], t: Tpl): string {
 }
 
 function tagHtml(el: El, inner: string, t: Tpl): string {
-  if (el.self && VOID.has(el.tag)) return `<${el.tag}${attrsHtml(el.attrs, t)}>`;
-  return `<${el.tag}${attrsHtml(el.attrs, t)}>${inner}</${el.tag}>`;
+  const open = `<${el.tag}${attrsHtml(el.attrs, t)}>`;
+  return el.self && VOID.has(el.tag) ? open : `${open}${inner}</${el.tag}>`;
 }
 
 /** Static subtree back to HTML (cms-text initial content) */
@@ -208,11 +203,5 @@ function templateNames(nodes: TNode[]): Set<string> {
   return names;
 }
 
-function templateTexts(nodes: TNode[]): string[] {
-  const texts: string[] = [];
-  for (const node of nodes) {
-    if (node.type === "text") texts.push(node.value);
-    else texts.push(...node.attrs.flatMap((a) => a.value ?? []), ...templateTexts(node.children));
-  }
-  return texts;
-}
+const templateTexts = (nodes: TNode[]): string[] =>
+  nodes.flatMap((n) => n.type === "text" ? n.value : [...n.attrs.flatMap((a) => a.value ?? []), ...templateTexts(n.children)]);
