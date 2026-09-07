@@ -1,4 +1,4 @@
-import { fillPlaceholders, hee, html as htmlTag, modulePlaceholders, placeholderNames } from "@qino/qino";
+import { fillPlaceholders, hee, html as htmlTag, modulePlaceholders, placeholderName as qualify, placeholderNames } from "@qino/qino";
 
 import { htmlOf, textOf, textToHtml } from "./format.ts";
 import { rewriteLinks, shortenOwn } from "./links.ts";
@@ -140,11 +140,14 @@ const names = placeholderNames;
 /** What a template writes for a module's placeholder. Messaging's own are the message's base
  *  vocabulary and stay bare; everything else is named after whoever offers it, so two modules can
  *  both know an `email` and a reader can tell whose it is. */
-export { placeholderName } from "@qino/qino";
+export const placeholderName = (mod: string, name: string): string => qualify(mod, name, BARE);
+
+/** The module whose placeholders stay bare — the rule lives here, not at each call site. */
+const BARE = "messaging";
 
 /** What every linked module offers, by the name a template writes between braces. */
 function placeholders(app: App): Record<string, Placeholder> {
-  return modulePlaceholders<Row>(app, "messaging");
+  return modulePlaceholders<Row>(app, BARE);
 }
 
 /** Work the asked-for ones out for this recipient; one with nothing to say comes out empty,
