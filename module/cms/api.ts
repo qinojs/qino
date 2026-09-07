@@ -209,14 +209,21 @@ const node = {
 
   texts: {
     get: {
-      description: "Text field names with their text id. Only fields already written or rendered exist.",
+      description: "Text field names with their text id. Without `names`, only fields already written or rendered exist.",
       ...nodeRead,
       query: s.object({
         values: s.optional(s.boolean()).describe("Also return each field's html, so a form needs one request instead of one per field"),
         lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language."),
+        names: s.optional(s.string()).describe("Comma-separated field names, e.g. \"title,intro\": answer only these, and create the missing ones when the caller may write. Without it, every field that exists."),
       }),
-      execute: ({ node, values, lang }: any, ctx: Ctx) =>
-        values ? textsJson(node, lang ?? ctx.lang) : textsJson(node),
+      execute: async ({ node, values, lang, names }: any, ctx: Ctx) => {
+        // An editor names the fields it edits, so they exist before it renders them — a module
+        // creates its texts lazily, and a panel cannot bind to a field that has no id yet.
+        const wanted = String(names ?? "").split(",").map((n: string) => n.trim()).filter(Boolean);
+        if (wanted.length && await node.access(ctx.user) >= 2) await Promise.all(wanted.map((n: string) => node.text(n)));
+        const all = await textsJson(node, values ? lang ?? ctx.lang : undefined);
+        return wanted.length ? Object.fromEntries(wanted.filter((n: string) => n in all).map((n: string) => [n, all[n]])) : all;
+      },
     },
   },
 

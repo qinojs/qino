@@ -16,9 +16,6 @@ const settingsSchema = {
   },
 };
 
-/** Texts of the mail this form writes; the panel edits them, the send reads them. */
-const MAIL_TEXTS = ["mailSubject", "email_before", "email_after"];
-
 /** Contents the module needs to be usable; created once per node. */
 async function init(node: Node): Promise<void> {
   if (node.settings.__inited()) return;
@@ -84,8 +81,6 @@ async function send(node: Node, form: Form): Promise<boolean> {
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {
   await init(node);
   const edit = await node.edit();
-  // the panel edits these in place, so they have to exist before it asks for them
-  if (edit) await Promise.all(MAIL_TEXTS.map((name) => node.text(name)));
   const t = node.app.t;
   const cms = node.cms;
   const redirectId = node.settings.redirect();

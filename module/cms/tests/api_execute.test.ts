@@ -58,7 +58,8 @@ class FakeNode {
       this.textValues[name] = `${lang}:${value}`;
       return true;
     }
-    return new TextObj(this.id * 100, this.textValues[name] ?? "");
+    this.textValues[name] ??= ""; // reading a field creates it, as the real node does
+    return new TextObj(this.id * 100, this.textValues[name]);
   }
   async texts() {
     return new Map(Object.entries(this.textValues).map(([name, value]) => [name, {
@@ -142,6 +143,28 @@ Deno.test("cms api: text fields are listed and read back without being created",
   });
 
   assertEquals(Object.keys(node.textValues), ["main"]); // the read did not create "unknown"
+});
+
+Deno.test("cms api: named text fields are created for a writer and answered alone", async () => {
+  const { ctx, nodes } = await setup();
+  const node = nodes.get(1)!;
+  node.textValues.other = "de:kept";
+
+  const out = await requestStorage.run(ctx, () =>
+    invoke(api, "GET", "/node/1/texts", { names: "intro, title" })); // spaces are trimmed
+
+  assertEquals(Object.keys(out as object).sort(), ["intro", "title"]); // "other" is not asked for
+  assertEquals(Object.keys(node.textValues).sort(), ["intro", "other", "title"]);
+});
+
+Deno.test("cms api: naming text fields creates nothing without write access", async () => {
+  const { ctx, nodes } = await setup(1); // read access only
+  const node = nodes.get(1)!;
+
+  const out = await requestStorage.run(ctx, () => invoke(api, "GET", "/node/1/texts", { names: "intro" }));
+
+  assertEquals(out, {});
+  assertEquals(Object.keys(node.textValues), []);
 });
 
 Deno.test("cms api: text reads pass the output allowlist", async () => {

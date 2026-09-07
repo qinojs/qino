@@ -12,23 +12,19 @@ export const css = `
 .-form2 label { display:block; }
 `;
 
-/** A text field of the node, rendered in place. Both come from render(), so both exist. */
-const field = (texts, name) => texts[name] ?? { id: '', value: '' };
-
 export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
   const [settings, texts, contents] = await Promise.all([
     ref.settings.get({}, { signal }),
-    ref.texts.get({ values: true }, { signal }),
+    // naming them creates the ones this node has not written yet, so each has an id to bind to
+    ref.texts.get({ values: true, names: 'mailSubject,email_before,email_after' }, { signal }),
     ref.contents.get({}, { signal }),
   ]);
   // the success content is created with the node; without it the row stays empty
   const success = contents.find((c) => c.name === 'success');
   const successHtml = success ? await api.cms.node(success.id).html.get({}, { signal }) : '';
 
-  const subject = field(texts, 'mailSubject');
-  const before = field(texts, 'email_before');
-  const after = field(texts, 'email_after');
+  const { mailSubject: subject, email_before: before, email_after: after } = texts;
 
   await widget.html`<table class="-form2 u2-table -Fields -Flex -NoSideGaps">
     <tr>
