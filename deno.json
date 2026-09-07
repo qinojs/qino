@@ -61,8 +61,8 @@
   "imports": {
     "@qino/item-cdn-alt/": "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.11/",
     "@qino/item-cdn/": "https://gcdn.li/nuxodin/item.js@0.6.11/",
-    "@qino/u2-alt/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.16/",
-    "@qino/u2/": "https://gcdn.li/u2ui/u2@1.5.16/",
+    "@qino/u2-alt/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.17/",
+    "@qino/u2/": "https://gcdn.li/u2ui/u2@1.5.17/",
     "@qino/m/": "./module/",
     "@qino/pub/": "./module/core/pub/js/",
     "@qino/qino": "./module/core/mod.ts",

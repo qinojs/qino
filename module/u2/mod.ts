@@ -15,8 +15,6 @@ export * as el from "./lib/el.ts";
 //   A layout asks for its own with `assets(ctx, files, "1.4.6")`. That one is written into the page as
 //   a finished url and never touches the import map, so the two versions cannot collide.
 //
-// Both come from the same host: cutting the version off the pin keeps its spelling — jsdelivr
-// `@1.5.16`, gcdn `@v1.5.16`. Qino names the cdn, the caller names the version on it.
 const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 
 /** Where a u2 release lives: the version the caller pinned, else the one qino ships with. */
