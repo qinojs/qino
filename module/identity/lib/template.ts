@@ -24,8 +24,9 @@ const settings: Record<string, TemplatePlaceholder> = Object.fromEntries(PATHS.m
 export const templatePlaceholders: Record<string, TemplatePlaceholder> = {
   ...settings,
   "organization.address.formatted": async (app) => {
-    const address = app.settings.identity.organization.address;
-    const parts = [await line(app.settings.identity.organization.name), await line(address.streetAddress), [await line(address.postalCode), await line(address.addressLocality)].filter(Boolean).join(" ")].filter(Boolean);
+    const org = app.settings.identity.organization;
+    const town = [await line(org.address.postalCode), await line(org.address.addressLocality)].filter(Boolean).join(" ");
+    const parts = [await line(org.name), await line(org.address.streetAddress), town].filter(Boolean);
     return parts.length ? { text: parts.join(", "), html: html.raw(parts.map(hee).join("<br>")) } : undefined;
   },
   ...asset("logo", 40),
