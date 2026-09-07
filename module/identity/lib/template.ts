@@ -16,7 +16,7 @@ const PATHS = [
 ];
 
 const settings: Record<string, TemplatePlaceholder> = Object.fromEntries(PATHS.map((path) => [path, async (app: App) => {
-  const value = String(await path.split(".").reduce((item, key) => item[key], app.settings.identity) ?? "").trim();
+  const value = await line(path.split(".").reduce((item, key) => item[key], app.settings.identity));
   return value ? { text: value } : undefined;
 }]));
 
@@ -28,11 +28,13 @@ export const templatePlaceholders: Record<string, TemplatePlaceholder> = {
     const parts = [await line(app.settings.identity.organization.name), await line(address.streetAddress), [await line(address.postalCode), await line(address.addressLocality)].filter(Boolean).join(" ")].filter(Boolean);
     return parts.length ? { text: parts.join(", "), html: html.raw(parts.map(hee).join("<br>")) } : undefined;
   },
-  ...asset("logo", { h: 80 }, 40),
-  ...asset("icon", { w: 128, h: 128 }, 64),
+  ...asset("logo", 40),
+  ...asset("icon", 64, true),
 };
 
-function asset(name: string, transform: Record<string, number>, height: number): Record<string, TemplatePlaceholder> {
+/** An uploaded asset at its display height — delivered at twice that, for retina. */
+function asset(name: string, height: number, square = false): Record<string, TemplatePlaceholder> {
+  const transform = square ? { w: height * 2, h: height * 2 } : { h: height * 2 };
   const url = async (app: App) => {
     const asset = await file(app, name).catch(() => undefined);
     const [path, base] = await Promise.all([asset?.url(transform).catch(() => undefined), app.url().catch(() => undefined)]);

@@ -41,8 +41,8 @@ export async function renderer(
   const marking = markers(app, links);
   // only the ones actually named: working out a value per recipient is not worth spending on
   // a template that never mentions it
-  const named = names(body.msg.text, chrome?.msg.text);
-  const asked = Object.entries(placeholders(app)).filter(([name]) => named.has(name));
+  const named = placeholderNames(body.msg.text, chrome?.msg.text); // the same reading `fill()` does
+  const asked = Object.entries(modulePlaceholders<Row>(app, BARE)).filter(([name]) => named.has(name));
 
   return {
     // what the message turned out to name, so a channel can add what a placeholder needs from it —
@@ -134,9 +134,6 @@ function fill(template: string, placeholders: Computed, side: "text" | "html"): 
     : String(placeholders[name]?.html ?? hee(placeholders[name]?.text ?? "")));
 }
 
-/** Which placeholders these texts name at all — the same reading `fill()` does. */
-const names = placeholderNames;
-
 /** What a template writes for a module's placeholder. Messaging's own are the message's base
  *  vocabulary and stay bare; everything else is named after whoever offers it, so two modules can
  *  both know an `email` and a reader can tell whose it is. */
@@ -144,11 +141,6 @@ export const placeholderName = (mod: string, name: string): string => qualify(mo
 
 /** The module whose placeholders stay bare — the rule lives here, not at each call site. */
 const BARE = "messaging";
-
-/** What every linked module offers, by the name a template writes between braces. */
-function placeholders(app: App): Record<string, Placeholder> {
-  return modulePlaceholders<Row>(app, BARE);
-}
 
 /** Work the asked-for ones out for this recipient; one with nothing to say comes out empty,
  *  which is what makes `{{givenName|Kunde}}` fall back to the name it gives. */

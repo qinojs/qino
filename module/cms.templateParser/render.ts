@@ -9,26 +9,30 @@ import type { TNode, TAttr } from "./parse.ts";
 
 type El = Extract<TNode, { type: "element" }>;
 
-/** One template run: the node it renders for, and the placeholder values its text may name. */
+/** One template run: the node it renders for, and the placeholder values its text may name.
+ *  A template that names none has no values at all — then every string is already its own answer. */
 class Tpl {
   node: Node;
-  #values: Record<string, TemplateValue>;
-  constructor(node: Node, values: Record<string, TemplateValue>) {
+  #values?: Record<string, TemplateValue>;
+  constructor(node: Node, values?: Record<string, TemplateValue>) {
     this.node = node;
     this.#values = values;
   }
   /** As plain text — an attribute value, escaped by whoever writes it out. */
   text(source: string): string {
-    return fillPlaceholders(source, (name) => this.#values[name]?.text);
+    const values = this.#values;
+    return values ? fillPlaceholders(source, (name) => values[name]?.text) : source;
   }
   /** In a text node: a module's trusted html form, otherwise its text, escaped. */
   html(source: string): string {
-    return fillPlaceholders(source, (name) => String(this.#values[name]?.html ?? hee(this.#values[name]?.text ?? "")));
+    const values = this.#values;
+    return values ? fillPlaceholders(source, (name) => String(values[name]?.html ?? hee(values[name]?.text ?? ""))) : source;
   }
 }
 
 export async function renderNodes(nodes: TNode[], node: Node): Promise<string> {
-  return render(nodes, new Tpl(node, await templateValues(nodes, node)));
+  const named = templateNames(nodes);
+  return render(nodes, new Tpl(node, named.size ? await templateValues(named, node) : undefined));
 }
 
 async function render(nodes: TNode[], t: Tpl): Promise<string> {
@@ -181,10 +185,9 @@ async function renderCmsCont(el: El, t: Tpl): Promise<string> {
 }
 
 /** Static template text only: generated CMS content never passes through this resolver. */
-async function templateValues(nodes: TNode[], node: Node): Promise<Record<string, TemplateValue>> {
-  const named = placeholderNames(...templateTexts(nodes));
-  const made = modulePlaceholders<Node>(node.app);
+async function templateValues(named: Set<string>, node: Node): Promise<Record<string, TemplateValue>> {
   const values: Record<string, TemplateValue> = {};
+  const made = modulePlaceholders<Node>(node.app);
   for (const name of named) {
     const make = made[name];
     if (!make) { await warn(node, `unknown placeholder {{${name}}}`); continue; }
@@ -192,6 +195,17 @@ async function templateValues(nodes: TNode[], node: Node): Promise<Record<string
     if (value) values[name] = value;
   }
   return values;
+}
+
+/** Which names a template writes follows from its source alone, not from the node it renders for —
+ *  so it is read once per parsed tree, and shared across apps like the tree itself. A reparsed file
+ *  is a new tree and reads again by itself. */
+const namesOf = new WeakMap<TNode[], Set<string>>();
+function templateNames(nodes: TNode[]): Set<string> {
+  let names = namesOf.get(nodes);
+  // joined, not spread: a big template has more text nodes than a call takes arguments
+  if (!names) namesOf.set(nodes, names = placeholderNames(templateTexts(nodes).join("\n")));
+  return names;
 }
 
 function templateTexts(nodes: TNode[]): string[] {
