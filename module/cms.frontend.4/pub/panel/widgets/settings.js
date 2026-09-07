@@ -74,26 +74,16 @@ export default async function (widget, { node, dialogs, signal }) {
       : ''}
   </div>`;
 
-  // Every accordion below comes from the widget list: a widget module, or — until the last
-  // server renderer is gone — a container the old endpoint fills.
+  // Every accordion below is a widget module named by the list.
   for (const w of widgets) {
     const h = head(w.title ?? w.name);
     h.classList.toggle('-open', !!cms.panel.widgets.has(w.name)?.get({ silent: true }));
     widget.append(h);
-    if (w.src) {
-      const child = mount(w.src, { node: { id: node.id }, dialogs, ...w.context });
-      child.className = '-content';
-      child.setAttribute('widget', w.name);
-      child.addEventListener('qcms-widget-head', ({ detail }) => announce(h, detail));
-      widget.append(child);
-    } else {
-      const box = document.createElement('div');
-      box.className = '-content';
-      box.setAttribute('widget', w.name);
-      widget.append(box);
-      api['cms.frontend.4'].widget(w.name).post({ params: { pid: node.id } }, { signal })
-        .then((res) => box.innerHTML = res);
-    }
+    const child = mount(w.src, { node: { id: node.id }, dialogs, ...w.context });
+    child.className = '-content';
+    child.setAttribute('widget', w.name);
+    child.addEventListener('qcms-widget-head', ({ detail }) => announce(h, detail));
+    widget.append(child);
   }
 
   widget.on('change', '.-changemodule', async (sel) => {

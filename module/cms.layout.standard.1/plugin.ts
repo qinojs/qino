@@ -1,4 +1,4 @@
-import { layoutOptions, moduleTemplate } from "@qino/qino/cms.templateParser";
+import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import * as u2 from "@qino/qino/u2";
 
 import type { Ctx } from "@qino/qino";
@@ -50,6 +50,6 @@ export const cms = {
   node: {
     css: ["pub/main.css"],
     render,
-    options: layoutOptions,
+    widget: "pub/widget.js",
   },
 };

@@ -10,11 +10,10 @@
   "files": [
     "manifest.json",
     "mod.ts",
-    "options.ts",
     "plugin.ts",
-    "pub/edit.mjs",
     "pub/main.css",
     "pub/main.mjs",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/widget.js"
   ]
 }

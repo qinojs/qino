@@ -15,13 +15,6 @@ const foreignCleaner = () => cleanerLoad ??= import('@qino/pub/c1/NodeCleaner.mj
 
 const handles = new TableHandles();
 let active, pid;
-document.addEventListener('input', e => {
-  const input = e.composedPath()[0].closest('[data-table2-setting]');
-  if (!input) return;
-  api.cms.node(input.dataset.node).settings[input.dataset.key].put({value:input.value}).then(() => {
-    if (input.hasAttribute('data-reload-options')) cms.cont(cms.cont.active).showWidget('options');
-  });
-});
 document.documentElement.addEventListener('focus', e => {
   const el = e.target.closest('[qcms-mod="cont.table2"] > table > tbody > tr > td');
   if (!el) return;

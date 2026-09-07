@@ -13,6 +13,7 @@
     "plugin.ts",
     "pub/main.css",
     "pub/module.svg",
+    "pub/widget.js",
     "template.html"
   ]
 }

@@ -36,7 +36,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 export const cms = {
   node: {
     render,
-    widget: "pub/settings.js", // settings widget for the CMS panel (markup + css + behaviour)
+    widget: "pub/widget.js", // panel widget: markup, css and behaviour in one place
     settingsSchema,
     js: ["pub/main.mjs"],
   },

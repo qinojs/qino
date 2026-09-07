@@ -250,12 +250,14 @@ export const cms = {
 
 ### Options
 
-`options.php` wird als Funktion ueber `cms.node.options` exportiert:
+`options.php` wird zum Panel-Widget des Moduls: eine Browser-Datei `pub/widget.js`, deklariert als
+`cms.node.widget`. Sie holt sich, was sie zeigt, ueber die API — Serverdaten, die es dort nicht gibt,
+bekommt sie ueber einen eigenen `api`-Zweig des Moduls.
 
-```ts
-async function options(Cont: Page, _vars: any): Promise<string> {
-  const ctx = getCtx();
-  return `...`;
+```js
+export default async function (widget, { node, signal }) {
+  const settings = await api.cms.node(node.id).settings.get({}, { signal });
+  await widget.html`...`;
 }
 ```
 

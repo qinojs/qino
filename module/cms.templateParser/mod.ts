@@ -40,4 +40,4 @@ export async function renderTemplateFile(source: string | URL, node: Node): Prom
 }
 
 // Layout-style modules ship a template the site takes over — kept separate, see moduleTemplate.ts.
-export { layoutOptions, moduleTemplate } from "./moduleTemplate.ts";
+export { moduleTemplate } from "./moduleTemplate.ts";

@@ -11,6 +11,6 @@
     "pub/edit.mjs",
     "pub/main.mjs",
     "pub/module.svg",
-    "pub/settings.js"
+    "pub/widget.js"
   ]
 }

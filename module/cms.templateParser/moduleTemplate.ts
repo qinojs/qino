@@ -1,10 +1,9 @@
-import { html } from "@qino/qino";
 import { WRITE } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import { renderTemplateFile } from "./mod.ts";
 
-import type { HtmlString, Module } from "@qino/qino";
+import type { Module } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const read = (source: URL) => source.protocol === "file:" ? Deno.readTextFile(source) : fetch(source).then((r) => r.text());
@@ -38,19 +37,17 @@ export function moduleTemplate(mod: Module): {
   };
 }
 
-/** Options panel of a layout module: the files are the layout of the whole site, so the layout page decides. */
-export async function layoutOptions(node: Node): Promise<HtmlString | false> {
-  const mod = node.module!;
-  const layout = await node.cms.layoutPage(mod.name);
-  if (await layout.access() < WRITE) return false;
-  const template = moduleTemplate(mod);
-  const file = editorUrl(template.file);
-  if (!file) return false; // no editor module, nothing to offer
-  const t = node.app.t;
-  return html.async`
-    <div>
-      <p>${t`Edit the files of this layout:`}</p>
-      <a target=_blank href="${file}">template.html</a><br>
-      <a target=_blank href="${editorUrl(template.css)}">main.css</a>
-    </div>`;
+/** May the current user edit this layout's files? The files are the layout of the whole site,
+  * so the layout page decides — not the node the panel happens to sit on. */
+export async function mayEditLayout(node: Node): Promise<boolean> {
+  const layout = await node.cms.layoutPage(node.module!.name);
+  return await layout.access() >= WRITE;
+}
+
+/** The layout's files as editor links. Each url is a capability for this session. */
+export function layoutEditorLinks(node: Node): { name: string; url: string }[] {
+  const template = moduleTemplate(node.module!);
+  return [["template.html", template.file], ["main.css", template.css]]
+    .map(([name, path]) => ({ name, url: editorUrl(path)! }))
+    .filter((f) => f.url);
 }

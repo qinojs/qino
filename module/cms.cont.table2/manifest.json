@@ -7,9 +7,9 @@
   "files": [
     "manifest.json",
     "nodeApi.ts",
-    "options.ts",
     "plugin.ts",
     "pub/edit.mjs",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/widget.js"
   ]
 }

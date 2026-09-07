@@ -58,15 +58,14 @@ Der Kontext ist, was der Mount uebergibt, plus `signal`. Ueblich sind `node` und
 ## Routen
 
 `widgets/:pid` liefert die Liste, `files/:pid` die Moduldateien des Nodes samt Anlegen und Loeschen,
-`feedback` das Panel-Feedback. `widget/:name` ist der Rest des alten Pfads, siehe TODO.
+`feedback` das Panel-Feedback.
 
 ## Mounts
 
 Die vier Sidebars stehen in `SIDEBAR_WIDGETS` ([pub/panel/panel.js](pub/panel/panel.js)). Alles
 darunter kommt aus `api["cms.frontend.4"].widgets(pid)` ([plugin.ts](plugin.ts)): Name, Titel und
-entweder `src` (Widget-Modul, inklusive des modul-eigenen `cms.node.widget` in der `options`-Position)
-oder nichts — dann ist es ein Container fuer den alten Renderer. Ein Eintrag darf `context` mitgeben,
-das der Mount in den Widget-Kontext mischt.
+und `src`, das Widget-Modul — in der `options`-Position das modul-eigene `cms.node.widget`. Ein
+Eintrag darf `context` mitgeben, das der Mount in den Widget-Kontext mischt.
 
 Widgets sind nicht ans Panel gebunden:
 [cms.cont.test.cmd-widget](../cms.cont.test.cmd-widget/pub/main.mjs) mountet das `media`-Widget in
@@ -83,10 +82,6 @@ Block per `outerHTML` ersetzt.
 - **Styling ausserhalb des Panels.** Ein Widget im Seiteninhalt bringt sein `css` mit, aber die
   gemeinsamen CMS-Klassen (`-styled`, `-info`, `-h1`) liegen im Panel-Root. `@scope` waere der Weg,
   diese Schicht ins Dokument zu laden, ohne die Seite umzufaerben.
-- **`options`.** Der letzte Container ohne `src`: die Options-UI, die jedes `cms.cont.*`-Modul selbst
-  rendert ([view/widgets/options.ts](view/widgets/options.ts)). Solange die existiert, bleiben der
-  `widget/:name`-Endpoint, `widgetUrl()` und der Container-Zweig in `loadWidget`. Module bringen
-  stattdessen ihr eigenes `cms.node.widget` mit — der Long-Tail wandert Modul fuer Modul.
 - **Gemeinsame CMS-Schicht.** Der Kernel liegt in `pub/panel/`. Sobald ein Backend-Verbraucher
   existiert, in die engste gemeinsam genutzte CMS-Browser-Schicht ziehen. Vorher nicht bewegen.
 

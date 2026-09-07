@@ -2,7 +2,6 @@ import { renderTemplateFile } from "@qino/qino/cms.templateParser";
 
 import { codeFiles } from "./codeFiles.ts";
 import { nodeApi } from "./api.ts";
-import options from "./options.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { Node } from "@qino/qino/cms";
@@ -54,6 +53,6 @@ async function render(node: Node): Promise<string> {
 export const cms = {
   node: {
     render,
-    options,
+    widget: "pub/widget.js",
   },
 };

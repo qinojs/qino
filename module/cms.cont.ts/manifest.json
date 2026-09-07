@@ -9,8 +9,8 @@
     "codeFiles.ts",
     "manifest.json",
     "mod.ts",
-    "options.ts",
     "plugin.ts",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/widget.js"
   ]
 }

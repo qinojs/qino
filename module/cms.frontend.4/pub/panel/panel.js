@@ -16,11 +16,6 @@ const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListene
 const sel = s => s[0] === ">" ? ":scope " + s : s;
 const findEl = (el, s) => el.querySelector(sel(s));
 const findAll = (el, s) => el.querySelectorAll(sel(s));
-function setHtml(el, html) {
-  el.innerHTML = html;
-  for (const s of el.querySelectorAll("script")) console.warn("Script tag in CMS widget HTML", s);
-}
-
 const uiState = item(globalThis.qino?.cms?.ui ?? {});
 const sidebar = uiState.item("sidebar");
 const widgets = uiState.item("widget");
@@ -54,19 +49,11 @@ const loadWidget = (widget) => {
   if (widgetEl.localName === "qcms-widget") return widgetEl.reload();
   // sidebar items are placed by view/panel.ts, so the client ones are named here
   const src = SIDEBAR_WIDGETS[widget];
-  if (src) {
-    const context = { node: { id: activeId() }, dialogs: root };
-    const mounted = widgetEl.firstElementChild;
-    if (mounted?.reload) return mounted.reload(context); // the active node may have changed
-    return widgetEl.replaceChildren(mountWidget(src, context));
-  }
-  import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
-    loading.mark(widgetEl);
-    api['cms.frontend.4'].widget(widget).post({ params: { pid: activeId() } }).then((res) => {
-      loading.done(widgetEl);
-      setHtml(widgetEl, res);
-    });
-  });
+  if (!src) return;
+  const context = { node: { id: activeId() }, dialogs: root };
+  const mounted = widgetEl.firstElementChild;
+  if (mounted?.reload) return mounted.reload(context); // the active node may have changed
+  widgetEl.replaceChildren(mountWidget(src, context));
 };
 
 

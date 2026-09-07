@@ -11,6 +11,6 @@
     "plugin.ts",
     "pub/main.css",
     "pub/module.svg",
-    "pub/options.js"
+    "pub/widget.js"
   ]
 }

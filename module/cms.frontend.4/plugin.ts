@@ -6,13 +6,10 @@ import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
 
 type FeedbackInput = { msg: string; link?: string };
 type FileInput = { pid: number; in: string; path: string };
 type PidInput = { pid: number };
-type WidgetParams = Record<string, unknown> & { pid?: number };
-type WidgetInput = { widget: string; params?: WidgetParams };
 
 export const settingsSchema = {
   properties: {
@@ -40,45 +37,26 @@ export const ctxSettingsSchema = {
   },
 };
 
-async function renderWidget(ctx: Ctx, widget: string, params: WidgetParams = {}): Promise<string | null> {
-  const page = await cms(ctx.app).node(params.pid);
-  if (await page.access() < 2) throw new AccessError();
-  if (widget.includes("/")) return null;
-  ctx.state.cmsWidgetCont = page;
-  await ctx.app.languages.nsStart("cms");
-  const mod = await import(new URL("./view/widgets/" + widget + ".ts", import.meta.url).href);
-  const html = String(await mod.default?.(page, { param: params }) ?? "");
-  ctx.app.languages.nsStop();
-  return html;
-}
-
-/** A module renders its own options, or the node carries settings the generic editor can show. */
-function hasOptions(node: Node): boolean {
-  const mod = node.module as { plugin?: { cms?: { node?: { options?: unknown } } } } | undefined;
-  return typeof mod?.plugin?.cms?.node?.options === "function" || !!node.settings[$item].keys?.length;
-}
-
 /** Widget modules for a node's settings: the core ones plus whatever its module ships.
-  * A module declares one as `cms.node.widget = "pub/settings.js"` in its plugin. */
+  * A module declares one as `cms.node.widget = "pub/widget.js"` in its plugin. */
 async function settingsWidgets(ctx: Ctx, pid: number) {
   const node = await cms(ctx.app).node(pid);
   if (await node.access() < 2) throw new AccessError();
   const list = [];
   const own = (name: string) => ({ name, src: ctx.req.moduleUrl + "cms.frontend.4/pub/panel/widgets/" + name + ".js" });
-  // A module's own widget fills the "options" slot — same name and title as the server-rendered one,
-  // so it keeps its place, its open state and its label whatever module the node holds.
+  // The options slot: the module's own widget, else the generic settings editor when the node
+  // carries settings at all. Same place, open state and label whatever module the node holds.
   const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
   const modWidget = mod?.plugin?.cms?.node?.widget;
-  // The options slot: the module's own widget, else its server-rendered options — an entry without
-  // `src` is a container the widget endpoint fills, until that renderer is gone too.
-  const options = modWidget && mod?.modUrl ? { src: mod.modUrl + modWidget } : hasOptions(node) ? {} : null;
+  const options = modWidget && mod?.modUrl ? mod.modUrl + modWidget
+    : node.settings[$item].keys?.length ? own("sets").src : null;
   const [settingsTitle, showTime, showUrls, access] = await Promise.all([
     ctx.app.t`Settings`,
     ctx.app.settings["cms.frontend.4"]["show access.time"],
     ctx.app.settings["cms.frontend.4"]["show urls"],
     node.access(),
   ]);
-  if (options) list.push({ name: "options", title: settingsTitle, ...options });
+  if (options) list.push({ name: "options", title: settingsTitle, src: options });
   list.push(own("media"));
   if (showTime) list.push(own("access.time"));
   if (access > 2) list.push(own("access.grp"), own("access.usr"));
@@ -219,17 +197,6 @@ export const api: ApiTree = {
         description: "Widget module urls for the settings of a node, in display order.",
         access: Access.USER,
         execute: ({ pid }: PidInput, ctx: Ctx) => settingsWidgets(ctx, Number(pid)),
-      },
-    },
-  },
-  widget: {
-    ":widget": {
-      post: {
-        description: "Render CMS frontend widget.",
-        access: Access.USER,
-        input: s.object({ params: s.optional(s.record()) }),
-        execute: ({ widget, params }: WidgetInput, ctx: Ctx) =>
-          renderWidget(ctx, widget, params ?? {}),
       },
     },
   },

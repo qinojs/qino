@@ -1,6 +1,5 @@
 import { Output, header } from "@qino/qino";
 
-import options from "./options.ts";
 import api from "./nodeApi.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -83,7 +82,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 export const cms = {
   node: {
     render,
-    options,
+    widget: "pub/widget.js",
     api,
     settingsSchema,
   },

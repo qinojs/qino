@@ -2,7 +2,6 @@ import { hee, html, sql, tableRef, unixTime, isEmptyObject } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
 
 import { openForm } from "./mod.ts";
-import options from "./options.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -16,6 +15,9 @@ const settingsSchema = {
     reset: { type: "boolean", description: "Shows a reset button." },
   },
 };
+
+/** Texts of the mail this form writes; the panel edits them, the send reads them. */
+const MAIL_TEXTS = ["mailSubject", "email_before", "email_after"];
 
 /** Contents the module needs to be usable; created once per node. */
 async function init(node: Node): Promise<void> {
@@ -82,7 +84,8 @@ async function send(node: Node, form: Form): Promise<boolean> {
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {
   await init(node);
   const edit = await node.edit();
-  if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
+  // the panel edits these in place, so they have to exist before it asks for them
+  if (edit) await Promise.all(MAIL_TEXTS.map((name) => node.text(name)));
   const t = node.app.t;
   const cms = node.cms;
   const redirectId = node.settings.redirect();
@@ -141,7 +144,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 export const cms = {
   node: {
     render,
-    options,
+    widget: "pub/widget.js",
     settingsSchema,
     css: ["pub/main.css"],
     js: ["pub/main.mjs"],

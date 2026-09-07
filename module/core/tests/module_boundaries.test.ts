@@ -249,8 +249,8 @@ const OPTIONAL = new Set([
   "cms.backend.superuser.db.query/render.ts -> ai",
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
   "cms.backend.superuser.module/detail.ts -> fileEditor",
-  "cms.cont.html/options.ts -> fileEditor",
-  "cms.cont.ts/options.ts -> fileEditor",
+  "cms.cont.html/api.ts -> fileEditor",
+  "cms.cont.ts/plugin.ts -> fileEditor",
   "cms.frontend.4/plugin.ts -> fileEditor", // editorUrl: "open this file", if an editor is configured
   "cms.templateParser/moduleTemplate.ts -> fileEditor",
 ]);

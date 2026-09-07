@@ -10,6 +10,6 @@
     "plugin.ts",
     "pub/list.js",
     "pub/module.svg",
-    "pub/options.js"
+    "pub/widget.js"
   ]
 }

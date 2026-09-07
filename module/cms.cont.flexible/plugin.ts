@@ -53,6 +53,6 @@ export const cms = {
   node: {
     render,
     settingsSchema: nodeSettingsSchema,
-    widget: "pub/options.js",
+    widget: "pub/widget.js",
   },
 };
