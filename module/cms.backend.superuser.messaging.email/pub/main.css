@@ -1,0 +1,11 @@
+[qcms-mod="backend.superuser.messaging.email"] {
+  & .-richText {
+    border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+    min-block-size: 9em;
+    padding: .5em;
+
+    --u2-rte: true;
+    --u2-rte-toolbar: bold italic underline link bullets numbers undo redo;
+    --u2-rte-toolbar-unavailable: hide;
+  }
+}

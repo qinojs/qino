@@ -1,4 +1,8 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { editor } from "@qino/u2/js/rte/rte.js";
+import { linkEditor } from "@qino/u2/js/rte/src/client/link.js";
+
+editor.add(linkEditor({ fields: ["href", "target", "title"] }));
 
 cms.initNode("backend.superuser.messaging.email", (el) => {
   const panel = nodePanel(el, ["sending", "inbound", "send", "contacts", "journal"]);
@@ -26,6 +30,33 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
   const value = (input) => input.type === "checkbox" ? input.checked : input.value.trim();
   const values = (form) => Object.fromEntries([...form.elements].filter((e) => e.name && e.type !== "file")
     .map((e) => [e.name, value(e)]));
+  const richText = (form) => form.querySelector("[data-rich-text]");
+  const syncText = (form) => {
+    const rich = richText(form);
+    if (rich) form.elements.text.value = rich.innerHTML;
+  };
+  const format = (form) => {
+    const rich = richText(form);
+    if (!rich) return;
+    const html = form.elements.format.value === "html";
+    if (html) rich.innerHTML = form.elements.text.value;
+    else if (!rich.hidden) syncText(form);
+    rich.hidden = !html;
+    form.elements.text.hidden = html;
+  };
+  for (const button of el.querySelectorAll("[data-send]")) {
+    const form = button.form;
+    const text = form.elements.text;
+    const rich = document.createElement("div");
+    rich.className = "-richText";
+    rich.contentEditable = "true";
+    rich.dataset.richText = "";
+    rich.hidden = true;
+    rich.setAttribute("aria-label", "Text");
+    rich.addEventListener("input", () => syncText(form));
+    text.after(rich);
+    format(form);
+  }
 
   el.addEventListener("change", (event) => {
     const form = event.target.closest("form[data-settings]");
@@ -34,11 +65,13 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
       saves = saves.then(() => save(form, data));
     }
     if (event.target.matches("[data-transport-type]")) transportFields();
+    if (event.target.name === "format") format(event.target.form);
   });
   el.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.target;
     if (form.matches("[data-settings]")) return;
+    syncText(form);
     const button = event.submitter;
     const data = values(form);
     if (button.matches("[data-send]")) {

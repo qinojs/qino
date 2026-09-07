@@ -217,8 +217,8 @@ export async function send(node: Node): Promise<HtmlString> {
         <option value=md>Markdown</option>
         <option value=html>HTML</option>
       </select>
-      ${t`Attachments`} <input type=file name=attachments multiple>
       ${t`Text`} <textarea name=text required rows=6></textarea>
+      ${t`Attachments`} <input type=file name=attachments multiple>
     </u2-fields>
     <button data-send>${t`Send`}</button>
   </form>`;
