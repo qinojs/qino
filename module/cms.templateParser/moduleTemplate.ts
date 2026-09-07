@@ -1,5 +1,3 @@
-import { WRITE } from "@qino/qino/cms";
-import { editorUrl } from "@qino/qino/fileEditor";
 
 import { renderTemplateFile } from "./mod.ts";
 
@@ -35,19 +33,4 @@ export function moduleTemplate(mod: Module): {
       return await renderTemplateFile(this.file, node) ?? await renderTemplateFile(this.shipped, node) ?? "<div></div>";
     },
   };
-}
-
-/** May the current user edit this layout's files? The files are the layout of the whole site,
-  * so the layout page decides — not the node the panel happens to sit on. */
-export async function mayEditLayout(node: Node): Promise<boolean> {
-  const layout = await node.cms.layoutPage(node.module!.name);
-  return await layout.access() >= WRITE;
-}
-
-/** The layout's files as editor links. Each url is a capability for this session. */
-export function layoutEditorLinks(node: Node): { name: string; url: string }[] {
-  const template = moduleTemplate(node.module!);
-  return [["template.html", template.file], ["main.css", template.css]]
-    .map(([name, path]) => ({ name, url: editorUrl(path)! }))
-    .filter((f) => f.url);
 }

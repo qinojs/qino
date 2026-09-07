@@ -1,12 +1,10 @@
 import { toFileUrl } from "@std/path";
-import { Access, ConflictError, NotFoundError, html, s } from "@qino/qino";
-import { cms as cmsOf } from "@qino/qino/cms";
+import { getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import { codeFiles } from "./codeFiles.ts";
-import manifest from "./manifest.json" with { type: "json" };
 
-import type { ApiTree, Ctx } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // The examples are commented out on purpose: nothing is created before you want it.
@@ -41,37 +39,19 @@ async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown>
   return String(await mod.default(node, { ...opt, html }) ?? "");
 }
 
-/** The node's files as editor links. A `.ts` file runs on the server, so this is superuser-only —
-  * each url is a capability for the session that asked. */
-export const api: ApiTree = {
-  node: {
-    ":node": {
-      paramSchema: s.number(),
-      resolve: async (id: number, ctx: Ctx) => {
-        const node = await cmsOf(ctx.app).node(id);
-        if (!node.exists()) throw new NotFoundError(`Node ${id} not found`);
-        if (node.vs.module !== manifest.name) throw new ConflictError(`Node ${id} does not use ${manifest.name}`);
-        return node;
-      },
-      editors: {
-        get: {
-          description: "Links that open this node's files in the file editor; empty without an editor.",
-          access: Access.SUPERUSER,
-          execute: ({ node }: { node: Node }) => {
-            const files = codeFiles(node);
-            return (["src", "css", "js"] as const)
-              .map((key) => ({ name: files[key].split("/").pop()!, url: editorUrl(files[key]) }))
-              .filter((f) => f.url);
-          },
-        },
-      },
-    },
-  },
+/** What the panel asks for: the files of this node. A `.ts` runs on the server, so only a
+  * superuser gets one — each url is an editing capability for this session. */
+const api = (node: Node, vars: Record<string, unknown>) => {
+  if (vars.do !== "getFileEditorLinks" || !getCtx().user?.superuser) return [];
+  const files = codeFiles(node);
+  return (["src", "css", "js"] as const)
+    .map((key) => ({ name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url);
 };
 
 export const cms = {
   node: {
     render,
     widget: "pub/widget.js",
+    api,
   },
 };

@@ -1,4 +1,6 @@
+import { WRITE } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
+import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
 
 import type { Ctx } from "@qino/qino";
@@ -46,10 +48,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   return template.render(node);
 }
 
+/** What the panel asks for: the two files that make this layout. They are the layout of the whole
+  * site, so the layout page decides — and each url is an editing capability for this session. */
+const api = async (node: Node, vars: Record<string, unknown>) => {
+  if (vars.do !== "getFileEditorLinks") return;
+  const layout = await node.cms.layoutPage(node.module!.name);
+  if (await layout.access() < WRITE) return [];
+  const { file, css } = moduleTemplate(node.module!);
+  return [file, css].map((path) => ({ name: path.split("/").pop()!, url: editorUrl(path) })).filter((f) => f.url);
+};
+
 export const cms = {
   node: {
     css: ["pub/main.css"],
     render,
     widget: "pub/widget.js",
+    api,
   },
 };

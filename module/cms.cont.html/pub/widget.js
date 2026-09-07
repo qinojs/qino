@@ -6,7 +6,7 @@ import { t } from '@qino/pub/t.js';
 export const css = `.-codeFiles a { display:block; }`;
 
 export default async function (widget, { node, signal }) {
-  const files = await api['cms.cont.html'].node(node.id).editors.get({}, { signal });
+  const files = await api.cms.node(node.id).api.post({ do: 'getFileEditorLinks' }, { signal }) ?? [];
   if (!files.length) return; // no file editor linked, nothing to offer
 
   await widget.html`<div class=-codeFiles>

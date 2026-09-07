@@ -1,6 +1,5 @@
 import { Access, ConflictError, NotFoundError, s } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { editorUrl } from "@qino/qino/fileEditor";
 
 import { codeFiles } from "./codeFiles.ts";
 
@@ -41,15 +40,6 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
   },
 });
 
-/** The node's files as editor links. Each url is a capability for this session, so this is
-  * behind the same access as writing the files. */
-function editorLinks(node: Node) {
-  const files = codeFiles(node);
-  return (["src", "css", "js"] as const)
-    .map((key) => ({ name: files[key].split("/").pop()!, url: editorUrl(files[key]) }))
-    .filter((f) => f.url);
-}
-
 export function nodeApi(module: string): ApiTree {
   return {
     node: {
@@ -65,13 +55,6 @@ export function nodeApi(module: string): ApiTree {
           html: codeFile("src", "HTML template"),
           css: codeFile("css", "CSS"),
           js: codeFile("js", "JavaScript"),
-        },
-        editors: {
-          get: {
-            description: "Links that open this node's files in the file editor; empty without an editor.",
-            ...NODE_WRITE,
-            execute: ({ node }: { node: Node }) => editorLinks(node),
-          },
         },
       },
     },

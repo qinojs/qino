@@ -13,7 +13,6 @@
     "parse.ts",
     "plugin.ts",
     "pub/module.svg",
-    "pub/widget.js",
     "render.ts"
   ]
 }

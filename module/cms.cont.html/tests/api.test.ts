@@ -35,7 +35,6 @@ Deno.test("cms.cont.html api: tools describe each code file", () => {
     "put_cmsContHtml_node_codefiles_css",
     "get_cmsContHtml_node_codefiles_js",
     "put_cmsContHtml_node_codefiles_js",
-    "get_cmsContHtml_node_editors",
   ]);
   assertEquals(tools[3].parameters, {
     type: "object",
