@@ -1,5 +1,6 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import "@qino/u2/el/rte/rte.js";
+import "@qino/u2/js/rte/blocks.js";
 
 cms.initNode("backend.superuser.messaging.email", (el) => {
   const panel = nodePanel(el, ["sending", "inbound", "send", "contacts", "journal"]);
@@ -34,7 +35,7 @@ cms.initNode("backend.superuser.messaging.email", (el) => {
     if (html && !rich) {
       const rte = document.createElement("u2-rte");
       rte.setAttribute("name", "needsAName"); // has to stay!
-      rte.style.setProperty("--u2-rte-toolbar", "bold italic underline bullets numbers undo redo");
+      rte.style.setProperty("--u2-rte-toolbar", "block bold italic underline bullets numbers undo redo");
       rte.style.setProperty("--u2-rte-toolbar-unavailable", "hide");
       const parent = text.parentNode;
       const next = text.nextSibling;
