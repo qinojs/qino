@@ -65,14 +65,16 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         : kind === "address" ? { email: String(address) }
         : { all: true } as const;
       if (kind === "address" && !address) return { ok: false, message: await app.t`An address is required.` };
+      let error = "";
       const sent = await send(app, recipient, {
         text: String(text),
         title: title ? String(title) : undefined,
         format: format === "md" || format === "html" ? format : undefined,
         template: template === "-" ? null : template ? String(template) : undefined,
         attachments: await attachmentsOf(attachments),
-      });
-      return { ok: true, message: await app.t`Delivered to ${sent} addresses.` };
+      }, { onError: (message) => error ||= message });
+      const message = await app.t`Delivered to ${sent} addresses.`;
+      return error ? { ok: false, message: `${message} ${error}` } : { ok: true, message };
     }
     return null;
   } catch (e) {

@@ -198,12 +198,12 @@ export async function send(node: Node): Promise<HtmlString> {
   <form class=-body>
     <u2-fields>
       ${t`To`} <select name=to>
-        <option value=all>${t`All users with an address`}</option>
         <option value=address>${t`This address`}</option>
         <optgroup label="${await t`Groups`}">${groupRows.map((g) =>
           html`<option value="grp:${g.id}">${g.name} (${g.users})</option>`)}</optgroup>
         <optgroup label="${await t`Users`}">${userRows.map((u) =>
           html`<option value="usr:${u.usr_id}">${u.username ?? "#" + u.usr_id} (${u.addresses})</option>`)}</optgroup>
+        <option value=all>${t`All users with an address`}</option>
       </select>
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
       ${t`Subject`} <input name=title placeholder="${await t`the first line of the text`}">
@@ -213,9 +213,9 @@ export async function send(node: Node): Promise<HtmlString> {
         ${own.filter((f) => !f.main).map((f) => html`<option value="${f.name}">${f.name}</option>`)}
       </select>
       ${t`Format`} <select name=format>
+        <option value=html>HTML</option>
         <option value="">${t`Text`}</option>
         <option value=md>Markdown</option>
-        <option value=html>HTML</option>
       </select>
       ${t`Text`} <textarea name=text required rows=6></textarea>
       ${t`Attachments`} <input type=file name=attachments multiple>

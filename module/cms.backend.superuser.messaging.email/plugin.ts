@@ -47,7 +47,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
 export const cms = {
   node: {
-    css: ["pub/main.css"],
+    css: [u2.root() + "el/rte/rte.css"],
     js: ["pub/main.js"],
     render,
     api,

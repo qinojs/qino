@@ -83,6 +83,8 @@ Deno.test("cms.backend.superuser.messaging.email adds files to the send form", a
   const output = String(await sendForm(node));
   assertStringIncludes(output, "<input type=file name=attachments multiple>");
   assert(output.indexOf("<textarea name=text") < output.indexOf("<input type=file name=attachments"));
+  assert(output.indexOf('<option value=address>') < output.indexOf('<option value=all>'));
+  assert(output.indexOf('<option value=html>HTML</option>') < output.indexOf('<option value="">Text</option>'));
 
   const [file] = await attachmentsOf([{
     name: "invoice.txt",
