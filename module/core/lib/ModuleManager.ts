@@ -464,10 +464,13 @@ async function mirrorPub(mod: Module): Promise<void> {
   const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
   if (!files.length) return;
   const dir = `${mod.cache}remote/`;
-  // One read says whether this release is already here, however many files it has. A store address
+  // The source plus every declared file says whether this release is already here. A store address
   // carries its release, so nothing below it changes — and a different address is a different mirror.
   const stamp = dir + ".source";
-  if (await Deno.readTextFile(stamp).catch(() => "") === mod.source) return;
+  const marked = await Deno.readTextFile(stamp).catch(() => "");
+  if (marked === mod.source && (await Promise.all(
+    files.map((file: string) => Deno.stat(dir + file).then((entry) => entry.isFile).catch(() => false)),
+  )).every(Boolean)) return;
   // one mkdir per directory the list names, not one per file — pub/ has subdirectories
   const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
   await Promise.all([...dirs].map((d) => Deno.mkdir(d, { recursive: true }).catch(() => {})));
