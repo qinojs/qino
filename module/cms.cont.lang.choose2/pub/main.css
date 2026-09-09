@@ -6,9 +6,10 @@
   & li {
     display: flex;
     align-items: center;
+    border: 0; /* a list in a nav gets one from some classless sheets — not here */
     &::after {
       content: '|';
-      margin: auto .2em;
+      margin: auto .2em 0.2em 0.2em; /* sits on the baseline of the codes, not centred */
     }
     &:last-child::after {
       display: none;
