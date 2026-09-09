@@ -6,8 +6,11 @@
     "cms.cont.form4"
   ],
   "files": [
+    "dbschema.json",
     "manifest.json",
+    "nodeApi.ts",
     "plugin.ts",
+    "pub/edit.mjs",
     "pub/module.svg"
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "properties": {
+    "form4_entry": {
+      "additionalProperties": {
+        "properties": {
+          "released": {
+            "type": "integer",
+            "x-index": true,
+            "description": "Set once someone with write access let this entry through. Declared here, not by cms.cont.form4: a form that is never shown in public needs no release."
+          }
+        }
+      }
+    }
+  }
+}

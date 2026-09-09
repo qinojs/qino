@@ -1,6 +1,8 @@
 import { html, sql, tableRef } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 
+import api from "./nodeApi.ts";
+
 import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
@@ -14,6 +16,7 @@ const settingsSchema = {
     },
     limit: { type: "integer", minimum: 1, default: 20, description: "How many entries are shown." },
     onlyIf: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
+    moderated: { type: "boolean", description: "An entry is shown once someone with write access let it through. Its own author sees it before that." },
     fields: { type: "string", description: "Comma-separated field names to show, in that order. Empty: every field, in the order the form asks." },
   },
 };
@@ -61,10 +64,14 @@ async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], o
  * JavaScript, not in SQL: a json path reads differently in every database, and one written
  * for SQLite would fail on MySQL and Postgres.
  */
-async function read(app: App, form: Node, onlyIf: string, limit: number) {
+async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; moderated: boolean; all: boolean; client: unknown }) {
+  /* The client comes from the log row the entry was written with — that is how an entry
+     waiting for release still shows to the one who wrote it, and to nobody else. */
   const rows = await app.db.query`
-    SELECT id, created, data FROM ${sql.id(tableRef("form4_entry"))}
-    WHERE node_id = ${form.id} ORDER BY created DESC, id DESC`;
+    SELECT e.id, e.created, e.data, e.released, l.client_id
+    FROM ${sql.id(tableRef("form4_entry"))} e
+    LEFT JOIN ${sql.id(tableRef("log"))} l ON l.id = e.log_id
+    WHERE e.node_id = ${form.id} ORDER BY e.created DESC, e.id DESC`;
 
   const out = [];
   for (const row of rows) {
@@ -73,9 +80,12 @@ async function read(app: App, form: Node, onlyIf: string, limit: number) {
       const parsed = JSON.parse(String(row.data ?? "") || "{}");
       if (parsed && typeof parsed === "object") data = parsed;
     } catch { /* a broken row shows as an empty one; it does not take the listing down */ }
-    if (onlyIf && data[onlyIf] === undefined) continue;
-    out.push({ id: Number(row.id), created: Number(row.created), data });
-    if (out.length >= limit) break;
+    if (opt.onlyIf && data[opt.onlyIf] === undefined) continue;
+    const released = !!Number(row.released);
+    const mine = !!opt.client && String(row.client_id ?? "") === String(opt.client);
+    if (opt.moderated && !released && !opt.all && !mine) continue;
+    out.push({ id: Number(row.id), created: Number(row.created), data, released });
+    if (out.length >= opt.limit) break;
   }
   return out;
 }
@@ -110,7 +120,19 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       : html`<div></div>`;
   }
 
-  const rows = await read(app, form, String(node.settings.onlyIf() ?? "").trim(), Number(node.settings.limit()) || 20);
+  /* Releasing belongs to the edit mode: reading the page as a visitor should look like what
+     a visitor sees, waiting entries included — that is, not included. */
+  const mayRelease = await node.edit();
+  const moderated = !!node.settings.moderated();
+  if (mayRelease && moderated) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
+
+  const rows = await read(app, form, {
+    onlyIf: String(node.settings.onlyIf() ?? "").trim(),
+    limit: Number(node.settings.limit()) || 20,
+    moderated,
+    all: mayRelease,
+    client: ctx.clientId,
+  });
   const files = await uploads(app, rows.map((row) => row.id));
   const only = String(node.settings.fields() ?? "").split(",").map((name) => name.trim()).filter(Boolean);
   const fields = await fieldsOf(form, rows, only);
@@ -134,7 +156,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     return out;
   };
 
-  const entry = async (row: { id: number; created: number; data: Record<string, unknown> }) => {
+  const entry = async (row: { id: number; created: number; released: boolean; data: Record<string, unknown> }) => {
     const lines = [];
     for (const { name, label } of fields) {
       const shown = await pictures(row.id, name);
@@ -148,9 +170,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       </div>`);
     }
     const when = new Date(row.created * 1000);
-    return html.async`<article class=-entry>
-      <time datetime="${when.toISOString()}">${when.toLocaleDateString(ctx.lang || undefined)}</time>
+    const waiting = moderated && !row.released;
+    /* `<u2-time>` turns this into „three days ago" once it upgrades and keeps it current;
+       until then — and without JavaScript — the date inside it stands, in the reader's
+       language. (Not `u2.el.time()`: its fallback is the ISO string, and a page that never
+       upgrades would show `2026-09-09 06:14` to a guest.) */
+    return html.async`<article class="-entry${waiting ? " -pending" : ""}">
+      <u2-time datetime="${when.toISOString()}" type=relative>${when.toLocaleDateString(ctx.lang || undefined)}</u2-time>
       <dl>${lines}</dl>
+      ${mayRelease && moderated
+      ? html`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${await app.t`Released`}</label>`
+      : ""}
     </article>`;
   };
 
@@ -159,9 +189,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   }</div>`;
 }
 
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
 export const cms = {
   node: {
     render,
     settingsSchema,
+    api,
   },
 };
