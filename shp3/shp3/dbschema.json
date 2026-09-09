@@ -41,10 +41,12 @@
           },
           "smallest": {
             "type": "number",
+            "exclusiveMinimum": 0,
             "default": 0.05
           },
           "smallest_closing": {
             "type": "number",
+            "exclusiveMinimum": 0,
             "default": 0.05
           },
           "active": {

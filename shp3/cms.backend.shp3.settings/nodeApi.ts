@@ -89,6 +89,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     // A factor the rate job owns is not the panel's to change.
     if (field === "factor" && String(await app.settings["locale.currency"].update ?? "never") !== "never") return false;
     const value = field === "active" ? !!vars.value : Number(vars.value);
+    if (field.startsWith("smallest") && !(Number(value) > 0)) return false;
     return await db.table("shp3_currency").update({ id, [field]: value }) ? 1 : false;
   }
 

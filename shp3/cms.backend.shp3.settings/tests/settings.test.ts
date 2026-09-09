@@ -101,6 +101,7 @@ Deno.test("backend.shp3.settings: a factor the rate job owns is not edited here"
   assertEquals(await call(app, { currency: "EUR", field: "factor", value: 2 }), false);
   assertEquals(await app.db.one`SELECT factor FROM shp3_currency WHERE id = ${"EUR"}`, 0.95);
   assertEquals(await call(app, { currency: "EUR", field: "smallest", value: 0.05 }), 1); // the rest stays editable
+  assertEquals(await call(app, { currency: "EUR", field: "smallest", value: 0 }), false);
 
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   await requestStorage.run(ctx, async () => {
