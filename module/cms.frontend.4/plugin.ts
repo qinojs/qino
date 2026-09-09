@@ -187,7 +187,6 @@ export const api: ApiTree = {
         input: s.object({ in: s.string(), path: s.string() }),
         execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
           await Deno.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
-          ctx.app.assetRev = unixTime();
           return { ok: true };
         },
       },
