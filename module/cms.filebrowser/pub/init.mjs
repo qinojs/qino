@@ -38,14 +38,6 @@ panelRoot.then(async root => {
     tools.querySelector('.-upload').after(button);
   }}).observe('.-media .-tools', { root });
 
-  // ─── cms.frontend.2 — drop this block together with that module ───
-  new SelectorObserver({ on: el => {
-    const button = c1.dom.el('<button>select');
-    el.after(button);
-    button.addEventListener('click', () => browse({ multiple: true }, addFiles));
-    el.style.display = 'none';
-  }}).observe('.file-manager .-addExistingFile', { root });
-
   new SelectorObserver({ on: el => el.addEventListener('click', e => {
     e.stopImmediatePropagation();
     cms.replaceFile(pid(), e.target.closest('tr').getAttribute('itemid'));

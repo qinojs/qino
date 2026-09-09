@@ -105,7 +105,4 @@ customElements.whenDefined('qino-cms').then(async () => {
   new SelectorObserver({ on: (tr) => editColumn(tr, '<button class=u2-unstyle title="Edit image"><u2-ico icon=edit>\u270e</u2-ico></button>') })
     .observe('.-media tr[itemid]', { root });
 
-  // cms.frontend.2 — drop this together with that module
-  new SelectorObserver({ on: (tr) => editColumn(tr, EDIT_SVG) })
-    .observe('.file-manager tr[itemid]', { root });
 });
