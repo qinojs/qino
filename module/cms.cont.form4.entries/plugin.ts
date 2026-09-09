@@ -115,18 +115,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const only = String(node.settings.fields() ?? "").split(",").map((name) => name.trim()).filter(Boolean);
   const fields = await fieldsOf(form, rows, only);
 
-  /* Pictures are signed permanently, not for this session: these entries are read by people
-     who never sign in. The file stays unlisted — only this link reaches it. */
-  const shown = async (entryId: number, name: string) => {
+  /**
+   * Pictures only, and only through the transform: what a visitor uploaded is re-encoded on
+   * the way out, so an svg carrying a script arrives as a picture. Anything else — a pdf, a
+   * document — is not shown and not linked either: a public listing must not hand out a file
+   * of unknown making under our own domain. It stays visible in the backend.
+   *
+   * The urls are signed permanently, not for this session: these entries are read by people
+   * who never sign in. The file itself stays unlisted; only this link reaches it.
+   */
+  const pictures = async (entryId: number, name: string) => {
     const out = [];
     for (const file of files.get(`${entryId}:${name}`) ?? []) {
-      const dbFile = await app.dbFiles.file(file.id);
-      const href = await dbFile.url({ dl: true, grant: "permanent" });
-      out.push(
-        file.mime.startsWith("image/")
-          ? html`<img src="${await dbFile.url({ fmt: "avif", w: 900, max: true, grant: "permanent" })}" alt="${file.name}" loading=lazy>`
-          : html`<a href="${href}" download>${file.name}</a>`,
-      );
+      if (!file.mime.startsWith("image/")) continue;
+      const src = await (await app.dbFiles.file(file.id)).url({ fmt: "avif", w: 900, max: true, grant: "permanent" });
+      out.push(html`<img src="${src}" alt="${file.name}" loading=lazy>`);
     }
     return out;
   };
@@ -134,14 +137,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const entry = async (row: { id: number; created: number; data: Record<string, unknown> }) => {
     const lines = [];
     for (const { name, label } of fields) {
-      const pictures = await shown(row.id, name);
+      const shown = await pictures(row.id, name);
       const value = String(row.data[name] ?? "").trim();
-      if (!value && !pictures.length) continue; // a field nobody filled in says nothing
+      if (!value && !shown.length) continue; // a field nobody filled in says nothing
       // `</div>` has to be written: a `<div>` does not close an open `<dd>`, so without it
       // the next field would nest inside the previous value.
       lines.push(html`<div class="-field-${name}">
         <dt>${label}
-        <dd>${pictures.length ? pictures : value}
+        <dd>${shown.length ? shown : value}
       </div>`);
     }
     const when = new Date(row.created * 1000);
