@@ -94,7 +94,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY ${orderBy} LIMIT 1000`;
 
   const relHeaders = children.map((dbFile) => 
-    html`<th style="writing-mode:sideways-lr" title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
+    html`<th style="writing-mode:sideways-lr; width:2rem" title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
 
   const trs = [];
   const u = ctx.req.url.toURL();
@@ -122,7 +122,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 <thead><tr style="vertical-align:bottom">
   <th>${app.t`File`}
   <th>${app.t`ID`}
-  <th>${app.t`Name`}
+  <th style="width:35rem">${app.t`Name`}
   <th>${app.t`Size`}
   ${relHeaders}
   <th>${app.t`Created`}
@@ -187,7 +187,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       <small>${app.t`Warning: only files older than 7 days.`}</small>
     </div>
   </div>
-  <div class="u2-card -main" style="max-height:90vh">
+  <div class="u2-card -main" style="max-height:90vh; flex:0 1 auto;">
     <table class="u2-table -Sticky" cms-part=list>${list(node, { ctx, vars: {} })}</table>
   </div>
 </div>`;
