@@ -1,0 +1,16 @@
+{
+  "name": "cms.cont.form4.fields",
+  "description": "The fields of a cms.cont.form4 — each one named after the label it was given.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "mod.ts",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg",
+    "pub/widget.js"
+  ]
+}

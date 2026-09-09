@@ -1,0 +1,11 @@
+/* Honeypot: bots fill what they cannot see. */
+[qcms-mod="cont.form4"] input[name=your_name] {
+	display: none !important;
+}
+
+/* Air above the buttons. Wrapped in :where() so it carries no specificity at all — a site
+   that wants its buttons elsewhere overrides this with a single class. */
+:where([qcms-mod="cont.form4"] .-btns) {
+	margin-block-start: 1rem;
+	justify-content: end;
+}

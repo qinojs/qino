@@ -1,0 +1,71 @@
+{
+  "properties": {
+    "form4_entry": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "node_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "The form block this entry was sent from. Its fields give the values their meaning, so an entry does not outlive it."
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "description": "Request this arrived with — client, address and user agent hang there. Logs are pruned, so nothing an entry needs long-term may live only here."
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 12,
+            "description": "Language the form was filled in — the language to answer in."
+          },
+          "data": {
+            "type": "string",
+            "description": "Submitted values as a JSON object, keyed by field name: {\"name\":\"…\",\"email\":\"…\"}. Numbers and checkboxes keep their JSON type so that data ->> '$.field' sorts and compares as one."
+          }
+        },
+        "required": ["id", "node_id", "created"]
+      }
+    },
+    "form4_entry_file": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "entry_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "form4_entry",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "field": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Field name the upload came from."
+          }
+        },
+        "required": ["id", "entry_id", "file_id", "field"]
+      }
+    }
+  }
+}

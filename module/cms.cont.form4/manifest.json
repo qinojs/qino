@@ -1,0 +1,20 @@
+{
+  "name": "cms.cont.form4",
+  "description": "Form: renders its fields, validates them, keeps every entry and optionally mails it.",
+  "dependencies": [
+    "cms",
+    "messaging.email",
+    "cms.cont.form4.fields",
+    "cms.cont.text"
+  ],
+  "files": [
+    "manifest.json",
+    "dbschema.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.mjs",
+    "pub/module.svg",
+    "pub/widget.js"
+  ]
+}

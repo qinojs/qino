@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.cms.form4",
+  "description": "Form entries: every form of this site, its table of entries, and the export.",
+  "dependencies": [
+    "cms",
+    "cms.backend",
+    "cms.cont.form4"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "render.ts",
+    "pub/main.js"
+  ]
+}
