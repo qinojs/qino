@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.form4.entries",
+  "description": "Shows what visitors sent through a cms.cont.form4 — a guest book, a log.",
+  "dependencies": [
+    "cms",
+    "cms.cont.form4"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg"
+  ]
+}
