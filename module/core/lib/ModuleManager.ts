@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import { getCtx } from "./ctx/Ctx.ts";
-import { enableItemSchemaDefaults, errMsg, isEmptyObject, unixTime } from "./util.ts";
+import { enableItemSchemaDefaults, errMsg, isEmptyObject, newestMtime, unixTime } from "./util.ts";
 import { safeFetch } from "./fileStream.ts";
 import { uid } from "./crypto.ts";
 
@@ -85,6 +85,10 @@ export class Module {
   get source(): string { return this.#source; }
   /** Directory the module lives in; undefined for remote modules. */
   get dir(): string | undefined { return this.#source.startsWith("file:") ? fromFileUrl(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
+  /** The served files of this module. A module without a directory of its own serves what was
+   *  mirrored into its cache on import — under a roof of its own, so it does not mix with what
+   *  the module caches for itself. */
+  get pubDir(): string { return this.dir ? this.dir + "pub" : this.cache + "remote/pub"; }
   /** App files of this module — backed up, never deleted. What lies in pub/ is served. */
   get data(): string { return `${this.#app.dir}data/${this.name}/`; }
   /** Derived files, reproducible from data/ alone — droppable at any time, no backup. */
@@ -95,7 +99,7 @@ export class Module {
    *  mirrored into its cache when it is imported, so this address is the app's own either way. */
   get modUrl(): string { return `${getCtx().req.moduleUrl}${this.name}/`; }
   /** data/ as a URL; only pub/ below it is reachable. */
-  get dataUrl(): string { return `${getCtx().req.appUrl}d/${this.name}/`; }
+  get dataUrl(): string { return `${getCtx().req.dataUrl}${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
   abort(): void { this.#abort.abort(); }
@@ -333,6 +337,10 @@ export class ModuleManager {
       }
       await this.#loadLocales(mod);
       if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
+      // The url of everything this module serves carries the newest of its files: linking one that
+      // was just installed or updated is what makes clients ask for the new files at all.
+      for (const dir of [mod.pubDir, mod.data + "pub"])
+        this.#app.assetRev = Math.max(this.#app.assetRev, await newestMtime(dir));
       this.#linked.add(mod.name);
     } catch (e) { mod.abort(); throw e; } // roll back what init() registered with the signal
   }

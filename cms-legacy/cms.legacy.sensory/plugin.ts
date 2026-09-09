@@ -10,7 +10,7 @@ const labels = {
 };
 
 export function sensoryCms(type: keyof typeof labels) {
-  return { node: { render: (node: Node, data: { ctx: Ctx }) => render(node, data.ctx, type), js: ["/m/cms.legacy.sensory/pub/main.js"] } };
+  return { node: { render: (node: Node, data: { ctx: Ctx }) => render(node, data.ctx, type), js: ["pub/main.js"] } };
 }
 
 async function render(node: Node, ctx: Ctx, type: keyof typeof labels): Promise<HtmlString> {

@@ -76,6 +76,7 @@ export class Ctx {
     const req = await Req.create(request, {
       ...opt,
       maxSize: await app.settings.core.uploadMaxFileSize as number | undefined,
+      assetRev: app.assetRev,
       trustedProxyHops: app.trustedProxyHops,
     });
     const ctx = new Ctx();
@@ -101,20 +102,19 @@ export function urlToLocalPath(url: string | URL, appUrl: string, app: App): str
 const safeSeg = (s: string) => s !== "." && s !== ".." ? s : null;
 
 function appRequestPathToLocalPath(appRequestPath: string, app: App) {
-  const matchM = appRequestPath.match(/^m\/([^/]+)\/pub\/(.*)/);
+  const matchM = appRequestPath.match(/^m(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
   if (matchM && safeSeg(matchM[1])) {
     const mod = app.modules.get(matchM[1]);
-    // A module without a directory of its own serves what was mirrored into its cache — under a
-    // roof of its own, so it does not mix with what the module caches for itself.
-    return pubPath(mod?.dir ?? (app.dir + "cache/" + matchM[1] + "/remote/"), matchM[2]);
+    // Not registered (yet): its mirror is still where import() put it. Same layout as Module.pubDir.
+    return pubPath(mod?.pubDir ?? `${app.dir}cache/${matchM[1]}/remote/pub`, matchM[2]);
   }
-  const matchD = appRequestPath.match(/^d\/([^/]+)\/pub\/(.*)/);
-  return matchD && safeSeg(matchD[1]) ? pubPath(app.dir + "data/" + matchD[1] + "/", matchD[2]) : null;
+  const matchD = appRequestPath.match(/^d(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
+  return matchD && safeSeg(matchD[1]) ? pubPath(`${app.dir}data/${matchD[1]}/pub`, matchD[2]) : null;
 }
 
 function pubPath(root: string, file: string) {
   if (!file || file.includes("\0")) return null;
-  const pub = nodePath.resolve(root, "pub"), target = nodePath.resolve(pub, file);
+  const pub = nodePath.resolve(root), target = nodePath.resolve(pub, file);
   const rel = nodePath.relative(pub, target);
   return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }

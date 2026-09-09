@@ -1,6 +1,6 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
-import { $item, Access, AccessError, ValidationError, hee, s } from "@qino/qino";
+import { $item, Access, AccessError, ValidationError, hee, s, unixTime } from "@qino/qino";
 import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
@@ -177,6 +177,7 @@ export const api: ApiTree = {
           const file = inRoot(await moduleRoot(ctx, Number(pid), scope), path);
           await Deno.mkdir(dirname(file), { recursive: true }).catch(() => {});
           await Deno.writeTextFile(file, "");
+          ctx.app.assetRev = unixTime();
           return { ok: true };
         },
       },
@@ -186,6 +187,7 @@ export const api: ApiTree = {
         input: s.object({ in: s.string(), path: s.string() }),
         execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
           await Deno.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
+          ctx.app.assetRev = unixTime();
           return { ok: true };
         },
       },

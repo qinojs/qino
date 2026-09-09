@@ -1,7 +1,7 @@
 /**
  * webpush.js — Web Push client
  *
- * import { subscribe, unsubscribe, channels } from "/m/messaging.webpush/pub/webpush.js";
+ * import { subscribe, unsubscribe, channels } from "@qino/m/messaging.webpush/pub/webpush.js";
  */
 import { api } from "@qino/pub/api.js";
 

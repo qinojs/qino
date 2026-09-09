@@ -23,9 +23,10 @@ export class Req {
   #query: Readonly<Record<string, string>> | undefined;
   #queryAll: Readonly<Record<string, readonly string[]>> | undefined;
   #cookies: Readonly<Record<string, string>> | undefined;
+  #rev: string;
   #deadline: ReqDeadline | null = null;
 
-  constructor(raw: Request, url: URL, body: ReqBody, opt: { peerAddr: string; time: number; appUrl: string; appPath: string; clientIp: string }) {
+  constructor(raw: Request, url: URL, body: ReqBody, opt: { peerAddr: string; time: number; appUrl: string; appPath: string; clientIp: string; rev?: string }) {
     this.#raw = raw;
     this.#nativeUrl = url;
     this.#url = new ReqUrl(url);
@@ -35,6 +36,7 @@ export class Req {
     this.#appUrl = opt.appUrl;
     this.#appPath = opt.appPath;
     this.#clientIp = opt.clientIp;
+    this.#rev = opt.rev ?? "";
   }
 
   get raw(): Request { return this.#raw; }
@@ -55,8 +57,10 @@ export class Req {
   get clientIp(): string { return this.#clientIp; }
   /** Mount prefix of this request, always with trailing slash (e.g. `/cms1/`). */
   get appUrl(): string { return this.#appUrl; }
-  /** Where module files are served from: `appUrl` + `m/`. Data files are below `Module.dataUrl`. */
-  get moduleUrl(): string { return this.#appUrl + "m/"; }
+  /** Where module files are served from: `appUrl` + `m.<rev>/` — see `app.assetRev`. */
+  get moduleUrl(): string { return `${this.#appUrl}m${this.#rev}/`; }
+  /** Where module data files are served from; `Module.dataUrl` appends the module. */
+  get dataUrl(): string { return `${this.#appUrl}d${this.#rev}/`; }
   /** Decoded app-relative routing path, without base prefix and query.
    *  A URL path — not to be confused with `app.dir` (filesystem path). */
   get appPath(): string { return this.#appPath; }
@@ -102,7 +106,7 @@ export class Req {
 
   static async create(request: Request, opt: {
     url?: URL; appUrl?: string; peerAddr?: string; time?: number;
-    maxSize?: number; trustedProxyHops?: number;
+    maxSize?: number; trustedProxyHops?: number; assetRev?: number;
   } = {}): Promise<Req> {
     const url = publicScheme(request, opt.url ?? new URL(request.url), opt.trustedProxyHops ?? 0);
     const appUrl = ensureSlash(opt.appUrl || "/");
@@ -120,6 +124,7 @@ export class Req {
       appUrl,
       appPath,
       clientIp: clientIp(request, peerAddr, opt.trustedProxyHops ?? 0),
+      rev: opt.assetRev ? "." + opt.assetRev.toString(36) : "",
     });
   }
 }

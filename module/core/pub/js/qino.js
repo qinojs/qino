@@ -11,7 +11,7 @@ const appUrl = globalThis.qino?.appUrl ?? "/";
 export const ctx = {
   lang: document.documentElement.getAttribute("lang"),
   appUrl,
-  moduleUrl: appUrl + "m/",   // same as server-side: appUrl + "m/"
+  moduleUrl: globalThis.qino?.moduleUrl ?? appUrl + "m/",  // carries the asset revision, so it comes from the server
   dev: !!globalThis.qino?.dev,
   csrfToken: globalThis.qino?.csrfToken,
 };

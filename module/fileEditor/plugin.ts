@@ -1,5 +1,5 @@
 import * as nodeFs from "node:fs/promises";
-import { Output, getCtx, Access, s } from "@qino/qino";
+import { Output, getCtx, Access, s, unixTime } from "@qino/qino";
 
 import codemirrorView from "./view/codemirror.ts";
 import { check } from "./lib/sign.ts";
@@ -29,6 +29,7 @@ async function saveFile(ctx: Ctx, file: string, content: string, exp: unknown, s
   await nodeFs.mkdir(backupDir, { recursive: true }).catch(() => {});
   await nodeFs.copyFile(file, backupDir + backupName).catch(() => {});
   await nodeFs.writeFile(file, content);
+  ctx.app.assetRev = unixTime(); // the file may be a served one, and its url has to change with it
   return 1;
 }
 

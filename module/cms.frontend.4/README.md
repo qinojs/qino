@@ -5,7 +5,7 @@ Oberflaeche selbst erzeugt. Das Panel besteht aus solchen Widgets, und wer sonst
 ein anderes Modul, spaeter das Backend — mountet dasselbe.
 
 ```js
-const media = widget("/m/cms.frontend.4/pub/panel/widgets/media.js", { node });
+const media = widget("@qino/m/cms.frontend.4/pub/panel/widgets/media.js", { node });
 sidebar.append(media);          // laeuft beim Einhaengen
 await media.reload({ node: other });
 media.remove();                 // bricht ab und raeumt auf

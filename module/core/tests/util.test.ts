@@ -100,7 +100,7 @@ Deno.test("util: ctx.urlToLocalPath maps module and data public files", async ()
       dir: "/app/",
       modules: {
         get(name: string) {
-          return name === "cms.foo" ? { dir: "/sys/cms.foo/" } : undefined;
+          return name === "cms.foo" ? { pubDir: "/sys/cms.foo/pub" } : undefined;
         },
       },
     },
@@ -109,6 +109,9 @@ Deno.test("util: ctx.urlToLocalPath maps module and data public files", async ()
   // no directory of its own: what was mirrored into its cache on import
   assertEquals(ctx.urlToLocalPath("http://h/app/m/local.foo/pub/main.css"), "/app/cache/local.foo/remote/pub/main.css");
   assertEquals(ctx.urlToLocalPath("http://h/app/d/custom/pub/main.css"), "/app/data/custom/pub/main.css");
+  // an asset revision in the path names the same file — it only makes the url cacheable
+  assertEquals(ctx.urlToLocalPath("http://h/app/m.k9z/cms.foo/pub/main.css"), "/sys/cms.foo/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/app/d.k9z/custom/pub/main.css"), "/app/data/custom/pub/main.css");
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../mod.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../../deps.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/app/d/custom/pub/../mod.ts"), null);

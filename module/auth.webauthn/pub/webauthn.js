@@ -1,7 +1,7 @@
 /**
  * webauthn.js — WebAuthn Client
  *
- * import { WebAuthn } from "/m/auth.webauthn/pub/webauthn.js";
+ * import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
  */
 import { t } from "@qino/pub/t.js";
 

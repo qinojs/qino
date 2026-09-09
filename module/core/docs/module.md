@@ -122,9 +122,16 @@ await Deno.mkdir(dir, { recursive: true });
 await Deno.writeTextFile(dir + key + ".json", body);
 ```
 
-What lies in `data/<module>/pub/` is served at `Module.dataUrl` (`<appUrl>d/<module>/`), the
-counterpart to the module's own code under `<appUrl>m/<module>/pub/` (`ctx.req.moduleUrl`).
+What lies in `data/<module>/pub/` is served at `Module.dataUrl` (`<appUrl>d.<rev>/<module>/`), the
+counterpart to the module's own code under `<appUrl>m.<rev>/<module>/pub/` (`ctx.req.moduleUrl`).
 Nothing else below `data/` is reachable over HTTP.
+
+`<rev>` is `app.assetRev` — the newest mtime of any served file, base 36. It is ignored when the
+path is resolved, so an address without it names the same file; with it the answer is `immutable`
+for a year, without it `no-cache`. Both urls are built for you: use `mod.modUrl` / `mod.dataUrl`
+and, in browser code, the `@qino/m/<module>/` specifier — never a literal `/m/…` path, which would
+opt out of caching. Whoever writes a file below a `pub/` dir sets `app.assetRev = unixTime()`;
+linking a module folds in its own files.
 
 Uploads are core's: `data/core/file/`, managed by `app.dbFiles`.
 

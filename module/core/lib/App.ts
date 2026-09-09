@@ -34,6 +34,8 @@ const DEFAULT_CONFIG = {
 /** Statuses a response must not carry a body with. */
 const NULL_BODY = new Set([204, 205, 304]);
 
+const REV = /^[md]\.\w+\//; // the asset revision segment of a static url
+
 /** Set on every response unless it already carries them. */
 const RESPONSE_HEADERS: Record<string, string> = {
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -78,6 +80,9 @@ export class App extends Emitter<AppEvents> {
     stores: StoreManager;
     languages: LangManager;
     t: LangManager["t"];
+    /** Newest mtime of any served file, in unix seconds. It rides along in `m.<rev>/` and `d.<rev>/`
+     *  urls so those can be cached forever; whoever writes a served file sets it to `unixTime()`. */
+    assetRev = 0;
     /** What the modules declare — the loader mounts each module's `api` export under its name. */
     apiTree: ApiTree = {};
     #api?: ApiProxy;
@@ -138,7 +143,15 @@ export class App extends Emitter<AppEvents> {
             await this.fire("request-start", meta); // cheap pre-filter, before any DB/session work
             const url = new URL(request.url);
             const localPath = urlToLocalPath(url, base, this);
-            if (localPath) return this.#finish(await serveFile(request, localPath), meta);
+            if (localPath) {
+                const res = await serveFile(request, localPath);
+                // With a revision the url names one version of the file and can never go stale; without
+                // one — an old link, a hand-typed path — the etag has to be revalidated every time.
+                // Errors are never forever: a 404 pinned for a year would outlive the file it missed.
+                const forever = res.status < 400 && REV.test(url.pathname.slice(base.length));
+                res.headers.set("Cache-Control", forever ? "public, max-age=31536000, immutable" : "no-cache");
+                return this.#finish(res, meta);
+            }
             ctx = await Ctx.create(this, request, { appUrl: base, peerAddr, time, url });
         } catch (e) {
             return this.#finish(earlyError(e), meta);
@@ -194,6 +207,7 @@ export class App extends Emitter<AppEvents> {
             const qino = res.html.jsData.qino ??= {};
             qino.csrfToken = ctx.csrfToken;
             qino.appUrl = ctx.req.appUrl;
+            qino.moduleUrl = ctx.req.moduleUrl;
             res.body = res.html.render();
             if (!res.headers.has("Content-Type")) res.headers.set("Content-Type", "text/html; charset=utf-8");
         }

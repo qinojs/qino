@@ -66,6 +66,19 @@ export function clientIp(request: Request, peerAddr: string, hops = 0): string {
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
 
+/** Newest mtime below a directory, in unix seconds; 0 when it holds no files. */
+export async function newestMtime(dir: string): Promise<number> {
+  let newest = 0;
+  try {
+    for await (const e of Deno.readDir(dir)) {
+      const path = `${dir}/${e.name}`;
+      const time = e.isDirectory ? await newestMtime(path) : Math.floor(((await Deno.stat(path)).mtime?.getTime() ?? 0) / 1000);
+      if (time > newest) newest = time;
+    }
+  } catch { /* no such directory */ }
+  return newest;
+}
+
 /** To boolean. Settings are stored as text, so "false", "0" and "" are false. */
 export const isOn = (v: unknown): boolean => !!v && v !== "0" && v !== "false";
 
