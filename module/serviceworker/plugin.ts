@@ -4,13 +4,14 @@ import type { App, Ctx, Module } from "@qino/qino";
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   let cache: { key: string; script: string; etag: string } | undefined; // per app — a module global would mix tenants
 
-  // linking/unlinking a part is the only thing that changes the worker
-  const fresh = () => cache?.key === partNames(app).join() ? cache : undefined;
+  // Linked parts, asset revisions and mount paths determine the generated import URLs.
+  const keyOf = (base: string) => JSON.stringify([base, app.assetRev, partNames(app)]);
+  const fresh = (base: string) => cache?.key === keyOf(base) ? cache : undefined;
 
   // answers revalidations before routing, the cheapest point in the pipeline
   app.on("request-start", ({ request, base }) => {
     if (!request.url.endsWith(base + "sw.js")) return;
-    const hit = fresh();
+    const hit = fresh(base);
     if (hit && request.headers.get("if-none-match") === hit.etag) {
       throw new Output(undefined, { status: 304, headers: { ETag: hit.etag } });
     }
@@ -19,13 +20,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   /** The worker is nothing but imports — every behaviour comes from a module's part. */
   const build = async (ctx: Ctx) => {
     const names = partNames(app);
+    const key = keyOf(ctx.req.appUrl);
     if (!names.length) return; // no part, no worker
     const script = names.map((name) => `import ${JSON.stringify(`${ctx.req.moduleUrl + name}/pub/sw.js`)};\n`).join("");
-    return cache = { key: names.join(), script, etag: `W/"${await sha256b64url(script)}"` };
+    return cache = { key, script, etag: `W/"${await sha256b64url(script)}"` };
   };
 
   async function serve(ctx: Ctx): Promise<void> {
-    const worker = fresh() ?? await build(ctx);
+    const worker = fresh(ctx.req.appUrl) ?? await build(ctx);
     if (!worker) return;
     // "no-cache" stores the worker but revalidates it; the ETag then answers most checks with a 304
     const headers = {

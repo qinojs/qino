@@ -42,6 +42,7 @@ export class FileTransformer {
   /** Max seconds per transform pipeline; external commands are killed on expiry */
   timeout: number;
   #transformers: TransformerDef[] = [];
+  #running = new Map<string, Promise<TransformResult>>();
   #ocrEngines: OcrEngine[] = [];
   #transcriptEngines: TranscriptEngine[] = [];
 
@@ -119,10 +120,8 @@ export class FileTransformer {
   async transform(
     sourcePath: string,
     options: TransformOptions,
-    /** Known MIME type of the source file (e.g. from DB) – fallback to extension detection */
-    knownMime?: string,
-    /** Media types the client accepts, from its `Accept` header. Omitted = no constraint. */
-    accept?: string,
+    knownMime?: string, // Known MIME type of the source file (e.g. from DB) – fallback to extension detection
+    accept?: string, // Media types the client accepts, from its `Accept` header. Omitted = no constraint.
   ): Promise<TransformResult> {
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
@@ -146,55 +145,60 @@ export class FileTransformer {
     const knownProps = new Set(this.#transformers.flatMap((t) => t.props));
     const optParts = [...knownProps].sort().flatMap((k) => opts[k] !== undefined ? `${k}=${opts[k]}` : []);
     const cacheKey = await hashKey([fingerprint, ...optParts, await this.#toolchain(), accepts(accept, opts)]);
-    const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
-    const metaPath = `${cachePath}.mime`;
+    const run = async (): Promise<TransformResult> => {
+      const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
+      const metaPath = `${cachePath}.mime`;
 
-    // Check cache hit
-    try {
-      const cacheStat = await Deno.stat(cachePath);
-      const cachedMime = await Deno.readTextFile(metaPath).catch(() => mime);
-      if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) {
-        Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
+      // Check cache hit
+      try {
+        const cacheStat = await Deno.stat(cachePath);
+        const cachedMime = await Deno.readTextFile(metaPath).catch(() => mime);
+        if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) {
+          Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
+        }
+        return { path: cachePath, mime: cachedMime, transformed: true, key: cacheKey };
+      } catch { /* Cache miss – continue */ }
+
+      const pipeline = sortTransformers(this.#transformers);
+      const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
+      const ctx: TransformContext = {
+        transformer: this,
+        sourcePath,
+        currentPath: sourcePath,
+        mime,
+        options: opts,
+        accept,
+        meta: {},
+        tmpDir,
+        signal: AbortSignal.timeout(this.timeout * 1000),
+      };
+
+      try {
+        for (const transformer of pipeline)
+          if (await transformer.handles(ctx)) await transformer.transform(ctx);
+
+        if (ctx.currentPath === sourcePath) {
+          return { path: sourcePath, mime, transformed: false, key: cacheKey };
+        }
+
+        // Write meta first, then move the file atomically into place (concurrent readers never see a partial file)
+        await nodeFs.mkdir(this.cacheDir, { recursive: true });
+        await Deno.writeTextFile(metaPath, ctx.mime);
+        const partPath = `${cachePath}.part-${crypto.randomUUID()}`;
+        await nodeFs.copyFile(ctx.currentPath, partPath);
+        await nodeFs.rename(partPath, cachePath);
+        return { path: cachePath, mime: ctx.mime, transformed: true, key: cacheKey };
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        console.error('[FileTransformer]', err.message);
+        return { path: sourcePath, mime, transformed: false, error: err };
+      } finally {
+        await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
       }
-      return { path: cachePath, mime: cachedMime, transformed: true, key: cacheKey };
-    } catch { /* Cache miss – continue */ }
-
-    const pipeline = sortTransformers(this.#transformers);
-    const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
-    const ctx: TransformContext = {
-      transformer: this,
-      sourcePath,
-      currentPath: sourcePath,
-      mime,
-      options: opts,
-      accept,
-      meta: {},
-      tmpDir,
-      signal: AbortSignal.timeout(this.timeout * 1000),
     };
-
-    try {
-      for (const transformer of pipeline)
-        if (await transformer.handles(ctx)) await transformer.transform(ctx);
-
-      if (ctx.currentPath === sourcePath) {
-        return { path: sourcePath, mime, transformed: false, key: cacheKey };
-      }
-
-      // Write meta first, then move the file atomically into place (concurrent readers never see a partial file)
-      await nodeFs.mkdir(this.cacheDir, { recursive: true });
-      await Deno.writeTextFile(metaPath, ctx.mime);
-      const partPath = `${cachePath}.part-${crypto.randomUUID()}`;
-      await nodeFs.copyFile(ctx.currentPath, partPath);
-      await nodeFs.rename(partPath, cachePath);
-      return { path: cachePath, mime: ctx.mime, transformed: true, key: cacheKey };
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      console.error('[FileTransformer]', err.message);
-      return { path: sourcePath, mime, transformed: false, error: err };
-    } finally {
-      await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
-    }
+    return this.#running.getOrInsertComputed(cacheKey, () =>
+      run().finally(() => this.#running.delete(cacheKey))
+    );
   }
 }
 
