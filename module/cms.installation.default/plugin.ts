@@ -4,6 +4,7 @@ import { cms } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
@@ -67,6 +68,13 @@ export async function init(app: App): Promise<void> {
   await setting(seeded.join(","));
 }
 
+/* Titles in the four languages the backend also installs. A title exists only in the
+   languages it was written in, so an English-only one is unreachable on a site that does not
+   run English — the page then shows in the tree as a nameless row. */
+async function titles(page: Node, texts: Record<string, string>) {
+  for (const [lang, text] of Object.entries(texts)) await page.title(lang, text);
+}
+
 // Atomic: a half-installed site (pages without their trash/login/not-found targets) is unrecoverable
 // on the next boot, because every step guards itself with "does this id already exist?".
 export function install({ app }: { app: App }): Promise<void> {
@@ -106,37 +114,37 @@ async function installTx(app: App): Promise<void> {
     const p = await (await cm.node(1)).createChild({ id: 2, access: 1, visible: true, offline: 0, searchable: true, sort: 1 });
     await p.changeGroup(adminGrp, 2);
     await db.table("page_redirect").insert({ request: "", redirect: "2" });
-    await p.title("en", "Home");
+    await titles(p, { en: "Home", de: "Startseite", fr: "Accueil", it: "Home" });
   }
   // Service
   if (!await db.one`SELECT id FROM page WHERE id = 10`) {
     const p = await (await cm.node(1)).createChild({ id: 10, access: 1, visible: false, searchable: true, sort: 4 });
     await p.changeGroup(adminGrp, 1);
-    await p.title("en", "Service");
+    await titles(p, { en: "Service", de: "Service", fr: "Service", it: "Servizio" });
   }
   if (!await db.one`SELECT id FROM page WHERE id = 20`) {
     const p = await (await cm.node(10)).createChild({ id: 20, visible: true, searchable: false });
     await p.changeGroup(adminGrp, 2);
     await (await p.cont("main")).cont('1', "cms.cont.search1");
-    await p.title("en", "Search");
+    await titles(p, { en: "Search", de: "Suche", fr: "Recherche", it: "Ricerca" });
   }
 
   if (!await db.one`SELECT id FROM page WHERE id = 40`) {
     const p = await (await cm.node(1)).createChild({ id: 40, access: 0, visible: false, searchable: false, sort: 8 });
     await p.changeGroup(adminGrp, 1);
-    await p.title("en", "System");
+    await titles(p, { en: "System", de: "System", fr: "Système", it: "Sistema" });
   }
   if (!await db.one`SELECT id FROM page WHERE id = 5`) {
     const p = await (await cm.node(40)).createChild({ id: 5, access: 1, offline: 0, visible: false });
     await p.changeGroup(adminGrp, 1);
-    await p.title("en", "Layout");
+    await titles(p, { en: "Layout", de: "Layout", fr: "Mise en page", it: "Layout" });
   }
 
   if (!await db.one`SELECT id FROM page WHERE id = 50`) {
     const p = await (await cm.node(40)).createChild({ id: 50, access: 0, offline: 0, visible: false });
     await p.changeGroup(adminGrp, 1);
     await (await p.cont("main")).cont("cms.cont.trash");
-    await p.title('en', "Trash");
+    await titles(p, { en: "Trash", de: "Papierkorb", fr: "Corbeille", it: "Cestino" });
     if (!await settings.cms.pageTrash) settings.cms.pageTrash(50);
   }
   await (await cm.node(50)).set("module", "cms.layout.login");
@@ -146,14 +154,14 @@ async function installTx(app: App): Promise<void> {
     const p = await (await cm.node(40)).createChild({ id: 60, access: 1, offline: 0, visible: false });
     await p.changeGroup(adminGrp, 1);
     await (await p.cont("main")).cont('1', "cms.cont.login4");
-    await p.title("en", "No access");
+    await titles(p, { en: "No access", de: "Kein Zugriff", fr: "Accès refusé", it: "Nessun accesso" });
     if (!await settings.cms.pageNoAccess) settings.cms.pageNoAccess(60);
   }
   if (!await db.one`SELECT id FROM page WHERE id = 80`) {
     const p = await (await cm.node(40)).createChild({ id: 80, access: 1, offline: 0 });
     await p.changeGroup(adminGrp, 1);
     await (await p.cont("main")).cont('1', "cms.cont.login4");
-    await p.title("en", "Login");
+    await titles(p, { en: "Login", de: "Anmelden", fr: "Connexion", it: "Accedi" });
     await db.table("page_redirect").insert({ request: "login", redirect: "80" });
   }
   await (await cm.node(80)).set("module", "cms.layout.login");
@@ -163,7 +171,7 @@ async function installTx(app: App): Promise<void> {
     const p = await (await cm.node(40)).createChild({ id: 70, access: 1, offline: 0, visible: false });
     await p.changeGroup(adminGrp, 2);
     await (await p.cont("main")).cont('1', "cms.cont.not_found1");
-    await p.title("en", "Not found");
+    await titles(p, { en: "Not found", de: "Nicht gefunden", fr: "Page introuvable", it: "Non trovato" });
     if (!await settings.cms.pageNotFound) settings.cms.pageNotFound(70);
     if (!await settings.cms.pageOffline)  settings.cms.pageOffline(60);
   }
