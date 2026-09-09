@@ -360,7 +360,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
       <td data-g=dns data-value="${aaaa.length ? 1 : 0}">${aaaa.length ? dot("green", aaaa.join(", ")) : dot("blue", "no AAAA record")}
       <td data-g=dns data-value="${row.dns_mx}">${dnsCell(row.dns_mx)}
       <td data-g=dns data-value="${txt.map(([label]) => label).join(",")}">${txtCell(txt)}
-      <td data-g=dns data-value="${lines(row.dns_ttl).map((l) => Number(l.split("=")[1]) || 0).reduce((a, b) => Math.min(a, b), Infinity)}">${ttlCell(row)}
+      <td data-g=dns data-value="${lines(row.dns_ttl).map((l) => Number(l.split("=")[1]) || 0).sort((a, b) => a - b)[0] ?? 0}">${ttlCell(row)}
       <td data-g=dns data-value="${rank(row.dnssec)}">${dnssecCell(row)}
       <td data-g=mail data-value="${row.spf_error ? 1 : rank(row.spf_policy)}|${row.spf_lookups ?? 0}">${spfCell(row)}
       <td data-g=mail data-value="${row.dmarc_policy}">${dmarcCell(row)}

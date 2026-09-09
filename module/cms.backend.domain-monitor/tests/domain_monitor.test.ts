@@ -238,6 +238,7 @@ Deno.test("cms.backend.domain-monitor: row grades TTL, expiry and mail policy", 
   assertEquals(cell({ dns_ttl: "a=30\nmx=3600" }).includes("var(--red)"), true);
   assertEquals(cell({ dns_ttl: "a=120" }).includes("var(--orange)"), true);
   assertEquals(cell({ dns_ttl: "a=3600\nmx=3600" }).includes("<small>3600s</small>"), true);
+  assertEquals(cell({ dns_ttl: null }).includes('data-g=dns data-value="0">–'), true);
 
   const soon = cell({ reg_expires: Math.floor(Date.now() / 1000) + 5 * day });
   assertEquals(soon.includes("<small>4 d</small>") || soon.includes("<small>5 d</small>"), true);
