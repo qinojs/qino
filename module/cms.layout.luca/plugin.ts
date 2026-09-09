@@ -43,6 +43,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   u2.assets(ctx, U2_CSS, U2_VERSION);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
+  /* Die Schriften holt `pub/main.css` per @import von Google: das Stylesheet von
+     fonts.googleapis.com, die Schriftdateien von fonts.gstatic.com. Ohne diese beiden
+     Einträge meldet die CSP sie heute nur (report-only) — scharf geschaltet fielen alle
+     vier Schnitte aus. */
+  ctx.res.csp["style-src"]["https://fonts.googleapis.com"] = true;
+  ctx.res.csp["font-src"]["https://fonts.gstatic.com"] = true;
+
   return template.render(node);
 }
 
