@@ -43,6 +43,21 @@ async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
   }
 }
 
+Deno.test("loginFromRequest: a failed login keeps the current user's remember-me", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("client_usr").insert({ client_id: 1, usr_id: 7, save_login: true });
+    ctx.sess.data.core.userId(7);
+    const body = new URLSearchParams({ core_login: "", email: "missing@example.test", pw: "wrong", csrfToken: ctx.csrfToken });
+    const attempt = await Ctx.create(app, new Request("http://test/", { method: "POST", body }), { appUrl: "/" });
+    attempt.sess = ctx.sess;
+    attempt.clientId = ctx.clientId;
+
+    await loginFromRequest(attempt);
+    assertEquals(attempt.loginError, "username");
+    assertEquals(await app.db.one`SELECT save_login FROM client_usr WHERE client_id = ${1} AND usr_id = ${7}`, 1);
+  });
+});
+
 // logout() empties the very item login() hands to the listeners, so what they get has to be a
 // snapshot — otherwise a module carrying something over the login (a shop cart) finds it gone.
 Deno.test("login: auth:login carries the session as it was before the logout", async () => {

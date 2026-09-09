@@ -25,7 +25,7 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
     if (!safeEqual(body.csrfToken, ctx.csrfToken)) return;
     const saveLogin = !!body.save_login;
     ctx.loginError = await tryLogin(ctx, String(body.email ?? ""), String(body.pw ?? "")) || undefined;
-    await rememberLogin(ctx, saveLogin);
+    if (!ctx.loginError) await rememberLogin(ctx, saveLogin);
   }
   if (body?.core_logout != null) {
     if (!safeEqual(body.csrfToken, ctx.csrfToken)) return;
