@@ -28,7 +28,9 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
   const tables = Object.values<any>(db.tables ?? {});
   const schemaProps = db.schema?.properties ?? {};
 
-  const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables");
+  const u = getCtx().req.url.toURL();
+  u.searchParams.set("view", "tables");
+
   const rows = await Promise.all(
     tables.sort((a, b) => {
       const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
