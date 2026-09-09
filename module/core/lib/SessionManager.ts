@@ -49,6 +49,7 @@ export class Session {
       this.#db.table("sess").update(this.id, { access: this.access, usr_id: this.usrId || null })
         .catch(e => console.error("session touch error:", e));
     }, 50);
+    Deno.unrefTimer(this.#touchTimer);
   }
 }
 
