@@ -54,7 +54,15 @@ export async function labels(node: Node): Promise<Record<string, string>> {
   return labels;
 }
 
-/** Entries of one form, searched and sorted. `sort` is a field name or "created". */
+/**
+ * Entries of one form, searched and sorted. `sort` is a field name or "created".
+ *
+ * The search runs in SQL — it is a LIKE over the whole json text and names no field. Sorting
+ * by a field and cutting the page happen afterwards in JavaScript: reaching into the json in
+ * SQL would need a json path, and that reads differently in SQLite, MySQL and Postgres.
+ * The price is that one form's entries are read whole; a form with tens of thousands of them
+ * would want a column of its own, and that is the moment to add one.
+ */
 export async function entries(app: App, node: Node, opt: {
   search?: string;
   sort?: string;
@@ -62,32 +70,34 @@ export async function entries(app: App, node: Node, opt: {
   page?: number;
   all?: boolean;
 } = {}) {
-  const db = app.db;
-  const table = sql.id(tableRef("form4_entry"));
-  // The search runs over the whole json — one condition for every field, without naming one.
   const sh = sqlSearch(String(opt.search ?? ""), ["data"]);
-  const where = sql`node_id = ${node.id} AND ${sh.where}`;
-
-  const dir = sql.raw(String(opt.dir).toUpperCase() === "ASC" ? "ASC" : "DESC");
-  // A field name reaches SQL as a bound json path, never as an identifier.
-  const order = !opt.sort || opt.sort === "created"
-    ? sql`created ${dir}, id ${dir}`
-    : sql`data ->> ${"$." + opt.sort} ${dir}, id DESC`;
-
-  const total = Number(await db.one`SELECT count(*) FROM ${table} WHERE ${where}`);
-  // The export takes everything the search matched; the table takes one page of it.
-  const window = opt.all
-    ? sql``
-    : sql`LIMIT ${PER_PAGE} OFFSET ${Math.max(0, Number(opt.page ?? 0)) * PER_PAGE}`;
-  const rows = await db.query`
-    SELECT id, created, lang, data FROM ${table} WHERE ${where} ORDER BY ${order} ${window}`;
+  const rows = await app.db.query`
+    SELECT id, created, lang, data FROM ${sql.id(tableRef("form4_entry"))}
+    WHERE node_id = ${node.id} AND ${sh.where} ORDER BY created DESC, id DESC`;
 
   // The values stay in `data` rather than being mixed into the row: a field called `id` or
   // `created` would otherwise fight with the entry's own columns — and did, in the table head.
-  return {
-    total,
-    rows: rows.map((row) => ({ id: Number(row.id), created: Number(row.created), lang: String(row.lang ?? ""), data: parse(String(row.data ?? "")) })),
-  };
+  const all = rows.map((row) => ({
+    id: Number(row.id),
+    created: Number(row.created),
+    lang: String(row.lang ?? ""),
+    data: parse(String(row.data ?? "")),
+  }));
+
+  const dir = String(opt.dir).toUpperCase() === "ASC" ? 1 : -1;
+  const sort = String(opt.sort ?? "created");
+  if (sort === "created") all.sort((a, b) => dir * (a.created - b.created || a.id - b.id));
+  else {
+    // Numbers compare as numbers, everything else as text — the type a value was stored with.
+    all.sort((a, b) => {
+      const x = a.data[sort], y = b.data[sort];
+      if (typeof x === "number" && typeof y === "number") return dir * (x - y);
+      return dir * String(x ?? "").localeCompare(String(y ?? ""));
+    });
+  }
+
+  const from = opt.all ? 0 : Math.max(0, Number(opt.page ?? 0)) * PER_PAGE;
+  return { total: all.length, rows: opt.all ? all : all.slice(from, from + PER_PAGE) };
 }
 
 function parse(json: string): Record<string, unknown> {

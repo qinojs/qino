@@ -1,8 +1,7 @@
-import { html } from "@qino/qino";
-import { entries, entryFiles } from "@qino/qino/cms.cont.form4";
+import { html, sql, tableRef } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -14,6 +13,8 @@ const settingsSchema = {
       "x-html": { type: "qgcms-page" },
     },
     limit: { type: "integer", minimum: 1, default: 20, description: "How many entries are shown." },
+    onlyIf: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
+    fields: { type: "string", description: "Comma-separated field names to show, in that order. Empty: every field, in the order the form asks." },
   },
 };
 
@@ -34,17 +35,63 @@ async function formOf(node: Node): Promise<Node | undefined> {
  * entries still carry come last: a field that was deleted later keeps its values, and they
  * must not disappear because nothing declares them any more.
  */
-async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[]) {
+async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], only: string[]) {
   const cont = (await form.conts()).find((c) => c.vs.module === "cms.cont.form4.fields");
   const declared = cont ? Object.keys(cont.settings.fields) : [];
   const sorted = String(cont?.settings.sort() ?? "").split(",").filter((name) => declared.includes(name));
-  const names = [...sorted, ...declared.filter((name) => !sorted.includes(name))];
+  let names = [...sorted, ...declared.filter((name) => !sorted.includes(name))];
   for (const row of rows) for (const name of Object.keys(row.data)) if (!names.includes(name)) names.push(name);
+  // A chosen list is also the order — and it is what keeps an answer out of a public listing.
+  if (only.length) names = only.filter((name) => names.includes(name));
 
   const out: { name: string; label: string }[] = [];
   for (const name of names) {
     const label = cont ? String(await cont.showText(name + "_title")).replace(/<[^>]*>/g, "").trim() : "";
     out.push({ name, label: label || name });
+  }
+  return out;
+}
+
+/**
+ * The entries of one form, newest first — read here rather than through a shared helper, so
+ * that every reader keeps its own query and its own conditions.
+ *
+ * `onlyIf` names a field an entry has to carry, a consent checkbox say; an unticked box sends
+ * nothing, so the question is whether the key is among the values at all. It is asked in
+ * JavaScript, not in SQL: a json path reads differently in every database, and one written
+ * for SQLite would fail on MySQL and Postgres.
+ */
+async function read(app: App, form: Node, onlyIf: string, limit: number) {
+  const rows = await app.db.query`
+    SELECT id, created, data FROM ${sql.id(tableRef("form4_entry"))}
+    WHERE node_id = ${form.id} ORDER BY created DESC, id DESC`;
+
+  const out = [];
+  for (const row of rows) {
+    let data: Record<string, unknown> = {};
+    try {
+      const parsed = JSON.parse(String(row.data ?? "") || "{}");
+      if (parsed && typeof parsed === "object") data = parsed;
+    } catch { /* a broken row shows as an empty one; it does not take the listing down */ }
+    if (onlyIf && data[onlyIf] === undefined) continue;
+    out.push({ id: Number(row.id), created: Number(row.created), data });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** The uploads of these entries, keyed `<entry>:<field>` — one query for the whole listing. */
+async function uploads(app: App, ids: number[]) {
+  const out = new Map<string, { id: number; name: string; mime: string }[]>();
+  if (!ids.length) return out;
+  const rows = await app.db.query`
+    SELECT ef.entry_id, ef.field, f.id, f.name, f.mime
+    FROM ${sql.id(tableRef("form4_entry_file"))} ef
+    JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
+    WHERE ef.entry_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")}) ORDER BY ef.id`;
+  for (const row of rows) {
+    const key = `${row.entry_id}:${row.field}`;
+    out.set(key, [...(out.get(key) ?? []), { id: Number(row.id), name: String(row.name ?? ""), mime: String(row.mime ?? "") }]);
   }
   return out;
 }
@@ -63,9 +110,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       : html`<div></div>`;
   }
 
-  const rows = await entries(app, form, { limit: Number(node.settings.limit()) || 20 });
-  const files = await entryFiles(app, rows.map((row) => row.id));
-  const fields = await fieldsOf(form, rows);
+  const rows = await read(app, form, String(node.settings.onlyIf() ?? "").trim(), Number(node.settings.limit()) || 20);
+  const files = await uploads(app, rows.map((row) => row.id));
+  const only = String(node.settings.fields() ?? "").split(",").map((name) => name.trim()).filter(Boolean);
+  const fields = await fieldsOf(form, rows, only);
 
   /* Pictures are signed permanently, not for this session: these entries are read by people
      who never sign in. The file stays unlisted — only this link reaches it. */

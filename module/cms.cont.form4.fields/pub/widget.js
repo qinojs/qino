@@ -89,7 +89,7 @@ export default async function (widget, { node, dialogs, signal }) {
   };
 
   await widget.html`<div class=-fields4>
-    <div class=-list u2-dropzone>${names.map(field)}</div>
+    <div class=-list u2-dropzone style="padding-bottom:.5rem">${names.map(field)}</div>
     <datalist id=fields4-names>${names.map((n) => html`<option value="${n}">`)}</datalist>
     <button type=button class="-add">${t`Add field`}</button>
   </div>`;

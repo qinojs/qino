@@ -1,8 +1,8 @@
 /* What the fields of one form report while they render, and where a submitted entry goes.
  * Unlike form2 the fields are addressed by a name the editor typed, and an entry is kept. */
-import { getCtx, requestStorage, sql, tableRef, unixTime } from "@qino/qino";
+import { getCtx, requestStorage, unixTime } from "@qino/qino";
 
-import type { App, UploadedFile } from "@qino/qino";
+import type { UploadedFile } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export class Form {
@@ -73,47 +73,4 @@ export async function keepEntry(node: Node, form: Form): Promise<number> {
     await app.db.table("form4_entry_file").insert({ entry_id: id, file_id: file.id, field });
   }
   return id;
-}
-
-/**
- * Entries of one form, newest first, `data` parsed. `where` adds equality on columns of
- * `form4_entry` — a module that adds a column of its own filters through it.
- */
-export async function entries(app: App, node: Node | number, opt: { limit?: number; offset?: number; where?: Record<string, unknown> } = {}) {
-  const where = app.db.table("form4_entry").valuesToFragment({ node_id: Number(node), ...opt.where });
-  const rows = await app.db.query`
-    SELECT id, created, lang, data FROM ${sql.id(tableRef("form4_entry"))} WHERE ${where}
-    ORDER BY created DESC, id DESC
-    LIMIT ${opt.limit ?? 100} OFFSET ${opt.offset ?? 0}`;
-  return rows.map((row) => ({
-    id: Number(row.id),
-    created: Number(row.created),
-    lang: String(row.lang ?? ""),
-    data: parse(String(row.data ?? "")),
-  }));
-}
-
-/** The uploads of these entries, keyed `<entry>:<field>` — one query for a whole listing. */
-export async function entryFiles(app: App, ids: number[]) {
-  if (!ids.length) return new Map<string, { id: number; name: string; mime: string }[]>();
-  const rows = await app.db.query`
-    SELECT ef.entry_id, ef.field, f.id, f.name, f.mime
-    FROM ${sql.id(tableRef("form4_entry_file"))} ef
-    JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
-    WHERE ef.entry_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")}) ORDER BY ef.id`;
-  const out = new Map<string, { id: number; name: string; mime: string }[]>();
-  for (const row of rows) {
-    const key = `${row.entry_id}:${row.field}`;
-    out.set(key, [...(out.get(key) ?? []), { id: Number(row.id), name: String(row.name ?? ""), mime: String(row.mime ?? "") }]);
-  }
-  return out;
-}
-
-function parse(json: string) {
-  try {
-    const data = JSON.parse(json || "{}");
-    return data && typeof data === "object" ? data as Record<string, string | number | boolean> : {};
-  } catch {
-    return {}; // a broken row must not take a listing down
-  }
 }
