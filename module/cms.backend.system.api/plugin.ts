@@ -13,7 +13,7 @@ type PathParam = {
   schema?: StandardSchema;
 };
 
-interface Route {
+type Route = {
   method: Method;
   path: string;
   name: string;
@@ -23,7 +23,7 @@ interface Route {
   output?: StandardSchema;
   pathParams: PathParam[];
   accessLevel: "public" | "user" | "superuser" | "dynamic" | "none";
-}
+};
 
 function accessLevel(action: Verb, ctx: Ctx): Route["accessLevel"] {
   const { access, guard } = action;
