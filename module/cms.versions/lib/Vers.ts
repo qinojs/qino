@@ -100,22 +100,21 @@ export async function view(db: Db, tableName: string, space: number, log: number
     if (!versedTables(db)[tableName]) return tableName;
     if (space === 0 && log === 0) return tableName;
 
-    const vt   = `_vers_${tableName}`;
-    const name = `_vers_${log}_space_${space}_${tableName}`;
+    const view = `_vers_${log}_space_${space}_${tableName}`;
 
     if (log !== 0) { // one-shot, caller drops it
-        await createView(db, tableName, vt, name, space, log);
-        return name;
+        await createView(db, tableName, space, log);
+        return view;
     }
 
     const views = dbState(db).views;
-    const creating = views.getOrInsertComputed(name, () => {
-        const creating = createView(db, tableName, vt, name, space, log);
-        creating.catch(() => views.delete(name)); // allow retry after failure
+    const creating = views.getOrInsertComputed(view, () => {
+        const creating = createView(db, tableName, space, log);
+        creating.catch(() => views.delete(view)); // allow retry after failure
         return creating;
     });
     await creating;
-    return name;
+    return view;
 }
 
 /** Route this request's reads through one-shot historical views and drop them again on dispose.
@@ -131,7 +130,9 @@ export async function historicalViews(ctx: Ctx, space: number, log: number): Pro
     return { async [Symbol.asyncDispose]() { delete scope.tables; await drop(); } };
 }
 
-async function createView(db: Db, tableName: string, vt: string, name: string, space: number, log: number): Promise<void> {
+async function createView(db: Db, tableName: string, space: number, log: number): Promise<void> {
+    const view = `_vers_${log}_space_${space}_${tableName}`;
+    const versTable = `_vers_${tableName}`;
     // Build field list: versioned fields from shadow table, rest from live table.
     const liveFields = await db.columns(tableName);
     const fieldSpec   = versedTables(db)[tableName];
@@ -151,13 +152,13 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
     // else: space head view (log=0 = current draft).
     const where = log
         ? sql`m._vers_deleted = 0 AND m._vers_space = ${spaceSql} AND m._vers_log BETWEEN 1 AND ${lastLogSql}
-          AND NOT EXISTS (SELECT 1 FROM ${sql.id(vt)} mm WHERE mm._vers_space = ${spaceSql}
+          AND NOT EXISTS (SELECT 1 FROM ${sql.id(versTable)} mm WHERE mm._vers_space = ${spaceSql}
           AND mm._vers_log BETWEEN 1 AND ${lastLogSql} AND mm._vers_log > m._vers_log
           AND ${sql.join(pkJoins, " AND ")} LIMIT 1)`
         : sql`m._vers_space = ${spaceSql} AND m._vers_log = 0`;
 
-    await db.query`DROP VIEW IF EXISTS ${sql.id(name)}`;
-    await db.query`CREATE VIEW ${sql.id(name)} AS SELECT ${sql.join(selects)} FROM ${sql.id(vt)} m
+    await db.query`DROP VIEW IF EXISTS ${sql.id(view)}`;
+    await db.query`CREATE VIEW ${sql.id(view)} AS SELECT ${sql.join(selects)} FROM ${sql.id(versTable)} m
         LEFT JOIN ${sql.id(tableName)} original ON ${sql.join(origJoins, " AND ")} WHERE ${where}`;
 }
 
