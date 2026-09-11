@@ -1,0 +1,8 @@
+[qcms-mod="cont.gallery.masonry"] {
+
+}
+u2-masonry:not(:defined) {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(min(var(--u2-Items-width), 100%) , 1fr));
+  gap: var(--u2-Items-gap, 1rem);
+}

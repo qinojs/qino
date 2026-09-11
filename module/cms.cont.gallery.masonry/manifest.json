@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.gallery.masonry",
+  "description": "Masonry image gallery with the u2 lightbox.",
+  "dependencies": ["cms", "cms.image2", "u2"],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

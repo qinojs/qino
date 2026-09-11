@@ -79,8 +79,9 @@ class SettingsEditorElement extends HTMLElement {
 
   constructor() {
     super();
-    this.addEventListener("change", (event) => this.#saveInput(event));
-    this.addEventListener("input", debounce((event) => this.#saveInput(event), 400));
+    const save = debounce((el) => this.#saveInput(el), 400);
+    this.addEventListener("change", (event) => this.#saveInput(event.target));
+    this.addEventListener("input", (event) => save(event.target));
     this.addEventListener("click", (event) => this.#click(event));
   }
 
@@ -115,8 +116,7 @@ class SettingsEditorElement extends HTMLElement {
     this.innerHTML = `<div class=qgSettingsEditor>${html || "<em>No settings available.</em>"}</div>`;
   }
 
-  async #saveInput(event) {
-    const el = event.target;
+  async #saveInput(el) {
     if (!this.#source || !el?.name || el.type === "hidden") return;
     let path;
     try { path = JSON.parse(el.name); }
