@@ -72,9 +72,9 @@ export default async function (node: Node, vars:any): Promise<any> {
     const name = String(vars.name ?? "");
     if (!allowed[name] || (name === "superuser" && !isSuperuser)) return false;
     if (name === "pw" && !String(vars.value ?? "")) return false;
-    const value = name === "pw" ? await pwHash(String(vars.value)) : name === "email" ? String(vars.value ?? "").trim() : vars.value;
+    const value = name === "pw" ? await pwHash(String(vars.value)) : name === "username" ? String(vars.value ?? "").trim() : vars.value;
     await targetUsr.$set({ [name]: value });
-    if (name === "email") await adoptUsername(node.app, Number(targetUsr.$id), String(value ?? ""));
+    if (name === "username") await adoptUsername(node.app, Number(targetUsr.$id), String(value ?? ""));
     return 1;
   }
 
