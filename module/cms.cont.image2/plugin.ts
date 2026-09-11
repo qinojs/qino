@@ -67,7 +67,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${String(text)}">
         </div>
         <style>
-        [qcms-mod="cont.image2"] img { min-height:4em; }
         [qcms-mod="cont.image2"] .-alt-edit { position:relative; }
         [qcms-mod="cont.image2"] .-alt-edit > input {
             opacity:0; transition:opacity .3s;
