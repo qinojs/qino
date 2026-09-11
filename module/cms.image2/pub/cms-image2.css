@@ -1,11 +1,15 @@
+:where(cms-image2) {
+  width:var(--image-width);
+  max-width:100%;
+  aspect-ratio:var(--aspect-ratio);
+}
+
 cms-image2 {
   display:inline-block;
   position:relative;
   overflow:hidden;
   box-sizing:border-box;
 
-  max-width:5rem; /* shout be overwritten */
-  width:100%; /* if max-width:100% => somtimes "with" wins in containers */
   min-width:.625rem;
   min-height:.625rem;
 
@@ -15,16 +19,7 @@ cms-image2 {
   vertical-align: middle;
   padding:0 !important;
 
-  /* aspect-ratio: calc(1 / var(--aspect-ratio) ); todo */
   /* z-index:-1; todo? */
-}
-cms-image2::after {
-  content:'';
-  display:block;
-  height:0;
-  box-sizing:border-box;
-  /* padding-bottom:100%; /* should be overwritten */
-  padding-bottom:calc( var(--aspect-ratio) * 100% ); /* new style */
 }
 cms-image2 img {
   position:absolute;

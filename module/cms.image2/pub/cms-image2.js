@@ -37,6 +37,12 @@
       img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
       //preview
       c1Img.prepend(img);
+      if (img.c1Image2_url.startsWith('data:')) {
+        img.src = img.c1Image2_url;
+        img.removeAttribute('loading');
+        c1Img.setAttribute('loaded', '');
+        return;
+      }
 
       const preload = c1Img.hasAttribute('data-preload') || c1Img.hasAttribute('preload');
       if (preload) {
@@ -158,6 +164,7 @@
     const m = url.match(/(.*dbFile\/([^/]+))((?:\/[^/]+)*?)\/([^/]+)$/);
     if (!m) return url;
     const params = Object.fromEntries((m[3].match(/\/[^/]+/g) ?? []).map(s => { const [k,...rest] = s.slice(1).split('-'); return [k, rest.length ? rest.join('-') : true]; }));
+    if (!('w' in params) && !('h' in params)) return url;
     params.w = w;
     params.h = h;
     params.dpr = Math.min(devicePixelRatio || 1, 2); // hi-dpi: physical px (capped 2×), explicit so a dpr cookie can't override
