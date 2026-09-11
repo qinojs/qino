@@ -27,16 +27,16 @@ export async function isFile(path: string, dev = false): Promise<boolean> {
 }
 
 /** Cookie name prefix. `__Host-` requires Path=/, so fall back to `__Secure-` on sub-path mounts. */
-export function cookiePrefix(https: boolean, appUrl: string): string {
-  if (!https) return "";
-  return appUrl === "/" ? "__Host-" : "__Secure-";
+export function cookiePrefix(secure: boolean, path: string): string {
+  if (!secure) return "";
+  return path === "/" ? "__Host-" : "__Secure-";
 }
 
 /** Header builders (like sql.id/html.raw): each returns a [name, value] tuple
  *  for headers.set(...) / .append(...) or HeadersInit arrays. */
 interface HeaderBuilders {
   contentDisposition(type: "inline" | "attachment", name: string): [string, string];
-  setCookie(name: string, value: string, appUrl: string, https: boolean, maxAge?: number): [string, string];
+  setCookie(name: string, value: string, options: { path: string; secure: boolean; maxAge?: number }): [string, string];
 }
 
 export const header: HeaderBuilders = {
@@ -47,12 +47,12 @@ export const header: HeaderBuilders = {
     return ["Content-Disposition", `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`];
   },
   /** Secure Set-Cookie (HttpOnly, SameSite=Lax, prefix). Optional Max-Age (seconds) for persistent cookies. */
-  setCookie(name: string, value: string, appUrl: string, https: boolean, maxAge?: number): [string, string] {
-    const fullName = cookiePrefix(https, appUrl) + name;
-    const parts = [`${fullName}=${value}`, `Path=${appUrl}`];
+  setCookie(name, value, { path, secure, maxAge }): [string, string] {
+    const fullName = cookiePrefix(secure, path) + name;
+    const parts = [`${fullName}=${value}`, `Path=${path}`];
     if (maxAge != null) parts.push(`Max-Age=${maxAge}`);
     parts.push("HttpOnly;SameSite=Lax");
-    if (https) parts.push("Secure");
+    if (secure) parts.push("Secure");
     return ["Set-Cookie", parts.join("; ")];
   },
 };

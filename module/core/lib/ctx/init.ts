@@ -32,7 +32,7 @@ async function initClient(ctx: Ctx): Promise<void> {
 
 async function registerClient(ctx: Ctx): Promise<void> {
   const hash = uid();
-  ctx.res.headers.append(...header.setCookie("cid", hash, ctx.req.appUrl, ctx.app.https, 5 * 365 * 24 * 60 * 60));
+  ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure: ctx.app.https, maxAge: 5 * 365 * 24 * 60 * 60 }));
   const client = await ctx.app.db.table("client").add({ hash });
   ctx.clientId = String(client);
 }

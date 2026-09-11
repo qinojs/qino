@@ -91,7 +91,7 @@ export class SessionManager {
   setCookieIfNew(ctx: Ctx): void {
     if (!ctx.sess.isNew || ctx.sess.cookieSent) return;
     ctx.sess.cookieSent = true;
-    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, ctx.req.appUrl, ctx.app.https));
+    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, { path: ctx.req.appUrl, secure: ctx.app.https }));
   }
 
   async #create(): Promise<Session> {
