@@ -111,9 +111,14 @@
   background-size:1rem 1rem;
 }
 
-.c2t-stage cms-image2 {
+.c2t-stage :is(cms-image2, .c2t-native-image) {
   outline:1px solid rgba(20, 60, 100, .3);
   outline-offset:-1px;
+}
+
+.cms-image2-test .c2t-native-image {
+  max-width:100%;
+  vertical-align:middle;
 }
 
 .c2t-metric {

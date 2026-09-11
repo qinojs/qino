@@ -33,7 +33,7 @@ async function render(node: Node, { vars }: { vars?: Record<string, unknown> } =
 
   const basic = html.raw((await Promise.all(TESTS.map((test) => {
     const options = imageOptions(base, test.id, test.options);
-    return renderCard(test.id, test.title, test.note, cms_image2(file, options), optionsText(options));
+    return renderCard(test.id, test.title, test.note, image(file, options, test.id), optionsText(options));
   }))).join(""));
 
   const flex = html.raw((await Promise.all([
@@ -71,7 +71,6 @@ async function labPart(node: Node, { vars }: { vars?: Record<string, unknown> } 
     fit: lab.fit,
     hpos: lab.hpos,
     vpos: lab.vpos,
-    css: { "max-width": lab.width + "px" },
   });
   return renderLab(file, options, lab);
 }
@@ -95,7 +94,7 @@ function renderLab(file: DbFile, options: ImgOptions, lab: LabVars): Promise<Htm
         <label>Box <input type=range min=120 max=1100 value="${lab.box}" data-c2t-param=box><output></output></label>
         <button type=button data-c2t-reload>Reload preview</button>
       </form>
-      <div class=c2t-stage style="width:min(100%, ${lab.box}px)">${cms_image2(file, options)}</div>
+      <div class=c2t-stage style="width:min(100%, ${lab.box}px)">${image(file, options, "lab")}</div>
       <output class=c2t-metric></output>
       <code class=c2t-params>${optionsText(options)}</code>
     </article>
@@ -128,11 +127,26 @@ function renderCard(
 }
 
 function image(file: DbFile, base: ImgOptions, id: string, opts: ImgOptions = {}): Promise<HtmlString> {
-  return cms_image2(file, imageOptions(base, id, opts));
+  const options = imageOptions(base, id, opts);
+  return html.async`${cms_image2(file, options)}<template class=c2t-native>${nativeImage(file, options)}</template>`;
+}
+
+async function nativeImage(file: DbFile, options: ImgOptions): Promise<HtmlString> {
+  const hpos = options.hpos ?? await file.get("hpos") ?? 50;
+  const vpos = options.vpos ?? await file.get("vpos") ?? 50;
+  const styles = {
+    "object-fit": options.fit,
+    "object-position": `${hpos}% ${vpos}%`,
+    ...(typeof options.css === "object" ? options.css : {}),
+  };
+  const style = Object.entries(styles).map(([k, v]) => `${k}:${v}`).join(";") + ";" + (options.style ?? "");
+  return html.async`<img class=c2t-native-image src="${file.url()}" alt="${options.alt}"
+    ${options.width ? html`width="${options.width}"` : ""}
+    ${options.height ? html`height="${options.height}"` : ""} style="${style}">`;
 }
 
 function imageOptions(base: ImgOptions, id: string, opts: ImgOptions = {}): ImgOptions {
-  return { ...base, fit: "cover", "data-test": id, ...opts };
+  return { fit: "cover", ...base, "data-test": id, ...opts };
 }
 
 function optionsText(options: ImgOptions): string {

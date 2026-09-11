@@ -1,3 +1,5 @@
+import { api } from "@qino/pub/api.js";
+
 function init(root) {
   initCases(root);
   initLab(root);
@@ -16,6 +18,14 @@ function initCases(root) {
     };
     if (!c.img || !c.out || !c.params) continue;
     el.__c2tCaseInit = true;
+    const native = el.querySelector(".c2t-stage").cloneNode(true);
+    for (const template of native.querySelectorAll("template.c2t-native")) {
+      template.previousElementSibling.remove();
+      template.replaceWith(template.content.cloneNode(true));
+    }
+    const label = document.createElement("p");
+    label.textContent = "Native <img>";
+    el.append(label, native);
 
     const update = () => updateCase(c);
     const ro = new ResizeObserver(update);
@@ -65,13 +75,14 @@ function start(root) {
 }
 
 function reloadLab(root, lab, btn = null) {
-  const nid = globalThis.cms?.el?.nid(root) || root.closest("[qcms-id]")?.getAttribute("qcms-id");
-  if (!nid || !globalThis.cms?.reloadPart) return;
+  const nid = root.closest("[qcms-id]")?.getAttribute("qcms-id");
+  if (!nid) return;
   if (root.__c2tReloading) return root.__c2tReloadQueued = lab;
   root.__c2tReloading = true;
   if (btn) btn.disabled = true;
   root.querySelector(".c2t-lab")?.__c2tClean?.();
-  globalThis.cms.reloadPart(nid, "lab", { lab }).then(() => {
+  return api.cms.node(nid).html.part("lab").post({ vars: { lab } }).then(html => {
+    root.querySelector("[cms-part=lab]").innerHTML = html;
     init(root);
   }).finally(() => {
     root.__c2tReloading = false;
@@ -86,8 +97,9 @@ function reloadLab(root, lab, btn = null) {
 function updateCase(c) {
   const now = rect(c.img);
   const loaded = c.img.hasAttribute("loaded");
-  const target = Number(getComputedStyle(c.img).getPropertyValue("--aspect-ratio")) || 0;
-  const ratio = now.w ? now.h / now.w : 0;
+  const [w, h = 1] = getComputedStyle(c.img).getPropertyValue("--aspect-ratio").split('/').map(Number);
+  const target = w / h || 0;
+  const ratio = now.h ? now.w / now.h : 0;
   const ratioDiff = target && ratio ? Math.abs(ratio - target) / target : 0;
   const shift = c.before ? Math.max(Math.abs(now.w - c.before.w), Math.abs(now.h - c.before.h)) : 0;
   const tiny = now.w <= 12 || now.h <= 12;
