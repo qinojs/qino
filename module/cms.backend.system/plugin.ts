@@ -114,24 +114,6 @@ async function render(node: Node): Promise<HtmlString> {
 
   return html.async`
 <div class=u2-flex>
-  <style>
-    .u2-card {
-      flex-basis:28rem;
-      flex-grow:0;
-    }
-    .healty_container {
-      display:grid; gap:.5rem;
-    }
-    .healty_item {
-      padding:.5rem;
-      background:color-mix(in srgb, var(--gray), #fff 80%);
-      border-radius:var(--radius);
-      &.-error   { background: color-mix(in srgb, var(--red), #fff 80%); }
-      &.-warning { background: color-mix(in srgb, var(--orange), #fff 80%); }
-      &.-notice  { background: color-mix(in srgb, var(--blue), #fff 80%); }
-      button { background-color: var(--color-text); border-radius: .2rem; margin: 0;  }
-    }
-  </style>
   ${serverInfoHtml}
   ${healthBox}
   ${dbBox}
@@ -303,6 +285,7 @@ async function dbDetails(node: Node): Promise<HtmlString> {
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     js: ["pub/main.js"],
     render,
     api,

@@ -89,10 +89,6 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const search = ctx.req.query.search ?? "";
 
   return html.async`<div class=u2-flex>
-    <style>
-        [cms-part=list] .-url a { display:block; max-width:40rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden }
-        [cms-part=list] th[data-sort] { cursor:pointer; user-select:none }
-    </style>
 
     <div class=u2-card style="flex:1 1 100%">
         <div class=-head>${t`New short link`}</div>
@@ -126,6 +122,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     js: ["pub/main.js"],
     render,
     parts: { list },

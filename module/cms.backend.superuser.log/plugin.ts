@@ -196,10 +196,9 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const initSearch = ctx.req.query.search ?? "";
   const initialList = await list(node, { ctx, vars: { filter: { search: initSearch } } });
 
-  // single root element — the CMS injects qcms-id/qcms-mod into the first tag, so the
-  // <style> must live inside it (otherwise el would be the <style> and querySelector misses the form)
+  // Single root element — the CMS injects qcms-id/qcms-mod into the first tag.
+  // Keep the form inside it so the client can find it with querySelector.
   return html.async`<div class=u2-flex>
-    <style>[cms-part=list] .-url { display:block; max-width:40rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden }</style>
     <div class=u2-card style="flex:1 1 100%">
         <div class=-head>${t`Filter`}</div>
         <div>
@@ -366,6 +365,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     js: ["pub/main.js"],
     render,
     parts: { list },

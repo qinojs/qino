@@ -93,13 +93,6 @@ function render(node: Node): Promise<HtmlString> {
 
   return html.async`
 <div class=u2-flex>
-  <style>
-    .ai-role { display:inline-block; color:#fff; padding:1px .4rem; border-radius:.2rem; font-size:.8em; }
-    .ai-msg { margin:0 0 .75rem; }
-    .ai-msg-head { display:flex; align-items:center; gap:.4rem; margin-bottom:.2rem; }
-    .ai-dim { color:#999; font-size:.8em; }
-    .ai-msg-body { white-space:pre-wrap; word-break:break-word; }
-  </style>
 
   <div class=u2-card style="flex:0 0 auto;">
     <div class=-head>Sessions</div>
@@ -126,6 +119,7 @@ function render(node: Node): Promise<HtmlString> {
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     js: ["pub/main.js"],
     render,
     parts: { list },

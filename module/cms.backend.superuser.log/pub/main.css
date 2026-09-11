@@ -1,0 +1,5 @@
+[qcms-mod="backend.superuser.log"] {
+  [cms-part=list] .-url {
+    display:block; max-width:40rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden
+  }
+}

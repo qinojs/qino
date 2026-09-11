@@ -1,0 +1,4 @@
+[qcms-mod="backend.superuser.shorturl"] {
+  [cms-part=list] .-url a { display:block; max-width:40rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden }
+  [cms-part=list] th[data-sort] { cursor:pointer; user-select:none }
+}
