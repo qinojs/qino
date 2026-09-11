@@ -10,15 +10,12 @@ export class ResHtml {
   titleSuffix = "";
   meta: Record<string, string> = { viewport: "width=device-width" };
   link: Record<string, Record<string, string>> = {};
-  scripts: Set<string> = new Set();
   styles: Set<string> = new Set();
-  /** Inline css, emitted ahead of the stylesheets: defaults any sheet overrides. Hashed for CSP like the inline scripts. */
   inlineStyles: InlineStyles = new InlineStyles();
+  scripts: Set<string> = new Set();
   legacyScripts: Set<string> = new Set();
-  importMap: Map<string, string> = new Map();
-  /** Inline script bodies with their attributes; `type` defaults to module. Each gets a CSP hash, which
-   *  only executable code needs — data blocks can be written straight into the markup. */
   inlineScripts: InlineScripts = new InlineScripts();
+  importMap: Map<string, string> = new Map();
   /** Trusted HTML appended verbatim to the document body. */
   content = "";
   // deno-lint-ignore no-explicit-any
