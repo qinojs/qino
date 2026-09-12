@@ -120,11 +120,44 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
   try {
     await requestStorage.run(ctx, async () => {
       assertEquals(await invoke(api, "POST", "/page/1/translate-all-langs", { ifNeeded: true }), { count: 4, fail: 0 });
+      assertEquals(title.values, { de: "Titel", en: "de-en:Titel", fr: "en-fr:de-en:Titel" });
+      assertEquals(main.values, { de: "Hallo", en: "de-en:Hallo", fr: "en-fr:de-en:Hallo" });
+      assertEquals(await invoke(api, "POST", "/page/1/translate", { targetLang: "en", sourceLang: "clean" }), { count: 2, fail: 0 });
     });
   } finally {
     globalThis.fetch = fetchOrg;
   }
 
-  assertEquals(title.values, { de: "Titel", en: "de-en:Titel", fr: "en-fr:de-en:Titel" });
-  assertEquals(main.values, { de: "Hallo", en: "de-en:Hallo", fr: "en-fr:de-en:Hallo" });
+  assertEquals(title.values, { de: "Titel", en: "", fr: "en-fr:de-en:Titel" });
+  assertEquals(main.values, { de: "Hallo", en: "", fr: "en-fr:de-en:Hallo" });
+});
+
+Deno.test("cms.text: camelCase translation inputs map to DeepL's field names", async () => {
+  const writes: unknown[] = [];
+  const ctx = await ctxWith({
+    languages: { all: ["de", "en"] },
+    api: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
+    cms: { node: () => ({ access: () => 3 }) },
+    db: { one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }), ensure: (value: unknown) => writes.push(value) }) },
+    settings: {
+      "cms.text": { "translation service": "deepl", "translate char count": setting(0) },
+      core: { keys: { "api.deepl.com": "test-key" } },
+    },
+  });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (_url, init) => {
+    const params = init?.body as URLSearchParams;
+    assertEquals(params.get("source_lang"), "de");
+    assertEquals(params.get("target_lang"), "en");
+    assertEquals(params.get("text"), "Hallo");
+    return Promise.resolve(Response.json({ translations: [{ text: "hello" }] }));
+  };
+  try {
+    await requestStorage.run(ctx, async () => {
+      assertEquals(await invoke(api, "POST", "/text/7/translate", { targetLang: "en", sourceLang: "de" }), true);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assertEquals(writes, [{ id: 7, lang: "en", text: "Hello" }]);
 });

@@ -26,10 +26,10 @@ const showEditor = async el => {
   dialog.className = 'qgCMS';
   const parts = [];
   for (const row of data) {
-    let source_lang = null;
+    let sourceLang = null;
     for (const item of data) {
       if (item.text !== false && item.lang !== row.lang) {
-        source_lang = item.lang;
+        sourceLang = item.lang;
         break;
       }
     }
@@ -40,7 +40,7 @@ const showEditor = async el => {
         <div class=-language style="padding:1rem; min-width:20rem; border-right:1px solid">
             <div style="display:flex; align-items:center; margin-bottom:.5rem">
                 <h2 style="text-transform:uppercase; margin:0 auto 0 0;${row.lang===activeLang?'color:var(--cms-access-2)':''}">${row.lang}</h2>
-                ${source_lang ? html.async`<button class=-translate source_lang="${source_lang}">${t`translate from ${source_lang}`}</button>` : ''}
+                ${sourceLang ? html.async`<button class=-translate data-source-lang="${sourceLang}">${t`translate from ${sourceLang}`}</button>` : ''}
                 <button class=-history style="margin-left:.2em">${t`history`}</button>
                 <!--button class=-continueAi style="margin-left:.2em" title="Is this useful? Feedback welcome!">AI extend (beta)</button-->
             </div>
@@ -56,12 +56,12 @@ const showEditor = async el => {
   dialog.addEventListener('click',async e=>{
     if (!e.target.classList.contains('-translate')) return;
     const btn = e.target;
-    const target_lang = btn.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
-    const source_lang = btn.getAttribute('source_lang');
+    const targetLang = btn.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
+    const sourceLang = btn.dataset.sourceLang;
     const loading = await import('@qino/pub/c1/loading.mjs').then(m => m.default);
     const unmark = loading.mark(e.target.closest('.-language'));
     try {
-      await api['cms.text'].text(tid).translate.post({ target_lang, source_lang });
+      await api['cms.text'].text(tid).translate.post({ targetLang, sourceLang });
       dialog.close();
       showEditor(el);
     } catch (err) {
@@ -181,7 +181,7 @@ const addTranslateWidget = async el=>{
     const sourceLang = e.submitter.name;
     const done = c1.loading.mark(e.target);
     try {
-      const result = await api['cms.text'].page(nodeId).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
+      const result = await api['cms.text'].page(nodeId).translate.post({ targetLang: lang, sourceLang: sourceLang, ifNeeded: true, subpages: false });
       await cms.dialogs.alert(t`translated texts: ${result.count}`);
       if (result.fail) await cms.dialogs.alert(t`not allowed on ${result.fail} pages`);
       result.count && location.reload();
