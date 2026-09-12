@@ -146,7 +146,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log) return;
     //     if (!node.vs) {
-    //         const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
+    //         const spaceView = await ensureView(ctx.app.db, "page", getCmsVers(ctx).space, 0);
     //         node.vs = await ctx.app.db.row`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE id = ${node.id}`;
     //     }
     //     if (!node.vs) return;
@@ -164,7 +164,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     // app.on("node:children", async ({ node }) => {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log || node.Children !== null) return;
-    //     const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
+    //     const spaceView = await ensureView(ctx.app.db, "page", getCmsVers(ctx).space, 0);
     //     const rows1 = await ctx.app.db.query`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE basis = ${node.id} ORDER BY type DESC, sort`;
     //     const rows2 = await ctx.app.db.query`SELECT * FROM page WHERE basis = ${node.id} ORDER BY type DESC, sort`;
     //     node.Children = new Map();

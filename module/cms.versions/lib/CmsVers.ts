@@ -1,7 +1,7 @@
 import { getCtx, requestStorage, sql, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
-import { versedTables, setVers, view } from "./Vers.ts";
+import { versedTables, setVers, ensureView } from "./Vers.ts";
 import { tableEntriesCopyTo } from "./Spaces.ts";
 
 import type { Ctx, Db, DbEvents, App } from "@qino/qino";
@@ -84,26 +84,26 @@ export async function copyNode(
         await tableEntriesCopyTo(db, "page_url",  { page_id: id }, fromSpace, fromLog, toSpace);
 
         // Copy title text
-        const toPageView = view(db, "page", toSpace, 0);
+        const toPageView = ensureView(db, "page", toSpace, 0);
         const titleId = await db.one`SELECT title_id FROM ${sql.id(toPageView)} WHERE id = ${id}`;
         if (titleId) await tableEntriesCopyTo(db, "text", { id: titleId }, fromSpace, fromLog, toSpace);
 
         // Copy content texts
-        const toTextView = view(db, "page_text", toSpace, 0);
+        const toTextView = ensureView(db, "page_text", toSpace, 0);
         const textIds = await db.col`SELECT text_id FROM ${sql.id(toTextView)} WHERE page_id = ${id}`;
         for (const tid of textIds) {
             await tableEntriesCopyTo(db, "text", { id: tid }, fromSpace, fromLog, toSpace);
         }
 
         // Copy files
-        const toFileView = view(db, "page_file", toSpace, 0);
+        const toFileView = ensureView(db, "page_file", toSpace, 0);
         const fileIds = await db.col`SELECT file_id FROM ${sql.id(toFileView)} WHERE page_id = ${id}`;
         for (const fid of fileIds) {
             await tableEntriesCopyTo(db, "file", { id: fid }, fromSpace, fromLog, toSpace);
         }
 
         // Recurse into children
-        const childView = view(db, "page", toSpace, 0);
+        const childView = ensureView(db, "page", toSpace, 0);
         const childIds = await db.col`SELECT id FROM ${sql.id(childView)} WHERE basis = ${id} ${sql.raw(subPages ? "" : "AND type = 'c'")}`;
         for (const cid of childIds) await generate(Number(cid));
     };

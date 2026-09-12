@@ -15,7 +15,7 @@
 // per bucket survives, every live row keeps ≥1 entry (baseline invariant).
 import { sql, unixTime } from "@qino/qino";
 
-import { versTable, versedTables } from "./lib/Vers.ts";
+import { getVersTable, versedTables } from "./lib/Vers.ts";
 
 import type { Db, Sql } from "@qino/qino";
 
@@ -39,16 +39,16 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
 
   let count = 0;
   for (const t of Object.keys(versedTables(db))) {
-    const vt = versTable(db, t);
-    if (!vt) continue;
+    const versTable = getVersTable(db, t);
+    if (!versTable) continue;
     const pks = (await db.columns(t)).filter((c) => c.Key === "PRI").map((c) => c.Field);
     const ids = [...pks, "_vers_space", "_vers_log"];
     const cols = sql.join(ids.map((f) => sql`m.${sql.id(f)}`));
     const join = sql.join(pks.map((f) => sql`mm.${sql.id(f)} = m.${sql.id(f)}`), " AND ");
     // m is deletable if a newer entry mm of the same row falls into the same bucket
-    const body = sql`FROM ${sql.id(vt)} m
+    const body = sql`FROM ${sql.id(versTable)} m
       JOIN log l ON l.id = m._vers_log
-      JOIN ${sql.id(vt)} mm ON mm._vers_space = m._vers_space AND ${join} AND mm._vers_log > m._vers_log
+      JOIN ${sql.id(versTable)} mm ON mm._vers_space = m._vers_space AND ${join} AND mm._vers_log > m._vers_log
       JOIN log ll ON ll.id = mm._vers_log
       WHERE l.time < ${now - KEEP_RECENT_SEC} AND ${bucket(sql`l.time`)} = ${bucket(sql`ll.time`)}`;
     if (dryRun) {
@@ -56,7 +56,7 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
     } else if (db.dialect === "mysql") {
       count += Number((await db.exec`DELETE m ${body}`).affectedRows ?? 0);
     } else {
-      count += Number((await db.exec`DELETE FROM ${sql.id(vt)} WHERE (${sql.join(ids.map(sql.id))}) IN (SELECT ${cols} ${body})`).affectedRows ?? 0);
+      count += Number((await db.exec`DELETE FROM ${sql.id(versTable)} WHERE (${sql.join(ids.map(sql.id))}) IN (SELECT ${cols} ${body})`).affectedRows ?? 0);
     }
   }
   return count;

@@ -66,7 +66,7 @@ export function setVers(ctx: Ctx, spaceLog: [number, number] | null): [number, n
 /** Shadow table name for a versioned table, or undefined if it is not versioned.
  *  The _vers_* tables are created centrally via the schema (see plugin.ts
  *  extendDbSchema), so this is a pure lookup. */
-export function versTable(db: Db, tableName: string): string | undefined {
+export function getVersTable(db: Db, tableName: string): string | undefined {
     return versedTables(db)[tableName] ? `_vers_${tableName}` : undefined;
 }
 
@@ -96,7 +96,7 @@ export function shadowSchema(source: any): any {
  * are one-shot: not cached, and the caller drops them after use (else one set
  * accumulates per browsed log entry).
  */
-export async function view(db: Db, tableName: string, space: number, log: number): Promise<string> {
+export async function ensureView(db: Db, tableName: string, space: number, log: number): Promise<string> {
     if (!versedTables(db)[tableName]) return tableName;
     if (space === 0 && log === 0) return tableName;
 
@@ -124,7 +124,7 @@ export async function historicalViews(ctx: Ctx, space: number, log: number): Pro
     await dbState(db).baseline; // the views are UNION-free: every live row needs its capture first
     const tables: Record<string, string> = {};
     const drop = async () => { for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; };
-    try { for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, space, log); }
+    try { for (const t of Object.keys(versedTables(db))) tables[t] = await ensureView(db, t, space, log); }
     catch (e) { await drop(); throw e; } // a half-built set must not stay behind either
     const scope: DbScope = ctx.state.dbScope = { tables, cache: {} };
     return { async [Symbol.asyncDispose]() { delete scope.tables; await drop(); } };
@@ -178,16 +178,16 @@ async function baselineAll(db: Db, log: Promise<string | null>): Promise<void> {
 }
 
 async function baselineTable(db: Db, tableName: string, logId: number): Promise<void> {
-    const vt = `_vers_${tableName}`;
+    const versTable = `_vers_${tableName}`;
     const pks = (await db.columns(tableName)).filter((c) => c.Key === "PRI").map((c) => c.Field);
     const join = sql.join(pks.map((f) => sql`v.${sql.id(f)} = t.${sql.id(f)}`), " AND ");
     // Map values onto the shadow's own column order (not positional t.*,…), so it stays
     // correct even when the shadow's column order has diverged from the live table.
-    const selects = (await db.columns(vt)).map((c) =>
+    const selects = (await db.columns(versTable)).map((c) =>
         c.Field === "_vers_log" ? sql`${logId}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql`t.${sql.id(c.Field)}`);
     await db.query`
-        INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} t
-        WHERE NOT EXISTS (SELECT 1 FROM ${sql.id(vt)} v WHERE v._vers_space = 0 AND ${join})`;
+        INSERT INTO ${sql.id(versTable)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} t
+        WHERE NOT EXISTS (SELECT 1 FROM ${sql.id(versTable)} v WHERE v._vers_space = 0 AND ${join})`;
 }
 
 // ─── App wiring (core) ───────────────────────────────────────────────────────

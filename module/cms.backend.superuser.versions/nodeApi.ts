@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { sql } from "@qino/qino";
-import { thinHistory, versedTables, versTable } from "@qino/qino/cms.versions";
+import { thinHistory, versedTables, getVersTable } from "@qino/qino/cms.versions";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -18,8 +18,8 @@ export default async function (node: Node, vars: any): Promise<any> {
     if (!space) return false; // never the live space (0)
     await db.transaction(async () => {
       for (const t of Object.keys(versedTables(db))) {
-        const vt = await versTable(db, t);
-        if (vt) await db.exec`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
+        const versTable = await getVersTable(db, t);
+        if (versTable) await db.exec`DELETE FROM ${sql.id(versTable)} WHERE _vers_space = ${space}`;
       }
       await db.exec`DELETE FROM vers_space WHERE space = ${space}`;
     });
@@ -30,8 +30,8 @@ export default async function (node: Node, vars: any): Promise<any> {
   if ("purge" in vars) {
     await db.transaction(async () => {
       for (const t of Object.keys(versedTables(db))) {
-        const vt = await versTable(db, t);
-        if (vt) await db.exec`DELETE FROM ${sql.id(vt)}`;
+        const versTable = await getVersTable(db, t);
+        if (versTable) await db.exec`DELETE FROM ${sql.id(versTable)}`;
       }
       await db.exec`DELETE FROM vers_space`;
     });

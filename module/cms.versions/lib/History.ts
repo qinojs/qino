@@ -6,15 +6,15 @@
 // is keyed to ctx.logId, so there is no log entry to attach them to.
 import { requestStorage, sql } from "@qino/qino";
 
-import { getVers, versTable } from "./Vers.ts";
+import { getVers, getVersTable } from "./Vers.ts";
 
 import type { App, Db, DbEvents, Sql } from "@qino/qino";
 
-function replaceFrom(db: Db, vt: string, cols: Record<string, any>[], source: Sql) {
-  if (db.dialect !== "postgres") return db.exec`REPLACE INTO ${sql.id(vt)} ${source}`;
+function replaceFrom(db: Db, versTable: string, cols: Record<string, any>[], source: Sql) {
+  if (db.dialect !== "postgres") return db.exec`REPLACE INTO ${sql.id(versTable)} ${source}`;
   const keys = cols.filter((c) => c.Key === "PRI").map((c) => c.Field);
   const set = cols.filter((c) => c.Key !== "PRI").map((c) => sql`${sql.id(c.Field)} = excluded.${sql.id(c.Field)}`);
-  return db.exec`INSERT INTO ${sql.id(vt)} ${source} ON CONFLICT (${sql.join(keys.map(sql.id))}) DO UPDATE SET ${sql.join(set)}`;
+  return db.exec`INSERT INTO ${sql.id(versTable)} ${source} ON CONFLICT (${sql.join(keys.map(sql.id))}) DO UPDATE SET ${sql.join(set)}`;
 }
 
 export function initHistory(app: App, signal: AbortSignal) {
@@ -27,11 +27,11 @@ export function initHistory(app: App, signal: AbortSignal) {
     if (!ctx) return null;
     const tableName = String(e.table);
     if (tableName.startsWith("_vers_") && !e.data?._vers_log) return null; // writing to vers table – let through
-    const vt = versTable(ctx.app.db, tableName);
-    if (!vt) return null;
+    const versTable = getVersTable(ctx.app.db, tableName);
+    if (!versTable) return null;
     const logId = await ctx.logId;
     if (!logId) return null;
-    return { ctx, tableName, vt, logId };
+    return { ctx, tableName, versTable, logId };
   };
 
   // ─── History capture: insert/update ──────────────────────────────────────
@@ -39,9 +39,9 @@ export function initHistory(app: App, signal: AbortSignal) {
   const catchInsertUpdate = async (e: DbEvents["table:insert-after"]) => {
     const t = await track(e);
     if (!t) return;
-    const { ctx, tableName, vt, logId } = t;
+    const { ctx, tableName, versTable, logId } = t;
     // Build field list from _vers_* table to ensure correct column order
-    const versCols = await ctx.app.db.columns(vt);
+    const versCols = await ctx.app.db.columns(versTable);
     const selects = versCols.map((c) => {
       const f = c.Field;
       if (f === "_vers_space")   return sql`${getVers(ctx).space}`;
@@ -51,7 +51,7 @@ export function initHistory(app: App, signal: AbortSignal) {
     });
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    await replaceFrom(ctx.app.db, vt, versCols, sql`SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`);
+    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`);
   };
   app.db.on("table:update-after", catchInsertUpdate, { signal });
   app.db.on("table:insert-after", catchInsertUpdate, { signal });
@@ -60,14 +60,14 @@ export function initHistory(app: App, signal: AbortSignal) {
   app.db.on("table:delete-after", async (e) => {
     const t = await track(e);
     if (!t) return;
-    const { ctx, vt, logId } = t;
+    const { ctx, versTable, logId } = t;
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
     // The live row is gone, so copy its most recent snapshot and flip _vers_deleted.
     // This keeps every (NOT NULL) column populated, mirroring the insert/update capture above —
     // a partial VALUES insert would break on data columns that have no default.
     const space = getVers(ctx).space;
-    const versCols = await ctx.app.db.columns(vt);
+    const versCols = await ctx.app.db.columns(versTable);
     const selects = versCols.map((c) => {
       const f = c.Field;
       if (f === "_vers_space")   return sql`${space}`;
@@ -75,8 +75,8 @@ export function initHistory(app: App, signal: AbortSignal) {
       if (f === "_vers_deleted") return sql.raw("1");
       return sql.id(f);
     });
-    await replaceFrom(ctx.app.db, vt, versCols, sql`SELECT ${sql.join(selects)} FROM (
-      SELECT * FROM ${sql.id(vt)} WHERE ${where} AND _vers_space = ${space}
+    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${sql.join(selects)} FROM (
+      SELECT * FROM ${sql.id(versTable)} WHERE ${where} AND _vers_space = ${space}
       ORDER BY _vers_log DESC LIMIT 1) AS src`);
   }, { signal });
 

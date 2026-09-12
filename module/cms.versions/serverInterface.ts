@@ -2,7 +2,7 @@
 import { sql, hee } from "@qino/qino";
 import { cms, describeChange } from "@qino/qino/cms";
 
-import { versedTables, view } from "./lib/Vers.ts";
+import { versedTables, ensureView } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
 import type { Sql } from "@qino/qino";
@@ -89,7 +89,7 @@ async function versProtocolForNodeTree(ctx: any, pid: number): Promise<any[]> {
 
 async function versProtocolForNode(ctx: any, pid: number): Promise<any[]> {
     const space = getCmsVers(ctx).space;
-    const spaceView = (t: string) => view(ctx.app.db, t, space, 0);
+    const spaceView = (t: string) => ensureView(ctx.app.db, t, space, 0);
 
     const results = await Promise.all([
         versProtocol(ctx, "page",      sql`t.id = ${pid}`),

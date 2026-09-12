@@ -2,7 +2,7 @@
 // (space 0 = live). Space lifecycle + copying entries between spaces.
 import { getCtx, requestStorage, sql } from "@qino/qino";
 
-import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
+import { getVers, setVers, versedTables, getVersTable, ensureView } from "./Vers.ts";
 
 import type { App, Db, Row } from "@qino/qino";
 
@@ -17,14 +17,14 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
   await db.transaction(async () => {
     // Seed each versioned table with live data
     for (const tableName of Object.keys(versedTables(db))) {
-      const vt = versTable(db, tableName);
-      if (!vt) continue;
+      const versTable = getVersTable(db, tableName);
+      if (!versTable) continue;
       // Build the select onto the shadow's own column order (not positional *,0,?,0),
       // so it stays correct even when the shadow's column order diverged from the live table.
-      const selects = (await db.columns(vt)).map((c) =>
+      const selects = (await db.columns(versTable)).map((c) =>
         c.Field === "_vers_space" ? sql`${space}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql.id(c.Field));
-      await db.exec`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
-      await db.exec`INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
+      await db.exec`DELETE FROM ${sql.id(versTable)} WHERE _vers_space = ${space}`;
+      await db.exec`INSERT INTO ${sql.id(versTable)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
     }
     await db.table("vers_space").insert({ space, time_created: new Date() });
   });
@@ -44,8 +44,8 @@ export async function tableEntriesCopyTo(
 ): Promise<void> {
   const tbl   = db.table(tableName);
   const where   = tbl.valuesToFragment(filter);
-  const fromView = await view(db, tableName, fromSpace, fromLog);
-  const toView   = await view(db, tableName, toSpace, 0);
+  const fromView = await ensureView(db, tableName, fromSpace, fromLog);
+  const toView   = await ensureView(db, tableName, toSpace, 0);
 
   const oldEntries: Record<string, Row> = {};
   const newEntries: Record<string, Row> = {};
