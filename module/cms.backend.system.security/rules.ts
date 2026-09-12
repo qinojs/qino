@@ -15,14 +15,19 @@ export type Signal = {
 export function actionSignals(ctx: any, info: any): Signal[] {
   const hits = probes
     .filter(([r]) => r.test(info.path))
-    .map(([, reason, score, confidence]) => signal("warning", "probe", "ip", info.ip, reason, score, confidence));
+    .map(([, reason, score, confidence]) => signal({ prio: "warning", kind: "probe", scope: "ip", ident: info.ip, reason, score, confidence }));
   hits.push(...attacks
     .filter(([r]) => r.test(info.inspect ?? info.path))
-    .map(([, reason, score, confidence]) => signal("error", "attack", "ip", info.ip, reason, score, confidence)));
+    .map(([, reason, score, confidence]) => signal({ prio: "error", kind: "attack", scope: "ip", ident: info.ip, reason, score, confidence })));
   // `pending` says the credentials were right and a second factor is owed, `throttled` is one core
   // already turned away — neither is an attempt this has to score again
   if (ctx.loginError && ctx.loginError !== "pending" && ctx.loginError !== "throttled") {
-    hits.push(signal("warning", "login", "ip", info.ip, "login failed: " + ctx.loginError, ctx.loginError === "password" ? 45 : 25, ctx.loginError === "password" ? 85 : 65));
+    hits.push(signal({
+      prio: "warning", kind: "login", scope: "ip", ident: info.ip,
+      reason: "login failed: " + ctx.loginError,
+      score: ctx.loginError === "password" ? 45 : 25,
+      confidence: ctx.loginError === "password" ? 85 : 65,
+    }));
   }
   return hits;
 }
@@ -39,7 +44,7 @@ export function responseSignal(info: any, set: Record<string, number>): Signal |
   else if (info.duration_ms > warnMs) { score += Math.min(50, Math.round(info.duration_ms / warnMs) * 8); reason = "request warn time"; prio = "warning"; kind = "load"; }
   if (info.bytes_in > set.largeBody) { score += Math.min(50, Math.round(info.bytes_in / set.largeBody) * 10); reason = "large body"; }
   if (score <= 1) return null;
-  return signal(prio, kind, "path", info.path, reason, score, prio === "error" ? 85 : 60);
+  return signal({ prio, kind, scope: "path", ident: info.path, reason, score, confidence: prio === "error" ? 85 : 60 });
 }
 
 export function rankSignal(s: Signal, info: any, set: Record<string, number>): Signal {
@@ -54,7 +59,7 @@ export function rankSignals(signals: Signal[], info: any, set: Record<string, nu
   return signals.map(s => rankSignal(s, info, set));
 }
 
-function signal(prio: string, kind: string, scope: string, ident: string, reason: string, score: number, confidence: number): Signal {
+function signal({ prio, kind, scope, ident, reason, score, confidence }: Omit<Signal, "severity">): Signal {
   return { prio, kind, scope, ident, reason, confidence, severity: severity(score, confidence), score };
 }
 

@@ -6,6 +6,9 @@ import { settingsSchema } from "./schema.ts";
 
 import type { App, Db, Ctx } from "@qino/qino";
 import type { SecuritySettings } from "./schema.ts";
+import type { Signal } from "./rules.ts";
+
+type BucketHit = Pick<Signal, "scope" | "ident" | "score" | "reason">;
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();
@@ -55,11 +58,11 @@ export function reqInfo(ctx: Ctx, info: any = fastInfo(ctx)): any {
 
 export async function hitBuckets(ctx: Ctx, info: any, signals: any[], set: Record<string, number>) {
   for (const hit of bucketHits(info, signals, set))
-    await hitBucket(ctx.app.db, hit.scope, hit.ident, hit.score, hit.reason, info.path, set);
+    await hitBucket(ctx.app.db, { ...hit, path: info.path }, set);
 }
 
 export function bucketHits(info: any, signals: any[], set: Record<string, number>) {
-  const hits = new Map<string, any>();
+  const hits = new Map<string, BucketHit>();
   for (const s of signals) for (const [scope, ident, percent] of bucketScopes(info, set, s)) {
     if (!ident || percent <= 0) continue;
     const key = scope + "\n" + ident;
@@ -70,7 +73,7 @@ export function bucketHits(info: any, signals: any[], set: Record<string, number
   return [...hits.values()];
 }
 
-function hitBucket(db: Db, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
+function hitBucket(db: Db, { scope, ident, score: add, reason, path }: BucketHit & { path: string }, set: Record<string, number>) {
   return serialize(db, bucketKey(scope, ident), async () => {
     const t = unixTime();
     const row = await getBucket(db, scope, ident, set);
