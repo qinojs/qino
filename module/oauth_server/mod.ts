@@ -96,7 +96,7 @@ export async function token(ctx: Ctx): Promise<never> {
 async function redeemCode(ctx: Ctx, b: Record<string, unknown>) {
   const row = await consume(ctx.app, "code", String(b.code ?? "")); // single use, gone either way
   if (!row) throw fail("invalid_grant", "code unknown, expired or already used");
-  if (String(row.client_id) !== String(b.client_id ?? "")) throw fail("invalid_grant", "client_id mismatch");
+  if (String(row.client_id) !== String(b.client_id ?? "")) clientMismatch(ctx);
   if (String(row.redirect_uri) !== String(b.redirect_uri ?? "")) throw fail("invalid_grant", "redirect_uri mismatch");
   const verifier = String(b.code_verifier ?? "");
   if (!verifier || !safeEqual(s256(verifier), String(row.challenge))) {
@@ -109,8 +109,13 @@ async function redeemCode(ctx: Ctx, b: Record<string, unknown>) {
 async function rotate(ctx: Ctx, b: Record<string, unknown>) {
   const row = await consume(ctx.app, "refresh", String(b.refresh_token ?? "")); // rotation: the old one dies here
   if (!row) throw fail("invalid_grant", "refresh token unknown or expired");
-  if (b.client_id != null && String(row.client_id) !== String(b.client_id)) throw fail("invalid_grant", "client_id mismatch");
+  if (b.client_id != null && String(row.client_id) !== String(b.client_id)) clientMismatch(ctx);
   return row;
+}
+
+function clientMismatch(ctx: Ctx): never {
+  ctx.app.fire("suspicious", { ctx, reason: "oauth client_id mismatch" }).catch(() => {});
+  throw fail("invalid_grant", "client_id mismatch");
 }
 
 async function issue(ctx: Ctx, row: Record<string, unknown>): Promise<never> {
