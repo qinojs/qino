@@ -27,19 +27,17 @@ cms-image2 img {
   height:100%;
   width:100%;
   object-fit:cover;
-  object-position:50% 50%;
-}
+  object-position:50% 50%;  
 
-/*
-cms-image2 > img {
-  transition:opacity .3s;
+  /* transition*/
+  transition:opacity .2s;
   opacity:0;
   &:not([loading]) { opacity:1; }
 }
-*/
 
 
-cms-image2[fit="contain"] { background-size:contain; }
+
+/* neede? cms-image2[fit="contain"] { background-size:contain; } */
 cms-image2[fit="contain"] img { object-fit:contain; }
 
 

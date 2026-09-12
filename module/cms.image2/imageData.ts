@@ -19,8 +19,9 @@ async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: 
   const { hpos, vpos } = options;
   const FACTOR = 42;
   const MAX_HW = 30;
+  const QUALITY = 60;
   const md5 = await file.get("md5");
-  const cacheFile = cacheDir + `data-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${MAX_HW}.${options.fit ?? ""}.json`;
+  const cacheFile = cacheDir + `data-v2-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${QUALITY}.${MAX_HW}.${options.fit ?? ""}.json`;
   let data;
   if (md5) {
     try { data = JSON.parse(await Deno.readTextFile(cacheFile)); } catch { /* no cache */ }
@@ -40,13 +41,19 @@ async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: 
       setTimeout(async () => {
         try {
           if (!ow) return;
-          const smallW = Math.max(Math.min(Math.round(w / FACTOR), MAX_HW), 1);
-          const smallH = Math.max(Math.min(Math.round(h / FACTOR), MAX_HW), 1);
-          const { path: tmpPath, mime } = await file.transform({ w: smallW, h: smallH, q: 5, fmt: "png", hpos, vpos });
+
+          // const smallW = Math.max(Math.min(Math.round(w / FACTOR), MAX_HW), 1);
+          // const smallH = Math.max(Math.min(Math.round(h / FACTOR), MAX_HW), 1);
+
+          const scale = Math.min(1 / FACTOR, MAX_HW / Math.max(w, h));
+          const smallW = Math.max(1, Math.round(w * scale));
+          const smallH = Math.max(1, Math.round(h * scale));
+
+          const { path: tmpPath, mime } = await file.transform({ w: smallW, h: smallH, q: QUALITY, fmt: "png", hpos, vpos });
           const buf = await Deno.readFile(tmpPath);
-          const prev = "data:" + mime + ";base64," + btoa(String.fromCharCode(...buf));
+          const preview = "data:" + mime + ";base64," + btoa(String.fromCharCode(...buf));
           await Deno.mkdir(cacheDir, { recursive: true });
-          await Deno.writeTextFile(cacheFile, JSON.stringify({ w, h, vpos, hpos, preview: prev }));
+          await Deno.writeTextFile(cacheFile, JSON.stringify({ w, h, vpos, hpos, preview }));
         } catch { /* skip */ }
       }, 0);
     }

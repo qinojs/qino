@@ -56,7 +56,6 @@ export class ResHtml {
     if (this.#jsData && hasScripts) ret += `<script type=application/json id=qino-data>${jsonScript(this.#jsData)}</script>\n`;
 
     for (const url of this.legacyScripts) ret += `<script src="${hee(url)}"></script>\n`;
-
     for (const url of this.scripts) ret += `<script type=module src="${hee(url)}"></script>\n`;
 
     return ret + inlinescripts;

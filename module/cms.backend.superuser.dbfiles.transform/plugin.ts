@@ -80,6 +80,7 @@ type Binary = {
   available: Promise<boolean>;
   install: Partial<Record<Platform, string>>;
   notes?: string;
+  optional?: boolean;
   noAutoInstall?: boolean;
 };
 
@@ -93,6 +94,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add imagemagick",
       macos:  "brew install imagemagick",
     },
+    notes: "Backbone of the image pipeline: resize, format conversion and PDF page rendering.",
   },
   {
     id: "ffmpeg",
@@ -103,6 +105,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add ffmpeg",
       macos:  "brew install ffmpeg",
     },
+    notes: "Decodes video and audio: a poster frame from a video, the audio track for transcripts.",
   },
   {
     id: "pngquant",
@@ -113,6 +116,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add pngquant",
       macos:  "brew install pngquant",
     },
+    notes: "Shrinks PNG output to a palette after encoding; `q` is the quality target.",
   },
   {
     id: "pandoc",
@@ -123,6 +127,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add pandoc",
       macos:  "brew install pandoc",
     },
+    notes: "Converts documents (docx, odt, html, epub, rtf, csv) to Markdown when `fmt=md` is requested.",
   },
   {
     id: "pdftotext",
@@ -133,6 +138,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add poppler-utils",
       macos:  "brew install poppler",
     },
+    notes: "Reads the text layer of a PDF for `fmt=md`; OCR only steps in when there is none.",
   },
   {
     id: "tesseract",
@@ -143,6 +149,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add tesseract-ocr tesseract-ocr-data-deu",
       macos:  "brew install tesseract tesseract-lang",
     },
+    notes: "Extracts text from images and scanned PDFs when no AI vision engine is configured.",
   },
   {
     id: "librsvg",
@@ -165,6 +172,7 @@ const BINARIES: Binary[] = [
       macos:  "brew install --cask inkscape",
     },
     noAutoInstall: true,
+    optional: true,
     notes: "Optional. Only used when librsvg is missing; wider SVG 2 coverage, but a large install.",
   },
   {
@@ -188,6 +196,7 @@ const BINARIES: Binary[] = [
       alpine: "apk add py3-scour",
       macos:  "brew install scour",
     },
+    optional: true,
     notes: "Optional. Only used when svgo is missing; no Node runtime required.",
   },
   {
@@ -199,7 +208,7 @@ const BINARIES: Binary[] = [
       macos:  "brew install imagemagick libheif",
     },
     noAutoInstall: true,
-    notes: "Requires ImageMagick compiled with libheif support.",
+    notes: "Writes AVIF (`fmt=avif`). Requires ImageMagick compiled with libheif support.",
   },
 ];
 
@@ -272,8 +281,12 @@ const PLATFORM_LABELS: Record<Platform, string> = {
 
 async function renderBinary(bin: Binary, platform: Platform, root: boolean): Promise<HtmlString> {
   const ok = await bin.available;
-  const cls  = ok ? "-ok" : "-missing";
-  const icon = ok ? html`<u2-ico icon=check_circle inline>✓</u2-ico>` : html`<u2-ico icon=cancel inline>✗</u2-ico>`;
+  const cls  = ok ? "-ok" : bin.optional ? "-optional" : "-missing";
+  const icon = ok
+    ? html`<u2-ico icon=check_circle inline>✓</u2-ico>`
+    : bin.optional
+    ? html`<u2-ico icon=remove_circle inline>–</u2-ico>`
+    : html`<u2-ico icon=cancel inline>✗</u2-ico>`;
   const notes = bin.notes ? html`<br><small>${bin.notes}</small>` : "";
   const label = html`${icon} ${bin.label}${notes}`;
 
