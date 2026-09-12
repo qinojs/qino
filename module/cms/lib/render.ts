@@ -60,6 +60,11 @@ export async function render(ctx: Ctx): Promise<void> {
 
   if (!pageObj.vs.searchable) ctx.res.html.meta.robots = "noindex, nofollow";
 
+  // hreflang alternates: only meaningful with more than one language, and only for indexable pages
+  const langs = app.languages.all;
+  if (langs.length > 1 && pageObj.vs.searchable)
+    for (const l of langs) ctx.res.html.link[ctx.req.url.origin + await mainNode.url(l)] = { rel: "alternate", hreflang: l };
+
   const content = await mainNode.html();
   ctx.res.html.content += content;
 

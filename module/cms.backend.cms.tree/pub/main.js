@@ -28,7 +28,7 @@ cms.initNode("backend.cms.tree", (el) => {
   tree?.addEventListener("change", (e) => {
     const box = e.target.closest("input[type=checkbox][data-toggle]");
     if (!box) return;
-    api.cms.node(box.dataset.pid)[box.dataset.toggle].put({ value: box.checked });
+    api.cms.node(box.dataset.pid).patch({ [box.dataset.toggle]: box.checked });
   });
 
   // show/hide content elements in the tree
