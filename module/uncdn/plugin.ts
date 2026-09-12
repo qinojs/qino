@@ -70,17 +70,25 @@ function serveResponse(mediaType: string, data: Uint8Array): never {
   throw new Output(data, { headers });
 }
 
-async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: Ctx): Promise<void> {
+async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: string): Promise<Uint8Array> {
+  const cached = await Deno.readFile(filePath).catch(() => null);
+  if (cached) return cached;
   const res = await safeFetch(url); // SSRF-guarded, re-checked after redirects; safeFetch applies a default timeout
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   if (Number(res.headers.get("content-length")) > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
   const data = new Uint8Array(await res.arrayBuffer());
   if (data.byteLength > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
-  const maxCacheBytes = cacheByteLimit(await ctx.app.settings.uncdn.maxCacheBytes);
-  if (await directorySize(cacheDir) + data.byteLength > maxCacheBytes) done(ctx, 507, "Cache full");
+  const maxCacheBytes = cacheByteLimit(await app.settings.uncdn.maxCacheBytes);
+  if (await directorySize(cacheDir) + data.byteLength > maxCacheBytes) throw new Output("Cache full", { status: 507 });
   await Deno.mkdir(filePath.replace(/\/[^/]+$/, ""), { recursive: true });
-  await Deno.writeFile(filePath, data);
-  serveResponse(mediaType, data);
+  const partPath = `${filePath}.part-${crypto.randomUUID()}`;
+  try {
+    await Deno.writeFile(partPath, data);
+    await Deno.rename(partPath, filePath);
+  } finally {
+    await Deno.remove(partPath).catch(() => {});
+  }
+  return data;
 }
 
 type CspSources = Record<string, true>;
@@ -92,6 +100,7 @@ const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set(set.
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const cacheDir = app.modules.get(name)!.cache;
+  const running = new Map<string, Promise<Uint8Array>>();
   const allowed = new Set<string>(); // sources pages declared via CSP — the only thing this proxy fetches
   uncdnInstances.set(app, { origins: allowed });
 
@@ -114,7 +123,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     // The CSP declaration is the whole permission — what no page asked for is never fetched.
     if (![...allowed].some(o => new URL(o).origin === origin && url.startsWith(o))) done(ctx, 404, "Not cached");
 
-    await fetchAndCache(url, filePath, cacheDir, mediaType, ctx);
+    const pending = running.getOrInsertComputed(filePath, () =>
+      fetchAndCache(app, url, filePath, cacheDir).finally(() => running.delete(filePath))
+    );
+    serveResponse(mediaType, await pending);
   }, { signal });
 
   app.on("html-ready", ({ ctx }) => {

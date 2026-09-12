@@ -1,13 +1,16 @@
+import https from "node:https";
+import { Readable, Writable } from "node:stream";
+
 import { Output, ResCsp, ResHtml } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { uncdnInstances } from "../internal.ts";
 import { init, rewriteHtml } from "../plugin.ts";
 
-async function routeFor(url: string, source: string) {
+async function routeFor(url: string, source: string, cache = "/tmp/uncdn-origin-test/cache/uncdn/") {
   let route: (event: { ctx: any }) => Promise<void> = () => Promise.resolve();
   const ctx = await testContext({ url, app: {
-    modules: { get: () => ({ cache: "/tmp/uncdn-origin-test/cache/uncdn/" }) },
+    modules: { get: () => ({ cache }) },
     on: (name: string, handler: typeof route) => { if (name === "route") route = handler; },
   } });
   init(ctx.app, { signal: new AbortController().signal });
@@ -126,3 +129,107 @@ Deno.test("uncdn: declared source is fetched", async () => {
   await assertRejects(() => route({ ctx }), Error, "SSRF blocked: 127.0.0.1");
   assertEquals(ctx.res.status, 200);
 });
+
+async function cacheTest(run: (fixture: {
+  file: string;
+  request: () => Promise<Response>;
+  downloads: () => number;
+}) => Promise<void>) {
+  const cache = await Deno.makeTempDir({ prefix: "uncdn-" }) + "/";
+  const original = https.request;
+  let downloads = 0;
+  try {
+    https.request = ((_url: unknown, _options: unknown, done: (res: unknown) => void) => new Writable({
+      final(callback) {
+        downloads++;
+        done(Object.assign(Readable.from([new TextEncoder().encode("complete asset")]), {
+          statusCode: 200, statusMessage: "OK", headers: {},
+        }));
+        callback();
+      },
+    })) as unknown as typeof https.request;
+    const url = "https://qino.test/uncdn/93.184.216.34/a.js";
+    const { route } = await routeFor(url, "https://93.184.216.34/", cache);
+    await run({
+      file: cache + "93.184.216.34/a.js",
+      request: async () => {
+        const ctx = await testContext({ url });
+        try { await route({ ctx }); }
+        catch (error) {
+          if (error instanceof Output) return error.toResponse();
+          throw error;
+        }
+        throw new Error("route did not respond");
+      },
+      downloads: () => downloads,
+    });
+  } finally {
+    https.request = original;
+    await Deno.remove(cache, { recursive: true });
+  }
+}
+
+Deno.test("uncdn: concurrent misses share a download and only publish complete files", async () => {
+  await cacheTest(async ({ file, request, downloads }) => {
+    const writeFile = Deno.writeFile;
+    const readFile = Deno.readFile;
+    const writing = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const secondRead = Promise.withResolvers<void>();
+    let observeRead = false;
+    const requests: Promise<Response>[] = [];
+    try {
+      Deno.writeFile = async (path, data, options) => {
+        await writeFile(path, new TextEncoder().encode("partial"), options);
+        writing.resolve();
+        await release.promise;
+        await writeFile(path, data, options);
+      };
+      Deno.readFile = async (path, options) => {
+        try { return await readFile(path, options); }
+        finally { if (observeRead && path === file) secondRead.resolve(); }
+      };
+      requests.push(request());
+      await writing.promise;
+      await assertRejects(() => Deno.stat(file), Deno.errors.NotFound);
+      observeRead = true;
+      requests.push(request());
+      await secondRead.promise;
+      release.resolve();
+      const responses = await Promise.all(requests);
+      assertEquals(downloads(), 1);
+      for (const response of responses) assertEquals(await response.text(), "complete asset");
+      assertEquals(await Deno.readTextFile(file), "complete asset");
+      assertEquals((await Array.fromAsync(Deno.readDir(file.slice(0, file.lastIndexOf("/"))))).map(e => e.name), ["a.js"]);
+      assertEquals(await (await request()).text(), "complete asset");
+      assertEquals(downloads(), 1);
+    } finally {
+      release.resolve();
+      await Promise.allSettled(requests);
+      Deno.writeFile = writeFile;
+      Deno.readFile = readFile;
+    }
+  });
+});
+
+for (const operation of ["writeFile", "rename"] as const) {
+  Deno.test(`uncdn: failed ${operation} cleans partial files and allows retry`, async () => {
+    await cacheTest(async ({ file, request, downloads }) => {
+      const original = Deno[operation];
+      try {
+        const writeFile = Deno.writeFile;
+        Object.assign(Deno, { [operation]: async (path: string | URL) => {
+          if (operation === "writeFile") await writeFile(path, new Uint8Array([1]));
+          throw new Error("disk failure");
+        } });
+        await assertRejects(request, Error, "disk failure");
+      } finally {
+        Object.assign(Deno, { [operation]: original });
+      }
+      await assertRejects(() => Deno.stat(file), Deno.errors.NotFound);
+      assertEquals(await Array.fromAsync(Deno.readDir(file.slice(0, file.lastIndexOf("/")))), []);
+      assertEquals(await (await request()).text(), "complete asset");
+      assertEquals(downloads(), 2);
+    });
+  });
+}
