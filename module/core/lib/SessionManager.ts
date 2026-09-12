@@ -26,9 +26,9 @@ export class Session {
   isNew: boolean;
   cookieSent = false;
 
-  constructor(db: Db, sessId: string | number, token: string, data: string | null, isNew: boolean) {
+  constructor(db: Db, id: string | number, token: string, data: string | null, isNew: boolean) {
     this.#db = db;
-    this.id = String(sessId);
+    this.id = String(id);
     this.token = token;
     this.isNew = isNew;
     this.data = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
