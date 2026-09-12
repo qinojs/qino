@@ -34,6 +34,10 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);
   const rows = await db.query`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
   const total = Number(await db.one`SELECT count(*) FROM smalltext`);
+  const codeLogs = isSuperuser && rows.length
+    ? await db.query`SELECT * FROM smalltext_code_log WHERE ${sql.join(rows.map(row => sql`(hash = ${row.hash} AND namespace = ${row.namespace})`), " OR ")}`
+    : [];
+  const logsByText = Map.groupBy(codeLogs, row => JSON.stringify([row.hash, row.namespace]));
 
   const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
   const sortMark = (col: string) => col === order ? (dir === "ASC" ? " ↑" : " ↓") : "";
@@ -46,7 +50,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
     const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`);
     let codeLogTd: HtmlString | string = "";
     if (isSuperuser) {
-      const logs = await db.query`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
+      const logs = logsByText.get(JSON.stringify([row.hash, row.namespace])) ?? [];
       codeLogTd = html`<td>${html.join(
         logs.map(r => html`<a href="${r.file}:${r.line}">${r.file}:${r.line}</a>`), "<br>"
       )}`;
