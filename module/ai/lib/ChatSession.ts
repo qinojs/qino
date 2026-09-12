@@ -1,4 +1,4 @@
-import { errMsg, unixTime } from "@qino/qino";
+import { ApiError, errMsg, unixTime } from "@qino/qino";
 
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
@@ -202,8 +202,15 @@ function toOpenAiTools(tools?: Tool[]): Msg[] | undefined {
 async function execTool(bot: Bot, name: string | undefined, args: string | undefined, ctx: Ctx): Promise<unknown> {
   const tool = bot.tools?.find((t) => t.name === name);
   if (!tool) return { error: `Unknown tool: ${name}` };
-  try { return await tool.execute(JSON.parse(args ?? "{}"), ctx); }
-  catch (e) { return { error: String(e) }; }
+  let input: unknown;
+  try { input = JSON.parse(args ?? "{}"); }
+  catch { return { error: "Invalid tool arguments: expected JSON" }; }
+  try { return await tool.execute(input, ctx); }
+  catch (e) {
+    if (e instanceof ApiError) return { error: e.message, ...(e.code && { code: e.code }), ...(e.data !== undefined && { data: e.data }) };
+    console.error("[ai tool]", name, e);
+    return { error: "Tool execution failed" };
+  }
 }
 
 function parseJson(value: unknown): Record<string, unknown> {

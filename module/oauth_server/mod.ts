@@ -99,7 +99,10 @@ async function redeemCode(ctx: Ctx, b: Record<string, unknown>) {
   if (String(row.client_id) !== String(b.client_id ?? "")) throw fail("invalid_grant", "client_id mismatch");
   if (String(row.redirect_uri) !== String(b.redirect_uri ?? "")) throw fail("invalid_grant", "redirect_uri mismatch");
   const verifier = String(b.code_verifier ?? "");
-  if (!verifier || !safeEqual(s256(verifier), String(row.challenge))) throw fail("invalid_grant", "PKCE verification failed");
+  if (!verifier || !safeEqual(s256(verifier), String(row.challenge))) {
+    ctx.app.fire("suspicious", { ctx, reason: "oauth PKCE verification failed" }).catch(() => {});
+    throw fail("invalid_grant", "PKCE verification failed");
+  }
   return row;
 }
 
