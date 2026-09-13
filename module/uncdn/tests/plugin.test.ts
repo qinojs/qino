@@ -2,19 +2,20 @@ import https from "node:https";
 import { Readable, Writable } from "node:stream";
 
 import { Output, ResCsp, ResHtml } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
-import { uncdnInstances } from "../internal.ts";
+import { uncdn } from "../mod.ts";
 import { init, rewriteHtml } from "../plugin.ts";
 
 async function routeFor(url: string, source: string, cache = "/tmp/uncdn-origin-test/cache/uncdn/") {
-  let route: (event: { ctx: any }) => Promise<void> = () => Promise.resolve();
+  let route: (event: { ctx: Ctx }) => Promise<void> = () => Promise.resolve();
   const ctx = await testContext({ url, app: {
     modules: { get: () => ({ cache }) },
     on: (name: string, handler: typeof route) => { if (name === "route") route = handler; },
   } });
   init(ctx.app, { signal: new AbortController().signal });
-  uncdnInstances.get(ctx.app)!.origins.add(source);
+  uncdn(ctx.app).origins.add(source);
   return { ctx, route };
 }
 
@@ -233,3 +234,16 @@ for (const operation of ["writeFile", "rename"] as const) {
     });
   });
 }
+
+Deno.test("uncdn: a declared source only covers urls at a path boundary", () => {
+  const html = new ResHtml();
+  const lookalike = "https://cdn.example.attacker.test/a.js";
+  html.scripts.add(lookalike);
+  html.scripts.add("https://cdn.example/a.js");
+
+  const csp = new ResCsp();
+  csp["script-src"]["https://cdn.example"] = true;
+  rewriteHtml(html, "/app/", csp);
+
+  assertEquals([...html.scripts], [lookalike, "/app/uncdn/cdn.example/a.js"]);
+});

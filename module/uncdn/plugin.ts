@@ -1,8 +1,7 @@
 import * as nodePath from "node:path";
 import { Output, safeFetch, isEmptyObject } from "@qino/qino";
 
-import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit } from "./mod.ts";
-import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
+import { DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES, cacheByteLimit, uncdn } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, Ctx, ResHtml, ResCsp } from "@qino/qino";
@@ -14,33 +13,22 @@ export const settingsSchema = {
     maxCacheBytes: {
       type: "integer",
       default: DEFAULT_MAX_CACHE_BYTES,
-      minimum: 1024 * 1024,
+      minimum: MAX_ASSET_BYTES,
       description: "Maximum total cache size in bytes.",
     },
   },
 };
 
 const PROXY_PREFIX = "uncdn/";
-const MEDIA_TYPES_BY_EXTENSION: Record<string, string> = {
-  css: "text/css",
-  js: "text/javascript",
-  mjs: "text/javascript",
-  json: "application/json",
-  wasm: "application/wasm",
-  woff2: "font/woff2",
-  svg: "image/svg+xml",
+const MEDIA_TYPES: Record<string, [type: string, csp?: string]> = {
+  css: ["text/css"],
+  js: ["text/javascript"],
+  mjs: ["text/javascript"],
+  json: ["application/json"],
+  wasm: ["application/wasm"],
+  woff2: ["font/woff2"],
+  svg: ["image/svg+xml", "default-src 'none'; style-src 'unsafe-inline'"],
 };
-
-function urlToPath(cacheDir: string, url: string): string | null {
-  const u = new URL(url);
-  const target = nodePath.resolve(cacheDir, u.hostname + u.pathname);
-  return target.startsWith(nodePath.resolve(cacheDir) + nodePath.sep) ? target : null;
-}
-
-function mediaTypeForPath(filePath: string): string | null {
-  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
-  return MEDIA_TYPES_BY_EXTENSION[ext] ?? null;
-}
 
 async function directorySize(path: string): Promise<number> {
   let size = 0;
@@ -60,13 +48,13 @@ function done(ctx: Ctx, status: number, body: string): never {
   throw new Output();
 }
 
-function serveResponse(mediaType: string, data: Uint8Array): never {
+function serveResponse([mediaType, csp]: [string, string?], data: Uint8Array): never {
   const headers: Record<string, string> = {
     "Content-Type": mediaType,
     "Cache-Control": "public, max-age=31536000, immutable",
     "X-Content-Type-Options": "nosniff",
   };
-  if (mediaType === "image/svg+xml") headers["Content-Security-Policy"] = "script-src 'none'";
+  if (csp) headers["Content-Security-Policy"] = csp;
   throw new Output(data, { headers });
 }
 
@@ -95,58 +83,61 @@ type CspSources = Record<string, true>;
 // https only: the proxy path carries no scheme and is fetched back as https, so an
 // http source rewritten into it could never be served — and a plain-http origin is
 // a local one anyway, which this proxy has no reason to stand in front of.
-const origins = (s: CspSources) => Object.keys(s).filter(k => /^https:\/\//.test(k));
+const origins = (s: CspSources) => Object.keys(s).filter(k => k.startsWith("https://"));
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set(set.values().map(fn));
+// A CSP source covers a url as a prefix only at a path boundary, so "https://cdn.example"
+// does not cover "https://cdn.example.attacker.test/a.js".
+const covers = (source: string, url: string) => url.startsWith(source) && (source.endsWith("/") || url[source.length] === "/");
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const cacheDir = app.modules.get(name)!.cache;
+  const cacheRoot = nodePath.resolve(cacheDir) + nodePath.sep;
   const running = new Map<string, Promise<Uint8Array>>();
-  const allowed = new Set<string>(); // sources pages declared via CSP — the only thing this proxy fetches
-  uncdnInstances.set(app, { origins: allowed });
+  const allowed = uncdn(app).origins; // sources pages declared via CSP — the only thing this proxy fetches
 
   app.on("route", async ({ ctx }) => {
     if (!ctx.req.appPath.startsWith(PROXY_PREFIX)) return;
     const rest = ctx.req.appPath.slice(PROXY_PREFIX.length);
     if (!rest) return;
-    if (!isEmptyObject(ctx.req.query)) done(ctx, 404, "Not allowed");
 
-    const url = "https://" + rest;
-    const origin = new URL(url).origin;
-    const filePath = urlToPath(cacheDir, url);
-    if (!filePath) done(ctx, 404, "Not allowed");
-    const mediaType = mediaTypeForPath(filePath);
-    if (!mediaType) done(ctx, 404, "Not allowed");
+    const target = URL.parse("https://" + rest);
+    if (!target || !isEmptyObject(ctx.req.query)) done(ctx, 404, "Not allowed");
+    const type = MEDIA_TYPES[rest.split(".").pop()!.toLowerCase()];
+    const filePath = nodePath.resolve(cacheDir, target.hostname + target.pathname);
+    if (!type || !filePath.startsWith(cacheRoot)) done(ctx, 404, "Not allowed");
 
     const data = await Deno.readFile(filePath).catch(() => null);
-    if (data) serveResponse(mediaType, data);
+    if (data) serveResponse(type, data);
 
     // The CSP declaration is the whole permission — what no page asked for is never fetched.
-    if (![...allowed].some(o => new URL(o).origin === origin && url.startsWith(o))) done(ctx, 404, "Not cached");
+    if (![...allowed].some(o => covers(o, target.href))) done(ctx, 404, "Not cached");
 
     const pending = running.getOrInsertComputed(filePath, () =>
-      fetchAndCache(app, url, filePath, cacheDir).finally(() => running.delete(filePath))
+      fetchAndCache(app, target.href, filePath, cacheDir).finally(() => running.delete(filePath))
     );
-    serveResponse(mediaType, await pending);
+    serveResponse(type, await pending);
   }, { signal });
 
   app.on("html-ready", ({ ctx }) => {
-    if (!ctx.res.hasHtml) return;
-    for (const src of [ctx.res.csp["script-src"], ctx.res.csp["style-src"]]) for (const o of origins(src)) allowed.add(o);
-    rewriteHtml(ctx.res.html, ctx.req.appUrl, ctx.res.csp);
+    if (ctx.res.hasHtml) rewriteHtml(ctx.res.html, ctx.req.appUrl, ctx.res.csp, allowed);
   }, { signal });
 }
 
 // Rewrite assets to the proxy, but only for origins the page declared in its CSP
 // (per directive: script-src gates scripts, style-src gates styles). Fonts/images
 // referenced relatively inside a proxied CSS cascade through the proxy on their own.
-export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
+// Every declared source is remembered in `allowed` — that is what the proxy will fetch.
+export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed = new Set<string>()): void {
   const rewritten = new Set<string>();
-  const rewriter = (allow: string[]) => (url: string): string => {
-    if (!/^https:\/\//.test(url) || /[?#]/.test(url)) return url;
-    const hit = allow.find(p => url.startsWith(p));
-    if (!hit) return url;
-    rewritten.add(hit);
-    return appUrl + PROXY_PREFIX + url.replace(/^https?:\/\//, "");
+  const rewriter = (allow: string[]) => {
+    for (const o of allow) allowed.add(o);
+    return (url: string): string => {
+      if (!url.startsWith("https://") || /[?#]/.test(url)) return url;
+      const hit = allow.find(p => covers(p, url));
+      if (!hit) return url;
+      rewritten.add(hit);
+      return appUrl + PROXY_PREFIX + url.slice("https://".length);
+    };
   };
   const rwScript = rewriter(origins(csp["script-src"])), rwStyle = rewriter(origins(csp["style-src"]));
   for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
