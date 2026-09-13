@@ -1,4 +1,3 @@
-// Public API of uncdn. The qino plugin lives in ./plugin.ts.
 import type { App } from "@qino/qino";
 
 /** Cap per proxied asset, and the floor for the total cache limit. */

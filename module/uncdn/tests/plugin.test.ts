@@ -116,9 +116,9 @@ Deno.test("uncdn: lookalike origin is not covered by a declared source", async (
     "https://cdn.example",
   );
 
-  await assertRejects(() => route({ ctx }), Output);
-  assertEquals(ctx.res.status, 404);
-  assertEquals(ctx.res.body, "Not cached");
+  const thrown = await assertRejects(() => route({ ctx }), Output);
+  assertEquals(thrown.status, 404);
+  assertEquals(thrown.body, "Not cached");
 });
 
 Deno.test("uncdn: declared source is fetched", async () => {
@@ -128,7 +128,6 @@ Deno.test("uncdn: declared source is fetched", async () => {
   );
 
   await assertRejects(() => route({ ctx }), Error, "SSRF blocked: 127.0.0.1");
-  assertEquals(ctx.res.status, 200);
 });
 
 async function cacheTest(run: (fixture: {

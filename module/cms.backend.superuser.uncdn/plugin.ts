@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import * as nodePath from "node:path";
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
@@ -15,108 +14,77 @@ export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "UnCDN Cache", de: "UnCDN Cache" });
 }
 
-type TreeResult = { html: HtmlString; size: number };
-
-async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
-  const parts = [];
-  let size = 0;
-  try {
-    const entries = [];
-    for await (const e of Deno.readDir(path)) entries.push(e);
-    entries.sort((a, b) => {
-      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-    const results = await Promise.all(entries.map(async (e) => {
-      const full = path + e.name;
-      const rel = full.slice(baseLen);
-      if (e.isDirectory) {
-        const sub = await buildTree(full + "/", baseLen);
-        return {
-          size: sub.size,
-          html: html`<u2-tree>
-            <u2-ico slot=icon icon=folder>🗀</u2-ico>
-            ${e.name}
-            <small style="margin-left:auto"><u2-bytes>${sub.size}</u2-bytes></small>
-            <button data-delete=${JSON.stringify(rel + "/")} class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
-            ${sub.html}
-          </u2-tree>`,
-        };
-      } else {
-        const fileSize = (await Deno.stat(full).catch(() => null))?.size ?? 0;
-        return {
-          size: fileSize,
-          html: html`<u2-tree>
-            <u2-ico slot=icon icon=description>🗎</u2-ico>
-            <code>${e.name}</code>
-            <small style="margin-left:auto"><u2-bytes>${fileSize}</u2-bytes></small>
-            <button data-delete=${JSON.stringify(rel)} class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
-          </u2-tree>`,
-        };
-      }
-    }));
-    for (const r of results) { parts.push(r.html); size += r.size; }
-  } catch { /* empty or missing dir */ }
-  return { html: html.join(parts), size };
+/** The cache as a u2-tree, and the bytes below `path`. */
+async function buildTree(path: string, baseLen: number): Promise<[HtmlString, number]> {
+  const entries: Deno.DirEntry[] = await Array.fromAsync(Deno.readDir(path)).catch(() => []);
+  entries.sort((a, b) =>
+    a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1
+  );
+  let total = 0;
+  const parts = await Promise.all(entries.map(async (e) => {
+    const full = path + e.name;
+    const [children, size]: [HtmlString, number] = e.isDirectory
+      ? await buildTree(full + "/", baseLen)
+      : [html``, (await Deno.stat(full).catch(() => null))?.size ?? 0];
+    total += size;
+    return html`<u2-tree>
+      <u2-ico slot=icon icon=${e.isDirectory ? "folder" : "description"}>${e.isDirectory ? "🗀" : "🗎"}</u2-ico>
+      ${e.isDirectory ? e.name : html`<code>${e.name}</code>`}
+      <small style="margin-left:auto"><u2-bytes>${size}</u2-bytes></small>
+      <button data-delete="${full.slice(baseLen)}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
+      ${children}
+    </u2-tree>`;
+  }));
+  return [html.join(parts), total];
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
-  const cacheDir = node.app.modules.get("uncdn")!.cache;
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+  const { app } = node;
+  const t = app.t;
+  const cacheDir = app.modules.get("uncdn")!.cache;
+  const root = nodePath.resolve(cacheDir);
 
-  if (vars.delete) {
-    const target = nodePath.resolve(cacheDir, String(vars.delete).replace(/^\/+/, ""));
-    if (target.startsWith(nodePath.resolve(cacheDir) + nodePath.sep)) {
-      try { await Deno.remove(target, { recursive: true }); } catch { /* already gone */ }
-    }
+  // An empty path is the whole cache; anything else has to stay inside it. Nothing recreates
+  // the directory — uncdn mkdir's its way back on the next miss.
+  if (vars.delete !== undefined) {
+    const target = nodePath.resolve(root, String(vars.delete).replace(/^\/+/, ""));
+    if (target === root || target.startsWith(root + nodePath.sep))
+      await Deno.remove(target, { recursive: true }).catch(() => {}); // already gone
   }
 
-  if (vars.deleteAll) {
-    try { await Deno.remove(cacheDir, { recursive: true }); } catch { /* already gone */ }
-    try { await Deno.mkdir(cacheDir, { recursive: true }); } catch { /* ignore */ }
-  }
+  const [tree, totalSize] = await buildTree(cacheDir, cacheDir.length);
+  const maxCacheBytes = cacheByteLimit(await app.settings.uncdn.maxCacheBytes);
+  const origins = [...uncdn(app).origins].sort();
 
-  const { html: tree, size: totalSize } = await buildTree(cacheDir, cacheDir.length);
-  const maxCacheBytes = cacheByteLimit(await node.app.settings.uncdn.maxCacheBytes);
-
-  const origins = [...uncdn(node.app).origins].sort();
-
-  const t = node.app.t;
-  const [tCacheSize, tMaxCacheBytes, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached, tAllowList, tNoOrigins] = await Promise.all([
-    t`Cache size`,
-    t`Max cache bytes`,
-    t`Cache path`,
-    t`Actions`,
-    t`Delete all`,
-    t`Info`,
-    t`Cached files`,
-    t`No cached files yet.`,
-    t`Allow-list (CSP)`,
-    t`No origins declared yet.`,
-  ]);
-
-  return html`<div class=u2-flex>
+  return html.async`<div class=u2-flex>
   <div class="u2-card -sidebar" style="flex:0 0 auto">
-    <div class=-head>${tInfo}</div>
+    <div class=-head>${t`Info`}</div>
     <div>
       <table class=u2-table>
-        <tr><td>${tCacheSize}<td><u2-bytes>${totalSize}</u2-bytes>
-        <tr><td>${tMaxCacheBytes}<td><u2-bytes>${maxCacheBytes}</u2-bytes>
-        <tr><td>${tCachePath}<td><small><code>${cacheDir}</code></small>
+        <tr>
+          <td>${t`Cache size`}
+          <td><u2-bytes>${totalSize}</u2-bytes>
+        <tr>
+          <td>${t`Max cache bytes`}
+          <td><u2-bytes>${maxCacheBytes}</u2-bytes>
+        <tr>
+          <td>${t`Cache path`}
+          <td><small><code>${cacheDir}</code></small>
       </table>
     </div>
-    <div class=-head>${tAllowList}</div>
+    <div class=-head>${t`Allow-list (CSP)`}</div>
     <div>
-      ${origins.length ? html`<table class=u2-table>${origins.map(o => html`<tr><td><small><code>${o}</code></small>`)}</table>` : html`<em>${tNoOrigins}</em>`}
+      ${origins.length ? html`<table class=u2-table>${origins.map(o => html`<tr><td><small><code>${o}</code></small>`)}</table>` : html.async`<em>${t`No origins declared yet.`}</em>`}
     </div>
-    <div class=-head>${tActions}</div>
+    <div class=-head>${t`Actions`}</div>
     <div>
-      <button data-reload='{"deleteAll":1}' u2-confirm><u2-ico icon=delete>✕</u2-ico> ${tDeleteAll}</button>
+      <button data-delete="" u2-confirm><u2-ico icon=delete>✕</u2-ico> ${t`Delete all`}</button>
     </div>
   </div>
   <div class=u2-card style="flex:1">
-    <div class=-head>${tCachedFiles}</div>
+    <div class=-head>${t`Cached files`}</div>
     <div>
-      ${tree.html ? html`<u2-tree aria-expanded=true><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : html`<em>${tNoCached}</em>`}
+      ${tree.html ? html`<u2-tree aria-expanded=true><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : html.async`<em>${t`No cached files yet.`}</em>`}
     </div>
   </div>
 </div>`;

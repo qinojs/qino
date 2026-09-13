@@ -4,7 +4,7 @@ import { Output, safeFetch, isEmptyObject } from "@qino/qino";
 import { DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES, cacheByteLimit, uncdn } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, ResHtml, ResCsp } from "@qino/qino";
+import type { App, ResHtml, ResCsp } from "@qino/qino";
 
 const { name } = manifest;
 
@@ -20,6 +20,7 @@ export const settingsSchema = {
 };
 
 const PROXY_PREFIX = "uncdn/";
+const notFound = (reason: string) => new Output(reason, { status: 404 });
 const MEDIA_TYPES: Record<string, [type: string, csp?: string]> = {
   css: ["text/css"],
   js: ["text/javascript"],
@@ -40,12 +41,6 @@ async function directorySize(path: string): Promise<number> {
     }
   } catch { /* cache dir may not exist yet */ }
   return size;
-}
-
-function done(ctx: Ctx, status: number, body: string): never {
-  ctx.res.status = status;
-  ctx.res.body = body;
-  throw new Output();
 }
 
 function serveResponse([mediaType, csp]: [string, string?], data: Uint8Array): never {
@@ -101,16 +96,16 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!rest) return;
 
     const target = URL.parse("https://" + rest);
-    if (!target || !isEmptyObject(ctx.req.query)) done(ctx, 404, "Not allowed");
+    if (!target || !isEmptyObject(ctx.req.query)) throw notFound("Not allowed");
     const type = MEDIA_TYPES[rest.split(".").pop()!.toLowerCase()];
     const filePath = nodePath.resolve(cacheDir, target.hostname + target.pathname);
-    if (!type || !filePath.startsWith(cacheRoot)) done(ctx, 404, "Not allowed");
+    if (!type || !filePath.startsWith(cacheRoot)) throw notFound("Not allowed");
 
     const data = await Deno.readFile(filePath).catch(() => null);
     if (data) serveResponse(type, data);
 
     // The CSP declaration is the whole permission — what no page asked for is never fetched.
-    if (![...allowed].some(o => covers(o, target.href))) done(ctx, 404, "Not cached");
+    if (![...allowed].some(o => covers(o, target.href))) throw notFound("Not cached");
 
     const pending = running.getOrInsertComputed(filePath, () =>
       fetchAndCache(app, target.href, filePath, cacheDir).finally(() => running.delete(filePath))
@@ -129,7 +124,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 // Every declared source is remembered in `allowed` — that is what the proxy will fetch.
 export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed = new Set<string>()): void {
   const rewritten = new Set<string>();
-  const rewriter = (allow: string[]) => {
+  const rewriter = (src: CspSources) => {
+    const allow = origins(src);
     for (const o of allow) allowed.add(o);
     return (url: string): string => {
       if (!url.startsWith("https://") || /[?#]/.test(url)) return url;
@@ -139,7 +135,7 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
       return appUrl + PROXY_PREFIX + url.slice("https://".length);
     };
   };
-  const rwScript = rewriter(origins(csp["script-src"])), rwStyle = rewriter(origins(csp["style-src"]));
+  const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
   for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
   html.legacyScripts = mapSet(html.legacyScripts, rwScript);
   html.scripts       = mapSet(html.scripts, rwScript);
@@ -152,14 +148,12 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
     html.link[to] = attr;
   }
 
-  // drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay
-  stripDead(csp["script-src"], rewritten, html.scripts, html.legacyScripts, html.importMap.values());
-  stripDead(csp["style-src"], rewritten, html.styles, Object.keys(html.link));
-}
-
-/** Only what this pass actually moved to the proxy — a source no html asset names may still be
- *  needed by an import inside a script, which is nothing this rewrite can see. */
-function stripDead(src: CspSources, rewritten: Set<string>, ...refs: Iterable<string>[]): void {
-  const urls = refs.flatMap(ref => [...ref]);
-  for (const o of origins(src)) if (rewritten.has(o) && !urls.some(u => u.startsWith(o))) delete src[o];
+  // Drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay.
+  // Only what this pass actually moved: a source no html asset names may still be needed by an
+  // import inside a script, which is nothing this rewrite can see.
+  const strip = (src: CspSources, urls: string[]) => {
+    for (const o of origins(src)) if (rewritten.has(o) && !urls.some(u => u.startsWith(o))) delete src[o];
+  };
+  strip(csp["script-src"], [...html.scripts, ...html.legacyScripts, ...html.importMap.values()]);
+  strip(csp["style-src"], [...html.styles, ...Object.keys(html.link)]);
 }
