@@ -102,7 +102,7 @@ Deno.test("cms.versions: moved content follows the selected version's position",
 });
 
 Deno.test("cms.versions: historical responses stay privately cacheable", async () => {
-  const ctx = await testContext({ app: { fire: () => {}, settings: { cms: {} } } });
+  const ctx = await testContext({ app: { fire: () => {}, settings: { cms: {} }, languages: { all: ["en"] } } });
   const page = {
     vs: { searchable: 1 }, exists: () => true, access: () => 1, isReadable: () => true,
     page: () => page, text: () => null, title: () => null, html: () => "",
