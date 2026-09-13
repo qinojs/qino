@@ -1,8 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
-import { requestStorage, isEmptyObject } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
-import { getVers } from "./lib/Vers.ts";
 import { getCmsVers } from "./lib/CmsVers.ts";
 
 import type { Ctx, App } from "@qino/qino";
@@ -17,10 +14,10 @@ import type { Ctx, App } from "@qino/qino";
  * Parked: plugin.ts does not wire this file until read/write routing is complete.
  * Implemented pieces:
  *   - editmode → draft space selection (applyDraftSpace)
- *   - cross-space field sync for `page`
  *
  * What is commented out (TODO – space-mode write/read routing):
  *   - table:insert/update/delete-before space routing
+ *   - cross-space field sync for `page`
  *   - node:construct / node:children space-aware read overrides
  *   - node:sql SQL-rewrite hook (complex regex approach)
  */
@@ -94,27 +91,30 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     // ─────────────────────────────────────────────────────────────────────────
 
     // ─── cross-space field sync for `page` table ─────────────────────────────
+    // Paused with draft mode: without it `space` is always 0, so the hook never fires.
     // Some `page` fields (sort, basis, access, title_id) must stay in sync
     // with the live table even when we're in a space.
-    app.db.on("table:update-before", async (e) => {
-        const ctx = requestStorage.getStore();
-        if (!ctx || !getVers(ctx).space) return;
-        if (String(e.table) !== "page") return;
-        const liveData: Record<string, any> = {};
-        for (const key of ["sort", "basis", "access", "title_id"])
-            if (key in e.data) liveData[key] = e.data[key];
-        const idValues = e.table.entryIdValues(e.id);
-        if (!idValues) return;
-        const idWhere = e.table.valuesToFragment(idValues);
-        const db = ctx.app.db;
-        const row = await db.row`SELECT * FROM page WHERE ${idWhere}`;
-        if (!row) return;
-        if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
-        if (isEmptyObject(liveData)) return;
-        const set = e.table.valuesToFragment(liveData, undefined, true);
-        await db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
-        await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
-    }, { signal });
+    //
+    // app.db.on("table:update-before", async (e) => {
+    //     const ctx = requestStorage.getStore();
+    //     if (!ctx || !getVers(ctx).space) return;
+    //     if (String(e.table) !== "page") return;
+    //     const liveData: Record<string, any> = {};
+    //     for (const key of ["sort", "basis", "access", "title_id"])
+    //         if (key in e.data) liveData[key] = e.data[key];
+    //     const idValues = e.table.entryIdValues(e.id);
+    //     if (!idValues) return;
+    //     const idWhere = e.table.valuesToFragment(idValues);
+    //     const db = ctx.app.db;
+    //     const row = await db.row`SELECT * FROM page WHERE ${idWhere}`;
+    //     if (!row) return;
+    //     if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
+    //     if (isEmptyObject(liveData)) return;
+    //     const set = e.table.valuesToFragment(liveData, undefined, true);
+    //     const space = getVers(ctx).space;
+    //     await db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
+    //     await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere} AND _vers_space = ${space} AND _vers_log = 0`;
+    // }, { signal });
 
     // Inform client about changed pages after API calls (draftmode)
     // app.on("serverInterface::after", async (e: any) => { // no longer exists! use something else
