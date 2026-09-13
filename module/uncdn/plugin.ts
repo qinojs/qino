@@ -21,14 +21,15 @@ export const settingsSchema = {
 
 const PROXY_PREFIX = "uncdn/";
 const notFound = (reason: string) => new Output(reason, { status: 404 });
-const MEDIA_TYPES: Record<string, [type: string, csp?: string]> = {
-  css: ["text/css"],
-  js: ["text/javascript"],
-  mjs: ["text/javascript"],
-  json: ["application/json"],
-  wasm: ["application/wasm"],
-  woff2: ["font/woff2"],
-  svg: ["image/svg+xml", "default-src 'none'; style-src 'unsafe-inline'"],
+const SVG = "image/svg+xml";
+const MEDIA_TYPES: Record<string, string> = {
+  css: "text/css",
+  js: "text/javascript",
+  mjs: "text/javascript",
+  json: "application/json",
+  wasm: "application/wasm",
+  woff2: "font/woff2",
+  svg: SVG,
 };
 
 async function directorySize(path: string): Promise<number> {
@@ -43,33 +44,35 @@ async function directorySize(path: string): Promise<number> {
   return size;
 }
 
-function serveResponse([mediaType, csp]: [string, string?], data: Uint8Array): never {
-  const headers: Record<string, string> = {
-    "Content-Type": mediaType,
+function serveResponse(type: string, data: Uint8Array): never {
+  throw new Output(data, { headers: {
+    "Content-Type": type,
     "Cache-Control": "public, max-age=31536000, immutable",
     "X-Content-Type-Options": "nosniff",
-  };
-  if (csp) headers["Content-Security-Policy"] = csp;
-  throw new Output(data, { headers });
+    // an svg is served inline by the browser, so deny it everything but its own styles
+    ...type === SVG && { "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'" },
+  } });
 }
 
 async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: string): Promise<Uint8Array> {
-  const cached = await Deno.readFile(filePath).catch(() => null);
-  if (cached) return cached;
   const res = await safeFetch(url); // SSRF-guarded, re-checked after redirects; safeFetch applies a default timeout
-  if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
-  if (Number(res.headers.get("content-length")) > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
+  const tooBig = Number(res.headers.get("content-length")) > MAX_ASSET_BYTES;
+  if (!res.ok || tooBig) {
+    await res.body?.cancel();
+    throw new Error(`fetch ${url} → ${tooBig ? "too large" : res.status}`);
+  }
   const data = new Uint8Array(await res.arrayBuffer());
   if (data.byteLength > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
   const maxCacheBytes = cacheByteLimit(await app.settings.uncdn.maxCacheBytes);
   if (await directorySize(cacheDir) + data.byteLength > maxCacheBytes) throw new Output("Cache full", { status: 507 });
-  await Deno.mkdir(filePath.replace(/\/[^/]+$/, ""), { recursive: true });
+  await Deno.mkdir(nodePath.dirname(filePath), { recursive: true });
   const partPath = `${filePath}.part-${crypto.randomUUID()}`;
   try {
     await Deno.writeFile(partPath, data);
     await Deno.rename(partPath, filePath);
-  } finally {
+  } catch (error) {
     await Deno.remove(partPath).catch(() => {});
+    throw error;
   }
   return data;
 }
