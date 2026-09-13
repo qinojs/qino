@@ -158,14 +158,24 @@ export async function install({ app }: { app: App }): Promise<void> {
 /** Streams the given DbFiles as a zip archive using the system `zip` command. */
 async function dbFiles2Zip(files: DbFile[]): Promise<ReadableStream<Uint8Array>> {
     const dir = await Deno.makeTempDir({ prefix: "qino-zip-" });
+    const cleanup = () => Deno.remove(dir, { recursive: true }).catch(console.error);
     const names: string[] = [];
-    for (const dbFile of files) {
-        let name = dbFile.name.replace(/[/\0]/g, "_") || "file";
-        if (names.includes(name)) name = names.length + "_" + name;
-        await Deno.symlink(dbFile.path, `${dir}/${name}`);
-        names.push(name);
+    try {
+        for (const dbFile of files) {
+            let name = dbFile.name.replace(/[/\0]/g, "_") || "file";
+            if (names.includes(name)) name = names.length + "_" + name;
+            await Deno.symlink(dbFile.path, `${dir}/${name}`);
+            names.push(name);
+        }
+    } catch (e) {
+        await cleanup();
+        throw e;
     }
     const proc = new Deno.Command("zip", { args: ["-q", "-", "--", ...names], cwd: dir, stdout: "piped", stderr: "null" }).spawn();
-    proc.status.finally(() => Deno.remove(dir, { recursive: true }).catch(console.error));
-    return proc.stdout;
+    proc.status.finally(cleanup);
+    return proc.stdout.pipeThrough(new TransformStream({
+        cancel() { // client aborted: stop zip, cleanup runs via proc.status
+            try { proc.kill(); } catch { /* already exited */ }
+        },
+    }));
 }
