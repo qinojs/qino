@@ -31,9 +31,9 @@ cms-image2 img {
 
   /* transition*/
   transition:opacity .2s;
-  opacity:0;
-  &:not([loading]) { opacity:1; }
 }
+/* only fade in when the element is upgraded - without js the <noscript> image stays visible */
+cms-image2:defined:not([loaded]) img { opacity:0; }
 
 
 
