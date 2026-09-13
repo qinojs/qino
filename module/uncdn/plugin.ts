@@ -1,5 +1,6 @@
 import * as nodePath from "node:path";
-import { Output, safeFetch, isEmptyObject } from "@qino/qino";
+import { serveFile } from "@std/http/file-server";
+import { Output, safeFetch } from "@qino/qino";
 
 import { DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES, cacheByteLimit, uncdn } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -44,14 +45,16 @@ async function directorySize(path: string): Promise<number> {
   return size;
 }
 
-function serveResponse(type: string, data: Uint8Array): never {
-  throw new Output(data, { headers: {
-    "Content-Type": type,
-    "Cache-Control": "public, max-age=31536000, immutable",
-    "X-Content-Type-Options": "nosniff",
-    // an svg is served inline by the browser, so deny it everything but its own styles
-    ...type === SVG && { "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'" },
-  } });
+// Own the media type rather than trusting an extension table, and pin the cache: a proxy url
+// names one immutable asset. `from` carries over what serveFile negotiated (etag, range, length).
+function cacheHeaders(type: string, from?: Headers): Headers {
+  const headers = new Headers(from);
+  headers.set("Content-Type", type);
+  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  headers.set("X-Content-Type-Options", "nosniff");
+  // an svg is served inline by the browser, so deny it everything but its own styles
+  if (type === SVG) headers.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
+  return headers;
 }
 
 async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: string): Promise<Uint8Array> {
@@ -93,19 +96,25 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const running = new Map<string, Promise<Uint8Array>>();
   const allowed = uncdn(app).origins; // sources pages declared via CSP — the only thing this proxy fetches
 
-  app.on("route", async ({ ctx }) => {
-    if (!ctx.req.appPath.startsWith(PROXY_PREFIX)) return;
-    const rest = ctx.req.appPath.slice(PROXY_PREFIX.length);
+  // Served before routing — a cached asset is a static file and needs neither session nor database.
+  app.on("request-start", async ({ request, base }) => {
+    const url = new URL(request.url);
+    if (!url.pathname.startsWith(base + PROXY_PREFIX)) return; // this hook sees every request
+    let rest: string;
+    try { rest = decodeURIComponent(url.pathname.slice(base.length + PROXY_PREFIX.length)); } catch { return; }
     if (!rest) return;
 
     const target = URL.parse("https://" + rest);
-    if (!target || !isEmptyObject(ctx.req.query)) throw notFound("Not allowed");
+    if (!target || url.search) throw notFound("Not allowed");
     const type = MEDIA_TYPES[rest.split(".").pop()!.toLowerCase()];
     const filePath = nodePath.resolve(cacheDir, target.hostname + target.pathname);
     if (!type || !filePath.startsWith(cacheRoot)) throw notFound("Not allowed");
 
-    const data = await Deno.readFile(filePath).catch(() => null);
-    if (data) serveResponse(type, data);
+    // streams and answers conditional requests; 404 is exactly the "not cached yet" case
+    const hit = await serveFile(request, filePath);
+    // ?? undefined: a 304 carries no body, and Output would turn a null one into "null"
+    if (hit.status !== 404) throw new Output(hit.body ?? undefined, { status: hit.status, headers: cacheHeaders(type, hit.headers) });
+    await hit.body?.cancel();
 
     // The CSP declaration is the whole permission — what no page asked for is never fetched.
     if (![...allowed].some(o => covers(o, target.href))) throw notFound("Not cached");
@@ -113,7 +122,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const pending = running.getOrInsertComputed(filePath, () =>
       fetchAndCache(app, target.href, filePath, cacheDir).finally(() => running.delete(filePath))
     );
-    serveResponse(type, await pending);
+    throw new Output(await pending, { headers: cacheHeaders(type) });
   }, { signal });
 
   app.on("html-ready", ({ ctx }) => {

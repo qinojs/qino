@@ -2,21 +2,22 @@ import https from "node:https";
 import { Readable, Writable } from "node:stream";
 
 import { Output, ResCsp, ResHtml } from "@qino/qino";
-import type { Ctx } from "@qino/qino";
-import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { assert, assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { uncdn } from "../mod.ts";
 import { init, rewriteHtml } from "../plugin.ts";
 
+type Start = (event: { request: Request; base: string }) => Promise<void>;
+
 async function routeFor(url: string, source: string, cache = "/tmp/uncdn-origin-test/cache/uncdn/") {
-  let route: (event: { ctx: Ctx }) => Promise<void> = () => Promise.resolve();
+  let start: Start = () => Promise.resolve();
   const ctx = await testContext({ url, app: {
     modules: { get: () => ({ cache }) },
-    on: (name: string, handler: typeof route) => { if (name === "route") route = handler; },
+    on: (name: string, handler: Start) => { if (name === "request-start") start = handler; },
   } });
   init(ctx.app, { signal: new AbortController().signal });
   uncdn(ctx.app).origins.add(source);
-  return { ctx, route };
+  return { ctx, route: (init?: RequestInit) => start({ request: new Request(url, init), base: ctx.req.appUrl }) };
 }
 
 Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () => {
@@ -111,28 +112,28 @@ Deno.test("uncdn: an http source stays external", () => {
 });
 
 Deno.test("uncdn: lookalike origin is not covered by a declared source", async () => {
-  const { ctx, route } = await routeFor(
+  const { route } = await routeFor(
     "https://qino.test/uncdn/cdn.example.attacker.test/a.js",
     "https://cdn.example",
   );
 
-  const thrown = await assertRejects(() => route({ ctx }), Output);
+  const thrown = await assertRejects(route, Output);
   assertEquals(thrown.status, 404);
   assertEquals(thrown.body, "Not cached");
 });
 
 Deno.test("uncdn: declared source is fetched", async () => {
-  const { ctx, route } = await routeFor(
+  const { route } = await routeFor(
     "https://qino.test/uncdn/127.0.0.1/a.js",
     "https://127.0.0.1",
   );
 
-  await assertRejects(() => route({ ctx }), Error, "SSRF blocked: 127.0.0.1");
+  await assertRejects(route, Error, "SSRF blocked: 127.0.0.1");
 });
 
 async function cacheTest(run: (fixture: {
   file: string;
-  request: () => Promise<Response>;
+  request: (init?: RequestInit) => Promise<Response>;
   downloads: () => number;
 }) => Promise<void>) {
   const cache = await Deno.makeTempDir({ prefix: "uncdn-" }) + "/";
@@ -152,9 +153,8 @@ async function cacheTest(run: (fixture: {
     const { route } = await routeFor(url, "https://93.184.216.34/", cache);
     await run({
       file: cache + "93.184.216.34/a.js",
-      request: async () => {
-        const ctx = await testContext({ url });
-        try { await route({ ctx }); }
+      request: async (init?: RequestInit) => {
+        try { await route(init); }
         catch (error) {
           if (error instanceof Output) return error.toResponse();
           throw error;
@@ -172,7 +172,7 @@ async function cacheTest(run: (fixture: {
 Deno.test("uncdn: concurrent misses share a download and only publish complete files", async () => {
   await cacheTest(async ({ file, request, downloads }) => {
     const writeFile = Deno.writeFile;
-    const readFile = Deno.readFile;
+    const stat = Deno.stat;
     const writing = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const secondRead = Promise.withResolvers<void>();
@@ -185,8 +185,9 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
         await release.promise;
         await writeFile(path, data, options);
       };
-      Deno.readFile = async (path, options) => {
-        try { return await readFile(path, options); }
+      // serveFile stats the cached file first — that stat is how the second request looks for it
+      Deno.stat = async (path) => {
+        try { return await stat(path); }
         finally { if (observeRead && path === file) secondRead.resolve(); }
       };
       requests.push(request());
@@ -207,7 +208,7 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
       release.resolve();
       await Promise.allSettled(requests);
       Deno.writeFile = writeFile;
-      Deno.readFile = readFile;
+      Deno.stat = stat;
     }
   });
 });
@@ -245,4 +246,21 @@ Deno.test("uncdn: a declared source only covers urls at a path boundary", () => 
   rewriteHtml(html, "/app/", csp);
 
   assertEquals([...html.scripts], [lookalike, "/app/uncdn/cdn.example/a.js"]);
+});
+
+Deno.test("uncdn: a cached asset is revalidated with its etag", async () => {
+  await cacheTest(async ({ request, downloads }) => {
+    await (await request()).body?.cancel(); // miss: fetched and served from memory, no etag yet
+    const hit = await request();
+    assertEquals(hit.headers.get("Content-Type"), "text/javascript");
+    assertEquals(hit.headers.get("Cache-Control"), "public, max-age=31536000, immutable");
+    const etag = hit.headers.get("ETag");
+    assert(etag);
+    await hit.body?.cancel();
+
+    const revalidated = await request({ headers: { "If-None-Match": etag } });
+    assertEquals(revalidated.status, 304);
+    assertEquals(revalidated.body, null);
+    assertEquals(downloads(), 1);
+  });
 });
