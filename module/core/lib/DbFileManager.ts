@@ -157,6 +157,7 @@ export class DbFileManager {
     headers.set("Content-Length", String((await file.stat()).size));
     return new Response(file.readable, { status: 200, headers });
   }
+
 }
 
 export class DbFile extends File {
