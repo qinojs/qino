@@ -16,10 +16,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     let rows;
     if (db.dialect === "mysql") {
       const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
-      rows = await db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
+      rows = await db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text_lang t ON p.title_id = t.text_id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
     } else {
       const { where } = sqlSearch(words, ["t.text"]);
-      rows = await db.query`SELECT p.id FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${where} GROUP BY p.id LIMIT 100`;
+      rows = await db.query`SELECT p.id FROM page p INNER JOIN text_lang t ON p.title_id = t.text_id WHERE p.searchable AND ${where} GROUP BY p.id LIMIT 100`;
     }
     let limit = 5;
     for (const row of rows) {

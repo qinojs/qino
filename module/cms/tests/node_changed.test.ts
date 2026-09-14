@@ -85,7 +85,7 @@ Deno.test("node_changed: text update resolves node via page_text + title link", 
   });
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
-    await handlers["table:update-after"](fakeEvent("text", 99, { de: "hi" }));
+    await handlers["table:update-after"](fakeEvent("text_lang", { text_id: 99, lang: "de" }, { text: "hi" }));
   });
   assertEquals(inserts.length, 1);
   assertEquals(inserts[0].node, 7);
@@ -95,7 +95,7 @@ Deno.test("node_changed: text insert with no link yet produces no row", async ()
   const { app, handlers, inserts } = fakeApp({ tree: {} }); // no page_text link
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
-    await handlers["table:insert-after"](fakeEvent("text", { id: 99, lang: "de" }, { id: 99, lang: "de", text: "hi" }));
+    await handlers["table:insert-after"](fakeEvent("text_lang", { text_id: 99, lang: "de" }, { text_id: 99, lang: "de", text: "hi" }));
   });
   assertEquals(inserts.length, 0);
 });
@@ -107,8 +107,8 @@ Deno.test("node_changed: adding a new language to an existing text is tracked", 
   });
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
-    // set() inserts a new (id, lang) row when that language did not exist yet
-    await handlers["table:insert-after"](fakeEvent("text", { id: 99, lang: "fr" }, { id: 99, lang: "fr", text: "salut" }));
+    // set() inserts a new (text_id, lang) row when that language did not exist yet
+    await handlers["table:insert-after"](fakeEvent("text_lang", { text_id: 99, lang: "fr" }, { text_id: 99, lang: "fr", text: "salut" }));
   });
   assertEquals(inserts.length, 1);
   assertEquals(inserts[0].node, 7);

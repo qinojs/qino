@@ -2,7 +2,7 @@
 import { assertEquals } from "./deps.ts";
 import { DbTextManager } from "../lib/DbTextManager.ts";
 
-Deno.test("DbTextManager: generate inserts empty text for strict sql mode", async () => {
+Deno.test("DbTextManager: generate inserts an identity row and takes its id", async () => {
   const inserts: Record<string, unknown>[] = [];
   const app = {
     languages: { def: "de" },
@@ -22,5 +22,5 @@ Deno.test("DbTextManager: generate inserts empty text for strict sql mode", asyn
 
   const text = await new DbTextManager(app as any).generate();
   assertEquals(text.id, 12);
-  assertEquals(inserts, [{ lang: "de", text: "" }]);
+  assertEquals(inserts, [{}]);
 });

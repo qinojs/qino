@@ -149,21 +149,22 @@ export async function healthChecks(app: App) {
 
   // ── texts ────────────────────────────────────────────────────────────────
   notice["texts with no lang"] = async () => {
-    const num = Number(await db.one`SELECT count(*) FROM text WHERE lang = ''`);
+    const num = Number(await db.one`SELECT count(*) FROM text_lang WHERE lang = ''`);
     if (!num) return;
-    return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.exec`DELETE FROM text WHERE lang = ''`; } } } };
+    return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.exec`DELETE FROM text_lang WHERE lang = ''`; } } } };
   };
 
   // MySQL-only fragments; other dialects run without cap/optimize.
   const limit1M  = db.dialect === "mysql" ? sql.raw(" LIMIT 1000000") : sql``;
   const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
-  // "no row references this table" condition, built from x-qg-parent child columns
-  const notLinked = (table: string) => sql.join(db.table(table).children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
+  // "no row references this table" condition, built from x-qg-parent child columns.
+  // Cascade children are owned rows (text_lang), not references that keep the parent alive.
+  const notLinked = (table: string) => sql.join(db.table(table).children.filter((f) => f.onParentDelete !== "cascade").map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
 
   cleanup["not linked texts"] = async () => {
-    if (!db.table("text").children.length) return;
+    if (!db.table("text").children.some((f) => f.onParentDelete !== "cascade")) return;
     const where = notLinked("text");
-    const count = Number(await db.one`SELECT count(DISTINCT id) FROM text WHERE ${where}`);
+    const count = Number(await db.one`SELECT count(*) FROM text WHERE ${where}`);
     if (!count) return;
     return {
       info: "found " + count,
@@ -171,6 +172,7 @@ export async function healthChecks(app: App) {
         run: {
           solve: async () => {
             const res = await db.exec`DELETE FROM text WHERE ${where}${limit1M}`;
+            await db.exec`DELETE FROM text_lang WHERE text_id NOT IN (SELECT id FROM text)`;
             await optimize("text");
             return res.affectedRows + " rows deleted\n";
           },

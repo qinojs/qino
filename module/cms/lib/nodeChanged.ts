@@ -28,21 +28,25 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         return cur;
     };
 
+    // the row's own id column — a text_lang row is addressed by the text it translates
+    const idOf = (table: string, vs: Record<string, any>) =>
+        LINKED.has(table) ? vs.page_id : table === "text_lang" ? vs.text_id : vs.id;
+
     // affected node ids for a mutation; row values = PK values merged with changed data.
-    // text/file are shared reference rows — resolve the node(s) through the link tables.
+    // text_lang/file are shared reference rows — resolve the node(s) through the link tables.
     // A row with no link yet (brand-new text/file) resolves to none; its page_text/
     // page_file insert captures it. A new-language row on an existing text still links,
     // so multilingual edits are tracked.
     const nodeIds = async (table: string, vs: Record<string, any>): Promise<number[]> => {
-        if (table === "page") return [Number(vs.id)];
-        if (LINKED.has(table)) return [Number(vs.page_id)];
-        if (table === "text") {
-            const links = await db.query`SELECT page_id FROM page_text WHERE text_id = ${vs.id}
-                UNION SELECT id FROM page WHERE title_id = ${vs.id}`;
+        const id = idOf(table, vs);
+        if (table === "page" || LINKED.has(table)) return [Number(id)];
+        if (table === "text_lang") {
+            const links = await db.query`SELECT page_id FROM page_text WHERE text_id = ${id}
+                UNION SELECT id FROM page WHERE title_id = ${id}`;
             return links.map((r) => Number(r.page_id));
         }
         if (table === "file") {
-            const links = await db.query`SELECT page_id FROM page_file WHERE file_id = ${vs.id}`;
+            const links = await db.query`SELECT page_id FROM page_file WHERE file_id = ${id}`;
             return links.map((r) => Number(r.page_id));
         }
         return [];
@@ -52,9 +56,9 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         const ctx = requestStorage.getStore();
         if (!ctx) return;
         const table = String(e.table);
-        if (table !== "page" && table !== "text" && table !== "file" && !LINKED.has(table)) return;
+        if (table !== "page" && table !== "text_lang" && table !== "file" && !LINKED.has(table)) return;
         const vs = { ...(e.id != null ? e.table.entryIdValues?.(e.id) : {}), ...e.data };
-        if ((LINKED.has(table) ? vs.page_id : vs.id) == null) return; // incomplete id (e.g. composite key given as a single value)
+        if (idOf(table, vs) == null) return; // incomplete id (e.g. composite key given as a single value)
         const logId = Number(await ctx.logId) || 0;
         if (!logId) return;
 
@@ -100,7 +104,8 @@ export async function describeChange(dataStr: unknown, t: TFn): Promise<string> 
             if (cols.includes("sort") || cols.includes("basis")) return t`Position changed`;
             return t`Setting changed`;
         case "page_text":
-        case "text":
+        case "text": // pre-split history
+        case "text_lang":
             return (d.name ? `${await t`Text`} "${hee(d.name)}"` : await t`Text`) + lang + " " + await t`changed`;
         case "page_file":
         case "file":

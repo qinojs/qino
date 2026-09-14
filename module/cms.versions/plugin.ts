@@ -43,7 +43,7 @@ const VERSED: Record<string, true | Record<string, 1>> = {
         sort: 1, module: 1, visible: 1, searchable: 1, title_id: 1,
         name: 1, settings: 1, _cache: 1,
     },
-    page_file: true, page_text: true, page_url: true, text: true, file: true,
+    page_file: true, page_text: true, page_url: true, text: true, text_lang: true, file: true,
 };
 
 // Derive the _vers_* shadow tables from the merged schema (function-form dbSchema runs

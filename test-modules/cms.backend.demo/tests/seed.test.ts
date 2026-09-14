@@ -24,7 +24,6 @@ Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly a
   const app = await demoApp();
   try {
     const before = await census(app);
-    const textsBefore = Number(await app.db.one`SELECT COUNT(*) FROM text WHERE id IS NOT NULL` ?? 0);
 
     const seed = await reset(app, { scale: 0.3 });
     assert(seed.counts.pages > 10, `pages: ${seed.counts.pages}`);
@@ -41,12 +40,6 @@ Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly a
     const after = await census(app);
     // dictionaries and settings are shared: a run may add a value, but never owns one
     for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting"]) delete after[shared], delete before[shared];
-    // SQLite cannot express AUTO_INCREMENT on the composite key of `text`, so every
-    // dbTexts.generate() leaves a row with a NULL id behind. Those are unaddressable already when
-    // core writes them — count the rows that do have an id.
-    const texts = async () => Number(await app.db.one`SELECT COUNT(*) FROM text WHERE id IS NOT NULL` ?? 0);
-    after.text = before.text = 0;
-    assertEquals(await texts(), textsBefore);
     assertEquals(after, before);
   } finally {
     await app.db.close();
@@ -56,7 +49,7 @@ Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly a
 Deno.test("cms.backend.demo: the same seed builds the same site twice", async () => {
   const app = await demoApp();
   try {
-    const titles = async () => (await app.db.query`SELECT text FROM text WHERE id IS NOT NULL ORDER BY text`).map((row) => row.text).join("|");
+    const titles = async () => (await app.db.query`SELECT text FROM text_lang ORDER BY text`).map((row) => row.text).join("|");
     await reset(app, { scale: 0.3, only: ["pages"] });
     const first = await titles();
     await reset(app, { scale: 0.3, only: ["pages"] });

@@ -94,8 +94,8 @@ async function versProtocolForNode(ctx: any, pid: number): Promise<any[]> {
     const results = await Promise.all([
         versProtocol(ctx, "page",      sql`t.id = ${pid}`),
         versProtocol(ctx, "page_text", sql`t.page_id = ${pid}`),
-        spaceView("page").then(v => versProtocol(ctx, "text", sql`t.id = (SELECT title_id FROM ${sql.id(v)} WHERE id = ${pid})`)),
-        spaceView("page_text").then(v => versProtocol(ctx, "text", sql`t.id IN(SELECT text_id FROM ${sql.id(v)} WHERE page_id = ${pid})`)),
+        spaceView("page").then(v => versProtocol(ctx, "text_lang", sql`t.text_id = (SELECT title_id FROM ${sql.id(v)} WHERE id = ${pid})`)),
+        spaceView("page_text").then(v => versProtocol(ctx, "text_lang", sql`t.text_id IN(SELECT text_id FROM ${sql.id(v)} WHERE page_id = ${pid})`)),
         spaceView("page_file").then(v => versProtocol(ctx, "file", sql`t.id IN(SELECT file_id FROM ${sql.id(v)} WHERE page_id = ${pid})`)),
     ]);
     return results.flat();

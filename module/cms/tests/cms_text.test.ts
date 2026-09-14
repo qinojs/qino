@@ -159,5 +159,5 @@ Deno.test("cms.text: camelCase translation inputs map to DeepL's field names", a
   } finally {
     globalThis.fetch = originalFetch;
   }
-  assertEquals(writes, [{ id: 7, lang: "en", text: "Hello" }]);
+  assertEquals(writes, [{ text_id: 7, lang: "en", text: "Hello" }]);
 });

@@ -37,8 +37,8 @@ async function renderList(node: Node): Promise<HtmlString> {
       COALESCE(NULLIF(t.text, ''), NULLIF(tf.text, ''), page.name) AS title
     FROM page
     LEFT JOIN shp3_product p ON p.id = page.id
-    LEFT JOIN ${sql.id(tableRef("text"))} t  ON t.id = page.title_id AND t.lang = ${lang}
-    LEFT JOIN ${sql.id(tableRef("text"))} tf ON tf.id = page.title_id AND tf.lang = ${app.languages.def}
+    LEFT JOIN ${sql.id(tableRef("text_lang"))} t  ON t.text_id = page.title_id AND t.lang = ${lang}
+    LEFT JOIN ${sql.id(tableRef("text_lang"))} tf ON tf.text_id = page.title_id AND tf.lang = ${app.languages.def}
     WHERE page.module = ${module} OR p.id IS NOT NULL
     ORDER BY title LIMIT 500`;
 

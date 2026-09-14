@@ -59,12 +59,12 @@ async function hits(node: Node, ctx: Ctx, search: string) {
 
   const titles = await db.query`
     SELECT p.id, t.text FROM page p
-    JOIN text t ON t.id = p.title_id AND t.lang = ${ctx.lang}
+    JOIN text_lang t ON t.text_id = p.title_id AND t.lang = ${ctx.lang}
     WHERE ${where} ${scope} LIMIT 100`;
   const texts = await db.query`
     SELECT p.id, t.text, pt.name FROM page p
     JOIN page_text pt ON pt.page_id = p.id
-    JOIN text t ON t.id = pt.text_id AND t.lang = ${ctx.lang}
+    JOIN text_lang t ON t.text_id = pt.text_id AND t.lang = ${ctx.lang}
     WHERE ${where} ${scope} LIMIT 200`;
 
   const found = new Map<number, { page: Node; text: string; score: number }>();

@@ -32,11 +32,10 @@ export class DbTextManager {
   }
 
   async generate(): Promise<DbText> {
-    const values: Record<string, unknown> = { lang: this.#app.languages.def, text: "" };
+    const values: Record<string, unknown> = {};
     await this.db.table("text").insert(values);
     // insert can be prevented (e.g. read-only history render) → id 0, never NaN
-    const id = Number(values.id) || 0;
-    return this.text(id);
+    return this.text(Number(values.id) || 0);
   }
 }
 
@@ -71,10 +70,8 @@ export class DbText {
   async copy(): Promise<DbText> {
     const db = this.#manager.db;
     const newText = await this.#manager.generate();
-    for (const row of await db.query`SELECT * FROM text WHERE id = ${this.id}`) {
-      row.id = newText.id;
-      const exists = await db.one`SELECT id FROM text WHERE id = ${row.id} AND lang = ${row.lang}`;
-      await (exists ? db.table("text").update(row) : db.table("text").insert(row));
+    for (const row of await db.query`SELECT * FROM ${sql.id(tableRef("text_lang"))} WHERE text_id = ${this.id}`) {
+      await db.table("text_lang").insert({ ...row, text_id: newText.id });
     }
     return newText;
   }
@@ -101,7 +98,7 @@ export class DbTextLang {
   async get(): Promise<string> {
     if (this.value === null) {
       const db = this.text.manager.db;
-      const value = await db.one`SELECT text FROM ${sql.id(tableRef("text"))} WHERE id = ${this.text.id} AND lang = ${this.lang}`;
+      const value = await db.one`SELECT text FROM ${sql.id(tableRef("text_lang"))} WHERE text_id = ${this.text.id} AND lang = ${this.lang}`;
       this.value = String(value ?? "");
     }
     return this.value!;
@@ -109,11 +106,7 @@ export class DbTextLang {
 
   async set(value: any): Promise<void> {
     this.value = null;
-    const db = this.text.manager.db;
-    const data = { id: this.text.id, lang: this.lang, text: value };
-    const has = await db.one`SELECT id FROM text WHERE id = ${this.text.id} AND lang = ${this.lang}`;
-    if (has) await db.table("text").update(data);
-    else await db.table("text").insert(data);
+    await this.text.manager.db.table("text_lang").ensure({ text_id: this.text.id, lang: this.lang, text: value });
   }
 
   toString() { throw new Error("DbTextLang: toString() not implemented"); }

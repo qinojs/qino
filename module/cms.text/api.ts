@@ -31,7 +31,7 @@ class CmsTextService {
     if (!await this.textAccess(textId)) return false;
     const results = [];
     for (const lang of this.#app.languages.all) {
-      const text = await this.#app.db.one`SELECT text FROM text WHERE id = ${textId} AND lang = ${lang}`;
+      const text = await this.#app.db.one`SELECT text FROM text_lang WHERE text_id = ${textId} AND lang = ${lang}`;
       results.push({
         lang,
         text: !text ? false : sanitizeHtml(String(text)),
@@ -45,14 +45,14 @@ class CmsTextService {
     sourceLang = this.#lang(sourceLang);
     if (!await this.textAccess(textId)) throw new ApiError(403, "No access to this text");
     const db = this.#app.db;
-    const input = String(await db.one`SELECT text FROM text WHERE id = ${textId} AND lang = ${sourceLang}` ?? "");
+    const input = String(await db.one`SELECT text FROM text_lang WHERE text_id = ${textId} AND lang = ${sourceLang}` ?? "");
     if (!input.trim()) throw new ApiError(400, "Source text is empty");
     let output = await this.transl(input, targetLang, sourceLang);
     if (!output) throw new ApiError(502, "Translation service returned nothing");
 
     if (/^[A-Z]/.test(input)) output = output.charAt(0).toUpperCase() + output.slice(1);
 
-    await db.table("text").ensure({ id: textId, lang: targetLang, text: output });
+    await db.table("text_lang").ensure({ text_id: textId, lang: targetLang, text: output });
     return true;
   }
 
@@ -188,13 +188,13 @@ class CmsTextService {
     const SPACE = 0; // cms_vers::$space — cms.versions not ported yet
     const rows = await this.#app.db.query<{ text: string | null; log_id: number; log_time: number; email: string | null }>`
       SELECT text.text, log.id as log_id, log.time as log_time, usr.username as email
-      FROM _vers_text text
+      FROM _vers_text_lang text
       LEFT JOIN log ON text._vers_log = log.id
       LEFT JOIN sess ON log.sess_id = sess.id
       LEFT JOIN usr ON sess.usr_id = usr.id
       WHERE
         text._vers_log <> 0
-        AND text.id = ${textId}
+        AND text.text_id = ${textId}
         AND text.lang = ${lang}
         AND text._vers_space = ${SPACE}
       ORDER BY text._vers_log DESC
@@ -206,9 +206,9 @@ class CmsTextService {
   async isTranslated(textIds: number | number[], lang = this.ctx.lang) {
     const ids = (Array.isArray(textIds) ? textIds : [textIds]).map(Number).filter(Number.isFinite);
     if (!ids.length) return Array.isArray(textIds) ? {} : false;
-    const rows = await this.#app.db.query<{ id: number; text: string | null }>`SELECT id, text FROM text WHERE ${sql.in("id", ids)} AND lang = ${lang}`;
+    const rows = await this.#app.db.query<{ text_id: number; text: string | null }>`SELECT text_id, text FROM text_lang WHERE ${sql.in("text_id", ids)} AND lang = ${lang}`;
     const map: Record<number, boolean> = {};
-    for (const row of rows) map[row.id] = !!row.text;
+    for (const row of rows) map[row.text_id] = !!row.text;
     if (!Array.isArray(textIds)) return map[ids[0]] ?? false;
     return Object.fromEntries(ids.map(id => [id, map[id] ?? false]));
   }

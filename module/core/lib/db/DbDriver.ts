@@ -214,14 +214,15 @@ class SqliteDriver extends DbDriver {
   async columns(table: string) {
     // Map PRAGMA table_info → MySQL SHOW FULL COLUMNS shape so DbField stays dialect-free.
     const rows = await this.query(`PRAGMA table_info(${this.quoteId(table)})`);
+    const solo = rows.filter((c) => c.pk).length === 1;
     return rows.map((c) => ({
       Field: c.name,
       Type: c.type || "text",
       Null: c.notnull ? "NO" : "YES",
       Key: c.pk ? "PRI" : "",
       Default: c.dflt_value,
-      // INTEGER PRIMARY KEY is SQLite's auto-incrementing rowid alias.
-      Extra: c.pk && /int/i.test(c.type) ? "auto_increment" : "",
+      // Only a sole `INTEGER PRIMARY KEY` is SQLite's auto-incrementing rowid alias.
+      Extra: c.pk && solo && /^integer$/i.test(c.type) ? "auto_increment" : "",
     }));
   }
   // Only AUTOINCREMENT tables keep a counter; without one (or without the table) there is nothing to move.

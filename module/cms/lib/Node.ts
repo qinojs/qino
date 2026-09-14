@@ -385,7 +385,7 @@ export class Node {
         const texts = await this.texts();
         const text = texts.get(name);
         if (!text) return;
-        await this.db.table("text").deleteWhere({ id: text.id }); // composite key (id, lang): every language row goes
+        await this.db.table("text").delete(text.id); // cascades to text_lang
         texts.delete(name);
     }
 

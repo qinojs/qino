@@ -409,11 +409,19 @@
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "log"
-          },
-          "log_id_ch": {
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "text_lang": {
+      "additionalProperties": {
+        "properties": {
+          "text_id": {
             "type": "integer",
-            "x-index": true,
-            "x-qg-parent": "log"
+            "x-index": "primary",
+            "x-qg-parent": "text",
+            "x-qg-on-parent-delete": "cascade"
           },
           "lang": {
             "type": "string",
@@ -423,9 +431,14 @@
           "text": {
             "type": "string",
             "x-index": "fulltext"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log"
           }
         },
-        "required": ["id", "lang", "text"]
+        "required": ["text_id", "lang", "text"]
       }
     },
     "usr": {

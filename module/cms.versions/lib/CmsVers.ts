@@ -83,17 +83,19 @@ export async function copyNode(
         await tableEntriesCopyTo(db, "page_text", { page_id: id }, fromSpace, fromLog, toSpace);
         await tableEntriesCopyTo(db, "page_url",  { page_id: id }, fromSpace, fromLog, toSpace);
 
+        const copyText = async (tid: unknown) => {
+            await tableEntriesCopyTo(db, "text", { id: tid }, fromSpace, fromLog, toSpace);
+            await tableEntriesCopyTo(db, "text_lang", { text_id: tid }, fromSpace, fromLog, toSpace);
+        };
+
         // Copy title text
         const toPageView = ensureView(db, "page", toSpace, 0);
         const titleId = await db.one`SELECT title_id FROM ${sql.id(toPageView)} WHERE id = ${id}`;
-        if (titleId) await tableEntriesCopyTo(db, "text", { id: titleId }, fromSpace, fromLog, toSpace);
+        if (titleId) await copyText(titleId);
 
         // Copy content texts
         const toTextView = ensureView(db, "page_text", toSpace, 0);
-        const textIds = await db.col`SELECT text_id FROM ${sql.id(toTextView)} WHERE page_id = ${id}`;
-        for (const tid of textIds) {
-            await tableEntriesCopyTo(db, "text", { id: tid }, fromSpace, fromLog, toSpace);
-        }
+        for (const tid of await db.col`SELECT text_id FROM ${sql.id(toTextView)} WHERE page_id = ${id}`) await copyText(tid);
 
         // Copy files
         const toFileView = ensureView(db, "page_file", toSpace, 0);

@@ -21,7 +21,7 @@ Deno.test("historicalViews: routes reads while open, drops every view on dispose
 
   {
     await using _v = await historicalViews(ctx, 0, 5);
-    assertEquals((await views(app)).length, 6);
+    assertEquals((await views(app)).length, 7);
     assertEquals(!!ctx.state.dbScope.tables, true);
   }
 
