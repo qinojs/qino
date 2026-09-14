@@ -149,6 +149,11 @@ export class DbTable {
     return sql.join(frags, isSet ? ", " : " AND ");
   }
 
+  /**
+   * Returns the canonical entry id — on a composite key that is the joined, encoded form.
+   * Generated ids are also written back into `values`: callers that need a single generated
+   * column read it there, the return value cannot carry it.
+   */
   async insert(values: Record<string, any> = {}): Promise<string | undefined> {
     const eBefore: any = { table: this, data: values, returnValue: undefined };
     await this.#db.fire("table:insert-before", eBefore);
