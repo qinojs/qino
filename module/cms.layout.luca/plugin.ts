@@ -27,12 +27,9 @@ html {
   /* --width: 68rem; */ /* measure of header, content and footer */
 }
 #container { /* nesting syntax */
-  #head {
-  }
-  #content {
-  }
-  #foot {
-  }
+  #head { }
+  #content { }
+  #foot { }
 }
 `;
 
