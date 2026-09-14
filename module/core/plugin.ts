@@ -4,7 +4,6 @@ import { isOn, Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
-import { migrateTextLang } from "./lib/migrateTextLang.ts";
 import { pendingLogin } from "./lib/auth/factors.ts";
 
 import type { App } from "./lib/App.ts";
@@ -123,7 +122,6 @@ export const ctxSettingsSchema = {
 export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     registerRows(app.db);
-    await migrateTextLang(app.db);
 
     const settings = app.settings.core;
     if (!await settings._secret) await settings._secret(randB64(32));

@@ -1,30 +1,37 @@
 import type { Db } from "./db/Db.ts";
 
+const has = async (db: Db, table: string) => !!(await db.columns(table).catch(() => [])).length;
+
 /** One-off: `text` carried (id, lang, text), which no dialect can auto-increment on a composite
  *  key — on SQLite every generate() left a row with a NULL id behind. The language rows now live
  *  in `text_lang`, `text` keeps the identity. Ids stay, so page.title_id keeps pointing home.
  *
  *  Removable once every installation has booted once (> 1.0).
  *
- *  `text` is dropped rather than renamed: its indexes carry their names along and would collide
- *  with the ones the new table wants. `text_ids` holds the identities meanwhile — as a table, so
- *  an interrupted run resumes instead of losing them. */
-export async function migrateTextLang(db: Db): Promise<void> {
-  const cols = async (t: string) => await db.columns(t).catch(() => []);
-  const legacy = (await cols("text")).some((c) => c.Field === "lang");
-  if (!legacy && !(await cols("text_ids")).length) return;
-  if (legacy) {
-    await db.exec`INSERT INTO text_lang (text_id, lang, text, log_id_ch) SELECT id, lang, text, log_id_ch FROM text WHERE id IS NOT NULL`;
-    // Text history, where cms.versions is installed; the identity alone has none worth keeping.
+ *  Two halves around the schema migration, because that one would change the primary key of a
+ *  table still full of duplicate ids and fail. So the rows are parked in plain copies, the old
+ *  tables are dropped (their indexes go with them), the schema migration builds both tables
+ *  fresh, and the parks are poured back. A run that breaks off resumes from the parks. */
+export async function parkText(db: Db): Promise<void> {
+  if (!(await db.columns("text").catch(() => [])).some((c) => c.Field === "lang")) return;
+  await db.exec`CREATE TABLE text_park AS SELECT id AS text_id, lang, text, log_id, log_id_ch FROM text WHERE id IS NOT NULL`;
+  await db.exec`DROP TABLE text`;
+  // Text history, where cms.versions is installed; the identity alone has none worth keeping.
+  if (!await has(db, "_vers_text")) return;
+  await db.exec`CREATE TABLE text_vers_park AS SELECT id AS text_id, lang, text, log_id_ch, _vers_log, _vers_space, _vers_deleted FROM _vers_text WHERE id IS NOT NULL`;
+  await db.exec`DROP TABLE _vers_text`;
+}
+
+export async function unparkText(db: Db): Promise<void> {
+  if (!await has(db, "text_park")) return;
+  await db.exec`INSERT INTO text (id, log_id) SELECT text_id, MIN(log_id) FROM text_park GROUP BY text_id`;
+  await db.exec`INSERT INTO text_lang (text_id, lang, text, log_id_ch) SELECT text_id, lang, text, log_id_ch FROM text_park`;
+  await db.exec`DROP TABLE text_park`;
+  if (await has(db, "text_vers_park")) {
     await db.exec`INSERT INTO _vers_text_lang (text_id, lang, text, log_id_ch, _vers_log, _vers_space, _vers_deleted)
-      SELECT id, lang, text, log_id_ch, _vers_log, _vers_space, _vers_deleted FROM _vers_text WHERE id IS NOT NULL`.catch(() => {});
-    await db.exec`CREATE TABLE text_ids AS SELECT id, MIN(log_id) AS log_id FROM text WHERE id IS NOT NULL GROUP BY id`;
-    await db.exec`DROP TABLE text`;
-    await db.exec`DROP TABLE _vers_text`.catch(() => {});
-    await db.migrate(db.schema, { patch: true }); // recreates both in their new shape
+      SELECT text_id, lang, text, log_id_ch, _vers_log, _vers_space, _vers_deleted FROM text_vers_park`;
+    await db.exec`DROP TABLE text_vers_park`;
   }
-  await db.exec`INSERT INTO text (id, log_id) SELECT id, log_id FROM text_ids`;
-  await db.exec`DROP TABLE text_ids`;
   await db.syncAutoIncrement("text", "id", Number(await db.one`SELECT MAX(id) FROM text`) || 0);
   await db.loadTables();
 }

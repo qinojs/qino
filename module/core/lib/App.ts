@@ -8,6 +8,7 @@ import { Db } from "./db/Db.ts";
 import { DbFileManager } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
+import { parkText, unparkText } from "./migrateTextLang.ts";
 import { FileTransformer } from "./transform/mod.ts";
 import { ModuleManager } from "./ModuleManager.ts";
 import { StoreManager } from "./StoreManager.ts";
@@ -121,7 +122,9 @@ export class App extends Emitter<AppEvents> {
     async init(): Promise<void> {
         await this.db.ensureDatabase();  // DB must exist before migration queries run against it
         await this.stores.init();
+        await parkText(this.db);         // one-off text/text_lang split, around the schema migration
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
+        await unparkText(this.db);
     }
 
     /** `await using app = new App(...)` — closes the database. Files under `dir` are the caller's. */
