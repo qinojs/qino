@@ -28,7 +28,7 @@ export class Node {
     #texts: Map<string, DbText> | null = null;
     #files: Promise<Map<string, DbFile>> | null = null;
     #filesAll: Map<string, DbFile> | null = null;
-    #urls: Map<string, Record<string, string>> | null = null;
+    #urls: Promise<Map<string, Record<string, string>>> | null = null;
 
     #children: Promise<Map<number, Node>> | null = null;
     #conts: Node[] | null = null;
@@ -482,13 +482,14 @@ export class Node {
     }
 
     /* URLs */
-    async urls(): Promise<Map<string, Record<string, string>>> {
-        if (this.#urls === null) {
-            this.#urls = new Map();
-            const rows = await this.db.query`SELECT lang, url, target FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id}`;
-            for (const row of rows) this.#urls.set(row.lang, row);
-        }
-        return this.#urls;
+    // The promise is the cache, not the map: a half-built map must never be visible to a
+    // second caller, and a clear while the query is in flight just makes the next one re-ask.
+    urls(): Promise<Map<string, Record<string, string>>> {
+        return this.#urls ??= (async () => {
+            const urls = new Map<string, Record<string, string>>();
+            for (const row of await this.db.query`SELECT lang, url, target FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id}`) urls.set(row.lang, row);
+            return urls;
+        })();
     }
 
     async url(lang?: string): Promise<string> {

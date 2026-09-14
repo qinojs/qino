@@ -4,6 +4,8 @@ import type { Db } from "./db/Db.ts";
  *  key — on SQLite every generate() left a row with a NULL id behind. The language rows now live
  *  in `text_lang`, `text` keeps the identity. Ids stay, so page.title_id keeps pointing home.
  *
+ *  Removable once every installation has booted once (> 1.0).
+ *
  *  `text` is dropped rather than renamed: its indexes carry their names along and would collide
  *  with the ones the new table wants. `text_ids` holds the identities meanwhile — as a table, so
  *  an interrupted run resumes instead of losing them. */
