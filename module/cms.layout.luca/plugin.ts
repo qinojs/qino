@@ -7,7 +7,7 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // Pinned on purpose: this layout's css is written against it, so a newer u2 elsewhere cannot change its look.
-const U2_VERSION = "1.4.6";
+const U2_VERSION = "1.5.17";
 
 const U2_CSS = [
   "css/norm/norm.css",
