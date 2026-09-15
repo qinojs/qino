@@ -80,6 +80,16 @@ export const settingsSchema = {
             description: "API keys per provider host, shared by all modules talking to that provider.",
             additionalProperties: { type: "string" },
         },
+        sess: {
+            description: "Settings for visitor sessions.",
+            properties: {
+                maxIdle: {
+                    type: "integer",
+                    default: 30 * 24 * 60 * 60,
+                    description: "Seconds a session stays valid without a request. A visitor returning later is signed out and gets a new session. Empty or 0 keeps the default.",
+                },
+            },
+        },
         smalltext: {
             properties: {
                 counter: {

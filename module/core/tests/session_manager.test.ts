@@ -153,3 +153,10 @@ Deno.test("SessionManager: settings.core.sess.maxIdle overrides the default", as
   const res = await new SessionManager(app).load("token-1");
   assertEquals(res.isNew, true);
 });
+
+Deno.test("SessionManager: an unreadable access time expires the session", async () => {
+  const db = fakeDb();
+  db.setRow({ id: 7, data: "{}" }); // no access column -> must not read as "still fresh"
+  const res = await new SessionManager(fakeApp(db)).load("token-1");
+  assertEquals(res.isNew, true);
+});

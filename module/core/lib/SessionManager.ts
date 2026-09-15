@@ -76,7 +76,7 @@ export class SessionManager {
     const row = cookieSessionToken
       ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${cookieSessionToken}`
       : null;
-    if (!row || unixTime() - Number(row.access) > await this.maxIdle()) return this.#create();
+    if (!row || unixTime() - (Number(row.access) || 0) > await this.maxIdle()) return this.#create(); // unreadable access = expired
     const sess = new Session(this.#db, row.id, cookieSessionToken!, row.data, false);
     sess.settings = row.settings;
     sess.access = Number(row.access) || 0;
