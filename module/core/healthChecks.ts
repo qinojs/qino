@@ -236,53 +236,46 @@ export async function healthChecks(app: App) {
 
   // ── cache ────────────────────────────────────────────────────────────────
   const cacheDir = app.dir + "cache/";
-  const TWO_DAYS = 60 * 60 * 24 * 2 * 1000;
+  const HOUR = 60 * 60 * 1000;
+  const DAY  = 24 * HOUR;
 
-  async function countCacheFiles(dir: string, maxAge: number): Promise<number> {
-    let i = 0;
+  // Counts stale files, or deletes them and sums their size. Counting stops early — the checks only
+  // ask whether there are many. Every file is treated alike: one being written keeps its mtime fresh,
+  // so the age threshold protects it, while an abandoned one ages out like anything else.
+  async function staleFiles(dir: string, maxAge: number, del = false): Promise<number> {
+    let n = 0;
     try {
       for await (const entry of Deno.readDir(dir)) {
-        if (entry.name.startsWith(".")) continue;
         const full = dir + entry.name;
-        i += entry.isDirectory
-          ? await countCacheFiles(full + "/", maxAge)
-          : (stat => (stat.atime?.getTime() ?? 0) < Date.now() - maxAge ? 1 : 0)(await Deno.stat(full));
-        if (i > 100) break;
+        if (entry.isDirectory) { n += await staleFiles(full + "/", maxAge, del); if (!del && n > 100) break; continue; }
+        const stat = await Deno.stat(full);
+        // atime is unreliable (relatime lags, noatime never updates), mtime is what FileTransformer
+        // keeps ticking on a hit — so the later of the two, and no timestamp at all means keep.
+        const used = Math.max(stat.mtime?.getTime() ?? 0, stat.atime?.getTime() ?? 0);
+        if (!used || Date.now() - used < maxAge) continue;
+        if (del) n += stat.size, await Deno.remove(full);
+        else if (++n > 100) break;
       }
     } catch { /* dir may not exist */ }
-    return i;
-  }
-
-  async function deleteCacheFiles(dir: string, maxAge: number): Promise<number> {
-    let size = 0;
-    try {
-      for await (const entry of Deno.readDir(dir)) {
-        if (entry.name.startsWith(".")) continue;
-        const full = dir + entry.name;
-        if (entry.isDirectory) { size += await deleteCacheFiles(full + "/", maxAge); continue; }
-        const stat = await Deno.stat(full);
-        if ((stat.atime?.getTime() ?? 0) < Date.now() - maxAge) { size += stat.size; await Deno.remove(full); }
-      }
-    } catch { /* skip */ }
-    return size;
+    return n;
   }
 
   const kb = (bytes: number) => (bytes / 1000).toFixed(1) + " kb cleaned";
 
   cleanup["delete cache"] = async () => {
-    if (await countCacheFiles(cacheDir, TWO_DAYS) < 100) return;
+    if (await staleFiles(cacheDir, 2 * DAY) < 100) return;
+    const older = (age: number) => ({ solve: async () => kb(await staleFiles(cacheDir, age, true)) });
     return {
       info: "100+ files",
       solutions: {
-        all:          { solve: async () => kb(await deleteCacheFiles(cacheDir,        TWO_DAYS)) },
-        "temp files": { solve: async () => kb(await deleteCacheFiles(app.dir + "tmp/", TWO_DAYS)) },
+        "older than 3 months": older(90 * DAY),
+        "older than 1 month":  older(30 * DAY),
+        "older than 1 week":   older(7 * DAY),
+        // a grace period, so a request never loses the file it just wrote
+        everything:            older(5 * 60_000),
+        "temp files":          { solve: async () => kb(await staleFiles(app.dir + "tmp/", HOUR, true)) },
       },
     };
-  };
-
-  cleanup["clean files-cache"] = async () => {
-    if (await countCacheFiles(cacheDir, 60 * 1000) < 100) return;
-    return { solutions: { run: { solve: async () => kb(await deleteCacheFiles(cacheDir, 60 * 1000)) } } };
   };
 
   return { error, warning, notice, cleanup };
