@@ -17,18 +17,18 @@ const ms = (n: number) => n.toFixed(n < 10 ? 1 : 0) + " ms";
 
 /** What is known without running the check; the remaining cells arrive through the `check` part.
  *  The type sorts by severity, not alphabetically — hence its rank as sort value. */
-const knownCells = (type: string, rank: number, check: string, mod?: string, passed = false) =>
+const knownCells = (type: string, rank: number, check: string, mod: string, passed = false) =>
   html`<td>${mod}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(check)}`;
 
 // Every check as an empty row — the client fills them in one by one.
 async function table(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  const types = await getHealthChecks(node.app);
-
   const rows: HtmlString[] = [];
-  for (const [rank, [type, checks]] of Object.entries(types).entries()) {
-    for (const [check, checkFn] of Object.entries(checks)) {
-      rows.push(html`<tr data-type="${type}" data-item="${check}">${knownCells(type, rank, check, checkFn.mod)}<td>…<td><td class=-time>`);
+  for (const [rank, [type, mods]] of Object.entries(await getHealthChecks(node.app)).entries()) {
+    for (const [mod, checks] of Object.entries(mods)) {
+      for (const check of Object.keys(checks)) {
+        rows.push(html`<tr data-type="${type}" data-mod="${mod}" data-item="${check}">${knownCells(type, rank, check, mod)}<td>…<td><td class=-time>`);
+      }
     }
   }
 
@@ -52,9 +52,10 @@ async function table(node: Node): Promise<HtmlString> {
 // One row, run on demand: the check itself plus how long it took.
 async function check(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
   const type = String(vars.type);
+  const mod  = String(vars.mod);
   const item = String(vars.item);
   const types = await getHealthChecks(node.app);
-  const checkFn = types[type]?.[item];
+  const checkFn = types[type]?.[mod]?.[item];
   if (!checkFn) return html`<td colspan=6>`;
 
   let data: CheckResult;
@@ -71,9 +72,9 @@ async function check(node: Node, { vars }: { vars: Record<string, unknown> }): P
     ? ""
     : html`<span class=-ok>&#10003;</span>`;
 
-  return html`${knownCells(type, Object.keys(types).indexOf(type), item, checkFn.mod, !data && !failed)}
+  return html`${knownCells(type, Object.keys(types).indexOf(type), item, mod, !data && !failed)}
   <td>${message}
-  <td>${data ? solutionsHtml(type, item, data) : ""}
+  <td>${data ? solutionsHtml(data) : ""}
   <td class=-time data-value="${took.toFixed(1)}">${ms(took)}`;
 }
 

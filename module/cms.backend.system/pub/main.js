@@ -17,7 +17,7 @@ cms.initNode("backend.system", (el) => {
   // one after another: every check re-collects the registry, so parallel runs only pile up load
   (async () => {
     for (const box of el.querySelectorAll(".healty_item[data-item]")) {
-      const inner = await node.html.part("health-item").post({ vars: { type: box.dataset.type, item: box.dataset.item } });
+      const inner = await node.html.part("health-item").post({ vars: { type: box.dataset.type, mod: box.dataset.mod, item: box.dataset.item } });
       if (!inner.trim()) { box.remove(); continue; }
       box.innerHTML = inner;
       box.classList.add("-" + box.dataset.type);
@@ -36,17 +36,17 @@ cms.initNode("backend.system", (el) => {
     const btn = e.target.closest("button[data-solution]");
     if (!btn) return;
     e.preventDefault();
-    const type     = btn.closest("[data-type]").getAttribute("data-type");
-    const item     = btn.closest("[data-item]").getAttribute("data-item");
+    const box      = btn.closest(".healty_item");
+    const { type, mod, item } = box.dataset;
     const solution = btn.getAttribute("data-solution");
     const form     = btn.closest("form");
     const formData = form ? Object.fromEntries(new FormData(form)) : {};
 
     btn.disabled = true;
-    const result = await node.api.post({ solve_health_item: { type, item, solution, formData } });
+    const result = await node.api.post({ solve_health_item: { type, mod, item, solution, formData } });
     btn.disabled = false;
 
-    result?.done ? btn.closest(".healty_item").remove() : await alert("failed?");
+    result?.done ? box.remove() : await alert("failed?");
     if (result?.response) await alert(result.response);
   });
 });

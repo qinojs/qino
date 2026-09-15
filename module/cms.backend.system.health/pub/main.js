@@ -4,7 +4,7 @@ cms.initNode("backend.system.health", (el) => {
   const { node, refresh, alert } = nodePanel(el, ["table"]);
 
   const loadRow = async (row) => {
-    row.innerHTML = await node.html.part("check").post({ vars: { type: row.dataset.type, item: row.dataset.item } });
+    row.innerHTML = await node.html.part("check").post({ vars: { type: row.dataset.type, mod: row.dataset.mod, item: row.dataset.item } });
     row.classList.toggle("-passed", !!row.querySelector(".u2-badge.-passed"));
   };
 
@@ -42,7 +42,7 @@ cms.initNode("backend.system.health", (el) => {
 
     btn.disabled = true;
     const result = await node.api.post({
-      solve_health_item: { type: row.dataset.type, item: row.dataset.item, solution, formData },
+      solve_health_item: { type: row.dataset.type, mod: row.dataset.mod, item: row.dataset.item, solution, formData },
     }).catch((err) => ({ response: err?.message || String(err) }));
 
     if (result?.response) await alert(result.response);

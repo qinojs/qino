@@ -10,9 +10,9 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
 
   const itemData = vars.solve_health_item;
   if (!itemData || typeof itemData !== "object") return;
-  const { type, item, solution, formData } = itemData as Record<string, unknown>;
+  const { type, mod, item, solution, formData } = itemData as Record<string, unknown>;
 
-  const checkFn = types[String(type)]?.[String(item)];
+  const checkFn = types[String(type)]?.[String(mod)]?.[String(item)];
   if (!checkFn) return { done: false, response: "check not found" };
 
   const data = await checkFn();

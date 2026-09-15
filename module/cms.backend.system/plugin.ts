@@ -55,15 +55,15 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── health checks ──────────────────────────────────────────────────────
   // Placeholders only — the client runs the checks one by one through the `health-item` part.
-  const types = await getHealthChecks(app);
-
   const items: HtmlString[] = [];
-  for (const [type, checks] of Object.entries(types)) {
-    for (const [name, checkFn] of Object.entries(checks)) {
-      items.push(html`<div class=healty_item data-type="${type}" data-item="${name}">
-  <small>${checkFn.mod}</small><br>
+  for (const [type, mods] of Object.entries(await getHealthChecks(app))) {
+    for (const [mod, checks] of Object.entries(mods)) {
+      for (const name of Object.keys(checks)) {
+        items.push(html`<div class=healty_item data-type="${type}" data-mod="${mod}" data-item="${name}">
+  <small>${mod}</small><br>
   <strong>${cap(name)}</strong>
 </div>`);
+      }
     }
   }
 
@@ -124,11 +124,9 @@ async function render(node: Node): Promise<HtmlString> {
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
-  const types = await getHealthChecks(app);
-
   let errors = 0, warnings = 0;
-  for (const [type, checks] of Object.entries(types)) {
-    for (const checkFn of Object.values(checks)) {
+  for (const [type, mods] of Object.entries(await getHealthChecks(app))) {
+    for (const checkFn of Object.values(mods).flatMap((checks) => Object.values(checks))) {
       let result;
       try { result = await checkFn(); } catch { continue; }
       if (!result) continue;
@@ -253,18 +251,19 @@ async function sqliteBox(node: Node): Promise<HtmlString> {
 // One health box, run on demand: nothing when the check passes.
 async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
   const type = String(vars.type);
+  const mod  = String(vars.mod);
   const item = String(vars.item);
-  const checkFn = (await getHealthChecks(node.app))[type]?.[item];
+  const checkFn = (await getHealthChecks(node.app))[type]?.[mod]?.[item];
   if (!checkFn) return html.raw("");
 
   let data: CheckResult;
   try { data = await checkFn(); } catch { return html.raw(""); }
   if (!data) return html.raw("");
 
-  return html`<small>${checkFn.mod}</small><br>
+  return html`<small>${mod}</small><br>
   <strong>${cap(item)}</strong>
   ${data.info ? html`<p>${html.raw(data.info)}</p>` : ""}
-  <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(type, item, data)}</div>`;
+  <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(data)}</div>`;
 }
 
 async function dbDetails(node: Node): Promise<HtmlString> {

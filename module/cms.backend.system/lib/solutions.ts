@@ -6,7 +6,7 @@ import type { CheckResult } from "./healthRegistry.ts";
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** The buttons (with optional input form) that run a check's solutions through the node api. */
-export function solutionsHtml(type: string, item: string, data: NonNullable<CheckResult>): HtmlString | string {
+export function solutionsHtml(data: NonNullable<CheckResult>): HtmlString | string {
   const solutions = Object.entries(data.solutions ?? {});
   if (!solutions.length) return "";
 
@@ -19,12 +19,12 @@ export function solutionsHtml(type: string, item: string, data: NonNullable<Chec
     }
     return html`<form>
   ${formFields.length ? html`<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
-  <button data-type="${type}" data-item="${item}" data-solution="${solution}">${cap(solution)}</button>
+  <button data-solution="${solution}">${cap(solution)}</button>
 </form>`;
   }
 
   const menuItems = solutions.map(([solution]) =>
-    html`<li><button data-type="${type}" data-item="${item}" data-solution="${solution}">${cap(solution)}</button>`
+    html`<li><button data-solution="${solution}">${cap(solution)}</button>`
   );
   return html`<form><u2-menubutton>
   <button type=button>solve ▾</button>
