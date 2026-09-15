@@ -12,11 +12,9 @@ export function solutionsHtml(data: NonNullable<CheckResult>): HtmlString | stri
 
   if (solutions.length === 1) {
     const [solution, solveData] = solutions[0];
-    const formFields: HtmlString[] = [];
-    for (const [fname, field] of Object.entries(solveData.form ?? {})) {
-      const inputType = typeof field.type === "string" ? field.type : "text";
-      formFields.push(html`<tr><td>${cap(fname)}:<td><input name="${fname}" type="${inputType}">`);
-    }
+    const formFields = Object.entries(solveData.form ?? {}).map(([fname, field]) =>
+      html`<tr><td>${cap(fname)}:<td><input name="${fname}" type="${typeof field.type === "string" ? field.type : "text"}">`
+    );
     return html`<form>
   ${formFields.length ? html`<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
   <button data-solution="${solution}">${cap(solution)}</button>

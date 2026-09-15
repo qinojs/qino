@@ -121,11 +121,12 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   let errors = 0, warnings = 0;
   for (const { type, run } of await getHealthChecks(app)) {
+    if (type !== "error" && type !== "warning") continue; // the other severities are not counted, so do not pay for them
     let result;
     try { result = await run(); } catch { continue; }
     if (!result) continue;
     if (type === "error") errors++;
-    else if (type === "warning") warnings++;
+    else warnings++;
   }
 
   const badge = (n: number, label: string, color: string) =>

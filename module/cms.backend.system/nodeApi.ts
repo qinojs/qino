@@ -15,7 +15,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
   const solveFn = data.solutions?.[String(itemData.solution)]?.solve;
   if (!solveFn) return { done: false, response: "solution not found" };
 
-  const formData = itemData.formData;
-  const response = await solveFn(formData && typeof formData === "object" ? formData as Record<string, unknown> : undefined);
+  const { formData } = itemData;
+  const response = await solveFn(formData instanceof Object ? formData as Record<string, unknown> : undefined);
   return { done: true, response };
 }
