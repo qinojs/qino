@@ -38,6 +38,8 @@ export const api: ApiTree = {
     put: {
       description: "Save file from the file editor.",
       access: Access.USER,
+      // writing a runtime-loaded script is code execution, so it is worth a fresh proof
+      requireStepUp: true,
       input: s.object({ file: s.string(), content: s.string(), exp: s.optional(s.string()), sig: s.optional(s.string()) }),
       execute: ({ file, content, exp, sig }: Params, ctx: Ctx) => saveFile(ctx, String(file), String(content), exp, sig),
     },
