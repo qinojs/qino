@@ -4,14 +4,14 @@ cms.initNode("backend.system.health", (el) => {
   const { node, refresh, alert } = nodePanel(el, ["table"]);
 
   const loadRow = async (row) => {
-    row.innerHTML = await node.html.part("check").post({ vars: { type: row.dataset.type, mod: row.dataset.mod, item: row.dataset.item } });
+    row.innerHTML = await node.html.part("check").post({ vars: row.dataset });
     row.classList.toggle("-passed", !!row.querySelector(".u2-badge.-passed"));
   };
 
   // one after another: every check re-collects the registry, so parallel runs only pile up load
   const loadAll = async () => {
     let sum = 0;
-    for (const row of el.querySelectorAll("tr[data-item]")) {
+    for (const row of el.querySelectorAll("tr[data-name]")) {
       await loadRow(row);
       sum += parseFloat(row.querySelector(".-time")?.textContent) || 0;
       el.querySelector(".-total").textContent = Math.round(sum) + " ms";
@@ -35,14 +35,14 @@ cms.initNode("backend.system.health", (el) => {
     const btn = e.target.closest("button[data-solution]");
     if (!btn) return;
     e.preventDefault();
-    const row      = btn.closest("tr[data-item]");
+    const row      = btn.closest("tr[data-name]");
     const solution = btn.getAttribute("data-solution");
     const form     = btn.closest("form");
     const formData = form ? Object.fromEntries(new FormData(form)) : {};
 
     btn.disabled = true;
     const result = await node.api.post({
-      solve_health_item: { type: row.dataset.type, mod: row.dataset.mod, item: row.dataset.item, solution, formData },
+      solve_health_item: { ...row.dataset, solution, formData },
     }).catch((err) => ({ response: err?.message || String(err) }));
 
     if (result?.response) await alert(result.response);

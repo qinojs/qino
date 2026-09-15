@@ -1,10 +1,10 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { cap, getHealthChecks, healthApi, solutionsHtml } from "@qino/qino/cms.backend.system";
+import { cap, findCheck, getHealthChecks, healthApi, solutionsHtml } from "@qino/qino/cms.backend.system";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
-import type { CheckResult } from "@qino/qino/cms.backend.system";
+import type { Check, CheckResult } from "@qino/qino/cms.backend.system";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -17,20 +17,15 @@ const ms = (n: number) => n.toFixed(n < 10 ? 1 : 0) + " ms";
 
 /** What is known without running the check; the remaining cells arrive through the `check` part.
  *  The type sorts by severity, not alphabetically — hence its rank as sort value. */
-const knownCells = (type: string, rank: number, check: string, mod: string, passed = false) =>
-  html`<td>${mod}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(check)}`;
+const knownCells = ({ type, rank, mod, name }: Check, passed = false) =>
+  html`<td>${mod}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(name)}`;
 
 // Every check as an empty row — the client fills them in one by one.
 async function table(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  const rows: HtmlString[] = [];
-  for (const [rank, [type, mods]] of Object.entries(await getHealthChecks(node.app)).entries()) {
-    for (const [mod, checks] of Object.entries(mods)) {
-      for (const check of Object.keys(checks)) {
-        rows.push(html`<tr data-type="${type}" data-mod="${mod}" data-item="${check}">${knownCells(type, rank, check, mod)}<td>…<td><td class=-time>`);
-      }
-    }
-  }
+  const rows = (await getHealthChecks(node.app)).map((check) =>
+    html`<tr data-type="${check.type}" data-mod="${check.mod}" data-name="${check.name}">${knownCells(check)}<td>…<td><td class=-time>`
+  );
 
   return html.async`<u2-table><table class=u2-table>
   <thead>
@@ -51,17 +46,13 @@ async function table(node: Node): Promise<HtmlString> {
 
 // One row, run on demand: the check itself plus how long it took.
 async function check(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
-  const type = String(vars.type);
-  const mod  = String(vars.mod);
-  const item = String(vars.item);
-  const types = await getHealthChecks(node.app);
-  const checkFn = types[type]?.[mod]?.[item];
-  if (!checkFn) return html`<td colspan=6>`;
+  const check = findCheck(await getHealthChecks(node.app), vars);
+  if (!check) return html`<td colspan=6>`;
 
   let data: CheckResult;
   let failed = "";
   const started = performance.now();
-  try { data = await checkFn(); } catch (e) { failed = String(e); }
+  try { data = await check.run(); } catch (e) { failed = String(e); }
   const took = performance.now() - started;
 
   const message = failed
@@ -72,7 +63,7 @@ async function check(node: Node, { vars }: { vars: Record<string, unknown> }): P
     ? ""
     : html`<span class=-ok>&#10003;</span>`;
 
-  return html`${knownCells(type, Object.keys(types).indexOf(type), item, mod, !data && !failed)}
+  return html`${knownCells(check, !data && !failed)}
   <td>${message}
   <td>${data ? solutionsHtml(data) : ""}
   <td class=-time data-value="${took.toFixed(1)}">${ms(took)}`;

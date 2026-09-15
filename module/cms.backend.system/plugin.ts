@@ -1,7 +1,7 @@
 import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import { getHealthChecks } from "./lib/healthRegistry.ts";
+import { findCheck, getHealthChecks } from "./lib/healthRegistry.ts";
 import { cap, solutionsHtml } from "./lib/solutions.ts";
 import { markInstance } from "./lib/instanceMarker.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
@@ -55,17 +55,12 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── health checks ──────────────────────────────────────────────────────
   // Placeholders only — the client runs the checks one by one through the `health-item` part.
-  const items: HtmlString[] = [];
-  for (const [type, mods] of Object.entries(await getHealthChecks(app))) {
-    for (const [mod, checks] of Object.entries(mods)) {
-      for (const name of Object.keys(checks)) {
-        items.push(html`<div class=healty_item data-type="${type}" data-mod="${mod}" data-item="${name}">
+  const items = (await getHealthChecks(app)).map(({ type, mod, name }) =>
+    html`<div class=healty_item data-type="${type}" data-mod="${mod}" data-name="${name}">
   <small>${mod}</small><br>
   <strong>${cap(name)}</strong>
-</div>`);
-      }
-    }
-  }
+</div>`
+  );
 
   const healthBox = html.async`
 <div class=u2-card>
@@ -125,14 +120,12 @@ async function render(node: Node): Promise<HtmlString> {
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   let errors = 0, warnings = 0;
-  for (const [type, mods] of Object.entries(await getHealthChecks(app))) {
-    for (const checkFn of Object.values(mods).flatMap((checks) => Object.values(checks))) {
-      let result;
-      try { result = await checkFn(); } catch { continue; }
-      if (!result) continue;
-      if (type === "error") errors++;
-      else if (type === "warning") warnings++;
-    }
+  for (const { type, run } of await getHealthChecks(app)) {
+    let result;
+    try { result = await run(); } catch { continue; }
+    if (!result) continue;
+    if (type === "error") errors++;
+    else if (type === "warning") warnings++;
   }
 
   const badge = (n: number, label: string, color: string) =>
@@ -250,18 +243,15 @@ async function sqliteBox(node: Node): Promise<HtmlString> {
 
 // One health box, run on demand: nothing when the check passes.
 async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
-  const type = String(vars.type);
-  const mod  = String(vars.mod);
-  const item = String(vars.item);
-  const checkFn = (await getHealthChecks(node.app))[type]?.[mod]?.[item];
-  if (!checkFn) return html.raw("");
+  const check = findCheck(await getHealthChecks(node.app), vars);
+  if (!check) return html.raw("");
 
   let data: CheckResult;
-  try { data = await checkFn(); } catch { return html.raw(""); }
+  try { data = await check.run(); } catch { return html.raw(""); }
   if (!data) return html.raw("");
 
-  return html`<small>${mod}</small><br>
-  <strong>${cap(item)}</strong>
+  return html`<small>${check.mod}</small><br>
+  <strong>${cap(check.name)}</strong>
   ${data.info ? html`<p>${html.raw(data.info)}</p>` : ""}
   <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(data)}</div>`;
 }

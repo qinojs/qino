@@ -1,26 +1,21 @@
-import { getHealthChecks } from "./lib/healthRegistry.ts";
+import { findCheck, getHealthChecks } from "./lib/healthRegistry.ts";
 
 import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {
-  if (!vars?.solve_health_item) return;
-
-  const app = node.app;
-  const types = await getHealthChecks(app);
-
-  const itemData = vars.solve_health_item;
+  const itemData = vars?.solve_health_item as Record<string, unknown> | undefined;
   if (!itemData || typeof itemData !== "object") return;
-  const { type, mod, item, solution, formData } = itemData as Record<string, unknown>;
 
-  const checkFn = types[String(type)]?.[String(mod)]?.[String(item)];
-  if (!checkFn) return { done: false, response: "check not found" };
+  const check = findCheck(await getHealthChecks(node.app), itemData);
+  if (!check) return { done: false, response: "check not found" };
 
-  const data = await checkFn();
+  const data = await check.run();
   if (!data) return { done: false, response: "check returned no data" };
 
-  const solveFn = data.solutions?.[String(solution)]?.solve;
+  const solveFn = data.solutions?.[String(itemData.solution)]?.solve;
   if (!solveFn) return { done: false, response: "solution not found" };
 
+  const formData = itemData.formData;
   const response = await solveFn(formData && typeof formData === "object" ? formData as Record<string, unknown> : undefined);
   return { done: true, response };
 }

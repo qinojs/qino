@@ -14,17 +14,25 @@ export type CheckResult = {
 
 export type CheckFn = () => Promise<CheckResult> | CheckResult;
 
-/** What a module exports: its checks grouped by severity — error, warning, notice, cleanup, repair. */
+/** What a module exports: its checks grouped by severity. */
 export type HealthChecks = Record<string, Record<string, CheckFn>>;
-/** The collected registry: severity, then module name, then check. A check is addressed by all three. */
-export type HealthRegistry = Record<string, Record<string, Record<string, CheckFn>>>;
 
-/** Collects the healthChecks hook of every linked module under its module name. */
-export async function getHealthChecks(app: App): Promise<HealthRegistry> {
-  const types: HealthRegistry = { error: {}, warning: {}, notice: {}, cleanup: {}, repair: {} };
+/** One registered check. `type` and `mod` and `name` together address it; `rank` sorts by severity. */
+export type Check = { type: string; rank: number; mod: string; name: string; run: CheckFn };
+
+const SEVERITY = ["error", "warning", "notice", "cleanup", "repair"];
+
+/** The checks of every linked module, flat and sorted by severity. */
+export async function getHealthChecks(app: App): Promise<Check[]> {
+  const all: Check[] = [];
   for (const mod of app.modules.linked()) {
     const checks: HealthChecks | undefined = await mod.plugin.healthChecks?.(app);
-    for (const [type, items] of Object.entries(checks ?? {})) (types[type] ??= {})[mod.name] = items;
+    for (const [type, items] of Object.entries(checks ?? {}))
+      for (const [name, run] of Object.entries(items)) all.push({ type, rank: SEVERITY.indexOf(type), mod: mod.name, name, run });
   }
-  return types;
+  return all.sort((a, b) => a.rank - b.rank);
 }
+
+/** Finds the check a client refers to by its `type`/`mod`/`name` triple. */
+export const findCheck = (checks: Check[], v: Record<string, unknown>): Check | undefined =>
+  checks.find((c) => c.type === v.type && c.mod === v.mod && c.name === v.name);
