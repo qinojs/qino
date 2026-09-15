@@ -109,7 +109,7 @@ export class App extends Emitter<AppEvents> {
         this.dbFiles   = new DbFileManager(this, this.dir + "data/core/file/");
         this.dbTexts   = new DbTextManager(this);
         this.fileTransformer = FileTransformer.create({ cacheDir: this.dir + "cache/core/file/" });
-        this.sessions  = new SessionManager(this.db);
+        this.sessions  = new SessionManager(this);
         this.modules   = new ModuleManager(this);
         this.modules.add(new URL("../plugin.ts", import.meta.url)); // the root of the needs graph — every app has it
         this.stores    = new StoreManager(this);

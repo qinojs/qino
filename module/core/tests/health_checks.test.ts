@@ -1,0 +1,51 @@
+// deno-lint-ignore-file no-explicit-any
+import { assertEquals } from "./deps.ts";
+import { Db } from "../lib/db/Db.ts";
+import { healthChecks } from "../healthChecks.ts";
+import { fakeSettings } from "./appFake.ts";
+
+import dbSchema from "../dbschema.json" with { type: "json" };
+
+// page/page_text live in the cms module; rebuilt here so core stays testable on its own.
+const schema = structuredClone(dbSchema) as any;
+schema.properties.page = { additionalProperties: { properties: {
+  id:       { type: "integer", "x-index": "primary", "x-autoincrement": true },
+  title_id: { type: "integer", "x-index": true, "x-qg-parent": "text", "x-qg-on-parent-delete": "setnull" },
+} } };
+schema.properties.page_text = { additionalProperties: { properties: {
+  page_id: { type: "integer", "x-index": "primary", "x-qg-parent": "page", "x-qg-on-parent-delete": "cascade" },
+  name:    { type: "string", maxLength: 128, "x-index": "primary" },
+  text_id: { type: "integer", "x-index": true, "x-qg-parent": "text", "x-qg-on-parent-delete": "cascade" },
+} } };
+
+async function app() {
+  const db = new Db("sqlite::memory:");
+  await db.migrate(schema);
+  db.schema = schema; // the App does this; children() reads x-qg-parent from it
+  await db.loadTables();
+  await db.exec`INSERT INTO text (id) VALUES (1), (2), (3)`;
+  await db.exec`INSERT INTO text_lang (text_id, lang, text) VALUES (1,'de','in a page'), (2,'de','a title'), (3,'de','orphan')`;
+  await db.exec`INSERT INTO page (id, title_id) VALUES (10, 2)`;
+  await db.exec`INSERT INTO page_text (page_id, name, text_id) VALUES (10, 'main', 1)`;
+  return { db, settings: fakeSettings(), modules: { all: () => new Map() }, [Symbol.asyncDispose]: () => db.close() } as any;
+}
+
+const ids = (db: Db) => db.query`SELECT id FROM text ORDER BY id`.then((r) => r.map((x) => Number(x.id)));
+
+Deno.test("healthChecks: only the text nothing points at counts as unused", async () => {
+  await using a = await app();
+  const found = await (await healthChecks(a)).cleanup["not linked texts"]() as any;
+  assertEquals(found.info, "found 1");
+  assertEquals(await found.solutions.run.solve(), "1 rows deleted\n");
+  assertEquals(await ids(a.db), [1, 2]); // page_text link and page title both keep their text
+});
+
+Deno.test("healthChecks: a text's own language rows are not a use of it", async () => {
+  await using a = await app();
+  await a.db.exec`DELETE FROM page_text`;
+  const found = await (await healthChecks(a)).cleanup["not linked texts"]() as any;
+  assertEquals(found.info, "found 2"); // text 1 is now unlinked, its text_lang row must not save it
+  await found.solutions.run.solve();
+  assertEquals(await ids(a.db), [2]);
+  assertEquals(Number(await a.db.one`SELECT count(*) FROM text_lang`), 1);
+});

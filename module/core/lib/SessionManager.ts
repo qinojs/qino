@@ -6,10 +6,12 @@ import type { ItemProxy } from "../deps.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
 import type { Req } from "./ctx/Req.ts";
 import type { Db } from "./db/Db.ts";
+import type { App } from "./App.ts";
 
 const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qinoSess";
 const TOUCH_INTERVAL = 10; // seconds — `access` is read as "last online", never as an exact time
+const DEFAULT_MAX_IDLE = 30 * 24 * 60 * 60; // seconds a session survives without a request
 
 /** One session: identity (token/id), server-trusted reactive data, and its own touch timer. */
 export class Session {
@@ -54,9 +56,16 @@ export class Session {
 
 export class SessionManager {
   #db: Db;
+  #app: App;
 
-  constructor(db: Db) {
-    this.#db = db;
+  constructor(app: App) {
+    this.#app = app;
+    this.#db = app.db;
+  }
+
+  /** Idle seconds after which a session is dropped; `settings.core.sess.maxIdle` overrides the default. */
+  async maxIdle(): Promise<number> {
+    return Number(await this.#app.settings.core.sess.maxIdle) || DEFAULT_MAX_IDLE;
   }
 
   loadFromRequest(req: Req, https: boolean, appUrl: string): Promise<Session> {
@@ -67,7 +76,7 @@ export class SessionManager {
     const row = cookieSessionToken
       ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${cookieSessionToken}`
       : null;
-    if (!row) return this.#create();
+    if (!row || unixTime() - Number(row.access) > await this.maxIdle()) return this.#create();
     const sess = new Session(this.#db, row.id, cookieSessionToken!, row.data, false);
     sess.settings = row.settings;
     sess.access = Number(row.access) || 0;

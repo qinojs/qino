@@ -154,16 +154,23 @@ export async function healthChecks(app: App) {
     return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.exec`DELETE FROM text_lang WHERE lang = ''`; } } } };
   };
 
-  // MySQL-only fragments; other dialects run without cap/optimize.
-  const limit1M  = db.dialect === "mysql" ? sql.raw(" LIMIT 1000000") : sql``;
+  // MySQL-only; other dialects run without it.
   const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
-  // "no row references this table" condition, built from x-qg-parent child columns.
-  // Cascade children are owned rows (text_lang), not references that keep the parent alive.
-  const notLinked = (table: string) => sql.join(db.table(table).children.filter((f) => f.onParentDelete !== "cascade").map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
+
+  // "no row references this table"; `except` skips columns that are part of the parent, not a use of it.
+  const notLinked = (table: string, except: string[] = []) => {
+    const refs = db.table(table).children.filter((f) => !except.includes(`${f.table.name}.${f.name}`));
+    if (!refs.length) return sql`${false}`; // nothing points here — an empty condition would mean "all unused"
+    return sql.join(
+      refs.map((f) =>
+        sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table.name)} WHERE ${sql.id(f.name)} IS NOT NULL)`
+      ),
+      " AND ",
+    );
+  };
 
   cleanup["not linked texts"] = async () => {
-    if (!db.table("text").children.some((f) => f.onParentDelete !== "cascade")) return;
-    const where = notLinked("text");
+    const where = notLinked("text", ["text_lang.text_id"]);
     const count = Number(await db.one`SELECT count(*) FROM text WHERE ${where}`);
     if (!count) return;
     return {
@@ -171,7 +178,7 @@ export async function healthChecks(app: App) {
       solutions: {
         run: {
           solve: async () => {
-            const res = await db.exec`DELETE FROM text WHERE ${where}${limit1M}`;
+            const res = await db.exec`DELETE FROM text WHERE ${where}`;
             await db.exec`DELETE FROM text_lang WHERE text_id NOT IN (SELECT id FROM text)`;
             await optimize("text");
             return res.affectedRows + " rows deleted\n";
@@ -198,7 +205,7 @@ export async function healthChecks(app: App) {
 
   // ── logs, clients, sessions ──────────────────────────────────────────────
   cleanup["clean logs, clients and sessions"] = () => ({
-    info: "deletes not used and older then one month, can take long!",
+    info: "deletes what is not used any more, can take long!",
     solutions: {
       run: {
         solve: async () => {
@@ -206,24 +213,25 @@ export async function healthChecks(app: App) {
           const monthAgo = unixTime() - (60 * 60 * 24 * 30);
           let msg = "";
 
-          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} AND ${notLinked("log")}${limit1M}`;
+          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} AND ${notLinked("log")}`;
           await optimize("log");
           msg += logRes.affectedRows + " log-rows deleted\n";
 
           for (const table of ["log_url", "log_user_agent", "log_ip"]) {
-            const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${notLinked(table)}${limit1M}`;
+            const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${notLinked(table)}`;
             await optimize(table);
             msg += res.affectedRows + ` ${table}-rows deleted\n`;
           }
 
-          const clientRes = await db.exec`DELETE FROM client WHERE ${notLinked("client")}${limit1M}`;
+          const clientRes = await db.exec`DELETE FROM client WHERE ${notLinked("client")}`;
           await optimize("client");
           msg += clientRes.affectedRows + " client-rows deleted\n";
 
-          const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${monthAgo} AND token IS NOT NULL${limit1M}`;
+          const idleBefore = unixTime() - await app.sessions.maxIdle(); // the same limit load() already enforces
+          const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${idleBefore} AND token IS NOT NULL`;
           msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
 
-          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND ${notLinked("sess")}${limit1M}`;
+          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND ${notLinked("sess")}`;
           await optimize("sess");
           msg += sessRes.affectedRows + " sess-rows deleted\n";
 

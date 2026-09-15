@@ -1,7 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, testContext } from "./deps.ts";
+import { unixTime } from "../lib/util.ts";
 import { Session, SessionManager } from "../lib/SessionManager.ts";
 import { fakeRender } from "./sqlFake.ts";
+import { fakeSettings } from "./appFake.ts";
+
+const fakeApp = (db: unknown) => ({ db, settings: fakeSettings() }) as any;
 
 function fakeDb() {
   const calls: Array<[string, unknown[] | undefined]> = [];
@@ -37,8 +41,8 @@ function fakeDb() {
 
 Deno.test("SessionManager: load returns existing session when token is known", async () => {
   const db = fakeDb();
-  db.setRow({ id: 7, data: '{"core":{"userId":5}}' });
-  const sessions = new SessionManager(db as any);
+  db.setRow({ id: 7, data: '{"core":{"userId":5}}', access: unixTime() });
+  const sessions = new SessionManager(fakeApp(db));
 
   const res = await sessions.load("token-1");
   assertEquals(res.token, "token-1");
@@ -49,7 +53,7 @@ Deno.test("SessionManager: load returns existing session when token is known", a
 
 Deno.test("SessionManager: load creates session without valid cookie", async () => {
   const db = fakeDb();
-  const sessions = new SessionManager(db as any);
+  const sessions = new SessionManager(fakeApp(db));
 
   const res = await sessions.load();
   assertEquals(res.id, "1");
@@ -65,7 +69,7 @@ Deno.test("SessionManager: load creates session without valid cookie", async () 
 Deno.test("SessionManager: regenerateId resets an existing session", async () => {
   const db = fakeDb();
   db.setRow({ id: 9 });
-  const sessions = new SessionManager(db as any);
+  const sessions = new SessionManager(fakeApp(db));
 
   const res = await sessions.regenerateId("old-token");
   assertEquals(res.id, "9");
@@ -78,7 +82,7 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
 });
 
 Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", async () => {
-  const sessions = new SessionManager(fakeDb() as any);
+  const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ url: "http://qino.test/app/", appUrl: "/app/", app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
@@ -86,7 +90,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path moun
 });
 
 Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async () => {
-  const sessions = new SessionManager(fakeDb() as any);
+  const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
@@ -94,7 +98,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async ()
 });
 
 Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", async () => {
-  const sessions = new SessionManager(fakeDb() as any);
+  const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ app: { https: true }, sess: { token: "token", isNew: true, cookieSent: false } });
 
   sessions.setCookieIfNew(ctx);
@@ -128,4 +132,24 @@ Deno.test("Session: parallel sessions touch independently", async () => {
 
   const updates = db.calls.filter(([sql]) => sql === "UPDATE sess");
   assertEquals(updates.length, 2);
+});
+
+Deno.test("SessionManager: a session idle past the limit is not resumed", async () => {
+  const db = fakeDb();
+  db.setRow({ id: 7, data: "{}", access: unixTime() - 31 * 24 * 60 * 60 }); // past the 30-day default
+  const sessions = new SessionManager(fakeApp(db));
+
+  const res = await sessions.load("token-1");
+  assertEquals(res.isNew, true); // a fresh session, not the known row
+  assertEquals(res.id, "1");
+});
+
+Deno.test("SessionManager: settings.core.sess.maxIdle overrides the default", async () => {
+  const db = fakeDb();
+  db.setRow({ id: 7, data: "{}", access: unixTime() - 60 });
+  const app = fakeApp(db);
+  app.settings = fakeSettings({ core: fakeSettings({ sess: fakeSettings({ maxIdle: 30 }) }) });
+
+  const res = await new SessionManager(app).load("token-1");
+  assertEquals(res.isNew, true);
 });
