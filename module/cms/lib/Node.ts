@@ -77,7 +77,8 @@ export class Node {
 
     /* Cache invalidation */
     #clearTreeCache(): void { this.#children = this.#conts = null; }
-    #clearFileCache(): void { this.#files = this.#filesAll = null; }
+    /** Public: a `file` row replaced in place leaves page_file untouched (see cms/plugin.ts). */
+    clearFileCache(): void { this.#files = this.#filesAll = null; }
     #clearUrlCache(): void { this.#urls = null; }
 
     async set(data: string | Record<string, any>, value?: any): Promise<void> {
@@ -446,7 +447,7 @@ export class Node {
         }
         row.name = name;
         await this.db.table("page_file").ensure(row);
-        this.#clearFileCache();
+        this.clearFileCache();
         return dbFile;
     }
 
@@ -460,7 +461,7 @@ export class Node {
         await this.db.table("page_file").delete({ page_id: String(this), name });
         const used = await dbFile.used();
         if (!used) await dbFile.remove();
-        this.#clearFileCache();
+        this.clearFileCache();
         return true;
     }
 
@@ -478,7 +479,7 @@ export class Node {
         await this.db.transaction(() =>
             Promise.all(ordered.map((name, i) => table.update({ page_id: String(this), name, sort: i + 1 }))),
         );
-        this.#clearFileCache();
+        this.clearFileCache();
     }
 
     /* URLs */
@@ -654,7 +655,7 @@ export class Node {
             old2new[String(file.id)] = String(newFile.id);
             await this.db.table("page_file").insert({ page_id: newId, file_id: newFile.id, name });
         }
-        page.#clearFileCache();
+        page.clearFileCache();
 
         if (!isEmptyObject(old2new)) {
             const newTexts = await page.texts();

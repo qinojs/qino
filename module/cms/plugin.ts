@@ -133,6 +133,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         }
     }, { signal });
 
+    // Filling a file row in place (upload into a placeholder) touches no page_file row,
+    // so the nodes holding it have to be told their file list is stale.
+    app.db.on("table:update-after", async (e) => {
+        if (String(e.table) !== "file" || !("md5" in (e.data ?? {}))) return;
+        for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${Number(e.id)}`)
+            (await cms(app).node(Number(vs.page_id))).clearFileCache();
+    }, { signal });
+
     // File access check
     app.on("dbFile:access-fallback", async (e) => {
         if (e.access) return;
