@@ -1,6 +1,8 @@
 [qcms-mod="cont.trash"] {
   .-toolbar {
-    margin-bottom: .625rem;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
   }
   .-list {
     max-width: 90vw;
@@ -9,8 +11,6 @@
   .-item {
     width: 19rem;
     cursor: pointer;
-    background: #fffa;
-    backdrop-filter: blur(1rem);
 
     & strong {
       display: block;

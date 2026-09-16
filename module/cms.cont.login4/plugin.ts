@@ -120,7 +120,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
           tag: "div",
           initial: { en: "Stay logged in:" },
         })}
-      <td><label><input name=save_login type=checkbox value=1 class=c1-fakable><i></i></label>`
+      <td><label><input name=save_login type=checkbox value=1></label>`
         : ""
     }
     <tr class=-login>
