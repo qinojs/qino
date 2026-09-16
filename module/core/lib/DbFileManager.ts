@@ -140,12 +140,20 @@ export class DbFileManager {
     // Cache key as ETag (content identity) – cache-file mtime is unusable, it gets touched for LRU tracking
     const etag = `"qg${key ?? String((await Deno.stat(outputPath).catch(() => null))?.mtime?.getTime() ?? 0)}"`;
     headers.set("ETag", etag);
-    if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
+    const inm = req.headers.get("if-none-match");
+    if (inm ? etagMatch(inm, etag) : Date.parse(req.headers.get("if-modified-since") ?? "") >= mtime! * 1000) {
+      return new Response(null, { status: 304, headers });
+    }
 
     headers.set("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.get("range");
-    if (rangeHeader) {
+    const ifRange = req.headers.get("if-range"); // a stale validator means: send the whole file
+    if (rangeHeader && (!ifRange || ifRange === etag || Date.parse(ifRange) === mtime! * 1000)) {
       const range = await openRange(outputPath, rangeHeader);
+      if (typeof range === "number") {
+        headers.set("Content-Range", `bytes */${range}`);
+        return new Response(null, { status: 416, headers });
+      }
       if (range) {
         headers.set("Content-Range", range.contentRange);
         headers.set("Content-Length", String(range.length));
@@ -338,11 +346,16 @@ function parseTransformOptions(param: Record<string, unknown>): TransformOptions
   return opt;
 }
 
+/** `If-None-Match` per RFC 9110: a list, `*`, and weak tags all match. */
+function etagMatch(header: string, etag: string) {
+  return header === "*" || header.split(",").some((t) => t.trim().replace(/^W\//, "") === etag);
+}
+
 function isTransformRequest(param: Record<string, unknown>): boolean {
   return ['fmt', 'w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame', 'max'].some((k) => k in param);
 }
 
-/** Stream a single `bytes=` range of a file; null = serve the full file instead. */
+/** Stream a single `bytes=` range; a number = unsatisfiable (416, that size), null = serve the full file. */
 async function openRange(filePath: string, rangeHeader: string) {
   const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
   if (!m || (!m[1] && !m[2])) return null;
@@ -352,7 +365,7 @@ async function openRange(filePath: string, rangeHeader: string) {
     const size = (await file.stat()).size;
     const start = m[1] === "" ? Math.max(size - Number(m[2]), 0) : Number(m[1]); // `-n` = last n bytes
     const end = m[1] !== "" && m[2] !== "" ? Math.min(Number(m[2]), size - 1) : size - 1;
-    if (start > end || start >= size) { file.close(); return null; }
+    if (start > end || start >= size) { file.close(); return size; }
     await file.seek(start, Deno.SeekMode.Start);
     const length = end - start + 1;
     let remaining = length;
