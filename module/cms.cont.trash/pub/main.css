@@ -1,37 +1,34 @@
-[qcms-mod="cont.trash"] .-toolbar {
-  margin-bottom: .625rem;
-}
-[qcms-mod="cont.trash"] .-list {
-  width: min(72rem, 90vw); /* the list asks for room; a shrink-to-fit layout would give u2-grid one column */
-  --u2-Items-width: 16rem;
-  xdisplay: grid;
-  xgap: .625rem;
-  xgrid-template-columns: repeat(auto-fill, minmax(16.25rem, 1fr));
-}
-[qcms-mod="cont.trash"] .-item {
-  position: relative;
-  cursor: pointer;
-  background: #fffa;
-  backdrop-filter: blur(1rem);
-}
-[qcms-mod="cont.trash"] .-item strong {
-  display: block;
-  font-size: 1.1em;
-}
-[qcms-mod="cont.trash"] .-item small {
-  display: block;
-  opacity: .5;
-}
-[qcms-mod="cont.trash"] .-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: .5rem;
-}
-[qcms-mod="cont.trash"] .-preview {
-  width: 90vw;
-  height: 90vh;
-  padding: 0;
-  border: none;
-  &::backdrop { background: rgba(0,0,0,.6); }
-  & iframe { width: 100%; height: 100%; border: none; }
+[qcms-mod="cont.trash"] {
+  .-toolbar {
+    margin-bottom: .625rem;
+  }
+  .-list {
+    max-width: 90vw;
+    justify-content: center;
+  }
+  .-item {
+    width: 19rem;
+    cursor: pointer;
+    background: #fffa;
+    backdrop-filter: blur(1rem);
+
+    & strong {
+      display: block;
+      font-size: 1.2em;
+    }
+  }
+  .-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: .5rem;
+    .-remove { background: var(--red); }
+  }
+  .-preview {
+    width: 90vw;
+    height: 90vh;
+    padding: 0;
+    border: none;
+    &::backdrop { background: rgba(0,0,0,.6); }
+    & iframe { width: 100%; height: 100%; border: none; }
+  }
 }

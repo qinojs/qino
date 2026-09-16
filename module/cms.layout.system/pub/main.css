@@ -1,4 +1,5 @@
 body {
+  background: var(--cms-background);
   display: grid;
   align-content: center;
   justify-items: center;
@@ -6,7 +7,12 @@ body {
 }
 
 #container {
+  color: #fff;
   min-width: min(22rem, 100%);
   max-width: 100%;
   padding: 2rem 1rem;
+}
+
+#container > h1 {
+  text-align: center;
 }

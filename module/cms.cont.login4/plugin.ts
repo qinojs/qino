@@ -112,9 +112,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       initial: { en: "Password:" },
     })}
       <td><input name=pw type=password required>
-    <tr class=-login>
-      <th>
-      <td><button name=core_login>${await app.t`Log in`}</button>
     ${
       showSaveLogin
         ? html`<tr class=-save_login>
@@ -126,6 +123,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       <td><label><input name=save_login type=checkbox value=1 class=c1-fakable><i></i></label>`
         : ""
     }
+    <tr class=-login>
+      <th>
+      <td><button name=core_login>${await app.t`Log in`}</button>
   </table>
 </form>\n`);
   } else {

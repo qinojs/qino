@@ -35,9 +35,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <tr><th>ID<td>${id}
     </table>
   </div>
-  <div class=-actions>
+  <div class=-foot>
     <button class=-restore>Restore</button>
-    <button class=-remove>Delete permanently</button>
+    <button class=-remove u2-confirm>Delete permanently</button>
   </div>
 </div>`);
   }
@@ -47,9 +47,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   return html`
 <div>
   <div class=-toolbar>
-    <button class=-removeAll>Papierkorb leeren</button>
+    <button class=-removeAll u2-confirm>Papierkorb leeren</button>
   </div>
-  <div class="-list u2-grid">${cards}</div>
+  <div class="-list u2-flex">${cards}</div>
   <dialog class=-preview><iframe></iframe></dialog>
 </div>
 <script type=module src="${ctx.req.moduleUrl}cms.cont.trash/pub/main.js"></script>`;

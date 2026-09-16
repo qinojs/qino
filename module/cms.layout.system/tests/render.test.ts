@@ -21,7 +21,7 @@ Deno.test("cms.layout.system: render adds assets and wraps the main cont", async
   };
 
   const out = String(await cms.node.render(node as any, { ctx }));
-  assertEquals(out.includes("<h1 class=-h1>Login</h1>"), true);
+  assertEquals(out.includes("<h1>Login</h1>"), true);
   assertEquals(out.includes("<form>Form</form>"), true);
   assertEquals(ctx.res.html.styles.has(u2Root + "css/norm/norm.css"), true);
   assertEquals(ctx.res.html.styles.has("/m/cms/pub/css/ui.css"), true);
