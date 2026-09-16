@@ -189,7 +189,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
   return html`<tr data-mod="${mod}" data-store="${store?.url}" data-state=${st}>
-    <td style="padding-right:0">${icon}
+    <td style="padding-block:.1em; padding-right:0">${icon}
     <td data-value="${mod}" title="${why ?? description}">${known ? html`<a href="${detail.search}">${mod}</a>` : mod}
     <td title="${store?.url}"><small>${store ? label(store.url) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
@@ -197,7 +197,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
     <td data-value="${dependencies}" style="text-align:center">${dependencies}
     <td data-value="${neededBy}" style="text-align:center">${neededBy}
     <td title="${description}" style="max-width:30rem;overflow:hidden;text-overflow:ellipsis">${description}
-    <td style="text-align:right; padding-block:0">${html.join(acts, " ")}`;
+    <td style="text-align:right; padding-block:.1em">${html.join(acts, " ")}`;
 }
 
 function storeRow(store: Store, error: string, l: Labels, label: (url: string) => string, su: boolean): HtmlString {

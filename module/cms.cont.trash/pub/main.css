@@ -2,6 +2,8 @@
   margin-bottom: .625rem;
 }
 [qcms-mod="cont.trash"] .-list {
+  width: min(72rem, 90vw); /* the list asks for room; a shrink-to-fit layout would give u2-grid one column */
+  --u2-Items-width: 16rem;
   xdisplay: grid;
   xgap: .625rem;
   xgrid-template-columns: repeat(auto-fill, minmax(16.25rem, 1fr));

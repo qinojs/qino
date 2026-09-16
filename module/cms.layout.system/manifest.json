@@ -1,0 +1,13 @@
+{
+  "name": "cms.layout.system",
+  "description": "Minimal layout for CMS system pages (login, trash, not found).",
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg"
+  ],
+  "dependencies": [
+    "u2"
+  ]
+}

@@ -37,7 +37,7 @@ export const recommended = [
   "cms.cont.not_found1",
   "cms.layout.custom.9",
   "cms.layout.backend",
-  "cms.layout.login",
+  "cms.layout.system",
   "cms.backend",
   "cms.backend.cms",
   "cms.backend.cms.tree",
@@ -147,7 +147,7 @@ async function installTx(app: App): Promise<void> {
     await titles(p, { en: "Trash", de: "Papierkorb", fr: "Corbeille", it: "Cestino" });
     if (!await settings.cms.pageTrash) settings.cms.pageTrash(50);
   }
-  await (await cm.node(50)).set("module", "cms.layout.login");
+  await (await cm.node(50)).set("module", "cms.layout.system");
   await (await (await cm.node(50)).cont("main")).set("module", "cms.cont.trash");
 
   if (!await db.one`SELECT id FROM page WHERE id = 60`) {
@@ -164,7 +164,7 @@ async function installTx(app: App): Promise<void> {
     await titles(p, { en: "Login", de: "Anmelden", fr: "Connexion", it: "Accedi" });
     await db.table("page_redirect").insert({ request: "login", redirect: "80" });
   }
-  await (await cm.node(80)).set("module", "cms.layout.login");
+  await (await cm.node(80)).set("module", "cms.layout.system");
   await (await (await cm.node(80)).cont("main")).cont('1').then((c) => c.set("module", "cms.cont.login4"));
 
   if (!await db.one`SELECT id FROM page WHERE id = 70`) {

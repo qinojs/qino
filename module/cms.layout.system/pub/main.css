@@ -1,0 +1,12 @@
+body {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 100svh;
+}
+
+#container {
+  min-width: min(22rem, 100%);
+  max-width: 100%;
+  padding: 2rem 1rem;
+}
