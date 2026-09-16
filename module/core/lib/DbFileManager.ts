@@ -104,8 +104,7 @@ export class DbFileManager {
 
     const mtime = await f.mtime();
     if (mtime !== undefined) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
-    const maxAge = 60 * 60 * 24 * 180;
-    headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
+    headers.set("Cache-Control", `max-age=${60 * 60 * 24 * 180}, private, immutable`);
 
     // The chosen format may depend on what the client accepts, so caches must key on it too.
     headers.append("Vary", "Accept");
@@ -138,7 +137,7 @@ export class DbFileManager {
     headers.set("Content-Type", mime);
 
     // Cache key as ETag (content identity) – cache-file mtime is unusable, it gets touched for LRU tracking
-    const etag = `"qg${key ?? String((await Deno.stat(outputPath).catch(() => null))?.mtime?.getTime() ?? 0)}"`;
+    const etag = `"qg${key ?? (await Deno.stat(outputPath).catch(() => null))?.mtime?.getTime() ?? 0}"`;
     headers.set("ETag", etag);
     const inm = req.headers.get("if-none-match");
     if (inm ? etagMatch(inm, etag) : Date.parse(req.headers.get("if-modified-since") ?? "") >= mtime! * 1000) {
@@ -336,13 +335,14 @@ function permanentResource(resource: string, md5: unknown): string {
   return `${resource}\0${String(md5 ?? "")}`;
 }
 
+const numOptions = ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const;
+const transformOptions = ['fmt', 'max', ...numOptions];
+
 function parseTransformOptions(param: Record<string, unknown>): TransformOptions {
   const opt: TransformOptions = { fmt: param.fmt as TransformOptions['fmt'] };
-  const bool = (k: string) => k in param ? param[k] !== 'false' && param[k] !== '0' : undefined;
   const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : undefined; };
-  for (const k of ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const)
-    opt[k] = k in param ? num(param[k]) : undefined;
-  opt.max = bool('max');
+  for (const k of numOptions) opt[k] = num(param[k]); // absent → NaN → undefined
+  opt.max = 'max' in param ? param.max !== 'false' && param.max !== '0' : undefined;
   return opt;
 }
 
@@ -352,7 +352,7 @@ function etagMatch(header: string, etag: string) {
 }
 
 function isTransformRequest(param: Record<string, unknown>): boolean {
-  return ['fmt', 'w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame', 'max'].some((k) => k in param);
+  return transformOptions.some((k) => k in param);
 }
 
 /** Stream a single `bytes=` range; a number = unsatisfiable (416, that size), null = serve the full file. */
