@@ -67,9 +67,8 @@ the fastest-growing directory on the machine. Cache hits touch `atime` so the LR
 The access log is the dominant writer. [`initLog`](../module/core/lib/ctx/init.ts#L69) runs on **every**
 request and writes up to five rows: `log`, plus `log_url`, `log_ip`, `log_user_agent` dictionary
 entries on first sight, plus the redacted POST body (clipped to 10 000 chars) inline in `log.post`.
-Other steady growers: `sess`, `client`, the security buckets in
-[cms.backend.system.security/store.ts](../module/cms.backend.system.security/store.ts), and `smalltext`
-which gains a row for every new translatable string.
+Other steady growers: `sess`, `client`, and `smalltext`, which gains a row for every new
+translatable string.
 
 Cleanup lives in [healthChecks.ts:198](../module/core/healthChecks.ts#L198) — deletes logs, clients and
 sessions older than a month, capped at a million rows per statement on MySQL. It is operator-triggered.
@@ -133,4 +132,3 @@ Worth stating, because they look like they should be:
 | `setMaxProcesses(n)` ([limit.ts](../module/core/lib/transform/limit.ts)) | concurrent external tools |
 | `FileTransformer` `timeout` | seconds before a transform pipeline is killed |
 | `core.smalltext.counter` | off by default; on, it adds an UPDATE per translated string |
-| security `allowedPaths` / `suspiciousPaths` | how many requests reach the bucket store |

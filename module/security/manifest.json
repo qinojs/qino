@@ -1,0 +1,14 @@
+{
+  "name": "security",
+  "description": "Slows down and blocks clients that other modules report as suspicious.",
+  "dependencies": [
+    "core",
+    "score"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -142,12 +142,22 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
             (await cms(app).node(Number(vs.page_id))).clearFileCache();
     }, { signal });
 
-    // Public pages for the seo module; a subtree that is not public or online is skipped whole
-    app.on("seo:sitemap", async ({ base, urls }) => {
+    // Public pages for the seo module; a subtree that is not public or online is skipped whole.
+    // lastmod: latest change on the page or its contents, as the history shows it. image: the page file "main".
+    app.on("seo:sitemap", async ({ ctx, base, urls }) => {
+        const changed = new Map<number, number>();
+        for (const row of await app.db.query`SELECT nc.page_id, MAX(l.time) AS time FROM node_changed nc JOIN log l ON l.id = nc.log_id GROUP BY nc.page_id`)
+            changed.set(Number(row.page_id), Number(row.time));
         const walk = async (node: Node) => {
             for (const page of (await node.children({ type: "p" })).values()) {
                 if (!await page.isPublic() || !await page.isOnline()) continue;
-                if (page.vs.searchable) for (const lang of app.languages.all) urls.push(base + await page.urlSeo(lang));
+                if (page.vs.searchable) {
+                    const url: Record<string, string> = {};
+                    for (const lang of app.languages.all) url[lang] = base + await page.urlSeo(lang);
+                    const main = await page.hasFile("main");
+                    const image = main?.mime.startsWith("image/") ? ctx.req.url.origin + await main.url() : undefined;
+                    urls.push({ url, lastmod: changed.get(page.id), image });
+                }
                 await walk(page);
             }
         };
