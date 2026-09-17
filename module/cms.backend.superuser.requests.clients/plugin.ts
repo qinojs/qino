@@ -271,7 +271,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const myIp = await app.t`my IP`;
   if (!rows.length || !page) return html``;
   const pageUrl = await page.url();
-  const href = (client: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + client;
+  const href = (client: unknown) => backend.toUrl(pageUrl, { id: client });
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
     const info = backend.uaInfo(row.user_agent ?? "");
     return html`<tr u2-href>

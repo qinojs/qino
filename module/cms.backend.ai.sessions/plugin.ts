@@ -64,26 +64,21 @@ async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<
     : sql`WHERE ${own}`;
   const sessions = await app.db.query`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
   const counts = await app.db.indexCol`SELECT session_id, COUNT(*) FROM ai_message GROUP BY session_id`;
-  const base = node ? await sessionLinkBase(node) : "?s=";
+  const base = node ? await (await node.page()).url() : "";
+  // without a node (part reload) the link stays relative to the page the browser is on
+  const sessionUrl = (id: unknown) => base ? backend.toUrl(base, { s: id }) : "?s=" + id;
 
   const rows = [];
   for (const s of sessions) {
     const time = iso(s.updated_at);
     rows.push(html`<tr>
       <td>${s.id}
-      <td><a href="${base + s.id}">${s.bot}</a>
+      <td><a href="${sessionUrl(s.id)}">${s.bot}</a>
       <td>${s.user_id}
       <td>${Number(counts.get(String(s.id)) ?? 0)}
       <td><u2-time datetime="${time}" type=relative>${time.slice(0, 16).replace("T", " ")}</u2-time>`);
   }
   return rows.length ? html.join(rows) : html`<tr><td colspan=5><em>No sessions.</em>`;
-}
-
-async function sessionLinkBase(node: Node): Promise<string> {
-  const url = new URL(await (await node.page()).url(), "http://x");
-  url.searchParams.delete("s");
-  const qs = url.searchParams.toString();
-  return url.pathname + (qs ? "?" + qs + "&" : "?") + "s=";
 }
 
 function render(node: Node): Promise<HtmlString> {

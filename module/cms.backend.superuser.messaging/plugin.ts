@@ -104,7 +104,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   if (!rows.length) return html`<tr><td colspan=9>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
-  const msgUrl = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "msg=" + id;
+  const msgUrl = (id: unknown) => backend.toUrl(pageUrl, { msg: id });
   return html.join(rows.map((row) => {
     const errors = Number(row.error_count) || 0;
     const target = messageTarget(row, view);
@@ -498,7 +498,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     const errors = Number(row.error_count) || 0;
     const target = messageTarget(row, view);
     const title = cut(String(row.title || plain(row) || "#" + row.id), 70);
-    const href = pageUrl ? pageUrl + (pageUrl.includes("?") ? "&" : "?") + "msg=" + row.id : "";
+    const href = backend.toUrl(pageUrl, { msg: row.id });
     return html`<tr${href ? html.raw(" u2-href") : ""}>
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
       <td>${href ? html`<a href="${href}">${title}</a>` : title}${target ? html` <small>${target}</small>` : ""}

@@ -72,19 +72,22 @@ export async function install(app: App, module: string, titles?: Record<string, 
   return p;
 }
 
+/** Adds query params to a page url, "" staying "" — page urls are app-relative,
+ *  the base only lets `URL` parse them. */
+export function toUrl(url: string, params: Record<string, unknown> = {}): string {
+  if (!url) return "";
+  const u = new URL(url, "http://-");
+  for (const [key, value] of Object.entries(params)) u.searchParams.set(key, String(value));
+  return u.pathname + u.search;
+}
+
 /** Link builder for another backend module's page: `link({ id })` → "/path?id=…".
  *  "" when that page is missing or the user may not see it — every caller falls back to plain text,
- *  like the menu and the dashboard, which list only pages the user has access to.
- *  Page urls are app-relative, the base only lets `URL` parse them. */
+ *  like the menu and the dashboard, which list only pages the user has access to. */
 export async function toModuleUrl(node: Node, module: string): Promise<(params?: Record<string, unknown>) => string> {
   const page = await (await node.cms.nodeByModule(module))?.page();
   const url = page && await page.access() ? await page.url() : "";
-  const base = url ? new URL(url, "http://-") : null;
-  return (params = {}) => {
-    if (!base) return "";
-    for (const [key, value] of Object.entries(params)) base.searchParams.set(key, String(value));
-    return base.pathname + base.search;
-  };
+  return (params) => toUrl(url, params);
 }
 
 /** Remove the backend page install() created — the counterpart every cms.backend.* module needs.

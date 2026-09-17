@@ -1,4 +1,5 @@
 import { html, sqlSearch, sql } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
 
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -35,7 +36,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   for (const vs of rows) {
     const lastOnlineIso = vs.last_online ? new Date(Number(vs.last_online) * 1000).toISOString() : "";
 
-    const detailUrl = pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + vs.id;
+    const detailUrl = backend.toUrl(pageUrl, { id: vs.id });
     const isEmail = vs.username && /@/.test(vs.username);
     const emailCell = isEmail
       ? html`<a href="mailto:${vs.username}">${vs.username}</a>`

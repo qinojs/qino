@@ -368,7 +368,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     page?.url() ?? "",
   ]);
   if (!rows.length) return html``;
-  const href = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + id;
+  const href = (id: unknown) => backend.toUrl(pageUrl, { id });
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
     const info = backend.uaInfo(row.user_agent ?? "");
     const user = [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;

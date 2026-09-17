@@ -1,5 +1,6 @@
 import { html, typeContacts, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+import { backend } from "@qino/qino/cms.backend";
 import { cms } from "@qino/qino/cms";
 import { status } from "@qino/qino/cron";
 import { pendingContacts, templates, textOf } from "@qino/qino/messaging";
@@ -314,7 +315,7 @@ export async function journal(node: Node): Promise<HtmlString> {
   const [outgoing, incoming, nothing] = await Promise.all([t`sent`, t`received`, t`Nothing yet.`]);
   const body = rows.length
     ? rows.map((m) => html`<tr>
-      <td>${url ? html`<a href="${url}msg=${m.id}">${m.id}</a>` : m.id}
+      <td>${url ? html`<a href="${backend.toUrl(url, { msg: m.id })}">${m.id}</a>` : m.id}
       <td>${u2.el.time(m.time)}
       <td>${m.direction === "out"
         ? html`<u2-ico inline icon=call_made>→</u2-ico>`
@@ -345,8 +346,7 @@ export async function journal(node: Node): Promise<HtmlString> {
 /** The messaging panel's address, so one journal row opens with its deliveries. */
 async function messagingUrl(app: App): Promise<string> {
   const node = await cms(app).nodeByModule("cms.backend.superuser.messaging");
-  const url = await (await node?.page())?.url();
-  return url ? url + (url.includes("?") ? "&" : "?") : "";
+  return await (await node?.page())?.url() ?? "";
 }
 
 function userName(user: Row): string {

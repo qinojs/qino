@@ -25,7 +25,7 @@ const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugi
 const contentModules = (app: App) => app.modules.linked().map((mod) => mod.name).filter((n) => isContent(app, n)).sort();
 
 /** Detail link of a module list page (this one or cms.backend.superuser.module). */
-const modUrl = (base: string, module: string) => base + (base.includes("?") ? "&" : "?") + "mod=" + module;
+const modUrl = (base: string, module: string) => backend.toUrl(base, { mod: module });
 
 const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number(v)] ?? "?";
 const accessWord = word(["none", "read", "edit", "admin"]);
