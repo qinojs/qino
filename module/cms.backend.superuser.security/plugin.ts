@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { BLOCK, HALF_LIFE, release, reports, suspects } from "@qino/qino/security";
+import { BLOCK, HALF_LIFE, ipKey, release, reports, suspects } from "@qino/qino/security";
 import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -80,16 +80,19 @@ async function recentRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: 
     <tbody>${rows.length ? rows : html.async`<tr><td colspan=4>${t`No reports yet.`}`}`;
 }
 
-/** IP → request log of that IP; plain text for an IPv6 network or without the log page. */
+/** IP → request log of that IP, the own one badged; plain text for an IPv6 network or without the log page. */
 async function ipLink(node: Node, ctx: Ctx) {
   const url = await (await (await node.cms.nodeByModule("cms.backend.superuser.requests.log"))?.page())?.url();
   const log = url && new URL(url, ctx.req.url.origin);
+  const me = ctx.req.clientIp;
+  const myIp = await node.app.t`my IP`;
   return (value: string) => {
     const code = html`<code style="color:${uniqueColor(value)}">${value}</code>`;
-    if (!log || value.includes("/")) return code;
+    const badge = me && (value === me || value === ipKey(me)) ? html` <small class=u2-badge>${myIp}</small>` : "";
+    if (!log || value.includes("/")) return html`${code}${badge}`;
     const href = new URL(log);
     href.searchParams.set("search", value);
-    return html`<a href="${href.href}">${code}</a>`;
+    return html`<a href="${href.href}">${code}</a>${badge}`;
   };
 }
 
