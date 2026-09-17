@@ -33,7 +33,7 @@ export async function load(app: App): Promise<void> {
 
 export function suspect(ctx: Ctx, weight: number, reason: string): void {
   const ip = ctx.req.clientIp;
-  if (!ip || ctx.user?.superuser) return; // a superuser does not lock himself out
+  if (!ip || ctx.user?.superuser) return; // superusers do not lock themselves out
   const { keys, reports } = states.get(ctx.app)!;
   const key = ipKey(ip);
   const t = now();

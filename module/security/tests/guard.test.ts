@@ -31,6 +31,10 @@ Deno.test("security: reports add up, delay, block and are stored from strength 5
     assertEquals(Math.round(top.strength), 51);
     assertEquals(top.blocked > 0, true);
     assertEquals(reports(app).map((r) => r.reason), ["big", "small"]);
+
+    // reports from superusers are ignored
+    await app.fire("suspicious", { ctx: Object.assign(ctxOf(app, "5.5.5.5"), { user: { superuser: true } }), weight: 99 });
+    assertEquals((await get(app, "5.5.5.5")).status, 200);
   } finally {
     await close(app);
     await Deno.remove(dir, { recursive: true });

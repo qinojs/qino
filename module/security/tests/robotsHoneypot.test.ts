@@ -10,7 +10,7 @@ const trapOf = async (app: App) => {
   return robots.match(/^Disallow: \/site\/(.+)$/m)?.[1] ?? "";
 };
 
-Deno.test("security: robots.txt disallows a trap, requesting it reports weight 20", async () => {
+Deno.test("security: robots.txt disallows a trap, requesting it reports weight 10", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const app = await testApp(dir);
   try {
@@ -19,8 +19,8 @@ Deno.test("security: robots.txt disallows a trap, requesting it reports weight 2
     assertEquals(reports(app), []);
 
     await app.fetch(new Request(`https://qino.test/site/${trap}secret.zip`), from("6.6.6.6"));
-    assertEquals(reports(app).map((r) => [r.ip, r.weight, r.reason]), [["6.6.6.6", 20, "robots.txt honeypot"]]);
-    assertEquals(Math.round(suspects(app)[0].strength), 20);
+    assertEquals(reports(app).map((r) => [r.ip, r.weight, r.reason]), [["6.6.6.6", 10, "robots.txt honeypot"]]);
+    assertEquals(Math.round(suspects(app)[0].strength), 10);
   } finally {
     await close(app);
     await Deno.remove(dir, { recursive: true });

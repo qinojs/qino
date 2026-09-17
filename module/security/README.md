@@ -7,26 +7,28 @@ counts as its `/64` network, which one connection holds and can rotate the rest 
 ctx.app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" });
 ```
 
-Every report adds its `weight` (default 1) to the IP's strength, which halves every hour.
-Answers wait strength² ms (5 → 25 ms, 20 → 400 ms), from 50 on they are refused with `429`
-until the strength has faded below 50. Waiting holds a connection, a `429` is almost free, so
-the delay stays short.
-The check runs at `request-start`, before sessions and static files, so it knows no user:
-a superuser behind a blocked IP is blocked too.
+Every report adds its `weight` (default 1) to the IP's strength, which fades with a half-life.
+Answers wait strength² ms; above a limit they are refused with `429` until the strength has
+faded below it. Waiting holds a connection, a `429` is almost free, so the delay stays short.
+Half-life and limits are the constants at the top of [`lib/guard.ts`](lib/guard.ts).
 
-Strengths live in memory, so the per-request check needs no query. From strength 5 on they
+The check runs at `request-start`, before sessions and static files, so it knows no user:
+a superuser behind a blocked IP is blocked too. Reports caused by a superuser do not count.
+
+Strengths live in memory, so the per-request check needs no query. Above a small strength they
 are also stored through [`score`](../score/) on `log_ip`, so a restart does not forgive anyone
 and the score backend shows them; one-off slips cost no write.
 
-With [`seo`](../seo/), `robots.txt` disallows a random path nothing links to, like `xF39FliP/`,
-new at every start. Whoever requests it read robots.txt and ignored it, which reports weight 20.
+Built-in reports, each in its own file under `lib/`:
 
-A 404 on a path no site ever links to (`.env`, `.git`, `phpinfo`, `server-status`, `*.sql`, …)
-reports weight 20, so three of them block. A 404 on a path of another system (`*.php`,
-`wp-admin`, `js/`, `css/`, …) reports weight 5; after replacing an old site these may be real
-links, so turn off `security.foreignPaths` for a while. Both lists live in `lib/pathReports.ts`.
+- `robotsHoneypot` — with [`seo`](../seo/), `robots.txt` disallows a random path nothing links
+  to, new at every start. Whoever requests it read robots.txt and ignored it.
+- `pathReports` — a 404 on a path no site ever links to (`.env`, `.git`, `phpinfo`, …) weighs
+  heavily; a 404 on a path of another system (`*.php`, `wp-admin`, `js/`, …) lightly. After
+  replacing an old site the latter may be real links, so turn off `security.foreignPaths` for
+  a while.
 
-`mod.ts` exposes `suspects(app)`, `reports(app)` (the last 100, in memory) and
+`mod.ts` exposes `suspects(app)`, `reports(app)` (the most recent, in memory) and
 `release(app, key)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)
 shows them.
 
