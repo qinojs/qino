@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
 import type { App, HtmlString } from "@qino/qino";
@@ -106,6 +106,16 @@ export function uniqueColor(v: unknown): string {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return `hsl(${h % 360} 55% 45%)`;
+}
+
+/** Freshness color for a unix time: green → orange (2 min) → text color (10 min), "" when older. */
+export function ageColor(time: unknown, now = unixTime()): string {
+  const min = Math.max(0, now - Number(time)) / 60;
+  if (!(min < 10)) return "";
+  const pct = (f: number) => Math.round(f * 100);
+  return min < 2
+    ? `color-mix(in oklch, var(--orange) ${pct(min / 2)}%, var(--green))`
+    : `color-mix(in oklch, currentColor ${pct((min - 2) / 8)}%, var(--orange))`;
 }
 
 /** Lightweight user-agent classification (browser + version, OS, mobile and bot flags). */

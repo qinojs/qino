@@ -9,7 +9,7 @@ import type { Sql, Ctx, App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
-const { uniqueColor } = backend;
+const { uniqueColor, ageColor } = backend;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Log", de: "Log" });
@@ -78,6 +78,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const u = ctx.req.url.toURL();
   const ownHost = ctx.req.url.host;
+  const myIp = await t`my IP`;
   const trs = [];
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
@@ -89,7 +90,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const post = row.post ? (row.post.length >= 2000 ? "(too big)" : row.post) : "";
     trs.push(html`
 <tr u2-href>
-    <td style="white-space:nowrap"><a href="${u.search}">${u2.el.time(row.time)}</a>
+    <td style="white-space:nowrap"><a href="${u.search}" style="color:${ageColor(row.time)}">${u2.el.time(row.time)}</a>
     <td>
         <div class=-url>${row.url}</div>
         <small class=-url${foreignRef ? html.raw(' style="color:var(--red)"') : ""}>${row.referer}</small>
@@ -100,7 +101,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
         <small style="color:${uniqueColor(info.browser)}">${info.browser} ${info.version}</small>
         ${info.bot ? html`<br><small class=u2-badge>bot</small>` : ""}
     <td>${row.usr_id ? html`<span style="color:${uniqueColor(row.usr_id)}">${(row.given_name ?? "") + " " + (row.family_name ?? "")}</span><br><small>${row.username}</small>` : html`<small>guest</small>`}
-    <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${row.ip}
+    <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${row.ip}${row.ip === ctx.req.clientIp ? html` <small class=u2-badge>${myIp}</small>` : ""}
     <td>${post ? html`<pre style="max-width:25rem; max-height:6rem; overflow:auto">${post}</pre>` : "-"}
     <td>${row.id}`);
   }
@@ -290,7 +291,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     for (const item of logs) {
       u.searchParams.set("id", String(item.id));
       historyTrs.push(html`<tr u2-href${item.id === id ? " aria-current=true" : ""}>
-        <td style="white-space:nowrap"><a href="${u.search}">${u2.el.time(item.time)}</a><br><small>${item.id}</small>
+        <td style="white-space:nowrap"><a href="${u.search}" style="color:${ageColor(item.time)}">${u2.el.time(item.time)}</a><br><small>${item.id}</small>
         <td><a href="${item.url}" target=_blank>${item.url}</a><br><small>${item.referer}</small>
         <td>${item.post ? html`<pre style="max-width:30rem; max-height:8rem; overflow:auto">${item.post}</pre>` : "-"}`);
     }
@@ -315,10 +316,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               <th>${t`Browser`}
               <td>${info.browser} ${info.version} ${info.bot ? html`<small class=u2-badge>bot</small>` : ""}
                   <br><small>${log.user_agent}</small>
-            <tr><th>${t`Time`}<td>${u2.el.time(log.time)}
+            <tr><th>${t`Time`}<td style="color:${ageColor(log.time)}">${u2.el.time(log.time)}
             <tr>
               <th style="color:${uniqueColor(log.ip)}">${t`IP`}
-              <td>${log.ip ? html`<a href="${searchLink(log.ip)}">${log.ip}</a>` : "-"}
+              <td>${log.ip ? html`<a href="${searchLink(log.ip)}">${log.ip}</a>` : "-"}${log.ip && log.ip === ctx.req.clientIp ? html.async` <small class=u2-badge>${t`my IP`}</small>` : ""}
             <tr>
               <th>${t`Client`}
               <td><a href="${searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${log.client_id}</a>
@@ -347,7 +348,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
 // latest requests of other clients, newest first
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
-  const own = getCtx().clientId;
+  const ctx = getCtx();
+  const own = ctx.clientId;
+  const myIp = await app.t`my IP`;
   const [rows, pageUrl] = await Promise.all([
     app.db.query`
       SELECT log.id, log.time, url.url AS url, ip.ip, ua.user_agent, usr.id AS usr_id, usr.username, usr.given_name, usr.family_name
@@ -367,10 +370,10 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     const info = backend.uaInfo(row.user_agent ?? "");
     const user = [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
     return html`<tr u2-href>
-    <td style="white-space:nowrap"><a href="${href(row.id)}">${u2.el.time(row.time, { narrow: true })}</a>
+    <td style="white-space:nowrap"><a href="${href(row.id)}" style="color:${ageColor(row.time)}">${u2.el.time(row.time, { narrow: true })}</a>
     <td><small style="word-break:break-all">${row.url}</small>
     <td style="white-space:nowrap"><small style="color:${uniqueColor(info.browser)}">${info.bot ? "bot" : info.browser}</small>
-    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>
+    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>${row.ip === ctx.req.clientIp ? html` <small class=u2-badge>${myIp}</small>` : ""}
     <td style="white-space:nowrap">${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${user}</small>` : ""}`;
   })}</table></div>`;
 }

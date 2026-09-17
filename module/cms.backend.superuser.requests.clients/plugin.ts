@@ -8,7 +8,7 @@ import type { App, Ctx, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
-const { uniqueColor } = backend;
+const { uniqueColor, ageColor } = backend;
 
 // Only the newest log rows are scanned (primary key range), so the list stays fast on huge logs.
 const WINDOW = 20000;
@@ -51,6 +51,9 @@ async function pageLink(node: Node, module: string, param: string): Promise<(val
   return (value) => url ? url + (url.includes("?") ? "&" : "?") + param + "=" + encodeURIComponent(String(value)) : "";
 }
 
+/** Badge when the ip is the viewer's own. */
+const myIpBadge = (ip: unknown, label: string) => ip && ip === getCtx().req.clientIp ? html` <small class=u2-badge>${label}</small>` : "";
+
 const userName = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
 
 // ── list (filterable part) ──────────────────────────────────────────────────
@@ -58,6 +61,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const { t } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
   const rows = await latest(node.app, LIMIT, { returning: !!f.returning });
+  const myIp = await t`my IP`;
   const u = ctx.req.url.toURL();
   const href = (client: unknown) => (u.searchParams.set("id", String(client)), u.search);
 
@@ -70,11 +74,11 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     trs.push(html`<tr u2-href>
     <td><a href="${href(row.client_id)}" style="color:${uniqueColor(row.client_id)}">${row.client_id}</a>${own ? html` <small class=u2-badge>${await t`me`}</small>` : ""}
     <td style="white-space:nowrap" title="${row.user_agent}"><span style="color:${uniqueColor(info.browser)}">${info.browser}</span> <span style="color:${uniqueColor(row.user_agent)}">${info.version}</span> <small>${info.os}${info.mobile ? " 📱" : ""}</small>${info.bot ? html` <small class=u2-badge>bot</small>` : ""}
-    <td style="white-space:nowrap; color:${uniqueColor(row.ip)}">${row.ip}
+    <td style="white-space:nowrap"><span style="color:${uniqueColor(row.ip)}">${row.ip}</span>${myIpBadge(row.ip, myIp)}
     <td>${row.usr_id ? html`<span style="color:${uniqueColor(row.usr_id)}">${userName(row)}</span>` : ""}
     <td style="text-align:right">${row.users || ""}
     <td style="text-align:right">${row.requests}
-    <td style="white-space:nowrap">${u2.el.time(row.time)}
+    <td style="white-space:nowrap; color:${ageColor(row.time)}">${u2.el.time(row.time)}
     <td><small style="word-break:break-all">${row.url}</small>`);
   }
 
@@ -183,7 +187,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const info = backend.uaInfo(last?.user_agent ?? "");
   const now = unixTime();
   const active = sessions.some((s) => Number(s.access) >= now - ACTIVE);
-  const [lastLabel, activeLabel, mobileLabel, desktopLabel] = await Promise.all([t`last`, t`active`, t`mobile`, t`desktop`]);
+  const [lastLabel, activeLabel, mobileLabel, desktopLabel, myIp] = await Promise.all([t`last`, t`active`, t`mobile`, t`desktop`, t`my IP`]);
   const user = (row: Row) => html`<span style="color:${uniqueColor(row.usr_id)}">${userName(row)}</span>`;
   const empty = (cols: number) => html.async`<tr><td colspan=${cols}>${t`No entries`}`;
   const link = (href: string, label: unknown) => href ? html`<a href="${href}">${label}</a>` : html`${label}`;
@@ -197,13 +201,13 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               <td><span style="color:${uniqueColor(info.browser)}">${info.browser}</span> ${info.version} ${info.bot ? html`<small class=u2-badge>bot</small>` : ""}
                   <br><small>${last?.user_agent}</small>
             <tr><th>${t`System`}<td>${info.os || "?"} · ${info.mobile ? mobileLabel : desktopLabel}
-            <tr><th>${t`IP`}<td><span style="color:${uniqueColor(last?.ip)}">${last?.ip ?? "-"}</span>${host ? html`<br><small>${host}</small>` : ""}
+            <tr><th>${t`IP`}<td><span style="color:${uniqueColor(last?.ip)}">${last?.ip ?? "-"}</span>${myIpBadge(last?.ip, myIp)}${host ? html`<br><small>${host}</small>` : ""}
             <tr><th>${t`Last user`}<td>${lastUser ? user({ ...lastUser, usr_id: lastUser.id }) : "-"}
             <tr><th>${t`Requests`}<td>${link(logUrl(id), range?.requests)}
             <tr><th>${t`Sessions`}<td>${range?.sessions}${active ? html` <small class=u2-badge>${activeLabel}</small>` : ""}
-            <tr><th>${t`First request`}<td>${first ? html`${u2.el.time(first.time)}<br><small style="word-break:break-all">${first.url}</small>` : "-"}
+            <tr><th>${t`First request`}<td>${first ? html`<span style="color:${ageColor(first.time)}">${u2.el.time(first.time)}</span><br><small style="word-break:break-all">${first.url}</small>` : "-"}
             <tr><th>${t`Origin`}<td><small style="word-break:break-all">${first?.referer || "-"}</small>
-            <tr><th>${t`Last request`}<td>${last ? html`${u2.el.time(last.time)}<br><small style="word-break:break-all">${last.url}</small>` : "-"}
+            <tr><th>${t`Last request`}<td>${last ? html`<span style="color:${ageColor(last.time)}">${u2.el.time(last.time)}</span><br><small style="word-break:break-all">${last.url}</small>` : "-"}
         </table>
     </div>
 
@@ -216,7 +220,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               <th>${t`Stay logged in`}
             <tbody>${users.length ? users.map((row) => html`<tr>
               <td>${user(row)}${Number(row.usr_id) === Number(client.usr_id) ? html` <small class=u2-badge>${lastLabel}</small>` : ""}<br><small>${row.username}</small>
-              <td style="white-space:nowrap">${row.time ? u2.el.time(row.time) : ""}
+              <td style="white-space:nowrap; color:${ageColor(row.time)}">${row.time ? u2.el.time(row.time) : ""}
               <td>${row.save_login ? "✓" : ""}`) : empty(3)}
         </table>
     </div>
@@ -225,9 +229,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <div class=-head>${t`IPs`} (${ips.length})</div>
         <table class=u2-table>
             <tbody>${ips.map((row) => html`<tr>
-              <td style="color:${uniqueColor(row.ip)}">${link(logUrl(row.ip ?? ""), row.ip ?? "-")}
+              <td style="color:${uniqueColor(row.ip)}">${link(logUrl(row.ip ?? ""), row.ip ?? "-")}${myIpBadge(row.ip, myIp)}
               <td style="text-align:right">${row.n}
-              <td style="white-space:nowrap">${u2.el.time(row.last, { narrow: true })}`)}
+              <td style="white-space:nowrap; color:${ageColor(row.last)}">${u2.el.time(row.last, { narrow: true })}`)}
         </table>
     </div>
 
@@ -238,7 +242,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               <td style="color:${uniqueColor(row.sess_id)}">${link(logUrl(row.sess_id), row.sess_id)}${Number(row.access) >= now - ACTIVE ? html` <small class=u2-badge>${activeLabel}</small>` : ""}
               <td>${row.usr_id ? user(row) : ""}
               <td style="text-align:right">${row.n}
-              <td style="white-space:nowrap">${u2.el.time(row.first, { narrow: true })}`) : empty(4)}
+              <td style="white-space:nowrap; color:${ageColor(row.first)}">${u2.el.time(row.first, { narrow: true })}`) : empty(4)}
         </table>
     </div>
 
@@ -250,7 +254,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               return html`<tr>
               <td><span style="color:${uniqueColor(ua.browser)}">${ua.browser} ${ua.version}</span> <small>${ua.os}</small><br><small style="word-break:break-all">${row.user_agent}</small>
               <td style="text-align:right">${row.n}
-              <td style="white-space:nowrap">${u2.el.time(row.first, { narrow: true })} – ${u2.el.time(row.last, { narrow: true })}`;
+              <td style="white-space:nowrap"><span style="color:${ageColor(row.first)}">${u2.el.time(row.first, { narrow: true })}</span> – <span style="color:${ageColor(row.last)}">${u2.el.time(row.last, { narrow: true })}</span>`;
             })}
         </table>
     </div>
@@ -270,6 +274,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 // newest other clients with more than one request
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const rows = await latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) });
+  const myIp = await app.t`my IP`;
   if (!rows.length || !page) return html``;
   const pageUrl = await page.url();
   const href = (client: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + client;
@@ -278,9 +283,9 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     return html`<tr u2-href>
     <td><a href="${href(row.client_id)}" style="color:${uniqueColor(row.client_id)}">${row.client_id}</a>
     <td style="white-space:nowrap">${info.bot ? "bot" : html`<span style="color:${uniqueColor(info.browser)}">${info.browser}</span>`} ${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${userName(row)}</small>` : ""}
-    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>
+    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>${myIpBadge(row.ip, myIp)}
     <td style="text-align:right">${row.requests}
-    <td style="white-space:nowrap">${u2.el.time(row.time, { narrow: true })}`;
+    <td style="white-space:nowrap; color:${ageColor(row.time)}">${u2.el.time(row.time, { narrow: true })}`;
   })}</table></div>`;
 }
 
