@@ -64,3 +64,11 @@ Deno.test("security: a restart keeps stored strengths, release forgets them", ()
     await close(again);
   }
 }));
+
+Deno.test("security: the tracked keys stay capped, the strongest survive", () => withApp(async (app) => {
+  for (let i = 0; i < 11000; i++) await app.fire("suspicious", { ctx: ctxOf(app, `10.${i >> 16 & 255}.${i >> 8 & 255}.${i & 255}`), weight: 1 });
+  await app.fire("suspicious", { ctx: ctxOf(app, "6.6.6.6"), weight: 60 });
+  const all = suspects(app);
+  assertEquals(all.length < 11000, true);
+  assertEquals(all[0].key, "6.6.6.6");
+}));

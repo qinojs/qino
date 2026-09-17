@@ -8,7 +8,7 @@ import type { App, Ctx } from "@qino/qino";
 export const HALF_LIFE = 3600;  // a suspicion halves every hour
 export const BLOCK = 50;       // from this strength on, answers are refused; below, they wait strength² ms
 const STORE = 5;               // from this strength on, it is stored
-const MAX = 10000;             // tracked keys before faded ones are swept
+const MAX = 10000;             // at most this many tracked keys
 const REPORTS = 100;           // recent reports kept for the backend
 
 const newState = () => ({
@@ -42,8 +42,11 @@ export function suspect(ctx: Ctx, weight: number, reason: string): void {
   reports.unshift({ time: t, ip, weight, reason });
   reports.length = Math.min(reports.length, REPORTS);
   const e = keys.get(key);
+  // A full map drops the faded ones, then the weakest until it fits; what is stored comes back anyway.
   if (!e && keys.size >= MAX) {
-    for (const [k, v] of keys) if (decay(v, t) < 1) keys.delete(k);
+    for (let min = 1; keys.size >= MAX; min *= 2) {
+      for (const [k, v] of keys) if (decay(v, t) < min) keys.delete(k);
+    }
   }
   const next = { s: (e ? decay(e, t) : 0) + weight, t, stored: e?.stored };
   keys.set(key, next);
