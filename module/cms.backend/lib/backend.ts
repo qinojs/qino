@@ -72,6 +72,18 @@ export async function install(app: App, module: string, titles?: Record<string, 
   return p;
 }
 
+/** Link builder for another backend module's page: `link({ id })` → "/path?id=…", "" when that module has no page.
+ *  Page urls are app-relative, the base only lets `URL` parse them. */
+export async function toModuleUrl(node: Node, module: string): Promise<(params?: Record<string, unknown>) => string> {
+  const url = await (await (await node.cms.nodeByModule(module))?.page())?.url();
+  const base = url ? new URL(url, "http://-") : null;
+  return (params = {}) => {
+    if (!base) return "";
+    for (const [key, value] of Object.entries(params)) base.searchParams.set(key, String(value));
+    return base.pathname + base.search;
+  };
+}
+
 /** Remove the backend page install() created — the counterpart every cms.backend.* module needs.
  *  A page that still carries sub-pages stays: those belong to other modules that are installed. */
 export async function uninstall(app: App, module: string): Promise<void> {

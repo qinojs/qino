@@ -303,6 +303,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const lu = ctx.req.url.toURL(); lu.searchParams.delete("id"); lu.searchParams.delete("history_of");
   const searchLink = (v: unknown) => { lu.searchParams.set("search", String(v)); return lu.search; };
 
+  // the client column points at the client detail page; without that module the filtered list has to do
+  const clientUrl = await backend.toModuleUrl(node, "cms.backend.superuser.requests.clients");
+
   return html.async`
 <div class=u2-flex>
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
@@ -322,7 +325,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               <td>${log.ip ? html`<a href="${searchLink(log.ip)}">${log.ip}</a>` : "-"}${log.ip && log.ip === ctx.req.clientIp ? html.async` <small class=u2-badge>${t`my IP`}</small>` : ""}
             <tr>
               <th>${t`Client`}
-              <td><a href="${searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${log.client_id}</a>
+              <td><a href="${clientUrl({ id: log.client_id }) || searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${log.client_id}</a>
             <tr><th>${t`Session`}<td><a href="${searchLink(log.sess_id)}">${log.sess_id}</a>
             <tr>
               <th>${t`User`}

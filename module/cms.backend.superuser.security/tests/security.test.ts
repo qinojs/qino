@@ -22,7 +22,7 @@ Deno.test("cms.backend.superuser.security lists suspicious IPs and releases them
     const node = { app, cms: { nodeByModule: () => Promise.resolve({ page: () => Promise.resolve(page) }) } } as never;
     const opts = { ctx: { req: { url: new URL("https://qino.test/"), clientIp: "6.6.6.6" } } } as never;
     const out = String(await cms.node.parts.recent(node, opts)) + String(await cms.node.parts.suspects(node, opts));
-    assertStringIncludes(out, `<a href="https://qino.test/backend/log?cmspid=9&amp;search=6.6.6.6"><code style="color:${backend.uniqueColor("6.6.6.6")}">6.6.6.6</code></a>`);
+    assertStringIncludes(out, `<a href="/backend/log?cmspid=9&amp;search=6.6.6.6"><code style="color:${backend.uniqueColor("6.6.6.6")}">6.6.6.6</code></a>`);
     assertStringIncludes(out, `</a> <small class=u2-badge>my IP</small>`); // the own ip is badged in both tables
     assertStringIncludes(out, ">blocked</span>");
     assertStringIncludes(out, "test &lt;probe&gt;");

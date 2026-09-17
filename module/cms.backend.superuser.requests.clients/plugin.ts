@@ -45,12 +45,6 @@ async function latest(app: App, limit: number, { window = WINDOW, returning = fa
   return groups.map((g) => ({ ...logById.get(Number(g.last_id)), ...g, users: usersByClient.get(Number(g.client_id)) ?? 0 }));
 }
 
-/** Link builder for another backend page with one query param; "" if the page is missing. */
-async function pageLink(node: Node, module: string, param: string): Promise<(value: unknown) => string> {
-  const url = await (await (await node.cms.nodeByModule(module))?.page())?.url() ?? "";
-  return (value) => url ? url + (url.includes("?") ? "&" : "?") + param + "=" + encodeURIComponent(String(value)) : "";
-}
-
 /** Badge when the ip is the viewer's own. */
 const myIpBadge = (ip: unknown, label: string) => ip && ip === getCtx().req.clientIp ? html` <small class=u2-badge>${label}</small>` : "";
 
@@ -176,8 +170,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       SELECT e.id, e.time, e.source, e.message
        FROM m_error_report e JOIN log ON log.id = e.log_id
        WHERE log.client_id = ${id} ORDER BY e.id DESC LIMIT 50` : [],
-    pageLink(node, "cms.backend.superuser.requests.log", "search"),
-    pageLink(node, "cms.backend.superuser.error_report", "id"),
+    backend.toModuleUrl(node, "cms.backend.superuser.requests.log"),
+    backend.toModuleUrl(node, "cms.backend.superuser.error_report"),
   ]);
   const [first, last, host] = await Promise.all([
     range?.first ? logRow(db, range.first) : undefined,
@@ -203,7 +197,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <tr><th>${t`System`}<td>${info.os || "?"} · ${info.mobile ? mobileLabel : desktopLabel}
             <tr><th>${t`IP`}<td><span style="color:${uniqueColor(last?.ip)}">${last?.ip ?? "-"}</span>${myIpBadge(last?.ip, myIp)}${host ? html`<br><small>${host}</small>` : ""}
             <tr><th>${t`Last user`}<td>${lastUser ? user({ ...lastUser, usr_id: lastUser.id }) : "-"}
-            <tr><th>${t`Requests`}<td>${link(logUrl(id), range?.requests)}
+            <tr><th>${t`Requests`}<td>${link(logUrl({ search: id }), range?.requests)}
             <tr><th>${t`Sessions`}<td>${range?.sessions}${active ? html` <small class=u2-badge>${activeLabel}</small>` : ""}
             <tr><th>${t`First request`}<td>${first ? html`<span style="color:${ageColor(first.time)}">${u2.el.time(first.time)}</span><br><small style="word-break:break-all">${first.url}</small>` : "-"}
             <tr><th>${t`Origin`}<td><small style="word-break:break-all">${first?.referer || "-"}</small>
@@ -229,7 +223,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <div class=-head>${t`IPs`} (${ips.length})</div>
         <table class=u2-table>
             <tbody>${ips.map((row) => html`<tr>
-              <td style="color:${uniqueColor(row.ip)}">${link(logUrl(row.ip ?? ""), row.ip ?? "-")}${myIpBadge(row.ip, myIp)}
+              <td style="color:${uniqueColor(row.ip)}">${link(logUrl({ search: row.ip ?? "" }), row.ip ?? "-")}${myIpBadge(row.ip, myIp)}
               <td style="text-align:right">${row.n}
               <td style="white-space:nowrap; color:${ageColor(row.last)}">${u2.el.time(row.last, { narrow: true })}`)}
         </table>
@@ -239,7 +233,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <div class=-head>${t`Sessions`}</div>
         <table class=u2-table>
             <tbody>${sessions.length ? sessions.map((row) => html`<tr>
-              <td style="color:${uniqueColor(row.sess_id)}">${link(logUrl(row.sess_id), row.sess_id)}${Number(row.access) >= now - ACTIVE ? html` <small class=u2-badge>${activeLabel}</small>` : ""}
+              <td style="color:${uniqueColor(row.sess_id)}">${link(logUrl({ search: row.sess_id }), row.sess_id)}${Number(row.access) >= now - ACTIVE ? html` <small class=u2-badge>${activeLabel}</small>` : ""}
               <td>${row.usr_id ? user(row) : ""}
               <td style="text-align:right">${row.n}
               <td style="white-space:nowrap; color:${ageColor(row.first)}">${u2.el.time(row.first, { narrow: true })}`) : empty(4)}
@@ -263,7 +257,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <div class=-head>${t`Errors`} (${errors.length})</div>
         <table class=u2-table>
             <tbody>${errors.length ? errors.map((row) => html`<tr>
-              <td style="white-space:nowrap">${link(errorUrl(row.id), row.time)}
+              <td style="white-space:nowrap">${link(errorUrl({ id: row.id }), row.time)}
               <td>${row.source}
               <td style="word-break:break-all">${row.message}`) : empty(3)}
         </table>
