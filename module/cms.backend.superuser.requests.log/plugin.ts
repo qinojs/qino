@@ -350,17 +350,29 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const own = getCtx().clientId;
   const [rows, pageUrl] = await Promise.all([
     app.db.query`
-      SELECT log.id, log.time, url.url AS url
-       FROM log LEFT JOIN log_url url ON log.url_id = url.id
+      SELECT log.id, log.time, url.url AS url, ip.ip, ua.user_agent, usr.id AS usr_id, usr.username, usr.given_name, usr.family_name
+       FROM log
+          LEFT JOIN log_url url       ON log.url_id        = url.id
+          LEFT JOIN log_ip ip         ON log.ip_id         = ip.id
+          LEFT JOIN log_user_agent ua ON log.user_agent_id = ua.id
+          LEFT JOIN sess              ON log.sess_id       = sess.id
+          LEFT JOIN usr               ON sess.usr_id       = usr.id
        WHERE log.client_id IS NULL OR log.client_id != ${own}
-       ORDER BY log.id DESC LIMIT 50`.catch(() => []),
+       ORDER BY log.id DESC LIMIT 35`.catch(() => []),
     page?.url() ?? "",
   ]);
   if (!rows.length) return html``;
   const href = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + id;
-  return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => html`<tr u2-href>
+  return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
+    const info = backend.uaInfo(row.user_agent ?? "");
+    const user = [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
+    return html`<tr u2-href>
     <td style="white-space:nowrap"><a href="${href(row.id)}">${u2.el.time(row.time, { narrow: true })}</a>
-    <td><small style="word-break:break-all">${row.url}</small>`)}</table></div>`;
+    <td><small style="word-break:break-all">${row.url}</small>
+    <td style="white-space:nowrap"><small style="color:${uniqueColor(info.browser)}">${info.bot ? "bot" : info.browser}</small>
+    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>
+    <td style="white-space:nowrap">${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${user}</small>` : ""}`;
+  })}</table></div>`;
 }
 
 export const cms = {

@@ -281,8 +281,8 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <a href="${row.request}" target=_blank>${row.request}</a><br>
     <a href="${row.referer}" target=_blank>${row.referer}</a><br>
     <small>${row.browser}</small>
-    <br>${row.ip}
-    <br>${row.username}
+    <br><span style="color:${backend.uniqueColor(row.ip)}">${row.ip}</span>
+    <br><span style="color:${backend.uniqueColor(row.username)}">${row.username}</span>
   <td>${fileCell}
   <td>${bt.length ? html`<table>${btTrs}</table>` : ""}`);
   }
@@ -352,7 +352,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       }
       historyTrs.push(html`
 <tr>
-  <td>${u2.el.time(item.time)} <br> Session: ${item.sess_id} <br> Log-ID: ${item.id}
+  <td>${u2.el.time(item.time)} <br> Session: <span style="color:${backend.uniqueColor(item.sess_id)}">${item.sess_id}</span> <br> Log-ID: ${item.id}
   <td>
     <a href="${item.url}" target=_blank>${item.url}</a><br>
     <div style="font-size:.9em; color:#aaa">${item.referer}</div>
@@ -395,7 +395,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
         <small>${t`Referer`} <a href="${error.referer}">${error.referer}</a></small>
       <tr><th>${t`Browser`}<td><small>${error.browser}</small>
       <tr><th>${t`Time`}<td>${u2.el.time(error.time)} <small>(Log-ID ${error.log_id})</small>
-      <tr><th>${t`IP`}<td>${error.ip}
+      <tr><th>${t`IP`}<td style="color:${backend.uniqueColor(error.ip)}">${error.ip}
     </table>
     <div>
       ${sess ? html`<b>Sess</b><pre>${JSON.stringify(sess, null, 2)}</pre>` : ""}

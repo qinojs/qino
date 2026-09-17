@@ -269,7 +269,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
 // newest other clients with more than one request
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
-  const rows = await latest(app, 50, { window: 10000, returning: true, exclude: Number(getCtx().clientId) });
+  const rows = await latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) });
   if (!rows.length || !page) return html``;
   const pageUrl = await page.url();
   const href = (client: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + client;
@@ -278,6 +278,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     return html`<tr u2-href>
     <td><a href="${href(row.client_id)}" style="color:${uniqueColor(row.client_id)}">${row.client_id}</a>
     <td style="white-space:nowrap">${info.bot ? "bot" : html`<span style="color:${uniqueColor(info.browser)}">${info.browser}</span>`} ${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${userName(row)}</small>` : ""}
+    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>
     <td style="text-align:right">${row.requests}
     <td style="white-space:nowrap">${u2.el.time(row.time, { narrow: true })}`;
   })}</table></div>`;

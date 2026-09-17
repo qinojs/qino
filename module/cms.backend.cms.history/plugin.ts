@@ -116,7 +116,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   <td class=-who>${await actorCell(r, t)}
   <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
   <td class=-what>${labels}
-  <td class=-client>${r.ip ?? "-"}<br><small>${ua.browser} ${ua.version.split(".")[0]}${
+  <td class=-client><span style="color:${backend.uniqueColor(r.ip)}">${r.ip ?? "-"}</span><br><small style="color:${backend.uniqueColor(ua.browser)}">${ua.browser} ${ua.version.split(".")[0]}${
     ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : ""
   }</small>`;
 }
@@ -124,7 +124,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
 async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
   if (!r.usr_id) return html`<small>${await t`guest`}</small>`;
   const name = `${r.given_name ?? ""} ${r.family_name ?? ""}`.trim();
-  return html.async`<b>${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;
+  return html.async`<b style="color:${backend.uniqueColor(r.usr_id)}">${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;
 }
 
 // ── render ──────────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 import { getCtx, html, sql } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
 import { settings } from "./store.ts";
@@ -138,7 +139,7 @@ function scoreCell(r: Row) {
 }
 
 function bucketCell(r: Row) {
-  return r.scope || r.ident ? html`${tag(SCOPE_LABELS[r.scope] ?? (r.scope || "-"))}<br><code>${r.ident || "-"}</code>` : "-";
+  return r.scope || r.ident ? html`${tag(SCOPE_LABELS[r.scope] ?? (r.scope || "-"))}<br><code style="color:${backend.uniqueColor(r.ident)}">${r.ident || "-"}</code>` : "-";
 }
 
 function actionCell(r: Row) {
@@ -150,9 +151,9 @@ function actionCell(r: Row) {
 }
 
 function requestCell(r: Row) {
-  const meta = [r.method, r.ip, r.duration_ms ? r.duration_ms + "ms" : "", bytes(r.bytes_in, "in"), bytes(r.bytes_out, "out")].filter(Boolean);
+  const meta = [r.method, r.duration_ms ? r.duration_ms + "ms" : "", bytes(r.bytes_in, "in"), bytes(r.bytes_out, "out")].filter(Boolean);
   const ids = [r.log_id ? "log " + r.log_id : "", r.usr_id ? "user " + r.usr_id : "", r.client_id ? "client " + r.client_id : ""].filter(Boolean);
-  return html`<code>${r.path}</code>${meta.length ? html`<br><small>${meta.join(" · ")}</small>` : ""}${ids.length ? html`<br><small>${ids.join(" · ")}</small>` : ""}`;
+  return html`<code>${r.path}</code>${r.ip ? html`<br><small style="color:${backend.uniqueColor(r.ip)}">${r.ip}</small>` : ""}${meta.length ? html`<br><small>${meta.join(" · ")}</small>` : ""}${ids.length ? html`<br><small>${ids.join(" · ")}</small>` : ""}`;
 }
 
 function stateCell(r: Row) {
@@ -170,7 +171,7 @@ function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key:
   return html`<div class="u2-card -table -toplist"><div class=-head>${title}</div><table class=u2-table>
     ${rows.map(r => html`<tr>
       <td>${r.num}
-      <td><a href="${href(r[key])}"><code>${r[key]}</code></a>
+      <td><a href="${href(r[key])}"><code style="color:${backend.uniqueColor(r[key])}">${r[key]}</code></a>
       <td>${u2.el.time(r.last)}`)}
   </table></div>`;
 }

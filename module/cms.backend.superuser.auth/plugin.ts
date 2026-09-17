@@ -60,7 +60,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const sessionRows = sessions.map((s) => {
     const ways = Object.entries(viaOf(String(s.data ?? ""))).sort((a, b) => b[1] - a[1]);
     return html`<tr>
-      <td>${s.username ?? `#${s.usr_id}`}
+      <td style="color:${backend.uniqueColor(s.usr_id)}">${s.username ?? `#${s.usr_id}`}
       <td>${ways.length ? html.join(ways.map(([name, at]) => html`<code>${name}</code> ${when(at)}`), ", ") : "—"}
       <td>${when(Number(s.access))}`;
   });
