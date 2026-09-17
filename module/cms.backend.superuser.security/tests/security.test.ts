@@ -18,7 +18,7 @@ Deno.test("cms.backend.superuser.security lists suspicious IPs and releases them
     await app.fire("suspicious", { ctx, weight: 2, reason: "second" });
 
     app.t = ((strings: TemplateStringsArray) => Promise.resolve(strings.join(""))) as App["t"];
-    const page = { url: () => Promise.resolve("/backend/log?cmspid=9") };
+    const page = { access: () => Promise.resolve(3), url: () => Promise.resolve("/backend/log?cmspid=9") };
     const node = { app, cms: { nodeByModule: () => Promise.resolve({ page: () => Promise.resolve(page) }) } } as never;
     const opts = { ctx: { req: { url: new URL("https://qino.test/"), clientIp: "6.6.6.6" } } } as never;
     const out = String(await cms.node.parts.recent(node, opts)) + String(await cms.node.parts.suspects(node, opts));

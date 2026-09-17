@@ -72,10 +72,13 @@ export async function install(app: App, module: string, titles?: Record<string, 
   return p;
 }
 
-/** Link builder for another backend module's page: `link({ id })` → "/path?id=…", "" when that module has no page.
+/** Link builder for another backend module's page: `link({ id })` → "/path?id=…".
+ *  "" when that page is missing or the user may not see it — every caller falls back to plain text,
+ *  like the menu and the dashboard, which list only pages the user has access to.
  *  Page urls are app-relative, the base only lets `URL` parse them. */
 export async function toModuleUrl(node: Node, module: string): Promise<(params?: Record<string, unknown>) => string> {
-  const url = await (await (await node.cms.nodeByModule(module))?.page())?.url();
+  const page = await (await node.cms.nodeByModule(module))?.page();
+  const url = page && await page.access() ? await page.url() : "";
   const base = url ? new URL(url, "http://-") : null;
   return (params = {}) => {
     if (!base) return "";

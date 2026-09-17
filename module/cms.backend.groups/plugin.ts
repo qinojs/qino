@@ -35,8 +35,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     await db.table("grp").insert({ name: String(ctx.req.body.name ?? "") });
   }
 
-  const usersNode = await node.cms.nodeByModule("cms.backend.users");
-  const usersUrl = usersNode ? await (await usersNode.page()).url() : "";
+  const usersUrl = await backend.toModuleUrl(node, "cms.backend.users");
 
   const rows = await db.query`
     SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
@@ -44,12 +43,13 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 
   const trs = [];
   for (const vs of rows) {
+    const membersUrl = usersUrl({ grp_id: vs.id });
     trs.push(html`<tr itemid=${vs.id}>
       <td>${vs.id}
       <td><a href="?id=${vs.id}">${vs.name}</a>
       <td>${vs.type}
       <td style="text-align:right">${
-        usersUrl ? html`<a href="${usersUrl}?grp_id=${vs.id}">${Number(vs.members)}</a>` : Number(vs.members)
+        membersUrl ? html`<a href="${membersUrl}">${Number(vs.members)}</a>` : Number(vs.members)
       }
       <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
@@ -97,8 +97,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const vs = await db.row`SELECT * FROM grp WHERE id = ${id}`;
   if (!vs) return html.async`<div class=u2-card><div>${t`Group not found.`}</div></div>`;
 
-  const usersNode = await node.cms.nodeByModule("cms.backend.users");
-  const usersUrl = usersNode ? await (await usersNode.page()).url() : "";
+  const usersUrl = await backend.toModuleUrl(node, "cms.backend.users");
   const canManage = await canManageMembers(id);
 
   const members = await db.query`
@@ -109,8 +108,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const memberRows = [];
   for (const m of members) {
     const label = [m.given_name, m.family_name].filter(Boolean).join(" ") || m.username || m.id;
+    const userUrl = usersUrl({ id: m.id });
     memberRows.push(html`<tr>
-      <td>${usersUrl ? html`<a href="${usersUrl}?id=${m.id}">${label}</a>` : label}
+      <td>${userUrl ? html`<a href="${userUrl}">${label}</a>` : label}
       <td>${m.username}
       <td>${canManage ? html`<button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`);
   }

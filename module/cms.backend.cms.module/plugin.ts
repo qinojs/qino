@@ -218,8 +218,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
 
   const canReplace = access >= ADMIN && editable > 0 && !!targets.length;
   // the code/plugin view of the same module, if that backend page is installed and readable
-  const codePage = await (await node.cms.nodeByModule("cms.backend.superuser.module"))?.page();
-  const codeUrl = codePage && await codePage.access() ? await codePage.url() : "";
+  const codeUrl = (await backend.toModuleUrl(node, "cms.backend.superuser.module"))({ mod: modName });
   const history = await historyRows(node, visible, titles);
 
   return html.async`<div class="u2-flex cmsBackendCmsModule" data-mod="${modName}">
@@ -230,7 +229,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
       <tr><th>${t`Used`}<td>${usedTotal}
       <tr><th>${t`Module access`}<td>${accessWord(access)}
       <tr><th>${t`Standard`}<td>${stdWord(standard)}
-      ${codeUrl ? html.async`<tr><th>${t`Code`}<td><a href="${modUrl(codeUrl, modName)}">cms.backend.superuser.module</a>` : ""}
+      ${codeUrl ? html.async`<tr><th>${t`Code`}<td><a href="${codeUrl}">cms.backend.superuser.module</a>` : ""}
     </table>
     ${message ? html`<div class=-body><strong>${message}</strong></div>` : ""}
   </div>

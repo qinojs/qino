@@ -105,9 +105,7 @@ async function render(node: Node): Promise<HtmlString> {
   const store = app.stores.get(storeUrl(app));
   const mine = await (store?.names() ?? Promise.resolve([])).catch(() => []);
   const templates = app.modules.all().values().filter((mod) => mod.manifest.files?.length).map((mod) => mod.name).toArray().sort();
-  const modulesPage = await (await node.cms.nodeByModule("cms.backend.superuser.module"))?.page();
-  const modulesUrl = modulesPage && await modulesPage.access() ? await modulesPage.url() : "";
-  const modUrl = (mod: string) => `${modulesUrl}${modulesUrl.includes("?") ? "&" : "?"}mod=${encodeURIComponent(mod)}`;
+  const modulesUrl = await backend.toModuleUrl(node, "cms.backend.superuser.module");
 
   return html.async`<div class=u2-flex>
   <div class=u2-card>
@@ -130,9 +128,9 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Modules of this app`} <small>${mine.length}</small></div>
     <table class=u2-table>
-      ${mine.map((mod) => html.async`<tr>
-        <td>${modulesUrl ? html`<a href="${modUrl(mod)}">${mod}</a>` : mod}
-        <td><small>${app.modules.linked(mod) ? t`active` : t`inactive`}</small>`)}
+      ${mine.map((mod) => { const url = modulesUrl({ mod }); return html.async`<tr>
+        <td>${url ? html`<a href="${url}">${mod}</a>` : mod}
+        <td><small>${app.modules.linked(mod) ? t`active` : t`inactive`}</small>`; })}
     </table>
   </div>
 </div>`;
