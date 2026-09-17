@@ -1,7 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 
 cms.initNode("backend.superuser.security", (el) => {
-  const { execute, refresh, alert } = nodePanel(el, ["list"]);
+  const { execute, refresh, alert } = nodePanel(el, ["suspects", "recent"]);
 
   el.addEventListener("click", (event) => {
     const release = event.target.closest("[data-release]");

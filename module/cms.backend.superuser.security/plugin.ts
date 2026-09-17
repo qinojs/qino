@@ -21,62 +21,65 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+function render(node: Node, opts: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<div class="u2-card">
-    <div class=-head>
-      <span>${t`Security`}</span>
+    <div class=-head>${t`Security`}</div>
+    <div class=-body>
       <button type=button data-refresh>${t`Refresh`}</button>
+      ${t`Each report adds its weight to the IP; the strength halves every`} ${duration(HALF)}.
+      ${t`Answers wait strength² ms, from`} ${BLOCK} ${t`on they are refused.`}
     </div>
-    <div cms-part=list>${list(node, { ctx })}</div>
+    <table class="u2-table -Sticky" style="padding:0" cms-part=suspects>${suspectRows(node, opts)}</table>
+    <div class=-body><b>${t`Recent reports`}</b> <small>${t`since the last restart`}</small></div>
+    <table class="u2-table -Sticky" cms-part=recent>${recentRows(node, opts)}</table>
   </div>`;
 }
 
-async function list(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const app = node.app;
-  const t = app.t;
-  // IP → request log of that IP; plain text for an IPv6 network or without the log page
-  const logUrl = await (await (await node.cms.nodeByModule("cms.backend.superuser.requests.log"))?.page())?.url();
-  const ip = (value: string) => {
-    if (!logUrl || value.includes("/")) return html`<code>${value}</code>`;
-    const url = new URL(logUrl, ctx.req.url.origin);
-    url.searchParams.set("search", value);
-    return html`<a href="${url.href}"><code>${value}</code></a>`;
-  };
-  const ips = await Promise.all(suspects(app).map((s) => html.async`<tr>
+async function suspectRows(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const t = node.app.t;
+  const ip = await ipLink(node, ctx);
+  const rows = suspects(node.app).map((s) => html.async`<tr>
       <td>${ip(s.key)}
       <td>${s.strength < 10 ? s.strength.toFixed(1) : Math.round(s.strength)}
       <td>${s.blocked ? html.async`<span class=u2-badge>${t`blocked`}</span> ${duration(s.blocked)}` : `${Math.round(s.delay)} ms`}
       <td>${time(s.time)}
-      <td><button type=button data-release="${s.key}">${t`Release`}</button>`));
-  const recent = reports(app).map((r) => html`<tr>
-      <td>${time(r.time)}
-      <td>${ip(r.ip)}
-      <td>${r.weight}
-      <td>${r.reason}`);
-
-  return html.async`<div class=-body>
-    ${t`Each report adds its weight to the IP; the strength halves every`} ${duration(HALF)}.
-    ${t`Answers wait strength² ms, from`} ${BLOCK} ${t`on they are refused.`}
-  </div>
-  ${ips.length ? html.async`<table class="u2-table -Sticky">
-    <thead><tr>
+      <td><button type=button data-release="${s.key}">${t`Release`}</button>`);
+  return html.async`<thead><tr>
       <th>IP
       <th>${t`Strength`}
       <th>${t`Effect`}
       <th>${t`Last report`}
       <th>
-    <tbody>${ips}
-  </table>` : html.async`<div class=-body>${t`No suspicious IPs.`}</div>`}
-  <div class=-body><b>${t`Recent reports`}</b> <small>${t`since the last restart`}</small></div>
-  ${recent.length ? html.async`<table class="u2-table -Sticky">
-    <thead><tr>
+    <tbody>${rows.length ? rows : html.async`<tr><td colspan=5>${t`No suspicious IPs.`}`}`;
+}
+
+async function recentRows(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const t = node.app.t;
+  const ip = await ipLink(node, ctx);
+  const rows = reports(node.app).map((r) => html`<tr>
+      <td>${time(r.time)}
+      <td>${ip(r.ip)}
+      <td>${r.weight}
+      <td>${r.reason}`);
+  return html.async`<thead><tr>
       <th>${t`Time`}
       <th>IP
       <th>${t`Weight`}
       <th>${t`Reason`}
-    <tbody>${recent}
-  </table>` : html.async`<div class=-body>${t`No reports yet.`}</div>`}`;
+    <tbody>${rows.length ? rows : html.async`<tr><td colspan=4>${t`No reports yet.`}`}`;
+}
+
+/** IP → request log of that IP; plain text for an IPv6 network or without the log page. */
+async function ipLink(node: Node, ctx: Ctx): Promise<(value: string) => HtmlString> {
+  const url = await (await (await node.cms.nodeByModule("cms.backend.superuser.requests.log"))?.page())?.url();
+  const log = url && new URL(url, ctx.req.url.origin);
+  return (value) => {
+    if (!log || value.includes("/")) return html`<code>${value}</code>`;
+    const href = new URL(log);
+    href.searchParams.set("search", value);
+    return html`<a href="${href.href}"><code>${value}</code></a>`;
+  };
 }
 
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -100,6 +103,6 @@ export const cms = {
     js: ["pub/main.js"],
     render,
     api,
-    parts: { list },
+    parts: { suspects: suspectRows, recent: recentRows },
   },
 };

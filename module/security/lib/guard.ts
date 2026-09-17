@@ -7,12 +7,12 @@ import type { App, Ctx } from "@qino/qino";
 
 export const HALF = 3600;  // a suspicion halves every hour
 export const BLOCK = 50;   // from this strength on, answers are refused; below, they wait strength² ms
-const KEEP = 5;            // from this strength on, it is stored
+const STORE = 5;           // from this strength on, it is stored
 const MAX = 10000;         // tracked keys before faded ones are swept
 const REPORTS = 100;       // recent reports kept for the backend
 
 type Entry = { s: number; t: number; stored?: boolean };
-export type Report = { time: number; ip: string; weight: number; reason: string };
+type Report = { time: number; ip: string; weight: number; reason: string };
 type State = { keys: Map<string, Entry>; reports: Report[]; writes: Map<string, Promise<void>> };
 
 const states = new WeakMap<App, State>();
@@ -20,7 +20,7 @@ const now = () => Date.now() / 1000;
 const decay = (e: Entry, t: number) => e.s * 2 ** ((e.t - t) / HALF);
 
 /** Registers the score scope and warms the in-memory view, so a restart does not forgive anyone. */
-export async function start(app: App): Promise<void> {
+export async function load(app: App): Promise<void> {
   await scored(app.db, "log_ip", HALF);
   const state: State = { keys: new Map(), reports: [], writes: new Map() };
   states.set(app, state);
@@ -33,7 +33,7 @@ export async function start(app: App): Promise<void> {
 
 export function suspect(ctx: Ctx, weight: number, reason: string): void {
   const ip = ctx.req.clientIp;
-  if (!ip) return;
+  if (!ip || ctx.user?.superuser) return; // a superuser does not lock himself out
   const { keys, reports } = states.get(ctx.app)!;
   const key = ipKey(ip);
   const t = now();
@@ -44,7 +44,7 @@ export function suspect(ctx: Ctx, weight: number, reason: string): void {
   const next: Entry = { s: (e ? decay(e, t) : 0) + weight, t, stored: e?.stored };
   keys.set(key, next);
   // One-off slips stay in memory; the first store carries what was collected so far.
-  if (next.s < KEEP) return;
+  if (next.s < STORE) return;
   const add = next.stored ? weight : next.s;
   next.stored = true;
   store(ctx.app, key, add);
@@ -64,17 +64,17 @@ function store(app: App, key: string, add: number): void {
  *  A concurrent insert by the request log wins the race; its row is read then. */
 async function keyId(app: App, key: string): Promise<number> {
   const table = app.db.table("log_ip");
-  const row = await table.rowBy("ip", key);
-  if (row) return Number(String(row));
-  return Number(await table.insert({ ip: key }).catch(async () => String(await table.rowBy("ip", key))));
+  const find = () => table.rowBy("ip", key);
+  return Number(String(await find() ?? await table.insert({ ip: key }).catch(find)));
 }
 
 /** Seconds until a strength drops below BLOCK, negative when it is not blocked. */
 const blockedFor = (s: number) => Math.ceil(Math.log2(s / BLOCK) * HALF);
 
-/** Before any other work, so static files are covered too. */
-export async function gate(app: App, ip: string): Promise<void> {
+/** Before any other work, so static files are covered too. Synchronous unless it delays. */
+export function gate(app: App, ip: string): Promise<void> | void {
   const { keys } = states.get(app)!;
+  if (!keys.size) return; // the usual case: nobody is suspect
   const key = ipKey(ip);
   const e = keys.get(key);
   if (!e) return;
@@ -82,7 +82,7 @@ export async function gate(app: App, ip: string): Promise<void> {
   if (s < 1) return void keys.delete(key);
   const wait = blockedFor(s);
   if (wait >= 0) throw new Output("Too many requests", { status: 429, headers: { "Retry-After": String(wait || 1) } });
-  await new Promise((resolve) => setTimeout(resolve, s * s));
+  return new Promise<void>((resolve) => setTimeout(resolve, s * s));
 }
 
 /** Tracked keys (see ipKey), strongest first. `blocked` is seconds left, 0 when only delayed. */
@@ -105,6 +105,6 @@ export async function release(app: App, key: string): Promise<void> {
   const state = states.get(app);
   state?.keys.delete(key);
   await state?.writes.get(key); // a pending write would bring the score back
-  const id = await app.db.one`SELECT id FROM log_ip WHERE ip = ${key}`;
-  if (id) await forget(app.db, "log_ip", Number(id));
+  const row = await app.db.table("log_ip").rowBy("ip", key);
+  if (row) await forget(app.db, "log_ip", Number(String(row)));
 }

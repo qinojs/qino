@@ -1,11 +1,13 @@
+import { uid } from "@qino/qino";
+
 import type { App } from "@qino/qino";
 
-const TRAP = "admin-backup/";
-
-/** A path robots.txt disallows and nothing links to: whoever asks for it ignored robots.txt. */
+/** A random path robots.txt disallows and nothing links to: whoever asks for it ignored robots.txt.
+ *  New at every start; a bot holding an older robots.txt just is not caught. */
 export function robotsHoneypot(app: App, signal: AbortSignal): void {
-  app.on("route", async ({ ctx }) => {
-    if (ctx.req.appPath.startsWith(TRAP)) await app.fire("suspicious", { ctx, weight: 3, reason: "robots.txt honeypot" });
+  const trap = uid(8) + "/";
+  app.on("route", ({ ctx }) => {
+    if (ctx.req.appPath.startsWith(trap)) app.fire("suspicious", { ctx, weight: 10, reason: "robots.txt honeypot" }).catch(() => {});
   }, { signal });
-  app.on("seo:robots", ({ ctx, lines }) => { lines.push(`Disallow: ${ctx.req.appUrl}${TRAP}`); }, { signal });
+  app.on("seo:robots", ({ ctx, lines }) => { lines.push(`Disallow: ${ctx.req.appUrl}${trap}`); }, { signal });
 }

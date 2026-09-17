@@ -9,6 +9,7 @@
     "README.md",
     "lib/guard.ts",
     "lib/ipKey.ts",
+    "lib/pathReports.ts",
     "lib/robotsHoneypot.ts",
     "manifest.json",
     "mod.ts",

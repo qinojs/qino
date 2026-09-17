@@ -20,7 +20,7 @@ Deno.test("cms.backend.superuser.security lists suspicious IPs and releases them
     const page = { url: () => Promise.resolve("/backend/log?cmspid=9") };
     const node = { app, cms: { nodeByModule: () => Promise.resolve({ page: () => Promise.resolve(page) }) } } as never;
     const opts = { ctx: { req: { url: new URL("https://qino.test/") } } } as never;
-    const out = String(await cms.node.parts.list(node, opts));
+    const out = String(await cms.node.parts.recent(node, opts)) + String(await cms.node.parts.suspects(node, opts));
     assertStringIncludes(out, `<a href="https://qino.test/backend/log?cmspid=9&amp;search=6.6.6.6"><code>6.6.6.6</code></a>`);
     assertStringIncludes(out, ">blocked</span>");
     assertStringIncludes(out, "test &lt;probe&gt;");
@@ -28,7 +28,7 @@ Deno.test("cms.backend.superuser.security lists suspicious IPs and releases them
 
     const res = await cms.node.api(node, { release: "6.6.6.6" }) as { ok: boolean };
     assertEquals(res.ok, true);
-    assertStringIncludes(String(await cms.node.parts.list(node, opts)), "No suspicious IPs.");
+    assertStringIncludes(String(await cms.node.parts.suspects(node, opts)), "No suspicious IPs.");
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM score`), 0);
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

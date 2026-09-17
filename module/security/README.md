@@ -18,18 +18,22 @@ Strengths live in memory, so the per-request check needs no query. From strength
 are also stored through [`score`](../score/) on `log_ip`, so a restart does not forgive anyone
 and the score backend shows them; one-off slips cost no write.
 
-With [`seo`](../seo/), `robots.txt` disallows `admin-backup/`, a path nothing links to. Whoever
-requests it read robots.txt and ignored it, which reports weight 3.
+With [`seo`](../seo/), `robots.txt` disallows a random path nothing links to, like `xF39FliP/`,
+new at every start. Whoever requests it read robots.txt and ignored it, which reports weight 20.
+
+A 404 on a path no site ever links to (`.env`, `.git`, `phpinfo`, `server-status`, `*.sql`, …)
+reports weight 20, so three of them block. A 404 on a path of another system (`*.php`,
+`wp-admin`, `js/`, `css/`, …) reports weight 5; after replacing an old site these may be real
+links, so turn off `security.foreignPaths` for a while. Both lists live in `lib/pathReports.ts`.
 
 `mod.ts` exposes `suspects(app)`, `reports(app)` (the last 100, in memory) and
-`release(app, ip)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)
+`release(app, key)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)
 shows them.
 
 ## Ideas
 
 Collected from the former `cms.backend.system.security`:
 
-- Report probes for foreign stacks on 404: `wp-admin`, `xmlrpc.php`, `.env`, `.git`, `phpmyadmin`, `*.php`.
 - Report injection patterns in path and query: `union select`, `../`, `<script`, `;cat`.
 - Report failed logins (`ctx.loginError`), weighted by cause.
 - Report slow requests, large bodies and 5xx bursts per path.
