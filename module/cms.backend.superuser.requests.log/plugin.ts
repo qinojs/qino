@@ -1,5 +1,5 @@
 import { dump } from "@nuxodin/dump";
-import { html, getCtx, sql, unixTime } from "@qino/qino";
+import { html, getCtx, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -47,11 +47,16 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   if (f.from)          where.push(sql`log.time >= ${backend.toUnix(f.from)}`);
   if (f.to)            where.push(sql`log.time <= ${backend.toUnix(f.to)}`);
   // Search hits a single indexed path (never an OR across joined tables, which would
-  // force a full log scan). Input shape decides the dimension: number → id/client,
+  // force a full log scan). Input shape decides the dimension: "user:x" → usr, number → id/client,
   // ip shape → ip (prefix match on the unique log_ip.ip), else → url (fulltext on the small log_url).
   if (f.search) {
     const s = f.search.trim();
-    if (/^\d+$/.test(s)) {
+    const user = s.match(/^user:(.+)/i)?.[1].trim();
+    if (user) {
+      // usr is small; sess.usr_id and log.sess_id are indexed, so the log itself is still a seek.
+      const u = sqlSearch(user, ["given_name", "family_name", "username", "organization"], { exact: ["id"] });
+      where.push(sql`log.sess_id IN (SELECT id FROM sess WHERE usr_id IN (SELECT id FROM usr WHERE ${u.where}))`);
+    } else if (/^\d+$/.test(s)) {
       where.push(sql`(log.id = ${Number(s)} OR log.client_id = ${Number(s)} OR log.sess_id = ${Number(s)})`); // same table → index merge
     } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4})+$/i.test(s)) {
       where.push(sql`log.ip_id IN (SELECT id FROM log_ip WHERE ip LIKE ${s + "%"})`); // prefix → index seek
@@ -197,7 +202,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
         <div class=-head>${t`Filter`}</div>
         <div>
             <form data-filter class=u2-flex style="gap:.5em 1em; align-items:end">
-                <label>${t`Search`}<br><input name=search value="${initSearch}" placeholder="${t`URL, IP, ID`}"></label>
+                <label>${t`Search`}<br><input name=search value="${initSearch}" placeholder="${t`URL, IP, ID, user:name`}"></label>
                 <label>ID<br><input type=number name=id></label>
                 <label>${t`Logged in`}<br><select name=loggedin><option value=""><option value=yes>${t`yes`}<option value=no>${t`no`}</select></label>
                 <label>${t`from`}<br><input type=datetime-local name=from></label>
@@ -329,7 +334,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <tr><th>${t`Session`}<td><a href="${searchLink(log.sess_id)}">${log.sess_id}</a>
             <tr>
               <th>${t`User`}
-              <td>${usr ? html`${(usr.given_name ?? "") + " " + (usr.family_name ?? "")} <small>#${usr.id}</small>
+              <td>${usr ? html`<a href="${searchLink("user:" + usr.id)}">${(usr.given_name ?? "") + " " + (usr.family_name ?? "")}</a> <small>#${usr.id}</small>
                   <br><small>${usr.username}</small>` : "guest"}
             <tr><th>POST<td><div style="max-width:40rem; max-height:30rem; overflow:auto">${dumpData(log.post)}</div>
         </table>
