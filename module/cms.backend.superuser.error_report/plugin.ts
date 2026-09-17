@@ -1,7 +1,6 @@
 import { html, getCtx, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { cms as cmsOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import type { Sql, Ctx, App, HtmlString } from "@qino/qino";
@@ -435,7 +434,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const db = app.db;
   const rows = await db.query`
     SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
@@ -451,15 +450,13 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
   if (!rows.length) return html`<span style="color:var(--green)">&#10003; No entries (last 7 days)</span>`;
 
-  const errNode = await cmsOf(app).nodeByModule("cms.backend.superuser.error_report");
-  const baseUrl = errNode ? await errNode.url() : null;
+  const baseUrl = page ? await page.url() : "";
 
   const color: Record<string, string> = { error: "var(--red)", warning: "var(--orange)", notice: "var(--gray)" };
   const trs = [];
   for (const row of rows) {
     const c = color[row.prio] ?? "#333";
-    const qs = "?show=entries&source=" + encodeURIComponent(row.source) + "&file=" + encodeURIComponent(row.file) + "&line=" + encodeURIComponent(row.line) + "&col=" + encodeURIComponent(row.col);
-    const detailUrl = baseUrl ? baseUrl.replace(/(#|$)/, qs + "$1") : null;
+    const detailUrl = backend.toUrl(baseUrl, { show: "entries", source: row.source, file: row.file, line: row.line, col: row.col });
     const msg = html`<span style="max-width:12.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${row.message}</span>`;
     trs.push(html`<tr>
     <td><span style="color:${c};font-weight:bold">${row.prio}</span>
