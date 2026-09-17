@@ -8,6 +8,7 @@
   "files": [
     "README.md",
     "lib/guard.ts",
+    "lib/ipKey.ts",
     "lib/robotsHoneypot.ts",
     "manifest.json",
     "mod.ts",

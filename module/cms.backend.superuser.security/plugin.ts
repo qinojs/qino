@@ -35,20 +35,20 @@ function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 async function list(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  // IP → request log of that IP; plain text when the log page is not installed
+  // IP → request log of that IP; plain text for an IPv6 network or without the log page
   const logUrl = await (await (await node.cms.nodeByModule("cms.backend.superuser.requests.log"))?.page())?.url();
   const ip = (value: string) => {
-    if (!logUrl) return html`<code>${value}</code>`;
+    if (!logUrl || value.includes("/")) return html`<code>${value}</code>`;
     const url = new URL(logUrl, ctx.req.url.origin);
     url.searchParams.set("search", value);
     return html`<a href="${url.href}"><code>${value}</code></a>`;
   };
   const ips = await Promise.all(suspects(app).map((s) => html.async`<tr>
-      <td>${ip(s.ip)}
+      <td>${ip(s.key)}
       <td>${s.strength < 10 ? s.strength.toFixed(1) : Math.round(s.strength)}
       <td>${s.blocked ? html.async`<span class=u2-badge>${t`blocked`}</span> ${duration(s.blocked)}` : `${Math.round(s.delay)} ms`}
       <td>${time(s.time)}
-      <td><button type=button data-release="${s.ip}">${t`Release`}</button>`));
+      <td><button type=button data-release="${s.key}">${t`Release`}</button>`));
   const recent = reports(app).map((r) => html`<tr>
       <td>${time(r.time)}
       <td>${ip(r.ip)}

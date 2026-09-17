@@ -1,6 +1,7 @@
 # security
 
-Slows down and blocks IP addresses that other modules report as suspicious:
+Slows down and blocks IP addresses that other modules report as suspicious. An IPv6 address
+counts as its `/64` network, which one connection holds and can rotate the rest of:
 
 ```ts
 ctx.app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" });
