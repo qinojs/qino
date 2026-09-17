@@ -43,6 +43,14 @@ export async function healthChecks(app: App) {
     return { info: `${hee(url)} — ${hee(reason)}`, solutions: current && current !== url ? setTo(current) : {} };
   };
 
+  warning["public address is not the one you are on"] = async () => {
+    const url = String(await settings.core.url ?? "");
+    const current = here();
+    const slash = (u: string) => u.replace(/\/?$/, "/");
+    if (!url || !current || slash(url) === slash(current)) return;
+    return { info: `set to ${hee(url)}, you are on ${hee(current)} — mails and jobs link to the first one`, solutions: setTo(current) };
+  };
+
   warning["a remote module is missing public files"] = async () => {
     // only a complete mirror is stamped with the source it came from, so a stamp that does not
     // match is the whole signal — the file that stayed away is otherwise a line in the console

@@ -3,6 +3,7 @@ import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { healthChecks } from "../healthChecks.ts";
 import { fakeSettings } from "./appFake.ts";
+import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 
@@ -48,4 +49,17 @@ Deno.test("healthChecks: a text's own language rows are not a use of it", async 
   await found.solutions.run.solve();
   assertEquals(await ids(a.db), [2]);
   assertEquals(Number(await a.db.one`SELECT count(*) FROM text_lang`), 1);
+});
+
+const onUrl = <T>(url: string, fn: () => T): T =>
+  requestStorage.run({ req: { url: new URL(url), appUrl: "/" } } as any, fn);
+
+Deno.test("healthChecks: the address you are on differs from core.url", async () => {
+  await using a = await app();
+  a.settings = fakeSettings({ core: fakeSettings({ url: "https://set.example/" }) });
+  const check = (await healthChecks(a)).warning["public address is not the one you are on"];
+  assertEquals(await onUrl("https://set.example/", check), undefined); // same address, trailing slash aside
+  const found = await onUrl("https://other.example/", check) as any;
+  assertEquals(found.info.includes("https://other.example/"), true);
+  assertEquals(Object.keys(found.solutions), ["set it to: https://other.example/"]);
 });
