@@ -28,6 +28,9 @@ Built-in reports, each in its own file under `lib/`:
   replacing an old site the latter may be real links, so turn off `security.foreignPaths` for
   a while.
 
+Other modules report on their own; core weighs every failed login the same, because a weight by
+cause would be measurable as a delay and so tell an outsider whether an address exists.
+
 `mod.ts` exposes `suspects(app)`, `reports(app)` (the most recent, in memory) and
 `release(app, key)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)
 shows them.
@@ -37,6 +40,5 @@ shows them.
 Collected from the former `cms.backend.system.security`:
 
 - Report injection patterns in path and query: `union select`, `../`, `<script`, `;cat`.
-- Report failed logins (`ctx.loginError`), weighted by cause.
 - Report slow requests, large bodies and 5xx bursts per path.
 - An allowlist of paths or IPs that never count.

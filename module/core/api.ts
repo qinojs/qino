@@ -89,7 +89,7 @@ export const api: ApiTree = {
           await beforeProof(ctx.app, ctx.userId);
           if (!await pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? ""))) {
             await proofFailed(ctx.app, ctx.userId);
-            ctx.app.fire("suspicious", { ctx, reason: "password step-up failed" }).catch(() => {});
+            ctx.app.fire("suspicious", { ctx, weight: 2, reason: "password step-up failed" }).catch(() => {});
             throw new ApiError(422, "That password does not match");
           }
           await proofPassed(ctx.app, ctx.userId);

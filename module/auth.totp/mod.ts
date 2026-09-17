@@ -38,7 +38,7 @@ export async function verify(ctx: Ctx, code: string): Promise<boolean> {
     return !await proof(ctx, TYPE, usrId); // nothing missing = it counted
   }
   await proofFailed(ctx.app, usrId);
-  ctx.app.fire("suspicious", { ctx, reason: "totp verification failed" }).catch(() => {});
+  ctx.app.fire("suspicious", { ctx, weight: 2, reason: "totp verification failed" }).catch(() => {});
   throw new ApiError(422, "That code does not match");
 }
 

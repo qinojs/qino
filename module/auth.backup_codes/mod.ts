@@ -51,7 +51,7 @@ export async function spend(ctx: Ctx, code: string): Promise<boolean> {
   // The delete decides the race: of two parallel attempts with the same code only one removes a row
   if (!match || !await drop(ctx.app, usrId, TYPE, Number(match.id))) {
     await proofFailed(ctx.app, usrId);
-    ctx.app.fire("suspicious", { ctx, reason: "backup code rejected" }).catch(() => {});
+    ctx.app.fire("suspicious", { ctx, weight: 2, reason: "backup code rejected" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }
   return !await proof(ctx, TYPE, usrId); // nothing missing = it counted

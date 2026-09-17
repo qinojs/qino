@@ -229,7 +229,7 @@ export const api: ApiTree = {
               const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             } else {
-              ctx.app.fire("suspicious", { ctx, reason: "webauthn login challenge for unknown email" }).catch(() => {});
+              ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login challenge for unknown email" }).catch(() => {});
             }
           }
 
@@ -260,7 +260,7 @@ export const api: ApiTree = {
 
           const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
           if (!r.ok) {
-            ctx.app.fire("suspicious", { ctx, reason: "webauthn login verification failed" }).catch(() => {});
+            ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login verification failed" }).catch(() => {});
             return r;
           }
 

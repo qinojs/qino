@@ -26,6 +26,12 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
     const saveLogin = !!body.save_login;
     ctx.loginError = await tryLogin(ctx, String(body.email ?? ""), String(body.pw ?? "")) || undefined;
     if (!ctx.loginError) await rememberLogin(ctx, saveLogin);
+    // attempts.ts slows down the account, this the client — the one guessing its way through accounts.
+    // Every failure weighs the same: a weight by cause would be measurable as a delay, and so tell
+    // an outsider whether an address exists. `pending` is no failure.
+    if (ctx.loginError && ctx.loginError !== "pending") {
+      ctx.app.fire("suspicious", { ctx, weight: 2, reason: "login failed: " + ctx.loginError }).catch(() => {});
+    }
   }
   if (body?.core_logout != null) {
     if (!safeEqual(body.csrfToken, ctx.csrfToken)) return;
@@ -48,18 +54,18 @@ export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginE
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
   const usrId = Number(user.id);
   const rehash = pwNeedsRehash(usr.pw);
-  if (!rehash) {
-    const clientUsrs = await ctx.client.users();
-    // remember-me: the password is never asked here, so this is how access was had, not what proved it
-    if (clientUsrs[String(usrId)]?.save_login) return await login(ctx, usrId, "remember") ? "" : "username";
-  }
+  const known = (await ctx.client.users())[String(usrId)];
+  // remember-me: the password is never asked here, so this is how access was had, not what proved it
+  if (!rehash && known?.save_login) return await login(ctx, usrId, "remember") ? "" : "username";
   // Only a typed password is a guess — the pass above comes through without one on every request of
   // a client whose session lapsed, and that must neither cost the account nor make it wait.
   if (!pw) return "password";
   // The wait is the account's, so the user has to be known before we can ask for it. A wait
   // therefore tells an outsider that this address exists; it costs them four wrong guesses to learn
   // that, and the alternative is lying to the owner about why they cannot get in.
-  const wait = await proofWait(ctx.app, usrId);
+  // A client this user has signed in from before never waits: otherwise anyone knowing the address
+  // could park the owner in front of their own login. Wrong tries still count, for everyone else.
+  const wait = known ? 0 : await proofWait(ctx.app, usrId);
   if (wait) {
     ctx.loginRetryAfter = wait; // the form says how long, so nobody has to guess that too
     return "throttled";

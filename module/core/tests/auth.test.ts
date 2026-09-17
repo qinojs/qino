@@ -175,3 +175,38 @@ Deno.test("login: how the identity was had is recorded, and the rotation drops i
     assertEquals(ctx.sess.data.core.via(), undefined);
   });
 });
+
+// A wrong password and an unknown address weigh the same, or the delay would say which is which.
+Deno.test("loginFromRequest: a failed login reports the client as suspicious", async () => {
+  await withApp(async (app, ctx) => {
+    const seen: { weight?: number; reason?: string }[] = [];
+    app.on("suspicious", (e) => void seen.push({ weight: e.weight, reason: e.reason }));
+    const post = async (email: string, pw: string) => {
+      const body = new URLSearchParams({ core_login: "", email, pw, csrfToken: ctx.csrfToken });
+      const attempt = await Ctx.create(app, new Request("http://test/", { method: "POST", body }), { appUrl: "/" });
+      attempt.sess = ctx.sess;
+      attempt.clientId = ctx.clientId;
+      await loginFromRequest(attempt);
+    };
+
+    await post("missing@example.test", "wrong");
+    await post("ann@example.test", "wrong");
+    assertEquals(seen, [
+      { weight: 2, reason: "login failed: username" },
+      { weight: 2, reason: "login failed: password" },
+    ]);
+  });
+});
+
+// Anyone knowing an address could otherwise park its owner in front of their own login.
+Deno.test("tryLogin: a client this user knows is not made to wait", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").row(7).$set({ pw: await pwHash("right") });
+    for (let i = 0; i < 6; i++) await proofFailed(app, 7);
+    assertEquals(await tryLogin(ctx, "ann@example.test", "wrong"), "throttled");
+
+    await app.db.table("client_usr").insert({ client_id: 1, usr_id: 7 });
+    ctx.client.$forget?.();
+    assertEquals(await tryLogin(ctx, "ann@example.test", "right"), "");
+  });
+});
