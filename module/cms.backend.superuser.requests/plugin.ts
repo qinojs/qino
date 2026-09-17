@@ -66,9 +66,17 @@ async function recent(app: App) {
   };
 }
 
-function topTable(rows: (readonly [string, number])[], total: number, colored = false): HtmlString {
+const urlCell = (url: string) => html`<td style="word-break:break-all">${url}`;
+
+// referer split into its domain (colored) and the rest
+const refererCells = (url: string) => {
+  const u = new URL(url);
+  return html`<td style="color:${uniqueColor(u.host)}">${u.host}<td style="word-break:break-all">${u.pathname + u.search}`;
+};
+
+function topTable(rows: (readonly [string, number])[], total: number, cells = urlCell): HtmlString {
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map(([label, n]) => html`<tr>
-    <td style="word-break:break-all${colored ? html.raw(`; color:${uniqueColor(label)}`) : ""}">${label}
+    ${cells(label)}
     <td style="text-align:right">${int(n)}
     <td style="text-align:right"><small>${total ? Math.round(n / total * 100) : 0}%</small>`)}</table></div>`;
 }
@@ -85,7 +93,7 @@ async function render(node: Node): Promise<HtmlString> {
     </div>
     <div class=u2-card style="flex:1 1 30rem">
         <div class=-head>${t`Top external referers`}</div>
-        ${topTable(r.referers, r.total, true)}
+        ${topTable(r.referers, r.total, refererCells)}
     </div>
   </div>
 </div>`;
