@@ -9,18 +9,11 @@ import type { Sql, Ctx, App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
+const { uniqueColor } = backend;
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, name, { en: "Requests", de: "Anfragen" });
+  await backend.install(app, name, { en: "Log", de: "Log" });
 }
-
-// deterministic color from any value (clients, IPs, users …)
-const uniqueColor = (v: unknown): string => {
-  const s = String(v ?? "");
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return `hsl(${h % 360} 55% 45%)`;
-};
 
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first
 const dumpData = (raw: unknown): HtmlString => {
@@ -352,15 +345,22 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
-  const db = app.db;
-  const since = unixTime() - 86400;
-  const total = Number(await db.one`SELECT count(*) FROM log WHERE time >= ${since}`.catch(() => 0)) || 0;
-  const users = Number(await db.one`SELECT count(DISTINCT sess.usr_id) FROM log JOIN sess ON log.sess_id = sess.id WHERE log.time >= ${since} AND sess.usr_id IS NOT NULL`.catch(() => 0)) || 0;
-  return html.async`<div class=-body>
-    <b>${total.toLocaleString("de-CH")}</b> ${app.t`requests (24h)`}<br>
-    <small>${users} ${app.t`logged-in users`}</small>
-</div>`;
+// latest requests of other clients, newest first
+export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
+  const own = getCtx().clientId;
+  const [rows, pageUrl] = await Promise.all([
+    app.db.query`
+      SELECT log.id, log.time, url.url AS url
+       FROM log LEFT JOIN log_url url ON log.url_id = url.id
+       WHERE log.client_id IS NULL OR log.client_id != ${own}
+       ORDER BY log.id DESC LIMIT 50`.catch(() => []),
+    page?.url() ?? "",
+  ]);
+  if (!rows.length) return html``;
+  const href = (id: unknown) => pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + id;
+  return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => html`<tr u2-href>
+    <td style="white-space:nowrap"><a href="${href(row.id)}">${u2.el.time(row.time, { narrow: true })}</a>
+    <td><small style="word-break:break-all">${row.url}</small>`)}</table></div>`;
 }
 
 export const cms = {

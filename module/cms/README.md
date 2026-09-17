@@ -41,7 +41,7 @@ From the client, use the built-in helpers (see `pub/js/cms.mjs`) instead of call
 directly:
 
 ```js
-cms.initNode("backend.superuser.log", (el) => {
+cms.initNode("backend.superuser.requests.log", (el) => {
   const nid = Number(cms.el.nid(el));
   // reload one part with vars → server runs cms.node.parts[name](node, { ctx, vars })
   cms.reloadPart(nid, "list", { filter });

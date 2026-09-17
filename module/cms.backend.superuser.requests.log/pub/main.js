@@ -1,4 +1,4 @@
-cms.initNode("backend.superuser.log", (el) => {
+cms.initNode("backend.superuser.requests.log", (el) => {
   const nid = Number(cms.el.nid(el));
 
   // live filter → reload only the list part

@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser.requests",
+  "description": "Dashboard of the request pages: recent requests, visitors and more.",
+  "dependencies": [
+    "cms.backend.superuser"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

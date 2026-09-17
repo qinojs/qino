@@ -1,13 +1,12 @@
 {
-  "name": "cms.backend.superuser.requests.log",
-  "description": "Inspects request logs, sessions, clients, users, and related records.",
+  "name": "cms.backend.superuser.requests.clients",
+  "description": "Lists the latest clients with their last request.",
   "dependencies": [
     "cms.backend.superuser.requests"
   ],
   "files": [
     "manifest.json",
     "plugin.ts",
-    "pub/main.css",
     "pub/main.js",
     "pub/module.svg"
   ]

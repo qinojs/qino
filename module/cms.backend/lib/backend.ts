@@ -91,14 +91,30 @@ const UA_TESTS: [string, RegExp][] = [
   ["Safari", /Version\/([\d.]+).*Safari/],
 ];
 
-/** Lightweight user-agent classification (browser name + version, bot flag). */
-export function uaInfo(ua: string): { browser: string; version: string; bot: boolean } {
+const OS_TESTS: [string, RegExp][] = [
+  ["Windows", /Windows/],
+  ["Android", /Android/],
+  ["iOS", /iPhone|iPad|iPod/],
+  ["ChromeOS", /CrOS/],
+  ["macOS", /Mac OS X|Macintosh/],
+  ["Linux", /Linux/],
+];
+
+/** Deterministic color for any value, to tell clients, IPs, users … apart at a glance. */
+export function uniqueColor(v: unknown): string {
+  const s = String(v ?? "");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return `hsl(${h % 360} 55% 45%)`;
+}
+
+/** Lightweight user-agent classification (browser + version, OS, mobile and bot flags). */
+export function uaInfo(ua: string): { browser: string; version: string; os: string; mobile: boolean; bot: boolean } {
   const bot = /bot|crawl|spider|slurp|bing|google|yandex|baidu|duckduck|facebookexternal|headless|preview|monitor/i.test(ua);
-  for (const [browser, re] of UA_TESTS) {
-    const m = re.exec(ua);
-    if (m) return { browser, version: m[1], bot };
-  }
-  return { browser: ua ? "?" : "-", version: "", bot };
+  const os = OS_TESTS.find(([, re]) => re.test(ua))?.[0] ?? "";
+  const mobile = /Mobi|Android|iPhone|iPad|iPod/.test(ua);
+  const [browser, m] = UA_TESTS.map(([name, re]) => [name, re.exec(ua)] as const).find(([, m]) => m) ?? [ua ? "?" : "-", null];
+  return { browser, version: m?.[1] ?? "", os, mobile, bot };
 }
 
 // Linked breadcrumb from the tree root down to a node (a page or a content
