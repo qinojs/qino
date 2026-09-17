@@ -1,0 +1,35 @@
+import { App } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
+import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
+
+Deno.test("cms adds public, searchable pages to the seo sitemap", async () => {
+  const dir = await Deno.makeTempDir() + "/";
+  const app = new App({ db: "sqlite::memory:", dir, appUrl: "/site/" });
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("seo");
+  await app.init();
+  app.languages.setLangs(["en", "de"]);
+  try {
+    const root = await cms(app).node(1);
+    const page = await root.createChild({ access: 1, searchable: true });
+    await page.title("en", "About");
+    const hidden = await root.createChild({ access: 0, searchable: true });
+    await hidden.createChild({ access: 1, searchable: true });
+    await root.createChild({ access: 1, searchable: false });
+    const file = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "main.png", { type: "image/png" }));
+    await page.addFile(file, "main");
+    const logId = await app.db.table("log").insert({ time: 1726560000 });
+    await app.db.table("node_changed").insert({ log_id: logId, node_id: page.id, page_id: page.id, data: "{}" });
+
+    const xml = await (await app.fetch(new Request("https://qino.test/site/sitemap.xml"))).text();
+    const locs = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
+    const en = "https://qino.test/site/" + await page.urlSeo("en");
+    const de = "https://qino.test/site/" + await page.urlSeo("de");
+    assertEquals(locs, [en, de]);
+    assertStringIncludes(xml, `<xhtml:link rel="alternate" hreflang="de" href="${de}"/>`);
+    assertStringIncludes(xml, `<loc>${en}</loc><lastmod>2024-09-17T08:00:00.000Z</lastmod><image:image><image:loc>https://qino.test/site/dbFile/${file.id}/`);
+  } finally {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await app.db.close();
+    await Deno.remove(dir, { recursive: true });
+  }
+});
