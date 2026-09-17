@@ -6,6 +6,7 @@ import { cmsCtx } from "./lib/CmsContext.ts";
 import { render } from "./lib/render.ts";
 
 import type { App, DbFile } from "@qino/qino";
+import type { Node } from "./lib/Node.ts";
 
 export { api } from "./api.ts";
 
@@ -139,6 +140,18 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (String(e.table) !== "file" || !("md5" in (e.data ?? {}))) return;
         for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${Number(e.id)}`)
             (await cms(app).node(Number(vs.page_id))).clearFileCache();
+    }, { signal });
+
+    // Public pages for the seo module; a subtree that is not public or online is skipped whole
+    app.on("seo:sitemap", async ({ base, urls }) => {
+        const walk = async (node: Node) => {
+            for (const page of (await node.children({ type: "p" })).values()) {
+                if (!await page.isPublic() || !await page.isOnline()) continue;
+                if (page.vs.searchable) for (const lang of app.languages.all) urls.push(base + await page.urlSeo(lang));
+                await walk(page);
+            }
+        };
+        await walk(await cms(app).node(1));
     }, { signal });
 
     // File access check
