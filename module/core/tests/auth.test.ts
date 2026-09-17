@@ -206,7 +206,6 @@ Deno.test("tryLogin: a client this user knows is not made to wait", async () => 
     assertEquals(await tryLogin(ctx, "ann@example.test", "wrong"), "throttled");
 
     await app.db.table("client_usr").insert({ client_id: 1, usr_id: 7 });
-    ctx.client.$forget?.();
     assertEquals(await tryLogin(ctx, "ann@example.test", "right"), "");
   });
 });
