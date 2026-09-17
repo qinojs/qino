@@ -62,6 +62,7 @@
     "cms.backend.superuser.requests.clients": {},
     "cms.backend.superuser.requests.log": {},
     "cms.backend.superuser.score": {},
+    "cms.backend.superuser.security": {},
     "cms.backend.superuser.shorturl": {},
     "cms.backend.superuser.social": {},
     "cms.backend.superuser.social.bluesky": {},

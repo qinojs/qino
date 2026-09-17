@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.security",
+  "description": "Shows suspicious IPs, their delay or block, and recent reports.",
+  "dependencies": [
+    "cms.backend",
+    "security"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

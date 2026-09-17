@@ -20,14 +20,16 @@ and the score backend shows them; one-off slips cost no write.
 With [`seo`](../seo/), `robots.txt` disallows `admin-backup/`, a path nothing links to. Whoever
 requests it read robots.txt and ignored it, which reports weight 3.
 
+`mod.ts` exposes `suspects(app)`, `reports(app)` (the last 100, in memory) and
+`release(app, ip)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)
+shows them.
+
 ## Ideas
 
 Collected from the former `cms.backend.system.security`:
 
-- Report probes for foreign stacks: `wp-admin`, `xmlrpc.php`, `.env`, `.git`, `phpmyadmin`, `*.php`.
+- Report probes for foreign stacks on 404: `wp-admin`, `xmlrpc.php`, `.env`, `.git`, `phpmyadmin`, `*.php`.
 - Report injection patterns in path and query: `union select`, `../`, `<script`, `;cat`.
 - Report failed logins (`ctx.loginError`), weighted by cause.
-- Check already at `request-start`, so static files and early errors are covered too.
 - Report slow requests, large bodies and 5xx bursts per path.
 - An allowlist of paths or IPs that never count.
-- A backend view `cms.backend.superuser.security`: current IPs, release one, recent reasons.

@@ -43,7 +43,7 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
   }
   const age = await clientAge(ctx);
   if (age < 3) {
-    app.fire("suspicious", { ctx, weight: 2, reason: "form4 submit from a brand-new client" });
+    app.fire("suspicious", { ctx, weight: 5, reason: "form4 submit from a brand-new client" });
     return await app.t`Your entry could not be sent. Please try again.`;
   }
   if (age < 10) app.fire("suspicious", { ctx, reason: "form4 submit from a very young client" });
