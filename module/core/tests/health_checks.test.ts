@@ -60,6 +60,6 @@ Deno.test("healthChecks: the address you are on differs from core.url", async ()
   const check = (await healthChecks(a)).warning["public address is not the one you are on"];
   assertEquals(await onUrl("https://set.example/", check), undefined); // same address, trailing slash aside
   const found = await onUrl("https://other.example/", check) as any;
-  assertEquals(found.info.includes("https://other.example/"), true);
+  assertEquals(found.info, "mails and jobs link to https://set.example/");
   assertEquals(Object.keys(found.solutions), ["set it to: https://other.example/"]);
 });

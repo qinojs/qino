@@ -48,7 +48,7 @@ export async function healthChecks(app: App) {
     const current = here();
     const slash = (u: string) => u.replace(/\/?$/, "/");
     if (!url || !current || slash(url) === slash(current)) return;
-    return { info: `set to ${hee(url)}, you are on ${hee(current)} — mails and jobs link to the first one`, solutions: setTo(current) };
+    return { info: `mails and jobs link to ${hee(url)}`, solutions: setTo(current) };
   };
 
   warning["a remote module is missing public files"] = async () => {
