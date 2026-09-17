@@ -46,7 +46,7 @@ function render(node: Node, opts: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function suspectRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: Ctx; link?: ReturnType<typeof ipLink> }): Promise<HtmlString> {
+async function suspectRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: Ctx; link?: ReturnType<typeof ipLink> }) {
   const t = node.app.t;
   const ip = await link;
   const rows = suspects(node.app).map((s) => html.async`<tr>
@@ -64,7 +64,7 @@ async function suspectRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx:
     <tbody>${rows.length ? rows : html.async`<tr><td colspan=5>${t`No suspicious IPs.`}`}`;
 }
 
-async function recentRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: Ctx; link?: ReturnType<typeof ipLink> }): Promise<HtmlString> {
+async function recentRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: Ctx; link?: ReturnType<typeof ipLink> }) {
   const t = node.app.t;
   const ip = await link;
   const rows = reports(node.app).map((r) => html`<tr>
@@ -81,10 +81,10 @@ async function recentRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: 
 }
 
 /** IP → request log of that IP; plain text for an IPv6 network or without the log page. */
-async function ipLink(node: Node, ctx: Ctx): Promise<(value: string) => HtmlString> {
+async function ipLink(node: Node, ctx: Ctx) {
   const url = await (await (await node.cms.nodeByModule("cms.backend.superuser.requests.log"))?.page())?.url();
   const log = url && new URL(url, ctx.req.url.origin);
-  return (value) => {
+  return (value: string) => {
     const code = html`<code style="color:${uniqueColor(value)}">${value}</code>`;
     if (!log || value.includes("/")) return code;
     const href = new URL(log);

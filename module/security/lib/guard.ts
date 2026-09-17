@@ -91,7 +91,7 @@ export function gate(app: App, ip: string): Promise<void> | void {
 }
 
 /** Tracked keys (see ipKey), strongest first. `blocked` is seconds left, 0 when only delayed. */
-export function suspects(app: App): { key: string; strength: number; delay: number; blocked: number; time: number }[] {
+export function suspects(app: App) {
   const t = now();
   return [...states.get(app)?.keys ?? []]
     .map(([key, e]) => {
