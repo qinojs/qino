@@ -48,13 +48,13 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   if (f.to)            where.push(sql`log.time <= ${backend.toUnix(f.to)}`);
   // Search hits a single indexed path (never an OR across joined tables, which would
   // force a full log scan). Input shape decides the dimension: number → id/client,
-  // dotted/colon → ip (via unique log_ip), else → url (fulltext on the small log_url).
+  // ip shape → ip (prefix match on the unique log_ip.ip), else → url (fulltext on the small log_url).
   if (f.search) {
     const s = f.search.trim();
     if (/^\d+$/.test(s)) {
       where.push(sql`(log.id = ${Number(s)} OR log.client_id = ${Number(s)} OR log.sess_id = ${Number(s)})`); // same table → index merge
-    } else if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s) || s.includes(":")) {
-      where.push(sql`log.ip_id = (SELECT id FROM log_ip WHERE ip = ${s})`);
+    } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4})+$/i.test(s)) {
+      where.push(sql`log.ip_id IN (SELECT id FROM log_ip WHERE ip LIKE ${s + "%"})`); // prefix → index seek
     } else if (db.dialect === "mysql") {
       where.push(sql`log.url_id IN (SELECT id FROM log_url WHERE MATCH(url) AGAINST (${s + "*"} IN BOOLEAN MODE))`);
     } else {
