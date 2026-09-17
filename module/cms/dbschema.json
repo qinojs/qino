@@ -284,18 +284,6 @@
         },
         "required": ["name"]
       }
-    },
-    "mail": {
-      "additionalProperties": {
-        "properties": {
-          "page_id": {
-            "type": "integer",
-            "x-index": true,
-            "x-qg-parent": "page",
-            "x-qg-on-parent-delete": "setnull"
-          }
-        }
-      }
     }
   }
 }

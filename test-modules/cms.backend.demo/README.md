@@ -1,6 +1,6 @@
 # cms.backend.demo
 
-Fills an installation with demo data — pages, contents, texts, images, users, groups, mail, visits,
+Fills an installation with demo data — pages, contents, texts, images, users, groups, visits,
 short links, error reports — so the backend can be looked at with realistic amounts of content.
 
 ```ts

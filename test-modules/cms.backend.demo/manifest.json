@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.demo",
-  "description": "Fills the installation with demo pages, users, groups, mail and traffic, and removes them again.",
+  "description": "Fills the installation with demo pages, users, groups and traffic, and removes them again.",
   "dependencies": [
     "cms.backend",
     "cms"
@@ -14,7 +14,6 @@
     "lib/seeders/errors.ts",
     "lib/seeders/groups.ts",
     "lib/seeders/links.ts",
-    "lib/seeders/mail.ts",
     "lib/seeders/pages.ts",
     "lib/seeders/traffic.ts",
     "lib/seeders/users.ts",
