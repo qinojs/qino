@@ -1,6 +1,7 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { BLOCK, HALF, release, reports, suspects } from "@qino/qino/security";
+import { BLOCK, HALF_LIFE, release, reports, suspects } from "@qino/qino/security";
+import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -8,6 +9,7 @@ import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
+const { uniqueColor, ageColor } = backend;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Security", de: "Sicherheit" });
@@ -23,22 +25,30 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
 function render(node: Node, opts: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<div class="u2-card">
+  const link = ipLink(node, opts.ctx); // shared by both parts
+  return html.async`<div class=u2-flex>
+  <div class=u2-card style="flex:0 1 17rem">
     <div class=-head>${t`Security`}</div>
     <div class=-body>
-      <button type=button data-refresh>${t`Refresh`}</button>
-      ${t`Each report adds its weight to the IP; the strength halves every`} ${duration(HALF)}.
+      ${t`Each report adds its weight to the IP; the strength halves every`} ${duration(HALF_LIFE)}.
       ${t`Answers wait strength² ms, from`} ${BLOCK} ${t`on they are refused.`}
     </div>
-    <table class="u2-table -Sticky" style="padding:0" cms-part=suspects>${suspectRows(node, opts)}</table>
-    <div class=-body><b>${t`Recent reports`}</b> <small>${t`since the last restart`}</small></div>
-    <table class="u2-table -Sticky" cms-part=recent>${recentRows(node, opts)}</table>
-  </div>`;
+    <settings-editor source="/api/core/settings/security"></settings-editor>
+  </div>
+  <div class=u2-card>
+    <div class=-head>${t`Suspect IPs`} <button type=button data-refresh>${t`Refresh`}</button></div>
+    <table class="u2-table -Sticky" cms-part=suspects>${suspectRows(node, { ...opts, link })}</table>
+  </div>
+  <div class=u2-card>
+    <div class=-head>${t`Recent reports`} <small>${t`since the last restart`}</small></div>
+    <table class="u2-table -Sticky" cms-part=recent>${recentRows(node, { ...opts, link })}</table>
+  </div>
+</div>`;
 }
 
-async function suspectRows(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function suspectRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: Ctx; link?: ReturnType<typeof ipLink> }): Promise<HtmlString> {
   const t = node.app.t;
-  const ip = await ipLink(node, ctx);
+  const ip = await link;
   const rows = suspects(node.app).map((s) => html.async`<tr>
       <td>${ip(s.key)}
       <td>${s.strength < 10 ? s.strength.toFixed(1) : Math.round(s.strength)}
@@ -54,9 +64,9 @@ async function suspectRows(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStrin
     <tbody>${rows.length ? rows : html.async`<tr><td colspan=5>${t`No suspicious IPs.`}`}`;
 }
 
-async function recentRows(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function recentRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: Ctx; link?: ReturnType<typeof ipLink> }): Promise<HtmlString> {
   const t = node.app.t;
-  const ip = await ipLink(node, ctx);
+  const ip = await link;
   const rows = reports(node.app).map((r) => html`<tr>
       <td>${time(r.time)}
       <td>${ip(r.ip)}
@@ -75,10 +85,11 @@ async function ipLink(node: Node, ctx: Ctx): Promise<(value: string) => HtmlStri
   const url = await (await (await node.cms.nodeByModule("cms.backend.superuser.requests.log"))?.page())?.url();
   const log = url && new URL(url, ctx.req.url.origin);
   return (value) => {
-    if (!log || value.includes("/")) return html`<code>${value}</code>`;
+    const code = html`<code style="color:${uniqueColor(value)}">${value}</code>`;
+    if (!log || value.includes("/")) return code;
     const href = new URL(log);
     href.searchParams.set("search", value);
-    return html`<a href="${href.href}"><code>${value}</code></a>`;
+    return html`<a href="${href.href}">${code}</a>`;
   };
 }
 
@@ -89,7 +100,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
 }
 
 function time(value: number): HtmlString {
-  return html`<u2-time datetime="${new Date(value * 1000).toISOString()}" second type=relative></u2-time>`;
+  return html`<span style="color:${ageColor(value)}">${u2.el.time(value)}</span>`;
 }
 
 function duration(seconds: number): string {

@@ -1,1 +1,1 @@
-export { BLOCK, HALF, release, reports, suspects } from "./lib/guard.ts";
+export { BLOCK, HALF_LIFE, release, reports, suspects } from "./lib/guard.ts";
