@@ -1,6 +1,7 @@
 import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { versedTables, getVersTable, thinHistory } from "@qino/qino/cms.versions";
+import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -19,26 +20,23 @@ async function render(node: Node): Promise<HtmlString> {
   const t = app.t;
   const db = app.db;
 
-  // table sizes (MySQL)
-  const status = await db.query`SHOW TABLE STATUS`.catch(() => []);
-  const sizeOf = new Map(status.map((r) => [String(r.Name), Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0)]));
-
   // ── per-table history storage ────────────────────────────────────────────
   const rows = [];
   for (const tbl of Object.keys(versedTables(db))) {
     const versTable = await getVersTable(db, tbl);
     if (!versTable) continue;
-    const [entries, rowsCount, spaces] = await Promise.all([
+    const [entries, rowsCount, spaces, status] = await Promise.all([
       db.one`SELECT COUNT(*) FROM ${sql.id(versTable)} WHERE _vers_log > 0`,
       db.one`SELECT COUNT(DISTINCT _vers_log) FROM ${sql.id(versTable)} WHERE _vers_log > 0`,
       db.one`SELECT COUNT(DISTINCT _vers_space) FROM ${sql.id(versTable)}`,
+      tableStatus(db, versTable).catch(() => null),
     ]);
     rows.push(html`<tr>
       <td>${tbl}
       <td style="text-align:right">${entries}
       <td style="text-align:right">${rowsCount}
       <td style="text-align:right">${spaces}
-      <td style="text-align:right"><u2-bytes>${sizeOf.get(versTable) ?? 0}</u2-bytes>`);
+      <td style="text-align:right"><u2-bytes>${status?.bytes ?? 0}</u2-bytes>`);
   }
 
   const storageBox = html.async`

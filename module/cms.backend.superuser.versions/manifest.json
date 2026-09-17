@@ -3,6 +3,7 @@
   "description": "Manages version storage, draft spaces, and history cleanup.",
   "dependencies": [
     "cms.backend",
+    "cms.backend.superuser.db",
     "cms.versions"
   ],
   "files": [
