@@ -1,5 +1,7 @@
 # Qino
 
+<img src="module/cms.layout.backend/pub/logo.svg" alt="Qino" width="140">
+
 **The Deno framework for building modern digital platforms.**
 
 Qino brings the technical foundation and the product capabilities of a modern platform into one modular system. Start with a focused API, then add identity, permissions, communication, AI, content management, and operational tools as your application grows.

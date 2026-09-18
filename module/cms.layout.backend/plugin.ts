@@ -4,6 +4,8 @@ import * as u2 from "@qino/qino/u2";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+const ICON = html.raw(await (await fetch(new URL("./pub/logo-wide.svg", import.meta.url))).text());
+
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   const app = node.app;
@@ -103,10 +105,8 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   return html`
   <div class=qgCMS id=container>
-    <a id=logo href="${backendRoot ? await backendRoot.url() : "/"}">
-      <svg viewBox="0 0 90 30">
-        <text x=0 y=24 font-family="system-ui,sans-serif" font-weight=900 font-size=26 fill=currentColor letter-spacing=-1>q<tspan opacity=".4">i</tspan>no</text>
-      </svg>
+    <a id=logo href="${backendRoot ? await backendRoot.url() : "/"}" aria-label="Qino">
+      ${ICON}
     </a>
     <nav id=nav>
       <ul>

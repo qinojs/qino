@@ -4,6 +4,9 @@
   "files": [
     "manifest.json",
     "plugin.ts",
+    "pub/icon.svg",
+    "pub/logo-horizontal.svg",
+    "pub/logo.svg",
     "pub/main.css",
     "pub/module.svg"
   ],
