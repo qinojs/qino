@@ -104,9 +104,9 @@ const UA_TESTS: [string, RegExp][] = [
   ["Edge", /Edg(?:e|A|iOS)?\/([\d.]+)/],
   ["Opera", /(?:OPR|Opera)\/([\d.]+)/],
   ["Samsung", /SamsungBrowser\/([\d.]+)/],
-  ["Firefox", /Firefox\/([\d.]+)/],
-  ["Chrome", /Chrome\/([\d.]+)/],
-  ["Safari", /Version\/([\d.]+).*Safari/],
+  ["Firefox", /(?:Firefox|FxiOS)\/([\d.]+)/],
+  ["Chrome", /(?:Chrome|CriOS)\/([\d.]+)/],
+  ["Safari", /(?:Version\/([\d.]+).*)?Safari\//], // in-app WebKit views (Google app, …) carry no Version
 ];
 
 const OS_TESTS: [string, RegExp][] = [

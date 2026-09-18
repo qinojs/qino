@@ -53,12 +53,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   }
 
   // Determine start page
-  const startPageSetting = settings.startPage();
+  const startPageId = settings.startPage();
   const startLevelSetting = settings.startLevel();
 
   let startPage: Node | undefined;
-  if (startPageSetting) {
-    startPage = await cms.node(Number(startPageSetting));
+  if (Number.isSafeInteger(startPageId) && startPageId > 0) {
+    startPage = await cms.node(startPageId);
     if (!startPage.exists()) startPage = await node.page();
   } else {
     startPage = await node.page();

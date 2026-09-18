@@ -11,6 +11,9 @@ Deno.test("cms.backend: uaInfo classifies browser, os and device", () => {
     uaInfo("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"),
     { browser: "Chrome", version: "126.0", os: "Windows", mobile: false, bot: false },
   );
+  const ios = (app: string) => uaInfo(`Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) ${app} Mobile/15E148 Safari/604.1`);
+  assertEquals(ios("GSA/438.6.976963367"), { browser: "Safari", version: "", os: "iOS", mobile: true, bot: false });
+  assertEquals([ios("CriOS/140.0").browser, ios("FxiOS/142.0").browser], ["Chrome", "Firefox"]);
   assertEquals(uaInfo("Googlebot/2.1").bot, true);
   assertEquals(uaInfo(""), { browser: "-", version: "", os: "", mobile: false, bot: false });
 });
