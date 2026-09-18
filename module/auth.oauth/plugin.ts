@@ -178,10 +178,8 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   const e = await endpoints(p);
   const state = randB64(24), nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
 
-  const d = ctx.sess.data.oauth; // one-shot transient, mirrors ctx.sess.data.core.*
-  d({}); // spends the mark: the next round trip asks again
-  d.prov(name); d.state(state); d.nonce(nonce); d.verifier(verifier);
-  d.returnTo(safeReturn(ctx.req.appUrl, ctx.req.query.return_to));
+  // one-shot, for the callback; replacing the whole value also spends the `connect` mark
+  ctx.sess.data.oauth({ prov: name, state, nonce, verifier, returnTo: safeReturn(ctx.req.appUrl, ctx.req.query.return_to) });
 
   const u = new URL(e.authorize);
   u.searchParams.set("response_type", "code");
@@ -200,10 +198,9 @@ async function start(ctx: Ctx, name: string): Promise<never> {
 /** Provider redirect back: exchange the code, obtain identity (id_token or userinfo), log in. */
 async function callback(ctx: Ctx, name: string): Promise<never> {
   const q = ctx.req.query;
-  const d = ctx.sess.data.oauth;
-  const savedProv = String(d.prov() ?? ""), state = String(d.state() ?? ""), nonce = String(d.nonce() ?? ""), verifier = String(d.verifier() ?? ""), returnTo = String(d.returnTo() ?? "");
-  d({}); // consume the transient regardless of outcome
-  if (savedProv !== name || !state || !q.code || q.state !== state) throw new Output("oauth state mismatch", { status: 400 });
+  const { prov, state, nonce, verifier, returnTo } = (ctx.sess.data.oauth() ?? {}) as Record<string, string>;
+  ctx.sess.data.oauth({}); // spent whatever the outcome
+  if (prov !== name || !state || !q.code || q.state !== state) throw new Output("oauth state mismatch", { status: 400 });
 
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);
@@ -214,8 +211,8 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
     redirect_uri: callbackUrl(ctx, name),
     client_id: p.client_id,
     client_secret: p.client_secret,
+    ...(verifier && { code_verifier: verifier }),
   };
-  if (verifier) form.code_verifier = verifier;
   const res = await fetch(e.token, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
@@ -244,9 +241,8 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  // Already this user: the round trip connected a provider, no session to open. A login still owed
-  // a factor is parked in the session, and the page we return to asks for it; an empty list means
-  // nothing would finish it.
+  // Already this user: a provider was connected, no session to open. A factor still owed is asked
+  // for by the page we return to; an empty list means nothing would finish the login.
   const missing = usrId && usrId !== ctx.userId ? await proof(ctx, "oauth", usrId) : undefined;
   if (!usrId || missing?.length === 0) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
