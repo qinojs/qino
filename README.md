@@ -1,6 +1,8 @@
 # Qino
 
-<img src="module/cms.layout.backend/pub/logo.svg" alt="Qino" width="140">
+<p align="center">
+  <img src="module/cms.layout.backend/pub/logo.svg" alt="Qino" width="140">
+</p>
 
 **The Deno framework for building modern digital platforms.**
 
