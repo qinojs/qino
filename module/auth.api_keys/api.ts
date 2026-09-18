@@ -17,6 +17,7 @@ export const api: ApiTree = {
   post: {
     description: "Create an API key — the token is returned only once and never stored in clear",
     access: Access.USER,
+    requireStepUp: true,
     input: s.object({ name: s.optional(s.string()), expires: s.optional(s.number()).describe("Unix seconds; omit for no expiry") }),
     execute: async ({ name, expires }: Params) => {
       const ctx = getCtx();
