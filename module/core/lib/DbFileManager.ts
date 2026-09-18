@@ -4,7 +4,7 @@ import { grant } from "./crypto.ts";
 import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
-import { fetchRemoteFile, readDataUrl, readUploadFile } from "./fileStream.ts";
+import { fetchRemoteFile, mimeType, readDataUrl, readUploadFile } from "./fileStream.ts";
 import { header, unixTime } from "./util.ts";
 
 import type { App } from "./App.ts";
@@ -98,7 +98,7 @@ export class DbFileManager {
       if (!granted && !await f.access()) return new Response(null, { status: 403 });
     }
 
-    let mime = f.mime || typeByExtension(f.extension) || "application/octet-stream";
+    let mime = f.mime || mimeType(typeByExtension(f.extension) ?? "application/octet-stream");
 
     const headers = new Headers();
 
@@ -113,7 +113,7 @@ export class DbFileManager {
       status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
-    mime = outputMime || mime;
+    mime = mimeType(outputMime || mime);
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
@@ -128,9 +128,11 @@ export class DbFileManager {
 
     if (params.as === "text") mime = "text/plain";
 
-    // Security
-    if (/^(text\/html|application\/xhtml\+xml)/.test(mime)) mime = "text/plain";
-    if (mime === "image/svg+xml") headers.set("Content-Security-Policy", "script-src 'none'");
+    // A file is never a page of this site: whatever the browser renders as a document (html, xml,
+    // svg, types nobody listed) runs sandboxed — no script, no forms, an opaque origin. PDF is the
+    // exception, Chrome refuses to show one sandboxed; its viewer isolates it by itself.
+    if (mime === "text/html" || mime === "application/xhtml+xml") mime = "text/plain";
+    if (mime !== "application/pdf") headers.set("Content-Security-Policy", "sandbox");
     headers.set("X-Content-Type-Options", "nosniff");
 
     if (mime === "image/svg+xml" || mime === "text/markdown") mime += "; charset=utf-8";
@@ -182,7 +184,8 @@ export class DbFile extends File {
 
   override get extension(): string { return String(this.vs?.name ?? "").replace(/.*\./, "").toLowerCase(); }
 
-  override get mime(): string { return this.vs?.mime ?? ""; }
+  /** Normalized on read too: rows from before types were normalized on write. */
+  override get mime(): string { return mimeType(this.vs?.mime ?? ""); }
 
   get name(): string { return this.vs?.name ?? ""; }
 
@@ -287,7 +290,7 @@ export class DbFile extends File {
     await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
     if (!await src.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
 
-    await this.setVs({ name: src.basename(), mime: src.mime, text: await src.getText(), md5, size: await this.size() });
+    await this.setVs({ name: src.basename(), mime: mimeType(src.mime), text: await src.getText(), md5, size: await this.size() });
   }
 
   async replaceFromUpload(f: UploadedFile) {
@@ -296,9 +299,7 @@ export class DbFile extends File {
     await moveFile(f.tmpPath, this.path);
 
     const ext = f.name.replace(/.*\./, "").toLowerCase();
-    let type = f.type;
-    if (type === "application/octet-stream") type = typeByExtension(ext) ?? "application/octet-stream";
-    type = type.replace(/;.*/, "");
+    const type = f.type === "application/octet-stream" ? mimeType(typeByExtension(ext) ?? f.type) : f.type;
 
     await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: await this.getText() });
   }

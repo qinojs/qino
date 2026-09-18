@@ -14,9 +14,12 @@ export type UploadedFile = {
   md5: string;
 };
 
+/** A media type as stored and compared: the essence, lowercase — `Text/HTML; charset=x` is `text/html`. */
+export const mimeType = (raw: string): string => raw.split(";")[0].trim().toLowerCase();
+
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);
-  return { name: file.name, type: file.type, size: tmp.size, tmpPath: tmp.path, md5: tmp.md5 };
+  return { name: file.name, type: mimeType(file.type), size: tmp.size, tmpPath: tmp.path, md5: tmp.md5 };
 }
 
 export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Promise<UploadedFile> {
@@ -29,7 +32,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
 
   const m = resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/);
   const name = (m?.[1] ?? new URL(opt.url).pathname.split("/").pop() ?? "file").replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
-  const type = resp.headers.get("content-type")?.replace(/;.*/, "") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "";
+  const type = mimeType(resp.headers.get("content-type") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "");
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 
@@ -37,7 +40,8 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
 export async function readDataUrl(uri: string, opt: { maxSize: number }): Promise<UploadedFile> {
   const m = uri.match(/^data:([^;,]*)((?:;[^;,]*)*),([\s\S]*)$/);
   if (!m) throw new Error("Invalid data URI");
-  const [, type, params, payload] = m;
+  const [, raw, params, payload] = m;
+  const type = mimeType(raw);
   let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = /;base64(;|$)/i.test(params)

@@ -65,6 +65,17 @@ Deno.test("fileStream: readDataUrl takes an explicit name and percent-encoded pa
   }
 });
 
+Deno.test("fileStream: media types are stored lowercase and without parameters", async () => {
+  const data = await readDataUrl("data:TEXT/HTML;name=x.html,a", { maxSize: 10 });
+  const upload = await readUploadFile(new File(["a"], "x.xml", { type: "Application/XML; charset=utf-8" }));
+  try {
+    assertEquals([data.type, upload.type], ["text/html", "application/xml"]);
+  } finally {
+    await Deno.remove(data.tmpPath);
+    await Deno.remove(upload.tmpPath);
+  }
+});
+
 Deno.test("fileStream: readDataUrl rejects malformed URIs and oversized payloads", async () => {
   await assertRejects(() => readDataUrl("data:image/png;base64", { maxSize: 10 }), Error, "Invalid data URI");
   await assertRejects(() => readDataUrl("data:image/png;base64,!!!", { maxSize: 10 }), Error, "Invalid data URI payload");
