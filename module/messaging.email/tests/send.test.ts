@@ -177,12 +177,15 @@ Deno.test("email carries generic attachments as MIME files", async () => {
     ],
   });
 
-  const files = sent[0].attachments as { filename: string; contentType: string; content: Promise<Uint8Array> }[];
+  const files = sent[0].attachments as { filename: string; contentType: string; content: unknown }[];
   assertEquals(files.map((file) => [file.filename, file.contentType]), [
     ["invoice.txt", "text/plain"],
     ["terms.txt", "text/plain"],
   ]);
-  assertEquals((await Promise.all(files.map((file) => file.content))).map((bytes) => new TextDecoder().decode(bytes)), ["invoice", "terms"]);
+  // upyo 0.6 may hand the content over as a reader factory instead of bytes
+  const text = async (content: unknown) =>
+    new Response(typeof content === "function" ? ReadableStream.from(await content()) : await content as BodyInit).text();
+  assertEquals(await Promise.all(files.map((file) => text(file.content))), ["invoice", "terms"]);
 
   const [journaled] = await journal(app);
   assertEquals(journaled.attachments.map((file) => [file.name, file.mime, file.size, file.sort]), [
