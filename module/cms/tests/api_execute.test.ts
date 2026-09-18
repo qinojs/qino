@@ -31,6 +31,7 @@ class FakeNode {
   fileNames = ["file.jpg"];
   allFileNames = ["file.jpg", "placeholder.jpg"];
   deletedFiles: string[] = [];
+  online = true;
 
   constructor(id: number, accessLevel = 3, vs: Record<string, unknown> = {}) {
     this.id = id;
@@ -51,7 +52,7 @@ class FakeNode {
   async showTitle() { return new TextObj(this.id * 10, this.titleValue); }
   async page() { return this; }
   async url() { return `/n${this.id}`; }
-  async isOnline() { return true; }
+  async isOnline() { return this.online; }
   async isPublic() { return true; }
   async text(name: string, lang?: string, value?: string) {
     if (value !== undefined) {
@@ -260,6 +261,18 @@ Deno.test("cms api: resolve rejects missing and unreadable nodes", async () => {
     await assertRejects(() => invoke(api, "GET", "/node/99"), NotFoundError);
     await assertRejects(() => invoke(api, "GET", "/node/2"), AccessError);
   });
+});
+
+Deno.test("cms api: offline nodes are readable for writers only", async () => {
+  for (const [access, readable] of [[1, false], [2, true]] as const) {
+    const { ctx, nodes } = await setup(access);
+    nodes.get(1)!.online = false;
+    await requestStorage.run(ctx, async () => {
+      const read = invoke(api, "GET", "/node/1/text/main");
+      if (readable) await read;
+      else await assertRejects(() => read, AccessError);
+    });
+  }
 });
 
 Deno.test("cms api: node write access is required for mutations", async () => {

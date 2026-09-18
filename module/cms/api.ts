@@ -14,7 +14,7 @@ import type { Node } from "./lib/Node.ts";
 // Static gate: a node read is reachable for anyone, everything above read needs a user — without one
 // neither page_access_usr nor groups are consulted and page.access tops out at 1 (read).
 // The per-call level is checked against the resolved node in guard.
-const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 1) };
+const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2 || (a >= 1 && node.isOnline())) };
 const nodeWrite = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
 const nodeAdmin = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
 
