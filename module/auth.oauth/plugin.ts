@@ -97,13 +97,13 @@ async function provider(app: App, name: string): Promise<any> {
 }
 
 /** Distill an id_token / userinfo response into canonical identity fields (providers vary in naming). */
-export function identity(c: any): { sub: string; email: string; verified: unknown; given_name: string; family_name: string } {
+export function identity(c: any): { sub: string; email: string; verified: boolean; given_name: string; family_name: string } {
   const full = String(c.name ?? c.global_name ?? c.username ?? c.login ?? "").trim();
   const [first, ...rest] = full.split(/\s+/);
   return {
     sub: String(c.sub ?? c.id ?? ""), // OIDC calls it sub, plain OAuth2 userinfos usually id
     email: String(c.email ?? "").trim().toLowerCase(),
-    verified: c.email_verified ?? c.verified, // may be undefined — that counts as unconfirmed
+    verified: String(c.email_verified ?? c.verified) === "true", // missing counts as unconfirmed
     given_name: String(c.given_name ?? first ?? ""),
     family_name: String(c.family_name ?? rest.join(" ")),
   };
@@ -144,7 +144,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
   if (!usrId) {
     // Never link/create on an e-mail the provider does not vouch for. A missing claim counts as
     // unconfirmed: a provider whose userinfo mail is editable would otherwise hand over accounts.
-    if (!id.email || (id.verified !== true && id.verified !== "true")) return 0;
+    if (!id.email || !id.verified) return 0;
     // whoever owns the address owns the account — the contact is proven, a login handle is not
     usrId = await contactOwner(db, "email", id.email) ?? 0;
     if (!usrId) {
@@ -157,7 +157,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
   }
   // The provider confirmed the address, which is the same proof a code of ours would be. One that
   // already belongs to somebody else stays theirs — connecting a provider cannot take it over.
-  if (id.email && (id.verified === true || id.verified === "true")) await addContact(db, usrId, "email", id.email).catch(() => {});
+  if (id.email && id.verified) await addContact(db, usrId, "email", id.email).catch(() => {});
   if (id.sub) {
     const now = unixTime();
     await db.table("oauth_provider_usr").insert({ provider: p.name, sub: id.sub, usr_id: usrId, created: now, last_used: now });

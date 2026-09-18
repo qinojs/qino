@@ -109,4 +109,5 @@ Deno.test("auth.oauth: identity reads the id of both provider kinds", () => {
   assertEquals(identity({ sub: "oidc-1" }).sub, "oidc-1");
   assertEquals(identity({ id: 4711 }).sub, "4711");
   assertEquals(identity({}).sub, ""); // nothing to remember, e-mail stays the only way
+  assertEquals([identity({ email_verified: "true" }).verified, identity({ verified: true }).verified, identity({}).verified], [true, true, false]);
 });
