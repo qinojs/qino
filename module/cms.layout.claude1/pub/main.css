@@ -21,7 +21,7 @@
   background: color-mix(in srgb, var(--color-bg), transparent 25%);
   backdrop-filter: blur(.875rem) saturate(1.4);
   border-bottom: 1px solid color-mix(in srgb, var(--color-line), transparent 88%);
-  box-shadow: 0 .4rem 1.2rem color-mix(in srgb, var(--color), transparent 92%);
+  box-shadow: var(--shadow);
 }
 #head .u2-flex { align-items: center; }
 
