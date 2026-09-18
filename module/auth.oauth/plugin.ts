@@ -88,7 +88,7 @@ const callbackUrl = (ctx: Ctx, name: string): string => ctx.req.url.origin + ctx
 
 /** Only allow local, same-app return targets — blocks open-redirect via ?return_to=. */
 const safeReturn = (base: string, raw: unknown): string =>
-  typeof raw === "string" && /^\/(?![/\\])/.test(raw) ? raw : base;
+  typeof raw === "string" && /^\/(?![/\\])[^\x00-\x1f]*$/.test(raw) ? raw : base;
 
 async function provider(app: App, name: string): Promise<any> {
   const p = await app.db.row`SELECT * FROM oauth_provider WHERE name = ${name}`;

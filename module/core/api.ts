@@ -107,7 +107,11 @@ export const api: ApiTree = {
         const ctx = getCtx();
         const usr = ctx.user;
         if (!usr) throw new AccessError();
-        if (!await pwVerify(oldpw, String(usr.pw ?? ""))) throw new ApiError(422, "The old password is incorrect");
+        if (!await attempt(ctx.app, ctx.userId, () => pwVerify(oldpw, String(usr.pw ?? "")))) {
+          ctx.app.fire("suspicious", { ctx, weight: 2, reason: "password change failed" }).catch(() => {});
+          throw new ApiError(422, "The old password is incorrect");
+        }
+        await proofPassed(ctx.app, ctx.userId);
         if (String(pw ?? "").length < 8) throw new ApiError(422, "The password is too short");
         await usr.$set({ pw: await pwHash(pw) });
         return { ok: true };

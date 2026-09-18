@@ -190,7 +190,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
             }
         }
 
-        if (!await settings.url) await settings.url(urlOf(ctx));
+        if (!await settings.url && ctx.user?.superuser) await settings.url(urlOf(ctx));
     }, { signal });
 
     // stamp the current request's logId onto every write — except the log tables themselves
