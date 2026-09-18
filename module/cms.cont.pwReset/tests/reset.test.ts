@@ -13,9 +13,13 @@ async function app() {
   await db.migrate(ticketSchema);
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, pw TEXT, active INTEGER)`;
   await db.exec`CREATE TABLE sess (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;
+  await db.exec`CREATE TABLE client (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;
+  await db.exec`CREATE TABLE client_usr (client_id INTEGER, usr_id INTEGER, save_login INTEGER)`;
   await db.loadTables();
   await db.table("usr").insert({ username: "one@qino.test", pw: "old", active: 1 });
   await db.table("sess").insert({ usr_id: 1 });
+  await db.table("client").insert({ usr_id: 1 });
+  await db.table("client_usr").insert({ client_id: 1, usr_id: 1, save_login: 1 });
   return {
     db,
     [Symbol.asyncDispose]: () => db.close(),
@@ -25,7 +29,7 @@ async function app() {
   } as any;
 }
 
-Deno.test("the link sets the password once and logs every session out", async () => {
+Deno.test("the link sets the password once and logs out every session and remembered device", async () => {
   await using a = await app();
   const node = { app: a } as unknown as Node;
   const handle = await issue(a, PURPOSE, { usrId: 1 });
@@ -48,6 +52,7 @@ Deno.test("the link sets the password once and logs every session out", async ()
   assertNotEquals(hash, "old");
   assertEquals(await pwVerify("a good password", hash), true);
   assertEquals(await a.db.one`SELECT COUNT(*) FROM sess`, 0);
+  assertEquals(await a.db.row`SELECT c.usr_id, cu.save_login FROM client c, client_usr cu`, { usr_id: 0, save_login: 0 });
 
   // the same link a second time does nothing, whatever it carries
   assertEquals(await api(node, { reset: { handle, pw: "another password" } }), {

@@ -14,8 +14,11 @@ export const tickets: Record<string, TicketKind> = {
       const { usrId } = ticket.data as { usrId: number };
       const pw = String((input as { pw: string }).pw);
       await app.db.table("usr").update(usrId, { pw: await pwHash(pw) });
-      // whoever knew the old password is out — a reset is also how a takeover is undone
+      // whoever knew the old password is out everywhere — a reset is also how a takeover is undone,
+      // so no device comes back in on its own either (remember-me)
       await app.db.exec`DELETE FROM sess WHERE usr_id = ${usrId}`;
+      await app.db.exec`UPDATE client_usr SET save_login = ${false} WHERE usr_id = ${usrId}`;
+      await app.db.exec`UPDATE client SET usr_id = 0 WHERE usr_id = ${usrId}`;
     },
   },
 };
