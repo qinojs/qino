@@ -60,7 +60,7 @@ export { isModuleName, Module } from "./lib/ModuleManager.ts";
 export { Store } from "./lib/StoreManager.ts";
 
 // Auth
-export { authFactors, beforeProof, identified, login, loginProof, proofFailed, proofPassed, pwHash, pwVerify, requireStepUp, userFactors } from "./lib/auth/mod.ts";
+export { attempt, authFactors, identified, login, loginProof, proofPassed, pwHash, pwVerify, requireStepUp, userFactors } from "./lib/auth/mod.ts";
 export type { AuthFactor, Offer } from "./lib/auth/factors.ts";
 
 // File transforms

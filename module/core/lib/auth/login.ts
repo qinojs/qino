@@ -1,5 +1,5 @@
 /** Signing in: the form, the password, the session. What may prove an identity is factors.ts. */
-import { proofFailed, proofPassed, proofWait } from "./attempts.ts";
+import { inTurn, proofFailed, proofPassed, proofWait } from "./attempts.ts";
 import { bcrypt } from "../../deps.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
 import { safeEqual } from "../crypto.ts";
@@ -65,15 +65,17 @@ export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginE
   // that, and the alternative is lying to the owner about why they cannot get in.
   // A client this user has signed in from before never waits: otherwise anyone knowing the address
   // could park the owner in front of their own login. Wrong tries still count, for everyone else.
-  const wait = known ? 0 : await proofWait(ctx.app, usrId);
-  if (wait) {
-    ctx.loginRetryAfter = wait; // the form says how long, so nobody has to guess that too
-    return "throttled";
-  }
-  if (!await pwVerify(pw, usr.pw ?? "")) {
+  const failed = await inTurn(ctx.app, usrId, async () => {
+    const wait = known ? 0 : await proofWait(ctx.app, usrId);
+    if (wait) {
+      ctx.loginRetryAfter = wait; // the form says how long, so nobody has to guess that too
+      return "throttled";
+    }
+    if (await pwVerify(pw, usr.pw ?? "")) return;
     await proofFailed(ctx.app, usrId);
     return "password";
-  }
+  });
+  if (failed) return failed;
   if (rehash) await usr.$set({ pw: await pwHash(pw) });
   // The same route every other factor takes: core declares `password` and claims no shortcut.
   const missing = await loginProof(ctx, passwordFactor(ctx.app), usrId);

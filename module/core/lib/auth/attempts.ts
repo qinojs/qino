@@ -24,6 +24,29 @@ export async function proofWait(app: App, usrId: number): Promise<number> {
   return Math.max(0, last + wait(Number(row.fails)) - now);
 }
 
+const turns = new WeakMap<App, Map<number, Promise<unknown>>>();
+
+/** Attempts on one account run one after another, so each sees the count the previous one left —
+ *  parallel guesses would otherwise all read the same number and all be checked. */
+export function inTurn<T>(app: App, usrId: number, fn: () => Promise<T>): Promise<T> {
+  const queue = turns.getOrInsertComputed(app, () => new Map());
+  const run = (queue.get(usrId) ?? Promise.resolve()).then(fn, fn);
+  const done = run.catch(() => {}).finally(() => queue.get(usrId) === done && queue.delete(usrId));
+  queue.set(usrId, done);
+  return run;
+}
+
+/** One guess at something of `usrId`'s: in turn, behind the account's wait, and counted when `check`
+ *  comes back falsy. A `check` that throws counts nothing. Throws while the wait is still running. */
+export function attempt<T>(app: App, usrId: number, check: () => Promise<T>): Promise<T> {
+  return inTurn(app, usrId, async () => {
+    await beforeProof(app, usrId);
+    const result = await check();
+    if (!result) await proofFailed(app, usrId);
+    return result;
+  });
+}
+
 /** Stand in front of every check of something guessable. Throws while the wait is still running. */
 export async function beforeProof(app: App, usrId: number): Promise<void> {
   const left = await proofWait(app, usrId);

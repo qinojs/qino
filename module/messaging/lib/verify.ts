@@ -1,4 +1,4 @@
-import { ApiError, beforeProof, contactKey, keyed, proofFailed, proofPassed, safeEqual, unixTime } from "@qino/qino";
+import { ApiError, attempt, contactKey, keyed, proofPassed, safeEqual, unixTime } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";
 
@@ -55,19 +55,18 @@ export async function redeemCode(app: App, type: string, usrId: number, input: s
   const address = contactKey(type, input);
   const open = await claim(app, type, usrId, address);
   if (!open) throw new ApiError(404, "Nothing to verify");
-  await beforeProof(app, usrId);
   const drop = () => app.db.exec`DELETE FROM usr_contact_verification
     WHERE type = ${type} AND address = ${address} AND usr_id = ${usrId}`;
-  if (Number(open.expires) < unixTime()) {
-    await drop();
-    throw new ApiError(410, "Verification code expired");
-  }
-  if (/^\d{6}$/.test(code) && safeEqual(await codeHash(app, type, address, code), String(open.hash))) {
-    await proofPassed(app, usrId);
-    return void await drop();
-  }
-  await proofFailed(app, usrId);
-  throw new ApiError(422, "Verification code is invalid");
+  const right = await attempt(app, usrId, async () => {
+    if (Number(open.expires) < unixTime()) {
+      await drop();
+      throw new ApiError(410, "Verification code expired");
+    }
+    return /^\d{6}$/.test(code) && safeEqual(await codeHash(app, type, address, code), String(open.hash));
+  });
+  if (!right) throw new ApiError(422, "Verification code is invalid");
+  await proofPassed(app, usrId);
+  await drop();
 }
 
 /** Claims of one user on one kind of address — what a "pending" list shows. */

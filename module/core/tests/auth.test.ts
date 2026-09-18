@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
-import { beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
+import { attempt, beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
 
 Deno.test("loginFromRequest: login form requires token", async () => {
@@ -123,6 +123,19 @@ Deno.test("login: wrong passwords buy a growing wait that every factor shares", 
     assertEquals(ctx.userId, 0);
     // the same wait stands in front of every other factor: nobody gets a fresh budget by switching
     await assertRejects(() => beforeProof(app, 7), Error, "Too many attempts");
+  });
+});
+
+Deno.test("attempt: parallel guesses take turns, so the wait stops them as it would one by one", async () => {
+  await withApp(async (app) => {
+    let checked = 0;
+    const guess = () => attempt(app, 7, () => Promise.resolve(void checked++)); // always wrong
+    const results = await Promise.allSettled(Array.from({ length: 10 }, guess));
+    assertEquals(checked, 4); // the free ones and the one that earns the first wait
+    assertEquals(results.filter((r) => r.status === "rejected").length, 6);
+    // a check that throws is no guess
+    await assertRejects(() => attempt(app, 8, () => Promise.reject(new Error("expired"))), Error, "expired");
+    await beforeProof(app, 8);
   });
 });
 

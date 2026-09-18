@@ -11,7 +11,7 @@ import { getCtx } from "./lib/ctx/Ctx.ts";
 import { $item, sql } from "./deps.ts";
 import { Access, AccessError, ApiError, ConflictError } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
-import { beforeProof, loginNeeds, logout, pendingLogin, proofFailed, proofPassed, pwHash, pwVerify } from "./lib/auth/mod.ts";
+import { attempt, loginNeeds, logout, pendingLogin, proofPassed, pwHash, pwVerify } from "./lib/auth/mod.ts";
 import { itemReadDeep, unixTime } from "./lib/util.ts";
 
 import type { ApiTree } from "./lib/api/mod.ts";
@@ -86,9 +86,7 @@ export const api: ApiTree = {
           // Same reason as in auth's proof(): a stateless credential identifies a request, not the
           // session a proof would be written to. Nothing is guessed there, so nothing is counted.
           if (ctx.statelessAuth) throw new ApiError(422, "That password does not match");
-          await beforeProof(ctx.app, ctx.userId);
-          if (!await pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? ""))) {
-            await proofFailed(ctx.app, ctx.userId);
+          if (!await attempt(ctx.app, ctx.userId, () => pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? "")))) {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "password step-up failed" }).catch(() => {});
             throw new ApiError(422, "That password does not match");
           }

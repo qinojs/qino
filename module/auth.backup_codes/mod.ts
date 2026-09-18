@@ -1,5 +1,5 @@
 // Public API of auth.backup_codes. The qino plugin lives in ./plugin.ts.
-import { ApiError, beforeProof, identified, proofFailed, pwHash, pwVerify } from "@qino/qino";
+import { ApiError, attempt, identified, pwHash, pwVerify } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
 import type { App, Ctx } from "@qino/qino";
@@ -40,17 +40,16 @@ export async function left(app: App, usrId: number): Promise<number> {
 /** Spend one to prove the user is present — signed in, or a login under way. */
 export async function spend(ctx: Ctx, code: string): Promise<boolean> {
   const usrId = identified(ctx);
-  await beforeProof(ctx.app, usrId);
   const typed = normalize(code);
-  const rows = await stored(ctx.app, usrId, TYPE);
-  let match;
-  // Tried one by one: bcrypt makes that a second at worst, and only for the account's own owner
-  for (const row of rows) {
-    if (await pwVerify(typed, JSON.parse(String(row.data)).hash)) { match = row; break; }
-  }
-  // The delete decides the race: of two parallel attempts with the same code only one removes a row
-  if (!match || !await drop(ctx.app, usrId, TYPE, Number(match.id))) {
-    await proofFailed(ctx.app, usrId);
+  const spent = await attempt(ctx.app, usrId, async () => {
+    // Tried one by one: bcrypt makes that a second at worst, and only for the account's own owner
+    for (const row of await stored(ctx.app, usrId, TYPE)) {
+      // the delete decides the race: of two parallel attempts with the same code only one removes a row
+      if (await pwVerify(typed, JSON.parse(String(row.data)).hash)) return !!await drop(ctx.app, usrId, TYPE, Number(row.id));
+    }
+    return false;
+  });
+  if (!spent) {
     ctx.app.fire("suspicious", { ctx, weight: 2, reason: "backup code rejected" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }
