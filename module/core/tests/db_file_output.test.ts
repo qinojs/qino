@@ -25,10 +25,11 @@ Deno.test("dbFile: anything a browser renders as a document is sandboxed", async
   }
 });
 
-Deno.test("dbFile: html never goes out as html, whatever its case", async () => {
-  for (const mime of ["text/html", "TEXT/HTML", "Text/Html; charset=utf-8", "application/xhtml+xml"]) {
+Deno.test("dbFile: markup goes out as its source, whatever its case — svg stays an image", async () => {
+  for (const mime of ["text/html", "TEXT/HTML", "Text/Html; charset=utf-8", "application/xhtml+xml", "application/xml", "text/xml", "application/rss+xml", "text/xsl"]) {
     assertEquals([mime, (await headersFor(mime)).get("Content-Type")], [mime, "text/plain"]);
   }
+  assertEquals((await headersFor("image/svg+xml")).get("Content-Type"), "image/svg+xml; charset=utf-8");
 });
 
 Deno.test("dbFile: pdf is left to the viewer, which refuses a sandbox", async () => {

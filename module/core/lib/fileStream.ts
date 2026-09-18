@@ -17,6 +17,9 @@ export type UploadedFile = {
 /** A media type as stored and compared: the essence, lowercase — `Text/HTML; charset=x` is `text/html`. */
 export const mimeType = (raw: string): string => raw.split(";")[0].trim().toLowerCase();
 
+/** The last path segment of a name a client or server handed us, never empty. */
+const baseName = (raw: string): string => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
+
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);
   return { name: file.name, type: mimeType(file.type), size: tmp.size, tmpPath: tmp.path, md5: tmp.md5 };
@@ -31,7 +34,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   const file = await saveStream(resp.body, { prefix: "remote-", maxSize: opt.maxSize });
 
   const m = resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/);
-  const name = (m?.[1] ?? new URL(opt.url).pathname.split("/").pop() ?? "file").replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
+  const name = baseName(m?.[1] ?? new URL(opt.url).pathname);
   const type = mimeType(resp.headers.get("content-type") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "");
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
@@ -52,7 +55,7 @@ export async function readDataUrl(uri: string, opt: { maxSize: number }): Promis
   }
   const file = await saveStream(new Blob([bytes]).stream(), { prefix: "inline-", maxSize: opt.maxSize });
   const name = params.match(/;name=([^;]+)/)?.[1] ?? "file." + (extensionByType(type) ?? "bin");
-  return { name: name.replace(/\?.*/, "").split(/[\\/]/).pop() || "file", type, size: file.size, tmpPath: file.path, md5: file.md5 };
+  return { name: baseName(name), type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 
 async function saveStream(stream: ReadableStream<Uint8Array>, opt: { maxSize?: number; prefix?: string; dir?: string } = {}) {

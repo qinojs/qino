@@ -98,8 +98,6 @@ export class DbFileManager {
       if (!granted && !await f.access()) return new Response(null, { status: 403 });
     }
 
-    let mime = f.mime || mimeType(typeByExtension(f.extension) ?? "application/octet-stream");
-
     const headers = new Headers();
 
     const mtime = await f.mtime();
@@ -113,7 +111,7 @@ export class DbFileManager {
       status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
-    mime = mimeType(outputMime || mime);
+    let mime = mimeType(outputMime || typeByExtension(f.extension) || "application/octet-stream");
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
@@ -128,10 +126,11 @@ export class DbFileManager {
 
     if (params.as === "text") mime = "text/plain";
 
-    // A file is never a page of this site: whatever the browser renders as a document (html, xml,
-    // svg, types nobody listed) runs sandboxed — no script, no forms, an opaque origin. PDF is the
-    // exception, Chrome refuses to show one sandboxed; its viewer isolates it by itself.
-    if (mime === "text/html" || mime === "application/xhtml+xml") mime = "text/plain";
+    // A file is never a page of this site: whatever the browser renders as a document runs sandboxed —
+    // no script, no forms, an opaque origin. PDF is the exception, Chrome refuses to show one sandboxed;
+    // its viewer isolates it by itself. Markup goes out as its source: a sandbox still follows a
+    // <meta> refresh. SVG stays an image.
+    if (MARKUP.test(mime) && mime !== "image/svg+xml") mime = "text/plain";
     if (mime !== "application/pdf") headers.set("Content-Security-Policy", "sandbox");
     headers.set("X-Content-Type-Options", "nosniff");
 
@@ -276,12 +275,7 @@ export class DbFile extends File {
   async replaceBy(path: string) {
     if (/^(https?|data):/.test(path)) {
       const maxSize = await this.#manager.app.settings.core.uploadMaxFileSize as number;
-      const src = path.startsWith("data:") ? await readDataUrl(path, { maxSize }) : await fetchRemoteFile({ url: path, maxSize });
-      this.path = this.#manager.directory + src.md5;
-      await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-      await moveFile(src.tmpPath, this.path);
-      await this.setVs({ name: src.name, mime: src.type, text: await this.getText(), md5: src.md5, size: src.size });
-      return;
+      return this.replaceFromUpload(path.startsWith("data:") ? await readDataUrl(path, { maxSize }) : await fetchRemoteFile({ url: path, maxSize }));
     }
     const src = new File(path);
 
@@ -335,6 +329,9 @@ function grantResource(id: number, parts: string[]): string {
 function permanentResource(resource: string, md5: unknown): string {
   return `${resource}\0${String(md5 ?? "")}`;
 }
+
+/** What a browser renders as a document: html, and xml of any kind (xhtml, rss, xslt, svg). */
+const MARKUP = /^text\/html$|xml$|xsl$/;
 
 const numOptions = ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const;
 const transformOptions = ['fmt', 'max', ...numOptions];
