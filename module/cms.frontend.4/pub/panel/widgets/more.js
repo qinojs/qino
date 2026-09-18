@@ -50,7 +50,6 @@ export default async function (widget, { dialogs, signal }) {
     <div>
       <form class=-pwchange>
         <table class=c1-padding>
-          <tr><td><input type=password name=old autocomplete=current-password placeholder="${t`old password`}">
           <tr><td><input type=password name=new autocomplete=new-password placeholder="${t`new password`}">
           <tr><td><input type=password name=new2 autocomplete=new-password placeholder="${t`repeat new password`}">
           <tr><td><button>${t`change`}</button>
@@ -101,10 +100,10 @@ export default async function (widget, { dialogs, signal }) {
 
   widget.on('submit', '.-pwchange', async (form, e) => {
     e.preventDefault();
-    const [oldpw, pw, pw2] = ['old', 'new', 'new2'].map((n) => form.querySelector(`[name=${n}]`).value);
+    const [pw, pw2] = ['new', 'new2'].map((n) => form.querySelector(`[name=${n}]`).value);
     if (pw !== pw2) return dialogs.alert(t`Passwords do not match`);
     try {
-      await api.core.password.put({ oldpw, pw });
+      await api.core.password.put({ pw });
       await dialogs.alert(t`Password changed successfully.`);
       form.reset();
     } catch (err) { await dialogs.alert(err.message); }
