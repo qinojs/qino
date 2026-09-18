@@ -7,14 +7,14 @@ import { identity, resolveUser } from "../plugin.ts";
 const PROVIDER = { name: "github", auto_create: 1, allowed_domains: "" };
 
 /** A database that answers from the two rows a login looks at, and records what it wrote. */
-function fakeDb({ link, usr }: { link?: number; usr?: number } = {}) {
+function fakeDb({ link, usr, handle }: { link?: number; usr?: number; handle?: number } = {}) {
   const inserted: Array<[string, Record<string, unknown>]> = [];
   const execs: string[] = [];
   return {
     inserted,
     execs,
     row: (...a: any[]) => Promise.resolve(fakeRender(a[0], a.slice(1))[0].includes("oauth_provider_usr") && link ? { usr_id: link } : null),
-    one: () => Promise.resolve(usr ?? null),
+    one: (...a: any[]) => Promise.resolve((fakeRender(a[0], a.slice(1))[0].includes("username") ? handle : usr) ?? null),
     exec: (...a: any[]) => { execs.push(fakeRender(a[0], a.slice(1))[0]); return Promise.resolve({ affectedRows: 1 }); },
     table: (name: string) => ({
       insert: (row: Record<string, unknown>) => { inserted.push([name, row]); return Promise.resolve(99); },
@@ -65,6 +65,12 @@ Deno.test("auth.oauth: auto_create off means an unknown e-mail creates nobody", 
   assertEquals(db.inserted.length, 0);
 });
 
+Deno.test("auth.oauth: a login handle already taken creates no twin account", async () => {
+  const db = fakeDb({ handle: 8 });
+  assertEquals(await resolveUser(ctxWith(db), PROVIDER, github()), 0);
+  assertEquals(db.inserted.length, 0);
+});
+
 Deno.test("auth.oauth: signed in, the round trip connects the provider to whoever is here", async () => {
   const db = fakeDb();
   assertEquals(await resolveUser(ctxWith(db, 5), PROVIDER, github({ email: "someone.else@example.com" })), 5);
@@ -76,10 +82,16 @@ Deno.test("auth.oauth: signed in, an identity linked to someone else is refused,
   assertEquals(await resolveUser(ctxWith(db, 5), PROVIDER, github()), 0);
 });
 
-Deno.test("auth.oauth: a parked login connects the provider to the user it established", async () => {
-  const db = fakeDb();
-  assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github({ email: "someone.else@example.com" })), 5);
-  assertEquals(db.inserted[0][1].usr_id, 5);
+Deno.test("auth.oauth: a parked login is finished by a link it already has", async () => {
+  const db = fakeDb({ link: 5 });
+  assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github()), 5);
+});
+
+Deno.test("auth.oauth: a parked login connects no new provider — the password alone must not add a factor", async () => {
+  const db = fakeDb({ usr: 5 });
+  assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github({ email: "someone.else@example.com" })), 0);
+  assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github()), 0); // not even with the user's own verified e-mail
+  assertEquals(db.inserted.length, 0);
 });
 
 Deno.test("auth.oauth: a parked login is not finished by an identity belonging to someone else", async () => {

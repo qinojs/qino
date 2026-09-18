@@ -115,9 +115,9 @@ export function identity(c: any): { sub: string; email: string; verified: unknow
  * not known yet is matched by verified e-mail, optionally created — and remembered from then on.
  *
  * Coming back to a session that already knows someone means "connect this to me": the link is made
- * for them, and an identity belonging to somebody else is refused rather than silently switching
- * account. That someone is whoever is signed in — or the login parked here waiting for a second
- * factor, which this round trip is answering.
+ * for whoever is signed in, and an identity belonging to somebody else is refused rather than
+ * silently switching account. A login parked here waiting for a second factor accepts only a link
+ * it already has.
  */
 export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
   const db = ctx.app.db;
@@ -137,7 +137,10 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     }
   }
 
-  let usrId = here;
+  // A login under way is finished only by a link it already has: whoever knows the password would
+  // otherwise connect their own provider account as the missing factor. Connecting needs a session.
+  if (here && !ctx.userId) return 0;
+  let usrId = ctx.userId;
   if (!usrId) {
     // Never link/create on an e-mail the provider does not vouch for. A missing claim counts as
     // unconfirmed: a provider whose userinfo mail is editable would otherwise hand over accounts.
@@ -145,7 +148,8 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     // whoever owns the address owns the account — the contact is proven, a login handle is not
     usrId = await contactOwner(db, "email", id.email) ?? 0;
     if (!usrId) {
-      if (!p.auto_create) return 0;
+      // a taken login handle is someone's account: they sign in and connect, nobody gets a twin
+      if (!p.auto_create || await db.one`SELECT id FROM usr WHERE LOWER(TRIM(username)) = ${id.email}`) return 0;
       usrId = Number(await db.table("usr").insert({
         username: id.email, active: 1, pw: "", superuser: 0, given_name: id.given_name, family_name: id.family_name,
       }));
