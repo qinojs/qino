@@ -39,16 +39,15 @@ export async function install({ app }: { app: App }): Promise<void> {
   }
 }
 
-/** One editable card per provider (blank `p` = the "add" form). */
-function providerForm(csrf: string, selfBase: string, p: any = {}): HtmlString {
+/** One editable form per provider (blank `p` = the "add" form). */
+function providerForm(csrf: string, selfBase: string, action: string, p: any = {}): HtmlString {
   const v = (k: string) => p[k];
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
   const text = (k: string, ph = "") => html`<input name=${k} value="${v(k)}" placeholder="${ph}" autocomplete=off>`;
   // autocomplete: a password field makes the browser read the whole form as a login and offer the
   // saved one; `new-password` says this is not that form.
-  return html`<form method=post class=u2-card autocomplete=off>
-  <div class=-head>${isNew ? "Add provider" : v("name")}</div>
+  return html`<form method=post action="${action}" autocomplete=off>
   <div>
     <input type=hidden name=csrfToken value="${csrf}">
     <input type=hidden name=id value="${v("id")}">
@@ -61,15 +60,15 @@ function providerForm(csrf: string, selfBase: string, p: any = {}): HtmlString {
       Allowed domains ${text("allowed_domains", "example.com")}
       <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
     </u2-fields>
-    <details>
-      <summary>OAuth2 (no discovery)</summary>
+    <fieldset>
+      <legend>OAuth2 (no discovery)</legend>
       <u2-fields>
         Authorize URL ${text("authorize_url")}
         Token URL ${text("token_url")}
         Userinfo URL ${text("userinfo_url")}
         E-mail URL ${text("email_url")}
       </u2-fields>
-    </details>
+    </fieldset>
     ${isNew ? "" : html`<div><small>Redirect URI: <code>${selfBase + "oauth/callback/" + String(p.name)}</code></small></div>`}
     <div><button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" class=u2-unstyle>✕</button>`}</div>
   </div>
@@ -113,11 +112,45 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const rows = await db.query`SELECT * FROM oauth_provider ORDER BY name`;
   const csrf = ctx.csrfToken;
   const selfBase = ctx.req.url.origin + ctx.req.appUrl;
-  const cards = rows.map((r) => providerForm(csrf, selfBase, r));
+  const url = ctx.req.url.toURL();
+  url.searchParams.delete("auth_oauth_edit");
+  const back = url.pathname + url.search;
+  const edit = ctx.req.query.auth_oauth_edit;
+  const provider = rows.find((r) => String(r.id) === edit);
+  if (edit === "new" || provider) return html`<div class=u2-card>
+    <div class=-head><a href="${back}">← Back</a> · ${provider?.name ?? "Add provider"}</div>
+    ${providerForm(csrf, selfBase, back, provider)}
+  </div>`;
 
-  return html`<div class=u2-flex>
-  ${html.join(cards, "\n")}
-  ${providerForm(csrf, selfBase)}
+  const list = rows.map((r) => {
+    url.searchParams.set("auth_oauth_edit", String(r.id));
+    return html`<tr u2-href>
+      <td><a href="${url.pathname + url.search}">${r.name}</a>
+      <td>${r.issuer || r.authorize_url || "—"}
+      <td>${r.client_id || "—"}
+      <td>${r.scopes || "—"}
+      <td>${r.allowed_domains || "All"}
+      <td>${Number(r.auto_create) ? "Yes" : "No"}`;
+  });
+  url.searchParams.set("auth_oauth_edit", "new");
+
+  return html`<div class="u2-flex">
+  <div class=u2-card>
+    <div class=-head>Login providers (${rows.length})</div>
+    <div style="overflow:auto; padding:0">
+      <table class=u2-table>
+        <thead><tr>
+          <th>Provider
+          <th>Issuer / Authorize URL
+          <th>Client ID
+          <th>Scopes
+          <th>Allowed domains
+          <th>Auto-create users
+        <tbody>${list.length ? html.join(list, "\n") : html`<tr><td colspan=6>No providers configured.`}
+      </table>
+    </div>
+    <div><a class=btn href="${url.pathname + url.search}">Add provider</a></div>
+  </div>
   ${await links(node.app, csrf)}
 </div>`;
 }
