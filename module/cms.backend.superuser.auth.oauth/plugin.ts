@@ -13,13 +13,17 @@ export const cms = { node: { render } };
 
 type Preset = { issuer?: string; scopes: string; authorize_url?: string; token_url?: string; userinfo_url?: string; email_url?: string };
 
-// Well-known providers, seeded on install; the admin only adds client_id/secret.
-// OIDC = issuer (discovery). OAuth2 = explicit endpoints. Replace <tenant> with your own domain.
+// Well-known providers, seeded on install; the admin adds client_id/secret and replaces placeholders.
+// OIDC = issuer (discovery). OAuth2 = explicit endpoints. Authentik uses per-provider issuer mode.
 const PRESETS: Record<string, Preset> = {
   google:    { issuer: "https://accounts.google.com", scopes: "openid email profile" },
   microsoft: { issuer: "https://login.microsoftonline.com/<tenant>/v2.0", scopes: "openid email profile" },
   apple:     { issuer: "https://appleid.apple.com", scopes: "openid email name" },
   auth0:     { issuer: "https://<tenant>.auth0.com", scopes: "openid email profile" },
+  okta:      { issuer: "https://<tenant>.okta.com", scopes: "openid email profile" },
+  keycloak:  { issuer: "https://<domain>/realms/<realm>", scopes: "openid email profile" },
+  authentik: { issuer: "https://<domain>/application/o/<application>/", scopes: "openid email profile" },
+  zitadel:   { issuer: "https://<domain>", scopes: "openid email profile" },
   gitlab:    { issuer: "https://gitlab.com", scopes: "openid email profile" },
   linkedin:  { issuer: "https://www.linkedin.com/oauth", scopes: "openid email profile" },
   slack:     { issuer: "https://slack.com", scopes: "openid email profile" },
@@ -109,7 +113,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     }
   }
 
-  const rows = await db.query`SELECT * FROM oauth_provider ORDER BY name`;
+  const rows = await db.query`SELECT * FROM oauth_provider ORDER BY client_id IS NULL, name`;
   const csrf = ctx.csrfToken;
   const selfBase = ctx.req.url.origin + ctx.req.appUrl;
   const url = ctx.req.url.toURL();
