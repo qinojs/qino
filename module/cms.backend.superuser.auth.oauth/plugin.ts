@@ -113,7 +113,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     }
   }
 
-  const rows = await db.query`SELECT * FROM oauth_provider ORDER BY client_id IS NULL, name`;
+  const rows = await db.query`SELECT * FROM oauth_provider ORDER BY client_id = '', name`;
   const csrf = ctx.csrfToken;
   const selfBase = ctx.req.url.origin + ctx.req.appUrl;
   const url = ctx.req.url.toURL();
