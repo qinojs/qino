@@ -12,6 +12,6 @@ export async function ipBadges(app: App) {
   const suspicious = withSecurity ? await app.t`suspicious` : "";
   return (ip: unknown) => {
     const strength = withSecurity && ip ? suspicion(app, String(ip)) : 0;
-    return html`${myIpBadge(ip, myIp)}${strength >= 1 ? html` <small class=u2-badge title="${suspicious}" aria-label="${suspicious}: ${Math.round(strength)}">☠ ${Math.round(strength)}</small>` : ""}`;
+    return html`${myIpBadge(ip, myIp)}${strength >= 1 ? html` <small class=u2-badge style="background:var(--red)" title="${suspicious}" aria-label="${suspicious}: ${Math.round(strength)}">☠ ${Math.round(strength)}</small>` : ""}`;
   };
 }
