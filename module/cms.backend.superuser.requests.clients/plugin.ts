@@ -1,6 +1,6 @@
 import { getCtx, html, sql, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { suspicion } from "@qino/qino/security";
+import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -44,19 +44,6 @@ async function latest(app: App, limit: number, { window = WINDOW, returning = fa
   const logById = new Map(logs.map((l) => [Number(l.id), l]));
   const usersByClient = new Map(users.map((u) => [Number(u.client_id), Number(u.n)]));
   return groups.map((g) => ({ ...logById.get(Number(g.last_id)), ...g, users: usersByClient.get(Number(g.client_id)) ?? 0 }));
-}
-
-/** Badge when the ip is the viewer's own. */
-const myIpBadge = (ip: unknown, label: string) => ip && ip === getCtx().req.clientIp ? html` <small class=u2-badge>${label}</small>` : "";
-
-async function ipBadges(app: App) {
-  const myIp = await app.t`my IP`;
-  const withSecurity = !!app.modules.linked("security");
-  const suspicious = withSecurity ? await app.t`suspicious` : "";
-  return (ip: unknown) => {
-    const strength = withSecurity && ip ? suspicion(app, String(ip)) : 0;
-    return html`${myIpBadge(ip, myIp)}${strength >= 1 ? html` <small class=u2-badge title="${suspicious}" aria-label="${suspicious}: ${Math.round(strength)}">☠ ${Math.round(strength)}</small>` : ""}`;
-  };
 }
 
 const userName = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;

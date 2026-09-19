@@ -1,6 +1,7 @@
 import { dump } from "@nuxodin/dump";
 import { html, getCtx, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -83,7 +84,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const u = ctx.req.url.toURL();
   const ownHost = ctx.req.url.host;
-  const myIp = await t`my IP`;
+  const badges = await ipBadges(node.app);
   const trs = [];
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
@@ -106,7 +107,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
         <small style="color:${uniqueColor(info.browser)}">${info.browser} ${info.version}</small>
         ${info.bot ? html`<br><small class=u2-badge>bot</small>` : ""}
     <td>${row.usr_id ? html`<span style="color:${uniqueColor(row.usr_id)}">${(row.given_name ?? "") + " " + (row.family_name ?? "")}</span><br><small>${row.username}</small>` : html`<small>guest</small>`}
-    <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${row.ip}${row.ip === ctx.req.clientIp ? html` <small class=u2-badge>${myIp}</small>` : ""}
+    <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${row.ip}${badges(row.ip)}
     <td>${post ? html`<pre style="max-width:25rem; max-height:6rem; overflow:auto">${post}</pre>` : "-"}
     <td>${row.id}`);
   }
@@ -260,6 +261,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         LEFT JOIN log_user_agent ua ON log.user_agent_id = ua.id
      WHERE log.id = ${id}`;
   if (!log) return html`<div>${await t`Not found`}</div>`;
+  const badges = await ipBadges(node.app);
 
   const sess = log.sess_id ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr = sess?.usr_id ? await db.row`SELECT * FROM usr WHERE id = ${sess.usr_id}` : null;
@@ -327,7 +329,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <tr><th>${t`Time`}<td style="color:${ageColor(log.time)}">${u2.el.time(log.time)}
             <tr>
               <th style="color:${uniqueColor(log.ip)}">${t`IP`}
-              <td>${log.ip ? html`<a href="${searchLink(log.ip)}">${log.ip}</a>` : "-"}${log.ip && log.ip === ctx.req.clientIp ? html.async` <small class=u2-badge>${t`my IP`}</small>` : ""}
+              <td>${log.ip ? html`<a href="${searchLink(log.ip)}">${log.ip}</a>` : "-"}${badges(log.ip)}
             <tr>
               <th>${t`Client`}
               <td><a href="${clientUrl({ id: log.client_id }) || searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${log.client_id}</a>
@@ -358,7 +360,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const own = ctx.clientId;
-  const myIp = await app.t`my IP`;
+  const badges = await ipBadges(app);
   const [rows, pageUrl] = await Promise.all([
     app.db.query`
       SELECT log.id, log.time, url.url AS url, ip.ip, ua.user_agent, usr.id AS usr_id, usr.username, usr.given_name, usr.family_name
@@ -381,7 +383,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     <td style="white-space:nowrap"><a href="${href(row.id)}" style="color:${ageColor(row.time)}">${u2.el.time(row.time, { narrow: true })}</a>
     <td><small style="word-break:break-all">${row.url}</small>
     <td style="white-space:nowrap"><small style="color:${uniqueColor(info.browser)}">${info.bot ? "bot" : info.browser}</small>
-    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>${row.ip === ctx.req.clientIp ? html` <small class=u2-badge>${myIp}</small>` : ""}
+    <td style="white-space:nowrap"><small style="color:${uniqueColor(row.ip)}">${row.ip}</small>${badges(row.ip)}
     <td style="white-space:nowrap">${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${user}</small>` : ""}`;
   })}</table></div>`;
 }
