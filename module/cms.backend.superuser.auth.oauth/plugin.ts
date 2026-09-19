@@ -11,26 +11,41 @@ const { name } = manifest;
 
 export const cms = { node: { render } };
 
-type Preset = { issuer?: string; scopes: string; authorize_url?: string; token_url?: string; userinfo_url?: string; email_url?: string };
+type Preset = {
+  issuer?: string;
+  scopes: string;
+  authorize_url?: string;
+  token_url?: string;
+  userinfo_url?: string;
+  email_url?: string;
+  console_url: string; // Wo man Client-ID/Secret erstellt
+};
 
 // Well-known providers, seeded on install; the admin adds client_id/secret and replaces placeholders.
 // OIDC = issuer (discovery). OAuth2 = explicit endpoints. Authentik uses per-provider issuer mode.
 const PRESETS: Record<string, Preset> = {
-  google:    { issuer: "https://accounts.google.com", scopes: "openid email profile" },
-  microsoft: { issuer: "https://login.microsoftonline.com/<tenant>/v2.0", scopes: "openid email profile" },
-  apple:     { issuer: "https://appleid.apple.com", scopes: "openid email name" },
-  auth0:     { issuer: "https://<tenant>.auth0.com", scopes: "openid email profile" },
-  okta:      { issuer: "https://<tenant>.okta.com", scopes: "openid email profile" },
-  keycloak:  { issuer: "https://<domain>/realms/<realm>", scopes: "openid email profile" },
-  authentik: { issuer: "https://<domain>/application/o/<application>/", scopes: "openid email profile" },
-  zitadel:   { issuer: "https://<domain>", scopes: "openid email profile" },
-  gitlab:    { issuer: "https://gitlab.com", scopes: "openid email profile" },
-  linkedin:  { issuer: "https://www.linkedin.com/oauth", scopes: "openid email profile" },
-  slack:     { issuer: "https://slack.com", scopes: "openid email profile" },
-  github:    { scopes: "read:user user:email", authorize_url: "https://github.com/login/oauth/authorize", token_url: "https://github.com/login/oauth/access_token", userinfo_url: "https://api.github.com/user", email_url: "https://api.github.com/user/emails" },
-  discord:   { scopes: "identify email", authorize_url: "https://discord.com/oauth2/authorize", token_url: "https://discord.com/api/oauth2/token", userinfo_url: "https://discord.com/api/users/@me" },
+  google:     { issuer: "https://accounts.google.com", scopes: "openid email profile", console_url: "https://console.cloud.google.com/apis/credentials" },
+  microsoft:  { issuer: "https://login.microsoftonline.com/common/v2.0", scopes: "openid email profile", console_url: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" }, // "common" statt fixem Tenant, damit es ohne Kunden-Tenant-ID sofort funktioniert
+  apple:      { issuer: "https://appleid.apple.com", scopes: "openid email name", console_url: "https://developer.apple.com/account/resources/identifiers/list/serviceId" },
+  auth0:      { issuer: "https://<tenant>.auth0.com", scopes: "openid email profile", console_url: "https://manage.auth0.com/" },
+  okta:       { issuer: "https://<tenant>.okta.com", scopes: "openid email profile", console_url: "https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/" },
+  keycloak:   { issuer: "https://<domain>/realms/<realm>", scopes: "openid email profile", console_url: "https://www.keycloak.org/docs/latest/server_admin/#proc-creating-oidc-client_server_administration_guide" },
+  authentik:  { issuer: "https://<domain>/application/o/<application>/", scopes: "openid email profile", console_url: "https://docs.goauthentik.io/docs/add-secure-apps/providers/oauth2/" },
+  zitadel:    { issuer: "https://<domain>", scopes: "openid email profile", console_url: "https://zitadel.com/docs/guides/manage/console/applications" },
+  gitlab:     { issuer: "https://gitlab.com", scopes: "openid email profile", console_url: "https://gitlab.com/-/user_settings/applications" },
+  linkedin:   { issuer: "https://www.linkedin.com/oauth", scopes: "openid email profile", console_url: "https://www.linkedin.com/developers/apps" },
+  slack:      { issuer: "https://slack.com", scopes: "openid email profile", console_url: "https://api.slack.com/apps" },
+  salesforce: { issuer: "https://login.salesforce.com", scopes: "openid email profile", console_url: "https://help.salesforce.com/s/articleView?id=sf.connected_app_create.htm" },
+  yahoo:      { issuer: "https://api.login.yahoo.com", scopes: "openid email profile", console_url: "https://developer.yahoo.com/apps/create/" },
+  twitch:     { issuer: "https://id.twitch.tv/oauth2", scopes: "openid", console_url: "https://dev.twitch.tv/console/apps/create" }, // email-Claim braucht zusätzlich "user:read:email"-Scope + expliziten claims-Request, kein Standard-"profile"-Scope
+  paypal:     { issuer: "https://www.paypal.com", scopes: "openid email profile", console_url: "https://developer.paypal.com/dashboard/applications/live" },
+  github:   { scopes: "read:user user:email", authorize_url: "https://github.com/login/oauth/authorize", token_url: "https://github.com/login/oauth/access_token", userinfo_url: "https://api.github.com/user", email_url: "https://api.github.com/user/emails", console_url: "https://github.com/settings/applications/new" },
+  discord:  { scopes: "identify email", authorize_url: "https://discord.com/oauth2/authorize", token_url: "https://discord.com/api/oauth2/token", userinfo_url: "https://discord.com/api/users/@me", console_url: "https://discord.com/developers/applications" },
+  facebook: { scopes: "email public_profile", authorize_url: "https://www.facebook.com/v19.0/dialog/oauth", token_url: "https://graph.facebook.com/v19.0/oauth/access_token", userinfo_url: "https://graph.facebook.com/me?fields=id,name,email", console_url: "https://developers.facebook.com/apps/" },
+  twitter:  { scopes: "users.read tweet.read", authorize_url: "https://twitter.com/i/oauth2/authorize", token_url: "https://api.twitter.com/2/oauth2/token", userinfo_url: "https://api.twitter.com/2/users/me", console_url: "https://console.x.com/" },
+  spotify:  { scopes: "user-read-email", authorize_url: "https://accounts.spotify.com/authorize", token_url: "https://accounts.spotify.com/api/token", userinfo_url: "https://api.spotify.com/v1/me", console_url: "https://developer.spotify.com/dashboard" },
+  bitbucket:{ scopes: "account email", authorize_url: "https://bitbucket.org/site/oauth2/authorize", token_url: "https://bitbucket.org/site/oauth2/access_token", userinfo_url: "https://api.bitbucket.org/2.0/user", console_url: "https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/" },
 };
-
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Login providers", de: "Login-Provider" });
   for (const [pname, def] of Object.entries(PRESETS)) {
@@ -52,6 +67,14 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
   // autocomplete: a password field makes the browser read the whole form as a login and offer the
   // saved one; `new-password` says this is not that form.
   return html`<form method=post action="${action}" autocomplete=off>
+
+  ${isNew ? "" : 
+    html`<div style="margin-bottom:1em">
+    ${PRESETS[v("name")]?.console_url ? 
+      html`<a href="${PRESETS[v("name")]?.console_url ?? "#"}" target=_blank rel=noopener>Provider console</a><br>
+    ` : ""}
+    <small>Redirect URI: <code>${selfBase + "oauth/callback/" + String(p.name)}</code></small>
+  </div>`}
   <div>
     <input type=hidden name=csrfToken value="${csrf}">
     <input type=hidden name=id value="${v("id")}">
@@ -73,8 +96,10 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
         E-mail URL ${text("email_url")}
       </u2-fields>
     </fieldset>
-    ${isNew ? "" : html`<div><small>Redirect URI: <code>${selfBase + "oauth/callback/" + String(p.name)}</code></small></div>`}
-    <div><button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" class=u2-unstyle>✕</button>`}</div>
+    <div>
+      <button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>
+      ${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" u2-confirm style="background:var(--red)">Delete</button>`}
+    </div>
   </div>
 </form>`;
 }
