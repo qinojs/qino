@@ -1,10 +1,15 @@
+import { clientIp, Output } from "@qino/qino";
+
+import { reportIp } from "./guard.ts";
+
 import type { App } from "@qino/qino";
 
 /** Never a real link on any site: secrets, repositories, server internals, dumps. */
 export const suspiciousPaths = (app: App, signal: AbortSignal): void => report(app, signal, {
+  early: true,
   weight: 15,
   reason: "suspicious path",
-  starts: ["_profiler/", "vendor/phpunit/"],
+  starts: ["_profiler/", "vendor/phpunit/", "wp-admin/install.php"],
   segments: [".env", ".git", ".svn", ".hg", ".htaccess", ".htpasswd", ".aws", ".ssh", ".ds_store"],
   contains: ["phpinfo", "php-info", "_environment", "server-status", "server-info", "wp-config"],
   ends: [".sql", ".bak", ".swp"],
@@ -23,8 +28,9 @@ export const foreignPaths = (app: App, signal: AbortSignal): void => report(app,
 // An empty list becomes (?!), which never matches.
 const anyOf = (list: string[] = []) => list.map(RegExp.escape).join("|") || "(?!)";
 
-/** Reports a 404 whose path matches one of the lists (case-insensitive); a path that exists or is redirected costs nothing. */
-function report(app: App, signal: AbortSignal, { weight, reason, starts, segments, contains, ends, enabled = async () => true }: {
+/** Matches paths case-insensitively. Early matches report and stop; otherwise only 404s count, not existing paths or redirects. */
+function report(app: App, signal: AbortSignal, { weight, reason, starts, segments, contains, ends, early = false, enabled = async () => true }: {
+  early?: boolean;
   weight: number;
   reason: string;
   starts?: string[];    // the start of the path
@@ -34,6 +40,19 @@ function report(app: App, signal: AbortSignal, { weight, reason, starts, segment
   enabled?: () => Promise<unknown>;
 }): void {
   const re = new RegExp(`^(${anyOf(starts)})|(^|/)(${anyOf(segments)})(/|$)|${anyOf(contains)}|(${anyOf(ends)})$`, "i");
+  if (early) {
+    app.on("request-start", ({ request, peerAddr, base }) => {
+      const pathname = new URL(request.url).pathname;
+      if (!pathname.startsWith(base)) return;
+      let path: string;
+      try { path = decodeURIComponent(pathname.slice(base.length)); }
+      catch { return; } // malformed paths are rejected by the request parser
+      if (!re.test(path)) return;
+      reportIp(app, clientIp(request, peerAddr, app.trustedProxyHops), weight, `${reason}: ${path.slice(0, 100)}`);
+      throw new Output("Not found", { status: 404 });
+    }, { signal });
+    return;
+  }
   app.on("respond", ({ ctx }) => {
     if (ctx.res.status !== 404) return;
     const path = ctx.req.appPath;

@@ -13,7 +13,7 @@ faded below it. Waiting holds a connection, a `429` is almost free, so the delay
 Half-life and limits are the constants at the top of [`lib/guard.ts`](lib/guard.ts).
 
 The check runs at `request-start`, before sessions and static files, so it knows no user:
-a superuser behind a blocked IP is blocked too. Reports caused by a superuser do not count.
+a superuser behind a blocked IP is blocked too. Reports with an authenticated superuser do not count; early path checks know no user and apply to everyone.
 
 Strengths live in memory, so the per-request check needs no query. Above a small strength they
 are also stored through [`score`](../score/) on `log_ip`, so a restart does not forgive anyone
@@ -23,8 +23,9 @@ Built-in reports, each in its own file under `lib/`:
 
 - `robotsHoneypot` — with [`seo`](../seo/), `robots.txt` disallows a random path nothing links
   to, new at every start. Whoever requests it read robots.txt and ignored it.
-- `pathReports` — a 404 on a path no site ever links to (`.env`, `.git`, `phpinfo`, …) weighs
-  heavily; a 404 on a path of another system (`*.php`, `wp-admin`, `js/`, …) lightly. After
+- `pathReports` — suspicious paths (`.env`, `.git`, `phpinfo`, …) are reported with a high
+  weight and stopped with 404 before sessions, static files or routing, even if the path exists.
+  A 404 on a path of another system (`*.php`, `wp-admin`, `js/`, …) weighs lightly. After
   replacing an old site the latter may be real links, so turn off `security.foreignPaths` for
   a while.
 

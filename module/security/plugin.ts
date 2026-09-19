@@ -1,6 +1,6 @@
 import { clientIp } from "@qino/qino";
 
-import { gate, load, suspect } from "./lib/guard.ts";
+import { gate, load, reportCtx } from "./lib/guard.ts";
 import { robotsHoneypot } from "./lib/robotsHoneypot.ts";
 import { foreignPaths, suspiciousPaths } from "./lib/pathReports.ts";
 
@@ -14,7 +14,7 @@ export const settingsSchema = {
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   await load(app);
-  app.on("suspicious", ({ ctx, weight = 1, reason = "" }) => suspect(ctx, weight, reason), { signal });
+  app.on("suspicious", ({ ctx, weight = 1, reason = "" }) => reportCtx(ctx, weight, reason), { signal });
   app.on("request-start", ({ request, peerAddr }) => gate(app, clientIp(request, peerAddr, app.trustedProxyHops)), { signal });
 
   robotsHoneypot(app, signal);

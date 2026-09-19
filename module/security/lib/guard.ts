@@ -33,10 +33,14 @@ export async function load(app: App): Promise<void> {
   }
 }
 
-export function suspect(ctx: Ctx, weight: number, reason: string): void {
-  const ip = ctx.req.clientIp;
-  if (!ip || ctx.user?.superuser) return; // superusers do not lock themselves out
-  const { keys, reports } = states.get(ctx.app)!;
+export function reportCtx(ctx: Ctx, weight: number, reason: string): void {
+  if (ctx.user?.superuser) return; // superusers do not lock themselves out
+  reportIp(ctx.app, ctx.req.clientIp, weight, reason);
+}
+
+export function reportIp(app: App, ip: string, weight: number, reason: string): void {
+  if (!ip) return;
+  const { keys, reports } = states.get(app)!;
   const key = ipKey(ip);
   const t = now();
   reports.unshift({ time: t, ip, weight, reason });
@@ -54,7 +58,7 @@ export function suspect(ctx: Ctx, weight: number, reason: string): void {
   if (next.s < STORE) return;
   const add = next.stored ? weight : next.s;
   next.stored = true;
-  store(ctx.app, key, add);
+  store(app, key, add);
 }
 
 /** Writes of one key run one after another, so they neither insert its row twice nor lose a hit. */

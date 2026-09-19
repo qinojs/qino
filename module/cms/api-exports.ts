@@ -242,8 +242,8 @@ export async function searchNodes(search: string): Promise<any[]> {
     const id = /^\d+$/.test(search) ? Number(search) : 0;
     const res = [];
     for (const vs of await ctx.app.db.query`
-        SELECT p.id AS id FROM page p, text t WHERE true
-        AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id
+        SELECT p.id AS id FROM page p, text_lang t WHERE true
+        AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.text_id
         AND ( p.id = ${id} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
         p.id = ${id} DESC, t.lang = ${ctx.lang} DESC,
         t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
