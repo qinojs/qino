@@ -1,6 +1,6 @@
 import { assertEquals } from "@qino/qino/tests";
 
-import { release, reports, suspects } from "../mod.ts";
+import { suspicion, release, reports, suspects } from "../mod.ts";
 import { close, ctxOf, get, inDir, settle, testApp, withApp } from "./app.ts";
 
 import type { App } from "@qino/qino";
@@ -9,10 +9,12 @@ const stored = async (app: App, ip: string) =>
   Number(await app.db.one`SELECT COUNT(*) FROM score s JOIN log_ip l ON l.id = s.id WHERE l.ip = ${ip}`);
 
 Deno.test("security: reports add up, delay, block and are stored from strength 5", () => withApp(async (app) => {
+  assertEquals(suspicion(app, "6.6.6.6") >= 1, false);
   await get(app, "6.6.6.6"); // puts the ip into log_ip
   await app.fire("suspicious", { ctx: ctxOf(app, "6.6.6.6"), weight: 2, reason: "small" });
   assertEquals((await get(app, "6.6.6.6")).status, 200); // delayed only
   assertEquals(await stored(app, "6.6.6.6"), 0);         // one-off slips stay in memory
+  assertEquals(suspicion(app, "6.6.6.6") >= 1, true);
 
   await app.fire("suspicious", { ctx: ctxOf(app, "6.6.6.6"), weight: 49, reason: "big" });
   await settle();
@@ -37,6 +39,8 @@ Deno.test("security: an IPv6 address counts as its /64, rotating inside it does 
   for (let i = 1; i <= 3; i++) await app.fire("suspicious", { ctx: ctxOf(app, `2a02:1210:3c4d:4200::${i}`), weight: 20 });
   assertEquals((await get(app, "2a02:1210:3c4d:4200:bc73:f023:7666:bd65")).status, 429);
   assertEquals((await get(app, "2a02:1210:3c4d:4201::1")).status, 200);
+  assertEquals(suspicion(app, "2a02:1210:3c4d:4200:bc73:f023:7666:bd65") >= 1, true);
+  assertEquals(suspicion(app, "2a02:1210:3c4d:4201::1") >= 1, false);
   assertEquals(suspects(app).map((s) => s.key), ["2a02:1210:3c4d:4200::/64"]);
   assertEquals(reports(app)[0].ip, "2a02:1210:3c4d:4200::3"); // reports keep the address
   await settle();
@@ -56,7 +60,9 @@ Deno.test("security: a restart keeps stored strengths, release forgets them", ()
   const again = await testApp(dir);
   try {
     assertEquals((await get(again, "6.6.6.6")).status, 429);
+    assertEquals(suspicion(again, "6.6.6.6") >= 1, true);
     await release(again, "6.6.6.6");
+    assertEquals(suspicion(again, "6.6.6.6") >= 1, false);
     assertEquals((await get(again, "6.6.6.6")).status, 200);
     assertEquals(await stored(again, "6.6.6.6"), 0);
     assertEquals(suspects(again), []);

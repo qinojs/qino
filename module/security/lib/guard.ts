@@ -97,6 +97,12 @@ export function gate(app: App, ip: string): Promise<void> | void {
   return new Promise<void>((resolve) => setTimeout(resolve, s * s));
 }
 
+/** Current suspicion strength of an IP, using only the in-memory state. */
+export function suspicion(app: App, ip: string): number {
+  const e = states.get(app)?.keys.get(ipKey(ip));
+  return e ? decay(e, now()) : 0;
+}
+
 /** Tracked keys (see ipKey), strongest first. `blocked` is seconds left, 0 when only delayed. */
 export function suspects(app: App) {
   const t = now();
