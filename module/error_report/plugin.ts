@@ -3,7 +3,7 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-import { getCtx, Output, unixTime } from "@qino/qino";
+import { clientIp, getCtx, Output, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -45,7 +45,7 @@ function intakeAllowed(ctx: Ctx): boolean {
 
 async function handleJsError(ctx: Ctx): Promise<void> {
   const report = ctx.req.body;
-  if (report?.message) await addReport(ctx.app, { source: "js", ...report });
+  if (report?.message) await addReport(ctx.app, { ...report, source: "js" });
   throw new Output({});
 }
 
@@ -112,16 +112,16 @@ async function addReport(app: App, vs: Report): Promise<void> {
     col: "",
     backtrace: [],
     source: "js",
-    time: new Date().toISOString().slice(0, 19).replace("T", " "),
     ...vs,
+    time: new Date().toISOString().slice(0, 19).replace("T", " "),
   };
   try {
     const ctx = getCtx();
     row.request ??= ctx.req.appUrl + ctx.req.appPath;
     row.referer ??= ctx.req.header("referer");
-    row.browser ??= ctx.req.header("user-agent");
-    row.ip ??= ctx.req.clientIp;
-    row.log_id ??= await ctx.logId;
+    row.browser = ctx.req.header("user-agent");
+    row.ip = ctx.req.clientIp;
+    row.log_id = await ctx.logId;
   } catch { /* no request context available */ }
   // the column always holds a JSON array — a report from the browser may send anything at all
   row.backtrace = JSON.stringify(Array.isArray(row.backtrace) ? row.backtrace : []);
@@ -169,7 +169,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       report.request = request.url;
       report.referer = request.headers.get("referer") ?? "";
       report.browser = request.headers.get("user-agent") ?? "";
-      report.ip = peerAddr;
+      report.ip = clientIp(request, peerAddr, app.trustedProxyHops);
     }
     await addReport(app, report);
   }, { signal });

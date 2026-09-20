@@ -21,6 +21,7 @@ function backtraceOf(raw: unknown) {
 function makeFileHelper(ctx: Ctx) {
   /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
   function localPath(file: string): string | null {
+    if (typeof file !== "string") return null;
     if (!file.startsWith("file:")) return ctx.urlToLocalPath(file);
     try {
       const path = new URL(file).pathname;
