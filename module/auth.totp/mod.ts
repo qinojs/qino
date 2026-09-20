@@ -1,5 +1,5 @@
 // Public API of auth.totp. The qino plugin lives in ./plugin.ts.
-import { ApiError, attempt, identified, unixTime } from "@qino/qino";
+import { ApiError, attempt, identified } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
 import { secret, uri, valid } from "./lib/totp.ts";
@@ -32,14 +32,17 @@ export async function confirm(ctx: Ctx, code: string, label = ""): Promise<void>
 export async function verify(ctx: Ctx, code: string): Promise<boolean> {
   const usrId = identified(ctx);
   // six digits are guessable; the wait is what makes them not
-  const row = await attempt(ctx.app, usrId, async () => {
-    for (const row of await stored(ctx.app, usrId, TYPE)) if (await valid(String(JSON.parse(String(row.data)).secret), code)) return row;
+  const hit = await attempt(ctx.app, usrId, async () => {
+    for (const row of await stored(ctx.app, usrId, TYPE)) {
+      const used = await valid(String(JSON.parse(String(row.data)).secret), code);
+      if (used && used > Number(row.last_used ?? 0)) return { row, used }; // RFC 6238 §5.2: a code is good once
+    }
   });
-  if (!row) {
+  if (!hit) {
     ctx.app.fire("suspicious", { ctx, weight: 2, reason: "totp verification failed" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }
-  ctx.app.db.table("usr_auth_factor").update(Number(row.id), { last_used: unixTime() }); // background write
+  ctx.app.db.table("usr_auth_factor").update(Number(hit.row.id), { last_used: hit.used }); // background write
   return !await proof(ctx, TYPE, usrId); // nothing missing = it counted
 }
 

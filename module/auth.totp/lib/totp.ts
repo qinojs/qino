@@ -18,14 +18,14 @@ export function uri(secret: string, account: string, issuer: string): string {
   return `otpauth://totp/${label}?${q}`;
 }
 
-/** Does `code` match the secret right now? One step of tolerance either way for clock drift. */
-export async function valid(secret: string, code: string, drift = 1): Promise<boolean> {
-  if (!/^\d{6}$/.test(code)) return false;
+/** The start time of the step `code` belongs to, or undefined — so a spent code can be told apart.
+ * One step of tolerance either way for clock drift. */
+export async function valid(secret: string, code: string, drift = 1): Promise<number | undefined> {
+  if (!/^\d{6}$/.test(code)) return;
   const counter = Math.floor(unixTime() / STEP);
   for (let i = -drift; i <= drift; i++) {
-    if (safeEqual(code, await at(secret, counter + i))) return true;
+    if (safeEqual(code, await at(secret, counter + i))) return (counter + i) * STEP;
   }
-  return false;
 }
 
 /** The code for one counter step — exported for the tests, which need a known answer. */

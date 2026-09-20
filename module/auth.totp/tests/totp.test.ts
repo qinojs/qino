@@ -14,7 +14,7 @@ Deno.test("totp: matches the RFC 6238 test vectors", async () => {
 Deno.test("totp: the current code is accepted, a wrong one is not", async () => {
   const s = secret();
   const now = Math.floor(Date.now() / 1000 / 30);
-  assert(await valid(s, await at(s, now)));
+  assertEquals(await valid(s, await at(s, now)), now * 30, "the step it belongs to, so a spent code can be rejected");
   assert(await valid(s, await at(s, now - 1)), "one step back is within the drift tolerance");
   assertFalse(await valid(s, await at(s, now - 5)));
   assertFalse(await valid(s, "000"));
