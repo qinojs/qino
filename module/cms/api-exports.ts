@@ -273,12 +273,17 @@ export async function searchFiles(search: string): Promise<any[]> {
     const res = [];
     let i = 0;
     const used: Record<string, boolean> = {};
+    // file contents live in the fulltext-indexed `text` column; only MySQL can use that index
+    const inText = db.dialect === "mysql"
+        ? sql`MATCH(f.text) AGAINST (${s + "*"} IN BOOLEAN MODE)`
+        : sql`f.text LIKE ${"%" + s + "%"}`;
     for (const vs of await db.query`
         SELECT pf.page_id AS pid, f.*
         FROM page_file pf, file f WHERE true AND pf.file_id = f.id
-        AND ( f.id = ${id} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )
+        AND ( f.id = ${id} OR f.name LIKE ${"%" + s + "%"} OR ${inText} )
         ORDER BY f.id = ${id} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
-        f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
+        f.name LIKE ${"% " + s + "%"} DESC, ${inText} DESC, f.name ASC
+        LIMIT 100`) { // the loop keeps 10 after the access and existence checks — this is the guard
         const node = await cms(ctx.app).node(vs.pid);
         if (await node.access() < 2) continue;
         const dbFile = await ctx.app.dbFiles.file(vs.id, vs);

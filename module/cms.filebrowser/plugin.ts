@@ -62,11 +62,15 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 async function search(s_: string, ctx: Ctx): Promise<any[]> {
   const db = ctx.app.db;
 
+  // file contents live in the fulltext-indexed `text` column; only MySQL can use that index
+  const inText = db.dialect === "mysql"
+    ? sql`MATCH(f.text) AGAINST (${s_ + "*"} IN BOOLEAN MODE)`
+    : sql`f.text LIKE ${"%" + s_ + "%"}`;
   const cond = s_
-    ? sql` AND ( f.id = ${s_} OR f.name LIKE ${"%" + s_ + "%"} OR f.text LIKE ${s_ + "%"} )`
+    ? sql` AND ( f.id = ${s_} OR f.name LIKE ${"%" + s_ + "%"} OR ${inText} )`
     : sql``;
   const order = s_
-    ? sql` f.id = ${s_} DESC, f.name = ${s_} DESC, f.name LIKE ${s_ + "%"} DESC, f.name LIKE ${"% " + s_ + "%"} DESC, f.text = ${s_} DESC, f.text LIKE ${s_ + "%"} DESC, f.name ASC,`
+    ? sql` f.id = ${s_} DESC, f.name = ${s_} DESC, f.name LIKE ${s_ + "%"} DESC, f.name LIKE ${"% " + s_ + "%"} DESC, ${inText} DESC, f.name ASC,`
     : sql``;
 
   const rows = await db.query`

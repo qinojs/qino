@@ -284,7 +284,7 @@ export class DbFile extends File {
     await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
     if (!await src.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
 
-    await this.setVs({ name: src.basename(), mime: mimeType(src.mime), text: await src.getText(), md5, size: await this.size() });
+    await this.setVs({ name: src.basename(), mime: mimeType(src.mime), md5, size: await this.size(), text: null });
   }
 
   async replaceFromUpload(f: UploadedFile) {
@@ -295,7 +295,7 @@ export class DbFile extends File {
     const ext = f.name.replace(/.*\./, "").toLowerCase();
     const type = f.type === "application/octet-stream" ? mimeType(typeByExtension(ext) ?? f.type) : f.type;
 
-    await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: await this.getText() });
+    await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: null });
   }
 
   async clone(to?: number | null): Promise<DbFile> {
@@ -318,6 +318,27 @@ export class DbFile extends File {
     return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed, error: result.error };
   }
 
+  /** Fill the searchable `text` column from the file itself: text as-is, everything else via the
+   *  `fmt=md` pipeline (pandoc, pdftotext, OCR, transcript). Capped — the column is an index, not an
+   *  archive. `""` means this file has no text to find; `null` means nobody looked yet. Throws when a
+   *  tool broke or timed out, which is neither. */
+  async extractText(): Promise<string> {
+    if (!await this.exists()) return "";
+    let path = this.path;
+    let text = "";
+    if (this.mime.startsWith("text/")) text = await Deno.readTextFile(path).catch(() => "");
+    else {
+      const r = await this.transform({ fmt: "md" });
+      if (r.error) throw r.error;
+      if (r.transformed) text = await Deno.readTextFile((path = r.path)).catch(() => "");
+    }
+    text = text.slice(0, MAX_TEXT);
+    await this.setVs({ text });
+    const { md5 } = this.vs!; // same blob, same text — no reason to make anyone extract it again
+    if (md5) await this.#manager.db.query`UPDATE ${sql.id(tableRef("file"))} SET text=${text} WHERE md5=${md5} AND id!=${this.id}`;
+    return text;
+  }
+
   override toString(): string { return String(this.id); }
 
 }
@@ -329,6 +350,10 @@ function grantResource(id: number, parts: string[]): string {
 function permanentResource(resource: string, md5: unknown): string {
   return `${resource}\0${String(md5 ?? "")}`;
 }
+
+/** Upper bound for the extracted `text` of one file. Small on purpose: the column sits in `file`, so
+ *  every `SELECT f.*` carries it — and a hit list needs the beginning of a document, not all of it. */
+const MAX_TEXT = 8_000;
 
 /** What a browser renders as a document: html, and xml of any kind (xhtml, rss, xslt, svg). */
 const MARKUP = /^text\/html$|xml$|xsl$/;

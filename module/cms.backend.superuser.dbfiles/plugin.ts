@@ -40,8 +40,20 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
 
 async function textView(f: DbFile): Promise<HtmlString | string> {
   if (!TXT.has(f.extension)) return "";
-  return html`<div class=u2-card style="flex:0 1 auto"><div><u2-code trim><textarea>${await
+  return html`<div class=u2-card style="flex:0 1 auto"><div><u2-code trim><textarea readonly>${await
     Deno.readTextFile(f.path)}</textarea></u2-code></div></div>`;
+}
+
+/** What the file search can find in this file. Shown verbatim: garbled OCR is the point of looking.
+ *  `null` is a file nobody extracted yet, `""` one that turned out to have no text at all. */
+function searchText(app: App, id: number, text: string | null): Promise<HtmlString> {
+  if (text == null) return html.async`<button data-extract="${id}">${app.t`Extract text`}</button>`;
+  const again = html.async`<button data-extract="${id}" title="${app.t`extract again`}"><u2-ico icon=refresh>↻</u2-ico></button>`;
+  if (!text) return html.async`<small>${app.t`no text in this file`}</small> ${again}`;
+  return html.async`<details>
+    <summary>${text.length.toLocaleString()} ${app.t`characters`} ${again}</summary>
+    <pre style="white-space:pre-wrap; max-height:25rem; overflow:auto">${text}</pre>
+  </details>`;
 }
 
 const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
@@ -73,7 +85,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const orderBy = orderSql[order] ?? sql.join([sql`f.size = ${0} DESC`, ...children.map((_: DbField, i: number) => sql.id("r" + i))], ",");
 
   // one indexed path per input shape (never an OR across joined tables, which would full-scan):
-  // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name fulltext
+  // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name and extracted
+  // text (both fulltext-indexed on `file` itself, so the OR stays on one table)
   let cond = sql``;
   if (search) {
     const s = search.trim();
@@ -81,8 +94,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     if (/^\d+$/.test(s)) cond = sql` AND f.id = ${Number(s)}`;
     else if (/^[0-9a-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
     else if (s.includes("@")) cond = sql` AND (${emailSub("log_id")} OR ${emailSub("log_id_ch")})`;
-    else if (db.dialect === "mysql") cond = sql` AND MATCH(f.name) AGAINST (${s + "*"} IN BOOLEAN MODE)`;
-    else cond = sql` AND f.name LIKE ${"%" + s + "%"}`;
+    else if (db.dialect === "mysql") cond = sql` AND (MATCH(f.name) AGAINST (${s + "*"} IN BOOLEAN MODE) OR MATCH(f.text) AGAINST (${s + "*"} IN BOOLEAN MODE))`;
+    else cond = sql` AND (f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${"%" + s + "%"})`;
   }
 
   const rows = await db.query`
@@ -150,6 +163,10 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   if (vars.delete) { await (await fm.file(Number(vars.delete))).remove(); return { done: true }; }
   if (vars.id != null) {
     const f = await fm.file(Number(vars.id));
+    if (vars.extract_text != null) {
+      const text = await f.extractText().catch((e: Error) => e);
+      return text instanceof Error ? { error: text.message } : { text };
+    }
     if (vars.set_name != null)   await f.setVs({ name: String(vars.set_name) });
     if (vars.set_public != null) await f.setVs({ access: vars.set_public ? 1 : 0 });
     if (vars.set_mime != null)   await f.setVs({ mime: String(vars.set_mime) });
@@ -163,7 +180,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const app = node.app;
   const get = ctx.req.query;
 
-  if (get.id) return renderDetail(node, Number(get.id));
+  const id = Number(vars.id ?? get.id); // vars: a reload posts to the api, where the page query is gone
+  if (id) return renderDetail(node, id);
 
   const message = vars.do ? await runAction(node, String(vars.do)) : "";
   const orderOpts = ORDERS.map(o => html`<option>${o}`);
@@ -206,12 +224,16 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const f = await fm.file(id, row);
   const exists = await f.exists();
 
-  const linkParts = await Promise.all(fileChildren(node).map(async (field: DbField) => {
+  // one row per link, the linking column itself left out — it is this file on every one of them
+  const linkRows = (await Promise.all(fileChildren(node).map(async (field: DbField) => {
     const rows = await db.query`SELECT * FROM ${sql.id(field.table.name)} WHERE ${sql.id(field.name)}=${id}`;
-    return rows.map((lr) => html`<div>${field.table.name+"."+field.name}: ${JSON.stringify(lr)}</div>`);
-  }));
-  const linkInner = linkParts;
-  const linksHtml = String(linkInner) ? linkInner : html`<div class=-body>none</div>`;
+    return rows.map((lr) => html`<tr>
+      <th>${field.table.name}
+      <td>${Object.entries(lr).filter(([k]) => k !== field.name).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+  }))).flat();
+  const linksHtml = linkRows.length
+    ? html`<table class="u2-table -Fields">${linkRows}</table>`
+    : html.async`<div class=-body>${app.t`none`}</div>`;
 
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.req.url.toURL();
@@ -253,18 +275,24 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`;
             })}
           </table>`
-          : html.async`<div class=-body>${app.t`none`}</div>`}
+          : html.async`<div>${app.t`none`}</div>`}
     </div>
 
     <div class=u2-card style="flex:0 0 auto">
       <div class=-head>${app.t`Links`}</div>
       ${linksHtml}
     </div>
+
   </div>
 
   ${preview}
 
   ${text}
+
+  <div class=u2-card style="flex:0 0 auto">
+    <div class=-head>${app.t`Search text`}</div>
+    <div>${searchText(app, row.id, row.text == null ? null : String(row.text))}</div>
+  </div>
 
 </div>`;
 }

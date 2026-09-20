@@ -53,21 +53,6 @@ export class File {
     return data ? nodeCrypto.createHash("md5").update(data).digest("hex") : "";
   }
 
-  async getText(): Promise<string> {
-    if (!await this.exists()) return "";
-    switch (this.extension) {
-      case "csv":
-      case "txt":
-        return Deno.readTextFile(this.path);
-      case "php":
-      case "htm":
-      case "html":
-        return (await Deno.readTextFile(this.path)).replace(/<[^>]+>/g, "");
-      default:
-        return "";
-    }
-  }
-
   toString(): string { return this.path; }
 
 }

@@ -42,6 +42,25 @@ Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () 
   assertEquals(added, ["/m/cms.filebrowser/pub/init.mjs"]);
 });
 
+Deno.test("cms.filebrowser: on mysql the file text is searched through its fulltext index", async () => {
+  let sqlText = "";
+  const app = {
+    db: {
+      dialect: "mysql",
+      query: (...a: any[]) => {
+        [sqlText] = fakeRender(a[0], a.slice(1));
+        return [];
+      },
+    },
+    dbFiles: { file: () => undefined },
+  };
+  fakeCms(app, { node: () => ({}) } as never);
+
+  await api.search.get!.execute({ s: "cat" }, { app } as any);
+  assertEquals(sqlText.includes("MATCH(f.text) AGAINST"), true);
+  assertEquals(sqlText.includes("f.text LIKE"), false);
+});
+
 Deno.test("cms.filebrowser: search groups existing accessible files by md5", async () => {
   const dbFiles: Record<number, any> = {
     1: {
@@ -67,7 +86,7 @@ Deno.test("cms.filebrowser: search groups existing accessible files by md5", asy
     db: {
       query: (...a: any[]) => {
         const [, params] = fakeRender(a[0], a.slice(1));
-        assertEquals(params.slice(0, 3), ["cat", "%cat%", "cat%"]);
+        assertEquals(params.slice(0, 3), ["cat", "%cat%", "%cat%"]); // no dialect → LIKE over the extracted text
         return [
           { pid: 10, id: 1, mime: "image/jpeg", name: "a.jpg", md5: "same", access: 1 },
           { pid: 11, id: 2, mime: "image/jpeg", name: "a-copy.jpg", md5: "same", access: 1 },

@@ -19,22 +19,14 @@ Deno.test("File: basename, size and md5", async () => {
   }
 });
 
-Deno.test("File: copyTo and getText handle common text/html files", async () => {
+Deno.test("File: copyTo keeps the contents", async () => {
   const dir = await Deno.makeTempDir();
   try {
     const txt = new File(dir + "/a.txt");
-    const html = new File(dir + "/b.html");
-    const bin = new File(dir + "/c.bin");
-
     await Deno.writeTextFile(txt.path, "plain");
-    await Deno.writeTextFile(html.path, "<h1>Hello</h1><p>World</p>");
-    await Deno.writeFile(bin.path, new Uint8Array([1, 2, 3]));
 
     assertEquals(await txt.copyTo(dir + "/copy.txt"), true);
     assertEquals(await Deno.readTextFile(dir + "/copy.txt"), "plain");
-    assertEquals(await txt.getText(), "plain");
-    assertEquals(await html.getText(), "HelloWorld");
-    assertEquals(await bin.getText(), "");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
@@ -64,7 +56,6 @@ Deno.test("File: missing files return safe defaults", async () => {
   assertEquals(await file.mtime(), undefined);
   assertEquals(await file.size(), 0);
   assertEquals(await file.md5(), "");
-  assertEquals(await file.getText(), "");
   assertEquals(file.extension, file.path.toLowerCase());
   assertEquals(file.mime, "application/octet-stream");
 });
