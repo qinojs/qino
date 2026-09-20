@@ -42,10 +42,12 @@ export async function issue(app: App, purpose: string, data?: unknown): Promise<
   return handle;
 }
 
-/** What the handle stands for while it still works — a look that spends nothing. */
-export async function check(app: App, handle: string): Promise<Ticket | undefined> {
+/** What the handle stands for while it still works — a look that spends nothing.
+ * `purpose` is the caller saying which kind it is willing to act on. */
+export async function check(app: App, handle: string, purpose?: string): Promise<Ticket | undefined> {
   const row = await app.db.row`SELECT * FROM ticket WHERE hash = ${await sha256b64url(handle)}`;
   if (!row || Number(row.used) >= Number(row.uses)) return;
+  if (purpose && String(row.purpose) !== purpose) return;
   if (row.expires != null && Number(row.expires) < unixTime()) return;
   return {
     purpose: String(row.purpose),
@@ -56,8 +58,8 @@ export async function check(app: App, handle: string): Promise<Ticket | undefine
 }
 
 /** Spend it and resolve with what the kind's `redeem` returned — the ticket itself when it declares none. */
-export async function redeem(app: App, handle: string, input?: unknown): Promise<unknown> {
-  const ticket = await check(app, handle);
+export async function redeem(app: App, handle: string, purpose?: string, input?: unknown): Promise<unknown> {
+  const ticket = await check(app, handle, purpose);
   if (!ticket) throw new ApiError(404, "Nothing to redeem");
   // one statement, so two parallel redemptions cannot both pass — and before the handler, so one
   // that throws leaves the ticket spent rather than reusable

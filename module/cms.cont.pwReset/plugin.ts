@@ -26,12 +26,10 @@ export const tickets: Record<string, TicketKind> = {
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
   const handle = String(ctx.req.query[TICKET_PARAM] ?? "");
-  // opening the link only looks — mail scanners must not spend the ticket
-  const ticket = handle ? await check(node.app, handle) : undefined;
-  if (handle && !ticket) {
-    return html.async`<p>${t`This link is no longer valid. Please request a new one.`}</p>`;
-  }
-  if (ticket) {
+  if (handle) {
+    // opening the link only looks — mail scanners must not spend the ticket
+    const ticket = await check(node.app, handle, PURPOSE);
+    if (!ticket) return html.async`<p>${t`This link is no longer valid. Please request a new one.`}</p>`;
     const iso = new Date(Number(ticket.expires) * 1000).toISOString();
     return html.async`<form data-reset>
     <input type=hidden name=handle value="${handle}">

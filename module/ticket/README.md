@@ -20,11 +20,12 @@ const handle = await issue(app, "auth.resetPw", { usrId: usr.id });
 if (!await check(app, handle)) return t`This link is no longer valid.`;
 
 // the form redeems it
-await redeem(app, handle, { pw });
+await redeem(app, handle, "auth.resetPw", { pw });
 ```
 
 Three functions — `issue`, `check`, `redeem` — and the caller never says where to look: the
-handle finds its own row. Reading the table is not among them: the backend below is the only
+handle finds its own row. Naming the purpose is optional and says the opposite: *this* form acts
+on reset tickets only, so another kind's handle is turned away instead of quietly redeemed here. Reading the table is not among them: the backend below is the only
 consumer, so it writes its own two queries instead of a reading API nobody else would call.
 
 ## Never redeem from a GET

@@ -35,7 +35,7 @@ Deno.test("knowing the handle is the whole proof, and redeeming spends it", asyn
   const handle = await issue(a, "auth.resetPw", { usrId: 7 });
   assertEquals((await check(a, handle))?.purpose, "auth.resetPw");
 
-  await redeem(a, handle, { pw: "new" });
+  await redeem(a, handle, "auth.resetPw", { pw: "new" });
   assertEquals(passwords, ["7:new"]);
   assertEquals(await check(a, handle), undefined);
   assertEquals(await a.db.one`SELECT used FROM ticket WHERE purpose = ${"auth.resetPw"}`, 1);
@@ -55,6 +55,12 @@ Deno.test("a kind decides how long and how often", async () => {
   assertEquals((await redeem(a, share) as { data: unknown }).data, { page: 410 }); // no handler: the ticket itself
   await redeem(a, share);
   await assertRejects(() => redeem(a, share), ApiError, "Nothing to redeem");
+
+  // a caller may say which kind it acts on — a handle of another kind is then no handle at all
+  const unsub = await issue(a, "mail.unsubscribe", { email: "two@qino.test" });
+  assertEquals(await check(a, unsub, "auth.resetPw"), undefined);
+  await assertRejects(() => redeem(a, unsub, "auth.resetPw"), ApiError, "Nothing to redeem");
+  assertEquals(await a.db.one`SELECT used FROM ticket WHERE purpose = ${"mail.unsubscribe"}`, 0); // and stays unspent
 
   const forever = await issue(a, "mail.unsubscribe", { email: "one@qino.test" });
   assertEquals(await a.db.one`SELECT expires FROM ticket WHERE purpose = ${"mail.unsubscribe"}`, null);
