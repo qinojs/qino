@@ -26,10 +26,12 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     const { handle, pw } = vars.reset as { handle: string; pw: string };
     if (String(pw ?? "").length < 8) return { ok: false, message: await app.t`The password is too short.` };
     // only a spent or unknown handle is answered softly — anything else is a real fault
-    const failed = await redeem(app, String(handle), PURPOSE, { pw })
-      .then(() => false, (e) => e instanceof ApiError ? true : Promise.reject(e));
-    if (failed) return { ok: false, message: await app.t`This link is no longer valid. Please request a new one.` };
-    return { ok: true, message: await app.t`Your password is set. You can sign in now.` };
+    const ok = await redeem(app, String(handle), PURPOSE, { pw })
+      .then(() => true, (e) => e instanceof ApiError ? false : Promise.reject(e));
+    const message = ok
+      ? await app.t`Your password is set. You can sign in now.`
+      : await app.t`This link is no longer valid. Please request a new one.`;
+    return { ok, message };
   }
   return null;
 }
