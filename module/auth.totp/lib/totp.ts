@@ -33,10 +33,9 @@ export async function at(secret: string, counter: number): Promise<string> {
   const message = new ArrayBuffer(8);
   new DataView(message).setBigUint64(0, BigInt(counter));
   const key = await crypto.subtle.importKey("raw", decode(secret), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
-  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, message));
-  const offset = mac[mac.length - 1] & 0xf; // dynamic truncation, RFC 4226
-  const num = ((mac[offset] & 0x7f) << 24) | (mac[offset + 1] << 16) | (mac[offset + 2] << 8) | mac[offset + 3];
-  return String(num % 10 ** DIGITS).padStart(DIGITS, "0");
+  const mac = new DataView(await crypto.subtle.sign("HMAC", key, message));
+  const offset = mac.getUint8(mac.byteLength - 1) & 0xf; // dynamic truncation, RFC 4226
+  return String((mac.getUint32(offset) & 0x7fffffff) % 10 ** DIGITS).padStart(DIGITS, "0");
 }
 
 function encode(bytes: Uint8Array): string {
