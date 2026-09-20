@@ -1,4 +1,5 @@
 import { assertEquals } from "./deps.ts";
+import { createHash } from "node:crypto";
 import { File } from "../lib/File.ts";
 
 Deno.test("File: basename, size and md5", async () => {
@@ -45,6 +46,19 @@ Deno.test("File: empty and spaced filenames keep stable metadata", async () => {
     assertEquals(await empty.size(), 0);
     assertEquals(await empty.md5(), "d41d8cd98f00b204e9800998ecf8427e");
     assertEquals(await same.md5(), await empty.md5());
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("File: md5 of a multi-chunk file matches the whole-file hash", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const path = dir + "/big";
+    await Deno.writeFile(path, new Uint8Array(5_000_000).fill(7)); // several read chunks
+    const buffered = createHash("md5").update(await Deno.readFile(path)).digest("hex");
+    assertEquals(await new File(path).md5(), buffered);
+    assertEquals(await new File(dir).md5(), ""); // a directory is not a file
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

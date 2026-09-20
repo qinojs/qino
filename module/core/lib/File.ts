@@ -43,8 +43,12 @@ export class File {
   }
 
   async md5(): Promise<string> {
-    const data = await Deno.readFile(this.path).catch(() => null);
-    return data ? nodeCrypto.createHash("md5").update(data).digest("hex") : "";
+    const file = await Deno.open(this.path).catch(() => null);
+    if (!file) return "";
+    const hash = nodeCrypto.createHash("md5");
+    // streamed: a big file must not land in memory. A directory opens fine and only throws here.
+    try { for await (const chunk of file.readable) hash.update(chunk); } catch { return ""; }
+    return hash.digest("hex");
   }
 
   toString(): string { return this.path; }
