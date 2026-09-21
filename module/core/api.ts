@@ -9,10 +9,10 @@ import { createHash } from "node:crypto";
 
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { $item, sql } from "./deps.ts";
-import { Access, AccessError, ApiError, ConflictError } from "./lib/api/mod.ts";
+import { Access, AccessError, ApiError, ConflictError, NotFoundError, toTools } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { attempt, loginNeeds, logout, pendingLogin, proofPassed, pwHash, pwVerify } from "./lib/auth/mod.ts";
-import { itemReadDeep, unixTime } from "./lib/util.ts";
+import { errMsg, itemReadDeep, Output, unixTime } from "./lib/util.ts";
 
 import type { ApiTree } from "./lib/api/mod.ts";
 
@@ -187,6 +187,32 @@ export const api: ApiTree = {
           await ctxSettingsRoot(path).remove();
           return { ok: true };
         },
+      },
+    },
+  },
+
+  "tool-calls": {
+    post: {
+      description: "Run several tool calls in order, in one request (one log entry). Stops at the first failure: the calls before it stay saved.",
+      access: Access.USER,
+      input: s.object({ calls: s.array(s.object({ name: s.string(), arguments: s.optional(s.record()) })) }),
+      execute: async ({ calls }: any, ctx) => {
+        const tools = new Map(toTools(ctx.app.apiTree).map((t) => [t.name, t]));
+        tools.delete("post_core_toolCalls");
+        const results: unknown[] = [];
+        for (const [index, call] of calls.entries()) {
+          try {
+            const tool = tools.get(call.name);
+            if (!tool) throw new NotFoundError(`Unknown tool: ${call.name}`);
+            results.push(await tool.execute(call.arguments ?? {}, ctx));
+          } catch (e) {
+            const err = e instanceof ApiError ? e
+              : e instanceof Output ? new ApiError(400, "Raw responses cannot be batched")
+              : (console.error("[tool-calls]", e), new ApiError(500, ctx.app.dev ? errMsg(e) : "Internal Server Error"));
+            throw new ApiError(err.status, err.message, { code: err.code, data: { index, results, ...(err.data !== undefined && { data: err.data }) } });
+          }
+        }
+        return { results };
       },
     },
   },
