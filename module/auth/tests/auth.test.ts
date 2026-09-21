@@ -21,7 +21,7 @@ const app = {
 } as any as App;
 
 /** A request whose session records the stamps in `via`, so one is visible without a database. */
-function ctx(userId: number, statelessAuth = false): Ctx & { via: Record<string, number> } {
+function ctx(userId: number): Ctx & { via: Record<string, number> } {
   const via: Record<string, number> = {};
   let pending: unknown;
   const sess = {
@@ -33,7 +33,7 @@ function ctx(userId: number, statelessAuth = false): Ctx & { via: Record<string,
     },
   };
   // deno-lint-ignore no-explicit-any
-  return { app, userId, statelessAuth, via, sess } as any;
+  return { app, userId, via, sess } as any;
 }
 
 Deno.test("only what a linked module declares is a factor", () => {
@@ -50,12 +50,6 @@ Deno.test("proving the user you already are is a step-up, not a login", async ()
 Deno.test("a factor may prove an identity without being allowed to refresh one", async () => {
   const c = ctx(7);
   assertEquals(await proof(c, "oauth", 7), []); // declares login, not stepUp: nothing here helps
-  assertEquals(c.via, {});
-});
-
-Deno.test("a stateless credential has no session to refresh", async () => {
-  const c = ctx(7, true);
-  assertEquals(await proof(c, "webauthn", 7), []);
   assertEquals(c.via, {});
 });
 

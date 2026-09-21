@@ -45,16 +45,16 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
   const { url = "http://qino.test/", appUrl = "/", app = {}, sess, userId = 0, set, ...reqInit } = init;
   const session = sess ?? { data: { core: { userId: () => userId, pending: () => undefined } } };
   const appFake = {
-    sessions: { loadFromRequest: () => session },
     trustedProxyHops: 0,
     db: { one: () => null, table: () => ({ get: () => undefined }) }, // an app with an empty database
     dbFiles: { file: () => undefined },
     modules: { linked: () => [] }, // an app with nothing linked
     fire: (_name: string, e: unknown) => Promise.resolve(e), // no listeners: an event passes through unchanged
     ...app,
-    settings: fakeSettings({ core: {}, ...app.settings }),
+    settings: fakeSettings({ core: { _secret: "test" }, ...app.settings }),
   };
   const ctx = await Ctx.create(appFake as never, new Request(url, reqInit), { appUrl });
+  ctx.sess = session as never; // initRequest's part, which the fake app does not run
   // initRequest loads the user row, which is what makes ctx.user read synchronously — a fake app
   // with a real database has to arrive in the same state.
   const uid = userId || Number(session.data?.core?.userId?.() ?? 0);

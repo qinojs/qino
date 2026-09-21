@@ -66,7 +66,3 @@ Deno.test("requireStepUp: only factors the user has are offered", async () => {
   assertEquals((e.data as any).factors.map((f: any) => f.name), ["password", "webauthn"]);
 });
 
-Deno.test("requireStepUp: a stateless credential is offered nothing — there is no session to prove into", async () => {
-  const e = await thrown(requireStepUp(await ctxWith({}, [factor("password")], { statelessAuth: true })));
-  assertEquals((e.data as any).factors, []);
-});

@@ -83,9 +83,6 @@ export const api: ApiTree = {
         input: s.object({ pw: s.string() }),
         execute: async ({ pw }: any) => {
           const ctx = getCtx();
-          // Same reason as in auth's proof(): a stateless credential identifies a request, not the
-          // session a proof would be written to. Nothing is guessed there, so nothing is counted.
-          if (ctx.statelessAuth) throw new ApiError(422, "That password does not match");
           if (!await attempt(ctx.app, ctx.userId, () => pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? "")))) {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "password step-up failed" }).catch(() => {});
             throw new ApiError(422, "That password does not match");
@@ -131,9 +128,9 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async () => {
         const ctx = getCtx();
-        // A stateless credential identifies a request, not a session — there is nothing here to end,
-        // and the key stays valid either way. Say so instead of failing on the missing client.
-        if (ctx.statelessAuth) throw new ApiError(409, "Nothing to log out — this request carries no session");
+        // A credential signs its device in for as long as it is valid — logging out would only
+        // unbind the device from its user, and the next request binds it again.
+        if (ctx.statelessAuth) throw new ApiError(409, "Nothing to log out — this request carries a credential, not a login");
         await logout(ctx);
         return { ok: true };
       },

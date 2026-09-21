@@ -16,6 +16,8 @@ const apiTree = {
 
 async function makeCtx(body: unknown, { auth = true, method = "POST", oauth = false } = {}): Promise<Ctx> {
   const ctx = await testContext({
+    userId: auth ? 1 : 0,
+    set: auth ? { statelessAuth: true } : {},
     url: "http://localhost/mcp",
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -27,7 +29,6 @@ async function makeCtx(body: unknown, { auth = true, method = "POST", oauth = fa
       apiTree,
     },
   });
-  if (auth) ctx.authenticate(1);
   return ctx;
 }
 

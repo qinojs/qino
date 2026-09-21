@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import * as nodePath from "node:path";
 
-import { uid } from "../crypto.ts";
+import { keyed, uid } from "../crypto.ts";
 import { Res } from "./Res.ts";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { Req } from "./Req.ts";
@@ -43,9 +43,14 @@ export class Ctx {
   }
 
   #authUserId = 0;
-  /** Establish request-scoped identity without any session/cookie side effect. */
-  authenticate(userId: number): void {
+  /** A credential (API key, …) names its user and the device it stands for (`api_key:12`). That device
+   *  is the request's client and session — a secret hash of both names them, it never leaves the server. */
+  async authenticate(userId: number, device: string): Promise<void> {
     this.#authUserId = userId;
+    const hash = await keyed(this.app, ["core.device", String(userId), device], 22);
+    const clients = this.app.db.table("client");
+    this.clientId = String(await clients.rowBy("hash", hash) ?? await clients.add({ hash }));
+    this.sess = await this.app.sessions.load(hash, true);
   }
   /** True when a non-cookie credential (API key, …) identifies this request. */
   get statelessAuth(): boolean { return this.#authUserId !== 0; }
@@ -82,7 +87,6 @@ export class Ctx {
     const ctx = new Ctx();
     ctx.req = req;
     ctx.app = app;
-    ctx.sess = await app.sessions.loadFromRequest(req, app.https, req.appUrl);
     return ctx;
   }
 }

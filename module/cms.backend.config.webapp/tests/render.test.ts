@@ -19,6 +19,7 @@ Deno.test("cms.backend.config.webapp renders launch and browser settings", async
   try {
     await app.settings[$item].sub(["identity", "name"]).set("Qino");
     const ctx = await Ctx.create(app, new Request("https://qino.test/"), { appUrl: "/" });
+    ctx.sess = await app.sessions.load();
     const node = {
       app,
       cms: { nodeByModule: () => Promise.resolve({ url: () => Promise.resolve("/backend/identity") }) },

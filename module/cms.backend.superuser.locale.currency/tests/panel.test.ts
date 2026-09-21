@@ -41,6 +41,7 @@ Deno.test("backend.locale.currency: the panel lists what is stored", async () =>
   await app.db.table("currency").update({ id: "CHF", rate_to_usd: 0.8 });
   await app.settings["locale.currency"].update("daily"); // read-only view
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const html = String(await panel.node.render({ app } as unknown as Node));
     assertEquals(html.includes("[object Promise]"), false);
@@ -54,6 +55,7 @@ Deno.test("backend.locale.currency: the panel lists what is stored", async () =>
 Deno.test("backend.locale.currency: every currency is listed, with its symbol", async () => {
   await using app = await app_();
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const html = String(await panel.node.render({ app } as unknown as Node));
     assertEquals(html.includes("[object Promise]"), false);
@@ -79,6 +81,7 @@ Deno.test("backend.locale.currency: rates are editable while the job is off", as
   await using app = await app_();
   await app.db.table("currency").update({ id: "CHF", rate_to_usd: 0.8 });
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const render = () => panel.node.render({ app } as unknown as Node).then(String);
     const manual = await render();

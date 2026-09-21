@@ -166,7 +166,7 @@ export class App extends Emitter<AppEvents> {
         let res: Response;
         try {
             await initRequest(ctx);
-            if (!ctx.statelessAuth) this.sessions.setCookieIfNew(ctx);
+            this.sessions.setCookieIfNew(ctx);
             await this.fire("route", { ctx });
             res = await this.#route(ctx);
         } catch (e) {

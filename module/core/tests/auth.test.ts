@@ -35,6 +35,7 @@ async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
     await app.db.table("client").insert({ id: 1 });
     const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
+    ctx.sess = await app.sessions.load();
     ctx.clientId = "1";
     await requestStorage.run(ctx, () => fn(app, ctx));
   } finally {

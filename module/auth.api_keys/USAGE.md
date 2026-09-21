@@ -40,9 +40,10 @@ Der Request wird als der Key-User behandelt; jeder `Access.USER`-Endpoint funkti
 ## Bearer auth
 
 Funktioniert out of the box: das Modul hängt sich in `init` an das core-Event `authenticate`
-(request-scoped Identität via `ctx.authenticate(usrId)`, gefeuert am Anfang von `initRequest`).
+(`ctx.authenticate(usrId, "api_key:<id>")`, gefeuert am Anfang von `initRequest`).
 
-- **Stateless:** kein Session-/`cid`-Cookie, keine client-Zeile; CSRF entfällt (kein ambient Cookie).
+- **Ein Key = ein Gerät:** jeder Key hat seinen eigenen Client und seine eigene Session, im Request-Log
+  also als Gerät mit User sichtbar. Keine Cookies; CSRF entfällt (kein ambient Cookie).
 - **Präzedenz:** ein mitgesendeter Bearer schlägt eine allfällige Cookie-Session.
 - **Laut bei Fehlern:** ein `qk_`-Bearer, der ungültig/abgelaufen ist oder zu einem inaktiven
   User gehört → **401**, kein stiller Anonym-Fallback. Fremde Bearer-Formate fallen durch.

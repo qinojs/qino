@@ -30,6 +30,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!m) return; // only the own naming scheme is claimed; foreign Bearer formats fall through
     const row = await verify(app, "access", m[1]);
     if (!row) throw new Output({ error: "invalid_token" }, { status: 401, headers: { "WWW-Authenticate": `Bearer error="invalid_token"` } });
-    ctx.authenticate(Number(row.usr_id));
+    await ctx.authenticate(Number(row.usr_id), "oauth_client:" + row.client_id);
   }, { signal });
 }

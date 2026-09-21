@@ -64,7 +64,6 @@ export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: numbe
   const via = (ctx.sess.data.core.via() ?? {}) as Record<string, number>;
   const newest = Math.max(0, ...factors.map((f) => Number(via[f.name] ?? 0)));
   if (newest && unixTime() - newest <= maxAge) return true;
-  if (ctx.statelessAuth) throw new StepUpError([], maxAge); // no session to prove into
   const usable = await setUpBy(ctx.app, ctx.userId, factors);
   // nothing to prove with: a demand nobody can meet protects nothing, it only locks them out
   if (!usable.length) return true;

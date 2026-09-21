@@ -9,11 +9,10 @@ import type { Ctx } from "./Ctx.ts";
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: Ctx): Promise<void> {
   await ctx.app.fire("authenticate", { ctx }); // explicit credentials first: a Bearer beats an ambient cookie
-  if (!ctx.statelessAuth) {
-    await initClient(ctx);
-    await loginFromRequest(ctx);
-    touchSession(ctx);
-  }
+  ctx.sess ??= await ctx.app.sessions.loadFromRequest(ctx);
+  await initClient(ctx);
+  if (!ctx.statelessAuth) await loginFromRequest(ctx);
+  ctx.sess.touch(ctx.userId);
   if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user reads synchronously
   await ctx.initSettings();
   await ctx.app.languages.initCtx(ctx);
@@ -35,10 +34,6 @@ async function registerClient(ctx: Ctx): Promise<void> {
   ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure: ctx.app.https, maxAge: 5 * 365 * 24 * 60 * 60 }));
   const client = await ctx.app.db.table("client").add({ hash });
   ctx.clientId = String(client);
-}
-
-function touchSession(ctx: Ctx): void {
-  if (ctx.sess) ctx.sess.touch(ctx.userId);
 }
 
 

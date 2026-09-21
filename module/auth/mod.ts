@@ -61,7 +61,6 @@ export async function proof(ctx: Ctx, factor: string, usrId: number): Promise<Of
   const declared = authFactors(ctx.app).find((f) => f.name === factor);
   if (!declared) throw new Error(`auth: no factor "${factor}" — declare it in a module's authFactors export`);
   if (ctx.userId !== usrId) return await loginProof(ctx, declared, usrId);
-  // stateless credentials identify a request, not the session the proof would be written to
-  if (ctx.statelessAuth || !declared.stepUp) return [];
+  if (!declared.stepUp) return [];
   ctx.sess.data.core.via[factor](unixTime()); // the same place `via()` reads, one screen up
 }

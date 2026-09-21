@@ -4,7 +4,6 @@ import { header, cookiePrefix, unixTime } from "./util.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
-import type { Req } from "./ctx/Req.ts";
 import type { Db } from "./db/Db.ts";
 import type { App } from "./App.ts";
 
@@ -68,16 +67,17 @@ export class SessionManager {
     return Number(await this.#app.settings.core.sess.maxIdle) || DEFAULT_MAX_IDLE;
   }
 
-  loadFromRequest(req: Req, https: boolean, appUrl: string): Promise<Session> {
-    return this.load(req.cookies[cookiePrefix(https, appUrl) + COOKIE_NAME]);
+  loadFromRequest({ req, app }: Ctx): Promise<Session> {
+    return this.load(req.cookies[cookiePrefix(app.https, req.appUrl) + COOKIE_NAME]);
   }
 
-  async load(cookieSessionToken?: string): Promise<Session> {
-    const row = cookieSessionToken
-      ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${cookieSessionToken}`
+  /** A `pinned` token names its session for good: it never idles out and is recreated under the same token. */
+  async load(token?: string, pinned = false): Promise<Session> {
+    const row = token
+      ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${token}`
       : null;
-    if (!row || unixTime() - (Number(row.access) || 0) > await this.maxIdle()) return this.#create(); // unreadable access = expired
-    const sess = new Session(this.#db, row.id, cookieSessionToken!, row.data, false);
+    if (!row || !pinned && unixTime() - (Number(row.access) || 0) > await this.maxIdle()) return this.#create(pinned ? token : uid()); // unreadable access = expired
+    const sess = new Session(this.#db, row.id, token!, row.data, false);
     sess.settings = row.settings;
     sess.access = Number(row.access) || 0;
     sess.usrId = Number(row.usr_id) || 0;
@@ -98,13 +98,12 @@ export class SessionManager {
   /** Send the cookie when the session was created or rotated this request (`regenerateId` yields a new-marked
    *  session). Idempotent per session object, so `login()` and the core request path can both call it. */
   setCookieIfNew(ctx: Ctx): void {
-    if (!ctx.sess.isNew || ctx.sess.cookieSent) return;
+    if (!ctx.sess.isNew || ctx.sess.cookieSent || ctx.statelessAuth) return;
     ctx.sess.cookieSent = true;
     ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, { path: ctx.req.appUrl, secure: ctx.app.https }));
   }
 
-  async #create(): Promise<Session> {
-    const token = uid();
+  async #create(token = uid()): Promise<Session> {
     const time = unixTime();
     const id = await this.#db.table('sess').insert({ token, time, access: time, data: EMPTY_SESSION });
     if (!id) throw new Error("Could not create session");

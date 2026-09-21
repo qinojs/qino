@@ -90,8 +90,7 @@ guard: ({ amount }, ctx) => amount <= 1000 || requireStepUp(ctx, { maxAge: 60 })
 ```
 
 The field is not shorthand for that: it is the only form a listing can see, which is how
-[`mcp`](../mcp/) can leave those verbs out — a Bearer token identifies a request, not a session, so
-a stateless caller could never answer. Every way a factor is handed out or taken away carries it,
+[`mcp`](../mcp/) can leave those verbs out — an agent has no dialog to answer them with. Every way a factor is handed out or taken away carries it,
 because whoever issues a factor changes what counts as a proof from then on.
 
 A route is not a verb and cannot demand anything (a `StepUpError` would land as a 403 page):
