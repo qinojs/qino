@@ -56,14 +56,16 @@ so `getCtx()` and `app.t` are available.
 
 ## GET parameter naming
 
-Parameters read outside your own node rendering (action hooks, core pipeline) are
-namespaced: module name with `_` instead of `.`, then the parameter name in camelCase —
-`cms_editmode`, `cms_nodeFilesZip`, `cms_noFrontend`, `cms_versions_space`.
-This avoids collisions without a registry and keeps `ctx.req.query.cms_editmode` as plain
-property access.
+The rule is about collisions, not form: a parameter needs a namespace when other modules
+may read the query of the same request. That is the case for action hooks, the core pipeline,
+layouts and content modules that share a page with others. Namespaced means module name with
+`_` instead of `.`, then the parameter name in camelCase — `cms_editmode`, `cms_nodeFilesZip`,
+`cms_noFrontend`, `cms_versions_space`. This avoids collisions without a registry and keeps
+`ctx.req.query.cms_editmode` as plain property access.
 
-Parameters read only by your own backend node stay short and unprefixed
-(`id`, `search`, `tab`) — the page scopes them.
+Short, unprefixed names (`id`, `search`, `tab`) are fine wherever something else scopes them:
+a backend node that owns its page, a dedicated route, a handler that only runs for its own
+upload field, or a value that has to match the node id (`export_table=<node id>`).
 
 Exceptions (do not extend):
 - `cmspid`, `lang` — core-owned, well-known short names.
