@@ -1,5 +1,5 @@
 import { debounce } from '@qino/pub/c1.js';
-import onElement from '@qino/pub/c1/onElement.mjs';
+import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
 import { Combobox } from '@qino/pub/qg/combobox.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
@@ -18,13 +18,6 @@ cms.initNode = function(module, fn) {
     el.__cms_initialized = true;
   }
 };
-
-onElement('[qcms-id]', el => {
-  if (el.__cms_initialized) return;
-  const module = cms.el.module(el);
-  const fn = cms.modConnected[module];
-  if (fn) { fn(el); el.__cms_initialized = true; }
-});
 
 cms.el = {
   root(el)   { return el.closest('[qcms-id]'); },
@@ -127,3 +120,11 @@ cms.reloadPart = (nid, part, vars) => {
 globalThis.cms      = cms;
 globalThis.dbFile   = DbFile;
 globalThis.dbFileUrl = DbFileUrl;
+
+// last: on() runs right away for nodes already in the page and needs the cms above
+new SelectorObserver({ on: el => {
+  if (el.__cms_initialized) return;
+  const module = cms.el.module(el);
+  const fn = cms.modConnected[module];
+  if (fn) { fn(el); el.__cms_initialized = true; }
+}}).observe('[qcms-id]');

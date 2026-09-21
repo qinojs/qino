@@ -1,6 +1,6 @@
 import { dom } from '@qino/pub/c1.js';
 import { globalContextMenu } from '@qino/pub/c1/contextMenu.mjs';
-import onElement from '@qino/pub/c1/onElement.mjs';
+import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 import { html } from '@qino/pub/html.js';
@@ -130,7 +130,7 @@ setTimeout(() => {
   ));
   const pendingByLang = {};
   let batchTimer;
-  onElement('[cmstxt]', el => {
+  new SelectorObserver({ on: el => {
     const id = el.getAttribute('cmstxt');
     const lang = el.getAttribute('cmslang') || activeLang;
     (pendingByLang[lang] ??= []).push({ id, el });
@@ -145,7 +145,7 @@ setTimeout(() => {
         }
       }
     }, 50);
-  });
+  }}).observe('[cmstxt]');
   api.on('PUT cms/txt/:id', ({ params: { id }, input }) => {
     const txt = input?.value;
     const setLang = input?.lang || activeLang;

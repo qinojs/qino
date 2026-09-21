@@ -106,7 +106,6 @@
     "pub/js/c1/fix/contextMenu.mjs",
     "pub/js/c1/form.mjs",
     "pub/js/c1/loading.mjs",
-    "pub/js/c1/onElement.mjs",
     "pub/js/c1/scrollSync.mjs",
     "pub/js/c1/tableHandles.mjs",
     "pub/js/finishLogin.mjs",
