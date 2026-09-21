@@ -22,6 +22,30 @@ Deno.test("auth.api_keys: a key is one device — same client and session on eve
     assertEquals(await app.db.query`SELECT usr_id FROM sess`, [{ usr_id: 7 }]);
     assertEquals(await app.db.one`SELECT count(*) FROM client`, 1);
     assertEquals(await app.db.one`SELECT count(DISTINCT client_id) FROM log`, 1);
+    assertEquals(await app.db.query`SELECT usr_id FROM client_usr`, [{ usr_id: 7 }]); // the device knows its user
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("auth.api_keys: parallel first requests of a new key share one client and one session", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  app.stores.add(import.meta.resolve("../../store.json")).add("auth.api_keys");
+  await app.init();
+  try {
+    await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
+    const token = generateToken();
+    await app.db.table("api_key").insert({ usr_id: 7, name: "agent", prefix: keyPrefix(token), hash: hashToken(token), created: 0 });
+
+    const call = () => app.fetch(new Request("https://qino.test/api/auth.api_keys", { headers: { authorization: "Bearer " + token } }));
+    const all = await Promise.all(Array.from({ length: 8 }, call));
+    assertEquals(all.map((r) => r.status), Array(8).fill(200));
+    await Promise.all(all.map((r) => r.body?.cancel()));
+    await new Promise((r) => setTimeout(r, 100));
+
+    assertEquals(await app.db.one`SELECT count(*) FROM client`, 1);
+    assertEquals(await app.db.one`SELECT count(*) FROM sess`, 1);
+    assertEquals(await app.db.one`SELECT count(*) FROM client_usr`, 1);
   } finally {
     await app.db.close();
   }
