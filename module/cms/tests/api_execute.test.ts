@@ -304,16 +304,15 @@ Deno.test("cms api: validation rejects wrong params and payloads before writing"
   assertEquals(node.writes, {});
 });
 
-Deno.test("cms api: modules lists content and layout modules, schema on demand", async () => {
+Deno.test("cms api: modules lists content and layout modules, module adds the schema", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/modules"), [
       { name: "cms.cont.text", kind: "cont", description: "Rich text" },
       { name: "cms.layout.system", kind: "layout", description: "" },
     ]);
-    const withSchema = await invoke(api, "GET", "/modules", { schema: true }) as Array<Record<string, unknown>>;
-    assertEquals(withSchema[0].settings, { properties: { cols: {} } });
-    assertEquals(withSchema[1].settings, {});
+    assertEquals(await invoke(api, "GET", "/module/cms.cont.text"), { name: "cms.cont.text", kind: "cont", description: "Rich text", settings: { properties: { cols: {} } } });
+    await assertRejects(() => invoke(api, "GET", "/module/cms.cont.nope"), NotFoundError);
   });
 });
 

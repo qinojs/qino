@@ -76,12 +76,14 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
 // in — the widget hides it because it is the drop target, not because it cannot be created.
 const MODULE_SVG = "pub/module.svg";
 
-export async function modules(schema = false): Promise<any[]> {
+/** Modules the user may insert; `only` picks one, with its settings schema. */
+export async function modules(only?: string): Promise<any[]> {
     const ctx = getCtx();
     const c = cms(ctx.app);
     const res = [];
     for (const [kind, mods] of Object.entries({ cont: c.getModules(), layout: c.getLayouts() })) {
         for (const [name, mod] of Object.entries(mods)) {
+            if (only && only !== name) continue;
             const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
             if (Number(e.access) < ADMIN) continue;
             res.push({
@@ -90,7 +92,7 @@ export async function modules(schema = false): Promise<any[]> {
                 description: mod.description.trim(),
                 // the icon a module declares, so a client can show it without knowing the manifest
                 ...(mod.manifest?.files?.includes(MODULE_SVG) && { icon: mod.modUrl + MODULE_SVG }),
-                ...(schema && { settings: mod.plugin.cms?.node?.settingsSchema ?? {} }),
+                ...(only && { settings: mod.plugin.cms?.node?.settingsSchema ?? {} }),
             });
         }
     }

@@ -669,8 +669,22 @@ export const api = {
     get: {
       description: "List modules assignable to a node — kind \"cont\" for content blocks, \"layout\" for pages",
       access: Access.USER,
-      query: s.object({ schema: s.optional(s.boolean()).describe("If true, include each module's settings schema") }),
-      execute: ({ schema }: any) => fns.modules(!!schema),
+      execute: () => fns.modules(),
+    },
+  },
+
+  module: {
+    ":name": {
+      paramSchema: s.string().describe("Module name, e.g. \"cms.cont.image2\""),
+      get: {
+        description: "One assignable module with its settings schema",
+        access: Access.USER,
+        execute: async ({ name }: any) => {
+          const [mod] = await fns.modules(name);
+          if (!mod) throw new NotFoundError();
+          return mod;
+        },
+      },
     },
   },
 
