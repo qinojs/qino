@@ -91,8 +91,11 @@ export default async function (widget, { node, dialogs, signal }) {
       : t`No files available`}
   </div>`;
 
-  const upload = async (list, replace) => {
-    for (const file of list) await ref.files.post({ file: await fileData(file), replace });
+  const upload = async (list, slot) => {
+    for (const f of list) {
+      const file = await fileData(f);
+      await (slot ? ref.file(slot).put({ file }) : ref.files.post({ file }));
+    }
     widget.reload();
   };
   const pick = (multiple) => new Promise((ok) => {
@@ -110,7 +113,7 @@ export default async function (widget, { node, dialogs, signal }) {
     upload(await pick(false), slot);
   });
   widget.on('click', '.-delete', async (td) => {
-    if (await dialogs.confirm(t`Really delete this file?`)) ref.files(td.closest('tr').getAttribute('itemid')).delete();
+    if (await dialogs.confirm(t`Really delete this file?`)) ref.file(td.closest('tr').getAttribute('itemid')).delete();
   });
   widget.on('change', '.-sort', (sel) => sel.value && ref.files.order.post({ by: sel.value }).then(() => widget.reload()));
   widget.on('change', '.-purge', async (sel) => {

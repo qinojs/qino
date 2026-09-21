@@ -242,6 +242,12 @@ Deno.test("cms api: delete all files includes placeholders", async () => {
   assertEquals(node.deletedFiles, ["file.jpg", "placeholder.jpg"]);
 });
 
+Deno.test("cms api: file slots are addressed apart from files sub-routes", async () => {
+  const { ctx, nodes } = await setup();
+  await requestStorage.run(ctx, () => invoke(api, "DELETE", "/node/1/file/all"));
+  assertEquals(nodes.get(1)!.deletedFiles, ["all"]);
+});
+
 Deno.test("cms api: user access and group access write through node", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;

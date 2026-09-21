@@ -186,17 +186,17 @@ export async function nodeFilesJson(node: Node, thumbSize = ""): Promise<Record<
     return res;
 }
 
-export function nodeFileAdd(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
-    return getCtx().app.db.transaction(() => nodeFileAddTx(node, file, replace));
+export function nodeFileAdd(node: Node, file: any, slot?: string): Promise<{ url: string; name: string }> {
+    return getCtx().app.db.transaction(() => nodeFileAddTx(node, file, slot));
 }
-async function nodeFileAddTx(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
+async function nodeFileAddTx(node: Node, file: any, slot?: string): Promise<{ url: string; name: string }> {
     const ctx = getCtx();
     let added: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
         const dbF = await ctx.app.dbFiles.file(Number(file));
         if (!await dbF.access()) throw new Output({ error: "Forbidden" }, { status: 403 });
-        if (replace) {
-            const existing = await node.file(replace);
+        if (slot) {
+            const existing = await node.file(slot);
             added = await dbF.clone(existing?.id);
         } else {
             added = await node.addFile(await dbF.clone());
@@ -205,7 +205,7 @@ async function nodeFileAddTx(node: Node, file: any, replace?: any): Promise<{ ur
         if (file != null && !/^(https?|data):/.test(String(file))) {
             throw new Output({ error: "Forbidden" }, { status: 403 });
         }
-        added = await node.addFile(file, replace);
+        added = await node.addFile(file, slot);
     }
     return { url: await added?.url() ?? "", name: added?.name ?? "" };
 }

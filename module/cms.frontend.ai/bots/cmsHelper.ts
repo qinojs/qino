@@ -19,6 +19,7 @@ const cmsTools = toTools(cmsApi, {
     "/node/:node/module": ["put"],
     "/node/:node/settings": ["get", "put"],
     "/node/:node/files": ["get", "post"],
+    "/node/:node/file/:slot": ["put"],
     "/node/:node/insert-before": ["put"],
   }
 });
@@ -47,7 +48,7 @@ Use the user's language. Be concise, practical, and use tools for CMS changes.
 - Use get_node_contents before content edits. Insert new blocks with post_node_contents into a cms.cont.flexible target; if no clear target exists, ask one short clarification.
 - Common block modules: cms.cont.text, cms.cont.image2, cms.cont.table2, cms.cont.nav3, cms.cont.login4.
 - Text/alt/cell content uses put_node_text (usually name "main"; table cells use "0_0", "0_1", ...). Inline cmstxt/text-id uses put_txt.
-- Files use post_node_files. Settings use put_node_settings. Copies use post_node_copy.
+- Files use post_node_files (append) or put_node_file (fill a slot). Settings use put_node_settings. Copies use post_node_copy.
 `.trim();
 
 export const cmsHelper: Bot = {

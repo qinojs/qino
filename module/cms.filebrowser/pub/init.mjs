@@ -23,7 +23,7 @@ const addFiles = async (e) => {
 cms.replaceFile = (node, replace) => browse({ multiple: false, local: 1 }, async e => {
   const item = e.dbFiles[0] || e.urls[0];
   if (item) {
-    await api.cms.node(node).files.post({ file: String(item), replace });
+    await api.cms.node(node).file(replace).put({ file: String(item) });
     cms.reloadNode(node);
   }
   if (e.files) cms.cont(node).upload(e.files[0], () => cms.reloadNode(node), replace);

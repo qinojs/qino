@@ -25,6 +25,7 @@ const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
   if (Number(e.access) < ADMIN) throw new AccessError();
 };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
+const fileSource = s.optional(s.string()).describe("http(s) URL to fetch, a data: URI (`data:image/png;name=cat.png;base64,…`) to store inline, or an existing file ID to copy. Omit to create an empty slot");
 
 /** Standalone render (no page request behind it): the rendered node is this request's main node. */
 const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
@@ -445,17 +446,14 @@ const node = {
     },
 
     post: {
-      description: "Add a file to the node",
+      description: "Add an unnamed file to the node",
       ...nodeWrite,
-      input: s.object({
-        file: s.optional(s.string()).describe("http(s) URL to fetch, a data: URI (`data:image/png;name=cat.png;base64,…`) to store inline, or an existing file ID to copy. Omit to create an empty file"),
-        replace: s.optional(s.string()).describe("Existing filename to replace"),
-      }),
-      execute: ({ node, file, replace }: any) => fns.nodeFileAdd(node, file, replace),
+      input: s.object({ file: fileSource }),
+      execute: ({ node, file }: any) => fns.nodeFileAdd(node, file),
     },
 
     put: {
-      description: "Manually set file order (array of filenames)",
+      description: "Set file order by slot names",
       ...nodeWrite,
       input: s.object({ sort: s.array(s.string()) }),
       execute: async ({ node, sort }: any) => {
@@ -503,13 +501,21 @@ const node = {
         },
       },
     },
+  },
 
-    ":file": {
-      paramSchema: s.string().describe("Filename"),
-      delete: {
-        description: "Delete a file from the node",
+  file: {
+    ":slot": {
+      paramSchema: s.string().describe("Slot name (key from GET files)"),
+      put: {
+        description: "Fill or replace the file in this slot",
         ...nodeWrite,
-        execute: ({ node, file }: any) => node.deleteFile(file),
+        input: s.object({ file: fileSource }),
+        execute: ({ node, slot, file }: any) => fns.nodeFileAdd(node, file, slot),
+      },
+      delete: {
+        description: "Delete the file in this slot",
+        ...nodeWrite,
+        execute: ({ node, slot }: any) => node.deleteFile(slot),
       },
     },
   },
