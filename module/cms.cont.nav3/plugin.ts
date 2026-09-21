@@ -53,7 +53,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   }
 
   // Determine start page
-  const startPageId = settings.startPage();
+  const startPageId = settings.startPage<number>();
   const startLevelSetting = settings.startLevel();
 
   let startPage: Node | undefined;

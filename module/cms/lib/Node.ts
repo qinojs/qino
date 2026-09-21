@@ -1,4 +1,4 @@
-import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
+import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -272,7 +272,7 @@ export class Node {
         return this.vs.type === "p" || !parent ? this : await parent.page();
     }
 
-    settings: any = {};
+    settings = {} as ItemProxy;
 
     get modUrl(): string { return this.module?.modUrl ?? getCtx().req.moduleUrl + this.vs.module + "/"; }
 

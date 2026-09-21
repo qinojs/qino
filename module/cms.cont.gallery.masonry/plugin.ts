@@ -16,7 +16,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       ${await cms_image2(file, {})}
     </a>`);
   }
-  const width = node.settings["col-width"]();
+  const width = node.settings["col-width"]<string>();
   const style = width && width.length <= MAX_LENGTH && !/[;{}]/.test(width) ? html` style="--u2-Items-width:${width}"` : "";
   return html`<div class=u2-width>
     <u2-masonry ${style}>${images}</u2-masonry>
