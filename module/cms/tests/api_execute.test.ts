@@ -69,7 +69,7 @@ class FakeNode {
     }]));
   }
   html(vars = {}) { return html.raw(`<div>${JSON.stringify(vars)}</div>`); }
-  htmlPart(part: string, vars = {}) { return `<span>${part}:${JSON.stringify(vars)}</span>`; }
+  htmlPart(part: string, vars = {}) { return part === "missing" ? undefined : `<span>${part}:${JSON.stringify(vars)}</span>`; }
   children(opt: Record<string, unknown>) {
     return new Map(this.childNodes
       .filter((node) => !opt.type || node.vs.type === opt.type)
@@ -189,6 +189,7 @@ Deno.test("cms api: html and html parts render through node helpers", async () =
     assertEquals(await invoke(api, "GET", "/node/1/html", { vars: { a: 1 } }), '<div>{"a":1}</div>');
     assertEquals(await invoke(api, "POST", "/node/1/html", { vars: { b: 2 } }), '<div>{"b":2}</div>');
     assertEquals(await invoke(api, "GET", "/node/1/html/part/teaser", { vars: { c: 3 } }), '<span>teaser:{"c":3}</span>');
+    await assertRejects(() => invoke(api, "GET", "/node/1/html/part/missing"), NotFoundError, 'Unknown part "missing"');
   });
 });
 

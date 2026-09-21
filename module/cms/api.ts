@@ -66,7 +66,12 @@ const renderVerb = (description: string, vars: any, run: (a: any) => Promise<str
   execute: async (a: any, ctx: Ctx) => { await asMainNode(a.node, ctx); return run(a); },
 });
 const renderHtml = async ({ node, vars }: any) => String(await node.html(vars));
-const renderPart = async ({ node, part, vars }: any) => String(await node.htmlPart(part, vars) || "");
+const renderPart = async ({ node, part, vars }: any) => {
+  const out = await node.htmlPart(part, vars);
+  if (out !== undefined) return String(out);
+  const parts = Object.keys(node.module?.plugin.cms?.node?.parts ?? {});
+  throw new NotFoundError(`Unknown part "${part}", available: ${parts.join(", ") || "none"}`);
+};
 
 const contentsJson = (node: Node) => fns.treeToJson({
   node,
