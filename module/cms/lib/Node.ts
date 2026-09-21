@@ -327,7 +327,7 @@ export class Node {
 
     /* Texts */
 
-    async #showTextLang(dbText: DbText, lang?: string | null): Promise<any> {
+    async #showTextLang(dbText: DbText, lang?: string | null) {
         const ctx = getCtx();
         const textLang = lang == null ? await dbText.orFallback(ctx.lang) : dbText.lang(lang);
         let text = await textLang.get();
@@ -343,11 +343,11 @@ export class Node {
         };
     }
 
-    async showText(name = "main", lang?: string | null): Promise<any> {
+    async showText(name = "main", lang?: string | null) {
         return this.#showTextLang(await this.text(name), lang);
     }
 
-    async showTitle(lang?: string | null): Promise<any> {
+    async showTitle(lang?: string | null) {
         return this.#showTextLang(await this.title(), lang);
     }
 
