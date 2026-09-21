@@ -1,10 +1,8 @@
-import '../c1.js';
-
 const listeners = [];
 const root = document;
 let observer;
 
-c1.onElement = function(selector, options) {
+export default function onElement(selector, options) {
   if (typeof options === 'function') options = { parsed:options }
   const listener = {
     selector: selector,
@@ -34,7 +32,7 @@ c1.onElement = function(selector, options) {
     });
   }
   checkListener(listener);
-};
+}
 function checkListener(listener, target) {
   const els = [];
     target?.matches?.(listener.selector) && els.push(target);
@@ -59,5 +57,3 @@ function checkMutations(mutations) {
 
 let loaded = false;
 document.addEventListener('DOMContentLoaded', () => loaded = true);
-
-export default c1.onElement;

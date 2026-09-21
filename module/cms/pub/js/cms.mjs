@@ -1,5 +1,5 @@
-import '@qino/pub/c1.js';
-import '@qino/pub/c1/onElement.mjs';
+import { debounce } from '@qino/pub/c1.js';
+import onElement from '@qino/pub/c1/onElement.mjs';
 import { Combobox } from '@qino/pub/qg/combobox.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
@@ -19,7 +19,7 @@ cms.initNode = function(module, fn) {
   }
 };
 
-c1.onElement('[qcms-id]', el => {
+onElement('[qcms-id]', el => {
   if (el.__cms_initialized) return;
   const module = cms.el.module(el);
   const fn = cms.modConnected[module];
@@ -106,7 +106,7 @@ function saveTxt(el) {
   api.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
 // composedPath()[0] (read sync, before debounce) resolves the target inside the qino-cms shadow root too
-const saveTxtDebounced = c1.debounce(saveTxt, 1600);
+const saveTxtDebounced = debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
 document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
 

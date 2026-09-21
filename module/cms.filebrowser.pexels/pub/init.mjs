@@ -1,5 +1,5 @@
 // add files
-import '@qino/pub/c1.js';
+import { debounce, dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 
 // scoped query helper
@@ -13,7 +13,7 @@ customElements.whenDefined('qino-cms').then(async () => {
 
     const search = find(el, '[type=search]');
     const mainList = find(el, '.-list.-main');
-    const container = c1.dom.el(
+    const container = dom.el(
       `<div class=-pexels style="padding-top:2em;" hidden>
             <h3>
                 Free images from:
@@ -26,13 +26,13 @@ customElements.whenDefined('qino-cms').then(async () => {
 
     const list = find(container, '.-list');
 
-    search.addEventListener('input',c1.debounce(async () => {
+    search.addEventListener('input',debounce(async () => {
       const hasPixabay = el.querySelector('.-pixabay');
       const items = await api['cms.filebrowser.pexels'].search.get({ s: search.value });
       list.innerHTML = '';
       for (const item of items) {
         if (hasPixabay && item.photographer === 'Pixabay') continue;
-        const el = c1.dom.el(
+        const el = dom.el(
           '<label data-type=url>'+
                     '<input type=checkbox style="position:absolute; top:.5rem; left:.5rem">'+
                     '<div class=-title></div>'+

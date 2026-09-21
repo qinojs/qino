@@ -1,8 +1,9 @@
-import '../../c1.js';
+import { dom } from '../../c1.js';
+import Placer from '../Placer.mjs';
 document.addEventListener('DOMContentLoaded', () => {
   if (document.body.contextMenu !== undefined) return;
 
-  const el    = html => c1.dom.el(html);
+  const el    = html => dom.el(html);
   const stop  = e => e.stopPropagation();
   const show  = node => node.matches(':popover-open') || node.showPopover();
   const close = (active = null) => {
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (item.children.length) {
         li.classList.add('-sub');
         const sub = el('<ul popover=manual tabindex=0>');
-        sub.c1Placer = new c1.Placer(sub, { x: 'after', y: 'prepend', margin: { top: 1, right: -3, bottom: 1, left: -3 } });
+        sub.c1Placer = new Placer(sub, { x: 'after', y: 'prepend', margin: { top: 1, right: -3, bottom: 1, left: -3 } });
         li.append(sub);
         parse(item, sub);
       }

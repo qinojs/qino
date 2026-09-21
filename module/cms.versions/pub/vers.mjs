@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { debounce, Eventer, dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 
@@ -17,7 +17,7 @@ function panelEl(selector) {
 }
 
 const CmsVersViewer = function(){
-  this.container = c1.dom.el(`
+  this.container = dom.el(`
     <div id=qgCms_vers tabindex=-1 class=qgCMS popover=manual>
       <div class=-preview></div>
       <div class=-control>
@@ -65,7 +65,7 @@ CmsVersViewer.prototype = {
       const list = find(this.container, '.-list');
       list.innerHTML = '';
       rows.forEach(row=>{
-        const li = c1.dom.el(
+        const li = dom.el(
           `<li v=${row.vers}><div class=-date>${relativeDate(row.time)}</div><div class=-usr>${row.usr}</div>`
         );
         find(li, '.-date').title = exactDate.format(row.time*1000);
@@ -95,7 +95,7 @@ CmsVersViewer.prototype = {
     this.preview.classList.add('-loading');
     this.loadFrame(vers);
   },
-  loadFrame: c1.debounce(function(vers){
+  loadFrame: debounce(function(vers){
     let scrollTop = this.initialScrolltop;
     const old = find(this.preview, 'iframe.-shown'); // always load into the hidden frame
     if (old) {
@@ -139,19 +139,19 @@ CmsVersViewer.prototype = {
     this.trigger('before-load', {vers});
   }, {min:200, max:5000}),
 };
-Object.assign(CmsVersViewer.prototype, c1.Eventer);
+Object.assign(CmsVersViewer.prototype, Eventer);
 
 /* create viewer */
 const viewer = new CmsVersViewer();
 
 /* more */
-const more = c1.dom.el(`
+const more = dom.el(`
   <div class=-more>
     <button class=-compareActive>Compare with current</button>
     <button class=-reactivate>Restore this version</button>
     <div class=-txt></div>
   </div>`);
-const pointer = c1.dom.el('<i class=-pointer></i>');
+const pointer = dom.el('<i class=-pointer></i>');
 find(viewer.container, '.-control').append(more, pointer);
 viewer.on('before-load',function(e){
   const li = find(this.container, `.-list > li[v="${e.vers}"]`);
@@ -237,7 +237,7 @@ cms.contextMenueContent.addItem('Verlauf', {
 });
 
 // frontend integration
-const sidebarItem = c1.dom.el(`
+const sidebarItem = dom.el(`
   <div class=-item itemid=history>
     <div class=-title>
       <div class=-text>Verlauf</div>

@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
@@ -97,10 +97,10 @@ function imgToDbFile(img, pid) {
 function fileGetPreview(f) {
   let ph;
   if (isImage(f)) {
-    ph = c1.dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
+    ph = dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
     toImage(f, ph);
   } else {
-    ph = c1.dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
+    ph = dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
   }
   const range = getSelection().getRangeAt(0);
   range.insertNode(ph);

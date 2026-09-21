@@ -1,9 +1,7 @@
-import '../c1.js';
-import './Placer.mjs';
 import './fix/contextMenu.mjs';
 
 let cnt = 0;
-c1.contextMenu = function(root){
+export default function contextMenu(root){
   const id = 'qgContextMenu_'+(cnt++);
   const menu = document.createElement('menu');
   menu.setAttribute('type','context');
@@ -11,7 +9,7 @@ c1.contextMenu = function(root){
   root.append(menu);
   root.setAttribute('contextmenu',id);
   return new MenuItem(menu);
-};
+}
 class MenuItem {
   constructor(menu){ this.menu = menu; }
   addItem(label, opt={}) { return this._add('menuitem', label, opt); }
@@ -42,12 +40,6 @@ function closest(e, selector) {
     }
   }
 }
-Object.defineProperty(c1,'globalContextMenu',{
-  get(){
-    delete this.globalContextMenu;
-    return this.globalContextMenu = new c1.contextMenu(document.documentElement);
-  },
-  configurable: true
-});
-
-export default c1.contextMenu;
+// the document-wide menu, created on first use
+let globalMenu;
+export const globalContextMenu = () => globalMenu ??= contextMenu(document.documentElement);

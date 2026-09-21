@@ -1,7 +1,6 @@
-import '@qino/pub/c1.js';
-import '@qino/pub/c1/fix/contextMenu.mjs';
-import '@qino/pub/c1/contextMenu.mjs';
-import '@qino/pub/c1/onElement.mjs';
+import { dom } from '@qino/pub/c1.js';
+import { globalContextMenu } from '@qino/pub/c1/contextMenu.mjs';
+import onElement from '@qino/pub/c1/onElement.mjs';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 import { html } from '@qino/pub/html.js';
@@ -12,7 +11,7 @@ const nodeId = globalThis.qino?.cms?.nodeId;
 const activeLang = document.documentElement.lang;
 
 // contextmenu
-c1.globalContextMenu.addItem('CMS Text',{
+globalContextMenu().addItem('CMS Text',{
   icon: moduleUrl+'cms.text/pub/module.svg',
   selector: '[cmstxt]',
   onshow(e) { this.qgCurrentTarget = e.currentTarget; },
@@ -123,7 +122,7 @@ const showEditor = async el => {
 
 // mark untranslated / void texts
 setTimeout(() => {
-  document.head.append(c1.dom.el(
+  document.head.append(dom.el(
     '<style>'+
     '  @keyframes qgCMS-text-untranslated { 0% { background-color: rgba(255,240,0,.4) } 50% {  } 100% {  } }'+
     '  .qgCMS-text-untranslated { animation:qgCMS-text-untranslated .8s infinite alternate; }'+
@@ -131,7 +130,7 @@ setTimeout(() => {
   ));
   const pendingByLang = {};
   let batchTimer;
-  c1.onElement('[cmstxt]', el => {
+  onElement('[cmstxt]', el => {
     const id = el.getAttribute('cmstxt');
     const lang = el.getAttribute('cmslang') || activeLang;
     (pendingByLang[lang] ??= []).push({ id, el });
@@ -177,9 +176,9 @@ const addTranslateWidget = async el=>{
     `);
   el.lastElementChild.querySelector('form').addEventListener('submit',async e=>{
     e.preventDefault();
-    await import('@qino/pub/c1/loading.mjs');
+    const { default: loading } = await import('@qino/pub/c1/loading.mjs');
     const sourceLang = e.submitter.name;
-    const done = c1.loading.mark(e.target);
+    const done = loading.mark(e.target);
     try {
       const result = await api['cms.text'].page(nodeId).translate.post({ targetLang: lang, sourceLang: sourceLang, ifNeeded: true, subpages: false });
       await cms.dialogs.alert(t`translated texts: ${result.count}`);

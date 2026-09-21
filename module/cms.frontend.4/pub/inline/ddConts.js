@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { debounce, Eventer } from '@qino/pub/c1.js';
 let active, dropCont, dropBefore, oldCss;
 const ghost = document.createElement('div');
 ghost.style.cssText = 'background:#ff5; outline:#ff5 3px solid; min-height:8px; margin:2px; box-shadow:0 0 30px 3px rgba(0,0,0,.8); min-width:20px; z-index:999; position:relative; overflow:hidden; opacity:.9';
@@ -10,7 +10,7 @@ cms.contDrag = function() {
     updatePosition(e);
   };
 
-  const updatePosition = c1.debounce((e) => {
+  const updatePosition = debounce((e) => {
     if (!active) return;
     const newDropCont   = getNearestElement2(e, this.targets, active);
     const newDropBefore = getBeforeElement(e,newDropCont);
@@ -50,7 +50,7 @@ cms.contDrag = function() {
   };
 
 };
-cms.contDrag.prototype = c1.Eventer;
+cms.contDrag.prototype = Eventer;
 
 
 function elementDistance(el,x,y) {

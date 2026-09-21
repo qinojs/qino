@@ -1,11 +1,10 @@
-import '../c1.js';
 // better known as scrollRestoration: https://www.chromestatus.com/feature/5657284784947200
 
-c1.scrollSync = {
+const scrollSync = {
   config : {},
   _elementConfig(el){
     const client = clientDim(el);
-    const selector = c1.scrollSync.getSelector(el);
+    const selector = scrollSync.getSelector(el);
     const config = {
       // pixel: {
       //     x: el.scrollLeft,
@@ -65,11 +64,11 @@ c1.scrollSync = {
 function scrollListener(e) {
   let el = e.target;
   if (el.nodeType === 9) el = el.scrollingElement; // document
-  const config = c1.scrollSync._elementConfig(el);
+  const config = scrollSync._elementConfig(el);
   const doc = el.ownerDocument;
   if (doc.defaultView.c1ScrollSyncPreventFeedback) return;
   if (doc.c1ScrollSyncTargetWindows) {
-    doc.c1ScrollSyncTargetWindows.forEach(win => c1.scrollSync.restoreIn(config, win));
+    doc.c1ScrollSyncTargetWindows.forEach(win => scrollSync.restoreIn(config, win));
   }
   // localStorage // better use sessionStorage?
   //localStorage.setItem('c1.scrollSync', JSON.stringify(c1.scrollSync.config));
@@ -85,7 +84,7 @@ addEventListener('scroll', scrollListener, true);
 // });
 
 /* helper */
-c1.scrollSync.getSelector = function(el){
+scrollSync.getSelector = function(el){
   const doc = el.ownerDocument;
   let selector = '';
   const root = el.closest('[id]') || doc.documentElement;
@@ -113,4 +112,4 @@ function clientDim() {
   }
 }
 
-export default c1.scrollSync;
+export default scrollSync;

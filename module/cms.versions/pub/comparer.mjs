@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { dom } from '@qino/pub/c1.js';
 import { ctx } from '@qino/pub/qino.js';
 
 const { appUrl } = ctx;
@@ -33,7 +33,7 @@ export const comparer = {
                 <div class=-v1><iframe class=-i1></iframe></div>
             </div>
         </div>`;
-    div = c1.dom.el(html);
+    div = dom.el(html);
     iframe1 = div.querySelector('.-i1');
     iframe2 = div.querySelector('.-i2');
     view1   = div.querySelector('.-v1');
@@ -53,13 +53,13 @@ export const comparer = {
       const doc1 = win.document;
 
       // scrollSync
-      import('@qino/pub/c1/scrollSync.mjs').then(() => {
+      import('@qino/pub/c1/scrollSync.mjs').then(({ default: scrollSync }) => {
         // sync scroll
-        c1.scrollSync.syncWindows(win, other.contentWindow);
+        scrollSync.syncWindows(win, other.contentWindow);
         // sync clicks
         win.addEventListener('click', e => {
           if (e.c1Synced) return;
-          const selector = c1.scrollSync.getSelector(e.target);
+          const selector = scrollSync.getSelector(e.target);
           const otherEl = other.contentWindow.document.querySelector(selector);
           const event = new MouseEvent('click', { view: globalThis, bubbles: true, cancelable: true });
           event.c1Synced = true;

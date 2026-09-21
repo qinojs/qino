@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 
 // scoped query helper
@@ -10,7 +10,7 @@ customElements.whenDefined('qino-cms').then(async () => {
   const root = document.querySelector('qino-cms').shadowRoot;
   new SelectorObserver({ on: el => {
     const mainList = find(el, '.-list.-main');
-    const container = c1.dom.el(
+    const container = dom.el(
       `<div class=-ai style="padding-top:2em;">
             <h3>AI Image Generation</h3>
             <form>

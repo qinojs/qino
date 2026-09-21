@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { debounce, Eventer, dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
@@ -33,7 +33,7 @@ panelRoot.then(async root => {
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 
   new SelectorObserver({ on: async tools => {
-    const button = c1.dom.el('<button>' + await t`existing file`);
+    const button = dom.el('<button>' + await t`existing file`);
     button.addEventListener('click', () => browse({ multiple: true }, addFiles));
     tools.querySelector('.-upload').after(button);
   }}).observe('.-media .-tools', { root });
@@ -50,7 +50,7 @@ cms.fileBrowser = class {
     this.options = options;
   }
   async show(){
-    await Promise.all([
+    const [{ default: loading }, { default: form }] = await Promise.all([
       import('@qino/pub/c1/loading.mjs'),
       import('@qino/pub/c1/form.mjs'),
     ]);
@@ -145,18 +145,18 @@ cms.fileBrowser = class {
     }
 
     const searchInput = dialog.querySelector('[type=search]');
-    searchInput.addEventListener('input', c1.debounce(() => search(searchInput.value), 600));
+    searchInput.addEventListener('input', debounce(() => search(searchInput.value), 600));
 
     dialog.querySelector('.-browse').addEventListener('click', async () => {
-      const files = await c1.form.fileDialog({ accept:this.options.accept, multiple:this.options.multiple });
+      const files = await form.fileDialog({ accept:this.options.accept, multiple:this.options.multiple });
       this.trigger('select', { files, dbFiles:[], urls:[] });
       dialog.close();
     });
 
     const search = needle => {
-      c1.loading.mark(list);
+      loading.mark(list);
       api['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result => {
-        c1.loading.done(list);
+        loading.done(list);
 
         const has = {};
         for (const label of [...list.children]) {
@@ -166,7 +166,7 @@ cms.fileBrowser = class {
 
         for (const item of result) {
           if (has[item.id]) continue;
-          const el = c1.dom.el(
+          const el = dom.el(
             `<label data-type=dbFile>
               <div class=-ext style="position:absolute; inset:0; display:flex; justify-content:center; align-items:center; font-size:3.6em; color:#fff"></div>
               <input type=checkbox style="position:absolute; top:.8em; left:.8em">
@@ -184,4 +184,4 @@ cms.fileBrowser = class {
     search();
   }
 }
-Object.assign(cms.fileBrowser.prototype, c1.Eventer);
+Object.assign(cms.fileBrowser.prototype, Eventer);

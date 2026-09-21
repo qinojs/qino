@@ -1,13 +1,12 @@
-import '../c1.js';
-c1.loading = {
+const loading = {
   mark(el, opt) {
     if (!el) return ()=>{};
-    if (el.nodeType) return c1.loading._markElement(el, opt);
-    const dones = Array.from(el, el=>c1.loading._markElement(el, opt))
+    if (el.nodeType) return loading._markElement(el, opt);
+    const dones = Array.from(el, el=>loading._markElement(el, opt))
     return ()=>{ for (const done of dones) done(); }
   },
   _markElement(el, {delay = 0, pointerEvents = false} = {}) {
-    c1.loading._adoptStyles(el);
+    loading._adoptStyles(el);
     el.loadingTasks ??= 0;
     el.loadingTasks++;
     if (el.loadingTasks === 1) {
@@ -25,7 +24,7 @@ c1.loading = {
         el.addEventListener('click', this, true);
       }
     }
-    return () => c1.loading.done(el);
+    return () => loading.done(el);
   },
   done(el) {
     el.loadingTasks--;
@@ -103,4 +102,4 @@ const css =
 const sheet = new CSSStyleSheet();
 sheet.replaceSync(css);
 
-export default c1.loading;
+export default loading;

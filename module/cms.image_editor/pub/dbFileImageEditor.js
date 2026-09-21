@@ -197,9 +197,9 @@ export class DbFileImageEditor extends ImageEditor {
   }
   loading(fn) {
     const sidebar = this.el('.-sidebar');
-    loadingMjs().then(() => sidebar && c1.loading.mark(sidebar));
+    loadingMjs().then(({ default: loading }) => sidebar && loading.mark(sidebar));
     return () => {
-      loadingMjs().then(() => sidebar && c1.loading.done(sidebar));
+      loadingMjs().then(({ default: loading }) => sidebar && loading.done(sidebar));
       return fn?.();
     };
   }

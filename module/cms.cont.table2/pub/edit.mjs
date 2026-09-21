@@ -1,4 +1,5 @@
 import { api } from '@qino/pub/api.js';
+import { dom } from '@qino/pub/c1.js';
 import { TableHandles } from '@qino/pub/c1/tableHandles.mjs';
 
 // Pasted tables come from Word, Excel or a foreign page. 10 KB of cleaner, fetched on the first such paste.
@@ -11,7 +12,7 @@ const FOREIGN_CONTENT = {
   removeNbsp: 1,
 };
 let cleanerLoad;
-const foreignCleaner = () => cleanerLoad ??= import('@qino/pub/c1/NodeCleaner.mjs').then(() => new c1.NodeCleaner(FOREIGN_CONTENT));
+const foreignCleaner = () => cleanerLoad ??= import('@qino/pub/c1/NodeCleaner.mjs').then(({ default: NodeCleaner }) => new NodeCleaner(FOREIGN_CONTENT));
 
 const handles = new TableHandles();
 let active, pid;
@@ -42,7 +43,7 @@ cms.initNode('cont.table2', function(el) {
     let html = e.clipboardData.getData('text/html');
     html = html.replace(/([\s\S]*)<body>/, '').replace(/<\/body>([\s\S]*)/, '');
     html = html.replace('<!--StartFragment-->', '').replace('<!--EndFragment-->', '');
-    const table = c1.dom.el(html);
+    const table = dom.el(html);
     if (table && table.tagName !== 'TABLE') return;
     e.preventDefault(); // not working!
     setTimeout(async () => {

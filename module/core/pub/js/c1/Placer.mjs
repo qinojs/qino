@@ -1,6 +1,4 @@
-import '../c1.js';
-
-c1.Placer = class {
+export default class Placer {
   constructor(el, options={}){
     this.el = el;
     this.options = Object.assign({
@@ -70,7 +68,7 @@ c1.Placer = class {
     const position = getComputedStyle(this.el).getPropertyValue('position');
     if (position !== 'fixed') {
       //if (position !== 'absolute') this.el.style.position = 'absolute';
-      let root = c1.Placer.offsetParent(this.el);
+      let root = Placer.offsetParent(this.el);
       if (root) {
         root ||= document.documentElement;
         viewport = root.getBoundingClientRect();
@@ -145,6 +143,4 @@ c1.Placer = class {
     }
     return parent;
   }
-};
-
-export default c1.Placer;
+}

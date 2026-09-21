@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 
@@ -39,7 +39,7 @@ const css =
 '  display:block; '+
 '} '+
 '';
-const el = c1.dom.el('<div class=-item itemid=publish>'+
+const el = dom.el('<div class=-item itemid=publish>'+
   '<div class=-content>'+
     '<div class=-standalone>'+
       '<div class=-h1>Draft</div>'+

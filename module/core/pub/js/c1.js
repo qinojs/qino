@@ -1,13 +1,10 @@
 const w = globalThis;
 const d = w.document;
 
-w.c1 ||= {};
-
-
 /* Waits for the execution of the function (min) and then executes the last call, but waits maximal (max) millisecunds.
 *  If the function-scope changes, the function executes immediatly (good for event-delegation)
 */
-c1.debounce ||= function(fn, options) {
+export function debounce(fn, options) {
   if (typeof options === 'number') options = {min:options, max:options*2};
   let inst,
     args,
@@ -35,10 +32,10 @@ c1.debounce ||= function(fn, options) {
     trigger();
   };
   return wrapped;
-};
+}
 
 /* eventer */
-c1.Eventer ||= {
+export const Eventer = {
   _getEvents : function(n) {
     this._Es ||= {};
     this._Es[n] ||= [];
@@ -63,7 +60,7 @@ c1.Eventer ||= {
 
 
 /* dom: single element from html; skips leading whitespace text nodes */
-c1.dom = {
+export const dom = {
   el: html => {
     const tmpl = d.createElement('template');
     tmpl.innerHTML = html;

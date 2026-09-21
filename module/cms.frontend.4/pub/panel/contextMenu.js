@@ -1,5 +1,5 @@
 /* Context menu on the page tree (panel shadow root). Block-level items live in inline/contextMenu.js. */
-import '@qino/pub/c1/contextMenu.mjs';
+import { globalContextMenu } from '@qino/pub/c1/contextMenu.mjs';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
@@ -10,7 +10,7 @@ import { showSettings } from './contentMenu.js';
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
 
-const treeMenu = c1.globalContextMenu;
+const treeMenu = globalContextMenu();
 treeMenu.addItem(t`Settings`, {
   icon: moduleUrl+'cms.frontend.4/pub/img/settings.svg',
   selector: '#tree .-title',

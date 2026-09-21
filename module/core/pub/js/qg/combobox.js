@@ -1,5 +1,5 @@
-import '../c1.js';
-import '../c1/Placer.mjs';
+import { debounce } from '../c1.js';
+import Placer from '../c1/Placer.mjs';
 
 const doc = document;
 const dialog = doc.createElement('div');
@@ -11,7 +11,7 @@ dialog.addEventListener('mousedown', e=>{
   e.stopPropagation(); // prevent closing cms-panel
 });
 dialog.addEventListener('touchstart', e => e.stopPropagation()); // prevent closing cms-panel
-const placer = new c1.Placer(dialog);
+const placer = new Placer(dialog);
 
 export function Combobox(input){
   if (input.combobox) return input.combobox;
@@ -38,7 +38,7 @@ Combobox.prototype = {
   searchOptions(){
     console.warn('not implemented');
   },
-  searchOptionsDebounced:c1.debounce(function(){
+  searchOptionsDebounced:debounce(function(){
     this.searchOptions();
   }, 150),
   setOptions(array){

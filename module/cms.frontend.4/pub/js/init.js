@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
 
@@ -11,9 +11,9 @@ function toggleEdit() {
   const url = new URL(location.href);
   url.searchParams.set('cms_editmode', globalThis.qino.cms.editmode?0:1);
   url.searchParams.set('cmspid', globalThis.qino.cms.requestedNodeId);
-  import('@qino/pub/c1/scrollSync.mjs').then(() => {
-    c1.scrollSync.reevaluate(globalThis);
-    const config = c1.scrollSync.getConfig(globalThis);
+  import('@qino/pub/c1/scrollSync.mjs').then(({ default: scrollSync }) => {
+    scrollSync.reevaluate(globalThis);
+    const config = scrollSync.getConfig(globalThis);
     localStorage.setItem('cmsLastScrollPosition', JSON.stringify(config));
     location.href = url;
   });
@@ -36,13 +36,13 @@ onShortcut(key => {
 const savedScroll = localStorage.getItem('cmsLastScrollPosition');
 if (savedScroll) {
   localStorage.removeItem('cmsLastScrollPosition');
-  import('@qino/pub/c1/scrollSync.mjs').then(() => {
-    c1.scrollSync.restoreIn(JSON.parse(savedScroll), globalThis);
+  import('@qino/pub/c1/scrollSync.mjs').then(({ default: scrollSync }) => {
+    scrollSync.restoreIn(JSON.parse(savedScroll), globalThis);
   });
 }
 
 if (editable) {
-  const editToggle = c1.dom.el('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Edit (E)"><div><i></i></div></a>');
+  const editToggle = dom.el('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Edit (E)"><div><i></i></div></a>');
   root.append(editToggle);
   editToggle.addEventListener('click', e => {
     toggleEdit();

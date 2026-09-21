@@ -1,4 +1,3 @@
-import '../c1.js';
 const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
 const DEFAULT_CONF = {
@@ -133,8 +132,6 @@ class NodeCleaner {
   }
   */
 }
-
-c1.NodeCleaner = NodeCleaner;
 
 export default NodeCleaner;
 
@@ -287,7 +284,7 @@ var conf = {
   },
   //classes: ['myclass', 'yourClass'], // class:[]
 };
-var cleaner = new c1.NodeCleaner(conf);
+var cleaner = new NodeCleaner(conf);
 cleaner.clean(el, bool_incContainings );
 */
 

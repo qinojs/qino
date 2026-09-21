@@ -1,4 +1,5 @@
-import '@qino/pub/c1.js';
+import { Eventer, dom } from '@qino/pub/c1.js';
+import Placer from '@qino/pub/c1/Placer.mjs';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
@@ -31,7 +32,7 @@ cms.contPos = function(el) {
   this.pid = el.getAttribute('qcms-id'); // used
   el.addEventListener('mouseleave',this.unmarkDelay.bind(this));
 };
-Object.assign(cms.contPos, c1.Eventer);
+Object.assign(cms.contPos, Eventer);
 
 cms.contPos.prototype = {
   isDraggable() {
@@ -80,11 +81,11 @@ cms.cont = function(id) {
   cms.cont.all[id] = this;
   this.id = id;
 };
-Object.assign(cms.cont, c1.Eventer);
+Object.assign(cms.cont, Eventer);
 
 cms.cont.prototype = {
   upload(File, complete, replace) {
-    const event = { ...c1.Eventer };
+    const event = { ...Eventer };
     event.pid = this.id;
     event.File = File;
     qgfileUpload(File, 'cmsPageFile', {
@@ -110,7 +111,7 @@ cms.cont.add = mod => api.cms.node(nodeId).contents.post({ module: mod }).then(l
 function loadCallback(res){
   setTimeout(async ()=>{ // html possibility has content-script that needs header-script to be executed first
     const html = typeof res.html === 'string' ? res.html : res.id ? await api.cms.node(res.id).html.get() : '';
-    const el = c1.dom.el(html);
+    const el = dom.el(html);
     if (!el) return console.warn('cms.cont.add: no html', res);
     cms.contPos(el);
     cms.contPos.dd.start(el); // todo. what todo?
@@ -121,7 +122,7 @@ function loadCallback(res){
 
 /* element menu */
 const p = cms.contPos;
-const menu = c1.dom.el(
+const menu = dom.el(
   '<div id=qgCmsContPosMenu popover=manual>'+
   '  <div class=-drag title=Move>'+
   '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2s.9-2 2-2s2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2s-2 .9-2 2s.9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2z"></path></svg>'+
@@ -136,7 +137,7 @@ menu.addEventListener('mouseleave', e => p.active?.unmarkDelay(e) )
 menu.addEventListener('click',     e => e.stopPropagation() );
 menu.addEventListener('mousedown', e => e.stopPropagation() );
 
-const trash = c1.dom.el(
+const trash = dom.el(
   '<div id=qgCmsContTrash popover=manual>'+
   '  <svg width="50" height="60" viewBox="0 -5 26 30">'+
   '    <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
@@ -213,7 +214,7 @@ menu.addEventListener('mousedown', e=>{
   e.preventDefault();
 })
 //let placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
-const placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
+const placer = new Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
 p.on('mark', obj=>{
   menu.togglePopover(true);
   const isDraggable = obj.isDraggable(),
@@ -224,7 +225,7 @@ p.on('mark', obj=>{
   menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
   menu.drag.style.display = isDraggable ? 'block' : 'none';
   for (const btn of contMenuButtons) {
-    if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a fresh c1.dom.el still hangs on its template fragment
+    if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a fresh dom.el still hangs on its template fragment
     btn.el.style.display = btn.show(obj) ? 'block' : 'none';
   }
   menu.style.cursor = (isDraggable?'move':'default');
@@ -260,7 +261,7 @@ cms.console = {
   },
   el() {
     let el = root.getElementById('cmsConsole');
-    if (!el) root.append(el = c1.dom.el('<div id=cmsConsole class=qgCMS popover=manual><div class=-msg></div></div>'));
+    if (!el) root.append(el = dom.el('<div id=cmsConsole class=qgCMS popover=manual><div class=-msg></div></div>'));
     return el;
   }
 };

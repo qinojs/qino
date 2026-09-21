@@ -1,12 +1,11 @@
-import '../c1.js';
-c1.form = {
+const form = {
   serializeObject: function(element) {
     const els = element instanceof Element
       ? [...(element.elements || element.querySelectorAll('input, select, textarea')), element]
       : Array.from(element);
     const object = Object.create(null);
     els.forEach(el => {
-      const value = c1.form.elementValue(el);
+      const value = form.elementValue(el);
       if (value === undefined) return;
       const name = el.name;
       if (!name) return;
@@ -69,4 +68,4 @@ document.addEventListener('focusout', e => {
   e.target.dispatchEvent(new CustomEvent('c1-changed', {bubbles: true}));
 }, true);
 
-export default c1.form;
+export default form;

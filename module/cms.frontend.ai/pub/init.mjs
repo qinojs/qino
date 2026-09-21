@@ -1,4 +1,4 @@
-import '@qino/pub/c1.js';
+import { dom } from '@qino/pub/c1.js';
 import "../../ai/pub/chat.js";
 
 // Registers a toolbar entry on the shared editor — which inline.js also fetches alongside.
@@ -12,7 +12,7 @@ customElements.whenDefined("qino-cms").then(async () => {
   const root = document.querySelector("qino-cms").shadowRoot;
   new SelectorObserver({ on: () => {
     if (root.querySelector(".cmsChatWrapper")) return;
-    const wrap = c1.dom.el(`
+    const wrap = dom.el(`
       <div xonmousedown="event.stopPropagation();">
         <style>
           .cmsChatWrapper {

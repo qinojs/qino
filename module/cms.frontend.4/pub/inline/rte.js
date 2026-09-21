@@ -10,7 +10,7 @@ import { blockStyles } from '@qino/u2/js/rte/src/client/blocks.js';
 import { linkEditor } from '@qino/u2/js/rte/src/client/link.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
-import '@qino/pub/c1.js';
+import { debounce, Eventer, dom } from '@qino/pub/c1.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);
@@ -190,7 +190,7 @@ const externMediaDialog = async function(txtEl,medias) {
     '<style>.cmsExtMediaHighlight {outline: 6px solid #fa0}</style>';
   const list = find(dialog, '.-files');
   for (const media of Object.values(medias)) {
-    const label = c1.dom.el('<label><input type=checkbox checked> '+media.basename+'</label>');
+    const label = dom.el('<label><input type=checkbox checked> '+media.basename+'</label>');
     label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
     label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
     find(label, 'input').addEventListener('change', e => media.checked = e.currentTarget.checked);
@@ -290,7 +290,7 @@ addEventListener('dblclick', e => {
         new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', zoomer.factor() );
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
       };
-      zoomer.on('change',c1.debounce(change, 500));
+      zoomer.on('change',debounce(change, 500));
       const pos = img.getBoundingClientRect();
       const left = pos.left + scrollX;
       const top  = pos.top  + scrollY;
@@ -400,7 +400,7 @@ class ImageZoomer {
     };
   }
 }
-Object.assign(ImageZoomer.prototype, c1.Eventer);
+Object.assign(ImageZoomer.prototype, Eventer);
 
 /*******************************/
 /* helpers *********************/

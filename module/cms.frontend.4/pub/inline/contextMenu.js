@@ -1,4 +1,4 @@
-import '@qino/pub/c1/contextMenu.mjs';
+import { globalContextMenu } from '@qino/pub/c1/contextMenu.mjs';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
@@ -10,7 +10,7 @@ const moduleUrl = ctx.moduleUrl;
 /** The block submenu and its selector, so a host can add its own entries. */
 export const blockSelector = '[qcms-edit], #qgCmsContPosMenu';
 
-export const blockMenu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
+export const blockMenu = cms.contextMenueContent = globalContextMenu().addMenu(t`CMS Block`,{
   icon: moduleUrl+'cms.frontend.4/pub/img/module_default.svg',
   selector: blockSelector,
 });
