@@ -578,7 +578,8 @@ const node = {
       ...nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any, ctx: Ctx) => {
-        if (await fns.requestUsed(url)) throw new Error("URL already in use");
+        url = fns.cleanRequest(url);
+        if (await fns.requestUsed(url)) throw new ConflictError("URL already in use");
         await ctx.app.db.table("page_redirect").insert({ request: url, redirect: node.id });
         return { ok: true };
       },
@@ -589,7 +590,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any, ctx: Ctx) => {
-        await ctx.app.db.table("page_redirect").deleteWhere({ request: url, redirect: node.id });
+        await ctx.app.db.table("page_redirect").deleteWhere({ request: fns.cleanRequest(url), redirect: node.id });
         return { ok: true };
       },
     },
@@ -706,7 +707,7 @@ export const api = {
 
   "request-used": {
     get: {
-      description: "Check if a URL is already used as a redirect",
+      description: "Check if a URL path is taken by a page or a redirect",
       access: Access.USER,
       input: s.object({ url: s.string() }),
       execute: ({ url }: any) => fns.requestUsed(url).then((used) => ({ used })),

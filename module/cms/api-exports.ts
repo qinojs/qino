@@ -229,7 +229,12 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
     await node.sortFiles(sorted);
 }
 
+/** Leading and trailing slashes are noise: routing matches `ctx.req.appPath`, which has neither. */
+export const cleanRequest = (v: string): string => String(v ?? "").trim().replace(/^\/+|\/+$/g, "");
+
+/** Whether a page url or a redirect answers this request. */
 export async function requestUsed(v: string): Promise<boolean> {
+    v = cleanRequest(v);
     const db = getCtx().app.db;
     const r  = await db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`;
     const u  = await db.one`SELECT count(*) FROM page_url WHERE url = ${v}`;

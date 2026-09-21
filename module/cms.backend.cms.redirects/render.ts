@@ -1,5 +1,5 @@
 import { html, sql, sqlSearch } from "@qino/qino";
-import { cms } from "@qino/qino/cms";
+import { cleanRequest, cms, requestUsed } from "@qino/qino/cms";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -67,9 +67,6 @@ export async function collect(app: App, opts: {
   return { rows: opts.broken ? rows.filter(bad) : rows, broken: rows.filter(bad).length };
 }
 
-/** Leading and trailing slashes are noise: cms/render.ts matches `ctx.req.appPath`, which has neither. */
-export const cleanRequest = (v: string): string => String(v ?? "").trim().replace(/^\/+/, "").replace(/\/+$/, "");
-
 /** The 404 box refuses these too — a direct link ends up in a Location header. */
 export const unsafe = (target: string): boolean => /^(javascript|data|vbscript|file):/i.test(target);
 
@@ -80,17 +77,10 @@ export async function write(app: App, vs: { from?: string; request?: string; red
   if (!redirect) return String(await app.t`A direct link needs a target.`);
   if (unsafe(redirect)) return String(await app.t`Unsupported redirect target.`);
   // A request that a page url or another direct link answers would never reach this one.
-  if (request !== vs.from && await used(app, request)) return String(await app.t`URL already in use`);
+  if (request !== vs.from && await requestUsed(request)) return String(await app.t`URL already in use`);
   const table = app.db.table("page_redirect");
   await (vs.from === undefined ? table.insert({ request, redirect }) : table.update({ request: vs.from }, { request, redirect }));
   return "";
-}
-
-async function used(app: App, request: string): Promise<boolean> {
-  const rows = await app.db.one`
-    SELECT (SELECT count(*) FROM ${sql.id("page_redirect")} WHERE request = ${request})
-         + (SELECT count(*) FROM ${sql.id("page_url")} WHERE url = ${request})`;
-  return !!Number(rows);
 }
 
 /** The table body. Pure: everything it shows comes from `rows`, so a test can hand it any state. */

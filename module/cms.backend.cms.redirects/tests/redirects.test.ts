@@ -2,7 +2,7 @@ import { assertEquals } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-import { cleanRequest, renderRows, unsafe } from "../render.ts";
+import { renderRows, unsafe } from "../render.ts";
 
 import type { Row } from "../render.ts";
 
@@ -78,12 +78,6 @@ Deno.test("cms.backend.cms.redirects: titles and targets from the database are e
 
 Deno.test("cms.backend.cms.redirects: an empty list says so instead of rendering nothing", () => {
   assertEquals(String(renderRows([], labels)).includes("No direct links"), true);
-});
-
-Deno.test("cms.backend.cms.redirects: a request is stored the way render.ts matches it", () => {
-  assertEquals(cleanRequest(" /menu/ "), "menu");
-  assertEquals(cleanRequest("//a//b//"), "a//b");
-  assertEquals(cleanRequest("/"), ""); // "/" is the entry link, and that is the empty request
 });
 
 Deno.test("cms.backend.cms.redirects: script schemes are refused as targets", () => {

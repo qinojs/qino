@@ -4,6 +4,7 @@ import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { cmsInstances } from "../lib/CMS.ts";
 import { api } from "../api.ts";
+import { cleanRequest } from "../api-exports.ts";
 
 class TextObj {
   id: number;
@@ -332,4 +333,10 @@ Deno.test("cms api: admin access is required for access mutations", async () => 
     await assertRejects(() => invoke(api, "PUT", "/node/1/access/users/5", { access: 2 }), AccessError);
     await assertRejects(() => invoke(api, "PUT", "/node/1/access/groups/6", { access: 1 }), AccessError);
   });
+});
+
+Deno.test("cms api: a request is stored the way routing matches it", () => {
+  assertEquals(cleanRequest(" /menu/ "), "menu");
+  assertEquals(cleanRequest("//a//b//"), "a//b");
+  assertEquals(cleanRequest("/"), ""); // "/" is the entry link, and that is the empty request
 });
