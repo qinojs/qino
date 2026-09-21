@@ -71,7 +71,7 @@ export class SessionManager {
     return this.load(req.cookies[cookiePrefix(app.https, req.appUrl) + COOKIE_NAME]);
   }
 
-  /** A `pinned` token names its session for good: it never idles out and is recreated under the same token. */
+  /** A `pinned` token names its session for good: loading never expires it, a missing one is recreated under the same token. */
   async load(token?: string, pinned = false): Promise<Session> {
     const row = token
       ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${token}`

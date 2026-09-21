@@ -22,7 +22,6 @@ Deno.test("auth.api_keys: a key is one device — same client and session on eve
     assertEquals(await app.db.query`SELECT usr_id FROM sess`, [{ usr_id: 7 }]);
     assertEquals(await app.db.one`SELECT count(*) FROM client`, 1);
     assertEquals(await app.db.one`SELECT count(DISTINCT client_id) FROM log`, 1);
-    assertEquals(await app.db.query`SELECT usr_id FROM client_usr`, [{ usr_id: 7 }]); // the device knows its user
   } finally {
     await app.db.close();
   }
@@ -45,7 +44,6 @@ Deno.test("auth.api_keys: parallel first requests of a new key share one client 
 
     assertEquals(await app.db.one`SELECT count(*) FROM client`, 1);
     assertEquals(await app.db.one`SELECT count(*) FROM sess`, 1);
-    assertEquals(await app.db.one`SELECT count(*) FROM client_usr`, 1);
   } finally {
     await app.db.close();
   }

@@ -60,6 +60,7 @@ const offer = (factors: Declared[]): Offer[] =>
  * Only declared factors count: `via` also holds `remember` and `login_as`, which prove nothing.
  */
 export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: number } = {}): Promise<true> {
+  if (ctx.statelessAuth) throw new StepUpError([], maxAge); // a credential is shared, not a person present
   const factors = authFactors(ctx.app).filter((f) => f.stepUp);
   const via = (ctx.sess.data.core.via() ?? {}) as Record<string, number>;
   const newest = Math.max(0, ...factors.map((f) => Number(via[f.name] ?? 0)));

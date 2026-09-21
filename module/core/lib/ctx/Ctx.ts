@@ -50,9 +50,8 @@ export class Ctx {
     const hash = await keyed(this.app, ["core.device", String(userId), device], 22);
     const clients = this.app.db.table("client");
     const find = () => clients.rowBy("hash", hash);
-    const add = async () => { const c = await clients.add<Client>({ hash }); await c!.addUsr(userId); return c; };
     // a parallel first request may win the insert: then read its row
-    this.clientId = String(await find() ?? await add().catch(find));
+    this.clientId = String(await find() ?? await clients.add({ hash }).catch(find));
     this.sess = await this.app.sessions.load(hash, true);
   }
   /** True when a non-cookie credential (API key, …) identifies this request. */

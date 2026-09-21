@@ -19,7 +19,7 @@ async function authenticated(userId: number, device: string) {
   const { sess, writes } = sessionFake(5);
   const seen: { client?: string; sess?: string; pinned?: boolean } = {};
   const app = {
-    db: { table: () => ({ rowBy: () => undefined, add: async ({ hash }: any) => (seen.client = hash, { addUsr: async () => {}, toString: () => "3" }) }) },
+    db: { table: () => ({ rowBy: () => undefined, add: async ({ hash }: any) => (seen.client = hash, 3) }) },
     sessions: { load: (token: string, pinned: boolean) => (Object.assign(seen, { sess: token, pinned }), { token }) },
   };
   const ctx = await testContext({ sess, app });
