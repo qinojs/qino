@@ -1,4 +1,4 @@
-import { invoke, Output, requestStorage, toTools } from "@qino/qino";
+import { ApiError, invoke, Output, requestStorage, toTools } from "@qino/qino";
 import { assert, assertEquals, testContext } from "@qino/qino/tests";
 
 import { api } from "../api.ts";
@@ -53,5 +53,18 @@ Deno.test("ai: stream endpoint throws an Output carrying a ReadableStream", asyn
     assert(err instanceof Output);
     assert(err.body instanceof ReadableStream);
     assertEquals(err.isJson, false);
+  });
+});
+
+Deno.test("ai: image generation turns a provider error into a failed request", async () => {
+  const ctx = await testContext({ userId: 1, app: {
+    db: { table: () => ({ row: () => ({ superuser: false }) }) },
+  } });
+  aiInstances.set(ctx.app, { images: () => ({ error: { message: "Insufficient credits", code: 402 } }) } as never);
+
+  await requestStorage.run(ctx, async () => {
+    const err = await invoke(api, "POST", "/image-generations", { data: { prompt: "x" } }).then(() => null, (e) => e);
+    assert(err instanceof ApiError);
+    assertEquals([err.status, err.message], [502, "Insufficient credits"]);
   });
 });

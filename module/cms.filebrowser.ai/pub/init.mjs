@@ -29,23 +29,20 @@ customElements.whenDefined('qino-cms').then(async () => {
       const prompt = e.target.prompt.value.trim();
       if (!prompt) return;
       list.innerHTML = 'Generating…';
-      try {
-        const res = await api.ai['image-generations'].post({ data: { prompt } });
-        list.innerHTML = '';
-        const urls = res?.data?.map(i => i.url) ?? [];
-        if (!urls.length) urls.push('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt));
-        for (const url of urls) {
-          const label = document.createElement('label');
-          label.dataset.type = 'url';
-          label.setAttribute('itemid', url);
-          label.append(
-            Object.assign(document.createElement('input'), { type: 'checkbox', style: 'position:absolute;top:8px;left:8px' }),
-            Object.assign(document.createElement('img'), { src: url, referrerPolicy: 'no-referrer', style: 'max-width:100%' }),
-          );
-          list.append(label);
-        }
-      } catch (err) {
-        list.textContent = err.message;
+      // a provider error is shown, the fallback image is still offered
+      const res = await api.ai['image-generations'].post({ data: { prompt } }).catch(err => { list.textContent = err.message; });
+      if (res) list.innerHTML = '';
+      const urls = res?.data?.map(i => i.url) ?? [];
+      if (!urls.length) urls.push('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt));
+      for (const url of urls) {
+        const label = document.createElement('label');
+        label.dataset.type = 'url';
+        label.setAttribute('itemid', url);
+        label.append(
+          Object.assign(document.createElement('input'), { type: 'checkbox', style: 'position:absolute;top:8px;left:8px' }),
+          Object.assign(document.createElement('img'), { src: url, referrerPolicy: 'no-referrer', style: 'max-width:100%' }),
+        );
+        list.append(label);
       }
     });
   }}).observe('.cmsFileBrowser', { root });

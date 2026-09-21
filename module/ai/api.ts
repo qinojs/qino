@@ -1,4 +1,4 @@
-import { Access, NotFoundError, Output, s } from "@qino/qino";
+import { Access, ApiError, NotFoundError, Output, s } from "@qino/qino";
 
 import { ai } from "./mod.ts";
 
@@ -61,7 +61,13 @@ export const api: ApiTree = {
       description: "Generate images from a prompt (OpenAI-compatible passthrough)",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: Params, ctx: Ctx) => ai(ctx.app).images(data as Record<string, unknown>),
+      execute: async ({ data }: Params, ctx: Ctx) => {
+        const res = await ai(ctx.app).images(data as Record<string, unknown>) as { error?: unknown };
+        // provider failures come back as `{ error }`: surface them as a failed request
+        const err = res.error as { message?: string } | string | undefined;
+        if (err) throw new ApiError(502, typeof err === "object" ? err.message ?? JSON.stringify(err) : String(err));
+        return res;
+      },
     },
   },
 };
