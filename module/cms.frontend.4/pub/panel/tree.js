@@ -129,7 +129,8 @@ export async function cmsTreeInit(json) {
   rootNode.addEventListener("u2-tree-expand", (e) => {
     e.load?.((n) =>
       api.cms.node(n.dataset.id).tree.get({ level: 1, filter: showContents() ? "*" : "p" })
-        .then((children) => { for (const c of children) n.append(makeNode(c)); }));
+        // reuse a node already moved in (e.g. dropped during the load): no duplicate, server order
+        .then((children) => { for (const c of children) n.append(cms.Tree.getNodeById(c.id) ?? makeNode(c)); }));
   });
 
   rootNode.addEventListener("u2-tree-dragover", (e) => { // allow, otherwise preventDefault (access rules)
@@ -186,7 +187,7 @@ export async function cmsTreeInit(json) {
     api.cms.node(parent.dataset.id).children.post({ title: name }).then((child) => {
       if (!child) return;
       const node = makeNode(child);
-      parent.insertBefore(node, parent.querySelector(":scope > u2-tree"));
+      parent.append(node);
       parent.toggleExpand(true);
       const a = node.querySelector(":scope > .-title");
       a?.classList.add("-new");

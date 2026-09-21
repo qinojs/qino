@@ -573,6 +573,7 @@ export class Node {
             visible: true,
             ...vs,
         };
+        vs.sort ??= Number(await this.db.one`SELECT max(sort) FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} AND type = ${vs.type}`) + 1;
         const id = await this.db.table("page").insert(vs);
         const page = await this.cms.node(Number(id ?? "0"));
         if (!id) return page;
@@ -618,7 +619,7 @@ export class Node {
             if (!Node.#xmlAttrs.has(name)) continue;
             await this.set(name === "public" ? "access" : name, name === "public" ? Number(value) : value);
         }
-        for (const child of [...node.children].reverse()) {
+        for (const child of node.children) {
             const created = child.tag === "cont" ? await this.createCont() : child.tag === "page" ? await this.createChild() : null;
             if (created) await created.#fromXmlNode(child);
         }

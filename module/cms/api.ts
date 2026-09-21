@@ -24,6 +24,7 @@ const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
   const e = await ctx.app.fire("module:access", { module, user: ctx.user, access: ADMIN });
   if (Number(e.access) < ADMIN) throw new AccessError();
 };
+const before = s.optional(s.string()).describe("Child of this node to insert above. Omit to append.");
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 const fileSource = s.optional(s.string()).describe("http(s) URL to fetch, a data: URI (`data:image/png;name=cat.png;base64,…`) to store inline, or an existing file ID to copy. Omit to create an empty slot");
 
@@ -289,9 +290,10 @@ const node = {
     post: {
       description: "Create a new child page. Returns it with its containers and text fields.",
       ...nodeWrite,
-      input: s.object({ title: s.string() }),
-      execute: async ({ node, title }: any, ctx: Ctx) => {
+      input: s.object({ title: s.string(), before }),
+      execute: async ({ node, title, before }: any, ctx: Ctx) => {
         const c = await node.createChild();
+        if (before) await node.insertBefore(c, before);
         await c.title(ctx.lang, title);
         await c.changeUser(ctx.user!, 3);
         await asMainNode(c, ctx);
@@ -326,7 +328,7 @@ const node = {
       ...nodeWrite,
       input: s.object({
         id: s.string().describe("ID of the node to move"),
-        before: s.optional(s.string()).describe("Child of this node to insert above. Omit to append."),
+        before,
       }),
       execute: async ({ node, id, before }: any) => {
         const child = await node.cms.node(id);
@@ -360,11 +362,12 @@ const node = {
     post: {
       description: "Create a content block in this node. On a page, use one of its containers, not the page itself.",
       ...nodeWrite,
-      input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\"") }),
-      execute: async ({ node, module }: any, ctx: Ctx) => {
+      input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\""), before }),
+      execute: async ({ node, module, before }: any, ctx: Ctx) => {
         await requireModuleAdmin(module, ctx);
         const c = await node.createCont({ module });
         if (!c) throw new Error("createCont failed");
+        if (before) await node.insertBefore(c, before);
         await c.changeUser(ctx.user, 3);
         await asMainNode(node, ctx);
         const html = String(await c.html());
