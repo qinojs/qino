@@ -32,8 +32,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const location = String(await node.showText("location"));
   const address = [info.address_street, [info.address_postal_code, info.address_locality].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   if (location || address) facts.push(html`<dt>${labels.location}</dt><dd>${html.raw(location)}${location && address ? " · " : ""}${address}</dd>`);
-  const price = info.price == null ? "" : `${Number(info.price).toLocaleString(ctx.lang, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${String(info.currency ?? "")}`.trim();
-  if (price) facts.push(html`<dt>${labels.price}</dt><dd>${price} ${await node.showText("price_more")}</dd>`);
+  const price = info.price == null ? "" : `${Number(info.price).toLocaleString(ctx.lang, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${info.currency ?? ""}`.trim();
+  if (price) facts.push(await html.async`<dt>${labels.price}</dt><dd>${price} ${node.showText("price_more")}</dd>`);
   if (performers.length) facts.push(html`<dt>${labels.performers}</dt><dd>${performers.join(", ")}</dd>`);
 
   const external = String(info.external_link ?? "").trim();
