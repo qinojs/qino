@@ -37,6 +37,7 @@ export class Node {
 
     #children: Promise<Map<number, Node>> | null = null;
     #conts: Node[] | null = null;
+    #parent: Node | undefined;
 
     constructor(cms: CMS, id = 0, vs?: Record<string, string | number>) {
         this.cms = cms;
@@ -305,7 +306,10 @@ export class Node {
     }
 
     async parent(level?: number): Promise<Node | undefined> {
-        const parent = this.vs.basis ? await this.cms.node(Number(this.vs.basis)) : undefined;
+        const basis = Number(this.vs.basis ?? 0);
+        // keyed by basis, so a move invalidates it; stale after cms.clearCache() like every cache here
+        if (this.#parent?.id !== basis) this.#parent = basis ? await this.cms.node(basis) : undefined;
+        const parent = this.#parent;
         if (level === undefined) return parent;
         const path = await this.path();
         let i = 0;
