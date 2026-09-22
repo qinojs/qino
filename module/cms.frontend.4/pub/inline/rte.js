@@ -190,7 +190,8 @@ const externMediaDialog = async function(txtEl,medias) {
     '<style>.cmsExtMediaHighlight {outline: 6px solid #fa0}</style>';
   const list = find(dialog, '.-files');
   for (const media of Object.values(medias)) {
-    const label = dom.el('<label><input type=checkbox checked> '+media.basename+'</label>');
+    const label = dom.el('<label><input type=checkbox checked> </label>');
+    label.append(media.basename);
     label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
     label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
     find(label, 'input').addEventListener('change', e => media.checked = e.currentTarget.checked);
@@ -232,7 +233,7 @@ const checkMedia = root => {
   has && externMediaDialog(root,medias);
 };
 document.addEventListener('paste', e => {
-  if (!e.target.contentEditable) return;
+  if (!e.target.isContentEditable) return;
   const txtEl = e.target.closest('[cmstxt]');
   if (!txtEl) return;
   setTimeout(()=>checkMedia(txtEl));

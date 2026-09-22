@@ -56,7 +56,6 @@ const loadWidget = (widget) => {
   widgetEl.replaceChildren(mountWidget(src, context));
 };
 
-
 uiState.addEventListener("changeIn", () => {
   api.core["ctx-settings"](["cms.frontend.4", "ui"]).put({ value: uiState.get({ silent: true }) }); // why silent? should we debounce?
 });

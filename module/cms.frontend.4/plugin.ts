@@ -65,7 +65,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   // sets and txts hang inside extended, mounted by it
   list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
   if (ctx.user?.superuser) list.push(own("superuser"));
-  return list; 
+  return list;
 }
 
 /* The two file roots behind a node's module: what the site added, and what the module ships. */
@@ -115,7 +115,6 @@ async function moduleFiles(ctx: Ctx, pid: number) {
   // the module's app settings, if it has any — shown below the files
   return { ...list, settings: module && module in ctx.app.settings ? module : null };
 }
-
 
 /** Feedback from the panel: goes to the address the site configured, answers go to the sender. */
 async function sendFeedback(ctx: Ctx, msg: string, link: string) {

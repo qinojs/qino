@@ -89,7 +89,7 @@ cms.cont.prototype = {
     event.pid = this.id;
     event.File = File;
     qgfileUpload(File, 'cmsPageFile', {
-      url: location.pathname+'?cmspid='+this.id+'&replace='+(replace||''),
+      url: location.pathname+'?cmspid='+this.id+'&replace='+encodeURIComponent(replace||''),
       progress: e => event.trigger('progress', e),
       complete: res => {
         res = JSON.parse(res);
@@ -221,7 +221,7 @@ p.on('mark', obj=>{
   mod = obj.el.getAttribute('qcms-mod') ?? '';
   placer.follow(obj.el);
 
-  menu.mod.innerHTML = mod.replace(/^cont\./,'');
+  menu.mod.textContent = mod.replace(/^cont\./,'');
   menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
   menu.drag.style.display = isDraggable ? 'block' : 'none';
   for (const btn of contMenuButtons) {
@@ -276,7 +276,7 @@ export const dialog = (title,body,buttons) =>
   });
 
 api.on('PUT cms/txt/:id', ({ value }) => {
-  if (value?.changed) cms.console.show(t`Der Text wurde gespeichert.`, 'info');
+  if (value?.changed) cms.console.show(t`The text has been saved.`, 'info');
 });
 
 api.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {

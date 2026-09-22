@@ -83,7 +83,7 @@ async function addFile(txtEl, f) {
     } else {
       ph.style.opacity = '';
       ph.firstElementChild.href = r.url;
-      ph.firstElementChild.innerHTML = r.url.replace(/.*\//,'');
+      ph.firstElementChild.textContent = r.url.replace(/.*\//,'');
     }
     txtEl.focus();
   };
@@ -100,7 +100,8 @@ function fileGetPreview(f) {
     ph = dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
     toImage(f, ph);
   } else {
-    ph = dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
+    ph = dom.el('<span><a href="#" target=_blank></a></span>');
+    ph.firstElementChild.textContent = ' '+f.name+' '; // a file name is text, whatever it spells
   }
   const range = getSelection().getRangeAt(0);
   range.insertNode(ph);
