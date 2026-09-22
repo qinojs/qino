@@ -66,7 +66,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   });
 
   return html`<div class=u2-flex>
-<div class=u2-card style="flex:1 1 20rem">
+<div class=u2-card style="flex:0 1 auto">
   <div class=-head>Declared factors (${declared.length})</div>
   <table class=u2-table>
     <thead><tr>
