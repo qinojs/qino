@@ -3,12 +3,13 @@
   "description": "Section limited to the layout width, with an optional title and vertical spacing.",
   "dependencies": [
     "cms",
-    "cms.cont.flexible"
+    "cms.templateParser"
   ],
   "files": [
     "manifest.json",
     "plugin.ts",
     "pub/main.css",
-    "pub/module.svg"
+    "pub/module.svg",
+    "template.html"
   ]
 }
