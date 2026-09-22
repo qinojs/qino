@@ -18,12 +18,12 @@ const backoff = (attempts: number) => 60 * 4 ** (attempts - 1);
 
 /**
  * How one attempt went. Ours to blame and attempts left: back in the queue. Anything else is
- * final — it went out, or the address refused it.
+ * final — it went out, or the address refused it. `ref` is what the far side called it.
  */
-export async function delivered(app: App, id: number, error?: unknown): Promise<void> {
+export async function delivered(app: App, id: number, error?: unknown, ref?: string): Promise<void> {
   const table = app.db.table("message_delivery");
   const message = error == null ? null : errMsg(error);
-  if (!(error instanceof ChannelError)) return void await table.update(id, { error: message, sent: unixTime(), due: null });
+  if (!(error instanceof ChannelError)) return void await table.update(id, { error: message, ref: ref ?? null, sent: unixTime(), due: null });
   const attempts = Number(await app.db.one`SELECT attempts FROM message_delivery WHERE id = ${id}` ?? 0) + 1;
   await table.update(id, { error: message, attempts, due: attempts < ATTEMPTS ? unixTime() + backoff(attempts) : null });
 }

@@ -100,9 +100,8 @@ async function barrels(): Promise<Map<string, string>> {
 // to describe a role rather than a privacy level.
 const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
 
-// Still open, because in both cases the consumer is the defect and fixing it is a design change:
-// `api` is a manifest field the loader already publishes as app.apiTree["cms"], and api-exports.ts is
-// the logic behind cms/api.ts, which exposes tree as an endpoint. See PLAN-modules.md.
+// Still open, because the consumer is the defect and fixing it is a design change: `api` is a
+// manifest field the loader already publishes as app.apiTree["cms"]. See PLAN-modules.md.
 const OPEN = new Set([
   "cms.frontend.ai/bots/cmsHelper.ts -> cms/api.ts",           // toTools() at module scope, no app yet
 ]);

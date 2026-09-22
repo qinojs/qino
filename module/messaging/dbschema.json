@@ -163,6 +163,12 @@
             "default": 0,
             "description": "With due and time both null: 0 is held back, more is given up"
           },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What the far side calls this delivery — the provider's own id"
+          },
           "error": {
             "type": "string",
             "description": "Delivery error; null means the recipient was reached"

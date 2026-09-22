@@ -60,7 +60,7 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
     const { text, html } = await render(row);
     // only where there is something to leave: the client's one-click way to the same link
     const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId) : undefined;
-    const failure = await transmit(mailer, {
+    const result = await transmit(mailer, {
       from,
       to: formatAddress(debug ?? { address, name: nameOf(row) }),
       replyTo: msg.replyTo || config.replyTo || undefined,
@@ -71,8 +71,9 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
     });
     // the transport took it, so it counts as sent — but nothing reached this address, and the
     // journal says so: an error is the absence of a delivery, not only a failure
+    const failure = result instanceof Error ? result : undefined;
     if (!failure) sent++;
-    await delivered(app, Number(row.id), failure ?? detour);
+    await delivered(app, Number(row.id), failure ?? detour, typeof result === "string" ? result : undefined);
   }
   // the pool serves this batch and nothing after it: a connection left open until the next mail is
   // one the server has long closed, and sending over it fails without saying why
@@ -86,7 +87,8 @@ async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> 
   return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
 }
 
-/** Sends one mail; resolves with the error message instead of throwing, because the journal wants it.
+/** Sends one mail; resolves with the message id the transport gave it, or with the error instead of
+ *  throwing, because the journal wants it.
  *  A failure that names no reason is a broken connection, never a refusal — the server that says no
  *  says why. Upyo keeps only `error.message` of what it caught, so an empty one is all that is left
  *  of it: worth one more mail on a fresh connection, and worth saying so when that fails too. */
@@ -94,10 +96,10 @@ async function transmit(
   mailer: Awaited<ReturnType<typeof transport>>,
   message: Record<string, unknown>,
   retry = true,
-): Promise<Error | undefined> {
+): Promise<Error | string | undefined> {
   try {
     const receipt = await mailer.send(await createMessage(message));
-    if (receipt?.successful) return;
+    if (receipt?.successful) return receipt.messageId;
     const reason = receipt?.errorMessages?.join("\n").trim();
     if (!reason && retry) {
       await mailer.closeAllConnections?.().catch(() => {});

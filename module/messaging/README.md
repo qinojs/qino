@@ -338,7 +338,7 @@ Releasing is nobody's business but the caller's: a backend button writes `now` i
 schedule writes a timestamp, an approval rule writes it when it is satisfied. `messaging` only ever
 asks what is owed.
 
-`delivered()` closes one attempt. A `ChannelError` puts the delivery back with a growing wait — a
+`delivered(app, id, error?, ref?)` closes one attempt. A `ChannelError` puts the delivery back with a growing wait — a
 minute, then four — and gives up after three tries; anything else is final. The `outbox` cron job
 picks up what is due and walks the very same way out as `send()` — the diagram above, from
 `recipients` onward. There is no second path, so nothing a channel does when sending can go missing
@@ -395,7 +395,10 @@ nothing is lost and nothing has to be normalized.
 `message_delivery` — one row per recipient, with the time it was attempted and the error, if
 any. `address` is where it actually went; `usr_id` is set only when that address is a
 verified contact of that user, so the journal never claims a message reached someone on the
-strength of an unproven address.
+strength of an unproven address. `ref` is what the far side calls this delivery — a mail's
+`Message-ID`, a Twilio `sid`, a Telegram message. Only a globally assigned id stands alone:
+where it means something only inside its provider or chat, it carries that context
+(`twilio:SM…`, `<chat>:<message>`), so one lookup can never mean two things.
 
 `message_attachment` — ordered links from a message to core's `file` table. Content and metadata
 stay in `DbFile`; channels decide whether they can deliver attachments.

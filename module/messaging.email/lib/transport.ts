@@ -2,7 +2,7 @@ import type { App } from "@qino/qino";
 
 /** What a transport must offer; Upyo's classes satisfy it. */
 export type Transport = {
-  send(message: unknown): Promise<{ successful?: boolean; errorMessages?: string[] } | undefined>;
+  send(message: unknown): Promise<{ successful?: boolean; messageId?: string; errorMessages?: string[] } | undefined>;
   close?(): Promise<void>;
   closeAllConnections?(): Promise<void>;
 };

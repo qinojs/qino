@@ -50,8 +50,8 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
   const one = async (row: Row) => {
     const chat = known.get(String(row.address));
     try {
-      await sendMessage(app, { ...telegramText(msg, await render(row)), chat_id: Number(row.address) });
-      await delivered(app, Number(row.id));
+      const ref = await sendMessage(app, { ...telegramText(msg, await render(row)), chat_id: Number(row.address) });
+      await delivered(app, Number(row.id), undefined, ref);
       sent++;
       if (chat?.error) await table.update(chat.id, { error: null }); // it delivers again
     } catch (e) {
@@ -76,14 +76,15 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
 }
 
 /** One retry on 429 — the answer carries how long to wait, and waiting is the documented fix. */
-async function sendMessage(app: App, params: Record<string, unknown>) {
+async function sendMessage(app: App, params: Record<string, unknown>): Promise<string> {
+  const post = async () => `${params.chat_id}:${(await call(app, "sendMessage", params))?.message_id ?? ""}`;
   try {
-    await call(app, "sendMessage", params);
+    return await post();
   } catch (e) {
     const wait = e instanceof BotError ? e.retryAfter : undefined;
     if (!wait || wait > 60) throw e;
     await new Promise((r) => setTimeout(r, wait * 1000));
-    await call(app, "sendMessage", params);
+    return await post();
   }
 }
 

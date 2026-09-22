@@ -43,8 +43,8 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
     const address = String(row.address);
     const body = (await render(row)).text;
     try {
-      await transmit(app, address, msg.title ? `${msg.title}\n${body}` : body);
-      await delivered(app, Number(row.id));
+      const ref = await transmit(app, address, msg.title ? `${msg.title}\n${body}` : body);
+      await delivered(app, Number(row.id), undefined, ref);
       sent++;
     } catch (e) {
       await delivered(app, Number(row.id), e);
