@@ -15,19 +15,17 @@ const NODE_WRITE = {
 
 const codeFile = (key: "src" | "css" | "js", label: string) => ({
   get: {
-    description: `Read the ${label} source of a cms.cont.html node`,
+    description: `Open the ${label}, with examples for new nodes.`,
     ...NODE_WRITE,
     output: content,
     execute: async ({ node }: { node: Node }) => {
-      const value = await Deno.readTextFile(codeFiles(node)[key]).catch((e) => {
-        if (e instanceof Deno.errors.NotFound) throw new NotFoundError(`${label} file not found`);
-        throw e;
-      });
-      return { content: value };
+      const files = codeFiles(node);
+      await files.create();
+      return { content: await Deno.readTextFile(files[key]) };
     },
   },
   put: {
-    description: `Write the ${label} of a cms.cont.html node, returns its rendered HTML. Read it first — a new node is scaffolded with its qcms-id selector and wiring.`,
+    description: `Save the ${label}. Open first to see the examples.`,
     ...NODE_WRITE,
     input: content,
     output: rendered,

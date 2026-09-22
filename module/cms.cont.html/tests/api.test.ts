@@ -63,6 +63,19 @@ Deno.test("cms.cont.html api: writes and reads code files", async () => {
   }
 });
 
+Deno.test("cms.cont.html api: opening a new node provides starter files without rendering", async () => {
+  const dir = await Deno.makeTempDir() + "/";
+  const ctx = fakeCtx(dir);
+  try {
+    for (const [file, example] of [["html", "cms-text=title"], ["css", '[qcms-id="7"]'], ["js", "SelectorObserver"]]) {
+      const result = await requestStorage.run(ctx as any, () => invoke(api, "GET", `/node/7/codefiles/${file}`)) as { content: string };
+      assertEquals(result.content.includes(example), true);
+    }
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("cms.cont.html api: rejects nodes of another module", async () => {
   const dir = await Deno.makeTempDir() + "/";
   try {
