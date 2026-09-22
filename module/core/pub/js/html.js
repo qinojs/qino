@@ -3,9 +3,13 @@
   * unless they are HtmlString; arrays render as their concatenated elements. */
 
 const HEE = { "&": "&amp;", '"': "&quot;", "'": "&#039;", "<": "&lt;", ">": "&gt;" };
+const SPECIAL = /[&"'<>]/;
 
 /** Escape for HTML. Rarely needed on its own — html`` escapes every value it interpolates. */
-export const hee = (str) => String(str ?? "").replace(/[&"'<>]/g, (c) => HEE[c]);
+export const hee = (str) => {
+  const s = String(str ?? "");
+  return SPECIAL.test(s) ? s.replace(/[&"'<>]/g, (c) => HEE[c]) : s; // most values have nothing to escape
+};
 
 const ENTITY = /&(?:#(\d+)|#x([\da-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi;
 const NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };

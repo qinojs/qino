@@ -44,6 +44,6 @@ const partNames = (app: App) => app.modules.linked().filter(hasWorkerPart).map((
 
 // runs on every rendered page
 function register(ctx: Ctx): void {
-  if (!partNames(ctx.app).length) return;
+  if (!ctx.app.modules.linked().some(hasWorkerPart)) return;
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "serviceworker/pub/register.js");
 }

@@ -43,9 +43,16 @@ function intakeAllowed(ctx: Ctx): boolean {
   return true;
 }
 
+/** What a browser report may say. Everything else — id, time, ip, log_id — the server fills in:
+ *  a posted `id` near the top of the range would use up the table's autoincrement for good. */
+const JS_FIELDS = ["message", "file", "line", "col", "prio", "sample", "backtrace", "request", "referer"];
+
 async function handleJsError(ctx: Ctx): Promise<void> {
   const report = ctx.req.body;
-  if (report?.message) await addReport(ctx.app, { ...report, source: "js" });
+  if (report?.message) {
+    const said = Object.fromEntries(JS_FIELDS.filter((k) => k in report).map((k) => [k, report[k]]));
+    await addReport(ctx.app, { ...said, source: "js" });
+  }
   throw new Output({});
 }
 
@@ -156,7 +163,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!intakeAllowed(ctx)) throw new Output({});
     if (path === "csp-error") return handleCspError(ctx); // csp reports are not covered by the setting
     if (!await app.settings.error_report.browserErrors) throw new Output({});
-    if (path === "js-error") return handleJsError(ctx)
+    if (path === "js-error") return handleJsError(ctx);
     if (path === "css-error") return handleCssError(ctx);
   }, { signal });
 

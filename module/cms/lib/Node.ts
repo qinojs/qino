@@ -133,8 +133,8 @@ export class Node {
         const nodeLevel = this.vs.access === null ? null : Number(this.vs.access ?? "0");
 
         // inherited (or explicit user) access level
-        const parent = await this.parent();
-        if (nodeLevel === null && parent)
+        const parent = nodeLevel === null ? await this.parent() : undefined;
+        if (parent)
             return Math.max(await parent.#rawAccess(user), await this.#accessUserLevel(user));
 
         // user
@@ -242,12 +242,12 @@ export class Node {
     }
     /* Online state */
     async onlineStart(): Promise<number> {
-        const p = await this.parent();
-        return this.vs.online_start === null && p ? p.onlineStart() : Number(this.vs.online_start ?? "0");
+        const p = this.vs.online_start === null ? await this.parent() : undefined;
+        return p ? p.onlineStart() : Number(this.vs.online_start ?? "0");
     }
     async onlineEnd(): Promise<number> {
-        const p = await this.parent();
-        return this.vs.online_end === null && p ? p.onlineEnd() : Number(this.vs.online_end ?? "0");
+        const p = this.vs.online_end === null ? await this.parent() : undefined;
+        return p ? p.onlineEnd() : Number(this.vs.online_end ?? "0");
     }
     async isOnline(): Promise<boolean> {
         const start = await this.onlineStart();
@@ -260,12 +260,12 @@ export class Node {
         return (await this.edit()) || ((await this.access()) > 0 && (await this.isOnline()));
     }
     async isPublic(): Promise<boolean> {
-        const p = await this.parent();
-        return this.vs.access === null && p ? p.isPublic() : !!this.vs.access;
+        const p = this.vs.access === null ? await this.parent() : undefined;
+        return p ? p.isPublic() : !!this.vs.access;
     }
     async accessInheritParent(): Promise<Node> {
-        const p = await this.parent();
-        return this.vs.access === null && p ? p.accessInheritParent() : this;
+        const p = this.vs.access === null ? await this.parent() : undefined;
+        return p ? p.accessInheritParent() : this;
     }
 
     async edit(): Promise<boolean> {
@@ -273,8 +273,8 @@ export class Node {
     }
 
     async page(): Promise<Node> {
-        const parent = await this.parent();
-        return this.vs.type === "p" || !parent ? this : await parent.page();
+        const parent = this.vs.type === "p" ? undefined : await this.parent();
+        return parent ? parent.page() : this;
     }
 
     settings = {} as ItemProxy;
@@ -327,7 +327,9 @@ export class Node {
     }
 
     async in(ref: Node | number): Promise<boolean> {
-        return (await this.path()).has(Number(ref));
+        const id = Number(ref);
+        for (let node: Node | undefined = this; node; node = await node.parent()) if (node.id === id) return true;
+        return false;
     }
 
     /* Texts */
