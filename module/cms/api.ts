@@ -502,7 +502,7 @@ const node = {
       post: {
         description: "Sort files by criterion",
         ...nodeWrite,
-        input: s.object({ by: s.string().describe("Sort criterion: \"name\", \"name_reverse\", \"date\", \"reverse\"") }),
+        input: s.object({ by: s.string().describe("Sort criterion: \"name\" sorts naturally by filename; \"name_reverse\" compares filenames with their characters reversed (suffix first), not descending by name; \"date\" sorts by file log ID; \"reverse\" reverses the stored sort order.") }),
         execute: async ({ node, by }: any) => {
           await fns.filesSetOrder(node, by);
           return { ok: true };

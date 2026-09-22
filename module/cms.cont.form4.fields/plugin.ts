@@ -99,7 +99,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
   const common = {
     id: `${node.id}_${name}`,
     name,
-    autocomplete: String(set.autocomplete() ?? "") || name,
+    autocomplete: String(set.autocomplete() ?? ""),
     placeholder,
     required,
     "u2-disableif": disableif,
