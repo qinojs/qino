@@ -98,10 +98,10 @@ async function uploads(app: App, ids: number[]) {
     SELECT ef.entry_id, ef.field, f.id, f.name, f.mime
     FROM ${sql.id(tableRef("form4_entry_file"))} ef
     JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
-    WHERE ef.entry_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")}) ORDER BY ef.id`;
+    WHERE ${sql.in("ef.entry_id", ids)} ORDER BY ef.id`;
   for (const row of rows) {
-    const key = `${row.entry_id}:${row.field}`;
-    out.set(key, [...(out.get(key) ?? []), { id: Number(row.id), name: String(row.name ?? ""), mime: String(row.mime ?? "") }]);
+    out.getOrInsertComputed(`${row.entry_id}:${row.field}`, () => [])
+      .push({ id: Number(row.id), name: String(row.name ?? ""), mime: String(row.mime ?? "") });
   }
   return out;
 }
@@ -109,8 +109,8 @@ async function uploads(app: App, ids: number[]) {
 /* What visitors sent through a form, entry by entry: the fields the form asks, in its order,
    under the words it asks them in. What that looks like is the site's business — this module
    knows of no field with a meaning of its own, and gives every value the same shape.
-   There is no moderation: an entry that is kept is an entry that shows, so a form whose
-   entries are not for the public simply does not get one of these blocks. */
+   Without `moderated` an entry that is kept is an entry that shows, so a form whose entries
+   are not for the public simply does not get one of these blocks. */
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   const form = await formOf(node);

@@ -43,22 +43,22 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`);
   }
 
-  if (!cards.length) return html`<div><p>Der Papierkorb ist leer.</p></div>`;
+  if (!cards.length) return html.async`<div><p>${app.t`The trash is empty.`}</p></div>`;
 
-  return html`
+  return html.async`
 <div>
   <div class=-toolbar>
-    <button class=-removeAll u2-confirm>Papierkorb leeren</button>
+    <button class=-removeAll u2-confirm>${app.t`Empty trash`}</button>
   </div>
   <div class="-list u2-flex">${cards}</div>
   <dialog class=-preview><iframe></iframe></dialog>
-</div>
-<script type=module src="${ctx.req.moduleUrl}cms.cont.trash/pub/main.js"></script>`;
+</div>`;
 }
 
 export const cms = {
   node: {
     css: ["pub/main.css"],
+    js: ["pub/main.js"],
     render,
   },
 };

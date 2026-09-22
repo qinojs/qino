@@ -47,7 +47,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const style = await cssLen("min-height") + await cssLen("max-height");
 
   const options = {
-    alt: String(text),
+    alt: text.plain(),
     width: await settings.width,
     height: await settings.height,
     fit: await settings.contain ? "contain" : "cover",
@@ -63,7 +63,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (edit) {
     editHtml = await html.async`
         <div class="-alt-edit qgCMS">
-            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${String(text)}">
+            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text.plain()}">
         </div>
         <style>
         [qcms-mod="cont.image2"] .-alt-edit { position:relative; }
