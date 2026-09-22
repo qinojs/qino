@@ -6,11 +6,11 @@ import type { Node } from "@qino/qino/cms";
 async function render(node: Node): Promise<HtmlString> {
   const raw = await node.settings.elements();
   const elements = raw && typeof raw === "object" ? raw as Record<string, Record<string, unknown>> : {};
-  const rows: HtmlString[] = [];
+  const rows = [];
   for (const [id, field] of Object.entries(elements)) {
     const type = String(field?.type ?? "text");
     if (type === "description") {
-      rows.push(html`<tr><td colspan=2>${await node.showText(id + "_desc")}</td></tr>`);
+      rows.push(html.async`<tr><td colspan=2>${node.showText(id + "_desc")}</td></tr>`);
       continue;
     }
     const label = await node.showText(id + "_name");
@@ -24,7 +24,7 @@ async function render(node: Node): Promise<HtmlString> {
     else input = html`<input type="${["email", "url"].includes(type) ? type : "text"}" name="${id}"${required}>`;
     rows.push(html`<tr><td><label>${label}${field?.obl ? "*" : ""}</label></td><td>${input}</td></tr>`);
   }
-  return html`<div><fieldset disabled><table class=mailform>${rows}<tr><td></td><td><button>${await node.showText("sendButton")}</button></td></tr></table></fieldset></div>`;
+  return html.async`<div><fieldset disabled><table class=mailform>${rows}<tr><td></td><td><button>${node.showText("sendButton")}</button></td></tr></table></fieldset></div>`;
 }
 
 export const cms = { node: { render } };

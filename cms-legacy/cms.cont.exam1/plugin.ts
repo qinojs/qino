@@ -39,9 +39,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     else input = html`<input required name="task_${task.id}">`;
     fields.push(html`<div class=-task><h2 class=-question>${task.question}</h2><div class=-answer>${input}</div></div>`);
   }
-  return html`<div><form method=post><input type=hidden name=csrfToken value="${ctx.csrfToken}"><input type=hidden name=exam_node value="${node.id}">
-  <h1>${exam.title}</h1><div class=-contents>${await (await node.cont(String(exam.id))).html()}</div>${fields}
-  <br>${await node.showText("text_" + exam.id)}<br><button>Tag abschliessen!</button></form></div>`;
+  return html.async`<div><form method=post><input type=hidden name=csrfToken value="${ctx.csrfToken}"><input type=hidden name=exam_node value="${node.id}">
+  <h1>${exam.title}</h1><div class=-contents>${node.cont(String(exam.id))}</div>${fields}
+  <br>${node.showText("text_" + exam.id)}<br><button>Tag abschliessen!</button></form></div>`;
 }
 
 export const cms = { node: { render } };

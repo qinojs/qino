@@ -32,7 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (limit && items.length >= limit) break;
   }
 
-  return html`<div>${items.length ? html`<div class=cd-overview>${items}</div>` : await node.showText("_no_events")}</div>`;
+  return html.async`<div>${items.length ? html`<div class=cd-overview>${items}</div>` : node.showText("_no_events")}</div>`;
 }
 
 export const cms = { node: { render } };
