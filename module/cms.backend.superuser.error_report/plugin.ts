@@ -278,8 +278,8 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <br><button data-delete="${row.id}">delete</button>
   <td>
     <b>${row.message}</b><br>
-    <a href="${row.request}" target=_blank>${row.request}</a><br>
-    <a href="${row.referer}" target=_blank>${row.referer}</a><br>
+    ${backend.link(row.request)}<br>
+    ${backend.link(row.referer)}<br>
     <small>${row.browser}</small>
     <br><span style="color:${backend.uniqueColor(row.ip)}">${row.ip}</span>
     <br><span style="color:${backend.uniqueColor(row.username)}">${row.username}</span>
@@ -354,7 +354,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 <tr>
   <td>${u2.el.time(item.time)} <br> Session: <span style="color:${backend.uniqueColor(item.sess_id)}">${item.sess_id}</span> <br> Log-ID: ${item.id}
   <td>
-    <a href="${item.url}" target=_blank>${item.url}</a><br>
+    ${backend.link(item.url)}<br>
     <div style="font-size:.9em; color:#aaa">${item.referer}</div>
     ${errorLinks}
   <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`);
@@ -391,8 +391,8 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
     <table class=u2-table>
       <tr><th>${t`Id`}<td>${error.id}
       <tr><th>${t`Request`}<td>
-        <a href="${error.request}">${error.request}</a><br>
-        <small>${t`Referer`} <a href="${error.referer}">${error.referer}</a></small>
+        ${backend.link(error.request)}<br>
+        <small>${t`Referer`} ${backend.link(error.referer)}</small>
       <tr><th>${t`Browser`}<td><small>${error.browser}</small>
       <tr><th>${t`Time`}<td>${u2.el.time(error.time)} <small>(Log-ID ${error.log_id})</small>
       <tr><th>${t`IP`}<td style="color:${backend.uniqueColor(error.ip)}">${error.ip}

@@ -299,7 +299,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       u.searchParams.set("id", String(item.id));
       historyTrs.push(html`<tr u2-href${item.id === id ? " aria-current=true" : ""}>
         <td style="white-space:nowrap"><a href="${u.search}" style="color:${ageColor(item.time)}">${u2.el.time(item.time)}</a><br><small>${item.id}</small>
-        <td><a href="${item.url}" target=_blank>${item.url}</a><br><small>${item.referer}</small>
+        <td>${backend.link(item.url)}<br><small>${item.referer}</small>
         <td>${item.post ? html`<pre style="max-width:30rem; max-height:8rem; overflow:auto">${item.post}</pre>` : "-"}`);
     }
   }
@@ -320,8 +320,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <table class=u2-table>
             <tr>
               <th>${t`Request`}
-              <td><a href="${log.url}" target=_blank>${log.url}</a><br>
-                  <small>Referer <a href="${log.referer}" target=_blank>${log.referer}</a></small>
+              <td>${backend.link(log.url)}<br>
+                  <small>Referer ${backend.link(log.referer)}</small>
             <tr>
               <th>${t`Browser`}
               <td>${info.browser} ${info.version} ${info.bot ? html`<small class=u2-badge>bot</small>` : ""}

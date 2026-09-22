@@ -118,6 +118,12 @@ const OS_TESTS: [string, RegExp][] = [
   ["Linux", /Linux/],
 ];
 
+/** A logged or reported address as a link — only http(s): a client sends whatever it likes as its
+ *  referer or report, and a `javascript:` there must stay text. */
+export function link(url: unknown): HtmlString {
+  return /^https?:\/\//i.test(String(url ?? "")) ? html`<a href="${url}" target=_blank>${url}</a>` : html`${url}`;
+}
+
 /** Deterministic color for any value, to tell clients, IPs, users … apart at a glance. */
 export function uniqueColor(v: unknown): string {
   const s = String(v ?? "");
