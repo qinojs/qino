@@ -3,7 +3,7 @@ import { globalContextMenu } from '@qino/pub/c1/contextMenu.mjs';
 import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
-import { html } from '@qino/pub/html.js';
+import { html, unhee } from '@qino/pub/html.js';
 import { t } from '@qino/pub/t.js';
 
 const moduleUrl = ctx.moduleUrl;
@@ -44,7 +44,7 @@ const showEditor = async el => {
                 <!--button class=-continueAi style="margin-left:.2em" title="Is this useful? Feedback welcome!">AI extend (beta)</button-->
             </div>
             ${tag === 'INPUT'
-              ? html`<input cmstxt=${tid} cmslang="${row.lang}" style="${style}" value="${text}">`
+              ? html`<input cmstxt=${tid} cmslang="${row.lang}" style="${style}" value="${unhee(text)}">`
               : html.raw(`<${tag} cmstxt=${tid} cmslang="${row.lang}" contenteditable style="${style}">${text}</${tag}>`)}
         </div>`);
   }

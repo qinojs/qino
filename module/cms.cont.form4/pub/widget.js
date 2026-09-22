@@ -1,5 +1,5 @@
 /* Panel widget: what happens to a sent form — where it is kept, where it goes, what it writes. */
-import { html } from '@qino/pub/html.js';
+import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
@@ -41,7 +41,7 @@ export default async function (widget, { node, signal }) {
       <td><textarea rows=2 setting=recipients>${settings.recipients ?? ''}</textarea>
     <tr>
       <td>${t`Subject`}<br><small>${t`(the page title is used when empty)`}</small>
-      <td><input cmstxt="${subject.id}" value="${subject.value}">
+      <td><input cmstxt="${subject.id}" value="${unhee(subject.value)}">
     <tr>
       <td>${t`E-Mail above`}
       <td><div class=-input contenteditable cmstxt="${before.id}">${html.raw(before.value)}</div>

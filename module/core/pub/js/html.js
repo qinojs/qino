@@ -7,6 +7,17 @@ const HEE = { "&": "&amp;", '"': "&quot;", "'": "&#039;", "<": "&lt;", ">": "&gt
 /** Escape for HTML. Rarely needed on its own — html`` escapes every value it interpolates. */
 export const hee = (str) => String(str ?? "").replace(/[&"'<>]/g, (c) => HEE[c]);
 
+const ENTITY = /&(?:#(\d+)|#x([\da-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi;
+const NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
+
+/** Undo hee(): decode what it and a sanitizer write — the basic named entities and numeric ones.
+ *  Text only, nothing is parsed; escape it again before it goes back into markup. */
+export const unhee = (str) => String(str ?? "").replace(ENTITY, (m, dec, hex, name) => {
+  if (name) return NAMED[name.toLowerCase()];
+  const n = dec ? Number(dec) : parseInt(hex, 16);
+  return n <= 0x10ffff ? String.fromCodePoint(n) : m;
+});
+
 export class HtmlString {
   #html;
   constructor(html) { this.#html = String(html ?? ""); }

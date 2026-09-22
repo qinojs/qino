@@ -2,8 +2,8 @@ import { sql } from "../deps.ts";
 import { fs } from "./fs.ts";
 import denoJson from "../../../deno.json" with { type: "json" };
 // html`` is shared verbatim with the browser (SSR): one implementation, two runtimes.
-import { hee, html, HtmlString } from "../pub/js/html.js";
-export { hee, html, HtmlString };
+import { hee, html, HtmlString, unhee } from "../pub/js/html.js";
+export { hee, html, HtmlString, unhee };
 
 import type { Sql } from "../deps.ts";
 import type { Manifest } from "./ModuleManager.ts";

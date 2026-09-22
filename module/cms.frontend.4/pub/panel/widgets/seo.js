@@ -1,5 +1,6 @@
 /* SEO widget: title, description and crawl priority of a node. */
 import { api } from '@qino/pub/api.js';
+import { unhee } from '@qino/pub/html.js';
 import { t } from '@qino/pub/t.js';
 
 import { bindSettings } from '../../../../cms/pub/js/settings.js';
@@ -23,7 +24,7 @@ export default async function (widget, { node, signal }) {
 
   await widget.html`<div class=-seo>
     ${t`Title`}:
-    <input cmstxt=${title.id} value="${title.value}" required pattern=".{10,55}" maxlength=100
+    <input cmstxt=${title.id} value="${unhee(title.value)}" required pattern=".{10,55}" maxlength=100
            placeholder="${t`max. 55 characters`}">
     ${t`Description`}:
     <textarea class=-desc cmstxt=${descr.id} required pattern=".{60,156}" maxlength=220

@@ -7,6 +7,7 @@ import {
   hee,
   html,
   sqlSearch,
+  unhee,
   urlize,
 } from "../lib/util.ts";
 import { App } from "../lib/App.ts";
@@ -15,6 +16,15 @@ import { fakeRender } from "./sqlFake.ts";
 Deno.test("util: hee escapes HTML-sensitive characters", () => {
   assertEquals(hee(`<a href="x&y">'ok'</a>`), "&lt;a href=&quot;x&amp;y&quot;&gt;&#039;ok&#039;&lt;/a&gt;");
   assertEquals(hee(null), "");
+});
+
+Deno.test("util: unhee undoes hee, and html`` escapes the result again", () => {
+  const typed = `x" onfocus="alert(1)" <b> & 'q'`;
+  assertEquals(unhee(hee(typed)), typed);
+  assertEquals(unhee("A &amp; B&nbsp;&#33;&#x21; &eacute;"), "A & B\u00a0!! &eacute;"); // only what editors write
+  assertEquals(unhee("&amp;lt;"), "&lt;", "one round, never two");
+  // a decoded value cannot leave its attribute: html`` escapes it on the way back in
+  assertEquals(String(html`<input value="${unhee("&quot;&gt;&lt;script&gt;")}">`), `<input value="&quot;&gt;&lt;script&gt;">`);
 });
 
 Deno.test("util: html template escapes values but keeps HtmlString values", () => {

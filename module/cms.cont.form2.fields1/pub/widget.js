@@ -1,7 +1,7 @@
 /* Settings widget for the form fields — shipped by this module, mounted by the CMS panel.
   * Content, style and behaviour in one place: no global listeners, no data-node/data-key
   * attributes carrying state through the html, no full reload after every change. */
-import { html } from '@qino/pub/html.js';
+import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
@@ -63,16 +63,16 @@ export default async function (el, { node, signal }) {
     return html.async`<div class=-field itemid=${id} type=${inp.type ?? 'text'} tabindex=-1 draggable>
       <div class=-head>
         <select setting="inputs.${id}.type">${options(TYPES, inp.type ?? 'text')}</select>
-        <input value="${title.value}" cmstxt=${title.id}>
+        <input value="${unhee(title.value)}" cmstxt=${title.id}>
         <button type=button class="-handle u2-unstyle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
         <button type=button class="-remove u2-unstyle" title="${t`Delete`}"><u2-ico icon=delete>✕</u2-ico></button>
       </div>
       <div class=-more>
         <label><input type=checkbox setting="inputs.${id}.required" ${inp.required ? 'checked' : ''}> ${t`Required`}</label>
         ${inp.type === 'email-reply-to' ? html.async`<label><input type=checkbox setting="inputs.${id}.is-recipient" ${inp['is-recipient'] ? 'checked' : ''}> ${t`Send a copy to this address`}</label>` : ''}
-        <label>${t`Choices (one per line):`}<textarea cmstxt=${choices.id}>${html.raw(choices.value)}</textarea></label>
+        <label>${t`Choices (one per line):`}<textarea cmstxt=${choices.id}>${unhee(choices.value)}</textarea></label>
         <label>${t`Default value:`}<input setting="inputs.${id}.default" value="${inp.default}"></label>
-        <label>${t`Placeholder:`}<input cmstxt=${place.id} value="${place.value}"></label>
+        <label>${t`Placeholder:`}<input cmstxt=${place.id} value="${unhee(place.value)}"></label>
         <label>${t`Autocomplete:`}<input list=fields1-ac setting="inputs.${id}.autocomplete" value="${inp.autocomplete}"></label>
       </div>
     </div>`;

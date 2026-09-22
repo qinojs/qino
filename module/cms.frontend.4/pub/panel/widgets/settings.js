@@ -1,5 +1,5 @@
 /* The settings sidebar: what this node is, and the accordions that configure it. */
-import { html } from '@qino/pub/html.js';
+import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
@@ -48,7 +48,7 @@ export default async function (widget, { node, dialogs, signal }) {
     <div title="Nr.${vs.id}">
       <div class=u2-flex style="align-items:baseline; margin-bottom:1em">
         <h1>${isPage ? t`Page` : t`Content`}:</h1>
-        <input ${editmode ? html.raw(`cmstxt=${vs.title_id}`) : ''} value="${vs.title}" placeholder="no title"
+        <input ${editmode ? html.raw(`cmstxt=${vs.title_id}`) : ''} value="${unhee(vs.title)}" placeholder="no title"
                style="background:transparent;flex:1;padding:0;border:none;font-size:20px">
         <div style="margin-top:-.9em">
           <svg class=-img fill="var(--cms-dark)" width=46 height=46 style="display:block">

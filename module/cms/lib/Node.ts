@@ -1,4 +1,4 @@
-import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
+import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -11,17 +11,9 @@ import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 
 const TAG = /<[^>]*>/g;
-const ENTITY = /&(?:#(\d+)|#x([\da-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi;
-const NAMED: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
 
 /** Plain text of CMS html: tags removed, the entities an editor writes decoded, trimmed. */
-const plainOf = (html: string) => (/[<&]/.test(html)
-    ? html.replace(TAG, "").replace(ENTITY, (m, dec, hex, name) => {
-        if (name) return NAMED[name.toLowerCase()];
-        const n = dec ? Number(dec) : parseInt(hex, 16);
-        return n <= 0x10ffff ? String.fromCodePoint(n) : m;
-    })
-    : html).trim();
+const plainOf = (html: string) => (/[<&]/.test(html) ? unhee(html.replace(TAG, "")) : html).trim();
 
 /** Node class
  * represents both "Page" (type "p") and "Cont"/"Content" (type "c") entries in the database
