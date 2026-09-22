@@ -2,7 +2,8 @@
   "name": "cms.cont.trash",
   "description": "Deleted CMS nodes with restore and permanent-delete actions.",
   "dependencies": [
-    "cms"
+    "cms",
+    "u2"
   ],
   "files": [
     "manifest.json",

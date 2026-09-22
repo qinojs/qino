@@ -1,4 +1,5 @@
 import { getCtx, html, sql } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -73,12 +74,6 @@ async function ipHosts(ips: string[]): Promise<Record<string, string>> {
 
 const ACTIVE = 15 * 60; // seconds since the last request that still count as "here"
 
-function time(ts: number): HtmlString | string {
-  if (!ts) return "–";
-  const iso = new Date(ts * 1000).toISOString();
-  return html`<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-}
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
@@ -115,8 +110,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <td title="${ua}">${device(ua) || t`Unknown device`}
       <td>${!ip ? "–" : ip === ctx.req.clientIp ? html`<strong>${ip}</strong>` : ip}
         ${hosts[ip] ? html`<br><small>${hosts[ip]}</small>` : ""}
-      <td>${time(Number(link.since))}
-      <td>${time(lastSeen(link))}
+      <td>${u2.el.time(link.since)}
+      <td>${u2.el.time(lastSeen(link))}
       <td>${link.save_login ? t`Yes` : "–"}
       <td>${state}
       <td><button type=button data-logout="${link.client_id}"${self ? html.raw(" data-self") : ""}>${t`Log out`}</button>

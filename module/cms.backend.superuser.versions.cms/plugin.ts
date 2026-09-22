@@ -1,5 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -45,10 +46,9 @@ async function render(node: Node): Promise<HtmlString> {
   const recentParts = [];
   for (const r of recent) {
     const anchor = await nodeAnchor(node, Number(r.page_id));
-    const iso = new Date(Number(r.last) * 1000).toISOString();
     recentParts.push(html`<tr>
       <td>${anchor}
-      <td><u2-time datetime="${iso}" type=relative></u2-time>
+      <td>${u2.el.time(r.last)}
       <td>${r.username ?? "guest"}`);
   }
   const recentBox = html.async`

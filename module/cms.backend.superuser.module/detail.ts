@@ -1,6 +1,7 @@
 import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
 import { errMsg, fs, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
+import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -99,7 +100,6 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
     for await (const { filePath, rel } of walkDir(modDir)) {
       const info = await fs.stat(filePath, { ttl: 0 }); // edited by hand, too
       if (!info?.isFile) continue;
-      const mtimeIso = info.mtime?.toISOString() ?? "";
       const url = isSuperuser ? editorUrl(filePath) : undefined;
       if (url) hasEditorLinks = true;
       const nameCell = url
@@ -108,7 +108,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
       rows.push(html`<tr>
         <td>${nameCell}
         <td style="text-align:right"><u2-bytes>${info.size}</u2-bytes>
-        <td><u2-time datetime="${mtimeIso}" type=relative>${mtimeIso.slice(0, 16).replace("T", " ")}</u2-time>`);
+        <td>${u2.el.time(info.mtime)}`);
     }
     filesHtml = rows.length
       ? await html.async`<table class=u2-table style="width:100%;white-space:nowrap">

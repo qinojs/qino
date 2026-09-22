@@ -1,6 +1,7 @@
 import { html, getCtx, moduleIcon, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ADMIN, WRITE, describeChange } from "@qino/qino/cms";
+import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -31,12 +32,6 @@ const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number
 const accessWord = word(["none", "read", "edit", "admin"]);
 // module.cms_access: null = no rule, 0 = off for everyone, 1-3 = default level (see cms/ACCESS.md)
 const stdWord = word(["deny", "read", "edit", "insertable"]);
-
-const time = (unix: unknown) => {
-  if (!unix) return "";
-  const iso = new Date(Number(unix) * 1000).toISOString();
-  return html`<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-};
 
 export const ctxSettingsSchema = {
   properties: { 
@@ -79,7 +74,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
       <td>${type}
       <td style="text-align:right" data-value="${row.used}">${Number(row.used) || ""}
       <td>${stdWord(row.cms_access)}
-      <td data-value="${row.changed ?? 0}">${time(row.changed)}`);
+      <td data-value="${row.changed ?? 0}">${u2.el.time(row.changed)}`);
   }
 
   return html.async`
@@ -159,7 +154,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   for (const { row: r, labels } of events.values()) {
     const who = r.username ? (`${r.given_name ?? ""} ${r.family_name ?? ""}`.trim() || r.username) : guest;
     out.push(html`<tr>
-      <td data-value="${r.time}">${time(r.time)}
+      <td data-value="${r.time}">${u2.el.time(r.time)}
       <td>${who}
       <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
       <td>${Array.from(labels, (l) => html`<div>${html.raw(l)}</div>`)}`);
@@ -296,7 +291,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     <br><br><small>${t`Most used`}</small>
     ${top.map((r) => link(r, html`<small>${r.used}</small>`))}
     <br><small>${t`Recently changed`}</small>
-    ${recent.map((r) => link(r, html`<small>${time(r.changed)}</small>`))}
+    ${recent.map((r) => link(r, html`<small>${u2.el.time(r.changed)}</small>`))}
   </div>`;
 }
 

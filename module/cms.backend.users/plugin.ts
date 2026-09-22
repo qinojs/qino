@@ -1,5 +1,6 @@
 import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, safeEqual, setMainContact } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import { list, allowLoginAs } from "./parts/list.ts";
 import api from "./nodeApi.ts";
@@ -127,7 +128,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
     logins.length
       ? html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${t`Recent logins`}<th>
-  <tbody>${logins.map((row) => html`<tr><td>${row.username ?? "–"}<td><u2-time datetime="${new Date(Number(row.access) * 1000).toISOString()}" type=relative></u2-time>`)}
+  <tbody>${logins.map((row) => html`<tr><td>${row.username ?? "–"}<td>${u2.el.time(row.access)}`)}
 </table>`
       : html.raw(""));
 

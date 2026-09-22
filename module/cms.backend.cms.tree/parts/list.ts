@@ -1,4 +1,5 @@
 import { html, unixTime } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -98,8 +99,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     if (access === 0) return "---";
     const onlineStart = subPage.vs.online_start;
     const ok = !onlineStart || Number(onlineStart) < unixTime();
-    const iso = onlineStart ? new Date(Number(onlineStart) * 1000).toISOString() : "";
-    const date = iso ? html`<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "---";
+    const date = onlineStart ? u2.el.time(onlineStart) : "---";
     if (access <= 2) return html`<span style="color:${ok ? "#8a8" : "#a88"}">${date}</span>`;
     return html`<span style="color:${ok ? "green" : "red"}">${date}</span>`;
   }
@@ -108,10 +108,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     if (access === 0) return "---";
     const onlineEnd = subPage.vs.online_end;
     const ts = onlineEnd == null ? null : Number(onlineEnd);
-    const iso = ts ? new Date(ts * 1000).toISOString() : "";
     const date = onlineEnd == null
       ? await t`inherited`
-      : (ts === 0 ? await t`always` : html`<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
+      : (ts === 0 ? await t`always` : u2.el.time(ts));
 
     const badge = notInheritBadge(numNotInherit, access, "&quot;online until&quot;");
 

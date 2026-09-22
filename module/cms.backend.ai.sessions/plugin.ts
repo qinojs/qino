@@ -1,3 +1,4 @@
+import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
@@ -70,13 +71,12 @@ async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   const rows = [];
   for (const s of sessions) {
-    const time = iso(s.updated_at);
     rows.push(html`<tr>
       <td>${s.id}
       <td><a href="${sessionUrl(s.id)}">${s.bot}</a>
       <td>${s.user_id}
       <td>${Number(counts.get(String(s.id)) ?? 0)}
-      <td><u2-time datetime="${time}" type=relative>${time.slice(0, 16).replace("T", " ")}</u2-time>`);
+      <td>${u2.el.time(s.updated_at)}`);
   }
   return rows.length ? html.join(rows) : html`<tr><td colspan=5><em>No sessions.</em>`;
 }

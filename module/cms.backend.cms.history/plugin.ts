@@ -1,3 +1,4 @@
+import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
 import { html, sql } from "@qino/qino";
 import { cms as cmsOf, describeChange, WRITE } from "@qino/qino/cms";
@@ -197,10 +198,9 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString | str
     const title = (await (await page.title()).string()).trim() || "#" + it.pageId;
     let url = "";
     try { url = await page.url(); } catch { /* no url */ }
-    const iso = new Date(it.time * 1000).toISOString();
     trs.push(html`<tr>
       <td>${it.name}
-      <td style="white-space:nowrap"><u2-time datetime="${iso}" type=relative></u2-time>
+      <td style="white-space:nowrap">${u2.el.time(it.time)}
       <td><a href="${url}" target=_blank>${title}</a>`);
   }
   return html`<div style="padding:0">

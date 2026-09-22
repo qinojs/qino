@@ -1,3 +1,4 @@
+import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any
 import { html, safeEqual } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
@@ -192,13 +193,12 @@ async function links(app: App, csrf: string): Promise<HtmlString> {
     FROM oauth_provider_usr l LEFT JOIN usr u ON u.id = l.usr_id
     ORDER BY l.last_used DESC LIMIT 500`;
 
-  const when = (at: unknown) => at ? html`<u2-time datetime="${new Date(Number(at) * 1000).toISOString()}" type=relative></u2-time>` : "—";
   const list = rows.map((r) => html`<tr>
     <td>${r.provider}
     <td>${r.username ?? `#${r.usr_id}`}
     <td><code>${r.sub}</code>
-    <td>${when(r.created)}
-    <td>${when(r.last_used)}
+    <td>${u2.el.time(r.created)}
+    <td>${u2.el.time(r.last_used)}
     <td><form method=post>
       <input type=hidden name=csrfToken value="${csrf}">
       <input type=hidden name=provider value="${r.provider}">

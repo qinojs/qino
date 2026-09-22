@@ -1,6 +1,7 @@
 import { errMsg, html, safeEqual } from "@qino/qino";
 import { generate, left, spend } from "@qino/qino/auth.backup_codes";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -40,7 +41,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const rows = all.map((r) => html`<tr>
     <td>${r.username ?? `#${r.usr_id}`}
     <td>${r.unspent}
-    <td><u2-time datetime="${new Date(Number(r.created) * 1000).toISOString()}" type=relative></u2-time>`);
+    <td>${u2.el.time(r.created)}`);
 
   return html`<div class=u2-flex>
 ${note ? html`<div class=u2-card style="flex:1 1 100%"><div>${note}</div></div>` : ""}

@@ -2,6 +2,7 @@ import { errMsg, html, safeEqual } from "@qino/qino";
 import { drop, stored } from "@qino/qino/auth";
 import { confirm, enrol, verify } from "@qino/qino/auth.totp";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -47,13 +48,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     FROM usr_auth_factor f LEFT JOIN usr u ON u.id = f.usr_id
     WHERE f.type = ${"totp"} ORDER BY f.created DESC LIMIT 500`;
 
-  const when = (at: unknown) => at ? html`<u2-time datetime="${new Date(Number(at) * 1000).toISOString()}" type=relative></u2-time>` : "—";
-
   const rows = all.map((r) => html`<tr>
     <td>${r.username ?? `#${r.usr_id}`}
     <td>${r.label || "—"}
-    <td>${when(r.created)}
-    <td>${when(r.last_used)}
+    <td>${u2.el.time(r.created)}
+    <td>${u2.el.time(r.last_used)}
     <td><form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <input type=hidden name=usr_id value="${r.usr_id}">

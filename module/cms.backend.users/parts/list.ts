@@ -1,5 +1,6 @@
 import { html, sqlSearch, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -34,8 +35,6 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
 
   const parts: Array<HtmlString | Promise<HtmlString>> = [];
   for (const vs of rows) {
-    const lastOnlineIso = vs.last_online ? new Date(Number(vs.last_online) * 1000).toISOString() : "";
-
     const detailUrl = backend.toUrl(pageUrl, { id: vs.id });
     const isEmail = vs.username && /@/.test(vs.username);
     const emailCell = isEmail
@@ -55,7 +54,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   <td> ${vs.organization}
   <td> ${vs.active ? "yes" : "no"}
   <td> ${vs.num_sess ?? 0}
-  <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
+  <td> ${u2.el.time(vs.last_online)}
     ${loginAsTd}
   <td>
     <a href="${detailUrl}">

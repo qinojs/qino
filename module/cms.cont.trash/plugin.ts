@@ -1,4 +1,5 @@
 import { html } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -20,7 +21,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const deletedBy   = await page.settings.__deleted.by;
     const deletedFrom = Number(await page.settings.__deleted.from);
     const fromTitle   = deletedFrom ? await (await (await node.cms.node(deletedFrom)).title()).string() : "";
-    const timeHtml    = deletedTime ? html`<u2-time datetime="${new Date(deletedTime * 1000).toISOString()}" type=relative></u2-time>` : "";
+    const timeHtml    = deletedTime ? u2.el.time(deletedTime) : "";
     const module      = page.vs.module;
     const previewUrl  = ctx.req.appUrl + "?cmspid=" + id;
     cards.push(html`
