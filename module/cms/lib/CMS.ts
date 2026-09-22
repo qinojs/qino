@@ -23,6 +23,7 @@ export class CMS {
   db: Db;
 
   #nodes = new Map<number, Promise<Node>>();
+  #idsByUrl = new Map<string, number>(); // page url → id; hits only, a miss is any url a client makes up
 
   constructor(app: App) {
     this.app = app;
@@ -44,8 +45,11 @@ export class CMS {
   }
 
   clearCache(id?: number) {
-    id === undefined ? this.#nodes.clear() : this.#nodes.delete(Number(id));
+    id === undefined ? (this.#nodes.clear(), this.#idsByUrl.clear()) : this.#nodes.delete(Number(id));
   }
+
+  /** After any write to page_url. */
+  clearUrlCache() { this.#idsByUrl.clear(); }
 
   /** Slow: a query per call, nothing cached — only the Nodes it builds are. Both columns are
     * indexed, so it is the round trip that costs. For setup and links, not a hot path. */
@@ -92,10 +96,14 @@ export class CMS {
   async nodeFromRequest(): Promise<Node> {
     const ctx = getCtx();
     const cmspid = ctx.req.query.cmspid;
-    const pid = cmspid ? Number(cmspid) : Number(
-      await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${ctx.req.appPath}`
-    ) || 0;
-    return this.node(pid);
+    return this.node(cmspid ? Number(cmspid) : await this.#idByUrl(ctx.req.appPath));
+  }
+
+  async #idByUrl(url: string): Promise<number> {
+    const ids = scopeCache(this.#idsByUrl, "cms.idsByUrl", () => new Map<string, number>());
+    const id = ids.get(url) ?? (Number(await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url}`) || 0);
+    if (id) ids.set(url, id);
+    return id;
   }
 
   getModules(): Record<string, Module> {

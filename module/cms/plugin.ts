@@ -134,6 +134,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         }
     }, { signal });
 
+    // url → page id is cached, so any write to page_url drops it
+    for (const name of ["table:insert-after", "table:update-after", "table:delete-after"] as const)
+        app.db.on(name, (e) => { if (String(e.table) === "page_url") cms(app).clearUrlCache(); }, { signal });
+
     // Filling a file row in place (upload into a placeholder) touches no page_file row,
     // so the nodes holding it have to be told their file list is stale.
     app.db.on("table:update-after", async (e) => {
