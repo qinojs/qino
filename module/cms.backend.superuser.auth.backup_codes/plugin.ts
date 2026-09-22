@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { errMsg, html, safeEqual } from "@qino/qino";
 import { generate, left, spend } from "@qino/qino/auth.backup_codes";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -17,14 +17,14 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 async function act(ctx: Ctx): Promise<{ note: string; codes?: string[] }> {
   const body = ctx.req.body;
-  if (!body || body.csrfToken !== ctx.csrfToken) return { note: "" };
+  if (!body || !safeEqual(body.csrfToken, ctx.csrfToken)) return { note: "" };
   try {
     if ("generate" in body) return { note: "Write these down now — they are not shown again.", codes: await generate(ctx) };
     if ("spend" in body) {
       return { note: await spend(ctx, String(body.code ?? "")) ? "Spent — a fresh proof is now in your session." : "Spent, but it counted for nothing here." };
     }
   } catch (e) {
-    return { note: e instanceof Error ? e.message : String(e) };
+    return { note: errMsg(e) };
   }
   return { note: "" };
 }

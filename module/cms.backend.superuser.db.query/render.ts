@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, sql } from "@qino/qino";
+import { errMsg, getCtx, html, safeEqual, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { ai } from "@qino/qino/ai";
 
@@ -24,7 +24,7 @@ export async function render(node: Node): Promise<HtmlString> {
   u2.elements(ctx, "code"); // the editor highlights with a library of its own
 
   const tables = await buildSchema(app);
-  const token = ctx.req.body?.csrfToken === ctx.csrfToken;
+  const token = safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken);
   const isAsk = ctx.req.body?.ask != null; // AI form vs. run form
   const question = String(ctx.req.body?.prompt ?? "").trim();
 

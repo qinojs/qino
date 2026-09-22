@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 /** Groups that participate in page access (grp.cms_access > 0). */
 function accessGroups(app: App): Promise<Record<string, string | number>[]> {
-  return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
+  return app.db.query`SELECT id, name FROM grp WHERE cms_access > 0 ORDER BY name`;
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

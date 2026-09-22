@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { html } from "@qino/qino";
+import { html, safeEqual } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -108,7 +108,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db = node.app.db;
   const b = ctx.req.body as Record<string, unknown> | undefined;
 
-  if (b?.csrfToken === ctx.csrfToken) {
+  if (b && safeEqual(b.csrfToken, ctx.csrfToken)) {
     if ("oauth_delete" in b) {
       const id = Number(b.oauth_delete);
       const gone = id ? await db.row`SELECT name FROM oauth_provider WHERE id = ${id}` : undefined;

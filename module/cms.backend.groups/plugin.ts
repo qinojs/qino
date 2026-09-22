@@ -1,4 +1,4 @@
-import { html, getCtx } from "@qino/qino";
+import { html, getCtx, safeEqual } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import api, { canManageMembers } from "./nodeApi.ts";
@@ -31,7 +31,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   const t = app.t;
   const db = app.db;
 
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
+  if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "add" in ctx.req.body) {
     await db.table("grp").insert({ name: String(ctx.req.body.name ?? "") });
   }
 

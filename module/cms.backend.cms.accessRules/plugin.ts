@@ -60,7 +60,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const app = node.app, t = app.t;
   await save(node, vars);
 
-  const groupRows = await app.db.query`SELECT id, name, cms_access FROM grp WHERE cms_access ORDER BY name`;
+  const groupRows = await app.db.query`SELECT id, name, cms_access FROM grp WHERE cms_access > 0 ORDER BY name`;
   const overrides = new Map<string, number>();
   for (const r of await app.db.query`SELECT module, grp_id, access FROM cms_module_access_grp`)
     overrides.set(`${r.module}:${r.grp_id}`, Number(r.access) || 0);
@@ -161,7 +161,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div class=-body>
     <b>${app.db.one`SELECT count(*) FROM cms_module_access_grp`}</b> ${app.t`module group rules`}<br>
-    <small>${app.db.one`SELECT count(*) FROM grp WHERE cms_access`} ${app.t`groups with cap`}</small>
+    <small>${app.db.one`SELECT count(*) FROM grp WHERE cms_access > 0`} ${app.t`groups with cap`}</small>
   </div>`;
 }
 

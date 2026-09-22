@@ -1,4 +1,4 @@
-import { getCtx, html, isEmptyObject } from "@qino/qino";
+import { getCtx, html, isEmptyObject, safeEqual } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { channels, placeholderName, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
@@ -38,7 +38,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
   const ctx = getCtx();
   const post = ctx.req.body;
 
-  if (post?.csrfToken === ctx.csrfToken && "create" in post) {
+  if (safeEqual(post?.csrfToken, ctx.csrfToken) && "create" in post) {
     const name = String(post.name ?? "").trim();
     const channel = String(post.channel ?? "");
     if (name && channel) {
@@ -101,7 +101,7 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
   back.searchParams.delete("name");
   back.searchParams.delete("channel");
 
-  if (post?.csrfToken === ctx.csrfToken) {
+  if (safeEqual(post?.csrfToken, ctx.csrfToken)) {
     if ("delete" in post) {
       await app.db.exec`DELETE FROM message_template WHERE name = ${name} AND channel = ${channel}`;
       return redirect(back.search || "?");

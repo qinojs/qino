@@ -265,7 +265,7 @@ export async function searchNodes(search: string): Promise<any[]> {
         res.push({
             html:  `<b>${hee(titleStr)}</b> (${page.vs?.type === "c" ? "Content" : "Page"} ${page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),
-            text:  titleStr ? `${hee(titleStr)} (${page.id})` : String(page.id),
+            text:  `${titleStr} (${page.id})`,
             value: page.id,
         });
     }
@@ -297,7 +297,7 @@ export async function searchFiles(search: string): Promise<any[]> {
         if (!await dbFile.exists()) continue;
         const md5 = vs.md5;
         if (md5 && used[md5]) continue;
-        if (i++ > 10) break;
+        if (++i > 10) break;
         if (md5) used[md5] = true;
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(dbFile.extension);
         const imgSrc = isImg ? await dbFile.url({w: 32, h: 32}) : "about:blank";

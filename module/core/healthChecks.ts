@@ -25,7 +25,7 @@ export async function healthChecks(app: App) {
     const ctx = requestStorage.getStore();
     return ctx ? urlOf(ctx) : "";
   };
-  const setTo = (url: string) => ({ [`set it to: ${hee(url)}`]: { solve: async () => { await app.settings.core.url(url); } } });
+  const setTo = (url: string) => ({ [`set it to: ${url}`]: { solve: async () => { await app.settings.core.url(url); } } });
 
   warning["public address is unknown"] = async () => {
     if (await app.settings.core.url) return;

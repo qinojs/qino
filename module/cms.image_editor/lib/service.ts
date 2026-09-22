@@ -58,7 +58,7 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
           LEFT JOIN log  ON file._vers_log = log.id
           LEFT JOIN sess ON log.sess_id = sess.id
           LEFT JOIN usr  ON sess.usr_id = usr.id
-        WHERE file._vers_log AND file.id = ${fileId} AND file._vers_space = ${space}
+        WHERE file._vers_log > 0 AND file.id = ${fileId} AND file._vers_space = ${space}
         ORDER BY file._vers_log DESC
         LIMIT 40`;
 

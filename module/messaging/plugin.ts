@@ -15,8 +15,6 @@ export const cron = {
   outbox: { every: 60, timeout: 120, run: (app: App) => outbox(app) },
 } satisfies Jobs;
 
-/** Every placeholder a message may name — what a template reads, and all any module has to
- *  look at to know what is on offer. Another module adds its own the same way. */
 /** A contact of the recipient — looked up only where a template really names it. */
 const contact = (type: string): Placeholder => async (app, to) => {
   const usrId = Number(to.usrId);
@@ -24,6 +22,8 @@ const contact = (type: string): Placeholder => async (app, to) => {
   return row ? { text: String(row.address) } : undefined;
 };
 
+/** Every placeholder a message may name — what a template reads, and all any module has to
+ *  look at to know what is on offer. Another module adds its own the same way. */
 export const templatePlaceholders: Record<string, Placeholder> = {
   ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", address: "address" }),
   email: contact("email"),

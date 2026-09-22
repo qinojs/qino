@@ -2,6 +2,7 @@
   * cms.Tree is the facade for panel, contextMenu.js
   * and server listeners. */
 import { api } from "@qino/pub/api.js";
+import { hee } from "@qino/pub/html.js";
 import { t } from "@qino/pub/t.js";
 
 import "./contextMenu.js";
@@ -9,7 +10,6 @@ import "./contextMenu.js";
 const nodeId = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // tree node or null (skip icon/anchor)
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const root = cms.panelRoot;
 const ready = Promise.all([
   import("@qino/u2/el/tree/tree.js"),
@@ -65,8 +65,8 @@ export async function cmsTreeInit(json) {
     a.className = "-title" + typeMod;
     a.href = d.url || "#";
     let html = `<span cmstxt="${d.title_id}">${d.title}</span>`;
-    if (d.ptype === "c") html += ` <span class=-col1 title="${esc(d.module)}"> ${esc(String(d.module).replace(/^cms\.cont\./, ""))} </span> `;
-    html += ` <span class=-col2> ${esc(d.name)} </span> `;
+    if (d.ptype === "c") html += ` <span class=-col1 title="${hee(d.module)}"> ${hee(String(d.module).replace(/^cms\.cont\./, ""))} </span> `;
+    html += ` <span class=-col2> ${hee(d.name)} </span> `;
     if (!d.public) html += "<span class=-private title=private></span>";
     if (!d.online) html += "<span class=-offline title=offline></span>";
     a.innerHTML = html;

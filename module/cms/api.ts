@@ -34,7 +34,7 @@ const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= aw
 
 const ACCESS_LIST = {
   usr: { table: "usr", link: "page_access_usr", key: "usr_id", cols: ["usr.given_name", "usr.family_name", "usr.username"], label: sql`usr.username`, where: sql`true` },
-  grp: { table: "grp", link: "page_access_grp", key: "grp_id", cols: ["grp.name"], label: sql`grp.name`, where: sql`cms_access` },
+  grp: { table: "grp", link: "page_access_grp", key: "grp_id", cols: ["grp.name"], label: sql`grp.name`, where: sql`cms_access > 0` },
 } as const;
 
 /** Users or groups with their access level here. Without a search only granted ones, unless the list is short.
@@ -47,7 +47,7 @@ async function accessList(node: Node, kind: "usr" | "grp", search: string) {
   const total = Number(await db.one`SELECT count(*) FROM ${sql.id(c.table)} WHERE ${c.where}`);
   let tail;
   if (total <= 10) tail = sql` ORDER BY a.access DESC`;
-  else if (!search) tail = sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC`;
+  else if (!search) tail = sql` AND a.access IS NOT NULL ORDER BY a.access DESC`;
   else {
     const sh = sqlSearch(search, [...c.cols]);
     tail = sql` AND ${sh.where} ORDER BY ${sh.order}`;

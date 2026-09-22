@@ -1,8 +1,8 @@
 import { hee } from "@qino/qino";
 
-import type { App } from "@qino/qino";
 import { liveInstances } from "./lib/instanceMarker.ts";
 
+import type { App } from "@qino/qino";
 import type { HealthChecks } from "./lib/healthRegistry.ts";
 
 export function healthChecks(app: App): HealthChecks {

@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { errMsg, html, safeEqual } from "@qino/qino";
 import { drop, stored } from "@qino/qino/auth";
 import { confirm, enrol, verify } from "@qino/qino/auth.totp";
 import { backend } from "@qino/qino/cms.backend";
@@ -19,7 +19,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 /** What the posted form asked for, and what came of it — the message shown above the cards. */
 async function act(ctx: Ctx): Promise<{ note: string; started?: { secret: string; uri: string } }> {
   const body = ctx.req.body;
-  if (!body || body.csrfToken !== ctx.csrfToken) return { note: "" };
+  if (!body || !safeEqual(body.csrfToken, ctx.csrfToken)) return { note: "" };
   try {
     if ("start" in body) return { note: "Scan the code, then confirm with what the app shows.", started: enrol(ctx) };
     if ("confirm" in body) {
@@ -34,7 +34,7 @@ async function act(ctx: Ctx): Promise<{ note: string; started?: { secret: string
       return { note: "Removed." };
     }
   } catch (e) {
-    return { note: e instanceof Error ? e.message : String(e) };
+    return { note: errMsg(e) };
   }
   return { note: "" };
 }

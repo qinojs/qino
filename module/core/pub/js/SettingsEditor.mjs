@@ -1,13 +1,11 @@
 import { confirm } from "@qino/u2/js/dialog/dialog.js";
 
 import { api } from "./api.js";
+import { hee } from "./html.js";
 
 const opened = new Set();
 const itemJs = import("@qino/item-cdn/item.js");
 const itemJsHtmlRenderer = import("@qino/item-cdn/tools/schema/render/html.js").then((mod) => mod.toInput);
-
-const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
-const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ESCAPES[c]);
 
 const apiPath = (endpoint) => {
   const [ns, name, ...path] = endpoint.replace(/^\/api\//, "").split("/").filter(Boolean);
@@ -32,10 +30,10 @@ async function renderItems(item) {
     const cs = child.schema ?? {};
     const objectNode = isObjectItem(child);
     const id = JSON.stringify(child.path);
-    const eid = escapeHtml(id);
-    const key = escapeHtml(child.key);
+    const eid = hee(id);
+    const key = hee(child.key);
     const isOpen = opened.has(id);
-    const title = typeof cs.description === "string" && cs.description ? ` title="${escapeHtml(cs.description)}"` : "";
+    const title = typeof cs.description === "string" && cs.description ? ` title="${hee(cs.description)}"` : "";
     const toggle = objectNode
       ? `<a class="toggle -${isOpen ? "minus" : "plus"}"></a>`
       : "<a class=toggle></a>";

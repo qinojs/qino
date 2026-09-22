@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, safeEqual } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -17,7 +17,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db  = node.app.db;
 
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_cred" in ctx.req.body) {
+  if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "delete_cred" in ctx.req.body) {
     const id = Number(ctx.req.body.delete_cred);
     if (id) await db.table("webauthn_credential").delete(id);
   }

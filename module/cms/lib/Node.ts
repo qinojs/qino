@@ -375,7 +375,7 @@ export class Node {
             texts.set(name, text);
         }
         if (lang == null) return text;
-        const textLang = await text.lang(lang);
+        const textLang = text.lang(lang);
         if (value === undefined) return textLang;
         if (await textLang.get() === value) return;
         await textLang.set(value);
@@ -393,7 +393,7 @@ export class Node {
     async title(lang?: string | null, value?: any): Promise<any> {
         this.#title ??= this.app.dbTexts.text(Number(this.vs.title_id ?? "0"));
         if (lang == null) return this.#title;
-        const textLang = await this.#title.lang(lang);
+        const textLang = this.#title.lang(lang);
         if (value === undefined) return textLang.get();
         if (await textLang.get() === value) return;
         await textLang.set(value);

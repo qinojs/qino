@@ -2,15 +2,14 @@ import { sql } from "@qino/qino";
 
 import { selectors } from "../mod.ts";
 
-import type { App, Row } from "@qino/qino";
-
-type Recipient = Row & { address: string; usrId?: number; addressError?: string };
+import type { App } from "@qino/qino";
+import type { Recipient, To } from "../mod.ts";
 
 /** Resolve selected users to preferred contacts and literal addresses to owners, keeping unknown literals anonymous. */
 export async function contactRecipients(
   app: App,
   type: string,
-  to: { grp?: number; usr?: number | number[]; all?: true },
+  to: To,
   direct: Recipient[] = [],
 ): Promise<Recipient[]> {
   const who = selectors(to, "c.usr_id");

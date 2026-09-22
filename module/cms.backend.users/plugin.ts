@@ -1,4 +1,4 @@
-import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, setMainContact } from "@qino/qino";
+import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, safeEqual, setMainContact } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { list, allowLoginAs } from "./parts/list.ts";
@@ -26,7 +26,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
   const db = app.db;
 
   let addMessage: HtmlString | string = "";
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
+  if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "add" in ctx.req.body) {
     const email = String(ctx.req.body.email ?? "").trim();
     // login compares LOWER(TRIM(email)), so two handles that differ only in case are one account
     const exists = email && await db.one`SELECT id FROM usr WHERE LOWER(TRIM(username)) = LOWER(${email})`;

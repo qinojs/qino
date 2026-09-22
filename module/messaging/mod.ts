@@ -5,10 +5,9 @@ import { dispatch } from "./lib/dispatch.ts";
 import { textOf } from "./lib/format.ts";
 import { owed } from "./lib/outbox.ts";
 
+import type { App, Row, Sql } from "@qino/qino";
 import type { Profile } from "./lib/format.ts";
 import type { Rendering } from "./lib/dispatch.ts";
-
-import type { App, Row, Sql } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
 export { contactRecipients } from "./lib/contact.ts";
@@ -139,7 +138,6 @@ export function titled<T extends Msg>(message: string | T): T {
   return { ...msg, title: titleOf(msg) };
 }
 
-
 /** Every channel a linked module declares. */
 export function channels(app: App): Channel[] {
   return app.modules.linked().filter((mod) => mod.plugin.messagingChannel).map((mod) => mod.plugin.messagingChannel as Channel);
@@ -184,7 +182,7 @@ export async function record(
   const time = message.time ?? unixTime();
   const msg = message.msg == null ? undefined : msgOf(message.msg);
   const files = msg?.attachments?.length
-    ? await Promise.all(msg.attachments.map(async (attachment) => await app.dbFiles.add(await attachmentFile(attachment))))
+    ? await Promise.all(msg.attachments.map(async (attachment) => app.dbFiles.add(await attachmentFile(attachment))))
     : [];
   let id = 0;
   const ids: number[] = [];

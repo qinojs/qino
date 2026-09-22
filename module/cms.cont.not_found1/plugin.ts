@@ -1,4 +1,4 @@
-import { html, sql, sqlSearch } from "@qino/qino";
+import { html, safeEqual, sql, sqlSearch } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -57,7 +57,7 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<HtmlString | string>
   ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
 
   let savedMsg: HtmlString | string = "";
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && "setRedirect" in ctx.req.body) {
+  if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "setRedirect" in ctx.req.body) {
     const redirect = String(ctx.req.body.redirect ?? "").trim();
     if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
       savedMsg = html`<p style="color:red">${await t`Unsupported redirect target.`}</p>`;

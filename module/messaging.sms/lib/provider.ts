@@ -1,3 +1,4 @@
+import { errMsg } from "@qino/qino";
 import { ChannelError } from "@qino/qino/messaging";
 
 import type { App } from "@qino/qino";
@@ -68,7 +69,7 @@ async function http(settings: Record<string, unknown>, to: string, text: string)
 /** Resolves with the id the provider gave the text, when it named one. */
 async function request(url: string, init: RequestInit): Promise<string | undefined> {
   const res = await fetch(url, init).catch((e) => {
-    throw new ChannelError(`messaging.sms: provider unreachable — ${e instanceof Error ? e.message : e}`);
+    throw new ChannelError(`messaging.sms: provider unreachable — ${errMsg(e)}`);
   });
   if (res.ok) return res.json().then((body) => body?.sid ?? body?.id, () => undefined);
   const detail = (await res.text()).trim().slice(0, 300);
