@@ -81,7 +81,7 @@ c1.Eventer = {
 c1.ext = function (src, target, force, deep) {
     target = target || {};
     for (k in src) {
-    	if (!src.hasOwnProperty(k)) continue;
+	if (!Object.hasOwn(src, k)) continue;
         if (force || target[k] === undf) {
             target[k] = src[k];
         }

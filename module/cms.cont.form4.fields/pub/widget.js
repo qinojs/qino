@@ -96,7 +96,7 @@ export default async function (widget, { node, dialogs, signal }) {
 
   bindSettings(widget, ref);
   // A field block is a form only for u2-disableif — Enter must not navigate away.
-  widget.on('submit', (el, e) => e.preventDefault());
+  widget.on('submit', (_, e) => e.preventDefault());
 
   widget.on('click', '.-toggle', (btn) => {
     const open = btn.closest('.-field').toggleAttribute('open');
