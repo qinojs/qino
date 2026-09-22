@@ -34,7 +34,7 @@ Deno.test("cms.cont.html: renders the file of the node, unknown to the parser st
   await Deno.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.html: the first render in edit mode creates the files, the example stays commented out", async () => {
+Deno.test("cms.cont.html: the first render in edit mode creates only HTML, the example stays commented out", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const ctx = fakeCtx();
   const out = await render(fakeNode(dir, true), ctx);
@@ -43,8 +43,8 @@ Deno.test("cms.cont.html: the first render in edit mode creates the files, the e
   const source = await Deno.readTextFile(`${dir}data/${name}/7.html`);
   assertStringIncludes(source, "<!-- editable text");
   assertStringIncludes(source, "cms-link=page");
-  assertEquals([...ctx.res.html.styles], [`/app/d/${name}/pub/7.css`]);
-  assertEquals([...ctx.res.html.scripts], [`/app/d/${name}/pub/7.js`]);
+  assertEquals([...ctx.res.html.styles], []);
+  assertEquals([...ctx.res.html.scripts], []);
   await Deno.remove(dir, { recursive: true });
 });
 

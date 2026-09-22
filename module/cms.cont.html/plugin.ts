@@ -26,7 +26,7 @@ const panelApi = async (node: Node, vars: Record<string, unknown>) => {
   const files = codeFiles(node);
   await files.create();
   return (["src", "css", "js"] as const)
-    .map((key) => ({ name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url);
+    .map((key) => ({ key: key === "src" ? "html" : key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url);
 };
 
 export const cms = {

@@ -1,4 +1,4 @@
-import { Access, ConflictError, NotFoundError, s, unixTime } from "@qino/qino";
+import { Access, ConflictError, NotFoundError, isFile, s, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
 import { codeFiles } from "./codeFiles.ts";
@@ -20,7 +20,7 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
     output: content,
     execute: async ({ node }: { node: Node }) => {
       const files = codeFiles(node);
-      await files.create();
+      await files.create(key);
       return { content: await Deno.readTextFile(files[key]) };
     },
   },
@@ -31,8 +31,9 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
     output: rendered,
     execute: async ({ node, content }: { node: Node; content: string }, ctx: Ctx) => {
       const files = codeFiles(node);
-      await Deno.mkdir(`${node.module!.data}pub/`, { recursive: true });
+      await files.create();
       await Deno.writeTextFile(files[key], content);
+      await isFile(files[key], true);
       ctx.app.assetRev = unixTime(); // css/js live under pub/, so their url has to change
       return String(await node.html()); // tobi: does rendering node.html() for a CSS/JS file make sense, or does it only waste tokens?
     },

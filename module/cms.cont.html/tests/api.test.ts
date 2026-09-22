@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { AccessError, ConflictError, invoke, requestStorage, toTools } from "@qino/qino";
+import { AccessError, ConflictError, invoke, isFile, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, fakeCms } from "@qino/qino/tests";
 
 import { api } from "../plugin.ts";
@@ -50,10 +50,13 @@ Deno.test("cms.cont.html api: writes and reads code files", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const ctx = fakeCtx(dir);
   try {
+    const css = `${dir}data/${name}/pub/7.css`;
+    assertEquals(await isFile(css), false);
     assertEquals(
       await requestStorage.run(ctx as any, () => invoke(api, "PUT", "/node/7/codefiles/css", { content: "body {}\n" })),
       "<div>rendered</div>",
     );
+    assertEquals(await isFile(css), true);
     assertEquals(
       await requestStorage.run(ctx as any, () => invoke(api, "GET", "/node/7/codefiles/css")),
       { content: "body {}\n" },
@@ -70,6 +73,12 @@ Deno.test("cms.cont.html api: opening a new node provides starter files without 
     for (const [file, example] of [["html", "cms-text=title"], ["css", '[qcms-id="7"]'], ["js", "SelectorObserver"]]) {
       const result = await requestStorage.run(ctx as any, () => invoke(api, "GET", `/node/7/codefiles/${file}`)) as { content: string };
       assertEquals(result.content.includes(example), true);
+      if (file === "html") {
+        await assertRejects(() => Deno.stat(`${dir}data/${name}/pub/7.css`), Deno.errors.NotFound);
+      }
+      if (file !== "js") {
+        await assertRejects(() => Deno.stat(`${dir}data/${name}/pub/7.js`), Deno.errors.NotFound);
+      }
     }
   } finally {
     await Deno.remove(dir, { recursive: true });

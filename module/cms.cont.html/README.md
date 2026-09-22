@@ -13,9 +13,9 @@ Files of node `12`, below the app directory:
 | `data/cms.cont.html/pub/12.css` | `d/cms.cont.html/pub/12.css` |
 | `data/cms.cont.html/pub/12.js`  | `d/cms.cont.html/pub/12.js`  |
 
-They are created with their initial content when first opened through the API or rendered in edit mode;
-the example constructs in it are commented out, so nothing exists before you
-uncomment it. css and js are linked only while they exist, the js as a module
+HTML is created with its initial content on rendering in edit mode or opening. CSS and JS are
+created individually when opened in the panel or through the API. The HTML
+examples are commented out until you need them. css and js are linked only while they exist, the js as a module
 script. Superusers edit all three from the options panel via
 [fileEditor](../fileEditor/), and a saved file takes effect with the next
 request.
