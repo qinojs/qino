@@ -54,7 +54,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     <div class=u2-card style="flex-grow:0">
         <div class=-head>${t`Direct links`}</div>
         <div><input type=search data-search value="${search}" placeholder="${t`Search`}…"></div>
-        <table class=u2-table cms-part=list>${await list(node, { vars: { search } })}</table>
+        <table class=u2-table cms-part=list>${list(node, { vars: { search } })}</table>
     </div>
 </div>`;
 }

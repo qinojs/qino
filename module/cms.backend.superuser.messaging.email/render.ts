@@ -200,14 +200,14 @@ export async function send(node: Node): Promise<HtmlString> {
     <u2-fields>
       ${t`To`} <select name=to>
         <option value=address>${t`This address`}</option>
-        <optgroup label="${await t`Groups`}">${groupRows.map((g) =>
+        <optgroup label="${t`Groups`}">${groupRows.map((g) =>
           html`<option value="grp:${g.id}">${g.name} (${g.users})</option>`)}</optgroup>
-        <optgroup label="${await t`Users`}">${userRows.map((u) =>
+        <optgroup label="${t`Users`}">${userRows.map((u) =>
           html`<option value="usr:${u.usr_id}">${u.username ?? "#" + u.usr_id} (${u.addresses})</option>`)}</optgroup>
         <option value=all>${t`All users with an address`}</option>
       </select>
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
-      ${t`Subject`} <input name=title placeholder="${await t`the first line of the text`}">
+      ${t`Subject`} <input name=title placeholder="${t`the first line of the text`}">
       ${t`Template`} <select name=template>
         ${main ? html`<option value="">${await t`default`} (${main.name})</option>` : ""}
         <option value="-">${t`none`}</option>

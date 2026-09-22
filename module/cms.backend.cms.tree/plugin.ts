@@ -52,7 +52,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
         <th style="width:5rem"> ${t`Searchable`}
         <th style="width:10rem"> ${t`Layout`}
     <tbody cms-part=list>
-      ${await list(node, { ctx, vars: {} })}
+      ${list(node, { ctx, vars: {} })}
   </table>
 </div>`;
 }

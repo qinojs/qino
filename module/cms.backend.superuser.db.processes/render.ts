@@ -23,7 +23,7 @@ export async function render(node: Node): Promise<HtmlString> {
       <label><input type=checkbox data-live checked> ${t`Live`}</label>
       <label><input type=checkbox data-keep> ${t`Keep old`}</label>
     </div>
-    <u2-table style="padding:0" data-refresh="${REFRESH_MS}" cms-part=list>${await list(node)}</u2-table>
+    <u2-table style="padding:0" data-refresh="${REFRESH_MS}" cms-part=list>${list(node)}</u2-table>
   </div>`;
 }
 

@@ -91,8 +91,8 @@ export async function send(node: Node): Promise<HtmlString> {
     <u2-fields>
       ${t`To`} <select name=to>
         <option value=all>${t`Everyone linked`}</option>
-        <optgroup label="${await t`Groups`}">${groupOptions}</optgroup>
-        <optgroup label="${await t`Users`}">${userOptions}</optgroup>
+        <optgroup label="${t`Groups`}">${groupOptions}</optgroup>
+        <optgroup label="${t`Users`}">${userOptions}</optgroup>
       </select>
       ${t`Text`} <textarea name=text required rows=3></textarea>
       ${t`HTML`} <input type=checkbox name=html>

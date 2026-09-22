@@ -51,7 +51,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
             <input type=search data-search placeholder="${t`Search`}…">
             <button data-export>${t`Export as CSV`}</button>
         </div>
-        <table class=u2-table cms-part=list>${await list(node, { vars })}</table>
+        <table class=u2-table cms-part=list>${list(node, { vars })}</table>
     </div>
 </div>`;
 }

@@ -77,9 +77,9 @@ async function render(node: Node): Promise<HtmlString> {
       <thead style="position:sticky; top:0">
         <tr>
           <th> ISO
-          <th> ${await t`Currency`}
-          <th> ${await t`Symbol`}
-          <th> ${await t`Per 1 USD`}
+          <th> ${t`Currency`}
+          <th> ${t`Symbol`}
+          <th> ${t`Per 1 USD`}
       <tbody>${trs}
     </table>
   </div>

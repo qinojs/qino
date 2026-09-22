@@ -110,7 +110,7 @@ async function render(node: Node): Promise<HtmlString> {
     <br>
   </div>
   <div style="overflow:auto; padding:0; max-height:90vh" cms-part=table>
-    ${await table(node)}
+    ${table(node)}
   </div>
 </div>`;
 }

@@ -116,7 +116,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const form = await formOf(node);
   if (!form) {
     return await node.edit()
-      ? html.async`<div><u2-alert open variant=warning>${await app.t`No form found for these entries.`}</u2-alert></div>`
+      ? html.async`<div><u2-alert open variant=warning>${app.t`No form found for these entries.`}</u2-alert></div>`
       : html`<div></div>`;
   }
 

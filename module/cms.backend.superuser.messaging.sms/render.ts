@@ -32,20 +32,20 @@ export async function provider(node: Node): Promise<HtmlString> {
       </select>
     </u2-fields>
     <u2-fields data-provider-fields=twilio${type === "twilio" ? "" : " hidden"}>
-      ${t`Account SID`} <input name=accountSid value="${await twilio.accountSid}">
-      ${t`API key SID`} <input name=apiKeySid value="${await twilio.apiKeySid}">
+      ${t`Account SID`} <input name=accountSid value="${twilio.accountSid}">
+      ${t`API key SID`} <input name=apiKeySid value="${twilio.apiKeySid}">
       ${t`API key secret`} <input type=password name=apiKeySecret autocomplete=off
         placeholder="${await secret("apiKeySecret") ? "••••••" : ""}">
       ${t`Auth token`} <input type=password name=authToken autocomplete=off
         placeholder="${await secret("authToken") ? "••••••" : ""}">
-      ${t`From`} <input name=twilioFrom value="${await twilio.from}">
-      ${t`Messaging Service SID`} <input name=messagingServiceSid value="${await twilio.messagingServiceSid}">
+      ${t`From`} <input name=twilioFrom value="${twilio.from}">
+      ${t`Messaging Service SID`} <input name=messagingServiceSid value="${twilio.messagingServiceSid}">
     </u2-fields>
     <u2-fields data-provider-fields=http${type === "http" ? "" : " hidden"}>
-      ${t`URL`} <input type=url name=url value="${await http.url}">
+      ${t`URL`} <input type=url name=url value="${http.url}">
       ${t`Bearer token`} <input type=password name=httpToken autocomplete=off
         placeholder="${httpToken ? "••••••" : ""}">
-      ${t`From`} <input name=httpFrom value="${await http.from}">
+      ${t`From`} <input name=httpFrom value="${http.from}">
     </u2-fields>
     <button data-provider-save>${t`Save`}</button>
   </form>`;
@@ -77,8 +77,8 @@ export async function send(node: Node): Promise<HtmlString> {
     <u2-fields>
       ${t`To`} <select name=to>
         <option value=all>${t`All users with SMS`}</option>
-        <optgroup label="${await t`Groups`}">${groupOptions}</optgroup>
-        <optgroup label="${await t`Users`}">${userOptions}</optgroup>
+        <optgroup label="${t`Groups`}">${groupOptions}</optgroup>
+        <optgroup label="${t`Users`}">${userOptions}</optgroup>
       </select>
       ${t`Text`} <textarea name=text required rows=3></textarea>
     </u2-fields>
