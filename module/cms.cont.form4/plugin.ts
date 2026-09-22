@@ -69,7 +69,7 @@ async function send(node: Node, form: Form): Promise<boolean> {
   let body = String(await node.showText("email_before"));
   for (const [name, value] of Object.entries(form.values)) {
     const label = form.labels[name] || name;
-    body += `<p><b>${hee(label)}</b><br>${hee(String(value)).replace(/\n/g, "<br>")}</p>`;
+    body += `<p><b>${hee(label)}</b><br>${hee(value).replace(/\n/g, "<br>")}</p>`;
   }
   body += String(await node.showText("email_after"));
 

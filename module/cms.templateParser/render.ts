@@ -21,7 +21,7 @@ class Tpl {
     this.node = node;
     const same = (source: string) => source;
     this.text = values ? (source) => fillPlaceholders(source, (name) => values[name]?.text) : same;
-    this.html = values ? (source) => fillPlaceholders(source, (name) => String(values[name]?.html ?? hee(values[name]?.text ?? ""))) : same;
+    this.html = values ? (source) => fillPlaceholders(source, (name) => String(values[name]?.html ?? hee(values[name]?.text))) : same;
   }
 }
 

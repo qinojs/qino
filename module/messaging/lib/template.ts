@@ -131,7 +131,7 @@ function load(app: App, channel: string, name?: string): Promise<Msg | undefined
 function fill(template: string, placeholders: Computed, side: "text" | "html"): string {
   return fillPlaceholders(template, (name) => side === "text"
     ? placeholders[name]?.text
-    : String(placeholders[name]?.html ?? hee(placeholders[name]?.text ?? "")));
+    : String(placeholders[name]?.html ?? hee(placeholders[name]?.text)));
 }
 
 /** What a template writes for a module's placeholder. Messaging's own are the message's base

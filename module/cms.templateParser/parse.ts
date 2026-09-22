@@ -26,12 +26,12 @@ function tokenize(html: string): Token[] {
       tokens.push({ t: "text", value: html.slice(start, i) });
       continue;
     }
-    if (html.startsWith("<!--", i)) { i = (html.indexOf("-->", i + 4) + 3) || html.length; continue; }
-    if (html.slice(i, i + 9).toLowerCase() === "<!doctype") { i = html.indexOf(">", i) + 1; continue; }
+    if (html.startsWith("<!--", i)) { i = html.indexOf("-->", i + 4) + 3; if (i < 3) break; continue; }
+    if (html.slice(i, i + 9).toLowerCase() === "<!doctype") { i = html.indexOf(">", i) + 1 || html.length; continue; }
     if (html[i + 1] === "/") {
       const end = html.indexOf(">", i);
       tokens.push({ t: "close", tag: html.slice(i + 2, end).trim().toLowerCase() });
-      i = end + 1; continue;
+      i = end + 1 || html.length; continue;
     }
     const end = findTagEnd(html, i + 1);
     const raw = html.slice(i + 1, end);
@@ -79,7 +79,7 @@ export function parseTemplate(html: string): TNode[] {
       stack.at(-1)!.children.push({ type: "text", value: tok.value }); continue;
     }
     if (tok.t === "open") {
-      const el: TNode & { type: "element" } = { type: "element", tag: tok.tag, attrs: tok.attrs, self: tok.self, children: [] };
+      const el: TNode = { type: "element", tag: tok.tag, attrs: tok.attrs, self: tok.self, children: [] };
       stack.at(-1)!.children.push(el);
       if (!tok.self) stack.push({ tag: tok.tag, children: el.children });
       continue;
