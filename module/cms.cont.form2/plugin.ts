@@ -118,7 +118,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       ctx.res.status = 302;
       return html.raw("<div></div>");
     }
-    return html.async`<div>${await (await node.cont("success", "cms.cont.text")).html()}</div>`;
+    return html.async`<div>${node.cont("success", "cms.cont.text")}</div>`;
   }
 
   const button = node.settings.button() ?? true;

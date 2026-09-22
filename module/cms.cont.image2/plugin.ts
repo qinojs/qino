@@ -28,8 +28,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // Language-specific variants
   for (const l of node.app.languages.all) {
     const langImg = await node.file("image_" + l);
-    if (ctx.lang === l && await langImg.exists()) img = langImg;
-    else if (!img && await langImg.exists()) img = langImg;
+    if ((ctx.lang === l || !img) && await langImg.exists()) img = langImg;
     const lUrl = await node.cms.url(settings["url_" + l]());
     if (ctx.lang === l && lUrl) url = lUrl;
   }

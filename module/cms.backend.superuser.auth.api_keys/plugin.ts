@@ -85,7 +85,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td>${r.expires ? fmt(r.expires) : "–"}
       <td><form method=post style="display:inline">
         <input type=hidden name=csrfToken value="${ctx.csrfToken}">
-        <input type=hidden name=usr_id value="${usrId ?? ""}">
+        <input type=hidden name=usr_id value="${usrId}">
         <input type=hidden name=delete_key value="${r.id}">
         <button class=u2-unstyle u2-confirm="${`Really delete ${r.name ?? r.id}?`}"><u2-ico icon=delete>✕</u2-ico></button>
       </form>`;

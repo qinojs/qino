@@ -74,10 +74,10 @@ export const unsafe = (target: string): boolean => /^(javascript|data|vbscript|f
 export async function write(app: App, vs: { from?: string; request?: string; redirect?: string }): Promise<string> {
   const request = cleanRequest(String(vs.request ?? ""));
   const redirect = String(vs.redirect ?? "").trim();
-  if (!redirect) return String(await app.t`A direct link needs a target.`);
-  if (unsafe(redirect)) return String(await app.t`Unsupported redirect target.`);
+  if (!redirect) return app.t`A direct link needs a target.`;
+  if (unsafe(redirect)) return app.t`Unsupported redirect target.`;
   // A request that a page url or another direct link answers would never reach this one.
-  if (request !== vs.from && await requestUsed(request)) return String(await app.t`URL already in use`);
+  if (request !== vs.from && await requestUsed(request)) return app.t`URL already in use`;
   const table = app.db.table("page_redirect");
   await (vs.from === undefined ? table.insert({ request, redirect }) : table.update({ request: vs.from }, { request, redirect }));
   return "";
@@ -107,7 +107,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
   let message = "";
   if (typeof vars.delete === "string") {
     // No button offers this for the entry link, but the var could still ask for it.
-    if (vars.delete === "") message = String(await t`The entry link cannot be deleted.`);
+    if (vars.delete === "") message = await t`The entry link cannot be deleted.`;
     else await app.db.table("page_redirect").deleteWhere({ request: vars.delete });
   } else if (vars.save) message = await write(app, vars.save as Record<string, string>);
 

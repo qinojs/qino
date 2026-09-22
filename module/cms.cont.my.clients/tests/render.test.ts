@@ -21,7 +21,7 @@ const ctx = { user: {}, userId: 7, clientId: "5", req: { clientIp: "1.2.3.4" } }
 
 Deno.test("cms.cont.my.clients lists the user's devices", async () => {
   assertEquals(name, "cms.cont.my.clients");
-  assertEquals(dependencies, ["cms"]);
+  assertEquals(dependencies, ["cms", "u2"]);
 
   const output = String(await cms.node.render(node, { ctx }));
   assertStringIncludes(output, "Firefox · Linux");

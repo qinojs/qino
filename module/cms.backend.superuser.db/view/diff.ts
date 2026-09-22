@@ -45,7 +45,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
             <th>${t`Status`}
         <tbody>${rows.map(({ table, field, status }) => html`<tr>
           <td>${table}
-          <td>${field ?? ""}
+          <td>${field}
           <td>${badges[status]}`)}
       </table>`
     : html`<div>Schema and DB match.</div>`;

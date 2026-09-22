@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const exists = await node.db.one`SELECT 1 FROM ${sql.id("exam1_usr")} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
     if (exists) await node.db.query`UPDATE ${sql.id("exam1_usr")} SET completed = ${unixTime()}, result = ${result} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
     else await node.db.query`INSERT INTO ${sql.id("exam1_usr")} (exam_id, usr_id, completed, result) VALUES (${exam.id}, ${ctx.userId}, ${unixTime()}, ${result})`;
-    return html`<div><h2>${String(exam.completion_text || "Prüfung abgeschlossen")}</h2></div>`;
+    return html`<div><h2>${exam.completion_text || "Prüfung abgeschlossen"}</h2></div>`;
   }
 
   const fields: HtmlString[] = [];
@@ -37,10 +37,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (String(task.type) === "bool") input = html`<label><input required type=radio name="task_${task.id}" value=1> Ja</label> <label><input required type=radio name="task_${task.id}" value=0> Nein</label>`;
     else if (options.length) input = html`<span>${options.map((value) => html`<label><input required type=radio name="task_${task.id}" value="${value}"> ${value}</label><br>`)}</span>`;
     else input = html`<input required name="task_${task.id}">`;
-    fields.push(html`<div class=-task><h2 class=-question>${String(task.question)}</h2><div class=-answer>${input}</div></div>`);
+    fields.push(html`<div class=-task><h2 class=-question>${task.question}</h2><div class=-answer>${input}</div></div>`);
   }
   return html`<div><form method=post><input type=hidden name=csrfToken value="${ctx.csrfToken}"><input type=hidden name=exam_node value="${node.id}">
-  <h1>${String(exam.title)}</h1><div class=-contents>${await (await node.cont(String(exam.id))).html()}</div>${fields}
+  <h1>${exam.title}</h1><div class=-contents>${await (await node.cont(String(exam.id))).html()}</div>${fields}
   <br>${await node.showText("text_" + exam.id)}<br><button>Tag abschliessen!</button></form></div>`;
 }
 

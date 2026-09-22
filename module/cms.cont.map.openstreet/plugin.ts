@@ -109,7 +109,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   );
 
   return html.async`
-<figure style="--map-height:${String(height)}rem">
+<figure style="--map-height:${height}rem">
   ${frame}
   ${caption}
 </figure>`;

@@ -128,7 +128,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       ctx.res.status = 302;
       return html.raw("<div class=u2-width></div>");
     }
-    return html.async`<div class=u2-width>${await (await node.cont("success", "cms.cont.text")).html()}</div>`;
+    return html.async`<div class=u2-width>${node.cont("success", "cms.cont.text")}</div>`;
   }
 
   return html.async`<div class=u2-width>${warnings}

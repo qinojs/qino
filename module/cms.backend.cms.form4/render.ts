@@ -136,7 +136,7 @@ async function uploads(app: App, ids: number[]): Promise<Map<string, HtmlString>
       preview ? html`<img src="${preview}" alt="${row.name}" loading=lazy>` : html`<u2-ico inline icon=download>↓</u2-ico> ${row.name}`
     }</a> `;
     const key = `${row.entry_id}:${row.field}`;
-    out.set(key, html`${out.get(key) ?? ""}${link}`);
+    out.set(key, html`${out.get(key)}${link}`);
   }
   return out;
 }
@@ -173,11 +173,11 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
     names.map((name) => {
       const sent = files.get(`${row.id}:${name}`);
       // An upload is not a value one corrects — it is a file one looks at or takes away.
-      return sent ? html`<td>${sent}` : html`<td><input data-field="${name}" value="${row.data[name] ?? ""}" size=12>`;
+      return sent ? html`<td>${sent}` : html`<td><input data-field="${name}" value="${row.data[name]}" size=12>`;
     });
 
   return html.async`<thead><tr>
-      ${head("created", String(await t`Received`))}
+      ${head("created", await t`Received`)}
       ${names.map((name) => head(name, label[name] || name))}
       <th>
     </tr></thead>
@@ -267,7 +267,7 @@ export async function csv(app: App, node: Node, search: string): Promise<string>
       attached.set(key, [attached.get(key), f.name].filter(Boolean).join(", "));
     }
   }
-  const head = [String(await app.t`Received`), ...names.map((n) => label[n] || n)].map(cell).join(";");
+  const head = [await app.t`Received`, ...names.map((n) => label[n] || n)].map(cell).join(";");
   const body = rows.map((row) =>
     [date(row.created), ...names.map((n) => attached.get(`${row.id}:${n}`) ?? row.data[n])].map(cell).join(";")
   );
