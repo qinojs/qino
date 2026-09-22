@@ -139,6 +139,7 @@ Deno.test("shp3: an order with errors is not placed", async () => {
   await using app = await shop("shp3.shipping.pickup", "shp3.payment.invoice");
   // The checks speak to the customer, so they need the request's language.
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
   const order = (await newOrder(app))!;
   const empty = await order.tryPlace();
@@ -175,6 +176,7 @@ Deno.test("shp3: the price passes four phases, in order", async () => {
 Deno.test("shp3: a product whose page is not public cannot be sold", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const cup = (await app.db.table("shp3_product").get<Product>(10))!;
     assertEquals(await cup.errors(), {});
@@ -199,6 +201,7 @@ Deno.test("shp3: a rounding step survives the float noise of a legacy FLOAT colu
 Deno.test("shp3: an item takes the page title, falling through an empty translation", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const cup = await cms(app).node(10);
     await cup.title("en", "Teddy");
@@ -236,6 +239,7 @@ Deno.test("shp3: the countries the shop sells to, and what they cost", async () 
 Deno.test("shp3: what the guest collected follows them into the login", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const guest = (await cart(ctx))!;
     await guest.itemAdd(10, 2);

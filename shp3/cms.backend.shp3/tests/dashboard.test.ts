@@ -40,6 +40,7 @@ Deno.test("backend.shp3: every shop page reports its numbers to the overview", a
   await app.db.table("country").update({ id: "CH", shp3_enabled: true });
 
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const widget = (name: string) => app.modules.get(name)!.plugin.backendDashboardWidget(app);
     const orders = String(await widget("cms.backend.shp3.orders1"));

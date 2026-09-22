@@ -25,6 +25,7 @@ async function shop(...extra: string[]) {
 Deno.test("shp3: a whole order, from the empty cart to the placed one", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     // nothing in the cart — the checkout says so instead of placing an empty order
     assertEquals(await call(["cart", "order"], "post", {}), { success: false, errors: {}, redirect: "" });
@@ -64,6 +65,7 @@ Deno.test("shp3: a whole order, from the empty cart to the placed one", async ()
 Deno.test("shp3 backend: an order is paid off, an open cart can still be placed", async () => {
   await using app = await shop("cms.backend.shp3", "cms.backend.shp3.orders1");
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     await call(["cart", "items"], "post", { product: "10", quantity: 2 });
     await call(["cart", "payment"], "put", { value: "invoice" });
@@ -91,6 +93,7 @@ Deno.test("shp3: ordering sends the confirmation", async () => {
   } } as never);
 
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     await call(["cart", "items"], "post", { product: "10", quantity: 2 });
     await call(["cart", "address"], "put", { values: { bill_email: "kunde@example.test", bill_lastname: "B" } });
@@ -107,6 +110,7 @@ Deno.test("shp3: a confirmation that cannot go out does not undo the order", asy
   await using app = await shop("shp3.messages2");
   // No transport at all — exactly what an unconfigured shop looks like on its first sale.
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     await call(["cart", "items"], "post", { product: "10" });
     await call(["cart", "address"], "put", { values: { bill_email: "kunde@example.test" } });

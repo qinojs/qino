@@ -23,6 +23,7 @@ async function shop() {
 Deno.test("shp3 api: a product goes into the cart from anywhere", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     assertEquals(await call(["cart"], "get"), { items: 0, quantity: 0, net: 0, gross: 0, currency: "", grossText: "" });
 
@@ -40,6 +41,7 @@ Deno.test("shp3 api: a product goes into the cart from anywhere", async () => {
 Deno.test("shp3 api: price answers for an amount, method choices are checked", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const prices = await call(["price"], "post", { product: "10", quantity: 3 });
     assertEquals(prices.gross, 12);
@@ -55,6 +57,7 @@ Deno.test("shp3 api: price answers for an amount, method choices are checked", a
 Deno.test("shp3 api: the address only takes address columns", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     await call(["cart", "items"], "post", { product: "10" });
     await call(["cart", "address"], "put", { values: { bill_country: " ch ", bill_email: "Ann@Example.COM", cost: 99999, nonsense: 1 } });
@@ -72,6 +75,7 @@ Deno.test("shp3 api: the address only takes address columns", async () => {
 Deno.test("shp3 api: a line belongs to the visitor's own cart, never to an id from the request", async () => {
   await using app = await shop();
   const mine = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  mine.sess = await app.sessions.load();
   let foreign = "";
   await requestStorage.run(mine, async () => {
     foreign = (await call(["cart", "items"], "post", { product: "10" })).item;
@@ -79,6 +83,7 @@ Deno.test("shp3 api: a line belongs to the visitor's own cart, never to an id fr
 
   // another visitor, another session — that line is none of their business
   const other = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  other.sess = await app.sessions.load();
   await requestStorage.run(other, async () => {
     assertEquals(await call(["cart", "items", ":id"], "put", { id: foreign, quantity: 99 }), { error: "not in your cart" });
     assertEquals(await call(["cart", "items", ":id"], "delete", { id: foreign }), { error: "not in your cart" });
@@ -93,6 +98,7 @@ Deno.test("shp3 api: a line belongs to the visitor's own cart, never to an id fr
 Deno.test("shp3 api: money comes formatted, the client does not guess the decimals", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const prices = await call(["price"], "post", { product: "10" });
     assertEquals(prices.grossText, "12.00");
@@ -124,6 +130,7 @@ Deno.test("shp3 api: a page that is no product cannot be bought", async () => {
   // a public page without a product row — naming it in a request must not make it one
   await app.db.table("page").insert({ id: 20, name: "Imprint", access: 1, module: "cms.cont.text" });
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     assertEquals(await call(["cart", "items"], "post", { product: "20" }), { error: "not available" });
     assertEquals(await call(["price"], "post", { product: "20" }), { error: "not available" });

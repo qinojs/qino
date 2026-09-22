@@ -83,6 +83,7 @@ Deno.test("backend.shp3.settings: the panel renders every box, nothing left unre
   await using app = await shop();
   await app.db.table("country").update({ id: "CH", shp3_enabled: true });
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const html = String(await panel.node.render({ app } as unknown as Node));
     assertEquals(html.includes("[object Promise]"), false); // t`…` needs html.async, not html``
@@ -104,6 +105,7 @@ Deno.test("backend.shp3.settings: a factor the rate job owns is not edited here"
   assertEquals(await call(app, { currency: "EUR", field: "smallest", value: 0 }), false);
 
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const html = String(await panel.node.render({ app } as unknown as Node));
     assertStringIncludes(html, "factors follow the exchange rates");
@@ -114,6 +116,7 @@ Deno.test("backend.shp3.settings: every currency is offered, the shop picks", as
   await using app = await shop();
   await app.db.table("country").update({ id: "JP", shp3_enabled: true }); // pays in JPY
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
     const html = String(await panel.node.render({ app } as unknown as Node));
     assertStringIncludes(html, 'itemid=JPY'); // not in shp3_currency, still listed
