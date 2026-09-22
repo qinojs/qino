@@ -1,5 +1,6 @@
 import { html } from "@qino/qino";
 import { status } from "@qino/qino/cron";
+import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -66,10 +67,10 @@ async function renderRow(app: App, job: JobStatus): Promise<HtmlString> {
     <td><code>${job.id}</code>
     <td>${cadence(job)}
     <td class=-state><span class=u2-badge style="background:${stateColor}">${state}</span>${error}
-    <td>${time(job.nextRun)}
-    <td>${time(job.lastStarted)}
-    <td>${time(job.lastFinished)}
-    <td>${time(job.lastSuccess)}
+    <td>${u2.el.time(job.nextRun, { second: true })}
+    <td>${u2.el.time(job.lastStarted, { second: true })}
+    <td>${u2.el.time(job.lastFinished, { second: true })}
+    <td>${u2.el.time(job.lastSuccess, { second: true })}
     <td>${job.durationMs == null ? "–" : html`${job.durationMs} ms`}
     <td>${job.failures}
     <td>${action}`;
@@ -97,11 +98,6 @@ function atText(job: JobStatus): string {
   if (job.every === "hour") return `:${two(at.minute)}:${two(at.second)}`;
   const time = `${two(at.hour)}:${two(at.minute)}:${two(at.second)}`;
   return job.every === "week" ? `${at.weekday ?? "monday"} ${time}` : time;
-}
-
-function time(value?: number): HtmlString {
-  if (!value) return html`–`;
-  return html`<u2-time datetime="${new Date(value * 1000).toISOString()}" second type=relative></u2-time>`;
 }
 
 function duration(seconds: number): string {

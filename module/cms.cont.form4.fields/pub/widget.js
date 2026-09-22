@@ -79,7 +79,7 @@ export default async function (widget, { node, dialogs, signal }) {
         <label>${t`Label:`}<input value="${title.value}" cmstxt=${title.id}></label>
         <label><input type=checkbox setting="fields.${name}.required" ${set.required ? 'checked' : ''}> ${t`Required`}</label>
         <label><input type=checkbox u2-disableif="type!=email" setting="fields.${name}.is-recipient" ${set['is-recipient'] ? 'checked' : ''}> ${t`Send a copy to this address`}</label>
-        <label>${t`Choices (one per line):`}<textarea u2-disableif="type=checkbox" cmstxt=${choices.id}>${choices.value}</textarea></label>
+        <label>${t`Choices (one per line):`}<textarea u2-disableif="type=checkbox" cmstxt=${choices.id}>${html.raw(choices.value)}</textarea></label>
         <label>${t`Default value:`}<input u2-disableif="type=file" setting="fields.${name}.default" value="${set.default ?? ''}"></label>
         <label>${t`Placeholder:`}<input u2-disableif="type=checkbox" cmstxt=${place.id} value="${place.value}"></label>
         <label>${t`Disable if:`}<input setting="fields.${name}.disableif" value="${set.disableif ?? ''}" placeholder="${others(name)[0] ? others(name)[0] + '=yes' : 'field=value'}" list=fields4-names></label>

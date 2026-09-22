@@ -11,4 +11,5 @@ Deno.test("u2: el.time returns safe HTML", () => {
   );
   // narrow is the short wording for dense tables: "8d ago" instead of "8 days ago"
   assertEquals(String(el.time("2024-01-02T03:04:00Z", { narrow: true })).includes("minute mode=narrow>"), true);
+  assertEquals(String(el.time("2024-01-02T03:04:00Z", { second: true })).includes("type=relative second>"), true);
 });

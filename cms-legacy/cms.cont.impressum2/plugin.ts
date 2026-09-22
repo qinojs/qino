@@ -10,7 +10,8 @@ const workers = ["Kontaktadresse", "Technische Umsetzung", "Konzept", "Design", 
 const fields = ["company", "name", "address", "zip", "city", "phone", "email", "website"];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const heading = [1, 2, 3, 4].includes(Number(await node.settings.Heading)) ? Number(await node.settings.Heading) : 2;
+  const level = Number(await node.settings.Heading);
+  const heading = [1, 2, 3, 4].includes(level) ? level : 2;
   const blocks: HtmlString[] = [];
   for (const worker of workers) {
     const data: Record<string, string> = {};

@@ -70,7 +70,7 @@ export default async function (el, { node, signal }) {
       <div class=-more>
         <label><input type=checkbox setting="inputs.${id}.required" ${inp.required ? 'checked' : ''}> ${t`Required`}</label>
         ${inp.type === 'email-reply-to' ? html.async`<label><input type=checkbox setting="inputs.${id}.is-recipient" ${inp['is-recipient'] ? 'checked' : ''}> ${t`Send a copy to this address`}</label>` : ''}
-        <label>${t`Choices (one per line):`}<textarea cmstxt=${choices.id}>${choices.value}</textarea></label>
+        <label>${t`Choices (one per line):`}<textarea cmstxt=${choices.id}>${html.raw(choices.value)}</textarea></label>
         <label>${t`Default value:`}<input setting="inputs.${id}.default" value="${inp.default}"></label>
         <label>${t`Placeholder:`}<input cmstxt=${place.id} value="${place.value}"></label>
         <label>${t`Autocomplete:`}<input list=fields1-ac setting="inputs.${id}.autocomplete" value="${inp.autocomplete}"></label>

@@ -7,7 +7,8 @@ import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const heading = [1, 2, 3, 4].includes(Number(await node.settings.Heading)) ? Number(await node.settings.Heading) : 2;
+  const level = Number(await node.settings.Heading);
+  const heading = [1, 2, 3, 4].includes(level) ? level : 2;
   const texts = await node.texts();
   const sections: HtmlString[] = [];
   const preferred = ["accountable_body", "revocation", "grievance", "data_portability", "your_data", "https", "logs", "contactform", "youtube", "google_fonts", "cookies"];

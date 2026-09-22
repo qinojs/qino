@@ -4,7 +4,8 @@
   "dependencies": [
     "cms",
     "messaging.email",
-    "ticket"
+    "ticket",
+    "u2"
   ],
   "files": [
     "README.md",

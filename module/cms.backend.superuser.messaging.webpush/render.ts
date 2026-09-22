@@ -87,9 +87,9 @@ export async function send(node: Node): Promise<HtmlString> {
     <u2-fields>
       ${t`To`} <select name=to>
         <option value=all>${t`All subscribers`}</option>
-        <optgroup label="${await t`Channels`}">${channelOptions}</optgroup>
-        <optgroup label="${await t`Groups`}">${groupOptions}</optgroup>
-        <optgroup label="${await t`Users`}">${userOptions}</optgroup>
+        <optgroup label="${t`Channels`}">${channelOptions}</optgroup>
+        <optgroup label="${t`Groups`}">${groupOptions}</optgroup>
+        <optgroup label="${t`Users`}">${userOptions}</optgroup>
       </select>
       ${t`Title`} <input name=title required maxlength=30>
       ${t`Text`} <textarea name=body required maxlength=65></textarea>

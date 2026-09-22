@@ -1,6 +1,7 @@
 import { html, isOn, walk } from "@qino/qino";
 import { factors, userFactors, via as viaOf } from "@qino/qino/auth";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -16,7 +17,6 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 const yesNo = (v?: boolean) => v ? html`<u2-ico icon=check_circle>✓</u2-ico>` : "";
-const when = (at: number) => html`<u2-time datetime="${new Date(at * 1000).toISOString()}" second type=relative></u2-time>`;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const declared = factors(node.app).sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
@@ -49,7 +49,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const viaRows = Object.entries(via).sort((a, b) => b[1] - a[1]).map(([name, at]) => html`<tr>
     <td><code>${name}</code>
-    <td>${when(at)}
+    <td>${u2.el.time(at, { second: true })}
     <td>${declared.some((f) => f.name === name) ? "" : "record only"}`);
 
   // Every signed-in session carries its own record, so the same structure read across the table is
@@ -61,8 +61,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const ways = Object.entries(viaOf(String(s.data ?? ""))).sort((a, b) => b[1] - a[1]);
     return html`<tr>
       <td style="color:${backend.uniqueColor(s.usr_id)}">${s.username ?? `#${s.usr_id}`}
-      <td>${ways.length ? html.join(ways.map(([name, at]) => html`<code>${name}</code> ${when(at)}`), ", ") : "—"}
-      <td>${when(Number(s.access))}`;
+      <td>${ways.length ? html.join(ways.map(([name, at]) => html`<code>${name}</code> ${u2.el.time(at, { second: true })}`), ", ") : "—"}
+      <td>${u2.el.time(s.access, { second: true })}`;
   });
 
   return html`<div class=u2-flex>

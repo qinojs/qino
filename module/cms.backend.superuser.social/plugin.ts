@@ -114,7 +114,7 @@ async function render(node: Node): Promise<HtmlString> {
           <button name=publish value=1>${node.app.t`Publish`}</button>
         </form>
       </div>
-      ${await history(node.app)}
+      ${history(node.app)}
   </div>`;
 }
 

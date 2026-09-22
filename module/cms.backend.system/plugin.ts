@@ -1,5 +1,6 @@
 import { fs, html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 
 import { findCheck, getHealthChecks } from "./lib/healthRegistry.ts";
 import { cap, solutionsHtml } from "./lib/solutions.ts";
@@ -42,8 +43,8 @@ async function render(node: Node): Promise<HtmlString> {
     <table class=u2-table style="white-space:nowrap">
       <tr><td>${t`Deno Version`}:<td>${Deno.version.deno}
       <tr><td>${t`PID`}:<td>${Deno.pid}
-      <tr><td>${t`App Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
-      <tr><td>${t`Server Uptime`}:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
+      <tr><td>${t`App Uptime`}:<td>${u2.el.time(appStartIso, { second: true })}
+      <tr><td>${t`Server Uptime`}:<td>${u2.el.time(osStartIso, { second: true })}
       <tr><td>${t`System Load`}:<td>${load[0].toFixed(2)} (1m) / ${load[1].toFixed(2)} (5m)
       <tr><td>${t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
       <tr><td>${t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>
@@ -176,7 +177,7 @@ function systemInfoRows(app: App): Promise<HtmlString> {
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   return html.async`
   <tr><td>${t`Deno`}:<td>${Deno.version.deno}
-  <tr><td>${t`Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+  <tr><td>${t`Uptime`}:<td>${u2.el.time(appStartIso, { second: true })}
   <tr><td>${t`Load (1m/5m/15m)`}:<td>${load[0].toFixed(2)} / ${load[1].toFixed(2)} / ${load[2].toFixed(2)}
   <tr><td>${t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
   <tr><td>${t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>

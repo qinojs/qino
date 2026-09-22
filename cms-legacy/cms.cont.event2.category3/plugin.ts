@@ -37,11 +37,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     rows.push(await html.async`<tr><td><time datetime="${event.start.toISOString()}">${label}</time></td><td><a href="${url}?cmscid=${event.node.id}">${event.node.showTitle()}</a></td></tr>`);
   }
 
-  return html`<div>
-  ${await cmsText(node, "title", "h1")}
-  ${await (await node.cont("before")).html()}
+  return html.async`<div>
+  ${cmsText(node, "title", "h1")}
+  ${node.cont("before")}
   <div style="overflow:auto"><table><tbody>${rows}</tbody></table></div>
-  ${await (await node.cont("after")).html()}
+  ${node.cont("after")}
 </div>`;
 }
 

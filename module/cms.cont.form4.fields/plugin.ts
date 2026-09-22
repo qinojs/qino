@@ -32,8 +32,8 @@ function sortedNames(node: Node): string[] {
   return [...sorted, ...all.filter((name) => !sorted.includes(name))];
 }
 
-/** A node text with its markup stripped; `plain()` also drops the surrounding space. */
-const rawText = async (node: Node, name: string) => String(await node.showText(name)).replace(/<[^>]*>/g, "");
+/** A node text exactly as the textarea wrote it — no markup to strip, nothing trimmed. */
+const rawText = async (node: Node, name: string) => (await (await node.text(name)).string()) ?? "";
 const plain = async (node: Node, name: string) => (await node.showText(name)).plain();
 
 /**

@@ -60,7 +60,7 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
   const labelPosition = String(node.settings.labelPosition() ?? "");
   let type = String(input.type() ?? "") || "text";
 
-  const choices = (await plain(node, id + "_options")).split("\n").map((o) => o.trim()).filter(Boolean);
+  const choices = ((await (await node.text(id + "_options")).string()) ?? "").split("\n").map((o) => o.trim()).filter(Boolean);
 
   const posted = form?.value(fieldName);
   const value = posted ?? String(input.default() ?? "");

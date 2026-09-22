@@ -8,7 +8,8 @@ import type { Node } from "@qino/qino/cms";
 async function render(node: Node): Promise<HtmlString> {
   const page = await node.page();
   const startId = Number(await node.settings["start page"]);
-  const start = startId && (await node.cms.node(startId)).exists() ? await node.cms.node(startId) : page;
+  let start = startId ? await node.cms.node(startId) : page;
+  if (!start.exists()) start = page;
   const moduleName = String(await node.settings.module ?? "");
   const all = moduleName ? [...(await start.bough({ type: "*" })).values()].filter((p) => p.vs.module === moduleName) : [...(await start.children({ type: "p" })).values()];
   const inNavi = String(await node.settings["in navi"] ?? "");

@@ -1,5 +1,6 @@
 import { html, pwHash } from "@qino/qino";
 import { check } from "@qino/qino/ticket";
+import * as u2 from "@qino/qino/u2";
 
 import api, { PURPOSE, TICKET_PARAM, TTL } from "./nodeApi.ts";
 
@@ -30,7 +31,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     // opening the link only looks — mail scanners must not spend the ticket
     const ticket = await check(node.app, handle, PURPOSE);
     if (!ticket) return html.async`<p>${t`This link is no longer valid. Please request a new one.`}</p>`;
-    const iso = new Date(Number(ticket.expires) * 1000).toISOString();
     return html.async`<form data-reset>
     <input type=hidden name=handle value="${handle}">
     <u2-fields>
@@ -38,7 +38,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     </u2-fields>
     <button>${t`Set password`}</button>
     <p><small>${t`This link is valid until`}
-      <u2-time datetime="${iso}" type=relative second>${iso.slice(0, 16).replace("T", " ")}</u2-time></small></p>
+      ${u2.el.time(ticket.expires, { second: true })}</small></p>
     <output class=-msg></output>
   </form>`;
   }

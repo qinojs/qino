@@ -1,5 +1,6 @@
 import { html, sql, unixTime } from "@qino/qino";
 import { fadeLimit, scopes, strength } from "@qino/qino/score";
+import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -54,7 +55,7 @@ async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now:
     · ${app.t`half-life`} ${duration(half)}
     · <b>${Number(stats?.total ?? 0)}</b> ${app.t`rows`}
     ${faded ? html.async` · <span class=u2-badge>${faded} ${app.t`faded`}</span>` : ""}
-    · ${app.t`last access`} ${time(Number(stats?.last ?? 0))}
+    · ${app.t`last access`} ${u2.el.time(stats?.last, { second: true })}
   </div>
   ${top.length ? renderTop(app, tbl, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;
 }
@@ -66,7 +67,7 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
       <td><code>${row.id}</code>
       <td><code>${Number(row.score).toFixed(3)}</code>
       <td>${accesses(strength(app.db, tbl, Number(row.score), now))}
-      <td>${time(Number(row.time))}`
+      <td>${u2.el.time(row.time, { second: true })}`
   );
   return html.async`<table class="u2-table -Sticky">
     <thead><tr>
@@ -100,11 +101,6 @@ async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<Ht
 /** Strength in accesses: fractions matter near the fade limit, whole numbers above it. */
 function accesses(value: number): string {
   return value < 10 ? value.toFixed(2) : String(Math.round(value));
-}
-
-function time(value: number): HtmlString {
-  if (!value) return html`–`;
-  return html`<u2-time datetime="${new Date(value * 1000).toISOString()}" second type=relative></u2-time>`;
 }
 
 function duration(seconds: number): string {

@@ -39,17 +39,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const external = String(info.external_link ?? "").trim();
   const target = external || await node.url();
   const image = await node.hasFile("stundenplan");
-  return html`<div>
-  ${parent ? await html.async`<p class=-category><a href="${await parent.url()}">${parent.showTitle()}</a></p>` : ""}
-  ${await cmsText(node, "title", "h1")}
-  ${await cmsText(node, "subtitle")}
+  return html.async`<div>
+  ${parent ? html.async`<p class=-category><a href="${parent.url()}">${parent.showTitle()}</a></p>` : ""}
+  ${cmsText(node, "title", "h1")}
+  ${cmsText(node, "subtitle")}
   ${facts.length ? html`<dl class=-facts>${facts}</dl>` : ""}
   ${external ? html`<p><a href="${target}">${target}</a></p>` : ""}
-  ${await cmsText(node, "main")}
+  ${cmsText(node, "main")}
   ${image ? html`<p><img src="${await image.url({ w: 1400, q: 82 })}" alt=""></p>` : ""}
-  ${await cmsText(node, "price_included")}
-  ${await cmsText(node, "info")}
-  ${await (await node.cont("more")).html()}
+  ${cmsText(node, "price_included")}
+  ${cmsText(node, "info")}
+  ${node.cont("more")}
 </div>`;
 }
 
