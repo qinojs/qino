@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { AccessError, ConflictError, invoke, isFile, requestStorage, toTools } from "@qino/qino";
+import { AccessError, ConflictError, fs, invoke, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, fakeCms } from "@qino/qino/tests";
 
 import { api } from "../plugin.ts";
@@ -51,12 +51,12 @@ Deno.test("cms.cont.html api: writes and reads code files", async () => {
   const ctx = fakeCtx(dir);
   try {
     const css = `${dir}data/${name}/pub/7.css`;
-    assertEquals(await isFile(css), false);
+    assertEquals(await fs.isFile(css), false);
     assertEquals(
       await requestStorage.run(ctx as any, () => invoke(api, "PUT", "/node/7/codefiles/css", { content: "body {}\n" })),
       "<div>rendered</div>",
     );
-    assertEquals(await isFile(css), true);
+    assertEquals(await fs.isFile(css), true);
     assertEquals(
       await requestStorage.run(ctx as any, () => invoke(api, "GET", "/node/7/codefiles/css")),
       { content: "body {}\n" },

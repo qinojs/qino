@@ -1,6 +1,7 @@
 import { assertEquals } from "./deps.ts";
 import { createHash } from "node:crypto";
 import { File } from "../lib/File.ts";
+import { fs } from "../lib/fs.ts";
 
 Deno.test("File: basename, size and md5", async () => {
   const dir = await Deno.makeTempDir();
@@ -9,7 +10,7 @@ Deno.test("File: basename, size and md5", async () => {
     const file = new File(path);
 
     assertEquals(await file.exists(), undefined);
-    await Deno.writeTextFile(path, "hello");
+    await fs.write(path, "hello"); // through fs: the cached miss above is forgotten
     assertEquals(await file.exists(), file);
     assertEquals(file.basename(), "hello.txt");
     assertEquals(file.basename(".txt"), "hello");

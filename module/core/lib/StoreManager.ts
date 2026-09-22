@@ -1,4 +1,5 @@
 import { fromFileUrl } from "../deps.ts";
+import { fs } from "./fs.ts";
 import { isModuleName, readManifest, resolveSpecifier } from "./ModuleManager.ts";
 
 import type { App } from "./App.ts";
@@ -10,8 +11,8 @@ async function readFolder(url: string): Promise<string[]> {
   if (!url.startsWith("file:")) throw new Error(`Store ${url}: a folder store is local only, a remote store needs a store.json`);
   const dir = fromFileUrl(url);
   const names = [];
-  for await (const e of Deno.readDir(dir))
-    if (e.isDirectory && isModuleName(e.name) && await Deno.stat(`${dir}${e.name}/plugin.ts`).then((s) => s.isFile, () => false)) names.push(e.name);
+  for (const e of await fs.list(dir))
+    if (e.isDirectory && isModuleName(e.name) && await fs.isFile(`${dir}${e.name}/plugin.ts`)) names.push(e.name);
   return names.sort();
 }
 

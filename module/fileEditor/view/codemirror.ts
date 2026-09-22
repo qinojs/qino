@@ -1,8 +1,6 @@
 import * as nodePath from "node:path";
-import { constants as fsConstants } from "node:fs";
-import * as nodeFs from "node:fs/promises";
 import { typeByExtension } from "@std/media-types";
-import { html, getCtx } from "@qino/qino";
+import { fs, html, getCtx } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 export default async function codemirrorView(file: string): Promise<string> {
@@ -55,9 +53,9 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   const mime = extToCodeMirrorMime(file.replace(/.*\.([^.]+)/, "$1"));
 
-  const isWritable = await nodeFs.access(file, fsConstants.W_OK).then(() => true).catch(() => false);
+  const isWritable = await fs.writable(file);
 
-  const content = await Deno.readTextFile(file);
+  const content = await fs.text(file);
   const line = ctx.req.query.line ?? "";
   const col = ctx.req.query.col ?? "";
 

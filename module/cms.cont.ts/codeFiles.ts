@@ -1,8 +1,8 @@
-import { getCtx, isFile } from "@qino/qino";
+import { fs, getCtx } from "@qino/qino";
 
 import type { Node } from "@qino/qino/cms";
 
-const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});
+const write = (path: string, content: string) => fs.write(path, content, { createNew: true }).catch(() => {});
 
 /** The code of a node, in the app dir: the source outside pub/, css and js inside — where the static route serves them. */
 export function codeFiles(node: Node) {
@@ -14,7 +14,7 @@ export function codeFiles(node: Node) {
 
     /** Create the files with their initial content; existing files are kept. */
     async create(src: string) {
-      await Deno.mkdir(`${mod.data}pub/`, { recursive: true });
+      await fs.mkdir(`${mod.data}pub/`);
       await write(this.src, src);
       await write(this.css, `${sel} {\n}\n`);
       await write(this.js, initialJs(sel));
@@ -22,9 +22,9 @@ export function codeFiles(node: Node) {
 
     /** Add the css and js that exist to the current response. */
     async addAssets() {
-      const ctx = getCtx(), html = ctx.res.html;
-      if (await isFile(this.css, ctx.dev)) html.styles.add(`${mod.dataUrl}pub/${id}.css`);
-      if (await isFile(this.js, ctx.dev)) html.scripts.add(`${mod.dataUrl}pub/${id}.js`);
+      const html = getCtx().res.html;
+      if (await fs.isFile(this.css)) html.styles.add(`${mod.dataUrl}pub/${id}.css`);
+      if (await fs.isFile(this.js)) html.scripts.add(`${mod.dataUrl}pub/${id}.js`);
     },
   };
 }

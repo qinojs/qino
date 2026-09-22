@@ -1,11 +1,14 @@
 
+import { fileURLToPath } from "node:url";
+import { fs } from "@qino/qino";
+
 import { renderTemplateFile } from "./mod.ts";
 
 import type { Module } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-const read = (source: URL) => source.protocol === "file:" ? Deno.readTextFile(source) : fetch(source).then((r) => r.text());
-const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});
+const read = (source: URL) => source.protocol === "file:" ? fs.text(fileURLToPath(source)) : fetch(source).then((r) => r.text());
+const write = (path: string, content: string) => fs.write(path, content, { createNew: true }).catch(() => {});
 
 /** A module's template as a starting point: the site's own copy in the app dir beats the shipped one. */
 export function moduleTemplate(mod: Module): {
@@ -22,8 +25,8 @@ export function moduleTemplate(mod: Module): {
 
     /** Give the site its own files, once — a file deleted later stays deleted and falls back. */
     async create(css: string) {
-      if (await Deno.stat(mod.data).catch(() => null)) return;
-      await Deno.mkdir(`${mod.data}pub/`, { recursive: true });
+      if (await fs.stat(mod.data)) return;
+      await fs.mkdir(`${mod.data}pub/`);
       await write(this.file, await read(this.shipped));
       await write(this.css, css);
     },

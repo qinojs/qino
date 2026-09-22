@@ -5,6 +5,7 @@ import { BlockList, isIP } from "node:net";
 import { Readable } from "node:stream";
 
 import { extensionByType, typeByExtension } from "../deps.ts";
+import { fs } from "./fs.ts";
 
 export type UploadedFile = {
   name: string;
@@ -60,27 +61,24 @@ export async function readDataUrl(uri: string, opt: { maxSize: number }): Promis
 
 async function saveStream(stream: ReadableStream<Uint8Array>, opt: { maxSize?: number; prefix?: string; dir?: string } = {}) {
   const { prefix, dir } = opt;
-  const path = await Deno.makeTempFile({ prefix, dir });
+  const path = await fs.tempFile({ prefix, dir });
   const hash = nodeCrypto.createHash("md5");
   let size = 0;
-  try {
-    using file = await Deno.open(path, { write: true });
-    for await (const chunk of stream) {
+  const count = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
       size += chunk.length;
       if (opt.maxSize && size > opt.maxSize) throw new Error("Stream too large");
       hash.update(chunk);
-      await writeAll(file, chunk);
-    }
+      controller.enqueue(chunk);
+    },
+  });
+  try {
+    await fs.write(path, stream.pipeThrough(count));
   } catch (e) {
-    await Deno.remove(path).catch(() => {}); // the file is already closed here — `using` disposes on block exit
+    await fs.remove(path);
     throw e;
   }
   return { path, size, md5: hash.digest("hex") };
-}
-
-async function writeAll(file: Deno.FsFile, chunk: Uint8Array): Promise<void> {
-  let written = 0;
-  while (written < chunk.length) written += await file.write(chunk.subarray(written));
 }
 
 const NON_PUBLIC_IPV4 = new BlockList();

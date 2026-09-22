@@ -2,6 +2,7 @@
 import { typeByExtension, sql } from "../deps.ts";
 import { grant } from "./crypto.ts";
 import { File } from "./File.ts";
+import { fs } from "./fs.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, mimeType, readDataUrl, readUploadFile } from "./fileStream.ts";
@@ -29,12 +30,6 @@ export async function deleteUnlinkedDbFiles(app: App): Promise<{ deleted: number
   return { deleted };
 }
 
-/** Move a file, falling back to copy+remove when rename fails (e.g. across filesystems). */
-async function moveFile(from: string, to: string) {
-  try { await Deno.rename(from, to); }
-  catch { await Deno.copyFile(from, to); await Deno.remove(from).catch(() => {}); }
-}
-
 export class DbFileManager {
   #cache = new Map<string, DbFile>();
   #app: App;
@@ -43,7 +38,7 @@ export class DbFileManager {
   constructor(app: App, directory: string) {
     this.#app = app;
     this.#directory = directory.endsWith("/") ? directory : directory + "/";
-    Deno.mkdir(this.#directory, { recursive: true }).catch(() => {});
+    fs.mkdir(this.#directory).catch(() => {});
   }
 
   get app(): App { return this.#app; }
@@ -138,7 +133,7 @@ export class DbFileManager {
     headers.set("Content-Type", mime);
 
     // Cache key as ETag (content identity) – cache-file mtime is unusable, it gets touched for LRU tracking
-    const etag = `"qg${key ?? (await Deno.stat(outputPath).catch(() => null))?.mtime?.getTime() ?? 0}"`;
+    const etag = `"qg${key ?? await fs.mtime(outputPath) ?? 0}"`;
     headers.set("ETag", etag);
     const inm = req.headers.get("if-none-match");
     if (inm ? etagMatch(inm, etag) : Date.parse(req.headers.get("if-modified-since") ?? "") >= mtime! * 1000) {
@@ -161,9 +156,9 @@ export class DbFileManager {
       }
     }
 
-    const file = await Deno.open(outputPath, { read: true });
-    headers.set("Content-Length", String((await file.stat()).size));
-    return new Response(file.readable, { status: 200, headers });
+    const stream = await fs.stream(outputPath);
+    headers.set("Content-Length", String(await fs.size(outputPath)));
+    return new Response(stream, { status: 200, headers });
   }
 
 }
@@ -268,7 +263,7 @@ export class DbFile extends File {
     // Deferred: a blob is the only unrecoverable data, so never unlink before the transaction committed.
     await db.afterCommit(async () => {
       const still = await db.one`SELECT id FROM ${sql.id(tableRef("file"))} WHERE md5 = ${md5}`;
-      if (!still) await Deno.remove(this.#manager.directory + md5).catch(() => {});
+      if (!still) await fs.remove(this.#manager.directory + md5);
     });
   }
 
@@ -281,7 +276,7 @@ export class DbFile extends File {
 
     const md5 = await src.md5();
     this.path = this.#manager.directory + md5;
-    await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
+    await fs.mkdir(this.#manager.directory);
     if (!await src.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
 
     await this.setVs({ name: src.basename(), mime: mimeType(src.mime), md5, size: await this.size(), text: null });
@@ -289,8 +284,8 @@ export class DbFile extends File {
 
   async replaceFromUpload(f: UploadedFile) {
     this.path = this.#manager.directory + f.md5;
-    await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-    await moveFile(f.tmpPath, this.path);
+    await fs.mkdir(this.#manager.directory);
+    await fs.rename(f.tmpPath, this.path);
 
     const ext = f.name.replace(/.*\./, "").toLowerCase();
     const type = f.type === "application/octet-stream" ? mimeType(typeByExtension(ext) ?? f.type) : f.type;
@@ -326,11 +321,11 @@ export class DbFile extends File {
     if (!await this.exists()) return "";
     let path = this.path;
     let text = "";
-    if (this.mime.startsWith("text/")) text = await Deno.readTextFile(path).catch(() => "");
+    if (this.mime.startsWith("text/")) text = await fs.text(path).catch(() => "");
     else {
       const r = await this.transform({ fmt: "md" });
       if (r.error) throw r.error;
-      if (r.transformed) text = await Deno.readTextFile((path = r.path)).catch(() => "");
+      if (r.transformed) text = await fs.text((path = r.path)).catch(() => "");
     }
     text = text.slice(0, MAX_TEXT);
     await this.setVs({ text });
@@ -382,23 +377,11 @@ function isTransformRequest(param: Record<string, unknown>): boolean {
 async function openRange(filePath: string, rangeHeader: string) {
   const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
   if (!m || (!m[1] && !m[2])) return null;
-  const file = await Deno.open(filePath, { read: true }).catch(() => null);
-  if (!file) return null;
-  try {
-    const size = (await file.stat()).size;
-    const start = m[1] === "" ? Math.max(size - Number(m[2]), 0) : Number(m[1]); // `-n` = last n bytes
-    const end = m[1] !== "" && m[2] !== "" ? Math.min(Number(m[2]), size - 1) : size - 1;
-    if (start > end || start >= size) { file.close(); return size; }
-    await file.seek(start, Deno.SeekMode.Start);
-    const length = end - start + 1;
-    let remaining = length;
-    const stream = file.readable.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
-      transform(chunk, controller) {
-        controller.enqueue(chunk.subarray(0, Math.min(chunk.byteLength, remaining)));
-        remaining -= Math.min(chunk.byteLength, remaining);
-        if (remaining === 0) controller.terminate(); // cancels the source, closing the file
-      },
-    }));
-    return { stream, length, contentRange: `bytes ${start}-${end}/${size}` };
-  } catch { file.close(); return null; }
+  const size = await fs.size(filePath);
+  if (size === undefined) return null;
+  const start = m[1] === "" ? Math.max(size - Number(m[2]), 0) : Number(m[1]); // `-n` = last n bytes
+  const end = m[1] !== "" && m[2] !== "" ? Math.min(Number(m[2]), size - 1) : size - 1;
+  if (start > end || start >= size) return size;
+  const stream = await fs.stream(filePath, { start, end }).catch(() => null);
+  return stream && { stream, length: end - start + 1, contentRange: `bytes ${start}-${end}/${size}` };
 }

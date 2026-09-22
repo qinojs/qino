@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import * as nodePath from "node:path";
 
 import { keyed, uid } from "../crypto.ts";
+import { fs } from "../fs.ts";
 import { Res } from "./Res.ts";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { Req } from "./Req.ts";
@@ -126,6 +127,10 @@ function pubPath(root: string, file: string) {
 }
 
 export const requestStorage: AsyncLocalStorage<Ctx> = new AsyncLocalStorage();
+
+// A request in dev looks at files fresh; outside a request the default holds.
+const ttl = fs.ttl;
+fs.ttl = () => requestStorage.getStore()?.dev ? 0 : ttl();
 
 export function getCtx(): Ctx {
   const ctx = requestStorage.getStore();

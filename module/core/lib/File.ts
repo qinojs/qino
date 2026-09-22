@@ -1,6 +1,7 @@
 import * as nodeCrypto from "node:crypto";
 
 import { typeByExtension } from "../deps.ts";
+import { fs } from "./fs.ts";
 
 export class File {
   path: string;
@@ -23,31 +24,29 @@ export class File {
   }
 
   copyTo(dest: string): Promise<boolean> {
-    return Deno.copyFile(this.path, dest).then(() => true, () => false);
+    return fs.copy(this.path, dest).then(() => true, () => false);
   }
 
   async exists(): Promise<this | undefined> {
     if (!this.path) return;
-    const stat = await Deno.stat(this.path).catch(() => null);
-    return stat?.isFile ? this : undefined;
+    return await fs.isFile(this.path) ? this : undefined;
   }
 
   async mtime(): Promise<number | undefined> {
-    const stat = await Deno.stat(this.path).catch(() => null);
-    return stat?.mtime ? Math.floor(stat.mtime.getTime() / 1000) : undefined;
+    const ms = await fs.mtime(this.path);
+    return ms === undefined ? undefined : Math.floor(ms / 1000);
   }
 
   async size(): Promise<number> {
-    const stat = await Deno.stat(this.path).catch(() => null);
-    return stat?.size ?? 0;
+    return await fs.size(this.path) ?? 0;
   }
 
   async md5(): Promise<string> {
-    const file = await Deno.open(this.path).catch(() => null);
-    if (!file) return "";
+    const stream = await fs.stream(this.path).catch(() => null);
+    if (!stream) return "";
     const hash = nodeCrypto.createHash("md5");
     // streamed: a big file must not land in memory. A directory opens fine and only throws here.
-    try { for await (const chunk of file.readable) hash.update(chunk); } catch { return ""; }
+    try { for await (const chunk of stream) hash.update(chunk); } catch { return ""; }
     return hash.digest("hex");
   }
 

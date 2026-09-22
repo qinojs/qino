@@ -1,4 +1,5 @@
 import { assertEquals } from "@qino/qino/tests";
+import { fs } from "@qino/qino";
 
 import { loadTemplate } from "../mod.ts";
 
@@ -15,7 +16,7 @@ Deno.test("loadTemplate: a saved file is reparsed, an unchanged one comes from t
   assertEquals(await loadTemplate(path), first); // same object — parsed once
 
   await new Promise((r) => setTimeout(r, 10)); // let mtime advance
-  await Deno.writeTextFile(path, "<div>b</div>");
+  await fs.write(path, "<div>b</div>"); // through fs, or the cached stat hides it until its ttl
   const second = await loadTemplate(path);
   assertEquals(text(second) === text(first), false);
   await Deno.remove(path);

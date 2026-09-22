@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { getCtx, html } from "@qino/qino";
+import { fs, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import { codeFiles } from "./codeFiles.ts";
@@ -32,7 +32,7 @@ async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown>
   await code.addAssets();
 
   // mtime busts the ESM cache, so a saved file takes effect with the next request
-  const mtime = (await Deno.stat(code.src).catch(() => null))?.mtime?.getTime();
+  const mtime = await fs.mtime(code.src);
   if (mtime === undefined) return "<div></div>";
   const mod = await import(`${toFileUrl(code.src).href}?v=${mtime}`);
   if (typeof mod.default !== "function") throw new Error(`${node.id}.ts has no default exported function`);

@@ -2,6 +2,7 @@
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults, errMsg, isEmptyObject, newestMtime, unixTime } from "./util.ts";
+import { fs } from "./fs.ts";
 import { safeFetch } from "./fileStream.ts";
 import { uid } from "./crypto.ts";
 
@@ -278,7 +279,7 @@ export class ModuleManager {
     await this.#app.db.table("module").delete(name);
     // derived files go, `data/` stays: what is reproducible costs nothing to lose, and a mirrored
     // remote module would otherwise leave its files behind for a name that may come back as another
-    if (mod) await Deno.remove(mod.cache, { recursive: true }).catch(() => {});
+    if (mod) await fs.remove(mod.cache, { recursive: true }).catch(() => {});
     this.#installed.delete(name);
     this.#failed.delete(name);
     this.#modules.delete(name);
@@ -380,12 +381,12 @@ export class ModuleManager {
     if (!dir) return;
     const ns = mod.name === "core" ? "" : mod.name;
     try {
-      for await (const e of Deno.readDir(dir + "locale/")) {
+      for (const e of await fs.list(dir + "locale/")) {
         const m = e.name.match(/^([a-z]{2})\.json$/);
-        if (m) await this.#app.languages.import(m[1], ns, await Deno.readTextFile(dir + "locale/" + e.name));
+        if (m) await this.#app.languages.import(m[1], ns, await fs.text(dir + "locale/" + e.name));
       }
     } catch (e) { /* module has no locale dir */
-      if (!(e instanceof Deno.errors.NotFound)) console.error(`locale import failed for module "${mod.name}":`, e);
+      if ((e as { code?: string }).code !== "ENOENT") console.error(`locale import failed for module "${mod.name}":`, e);
     }
   }
 
@@ -467,13 +468,13 @@ async function mirrorPub(mod: Module): Promise<void> {
   // The source plus every declared file says whether this release is already here. A store address
   // carries its release, so nothing below it changes — and a different address is a different mirror.
   const stamp = dir + ".source";
-  const marked = await Deno.readTextFile(stamp).catch(() => "");
+  const marked = await fs.text(stamp).catch(() => "");
   if (marked === mod.source && (await Promise.all(
-    files.map((file: string) => Deno.stat(dir + file).then((entry) => entry.isFile).catch(() => false)),
+    files.map((file: string) => fs.isFile(dir + file)),
   )).every(Boolean)) return;
   // one mkdir per directory the list names, not one per file — pub/ has subdirectories
   const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
-  await Promise.all([...dirs].map((d) => Deno.mkdir(d, { recursive: true }).catch(() => {})));
+  await Promise.all([...dirs].map((d) => fs.mkdir(d).catch(() => {})));
   const got = await Promise.all(files.map(async (file: string) => {
     const target = dir + file;
     try {
@@ -481,8 +482,8 @@ async function mirrorPub(mod: Module): Promise<void> {
       if (!res.ok) throw new Error(`${res.status}`);
       // named for this attempt, then moved: a half-written file is never served
       const tmp = `${target}.${uid(8)}.part`;
-      await Deno.writeFile(tmp, new Uint8Array(await res.arrayBuffer()));
-      await Deno.rename(tmp, target).catch(() => Deno.remove(tmp).catch(() => {}));
+      await fs.write(tmp, new Uint8Array(await res.arrayBuffer()));
+      await fs.rename(tmp, target).catch(() => fs.remove(tmp));
       return true;
     } catch (e) {
       console.warn(`module ${mod.name}: ${file} could not be fetched —`, errMsg(e));
@@ -490,5 +491,5 @@ async function mirrorPub(mod: Module): Promise<void> {
     }
   }));
   // only a complete mirror is stamped, so what did not come is tried again next time
-  if (got.every(Boolean)) await Deno.writeTextFile(stamp, mod.source).catch(() => {});
+  if (got.every(Boolean)) await fs.write(stamp, mod.source).catch(() => {});
 }

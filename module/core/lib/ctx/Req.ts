@@ -101,7 +101,7 @@ export class Req {
   /** Clear the deadline, wait for running upload spools and remove their tmp files. */
   async cleanup(): Promise<void> {
     this.#deadline?.clear();
-    for (const p of await this.#body.settle()) await Deno.remove(p).catch(() => {});
+    for (const p of await this.#body.settle()) await fs.remove(p).catch(() => {});
   }
 
   static async create(request: Request, opt: {

@@ -1,4 +1,4 @@
-import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, isFile, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
+import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -173,7 +173,7 @@ export class Node {
         for (const file of nodeExports?.css ?? []) ctx.res.html.styles.add(isAbsolute(file) ? file : mod!.modUrl + file);
         for (const file of nodeExports?.js ?? [])  ctx.res.html.scripts.add(isAbsolute(file) ? file : mod!.modUrl + file);
         // App-specific css of this module
-        if (mod && await isFile(mod.data + "pub/main.css", ctx.dev)) ctx.res.html.styles.add(mod.dataUrl + "pub/main.css");
+        if (mod && await fs.isFile(mod.data + "pub/main.css")) ctx.res.html.styles.add(mod.dataUrl + "pub/main.css");
 
         renderPath.add(this.id);
         try { return await this.htmlPrepared(vars); }

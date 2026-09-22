@@ -1,4 +1,5 @@
 import { sql } from "../deps.ts";
+import { fs } from "./fs.ts";
 import denoJson from "../../../deno.json" with { type: "json" };
 // html`` is shared verbatim with the browser (SSR): one implementation, two runtimes.
 import { hee, html, HtmlString } from "../pub/js/html.js";
@@ -14,17 +15,6 @@ export const u2Root: string = denoJson.imports["@qino/u2/"];
 export const itemRoot: string = denoJson.imports["@qino/item-cdn/"];
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
-
-const fileCache = new Map<string, { is: boolean; t: number }>(); // absolute paths — no tenant mixing
-
-/** Does this file exist? Cached for 5 min, `dev` always looks. */
-export async function isFile(path: string, dev = false): Promise<boolean> {
-  const hit = fileCache.get(path);
-  if (!dev && hit && performance.now() - hit.t < 300_000) return hit.is;
-  const is = await Deno.stat(path).then((s) => s.isFile).catch(() => false);
-  fileCache.set(path, { is, t: performance.now() });
-  return is;
-}
 
 /** Cookie name prefix. `__Host-` requires Path=/, so fall back to `__Secure-` on sub-path mounts. */
 export function cookiePrefix(secure: boolean, path: string): string {
@@ -70,9 +60,9 @@ export const unixTime = (): number => Math.floor(Date.now() / 1000);
 export async function newestMtime(dir: string): Promise<number> {
   let newest = 0;
   try {
-    for await (const e of Deno.readDir(dir)) {
+    for (const e of await fs.list(dir)) {
       const path = `${dir}/${e.name}`;
-      const time = e.isDirectory ? await newestMtime(path) : Math.floor(((await Deno.stat(path)).mtime?.getTime() ?? 0) / 1000);
+      const time = e.isDirectory ? await newestMtime(path) : Math.floor((await fs.mtime(path) ?? 0) / 1000);
       if (time > newest) newest = time;
     }
   } catch { /* no such directory */ }

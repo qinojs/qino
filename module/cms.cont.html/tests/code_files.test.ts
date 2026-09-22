@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { isFile, requestStorage } from "@qino/qino";
+import { fs, requestStorage } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { codeFiles } from "../codeFiles.ts";
@@ -57,8 +57,8 @@ Deno.test("codeFiles: addAssets only links files that exist", async () => {
   assertEquals([...ctx.res.html.styles], ["/app/d/cms.cont.html/pub/7.css"]);
   assertEquals([...ctx.res.html.scripts], []);
   await Deno.remove(files.css);
-  assertEquals(await isFile(files.css), true); // cached until a write refreshes it
-  await isFile(files.css, true);
+  assertEquals(await fs.isFile(files.css), true); // a foreign remove stays unseen until ttl
+  await fs.isFile(files.css, { ttl: 0 });
   ctx.res.html.styles.clear();
   await requestStorage.run(ctx as any, () => files.addAssets());
   assertEquals([...ctx.res.html.styles], []);

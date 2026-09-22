@@ -1,4 +1,7 @@
 // Public API of cms.templateParser. The qino plugin lives in ./plugin.ts.
+import { fileURLToPath } from "node:url";
+import { fs } from "@qino/qino";
+
 import { parseTemplate } from "./parse.ts";
 import { renderNodes } from "./render.ts";
 
@@ -8,25 +11,25 @@ import type { TNode } from "./parse.ts";
 // Parsed templates keyed by path/URL — derived from the source only, safe to share across apps.
 const cache = new Map<string, { mtime?: number; ast: TNode[] }>();
 
-/** Parsed local or remote template; local files are reparsed whenever they change. */
+/** Parsed local or remote template; local files are reparsed when they change. */
 export async function loadTemplate(source: string | URL): Promise<TNode[] | undefined> {
   const key = String(source);
-  const input = key.startsWith("file:") ? new URL(key) : source;
   if (/^https?:\/\//.test(key)) {
     const cached = cache.get(key);
     if (cached) return cached.ast;
-    const res = await fetch(input).catch(() => null);
+    const res = await fetch(key).catch(() => null);
     if (!res?.ok) return;
     const ast = parseTemplate(await res.text());
     cache.set(key, { ast });
     return ast;
   }
-  const stat = await Deno.stat(input).catch(() => null);
-  if (!stat?.isFile) return;
-  const mtime = stat.mtime?.getTime() ?? 0;
+  const path = key.startsWith("file:") ? fileURLToPath(key) : key;
+  const info = await fs.stat(path);
+  if (!info?.isFile) return;
+  const mtime = info.mtime?.getTime() ?? 0;
   const cached = cache.get(key);
   if (cached?.mtime === mtime) return cached.ast;
-  const html = await Deno.readTextFile(input).catch(() => undefined);
+  const html = await fs.text(path).catch(() => undefined);
   if (html === undefined) return;
   const ast = parseTemplate(html);
   cache.set(key, { mtime, ast });
