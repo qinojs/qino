@@ -214,6 +214,7 @@ Deno.test("cms api: contents returns readable content tree", async () => {
 
 Deno.test("cms api: contents post returns rendered html and the block's shape", async () => {
   const { ctx } = await setup();
+  ctx.app.modules.get = (name) => name === "cms.text" ? {} as never : undefined;
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/node/1/contents", { module: "cms.text" }), {
       id: 4,
@@ -222,6 +223,19 @@ Deno.test("cms api: contents post returns rendered html and the block's shape", 
       texts: {},
       files: { "file.jpg": { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" }, "placeholder.jpg": { placeholder: true } },
     });
+  });
+});
+
+Deno.test("cms api: contents post rejects unknown modules before creating a block", async () => {
+  const { ctx, nodes } = await setup();
+  ctx.app.modules.get = () => undefined;
+  nodes.get(1)!.createCont = () => { throw new Error("Must not create a block"); };
+  await requestStorage.run(ctx, async () => {
+    const error = await assertRejects(
+      () => invoke(api, "POST", "/node/1/contents", { module: "cms.cont.gibtsnicht" }),
+      ValidationError,
+    );
+    assertEquals(error.data, { issues: [{ message: 'Unknown module "cms.cont.gibtsnicht"', path: ["module"] }], where: "input" });
   });
 });
 
