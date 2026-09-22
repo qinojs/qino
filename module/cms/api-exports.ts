@@ -169,7 +169,7 @@ async function thumbUrl(file: any, size: string): Promise<string | undefined> {
     const [w, h] = size.split("x").map(Number);
     if (!w || !h) return;
     const { tool: _tool, ...opt } = spec;
-    return await file.url({ w, h, max: true, ...opt });
+    return file.url({ w, h, max: true, ...opt });
 }
 
 /** `thumb` is a "WxH" the caller wants a preview in; without it none is built. */

@@ -86,7 +86,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
 export async function attachmentsOf(input: unknown): Promise<File[]> {
   if (input == null) return [];
   if (!Array.isArray(input)) throw new ApiError(422, "Invalid attachments");
-  return await Promise.all(input.map(async (value) => {
+  return Promise.all(input.map(async (value) => {
     if (!value || typeof value !== "object") throw new ApiError(422, "Invalid attachment");
     const attachment = value as Record<string, unknown>;
     const name = String(attachment.name ?? "").trim();

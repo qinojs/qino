@@ -29,7 +29,7 @@ const load = (app: App, batch: number[]) =>
 async function attachments(app: App, messageId: number): Promise<Attachment[] | undefined> {
   const files = await app.db.col`SELECT file_id FROM message_attachment WHERE message_id = ${messageId} ORDER BY sort, file_id`;
   if (!files.length) return;
-  return await Promise.all(files.map(async (id) => {
+  return Promise.all(files.map(async (id) => {
     const file = await app.dbFiles.file(Number(id));
     const vs = await file.ensureVs();
     return { name: String(vs.name ?? id), type: String(vs.mime ?? ""), content: fs.bytes(file.path) };

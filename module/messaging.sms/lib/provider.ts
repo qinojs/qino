@@ -70,7 +70,7 @@ async function request(url: string, init: RequestInit): Promise<string | undefin
   const res = await fetch(url, init).catch((e) => {
     throw new ChannelError(`messaging.sms: provider unreachable — ${e instanceof Error ? e.message : e}`);
   });
-  if (res.ok) return await res.json().then((body) => body?.sid ?? body?.id, () => undefined);
+  if (res.ok) return res.json().then((body) => body?.sid ?? body?.id, () => undefined);
   const detail = (await res.text()).trim().slice(0, 300);
   const message = `messaging.sms: provider returned ${res.status}${detail ? ` — ${detail}` : ""}`;
   // only a plain refusal is about the number; unreachable, unauthorised and throttled are ours

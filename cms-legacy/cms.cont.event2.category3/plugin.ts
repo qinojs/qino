@@ -10,7 +10,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const selectedId = Number(ctx.req.query.cmscid);
   if (selectedId) {
     const selected = await node.cms.node(selectedId);
-    if (selected.exists() && Number(selected.vs.basis) === node.id) return await html.async`<div>${selected.html()}</div>`;
+    if (selected.exists() && Number(selected.vs.basis) === node.id) return html.async`<div>${selected.html()}</div>`;
   }
 
   const events: { node: Node; row: Record<string, unknown>; start: Date }[] = [];
