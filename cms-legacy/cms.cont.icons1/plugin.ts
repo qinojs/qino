@@ -23,7 +23,7 @@ async function render(node: Node): Promise<HtmlString> {
   for (const [fileName, file] of await node.files()) {
     const detail: { target?: string; node?: Node } = {};
     const url = await node.cms.url(String(await node.settings.item[fileName].href ?? ""), detail) ?? "";
-    const alt = detail.node ? String(await detail.node.showTitle()) : URL.parse(url)?.host ?? "";
+    const alt = detail.node ? (await detail.node.showTitle()).plain() : URL.parse(url)?.host ?? "";
     const tag = url ? "a" : "span";
     const target = detail.target === "_blank" ? " target=_blank" : "";
     items.push(html`<${html.raw(tag)}${html.raw(target)} href="${url}" style="width:${width}; height:${height}">

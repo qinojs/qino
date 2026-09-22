@@ -48,7 +48,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       : await app.t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`;
     errorHtml = html`<div class=loginError>${msg}</div>`;
   } else if (ctx.loginError) {
-    errorHtml = html`<div class=loginError>${html.raw(await errorT.string())}</div>`;
+    errorHtml = html`<div class=loginError>${html.raw(String(await node.showText("login failed")))}</div>`; // sanitized, like every text output
   }
 
   const out: HtmlString[] = [html`<div>\n${errorHtml}\n`];

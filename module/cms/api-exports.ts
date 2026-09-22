@@ -256,12 +256,12 @@ export async function searchNodes(search: string): Promise<any[]> {
         t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
         const page = await cms(ctx.app).node(vs.id);
         if (!await page.access()) continue;
-        const titleStr = String(await page.showTitle()).trim();
+        const titleStr = (await page.showTitle()).plain();
         if (!titleStr) continue;
         const parent   = await page.parent();
-        const pTitle   = parent ? String(await parent.showTitle()).trim() : "";
+        const pTitle   = parent ? (await parent.showTitle()).plain() : "";
         const gp       = parent ? await parent.parent() : null;
-        const gpTitle  = gp ? String(await gp.showTitle()).trim() : "";
+        const gpTitle  = gp ? (await gp.showTitle()).plain() : "";
         res.push({
             html:  `<b>${hee(titleStr)}</b> (${page.vs?.type === "c" ? "Content" : "Page"} ${page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),

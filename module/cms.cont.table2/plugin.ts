@@ -38,7 +38,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   if (
     ctx.req.query.export_table && ctx.req.query.export_table === String(node)
   ) {
-    const titleStr = String(await node.showTitle());
+    const titleStr = (await node.showTitle()).plain();
     const d = new Date();
     const dateStr = `${String(d.getDate()).padStart(2, "0")}.${
       String(d.getMonth() + 1).padStart(2, "0")

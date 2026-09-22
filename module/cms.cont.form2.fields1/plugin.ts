@@ -1,4 +1,4 @@
-import { getCtx, hee, html, isEmptyObject } from "@qino/qino";
+import { contactKey, getCtx, hee, html, isEmptyObject } from "@qino/qino";
 
 import { sortedIds } from "./sortedIds.ts";
 
@@ -51,6 +51,10 @@ async function plain(node: Node, name: string): Promise<string> {
   return (await node.showText(name)).plain();
 }
 
+/** The address rule users' contacts follow. A visitor's typo must fail the field, not the mail:
+ *  an invalid reply-to stops the notification for the site owner too. */
+const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
+
 /** One field: its markup plus everything it contributes to the form. */
 async function field(node: Node, id: string, form: Form | undefined): Promise<HtmlString> {
   const input = node.settings.inputs[id];
@@ -70,10 +74,15 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
     if (required && !value) {
       form.errors++;
       error = html`<div class=-error>${await node.app.t`This field is required`}</div>`;
-    } else if (type !== "flexible" && value) form.values[label || fieldName] = value;
-    if (type === "email-reply-to" && value) {
-      form.replyTo ||= value;
-      if (input["is-recipient"]()) form.recipients.push(value);
+    } else if ((type === "email" || type === "email-reply-to") && value && !isEmail(value)) {
+      form.errors++;
+      error = html`<div class=-error>${await node.app.t`Please enter a valid e-mail address`}</div>`;
+    } else {
+      if (type !== "flexible" && value) form.values[label || fieldName] = value;
+      if (type === "email-reply-to" && value) {
+        form.replyTo ||= value;
+        if (input["is-recipient"]()) form.recipients.push(value);
+      }
     }
   }
   if (type === "email-reply-to") type = "email";

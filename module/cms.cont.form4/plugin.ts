@@ -64,7 +64,7 @@ async function recipients(node: Node, form?: Form): Promise<string[]> {
 async function send(node: Node, form: Form): Promise<boolean> {
   const app = node.app;
   const subject = (await node.showText("mailSubject")).plain() ||
-    String(await (await node.page()).showTitle());
+    (await (await node.page()).showTitle()).plain();
 
   let body = String(await node.showText("email_before"));
   for (const [name, value] of Object.entries(form.values)) {

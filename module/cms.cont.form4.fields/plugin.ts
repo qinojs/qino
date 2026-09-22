@@ -1,4 +1,4 @@
-import { getCtx, hee, html } from "@qino/qino";
+import { contactKey, getCtx, hee, html } from "@qino/qino";
 
 import api from "./nodeApi.ts";
 
@@ -56,6 +56,10 @@ function attrs(list: Record<string, string | number | boolean | undefined>): Htm
   return html.raw(str);
 }
 
+/** The address rule users' contacts follow. A visitor's typo must fail the field, not the mail:
+ *  an invalid reply-to stops the notification for the site owner too. */
+const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
+
 /** One field: its markup plus everything it contributes to the form. */
 async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx): Promise<HtmlString> {
   const set = node.settings.fields[name];
@@ -77,6 +81,9 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
     } else if (required && !value) {
       form.errors++;
       error = html`<div class=-error>${await node.app.t`This field is required`}</div>`;
+    } else if (type === "email" && value && !isEmail(value)) {
+      form.errors++;
+      error = html`<div class=-error>${await node.app.t`Please enter a valid e-mail address`}</div>`;
     } else if (value) {
       form.values[name] = type === "number" ? Number(value) : type === "checkbox" ? true : value;
       form.labels[name] = label;

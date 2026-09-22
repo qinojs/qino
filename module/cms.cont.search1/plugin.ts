@@ -1,4 +1,4 @@
-import { html, sql, sqlSearch } from "@qino/qino";
+import { html, sql, sqlSearch, unhee } from "@qino/qino";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -37,7 +37,7 @@ const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boole
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
 function snippet(text: string, words: string[], parts = 7, before = 30, after = 10): HtmlString {
-  const plain = text.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  const plain = unhee(text.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); // \s takes the decoded &nbsp; too
   if (!words.length) return html`${plain.slice(0, before + after)}`;
   const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i")).slice(0, parts).map((piece) =>
     words.includes(piece.toLowerCase())
@@ -105,7 +105,7 @@ async function item(node: Node, page: Node, text: string, words: string[]): Prom
   if (await node.settings.breadcrumb) {
     const links = [];
     for (const p of (await page.path()).values()) {
-      if (p.id === 1 || !String(await p.showTitle()).trim()) continue;
+      if (p.id === 1 || !(await p.showTitle()).plain()) continue;
       links.push(await cms.link(p));
     }
     path = html`<div class=-breadcrumb>${html.join(links, " - ")}</div>`;
