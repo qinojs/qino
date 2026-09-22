@@ -193,7 +193,7 @@ export const api: ApiTree = {
 
   "tool-calls": {
     post: {
-      description: "Run several tool calls in order, in one request (one log entry). Stops at the first failure: the calls before it stay saved.",
+      description: "Run several tool calls batched, in order. Stops at the first failure; earlier calls are not rolled back.",
       access: Access.USER,
       input: s.object({ calls: s.array(s.object({ name: s.string(), arguments: s.optional(s.record()) })) }),
       execute: async ({ calls }: any, ctx) => {
