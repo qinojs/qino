@@ -3,7 +3,7 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-import { clientIp, getCtx, Output, unixTime } from "@qino/qino";
+import { clientIp, fs, getCtx, Output, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -59,7 +59,7 @@ async function handleCssError(ctx: Ctx): Promise<void> {
       if (!localPath) throw new Error("not a local file");
       if (!localPath.endsWith(".css")) throw new Error("not a css file");
       ctx.app.assertAllowedPath(localPath);
-      const content = await Deno.readTextFile(localPath);
+      const content = await fs.text(localPath);
       const pos = content.indexOf(message);
       if (pos >= 0) {
         const lines = content.slice(0, pos).split("\n");

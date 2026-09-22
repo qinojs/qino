@@ -1,4 +1,4 @@
-import { html, sql } from "@qino/qino";
+import { fs, html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { findCheck, getHealthChecks } from "./lib/healthRegistry.ts";
@@ -146,9 +146,9 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   // Cache size
   let cacheSize = 0, cacheCount = 0;
   async function measureCache(dir: string) {
-    for (const entry of await Array.fromAsync(Deno.readDir(dir)).catch(() => [])) {
+    for (const entry of await fs.list(dir).catch(() => [])) {
       if (entry.isDirectory) { await measureCache(dir + entry.name + "/"); continue; }
-      cacheSize += (await Deno.stat(dir + entry.name).catch(() => null))?.size ?? 0;
+      cacheSize += await fs.size(dir + entry.name, { ttl: 0 }) ?? 0;
       cacheCount++;
     }
   }

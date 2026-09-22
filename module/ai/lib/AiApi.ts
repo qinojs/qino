@@ -1,4 +1,4 @@
-import { errMsg, unixTime } from "@qino/qino";
+import { errMsg, fs, unixTime } from "@qino/qino";
 
 import { Provider } from "./Provider.ts";
 import { ChatSession } from "./ChatSession.ts";
@@ -99,7 +99,7 @@ export class AiApi {
       const file = str(data.file);
       if (!file) throw new Error("No transcription file given.");
       const body = new FormData();
-      body.set("file", new Blob([await Deno.readFile(file)], { type: str(data.mime) ?? "application/octet-stream" }), str(data.filename) ?? "audio");
+      body.set("file", new Blob([await fs.bytes(file)], { type: str(data.mime) ?? "application/octet-stream" }), str(data.filename) ?? "audio");
       body.set("model", modelId ?? str(data.model) ?? "");
       for (const [k, v] of Object.entries(data)) {
         if (["_provider", "model", "file", "mime", "filename"].includes(k) || v == null) continue;

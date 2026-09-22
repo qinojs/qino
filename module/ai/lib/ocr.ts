@@ -1,3 +1,5 @@
+import { fs } from "@qino/qino";
+
 import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
 
@@ -27,7 +29,7 @@ export function registerAiOcr(app: App): void {
     beatsTextLayer: true,
     available: () => hasVisionModel(app),
     ocr: async (imagePath, mime) => {
-      const image = (await Deno.readFile(imagePath)).toBase64();
+      const image = (await fs.bytes(imagePath)).toBase64();
       const res = await ai(app).vision({
         messages: [{
           role: "user",

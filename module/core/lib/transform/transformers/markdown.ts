@@ -4,6 +4,7 @@ import * as pandoc from '../pandoc.ts';
 import * as pdftotext from '../pdftotext.ts';
 import { ocrPdf } from '../ocr.ts';
 import * as magick from '../magick.ts';
+import { fs } from '../../fs.ts';
 import { TRANSCRIPT_MIME } from './transcript.ts';
 
 import type { Transcript, TransformContext, TransformerDef } from '../types.ts';
@@ -41,7 +42,7 @@ export const markdown: TransformerDef = {
   ),
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'out.md');
-    if (ctx.mime === TRANSCRIPT_MIME) await Deno.writeTextFile(out, transcriptToMarkdown(JSON.parse(await Deno.readTextFile(ctx.currentPath))));
+    if (ctx.mime === TRANSCRIPT_MIME) await fs.write(out, transcriptToMarkdown(JSON.parse(await fs.text(ctx.currentPath))));
     else if (ctx.mime === 'application/pdf') await pdfToMarkdown(ctx, out);
     else await pandoc.run(ctx.currentPath, PANDOC_FORMATS[ctx.mime], out, ctx.signal);
     ctx.currentPath = out;
@@ -54,12 +55,12 @@ async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> 
   let text: string | undefined;
   if (await pdftotext.available()) {
     await pdftotext.run(ctx.currentPath, out, ctx.signal);
-    text = (await Deno.readTextFile(out)).trim();
+    text = (await fs.text(out)).trim();
   }
   const engine = await ctx.transformer.ocrEngine(ctx);
   if (engine && (engine.beatsTextLayer || !text || text.length < 20)) {
     const ocred = await ocrPdf(ctx, engine);
-    if (ocred !== undefined) return Deno.writeTextFile(out, ocred);
+    if (ocred !== undefined) return fs.write(out, ocred);
   }
   if (text === undefined) throw new Error('markdown: pdftotext missing and OCR failed');
 }

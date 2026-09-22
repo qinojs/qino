@@ -1,4 +1,4 @@
-import { hee, html, sql, tableRef, unixTime, isEmptyObject } from "@qino/qino";
+import { fs, hee, html, sql, tableRef, unixTime, isEmptyObject } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
 
 import { openForm } from "./mod.ts";
@@ -68,7 +68,7 @@ async function send(node: Node, form: Form): Promise<boolean> {
   const settingRecipients = String(node.settings.recipients() ?? "").match(/[^\s,;<>]+@[^\s,;<>]+/g) ?? [];
   const to = [...new Set([...settingRecipients, ...form.recipients])];
   if (!to.length) return false; // a form nobody receives is a misconfiguration, not a delivery
-  const attachments = form.attachments.map((file) => ({ name: file.name, content: Deno.readFile(file.path) }));
+  const attachments = form.attachments.map((file) => ({ name: file.name, content: fs.bytes(file.path) }));
   return await sendMail(app, { email: to }, {
     title: subject,
     text: body,

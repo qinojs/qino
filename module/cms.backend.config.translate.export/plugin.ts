@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { ConflictError, html } from "@qino/qino";
+import { ConflictError, fs, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import type { HtmlString, App } from "@qino/qino";
@@ -14,10 +14,10 @@ type Change = { ns: string; lang: string; file: string; added: { key: string; ne
 // Compare export map against the current file; null = no difference
 async function diffFile(ns: string, lang: string, file: string, map: Record<string, string>): Promise<Change | null> {
   let old: Record<string, string> = {};
-  try { old = JSON.parse(await Deno.readTextFile(file)); }
+  try { old = JSON.parse(await fs.text(file)); }
   catch (e) {
     if (e instanceof SyntaxError) throw new ConflictError(`Invalid locale file: ${ns}/locale/${lang}.json`);
-    if (!(e instanceof Deno.errors.NotFound)) throw e;
+    if ((e as { code?: string }).code !== "ENOENT") throw e;
   }
   const added: Change["added"] = [], removed: string[] = [], changed: Change["changed"] = [];
   for (const [k, v] of Object.entries(map)) {
@@ -48,8 +48,8 @@ async function api(node: Node, vars: any): Promise<any> {
       const change = await diffFile(name, lang, file, map);
       if (preview && change) changes.push(change);
       else if (!preview) {
-        await Deno.mkdir(localeDir, { recursive: true });
-        await Deno.writeTextFile(file, JSON.stringify(map, null, 2) + "\n");
+        await fs.mkdir(localeDir);
+        await fs.write(file, JSON.stringify(map, null, 2) + "\n");
         written.push(file);
       }
     }

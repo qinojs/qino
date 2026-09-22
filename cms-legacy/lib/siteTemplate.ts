@@ -1,3 +1,5 @@
+import { fs } from "@qino/qino";
+
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
@@ -9,9 +11,9 @@ export async function siteTemplate(
   data: unknown,
 ): Promise<HtmlString | string | undefined> {
   const path = node.module!.data + "index.ts";
+  if (!await fs.isFile(path)) return; // no site template for this module
   try {
-    await Deno.stat(path);
     const mod = await import(path);
     if (typeof mod.default === "function") return await mod.default(node, data);
-  } catch { /* no site template for this module */ }
+  } catch { /* broken site template */ }
 }

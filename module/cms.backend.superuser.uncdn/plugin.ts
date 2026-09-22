@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { html } from "@qino/qino";
+import { fs, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { cacheByteLimit, uncdn } from "@qino/qino/uncdn";
 
@@ -16,7 +16,7 @@ export async function install({ app }: { app: App }) {
 
 /** The cache as a u2-tree, and the bytes below `path`. */
 async function buildTree(path: string, baseLen: number): Promise<[HtmlString, number]> {
-  const entries: Deno.DirEntry[] = await Array.fromAsync(Deno.readDir(path)).catch(() => []);
+  const entries = await fs.list(path).catch(() => []);
   entries.sort((a, b) =>
     a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1
   );
@@ -25,7 +25,7 @@ async function buildTree(path: string, baseLen: number): Promise<[HtmlString, nu
     const full = path + e.name;
     const [children, size]: [HtmlString, number] = e.isDirectory
       ? await buildTree(full + "/", baseLen)
-      : [html``, (await Deno.stat(full).catch(() => null))?.size ?? 0];
+      : [html``, await fs.size(full, { ttl: 0 }) ?? 0];
     total += size;
     return html`<u2-tree>
       <u2-ico slot=icon icon=${e.isDirectory ? "folder" : "description"}>${e.isDirectory ? "🗀" : "🗎"}</u2-ico>
@@ -49,7 +49,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   if (vars.delete !== undefined) {
     const target = nodePath.resolve(root, String(vars.delete).replace(/^\/+/, ""));
     if (target === root || target.startsWith(root + nodePath.sep))
-      await Deno.remove(target, { recursive: true }).catch(() => {}); // already gone
+      await fs.remove(target, { recursive: true }).catch(() => {}); // already gone
   }
 
   const [tree, totalSize] = await buildTree(cacheDir, cacheDir.length);

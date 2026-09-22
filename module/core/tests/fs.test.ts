@@ -17,12 +17,14 @@ Deno.test("fs: stat, isFile, size, mtime; missing is undefined", () => inDir(asy
   await fs.write(path, "hello");
   const info = await fs.stat(path);
   assertEquals(info?.isFile, true);
+  assertEquals(info?.isDirectory, false);
   assertEquals(info?.size, 5);
   assert(info?.mtime instanceof Date);
   assert(info?.atime instanceof Date);
   assertEquals(await fs.size(path), 5);
   assertEquals(await fs.mtime(path), info?.mtime?.getTime());
   assertEquals(await fs.isFile(dir), false); // a directory is not a file
+  assertEquals((await fs.stat(dir))?.isDirectory, true);
 }));
 
 Deno.test("fs: foreign writes stay unseen until ttl, own writes are seen at once", () => inDir(async (dir) => {
@@ -107,6 +109,17 @@ Deno.test("fs: remove forgets the path and everything below", () => inDir(async 
   assertEquals(await fs.isFile(dir + "/b.txt"), false);
 }));
 
+Deno.test("fs: remove takes an empty directory, not a full one", () => inDir(async (dir) => {
+  await fs.mkdir(dir + "/empty");
+  await fs.remove(dir + "/empty");
+  assertEquals(await fs.stat(dir + "/empty"), undefined);
+
+  await fs.mkdir(dir + "/full");
+  await fs.write(dir + "/full/a.txt", "x");
+  const err = await assertRejects(() => fs.remove(dir + "/full"));
+  assertEquals((err as { code?: string }).code, "ENOTEMPTY");
+}));
+
 Deno.test("fs: rename, copy", () => inDir(async (dir) => {
   const a = dir + "/a.txt", b = dir + "/b.txt", c = dir + "/c.txt";
   await fs.write(a, "x");
@@ -124,14 +137,21 @@ Deno.test("fs: rename, copy", () => inDir(async (dir) => {
   await assertRejects(() => fs.rename(dir + "/nope", dir + "/x"));
 }));
 
-Deno.test("fs: symlink, touch", () => inDir(async (dir) => {
+// Deno grants symlink only with unscoped read and write — `deno task test` scopes write to /tmp.
+const unscoped = Deno.permissions.querySync({ name: "write" }).state === "granted";
+
+Deno.test({ name: "fs: symlink", ignore: !unscoped, fn: () => inDir(async (dir) => {
   const a = dir + "/a.txt", link = dir + "/link.txt";
   await fs.write(a, "x");
   assertEquals(await fs.isFile(link), false);
   await fs.symlink(a, link);
   assertEquals(await fs.isFile(link), true); // stat follows the link
   assertEquals(await fs.text(link), "x");
+}) });
 
+Deno.test("fs: touch", () => inDir(async (dir) => {
+  const a = dir + "/a.txt";
+  await fs.write(a, "x");
   const old = new Date(2000, 0, 1);
   await Deno.utime(a, old, old);
   assertEquals(await fs.mtime(a, { ttl: 0 }), old.getTime());
@@ -144,6 +164,10 @@ Deno.test("fs: writable", () => inDir(async (dir) => {
   await fs.write(path, "x");
   assertEquals(await fs.writable(path), true);
   assertEquals(await fs.writable(dir + "/nope.txt"), false);
+  await Deno.chmod(path, 0o444);
+  const root = (() => { try { return Deno.uid() === 0; } catch { return false; } })(); // uid needs --allow-sys
+  if (!root) assertEquals(await fs.writable(path), false); // root writes anyway
+  assertEquals(await fs.text(path), "x"); // asking did not truncate
 }));
 
 Deno.test("fs: tempFile, tempDir", () => inDir(async (dir) => {

@@ -1,6 +1,6 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
-import { $item, Access, AccessError, ValidationError, hee, s, unixTime } from "@qino/qino";
+import { $item, Access, AccessError, ValidationError, fs, hee, s, unixTime } from "@qino/qino";
 import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
@@ -90,7 +90,7 @@ function inRoot(root: string, path: string): string {
 async function* walkDir(dir: string): AsyncGenerator<string> {
   const entries = [];
   try {
-    for await (const entry of Deno.readDir(dir)) entries.push(entry);
+    entries.push(...await fs.list(dir));
   } catch { return; }
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     if (entry.isDirectory) yield* walkDir(dir + entry.name + "/");
@@ -104,7 +104,7 @@ async function moduleFiles(ctx: Ctx, pid: number) {
   const filesIn = async (scope: string) => {
     const root = await moduleRoot(ctx, pid, scope);
     const paths = await Array.fromAsync(walkDir(root));
-    const stats = await Promise.all(paths.map((p) => Deno.stat(p).catch(() => null)));
+    const stats = await Promise.all(paths.map((p) => fs.stat(p, { ttl: 0 }))); // edited by hand, too
     return paths
       .map((path, i) => ({ path, info: stats[i] }))
       .filter(({ info }) => info?.isFile)
@@ -175,8 +175,8 @@ export const api: ApiTree = {
         input: s.object({ in: s.string(), path: s.string() }),
         execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
           const file = inRoot(await moduleRoot(ctx, Number(pid), scope), path);
-          await Deno.mkdir(dirname(file), { recursive: true }).catch(() => {});
-          await Deno.writeTextFile(file, "");
+          await fs.mkdir(dirname(file)).catch(() => {});
+          await fs.write(file, "");
           ctx.app.assetRev = unixTime();
           return { ok: true };
         },
@@ -186,7 +186,7 @@ export const api: ApiTree = {
         access: Access.SUPERUSER,
         input: s.object({ in: s.string(), path: s.string() }),
         execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
-          await Deno.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
+          await fs.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
           return { ok: true };
         },
       },

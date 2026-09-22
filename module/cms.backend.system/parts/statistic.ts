@@ -1,4 +1,4 @@
-import { html, sql } from "@qino/qino";
+import { fs, html, sql } from "@qino/qino";
 
 import type { Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -39,11 +39,11 @@ async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
 async function dirSize(dir: string): Promise<number> {
   let total = 0;
   try {
-    for await (const entry of Deno.readDir(dir)) {
+    for (const entry of await fs.list(dir)) {
       const full = dir + entry.name;
       total += entry.isDirectory
         ? await dirSize(full + "/")
-        : (await Deno.stat(full).catch(() => null))?.size ?? 0;
+        : await fs.size(full, { ttl: 0 }) ?? 0;
     }
   } catch { /* skip */ }
   return total;
@@ -56,7 +56,7 @@ async function dirTree(dir: string): Promise<Record<string, TreeNode>> {
   async function walk(dir: string, relPath: string): Promise<number> {
     let total = 0;
     try {
-      for await (const entry of Deno.readDir(dir)) {
+      for (const entry of await fs.list(dir)) {
         const full = dir + entry.name;
         const rel  = relPath + entry.name;
         if (entry.isDirectory) {
@@ -74,7 +74,7 @@ async function dirTree(dir: string): Promise<Record<string, TreeNode>> {
           }
           total += size;
         } else {
-          total += (await Deno.stat(full).catch(() => null))?.size ?? 0;
+          total += await fs.size(full, { ttl: 0 }) ?? 0;
         }
       }
     } catch { /* skip */ }

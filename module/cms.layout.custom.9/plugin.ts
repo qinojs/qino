@@ -1,4 +1,4 @@
-import { hee, html } from "@qino/qino";
+import { fs, hee, html } from "@qino/qino";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -27,11 +27,12 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
 
   // Delegate to app-specific layout override: data/<module>/index.ts
   const customPath = module.data + "index.ts";
-  try {
-    await Deno.stat(customPath);
-    const mod = await import(customPath);
-    if (typeof mod.default === "function") return mod.default(node, data);
-  } catch { /* no custom layout override */ }
+  if (await fs.isFile(customPath)) {
+    try {
+      const mod = await import(customPath);
+      if (typeof mod.default === "function") return mod.default(node, data);
+    } catch { /* broken custom layout override */ }
+  } // else: no custom layout override
 
   // Fallback: basic layout
   return html.async`<div id=container><main>${node.cont("main")}</main></div>`;

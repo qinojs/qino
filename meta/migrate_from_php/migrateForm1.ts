@@ -1,4 +1,4 @@
-import { sql } from "@qino/qino";
+import { fs, sql } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
 import type { App } from "@qino/qino";
@@ -70,6 +70,6 @@ export async function migrateForm1(app: App): Promise<void> {
 async function moveData(app: App, from: string, to: string): Promise<void> {
   const source = app.dir + "data/" + from;
   const target = app.dir + "data/" + to;
-  if (!await Deno.stat(source).catch(() => null) || await Deno.stat(target).catch(() => null)) return;
-  await Deno.rename(source, target);
+  if (!await fs.stat(source, { ttl: 0 }) || await fs.stat(target, { ttl: 0 })) return;
+  await fs.rename(source, target);
 }

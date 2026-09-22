@@ -1,3 +1,5 @@
+import { fs } from "@qino/qino";
+
 import { currentModule } from "./renamedModules.ts";
 
 import type { App } from "@qino/qino";
@@ -20,7 +22,7 @@ export async function migrateCss(app: App): Promise<void> {
 
   let files = 0, hits = 0;
   for await (const path of cssFiles(app.dir + "data/")) {
-    const before = await Deno.readTextFile(path);
+    const before = await fs.text(path);
     let after = before;
     for (const [legacy, current] of pairs) {
       // not followed by a name character — ".-m-cms-cont-form1" must not eat "…-fields2"
@@ -32,7 +34,7 @@ export async function migrateCss(app: App): Promise<void> {
     );
     if (after === before) continue;
     hits += before.match(/\.-m-|\.-pid\d+(?![\w-])|\/qg\/[A-Za-z0-9._-]+\//g)?.length ?? 0;
-    await Deno.writeTextFile(path, after);
+    await fs.write(path, after);
     files++;
   }
   if (files) console.log(`[migrate_from_php] css: ${hits} legacy selectors in ${files} files → qcms attributes`);
@@ -50,7 +52,7 @@ function relativeDir(from: string, to: string): string {
 }
 
 async function* cssFiles(dir: string): AsyncGenerator<string> {
-  const entries = await Array.fromAsync(Deno.readDir(dir)).catch(() => []);
+  const entries = await fs.list(dir).catch(() => []);
   for (const entry of entries) {
     const path = dir + entry.name;
     if (entry.isDirectory) yield* cssFiles(path + "/");

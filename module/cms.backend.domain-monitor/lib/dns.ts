@@ -12,6 +12,8 @@
 // arrive. `QTYPE=ANY` would look like the cheaper trick but RFC 8482 killed it, authoritative
 // servers may answer it with a synthetic placeholder.
 
+import { readFile } from "node:fs/promises";
+
 export const TYPES = { A: 1, NS: 2, CNAME: 5, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, DS: 43, DNSKEY: 48, TLSA: 52, HTTPS: 65, CAA: 257 } as const;
 export type Type = keyof typeof TYPES;
 
@@ -224,7 +226,7 @@ export async function resolve(servers: string | string[], questions: { name: str
 
 /** First nameserver of the host, for questions that need a recursive resolver. */
 export const systemServer = (): Promise<string | null> =>
-  Deno.readTextFile("/etc/resolv.conf")
+  readFile("/etc/resolv.conf", "utf8")
     .then((text) => text.match(/^\s*nameserver\s+(\S+)/m)?.[1] ?? null)
     .catch(() => null);
 

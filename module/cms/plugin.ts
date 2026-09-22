@@ -1,4 +1,4 @@
-import { header, Output } from "@qino/qino";
+import { fs, header, Output } from "@qino/qino";
 
 import { CMS, cms, cmsInstances } from "./lib/CMS.ts";
 import { initNodeChanged } from "./lib/nodeChanged.ts";
@@ -188,14 +188,14 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 /** Streams the given DbFiles as a zip archive using the system `zip` command. */
 async function dbFiles2Zip(files: DbFile[]): Promise<ReadableStream<Uint8Array>> {
-    const dir = await Deno.makeTempDir({ prefix: "qino-zip-" });
-    const cleanup = () => Deno.remove(dir, { recursive: true }).catch(console.error);
+    const dir = await fs.tempDir({ prefix: "qino-zip-" });
+    const cleanup = () => fs.remove(dir, { recursive: true }).catch(console.error);
     const names: string[] = [];
     try {
         for (const dbFile of files) {
             let name = dbFile.name.replace(/[/\0]/g, "_") || "file";
             if (names.includes(name)) name = names.length + "_" + name;
-            await Deno.symlink(dbFile.path, `${dir}/${name}`);
+            await fs.symlink(dbFile.path, `${dir}/${name}`);
             names.push(name);
         }
     } catch (e) {

@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, html, isModuleName } from "@qino/qino";
+import { errMsg, fs, html, isModuleName } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -21,7 +21,7 @@ const ownStore = (app: App): Store => {
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Own modules", de: "Eigene Module" });
-  await Deno.mkdir(storeDir(app), { recursive: true });
+  await fs.mkdir(storeDir(app));
   await app.stores.install(storeUrl(app));
 }
 
@@ -49,26 +49,25 @@ async function copyTemplate(template: Module, dir: string, name: string): Promis
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Cannot copy "${file}" from template "${template.name}": ${res.status} ${res.statusText}`);
     const target = dir + file;
-    await Deno.mkdir(target.slice(0, target.lastIndexOf("/") + 1), { recursive: true });
+    await fs.mkdir(target.slice(0, target.lastIndexOf("/") + 1));
     const bytes = new Uint8Array(await res.arrayBuffer());
     const text = utf8(bytes);
-    if (text === undefined) await Deno.writeFile(target, bytes);
-    else await Deno.writeTextFile(target, rename(text, template.name, name));
+    await fs.write(target, text === undefined ? bytes : rename(text, template.name, name));
   }
 }
 
 /** The smallest thing that is a module — a shape to start from comes from a template, not from here. */
 async function blankModule(dir: string, modName: string): Promise<void> {
-  await Deno.mkdir(dir, { recursive: true });
-  await Deno.writeTextFile(dir + "manifest.json", JSON.stringify({ name: modName, files: ["manifest.json", "plugin.ts"] }, null, 2) + "\n");
-  await Deno.writeTextFile(dir + "plugin.ts", "export function init() {}\n");
+  await fs.mkdir(dir);
+  await fs.write(dir + "manifest.json", JSON.stringify({ name: modName, files: ["manifest.json", "plugin.ts"] }, null, 2) + "\n");
+  await fs.write(dir + "plugin.ts", "export function init() {}\n");
 }
 
 async function create(app: App, modName: string, template: string): Promise<void> {
   if (!isModuleName(modName)) throw new Error(`Invalid module name: ${modName}`);
   if (app.modules.get(modName)) throw new Error(`Module "${modName}" exists already`);
   const dir = storeDir(app) + modName + "/";
-  if (await Deno.stat(dir).then(() => true, () => false)) throw new Error(`Folder "${modName}" exists already`);
+  if (await fs.stat(dir, { ttl: 0 })) throw new Error(`Folder "${modName}" exists already`);
 
   try {
     if (!template) await blankModule(dir, modName);
@@ -81,7 +80,7 @@ async function create(app: App, modName: string, template: string): Promise<void
   } catch (e) {
     // A failed download or an unlinkable module must not block the name on the next try.
     await app.modules.uninstall(modName).catch(() => {});
-    await Deno.remove(dir, { recursive: true }).catch(() => {});
+    await fs.remove(dir, { recursive: true }).catch(() => {});
     throw e;
   }
 }

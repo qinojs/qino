@@ -2,6 +2,7 @@ import * as nodePath from 'node:path';
 
 import * as magick from '../magick.ts';
 import { typeByExtension } from '../../../deps.ts';
+import { fs } from '../../fs.ts';
 
 import type { TransformContext, TransformerDef } from '../types.ts';
 
@@ -9,7 +10,8 @@ import type { TransformContext, TransformerDef } from '../types.ts';
 const canSend = (ctx: TransformContext, type: string) => !ctx.accept || ctx.accept.includes(type);
 
 /** File size in bytes; a missing file is `Infinity` so it loses the smaller-output comparison. */
-const fileSize = async (path: string): Promise<number> => (await Deno.stat(path).catch(() => null))?.size ?? Infinity;
+// written by a subprocess, so never from the cache
+const fileSize = async (path: string): Promise<number> => await fs.size(path, { ttl: 0 }) ?? Infinity;
 
 /**
  * Encode phase: selects optimal output format (AVIF > JPEG > PNG) and sets quality.

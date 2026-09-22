@@ -1,4 +1,4 @@
-import { contactError, sql } from "@qino/qino";
+import { contactError, fs, sql } from "@qino/qino";
 
 import { delivered } from "./outbox.ts";
 import { renderer } from "./template.ts";
@@ -32,7 +32,7 @@ async function attachments(app: App, messageId: number): Promise<Attachment[] | 
   return await Promise.all(files.map(async (id) => {
     const file = await app.dbFiles.file(Number(id));
     const vs = await file.ensureVs();
-    return { name: String(vs.name ?? id), type: String(vs.mime ?? ""), content: Deno.readFile(file.path) };
+    return { name: String(vs.name ?? id), type: String(vs.mime ?? ""), content: fs.bytes(file.path) };
   }));
 }
 

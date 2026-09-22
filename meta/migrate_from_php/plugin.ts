@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { $item, sql } from "@qino/qino";
+import { $item, fs, sql } from "@qino/qino";
 
 import { migrateContacts } from "./migrateContacts.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
@@ -98,11 +98,11 @@ async function migrateRenamedModules(app: App): Promise<void> {
 async function moveNodeCode(app: App): Promise<void> {
   const from = app.dir + "data/cmsPhpFiles/";
   const to = app.dir + "data/cms.cont.ts/";
-  const files = await Array.fromAsync(Deno.readDir(from)).catch(() => []);
+  const files = await fs.list(from).catch(() => []);
   if (!files.length) return;
-  await Deno.mkdir(to, { recursive: true });
-  for (const file of files) await Deno.rename(from + file.name, to + file.name).catch(() => {});
-  await Deno.remove(from).catch(() => {});
+  await fs.mkdir(to);
+  for (const file of files) await fs.rename(from + file.name, to + file.name).catch(() => {});
+  await fs.remove(from).catch(() => {});
   console.log(`[migrate_from_php] ${files.length} cmsPhpFiles → data/cms.cont.ts/ (still PHP, port by hand)`);
 }
 

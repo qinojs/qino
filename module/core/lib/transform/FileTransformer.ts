@@ -1,7 +1,7 @@
 import * as nodePath from 'node:path';
-import * as nodeFs from 'node:fs/promises';
 
 import { typeByExtension } from '../../deps.ts';
+import { fs } from '../fs.ts';
 import { resetProbes } from './tryCommand.ts';
 import * as magick from './magick.ts';
 import * as ffmpeg from './ffmpeg.ts';
@@ -137,9 +137,8 @@ export class FileTransformer {
     // (no mtime: it may be touched on access for LRU tracking; no mime: derivable from path/content)
     // Content fingerprint: for db-files covered by the path (md5 content-addressed).
     // For generic use (mutable paths) something is still to be found (> 1.0).
-    const stat = await Deno.stat(sourcePath).catch(() => {
-      throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
-    });
+    const stat = await fs.stat(sourcePath);
+    if (!stat) throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
 
     const fingerprint = `${sourcePath}-${stat.size}`;
     const knownProps = new Set(this.#transformers.flatMap((t) => t.props));
@@ -150,17 +149,15 @@ export class FileTransformer {
       const metaPath = `${cachePath}.mime`;
 
       // Check cache hit
-      try {
-        const cacheStat = await Deno.stat(cachePath);
-        const cachedMime = await Deno.readTextFile(metaPath).catch(() => mime);
-        if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) {
-          Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
-        }
+      const cacheStat = await fs.stat(cachePath);
+      if (cacheStat) {
+        const cachedMime = await fs.text(metaPath).catch(() => mime);
+        if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) fs.touch(cachePath).catch(() => {});
         return { path: cachePath, mime: cachedMime, transformed: true, key: cacheKey };
-      } catch { /* Cache miss – continue */ }
+      } // Cache miss – continue
 
       const pipeline = sortTransformers(this.#transformers);
-      const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
+      const tmpDir = await fs.tempDir({ prefix: 'filetransform_' });
       const ctx: TransformContext = {
         transformer: this,
         sourcePath,
@@ -182,18 +179,18 @@ export class FileTransformer {
         }
 
         // Write meta first, then move the file atomically into place (concurrent readers never see a partial file)
-        await nodeFs.mkdir(this.cacheDir, { recursive: true });
-        await Deno.writeTextFile(metaPath, ctx.mime);
+        await fs.mkdir(this.cacheDir);
+        await fs.write(metaPath, ctx.mime);
         const partPath = `${cachePath}.part-${crypto.randomUUID()}`;
-        await nodeFs.copyFile(ctx.currentPath, partPath);
-        await nodeFs.rename(partPath, cachePath);
+        await fs.copy(ctx.currentPath, partPath);
+        await fs.rename(partPath, cachePath);
         return { path: cachePath, mime: ctx.mime, transformed: true, key: cacheKey };
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         console.error('[FileTransformer]', err.message);
         return { path: sourcePath, mime, transformed: false, error: err };
       } finally {
-        await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+        await fs.remove(tmpDir, { recursive: true }).catch(() => {});
       }
     };
     return this.#running.getOrInsertComputed(cacheKey, () =>

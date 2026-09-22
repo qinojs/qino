@@ -1,3 +1,5 @@
+import { fs } from "@qino/qino";
+
 import type { App } from "@qino/qino";
 
 /** The PHP CMS kept app files under qg/, uploads in qg/file/. They now live in
@@ -11,7 +13,7 @@ export async function migrateFiles(app: App): Promise<void> {
     moved += m;
     kept += k;
   }
-  await Deno.remove(legacy).catch(() => {}); // only when nothing was left behind
+  await fs.remove(legacy).catch(() => {}); // only when nothing was left behind
   await moveCustom1Css(app);
   if (moved || kept) console.log(`[migrate_from_php] qg/ → data/: ${moved} moved` + (kept ? `, ${kept} kept (target existed)` : ""));
 }
@@ -19,14 +21,14 @@ export async function migrateFiles(app: App): Promise<void> {
 async function moveCustom1Css(app: App): Promise<void> {
   const dir = app.dir + "data/cms.layout.custom.1/";
   const source = dir + "custom.css", target = dir + "pub/main.css";
-  if (!await Deno.stat(source).catch(() => null) || await Deno.stat(target).catch(() => null)) return;
-  await Deno.mkdir(dir + "pub", { recursive: true });
-  await Deno.rename(source, target);
+  if (!await fs.stat(source, { ttl: 0 }) || await fs.stat(target, { ttl: 0 })) return;
+  await fs.mkdir(dir + "pub");
+  await fs.rename(source, target);
 }
 
 /** Directory names directly below dir; empty when it does not exist. */
 export async function dirNames(dir: string): Promise<string[]> {
-  const entries = await Array.fromAsync(Deno.readDir(dir)).catch(() => []);
+  const entries = await fs.list(dir).catch(() => []);
   return entries.filter((e) => e.isDirectory).map((e) => e.name).sort();
 }
 
@@ -35,14 +37,14 @@ export async function dirNames(dir: string): Promise<string[]> {
  *  Running it again once src is gone does nothing, so a repeated repair is harmless. */
 export async function moveMerge(src: string, dst: string): Promise<[moved: number, kept: number]> {
   let moved = 0, kept = 0;
-  const entries = await Array.fromAsync(Deno.readDir(src)).catch(() => []);
+  const entries = await fs.list(src).catch(() => []);
   if (!entries.length) return [0, 0];
-  await Deno.mkdir(dst, { recursive: true });
+  await fs.mkdir(dst);
   for (const entry of entries) {
     const from = src + entry.name, to = dst + entry.name;
-    const target = await Deno.stat(to).catch(() => null);
+    const target = await fs.stat(to, { ttl: 0 });
     if (!target) {
-      await Deno.rename(from, to);
+      await fs.rename(from, to);
       moved++;
     } else if (entry.isDirectory && target.isDirectory) {
       const [m, k] = await moveMerge(from + "/", to + "/");
@@ -50,6 +52,6 @@ export async function moveMerge(src: string, dst: string): Promise<[moved: numbe
       kept += k;
     } else kept++;
   }
-  await Deno.remove(src).catch(() => {}); // succeeds only when everything moved
+  await fs.remove(src).catch(() => {}); // succeeds only when everything moved
   return [moved, kept];
 }

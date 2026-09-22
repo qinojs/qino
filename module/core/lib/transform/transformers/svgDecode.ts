@@ -2,6 +2,7 @@ import * as nodePath from 'node:path';
 
 import * as rsvg from '../rsvg.ts';
 import * as inkscape from '../inkscape.ts';
+import { fs } from '../../fs.ts';
 
 import type { TransformContext, TransformerDef } from '../types.ts';
 
@@ -12,7 +13,7 @@ const MAX = 9000;
 
 /** Intrinsic aspect ratio from viewBox, else width/height; 1 when unknown. */
 async function ratio(path: string): Promise<number> {
-  const head = (await Deno.readTextFile(path)).slice(0, 4000);
+  const head = (await fs.text(path)).slice(0, 4000);
   const box = head.match(/viewBox\s*=\s*["']\s*[-\d.eE]+[,\s]+[-\d.eE]+[,\s]+([\d.eE]+)[,\s]+([\d.eE]+)/);
   const size = !box && head.match(/width\s*=\s*["']([\d.]+)[a-z%]*["'][^>]*?height\s*=\s*["']([\d.]+)/);
   const [w, h] = box ? [+box[1], +box[2]] : size ? [+size[1], +size[2]] : [0, 0];

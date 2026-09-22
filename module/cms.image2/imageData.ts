@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { magick } from "@qino/qino";
+import { fs, magick } from "@qino/qino";
 import { Parser } from "htmlparser2";
 
 import type { DbFile } from "@qino/qino";
@@ -24,7 +24,7 @@ async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: 
   const cacheFile = cacheDir + `data-v2-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${QUALITY}.${MAX_HW}.${options.fit ?? ""}.json`;
   let data;
   if (md5) {
-    try { data = JSON.parse(await Deno.readTextFile(cacheFile)); } catch { /* no cache */ }
+    try { data = JSON.parse(await fs.text(cacheFile)); } catch { /* no cache */ }
   }
 
   if (!data) {
@@ -50,10 +50,10 @@ async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: 
           const smallH = Math.max(1, Math.round(h * scale));
 
           const { path: tmpPath, mime } = await file.transform({ w: smallW, h: smallH, q: QUALITY, fmt: "png", hpos, vpos });
-          const buf = await Deno.readFile(tmpPath);
+          const buf = await fs.bytes(tmpPath);
           const preview = "data:" + mime + ";base64," + btoa(String.fromCharCode(...buf));
-          await Deno.mkdir(cacheDir, { recursive: true });
-          await Deno.writeTextFile(cacheFile, JSON.stringify({ w, h, vpos, hpos, preview }));
+          await fs.mkdir(cacheDir);
+          await fs.write(cacheFile, JSON.stringify({ w, h, vpos, hpos, preview }));
         } catch { /* skip */ }
       }, 0);
     }
@@ -95,7 +95,7 @@ function length(value = ""): number {
 async function vectorData(file: DbFile, options: Record<string, any>) {
   const params = { q: options.quality ?? "85" };
   const { path } = await file.transform(params);
-  const source = path ? await Deno.readTextFile(path).catch(() => "") : "";
+  const source = path ? await fs.text(path).catch(() => "") : "";
   let attrs: Record<string, string> = {};
   const parser = new Parser({ onopentag(name, attributes) {
     if (name === "svg") attrs = attributes;

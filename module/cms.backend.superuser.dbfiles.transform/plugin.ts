@@ -1,4 +1,4 @@
-import { errMsg, FileTransformer, html } from "@qino/qino";
+import { errMsg, FileTransformer, fs, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -21,7 +21,7 @@ async function detectPlatform(): Promise<Platform> {
   if (Deno.build.os === "windows") return "windows";
   if (Deno.build.os === "linux") {
     try {
-      const text = await Deno.readTextFile("/etc/os-release");
+      const text = await fs.text("/etc/os-release");
       if (/ID(_LIKE)?=.*alpine/i.test(text)) return "alpine";
       if (/ID(_LIKE)?=.*(debian|ubuntu)/i.test(text)) return "debian";
     } catch { /* ignore */ }
@@ -42,10 +42,10 @@ function cacheDir(app: App): string {
 async function cacheStats(dir: string): Promise<{ count: number; size: number }> {
   let count = 0, size = 0;
   try {
-    for await (const entry of Deno.readDir(dir)) {
+    for (const entry of await fs.list(dir)) {
       if (!entry.name.startsWith("tf_") || entry.name.endsWith(".mime")) continue;
       count++;
-      size += (await Deno.stat(dir + entry.name).catch(() => null))?.size ?? 0;
+      size += await fs.size(dir + entry.name, { ttl: 0 }) ?? 0;
     }
   } catch { /* dir may not exist */ }
   return { count, size };
@@ -54,13 +54,13 @@ async function cacheStats(dir: string): Promise<{ count: number; size: number }>
 async function clearCache(dir: string, olderThanDays?: number): Promise<void> {
   const cutoff = olderThanDays ? Date.now() - olderThanDays * 86_400_000 : Infinity;
   try {
-    for await (const entry of Deno.readDir(dir)) {
+    for (const entry of await fs.list(dir)) {
       if (!entry.name.startsWith("tf_")) continue;
       if (olderThanDays) {
-        const mtime = (await Deno.stat(dir + entry.name).catch(() => null))?.mtime?.getTime() ?? 0;
+        const mtime = await fs.mtime(dir + entry.name, { ttl: 0 }) ?? 0;
         if (mtime > cutoff) continue;
       }
-      await Deno.remove(dir + entry.name).catch(() => {});
+      await fs.remove(dir + entry.name).catch(() => {});
     }
   } catch { /* ignore */ }
 }

@@ -1,6 +1,7 @@
 import * as nodePath from 'node:path';
 
 import * as magick from '../magick.ts';
+import { fs } from '../../fs.ts';
 
 import type { TransformerDef } from '../types.ts';
 
@@ -27,7 +28,7 @@ export const ocr: TransformerDef = {
       mime = 'image/png';
     }
     const out = nodePath.join(ctx.tmpDir, 'ocr.md');
-    await Deno.writeTextFile(out, await engine.ocr(path, mime, ctx));
+    await fs.write(out, await engine.ocr(path, mime, ctx));
     ctx.currentPath = out;
     ctx.mime = 'text/markdown';
   },

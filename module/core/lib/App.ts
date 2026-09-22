@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import * as nodePath from "node:path";
 
 import { fromFileUrl, serveFile } from "../deps.ts";
@@ -98,7 +99,7 @@ export class App extends Emitter<AppEvents> {
         this.dir   = ensureSlash(dir);
         // before the database opens: a sqlite file in a directory nobody made says only
         // "unable to open database file", and that is the first thing a new installation sees
-        Deno.mkdirSync(this.dir, { recursive: true });
+        mkdirSync(this.dir, { recursive: true });
         this.appUrl    = ensureSlash(cfg.appUrl || "/");
         this.https     = cfg.https;
         this.dev       = cfg.dev;

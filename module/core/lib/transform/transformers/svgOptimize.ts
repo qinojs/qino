@@ -2,10 +2,12 @@ import * as nodePath from 'node:path';
 
 import * as svgo from '../svgo.ts';
 import * as scour from '../scour.ts';
+import { fs } from '../../fs.ts';
 
 import type { TransformerDef } from '../types.ts';
 
-const fileSize = async (path: string): Promise<number> => (await Deno.stat(path).catch(() => null))?.size ?? Infinity;
+// written by a subprocess, so never from the cache
+const fileSize = async (path: string): Promise<number> => await fs.size(path, { ttl: 0 }) ?? Infinity;
 
 /**
  * Encode phase: minifies an SVG. Runs only when `q` is set – without it the stored bytes are served.

@@ -3,6 +3,7 @@ import * as nodePath from 'node:path';
 import * as ffmpeg from '../ffmpeg.ts';
 import { AUDIO_MIMES } from './audioDecode.ts';
 import { VIDEO_MIMES } from './videoDecode.ts';
+import { fs } from '../../fs.ts';
 
 import type { TransformerDef } from '../types.ts';
 
@@ -27,7 +28,7 @@ export const transcript: TransformerDef = {
       mime = 'audio/mp4';
     }
     const out = nodePath.join(ctx.tmpDir, 'transcript.json');
-    await Deno.writeTextFile(out, JSON.stringify(await engine.transcribe(path, mime, ctx)));
+    await fs.write(out, JSON.stringify(await engine.transcribe(path, mime, ctx)));
     ctx.currentPath = out;
     ctx.mime = TRANSCRIPT_MIME;
   },

@@ -1,4 +1,4 @@
-import { getCtx, html, sql, FileTransformer, deleteUnlinkedDbFiles } from "@qino/qino";
+import { getCtx, html, sql, FileTransformer, deleteUnlinkedDbFiles, fs } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -41,7 +41,7 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
 async function textView(f: DbFile): Promise<HtmlString | string> {
   if (!TXT.has(f.extension)) return "";
   return html`<div class=u2-card style="flex:0 1 auto"><div><u2-code trim><textarea readonly>${await
-    Deno.readTextFile(f.path)}</textarea></u2-code></div></div>`;
+    fs.text(f.path)}</textarea></u2-code></div></div>`;
 }
 
 /** What the file search can find in this file. Shown verbatim: garbled OCR is the point of looking.
@@ -301,11 +301,11 @@ async function deleteUnlinkedFs(node: Node) {
   const { db, dbFiles: fm } = node.app;
   const dbMd5s = new Set((await db.query`SELECT md5 FROM file WHERE md5 IS NOT NULL`).map((r) => r.md5));
   let deleted = 0, size = 0;
-  for await (const e of Deno.readDir(fm.directory)) {
+  for (const e of await fs.list(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;
     const path = fm.directory + e.name;
-    const fileSize = (await Deno.stat(path).catch(()=>null))?.size ?? 0;
-    if (!await Deno.remove(path).then(()=>true, ()=>false)) continue;
+    const fileSize = await fs.size(path) ?? 0;
+    if (!await fs.remove(path).then(()=>true, ()=>false)) continue;
     deleted++;
     size += fileSize;
   }

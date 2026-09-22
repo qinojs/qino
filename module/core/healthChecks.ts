@@ -1,5 +1,6 @@
 import { sql } from "./deps.ts";
 import { hee, unixTime } from "./lib/util.ts";
+import { fs } from "./lib/fs.ts";
 import { getCtx, requestStorage } from "./lib/ctx/Ctx.ts";
 import { pwVerify } from "./lib/auth/mod.ts";
 import { deleteUnlinkedDbFiles } from "./lib/DbFileManager.ts";
@@ -57,7 +58,7 @@ export async function healthChecks(app: App) {
     const partial = [];
     for (const mod of app.modules.all().values()) {
       if (mod.dir || !(mod.manifest.files ?? []).some((file: string) => file.startsWith("pub/"))) continue;
-      if (await Deno.readTextFile(`${mod.cache}remote/.source`).catch(() => "") !== mod.source) partial.push(mod.name);
+      if (await fs.text(`${mod.cache}remote/.source`).catch(() => "") !== mod.source) partial.push(mod.name);
     }
     if (!partial.length) return;
     return { info: `${hee(partial.join(", "))} — what did not arrive is fetched again on the next start` };
@@ -261,15 +262,16 @@ export async function healthChecks(app: App) {
   async function staleFiles(dir: string, maxAge: number, del = false): Promise<number> {
     let n = 0;
     try {
-      for await (const entry of Deno.readDir(dir)) {
+      for (const entry of await fs.list(dir)) {
         const full = dir + entry.name;
         if (entry.isDirectory) { n += await staleFiles(full + "/", maxAge, del); if (!del && n > 100) break; continue; }
-        const stat = await Deno.stat(full);
+        const stat = await fs.stat(full, { ttl: 0 }); // atime moves without anyone writing
+        if (!stat) continue;
         // atime is unreliable (relatime lags, noatime never updates), mtime is what FileTransformer
         // keeps ticking on a hit — so the later of the two, and no timestamp at all means keep.
         const used = Math.max(stat.mtime?.getTime() ?? 0, stat.atime?.getTime() ?? 0);
         if (!used || Date.now() - used < maxAge) continue;
-        if (del) n += stat.size, await Deno.remove(full);
+        if (del) n += stat.size, await fs.remove(full);
         else if (++n > 100) break;
       }
     } catch { /* dir may not exist */ }

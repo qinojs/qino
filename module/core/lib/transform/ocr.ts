@@ -2,6 +2,7 @@ import * as nodePath from 'node:path';
 
 import * as magick from './magick.ts';
 import * as tesseract from './tesseract.ts';
+import { fs } from '../fs.ts';
 
 import type { OcrEngine, TransformContext } from './types.ts';
 
@@ -11,7 +12,7 @@ export async function ocrPdf(ctx: TransformContext, engine?: OcrEngine): Promise
   if (!engine || !await magick.available()) return;
   const pattern = nodePath.join(ctx.tmpDir, 'ocr-page-%04d.png');
   await magick.run(ctx.currentPath, ['-background', 'white', '-alpha', 'remove'], pattern, { preArgs: ['-density', '300'], signal: ctx.signal });
-  const pages = (await Array.fromAsync(Deno.readDir(ctx.tmpDir)))
+  const pages = (await fs.list(ctx.tmpDir))
     .map((e) => e.name).filter((n) => n.startsWith('ocr-page-')).sort();
   const texts = [];
   for (const page of pages) texts.push(await engine.ocr(nodePath.join(ctx.tmpDir, page), 'image/png', ctx));

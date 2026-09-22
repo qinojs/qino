@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, mkdtemp, open, readdir, readFile, rename, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, mkdtemp, open, readdir, readFile, rename, rm, rmdir, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { constants, createWriteStream } from "node:fs";
 import { Readable, Writable } from "node:stream";
 import { tmpdir } from "node:os";
@@ -15,12 +15,13 @@ const MAX = 10_000;
 /** Like `Deno.FileInfo`: flags are properties, not methods. */
 const toInfo = (s: Stats) => ({
   isFile: s.isFile(),
+  isDirectory: s.isDirectory(),
   size: s.size,
   mtime: s.mtime as Date | null,
   atime: s.atime as Date | null,
 });
 // deno-lint-ignore no-explicit-any
-const pick = ({ isFile, size, mtime, atime }: any): Info => ({ isFile, size, mtime, atime });
+const pick = ({ isFile, isDirectory, size, mtime, atime }: any): Info => ({ isFile, isDirectory, size, mtime, atime });
 type Info = ReturnType<typeof toInfo>;
 type Opt = { ttl?: number };
 
@@ -40,7 +41,9 @@ const forgetTree = (path: string) => {
 };
 
 /** File operations for Deno, Bun and Node, with a cached stat like PHP's: changes made through
- *  here are seen at once, foreign ones after `ttl`. Names follow Deno where they differ. */
+ *  here are seen at once, foreign ones after `ttl`. Names follow Deno where they differ.
+ *  Foreign writers are subprocesses, other processes and hands — where their result matters,
+ *  ask with `{ ttl: 0 }`. */
 export const fs = {
   /** How long a stat is reused (ms), asked on every stat; `{ ttl: 0 }` on a call always looks. */
   ttl: (): number => 300_000,
@@ -66,8 +69,10 @@ export const fs = {
   async size(path: string, opt?: Opt): Promise<number | undefined> {
     return (await fs.stat(path, opt))?.size;
   },
-  /** May this process write it? Not cached — asked right before writing. */
+  /** May this process write the file? Not cached — asked right before writing. On Deno an open
+   *  for writing (no truncate) answers it: `access` there needs sys access for the uid. */
   writable(path: string): Promise<boolean> {
+    if (Deno) return Deno.open(path, { write: true }).then((f: { close(): void }) => (f.close(), true), () => false);
     return access(path, constants.W_OK).then(() => true, () => false);
   },
 
@@ -76,8 +81,8 @@ export const fs = {
   text(path: string): Promise<string> {
     return Deno ? Deno.readTextFile(path) : readFile(path, "utf8");
   },
-  bytes(path: string): Promise<Uint8Array> {
-    return Deno ? Deno.readFile(path) : readFile(path);
+  bytes(path: string): Promise<Uint8Array<ArrayBuffer>> {
+    return Deno ? Deno.readFile(path) : readFile(path) as Promise<Uint8Array<ArrayBuffer>>; // never shared
   },
   /** Streamed, optionally a byte range (`end` inclusive, like HTTP). Native where the runtime has it.
    *  A missing file throws here, not later while reading. */
@@ -120,9 +125,13 @@ export const fs = {
     await mkdir(path, { recursive: true });
     cache.delete(path);
   },
-  /** Missing is fine. `recursive` takes a directory with its content. */
+  /** Missing is fine. A file or an empty directory, like `Deno.remove`; `recursive` takes the content too. */
   async remove(path: string, { recursive = false } = {}): Promise<void> {
-    await rm(path, { force: true, recursive });
+    await rm(path, { force: true, recursive }).catch((e) => {
+      // rm refuses any directory without `recursive` (Bun says EFAULT); rmdir takes an empty one
+      if (recursive || !["ERR_FS_EISDIR", "EISDIR", "EFAULT"].includes(e.code)) throw e;
+      return rmdir(path);
+    });
     forgetTree(path);
   },
   /** Also across devices, where it copies and removes. */
@@ -155,12 +164,14 @@ export const fs = {
 
   // --- temp (like Deno.makeTempFile / makeTempDir) ---
 
-  async tempFile({ prefix = "", dir = tmpdir() } = {}): Promise<string> {
-    const path = join(dir, prefix + crypto.randomUUID());
+  /** A new empty file, in the system temp dir unless `dir` says otherwise. Deno's own needs no env access for TMPDIR. */
+  async tempFile({ prefix = "", dir }: { prefix?: string; dir?: string } = {}): Promise<string> {
+    if (Deno) return Deno.makeTempFile({ prefix, dir });
+    const path = join(dir ?? tmpdir(), prefix + crypto.randomUUID());
     await writeFile(path, "", { flag: "wx" });
     return path;
   },
-  tempDir({ prefix = "", dir = tmpdir() } = {}): Promise<string> {
-    return mkdtemp(join(dir, prefix));
+  tempDir({ prefix = "", dir }: { prefix?: string; dir?: string } = {}): Promise<string> {
+    return Deno ? Deno.makeTempDir({ prefix, dir }) : mkdtemp(join(dir ?? tmpdir(), prefix));
   },
 };

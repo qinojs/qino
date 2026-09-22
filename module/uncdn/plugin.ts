@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { serveFile } from "@std/http/file-server";
-import { Output, safeFetch } from "@qino/qino";
+import { fs, Output, safeFetch } from "@qino/qino";
 
 import { DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES, cacheByteLimit, uncdn } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -36,10 +36,10 @@ const MEDIA_TYPES: Record<string, string> = {
 async function directorySize(path: string): Promise<number> {
   let size = 0;
   try {
-    for await (const e of Deno.readDir(path)) {
+    for (const e of await fs.list(path)) {
       const file = path + e.name;
       if (e.isDirectory) size += await directorySize(file + "/");
-      else if (e.isFile) size += (await Deno.stat(file)).size;
+      else if (e.isFile) size += await fs.size(file) ?? 0;
     }
   } catch { /* cache dir may not exist yet */ }
   return size;
@@ -68,13 +68,13 @@ async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: 
   if (data.byteLength > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
   const maxCacheBytes = cacheByteLimit(await app.settings.uncdn.maxCacheBytes);
   if (await directorySize(cacheDir) + data.byteLength > maxCacheBytes) throw new Output("Cache full", { status: 507 });
-  await Deno.mkdir(nodePath.dirname(filePath), { recursive: true });
+  await fs.mkdir(nodePath.dirname(filePath));
   const partPath = `${filePath}.part-${crypto.randomUUID()}`;
   try {
-    await Deno.writeFile(partPath, data);
-    await Deno.rename(partPath, filePath);
+    await fs.write(partPath, data);
+    await fs.rename(partPath, filePath);
   } catch (error) {
-    await Deno.remove(partPath).catch(() => {});
+    await fs.remove(partPath).catch(() => {});
     throw error;
   }
   return data;

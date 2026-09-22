@@ -1,5 +1,5 @@
 import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
-import { errMsg, getCtx, html } from "@qino/qino";
+import { errMsg, fs, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import type { HtmlString } from "@qino/qino";
@@ -9,7 +9,7 @@ import type { Node } from "@qino/qino/cms";
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {
   const entries = [];
   try {
-    for await (const entry of Deno.readDir(dir)) {
+    for (const entry of await fs.list(dir)) {
       entries.push({ filePath: dir + entry.name, name: entry.name, isDir: entry.isDirectory });
     }
   } catch { return; }
@@ -97,7 +97,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   if (modDir) {
     const rows = [];
     for await (const { filePath, rel } of walkDir(modDir)) {
-      const info = await Deno.stat(filePath).catch(() => null);
+      const info = await fs.stat(filePath, { ttl: 0 }); // edited by hand, too
       if (!info?.isFile) continue;
       const mtimeIso = info.mtime?.toISOString() ?? "";
       const url = isSuperuser ? editorUrl(filePath) : undefined;
@@ -207,9 +207,9 @@ async function createFile(node: Node, modName: string, rel: string): Promise<voi
     if (!dir) throw new Error(`Module "${modName}" has no files here`);
     const file = resolvePath(dir, rel);
     if (!file.startsWith(resolvePath(dir) + SEPARATOR)) throw new Error(`"${rel}" is outside the module`);
-    if (await Deno.stat(file).then(() => true, () => false)) throw new Error(`"${rel}" exists already`);
-    await Deno.mkdir(dirname(file), { recursive: true });
-    await Deno.writeTextFile(file, "");
+    if (await fs.stat(file, { ttl: 0 })) throw new Error(`"${rel}" exists already`);
+    await fs.mkdir(dirname(file));
+    await fs.write(file, "");
   } catch (e) {
     ctx.state.moduleError = errMsg(e);
   }

@@ -1,4 +1,4 @@
-import { DbFile, html, isEmptyObject } from "@qino/qino";
+import { DbFile, fs, html, isEmptyObject } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
@@ -82,7 +82,7 @@ async function versionThumb(app: App, fileId: number, row: any): Promise<string 
         const dbFile = new DbFile(app.dbFiles, fileId, row); // detached: path points at this version's md5, live cache untouched
         if (!dbFile.path) return;
         const { path, mime } = await dbFile.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
-        const buf = await Deno.readFile(path);
+        const buf = await fs.bytes(path);
         return `data:${mime};base64,${btoa(String.fromCharCode(...buf))}`;
     } catch {/**/}
 }

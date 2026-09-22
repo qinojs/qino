@@ -1,4 +1,4 @@
-import { hee, html, sql, tableRef, unixTime } from "@qino/qino";
+import { fs, hee, html, sql, tableRef, unixTime } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
 
 import { keepEntry, openForm } from "./mod.ts";
@@ -75,7 +75,7 @@ async function send(node: Node, form: Form): Promise<boolean> {
 
   const to = await recipients(node, form);
   if (!to.length) return true; // nothing to send is not a failure — the entry is kept
-  const attachments = form.files.map(({ upload }) => ({ name: upload.name, content: Deno.readFile(upload.tmpPath) }));
+  const attachments = form.files.map(({ upload }) => ({ name: upload.name, content: fs.bytes(upload.tmpPath) }));
   return await sendMail(app, { email: to }, {
     title: subject,
     text: body,
