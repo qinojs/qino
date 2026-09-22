@@ -105,10 +105,10 @@ async function address(node: Node): Promise<HtmlString> {
         <td><select class=-set data-setting=location.country><option value="">${options}</select>
       <tr>
         <th>${t`City`}
-        <td><input class=-set data-setting=location.city value="${await set.location.city}">
+        <td><input class=-set data-setting=location.city value="${set.location.city}">
       <tr>
         <th>${t`Street`}
-        <td><input class=-set data-setting=location.street value="${await set.location.street}">
+        <td><input class=-set data-setting=location.street value="${set.location.street}">
       <tr>
         <th>${t`VAT`}
         <td><label>

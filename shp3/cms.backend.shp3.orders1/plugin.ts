@@ -106,9 +106,9 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
     <tr><th>${t`Shipping`}<td>${order.shipping}
     <tr><th>${t`Paid`}<td>
       ${money(Number(order.paid))}
-      ${Number(order.paid) < Number(order.cost) && order.time_ordered ? html`<button class=-pay>${await t`Mark as paid`}</button>` : ""}
+      ${Number(order.paid) < Number(order.cost) && order.time_ordered ? html.async`<button class=-pay>${t`Mark as paid`}</button>` : ""}
   </table>
-  ${order.time_ordered ? "" : html`<button class=-place>${await t`Place this order`}</button>`}
+  ${order.time_ordered ? "" : html.async`<button class=-place>${t`Place this order`}</button>`}
   <table class=u2-table>
     <thead><tr>
       <th>${t`Article`}

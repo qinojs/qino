@@ -10,8 +10,8 @@ async function render(node: Node): Promise<HtmlString> {
   if (!await file.exists()) return html`<div></div>`;
   const active: string[] = [];
   for (const flag of flags) if (await node.settings[flag]) active.push(flag);
-  return html`<div><video${html.raw(active.length ? " " + active.join(" ") : "")}>
-  <source src="${await file.url()}" type="${file.mime || "video/mp4"}">
+  return html.async`<div><video${html.raw(active.length ? " " + active.join(" ") : "")}>
+  <source src="${file.url()}" type="${file.mime || "video/mp4"}">
 </video></div>`;
 }
 

@@ -45,11 +45,11 @@ async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
       ${t`Redirect URIs`} <textarea name=redirect_uris rows=3 required>${client.redirect_uris}</textarea>
     </u2-fields>
     <small>${t`One per line, compared exactly. https, or http on localhost.`}</small>
-    ${isNew ? "" : html`<div><small>${await t`Registered`} ${u2.el.time(client.created)} · ${client.tokens} ${await t`active tokens`}</small></div>`}
+    ${isNew ? "" : html.async`<div><small>${t`Registered`} ${u2.el.time(client.created)} · ${client.tokens} ${t`active tokens`}</small></div>`}
     <div>
       <button type=button data-save>${isNew ? t`Add` : t`Save`}</button>
-      ${isNew ? "" : html`<button type=button data-delete="${client.id}" class=u2-unstyle
-        u2-confirm="${await t`Delete ${client.name} and all its tokens?`}"><u2-ico icon=delete>✕</u2-ico></button>`}
+      ${isNew ? "" : html.async`<button type=button data-delete="${client.id}" class=u2-unstyle
+        u2-confirm="${t`Delete ${client.name} and all its tokens?`}"><u2-ico icon=delete>✕</u2-ico></button>`}
     </div>
   </div>
 </form>`;
@@ -87,5 +87,5 @@ async function grantRow(app: App, g: Row): Promise<HtmlString> {
     <td>${u2.el.time(g.since)}
     <td>${u2.el.time(g.until)}
     <td><button type=button class=u2-unstyle data-revoke="${g.client_id}" data-usr="${g.usr_id}"
-      u2-confirm="${await app.t`Revoke this access?`}"><u2-ico icon=delete>✕</u2-ico></button>`;
+      u2-confirm="${app.t`Revoke this access?`}"><u2-ico icon=delete>✕</u2-ico></button>`;
 }

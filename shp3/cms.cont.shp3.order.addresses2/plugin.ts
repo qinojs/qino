@@ -29,12 +29,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       ${await fields(node, order, "bill", ctx.lang)}
     </fieldset>
     ${separate
-      ? html`<label class=-unlike>
+      ? html.async`<label class=-unlike>
       <input type=checkbox name=ship_unlike_bill value=1 ${order.ship_unlike_bill ? html.raw("checked") : ""}>
-      ${await t`Deliver to a different address`}
+      ${t`Deliver to a different address`}
     </label>
     <fieldset class=-ship ${order.ship_unlike_bill ? html.raw("") : html.raw("hidden")}>
-      <legend>${await t`Delivery address`}</legend>
+      <legend>${t`Delivery address`}</legend>
       ${await fields(node, order, "ship", ctx.lang)}
     </fieldset>`
       : ""}
