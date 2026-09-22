@@ -223,7 +223,7 @@ export class CMS {
     //     options.lang = shown.lang;
     // }
 
-    if (options.if && !edit && !text.replace(/<[^>]*>/g, "").trim()) return "";
+    if (options.if && !edit && !shown.plain()) return "";
     delete options.if;
     delete options.tag;
     delete options.initial;

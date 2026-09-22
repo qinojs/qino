@@ -12,7 +12,7 @@ function videoId(value: string): string {
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const textUrl = String(await node.showText("__url")).replace(/<[^>]*>/g, "").trim();
+  const textUrl = (await node.showText("__url")).plain();
   const raw = textUrl || String(await node.settings.url ?? "").trim();
   if (raw === "-") return html`<div></div>`;
   const id = videoId(raw);
@@ -25,7 +25,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const value = String(await node.settings[key] ?? "");
     if (value) params.set(key, value);
   }
-  const title = String(await node.showTitle()).replace(/<[^>]*>/g, "") || "Youtube video";
+  const title = (await node.showTitle()).plain() || "Youtube video";
 
   return html`<div style="max-width:${maxWidth}"><div class=-wrapper style="padding-bottom:${ratio * 100}%">
   <iframe src="https://www.youtube.com/embed/${id}?${params}" frameborder=0 allowfullscreen title="${title}"></iframe>

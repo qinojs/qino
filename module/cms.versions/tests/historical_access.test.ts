@@ -105,7 +105,7 @@ Deno.test("cms.versions: historical responses stay privately cacheable", async (
   const ctx = await testContext({ app: { fire: () => {}, settings: { cms: {} }, languages: { all: ["en"] } } });
   const page = {
     vs: { searchable: 1 }, exists: () => true, access: () => 1, isReadable: () => true,
-    page: () => page, text: () => null, title: () => null, html: () => "",
+    page: () => page, showText: () => ({ plain: () => "" }), showTitle: () => ({ plain: () => "" }), html: () => "",
   };
   fakeCms(ctx.app, { nodeFromRequest: () => page });
   cacheHeaders(ctx);

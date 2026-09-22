@@ -10,6 +10,19 @@ import type { HtmlString, AppEvents, DbText, DbTextLang, Usr, DbRow, Module } fr
 import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 
+const TAG = /<[^>]*>/g;
+const ENTITY = /&(?:#(\d+)|#x([\da-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi;
+const NAMED: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
+
+/** Plain text of CMS html: tags removed, the entities an editor writes decoded, trimmed. */
+const plainOf = (html: string) => (/[<&]/.test(html)
+    ? html.replace(TAG, "").replace(ENTITY, (m, dec, hex, name) => {
+        if (name) return NAMED[name.toLowerCase()];
+        const n = dec ? Number(dec) : parseInt(hex, 16);
+        return n <= 0x10ffff ? String.fromCodePoint(n) : m;
+    })
+    : html).trim();
+
 /** Node class
  * represents both "Page" (type "p") and "Cont"/"Content" (type "c") entries in the database
  */
@@ -340,6 +353,7 @@ export class Node {
             id: textLang.text.id,
             toString() { return text; },
             html: () => html.raw(text),
+            plain: () => plainOf(text),
         };
     }
 

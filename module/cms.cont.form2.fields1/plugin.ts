@@ -48,7 +48,7 @@ function attrs(list: Record<string, string | number | boolean | undefined>): Htm
 
 /** A node text without its markup — field labels and choices are plain text. */
 async function plain(node: Node, name: string): Promise<string> {
-  return String(await node.showText(name)).replace(/<[^>]*>/g, "").trim();
+  return (await node.showText(name)).plain();
 }
 
 /** One field: its markup plus everything it contributes to the form. */

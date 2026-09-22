@@ -35,7 +35,7 @@ async function render(node: Node): Promise<HtmlString> {
       height,
       style: "max-width:none;width:100%;height:100%",
       if: 1,
-    })}${edit || String(caption).replace(/<[^>]*>/g, "").trim() ? html`<div class=-caption>${caption}</div>` : ""}</div>`);
+    })}${edit || caption.plain() ? html`<div class=-caption>${caption}</div>` : ""}</div>`);
   }
 
   const controls = await node.settings.controlNav

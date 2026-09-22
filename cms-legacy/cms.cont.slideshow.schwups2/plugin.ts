@@ -21,7 +21,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const caption = await node.showText("file_" + file.id);
-    const captionHtml = edit || String(caption).replace(/<[^>]*>/g, "").trim()
+    const captionHtml = edit || caption.plain()
       ? html`<div class=-caption>${caption}</div>`
       : "";
     slides.push(html`<div>${await cms_image2(file, {

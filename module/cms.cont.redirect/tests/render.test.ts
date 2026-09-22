@@ -8,7 +8,7 @@ import manifest from "../manifest.json" with { type: "json" };
 const { name, dependencies } = manifest;
 
 function page(id: number, url: string, title = "Target") {
-  return { id, exists: () => true, url: () => url, showTitle: () => title, isReadable: () => true };
+  return { id, exists: () => true, url: () => url, showTitle: () => ({ plain: () => title }), isReadable: () => true };
 }
 
 /** Node fake: `value` is the stored `_redirect` text, `children` the pages below its page. */

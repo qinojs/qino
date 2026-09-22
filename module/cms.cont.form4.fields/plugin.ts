@@ -34,7 +34,7 @@ function sortedNames(node: Node): string[] {
 
 /** A node text with its markup stripped; `plain()` also drops the surrounding space. */
 const rawText = async (node: Node, name: string) => String(await node.showText(name)).replace(/<[^>]*>/g, "");
-const plain = async (node: Node, name: string) => (await rawText(node, name)).trim();
+const plain = async (node: Node, name: string) => (await node.showText(name)).plain();
 
 /**
  * The choices of a select or radio, one per line. An empty line stays a choice: it is how a

@@ -69,7 +69,7 @@ async function renderPages(app: App): Promise<HtmlString> {
 async function renderPage(app: App, row: { id: number; score: number; time: number }, now: number): Promise<HtmlString> {
   const node = await cms(app).node(Number(row.id)).catch(() => undefined);
   const page = node?.exists();
-  const title = page ? String((await (await page.title())?.string()) ?? "").replace(/<[^>]+>/g, "").trim() : "";
+  const title = page ? (await page.showTitle()).plain() : "";
   const url = page ? await page.url().catch(() => "") : "";
   const label = title || html`#${row.id}`;
 

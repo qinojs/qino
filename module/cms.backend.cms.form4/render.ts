@@ -48,7 +48,7 @@ export async function labels(node: Node): Promise<Record<string, string>> {
   const labels: Record<string, string> = {};
   if (!fields) return labels;
   for (const name of Object.keys(fields.settings.fields)) {
-    const label = String(await fields.showText(name + "_title")).replace(/<[^>]*>/g, "").trim();
+    const label = (await fields.showText(name + "_title")).plain();
     if (label) labels[name] = label;
   }
   return labels;
@@ -239,7 +239,7 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
   const count = await app.db.one`
     SELECT count(*) FROM ${sql.id(tableRef("form4_entry"))} WHERE node_id = ${node.id}`;
   const page = await pageOf(node);
-  const plain = async (n: Node) => String(await n.showTitle()).replace(/<[^>]*>/g, "").trim();
+  const plain = async (n: Node) => (await n.showTitle()).plain();
   const title = await plain(node) || (page ? await plain(page) : "");
   const url = page ? await page.url() : "";
   return html.async`<tr${active ? html.raw(" class=-active") : ""}>

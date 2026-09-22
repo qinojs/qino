@@ -49,7 +49,7 @@ async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], o
 
   const out: { name: string; label: string }[] = [];
   for (const name of names) {
-    const label = cont ? String(await cont.showText(name + "_title")).replace(/<[^>]*>/g, "").trim() : "";
+    const label = cont ? (await cont.showText(name + "_title")).plain() : "";
     out.push({ name, label: label || name });
   }
   return out;

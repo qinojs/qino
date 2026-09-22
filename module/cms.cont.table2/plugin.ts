@@ -49,7 +49,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       const r = bottomUp ? rows - 1 - i : i;
       const row = [];
       for (let j = 0; j < cols; j++) {
-        const text = String(await node.showText(`${r}_${j}`)).replace(/<[^>]*>/g, "");
+        const text = (await node.showText(`${r}_${j}`)).plain();
         row.push(text);
       }
       lines.push(row.map((f) => `"${f.replace(/"/g, '""')}"`).join(","));

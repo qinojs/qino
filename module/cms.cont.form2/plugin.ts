@@ -56,7 +56,7 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
 /** Build and send the mail. */
 async function send(node: Node, form: Form): Promise<boolean> {
   const app = node.app;
-  const subject = String(await node.showText("mailSubject")).replace(/<[^>]*>/g, "").trim() ||
+  const subject = (await node.showText("mailSubject")).plain() ||
     String(await (await node.page()).showTitle());
 
   let body = String(await node.showText("email_before"));
@@ -100,7 +100,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   if (edit) {
     const success = await node.cont("success", "cms.cont.text");
     if (!recipients) warnings.push(await html.async`<u2-alert open variant=warning>${t`No recipients defined!`}</u2-alert>`);
-    if (!redirectId && !String(await success.showText()).replace(/<[^>]*>/g, "").trim()) {
+    if (!redirectId && !(await success.showText()).plain()) {
       warnings.push(await html.async`<u2-alert open variant=warning>${t`A confirmation text or a redirect should be defined.`}</u2-alert>`);
     }
   }

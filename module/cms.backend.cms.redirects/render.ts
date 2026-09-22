@@ -57,7 +57,7 @@ export async function collect(app: App, opts: {
       request,
       redirect,
       kind,
-      title: target ? String(await target.showTitle()).replace(/<[^>]*>/g, "").trim() : "",
+      title: target ? (await target.showTitle()).plain() : "",
       href: target ? await target.url() : kind === "external" ? redirect : "",
       shadowed: shadowed.has(request),
       root: request === "",

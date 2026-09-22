@@ -89,7 +89,7 @@ async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: strin
     html`<option value="${key}"${key === mode ? html.raw(" selected") : ""}>${label}`
   );
 
-  const title = target ? String(await target.showTitle()).replace(/<[^>]*>/g, "").trim() : "";
+  const title = target ? (await target.showTitle()).plain() : "";
   const status = !value
     ? html.async`<u2-alert open variant=warning>${t`No target defined yet.`}</u2-alert>`
     : !url
