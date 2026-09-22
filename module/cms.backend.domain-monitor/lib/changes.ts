@@ -61,7 +61,7 @@ export async function pruneHistory(
       const stale = [];
       for (const check of page) {
         const result = parseResult(check.result);
-        if (kept && check.checked_at < before && !diffResults(kept, result).length) stale.push(sql`${check.id}`);
+        if (kept && check.checked_at < before && !diffResults(kept, result).length) stale.push(check.id);
         else kept = result;
       }
       if (stale.length) await app.db.exec`DELETE FROM monitor_domain_check WHERE ${sql.in("id", stale)}`;

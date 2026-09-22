@@ -1,4 +1,4 @@
-import { fs, header, Output } from "@qino/qino";
+import { fs, header, isTrustedOrigin, Output } from "@qino/qino";
 
 import { CMS, cms, cmsInstances } from "./lib/CMS.ts";
 import { initNodeChanged } from "./lib/nodeChanged.ts";
@@ -108,7 +108,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
             // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
             const cmspid = Number(ctx.req.query.cmspid ?? "0");
             const page = await cms(app).node(cmspid);
-            if (await page.access() > 1) {
+            if (isTrustedOrigin(ctx.req) && await page.access() > 1) {
                 const replace = ctx.req.query.replace;
                 const dbFile = await (replace ? page.file(replace) : page.addFile());
                 await dbFile.replaceFromUpload(cmsPageFile);

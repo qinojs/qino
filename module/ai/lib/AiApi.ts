@@ -95,7 +95,7 @@ export class AiApi {
   }
 
   transcription(data: Record<string, unknown>): Promise<unknown> {
-    return this.#sendForm("stt", str(data._provider), str(data.model), "/audio/transcriptions", async (modelId) => {
+    return this.#send("stt", str(data._provider), str(data.model), "/audio/transcriptions", async (modelId) => {
       const file = str(data.file);
       if (!file) throw new Error("No transcription file given.");
       const body = new FormData();
@@ -111,21 +111,13 @@ export class AiApi {
   }
 
   // Resolve provider+model, call the endpoint, track usage, normalise errors to `{ error }`.
-  async #send(kind: Kind, provider: string | undefined, model: string | undefined, path: string, body: (modelId?: string) => Record<string, unknown>, trackUsage = true): Promise<unknown> {
+  // A FormData body goes out as multipart, anything else as JSON.
+  async #send(kind: Kind, provider: string | undefined, model: string | undefined, path: string, body: (modelId?: string) => Record<string, unknown> | Promise<FormData>, trackUsage = true): Promise<unknown> {
     try {
       const resolved = await resolve(this.app, { provider, model, kind });
-      const result = await (await this.client(resolved.provider)).json(path, body(resolved.model?.model_id));
-      if (trackUsage && !result.error && resolved.model) await addUsage(this.app, resolved.model, result.usage);
-      return result;
-    } catch (e) {
-      return { error: errMsg(e) };
-    }
-  }
-
-  async #sendForm(kind: Kind, provider: string | undefined, model: string | undefined, path: string, body: (modelId?: string) => Promise<FormData>, trackUsage = true): Promise<unknown> {
-    try {
-      const resolved = await resolve(this.app, { provider, model, kind });
-      const result = await (await this.client(resolved.provider)).form(path, await body(resolved.model?.model_id));
+      const client = await this.client(resolved.provider);
+      const payload = await body(resolved.model?.model_id);
+      const result = await (payload instanceof FormData ? client.form(path, payload) : client.json(path, payload));
       if (trackUsage && !result.error && resolved.model) await addUsage(this.app, resolved.model, result.usage);
       return result;
     } catch (e) {

@@ -1,4 +1,4 @@
-import { ApiError, errMsg, unixTime } from "@qino/qino";
+import { ApiError, errMsg, NotFoundError, unixTime } from "@qino/qino";
 
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
@@ -63,8 +63,7 @@ export class ChatSession {
   // Load session + history, persist the new user message, build the message list.
   async #prepare(content: string, ctx: Ctx, context?: Record<string, unknown>): Promise<{ bot: Bot; messages: Msg[] }> {
     const data = await this.#app.db.row`SELECT * FROM ai_session WHERE id = ${this.#id}`;
-    if (!data) throw new Error("Session not found");
-    if (Number(data.user_id) !== ctx.userId) throw new Error("Forbidden");
+    if (!data || Number(data.user_id) !== ctx.userId) throw new NotFoundError(); // a foreign session is none, as on GET
 
     // Fresh client context (e.g. current page) supersedes the one stored at session start.
     if (context) {

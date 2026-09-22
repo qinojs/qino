@@ -191,7 +191,7 @@ export class DbFileImageEditor extends ImageEditor {
       url: ctx.appUrl + '?file_id=' + this.file_id,
       complete: () => {
         this.reloadElements();
-                cb?.();
+        cb?.();
       },
     });
   }

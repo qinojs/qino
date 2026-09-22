@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, Output, s } from "@qino/qino";
+import { Access, isTrustedOrigin, Output, s } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
@@ -79,7 +79,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!upload) return;
 
     const fileId = Number(ctx.req.query.file_id ?? "0");
-    const page = await writablePage(ctx, fileId);
+    const page = isTrustedOrigin(ctx.req) && await writablePage(ctx, fileId);
     if (!page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
     const dbFile = await app.dbFiles.file(fileId);

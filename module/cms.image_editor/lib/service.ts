@@ -83,7 +83,7 @@ async function versionThumb(app: App, fileId: number, row: any): Promise<string 
         if (!dbFile.path) return;
         const { path, mime } = await dbFile.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
         const buf = await fs.bytes(path);
-        return `data:${mime};base64,${btoa(String.fromCharCode(...buf))}`;
+        return `data:${mime};base64,${buf.toBase64()}`;
     } catch {/**/}
 }
 

@@ -336,7 +336,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
   ].filter(Boolean).join(" · ");
   const caa = lines(row.dns_caa);
   const aaaa = lines(row.dns_aaaa);
-  const ipv6Title = !aaaa.length ? "no AAAA record" :row.ipv6 == null ? "no IPv6 route from this server" : row.ipv6 ? "answers over IPv6" : "AAAA record, but no answer over IPv6";
+  const ipv6Title = !aaaa.length ? "no AAAA record" : row.ipv6 == null ? "no IPv6 route from this server" : row.ipv6 ? "answers over IPv6" : "AAAA record, but no answer over IPv6";
   const wwwTitle = row.www_ok == null ? `${alt} has no address` : row.www_ok ? `${alt} is served too` : `${alt} resolves but does not answer`;
 
   const dkim = lines(row.dkim);
@@ -474,8 +474,8 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
         ])}
         ${factGroup("Registry", [
           fact("Registered", no(row.reg_found) ? "not registered" : state(row.reg_found, "known to the registry")),
-          fact("Expires", time(row.reg_expires, "–")),
-          fact("Created", time(row.reg_created, "–")),
+          fact("Expires", time(row.reg_expires)),
+          fact("Created", time(row.reg_created)),
           fact("Registrar", row.reg_registrar || "–"),
           fact("Transfer lock", state(row.reg_locked, "the registry blocks transfers")),
           fact("Status", row.reg_status || "–"),
@@ -539,7 +539,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const app = node.app;
   const skipped = vars.add ? await addDomains(app, String(vars.domains ?? "")) : [];
   // Ordered by the reversed name rather than by SQL, so subdomains sit under their parent.
-  const rows = (await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`)
+  const rows = (await app.db.query<DomainRow>`SELECT * FROM monitor_domain`)
     .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || (domainKey(a.domain) < domainKey(b.domain) ? -1 : 1));
   const pageUrl = await nodeUrl(node, ctx);
   const body = html.join(rows.map((row) => rowHtml(row, pageUrl)), "\n");

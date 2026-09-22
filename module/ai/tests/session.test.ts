@@ -1,5 +1,5 @@
-import { ApiError } from "@qino/qino";
-import { assertEquals } from "@qino/qino/tests";
+import { ApiError, NotFoundError } from "@qino/qino";
+import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { ChatSession } from "../lib/ChatSession.ts";
 import { sse } from "../lib/sse.ts";
@@ -60,3 +60,10 @@ for (const streaming of [false, true]) {
     assertEquals(logged.map(args => args.at(-1)), failures);
   });
 }
+
+Deno.test("ai: someone else's session answers like a missing one", async () => {
+  for (const row of [undefined, { user_id: 2, bot: "test" }]) {
+    const session = new ChatSession({ db: { row: () => row } } as never, {} as never, 1);
+    await assertRejects(() => session.run("Hello", { userId: 1 } as never), NotFoundError);
+  }
+});

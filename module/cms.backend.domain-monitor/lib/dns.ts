@@ -213,7 +213,7 @@ export async function resolve(servers: string | string[], questions: { name: str
     // answer the first question and close, RFC 7766 or not. Asking again on one connection at a
     // time would cost a round trip per record, so the leftovers go out on their own connections
     // at once instead. Two round trips cover both kinds of server.
-    if (!await exchange(server, questions.map((question, at) => ({ ...question, at })), answers, limit)) continue;
+    if (!await exchange(server, open(), answers, limit)) continue;
     for (let pass = 0; pass < 2 && open().length && !limit.aborted; pass++) {
       const before = answers.size;
       await Promise.all(open().slice(0, 12).map((question) => exchange(server, [question], answers, limit)));
