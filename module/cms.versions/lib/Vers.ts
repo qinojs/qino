@@ -65,7 +65,7 @@ export function setVers(ctx: Ctx, spaceLog: [number, number] | null): [number, n
 
 /** Shadow table name for a versioned table, or undefined if it is not versioned.
  *  The _vers_* tables are created centrally via the schema (see plugin.ts
- *  extendDbSchema), so this is a pure lookup. */
+ *  dbSchema), so this is a pure lookup. */
 export function getVersTable(db: Db, tableName: string): string | undefined {
     return versedTables(db)[tableName] ? `_vers_${tableName}` : undefined;
 }
@@ -103,13 +103,13 @@ export async function ensureView(db: Db, tableName: string, space: number, log: 
     const view = `_vers_${log}_space_${space}_${tableName}`;
 
     if (log !== 0) { // one-shot, caller drops it
-        await createView(db, tableName, space, log);
+        await createView(db, view, tableName, space, log);
         return view;
     }
 
     const views = dbState(db).views;
     const creating = views.getOrInsertComputed(view, () => {
-        const creating = createView(db, tableName, space, log);
+        const creating = createView(db, view, tableName, space, log);
         creating.catch(() => views.delete(view)); // allow retry after failure
         return creating;
     });
@@ -130,8 +130,7 @@ export async function historicalViews(ctx: Ctx, space: number, log: number): Pro
     return { async [Symbol.asyncDispose]() { delete scope.tables; await drop(); } };
 }
 
-async function createView(db: Db, tableName: string, space: number, log: number): Promise<void> {
-    const view = `_vers_${log}_space_${space}_${tableName}`;
+async function createView(db: Db, view: string, tableName: string, space: number, log: number): Promise<void> {
     const versTable = `_vers_${tableName}`;
     // Build field list: versioned fields from shadow table, rest from live table.
     const liveFields = await db.columns(tableName);

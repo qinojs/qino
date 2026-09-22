@@ -99,7 +99,7 @@ Deno.test("util: sqlSearch exact columns, qualified names, wildcard escaping", (
 Deno.test("util: sqlSearch is neutral on empty input", () => {
   const res = sqlSearch("   ", ["title"]);
   assertEquals(fakeRender(res.where, []), ["?", [true]]);
-  assertEquals(fakeRender(res.order, [])[0], "NULL");
+  assertEquals(fakeRender(res.order, [])[0], "(SELECT NULL)"); // a bare NULL is refused by Postgres
 });
 
 Deno.test("util: ctx.urlToLocalPath maps module and data public files", async () => {

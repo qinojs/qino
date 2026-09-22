@@ -24,7 +24,7 @@ async function setup(access: Record<number, number>, changed: Array<{ node_id: n
       id: Number(id),
       vs: { type: "p" },
       access: () => Promise.resolve(access[Number(id)] ?? 0),
-      title: () => Promise.resolve({ string: () => Promise.resolve("T") }),
+      showTitle: () => Promise.resolve({ plain: () => "T" }),
     }),
   } as never);
   ctx.lang = "de";

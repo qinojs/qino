@@ -49,7 +49,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
     // Logs without any editable affected page (or none captured) stay closed.
     const t = ctx.app.t;
     const contOrPage = async (page: any): Promise<string> => {
-        const title = (await (await page.title())?.string?.() ?? "").trim();
+        const title = (await page.showTitle()).plain();
         return `${page.vs?.type === "p" ? await t`page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${page.id})`;
     };
 

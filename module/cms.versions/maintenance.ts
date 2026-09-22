@@ -29,11 +29,11 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
   const widths = Array.from({ length: Math.ceil(Math.log2(now / (DENSITY * UNIT_SEC))) + 1 }, (_, i) => UNIT_SEC * 2 ** i);
   // epoch-anchored bucket; width = UNIT × 2^k chosen so width ≈ age / DENSITY,
   // floored at UNIT → derives from the entry's own age, stable across runs.
+  // integers only: Postgres has no `%` for the double POWER() would return
   const bucket = (col: Sql) => {
     const age = sql`${now} - ${col}`;
-    const width = db.dialect === "sqlite"
-      ? sql`CASE ${sql.join(widths.slice(1).map((w, i) => sql`WHEN ${age} < ${DENSITY * w} THEN ${widths[i]}`), " ")} ELSE ${widths.at(-1)} END`
-      : sql`(${UNIT_SEC} * POWER(2, GREATEST(0, FLOOR(LN(GREATEST(${age}, 1) * 1.0 / ${DENSITY * UNIT_SEC}) / LN(2)))))`;
+    const n = (v: number) => sql.raw(String(v)); // our own numbers: typed literals, not untyped parameters
+    const width = sql`CASE ${sql.join(widths.slice(1).map((w, i) => sql`WHEN ${age} < ${n(DENSITY * w)} THEN ${n(widths[i])}`), " ")} ELSE ${n(widths.at(-1)!)} END`;
     return sql`(${col} - (${col} % (${width})))`;
   };
 

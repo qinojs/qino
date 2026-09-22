@@ -101,7 +101,7 @@ export const api: ApiTree = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
 
-    // Register versioned tables for the runtime engine (schema is wired via extendDbSchema).
+    // Register versioned tables for the runtime engine (schema is wired via dbSchema).
     Object.assign(versedTables(app.db), VERSED);
 
     // Generic engine (lib/): core shadow tables/views, history capture, spaces

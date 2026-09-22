@@ -26,7 +26,6 @@ export function initHistory(app: App, signal: AbortSignal) {
     const ctx = requestStorage.getStore();
     if (!ctx) return null;
     const tableName = String(e.table);
-    if (tableName.startsWith("_vers_") && !e.data?._vers_log) return null; // writing to vers table – let through
     const versTable = getVersTable(ctx.app.db, tableName);
     if (!versTable) return null;
     const logId = await ctx.logId;
