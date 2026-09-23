@@ -136,7 +136,7 @@ async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
   const remote = available.filter((ref) => ref.startsWith("refs/remotes/") && !local.has(ref.split("/").slice(3).join("/")));
   const tags = available.filter((ref) => ref.startsWith("refs/tags/"));
   const options = (list: string[], prefix: string) => list.map((ref) => html`<option value="${ref}"${ref === repo.ref ? html` selected` : ""}>${ref.slice(prefix.length)}</option>`);
-  return html.async`<div class=u2-card data-repo="${repo.root}">
+  return html.async`<div class=u2-card data-repo="${repo.root}" style="flex:0 0 auto">
   <div class=-head><code>${repo.root}</code></div>
   <div>
     <div><b>${repo.ref.startsWith("refs/tags/") ? repo.ref.slice(10) : repo.branch || "?"}</b>
@@ -146,7 +146,7 @@ async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
     </div>
     ${
     dirty
-      ? html.async`<details${dirty <= 12 ? html` open` : ""}>
+      ? html.async`<details${dirty <= 12 ? html` open` : ""} style="margin-block:.5em">
           <summary>${dirty} ${t`changed files`}</summary>
           <table class="u2-table -changes">${
         repo.files.map((file) => html`<tr><td class="-code -${file.code}">${file.code}<td>${file.path}`)
@@ -155,8 +155,10 @@ async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
         <button data-act=commit>${t`Commit`}</button>`
       : html.async`<small>${t`nothing changed`}</small>`
   }
+  </div>
+  <div>
     <button data-act=update u2-confirm="${t`Fetch, pull and restart the server if code changed?`}"${repo.branch === "(detached)" ? html` disabled` : ""}>${t`Update`}</button>
-    <details><summary>${t`Advanced`}</summary>
+    <details style="margin-block:.5em"><summary>${t`Advanced`}</summary>
       <label>${t`Version`}<br><select name=ref>
         <option value="">${t`Select version`}</option>
         <optgroup label="${t`Branches`}">${options(branches, "refs/heads/")}</optgroup>
@@ -179,10 +181,11 @@ async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
 function serverCard(t: App["t"]): Promise<HtmlString> {
   const can = supervised();
   return html.async`<div class=u2-card>
-  <details><summary>${t`Server`}</summary>
+  <div class=-head>${t`Server`}</div>
+  <div>
     <small>${can ? t`Pulled code is loaded on the next start.` : t`No service manager: nothing would start the process again.`}</small>
     <button data-act=restart data-confirm="${t`Restart the server now? The site is unreachable for a moment.`}"${can ? "" : html` disabled`}>${t`Restart`}</button>
-  </details>
+  </div>
 </div>`;
 }
 
