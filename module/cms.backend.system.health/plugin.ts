@@ -15,8 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 const ms = (n: number) => n.toFixed(n < 10 ? 1 : 0) + " ms";
 
-/** What is known without running the check; the remaining cells arrive through the `check` part.
- *  The type sorts by severity, not alphabetically — hence its rank as sort value. */
+/** Row known without running the check; the rest comes via the `check` part. Type sorts by severity. */
 const knownCells = ({ type, rank, mod, name }: Check, passed = false) =>
   html`<td>${mod}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(name)}`;
 

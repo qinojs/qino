@@ -12,23 +12,21 @@ const name = "cms.backend.superuser.module";
 // A typed URL wins, everything else is a path below the app.
 const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.dir)).href;
 
-// Which stores are registered decides where server code may be installed from — the modules below
-// inherit that decision, which is why only this pair asks. Access to the page is not enough.
+// Stores decide where server code may come from, so only superusers may change them — page
+// access is not enough.
 const isSuperuser = () => !!getCtx().user?.superuser;
 
 // core is the root of the dependency graph, and this module renders the page you are looking at.
 const LOCKED = new Set(["core", name]);
 
-// Acts that change which code the app runs. An hour-old session is enough to read this page; it is
-// not enough to install a module, so these ask for a proof that the owner is still at the keyboard.
+// Actions that change the running code require a fresh proof (step-up).
 const GRAVE = new Set(["addStore", "removeStore", "install", "uninstall", "useSource"]);
 
 // What is worth asking about before it happens.
 const CONFIRM = new Set(["repair", "reset", "uninstall", "unlink", "useSource"]);
 
-// One colour language, four things it can say: red deletes what a module keeps, orange writes into
-// one, green is the single action an untouched row exists for, blue marks a module that is not
-// running. Everything reversible and unremarkable stays plain — that is what keeps red readable.
+// Colors: red deletes a module's data, orange writes into it, green is the row's main action, blue
+// marks an inactive module. Everything else stays plain.
 const TONE: Record<string, string> = {
   uninstall: "-delete",
   reset: "-delete",
@@ -38,8 +36,7 @@ const TONE: Record<string, string> = {
 };
 
 // Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
-/** The icon of a module that is only offered, not imported — served by its store, so the page has
- *  to allow that origin for images. */
+/** Icon of a module not yet imported — served by its store, so allow that origin for images. */
 function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string }): HtmlString | undefined {
   if (!iconMod.manifest.files?.includes("pub/module.svg")) return;
   getCtx().res.csp["img-src"][iconMod.modUrl] = true;
@@ -50,25 +47,22 @@ const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared
 
 type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
 
-/** The one thing a row is about: everything it offers follows from this. A row is a module *and*
- *  a store, so the same module can be installed in one row and merely on offer in the next —
- *  `Module.source` says which store it actually came from, and only that row acts on it. */
+/** The state of a row, which decides its actions. A row is module + store, so a module may be
+ *  installed in one row and only offered in another; `Module.source` names the actual store. */
 function state(app: App, mod: string, store?: Store): RowState {
   if (app.modules.failures().has(mod)) return "broken";
   const known = app.modules.get(mod);
-  // Storeless and unimported leaves only one origin: a row in the module table nothing can load.
-  // Same state as a failed import — a row with nothing behind it; only the reason differs.
+  // No store and not imported: a module row nothing can load — like a failed import.
   if (!known) return store ? "available" : "broken";
   const mine = store ? known.source === store.moduleUrl(mod) : !offered(app, known);
   return !mine ? "elsewhere" : app.modules.linked(mod) ? "active" : "inactive";
 }
 
-/** True when some registered store is where this module came from — then it needs no storeless row. */
+/** True if the module came from a registered store (then no row without store is needed). */
 const offered = (app: App, mod: Module) => app.stores.all().some((store) => store.moduleUrl(mod.name) === mod.source);
 
-/** Short store name: the host of a remote catalog, the path of a local one. Two stores may well
- *  sit in a folder of the same name, so a local path keeps its parent, and the app's own is
- *  relative — that is what tells `./module/` from the built-in `qino/module`. */
+/** Short store name: host of a remote catalog, path of a local one (with parent folder; the app's
+ *  own relative, to tell `./module/` from `qino/module`). */
 function storeLabel(app: App, url: string): string {
   const u = new URL(url);
   if (u.host) return u.host;
@@ -87,17 +81,15 @@ function catalogs(app: App) {
   ));
 }
 
-/** One row per module *and* store: a module two stores offer is listed twice, once under each, so
- *  the row that says "active" is the store it was installed from. A module no store lists — added
- *  in server.ts, or installed straight from a URL — gets a single row without one. */
+/** One row per module and store; a module in two stores is listed twice. Modules without store
+ *  (server.ts or installed from a URL) get one row. */
 async function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): Promise<{ mod: string; store?: Store }[]> {
   const rows: { mod: string; store?: Store }[] = [];
   for (const { store, names } of cats) for (const mod of names) rows.push({ mod, store });
   for (const mod of app.modules.all().values()) if (!offered(app, mod)) rows.push({ mod: mod.name });
   for (const mod of app.modules.failures().keys()) if (!rows.some((row) => row.mod === mod)) rows.push({ mod });
-  // A name the table still holds that neither a catalog nor an import accounted for: the leftover of
-  // a module since renamed or dropped. Boot cannot spot it — it does not know the catalogs — and no
-  // other page lists it, so this is the only place it can be removed.
+  // A module row neither a catalog nor an import explains (renamed or removed module). Only this
+  // page can show and remove it.
   for (const { name } of await app.db.query`SELECT name FROM module`.catch(() => []))
     if (!rows.some((row) => row.mod === name)) rows.push({ mod: name });
   return rows.sort((a, b) => a.mod.localeCompare(b.mod) || (a.store?.url ?? "").localeCompare(b.store?.url ?? ""));
@@ -105,10 +97,8 @@ async function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>):
 
 const segments = (url: string) => decodeURIComponent(new URL(url).pathname).split("/").filter(Boolean);
 
-/** Store labels for one render, unique among the listed stores: two tags of the same catalog share
- *  a host, and `gcdn.li` twice tells nobody which is which. A collision is resolved with the least
- *  that separates them — the path segments the colliding stores do *not* have in common, so two
- *  release tags read as `gcdn.li/qino@v0.6.1` rather than as two full URLs. */
+/** Unique store labels: on collision (same host), add the differing path segments, e.g.
+ *  `gcdn.li/qino@v0.6.1`. */
 function labeller(app: App): (url: string) => string {
   const groups = new Map<string, string[]>();
   for (const store of app.stores.all()) {
@@ -140,8 +130,8 @@ type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset" |
 // --- rows -----------------------------------------------------------------
 // The row carries mod, store and state: the client reads them for its filter and its API calls.
 
-/** Link order as name → position. Only imported, unbroken modules have one — and an inactive module
- *  whose dependency was uninstalled leaves the graph unorderable, which may cost the column, not the page. */
+/** Link order as name → position (only imported, unbroken modules). If the graph can't be ordered,
+ *  only this column is lost. */
 function ranks(app: App): Map<string, number> {
   try { return new Map(app.modules.order().map((name, i) => [name, i + 1])); } catch { return new Map(); }
 }
@@ -158,9 +148,8 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
       (manifest) => ({ manifest, modUrl: new URL(".", store.moduleUrl(mod)).href }),
       () => undefined,
     );
-  // An imported module serves its own files; a catalog entry has none here yet and still points at
-  // the store, where a cross-origin `<use>` would never load. An `<img>` does, and this icon is
-  // decoration — nothing the row styles.
+  // Not-yet-imported modules have their icon at the store; `<use>` can't load cross-origin, `<img>`
+  // can.
   const use = iconMod === known ? moduleIcon(known) : undefined;
   const icon = use
     ? html`<svg style="display:block" width=20 height=20 aria-hidden=true>${use}</svg>`
@@ -175,9 +164,8 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
   detail.searchParams.set("mod", mod);
   const btn = (act: ModAct) =>
     html`<button data-act=${act}${TONE[act] ? html` class=${TONE[act]}` : ""}${CONFIRM.has(act) ? html` u2-confirm` : ""}>${l[act]}</button>`;
-  // Seeding again works for anything linked, declared modules included — that is how an older
-  // installation gets the default set it was never installed with. A row for a store the module did
-  // not come from cannot install it — the name is taken — but it can take the name over.
+  // Re-seeding works for any linked module, also declared ones (so older installations get the
+  // default set). A row of another store can't install (name taken) but can switch the source.
   const acts = st === "available"
     ? [btn("install")]
     : st === "broken"
@@ -213,9 +201,8 @@ function storeRow(store: Store, error: string, l: Labels, label: (url: string) =
   }`;
 }
 
-/** What installing `mod` from `from` would bring along: its missing dependencies, theirs, and so on.
- *  Read from the manifests, so it costs no import — this answers a question, it decides nothing.
- *  Same walk as install(): the row's store for the module itself, whoever offers it for the rest. */
+/** Missing dependencies (recursive) that installing `mod` from `from` would add. Read from the
+ *  manifests, no import. Same lookup as install(). */
 async function alsoNeeded(app: App, from: Store, mod: string): Promise<string[]> {
   const offers = await app.stores.offers();
   const found: string[] = [];
@@ -234,9 +221,8 @@ async function alsoNeeded(app: App, from: Store, mod: string): Promise<string[]>
 
 // --- node API -------------------------------------------------------------
 
-/** One action, answered with the module's fresh row (null = it is gone). The new row is the
- *  feedback, so only a failure has a message. Without a row the page reloads: a store came or
- *  went, and with it its modules. */
+/** Run an action; returns the updated row (null = gone), only errors have a message. Without a row
+ *  the page reloads (a store was added or removed). */
 export async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boolean; message?: string; row?: string | null; needs?: string[] }> {
   const app = node.app;
   const act = String(vars.act ?? "");
@@ -247,8 +233,7 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<{ 
     if (!found) throw new Error(`Unknown store: ${store}`);
     return found;
   };
-  // Outside the try on purpose: the demand has to reach the browser as `step_up_required`, not as
-  // a message string in an ok:false.
+  // Outside the try, so the browser gets `step_up_required`, not an ok:false message.
   if (GRAVE.has(act)) await requireStepUp(getCtx());
   try {
     switch (act) {
@@ -295,8 +280,7 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<{ 
   } catch (e) {
     return { ok: false, message: errMsg(e) };
   }
-  // Installing or removing a module changes the rows of every *other* store offering it too, so
-  // those two reload the page; the rest only ever touch their own row.
+  // Install/uninstall change the rows of other stores too, so they reload the page.
   return { ok: true, row: String(await moduleRow(app, mod, app.stores.get(store), await labels(app), labeller(app), ranks(app))) };
 }
 
@@ -361,7 +345,7 @@ export async function renderOverview(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-/** What is there, what came last, and the inactive modules — those are the ones you may want back. */
+/** Dashboard: counts, latest installs and inactive modules. */
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   const mods = [...app.modules.all().keys()];

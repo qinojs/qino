@@ -1,4 +1,3 @@
-// Public API of cms.templateParser. The qino plugin lives in ./plugin.ts.
 import { fileURLToPath } from "node:url";
 import { fs } from "@qino/qino";
 

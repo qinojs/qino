@@ -10,8 +10,8 @@ function page(ctx: Ctx, title: string, body: HtmlString, status = 200): never {
   throw new Output(); // stop the route here — the document on ctx.res is the response
 }
 
-/** Sign-in form. The fields are the core's (`core_login`), so `loginFromRequest` logs the user in
- *  on POST — before any route runs. Posting to the same URL keeps the authorization params. */
+/** Sign-in form with core's fields (`core_login`), so `loginFromRequest` handles the POST. Posting
+ *  to the same URL keeps the authorization params. */
 export async function loginPage(ctx: Ctx, client: string): Promise<never> {
   const t = ctx.app.t;
   const title = await t`Sign in`;

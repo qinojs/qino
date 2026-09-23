@@ -7,9 +7,8 @@ import { fs } from "../fs.ts";
 import type { UploadedFile } from "../fileStream.ts";
 
 /**
- * The fully initialized request of the dynamic phase — created once per request,
- * after prefilter and static check. Request data is read-only; a mutable URL
- * copy comes from `req.url.toURL()`.
+ * The request, created once after the pre-filter and static-file check. Read-only; for a mutable
+ * URL use `req.url.toURL()`.
  */
 export class Req {
   #raw: Request;
@@ -41,15 +40,15 @@ export class Req {
   }
 
   get raw(): Request { return this.#raw; }
-  /** Immutable request URL; `url.toURL()` yields an independent mutable native `URL`. */
+  /** Immutable request URL; `url.toURL()` returns a mutable copy. */
   get url(): ReqUrl { return this.#url; }
   get method(): string { return this.#raw.method; }
   get headers(): Headers { return this.#raw.headers; }
-  /** Direct TCP peer address (from the runtime), the only unspoofable IP source. */
+  /** TCP peer address — the only IP that can't be spoofed. */
   get peerAddr(): string { return this.#peerAddr; }
   /** performance.now() when the request entered the pipeline. */
   get time(): number { return this.#time; }
-  /** Parsed method-independent body: null (no/unknown body), flat frozen record (form) or deep-frozen JSON value. */
+  /** Parsed body: null (none/unknown), frozen record (form) or deep-frozen JSON. */
   // deno-lint-ignore no-explicit-any
   get body(): any { return this.#body.value; }
   /** Lazy per-file upload access: `await req.files.name` spools that file to tmp. */
@@ -62,8 +61,7 @@ export class Req {
   get moduleUrl(): string { return `${this.#appUrl}m${this.#rev}/`; }
   /** Where module data files are served from; `Module.dataUrl` appends the module. */
   get dataUrl(): string { return `${this.#appUrl}d${this.#rev}/`; }
-  /** Decoded app-relative routing path, without base prefix and query.
-   *  A URL path — not to be confused with `app.dir` (filesystem path). */
+  /** Decoded path relative to the app, without prefix and query. A URL path, not `app.dir`. */
   get appPath(): string { return this.#appPath; }
   /** Time limit + abort signal of this request: `req.deadline.left += 60`, `req.deadline.signal`. */
   get deadline(): ReqDeadline { return this.#deadline ??= new ReqDeadline(this.#raw.signal); }
@@ -89,7 +87,7 @@ export class Req {
     return this.#queryAll;
   }
 
-  /** Incoming request cookies only — response cookies never show up here. */
+  /** Request cookies only, not response cookies. */
   get cookies(): Readonly<Record<string, string>> {
     return this.#cookies ??= Object.freeze(parseCookies(this.header("cookie")));
   }
@@ -130,8 +128,8 @@ export class Req {
   }
 }
 
-/** A TLS-terminating proxy forwards plain http to the local port, so `request.url` would make every
- *  absolute self-link `http://`. Same trust model as `clientIp`: only honoured when hops > 0. */
+/** Behind a TLS proxy `request.url` is `http://`, which would break absolute self-links. Trusted
+ *  like `clientIp`: only when hops > 0. */
 function publicScheme(request: Request, url: URL, hops: number): URL {
   if (hops <= 0) return url;
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();

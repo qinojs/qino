@@ -47,7 +47,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     if (kind !== "payments" && kind !== "shippings") return false;
     const s = app.settings.shp3[kind];
     let sort = 0;
-    // Row order in, sort numbers out — unknown names are silently skipped, like every other write here.
+    // Row order in, sort numbers out; unknown names are skipped.
     for (const name of Array.isArray(vars.order) ? vars.order : []) {
       const setting = s[String(name)];
       if (await setting.description !== undefined) await setting.sort(++sort);
@@ -78,8 +78,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
       await db.table("shp3_currency").insert({ id, factor: 1, smallest: 0.01, smallest_closing: 0.01, active: true });
       return 1;
     }
-    // The main currency is the yardstick: every factor is relative to it, so switching it rescales
-    // them all, and the new one starts at 1 — the same move the PHP backend made.
+    // All factors are relative to the main currency, so switching rescales them (new main = 1), like PHP.
     if (field === "main") {
       const last = Number(await db.one`SELECT factor FROM shp3_currency WHERE id = ${id}`) || 1;
       await db.exec`UPDATE shp3_currency SET factor = factor / ${last}, main = ${false}`;

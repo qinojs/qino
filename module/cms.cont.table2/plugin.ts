@@ -18,8 +18,7 @@ const settingsSchema = {
   },
 };
 
-/** Column width: a bare number takes the `units` setting (px unless told otherwise), an explicit CSS
- *  length passes through, anything else is dropped. */
+/** Column width: a number uses the `units` setting (default px), a CSS length stays, else dropped. */
 function cssWidth(raw: string, units: string): string {
   const w = raw.trim();
   if (/^\d+(\.\d+)?$/.test(w)) return w + units;

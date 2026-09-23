@@ -1,5 +1,5 @@
-// The journal as the panel shows it: one row per message, its deliveries and attachments nested,
-// with the group and user names the table prints. That shape is this view's business, not messaging's.
+// The journal for the panel: one row per message with nested deliveries and attachments, plus group
+// and user names. Specific to this view.
 import { sql } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";

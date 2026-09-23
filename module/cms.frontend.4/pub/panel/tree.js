@@ -30,8 +30,8 @@ export async function cmsTreeInit(json) {
 
   let activeNode = null;
 
-  // Hidden root: shared active/selection scope and carrier of all listeners (delegation).
-  // replaceChildren on re-init throws it away together with its listeners -> no stacking.
+  // Hidden root: shared selection scope and holder of all (delegated) listeners. Re-init replaces
+  // it with its listeners, so they don't pile up.
   const rootNode = document.createElement("u2-tree");
   rootNode.classList.add("-root");
   rootNode.setAttribute("aria-expanded", "true");

@@ -1,5 +1,4 @@
-/** One git call. Never interactive: without credentials git would ask, and a question from a
- *  request handler is a hung page — so it fails fast instead, and slow remotes hit the timeout. */
+/** Run git, never interactive (a credential prompt would hang the request); with timeout. */
 export async function git(dir: string, args: string[], timeout = 30_000): Promise<{ ok: boolean; out: string }> {
   const cmd = new Deno.Command("git", {
     args: ["-C", dir, ...args],
@@ -18,8 +17,7 @@ export async function git(dir: string, args: string[], timeout = 30_000): Promis
 export type Change = { code: string; path: string };
 export type Repo<T = unknown> = { root: string; branch: string; ahead: number; behind: number; files: Change[]; holds: T[] };
 
-// Where the path starts in a porcelain v2 entry — each kind of line carries a different number of
-// fields before it, which is why counting from the end or from a fixed offset goes wrong on renames.
+// Where the path starts in a porcelain v2 entry — the field count differs per line type.
 const PATH_AT: Record<string, number> = { "1": 8, "2": 9, u: 10 };
 
 /** Branch, tracking distance and working-copy changes in one call — porcelain v2 answers all three. */
@@ -37,7 +35,7 @@ export async function status(root: string): Promise<Omit<Repo, "root" | "holds">
     } else if (line.startsWith("? ")) res.files.push({ code: "U", path: line.slice(2) });
     else if (line[1] === " " && PATH_AT[line[0]]) {
       const field = line.split(" ");
-      // XY is staged and worktree state; a dot means "unchanged there", so the other letter is the news.
+      // XY = staged and worktree state; a dot means unchanged, so take the other letter.
       res.files.push({
         code: line[0] === "u" ? "C" : field[1].replace(/\./g, "")[0] ?? "M",
         path: field.slice(PATH_AT[line[0]]).join(" ").split("\t")[0],
@@ -47,8 +45,8 @@ export async function status(root: string): Promise<Omit<Repo, "root" | "holds">
   return res;
 }
 
-/** The repositories behind a set of directories — one `rev-parse` per repo, not per directory:
- *  a candidate already inside a known root belongs to it and needs no call of its own. */
+/** The repositories of these directories — one `rev-parse` per repo (directories inside a known root
+ *  are skipped). */
 export async function reposOf<T>(dirs: Map<string, T>): Promise<Map<string, T[]>> {
   const roots = new Map<string, T[]>();
   for (const [dir, holds] of [...dirs].sort(([a], [b]) => a.localeCompare(b))) {

@@ -1,5 +1,4 @@
-// Restores the mailto hrefs the server encoded. Text addresses need no script at all — they already
-// read correctly, and stay broken for anything reading the markup or textContent.
+// Decodes the mailto hrefs encoded by the server. Text addresses need no script.
 // This file is served at <appUrl>m/emailguard/pub/main.js
 
 const key = JSON.parse(document.querySelector("#qino-data")?.textContent || "{}").emailguard?.key;

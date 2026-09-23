@@ -2,154 +2,142 @@
 
 Collects the ways a user can prove who they are, and decides what a proof is worth.
 
-**One idea: a factor proves who you are, and where the request stands decides what that is worth.**
-Signing in and confirming you are still there are the same proof in two situations, so the module
-that ran the ceremony says only what it found out:
+**A factor proves who you are; the state of the request decides what that means.** Login and
+"confirm it's still you" are the same proof, so the module that ran the check only reports the
+result:
 
 ```ts
 await proof(ctx, "webauthn", usrId);
 ```
 
-Not signed in, that is a login and core turns the identity into a session. Already signed in as that
-user, it is a fresh proof recorded in the session — a step-up. It resolves with **nothing when that
-went through, otherwise with what is still missing**; an empty list means nothing here helps (an
-inactive user, or a factor that may not do this).
+If nobody is signed in, this is a login and core creates the session. If the same user is already
+signed in, it is a fresh proof stored in the session — a step-up. It resolves with **nothing on
+success, otherwise with the factors still missing**; an empty list means nothing helps (inactive
+user, or a factor that isn't allowed here).
 
 ## Declaring a factor
 
-A module exports `authFactors` from its plugin, the way [messaging](../messaging/) collects
-channels:
+A module exports `authFactors` from its plugin, like [messaging](../messaging/) collects channels:
 
 ```ts
 export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", stepUp: true }];
 ```
 
-A list, because one module may bring several ([auth.otp](../auth.otp/) has one per channel); a
-function of the app when that is only known at runtime.
+It is a list because a module may bring several ([auth.otp](../auth.otp/) has one per channel), or a
+function of the app if the list is only known at runtime.
 
-- `stepUp` — may also refresh an open session. A federated login leaves it out: the provider answers
+- `stepUp` — may also refresh an open session. Federated logins leave it out: the provider answers
   from its own session and says nothing about who is at the keyboard now.
-- `second` — can only ever be the second factor. [auth.backup_codes](../auth.backup_codes/) finishes
-  a login somebody else started, so a stolen code is worth nothing without the password in front.
-- `order` — where it sits when several are offered, so the dialog opens the best one first. That is
-  presentation, not a verdict.
-- `has` — optional. A factor that cannot answer it per user counts as available for everyone.
+- `second` — only allowed as second factor. [auth.backup_codes](../auth.backup_codes/) only
+  finishes a login, so a stolen code is useless without the password.
+- `order` — sort order when several are offered; the dialog opens the first. Presentation only.
+- `has` — optional. Without it, the factor counts as available for every user.
 
-`factors(app)` lists what linked modules declare, `userFactors(app, usrId)` what one person has.
-Nothing here knows a factor by name, so a new one costs no code in `auth` and shows up in
-[cms.backend.superuser.auth](../cms.backend.superuser.auth/) by itself. `core` is one of those
-modules and declares `password`. Each factor brings its own `cms.cont.my.*` page for setting it up.
+`factors(app)` lists what linked modules declare, `userFactors(app, usrId)` what one user has set
+up. `auth` knows no factor by name, so a new factor needs no code here and shows up in
+[cms.backend.superuser.auth](../cms.backend.superuser.auth/) automatically. `core` declares
+`password`. Each factor has its own `cms.cont.my.*` page for setup.
 
-## A login of more than one factor
+## Login with more than one factor
 
-`core.loginTwoFactor` asks for a second one. The first proof then opens nothing: the identity waits
-as `core.pending` in the anonymous session for ten minutes, and the rotation on the real login
-clears it — no half-login table, nothing to sweep. Whoever has no second factor is let in with one.
+`core.loginTwoFactor` requires a second factor. The first proof then only stores the identity as
+`core.pending` in the anonymous session for ten minutes; the session rotation on the real login
+removes it. No extra table, nothing to clean up. Users without a second factor get in with one.
 
-In the browser it is the step-up dialog again: core loads
-[`finishLogin.mjs`](../core/pub/js/finishLogin.mjs) on any page while a login is parked, and it asks
-`GET core/login/missing` — so a login that came back as a redirect (oauth) is finished on the page it
-returned to, without a page of its own. The
-`verify` verbs behind it take `Access.IDENTIFIED` — **whoever is signed in, or whoever a login under
-way has established** (`identified(ctx)` in server code). That is also why a code can be sent at
-all: only ever to a user the request already knows.
+In the browser this is the step-up dialog again: while a login is pending, core loads
+[`finishLogin.mjs`](../core/pub/js/finishLogin.mjs) on every page, which calls
+`GET core/login/missing`. So a login that returns via redirect (oauth) is finished on the page it
+lands on. The `verify` verbs use `Access.IDENTIFIED` — **the signed-in user, or the one a pending
+login has identified** (`identified(ctx)` in server code). That is why a code is only ever sent to
+a user the request already knows.
 
-## What guessing costs
+## Brute-force protection
 
-The account is the subject, never the method
-([attempts.ts](../core/lib/auth/attempts.ts)): `beforeProof()` stands in front of every check of
-something guessable, `proofFailed()` makes the next one dearer, `proofPassed()` wipes the slate.
-Three free tries, then a wait doubling to five minutes, forgotten after an hour. A counter per
-factor would let an attacker spread guesses over password, totp and backup codes.
+Failed attempts are counted per account, not per method
+([attempts.ts](../core/lib/auth/attempts.ts)): `beforeProof()` runs before every check of something
+guessable, `proofFailed()` raises the wait, `proofPassed()` resets it. Three free tries, then a wait
+that doubles up to five minutes, forgotten after an hour. A counter per factor would let an
+attacker split guesses across password, totp and backup codes.
 
-A wait and not a lockout: a lockout is a weapon anyone who knows an e-mail address can fire.
-The slate is wiped when a login is **finished**, not when a factor lands — otherwise whoever knows
-the password buys a fresh budget for guessing the second one with every correct entry.
-[auth.webauthn](../auth.webauthn/) does not count at all: a signature is not guessed.
+It is a wait, not a lockout — a lockout could be triggered by anyone who knows an e-mail address.
+The counter resets when the login is **finished**, not after each factor; otherwise knowing the
+password would reset the budget for guessing the second one.
+[auth.webauthn](../auth.webauthn/) is not counted: a signature can't be guessed.
 
-## Demanding a fresh proof
+## Requiring a fresh proof
 
 [`requireStepUp(ctx, { maxAge })`](../core/lib/auth/factors.ts) throws `StepUpError`
-(`code: "step_up_required"`, plus the factors that would work for this user). It counts only what a
-module declares with `stepUp`, so `remember` and `login_as` never satisfy one.
+(`code: "step_up_required"`, plus the factors this user could use). Only factors with `stepUp`
+count, so `remember` and `login_as` never satisfy it.
 
-A verb that always needs one says so, and [`invoke()`](../core/lib/api/invoke.ts#L98) asks on its
-behalf, once the gates have passed and before `execute` runs:
+A verb that always needs it declares it; [`invoke()`](../core/lib/api/invoke.ts#L98) checks it after
+the access checks and before `execute`:
 
 ```ts
 requireStepUp: true,             // always
-requireStepUp: { maxAge: 60 },   // always, and sooner
+requireStepUp: { maxAge: 60 },   // always, with a shorter max age
 ```
 
-Where it depends on the call it goes in the `guard` — that sees the path params and the validated
-input, and runs before anything happens, which matters because the browser repeats the same request
-after the dialog:
+If it depends on the call, use `guard`. It sees path params and validated input and runs before
+anything happens — important, because the browser repeats the same request after the dialog:
 
 ```ts
 guard: ({ amount }, ctx) => amount <= 1000 || requireStepUp(ctx, { maxAge: 60 }),
 ```
 
-The field is not shorthand for that: it is the only form a listing can see, which is how
-[`mcp`](../mcp/) can leave those verbs out — an agent has no dialog to answer them with. Every way a factor is handed out or taken away carries it,
-because whoever issues a factor changes what counts as a proof from then on.
+The field is still needed: tools listing verbs can only see the field. [`mcp`](../mcp/) uses it to
+hide those verbs, since an agent cannot answer a dialog. Every verb that adds or removes a factor
+has it, because it changes what counts as proof from then on.
 
-A route is not a verb and cannot demand anything (a `StepUpError` would land as a 403 page):
-`oauth/start/<name>` therefore has the connect button call `POST auth.oauth/connect` first, and
-spends that note.
+A route is not a verb and cannot require a step-up (a `StepUpError` would show as a 403 page). So
+the connect button first calls `POST auth.oauth/connect`, and `oauth/start/<name>` uses that result.
 
-Whoever has no factor at all passes — a demand nobody can meet protects nothing and would only lock
-someone out of setting up their first factor. The dry run (`x-api-check: access`) asks who *may*
-use a verb and demands nothing either.
+Users without any factor pass — otherwise they could never set up their first one. The dry run
+(`x-api-check: access`) only checks who *may* call a verb and requires nothing.
 
-In the browser, [`ApiClient`](../core/pub/js/ApiClient.js) only offers `recover(error)`: a hook that
-may fix a failed request and send it **once** more. The dialog knows no factor by name — each ships
-a `pub/stepup.js` exporting `prove(root)`, and the error says which module to import it from.
+In the browser, [`ApiClient`](../core/pub/js/ApiClient.js) offers `recover(error)`: a hook that may
+fix a failed request and send it **once** more. The dialog knows no factor by name — each factor
+has a `pub/stepup.js` exporting `prove(root)`, and the error says which module to load it from.
 
 ## What a proof is not
 
-**Not a permission.** `access` and `guard` decide whether a user may do something at all; a proof
-only says the person is there right now.
+**Not a permission.** `access` and `guard` decide whether a user may do something; a proof only
+says the person is present right now.
 
-**Not a recovery mechanism.** A link is a [ticket](../ticket/), a one-time code is an ordinary
-factor.
+**Not account recovery.** A link is a [ticket](../ticket/), a one-time code is a normal factor.
 
-**Not what [auth.api_keys](../auth.api_keys/) does.** A key names the user on a request and never
-opens a session, so it declares no factor and can satisfy no demand — a step-up is a person, and a
-machine call has nobody to ask.
+**Not an API key.** An [auth.api_keys](../auth.api_keys/) key identifies the user of a request but
+never opens a session. It is no factor and satisfies no step-up — there is nobody to ask.
 
-**Not only a record of proofs.** The session keeps `core.via.<name> = <when>` for every way in,
-including ones that prove nothing (`remember`, `login_as`). They are auditable and can never satisfy
-a demand, because only a declared factor is ever asked for.
+**Also a log.** The session stores `core.via.<name> = <when>` for every way in, including ones that
+prove nothing (`remember`, `login_as`). They are visible for auditing but never satisfy a step-up,
+since only declared factors are checked.
 
 ## Storage
 
-How a session got here lives in the session, so [`logout()`](../core/lib/auth/login.ts) and the id
-rotation clear it without help.
+How a session was established is stored in the session, so
+[`logout()`](../core/lib/auth/login.ts) and the id rotation clear it automatically.
 
-`usr_auth_factor` holds what a factor remembers per user — one row per secret, so several
-authenticator apps or a handful of backup codes are rows of the same `type`. `data` is the factor's
-own JSON and `auth` never looks inside; `store()`, `stored()` and `drop()` are the whole interface,
-all keyed by the user, so no factor module has to check ownership. A factor with real columns of its
-own keeps its own table, as [auth.webauthn](../auth.webauthn/) does.
+`usr_auth_factor` holds per-user factor data — one row per secret, so several authenticator apps or
+backup codes are rows with the same `type`. `data` is the factor's own JSON; `auth` never reads it.
+The interface is `store()`, `stored()` and `drop()`, all keyed by user, so factor modules don't
+need to check ownership. A factor that needs real columns has its own table, like
+[auth.webauthn](../auth.webauthn/).
 
 ## Open
 
-- **The policy beyond the one switch.** The **known client**: a stolen password sits on an unknown
-  one by definition, and `client_usr` knows the difference — it may excuse the second factor at
-  login and never satisfy a step-up, with a mail on a login from a new client as the counter-check.
-  The **floor for whoever set nothing up**: everybody has a mail address, but mail is also the reset
-  path. And **blocking or catching up**: a code by mail every time, or letting them in and pinning
-  them to setting a factor up.
-- **Properties.** Whether a proof was phishing-resistant becomes a field on `Factor` as soon as a
-  policy reads it, and not before.
-- **A code as a login factor, and approval instead of a code.** [auth.otp](../auth.otp/) is step-up
-  only today. A tap instead of a code is not phishable but invites MFA fatigue — the answer is
-  number matching, a mechanism of its own.
-- **The backend pages act on their own account** and call the `mod.ts` functions directly, past the
-  verbs and their `requireStepUp`. They are form posts and would show a `StepUpError` as an error
-  page; the `cms.cont.my.*` pages are the right place anyway.
-- **A wait tells you the address exists.** What is counted is the account, so the user must be known
-  before there is anything to ask — four wrong tries to learn that, against not telling the owner
-  why they cannot get in.
-- **Nobody stops you locking yourself out.** The question "is a way in left?" is
-  `userFactors(app, usrId)`.
+- **More policy.** *Known client*: a stolen password is used on an unknown client, and
+  `client_usr` can tell — it could skip the second factor at login (never for step-up), with a mail
+  on login from a new client. *Minimum for users without a factor*: everyone has mail, but mail is
+  also the reset path. *Block or nudge*: require a mail code every time, or let them in and push
+  them to set up a factor.
+- **Properties.** "Phishing-resistant" becomes a field on `Factor` once a policy needs it.
+- **Code as login factor, and approval instead of a code.** [auth.otp](../auth.otp/) is step-up
+  only today. Tapping "approve" can't be phished but invites MFA fatigue — the fix is number
+  matching.
+- **Backend pages act on the own account** and call `mod.ts` directly, bypassing the verbs and
+  their `requireStepUp`. They are form posts and would show a `StepUpError` as an error page; the
+  `cms.cont.my.*` pages are the right place anyway.
+- **A wait reveals that the address exists.** Counting per account requires a known user — four
+  wrong tries reveal that, but the owner learns why they can't get in.
+- **Nothing prevents locking yourself out.** Check with `userFactors(app, usrId)`.

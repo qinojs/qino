@@ -25,8 +25,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await app.stores.install(storeUrl(app));
 }
 
-// A module name appears twice in its own sources: in full, and without the "cms." prefix as the
-// qcms-mod attribute the CMS renders. Longest first, so the short form only sees what is left.
+// The name appears in full and without "cms." (the qcms-mod attribute). Replace the long one first.
 const rename = (text: string, from: string, to: string) =>
   text.split(from).map((part) => part.replaceAll(from.replace(/^cms\./, ""), to.replace(/^cms\./, ""))).join(to);
 
@@ -37,8 +36,8 @@ const utf8 = (bytes: Uint8Array) => {
 const isModuleFile = (file: unknown): file is string =>
   typeof file === "string" && !file.includes("\\") && file.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 
-/** Copy every published file of a module, renaming it inside text files. The same URL path
- *  works for local and remote modules; the manifest is the portable directory listing. */
+/** Copy all published files of a module, renaming it in text files. Works for local and remote
+ *  modules; the manifest serves as the file list. */
 async function copyTemplate(template: Module, dir: string, name: string): Promise<void> {
   const files = template.manifest.files;
   if (!files?.length) throw new Error(`Template "${template.name}" does not list its files`);
@@ -56,7 +55,7 @@ async function copyTemplate(template: Module, dir: string, name: string): Promis
   }
 }
 
-/** The smallest thing that is a module — a shape to start from comes from a template, not from here. */
+/** A minimal module; real starting points come from templates. */
 async function blankModule(dir: string, modName: string): Promise<void> {
   await fs.mkdir(dir);
   await fs.write(dir + "manifest.json", JSON.stringify({ name: modName, files: ["manifest.json", "plugin.ts"] }, null, 2) + "\n");

@@ -4,10 +4,9 @@ import { Output } from "../util.ts";
 import type { UploadedFile } from "../fileStream.ts";
 
 /**
- * Parsed request body: fields eager, per-file disk spooling lazy.
- * `body.value` is the parsed body itself: null (no/unknown body),
- * flat frozen record (form) or deep-frozen JSON value (object/array/string/...).
- * `await body.files.name` spools exactly that file to a tmp path.
+ * Parsed request body: fields right away, files written to disk on demand.
+ * `body.value`: null (none/unknown), frozen record (form) or deep-frozen JSON.
+ * `await body.files.name` writes that file to a tmp path.
  */
 export class ReqBody {
   // deno-lint-ignore no-explicit-any
@@ -17,7 +16,7 @@ export class ReqBody {
 
   #files: Record<string, Promise<UploadedFile> | undefined>;
   get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#files; }
-  /** tmp file paths spooled so far — removed in Ctx.cleanup() */
+  /** tmp files written so far — removed in Ctx.cleanup() */
   tmpPaths: string[] = [];
   #rawFiles: Record<string, File> = Object.create(null);
   #spooled: Record<string, Promise<UploadedFile>> = Object.create(null);
@@ -38,12 +37,12 @@ export class ReqBody {
     if (!p) {
       p = this.#spooled[key] = readUploadFile(this.#rawFiles[key], { maxSize: this.#maxSize })
         .then((f) => (this.tmpPaths.push(f.tmpPath), f));
-      p.catch(() => {}); // property access without await must not become an unhandled rejection
+      p.catch(() => {}); // access without await must not cause an unhandled rejection
     }
     return p;
   }
 
-  /** Wait for running spools, then return the tmp paths (for cleanup). */
+  /** Wait for running writes, then return the tmp paths (for cleanup). */
   async settle(): Promise<string[]> {
     await Promise.allSettled(Object.values(this.#spooled));
     return this.tmpPaths;
@@ -57,12 +56,12 @@ export class ReqBody {
     const type = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() ?? "";
     const isJson = type === "application/json" || type === "application/csp-report" || type.endsWith("+json");
     const isForm = type === "multipart/form-data" || type === "application/x-www-form-urlencoded";
-    if (!isJson && !isForm) return body; // raw/streaming bodies stay untouched, readable via req
+    if (!isJson && !isForm) return body; // other bodies stay untouched, readable via req
 
     const lenHeader = request.headers.get("content-length");
     const len = lenHeader != null && /^\d+$/.test(lenHeader) ? Number(lenHeader) : null;
     if (len != null && len > opt.maxSize) throw new Output("Payload Too Large", { status: 413 });
-    // without a valid declared length (chunked/bogus) the body is read through a capped reader instead
+    // without a valid content-length (chunked/bogus), read through a capped reader
     const src = len == null ? await cappedResponse(request, opt.maxSize) : null;
 
     const bad = () => { throw new Output("Bad Request", { status: 400 }); };
@@ -75,7 +74,7 @@ export class ReqBody {
         const vals = Array.isArray(val) ? val : [val];
         const files = vals.filter((v) => v instanceof File);
         const fields = vals.filter((v) => !(v instanceof File));
-        if (files.length) body.#rawFiles[key] = files[files.length - 1]; // several files per name: last wins
+        if (files.length) body.#rawFiles[key] = files[files.length - 1]; // several per name: last wins
         if (fields.length) post[key] = fields.length > 1 ? Object.freeze(fields) : fields[0];
       }
       body.#value = Object.freeze(post);
@@ -84,7 +83,7 @@ export class ReqBody {
   }
 }
 
-/** Buffer a cloned body with a hard size cap — for chunked bodies that declare no content-length. */
+/** Buffer a cloned body with a size cap — for bodies without content-length. */
 async function cappedResponse(request: Request, maxSize: number): Promise<Response> {
   const chunks = [];
   let size = 0;
@@ -93,7 +92,7 @@ async function cappedResponse(request: Request, maxSize: number): Promise<Respon
     const { done, value } = await reader.read();
     if (done) break;
     if ((size += value.length) > maxSize) {
-      reader.cancel().catch(() => {}); // tee-branch cancel resolves only after the raw branch ends — never await it
+      reader.cancel().catch(() => {}); // resolves only after the other tee branch ends — don't await
       throw new Output("Payload Too Large", { status: 413 });
     }
     chunks.push(value);

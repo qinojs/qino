@@ -4,10 +4,9 @@ import { cleanRequest, cms, requestUsed } from "@qino/qino/cms";
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-/** One direct link with its target resolved. `kind`: "page" — the target node exists ·
- *  "external" — any other target · "orphan" — a node id that is gone. `shadowed`: a page url
- *  answers that request first, so cms/render.ts never reaches this entry. `root`: the entry
- *  link of the site (the empty request), which must not be deleted. */
+/** A direct link with resolved target. `kind`: "page" (node exists) · "external" · "orphan" (node
+ *  gone). `shadowed`: a page url matches first, so this entry is never used. `root`: the site's entry
+ *  link (empty request), not deletable. */
 export type Row = {
   request: string;
   redirect: string;
@@ -23,8 +22,8 @@ export const SORTABLE = ["request", "redirect"];
 const isNodeId = (v: string) => /^\d+$/.test(v);
 const inList = (vs: (string | number)[]) => sql.join(vs.map((v) => sql`${v}`), ", ");
 
-/** Every direct link, resolved. Needs a request context — page urls are language-specific.
- *  There is no paging: a site has redirects, not a redirect archive, and search narrows. */
+/** All direct links, resolved. Needs a request (page urls depend on the language). No paging;
+ *  use search. */
 export async function collect(app: App, opts: {
   search?: string;
   sort?: string;
@@ -38,9 +37,8 @@ export async function collect(app: App, opts: {
   const order = sort ? sql`${sql.id(sort)} ${sql.raw(opts.dir === "ASC" ? "ASC" : "DESC")}` : sql`${sh.order}, request`;
   const all = await db.query`SELECT request, redirect FROM ${sql.id("page_redirect")} WHERE ${sh.where} ORDER BY ${order}`;
 
-  /* Which targets still exist, and which requests a page url already answers: one query each for
-     the whole table. The id match happens in JS because `page.id = page_redirect.redirect`
-     compares an integer column to a text one — only SQLite quietly makes that work. */
+  /* Existing targets and requests answered by page urls: one query each. Ids are matched in JS,
+     since `page.id = page_redirect.redirect` compares integer with text (only SQLite allows that). */
   const ids = [...new Set(all.map((r) => String(r.redirect)).filter(isNodeId))];
   const requests = [...new Set(all.map((r) => String(r.request)))];
   const alive = new Set(!ids.length ? [] : (await db.query`
@@ -86,8 +84,7 @@ export async function write(app: App, vs: { from?: string; request?: string; red
 /** The table body. Pure: everything it shows comes from `rows`, so a test can hand it any state. */
 export function renderRows(rows: Row[], labels: Record<"root" | "orphan" | "shadowed" | "external" | "confirm" | "empty", string>): HtmlString {
   if (!rows.length) return html`<tr><td colspan=4>${labels.empty}`;
-  // State is a badge, not a colour on the row — the red badge is the house style for "look here"
-  // (cms.backend.superuser.db writes it the same way) and no stylesheet has to ship for it.
+  // State as a badge (like cms.backend.superuser.db), no own stylesheet needed.
   const badge = (label: string, red?: boolean) =>
     html`<span class=u2-badge${red ? html.raw(' style="background:var(--red)"') : ""}>${label}</span> `;
   return html`${rows.map((row) => html`<tr data-from="${row.request}">
@@ -99,8 +96,8 @@ export function renderRows(rows: Row[], labels: Record<"root" | "orphan" | "shad
       <td>${row.root ? "" : html`<button data-delete="${row.request}" class=u2-unstyle u2-confirm="${labels.confirm}"><u2-ico icon=delete>✕</u2-ico></button>`}`)}`;
 }
 
-/** The list part. Its state (search, sort, filter) lives in the browser and comes back as vars,
- *  and so do its writes — the same way cms.backend.superuser.shorturl deletes. */
+/** The list part. Search, sort, filter and writes come from the browser as vars (like
+ *  cms.backend.superuser.shorturl). */
 export async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const app = node.app, t = app.t;
 
@@ -116,8 +113,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
   const broken = !!vars.broken;
   const { rows, broken: bad } = await collect(app, { search: String(vars.search ?? ""), sort, dir, broken });
 
-  /* Every label is awaited here: only html.async resolves a promise, and these go into nested
-     html`` templates, which would render them as "[object Promise]". */
+  /* Labels are awaited here: nested html`` templates would render promises as "[object Promise]". */
   const [root, orphan, shadowed, external, confirm, empty, attention, all, request, target, resolves] = await Promise.all(
     [t`Start`, t`orphaned`, t`shadowed`, t`external`, t`Really delete this direct link?`, t`No direct links`,
       t`need attention`, t`show all`, t`Request`, t`Target`, t`Resolves to`],
@@ -125,8 +121,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
   const th = (col: string, label: string) =>
     html`<th data-sort="${col}" data-dir="${col === sort && dir === "DESC" ? "asc" : "desc"}">${label}${col === sort ? (dir === "ASC" ? " ↑" : " ↓") : ""}`;
 
-  /* The caption carries what the toolbar above the table cannot know before the query ran: the
-     answer to the last write, and how many entries the "only broken" filter would show. */
+  /* The caption shows the result of the last write and the "only broken" count. */
   return html.async`${
     message
       ? html`<caption><u2-alert open variant=warning>${message}</u2-alert>`

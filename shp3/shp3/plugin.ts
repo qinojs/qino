@@ -48,8 +48,7 @@ const VAT_RATES = "AU 10, AT 20, BE 21, BG 20, HR 25, CY 19, CZ 21, DK 25, EE 22
   " HU 27, IN 18, IE 23, IT 22, JP 10, LV 21, LT 21, LU 17, MT 18, NL 21, NZ 15, NO 25, PL 23, PT 23, RO 19," +
   " SK 23, SI 22, ZA 15, KR 10, ES 21, SE 25, CH 8.1, LI 8.1, TW 5, GB 20";
 
-/** A shop needs one currency to price anything, so the main one is seeded — and the countries
- *  it is most likely to sell to get a rate to start from. */
+/** Seed the main currency and starting rates for the most likely countries. */
 export async function install({ app }: { app: App }): Promise<void> {
   const countries = app.db.table("country");
   for (const entry of VAT_RATES.split(",")) {

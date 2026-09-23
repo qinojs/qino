@@ -1,12 +1,10 @@
-// Public API of fileEditor. The qino plugin lives in ./plugin.ts.
 import { getCtx } from "@qino/qino";
 
 import { sign } from "./lib/sign.ts";
 
-/** Editor URL for a file, allowing the current session to open and save it.
- *  The URL is the grant — only call it where editing that file is plausible for
- *  the current user. Undefined when the module is not linked (consumers treat it
- *  as optional) or the path lies outside the app/module roots. */
+/** Editor URL for a file; allows this session to open and save it. The URL is the permission, so
+ *  only create it for users who may edit the file. Undefined if the module isn't linked or the path
+ *  is outside the app/module roots. */
 export function editorUrl(file: string, pos: { line?: unknown; col?: unknown } = {}): string | undefined {
   const ctx = getCtx();
   if (!ctx.app.modules.linked("fileEditor")) return;

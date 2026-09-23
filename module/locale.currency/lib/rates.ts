@@ -1,6 +1,5 @@
-// Where the rates come from. Free sources, tried in order until one answers with something
-// plausible — no key, no account. Every parser hands back "units per one <base>" including the
-// base itself at 1; the column is USD-based, like the PHP original's source was.
+// Rate sources: free, no key, tried in order until one is plausible. Parsers return "units per one
+// <base>" (base = 1); the column is USD-based, like in PHP.
 import { unixTime } from "@qino/qino";
 
 import type { App } from "@qino/qino";

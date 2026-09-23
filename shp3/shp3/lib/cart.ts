@@ -3,8 +3,7 @@ import { unixTime } from "@qino/qino";
 import type { App, Ctx } from "@qino/qino";
 import type { Order } from "./rows.ts";
 
-/** The visitor's open order. Kept in the session — ctx.settings is writable by the visitor,
- *  who could otherwise point their cart at someone else's order. */
+/** The visitor's open order, stored in the session (ctx.settings is writable by the visitor). */
 export async function cart(ctx: Ctx, create = true): Promise<Order | undefined> {
   const table = ctx.app.db.table("shp3_order");
   const stored = ctx.sess.data.shp3.cartId();
@@ -25,8 +24,7 @@ export async function cart(ctx: Ctx, create = true): Promise<Order | undefined> 
   return order;
 }
 
-/** Logging in must not lose what the guest collected: the anonymous cart becomes the user's,
- *  and their older open ones are released so cart() cannot pick the wrong one. */
+/** On login the guest cart becomes the user's; older open carts are released. */
 export async function adoptCart(app: App, e: { oldSession: Record<string, any>; usrId: number }): Promise<void> {
   const id = e.oldSession.shp3?.cartId;
   if (!id) return;

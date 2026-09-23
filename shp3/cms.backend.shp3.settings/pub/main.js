@@ -45,8 +45,7 @@ cms.initNode("backend.shp3.settings", (el) => {
     }
   });
 
-  // What the shop uses is on top; the rest of the list is what the search is for. Delegated, so
-  // it survives a reload of the node.
+  // Used currencies on top, search for the rest. Delegated, so it survives a node reload.
   el.addEventListener("input", (e) => {
     const search = e.target.closest(".-search");
     if (!search) return;

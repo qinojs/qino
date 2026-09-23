@@ -13,9 +13,8 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "CMS history", de: "CMS-Verlauf" });
 }
 
-// Linked label for a node. Contents (type 'c') often have no title, so prefix
-// the containing page's title for context: "Page title › content label".
-// node.url() points contents at their page + anchor (and edit-links in editmode).
+// Linked label for a node. Contents often have no title, so prefix the page title:
+// "Page title › content label". node.url() points to page + anchor for contents.
 async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
   const page = await node.cms.node(id);
   const own = (await (await page.title()).string() ?? "").trim();

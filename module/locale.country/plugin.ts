@@ -22,8 +22,8 @@ export const dbSchema = {
   },
 };
 
-/** Seeds what is missing, in one statement. An existing row keeps its values — a site may have
- *  edited them. Pure reference data, so it goes past the table layer and its events. */
+/** Insert missing rows in one statement; existing rows are kept (may be edited). Reference data,
+ *  so it bypasses the table layer and its events. */
 export async function install({ app }: { app: App }): Promise<void> {
   const known = new Set(await app.db.col<string>`SELECT id FROM country`);
   const rows = DATA.split("\n")

@@ -1,4 +1,4 @@
-// qino-module manifest for core. The public library API lives in ./mod.ts.
+// Plugin of core. The public API is in ./mod.ts.
 import { randB64, sha256b64 } from "./lib/crypto.ts";
 import { isOn, Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
@@ -14,8 +14,7 @@ export { healthChecks } from "./healthChecks.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-// The password is not a module one can leave out — column, form and check are core. What a policy
-// needs on top is only this declaration, and `core` is a linked module like any other.
+// The password factor is part of core (column, form, check); only the declaration is needed.
 export const authFactors = [{
     name: "password",
     label: "Password",
@@ -137,26 +136,24 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!await settings._secret) await settings._secret(randB64(32));
 
     app.on("html-ready", ({ ctx }) => {
-        // a login owed another factor asks for it wherever it lands, not only on the login page
+        // a pending login asks for the next factor on any page, not only the login page
         if (pendingLogin(ctx)) ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
         
-        // These have to be here, not in the u2 module: `deno publish` never analyzes pub/, so browser
-        // files ship with their bare specifiers intact and nothing but this map resolves them — and the
-        // files that write `@qino/u2/` are backend and editor modules, not callers of `u2.assets()`.
-        // Still open: a page that loads no u2 pays for it anyway, and the csp below widens for nothing.
+        // Must be here, not in the u2 module: `deno publish` doesn't touch pub/, so browser files keep
+        // their bare specifiers and only this map resolves them; `@qino/u2/` is used by backend and
+        // editor modules, not only via `u2.assets()`.
+        // Open: pages without u2 still get the entry and the wider csp.
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
         ctx.res.html.importMap.set("@qino/item-cdn/", itemRoot);
 
-        // browser-only: the core's client api, and any module's pub files — relative paths break across stores
+        // browser only: core's client api and module pub files — relative paths break across stores
         ctx.res.html.importMap.set("@qino/pub/", ctx.req.moduleUrl + "core/pub/js/");
-        ctx.res.html.importMap.set("@qino/m/", ctx.req.moduleUrl); // core's own files keep @qino/pub/
-        // For files that name a cdn url outright rather than a bare specifier — u2 and item both did
-        // until the specifiers above replaced them, and a module in another store still may. Mapping a
-        // url to itself changes nothing on its own, but it is the one handle a proxy can take hold of:
-        // uncdn rewrites map values, and the browser then resolves the literal url to the proxy.
+        ctx.res.html.importMap.set("@qino/m/", ctx.req.moduleUrl); // core's own files use @qino/pub/
+        // For files importing a cdn url directly (modules of other stores may). Mapping a url to itself
+        // does nothing by itself, but uncdn rewrites map values, so the browser then loads it via the proxy.
         ctx.res.html.importMap.set(itemRoot, itemRoot);
         ctx.res.html.importMap.set(u2Root, u2Root);
-        // What the map points at has to be reachable, or the map is a promise the policy breaks.
+        // What the map points to must be allowed by the csp.
         ctx.res.csp["script-src"][itemRoot] = true;
         ctx.res.csp["script-src"][u2Root] = true;
         ctx.res.csp["style-src"][u2Root] = true;
@@ -193,8 +190,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         if (!await settings.url && ctx.user?.superuser) await settings.url(urlOf(ctx));
     }, { signal });
 
-    // stamp the current request's logId onto every write — except the log tables themselves
-    // (the log insert would otherwise await its own pending logId → deadlock)
+    // add the request's logId to every write — except the log tables
+    // (the log insert would wait for its own logId → deadlock)
     const stampLogId = (field: string) => async (e: DbEvents["table:insert-before"]) => {
       if (/^log(_|$)/.test(String(e.table))) return;
       try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
@@ -217,10 +214,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         const enable = enableRaw === "report only" ? "report only" : (isOn(enableRaw) ? "enforce" : "");
 
         if (enable) {
-            // Hashed, not nonced: the hash is derived from the body, so it stays correct in any cache
-            // the response ends up in (CDN, service worker). Only ever hash what the server built itself.
-            // A hash makes the browser drop 'unsafe-inline', and with it style="" attributes and onclick
-            // handlers — so a directive that allows inline gets no hashes at all.
+            // Hashes, not nonces: they follow from the body, so they stay valid in any cache (CDN,
+            // service worker). Only hash what the server built itself. A hash disables 'unsafe-inline'
+            // (and with it style="" and onclick), so directives allowing inline get no hashes.
             const hash = async (directive: "script-src" | "style-src", bodies: Iterable<string>) => {
                 const src = ctx.res.csp[directive];
                 if (src["'unsafe-inline'"]) return;

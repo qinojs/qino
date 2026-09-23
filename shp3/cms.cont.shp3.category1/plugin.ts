@@ -16,8 +16,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const { app } = node;
   const t = app.t;
   const module = String(await app.settings.shp3.default_product_module ?? "");
-  // A product is whatever carries the product module — page or container, the old shop nests
-  // them as containers below the category.
+  // A product is any node with the product module (the old shop uses containers below the category).
   const products = await node.children({ type: "*", module, access: 1 });
   if (!products.size) return html.async`<div></div>`;
 

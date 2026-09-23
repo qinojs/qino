@@ -37,15 +37,15 @@ export const ctxSettingsSchema = {
   },
 };
 
-/** Widget modules for a node's settings: the core ones plus whatever its module ships.
-  * A module declares one as `cms.node.widget = "pub/widget.js"` in its plugin. */
+/** Settings widgets of a node: the standard ones plus the module's own
+  * (`cms.node.widget = "pub/widget.js"` in its plugin). */
 async function settingsWidgets(ctx: Ctx, pid: number) {
   const node = await cms(ctx.app).node(pid);
   if (await node.access() < 2) throw new AccessError();
   const list = [];
   const own = (name: string) => ({ name, src: ctx.req.moduleUrl + "cms.frontend.4/pub/panel/widgets/" + name + ".js" });
-  // The options slot: the module's own widget, else the generic settings editor when the node
-  // carries settings at all. Same place, open state and label whatever module the node holds.
+  // The options slot: the module's widget, else the generic settings editor if the node has
+  // settings. Same position and label for every module.
   const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
   const modWidget = mod?.plugin?.cms?.node?.widget;
   const options = modWidget && mod?.modUrl ? mod.modUrl + modWidget
@@ -68,7 +68,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   return list;
 }
 
-/* The two file roots behind a node's module: what the site added, and what the module ships. */
+/* The two file roots of a node's module: the site's files and the module's own. */
 const ROOTS = ["data", "app"] as const;
 
 async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string> {
@@ -79,7 +79,7 @@ async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string>
   return root;
 }
 
-/** Resolve a path inside a root. Anything that escapes it is a bad request, not a file. */
+/** Resolve a path inside a root; escaping it is a bad request. */
 function inRoot(root: string, path: string): string {
   const file = resolve(root, path);
   const rel = relative(resolve(root), file);
@@ -104,7 +104,7 @@ async function moduleFiles(ctx: Ctx, pid: number) {
   const filesIn = async (scope: string) => {
     const root = await moduleRoot(ctx, pid, scope);
     const paths = await Array.fromAsync(walkDir(root));
-    const stats = await Promise.all(paths.map((p) => fs.stat(p, { ttl: 0 }))); // edited by hand, too
+    const stats = await Promise.all(paths.map((p) => fs.stat(p, { ttl: 0 }))); // may be edited by hand
     return paths
       .map((path, i) => ({ path, info: stats[i] }))
       .filter(({ info }) => info?.isFile)
@@ -116,12 +116,12 @@ async function moduleFiles(ctx: Ctx, pid: number) {
   return { ...list, settings: module && module in ctx.app.settings ? module : null };
 }
 
-/** Feedback from the panel: goes to the address the site configured, answers go to the sender. */
+/** Feedback from the panel: sent to the configured address, replies go to the sender. */
 async function sendFeedback(ctx: Ctx, msg: string, link: string) {
   const app = ctx.app;
   const to = String(await app.settings.cms.feedback.email ?? "").trim();
   if (!to) throw new Error("CMS feedback recipient is not configured");
-  // where an answer belongs: the verified contact, never the login handle
+  // reply address: the verified contact, not the login name
   const email = await ctx.user?.contact("email") ?? "";
   const data: Record<string, string> = {
     "Message:": msg,
@@ -136,10 +136,10 @@ async function sendFeedback(ctx: Ctx, msg: string, link: string) {
   ).join("")}</dl>`;
   let failed = "";
   const sent = await send(app, { email: to }, { title: "CMS feedback", text: body, format: "html", replyTo: email }, {
-    onError: (message: string) => failed ||= message, // send() reports the reason here and nowhere else
+    onError: (message: string) => failed ||= message, // send() reports errors only here
   });
   if (!sent) throw new Error("CMS feedback could not be sent" + (failed ? ": " + failed : ""));
-  ctx.settings.cms.feedback.text(""); // the draft is gone with it
+  ctx.settings.cms.feedback.text(""); // clear the draft
   return { ok: true };
 }
 
@@ -255,7 +255,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
       html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
       html.styles.add(moduleUrl + "cms/pub/css/ui.css");
 
-      html.inlineStyles.add(policyCss(policyOf(ctx.app))); // what the site allows, so the editor and the output agree
+      html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
       html.styles.add(moduleUrl + "cms.frontend.4/pub/inline/page.css");
       html.scripts.add(moduleUrl + "cms.frontend.4/pub/inline/inline.js");
       html.scripts.add(moduleUrl + "cms.frontend.4/pub/panel/panel.js");

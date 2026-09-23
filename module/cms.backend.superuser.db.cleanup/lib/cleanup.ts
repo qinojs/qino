@@ -97,8 +97,7 @@ export function schemaExtras(db: Db) {
     const fields = schema[table].additionalProperties?.properties ?? {};
     for (const [field, dbField] of dbTable.fields ?? []) {
       if (!(field in fields)) { issues.push({ table, field, status: "field-missing-schema" }); continue; }
-      // The migration only ever widens, so a column can outgrow its schema and stay that way.
-      // Only declared character lengths are comparable — an integer width is a different question.
+      // Migration only widens, so columns can be wider than the schema. Only char lengths compare.
       const current = Number(dbField.length), required = Number(fields[field].maxLength);
       if (/char|text|binary|blob/.test(dbField.type) && current > required) {
         issues.push({ table, field, status: "field-oversized", current, required });

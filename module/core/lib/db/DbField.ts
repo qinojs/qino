@@ -43,9 +43,8 @@ export class DbField {
   valueTransform(value: any): any {
     if (this.null && value === null) return null;
     if (this.null && value === "" && !STRING_TYPES.has(this.#type)) return null;
-    // What the schema declares beats what the dialect calls the column: SQLite has no boolean type
-    // and stores one as INTEGER, so relying on the column type alone would let `true` fall through
-    // to String() and land as the text "true" — which every later read then sees as truthy.
+    // The schema type wins over the column type: SQLite stores booleans as INTEGER, so `true` would
+    // otherwise be stored as the text "true", which is always truthy.
     if (this.#type === "boolean" || this.schema.type === "boolean") return value === true || value === 1 || value === "1" || value === "true";
     if (typeof value === "number" && DATE_TYPES.has(this.#type))
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);

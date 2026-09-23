@@ -1,10 +1,10 @@
 # auth.api_keys
 
-Per-user API keys. A logged-in user can mint, list and revoke keys; a key is meant to
-authenticate machine calls to the API (`{appUrl}api/…`) as that user.
+API keys per user. A signed-in user can create, list and revoke keys; a key authenticates
+machine calls to the API (`{appUrl}api/…`) as that user.
 
-Tokens are opaque (`qk_` + 256 random bits). Only their SHA-256 is stored (unique index),
-so a token is shown **once** at creation and can never be read back — only revoked.
+Tokens are `qk_` + 256 random bits. Only their SHA-256 is stored, so a token is shown **once**
+and can only be revoked, never read again.
 
 ## Einbindung in server.ts
 
@@ -18,8 +18,7 @@ app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.auth.a
 
 ## API (session-authenticated)
 
-Der Modulname benennt schon die Ressource, also hängen die Verben an der Wurzel
-`{appUrl}api/auth.api_keys` — wie bei [auth.totp](../auth.totp/) oder [auth.oauth](../auth.oauth/).
+Die Verben hängen direkt an `{appUrl}api/auth.api_keys` — der Modulname ist schon die Ressource.
 
 | Methode | Pfad   | Access | Beschreibung                                         |
 |---------|--------|--------|------------------------------------------------------|
@@ -39,11 +38,11 @@ Der Request wird als der Key-User behandelt; jeder `Access.USER`-Endpoint funkti
 
 ## Bearer auth
 
-Funktioniert out of the box: das Modul hängt sich in `init` an das core-Event `authenticate`
-(`ctx.authenticate(usrId, "api_key:<id>")`, gefeuert am Anfang von `initRequest`).
+Das Modul hört auf das core-Event `authenticate` (`ctx.authenticate(usrId, "api_key:<id>")`,
+am Anfang von `initRequest`).
 
-- **Ein Key = ein Gerät:** jeder Key hat seinen eigenen Client und seine eigene Session, im Request-Log
-  also als Gerät mit User sichtbar. Keine Cookies; CSRF entfällt (kein ambient Cookie).
-- **Präzedenz:** ein mitgesendeter Bearer schlägt eine allfällige Cookie-Session.
-- **Laut bei Fehlern:** ein `qk_`-Bearer, der ungültig/abgelaufen ist oder zu einem inaktiven
-  User gehört → **401**, kein stiller Anonym-Fallback. Fremde Bearer-Formate fallen durch.
+- **Ein Key = ein Gerät:** jeder Key hat eigenen Client und eigene Session, im Request-Log als
+  Gerät sichtbar. Keine Cookies, daher kein CSRF.
+- **Vorrang:** ein Bearer schlägt eine Cookie-Session.
+- **Fehler sind laut:** ungültiger, abgelaufener oder inaktiver `qk_`-Key → **401**, kein
+  Anonym-Fallback. Andere Bearer-Formate werden ignoriert.

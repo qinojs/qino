@@ -2,12 +2,12 @@
 
 A module is a folder with a `manifest.json` and a `plugin.ts` (or `.js`/`.mjs`). The
 `ModuleManager` (`lib/ModuleManager.ts`) imports plugins, runs their hooks in dependency
-order, and can **link/unlink** them at runtime without a restart.
+order and can **link/unlink** them at runtime.
 
 ## Manifest and plugin
 
-A module is two files. `manifest.json` says what it *is* — everything a store, an installer or a
-mirror has to know **before** any of its code runs:
+`manifest.json` says what a module *is* — everything a store or installer must know **before**
+its code runs:
 
 ```json
 {
@@ -31,29 +31,28 @@ export async function install({ app, module }) { … }   // once per app: seed c
 export async function uninstall({ app, module }) { … } // …and remove it again
 ```
 
-"Known before the code runs" is the whole rule, and it is what keeps the manifest from growing into
-Chrome's, where it became the API surface: a schema is data too, but nobody needs it before the
-module is linked.
+That is the only rule for the manifest. A schema is data too, but nobody needs it before the
+module is linked, so it stays in the plugin.
 
 Everything is optional, both files included — a module may consist only of
-`export function init(app) {}`. `name` is a cross-check rather than the identity: the folder or the
-store supplies it, and a mismatch fails the boot instead of silently renaming the module. A module
-that needs its own name reads it back from the same one truth:
+`export function init(app) {}`. The name comes from the folder or the store; `name` in the
+manifest is only a check, and a mismatch fails the boot. A module that needs its own name reads
+the manifest:
 
 ```ts
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 ```
 
-The loader **reads** the manifest and **imports** the plugin, and it does so in that order — which
-is why a store can list a module, and an installer refuse one, without executing anything. At
-runtime both sit on the `Module`: `mod.manifest`, plus `mod.name`, `mod.description` and
-`mod.dependencies` for the fields worth reaching for. Keep the public API in `mod.ts`.
+The loader first **reads** the manifest, then **imports** the plugin. So a store can list a
+module, and an installer refuse one, without running its code. At runtime both are on the
+`Module`: `mod.manifest`, `mod.name`, `mod.description`, `mod.dependencies`. The public API
+belongs in `mod.ts`.
 
 ## Public imports
 
-Paths within one module stay relative. Across module boundaries, import the public package
-entrypoint instead of another module's files:
+Within a module, use relative paths. Across modules, import the public package entrypoint, not
+the other module's files:
 
 ```ts
 import { html, type App } from "@qino/qino";
@@ -61,35 +60,31 @@ import type { Node } from "@qino/qino/cms";
 import { send } from "@qino/qino/messaging";
 ```
 
-The package `name` and `exports` in `deno.json` resolve these as self-references during Qino
-development. JSR rewrites them to fully qualified specifiers on publish, so a consumer may import
-Qino directly with `jsr:@qino/qino@<version>` without inheriting Qino's import map. A separately
-copied source module still needs its application to map `@qino/qino` to the desired version.
+During development, `name` and `exports` in `deno.json` resolve these to the package itself. JSR
+rewrites them to full specifiers on publish, so consumers need no import map. A module copied as
+source needs its application to map `@qino/qino` to a version.
 
 ## Module names
 
 A name is `[<role prefix>.]<vendor>.<name>`, e.g. `cms.cont.acme.blog` or `acme.shop`. Qino's own
-modules omit the vendor segment — that absence is what marks them as core.
+modules have no vendor segment.
 
-The name is not just a label: it is the api tree key, the locale namespace, the settings key, the
-`/m/<name>/pub/` route, and what other modules reference in `dependencies`. It can therefore never be
-renamed after the fact, which is why the two things it encodes need fixed positions.
+The name is the api tree key, the locale namespace, the settings key, the `/m/<name>/pub/` route
+and what `dependencies` refer to. It cannot be renamed later.
 
-- **Role prefixes** say where a module plugs in and are looked up by prefix — `CMS.getModules()`
-  scans `cms.cont.`, `getLayouts()` scans `cms.layout.`. They are defined and reserved by Qino.
-- **The vendor segment** follows the role prefix and belongs to whoever publishes the module. It
-  is what keeps two stores from colliding: `cms.cont.acme.blog` vs `cms.cont.other.blog`.
-  Uniqueness inside one vendor is that vendor's own problem.
+- **Role prefixes** say where a module plugs in — `CMS.getModules()` looks for `cms.cont.`,
+  `getLayouts()` for `cms.layout.`. Qino defines and reserves them.
+- **The vendor segment** follows the role prefix and belongs to the publisher, so two stores don't
+  collide: `cms.cont.acme.blog` vs `cms.cont.other.blog`.
 
-Open: a third party that brings a new plug-in point of its own has nowhere to put a role prefix,
-because the prefix set has no owner. Solving that means moving the role out of the name into the
-manifest — today `cms.cont.*` and `cms.layout.*` are structurally identical there (both export
-`cms.node.render`), so only the name distinguishes them.
+Open: a third party with its own plug-in point has no place for a new role prefix. The fix would be
+to move the role from the name into the manifest — `cms.cont.*` and `cms.layout.*` look the same
+there (both export `cms.node.render`), only the name tells them apart.
 
 ## Files
 
-A module gets three directories below `app.dir`, each named after the module. They differ in
-one thing only — what an operator may throw away:
+A module gets three directories below `app.dir`, named after the module. They differ only in
+what may be deleted:
 
 | Accessor | Directory | May be deleted |
 |---|---|---|
@@ -97,22 +92,19 @@ one thing only — what an operator may throw away:
 | `mod.cache` | `cache/<module>/` | any time |
 | `mod.tmp` | `tmp/<module>/` | when nothing runs |
 
-That split is what makes the operator's jobs one path each: clear `tmp/` on boot, drop `tmp/` +
-`cache/` to reclaim space. Below the module name the layout is yours.
+So `tmp/` can be cleared on boot, and `tmp/` + `cache/` can be dropped to free space. Below the
+module name the layout is yours.
 
-**Backing up follows from it, and is stated the other way round: save all of `app.dir` except
-`cache/` and `tmp/`, the database dumped rather than copied.** Excluding is the safe direction —
-whatever nobody classified is in the backup instead of missing from it, and it is missing that you
-notice at restore time. A whitelist would also have to name everything that is neither a module
-directory nor derived: the app's own `server.ts`, a store folder, and with SQLite the database file,
-which sits directly in `app.dir`. Copying that file while the app runs gives a torn copy, hence the
-dump — `VACUUM INTO` for SQLite, `mysqldump` / `pg_dump` otherwise.
+**Backup: save all of `app.dir` except `cache/` and `tmp/`, and dump the database instead of
+copying it.** Excluding is safer than listing what to keep — anything unknown ends up in the
+backup, e.g. `server.ts`, a store folder or the SQLite file in `app.dir`. Copying a live database
+file can give a broken copy, so dump it: `VACUUM INTO` for SQLite, `mysqldump` / `pg_dump`
+otherwise.
 
-**The invariant that carries it:** everything in `cache/` must be reproducible without the backup —
-from `data/`, or from wherever it was fetched. Otherwise "deletable" is not safe. Originals belong in
-`data/`; a remote module's mirrored files are copies of a release and belong in `cache/`.
-`tmp/` is separate from `cache/` because of *when* it may go: `cache/` can be cleared mid-request
-without breaking anything, `tmp/` cannot — a running upload or zip build dies with it.
+**Rule:** everything in `cache/` must be rebuildable without the backup — from `data/` or from
+where it was fetched. Originals belong in `data/`; mirrored files of a remote module belong in
+`cache/`. `cache/` may be cleared during a request; `tmp/` may not, since a running upload or zip
+build would break.
 
 The accessors are plain strings; create the directory where you write:
 
@@ -122,22 +114,21 @@ await Deno.mkdir(dir, { recursive: true });
 await Deno.writeTextFile(dir + key + ".json", body);
 ```
 
-What lies in `data/<module>/pub/` is served at `Module.dataUrl` (`<appUrl>d.<rev>/<module>/`), the
-counterpart to the module's own code under `<appUrl>m.<rev>/<module>/pub/` (`ctx.req.moduleUrl`).
-Nothing else below `data/` is reachable over HTTP.
+Files in `data/<module>/pub/` are served at `Module.dataUrl` (`<appUrl>d.<rev>/<module>/`), like
+the module's code under `<appUrl>m.<rev>/<module>/pub/` (`ctx.req.moduleUrl`). Nothing else in
+`data/` is reachable over HTTP.
 
-`<rev>` is `app.assetRev` — the newest mtime of any served file, base 36. It is ignored when the
-path is resolved, so an address without it names the same file; with it the answer is `immutable`
-for a year, without it `no-cache`. Both urls are built for you: use `mod.modUrl` / `mod.dataUrl`
-and, in browser code, the `@qino/m/<module>/` specifier — never a literal `/m/…` path, which would
-opt out of caching. Whoever writes a file below a `pub/` dir sets `app.assetRev = unixTime()`;
-linking a module folds in its own files.
+`<rev>` is `app.assetRev`, the newest mtime of any served file in base 36. The server ignores it
+when resolving the path. With it the response is `immutable` for a year, without it `no-cache`.
+So use `mod.modUrl` / `mod.dataUrl` and, in browser code, the `@qino/m/<module>/` specifier —
+never a literal `/m/…` path, which bypasses caching. Code that writes below a `pub/` dir sets
+`app.assetRev = unixTime()`; linking a module includes its own files.
 
-Uploads are core's: `data/core/file/`, managed by `app.dbFiles`.
+Uploads belong to core: `data/core/file/`, managed by `app.dbFiles`.
 
 ## Lifecycle
 
-Three separate phases — runtime mirrors boot, one module at a time:
+Three phases; at runtime the same steps work for one module:
 
 | | Boot (all modules) | Runtime (one module) |
 |---|---|---|
@@ -145,16 +136,15 @@ Three separate phases — runtime mirrors boot, one module at a time:
 | run hooks | `await app.init()` | `await app.modules.link(name)` |
 | tear down | — | `app.modules.unlink(name)` |
 
-- **`modules.add(spec)`** declares a local or remote module. `init()` imports it later. `core` is the
-  root of the dependency graph, so `App` declares it itself — no application has to.
-- **`store.add(name)`** declares a module whose conventional `<name>/plugin.ts` location comes
-  from a store catalog. `await store.addAll()` declares every module in that catalog.
-- **`import(spec)`** immediately loads and registers a module for runtime linking. It does
-  **not** run any hooks.
-- **`init()`** is the boot step: migrate the merged DB schema, apply all settings schemas, then
-  run every module's hooks in dependency order.
-- **`link(name)`** runs one already-imported module's hooks. Idempotent; its `dependencies` must be
-  linked already. **`unlink(name)`** reverses them.
+- **`modules.add(spec)`** registers a local or remote module; `init()` imports it later. `App`
+  adds `core` itself.
+- **`store.add(name)`** registers `<name>/plugin.ts` from a store. `await store.addAll()` registers
+  all modules of the store.
+- **`import(spec)`** loads a module right away for runtime linking. It runs **no** hooks.
+- **`init()`** boots: migrate the merged DB schema, apply all settings schemas, then run all hooks
+  in dependency order.
+- **`link(name)`** runs the hooks of one imported module. Idempotent; its `dependencies` must be
+  linked first. **`unlink(name)`** reverses it.
 
 ```ts
 // add a module while the app is running
@@ -165,17 +155,16 @@ app.modules.unlink("shop");
 await app.modules.link("shop"); // re-link is fine — the module stays registered
 ```
 
-`add()` and `import()` last for one boot. `modules.install(spec)` is the persistent version —
-it remembers the module in the `module` table and links it, `modules.uninstall(name)` reverses
-that including the `uninstall()` hook. `store.install(name)` is the same for a module of a store,
-and the form to use when request input is involved. See
-[stores.md](stores.md#installing-at-runtime); the two lifecycles nest, so linking presumes an
-install and unlinking keeps the data.
+`add()` and `import()` last for one boot. `modules.install(spec)` stores the module in the
+`module` table and links it; `modules.uninstall(name)` reverses that and runs the `uninstall()`
+hook. `store.install(name)` does the same for a store module — use it when the name comes from
+request input. See [stores.md](stores.md#installing-at-runtime). Install wraps link: unlinking
+keeps the data.
 
 ## Writing a hot-plug-safe module
 
-`init(app, { signal })` receives an `AbortSignal` that fires when the module is unlinked.
-**Register everything through it** so unlink tears it down automatically:
+`init(app, { signal })` gets an `AbortSignal` that fires on unlink. **Register everything with
+it**, then unlink cleans up by itself:
 
 ```ts
 export function init(app, { signal }) {
@@ -185,8 +174,7 @@ export function init(app, { signal }) {
 }
 ```
 
-Without `{ signal }`, a listener keeps firing after unlink — nothing crashes, but the module
-isn't fully gone. Each link gets a **fresh** signal, so re-linking rebinds cleanly.
+Without `{ signal }`, a listener keeps running after unlink. Each link gets a **new** signal.
 
 ## What link/unlink touch
 
@@ -196,37 +184,33 @@ isn't fully gone. Each link gets a **fresh** signal, so re-linking rebinds clean
 | `apiTree[name]` (the module's `api`) | deleted |
 | settings & ctx settings schema | rebuilt from the remaining linked modules |
 
-**Kept on purpose — this is data, not runtime state:**
+**Kept on purpose, because it is data:**
 
-- **DB tables.** Migration is additive (`patch: true`) and never drops. Neither `unlink` nor
-  `uninstall` drops a table; a module that wants its rows gone deletes them in `uninstall()`.
-- **Locales** seeded into `smalltext` (additive, only fills empty rows).
-- **`install()` content.** It runs once per app, not per link — `unlink` does not undo it, only
-  `uninstall` does, through the module's own `uninstall()` hook.
+- **DB tables.** Migration only adds (`patch: true`). Neither `unlink` nor `uninstall` drops a
+  table; a module deletes its rows in `uninstall()` if it wants to.
+- **Locales** in `smalltext` (only empty rows are filled).
+- **`install()` content.** It runs once per app, not per link. Only `uninstall` removes it, via
+  the module's `uninstall()` hook.
 
 ## Dependencies & ordering
 
-`dependencies` defines a partial order; the manager topologically sorts it and refuses cycles. A module
-is linked only after its `dependencies`, and cannot be unlinked while another linked module needs it.
-Settings schemas are applied *before* any hook runs, so `init()`/`install()` already see every
-linked module's defaults.
+Modules are sorted by `dependencies`; cycles are refused. A module is linked after its
+dependencies and cannot be unlinked while another linked module needs it. Settings schemas are
+applied *before* any hook, so `init()`/`install()` see the defaults of all linked modules.
 
 ## DB schema
 
-`dbSchema` is either a static object (the module's own tables) or a function
-`(merged) => schema` that computes tables from the already-merged schema of other modules — it
-runs after all static schemas. Both are merged and migrated additively on `init`/`link`.
+`dbSchema` is an object (the module's tables) or a function `(merged) => schema` that builds
+tables from the merged schema of the other modules; functions run after all objects. Both are
+merged and migrated on `init`/`link`.
 
 ## Not yet torn down on unlink
 
-Everything registered through `{ signal }` (listeners on `app` and `app.db`, timers) is now
-removed on unlink. What is **not** cleaned up yet are registrations into shared registries that
-have no removal API — they keep a stale entry after unlink:
+Registries without a remove API keep a stale entry after unlink:
 
 - **`ai`** — `registerAiOcr` / `registerAiTranscript` add engines to `app.fileTransformer`;
   `FileTransformer` has no unregister.
 - **`ai` / `cms.frontend.ai`** — `AiApi.registerBot(...)` writes into a `Map` with no unregister.
 
-To make these unlink-clean, the registries need either a `signal` argument or a returned dispose
-handle (e.g. `registerOcrEngine(engine, { signal })`). Small API addition, no behaviour change —
-deferred until module disable/enable actually needs it.
+Fix when needed: accept a `signal` (e.g. `registerOcrEngine(engine, { signal })`) or return a
+dispose function.

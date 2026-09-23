@@ -26,7 +26,7 @@ export function userSettingsItem(user: Usr, schema?: any): Promise<any> {
     );
 }
 
-/* unschön, wieso nicht gleich sess.settingsItem ?? und usr.settingsItem als lazy item-generator? */
+/* ugly — why not sess.settingsItem ?? usr.settingsItem directly, as a lazy item generator? */
 export function sessSettingsItem(sess: Session, schema?: any): Promise<any> {
     return buildRoot(
         async () => sess.settings,

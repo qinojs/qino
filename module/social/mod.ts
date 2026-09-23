@@ -1,4 +1,3 @@
-// Public API of social. The qino plugin lives in ./plugin.ts.
 import { errMsg, requestStorage, sha256b64url, sql, unixTime } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";

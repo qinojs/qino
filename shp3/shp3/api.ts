@@ -1,5 +1,5 @@
-// The shop's frontend API. Page-independent on purpose: a [shp3-add] form may sit on a category
-// page, in a teaser or in a sidebar, and the cart is always the visitor's own.
+// The shop's frontend API, independent of pages: [shp3-add] forms may be anywhere, and the cart is
+// always the visitor's own.
 import { Access, getCtx, s } from "@qino/qino";
 
 import { cart } from "./lib/cart.ts";
@@ -14,8 +14,8 @@ const item = s.object({
   config: s.optional(s.any()),
 });
 
-/** A product the visitor is allowed to buy. The row has to exist already — a page becomes a
- *  product by being rendered as one, never by being named in a request. */
+/** A product the visitor may buy. The row must exist (created when the page renders as a product,
+ *  never by a request). */
 async function sellable(id: string) {
   const product = await getCtx().app.db.table("shp3_product").get<Product>(id);
   if (!product || Object.keys(await product.errors()).length) return;
@@ -177,8 +177,7 @@ export const api: ApiTree = {
         const sold = await sellable(product);
         if (!sold) return { error: "not available" };
         const order = await cart(getCtx(), false);
-        // A price is shown long before anything is in the cart — without a fallback it would
-        // skip the conversion and arrive unlabelled.
+        // Prices are shown before anything is in the cart, so fall back to a currency.
         const currency = await order?.currencyRow() ?? await shp3(getCtx().app).mainCurrency();
         const country = order?.shipCountry() ?? "";
         const prices = await sold.pricesFor({ currency, quantity, config, country, grps: await order?.grps() });

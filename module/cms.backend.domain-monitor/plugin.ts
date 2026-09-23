@@ -40,8 +40,7 @@ export const cron = {
     jitter: 4 * 60 * 60,
     run: (app, { signal }) => runScheduled(app, "weekly", signal),
   },
-  // The history is a change log: an hourly check that found the same as the one before it says
-  // nothing a week later, so it goes and the entry that dated the state stays.
+  // Keep only checks with changes after a week; the first of a series of equal checks stays.
   prune: {
     every: "day",
     at: { hour: 3 },

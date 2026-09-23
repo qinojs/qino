@@ -13,14 +13,13 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
   const db = app.db;
   if (await db.row`SELECT space FROM vers_space WHERE space = ${space}`) return;
 
-  // Atomic: a half-seeded space would look complete to every later read (vers_space row present).
+  // Atomic: a half-filled space would look complete (vers_space row exists).
   await db.transaction(async () => {
     // Seed each versioned table with live data
     for (const tableName of Object.keys(versedTables(db))) {
       const versTable = getVersTable(db, tableName);
       if (!versTable) continue;
-      // Build the select onto the shadow's own column order (not positional *,0,?,0),
-      // so it stays correct even when the shadow's column order diverged from the live table.
+      // Use the shadow table's column order (not positional *,0,?,0), which may differ from live.
       const selects = (await db.columns(versTable)).map((c) =>
         c.Field === "_vers_space" ? sql`${space}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql.id(c.Field));
       await db.exec`DELETE FROM ${sql.id(versTable)} WHERE _vers_space = ${space}`;

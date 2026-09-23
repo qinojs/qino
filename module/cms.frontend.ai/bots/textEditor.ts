@@ -9,9 +9,8 @@ nothing else — no explanation, no code fence, no markdown.
 - Never invent links or image sources, and leave the src and href of existing ones untouched.
 `;
 
-/** Rewrites the content of one editor field. The assistant sends the field's html, and the tags and
- *  classes it allows where the field restricts them — what an answer uses beyond that is cleaned
- *  away on the way back in, so a model that is not told promises what it then loses. */
+/** Rewrites one editor field. Gets the field's html and its allowed tags/classes (if restricted),
+ *  so the model doesn't use markup that would be removed. */
 export const textEditor: Bot = {
   id: "rte",
   systemPrompt: (_ctx: unknown, { html, elements, classes }: ClientContext): string => {

@@ -1,4 +1,4 @@
-// The app's RPC client, one instance for the tab — server-side counterpart: `app.api`.
+// The app's RPC client, one per tab — on the server: `app.api`.
 //
 //   await api.core.user.me.get();
 import { ApiClient } from "./ApiClient.js";
@@ -11,7 +11,6 @@ function defaultBase() {
 }
 
 export const api = new ApiClient(defaultBase());
-// The one thing worth retrying: a demand for a fresh proof, answered by the user. The dialog is
-// loaded the first time that happens — a page that never hits one never fetches it.
+// Retry only after a step-up the user answered. The dialog is loaded on first use.
 api.recover = async (error) =>
   error.code === "step_up_required" && await (await import("./stepUpDialog.js")).stepUp(error.data);

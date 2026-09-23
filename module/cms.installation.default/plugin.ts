@@ -17,8 +17,7 @@ export const settingsSchema = {
   },
 };
 
-// Offered in this order — from here on the module table is the truth: each one can be uninstalled
-// again, and more can be installed from the same store.
+// Installed in this order; afterwards each can be uninstalled, and more added from the store.
 export const recommended = [
   "fileEditor",
   "identity",
@@ -51,8 +50,7 @@ export const recommended = [
   "cms.backend.superuser.module",
 ];
 
-// Once per name, not once per app — install() would leave an older installation without the set,
-// and its backend, which is where one would install the modules by hand.
+// Once per name, not per app — otherwise an older installation would lack the set and its backend.
 export async function init(app: App): Promise<void> {
   const setting = app.settings[name].seeded;
   const seeded = String(await setting ?? "").split(",").filter(Boolean);
@@ -68,15 +66,14 @@ export async function init(app: App): Promise<void> {
   await setting(seeded.join(","));
 }
 
-/* Titles in the four languages the backend also installs. A title exists only in the
-   languages it was written in, so an English-only one is unreachable on a site that does not
-   run English — the page then shows in the tree as a nameless row. */
+/* Titles in the four backend languages. A title only exists in the written languages; without
+   the site's language the page shows up nameless in the tree. */
 async function titles(page: Node, texts: Record<string, string>) {
   for (const [lang, text] of Object.entries(texts)) await page.title(lang, text);
 }
 
-// Atomic: a half-installed site (pages without their trash/login/not-found targets) is unrecoverable
-// on the next boot, because every step guards itself with "does this id already exist?".
+// Atomic: a half-installed site can't be repaired on the next boot, since every step skips
+// existing ids.
 export function install({ app }: { app: App }): Promise<void> {
   return app.db.transaction(() => installTx(app));
 }
@@ -97,13 +94,11 @@ async function installTx(app: App): Promise<void> {
   }
   // Superuser
   if (!await db.one`SELECT id FROM usr WHERE superuser = ${true}`) {
-    // lookalikes (0/O, 1/l/I) are out, and of the symbols only those that mean nothing to a shell
-    // and survive being copied out of a terminal — no ! # $ % & ? * ~, which do
+    // no lookalikes (0/O, 1/l/I), and only symbols that are safe in a shell (no ! # $ % & ? * ~)
     const PW_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789-_.+=@";
     const suPw = Array.from(crypto.getRandomValues(new Uint8Array(14)), b => PW_CHARS[b % PW_CHARS.length]).join("");
     await db.table('usr').insert({ username: 'su', pw: await pwHash(suPw), superuser: true, active: true, given_name: 'Superuser', family_name: 'Superuser' });
-    // the colour ends before the password and nothing follows it: a selection cannot drag an
-    // escape sequence along, which is what makes the line uncopyable from a log
+    // the color code ends before the password, so copying it doesn't include escape sequences
     console.log(`\n\x1b[33m[qino] Superuser created — email: su  password:\x1b[0m ${suPw}\n`);
   }
 

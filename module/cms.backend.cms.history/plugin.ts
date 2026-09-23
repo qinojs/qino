@@ -25,9 +25,8 @@ const TYPE_TABLES: Record<string, string[]> = {
   access: ["page_access_grp", "page_access_usr"],
 };
 
-// Candidate node_changed rows (newest first). Search/date/own-client narrow the
-// window in SQL; type and — crucially — per-node edit rights are applied in JS,
-// because access is inheritance/group/event derived and not expressible in SQL.
+// node_changed rows, newest first. Search/date/own client filter in SQL; type and edit rights in
+// JS (access depends on inheritance, groups and events).
 function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
   const db = app.db;
   const where: Sql[] = [sql`${true}`];
@@ -167,9 +166,8 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 </div>`;
 }
 
-// Dashboard widget: most recently active editors — one row per user with their
-// latest change (time + page). Access-filtered like the list, so a viewer only
-// sees activity on pages they may edit (superuser: all).
+// Dashboard widget: recently active editors with their latest change. Filtered like the list, so
+// only pages the viewer may edit (superuser: all).
 export async function backendDashboardWidget(app: App): Promise<HtmlString | string> {
   const t = app.t;
   const rows = await app.db.query`

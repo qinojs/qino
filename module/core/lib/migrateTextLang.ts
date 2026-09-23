@@ -2,21 +2,20 @@ import type { Db } from "./db/Db.ts";
 
 const has = async (db: Db, table: string) => !!(await db.columns(table).catch(() => [])).length;
 
-/** One-off: `text` carried (id, lang, text), which no dialect can auto-increment on a composite
- *  key — on SQLite every generate() left a row with a NULL id behind. The language rows now live
- *  in `text_lang`, `text` keeps the identity. Ids stay, so page.title_id keeps pointing home.
+/** One-off: `text` had (id, lang, text), a composite key no dialect can auto-increment (SQLite left
+ *  rows with NULL id). Now language rows are in `text_lang`, `text` keeps the id. Ids stay, so
+ *  page.title_id stays valid.
  *
  *  Removable once every installation has booted once (> 1.0).
  *
- *  Two halves around the schema migration, because that one would change the primary key of a
- *  table still full of duplicate ids and fail. So the rows are parked in plain copies, the old
- *  tables are dropped (their indexes go with them), the schema migration builds both tables
- *  fresh, and the parks are poured back. A run that breaks off resumes from the parks. */
+ *  Two steps around the schema migration, which would fail on a table with duplicate ids: copy the
+ *  rows aside, drop the old tables, let the migration create both tables, copy the rows back. An
+ *  interrupted run continues from the copies. */
 export async function parkText(db: Db): Promise<void> {
   if (!(await db.columns("text").catch(() => [])).some((c) => c.Field === "lang")) return;
   await db.exec`CREATE TABLE text_park AS SELECT id AS text_id, lang, text, log_id, log_id_ch FROM text WHERE id IS NOT NULL`;
   await db.exec`DROP TABLE text`;
-  // Text history, where cms.versions is installed; the identity alone has none worth keeping.
+  // Text history, if cms.versions is installed.
   if (!await has(db, "_vers_text")) return;
   await db.exec`CREATE TABLE text_vers_park AS SELECT id AS text_id, lang, text, log_id_ch, _vers_log, _vers_space, _vers_deleted FROM _vers_text WHERE id IS NOT NULL`;
   await db.exec`DROP TABLE _vers_text`;

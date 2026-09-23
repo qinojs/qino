@@ -5,16 +5,15 @@ import { unixTime } from "./util.ts";
 import type { Db } from "./db/Db.ts";
 import type { Row } from "./db/DbDriver.ts";
 
-// Verified ways to reach a user, one table for every kind of address. A row exists only once the
-// address was proven, so there is no "verified" column anyone could forget in a WHERE clause.
+// Verified addresses of a user, one table for all kinds. A row exists only once verified, so there
+// is no "verified" column to forget in a WHERE clause.
 //
-// `type` is what the address *is*, never how it is delivered: one phone number serves sms, whatsapp
-// and signal, and nobody should prove the same number once per transport. Which transports exist is
-// messaging's business and does not reach this table.
+// `type` is what the address *is*, not how it is delivered: one phone number serves sms, whatsapp and
+// signal and is verified once. Transports are messaging's business.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** The address kinds core knows how to read. A module may register its own. */
+/** Address kinds core can normalize. Modules may add their own. */
 const TYPES: Record<string, (input: string) => string> = {
   email(input) {
     const match = input.match(/^\s*.*?\s*<([^>]+)>\s*$/); // "Name <a@b.ch>" is an address too
@@ -22,7 +21,7 @@ const TYPES: Record<string, (input: string) => string> = {
     if (!EMAIL_RE.test(address)) throw new ApiError(422, "Use an email address such as name@example.com");
     return address;
   },
-  /** E.164, the only notation that travels: local formatting is not an address. */
+  /** E.164, the only unambiguous notation. */
   phone(input) {
     let number = input.trim().replace(/[\s().-]/g, "");
     if (number.startsWith("00")) number = "+" + number.slice(2);
@@ -31,17 +30,16 @@ const TYPES: Record<string, (input: string) => string> = {
   },
 };
 
-/** The kinds a form may offer, in the order they were registered. */
+/** Kinds a form may offer, in registration order. */
 export function contactTypes(): string[] {
   return Object.keys(TYPES);
 }
 
 /**
- * The one form an address is stored and looked up under.
+ * The normalized form an address is stored and looked up under.
  *
- * Whitespace and case never tell two contacts apart, and a kind that knows more says more:
- * `0041 79 123 45 67` and `+41 79 123 45 67` are one number. An unknown kind keeps the plain form,
- * so a module can hold contacts core has never heard of.
+ * Whitespace and case never matter, and known kinds normalize further: `0041 79 123 45 67` and
+ * `+41 79 123 45 67` are one number. Unknown kinds keep the plain form.
  */
 export function contactKey(type: string, address: string): string {
   return TYPES[type]?.(address) ?? address.trim().toLowerCase();
@@ -54,24 +52,24 @@ export function contacts(db: Db, usrId: number, type?: string): Promise<Row[]> {
     ORDER BY main DESC, created, address`;
 }
 
-/** The one destination to use: the preferred one, else the oldest. */
+/** The address to use: the main one, else the oldest. */
 export function mainContact(db: Db, usrId: number, type: string): Promise<Row | undefined> {
   return db.row`SELECT * FROM usr_contact WHERE usr_id = ${usrId} AND type = ${type}
     ORDER BY main DESC, created, address LIMIT 1`;
 }
 
-/** How many addresses of this kind the user has — what a channel's `reach` counts. */
+/** Number of addresses of this kind (what a channel's `reach` counts). */
 export async function countContacts(db: Db, usrId: number, type: string): Promise<number> {
   return Number(await db.one`SELECT COUNT(*) FROM usr_contact WHERE usr_id = ${usrId} AND type = ${type}`);
 }
 
-/** Whose address this is, if anyone's. */
+/** Owner of the address, if any. */
 export async function contactOwner(db: Db, type: string, address: string): Promise<number | undefined> {
   return Number(await db.one`SELECT usr_id FROM usr_contact WHERE type = ${type} AND address = ${contactKey(type, address)}`) || undefined;
 }
 
-/** The address becomes the user's; the first one of its kind is their main. Taking over someone
- *  else's contact is refused — an address belongs to one person at a time. */
+/** Add the address to the user; the first of its kind becomes main. Refused if another user has
+ *  it — an address belongs to one person. */
 export async function addContact(db: Db, usrId: number, type: string, input: string): Promise<Row> {
   const address = contactKey(type, input);
   await db.transaction(async () => {
@@ -84,7 +82,7 @@ export async function addContact(db: Db, usrId: number, type: string, input: str
   return (await db.row`SELECT * FROM usr_contact WHERE type = ${type} AND address = ${address}`)!;
 }
 
-/** Forget one contact of the user; the main one hands the flag to the next. */
+/** Remove a contact; if it was main, the next one becomes main. */
 export async function removeContact(db: Db, usrId: number, type: string, input: string): Promise<void> {
   const address = contactKey(type, input);
   await db.transaction(async () => {
@@ -98,7 +96,7 @@ export async function removeContact(db: Db, usrId: number, type: string, input: 
   });
 }
 
-/** Make one contact the user's preferred address of its kind. */
+/** Make a contact the user's main address of its kind. */
 export async function setMainContact(db: Db, usrId: number, type: string, input: string): Promise<Row> {
   const address = contactKey(type, input);
   await db.transaction(async () => {
@@ -111,14 +109,14 @@ export async function setMainContact(db: Db, usrId: number, type: string, input:
   return (await db.row`SELECT * FROM usr_contact WHERE type = ${type} AND address = ${address}`)!;
 }
 
-/** Every verified address of one kind, with its owner — for the backend panels. */
+/** All addresses of one kind with their owner — for backend panels. */
 export function typeContacts(db: Db, type: string, limit = 500): Promise<Row[]> {
   return db.query`
     SELECT c.*, u.username FROM usr_contact c LEFT JOIN usr u ON u.id = c.usr_id
     WHERE c.type = ${type} ORDER BY c.created DESC LIMIT ${limit}`;
 }
 
-/** Remember why a delivery failed, or that it works again. */
+/** Store why a delivery failed, or clear it. */
 export function contactError(db: Db, type: string, address: string, error?: string): Promise<unknown> {
   return db.table("usr_contact").update({ type, address: contactKey(type, address) }, { error: error?.slice(0, 255) ?? null });
 }

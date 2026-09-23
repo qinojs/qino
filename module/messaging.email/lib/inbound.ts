@@ -20,11 +20,10 @@ type Parsed = {
 };
 
 /**
- * Read what is new in the configured mailbox into the journal and mark it seen.
+ * Import new mails from the mailbox into the journal and mark them seen.
  *
- * Resolves with the number of messages taken over; 0 while receiving is disabled. A probe only
- * connects and opens the mailbox. Seen is the only bookkeeping — a message the app crashed on
- * stays unseen and arrives with the next run.
+ * Resolves with the number imported; 0 if disabled. A probe only connects and opens the mailbox.
+ * Unseen = not imported, so a mail that crashed the app is retried next time.
  */
 export async function receive(app: App, { limit = 50, probe }: { limit?: number; probe?: boolean } = {}): Promise<number> {
   const config = await inbound(app);

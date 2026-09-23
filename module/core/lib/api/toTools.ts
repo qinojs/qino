@@ -44,7 +44,7 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
         const concretePath = r.segments
           .flatMap((seg) => seg.startsWith(":") ? pathValue(raw[paramName(seg)], isCatchall(seg)) : seg)
           .join("/");
-        // path params travel in the URL; unknown fields stay in the strict part so invoke() rejects them
+        // path params go into the URL; unknown fields stay, so invoke() rejects them
         const pathNames = new Set(routeParams(r).map(([name]) => name));
         const qShape = shapeOf(r.verb.query);
         const input: Params = {}, query: Params = {};

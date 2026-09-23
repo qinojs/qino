@@ -3,7 +3,7 @@ import { fs, isModuleName } from "@qino/qino";
 
 import type { Store } from "@qino/qino";
 
-/** Every file of a module, relative to its folder; `tests/` stays behind, a consumer runs the module. */
+/** All files of a module, relative to its folder, without `tests/`. */
 async function moduleFiles(dir: string, base = dir): Promise<string[]> {
   const found: string[] = [];
   for (const e of await fs.list(dir)) {
@@ -15,7 +15,7 @@ async function moduleFiles(dir: string, base = dir): Promise<string[]> {
   return found.sort();
 }
 
-/** Module folders physically present in a local store; its possibly stale catalog is not consulted. */
+/** Module folders present in a local store (not from its catalog, which may be outdated). */
 async function moduleNames(dir: string): Promise<string[]> {
   const names: string[] = [];
   for (const e of await fs.list(dir)) {
@@ -26,8 +26,7 @@ async function moduleNames(dir: string): Promise<string[]> {
   return names.sort();
 }
 
-/** Refresh `files` in every manifest and the catalog beside them. Reports what changed, so a click
- *  that was not needed says so instead of looking like work. */
+/** Update `files` in every manifest and the catalog. Reports what changed. */
 export async function writeIndex(store: Store): Promise<string> {
   if (!store.base.startsWith("file:")) throw new Error("Only a local store can be written");
   const dir = fromFileUrl(store.base);

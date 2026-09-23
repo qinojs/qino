@@ -13,8 +13,7 @@ cms.initNode("backend.superuser.locale.currency", (el) => {
     if (rate) node.api.post({ rate: rate.closest("[itemid]").getAttribute("itemid"), value: rate.value });
   });
 
-  // Every currency there is, so the one you mean is found by code, name or symbol. Delegated, so
-  // it survives a reload of the node.
+  // Search all currencies by code, name or symbol. Delegated, so it survives a node reload.
   el.addEventListener("input", (e) => {
     const search = e.target.closest(".-search");
     if (!search) return;

@@ -2,10 +2,8 @@ import { hee } from "@qino/qino";
 
 import type { Node } from "@qino/qino/cms";
 
-/** PHP's `cms_image2_bg()` emitted `data-cms-image2-bg` plus a blurred preview, and its JS swapped
- *  in a fitting size. qino's cms.image2 only ports the foreground `<cms-image2>`, so this is a plain
- *  CSS background — same picture, no lazy upgrade. The focus point stored on the file becomes
- *  `background-position`, as in the PHP templates. */
+/** Replaces PHP's `cms_image2_bg()` (preview + lazy size swap) with a plain CSS background, since
+ *  qino's cms.image2 only has `<cms-image2>`. The file's focus point becomes `background-position`. */
 export async function backgroundStyle(node: Node, fileName: string, params: Record<string, unknown> = { w: 1920, q: 78 }): Promise<string> {
   const file = await node.file(fileName);
   if (!await file.exists()) return "";
@@ -34,8 +32,8 @@ function rgb(color: string): [number, number, number] | undefined {
   if (parts && parts.length >= 3) return parts.slice(0, 3) as [number, number, number];
 }
 
-/** The section modules of the PHP CMS all shared this style block: background image, an optional
- *  `background-color` setting, and white text once that colour is dark. */
+/** Shared style of the PHP section modules: background image, optional `background-color`, white
+ *  text on dark colors. */
 export async function sectionStyle(node: Node, fileName = "Background"): Promise<string> {
   let style = await backgroundStyle(node, fileName);
   const color = String(await node.settings["background-color"] ?? "");

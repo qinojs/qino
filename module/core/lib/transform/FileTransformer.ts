@@ -104,12 +104,10 @@ export class FileTransformer {
     for (const engine of this.#transcriptEngines) if (await engine.available(ctx)) return engine;
   }
 
-  /** What the machine can do decides what the pipeline produces: AVIF or JPEG, rsvg or inkscape,
-   *  svgo or scour, quantized PNG or not, which OCR engine wrote the text. None of that is an
-   *  option, so none of it would reach the cache key — two servers with different tools, or the
-   *  same server after installing one, would silently share entries. Every entry of
-   *  `capabilities` counts, so adding a tool there covers it here without a second edit.
-   *  Engines carry their priority: the one that wins is what shaped the output. */
+  /** The installed tools change the output (AVIF or JPEG, rsvg or inkscape, svgo or scour,
+   *  pngquant, OCR engine) but are no options, so they go into the cache key separately — otherwise
+   *  a newly installed tool would reuse old entries. Covers every entry of `capabilities`, plus the
+   *  engines with their priority. */
   async #toolchain(): Promise<string> {
     const caps = FileTransformer.capabilities as Readonly<Record<string, Promise<boolean>>>;
     const tools = await Promise.all(Object.keys(caps).sort().map(async (k) => `${k}=${await caps[k] ? 1 : 0}`));
@@ -120,8 +118,8 @@ export class FileTransformer {
   async transform(
     sourcePath: string,
     options: TransformOptions,
-    knownMime?: string, // Known MIME type of the source file (e.g. from DB) – fallback to extension detection
-    accept?: string, // Media types the client accepts, from its `Accept` header. Omitted = no constraint.
+    knownMime?: string, // MIME type of the source if known (e.g. from DB), else detected by extension
+    accept?: string, // the client's `Accept` header; omitted = no constraint
   ): Promise<TransformResult> {
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
@@ -133,10 +131,9 @@ export class FileTransformer {
     const ext = nodePath.extname(sourcePath).slice(1).toLowerCase();
     const mime = knownMime || typeByExtension(ext) || 'application/octet-stream';
 
-    // Cache key: source path + size + all set options consumed by any registered transformer + toolchain
-    // (no mtime: it may be touched on access for LRU tracking; no mime: derivable from path/content)
-    // Content fingerprint: for db-files covered by the path (md5 content-addressed).
-    // For generic use (mutable paths) something is still to be found (> 1.0).
+    // Cache key: source path + size + options used by any transformer + toolchain
+    // (no mtime: touched for LRU; no mime: follows from path/content).
+    // db-file paths are content hashes (md5); for changing paths a fingerprint is still missing (> 1.0).
     const stat = await fs.stat(sourcePath);
     if (!stat) throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
 
@@ -178,7 +175,7 @@ export class FileTransformer {
           return { path: sourcePath, mime, transformed: false, key: cacheKey };
         }
 
-        // Write meta first, then move the file atomically into place (concurrent readers never see a partial file)
+        // Meta first, then move the file into place atomically (readers never see a partial file)
         await fs.mkdir(this.cacheDir);
         await fs.write(metaPath, ctx.mime);
         const partPath = `${cachePath}.part-${crypto.randomUUID()}`;
@@ -199,17 +196,15 @@ export class FileTransformer {
   }
 }
 
-/** What the client rules out, keyed alongside the options — a browser without AVIF must not be
- *  served the AVIF entry. Only an explicit type token counts: `image/*` and `*​/*` say nothing about
- *  a specific codec, and a navigation or plain `fetch()` sends no image types at all. An absent
- *  header is no constraint (an unknown client is not evidence against anything), so it must not
- *  split the cache either — hence the empty string. */
+/** Cache key part for the Accept header, so a browser without AVIF never gets the AVIF entry.
+ *  Only explicit types count (`image/*` and `*​/*` say nothing about codecs). A missing header is no
+ *  constraint and gives the empty string. */
 function accepts(accept: string | undefined, opts: TransformOptions): string {
-  if (opts.fmt || !accept) return ''; // an explicit format was asked for, or nothing is known
+  if (opts.fmt || !accept) return ''; // explicit format, or nothing known
   return NEGOTIATED.filter((type) => !accept.includes(type)).join(',');
 }
 
-/** Types the pipeline may choose on its own, and that a client can therefore rule out. */
+/** Types the pipeline may pick itself, which a client can rule out. */
 const NEGOTIATED = ['image/avif'];
 
 /** Sorts transformers by phase order + `after` dependencies within a phase */

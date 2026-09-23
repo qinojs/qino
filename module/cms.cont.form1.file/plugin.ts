@@ -19,7 +19,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const form = await formOf(node);
 
   if (form?.sent) {
-    // ReqBody keeps only the last file per field name, so `multiple` still yields a single attachment
+    // ReqBody keeps only the last file per field, so `multiple` gives one attachment
     const file = await ctx.req.files[fieldName]?.catch(() => undefined);
     if (file?.name) form.attachments.push({ path: file.tmpPath, name: file.name });
     else if (settings.required()) form.errors++;

@@ -3,18 +3,18 @@
 //   import { ctx } from "./qino.js";
 //   ctx.lang / ctx.csrfToken / ctx.appUrl / ctx.moduleUrl / ctx.dev
 //
-// What the page knows about itself, and nothing else — so this module imports nothing. The rest of
-// what the server keeps on its ctx has its own module here: ./api.js, ./t.js, ./settings.js.
+// Only what the page knows about itself; imports nothing. The rest has its own modules:
+// ./api.js, ./t.js, ./settings.js.
 
 const appUrl = globalThis.qino?.appUrl ?? "/";
 
 export const ctx = {
   lang: document.documentElement.getAttribute("lang"),
   appUrl,
-  moduleUrl: globalThis.qino?.moduleUrl ?? appUrl + "m/",  // carries the asset revision, so it comes from the server
+  moduleUrl: globalThis.qino?.moduleUrl ?? appUrl + "m/",  // from the server, includes the asset revision
   dev: !!globalThis.qino?.dev,
   csrfToken: globalThis.qino?.csrfToken,
 };
 
-// server-side: import { getCtx } ... — client-side there is only the one ctx
+// server: import { getCtx } ... — in the browser there is only one ctx
 export function getCtx() { return ctx; }

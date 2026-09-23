@@ -1,4 +1,3 @@
-// Public API of social.threads. The qino plugin lives in ./plugin.ts.
 import { errMsg, safeFetch, unixTime } from "@qino/qino";
 import { ProviderError } from "@qino/qino/social";
 

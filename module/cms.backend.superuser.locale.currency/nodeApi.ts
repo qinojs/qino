@@ -13,8 +13,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     return { every };
   }
 
-  // A rate by hand — for a shop that keeps its own, or a currency the source does not carry.
-  // An empty value is not "zero", it means the currency has no rate.
+  // Manual rate (own rates, or currencies the source lacks). Empty means "no rate", not zero.
   if ("rate" in vars) {
     const id = String(vars.rate).toUpperCase();
     if (!await app.db.one`SELECT id FROM currency WHERE id = ${id}`) return false;

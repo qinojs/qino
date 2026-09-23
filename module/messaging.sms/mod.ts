@@ -1,4 +1,3 @@
-// Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 import { addContact, ApiError, contactKey, contactOwner, countContacts, errMsg, unixTime } from "@qino/qino";
 import { contactRecipients, delivered, dropClaim, record, redeemCode, requestCode, send as dispatch } from "@qino/qino/messaging";
 
@@ -11,9 +10,8 @@ import type { SmsProvider } from "./lib/provider.ts";
 export { setProvider, type SmsProvider };
 
 /**
- * Who a `to` means as phone numbers — `usr_contact` holds verified numbers only, so a group or
- * user selection needs no filtering. `{ phone }` is the number itself and reaches it whether or
- * not anyone verified it; a number that is somebody's is journaled as theirs.
+ * Resolve `to` to phone numbers (`usr_contact` has only verified ones). `{ phone }` is used as is,
+ * verified or not; if it belongs to a user, it is recorded as theirs.
  */
 async function recipients(app: App, to: To & { phone?: string | string[] }): Promise<Recipient[]> {
   const direct = [to.phone ?? []].flat().map(normalize);
@@ -30,8 +28,8 @@ function normalize(input: string): { address: string; addressError?: string } {
 }
 
 /**
- * Text the numbers of a group, user, one number, or everyone. An SMS is text and nothing else:
- * markup is flattened and a `title` becomes the first line.
+ * SMS to a group, users, numbers, or everyone. Plain text: markup is removed, `title` becomes the
+ * first line.
  */
 export const send = (app: App, to: To & { phone?: string | string[] }, message: string | Msg): Promise<number> =>
   dispatch(app, messagingChannel, to, message);
@@ -54,7 +52,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
   return sent;
 }
 
-/** Claim a phone number and send its six-digit code. Nothing is stored on the user until it is verified. */
+/** Claim a number and send a six-digit code. Nothing is stored on the user until verified. */
 export async function addPhone(app: App, usrId: number, input: string): Promise<Row> {
   const number = contactKey("phone", input);
   const owner = await contactOwner(app.db, "phone", number);

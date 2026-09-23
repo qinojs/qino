@@ -1,8 +1,7 @@
 import type { Kind } from "./types.ts";
 
-// Catalog of known providers (code, not DB). The backend admin uses it to prefill
-// "add provider" — nothing is auto-inserted. Configured providers live in ai_provider.
-// Keys are never here; they go to settings (secrets) and stay optional for local endpoints.
+// Known providers (in code). The backend uses it to prefill "add provider"; nothing is inserted
+// automatically. Configured providers are in ai_provider, keys in settings (optional for local).
 
 export const providerCatalog: {
   name: string;

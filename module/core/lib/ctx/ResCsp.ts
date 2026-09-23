@@ -1,10 +1,10 @@
 type Sources = Record<string, true>;
 
-// Only a source ending in "/" is a path prefix in CSP — everything below it is already covered.
+// Only a source ending in "/" is a path prefix in CSP; it covers everything below.
 const collapse = (keys: string[]) => keys.filter((k) => !keys.some((o) => o !== k && o.endsWith("/") && k.startsWith(o)));
 
-// Directives that fall back to default-src when absent — repeating what default-src already says is wasted bytes.
-// base-uri, form-action and frame-ancestors have no such fallback and are always emitted.
+// Directives falling back to default-src; omitted when equal to it. base-uri, form-action and
+// frame-ancestors have no fallback and are always sent.
 const fallsBack = new Set(["font-src", "img-src", "script-src", "style-src", "connect-src", "frame-src"]);
 
 /** Content-Security-Policy builder. Directives are typed fields; add a field for new ones. */
@@ -21,9 +21,8 @@ export class ResCsp {
   /** Who may frame this site. Loosen it per site, not here. */
   "frame-ancestors": Sources = { "'self'": true };
 
-  /** Violation-report endpoint, emitted as `report-uri`. Deprecated in favour of the Reporting API,
-   *  but the only mechanism firefox and safari implement — and a policy carrying `report-to` makes
-   *  them ignore `report-uri`, so sending both means those browsers report nothing at all. */
+  /** Report endpoint, sent as `report-uri`. Deprecated, but the only one Firefox and Safari support —
+   *  and with `report-to` present they ignore `report-uri`, so only this one is sent. */
   reportTo: string | undefined;
 
   toHeader(): string {
@@ -32,7 +31,7 @@ export class ResCsp {
     for (const [type, allowed] of Object.entries(this) as [string, Sources][]) {
       if (type === "reportTo") continue;
       let keys = collapse(Object.keys(allowed));
-      // 'report-sample' opts violation reports into a sample of the offending code
+      // 'report-sample' adds a code sample to reports
       if (type === "script-src" || type === "style-src") keys = [...keys, "'report-sample'"];
       // 'none' is meaningless once other sources are present
       else if (type === "default-src" && keys.length > 1) keys = keys.filter((k) => k !== "'none'");

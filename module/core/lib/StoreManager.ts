@@ -5,9 +5,9 @@ import { isModuleName, readManifest, resolveSpecifier } from "./ModuleManager.ts
 import type { App } from "./App.ts";
 import type { Manifest, Module } from "./ModuleManager.ts";
 
-/** A folder store lists itself: the subfolders holding the plugin file its URL would point at. */
+/** A folder store: its subfolders that contain a plugin file. */
 async function readFolder(url: string): Promise<string[]> {
-  // Some HTTP servers do serve an index, but parsing one is guesswork — remote stays catalog-only.
+  // HTTP directory listings are unreliable, so remote stores need a catalog.
   if (!url.startsWith("file:")) throw new Error(`Store ${url}: a folder store is local only, a remote store needs a store.json`);
   const dir = fromFileUrl(url);
   const names = [];
@@ -16,9 +16,9 @@ async function readFolder(url: string): Promise<string[]> {
   return names.sort();
 }
 
-/** The catalog's module names, sorted — this is where the store format is validated. */
+/** The catalog's module names, sorted; validates the format. */
 async function readCatalog(url: string): Promise<string[]> {
-  const res = await fetch(url); // fetch reads file: and http(s): alike
+  const res = await fetch(url); // works for file: and http(s):
   if (!res.ok) throw new Error(`Store ${url}: ${res.status} ${res.statusText}`);
   const modules = (await res.json())?.modules;
   if (!modules || typeof modules !== "object" || Array.isArray(modules)) throw new Error(`Store ${url}: modules must be an object`);
@@ -42,39 +42,39 @@ export class Store {
 
   /** URL of the store: its catalog file, or the folder itself. */
   get url(): string { return this.#url; }
-  /** Directory the store lives in — every module of the store lies below it. */
+  /** Directory of the store; all its modules are below it. */
   get base(): string { return new URL(".", this.#url).href; }
-  /** The base is convention for both forms; a module lives below it under its own name. */
+  /** Base URL; each module is in a subfolder named after it. */
   moduleUrl(name: string): string { return `${this.base}${name}/plugin.ts`; }
 
-  /** True for a store the application declares itself — it outlives any uninstall. */
+  /** True if declared by the application itself — can't be uninstalled. */
   get declared(): boolean { return this.#declared; }
 
-  /** Read the module names — a trailing slash is a folder, anything else a catalog. Not cached:
-   *  a store may gain modules while the app runs. */
+  /** Read the module names — trailing slash = folder, else catalog. Not cached, since a store may
+   *  get new modules while the app runs. */
   names(): Promise<string[]> { return (this.#url.endsWith("/") ? readFolder : readCatalog)(this.#url); }
 
-  /** What a module of this store says about itself, without importing it — its dependencies above all. */
+  /** A module's manifest (mainly its dependencies), without importing it. */
   manifest(name: string): Promise<Manifest> {
     if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
     return readManifest(this.moduleUrl(name));
   }
 
-  /** Declare one module of this store — its URL is conventional, so no catalog is read. */
+  /** Register one module; its URL follows from the name, so no catalog is read. */
   add(name: string): this {
     if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
     this.#app.modules.add(this.moduleUrl(name), name);
     return this;
   }
 
-  /** Install one module of this store — the persistent counterpart of add(). Deriving the URL from
-   *  the store is what keeps a caller that takes a module *name* from ever taking a URL. */
+  /** Install one module — the persistent version of add(). The URL comes from the store, so
+   *  callers that take a name never handle a URL. */
   install(name: string): Promise<Module> {
     if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
     return this.#app.modules.install(this.moduleUrl(name), name);
   }
 
-  /** Declare every module in the catalog — nothing but names() + add(). */
+  /** Register every module of the catalog: names() + add(). */
   async addAll(): Promise<this> {
     for (const name of await this.names()) this.add(name);
     return this;
@@ -87,8 +87,8 @@ export class StoreManager {
 
   constructor(app: App) {
     this.#app = app;
-    // Stores know where modules live, the module manager does not — so it is told, not asked. That
-    // keeps the one dependency between the two pointing this way, as everywhere else here.
+    // Stores know where modules are; the module manager doesn't, so it gets this hook. Keeps the
+    // dependency one-way.
     app.modules.locate = async (name) => (await this.offers()).get(name)?.moduleUrl(name);
   }
 
@@ -96,11 +96,11 @@ export class StoreManager {
 
   get(url: string): Store | undefined { return this.#stores.get(url); }
 
-  /** Which store offers which module — one catalog read per store, first registration wins. An
-   *  unreadable store contributes nothing instead of failing the lookup for all the others. */
+  /** Which store offers which module — one read per store, first registered wins. Unreadable
+   *  stores are skipped. */
   async offers(): Promise<Map<string, Store>> {
     const stores = this.all();
-    const lists = await Promise.all(stores.map((store) => store.names().catch(() => []))); // one round trip, not one per store
+    const lists = await Promise.all(stores.map((store) => store.names().catch(() => []))); // in parallel
     const found = new Map<string, Store>();
     for (const [i, names] of lists.entries()) for (const name of names) if (!found.has(name)) found.set(name, stores[i]);
     return found;
@@ -114,11 +114,11 @@ export class StoreManager {
     return this.#ensure(resolveSpecifier(this.#app, spec), true);
   }
 
-  /** Remember a store across restarts — the persistent counterpart of add(). */
+  /** Keep a store across restarts — the persistent version of add(). */
   async install(spec: string | URL): Promise<Store> {
     const url = resolveSpecifier(this.#app, spec);
     if (!this.#stores.has(url)) {
-      await new Store(this.#app, url, false).names(); // unreadable, no store
+      await new Store(this.#app, url, false).names(); // throws if unreadable
       await this.#app.db.table("store").insert({ url });
     }
     return this.#ensure(url, false);
@@ -132,9 +132,9 @@ export class StoreManager {
     this.#stores.delete(url);
   }
 
-  /** Register the remembered stores, so the backend can list and install from them. */
+  /** Register the saved stores, so the backend can list and install from them. */
   async init(): Promise<void> {
-    // Same bootstrap read as ModuleManager.init(), before this table's own migration — take it as it is.
+    // Read before migration, like ModuleManager.init().
     for (const { url } of await this.#app.db.query`SELECT * FROM store`.catch(() => []))
       if (url) this.#ensure(url, false);
   }

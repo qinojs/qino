@@ -12,8 +12,7 @@ import type { DomainRow } from "./lib/monitor.ts";
 const HISTORY_LIMIT = 500;
 const DAY = 24 * 60 * 60;
 
-// Optional column groups. The table carries a "-no-<name>" class per hidden group, so toggling one
-// is a single class change instead of a walk over every cell.
+// Optional column groups, hidden by a "-no-<name>" class on the table.
 const GROUPS = ["http", "tls", "dns", "mail"] as const;
 type Group = typeof GROUPS[number];
 const GROUP_LABELS: Record<Group, string> = { http: "HTTP", tls: "TLS", dns: "DNS", mail: "Mail" };
@@ -31,12 +30,10 @@ const flag = (value: unknown, title: string): HtmlString => dot(value == null ? 
 // Sort rank for tri-state flag columns: unknown < bad < good.
 const rank = (value: unknown) => value == null ? 0 : value ? 2 : 1;
 
-// "Checked, and it is not so" — never `=== false`: boolean columns come back from the driver as
-// 1/0 rather than as real booleans, so null is the only thing that means "nothing is known".
+// "Checked and false" — not `=== false`: the driver returns 1/0; only null means unknown.
 const no = (value: unknown): boolean => value != null && !value;
 
-// What the last check says about the domain as a whole. An answer is an answer: 401 and 404
-// mean the server is up, so they are a warning rather than downtime.
+// Overall status of the last check. 401 and 404 mean the server is up: a warning, not downtime.
 function status(row: DomainRow): { level: Level; title: string } {
   if (!row.checked) return { level: "gray", title: "not checked yet" };
   return checkedStatus(row.online, row.status_code, row.error, row.final_url);
@@ -116,10 +113,8 @@ const dnsCell = (value?: string | null): HtmlString => {
   return list.length ? html`<small>${html.join(list, "<br>")}</small>` : html`–`;
 };
 
-// TXT records share no syntax, so the badge takes whatever names the record: the key of a
-// "key=value" record, the scheme behind "v=", the vendor prefix of a token — "token" when
-// nothing in it names anything, which is what most verification strings look like.
-// Records write their names in every casing there is, so the label ends up lowercase throughout.
+// Badge label for a TXT record: the key of "key=value", the scheme after "v=", or a vendor prefix;
+// "token" otherwise (most verification strings). Always lowercase.
 function txtLabel(record: string): string {
   const value = record.trim();
   const eq = value.indexOf("=");
@@ -138,8 +133,7 @@ function txtLabel(record: string): string {
   return label.slice(0, 12).toLowerCase();
 }
 
-// Records that end up under the same label share one badge — a domain with four verification
-// strings would otherwise widen the column with four identical ones.
+// Records with the same label share one badge.
 const txtGroups = (value?: string | null): [string, string[]][] => [...Map.groupBy(lines(value), txtLabel)];
 
 const txtCell = (groups: [string, string[]][]): HtmlString =>
@@ -154,8 +148,7 @@ const txtCell = (groups: [string, string[]][]): HtmlString =>
 
 const bare = (name: string) => name.replace(/\.$/, "");
 
-// What each nameserver answered, as recorded by the check: "<name> <ip> <serial> <primary> <ns,ns>",
-// the bare name alone when it stayed silent. Everything below is read out of these lines.
+// Nameserver answers as recorded: "<name> <ip> <serial> <primary> <ns,ns>", or just the name if silent.
 type NsServer = { name: string; ip: string; serial: string; primary: string; zone: string[] };
 
 const nsServers = (row: DomainRow): NsServer[] => lines(row.ns_servers).map((line) => {
@@ -163,9 +156,8 @@ const nsServers = (row: DomainRow): NsServer[] => lines(row.ns_servers).map((lin
   return { name, ip, serial, primary, zone: zone.split(",").filter(Boolean) };
 });
 
-// Serials only compare per primary: two providers (say Route53 + NS1) run their own numbering, but
-// every server behind one primary must have received the same zone version. An empty NS set counts
-// as "did not say" rather than as drift.
+// Serials compare per primary only (providers number differently); all servers of one primary must
+// have the same version. An empty NS set is "unknown", not drift.
 function nsInSync(list: NsServer[]): boolean {
   const zones = new Set(list.map((s) => s.zone.join(",")).filter(Boolean));
   const groups = [...Map.groupBy(list, (s) => s.primary).values()];
@@ -192,8 +184,7 @@ function nsState(row: DomainRow) {
   return { list, answering, sync, parent, subnets, ok: list.length ? answering.length === list.length && sync && !no(parent) : null };
 }
 
-// One line per nameserver, because a single dot cannot say which of them is the broken one:
-// red is a server that never answered, orange means the answering ones serve different zones.
+// One line per nameserver: red = no answer, orange = servers disagree.
 function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
   const names = ns.list.length ? ns.list.map((s) => s.name) : lines(row.dns_ns).map(bare);
   if (!names.length) return html`${dot("gray", "no NS records")}`;
@@ -215,8 +206,7 @@ function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
   return html`${names.map(line)}${faults.map(([short, title]) => html`<div>${dot("orange", title)} <small>${short}</small></div>`)}`;
 }
 
-// A short TTL is a moving-house setting: right for the day of a migration, a liability every other
-// day, because it forces every resolver on earth to ask again that often.
+// A short TTL is fine during a migration, otherwise it makes every resolver ask again that often.
 const ttlLevel = (seconds: number): Level => seconds < 60 ? "red" : seconds < 300 ? "orange" : "green";
 
 function ttlCell(row: DomainRow): HtmlString {
@@ -227,8 +217,7 @@ function ttlCell(row: DomainRow): HtmlString {
   return html`${dot(ttlLevel(low), list.map(([type, value]) => `${type.toUpperCase()} ${value}s`).join(", "))} <small>${low}s</small>`;
 }
 
-// The registration outliving the certificate is not a given, and this deadline takes the whole
-// domain down rather than one service. Many ccTLDs publish no RDAP at all, hence the blank.
+// Registration expiry takes the whole domain down. Many ccTLDs have no RDAP, hence often blank.
 function expiresCell(row: DomainRow): HtmlString {
   if (no(row.reg_found)) return html`${dot("red", "the registry does not know this domain")} <small>gone</small>`;
   if (!row.reg_expires) return html`–`;
@@ -238,8 +227,7 @@ function expiresCell(row: DomainRow): HtmlString {
   return html`${dot(days < 14 ? "red" : days < 45 ? "orange" : "green", title)} <small>${days} d</small>`;
 }
 
-// A change is news rather than a fault, so the marker fades with age instead of ranking severity:
-// the fields the last check found different are named in the title.
+// A change is news, not a fault: the marker fades with age; changed fields are in the title.
 function changedCell(row: DomainRow): HtmlString {
   if (!row.changed) return html`–`;
   const age = Date.now() / 1000 - row.changed;
@@ -259,8 +247,8 @@ function headersCell(row: DomainRow): HtmlString {
   return html`${dot(row.hsts == null ? "gray" : !hsts || missing.length ? "orange" : "green", title)}${missing.length ? html` <small>${missing.length}</small>` : ""}`;
 }
 
-// Not being signed is the norm rather than a fault, so unsigned stays neutral. A DS at the parent
-// with no key behind it is the one alarming case — that breaks the domain for validating resolvers.
+// Unsigned is normal, so neutral. Alarm only for a DS at the parent without key — that breaks the
+// domain for validating resolvers.
 function dnssecCell(row: DomainRow): HtmlString {
   if (row.dnssec) return dot("green", "signed and delegated");
   if (no(row.dnssec)) return dot("gray", "not signed");
@@ -312,8 +300,7 @@ function frequencySelect(row: DomainRow): HtmlString {
   }</select>`;
 }
 
-/** The page the table lives on. Taken from the node, not from the request: an api call that
- *  re-renders a row runs on the api url and would build the links against that. */
+/** The table's page, from the node — api calls that re-render a row run on the api url. */
 export const nodeUrl = async (node: Node, ctx: Ctx): Promise<URL> => new URL(await node.url(), ctx.req.url.href);
 
 // Same page, one parameter more — a bare "?domain=…" would drop cmspid, lang and editmode.
@@ -515,11 +502,11 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
 
 const WIDGET_ROWS = 8;
 
-/** Dashboard card: what moved lately, which is the one thing worth seeing without opening the module. */
+/** Dashboard card: recent changes. */
 export async function backendDashboardWidget(app: App, node: Node): Promise<HtmlString | string> {
   const rows = await app.db.query<DomainRow>`
     SELECT domain, changed, changes FROM monitor_domain WHERE changed > 0 ORDER BY changed DESC LIMIT ${WIDGET_ROWS}`;
-  if (!rows.length) return ""; // nothing has ever changed — no card rather than an empty one
+  if (!rows.length) return ""; // no changes: no card
   const pageUrl = await nodeUrl(node, getCtx());
   return html.async`<table class=u2-table style="white-space:nowrap">${
     html.join(rows.map((row) => {
@@ -545,8 +532,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const body = html.join(rows.map((row) => rowHtml(row, pageUrl)), "\n");
   const empty = html`<tr><td colspan=28 class=-empty>No domains yet.`;
 
-  // Which groups the user folded away, kept per user rather than per browser. Mail is off to begin
-  // with — it is the most specialised block and the table is wide enough without it.
+  // Hidden column groups, per user. Mail is hidden by default.
   const stored = String(ctx.settings["cms.backend.domain-monitor"].cols() ?? "mail").split(",");
   const hidden = GROUPS.filter((group) => stored.includes(group));
 

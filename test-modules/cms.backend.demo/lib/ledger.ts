@@ -1,9 +1,7 @@
-// What the demo run wrote — the reason it can be removed again without touching anything else.
+// Records what the demo run inserted, so it can be removed exactly.
 //
-// Rather than every seeder remembering its own rows, the run listens to the database: while it is
-// active, each insert made *inside its async context* is noted with table and entry id. Requests
-// running in parallel have another context and stay out of it, and a seeder gets the whole tree an
-// api like `Node.createChild()` writes for free.
+// The run listens to the database: every insert *inside its async context* is noted (table + id).
+// Parallel requests have another context; nested writes (e.g. `Node.createChild()`) are covered.
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { App, Db } from "@qino/qino";

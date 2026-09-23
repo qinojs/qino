@@ -1,4 +1,3 @@
-// Public API of auth.backup_codes. The qino plugin lives in ./plugin.ts.
 import { ApiError, attempt, identified, pwHash, pwVerify } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
@@ -7,8 +6,7 @@ import type { App, Ctx } from "@qino/qino";
 const TYPE = "backup_codes";
 const COUNT = 10;
 const LENGTH = 12;
-// Crockford base32: 32 characters, so a random byte masked to 5 bits picks one without bias, and
-// none of them is an I, L, O or U that someone could read back as something else.
+// Crockford base32: 32 characters (5 bits of a random byte, no bias), without I, L, O, U.
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(LENGTH)), (b) => ALPHABET[b & 31]).join("");
@@ -19,11 +17,10 @@ const grouped = (code: string) => code.replace(/(.{4})(?=.)/g, "$1-");
 const normalize = (code: string) => code.toUpperCase().replace(/[^0-9A-Z]/g, "");
 
 /**
- * Replace the set with a fresh one. The plain codes exist only in what this resolves with.
+ * Replace the set with new codes. The plain codes are only in the return value.
  *
- * They are kept as bcrypt, not as a plain digest. 60 bits would not survive a stolen database
- * against a fast hash, and a keyed one would not help — the key lives in the settings table and
- * would be stolen along with it. bcrypt needs no key and costs the attacker milliseconds a guess.
+ * Stored as bcrypt: a fast hash of 60 bits would not survive a stolen database, and a key would be
+ * stolen with it (it's in the settings). bcrypt costs milliseconds per guess.
  */
 export async function generate(ctx: Ctx): Promise<string[]> {
   await drop(ctx.app, ctx.userId, TYPE);
@@ -44,7 +41,7 @@ export async function spend(ctx: Ctx, code: string): Promise<boolean> {
   const spent = await attempt(ctx.app, usrId, async () => {
     // Tried one by one: bcrypt makes that a second at worst, and only for the account's own owner
     for (const row of await stored(ctx.app, usrId, TYPE)) {
-      // the delete decides the race: of two parallel attempts with the same code only one removes a row
+      // the delete settles races: only one of two parallel attempts removes the row
       if (await pwVerify(typed, JSON.parse(String(row.data)).hash)) return !!await drop(ctx.app, usrId, TYPE, Number(row.id));
     }
     return false;

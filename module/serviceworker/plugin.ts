@@ -16,7 +16,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     return cache = { key: keyOf(base), script, etag: `W/"${await sha256b64url(script)}"` };
   };
 
-  // Served before routing — the worker needs neither session nor database, and update checks are frequent.
+  // Served before routing: no session or database needed, and update checks are frequent.
   app.on("request-start", async ({ request, base }) => {
     const path = base + "sw.js";
     if (!request.url.endsWith(path)) return; // this hook sees every request — reject without allocating

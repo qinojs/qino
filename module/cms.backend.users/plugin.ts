@@ -155,8 +155,8 @@ export const cms = {
 };
 
 
-/** A username that is a mail address is one the administrator vouches for: it becomes the user's
- *  verified main address. Anything else — "hans" — is a login handle and nothing more. */
+/** A username that is a mail address becomes the verified main address (the admin vouches for it).
+ *  Otherwise it's just a login name. */
 export async function adoptUsername(app: App, usrId: number, username: string): Promise<void> {
   const address = mailAddressOf(username);
   if (!address) return;
@@ -166,13 +166,12 @@ export async function adoptUsername(app: App, usrId: number, username: string): 
   await setMainContact(app.db, usrId, "email", address);
 }
 
-/** `contactKey` throws on anything that is not an address, which here is an answer, not a failure. */
+/** `contactKey` throws for non-addresses; here that just means "no". */
 function mailAddressOf(username: string): string | undefined {
   try { return contactKey("email", username); } catch { return; }
 }
 
-/** The contacts of one user: where they can be reached, and how to change it.
- *  Inner content only — the `cms-part` wrapper stays in `renderDetail`, so a reload replaces this. */
+/** A user's contacts, editable. Inner content only; the `cms-part` wrapper is in `renderDetail`. */
 async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;

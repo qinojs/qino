@@ -127,8 +127,7 @@ async function currencies(node: Node): Promise<HtmlString> {
   // Every currency there is; the shop's own row exists for the ones it prices in.
   const rows = await app.db.query`SELECT c.id, s.factor, s.smallest, s.smallest_closing, s.active, s.main
     FROM currency c LEFT JOIN shp3_currency s ON s.id = c.id`;
-  // While rates are fetched, the factors come from locale.currency — editing them here would
-  // only survive until the next run.
+  // While rates are fetched, factors come from locale.currency, so they aren't editable here.
   const fromRates = String(await app.settings["locale.currency"].update ?? "never") !== "never";
 
   // A country the shop delivers to pays in its own currency — worth offering.

@@ -3,13 +3,10 @@ import { addContact, contactKey, unixTime } from "@qino/qino";
 import type { App } from "@qino/qino";
 
 /**
- * Legacy knows one address per user and never asked anyone to prove it. Taking it as verified is
- * the only alternative to leaving every migrated user unreachable, so that is the call made here —
- * once, in the migration, and nowhere in the running code. Anything that is not an address stays
- * behind; `usr.username` keeps it as the login handle.
+ * The PHP CMS had one unverified address per user. It is taken as verified — otherwise migrated
+ * users would be unreachable. Only here, once. Non-addresses stay only as login name (`usr.username`).
  *
- * The flag is what makes it once: `usr.username` keeps the address forever, so without it a
- * repair() would hand back an address the user has since deleted — as a proven one, no less.
+ * The flag ensures it runs once: otherwise repair() would restore addresses the user deleted since.
  */
 export async function migrateContacts(app: App): Promise<number> {
   if (await app.settings.migrate_from_php.contacts) return 0;

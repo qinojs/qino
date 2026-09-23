@@ -1,8 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 
-/** Wait out the gap: the answer came from a process that is ending, so every request until the
- *  supervisor has the next one up fails at the connection — a failure here means "not yet". */
+/** Wait for the restart: requests fail until the new process is up, so a failure means "not yet". */
 async function untilBack(tries = 60) {
   while (tries--) {
     await new Promise((r) => setTimeout(r, 1000));

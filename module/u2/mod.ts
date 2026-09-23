@@ -1,4 +1,3 @@
-// Public API of the u2 module. The qino-module manifest is in ./plugin.ts.
 // Helpers mirror u2's own layout: elements under `el`, the framework itself flat.
 import { u2Root } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
@@ -20,8 +19,7 @@ const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 /** Where a u2 release lives: the version the caller pinned, else the one qino ships with. */
 export const root = (version?: string): string => version ? `${CDN}${version}/` : u2Root;
 
-// What an element fetches on its own once it upgrades — its dependency, declared where it is known.
-// Paths end in "/", so a version bump inside u2 needs no change here.
+// What an element loads itself after upgrading. Paths end in "/", so u2 version bumps need no change.
 const OWN: Record<string, string[]> = {
   code: ["https://cdn.jsdelivr.net/gh/highlightjs/"], // u2-code highlights with highlight.js
 };
@@ -36,8 +34,8 @@ export function elements(ctx: Ctx, ...names: string[]): void {
   }
 }
 
-/** Link u2 files (paths below the root) into the document and allow the origin. `u2/auto.js` is one of
- *  them: it fetches whatever the markup turns out to need, which a layout with a settled design can drop. */
+/** Link u2 files (paths below the root) and allow the origin. `u2/auto.js` loads whatever the markup
+ *  needs; a finished layout can drop it. */
 export function assets(ctx: Ctx, files: string[], version?: string): void {
   const base = root(version);
   for (const directive of ["style-src", "script-src", "connect-src"] as const) ctx.res.csp[directive][base] = true;

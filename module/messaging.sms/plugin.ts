@@ -71,7 +71,7 @@ export const api: ApiTree = {
     },
   },
 
-  // the number is the address and the identity, before and after verification — no row id in between
+  // the number is the identity before and after verification (no row id)
   phone: {
     ":number": {
       paramSchema: s.string(),

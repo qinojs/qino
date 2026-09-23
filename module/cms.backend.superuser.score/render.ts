@@ -80,7 +80,7 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
   </table>`;
 }
 
-/** Scopes still in the table whose module no longer registers them — their rows are never pruned. */
+/** Scopes no longer registered by any module — their rows are never cleaned up. */
 async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<HtmlString> {
   const all = await app.db.query<{ id: number; tbl: string }>`SELECT id, tbl FROM score_scope ORDER BY tbl`;
   const stale = all.filter((s) => !known.has(s.tbl));

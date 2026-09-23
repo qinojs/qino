@@ -32,8 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const layoutPage = await node.cms.layoutPage(String(node.vs.module));
 
-  // Logo: the identity image if uploaded, otherwise the portal name (or the host).
-  // Delivered at twice the display height — the transform scales it down, svg passes through untouched.
+  // Logo: the identity image, else the portal name (or host). At twice the display height; svg unchanged.
   const brand = String(await node.app.settings.identity.name ?? "") || (ctx.req.header("host") ?? "");
   const logo = await identity.file(node.app, "logo");
   const logoInner = logo ? html`<img src="${await logo.url({ h: LOGO_HEIGHT * 2 })}" alt="${brand}" height=${LOGO_HEIGHT}>` : brand;

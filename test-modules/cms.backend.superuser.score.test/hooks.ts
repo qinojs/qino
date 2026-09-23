@@ -16,8 +16,7 @@ export function pageHit(app: App, ctx: Ctx): Promise<void> | undefined {
   return hit(app.db, "page", cms.nodeId);
 }
 
-/** `dbFile:access` is the permission hook and fires on mere checks too, so only the
- *  delivery route counts — that is the one request that really hands the file out. */
+/** `dbFile:access` also fires on permission checks, so only the delivery route counts. */
 export function fileHit(app: App, id: number, access: boolean): Promise<void> | undefined {
   if (!access || !id) return;
   if (!requestStorage.getStore()?.req.appPath.startsWith("dbFile/")) return;

@@ -17,7 +17,7 @@ function validatePart(schema: StandardSchema | undefined, src: Params, where: st
   if (!schema) return {};
   const shape = shapeOf(schema);
   const out: Params = Object.create(null);
-  // strict: unknown fields are a caller mistake, not silently dropped
+  // strict: unknown fields throw instead of being dropped
   if (schema.shape) for (const k of Object.keys(src)) if (!(k in shape)) throw new ValidationError([{ message: "unexpected field", path: [k] }], where);
   for (const [k, field] of Object.entries(shape)) if (k in src) out[k] = doCoerce ? coerce(src[k], field) : src[k];
   return validate(schema, out, where) as Params;
@@ -25,7 +25,7 @@ function validatePart(schema: StandardSchema | undefined, src: Params, where: st
 
 export const asParams = (v: unknown): Params => v && typeof v === "object" ? v as Params : {};
 
-/** Out-of-band control channel, kept out of the input/query data namespace. */
+/** Control options, separate from input and query data. */
 export type InvokeOptions = { checkAccess?: boolean };
 
 export async function invoke(tree: ApiTree, method: string, path: string, rawParams: Params = {}, opts: InvokeOptions = {}): Promise<unknown> {
@@ -92,10 +92,10 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
 
   if (!verb.access) throw new AccessError("no access defined");
   if (!await verb.access(ctx)) throw new AccessError();
-  // a dry run carries no input, so the guard sees the path params alone there
+  // a dry run has no input, so the guard only sees the path params
   if (!opts.checkAccess) Object.assign(params, validatePart(verb.input, input, "input", !BODY_METHODS.has(m)), validatePart(verb.query, query, "query", true));
   if (verb.guard && !await verb.guard(params, ctx)) throw new AccessError();
-  // a dry run asks who may use this; a proof is something the caller can still give
+  // a dry run only checks access; the proof can still be given later
   if (opts.checkAccess) return { ok: true };
   if (verb.requireStepUp) await requireStepUp(ctx, verb.requireStepUp === true ? {} : verb.requireStepUp);
 

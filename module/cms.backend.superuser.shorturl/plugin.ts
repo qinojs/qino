@@ -79,7 +79,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     const url = String(data.url ?? "").trim();
     const expires = data.expires ? backend.toUnix(data.expires) : undefined;
     if (url) {
-      // the target is written by a superuser, so anything the runtime accepts as a URL is theirs to make
+      // set by a superuser, so any valid URL is allowed
       message = await shorten(node.app, url, { expires })
         .then((link) => html`<a href="${link}" target=_blank>${link}</a>`)
         .catch((e) => html`<span style="color:var(--red)">${e.message ?? e}</span>`);

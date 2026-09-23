@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
-// History capture (cms-agnostic): mirrors every mutation of a versioned table
-// into its _vers_* shadow table, keyed by the request's log entry.
-// Writes without request context (cron/CLI/boot) are not captured — capture
-// is keyed to ctx.logId, so there is no log entry to attach them to.
+// History capture (cms-agnostic): copies every write on a versioned table into its _vers_* table,
+// keyed by the request's log entry. Writes without request (cron/CLI/boot) have no log entry and
+// are not captured.
 import { requestStorage, sql } from "@qino/qino";
 
 import { getVers, getVersTable } from "./Vers.ts";
@@ -19,9 +18,8 @@ function replaceFrom(db: Db, versTable: string, cols: Record<string, any>[], sou
 
 export function initHistory(app: App, signal: AbortSignal) {
 
-  // Resolve request ctx + shadow table + logId for a tracked mutation, or null to skip.
-  // logId is awaited only after the versioned-table check: awaiting earlier deadlocks
-  // during the log insert's own insert-after (it would wait on its own pending logId).
+  // ctx + shadow table + logId for a tracked write, or null to skip. logId is awaited only after
+  // the table check; earlier, the log insert's own insert-after would wait for itself.
   const track = async (e: any) => {
     const ctx = requestStorage.getStore();
     if (!ctx) return null;
@@ -62,9 +60,8 @@ export function initHistory(app: App, signal: AbortSignal) {
     const { ctx, versTable, logId } = t;
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    // The live row is gone, so copy its most recent snapshot and flip _vers_deleted.
-    // This keeps every (NOT NULL) column populated, mirroring the insert/update capture above —
-    // a partial VALUES insert would break on data columns that have no default.
+    // The live row is gone: copy its latest snapshot with _vers_deleted set, so all NOT NULL
+    // columns are filled.
     const space = getVers(ctx).space;
     const versCols = await ctx.app.db.columns(versTable);
     const selects = versCols.map((c) => {
@@ -80,7 +77,7 @@ export function initHistory(app: App, signal: AbortSignal) {
   }, { signal });
 
   // ─── File protection: don't delete blobs referenced in _vers_file ────────
-  // Blobs are the only unrecoverable data (rows can be rebuilt from snapshots).
+  // Blobs can't be restored (rows can, from snapshots).
   // TODO: dbFile output should fall back to the _vers_file snapshot when the
   // live row is gone, so history views can still serve these preserved blobs.
   app.on("dbFile:unlink-before", async (e) => {

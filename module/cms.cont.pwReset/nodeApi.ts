@@ -9,8 +9,8 @@ export const TICKET_PARAM = "cmsContPwReset_t";
 export const TTL = 60 * 60;
 
 /**
- * Public by nature — whoever forgot their password has no session. Requesting always answers the
- * same, so this cannot be used to find out which addresses have an account.
+ * Public (no session when the password is forgotten). The answer is always the same, so it reveals
+ * no accounts.
  */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;

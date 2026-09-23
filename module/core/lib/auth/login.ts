@@ -1,4 +1,4 @@
-/** Signing in: the form, the password, the session. What may prove an identity is factors.ts. */
+/** Signing in: form, password, session. Which proofs count: factors.ts. */
 import { inTurn, proofFailed, proofPassed, proofWait } from "./attempts.ts";
 import { bcrypt } from "../../deps.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
@@ -10,15 +10,14 @@ import type { Ctx } from "../ctx/Ctx.ts";
 import type { AuthFactor, Offer } from "./factors.ts";
 import type { Usr } from "../rows.ts";
 
-/** Why a request is not signed in. `pending` is no failure: right credentials, second factor owed. */
+/** Why a request is not signed in. `pending` is no failure: credentials ok, second factor missing. */
 export type LoginError = "username" | "inactive" | "password" | "pending" | "throttled";
 
-// Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
-// response timing can't reveal whether an e-mail is registered (user enumeration).
+// Valid cost-10 bcrypt hash, checked when the user is missing/inactive, so timing doesn't reveal
+// whether an e-mail is registered.
 const DUMMY_HASH = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi";
 
-/** Act on the login/logout form in the request, or on a client that may come back without typing.
- *  Part of the per-request boot, before any route runs. */
+/** Handle the login/logout form, or a remembered client. Runs per request before any route. */
 export async function loginFromRequest(ctx: Ctx): Promise<void> {
   const body = ctx.req.method === "POST" ? ctx.req.body : null;
   if (body?.core_login != null) {
@@ -26,9 +25,8 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
     const saveLogin = !!body.save_login;
     ctx.loginError = await tryLogin(ctx, String(body.email ?? ""), String(body.pw ?? "")) || undefined;
     if (!ctx.loginError) await rememberLogin(ctx, saveLogin);
-    // attempts.ts slows down the account, this the client — the one guessing its way through accounts.
-    // Every failure weighs the same: a weight by cause would be measurable as a delay, and so tell
-    // an outsider whether an address exists. `pending` is no failure.
+    // attempts.ts slows down the account, this the client trying many accounts. Every failure
+    // weighs the same, otherwise the delay would reveal whether an address exists.
     if (ctx.loginError && ctx.loginError !== "pending") {
       ctx.app.fire("suspicious", { ctx, weight: 2, reason: "login failed: " + ctx.loginError }).catch(() => {});
     }
@@ -46,29 +44,26 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
   }
 }
 
-/** Log in whoever holds this e-mail — by what the client remembers, else by password.
- *  Resolves with why no session was opened, or "" when one was. */
+/** Log in the user with this e-mail — via remembered client, else password.
+ *  Resolves with the reason if no session was opened, "" on success. */
 export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(username)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
-  const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
+  const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // loaded by the SELECT above
   const usrId = Number(user.id);
   const rehash = pwNeedsRehash(usr.pw);
   const known = (await ctx.client.users())[String(usrId)];
-  // remember-me: the password is never asked here, so this is how access was had, not what proved it
+  // remember-me: no password asked, so this records the way in, not a proof
   if (!rehash && known?.save_login) return await login(ctx, usrId, "remember") ? "" : "username";
-  // Only a typed password is a guess — the pass above comes through without one on every request of
-  // a client whose session lapsed, and that must neither cost the account nor make it wait.
+  // Only a typed password is a guess; remembered clients must not count as attempts.
   if (!pw) return "password";
-  // The wait is the account's, so the user has to be known before we can ask for it. A wait
-  // therefore tells an outsider that this address exists; it costs them four wrong guesses to learn
-  // that, and the alternative is lying to the owner about why they cannot get in.
-  // A client this user has signed in from before never waits: otherwise anyone knowing the address
-  // could park the owner in front of their own login. Wrong tries still count, for everyone else.
+  // The wait belongs to the account, so it reveals that the address exists (after four wrong
+  // tries) — accepted, so the owner learns why they can't get in.
+  // Known clients of this user never wait, so nobody can lock the owner out; wrong tries still count.
   const failed = await inTurn(ctx.app, usrId, async () => {
     const wait = known ? 0 : await proofWait(ctx.app, usrId);
     if (wait) {
-      ctx.loginRetryAfter = wait; // the form says how long, so nobody has to guess that too
+      ctx.loginRetryAfter = wait; // shown in the form
       return "throttled";
     }
     if (await pwVerify(pw, usr.pw ?? "")) return;
@@ -77,35 +72,35 @@ export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginE
   });
   if (failed) return failed;
   if (rehash) await usr.$set({ pw: await pwHash(pw) });
-  // The same route every other factor takes: core declares `password` and claims no shortcut.
+  // Same path as every other factor: core declares `password`.
   const missing = await loginProof(ctx, passwordFactor(ctx.app), usrId);
   if (!missing) return "";
   return missing.length ? "pending" : "username";
 }
 
-/** Core's own declaration, read back from the plugin so it is stated once. */
+/** Core's factor declaration, from the plugin. */
 const passwordFactor = (app: App): AuthFactor =>
   authFactors(app).find((f) => f.name === "password") ?? { name: "password", label: "Password" };
 
-/** A factor established `usrId` at login: park it, and open the session once the set is enough.
- *  Nothing = signed in, otherwise what is missing (empty = nothing here helps). */
+/** A factor identified `usrId` at login: store it as pending, open the session once enough.
+ *  Returns nothing when signed in, else what is missing (empty = nothing helps). */
 export async function loginProof(ctx: Ctx, factor: AuthFactor, usrId: number): Promise<Offer[] | undefined> {
   const via = parkLogin(ctx, factor, usrId);
   if (!via) return [];
   const missing = await loginNeeds(ctx, usrId, via);
-  // Only a finished login wipes the wait. Clearing it per factor would hand whoever knows the
-  // password a fresh budget for every guess at the second one, which is the very attack it is for.
+  // Only a finished login resets the wait; resetting per factor would give a password holder new
+  // guesses for the second factor.
   if (missing.length) return missing;
   if (!await login(ctx, usrId, via)) return [];
   await proofPassed(ctx.app, usrId);
 }
 
-/** Make `id` the session's user; the caller has established who that is. `via` records how and when
- *  — a record, not a permission, so `remember` and `login_as` belong there too. A set keeps each moment. */
+/** Make `id` the session's user (the caller verified it). `via` records how and when — a log, not
+ *  a permission, so `remember` and `login_as` are included. */
 export async function login(ctx: Ctx, id: number | string, via?: string | Record<string, number>): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;
-  // The values, not the item: logout() empties it, and the listeners run after that.
+  // Copy the values: logout() empties the item before the listeners run.
   const oldSession = ctx.sess.data() as Record<string, unknown>;
   await logout(ctx);
   // new session id after logout prevents session fixation
@@ -114,7 +109,7 @@ export async function login(ctx: Ctx, id: number | string, via?: string | Record
   ctx.sess.data.core.userId(id);
   const record = typeof via === "string" ? { [via]: unixTime() } : via ?? {};
   for (const [name, at] of Object.entries(record)) ctx.sess.data.core.via[name](at);
-  ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
+  ctx.app.sessions.setCookieIfNew(ctx); // set the cookie now, independent of the request flow
   await ctx.client.addUsr(id);
   await ctx.client.$set({ usr_id: id });
   await ctx.app.fire("auth:login", { oldSession, usrId: id });
@@ -127,7 +122,7 @@ export async function logout(ctx: Ctx): Promise<void> {
   ctx.sess.data({});
 }
 
-/** Whether this client may come back as this user without typing anything. */
+/** Whether this client may sign in as this user without password. */
 async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
   const usr = ctx.userId ? await ctx.app.db.table("usr").get(ctx.userId) : undefined;
   if (!usr) return;
@@ -143,7 +138,7 @@ export function pwHash(pw: string): Promise<string> {
 
 export async function pwVerify(pw: string, hash: string) {
   if (!pw || !hash) return false;
-  return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
+  return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP writes $2y$, bcryptjs $2b$ — identical
 }
 
 function pwNeedsRehash(hash: string) {

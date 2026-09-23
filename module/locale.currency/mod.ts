@@ -1,5 +1,4 @@
-// ISO 4217 currencies. Names, symbols and decimals come from Intl — the row exists to carry
-// the one thing no standard knows: the exchange rate.
+// ISO 4217 currencies. Names, symbols and decimals come from Intl; the table only stores the rate.
 import type { Db } from "@qino/qino";
 
 export { updateRates } from "./lib/rates.ts";

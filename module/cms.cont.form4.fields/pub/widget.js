@@ -1,5 +1,5 @@
-/* Panel widget for the fields. A field is added by its label — the name it is stored under
-   follows from it and never changes again, so the entries keep their meaning. */
+/* Panel widget for the fields. A field is added by label; its storage name is derived once and
+   never changes. */
 import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
@@ -62,9 +62,8 @@ export default async function (widget, { node, dialogs, signal }) {
   /* The condition of one field names the others — offer them, the operators are typed. */
   const others = (self) => names.filter((n) => n !== self);
 
-  /* Every field is its own form: u2-disableif reads its condition through `el.form`, so the
-     type select carries a name and the names have to stay unique. Nothing is submitted here,
-     the bindings save each change on their own. */
+  /* Each field is its own form (u2-disableif uses `el.form`), so names must be unique. Nothing is
+     submitted; each change saves itself. */
   const field = (name) => {
     const set = fields[name] ?? {};
     const title = txt(name + '_title'), choices = txt(name + '_options'), place = txt(name + '_placeholder');
@@ -103,8 +102,7 @@ export default async function (widget, { node, dialogs, signal }) {
     btn.setAttribute('aria-expanded', open);
   });
 
-  /* Both go to the module's own api: it owns the rule that turns a label into a name, and
-     it takes the field's texts with it when the field goes. */
+  /* Via the module's api: it derives the name from the label and deletes the field's texts. */
   widget.on('click', '.-remove', async (btn) => {
     const f = btn.closest('.-field');
     await ref.api.post({ remove: f.getAttribute('itemid') });

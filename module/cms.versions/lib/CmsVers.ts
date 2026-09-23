@@ -21,10 +21,7 @@ export function getCmsVers(ctx: Ctx): CmsVersState {
     return ctx.state[STATE_KEY];
 }
 
-/**
- * Pre-load all page data into the runtime cache so that subsequent reads
- * inside a specific space/log still see correct values.
- */
+/** Preload all page data into the cache, so later reads in another space/log stay correct. */
 export async function nodeLoadRuntimeCache(node: Node): Promise<void> {
     await node.files();
     const ctx = getCtx();
@@ -128,7 +125,7 @@ export async function copyNode(
         }
     } finally {
         setVers(ctx, oldVers);
-        // The copy wrote rows past the managers — drop all derived caches
+        // The copy bypassed the managers — clear all caches
         cms(ctx.app).clearCache();
         ctx.app.dbTexts.clearCache();
         ctx.app.dbFiles.clearCache();
@@ -136,9 +133,8 @@ export async function copyNode(
 }
 
 /**
- * Block writes to versioned tables while a log-mode snapshot is rendered.
- * Registered once at init — the per-request log check happens in the handler
- * (registering per request would leak permanent app.db listeners).
+ * Block writes to versioned tables while a log-mode snapshot renders. Registered once at init;
+ * the handler checks per request (per-request listeners would leak).
  */
 export function preventDbManipulations(app: App, signal: AbortSignal): void {
     const prevent = (e: DbEvents["table:insert-before"]) => {

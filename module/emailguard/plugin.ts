@@ -5,8 +5,8 @@ import manifest from "./manifest.json" with { type: "json" };
 
 const { name } = manifest;
 
-/** An address, anchored on its "@" — the local part comes back as a lookbehind capture. Anchoring
- *  lets the engine scan for a literal instead of testing every position: a 14× difference on a big page. */
+/** An address, anchored on "@" with the local part as lookbehind — the engine searches a literal,
+ *  14× faster on big pages. */
 const ADDRESS = /(?<=([\w.!#$%&'*+/=?^{|}~-]+))@[a-z0-9-]+(?:\.[a-z0-9-]+)+/gi;
 
 /** Regions an address is left alone in: code, text shown verbatim, and comments. */
@@ -24,7 +24,7 @@ const blockRanges = (body: string) => [...body.matchAll(BLOCKS)].map((m) => [m.i
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("html-ready", ({ ctx }) => {
-    // Signed in nobody is protected from: the backend and inline editing have to see, and save, real addresses.
+    // Skip signed-in users: backend and inline editing need the real addresses.
     if (!ctx.res.hasHtml || ctx.user) return;
     protect(ctx.res.html, ctx.req.moduleUrl);
   }, { signal });
@@ -42,7 +42,7 @@ export function protect(html: ResHtml, moduleUrl: string): void {
     const at = hit.index, start = at - hit[1].length;
     const lt = body.lastIndexOf("<", start), gt = body.lastIndexOf(">", start);
 
-    if (lt > gt) { // inside a tag, where only an anchor's mailto href can be put back together later
+    if (lt > gt) { // inside a tag: only mailto hrefs can be restored later
       if (!/^<a[\s>]/i.test(body.slice(lt, lt + 3))) continue;
       if (body.slice(start - 7, start).toLowerCase() !== "mailto:") continue;
       out += body.slice(last, start) + encode(hit[1] + hit[0], key);
@@ -50,8 +50,7 @@ export function protect(html: ResHtml, moduleUrl: string): void {
       links++;
       continue;
     }
-    // An odd number of quotes since the tag opened means that ">" was one inside an attribute and
-    // this is an attribute value after all. Leaving the address alone is the safe reading either way.
+    // An odd number of quotes means the ">" was inside an attribute value; leave the address alone.
     if (body.slice(lt + 1, start).split('"').length % 2 === 0) continue;
     blocks ??= blockRanges(body);
     if (blocks.some(([from, to]) => start > from && start < to)) continue;

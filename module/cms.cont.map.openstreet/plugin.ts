@@ -24,8 +24,7 @@ const num = (v: unknown) => {
 
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
 
-/** The embed wants a bounding box. One tile spans 360/2^zoom degrees of longitude; two of them
- *  make a comfortable frame, and half that in latitude roughly matches a landscape viewport. */
+/** Bounding box for the embed: two tiles (360/2^zoom degrees each) wide, half that high. */
 function bbox(lat: number, lon: number, zoom: number): string {
   const lonSpan = 360 / 2 ** zoom;
   const latSpan = lonSpan / 2;
@@ -34,11 +33,9 @@ function bbox(lat: number, lon: number, zoom: number): string {
 }
 
 /**
- * Where the marker goes. Typed coordinates win — they are the correction for a geocoder
- * that landed next door. Otherwise the address is resolved once and the answer is written
- * back into the settings, so a page view costs nothing and Nominatim sees one lookup per
- * address, as its usage policy asks. `geo.q` records which address the stored pair belongs
- * to: change the address and it is looked up again, leave it and it never is.
+ * Marker position. Typed coordinates win (to correct a wrong result). Otherwise the address is
+ * looked up once and stored in the settings (`geo.q` = the address it belongs to), so page views
+ * cost nothing and Nominatim gets one lookup per address.
  */
 async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: number } | "unfound" | undefined> {
   const lat = num(node.settings.lat());
@@ -59,8 +56,7 @@ async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: numbe
   const place = await geocode(address, `qino-cms/map.openstreet (+${ctx.req.url.origin})`, ctx.lang);
   if (!place) return "unfound";
 
-  // `label` is what Nominatim thinks the address is — the only way an editor can tell a
-  // marker in the wrong village from one in the right one without opening the map.
+  // `label`: Nominatim's reading of the address, so editors can spot a wrong result.
   geo({ q: address, lat: place.lat, lon: place.lon, label: place.label });
   return { lat: place.lat, lon: place.lon };
 }
@@ -89,20 +85,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // The frame is only allowed where it can actually appear.
   ctx.res.csp["frame-src"][OSM] = true;
 
-  // The frame's `title` is its accessible name, and "Map" alone is a closed door: someone
-  // who cannot see the tiles learns nothing from it. The address is what the map is about,
-  // so it goes into the name — not the coordinates, which are noise to a human. `title` and
-  // not `aria-description`: for an iframe the title *is* the mechanism, and aria-description
-  // is still barely implemented.
+  // The iframe's `title` is its accessible name, so include the address (not the coordinates).
+  // Not `aria-description`: barely supported.
   const address = String(node.settings.address() ?? "").trim();
   const title = address ? await t`Map: ${address}` : await t`Map`;
 
-  // `loading=lazy` keeps a map further down the page from being fetched at all, and
-  // `no-referrer` means openstreetmap.org does not learn which page embeds it — the IP
-  // it sees anyway is all it gets.
+  // `loading=lazy`: load only when scrolled into view. `no-referrer`: openstreetmap.org doesn't
+  // learn the embedding page.
   //
-  // t`` resolves asynchronously, so the title has to be awaited before it goes into a
-  // plain string — and the markup below is html.async for the same reason.
+  // t`` is async, so the title is awaited, and the markup is html.async.
   const frame = html.raw(
     `<iframe src="${hee(embed)}" title="${hee(title)}" loading="lazy" referrerpolicy="no-referrer"` +
       ` allowfullscreen></iframe>`,

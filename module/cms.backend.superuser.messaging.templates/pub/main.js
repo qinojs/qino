@@ -72,7 +72,7 @@ cms.initNode("backend.superuser.messaging.templates", (el) => {
     }
   }
 
-  // the server renders what stands in the editor: markers and markdown have one truth, and it is not here
+  // the server renders the editor content (markers and markdown are handled there only)
   const preview = async () => {
     const answer = await node.api.post({ preview: { text: source.value, format: format.value, channel } }).catch(() => null);
     if (!answer?.ok) return;

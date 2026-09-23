@@ -1,23 +1,16 @@
 # Core docs
 
-The core is the foundation the rest of qino builds on: it boots the app, loads modules, opens
-the database, and serves files. These guides cover the building blocks you'll touch most —
-start here, then dive into a topic.
+The core boots the app, loads modules, opens the database and serves files.
 
-- **[Modules](module.md)** — the unit everything ships in. A module is a folder with a
-  `manifest.json` and `plugin.ts`; the `ModuleManager` reads the one and imports the other, runs its hooks in dependency order, and
-  can link/unlink it at runtime without a restart. Read this first if you're adding features.
+- **[Modules](module.md)** — a module is a folder with `manifest.json` and `plugin.ts`. The
+  `ModuleManager` runs their hooks in dependency order and can link/unlink them at runtime.
+  Start here.
 
-- **[Module stores](stores.md)** — why stores are an optional catalog layer, the chosen `add` API
-  and its persistent `install()` counterpart, local source mapping versus JSR, why installing by
-  name through a store is what keeps request input away from import URLs, and the deferred
-  integrity pinning and remote asset/locale work.
+- **[Module stores](stores.md)** — optional catalogs of modules: `add()` for one boot,
+  `install()` to keep them, local sources vs. JSR.
 
-- **[Database access](db.md)** — three layers from raw to high-level: composable `` sql`…` ``
-  fragments, `db.query`/`exec` to run them, and schema-aware `db.table()` CRUD helpers. Dialect
-  (mysql/sqlite/pg) is applied only at render time, so the same code runs on all three.
+- **[Database access](db.md)** — `` sql`…` `` fragments, `db.query`/`exec` to run them, and
+  `db.table()` CRUD helpers. The same code runs on MySQL, SQLite and PostgreSQL.
 
-- **[File transforms](transform.md)** — the `FileTransformer` pipeline that derives files on
-  demand: resize/crop/re-encode images, rasterize PDF pages, extract video frames, OCR and
-  transcribe. Small phase-ordered transformers, content-addressed disk cache, degrades gracefully
-  when a tool is missing.
+- **[File transforms](transform.md)** — derives files on demand: resize and re-encode images,
+  render PDF pages, extract video frames, OCR and transcription. Results are cached on disk.

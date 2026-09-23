@@ -2,8 +2,7 @@ import { Access, getCtx, s } from "@qino/qino";
 
 import type { ApiTree, Params } from "@qino/qino";
 
-/** Self-service only — a user sees and revokes their own grants. Managing clients is an
- *  administrative job and lives in the backend module, not in the public API tree. */
+/** Self-service only: users see and revoke their own grants. Clients are managed in the backend. */
 export const api: ApiTree = {
   grants: {
     get: {

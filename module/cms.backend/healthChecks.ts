@@ -5,10 +5,8 @@ import type { Node } from "@qino/qino/cms";
 import type { HealthChecks } from "@qino/qino/cms.backend.system";
 
 /**
- * Backend pages are protected purely via node access (groups/users), not via
- * code guards. This errors when a backend page is reachable by any logged-in
- * user who is in no group at all — i.e. the page's effective access is > 0
- * without requiring a specific group.
+ * Backend pages are protected only by node access (groups/users). Error if a backend page is
+ * reachable by a logged-in user without any group.
  */
 export function healthChecks(app: App): HealthChecks {
   const db = app.db;
@@ -17,9 +15,7 @@ export function healthChecks(app: App): HealthChecks {
       "backend reachable without group": async () => {
         const open = [];
         for (const page of Object.values(await backendPages(app))) {
-          // effective access for a logged-in user that is in no group:
-          // only the page's own access value (resolved through inheritance),
-          // no group/user boost from page_access_grp/usr.
+          // access of a user without groups: only the page's (inherited) own value
           const access = await ownAccess(page);
           if (access >= 1) open.push(String(page));
         }

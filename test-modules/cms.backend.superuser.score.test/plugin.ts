@@ -17,8 +17,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   for (const [tbl, half] of Object.entries(TABLES)) await scored(app.db, tbl, half);
 
-  // The blocks drop what the hooks return: `fire` awaits a listener's promise, and no
-  // request may wait for a score write.
+  // Blocks drop the hooks' return value: `fire` would await it, and no request should wait for scoring.
   app.on("cms:page-ready", ({ ctx }: { ctx: Ctx }) => { pageHit(app, ctx); }, { signal });
   app.on("dbFile:access", ({ file, access }) => { fileHit(app, Number(file.id), access); }, { signal });
 }

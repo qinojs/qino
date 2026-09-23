@@ -40,7 +40,7 @@ export const imageResize: TransformerDef = {
       const size = w && h ? `${w}x${h}>` : w ? `${w}>` : `x${h}>`;
       await magick.run(ctx.currentPath, ['-resize', size], out, { signal: ctx.signal });
     } else {
-      // After upscale lock, restore target aspect ratio (PHP: makeProportional before getAutoCroped)
+      // After limiting upscale, restore the target aspect ratio (PHP: makeProportional)
       if (targetW / targetH > w / h) h = Math.round((targetH / targetW) * w);
       else w = Math.round((targetW / targetH) * h);
 
@@ -50,7 +50,7 @@ export const imageResize: TransformerDef = {
       const rW = Math.round(origW * scale);
       const rH = Math.round(origH * scale);
 
-      // Crop-Offset: PHP-kompatibel = (Restplatz) * Position%
+      // Crop offset, like PHP: (remaining space) * position%
       const cropX = Math.round((rW - w) * hpos / 100);
       const cropY = Math.round((rH - h) * vpos / 100);
 

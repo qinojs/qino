@@ -5,17 +5,13 @@ import { getCmsVers } from "./lib/CmsVers.ts";
 import type { Ctx, App } from "@qino/qino";
 
 /**
- * cms.versions/draftmode.ts
+ * Draft mode: with the `draftmode` setting, editmode works in space 1 while visitors see live
+ * (space 0); `publish-node` copies draft → live.
  *
- * Draft-mode (space routing): with the `draftmode` setting on, editmode
- * works in space 1 while visitors see live (space 0); `publish-node`
- * copies draft → live.
+ * Parked: plugin.ts doesn't use this file until read/write routing is done.
+ * Done: editmode → draft space selection (applyDraftSpace)
  *
- * Parked: plugin.ts does not wire this file until read/write routing is complete.
- * Implemented pieces:
- *   - editmode → draft space selection (applyDraftSpace)
- *
- * What is commented out (TODO – space-mode write/read routing):
+ * Commented out (TODO – space-mode write/read routing):
  *   - table:insert/update/delete-before space routing
  *   - cross-space field sync for `page`
  *   - node:construct / node:children space-aware read overrides

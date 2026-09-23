@@ -14,8 +14,7 @@ export const settingsSchema = {
   },
 };
 
-// The columns this module adds belong to the product itself — there is no second kind of product.
-// The accessors come from the table, this only tells the compiler about them.
+// This module's columns on the product row. Accessors come from the table; this only types them.
 declare module "@qino/qino/shp3" {
   interface Product {
     stock: number;

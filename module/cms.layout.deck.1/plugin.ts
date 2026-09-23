@@ -45,8 +45,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   return template.render(node);
 }
 
-/** What the panel asks for: the two files that make this layout. They are the layout of the whole
-  * site, so the layout page decides — and each url is an editing capability for this session. */
+/** The layout's two files for the panel. Access is decided by the layout page; each url allows
+  * editing for this session. */
 const api = async (node: Node, vars: Record<string, unknown>) => {
   if (vars.do !== "getFileEditorLinks") return;
   const layout = await node.cms.layoutPage(node.module!.name);

@@ -4,8 +4,8 @@ import denoJson from "../../deno.json" with { type: "json" };
 
 import type { Params, Ctx, Tool } from "@qino/qino";
 
-/** MCP server (Streamable HTTP, stateless): exposes the app's api tree as MCP tools.
- *  Requires stateless Bearer auth (e.g. auth.api_keys); every call re-runs access/guard via invoke. */
+/** MCP server (Streamable HTTP, stateless): the app's api tree as MCP tools. Needs Bearer auth
+ *  (e.g. auth.api_keys); every call checks access/guard via invoke. */
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
@@ -31,8 +31,8 @@ export async function mcpFetch(ctx: Ctx): Promise<never> {
   throw new Output(await respond(msg, ctx));
 }
 
-/** 401 challenge. With `oauth_server` present it points at the resource metadata, so clients that
- *  cannot send a preconfigured header (browser connectors) can discover the authorization server. */
+/** 401 challenge. With `oauth_server` it points to the resource metadata, so clients without custom
+ *  headers (browser connectors) find the authorization server. */
 function unauthorized(ctx: Ctx): Output {
   const base = ctx.req.url.origin + ctx.req.appUrl.replace(/\/$/, "");
   const challenge = ctx.app.modules.get("oauth_server")
@@ -73,8 +73,8 @@ async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
   throw new RpcErr(-32601, `Method not found: ${msg.method}`);
 }
 
-/** Same access filter as cms.webmcp: static `access` gates the list, per-call `guard` runs on invoke.
- *  Verbs demanding a fresh proof are left out: a Bearer token has no session to prove into. */
+/** Same filter as cms.webmcp: `access` for the list, `guard` per call. Verbs requiring a step-up are
+ *  left out (a Bearer token has no session). */
 async function listTools(ctx: Ctx) {
   const meta = new Map(toTools(ctx.app.apiTree).map((t) => [t.name, t]));
   const tools = [];

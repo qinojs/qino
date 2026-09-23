@@ -8,7 +8,7 @@ import { sql } from "@qino/qino";
 import type { Ctx, App, Db, DbScope } from "@qino/qino";
 
 // ─── Per-Db state ────────────────────────────────────────────────────────────
-// Keyed by Db instance — module globals would leak between App instances (multi-tenant).
+// Keyed by Db instance, so App instances (tenants) don't share it.
 
 type DbVersState = {
     tables: Record<string, true | Record<string, 1>>;
@@ -63,15 +63,14 @@ export function setVers(ctx: Ctx, spaceLog: [number, number] | null): [number, n
 
 // ─── Table management ───────────────────────────────────────────────────────
 
-/** Shadow table name for a versioned table, or undefined if it is not versioned.
- *  The _vers_* tables are created centrally via the schema (see plugin.ts
- *  dbSchema), so this is a pure lookup. */
+/** Shadow table name, or undefined if not versioned. The tables come from the schema (plugin.ts
+ *  dbSchema), so this is only a lookup. */
 export function getVersTable(db: Db, tableName: string): string | undefined {
     return versedTables(db)[tableName] ? `_vers_${tableName}` : undefined;
 }
 
-/** Derive the _vers_<table> shadow item-schema from a live table's schema:
- *  all fields (composite PK, no auto-increment) plus the _vers_ bookkeeping columns. */
+/** Schema of _vers_<table> from the live table: all fields (composite PK, no auto-increment) plus
+ *  the _vers_ columns. */
 export function shadowSchema(source: any): any {
     const shadow = structuredClone(source);
     const props = shadow.additionalProperties.properties as Record<string, any>;
@@ -85,16 +84,14 @@ export function shadowSchema(source: any): any {
 // ─── View management ────────────────────────────────────────────────────────
 
 /**
- * Return the table name to use for a given table/space/log combination.
+ * Table name for a table/space/log combination.
  *
- * - space=0, log=0  → live table (no view)
- * - space≠0, log=0  → VIEW of _vers_<table> at space head (log=0 rows)
+ * - space=0, log=0  → live table
+ * - space≠0, log=0  → VIEW of _vers_<table> at the space head (log=0 rows)
  * - space≠0, log≠0  → VIEW of _vers_<table> up to that log entry (historical)
  *
- * Head views (log=0) are cached per process and left in the db (deterministic
- * definitions; first use after boot recreates them). Historical views (log≠0)
- * are one-shot: not cached, and the caller drops them after use (else one set
- * accumulates per browsed log entry).
+ * Head views are cached per process and stay in the db (recreated on first use after boot).
+ * Historical views are single-use: not cached, the caller drops them after use.
  */
 export async function ensureView(db: Db, tableName: string, space: number, log: number): Promise<string> {
     if (!versedTables(db)[tableName]) return tableName;
@@ -117,15 +114,14 @@ export async function ensureView(db: Db, tableName: string, space: number, log: 
     return view;
 }
 
-/** Route this request's reads through one-shot historical views and drop them again on dispose.
- *  `await using` — leaving them behind accumulates one view set per browsed log entry. */
+/** Read this request through single-use historical views, dropped on dispose (`await using`). */
 export async function historicalViews(ctx: Ctx, space: number, log: number): Promise<AsyncDisposable> {
     const db = ctx.app.db;
-    await dbState(db).baseline; // the views are UNION-free: every live row needs its capture first
+    await dbState(db).baseline; // views have no UNION: every live row needs a capture first
     const tables: Record<string, string> = {};
     const drop = async () => { for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; };
     try { for (const t of Object.keys(versedTables(db))) tables[t] = await ensureView(db, t, space, log); }
-    catch (e) { await drop(); throw e; } // a half-built set must not stay behind either
+    catch (e) { await drop(); throw e; } // don't leave a half-built set
     const scope: DbScope = ctx.state.dbScope = { tables, cache: {} };
     return { async [Symbol.asyncDispose]() { delete scope.tables; await drop(); } };
 }
@@ -145,9 +141,8 @@ async function createView(db: Db, view: string, tableName: string, space: number
 
     // Add vers_space annotation used by page:construct
     selects.push(sql`${spaceSql} AS vers_space`);
-    // log: historical view = most recent entry up to (log-1). Completeness (every live row
-    // has ≥1 capture) is guaranteed by baselineTable(), so no live fallback is needed —
-    // keeping the view UNION-free lets MySQL merge it (index pushdown on queries).
+    // log: historical view = latest entry up to (log-1). baselineTable() guarantees every live row
+    // has a capture, so no live fallback (no UNION, so MySQL can merge the view and use indexes).
     // else: space head view (log=0 = current draft).
     const where = log
         ? sql`m._vers_deleted = 0 AND m._vers_space = ${spaceSql} AND m._vers_log BETWEEN 1 AND ${lastLogSql}
@@ -164,14 +159,13 @@ async function createView(db: Db, view: string, tableName: string, space: number
 // ─── Baseline ────────────────────────────────────────────────────────────────
 
 /**
- * Give rows that predate versioning one capture entry, so historical views
- * are complete (invariant: every live row has ≥1 _vers_ entry — keeps the
- * views UNION-free/mergeable). Idempotent, checked once per process.
+ * Give rows older than versioning one capture entry, so historical views are complete (every live
+ * row has ≥1 _vers_ entry). Idempotent, once per process.
  */
 async function baselineAll(db: Db, log: Promise<string | null>): Promise<void> {
     const state = dbState(db);
     const logId = Number(await log) || 0;
-    // No log entry to stamp the captures on — leave it undone and try again on the next request.
+    // No log entry for the captures — retry on the next request.
     if (!logId) return void (state.baseline = undefined);
     for (const t in state.tables) await baselineTable(db, t, logId);
 }
@@ -180,8 +174,7 @@ async function baselineTable(db: Db, tableName: string, logId: number): Promise<
     const versTable = `_vers_${tableName}`;
     const pks = (await db.columns(tableName)).filter((c) => c.Key === "PRI").map((c) => c.Field);
     const join = sql.join(pks.map((f) => sql`v.${sql.id(f)} = t.${sql.id(f)}`), " AND ");
-    // Map values onto the shadow's own column order (not positional t.*,…), so it stays
-    // correct even when the shadow's column order has diverged from the live table.
+    // Use the shadow table's column order (not positional t.*,…), which may differ from live.
     const selects = (await db.columns(versTable)).map((c) =>
         c.Field === "_vers_log" ? sql`${logId}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql`t.${sql.id(c.Field)}`);
     await db.query`
@@ -194,11 +187,10 @@ async function baselineTable(db: Db, tableName: string, logId: number): Promise<
 export function initVers(app: App, signal: AbortSignal) {
 
     // ─── Baseline versioned rows on first action ─────────────────────────────
-    // Started here for the log entry, but nothing in this request waits for it —
-    // only historicalViews() does, because it reads the invariant.
+    // Started here (needs a log entry); only historicalViews() waits for it.
     app.on("route", ({ ctx }) => {
         const state = dbState(ctx.app.db);
         state.baseline ??= baselineAll(ctx.app.db, ctx.logId).catch((e) => { state.baseline = undefined; throw e; });
-        state.baseline.catch(() => {}); // a background failure must not become an unhandled rejection
+        state.baseline.catch(() => {}); // no unhandled rejection
     }, { signal });
 }

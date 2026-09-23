@@ -36,7 +36,7 @@ async function counts(app: App) {
   return { lastHour, lastDay, clients, users, online };
 }
 
-/** Top requests and external referers of the newest requests: one scan, counted here, urls resolved per IN list. */
+/** Top requests and external referers of recent requests: one scan, counted in JS, urls via IN list. */
 async function recent(app: App) {
   const db = app.db;
   const ctx = getCtx();

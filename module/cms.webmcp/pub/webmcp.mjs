@@ -5,8 +5,7 @@ const mc = document.modelContext;
 mc && register();
 
 async function register() {
-  // Behind the gate: a browser without an agent api loads this file and nothing else. Nothing is
-  // waited for — there is no "an agent arrived" signal, and the spec sets no deadline either.
+  // Without an agent api nothing else is loaded. No waiting — there is no "agent arrived" signal.
   const { api } = await import("@qino/pub/api.js");
   const tools = await api["cms.webmcp"].tools.get();
   for (const tool of tools) {

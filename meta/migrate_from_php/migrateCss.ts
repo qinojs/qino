@@ -4,14 +4,13 @@ import { currentModule } from "./renamedModules.ts";
 
 import type { App } from "@qino/qino";
 
-/** PHP put classes for the module and node id on every content element. qino uses attributes:
+/** PHP used classes for module and node id; qino uses attributes:
  *
  *      .-m-cms-cont-section3   →   [qcms-mod="cont.section3"]
  *      .-pid123                 →   [qcms-id="123"]
  *
- *  Dashes cannot simply be turned back into dots — a module name may hold one itself
- *  (`cms.backend.domain-monitor`), so the names come from the database. Specificity is unchanged:
- *  an attribute selector weighs the same as a class. */
+ *  Module names may contain dashes (`cms.backend.domain-monitor`), so they come from the database.
+ *  Specificity stays the same. */
 export async function migrateCss(app: App): Promise<void> {
   const modules = await app.db.col<string>`SELECT DISTINCT module FROM page WHERE module <> ''`;
   // longest first, so cms.cont.form1.fields2 wins over cms.cont.form1

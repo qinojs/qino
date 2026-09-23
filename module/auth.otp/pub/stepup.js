@@ -1,5 +1,4 @@
-// Step-up with a code sent over one of the user's channels. One handler for all of them: the
-// factor's name is the channel's name.
+// Step-up with a code sent over one of the user's channels (factor name = channel name).
 import { proveForm } from "@qino/pub/stepUpDialog.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
@@ -14,8 +13,7 @@ export async function prove(root, factor) {
   );
   const out = form.querySelector("output");
 
-  // Android reads the code out of the sms itself; everywhere else the keyboard offers it through
-  // autocomplete. Enhancement only — the field stays typeable if this does nothing.
+  // Android reads the code from the sms; elsewhere autocomplete offers it. Optional enhancement.
   const abort = new AbortController();
   root.closest("dialog")?.addEventListener("close", () => abort.abort(), { once: true });
   done.then(() => abort.abort());

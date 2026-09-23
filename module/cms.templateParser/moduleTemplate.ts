@@ -10,7 +10,7 @@ import type { Node } from "@qino/qino/cms";
 const read = (source: URL) => source.protocol === "file:" ? fs.text(fileURLToPath(source)) : fetch(source).then((r) => r.text());
 const write = (path: string, content: string) => fs.write(path, content, { createNew: true }).catch(() => {});
 
-/** A module's template as a starting point: the site's own copy in the app dir beats the shipped one. */
+/** A module's template as starting point: the site's copy in the app dir wins over the shipped one. */
 export function moduleTemplate(mod: Module): {
   file: string;
   css: string;

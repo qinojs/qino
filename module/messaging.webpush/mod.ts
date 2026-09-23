@@ -1,4 +1,3 @@
-// Public API of messaging.webpush. The qino plugin lives in ./plugin.ts.
 import { sendNotification } from "web-push-neo";
 import { sql } from "@qino/qino";
 import { ChannelError, delivered, send as dispatch, selectors, titled } from "@qino/qino/messaging";
@@ -8,11 +7,11 @@ import { vapid } from "./lib/vapid.ts";
 import type { App, Row } from "@qino/qino";
 import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
 
-/** A one-time code proves presence only where the request is not — so the asking device is skipped. */
+/** A one-time code must not go to the asking device, so it is skipped. */
 const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`AND s.client_id <> ${Number(id)}`;
 
-/** Everything the Notification API takes rides along — `url`, `icon`, `tag`, `actions` — reaches
- *  showNotification() as is, and is journalled, so a delivery sent again is the same notification. */
+/** Notification API fields (`url`, `icon`, `tag`, `actions`) go to showNotification() as is and are
+ *  recorded, so a resend is identical. */
 type PushMsg = Msg & { url?: string } & Record<string, unknown>;
 
 /** What showNotification() gets besides title and body. */
@@ -20,14 +19,14 @@ const pushOptions = (
   { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...options }: PushMsg,
 ) => options;
 
-/** Ours, not the endpoint's: no answer at all, a rate limit, or the push service having a bad day. */
+/** Our side, not the endpoint's: no answer, rate limit, or push service problems. */
 const ours = (status: number | undefined) => !status || status === 429 || status >= 500;
 
 /** What web-push-neo says went wrong, short enough for the journal and the subscription. */
 const failure = (e: unknown) => `${(e as { statusCode?: number }).statusCode ?? "no status"}: ${(e as Error).message}`.slice(0, 255);
 
-/** Who a `to` means as subscriptions. Channels are per browser, groups per user — the two answer
- *  different questions and can be used side by side. The journal keeps the endpoint's hash. */
+/** Resolve `to` to subscriptions. Channels are per browser, groups per user. The journal stores the
+ *  endpoint's hash. */
 async function recipients(
   app: App,
   to: To & { channel?: string; client?: string | number | (string | number)[]; sub?: number | number[] },
@@ -51,8 +50,8 @@ async function recipients(
 /**
  * Notify channels, groups, users, clients, subscriptions, or everyone.
  *
- * Resolves with the number of browsers reached. A notification needs a title, so an absent one is
- * the first line of the text, and it shows no markup, so a formatted text arrives flattened.
+ * Resolves with the number of browsers reached. Title: given, else the first line. No markup, so
+ * formatted text becomes plain.
  */
 export const send = (
   app: App,
@@ -60,7 +59,7 @@ export const send = (
   message: string | PushMsg,
 ): Promise<number> => dispatch(app, messagingChannel, to, titled(message));
 
-/** One batch of notifications. Subscriptions the push service has dropped are removed on the way. */
+/** Send a batch. Subscriptions the push service dropped are removed. */
 async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
   const table = app.db.table("webpush_subscription");
   const options = pushOptions(msg as PushMsg);
@@ -84,7 +83,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
       sent++;
       if (sub.error) await table.update(sub.id, { error: null }); // it delivers again
     } catch (e) {
-      // 404/410 = the browser dropped the subscription for good; anything else stays for the admin to judge
+      // 404/410 = subscription gone for good; other errors are left for the admin
       const status = (e as { statusCode?: number }).statusCode;
       const error = failure(e);
       if (ours(status)) return void await delivered(app, Number(row.id), new ChannelError(error)); // the endpoint is not to blame

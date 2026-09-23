@@ -3,7 +3,7 @@ cms.initNode("backend.cms.redirects", (el) => {
   const search = el.querySelector("[data-search]");
   let sort = "", dir = "desc", broken = false, timer;
 
-  // the list keeps its own state (search, sort, filter) and its writes — reload it, not the whole node
+  // reload only the list part (it keeps search, sort, filter)
   const reloadList = (vars) => cms.reloadPart(nid, "list", { search: search.value, sort, dir, broken, ...vars });
   search?.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(reloadList, 250); });
 
@@ -12,8 +12,7 @@ cms.initNode("backend.cms.redirects", (el) => {
     cms.reloadNode(nid, { create: Object.fromEntries(new FormData(e.target.closest("[data-create]"))) });
   });
 
-  // Editing a cell saves it when it loses focus — no save button per row, and the reload that
-  // follows shows what the change did to the badges.
+  // A cell saves on blur; the reload updates the badges.
   el.addEventListener("change", (e) => {
     const tr = e.target.closest("[data-request], [data-target]")?.closest("tr");
     if (tr) reloadList({ save: {

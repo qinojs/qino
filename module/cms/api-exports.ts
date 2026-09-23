@@ -32,7 +32,7 @@ export async function nodeToJson(node: Node, type = "*"): Promise<any> {
     };
 }
 
-// Shared recursive tree serializer over node.children(); self = start with the node itself instead of its children.
+// Recursive tree serializer over node.children(); self = include the node itself, not only its children.
 export async function treeToJson(opts: {
     node: Node;
     self?: boolean;
@@ -72,8 +72,8 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
     });
 }
 
-// Assignable modules, same source and gate as the backend's add widget. cms.cont.flexible stays
-// in — the widget hides it because it is the drop target, not because it cannot be created.
+// Assignable modules, same source and check as the backend's add widget. cms.cont.flexible is
+// included (the widget only hides it because it is the drop target).
 const MODULE_SVG = "pub/module.svg";
 
 /** Modules the user may insert; `only` picks one, with its settings schema. */
@@ -90,7 +90,7 @@ export async function modules(only?: string): Promise<any[]> {
                 name,
                 kind,
                 description: mod.description.trim(),
-                // the icon a module declares, so a client can show it without knowing the manifest
+                // the module's icon, so clients don't need the manifest
                 ...(mod.manifest?.files?.includes(MODULE_SVG) && { icon: mod.modUrl + MODULE_SVG }),
                 ...(only && { settings: mod.plugin.cms?.node?.settingsSchema ?? {} }),
             });
@@ -231,7 +231,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
     await node.sortFiles(sorted);
 }
 
-/** Leading and trailing slashes are noise: routing matches `ctx.req.appPath`, which has neither. */
+/** Strip leading/trailing slashes, like `ctx.req.appPath`. */
 export const cleanRequest = (v: string): string => String(v ?? "").trim().replace(/^\/+|\/+$/g, "");
 
 /** Whether a page url or a redirect answers this request. */
@@ -290,7 +290,7 @@ export async function searchFiles(search: string): Promise<any[]> {
         AND ( f.id = ${id} OR f.name LIKE ${"%" + s + "%"} OR ${inText} )
         ORDER BY f.id = ${id} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
         f.name LIKE ${"% " + s + "%"} DESC, ${inText} DESC, f.name ASC
-        LIMIT 100`) { // the loop keeps 10 after the access and existence checks — this is the guard
+        LIMIT 100`) { // the loop keeps 10 after access checks; this caps the work
         const node = await cms(ctx.app).node(vs.pid);
         if (await node.access() < 2) continue;
         const dbFile = await ctx.app.dbFiles.file(vs.id, vs);

@@ -4,8 +4,8 @@ import { ctx } from '@qino/pub/qino.js';
 import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
 import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 
-// What the cms does to content that lands in a text field: data urls uploaded, dbFile images
-// sized, foreign attributes stripped — and the drag, drop and paste handlers that trigger it.
+// Processing of content dropped or pasted into text fields: upload data urls, size dbFile images,
+// strip foreign attributes — plus the drag, drop and paste handlers.
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -23,10 +23,10 @@ const selectNode = el => {
   setRange(range);
 };
 
-// Chrome adds a bmp when a html image is dragged — the url beside it is the better source
+// Chrome adds a bmp when dragging an html image — prefer the url
 const dropFiles = dt => [...dt.files].filter(f => !/[a-z0-9]{8}\.bmp/.test(f.name));
 
-/** The dbFile id when the url is one of ours: dropping our own file must not copy it. */
+/** dbFile id if the url is ours — our own files must not be copied. */
 const dbFileId = url => url.includes(location.host) && url.match(/dbFile\/([0-9]+)\//)?.[1];
 
 // ─── text fields — [cmstxt][contenteditable] ────────────────────────────────
@@ -101,7 +101,7 @@ function fileGetPreview(f) {
     toImage(f, ph);
   } else {
     ph = dom.el('<span><a href="#" target=_blank></a></span>');
-    ph.firstElementChild.textContent = ' '+f.name+' '; // a file name is text, whatever it spells
+    ph.firstElementChild.textContent = ' '+f.name+' '; // as text, not html
   }
   const range = getSelection().getRangeAt(0);
   range.insertNode(ph);
@@ -128,8 +128,8 @@ const drop = async e => {
   e.stopImmediatePropagation();
   setTimeout(() => cleanText(e.target, tid));
   if (internalDrag) {
-    // firefox turns any image dropped/moved into a contenteditable into a link, so we place it
-    // ourselves. draggedEl is the real dragged element (composedPath sees through the shadow panel).
+    // firefox turns images dropped into a contenteditable into links, so we place it ourselves.
+    // draggedEl is the real dragged element (composedPath sees through the shadow panel).
     const dragImg = draggedEl?.tagName === 'IMG' ? draggedEl : null;
     const range = dragImg && document.caretRangeFromPoint(e.clientX, e.clientY);
     if (range && txtEl.contains(range.startContainer)) {
@@ -169,16 +169,14 @@ const drop = async e => {
   r.insertNode(img);
   img.addEventListener('load', () => cleanElement(img, tid), {once:true});
 }
-// Inserting and cleaning the pasted html is the editor's job (--u2-rte fields, see page.css).
-// Ours is what it cannot know: files in the clipboard go to the server, and what landed in the
-// field gets the cms treatment — data urls uploaded, dbFile images sized, foreign attributes off.
+// Inserting and cleaning pasted html is the editor's job (--u2-rte, see page.css). Here: upload
+// clipboard files, then process the result (upload data urls, size dbFile images, strip attributes).
 const paste = e => {
   const txtEl = e.target.closest('[cmstxt][contenteditable]');
   if (!txtEl) return;
   const tid = txtEl.getAttribute('cmstxt');
-  // A file with no html beside it: the browser would inline a data url, and the field saves before the
-  // upload is through. So we place it ourselves. With html the editor inserts, and rte's checkMedia
-  // then offers to copy what points at a foreign server.
+  // A file without html: the browser would insert a data url and save before the upload is done,
+  // so we insert it ourselves. With html the editor inserts, and checkMedia offers to copy foreign files.
   if (!e.clipboardData.types.includes('text/html')) {
     for (const item of e.clipboardData.items ?? []) {
       if (item.kind !== 'file') continue;
@@ -186,8 +184,8 @@ const paste = e => {
       addFile(txtEl, item.getAsFile());
     }
   }
-  // A pdf viewer labels its plain selection text/html: no tags, and html eats the line breaks that
-  // are all the structure it has. The flavor is escaped text already, so it only needs the breaks.
+  // PDF viewers label plain text as text/html without tags; html would drop the line breaks. It is
+  // already escaped, so only add the breaks.
   const html = e.clipboardData.getData('text/html').replace(/\s+$/, '');
   if (html.includes('\n') && !html.includes('<')) {
     e.preventDefault();

@@ -1,8 +1,8 @@
 import { fromFileUrl, resolve, toFileUrl } from "@std/path";
 import { fs } from "@qino/qino";
 
-/** Table columns declared by every local qino store. Both inline `dbSchema` exports and imported
- *  dbschema.json files arrive through the plugin manifest, so preparation sees the real schema. */
+/** Table columns declared by all local qino stores (inline `dbSchema` and dbschema.json, via the
+ *  plugins), so preparation sees the real schema. */
 export async function schemaColumns(qino: string): Promise<Record<string, Record<string, string>>> {
   const tables: Record<string, Record<string, string>> = {};
   qino = resolve(qino);

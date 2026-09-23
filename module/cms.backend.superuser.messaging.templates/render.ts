@@ -7,8 +7,8 @@ import type { Computed, Placeholder } from "@qino/qino/messaging";
 import type { Node } from "@qino/qino/cms";
 
 const FORMATS = ["", "md", "html"];
-/** Who the preview greets — a template says nothing about a real recipient. The ids make the
- *  unsubscribe link a real one: following it only ever asks, and dropping anyone needs a POST. */
+/** Sample recipient for the preview. The ids make the unsubscribe link real (it only asks; a POST
+ *  would be needed). */
 export const SAMPLE = {
   given_name: "Ada",
   family_name: "Lovelace",
@@ -145,8 +145,8 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
 </div>`;
 }
 
-/** The saved template around a sample message, in the forms this channel really sends: a text-only
- *  template has no markup to show, and only mail is worth running past the client simulator. */
+/** The saved template around a sample message, in the channel's actual forms (only mail goes
+ *  through the client simulator). */
 async function preview(node: Node, row: Row, values: Computed): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
@@ -222,8 +222,8 @@ function contributed(app: App): Map<string, Record<string, Placeholder>> {
   }));
 }
 
-/** Every placeholder worked out for the sample recipient — the preview asks the modules themselves,
- *  so an unset logo or a missing address shows here as it would in the mail. */
+/** All placeholders for the sample recipient, from the modules themselves — so missing values show
+ *  like in the real mail. */
 export async function sampleValues(app: App): Promise<Computed> {
   const made = [...contributed(app)].flatMap(([mod, made]) =>
     Object.entries(made).map(([name, make]) => [placeholderName(mod, name), make] as const));

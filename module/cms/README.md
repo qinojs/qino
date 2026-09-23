@@ -21,10 +21,9 @@ export const cms = {
 The CMS injects `qcms-id` / `qcms-mod` into the **first tag** of the (trimmed) output
 (`Node.htmlPrepared`, regex `/^<([^\s>]+)…/`).
 
-A leading `<style>` or several top-level siblings break this: the `qcms-*` attributes land
-on the wrong element. In the browser `cms.initNode(...)` then receives that wrong element as
-`el`, so `el.querySelector(...)` misses your forms/buttons, no listener binds, and nothing
-happens.
+A leading `<style>` or several top-level elements break this: the `qcms-*` attributes land
+on the wrong element, `cms.initNode(...)` gets that element as `el`, and your listeners are
+never bound.
 
 ```ts
 // ✗ wrong — <style> steals the qcms-id, the real content becomes a sibling
@@ -36,9 +35,8 @@ return `<div class=u2-flex><style>…</style>…</div>`;
 
 ## Parts and client wiring
 
-Expose reloadable fragments via `parts` and wrap them in `<div cms-part="name">…</div>`.
-From the client, use the built-in helpers (see `pub/js/cms.mjs`) instead of calling `api`
-directly:
+Reloadable fragments go into `parts`, wrapped in `<div cms-part="name">…</div>`. In the
+client, use the helpers from `pub/js/cms.mjs` instead of calling `api` directly:
 
 ```js
 cms.initNode("backend.superuser.requests.log", (el) => {
@@ -50,31 +48,29 @@ cms.initNode("backend.superuser.requests.log", (el) => {
 });
 ```
 
-`cms.initNode` fires once per node element (matched by `qcms-mod`, i.e. the module name
-without the leading `cms.`). Server-side, `render`/parts always run inside a request context,
-so `getCtx()` and `app.t` are available.
+`cms.initNode` runs once per node element (matched by `qcms-mod`, the module name without
+`cms.`). On the server, `render` and parts run in a request context, so `getCtx()` and `app.t`
+are available.
 
 ## GET parameter naming
 
-The rule is about collisions, not form: a parameter needs a namespace when other modules
-may read the query of the same request. That is the case for action hooks, the core pipeline,
-layouts and content modules that share a page with others. Namespaced means module name with
-`_` instead of `.`, then the parameter name in camelCase — `cms_editmode`, `cms_nodeFilesZip`,
-`cms_noFrontend`, `cms_versions_space`. This avoids collisions without a registry and keeps
-`ctx.req.query.cms_editmode` as plain property access.
+A parameter needs a prefix when other modules may read the same request — action hooks, the
+core pipeline, layouts, and content modules sharing a page. Prefix = module name with `_`
+instead of `.`, then the name in camelCase: `cms_editmode`, `cms_nodeFilesZip`,
+`cms_noFrontend`, `cms_versions_space`. No registry needed, and `ctx.req.query.cms_editmode`
+stays plain property access.
 
-Short, unprefixed names (`id`, `search`, `tab`) are fine wherever something else scopes them:
-a backend node that owns its page, a dedicated route, a handler that only runs for its own
-upload field, or a value that has to match the node id (`export_table=<node id>`).
+Short names (`id`, `search`, `tab`) are fine where nothing else can collide: a backend node that
+owns its page, an own route, a handler for its own upload field, or a value that must match the
+node id (`export_table=<node id>`).
 
 Exceptions (do not extend):
 - `cmspid`, `lang` — core-owned, well-known short names.
 
 ## Change tracking (`node_changed`)
 
-Every content mutation writes one row into `node_changed`, captured at the db-event
-level (`table:insert/update/delete`) in `lib/nodeChanged.ts` — so every write path
-through the table API is recorded without per-method instrumentation.
+Every content change writes a row into `node_changed`. `lib/nodeChanged.ts` listens to the db
+events (`table:insert/update/delete`), so every write through the table API is recorded.
 
 ```
 node_changed
@@ -85,20 +81,20 @@ node_changed
   data     small JSON: { table, op, name?, lang?, cols? }
 ```
 
-- **Event log, not a mapping**: one row per mutation, no dedup — text edited and file
-  added in the same request = two rows. Consumers aggregate (`EXISTS`, `GROUP BY node_id`,
-  `MAX(log.time)` via the `log` join). `data` is a display/debug payload, never a query
-  surface (JSON access is dialect-specific); promote a real column when a filter is needed.
-- **Shared text/file rows resolve through their links**: `text`/`file` are reference rows;
-  the node is found via `page_text`/`page.title_id`/`page_file`. Adding a translation is an
-  `INSERT` on an already-linked `text` row, so multilingual edits are tracked too.
-- **Deleted/moved nodes stay resolvable**: on page delete, `page_id` is taken from the
-  parent side (basis) before the row disappears.
-- **No request context** (cron/CLI/boot): no row — like the versions history capture.
-- `log_id` is `setnull` on log delete (like `page`/`text`): pruning logs keeps the history
-  rows, they just lose their who/when (which live in `log` → `sess` → `usr`). Field values
-  live in the `_vers_*` shadow tables; `node_changed` is only the node↔log index.
+- **A log, not a mapping**: one row per change, no dedup — editing a text and adding a file in
+  one request gives two rows. Readers aggregate (`EXISTS`, `GROUP BY node_id`, `MAX(log.time)`
+  via `log`). `data` is for display/debugging only, never for queries (JSON access differs per
+  dialect); add a real column if you need a filter.
+- **Text and file rows are found via their links**: the node comes from
+  `page_text`/`page.title_id`/`page_file`. A new translation is an `INSERT` on an already linked
+  `text` row, so it is tracked too.
+- **Deleted nodes stay traceable**: on page delete, `page_id` is read from the parent before the
+  row is gone.
+- **No request context** (cron/CLI/boot): no row, like the versions history.
+- `log_id` becomes `NULL` when the log row is deleted (like `page`/`text`): the rows remain but
+  lose who/when (`log` → `sess` → `usr`). Field values are in the `_vers_*` tables;
+  `node_changed` only links node and log.
 
-Consumers: the 213 access guards in `cms.versions/serverInterface.ts` (`getForNode`,
-`logDetails`), and the superuser history page (`cms.backend.superuser.versions.cms`).
-No backfill — pre-existing logs simply have no rows (fail-closed for the access guard).
+Used by the 213 access guards in `cms.versions/serverInterface.ts` (`getForNode`,
+`logDetails`) and the superuser history page (`cms.backend.superuser.versions.cms`). Older logs
+have no rows (the access guard then denies).

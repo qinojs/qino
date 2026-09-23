@@ -5,8 +5,7 @@ cms.initNode("cont.shp3.order.addresses2", (el) => {
   if (!form) return;
   const ship = el.querySelector("fieldset.-ship");
 
-  // An unchecked checkbox is simply absent from FormData, so it has to be spelled out —
-  // otherwise a delivery address could be switched on but never off again.
+  // Unchecked checkboxes are missing in FormData, so set it explicitly (else it can't be turned off).
   const save = () => setAddress({
     ...Object.fromEntries(new FormData(form)),
     ship_unlike_bill: form.elements.ship_unlike_bill?.checked ? "1" : "",

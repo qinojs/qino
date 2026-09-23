@@ -2,22 +2,18 @@ import { editor } from "@qino/u2/js/rte/rte.js";
 import { aiView } from "@qino/u2/js/rte/ai.js";
 import { api } from "@qino/pub/api.js";
 
-// The field's html travels as the message context, so the bot's system prompt carries the current
-// text; the chat session holds the thread of prompts and answers.
+// The field's html is sent as context (in the system prompt); the chat session keeps the thread.
 let htmlDiff = null;
-// One chat session per field: a follow-up like "kürze weiter" keeps the thread, another field
-// starts its own instead of dragging whole earlier answers along.
+// One chat session per field, so follow-ups keep the thread and other fields start fresh.
 const sessions = new WeakMap();
 
-// Plain strings on purpose: t() answers with a promise, and awaiting it here would hold the whole
-// module — and with it the toolbar entry — hostage to one api call.
+// Plain strings: awaiting t() here would delay the module and its toolbar entry.
 editor.add(aiView({
   label: "Assistant",
   prompts: ["Korrigiere", "Kürze", "Fahre fort", "Schlüsselwörter fett"],
   request: async ({ prompt, html, surface }) => {
     if (!sessions.has(surface)) sessions.set(surface, api.ai.sessions.post({ bot: "rte" }).then(r => r.id));
-    // Only what is actually restricted: an unset list means "no rule", and a rule nobody made
-    // would cost tokens on every question.
+    // Only real restrictions; an unset list means no rule (saves tokens).
     const { elements, classes } = surface.config;
     const context = { html };
     if (elements) context.elements = elements;

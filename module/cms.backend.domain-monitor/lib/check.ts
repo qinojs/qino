@@ -92,11 +92,10 @@ async function resolveDns(host: string): Promise<Dns> {
   return { ns, a, aaaa, mx, txt, caa, dmarc };
 }
 
-// Asks every authoritative nameserver directly and writes down what it said, one line per server:
-//   <name> <address> <soa serial> <soa primary> <ns set it serves, comma separated>
-// A server that did not answer is its bare name. Whether the redundancy is real and the zones
-// agree is read out of these lines later — this only records.
-// Hands back the addresses it resolved so the later batches can reuse them.
+// Ask every authoritative nameserver directly; one line per server:
+//   <name> <address> <soa serial> <soa primary> <ns set, comma separated>
+// A silent server is just its name. Evaluation happens later. Returns the resolved addresses
+// for reuse.
 async function nsAgreement(root: string, ns: string[]) {
   const answers = await Promise.all(ns.map(async (name) => {
     const [ip] = await dnsList(bare(name), "A");
@@ -117,8 +116,8 @@ async function nsAgreement(root: string, ns: string[]) {
   };
 }
 
-// Everything the runtime resolver cannot answer, in as few round trips as possible: one pipelined
-// batch to the zone's own servers, one to the parent for the delegation and the DS record.
+// What the runtime resolver can't answer: one batch to the zone's servers, one to the parent
+// (delegation and DS).
 async function dnsExtras(host: string, root: string, nsIps: string[], signal?: AbortSignal) {
   const blank = { ttl: "", cname: "", https: "", ds: "", dnssec: null as boolean | null, parent: "" };
   if (!nsIps.length) return blank;
@@ -148,14 +147,13 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
   const delegated = delegation && (delegation.values.length ? delegation.values : delegation.authority);
 
   return {
-    // TTLs are only meaningful straight from the source: a resolver hands back what is left of a
-    // cached record, which always looks shorter than what the zone actually publishes.
+    // TTLs only from the source: a resolver returns the remaining cache time, which is shorter.
     ttl: wanted.map(([label], i) => zone[i]?.ttl != null ? `${label}=${zone[i]!.ttl}` : "").filter(Boolean).join("\n"),
     cname: cname?.values.join("\n") ?? "",
     https: https?.values.join("\n") ?? "",
     ds: ds?.values.join("\n") ?? "",
-    // The parent has the last word on whether a zone is signed. A DS with no key behind it is
-    // worse than no DS at all, so that stays unknown rather than being reported as unsigned.
+    // The parent decides whether a zone is signed. A DS without key is worse than none, so it
+    // stays unknown instead of "unsigned".
     dnssec: !ds ? null : !ds.values.length ? false : dnskey ? !!dnskey.values.length : null,
     parent: (delegated ?? []).map(bare).sort().join("\n"),
   };
@@ -203,8 +201,8 @@ async function certInfo(host: string, signal?: AbortSignal) {
 export const covers = (name: string, host: string): boolean =>
   name === host || (name.startsWith("*.") && host.endsWith(name.slice(1)) && !host.slice(0, -name.slice(1).length).includes("."));
 
-// An AAAA record says nothing about the server, so speak real HTTP to that address.
-// Unreachable networks (no IPv6 route here) stay unknown rather than marking the domain broken.
+// An AAAA record proves nothing, so send real HTTP to that address. No IPv6 route here = unknown,
+// not broken.
 async function ipv6Answers(host: string, ip: string, signal?: AbortSignal): Promise<boolean | null> {
   let conn: Deno.Conn | undefined;
   const requestSignal = timedSignal(signal, 8000);
@@ -219,7 +217,7 @@ async function ipv6Answers(host: string, ip: string, signal?: AbortSignal): Prom
     return /^HTTP\/1\.[01] \d{3}/.test(new TextDecoder().decode(buf.subarray(0, n ?? 0)));
   } catch (e) {
     const msg = errText(e);
-    if (isCertError(msg)) return true; // the handshake reached a webserver, that is what we asked
+    if (isCertError(msg)) return true; // a webserver answered, that's enough
     return /unreachable|no route|address family/i.test(msg) ? null : false;
   } finally {
     requestSignal.removeEventListener("abort", abort);
@@ -249,8 +247,7 @@ async function redirectsToHttps(host: string, signal?: AbortSignal): Promise<boo
   }
 }
 
-// A path nobody published must not answer 200. Sites that serve the homepage for every URL turn
-// every typo and every dead link into a silent success.
+// A made-up path must not return 200, otherwise typos and dead links look like success.
 function missingPage(host: string, signal?: AbortSignal): Promise<boolean | null> {
   const url = `https://${host}/qino-monitor-probe-${Math.random().toString(36).slice(2, 10)}`;
   return fetch(url, { method: "GET", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
@@ -258,8 +255,7 @@ function missingPage(host: string, signal?: AbortSignal): Promise<boolean | null
     .catch(() => null);
 }
 
-// Headers a site is expected to carry. Frame protection counts either way — CSP frame-ancestors
-// is the modern spelling of X-Frame-Options, requiring both would be nagging.
+// Expected security headers. Frame protection: CSP frame-ancestors or X-Frame-Options.
 const WANTED_HEADERS = ["content-security-policy", "x-content-type-options", "referrer-policy", "permissions-policy"];
 
 function headers(res: Response) {
@@ -301,9 +297,8 @@ async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Pr
 }
 
 /**
- * `expect` is optional text that must appear in the body — a 200 alone does not prove the site works.
- * `deep` adds the checks that are wasteful to repeat hourly: registry data, the MTA-STS policy file
- * and guessing DKIM selectors. Those move on the scale of days.
+ * `expect`: optional text the body must contain (a 200 alone proves little).
+ * `deep`: also the slow-changing checks (registry data, MTA-STS policy, DKIM selector guessing).
  */
 export async function checkDomain(domain: string, opt: {
   expect?: string;
@@ -321,7 +316,7 @@ export async function checkDomain(domain: string, opt: {
   const dns = await dnsTask;
   signal?.throwIfAborted();
 
-  // Nothing here needs the nameserver addresses, so it runs while those are still being worked out.
+  // Doesn't need the nameserver addresses, so it runs in parallel.
   const httpTasks = Promise.all([
     probe.certValid ? certInfo(domain, signal) : Promise.resolve({ days: null, issuer: "", names: "" }),
     redirectsToHttps(domain, signal),

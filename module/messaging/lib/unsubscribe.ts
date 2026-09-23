@@ -3,18 +3,16 @@ import { hee, html, keyed, Output, safeEqual, sql } from "@qino/qino";
 import type { App, Ctx } from "@qino/qino";
 import type { Placeholder } from "./template.ts";
 
-// Leaving the group a message was sent to. The link says who and which group, and signs it — no
-// row is written for it, because a newsletter to ten thousand people would be ten thousand rows
-// for a link almost nobody follows, and the one in a mail from last year has to keep working.
+// Leave the group a message was sent to. The link contains user and group, signed — no row per
+// link (a newsletter would need thousands), and old links keep working.
 //
-// A GET only asks. Nothing is dropped without a POST: mail clients, scanners and link previews
-// fetch what they find, and a fetched link must not unsubscribe anyone.
+// A GET only asks; only a POST unsubscribes, since mail clients, scanners and previews fetch links.
 
 const NAME = "unsubscribe";
 const PATH = "messaging/" + NAME;
 const SIG = 8;
 
-/** The link for one recipient, ready to be put where `{{unsubscribe}}` stands. */
+/** The link for one recipient, for `{{unsubscribe}}`. */
 export async function link(app: App, usrId: number, grpId: number): Promise<string> {
   const stem = `${usrId.toString(36)}-${grpId.toString(36)}`;
   return `${await app.url()}${PATH}/${stem}-${await sign(app, stem)}`;
@@ -22,7 +20,7 @@ export async function link(app: App, usrId: number, grpId: number): Promise<stri
 
 const sign = (app: App, stem: string) => keyed(app, ["messaging.unsubscribe", stem], SIG);
 
-/** Who and which group a token stands for, or nothing when it is not one we handed out. */
+/** User and group of a token, or nothing if it isn't ours. */
 async function read(app: App, token: string): Promise<{ usrId: number; grpId: number } | undefined> {
   const cut = token.lastIndexOf("-");
   const stem = token.slice(0, cut);
@@ -33,19 +31,19 @@ async function read(app: App, token: string): Promise<{ usrId: number; grpId: nu
   return { usrId, grpId };
 }
 
-/** Leave the group. Idempotent: following the link twice is the same as following it once. */
+/** Leave the group. Idempotent. */
 const drop = (app: App, usrId: number, grpId: number) =>
   app.db.exec`DELETE FROM usr_grp WHERE usr_id = ${usrId} AND grp_id = ${grpId}`;
 
 /**
- * `messaging/unsubscribe/<token>` — the page that asks, and the POST that acts.
+ * `messaging/unsubscribe/<token>` — GET shows a confirmation page, POST unsubscribes.
  *
- * One-click unsubscribing (RFC 8058) is a POST the mail client sends by itself, carrying
- * `List-Unsubscribe=One-Click`; it gets no page and no confirmation, which is the whole point.
+ * One-click unsubscribe (RFC 8058) is a POST from the mail client with
+ * `List-Unsubscribe=One-Click`; it gets no page.
  */
 export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   const path = ctx.req.appPath;
-  if (!path.startsWith(PATH + "/")) return; // every request passes here; nothing is allocated to say no
+  if (!path.startsWith(PATH + "/")) return; // runs on every request: bail out cheaply
   const app = ctx.app;
   const t = app.t;
   const target = await read(app, path.slice(PATH.length + 1));
@@ -59,7 +57,7 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
 }
 
-/** Its own small page: an unsubscribe link is followed by people who are done with this site. */
+/** A minimal own page, not the site layout. */
 async function page(ctx: Ctx, said: string, ask = false, status = 200): Promise<never> {
   const title = await ctx.app.t`Unsubscribe`;
   ctx.res.html.title = title;
@@ -68,12 +66,11 @@ async function page(ctx: Ctx, said: string, ask = false, status = 200): Promise<
   ${ask ? html`<form method=post><button>${title}</button></form>` : ""}
 </main>`).html;
   ctx.res.status = status;
-  throw new Output(); // stop the route here — the document on ctx.res is the response
+  throw new Output(); // end the route; ctx.res holds the page
 }
 
-/** Which of these recipients may really leave the group. A selection is a union: `{ grp, usr }`
- *  reaches someone besides the group too, and offering them the way out of a group they are not in
- *  would be a lie. One query for the whole send; without a group there is nothing to ask. */
+/** Which recipients are actually in the group (`{ grp, usr }` also reaches non-members). One
+ *  query per send; without a group, none. */
 export async function unsubscribeGroup(
   app: App,
   grpId: number | undefined,
@@ -87,7 +84,7 @@ export async function unsubscribeGroup(
   return (usrId) => usrId && members.has(usrId) ? grpId : undefined;
 }
 
-/** What a mail carries so the client can offer the one-click way — the url is never shortened. */
+/** Mail headers for one-click unsubscribe — the url is never shortened. */
 export async function headers(app: App, usrId: number, grpId: number): Promise<Record<string, string>> {
   return {
     "List-Unsubscribe": `<${await link(app, usrId, grpId)}>`,
@@ -96,10 +93,9 @@ export async function headers(app: App, usrId: number, grpId: number): Promise<R
 }
 
 /**
- * `{{unsubscribe}}` — a link in markup, the bare address in text.
+ * `{{unsubscribe}}` — a link in markup, the plain URL in text.
  *
- * The channel puts `usrId` and `grpId` into the recipient row, the same way it hands over
- * `deliveryId`; without them there is no group to leave and the placeholder stays empty.
+ * Needs `usrId` and `grpId` in the recipient row (set by the channel); otherwise it stays empty.
  */
 export const placeholder: Placeholder = async (app, to) => {
   const usrId = Number(to.usrId);

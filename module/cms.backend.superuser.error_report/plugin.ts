@@ -103,8 +103,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 </div>`;
 }
 
-// WHERE for one error group (source/file/line/col). A missing value travels through URLs and
-// datasets as "null" or "" — the field decides what that means, "" being NULL on a numeric column.
+// WHERE for one error group (source/file/line/col). Missing values arrive as "null" or ""; "" means
+// NULL on numeric columns.
 function groupWhere(db: App["db"], vals: Record<string, unknown>): Sql {
   const cols = ["source", "file", "line", "col"];
   return db.table("m_error_report").valuesToFragment(
@@ -115,10 +115,8 @@ function groupWhere(db: App["db"], vals: Record<string, unknown>): Sql {
 // Cutoff in the table's "YYYY-MM-DD HH:MM:SS" time format; compares via the time index.
 const daysAgo = (days: number) => new Date(Date.now() - days * 86400e3).toISOString().slice(0, 19).replace("T", " ");
 
-// WHERE for the current search/filter state — shared by the list part and "delete matching".
-// The search dispatches on input shape to indexed paths: id/log_id, ip, or fulltext
-// MATCH on message/file (mysql). sqlite/pg get no fulltext index (schema engine
-// skips it) — the LIKE fallback there scans no more than the grouped view already does.
+// WHERE for search/filter, used by the list and "delete matching". By input type: id/log_id, ip,
+// or fulltext on message/file (mysql; sqlite/pg use LIKE, no worse than the grouped view).
 function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
   const search  = String(vars.search ?? "").trim();
   const fSource = String(vars.source ?? "");
@@ -133,7 +131,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
     const words = search.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 3).slice(0, 4);
     if (/^\d+$/.test(search)) conds.push(sql`(id = ${Number(search)} OR log_id = ${Number(search)})`);
     else if (/[.:]/.test(search) && /^[0-9a-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
-    // words below ft_min_token_size can never hit the fulltext index — empty result beats a full scan
+    // words shorter than ft_min_token_size never match the fulltext index — return nothing instead of a full scan
     else if (db.dialect === "mysql") conds.push(words.length ? sql`MATCH(${sql.id(ftCol)}) AGAINST (${words.map(w => `+${w}*`).join(" ")} IN BOOLEAN MODE)` : sql`${false}`);
     else conds.push(sqlSearch(search, [ftCol]).where);
   }

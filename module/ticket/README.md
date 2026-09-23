@@ -1,8 +1,7 @@
 # ticket
 
-One idea: **whoever knows the handle may do the thing, once.** No session, no account, no
-second question. That is what a password-reset link, an invitation and an unsubscribe link
-all are.
+**Whoever has the handle may do the thing, once.** No session, no account. Like a password-reset
+link or an invitation.
 
 ```ts
 // the module says what its ticket entitles you to
@@ -23,48 +22,42 @@ if (!await check(app, handle)) return t`This link is no longer valid.`;
 await redeem(app, handle, "auth.resetPw", { pw });
 ```
 
-Three functions — `issue`, `check`, `redeem` — and the caller never says where to look: the
-handle finds its own row. Naming the purpose is optional and says the opposite: *this* form acts
-on reset tickets only, so another kind's handle is turned away instead of quietly redeemed here. Reading the table is not among them: the backend below is the only
-consumer, so it writes its own two queries instead of a reading API nobody else would call.
+Three functions: `issue`, `check`, `redeem`. The handle finds its own row. The kind argument of
+`redeem` is optional; passing it makes sure a handle of another kind is rejected. There is no read
+API — the backend page is the only reader and uses its own queries.
 
 ## Never redeem from a GET
 
-Mail scanners, link checkers and Outlook SafeLinks open every URL they are sent. A link that
-acts on being opened is burnt before its owner clicks it — that is why the old PHP
-`hashAction` had to allow a hundred uses per link. Here the link shows a page and the page
-redeems. `check()` exists for exactly that half.
+Mail scanners, link checkers and Outlook SafeLinks open every URL. A link that acts when opened
+is used up before its owner clicks it (the old PHP `hashAction` allowed a hundred uses for that
+reason). So the link shows a page, and the page redeems. That's what `check()` is for.
 
 ## What it is not
 
-**Not for typed codes.** Six digits are short enough to guess, so they need "who is asking"
-and "how often have they tried" — a different mechanism with different columns. Contact
-verification lives in [messaging](../messaging/#verifying-a-contact) for that reason. The
-dividing line is the shape of the secret, not the channel: verifying a mail address *by link*
-is a ticket, the same address *by code* is not.
+**Not for typed codes.** Six digits can be guessed, so they need "who asks" and "how often" —
+another mechanism, see [messaging](../messaging/#verifying-a-contact). What matters is the secret,
+not the channel: verifying a mail address *by link* is a ticket, *by code* it is not.
 
-**Not an access grant.** A share link that many people may open repeatedly is checked, not
-redeemed. `uses` is there for a handful of redemptions, not for a permission.
+**Not an access grant.** A share link opened by many people repeatedly is checked, not redeemed.
+`uses` is for a few redemptions, not for permissions.
 
 ## Storage
 
-`ticket` — `hash` is the identity: the handle is 32 random bytes and is stored hashed, so a
-leaked database hands out no working capabilities. Plain SHA-256, no key: at that entropy
-there is nothing to guess. `data` is the payload written when the
-ticket is issued; `expires` is null only where the kind says so.
+`ticket` — the handle is 32 random bytes, stored as `hash`, so a leaked database contains no
+working handles. Plain SHA-256 without key: at that entropy nothing can be guessed. `data` is the
+payload from `issue`; `expires` is only null if the kind allows it.
 
-Nothing is deleted when it stops working. `uses` is how often it may be redeemed and `used`
-how often it has been; `used >= uses` or an `expires` in the past means it no longer works,
-and the row stays either way — so the backend can still show what was handed out and what
-became of it. A daily cron takes them a year after they were issued, and only once they are
-dead: an unexpiring link that nobody used is kept.
+Used-up tickets are not deleted. `uses` is how often it may be redeemed, `used` how often it was;
+`used >= uses` or a past `expires` means invalid. The row stays, so the backend can show what was
+issued and what happened. A daily cron removes them a year after issue, but only if invalid: an
+unused link without expiry is kept.
 
 Consumers: [cms.cont.pwReset](../cms.cont.pwReset/) issues them,
 [cms.backend.superuser.tickets](../cms.backend.superuser.tickets/) watches them.
 
 ## Possible extensions
 
-- **One route for every link**, dispatching by purpose, so a module does not need its own page
-  for a confirmation that has nothing to show.
-- **Rate limiting per issuer**, so "send me the reset mail" cannot be used to flood someone.
-- **Invitations and unsubscribe links** — both are this shape, neither exists yet.
+- **One route for all links**, dispatching by kind, so a module needs no own page for a simple
+  confirmation.
+- **Rate limit per issuer**, so "send me the reset mail" can't be used to flood someone.
+- **Invitations** — fit this shape, not built yet.

@@ -7,10 +7,9 @@ import type { ApiTree, App, Params } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
 /**
- * One factor per messaging channel, derived rather than listed: a channel that can reach a person can
- * carry a code to them, and `reach()` is already the question `has()` asks.
+ * One factor per messaging channel; `has()` uses the channel's `reach()`.
  *
- * `second`, because a code can only be sent to a user the request already knows.
+ * `second`, because codes can only go to a user the request already knows.
  */
 export const authFactors = (app: App): Factor[] =>
   channels(app).map((c) => ({
@@ -23,7 +22,7 @@ export const authFactors = (app: App): Factor[] =>
     has: async (app, usrId) => await c.reach(app, usrId, asking()) > 0,
   }));
 
-/** The device this is asked from, when a request is what asks — a job reaching every device is fine. */
+/** The asking device, if called from a request (jobs may reach all devices). */
 const asking = () => requestStorage.getStore()?.clientId ?? undefined;
 
 export const api: ApiTree = {

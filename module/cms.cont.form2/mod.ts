@@ -22,7 +22,7 @@ export class Form {
   value(name: string): string | undefined {
     if (!this.posted) return;
     const v = this.posted[name];
-    // repeated names arrive as an array (a checkbox and its empty hidden twin) — the last one counts
+    // repeated names arrive as array (checkbox + hidden fallback) — the last one counts
     return String((Array.isArray(v) ? v.at(-1) : v) ?? "");
   }
 }

@@ -3,9 +3,8 @@ import { fs } from "@qino/qino";
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-/** Several PHP modules were only a shell and included the site's own markup from
- *  `qg/<module>/index.php`. In qino that file is `data/<module>/index.ts`, exporting a default
- *  function with the same signature as a module render. Undefined when the site has none. */
+/** Some PHP modules included the site's markup from `qg/<module>/index.php`. In qino that is
+ *  `data/<module>/index.ts` with a default export like a module render. Undefined if missing. */
 export async function siteTemplate(
   node: Node,
   data: unknown,

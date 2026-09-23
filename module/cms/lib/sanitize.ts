@@ -5,16 +5,14 @@ import type { App } from "@qino/qino";
 
 const DIM = /^\d+(?:\.\d+)?(?:px|%|r?em|vw|vh)$/;
 
-/** Allowlist policy for CMS rich-HTML, written in the vocabulary of the web Sanitizer API so the
- *  editor, the browser and this filter name the same things alike. Two additions the api has no
- *  answer for: `protocols` per element and attribute, and `styles` — a css-property allowlist for
- *  sites that want one. Storage keeps raw editor HTML; every non-edit output passes through here,
- *  which makes this policy the security decision, not the one the editor works with. */
+/** Allowlist for CMS rich HTML, in the terms of the web Sanitizer API. Additions: `protocols` per
+ *  element and attribute, and `styles` (an optional css-property allowlist). Raw editor HTML is
+ *  stored; every non-edit output passes through here — this is the security boundary. */
 export type Policy = {
   elements: string[];
   attributes: Record<string, string[]>;
   protocols: Record<string, Record<string, string[]>>;
-  /** Per element, which css properties an inline style may carry. Absent element = all of them. */
+  /** Allowed inline css properties per element. Missing element = all. */
   styles?: Record<string, Record<string, RegExp[]>>;
 };
 
@@ -25,8 +23,7 @@ export const policy: Policy = {
     "table", "thead", "tbody", "tfoot", "tr", "td", "th", "ul", "ol", "li",
   ],
   attributes: {
-    // `class` carries the content classes an editor declares, `style` what it set on a block: both
-    // are presentation, and taking them away is the editor's business, not this boundary's.
+    // `class` and `style` are presentation from the editor; restricting them is the editor's job.
     "*": ["class", "dir", "lang", "style", "title"],
     a: ["href", "target"],
     img: ["src", "alt", "width", "height", "loading"],
@@ -39,8 +36,8 @@ export const policy: Policy = {
   },
 };
 
-// What a site allows, in the grammar the editor reads: `class title, a(href target)`, and one level
-// deeper for protocols. A bare group applies to every element.
+// Site allowlist in the editor's syntax: `class title, a(href target)`, with protocols one level
+// deeper. A bare group applies to all elements.
 function parse(declared: string, deep = false): Record<string, unknown> | null {
   if (!declared.trim()) return null;
   const result: Record<string, unknown> = {};
@@ -56,19 +53,18 @@ function parse(declared: string, deep = false): Record<string, unknown> | null {
   return result;
 }
 
-/** The policy this app runs with: the framework's, with whatever the site declared over it. Settings
- *  are read asynchronously while every consumer here is synchronous, so a resolved policy is kept and
- *  refreshed in the background — a change shows up within `ttl`, and at once while developing. */
+/** The app's policy: the default plus the site's settings. Settings are async but callers are sync,
+ *  so the policy is cached and refreshed in the background — changes apply within `ttl` (dev: at once). */
 const resolved = new WeakMap<App, { policy: Policy; at: number }>();
 
 export function policyOf(app?: App): Policy {
-  if (!app) return policy; // no app, no site settings — the shipped policy is the answer
+  if (!app) return policy; // no app: default policy
   const ttl = app.dev ? 0 : 5 * 60 * 1000;
   const known = resolved.get(app);
   if (!known) resolved.set(app, { policy, at: performance.now() });
   else if (performance.now() - known.at <= ttl) return known.policy;
   else known.at = performance.now();
-  refresh(app).catch(console.error); // the answer is for the next call, not this one
+  refresh(app).catch(console.error); // for the next call
   return resolved.get(app)!.policy;
 }
 
@@ -91,7 +87,7 @@ export function sanitizeHtml(html: string, use: Policy = policy): string {
   const seen = cached(use);
   const hit = seen.get(html);
   if (hit !== undefined) {
-    seen.delete(html); // re-insert: the map's own order is the recency this evicts by
+    seen.delete(html); // re-insert: map order = eviction order
     seen.set(html, hit);
     return hit;
   }
@@ -101,8 +97,7 @@ export function sanitizeHtml(html: string, use: Policy = policy): string {
   return clean;
 }
 
-// The same text sanitized with the same policy is the same answer, and a page renders the same texts
-// for every visitor — so the parse happens once per text rather than once per request.
+// Same text + same policy = same result, so cache per text instead of parsing per request.
 const LIMIT = 500;
 const results = new WeakMap<Policy, Map<string, string>>();
 
@@ -112,7 +107,7 @@ function cached(use: Policy): Map<string, string> {
   return seen;
 }
 
-// Every output passes through here, so the translation happens once per policy, not once per text.
+// Converted once per policy, not per text.
 const translated = new WeakMap<Policy, sanitize.IOptions>();
 
 function options(use: Policy): sanitize.IOptions {
@@ -121,8 +116,7 @@ function options(use: Policy): sanitize.IOptions {
   return ready;
 }
 
-/** The policy in sanitize-html's own shape. Its schemes are per element, not per attribute, so the
- *  protocols of one element are merged. */
+/** The policy for sanitize-html. It has schemes per element, not per attribute, so they are merged. */
 function build(use: Policy): sanitize.IOptions {
   const byTag: Record<string, string[]> = {};
   for (const [element, rules] of Object.entries(use.protocols)) {
@@ -138,9 +132,8 @@ function build(use: Policy): sanitize.IOptions {
   };
 }
 
-/** The same policy for the editor, in the css the rte reads: `class title, a(href target)` for the
- *  element-specific lists, the bare group applying to every element. One list decides what may be
- *  written and what survives being served, so the editor stops offering what output would drop. */
+/** The same policy in the editor's syntax (`class title, a(href target)`), so the editor only
+ *  offers what output keeps. */
 export function policyCss(use: Policy = policy): string {
   const group = (element: string, names: string[]) =>
     element === "*" ? names.join(" ") : `${element}(${names.join(" ")})`;

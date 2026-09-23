@@ -1,8 +1,8 @@
 import { api } from "@qino/pub/api.js";
 
 /**
- * The loop every backend panel runs: post to the node api, re-render the named cms-parts,
- * report the answer in a u2 dialog. One action at a time, the button disabled while it runs.
+ * Backend panel action: post to the node api, re-render the named cms-parts, show the result in a
+ * u2 dialog. One action at a time; the button is disabled meanwhile.
  */
 export function nodePanel(el, parts = []) {
   const node = api.cms.node(Number(cms.el.nid(el)));

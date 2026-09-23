@@ -43,10 +43,9 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         WHERE log.id = ${id}`;
     if (!row) return null;
 
-    // One message per node_changed row on a page the caller may edit (>= 2).
-    // Edit access on any affected page unlocks the metadata (who/when/ip);
-    // rows on unreachable pages are skipped, so no foreign node leaks through.
-    // Logs without any editable affected page (or none captured) stay closed.
+    // One message per node_changed row on a page the caller may edit (>= 2). Edit access on any
+    // affected page shows the metadata (who/when/ip); other rows are skipped. Logs without an
+    // editable page stay closed.
     const t = ctx.app.t;
     const contOrPage = async (page: any): Promise<string> => {
         const title = (await page.showTitle()).plain();

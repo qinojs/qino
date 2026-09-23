@@ -133,8 +133,7 @@ function reached(row: Row, view: View): HtmlString {
     : ""}</span>`;
 }
 
-/** Thumbnails of the first attachments, for the messages currently visible in the journal. One
- *  query for all of them; the file rows ride along, so building a URL costs no further read. */
+/** Thumbnails of the first attachments of the visible messages. One query, including the file rows. */
 async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>> {
   if (!rows.length) return new Map();
   const files = await app.db.query`
@@ -155,8 +154,8 @@ async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>>
   return out;
 }
 
-/** Recipient counts and first hits for the messages currently visible in the journal.
- *  A click is an open too — the pixel is what a mail client blocks, not the link. */
+/** Recipient counts and first hits of the visible messages. A click also counts as open (mail
+ *  clients block the pixel, not links). */
 async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
   if (!rows.length) return new Map();
   const stats = await app.db.query`
@@ -426,8 +425,7 @@ function plain(row: Row): string {
   return textOf(rowMsg(row));
 }
 
-/** The body as the panel shows it: sanitized markup when the message has some, escaped text
- *  otherwise. A message is written by whoever sent it, so nothing here is trusted. */
+/** The body for the panel: sanitized markup or escaped text. Messages are untrusted. */
 function body(row: Row): HtmlString {
   const markup = htmlOf(rowMsg(row));
   return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text}`;

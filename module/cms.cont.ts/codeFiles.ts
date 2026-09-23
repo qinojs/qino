@@ -4,7 +4,7 @@ import type { Node } from "@qino/qino/cms";
 
 const write = (path: string, content: string) => fs.write(path, content, { createNew: true }).catch(() => {});
 
-/** The code of a node, in the app dir: the source outside pub/, css and js inside — where the static route serves them. */
+/** A node's code files: source outside pub/, css and js inside (served statically). */
 export function codeFiles(node: Node) {
   const mod = node.module!, id = node.id, sel = `[qcms-id="${id}"]`;
   return {
@@ -29,7 +29,7 @@ export function codeFiles(node: Node) {
   };
 }
 
-// SelectorObserver instead of querySelectorAll: also runs for nodes inserted later (reload after edit, lazy content)
+// SelectorObserver, so it also runs for nodes inserted later (reload after edit, lazy content)
 const initialJs = (sel: string) =>
   `import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
 

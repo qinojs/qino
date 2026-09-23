@@ -10,8 +10,7 @@ export function generateToken(): string {
   return PREFIX + randB64(32);
 }
 
-/** SHA-256 hex — the only representation we store, looked up via the unique index.
- *  A 256-bit random token needs no slow hash; a fast digest keeps the lookup indexable. */
+/** SHA-256 hex, the only stored form (unique index). A 256-bit random token needs no slow hash. */
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }

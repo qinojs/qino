@@ -20,7 +20,7 @@ export function resolveSpecifier(app: App, spec: string | URL): string {
   return import.meta.resolve(spec);
 }
 
-/** manifest.json — what has to be known before the module's code runs. Everything else is an export. */
+/** manifest.json — what must be known before the module's code runs. Everything else is an export. */
 export type Manifest = {
   name?: string;
   description?: string;
@@ -28,7 +28,7 @@ export type Manifest = {
   files?: string[];
 };
 
-/** Read a module's manifest. Absent is legal: a module may be nothing but a plugin.ts. */
+/** Read a module's manifest. May be missing: a module can be just a plugin.ts. */
 export async function readManifest(source: string): Promise<Manifest> {
   const res = await fetch(new URL("manifest.json", source)).catch(() => null); // reads file: and http(s): alike
   if (!res?.ok) return {};
@@ -39,12 +39,12 @@ export async function readManifest(source: string): Promise<Manifest> {
 }
 
 export type Plugin = Record<string, any> & {
-  // Object = static schema. Function = computed from the merged schema (runs after all
-  // static ones), e.g. for tables derived from other modules' tables.
+  // Object = static schema. Function = built from the merged schema (runs after all static
+  // ones), e.g. for tables derived from other modules' tables.
   dbSchema?: DbSchema | ((merged: DbSchema) => DbSchema);
   init?(app: App, opts: { signal: AbortSignal }): void | Promise<void>;
-  // Runs once per app, not per boot: install() creates what the module owns (tables are migrated
-  // anyway, so rather content and files), uninstall() removes it again.
+  // Once per app, not per boot: install() creates the module's content and files (tables are
+  // migrated anyway), uninstall() removes them.
   install?(ctx: { app: App; module: Plugin }): void | Promise<void>;
   uninstall?(ctx: { app: App; module: Plugin }): void | Promise<void>;
   settingsSchema?: Record<string, unknown>;
@@ -82,26 +82,25 @@ export class Module {
   get manifest(): Manifest { return this.#manifest; }
   get description(): string { return this.#manifest.description ?? ""; }
   get dependencies(): string[] { return this.#manifest.dependencies ?? []; }
-  /** Where the module was imported from: resolved file:/https: URL of its plugin file. */
+  /** Resolved file:/https: URL of the plugin file. */
   get source(): string { return this.#source; }
   /** Directory the module lives in; undefined for remote modules. */
   get dir(): string | undefined { return this.#source.startsWith("file:") ? fromFileUrl(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
-  /** The served files of this module. A module without a directory of its own serves what was
-   *  mirrored into its cache on import — under a roof of its own, so it does not mix with what
-   *  the module caches for itself. */
+  /** Directory of the served files. A remote module serves the files mirrored on import, in a
+   *  subfolder of its cache so they don't mix with its own cache files. */
   get pubDir(): string { return this.dir ? this.dir + "pub" : this.cache + "remote/pub"; }
-  /** App files of this module — backed up, never deleted. What lies in pub/ is served. */
+  /** The module's data files — backed up, never deleted. pub/ below it is served. */
   get data(): string { return `${this.#app.dir}data/${this.name}/`; }
-  /** Derived files, reproducible from data/ alone — droppable at any time, no backup. */
+  /** Derived files, rebuildable from data/ — may be deleted any time, no backup. */
   get cache(): string { return `${this.#app.dir}cache/${this.name}/`; }
-  /** Scratch space for a single operation — droppable when nothing runs, no backup. */
+  /** Scratch space for single operations — may be deleted when nothing runs, no backup. */
   get tmp(): string { return `${this.#app.dir}tmp/${this.name}/`; }
-  /** The module dir as a URL; only pub/ below it is reachable. A remote module's public files are
-   *  mirrored into its cache when it is imported, so this address is the app's own either way. */
+  /** The module dir as URL; only pub/ is reachable. Always an address of this app, since a remote
+   *  module's public files are mirrored on import. */
   get modUrl(): string { return `${getCtx().req.moduleUrl}${this.name}/`; }
   /** data/ as a URL; only pub/ below it is reachable. */
   get dataUrl(): string { return `${getCtx().req.dataUrl}${this.name}/`; }
-  // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
+  // New signal per link; abort() on unlink removes what init() registered with it.
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
   abort(): void { this.#abort.abort(); }
   toString(): string { return this.name; }
@@ -112,13 +111,12 @@ export class ModuleManager {
   #modules = new Map<string, Module>();
   #pending: { spec: string; name?: string }[] = [];
   #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
-  #declared = new Set<string>(); // came from add(), i.e. the application itself — not uninstallable
+  #declared = new Set<string>(); // from add(), i.e. the application itself — not uninstallable
   #installed = new Map<string, number>(); // name → time install() ran; the `module` table in memory
   #failed = new Map<string, string>(); // installed but not importable this boot → name: why
   #booting = false; // inside init(): install() only registers, the link pass follows
 
-  /** Where to find a module that nobody declared. Set by whoever knows a catalog — the StoreManager
-   *  does it — so this manager keeps knowing only that a module is a URL, and needs no store. */
+  /** Finds a module nobody declared. Set by the StoreManager, so this manager needs no stores. */
   locate: (name: string) => Promise<string | undefined> = async () => undefined;
 
   constructor(app: App) {
@@ -127,10 +125,10 @@ export class ModuleManager {
 
   get(name: string): Module | undefined { return this.#modules.get(name); }
 
-  /** Everything imported, linked or not — the raw registry (imported ⊇ linked). */
+  /** All imported modules, linked or not (imported ⊇ linked). */
   all(): Map<string, Module> { return this.#modules; }
 
-  /** The working set: modules whose hooks have run, dependencies first. With a name: that one, if it is linked. */
+  /** Linked modules, dependencies first. With a name: that module, if linked. */
   linked(): Module[];
   linked(name: string): Module | undefined;
   linked(name?: string): Module[] | Module | undefined {
@@ -138,19 +136,19 @@ export class ModuleManager {
     if (this.#linked.has(name)) return this.#modules.get(name);
   }
 
-  /** The module, if the application declares it itself — those outlive any uninstall. */
+  /** The module, if declared by the application itself — those can't be uninstalled. */
   declared(name: string): Module | undefined {
     if (this.#declared.has(name)) return this.#modules.get(name);
   }
 
-  // Installed modules that could not be imported this boot, and why; uninstall() is the way out.
+  // Installed modules that failed to import this boot, and why; uninstall() removes them.
   failures(): Map<string, string> { return this.#failed; }
 
-  /** The order everything runs in: dependencies before dependents. A module's index is its position. */
+  /** Run order: dependencies before dependents. */
   order(): string[] { return this.#order(); }
 
-  /** Declare a module for import during app.init(). A relative string resolves against dir —
-   *  pass `new URL("./x/plugin.ts", import.meta.url)` for "relative to this source file". */
+  /** Register a module for import during app.init(). Relative strings resolve against dir; for
+   *  "relative to this file" pass `new URL("./x/plugin.ts", import.meta.url)`. */
   add(spec: string | URL, name?: string): this {
     this.#pending.push({ spec: resolveSpecifier(this.#app, spec), ...(name && { name }) });
     return this;
@@ -162,7 +160,7 @@ export class ModuleManager {
     if (!/\/plugin\.(?:ts|js)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
     const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
     const source = path ? toFileUrl(path).href : spec;
-    // The manifest is read, not imported: what a store needs to know must not require running code.
+    // The manifest is read, not imported: a store must not need to run code.
     const manifest = await readManifest(source);
     if (manifest.name !== undefined && (typeof manifest.name !== "string" || !manifest.name)) throw new Error(`Manifest of ${source} has an invalid name`);
     const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js)(?:[?#].*)?$/.exec(source)?.[1];
@@ -191,15 +189,14 @@ export class ModuleManager {
     for (const { spec, name } of this.#pending) await this.import(spec, name);
     this.#pending = [];
     this.#declared = new Set(this.#modules.keys());
-    // Chicken-and-egg: `url` says which modules to import, but importing them is what completes the
-    // schema this table is migrated to. So read it before its own migration — as it is, since a fresh
-    // database has no table and an install older than the column has no `url`.
+    // `url` says which modules to import, but only those modules complete the schema. So read the
+    // table before migration — a new database has no table, an older install no `url` column.
     const rows = await this.#app.db.query`SELECT * FROM module`.catch(() => []);
     for (const { name, url, installed } of rows) {
       if (installed) this.#installed.set(name, installed);
       if (!url || this.#modules.has(name)) continue;
-      // A deleted folder or an unreachable host must not keep the app from booting: shout, skip,
-      // and let the module page offer the uninstall that clears the row.
+      // A deleted folder or unreachable host must not stop the boot: log, skip, and let the module
+      // page offer uninstall to remove the row.
       await this.import(url, name).catch((e) => {
         this.#failed.set(name, errMsg(e));
         console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
@@ -207,8 +204,8 @@ export class ModuleManager {
     }
     await this.#importDependencies();
     this.#skipMissing();
-    // In passes: an install() hook may install further modules (a bundle bringing its set), and
-    // those need the same ordering and schema merge as the first round, not a nested link().
+    // In passes: an install() hook may install more modules, which need the same ordering and
+    // schema merge as the first round, not a nested link().
     this.#booting = true;
     try {
       for (let count = 0; count !== this.#modules.size;) {
@@ -224,9 +221,8 @@ export class ModuleManager {
   /** Import, remember and link a module — the persistent counterpart of add(). */
   async install(spec: string, name?: string): Promise<Module> {
     const mod = await this.import(spec, name);
-    // A locatable dependency is installed along, deepest first — asking someone to install five
-    // modules in the right order by hand is a worse answer than doing it. What cannot be found is
-    // an error: an unorderable module would break the next boot, so it must not reach the table.
+    // Missing dependencies that can be located are installed too, deepest first. Ones that can't
+    // be found throw: the module would break the next boot, so it must not reach the table.
     try {
       for (const need of mod.dependencies) {
         if (this.#modules.has(need)) continue;
@@ -246,8 +242,8 @@ export class ModuleManager {
     return mod;
   }
 
-  /** Run install() again — the hooks are written to fill gaps, so this restores what was deleted.
-   *  It does not touch what was changed: a seed guarded by "does this exist?" skips what is there. */
+  /** Run install() again to restore what was deleted. Changed content stays: install hooks only
+   *  fill gaps. */
   async repair(name: string): Promise<void> {
     const mod = this.#modules.get(name);
     if (!mod || !this.#linked.has(name)) throw new Error(`Cannot repair "${name}": not linked`);
@@ -257,8 +253,8 @@ export class ModuleManager {
     await this.#app.db.table("module").ensure({ name, installed });
   }
 
-  /** Back to factory: let the module remove what it owns, then install it again. Needs an
-   *  uninstall() hook — without one there is nothing to undo and repair() is the honest option. */
+  /** Reset to defaults: uninstall, then install again. Needs an uninstall() hook — otherwise use
+   *  repair(). */
   async reset(name: string): Promise<void> {
     const mod = this.#modules.get(name);
     if (!mod || !this.#linked.has(name)) throw new Error(`Cannot reset "${name}": not linked`);
@@ -267,33 +263,32 @@ export class ModuleManager {
     await this.repair(name);
   }
 
-  /** Unlink, let the module clean up after itself and forget it. Its data goes, unlink() keeps it. */
+  /** Unlink, let the module clean up, and forget it. Unlike unlink(), its data is removed. */
   async uninstall(name: string): Promise<void> {
     if (this.#declared.has(name)) throw new Error(`Cannot uninstall "${name}": the application declares it`);
     const mod = this.#modules.get(name);
     if (!mod && !await this.#app.db.table("module").get(name)) throw new Error(`Cannot uninstall "${name}": unknown`);
-    if (mod) { // a leftover row has no hooks to reverse and no plugin to ask — only the row goes
+    if (mod) { // a leftover row without plugin: only the row is removed
       this.unlink(name);
       await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
     }
     await this.#app.db.table("module").delete(name);
-    // derived files go, `data/` stays: what is reproducible costs nothing to lose, and a mirrored
-    // remote module would otherwise leave its files behind for a name that may come back as another
+    // cache/ and tmp/ go, data/ stays: derived files are cheap to lose, and a remote module's
+    // mirror must not linger for a name that may return as another module
     if (mod) await fs.remove(mod.cache, { recursive: true }).catch(() => {});
     this.#installed.delete(name);
     this.#failed.delete(name);
     this.#modules.delete(name);
   }
 
-  /** Same module, other source: where its code comes from changes, what it owns stays. Throws like
-   *  unlink() while something linked depends on it. The row is written last, so a failed import
-   *  leaves it pointing at the source that worked and the next boot is back where it started. */
+  /** Load the module from another source; its data stays. Throws like unlink() while a linked
+   *  module depends on it. The row is written last, so a failed import keeps the old source. */
   async relocate(name: string, url: string): Promise<void> {
     if (this.#declared.has(name)) throw new Error(`Cannot relocate "${name}": the application declares it`);
-    if (!this.#modules.has(name)) throw new Error(`Cannot relocate "${name}": not imported`); // never an install in disguise
-    const linked = this.#linked.has(name); // unlink() forgets it, and a deactivated module stays deactivated
+    if (!this.#modules.has(name)) throw new Error(`Cannot relocate "${name}": not imported`); // not an install
+    const linked = this.#linked.has(name); // unlink() clears it; an inactive module stays inactive
     this.unlink(name);
-    this.#modules.delete(name); // import() refuses a name it already holds
+    this.#modules.delete(name); // import() refuses known names
     await this.import(url, name);
     if (linked) await this.link(name);
     await this.#app.db.table("module").ensure({ name, url });
@@ -312,20 +307,20 @@ export class ModuleManager {
     await this.#linkOne(mod);
   }
 
-  // Reverse a module's hooks. Stays registered (re-linkable); tables, locales and install content (data) remain.
+  // Reverse a module's hooks. Stays registered (can be linked again); tables, locales and install content remain.
   unlink(name: string): void {
     const mod = this.#modules.get(name);
     if (!mod || !this.#linked.has(name)) return;
     for (const other of this.#modules.values())
       if (other !== mod && this.#linked.has(other.name) && other.dependencies.includes(name))
         throw new Error(`Cannot unlink "${name}": "${other.name}" needs it`);
-    mod.abort(); // fires the signal init() registered its listeners/timers with
+    mod.abort(); // removes listeners/timers init() registered with the signal
     delete this.#app.apiTree[name];
     this.#linked.delete(name);
     this.#applySchemas(this.#order([...this.#linked]));
   }
 
-  // Per-module hooks: registers everything init() sets up for one module.
+  // Run one module's hooks.
   async #linkOne(mod: Module): Promise<void> {
     const { plugin } = mod;
     try {
@@ -333,17 +328,16 @@ export class ModuleManager {
       if (!this.#installed.has(mod.name)) {
         await plugin.install?.({ app: this.#app, module: plugin });
         const installed = unixTime();
-        await this.#app.db.table("module").ensure({ name: mod.name, installed }); // db row first: the memo must not outlive a failed write
+        await this.#app.db.table("module").ensure({ name: mod.name, installed }); // db first, so memory never claims a failed write
         this.#installed.set(mod.name, installed);
       }
       await this.#loadLocales(mod);
       if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
-      // The url of everything this module serves carries the newest of its files: linking one that
-      // was just installed or updated is what makes clients ask for the new files at all.
+      // Asset URLs carry the newest file time, so after install or update clients load the new files.
       for (const dir of [mod.pubDir, mod.data + "pub"])
         this.#app.assetRev = Math.max(this.#app.assetRev, await newestMtime(dir));
       this.#linked.add(mod.name);
-    } catch (e) { mod.abort(); throw e; } // roll back what init() registered with the signal
+    } catch (e) { mod.abort(); throw e; } // undo what init() registered with the signal
   }
 
   // Rebuild app/ctx settings schema from the given (dependency-ordered) modules and re-apply defaults.
@@ -390,19 +384,17 @@ export class ModuleManager {
     }
   }
 
-  // An installed module may outlive a removed dependency: expose it as broken and keep booting.
-  /** Import what the declared modules need. An application says what it wants; the manifest names
-   *  the rest and locate() knows where it lives, so nobody has to write out the closure by hand.
-   *  What cannot be located stays missing — #skipMissing() and #order() report it as before. */
+  /** Import the dependencies of the declared modules via locate(). What can't be located stays
+   *  missing and is reported by #skipMissing() and #order(). */
   async #importDependencies(): Promise<void> {
     const tried = new Set<string>();
-    // One at a time: a module brings its own dependencies, which the next round picks up.
+    // One at a time: the next round picks up the new module's own dependencies.
     const next = () => this.#modules.values().flatMap((mod) => mod.dependencies)
       .find((need) => !this.#modules.has(need) && !tried.has(need));
     for (let need = next(); need; need = next()) {
       tried.add(need);
       const url = await this.locate(need);
-      if (!url) continue; // unresolvable: leave the reporting to #skipMissing()
+      if (!url) continue; // reported by #skipMissing()
       await this.import(url, need).catch((e) => {
         this.#failed.set(need, errMsg(e));
         console.error(`Module "${need}" is needed but could not be imported from ${url}:`, e);
@@ -410,9 +402,10 @@ export class ModuleManager {
     }
   }
 
+  // An installed module whose dependency is gone is marked broken; the boot continues.
   #skipMissing(): void {
     const gone = (need: string) => !this.#modules.has(need) || this.#failed.has(need);
-    // Marking one module broken can break its dependents, so sweep until a pass changes nothing.
+    // A broken module breaks its dependents, so repeat until nothing changes.
     for (let again = true; again;) {
       again = false;
       for (const mod of this.#modules.values()) {
@@ -452,27 +445,24 @@ export class ModuleManager {
 }
 
 /**
- * A remote module's public files, once, into `remote/` in its cache — where the static route already
- * looks for a module without a directory of its own, and clear of whatever the module caches for
- * itself. Only what the manifest lists, only from the module's own source,
- * and only what is not there yet — a store address carries its release, so a file never changes
- * under it. Without this, every asset of such a module would come from a foreign origin: slower,
- * a source to declare in the policy, and for an svg behind `<use>` refused outright.
+ * Download a remote module's public files once into `remote/` in its cache, where the static route
+ * looks for them. Only files listed in the manifest, from the module's own source, and only missing
+ * ones — a store address is a fixed release, so files never change. Otherwise every asset would
+ * come from a foreign origin: slower, an extra CSP source, and SVG `<use>` would not work at all.
  *
- * A file that will not come stays missing, exactly as it is today. It must not stop the module.
+ * A file that fails to download stays missing; it must not stop the module.
  */
 async function mirrorPub(mod: Module): Promise<void> {
   const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
   if (!files.length) return;
   const dir = `${mod.cache}remote/`;
-  // The source plus every declared file says whether this release is already here. A store address
-  // carries its release, so nothing below it changes — and a different address is a different mirror.
+  // Source + file list identify the release; a different address is a different mirror.
   const stamp = dir + ".source";
   const marked = await fs.text(stamp).catch(() => "");
   if (marked === mod.source && (await Promise.all(
     files.map((file: string) => fs.isFile(dir + file)),
   )).every(Boolean)) return;
-  // one mkdir per directory the list names, not one per file — pub/ has subdirectories
+  // one mkdir per directory, not per file
   const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
   await Promise.all([...dirs].map((d) => fs.mkdir(d).catch(() => {})));
   const got = await Promise.all(files.map(async (file: string) => {
@@ -480,7 +470,7 @@ async function mirrorPub(mod: Module): Promise<void> {
     try {
       const res = await safeFetch(new URL(file, mod.source).href);
       if (!res.ok) throw new Error(`${res.status}`);
-      // named for this attempt, then moved: a half-written file is never served
+      // write to a temp name, then move: half-written files are never served
       const tmp = `${target}.${uid(8)}.part`;
       await fs.write(tmp, new Uint8Array(await res.arrayBuffer()));
       await fs.rename(tmp, target).catch(() => fs.remove(tmp));
@@ -490,6 +480,6 @@ async function mirrorPub(mod: Module): Promise<void> {
       return false;
     }
   }));
-  // only a complete mirror is stamped, so what did not come is tried again next time
+  // only mark complete mirrors, so missing files are retried next time
   if (got.every(Boolean)) await fs.write(stamp, mod.source).catch(() => {});
 }

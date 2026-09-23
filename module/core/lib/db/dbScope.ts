@@ -1,11 +1,7 @@
-// Per-request db read scope.
-//
-// While a scope is active (ctx.state.dbScope = { tables, cache: {} }):
-//  - table reads built with tableRef() resolve to alternative tables
-//    (e.g. versioned views — see cms.versions),
-//  - shared app-level caches accessed via scopeCache() are replaced by a
-//    request-local cache, so scoped data never pollutes them.
-// Delete scope.tables to stop the routing while keeping the request cache.
+// Per-request db read scope. While active (ctx.state.dbScope = { tables, cache: {} }):
+//  - tableRef() resolves to other tables (e.g. versioned views, see cms.versions),
+//  - scopeCache() returns a request-local cache instead of the shared one.
+// Delete scope.tables to stop redirecting tables but keep the request cache.
 import { requestStorage } from "../ctx/Ctx.ts";
 
 export type DbScope = {

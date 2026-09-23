@@ -1,7 +1,6 @@
 import { errMsg } from "@qino/qino";
 
-// The handful of things every probe here needs. Separate from check.ts so the mail and registry
-// probes can use them without importing the orchestrator back.
+// Shared probe helpers, separate from check.ts to avoid circular imports.
 
 export const agent = "qino-domain-monitor";
 export const ua: Record<string, string> = { "user-agent": agent };
@@ -9,9 +8,8 @@ export const ua: Record<string, string> = { "user-agent": agent };
 export const timedSignal = (signal: AbortSignal | undefined, ms: number): AbortSignal =>
   signal ? AbortSignal.any([signal, AbortSignal.timeout(ms)]) : AbortSignal.timeout(ms);
 
-// rustls stamps the moment of the check into its expiry messages ("verification time 1785753422
-// (UNIX)", "(166536072 seconds ago)"), so the very same dead certificate reads differently every
-// hour and drowns real changes. The certificate's own timestamp is what matters and stays.
+// rustls puts the check time into expiry messages ("verification time 1785753422 (UNIX)", "(… seconds
+// ago)"), which would report a change every hour. Remove it; the certificate's own time stays.
 const stableTime = (msg: string): string =>
   msg.replace(/verification time \d+ \(UNIX\)/g, "verification time now").replace(/ \(\d+ seconds ago\)/g, "");
 

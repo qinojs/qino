@@ -26,14 +26,14 @@ async function init(node: Node): Promise<void> {
   await success.text("main", "de", "Vielen Dank<br>Wir werden uns schnellstmöglich um Ihr Anliegen kümmern.");
 }
 
-/** Seconds since this client was first seen — brand-new clients are almost always bots. Infinity when unknown. */
+/** Seconds since this client was first seen (new clients are mostly bots). Infinity if unknown. */
 async function clientAge(ctx: Ctx): Promise<number> {
   if (!ctx.clientId) return Infinity;
   const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
   return first ? unixTime() - Number(first) : Infinity;
 }
 
-/** Bot heuristics. Returns a message when the submit is refused, and flags borderline ones on the form. */
+/** Bot heuristics. Returns a message if refused; flags borderline cases on the form. */
 async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
@@ -85,14 +85,14 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const cms = node.cms;
   const redirectId = node.settings.redirect();
 
-  // Empty vars mean a plain page view; a JS-free form post and an api render with vars both arrive filled.
+  // Empty vars = page view; a form post (with or without JS) has vars.
   const form = openForm(node);
   if (!isEmptyObject(vars)) form.posted = vars;
 
   const error = form.sent ? await spamCheck(node, form, ctx) : "";
   if (error) form.errors++;
 
-  // Renders the fields, which report their values into `form` — so this has to run before the decision below.
+  // Rendering the fields fills `form` with their values, so it must run before the check below.
   const fields = await (await node.cont("main")).html();
 
   const recipients = String(node.settings.recipients() ?? "").trim();

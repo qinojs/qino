@@ -10,28 +10,26 @@ import type { Placeholder } from "./mod.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-// What is owed goes out here: held back until something released it, or waiting after a failure of ours.
+// Sends due deliveries: released ones, and retries after our own failures.
 export const cron = {
   outbox: { every: 60, timeout: 120, run: (app: App) => outbox(app) },
 } satisfies Jobs;
 
-/** A contact of the recipient — looked up only where a template really names it. */
+/** A contact of the recipient — looked up only if a template uses it. */
 const contact = (type: string): Placeholder => async (app, to) => {
   const usrId = Number(to.usrId);
   const row = usrId ? await mainContact(app.db, usrId, type) : undefined;
   return row ? { text: String(row.address) } : undefined;
 };
 
-/** Every placeholder a message may name — what a template reads, and all any module has to
- *  look at to know what is on offer. Another module adds its own the same way. */
+/** Messaging's template placeholders. Other modules add theirs the same way. */
 export const templatePlaceholders: Record<string, Placeholder> = {
   ...columns({ givenName: "given_name", familyName: "family_name", organization: "organization", address: "address" }),
   email: contact("email"),
   unsubscribe: placeholder,
 };
 
-/** A field of the recipient, as it stands in text and escaped in markup. The name a template
- *  writes is camelCase, the column it reads is the column. */
+/** A recipient column as placeholder (escaped in markup). Template name camelCase, column as is. */
 function columns(names: Record<string, string>): Record<string, Placeholder> {
   return Object.fromEntries(Object.entries(names).map(([name, column]) => [name, (_app, to) => {
     const value = String(to[column] ?? "");

@@ -7,7 +7,7 @@ cms.initNode("backend.cms.form4", (el) => {
   // Without a pick the server showed the first form — the export has to mean the same one.
   const active = () => el.querySelector("tr.-active [data-form]")?.dataset.form;
 
-  // the table keeps its own state (form, search, sort, page) and its writes — reload it, not the whole node
+  // reload only the table part (it keeps form, search, sort, page)
   const reloadList = (vars) => cms.reloadPart(nid, "list", { form, search: search.value, sort, dir, page, ...vars });
 
   search.addEventListener("input", () => {

@@ -38,8 +38,8 @@ export function* walk(tree: ApiTree, segments: string[] = [], nodes: ApiNode[] =
 
 export function camelName(verb: Method, segments: string[]): string {
   const parts = [verb, ...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s])];
-  // separators become camelCase; before a digit there is nothing to upcase, so they just vanish
-  // ("cms.frontend.4" → "cmsFrontend4") — a leftover dot is no legal tool name for MCP clients.
+  // separators become camelCase, before a digit they are dropped ("cms.frontend.4" →
+  // "cmsFrontend4"); dots are invalid in MCP tool names.
   return parts.map((p) => p.replace(/[-.]([a-z])?/g, (_, c) => c ? c.toUpperCase() : "")).join("_");
 }
 

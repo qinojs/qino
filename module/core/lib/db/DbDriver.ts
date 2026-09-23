@@ -20,8 +20,8 @@ export abstract class DbDriver {
   abstract exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
   /** Run fn in a transaction; nested calls join the outer one. */
   abstract transaction<T>(fn: () => Promise<T>): Promise<T>;
-  /** Set by drivers that serialize everything over one connection, where work outside a
-   *  transaction has to wait for its commit — see `Db.unit`. */
+  /** Set by drivers with a single connection, where work outside a transaction waits for its
+   *  commit — see `Db.unit`. */
   oneConnection = false;
   abstract listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
@@ -32,9 +32,9 @@ export abstract class DbDriver {
   close(): Promise<void> { return this.#closed ? Promise.resolve() : (this.#closed = true, this.closeDriver()); }
   protected abstract closeDriver(): Promise<void>;
   #closed = false;
-  /** Engine raises the counter itself when a row with an explicit higher id is inserted. */
+  /** The engine raises the counter itself when a higher explicit id is inserted. */
   insertSyncsAutoIncrement = true;
-  /** Move the id generator past `value` (never below). Only needed for ids the engine did not see. */
+  /** Move the id counter past `value` (never down). Only for ids the engine did not see. */
   syncAutoIncrement(_table: string, _field: string, _value: number): Promise<void> { return Promise.resolve(); }
   ensureDatabase(): Promise<void> { return Promise.resolve(); }
 
@@ -59,8 +59,8 @@ const SQL_MODE = [
 class MysqlDriver extends DbDriver {
   dialect = "mysql" as const;
   #pool: Pool;
-  // Holds a box, not the connection: clearing it on end cuts late writes (debounced saves,
-  // whose ALS context still points here) loose to the pool instead of a released connection.
+  // A box, not the connection: clearing it on end sends late writes (debounced saves whose ALS
+  // context still points here) to the pool instead of a released connection.
   #tx = new AsyncLocalStorage<{ conn: any }>();
   #database: string;
   #connParams: { host: string; port?: number; user: string; password: string };
@@ -75,10 +75,9 @@ class MysqlDriver extends DbDriver {
       ...this.#connParams, database: this.#database,
       charset: "utf8mb4", multipleStatements: false,
       waitForConnections: true, connectionLimit: 8, timezone: "Z",
-      // Dates as strings, the shape the sqlite driver already hands back: saves building a Date
-      // per row and keeps a column looking the same on every backend.
+      // Dates as strings, like the sqlite driver: no Date per row, same shape on every backend.
       dateStrings: true,
-      // Per connection — times connectionLimit this stays far below max_prepared_stmt_count.
+      // Per connection; times connectionLimit still far below max_prepared_stmt_count.
       maxPreparedStatements: 200,
     });
     this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [SQL_MODE]));
@@ -109,7 +108,7 @@ class MysqlDriver extends DbDriver {
   columns(table: string) {
     return this.query(`SHOW FULL COLUMNS FROM ${this.quoteId(table)}`);
   }
-  // ALTER TABLE implicitly commits an open transaction — MySQL offers no other way to move the counter.
+  // ALTER TABLE commits an open transaction, but MySQL has no other way to move the counter.
   override async syncAutoIncrement(table: string, _field: string, value: number) {
     await this.exec(`ALTER TABLE ${this.quoteId(table)} AUTO_INCREMENT=${value + 1}`);
   }
@@ -127,17 +126,16 @@ class MysqlDriver extends DbDriver {
   protected override closeDriver() { return this.#pool.end(); }
 }
 
-// How long a transaction may hold the one connection with work waiting behind it before that wait
-// is treated as a deadlock rather than a slow transaction.
+// How long a transaction may hold the connection while work waits, before it counts as deadlock.
 const STUCK_MS = 30_000;
 
 class SqliteDriver extends DbDriver {
   dialect = "sqlite" as const;
   override oneConnection = true;
   #db: DatabaseSync;
-  // One shared connection: while a transaction awaits, outside queries must not touch it.
-  // Holds a box, not a flag: clearing it on end sends late writes (debounced saves, whose ALS
-  // context still points here) back through #chain instead of into the finished transaction.
+  // One shared connection: during a transaction, outside queries must wait.
+  // A box, not a flag: clearing it on end sends late writes (debounced saves whose ALS context
+  // still points here) through #chain instead of into the finished transaction.
   #txAls = new AsyncLocalStorage<{ open: boolean }>();
   #chain: Promise<unknown> = Promise.resolve();
 
@@ -145,8 +143,8 @@ class SqliteDriver extends DbDriver {
     super();
     this.#db = new DatabaseSync(path);
     this.#db.exec("PRAGMA foreign_keys = ON");
-    // One sync per commit instead of one per write — a page request writes several rows (session,
-    // log, settings). NORMAL survives a process crash; only power loss can drop the last commits.
+    // One sync per commit instead of per write (a request writes session, log, settings…).
+    // NORMAL survives a process crash; only power loss can lose the last commits.
     this.#db.exec("PRAGMA journal_mode = WAL");   // ignored for :memory:, which has no journal
     this.#db.exec("PRAGMA synchronous = NORMAL"); // not persistent — set on every connect
   }
@@ -155,8 +153,8 @@ class SqliteDriver extends DbDriver {
   // node:sqlite rejects boolean binds; SQLite has no boolean type, so map to 0/1.
   #bind(params: unknown[]) { return params.map((p) => typeof p === "boolean" ? +p : p); }
   #queued = 0;
-  // Serialize access against an open transaction; the tx owner (#txAls set) runs directly to avoid
-  // deadlock. `hold` lets a transaction hand the connection on before it ends — see below.
+  // Wait for an open transaction; its own queries (#txAls set) run directly to avoid deadlock.
+  // `hold` lets a transaction pass the connection on before it ends — see below.
   #serial<T>(fn: () => T | Promise<T>, hold?: Promise<unknown>): Promise<T> {
     if (this.#txAls.getStore()?.open) return Promise.resolve(fn());
     this.#queued++;
@@ -166,13 +164,13 @@ class SqliteDriver extends DbDriver {
     done.then(() => this.#queued--);
     return run;
   }
-  // Compiling the SQL is a measurable part of a request; the texts repeat because values are bound,
-  // not inlined. SQLite recompiles a cached statement itself when the schema changes under it.
+  // Compiling SQL is measurable per request; texts repeat since values are bound. SQLite
+  // recompiles cached statements itself when the schema changes.
   #prepared = new Map<string, ReturnType<DatabaseSync["prepare"]>>();
   #prepare(sql: string) {
     let stmt = this.#prepared.get(sql);
     if (!stmt) {
-      if (this.#prepared.size > 500) this.#prepared.clear(); // bounded by code paths, but migrations add texts
+      if (this.#prepared.size > 500) this.#prepared.clear(); // limited by code paths, but migrations add more
       this.#prepared.set(sql, stmt = this.#db.prepare(sql));
     }
     return stmt;
@@ -191,10 +189,9 @@ class SqliteDriver extends DbDriver {
     const box = { open: true };
     let unblock!: () => void;
     const gate = new Promise<void>((r) => unblock = r);
-    // Work issued outside this transaction waits for its commit. A transaction that awaits such
-    // work therefore waits on itself, and the whole queue behind it is stuck for good — the shape
-    // `db.unit` exists to avoid. If it happens anyway, hand the connection on: the waiting work
-    // then runs inside the open transaction and shares its rollback, which beats a dead process.
+    // Outside work waits for the commit. A transaction awaiting such work waits for itself and
+    // blocks everything (what `db.unit` avoids). If it happens anyway, pass the connection on: the
+    // waiting work runs inside the transaction and shares its rollback — better than a hang.
     const stuck = setTimeout(() => {
       if (this.#queued < 2) return; // the transaction counts itself
       console.error(`sqlite: transaction open for ${STUCK_MS / 1000}s with ${this.#queued - 1} queries queued behind it — letting them run inside it to break the deadlock; wrap multi-step background work in db.unit()`);
@@ -225,7 +222,7 @@ class SqliteDriver extends DbDriver {
       Extra: c.pk && solo && /^integer$/i.test(c.type) ? "auto_increment" : "",
     }));
   }
-  // Only AUTOINCREMENT tables keep a counter; without one (or without the table) there is nothing to move.
+  // Only AUTOINCREMENT tables have a counter; otherwise there is nothing to move.
   override async syncAutoIncrement(table: string, _field: string, value: number) {
     await this.exec("UPDATE sqlite_sequence SET seq = ? WHERE name = ? AND seq < ?", [value, table, value]).catch(() => {});
   }
@@ -237,7 +234,7 @@ class SqliteDriver extends DbDriver {
 
 class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
-  // An explicit id leaves the sequence untouched, so every insert with one needs a sync.
+  // An explicit id does not advance the sequence, so each such insert needs a sync.
   override insertSyncsAutoIncrement = false;
   #pool: any;
   #tx = new AsyncLocalStorage<{ conn: any }>();
@@ -276,7 +273,7 @@ class PostgresDriver extends DbDriver {
     catch (e) { await client.query("ROLLBACK"); throw e; }
     finally { box.conn = null; client.release(); }
   }
-  // Own connection: setval is not rolled back anyway, and must not fail with the caller's transaction.
+  // Own connection: setval isn't rolled back anyway and must not fail with the caller's transaction.
   override async syncAutoIncrement(table: string, field: string, value: number) {
     await this.#pool.query(
       `SELECT setval(s::regclass, GREATEST($3, COALESCE(pg_sequence_last_value(s::regclass), 0)), true)

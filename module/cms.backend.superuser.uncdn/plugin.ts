@@ -44,8 +44,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const cacheDir = app.modules.get("uncdn")!.cache;
   const root = nodePath.resolve(cacheDir);
 
-  // An empty path is the whole cache; anything else has to stay inside it. Nothing recreates
-  // the directory — uncdn mkdir's its way back on the next miss.
+  // Empty path = whole cache; other paths must stay inside it. uncdn recreates the directory itself.
   if (vars.delete !== undefined) {
     const target = nodePath.resolve(root, String(vars.delete).replace(/^\/+/, ""));
     if (target === root || target.startsWith(root + nodePath.sep))

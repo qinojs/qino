@@ -10,9 +10,8 @@ const SIG = 1;
 
 export const LEN = STEM + SIG;
 
-// Both halves of a code are keyed: the signature so that a made-up code is recognisable without
-// a query — one character catches 63 of 64 — and the target half so that nobody can test
-// "is this the link to <guessed url>?" offline, where no rate limit and no score can reach them.
+// Both parts are keyed: the signature detects made-up codes without a query (63 of 64), and the
+// target part prevents offline guessing of "is this the link to <url>?".
 /** The half of the code that stands for the target. */
 export const stemOf = (app: App, value: string) => keyed(app, ["shorturl.url", value], STEM);
 

@@ -1,5 +1,4 @@
-/** What a score belongs to: an IPv4 address as is, an IPv6 address as its /64 network, the part
- *  a single connection holds and can rotate the rest of. */
+/** Score key: IPv4 as is, IPv6 as its /64 network (one connection can rotate within it). */
 export function ipKey(ip: string): string {
   if (!ip.includes(":") || ip.includes(".")) return ip; // IPv4, also IPv4-mapped IPv6
   const [head, tail] = ip.split("%")[0].toLowerCase().split("::");

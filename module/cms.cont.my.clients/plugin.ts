@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 export const cms = { node: { js: ["pub/main.js"], render, api } };
 
-/** Sign this user out on one of their other devices: its sessions, the remembered login, the link. */
+/** Sign the user out on another device: sessions, remembered login, link. */
 export async function api(node: Node, vars: Record<string, unknown>): Promise<Record<string, unknown> | null> {
   const ctx = getCtx();
   const t = node.app.t;
@@ -63,7 +63,7 @@ function arpaName(ip: string): string {
   return [...full.map((g) => g.padStart(4, "0")).join("")].reverse().join(".") + ".ip6.arpa";
 }
 
-/** Host names for the given IPs, "" where there is none. Best effort — never blocks the page for long. */
+/** Host names for the IPs, "" if none. Best effort, with short timeout. */
 async function ipHosts(ips: string[]): Promise<Record<string, string>> {
   return Object.fromEntries(await Promise.all([...new Set(ips.filter(Boolean))].map(async (ip) => [
     ip,
@@ -82,9 +82,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const links = await node.app.db.query`SELECT client_id, save_login, time AS since FROM client_usr WHERE usr_id = ${ctx.userId}`;
   if (!links.length) return html.async`<div><h3>${t`Your devices`}</h3><p>${t`No devices found.`}</p></div>`;
 
-  // The newest log row of a device says what it looked like and when it was last here. Asking for it
-  // per device (`log.id = (SELECT MAX(id) ... WHERE client_id = c.id)`) makes that a dependent
-  // subquery over every log row of the device — one flat IN list keeps it an index seek.
+  // The newest log row per device (last seen, user agent). An IN list instead of a correlated
+  // subquery, so it stays an index lookup.
   const rows = await node.app.db.query`
     SELECT l.client_id, l.time, ua.user_agent, ip.ip
     FROM log l

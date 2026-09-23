@@ -1,5 +1,5 @@
-/* What the fields of one form report while they render, and where a submitted entry goes.
- * Unlike form2 the fields are addressed by a name the editor typed, and an entry is kept. */
+/* Field values collected during render, and storage of submitted entries. Unlike form2, fields
+ * have editor-defined names and entries are stored. */
 import { getCtx, requestStorage, unixTime } from "@qino/qino";
 
 import type { UploadedFile } from "@qino/qino";
@@ -28,7 +28,7 @@ export class Form {
   value(name: string): string | undefined {
     if (!this.posted) return;
     const v = this.posted[name];
-    // repeated names arrive as an array (a checkbox and its empty hidden twin) — the last one counts
+    // repeated names arrive as array (checkbox + hidden fallback) — the last one counts
     return String((Array.isArray(v) ? v.at(-1) : v) ?? "");
   }
 }
@@ -53,8 +53,8 @@ export async function formOf(node: Node): Promise<Form | undefined> {
 }
 
 /**
- * Keep one submitted form, returning the entry id. Uploads become dbFiles without public
- * access — whoever releases an entry grants it.
+ * Store a submitted form; returns the entry id. Uploads become non-public dbFiles (releasing the
+ * entry grants access).
  */
 export async function keepEntry(node: Node, form: Form): Promise<number> {
   const app = node.app;

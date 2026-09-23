@@ -1,8 +1,8 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 
-// ~90 KB of markdown and sanitizer, needed the moment a message is rendered and not before.
-// Awaited once per flow, so the render paths below stay synchronous.
+// Markdown + sanitizer (~90 KB), loaded when the first message renders; awaited once, so rendering
+// stays synchronous.
 let render;
 let renderLoad;
 const loadRender = () => renderLoad ??= Promise.all([

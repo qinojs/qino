@@ -8,7 +8,7 @@ import { urlOf } from "./lib/App.ts";
 
 import type { App } from "./lib/App.ts";
 
-// The registry is duck-typed (cms.backend.system collects it), so nothing here imports its types.
+// Duck-typed (collected by cms.backend.system), so no type imports.
 type Check = () => unknown;
 
 export async function healthChecks(app: App) {
@@ -35,8 +35,8 @@ export async function healthChecks(app: App) {
 
   warning["public address does not answer"] = async () => {
     const url = String(await app.settings.core.url ?? "");
-    if (!url) return; // the check above owns that case
-    // its own address, so a redirect or a 404 still proves the app is reachable there
+    if (!url) return; // covered by the check above
+    // any answer, even a redirect or 404, proves the app is reachable there
     const reason = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(5000) })
       .then((res) => res.status >= 500 ? `answers ${res.status}` : "", (e) => String(e));
     if (!reason) return;
@@ -53,8 +53,7 @@ export async function healthChecks(app: App) {
   };
 
   warning["a remote module is missing public files"] = async () => {
-    // only a complete mirror is stamped with the source it came from, so a stamp that does not
-    // match is the whole signal — the file that stayed away is otherwise a line in the console
+    // only complete mirrors are stamped with their source, so a missing/other stamp = incomplete
     const partial = [];
     for (const mod of app.modules.all().values()) {
       if (mod.dir || !(mod.manifest.files ?? []).some((file: string) => file.startsWith("pub/"))) continue;
@@ -65,7 +64,7 @@ export async function healthChecks(app: App) {
   };
 
   // ── settings ─────────────────────────────────────────────────────────────
-  // qg_setting is a tree over `basis` — dropping a row alone would leave its children pointing at nothing
+  // qg_setting is a tree over `basis` — deleting a row alone would orphan its children
   const deleteSetting = async (id: unknown) => {
     for (const child of await db.query`SELECT id FROM qg_setting WHERE basis = ${id}`) await deleteSetting(child.id);
     await db.table("qg_setting").delete(id);
@@ -166,10 +165,10 @@ export async function healthChecks(app: App) {
   // MySQL-only; other dialects run without it.
   const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
 
-  // "no row references this table"; `except` skips columns that are part of the parent, not a use of it.
+  // "no row references this table"; `except` skips columns that belong to the parent itself.
   const notLinked = (table: string, except: string[] = []) => {
     const refs = db.table(table).children.filter((f) => !except.includes(`${f.table.name}.${f.name}`));
-    if (!refs.length) return sql`${false}`; // nothing points here — an empty condition would mean "all unused"
+    if (!refs.length) return sql`${false}`; // no references; an empty condition would mean "all unused"
     return sql.join(
       refs.map((f) =>
         sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table.name)} WHERE ${sql.id(f.name)} IS NOT NULL)`
@@ -236,7 +235,7 @@ export async function healthChecks(app: App) {
           await optimize("client");
           msg += clientRes.affectedRows + " client-rows deleted\n";
 
-          const idleBefore = unixTime() - await app.sessions.maxIdle(); // the same limit load() already enforces
+          const idleBefore = unixTime() - await app.sessions.maxIdle(); // same limit as load()
           const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${idleBefore} AND token IS NOT NULL`;
           msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
 
@@ -256,19 +255,18 @@ export async function healthChecks(app: App) {
   const HOUR = 60 * 60 * 1000;
   const DAY  = 24 * HOUR;
 
-  // Counts stale files, or deletes them and sums their size. Counting stops early — the checks only
-  // ask whether there are many. Every file is treated alike: one being written keeps its mtime fresh,
-  // so the age threshold protects it, while an abandoned one ages out like anything else.
+  // Counts stale files, or deletes them and sums their size. Counting stops early (the checks only
+  // need "many"). A file being written has a fresh mtime, so the age limit protects it.
   async function staleFiles(dir: string, maxAge: number, del = false): Promise<number> {
     let n = 0;
     try {
       for (const entry of await fs.list(dir)) {
         const full = dir + entry.name;
         if (entry.isDirectory) { n += await staleFiles(full + "/", maxAge, del); if (!del && n > 100) break; continue; }
-        const stat = await fs.stat(full, { ttl: 0 }); // atime moves without anyone writing
+        const stat = await fs.stat(full, { ttl: 0 }); // atime changes without writes
         if (!stat) continue;
-        // atime is unreliable (relatime lags, noatime never updates), mtime is what FileTransformer
-        // keeps ticking on a hit — so the later of the two, and no timestamp at all means keep.
+        // atime is unreliable (relatime, noatime); FileTransformer touches mtime on hits. Use the
+        // later of both; no timestamp = keep.
         const used = Math.max(stat.mtime?.getTime() ?? 0, stat.atime?.getTime() ?? 0);
         if (!used || Date.now() - used < maxAge) continue;
         if (del) n += stat.size, await fs.remove(full);
@@ -289,7 +287,7 @@ export async function healthChecks(app: App) {
         "older than 3 months": older(90 * DAY),
         "older than 1 month":  older(30 * DAY),
         "older than 1 week":   older(7 * DAY),
-        // a grace period, so a request never loses the file it just wrote
+        // grace period, so a request never loses a file it just wrote
         everything:            older(5 * 60_000),
         "temp files":          { solve: async () => kb(await staleFiles(app.dir + "tmp/", HOUR, true)) },
       },

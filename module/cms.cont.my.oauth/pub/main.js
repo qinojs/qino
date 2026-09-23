@@ -18,8 +18,8 @@ cms.initNode("cont.my.oauth", async (el) => {
     error: await t`Error loading.`,
   };
 
-  // The round trip leaves the page, so the proof is asked for here: `oauth/start` is a route and
-  // could only answer a demand with an error page.
+  // Ask for the step-up here, before leaving the page (`oauth/start` is a route and could only show
+  // an error page).
   el.addEventListener("click", async (event) => {
     const link = event.target.closest("[data-connect]");
     if (!link) return;

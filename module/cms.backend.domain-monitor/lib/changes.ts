@@ -5,9 +5,8 @@ import { parseResult } from "./monitor.ts";
 import type { App } from "@qino/qino";
 import type { DomainRow } from "./monitor.ts";
 
-// Fields that move on their own and would report a change on every single check: timings and
-// countdowns, the log ids the update hook adds, the mail greeting (most servers put their clock in
-// it) and dns_changed, which older stored results still carry.
+// Fields that change on every check and are ignored: timings, countdowns, log ids, the mail banner
+// (contains a clock) and dns_changed from older results.
 const IGNORED = new Set(["response_time", "cert_days", "checked", "checked_deep", "dns_changed", "log_id", "log_id_ch", "mail_banner"]);
 
 function flattened(value: unknown, path = "", target = new Map<string, unknown>()): Map<string, unknown> {
@@ -38,10 +37,8 @@ export async function lastResult(app: App, domain: string): Promise<Partial<Doma
 const KEEP = 7 * 24 * 60 * 60; // young checks stay whether they changed anything or not
 const PAGE = 500;
 
-// Of a run of identical checks the first one survives — it is the one that dates the state, and
-// keeping it means a later check still diffs against the same content the deleted ones held.
-// Ids run in check order per domain, so paging by id walks the history in time order; only rows
-// behind the cursor are deleted, which leaves the paging untouched.
+// Of a series of equal checks the first stays (it dates the state). Paging by id walks the history
+// in time order; only rows behind the cursor are deleted.
 /** Drop old checks that recorded no relevant change. Returns how many rows went. */
 export async function pruneHistory(
   app: App,

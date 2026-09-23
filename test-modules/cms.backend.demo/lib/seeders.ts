@@ -1,5 +1,4 @@
-// The registry. `needs` names tables: a seeder whose module is not installed simply does not run,
-// so the same demo module fits a bare cms and a full installation.
+// Seeder registry. `needs` lists tables; seeders of missing modules are skipped.
 import * as groups from "./seeders/groups.ts";
 import * as users from "./seeders/users.ts";
 import * as pages from "./seeders/pages.ts";

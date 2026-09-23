@@ -1,7 +1,7 @@
 /* CMS chrome styles for a shadow root: --cms-* tokens, buttons, inputs, icon font. */
 import { ctx } from '@qino/pub/qino.js';
 
-// A constructed sheet resolves url() against the document, so rebase it onto the css file.
+// Constructed sheets resolve url() against the document, so rebase onto the css file.
 const rebase = (css, base) =>
   css.replace(/url\((["']?)(?!data:|https?:|\/)([^"')]+)\1\)/g, (_, _q, path) => `url("${new URL(path, base)}")`);
 
@@ -31,8 +31,8 @@ export const addCss = (root, css) => pending = pending.then(() => {
   root.adoptedStyleSheets.push(s);
 });
 
-/** The shared CMS look. u2 ships from a CDN — fetching it would need connect-src for that
-  * origin, so it stays a link. Tree sheets cascade before adopted ones, keeping u2 below ours. */
+/** Shared CMS styles. u2 comes from a CDN, so it stays a <link> (fetching would need connect-src).
+  * Linked sheets come before adopted ones, so u2 is below ours. */
 export const addCmsStyles = (root) => {
   const u2 = ['css/norm/norm.css', 'css/base/base.css', 'class/table/table.css', 'el/ico/ico.css'];
   for (const href of u2.map((p) => '@qino/u2/' + p)) {

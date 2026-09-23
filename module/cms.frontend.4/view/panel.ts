@@ -15,7 +15,7 @@ function sidebar(name: string, title: unknown, tooltip: unknown, open: boolean):
 export default function (): Promise<HtmlString> {
   const ctx = getCtx();
   const t = ctx.app.t;
-  const open = Promise.resolve(ctx.settings["cms.frontend.4"].ui.sidebar); // read once, awaited four times
+  const open = Promise.resolve(ctx.settings["cms.frontend.4"].ui.sidebar); // read once, used four times
   const item = async (name: string, title: unknown, tooltip: unknown) =>
     sidebar(name, title, tooltip, await open === name);
 

@@ -1,18 +1,15 @@
 # Cron
 
-`cron` runs recurring module jobs without requiring an operating-system cron entry. A timer is
-the primary trigger; incoming requests provide a throttled fallback.
+`cron` runs recurring module jobs without a system cron entry. A timer triggers them; incoming
+requests serve as a throttled fallback.
 
 ## Declaring jobs
 
-Add `cron` as a dependency and export a job map from the module manifest:
+Add `cron` to the `dependencies` in `manifest.json` and export the jobs from `plugin.ts`:
 
 ```ts
 import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
-
-export const name = "shop";
-export const dependencies = ["core", "cron"];
 
 export const cron = {
   cleanup: {
@@ -37,16 +34,14 @@ async function sync(app: App) {
 }
 ```
 
-`every` accepts `"hour"`, `"day"`, `"week"`, or seconds. `at` positions a calendar job within
-its period: `{ minute: 15 }` for an hourly job, `{ hour: 3 }` for a daily job, or
-`{ weekday: "sunday", hour: 12 }` for a weekly job. Missing fields default to the start of the
-period; a weekly job defaults to Monday. An interval job (`every: 900`) counts from the end of
-its last run, so a long run shifts the following ones.
+`every` is `"hour"`, `"day"`, `"week"` or seconds. `at` sets the time within the period:
+`{ minute: 15 }` hourly, `{ hour: 3 }` daily, `{ weekday: "sunday", hour: 12 }` weekly. Missing
+fields default to the start of the period (Monday for weekly). An interval job (`every: 900`)
+counts from the end of its last run, so a long run delays the next ones.
 
-`jitter` is the maximum random deviation in seconds before or after an `every` schedule; the
-example therefore runs between 01:00 and 05:00. The selected time is persisted, so every process
-sees the same schedule. It may span at most half the interval so neighboring windows cannot overlap.
-Invalid values fail during startup rather than being silently shortened.
+`jitter` is the maximum random shift in seconds before or after the scheduled time; the example
+runs between 01:00 and 05:00. The chosen time is stored, so all processes agree. It may be at most
+half the interval, so windows don't overlap; invalid values fail at startup.
 
 ```ts
 const sunday = {
@@ -62,20 +57,15 @@ const hourly = {
 };
 ```
 
-Calendar schedules use `settings.cron.timezone` (`UTC` by default). Temporal handles local calendar
-arithmetic and daylight-saving transitions.
+Calendar schedules use `settings.cron.timezone` (default `UTC`); Temporal handles daylight saving.
 
-Job IDs are derived as `<module>:<job>`. State and leases live in `cron_job`; simultaneous timer,
-request, and external triggers therefore cannot claim the same run. Due jobs of one tick run in
-parallel. Failed jobs retry with exponential backoff, while a job cancelled by a shutdown only
-releases its lease and keeps its schedule. A process crash can cause a job to run again after its
-lease expires, so jobs should be idempotent.
+Job ids are `<module>:<job>`. State and leases are stored in `cron_job`, so timer, request and
+external triggers never run the same job twice at once. Due jobs of one tick run in parallel.
+Failed jobs retry with exponential backoff; a job cancelled by shutdown just releases its lease. A
+crash may cause a job to run again after the lease expires, so jobs should be idempotent.
 
-The `run(app)`, `trigger(app, id)`, and `status(app)` helpers from `@qino/qino/cron` are the
-public API — for host-level integration, or for an external heartbeat mounted by the host.
-`trigger` runs one job immediately without consuming a scheduled slot that is still ahead.
-Normal requests only kick the scheduler and never wait for a job. All three throw while the
-module is not linked.
+Public API from `@qino/qino/cron`: `run(app)`, `trigger(app, id)`, `status(app)` — e.g. for an
+external heartbeat. `trigger` runs one job now without using up an upcoming scheduled run. Normal
+requests only nudge the scheduler and never wait. All three throw while the module is not linked.
 
-Link the optional `cms.backend.superuser.cron` module to inspect job state, run due jobs, and
-trigger individual jobs from the backend.
+The optional `cms.backend.superuser.cron` module shows job state and runs jobs from the backend.

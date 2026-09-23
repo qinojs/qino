@@ -1,5 +1,4 @@
-// Deterministic pseudo-randomness: the same seed always rebuilds the same demo site, so a bug
-// found in seeded data can be reproduced by anyone who runs the module.
+// Deterministic randomness: the same seed builds the same demo site, so bugs are reproducible.
 
 const FIRST = "Anna Ben Clara David Elena Felix Greta Hugo Ida Jonas Karin Liam Mara Noah Olivia Paul Quinn Rosa Samuel Tina Uwe Vera Willem Xenia Yara Zoe Amir Bianca Cem Dilara Eero Fatima Gustav Hana Igor Julia Kenji Lucia Malik Nina Omar Petra Rafael Sofia Tarek Ulla Viktor Wanda Yusuf Zeynep".split(" ");
 const LAST = "Ackermann Bauer Costa Dubois Ehrler Fischer Gruber Huber Iversen Jensen Keller Lombardi Meier Novak Olsen Peters Quadri Richter Schneider Tanner Ulrich Vogel Weber Yilmaz Zimmermann Andersson Brunner Cavallo Dimitrov Fontaine".split(" ");

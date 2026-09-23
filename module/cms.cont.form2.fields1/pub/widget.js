@@ -1,6 +1,4 @@
-/* Settings widget for the form fields — shipped by this module, mounted by the CMS panel.
-  * Content, style and behaviour in one place: no global listeners, no data-node/data-key
-  * attributes carrying state through the html, no full reload after every change. */
+/* Settings widget for the form fields, mounted by the CMS panel. */
 import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';

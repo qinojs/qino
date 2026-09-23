@@ -1,11 +1,9 @@
-// Registry data over RDAP (RFC 9083): when the registration expires, who the registrar is and
-// which EPP status codes the registry has set. A certificate expiring is visible everywhere —
-// the registration expiring is the one that takes the whole domain down, so it belongs here.
+// Registry data via RDAP (RFC 9083): expiry, registrar, EPP status codes. An expired registration
+// takes the whole domain down.
 //
-// rdap.org redirects to whichever registry serves the TLD. Plenty of ccTLDs run no RDAP service
-// at all — .ch, .de and .at are not even in the IANA bootstrap — so "no data" is a normal outcome
-// and every field simply stays null. WHOIS is no fallback for them: those same registries withhold
-// the expiry date there too, only the gTLD registries publish it.
+// rdap.org redirects to the TLD's registry. Many ccTLDs have no RDAP (.ch, .de, .at aren't even in
+// the IANA bootstrap), so null fields are normal. WHOIS doesn't help: those registries hide the
+// expiry there too.
 import { timedSignal, ua } from "./net.ts";
 
 const registrar = (entities: unknown): string | null => {
@@ -27,9 +25,8 @@ const SERVICE = "https://rdap.org/domain/";
 const BLANK = { expires: null, registered: null, registrar: null, status: "", locked: false };
 
 /**
- * Registration facts, or null when the TLD has no RDAP service or it did not answer.
- * `found: false` is the opposite of no data — a registry that serves RDAP says the domain
- * is not registered, which for a monitored domain is an alarm, not a blank.
+ * Registration data, or null if the TLD has no RDAP or it didn't answer.
+ * `found: false` means the registry says the domain is not registered — an alarm.
  */
 export async function lookup(domain: string, signal?: AbortSignal) {
   const res = await fetch(SERVICE + encodeURIComponent(domain), {
@@ -38,8 +35,7 @@ export async function lookup(domain: string, signal?: AbortSignal) {
   }).catch(() => null);
   if (!res?.ok) {
     await res?.body?.cancel();
-    // Landing on a registry means the TLD is served and the domain really is unknown there;
-    // a 404 still on rdap.org only means it could not route the TLD anywhere.
+    // 404 from a registry = domain unknown; 404 from rdap.org itself = TLD not supported.
     return res?.status === 404 && !res.url.startsWith(SERVICE) ? { found: false, ...BLANK } : null;
   }
   const data = await res.json().catch(() => null);

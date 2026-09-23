@@ -8,9 +8,9 @@ import type { App } from "@qino/qino";
 export { PATH } from "./lib/code.ts";
 
 /**
- * A short link for `url`. The same target gives the same link back, and a later `expires` only
- * ever lengthens its life. Tell recipients apart with a segment of your own —
- * `${await shorten(app, url)}/${deliveryId}` reaches the `shorturl:hit` event and is stored nowhere.
+ * Short link for `url`. The same target returns the same link; a later `expires` only extends it.
+ * To tell recipients apart, append a segment: `${await shorten(app, url)}/${deliveryId}` reaches
+ * the `shorturl:hit` event and is not stored.
  */
 export async function shorten(app: App, url: string, opt: { expires?: number } = {}): Promise<string> {
   const root = await app.url();
@@ -21,8 +21,8 @@ export async function shorten(app: App, url: string, opt: { expires?: number } =
     return target;
   }
   const table = app.db.table("shorturl");
-  // a code taken by another target gives way to the next round, which the link finds again the
-  // same way when it is made once more — so codes stay one length instead of growing
+  // if the code is taken by another target, try the next round (found again the same way later),
+  // so codes keep their length
   for (let round = 0; round < 8; round++) {
     const code = await sign(app, await stemOf(app, `${target}\n${round}`));
     const known = await app.db.row`SELECT url, expires FROM shorturl WHERE code = ${code}`;

@@ -8,7 +8,7 @@ export const providers = (app: App): Promise<{ name: string }[]> =>
 export const links = (app: App, usrId: number): Promise<Row[]> =>
   app.db.query`SELECT provider, sub, created, last_used FROM oauth_provider_usr WHERE usr_id = ${usrId} ORDER BY created`;
 
-/** Forget one link. Always keyed by the user, so a foreign one removes nothing. Resolves with the rows gone. */
+/** Remove a link. Keyed by user, so others' links are untouched. Resolves with the deleted count. */
 export async function unlink(app: App, usrId: number, provider: string, sub: string): Promise<number> {
   const res = await app.db.exec`DELETE FROM oauth_provider_usr WHERE usr_id = ${usrId} AND provider = ${provider} AND sub = ${sub}`;
   return Number(res?.affectedRows ?? 0);

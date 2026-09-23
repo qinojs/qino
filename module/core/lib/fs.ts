@@ -9,7 +9,7 @@ import type { Stats } from "node:fs";
 // deno-lint-ignore no-explicit-any
 const { Bun, Deno } = globalThis as any;
 
-/** Paths may come from requests — the cache must not grow without bound. */
+/** Paths may come from requests, so the cache is limited. */
 const MAX = 10_000;
 
 /** Like `Deno.FileInfo`: flags are properties, not methods. */
@@ -25,11 +25,11 @@ const pick = ({ isFile, isDirectory, size, mtime, atime }: any): Info => ({ isFi
 type Info = ReturnType<typeof toInfo>;
 type Opt = { ttl?: number };
 
-// Absolute paths — no tenant mixing. The promise is shared, so concurrent calls stat once.
+// Absolute paths, so tenants don't mix. Concurrent calls share one stat promise.
 const cache = new Map<string, { info: Promise<Info | undefined>; t: number }>();
 
 const put = (path: string, info: Promise<Info | undefined>) => {
-  cache.delete(path); // re-insert: the map's order is the eviction order
+  cache.delete(path); // re-insert: map order = eviction order
   if (cache.size >= MAX) cache.delete(cache.keys().next().value!);
   cache.set(path, { info, t: performance.now() });
 };
@@ -40,12 +40,11 @@ const forgetTree = (path: string) => {
   for (const key of cache.keys()) if (key.startsWith(dir)) cache.delete(key);
 };
 
-/** File operations for Deno, Bun and Node, with a cached stat like PHP's: changes made through
- *  here are seen at once, foreign ones after `ttl`. Names follow Deno where they differ.
- *  Foreign writers are subprocesses, other processes and hands — where their result matters,
- *  ask with `{ ttl: 0 }`. */
+/** File operations for Deno, Bun and Node, with a cached stat like PHP: changes made here are
+ *  seen at once, others (subprocesses, other processes, manual edits) after `ttl`. Use
+ *  `{ ttl: 0 }` where those matter. Names follow Deno. */
 export const fs = {
-  /** How long a stat is reused (ms), asked on every stat; `{ ttl: 0 }` on a call always looks. */
+  /** How long a stat is reused (ms), read on every stat; `{ ttl: 0 }` bypasses the cache. */
   ttl: (): number => 300_000,
 
   // --- info (cached) ---
@@ -62,15 +61,15 @@ export const fs = {
   async isFile(path: string, opt?: Opt): Promise<boolean> {
     return !!(await fs.stat(path, opt))?.isFile;
   },
-  /** Modification time in ms — a number compares and caches easily. */
+  /** Modification time in ms. */
   async mtime(path: string, opt?: Opt): Promise<number | undefined> {
     return (await fs.stat(path, opt))?.mtime?.getTime();
   },
   async size(path: string, opt?: Opt): Promise<number | undefined> {
     return (await fs.stat(path, opt))?.size;
   },
-  /** May this process write the file? Not cached — asked right before writing. On Deno an open
-   *  for writing (no truncate) answers it: `access` there needs sys access for the uid. */
+  /** Can this process write the file? Not cached. On Deno it tries an open for writing (no
+   *  truncate), since `access` would need sys permission for the uid. */
   writable(path: string): Promise<boolean> {
     if (Deno) return Deno.open(path, { write: true }).then((f: { close(): void }) => (f.close(), true), () => false);
     return access(path, constants.W_OK).then(() => true, () => false);
@@ -84,8 +83,8 @@ export const fs = {
   bytes(path: string): Promise<Uint8Array<ArrayBuffer>> {
     return Deno ? Deno.readFile(path) : readFile(path) as Promise<Uint8Array<ArrayBuffer>>; // never shared
   },
-  /** Streamed, optionally a byte range (`end` inclusive, like HTTP). Native where the runtime has it.
-   *  A missing file throws here, not later while reading. */
+  /** As stream, optionally a byte range (`end` inclusive, like HTTP). A missing file throws
+   *  here, not later while reading. */
   async stream(path: string, { start, end }: { start?: number; end?: number } = {}): Promise<ReadableStream<Uint8Array>> {
     if (Bun) {
       const f = Bun.file(path);
@@ -112,7 +111,7 @@ export const fs = {
     const flags = createNew ? "wx" : "w";
     try {
       if (Deno) await (typeof data === "string" ? Deno.writeTextFile : Deno.writeFile)(path, data, { createNew });
-      // Bun.write has no flags; createPath: false keeps missing parents an error, as everywhere else
+      // Bun.write has no flags; createPath: false keeps missing parents an error, like elsewhere
       else if (Bun && !createNew) await Bun.write(path, stream ? new Response(data) : data, { createPath: false });
       else if (stream) await data.pipeTo(Writable.toWeb(createWriteStream(path, { flags })));
       else await writeFile(path, data, { flag: flags });
@@ -120,21 +119,21 @@ export const fs = {
       cache.delete(path);
     }
   },
-  /** Always recursive: parents are created, an existing directory is fine. */
+  /** Always recursive; an existing directory is fine. */
   async mkdir(path: string): Promise<void> {
     await mkdir(path, { recursive: true });
     cache.delete(path);
   },
-  /** Missing is fine. A file or an empty directory, like `Deno.remove`; `recursive` takes the content too. */
+  /** Missing is fine. A file or empty directory, like `Deno.remove`; `recursive` removes content too. */
   async remove(path: string, { recursive = false } = {}): Promise<void> {
     await rm(path, { force: true, recursive }).catch((e) => {
-      // rm refuses any directory without `recursive` (Bun says EFAULT); rmdir takes an empty one
+      // rm refuses directories without `recursive` (Bun: EFAULT); rmdir removes empty ones
       if (recursive || !["ERR_FS_EISDIR", "EISDIR", "EFAULT"].includes(e.code)) throw e;
       return rmdir(path);
     });
     forgetTree(path);
   },
-  /** Also across devices, where it copies and removes. */
+  /** Works across devices (copy + remove). */
   async rename(from: string, to: string): Promise<void> {
     try {
       await rename(from, to);
@@ -164,7 +163,7 @@ export const fs = {
 
   // --- temp (like Deno.makeTempFile / makeTempDir) ---
 
-  /** A new empty file, in the system temp dir unless `dir` says otherwise. Deno's own needs no env access for TMPDIR. */
+  /** New empty file in the system temp dir or `dir`. Deno's own needs no env access for TMPDIR. */
   async tempFile({ prefix = "", dir }: { prefix?: string; dir?: string } = {}): Promise<string> {
     if (Deno) return Deno.makeTempFile({ prefix, dir });
     const path = join(dir ?? tmpdir(), prefix + crypto.randomUUID());

@@ -9,13 +9,13 @@ import type { TransformContext, TransformerDef } from '../types.ts';
 /** True unless the client listed its accepted types and this one is not among them. */
 const canSend = (ctx: TransformContext, type: string) => !ctx.accept || ctx.accept.includes(type);
 
-/** File size in bytes; a missing file is `Infinity` so it loses the smaller-output comparison. */
-// written by a subprocess, so never from the cache
+/** File size in bytes; missing = `Infinity`, so it loses the size comparison. */
+// written by a subprocess, so not cached
 const fileSize = async (path: string): Promise<number> => await fs.size(path, { ttl: 0 }) ?? Infinity;
 
 /**
- * Encode phase: selects optimal output format (AVIF > JPEG > PNG) and sets quality.
- * Runs only when geometry has been applied or q/fmt is set explicitly.
+ * Encode phase: picks the output format (AVIF > JPEG > PNG) and quality.
+ * Runs only after a resize or with explicit q/fmt.
  */
 export const imageEncode: TransformerDef = {
   name: 'image-encode',
@@ -39,9 +39,8 @@ export const imageEncode: TransformerDef = {
       return;
     }
 
-    // AVIF carries alpha and beats JPEG on size at comparable quality, so it needs no contender.
-    // Comparing their file sizes would compare two different quality scales anyway: `-quality 77`
-    // means something else in each codec, so the smaller file is not the better one.
+    // AVIF supports alpha and is smaller than JPEG at similar quality, so no comparison. Sizes
+    // wouldn't be comparable anyway: `-quality 77` means something different per codec.
     if (canSend(ctx, 'image/avif') && await magick.avifSupported()) {
       const out = nodePath.join(ctx.tmpDir, 'out.avif');
       await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
@@ -50,7 +49,7 @@ export const imageEncode: TransformerDef = {
       return;
     }
 
-    // Only the fallback formats care about transparency: PNG carries it, JPEG does not.
+    // Transparency: PNG supports it, JPEG does not.
     ctx.meta.hasAlpha = await magick.identify(ctx.currentPath, '%A', ctx.signal) === 'True';
 
     if (ctx.meta.hasAlpha) {
@@ -59,8 +58,7 @@ export const imageEncode: TransformerDef = {
       ctx.currentPath = out;
       ctx.mime = 'image/png';
     } else {
-      // Photo or flat graphic is not cheaply knowable, and here the sizes are comparable: PNG is
-      // lossless, so whichever is smaller is genuinely the better pick.
+      // Photo or graphic is hard to tell; PNG is lossless, so the smaller file is the better one.
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       const png = nodePath.join(ctx.tmpDir, 'out.png');
       await Promise.all([

@@ -1,4 +1,3 @@
-// Public API of auth.totp. The qino plugin lives in ./plugin.ts.
 import { ApiError, attempt, identified } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
@@ -8,11 +7,10 @@ import type { Ctx } from "@qino/qino";
 
 const TYPE = "totp";
 
-// The candidate secret is not a factor until a code proves the app holds it, so it waits in the
-// session rather than in the table — an abandoned enrolment then needs no cleanup.
+// The new secret waits in the session until a code confirms it, so abandoned setups need no cleanup.
 const pending = (ctx: Ctx) => ctx.sess.data["auth.totp"].pending;
 
-/** Start setting one up. The secret is shown once, as text and as the `otpauth://` uri behind a QR. */
+/** Start a setup. The secret is shown once, as text and as `otpauth://` uri for a QR code. */
 export function enrol(ctx: Ctx): { secret: string; uri: string } {
   const fresh = secret();
   pending(ctx)(fresh);

@@ -1,6 +1,6 @@
 # Database access
 
-Three layers, from low to high:
+Layers, from low to high:
 
 | Layer | What it is | Use for |
 |---|---|---|
@@ -9,13 +9,9 @@ Three layers, from low to high:
 | `db.exec` | render a fragment and run it, returning an `ExecResult` | one-off **writes** (INSERT/UPDATE/DELETE) |
 | `db.table(name)` helpers | schema-aware `insert`/`update`/`ensure`/`delete`/`select` | normal row CRUD (the safe write path) |
 
-Reserve `query` (and `row`/`col`/`one`/`indexCol`) for reads; run writes through `exec`, which
-returns `affectedRows`/`insertId` and carries dialect write-quirks. Both take the same
-`` `…` `` template.
-
-The driver (`DbDriver.from(conn)`) picks the dialect — **mysql**, **sqlite** or **pg**. The same
-code runs on all three; the fragment stays pure data and the dialect (identifier quoting +
-placeholder style) is applied only at render time.
+The driver (`DbDriver.from(conn)`) picks the dialect — **mysql**, **sqlite** or **pg**. A fragment
+is plain data; quoting and placeholders are applied only when it is rendered, so the same code runs
+on all three.
 
 ## The `` sql`…` `` tag
 
@@ -29,10 +25,10 @@ db.query`SELECT * FROM usr ${frag}`;                          // fragment compos
 
 Helpers on `sql`:
 
-- **`sql.id(name)`** — a dynamic identifier (table/column), quoted per dialect. Use this for any
-  table/column name that isn't a literal in the template. Never build identifiers via `sql.raw`.
-- **`sql.raw(text)`** — verbatim text, no quoting, no binding. Escape hatch only — **never pass
-  user input** or values through it.
+- **`sql.id(name)`** — a dynamic table or column name, quoted per dialect. Never use `sql.raw`
+  for names.
+- **`sql.raw(text)`** — text as is, no quoting, no binding. Last resort — **never pass user
+  input** or values through it.
 - **`sql.join(frags, sep = ", ")`** — join fragments (IN-lists, column sets):
 
   ```ts
@@ -41,7 +37,7 @@ Helpers on `sql`:
 
 ## What you can interpolate as a value
 
-`toParam` (in item.js `sql.js`) decides how an interpolated value is bound:
+`toParam` (in item.js `sql.js`) decides how a value is bound:
 
 | Value | Bound as |
 |---|---|
@@ -52,43 +48,39 @@ Helpers on `sql`:
 | a `Promise` | awaited first — see below |
 | **plain object or array** | **throws `TypeError`** (would be mangled) |
 
-So `${someObject}` only works if the object has its own `toString`; a plain `{}` or `[]` is a
-mistake and fails loudly instead of producing broken SQL.
+So `${someObject}` needs its own `toString`; a plain `{}` or `[]` throws instead of producing
+broken SQL.
 
 ### Promises are awaited in parallel
 
-`resolveSql()` runs before render and awaits every interpolated `Promise` **concurrently**
-(`Promise.all`). A promise that resolves to a `Sql` fragment composes recursively. This lets you
-interpolate async lookups without serial `await`s:
+`resolveSql()` awaits all interpolated promises **in parallel** before rendering. A promise may
+also resolve to a `Sql` fragment. So async lookups need no `await` one after another:
 
 ```ts
 // both selects run in parallel, then the outer query renders
 db.exec`INSERT INTO x (a, b) VALUES (${lookupA()}, ${lookupB()})`;
 ```
 
-Note this parallelism is *within one statement's parameters*. It does not batch across statements.
+This works within one statement only, not across statements.
 
 ## Booleans: always bind, never `= 1`
 
-Bind boolean comparisons/assignments as `${true}` / `${false}` — never `= 1` / `= 0` / `= '1'`
-and never bare MySQL-truthiness (`WHERE flag`):
+Write booleans as `${true}` / `${false}` — never `= 1` / `= 0` / `= '1'` and never a bare
+`WHERE flag`:
 
 ```ts
 db.exec`DELETE FROM m_error_report WHERE bot = ${true}`;   // ✓ every dialect
 db.exec`DELETE FROM m_error_report WHERE bot = 1`;         // ✗ Postgres: boolean = integer error
 ```
 
-**Why:** only a bound JS boolean is serialized per dialect (sqlite driver maps `boolean → 0/1`,
-mysql2 → `1`, node-postgres → real `TRUE`). On a real PG `boolean` column, `= 1` throws
-(`operator does not exist: boolean = integer`); a bare `WHERE intcol` throws too. `= 1` merely
-trades a MySQL problem for a PG one. This applies **only to raw SQL** — `db.table().insert/update`
-normalizes booleans through `DbField.valueTransform` (`1/"1"/"true"/true → true`) before binding,
-so those are already dialect-safe. Write them as `true`/`false` anyway for readability.
+**Why:** only a bound JS boolean is converted per dialect (sqlite → `0/1`, mysql2 → `1`,
+node-postgres → `TRUE`). On a PG `boolean` column, `= 1` throws
+(`operator does not exist: boolean = integer`), and so does a bare `WHERE intcol`. This is **only
+about raw SQL** — `db.table().insert/update` converts booleans in `DbField.valueTransform`
+(`1/"1"/"true"/true → true`). Still write `true`/`false` there for readability.
 
-A bare `WHERE boolcol` (no `= 1`) is valid in PG *if* the column is genuinely `boolean` — but
-prefer the explicit `= ${true}` for one consistent rule. Watch for name collisions: `access` is a
-boolean column somewhere, but `page_access.access` / `cms_access` / `sess.access` are
-integer/timestamp — check the schema before "fixing" one.
+Careful with names: `page_access.access`, `cms_access` and `sess.access` are integer/timestamp
+columns, not booleans — check the schema first.
 
 ## Running queries
 
@@ -103,15 +95,15 @@ All take a tagged template and return promises:
 | `db.indexCol\`…\`` | `{ firstCol: secondCol }` map |
 | `db.exec\`…\`` | `ExecResult` (`affectedRows`, `insertId`) — for writes |
 
-**Reads** go through `query` and its shortcuts. **Writes** should use `exec`: it returns
-`affectedRows`/`insertId` and carries dialect specifics (e.g. PG `RETURNING` via
-`db.exec(frag, "id")`). Using `db.query` for an `INSERT`/`UPDATE`/`DELETE` works on mysql/sqlite
-but is the less portable path — prefer `exec`.
+Use `query` and its shortcuts for **reads** and `exec` for **writes**: it returns
+`affectedRows`/`insertId` and handles dialect details (e.g. PG `RETURNING` via
+`db.exec(frag, "id")`). `db.query` with `INSERT`/`UPDATE`/`DELETE` works on mysql/sqlite, but not
+everywhere.
 
 ## Table helpers — the safe write path
 
-`db.table(name)` is schema-aware and runs every value through `valueTransform` (boolean
-normalization, date formatting, strict numeric coercion). Prefer it over hand-written write SQL:
+`db.table(name)` knows the schema and converts every value (booleans, dates, numbers). Prefer it
+over hand-written write SQL:
 
 ```ts
 await db.table("usr").insert({ email, active: true, superuser: false });
@@ -123,13 +115,13 @@ await db.table("usr").delete(id);                       // id may be scalar or a
 - `insert()` / `update()` return the entry-id string; `delete()` returns a boolean.
 - Composite keys: an id is either the encoded string (`"a:b"`) or a values object; `entryId()`
   encodes, `entryIdValues()` decodes.
-- `ensure()` is read-then-write and **not** atomic (no upsert yet) — fine for boot/seeding, risky
-  under heavy concurrency without a unique index.
+- `ensure()` reads, then writes — **not** atomic. Fine for seeding; under heavy concurrency it
+  needs a unique index.
 
 ## Rows — data and behaviour in one object
 
-`db.table(name)` also hands out row objects: one object per row (identity map), columns as plain
-properties, everything of the row layer itself `$`-prefixed.
+`db.table(name)` also returns row objects: one object per row, columns as plain properties, the
+row's own API prefixed with `$`.
 
 ```ts
 const usr = await db.table("usr").get<Usr>(5);            // loaded row, or undefined
@@ -139,18 +131,18 @@ db.table("usr").row(5).email                              // handle without a qu
 await usr.$set({ lang: "de" });                           // assign and write in one UPDATE
 ```
 
-- Behaviour goes into a subclass, assigned in the module's `init()`: `db.table("usr").rowClass = Usr`.
-  `usr.contacts.add("email", "a@b.ch")` is what that buys — but only where the class was registered,
-  so library code takes the free functions (`addContact(db, …)`) that the class itself calls.
-  Columns are data, methods are verbs — `grps()`, `pricesFor()`, never `price()` beside a `price` column.
-- A member that collides with a column throws when the class is registered.
-- A write through the table invalidates the row object; an assigned but unsaved change is flushed at
-  the end of the microtask, so nothing is lost when nobody awaits `$save()`.
+- Methods go into a subclass, set in the module's `init()`: `db.table("usr").rowClass = Usr`.
+  Then `usr.contacts.add("email", "a@b.ch")` works — but only where the class is registered, so
+  library code uses the free functions (`addContact(db, …)`) the class calls.
+  Columns are data, methods are verbs — `grps()`, `pricesFor()`, never `price()` next to a `price` column.
+- A method with the same name as a column throws when the class is registered.
+- A write through the table invalidates the row object. Unsaved changes are written at the end of
+  the microtask, even if nobody awaits `$save()`.
 
 ## Transactions
 
-`db.transaction(fn)` runs `fn` atomically; nested calls **join** the outer transaction rather than
-starting a new one, so helpers that open their own transaction (e.g. `table.copy`) compose safely.
+`db.transaction(fn)` runs `fn` atomically. Nested calls **join** the outer transaction, so helpers
+with their own transaction (e.g. `table.copy`) can be combined.
 
 ```ts
 await db.transaction(async () => {

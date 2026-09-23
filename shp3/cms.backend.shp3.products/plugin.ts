@@ -21,17 +21,15 @@ function render(node: Node): Promise<HtmlString> {
   return id ? renderProduct(node, id) : renderList(node);
 }
 
-/** Every page using the product module is listed — also one whose product row is still missing,
- *  which is exactly the page an editor just created in the tree. */
+/** All pages with the product module, also those without product row yet (newly created). */
 async function renderList(node: Node): Promise<HtmlString> {
   const { app } = node;
   const t = app.t;
   const hasStock = !!app.db.table("shp3_product").field("stock"); // shp3.stock adds it
   const module = String(await app.settings.shp3.default_product_module ?? "");
 
-  // The title lives in the text table, page.name is only the internal short name — joined here
-  // instead of asking each node, which would be one query per row. An untranslated language is
-  // an empty string, not NULL, so COALESCE alone would stop at it.
+  // The title is in the text table (page.name is internal); joined to avoid a query per row.
+  // Untranslated = empty string, not NULL, so COALESCE alone isn't enough.
   const lang = getCtx().lang;
   const rows = await app.db.query`SELECT page.id, page.name, p.price, p.weight ${hasStock ? sql`, p.stock` : sql``},
       COALESCE(NULLIF(t.text, ''), NULLIF(tf.text, ''), page.name) AS title

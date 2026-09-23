@@ -1,32 +1,29 @@
 # cms.templateParser
 
-Lets a CMS module render its node from a plain `template.html` instead of a
-`render()` function. If a local or remote module contains `template.html` beside
-its `plugin.ts`, this module hooks `cms.node.render`, parses the file and renders
-it per request. Local templates are reparsed when their mtime changes; remote
-templates are cached for the lifetime of the process like their imported plugin.
+Lets a CMS module render its node from a `template.html` instead of a `render()`
+function. If a module has `template.html` next to its `plugin.ts`, this module
+provides `cms.node.render` from it. Local templates are reparsed when they change;
+remote templates are cached for the process lifetime, like their plugin.
 
 `renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
 other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.
 
-Deliberately minimal: static HTML plus four constructs and declared
-`{{placeholders}}` — no expressions or logic. Simple and safe, but built to be
-extended (`cms-if`, `cms-each` may come later).
+Deliberately minimal: static HTML, four constructs and declared
+`{{placeholders}}` — no expressions or logic.
 
-The rule: a `cms-*` **attribute** (`cms-text`) keeps your tag as the wrapper;
-a `<cms-*>` **element** (`<cms-image>`, `<cms-cont>`) is replaced by its output.
+Rule: a `cms-*` **attribute** (`cms-text`) keeps your tag as the wrapper; a
+`<cms-*>` **element** (`<cms-image>`, `<cms-cont>`) is replaced by its output.
 
 A full example: [cms.cont.example.ml/template.html](../../test-modules/cms.cont.example.ml/template.html)
 
-Each example below shows the template form, then the equivalent in a plain
-TS `render()` (see [cms/README.md](../cms/README.md)).
+Each example shows the template, then the same as TS `render()` (see
+[cms/README.md](../cms/README.md)).
 
 ## `cms-text=name`
 
-Editable text. The tag becomes the wrapper, other attributes are kept on it
-and passed through as `cms.text` options — e.g. a bare `if` hides the element
-for visitors while the text is empty.
-The inner HTML is the initial content, stored in the app's default language.
+Editable text. The tag is the wrapper; other attributes stay on it and are
+passed as `cms.text` options — e.g. `if` hides the element for visitors while the
+text is empty. The inner HTML is the initial content in the default language.
 
 ```html
 <h2 cms-text=title>Default <b>text</b> in default language</h2>
@@ -43,9 +40,9 @@ return html.async`
 
 ## `<cms-image name=... />`
 
-Editable image, rendered via `cms.image2`. All other attributes are passed
-through as options (`width`/`height` become numbers, bare attributes become
-`true`). With `localized`, each language has its own image (`cms.fileLang`).
+Editable image via `cms.image2`. Other attributes are passed as options
+(`width`/`height` as numbers, bare attributes as `true`). With `localized`, each
+language has its own image (`cms.fileLang`).
 
 ```html
 <cms-image name=image1 width=110 height=110 fit=contain />
@@ -62,9 +59,9 @@ return html.async`
 
 ## `<cms-cont name=... />`
 
-Embeds a sub-content node, created on first render. `module=` (alias
-`default-module=`) sets the module used at creation; an existing cont keeps
-its own module. Default: `cms.cont.flexible`.
+Embeds a child node, created on first render. `module=` (alias `default-module=`)
+sets its module on creation; an existing node keeps its module. Default:
+`cms.cont.flexible`.
 
 ```html
 <cms-cont name=body module=cms.cont.text />
@@ -76,11 +73,10 @@ return html.async`${node.cont("body", "cms.cont.text")}`;
 
 ## `cms-link=...`
 
-Stable internal link. The target uses the same syntax as `node=` below; its
-CMS link attributes (`href`, state classes, `aria-current`, edit marker and
-configured `target`) are added to the wrapper. A template class is prepended,
-an explicit template `target` wins over the configured one, and `href` always
-comes from the CMS. An empty wrapper uses the target page's title.
+Internal link by node. The target uses the `node=` syntax below. The CMS link
+attributes (`href`, state classes, `aria-current`, edit marker, `target`) are
+added to the wrapper. A template class is prepended, a template `target` wins,
+`href` always comes from the CMS. An empty wrapper gets the target's title.
 
 ```html
 <a cms-link=32 class=card>About us</a>
@@ -95,9 +91,8 @@ await cms.linkAttributes(target);
 return html.async`${cms.link(page)}`;
 ```
 
-`CMS.linkAttributes()` returns structured attributes; the template renderer
-merges them with its wrapper. `cms-link` can also share that wrapper with
-`cms-text` when the link label should be independently editable.
+`CMS.linkAttributes()` returns the attributes; the template merges them into the
+wrapper. Combine `cms-link` with `cms-text` on the same tag for an editable label.
 
 ## `node=` — target another node
 
@@ -131,19 +126,17 @@ return html.async`
 - Comments are stripped; everything else passes through as written.
 - In edit mode images become editable (`dbfile-editable`); missing images
   render nothing for visitors.
-- Typos don't fail silently: unknown `cms-*` elements/attributes and missing
-  `name=` log a warning in dev and edit mode.
+- Unknown `cms-*` elements/attributes and missing `name=` log a warning in dev
+  and edit mode.
 
 ## `{{placeholder|fallback}}`
 
-A linked module may explicitly export `templatePlaceholders`; its module
-name prefixes each key. The renderer resolves only those names, once per node.
-Values work in static text and attribute values; attributes always use escaped
-text, while text nodes may use a module's declared safe HTML form. CMS content
-rendered by `cms-text`, `cms-cont` or other elements is never parsed again.
-Unknown names warn in development and edit mode. A module returns `{ text }` for
-ordinary values; only an `html.raw()` value may additionally be returned as
-`html`, which is inserted only in text nodes.
+Modules can export `templatePlaceholders`; keys are prefixed with the module
+name. Only those names are resolved, once per node. They work in text and
+attribute values. A placeholder returns `{ text }` (escaped); an additional
+`html` (must be `html.raw()`) is used in text nodes only. Content rendered by
+`cms-text`, `cms-cont` etc. is never parsed again. Unknown names warn in dev
+and edit mode.
 
 ```html
 <a href="tel:{{identity.contact.telephone}}">
@@ -159,10 +152,10 @@ ordinary values; only an `html.raw()` value may additionally be returned as
 ## `moduleTemplate(module)`
 
 A layout module ships its `template.html` as a *starting point*: on the first
-render in edit mode the site gets its own copy in `data/<module>/`, which wins
-from then on — deleted files fall back to the shipped one.
-[moduleTemplate.ts](moduleTemplate.ts) holds the paths, that one-time copy and
-the options panel (`layoutOptions`) with the fileEditor links.
+render in edit mode the site gets a copy in `data/<module>/`, which is used from
+then on; if deleted, the shipped one is used again.
+[moduleTemplate.ts](moduleTemplate.ts) has the paths, the copy step and the
+options panel (`layoutOptions`) with fileEditor links.
 [cms.layout.standard.1](../cms.layout.standard.1/README.md) and
-[cms.layout.deck.1](../cms.layout.deck.1/README.md) are built on it and are
-little more than a template plus a css file.
+[cms.layout.deck.1](../cms.layout.deck.1/README.md) use it — little more than a
+template plus a css file.

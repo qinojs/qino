@@ -1,4 +1,3 @@
-// Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 import { hee, sql } from "@qino/qino";
 import { ChannelError, delivered, send as dispatch, selectors } from "@qino/qino/messaging";
 
@@ -23,17 +22,15 @@ async function recipients(app: App, to: To & { chat?: number | number[] }): Prom
 }
 
 /**
- * Message groups, users, chats, or everyone who linked their account.
+ * Message groups, users, chats, or everyone with a linked account.
  *
- * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
- * way. A `format` becomes Telegram's own HTML subset — no headings, no lists, so those arrive as
- * bold lines and bullets. A `title` becomes the first line, bold when markup is on.
+ * Resolves with the number of chats reached; chats that blocked the bot are removed. `format` uses
+ * Telegram's HTML subset (headings/lists become bold lines/bullets). `title` becomes the first line.
  */
 export const send = (app: App, to: To & { chat?: number | number[] }, message: string | Msg): Promise<number> =>
   dispatch(app, messagingChannel, to, message);
 
-/** Telegram has no title of its own; it becomes the first line, bold where the body is markup.
- *  `parse_mode` follows from what the renderer produced — a caller says `format`, never the wire. */
+/** The title becomes the first line, bold with markup. `parse_mode` follows from the rendered output. */
 function telegramText(msg: Msg, rendered: { text: string; html?: string }): { text: string; parse_mode?: string } {
   const body = rendered.html ?? rendered.text;
   const head = msg.title ? (rendered.html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
@@ -128,7 +125,7 @@ export async function setWebhook(app: App, url: string): Promise<void> {
   });
 }
 
-/** Stop Telegram from delivering updates. Linked chats keep working — only `/start` stops arriving. */
+/** Stop receiving updates. Linked chats keep working, but `/start` no longer arrives. */
 export async function deleteWebhook(app: App): Promise<void> {
   await call(app, "deleteWebhook", {});
 }

@@ -1,6 +1,4 @@
-// Characterization tests: pin today's Ctx semantics before the
-// ctx.req/ctx.res split (CONTEXT-REQUEST-PLAN.md Phase 1). Body and deadline
-// behavior live in req_body.test.ts / ctx_timeout.test.ts.
+// Ctx semantics. Body and deadline: req_body.test.ts / ctx_timeout.test.ts.
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { Output } from "../lib/util.ts";
 import { parseCookies } from "../lib/ctx/Req.ts";

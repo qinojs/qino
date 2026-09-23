@@ -192,9 +192,8 @@ async function templateValues(named: Set<string>, node: Node): Promise<Record<st
   return values;
 }
 
-/** Which names a template writes follows from its source alone, not from the node it renders for —
- *  so it is read once per parsed tree, and shared across apps like the tree itself. A reparsed file
- *  is a new tree and reads again by itself. */
+/** The placeholder names depend only on the source, so they are read once per parsed tree (shared
+ *  across apps). A reparsed file is a new tree. */
 const namesOf = new WeakMap<TNode[], Set<string>>();
 function templateNames(nodes: TNode[]): Set<string> {
   let names = namesOf.get(nodes);

@@ -44,8 +44,7 @@ async function textView(f: DbFile): Promise<HtmlString | string> {
     fs.text(f.path)}</textarea></u2-code></div></div>`;
 }
 
-/** What the file search can find in this file. Shown verbatim: garbled OCR is the point of looking.
- *  `null` is a file nobody extracted yet, `""` one that turned out to have no text at all. */
+/** The file's searchable text, shown as is (to spot bad OCR). `null` = not extracted yet, `""` = no text. */
 function searchText(app: App, id: number, text: string | null): Promise<HtmlString> {
   if (text == null) return html.async`<button data-extract="${id}">${app.t`Extract text`}</button>`;
   const again = html.async`<button data-extract="${id}" title="${app.t`extract again`}"><u2-ico icon=refresh>↻</u2-ico></button>`;
@@ -60,8 +59,8 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
   (f: DbField) => f.table.name !== "log" && f.table.name !== "mail_file"
 );
 
-// "not exists" sorts by the correlated relation-count subqueries → scans the whole table,
-// so it is selectable but never the default; the others are index-backed (log_id / size).
+// "not exists" sorts by subqueries and scans the whole table, so it is never the default; the
+// others use indexes (log_id / size).
 const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 
 // list (filterable part): total + table rows, reloaded on search/order change
@@ -84,9 +83,9 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   };
   const orderBy = orderSql[order] ?? sql.join([sql`f.size = ${0} DESC`, ...children.map((_: DbField, i: number) => sql.id("r" + i))], ",");
 
-  // one indexed path per input shape (never an OR across joined tables, which would full-scan):
-  // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name and extracted
-  // text (both fulltext-indexed on `file` itself, so the OR stays on one table)
+  // one indexed search per input type (no OR across joins, that would scan everything):
+  // number → id, 32-hex → md5, contains @ → creator/editor email, else → name and text (both
+  // fulltext-indexed on `file`)
   let cond = sql``;
   if (search) {
     const s = search.trim();

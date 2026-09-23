@@ -56,16 +56,9 @@ const r = await wa.confirm(); // öffnet Authenticator-Dialog
 if (r.ok) { /* geschützte Aktion */ }
 ```
 
-Der Nachweis landet über [auth](../auth/) in der Session, nicht in einem eigenen Flag — server-seitig
-prüfen heisst also, wie frisch er ist:
-
-```ts
-const at = Number(ctx.sess.data.core.via.webauthn() ?? 0);
-if (unixTime() - at > 60) return { ok: false, error: "confirmation_required" };
-```
-
-Das tut bisher niemand von Hand: der Guard, der das für beliebige Faktoren am api-Verb erledigt,
-fehlt noch (siehe [auth](../auth/#possible-extensions)).
+Der Nachweis landet über [auth](../auth/) in der Session. Serverseitig verlangt ihn
+`requireStepUp` am api-Verb oder im `guard` — für jeden Faktor, nicht nur Passkeys (siehe
+[auth](../auth/README.md#requiring-a-fresh-proof)).
 
 ## CMS-Module
 

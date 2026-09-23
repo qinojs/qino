@@ -221,8 +221,8 @@ export const api: ApiTree = {
     "are-translated": {
       get: {
         description: "Batch-check if multiple texts are translated in a language",
-        // No per-id access check: authenticated users can probe existence/translated-status of foreign
-        // text ids (metadata only, no content). Accepted trade-off; rate-limit later if needed.
+        // No per-id access check: signed-in users can see whether foreign text ids exist/are translated
+        // (no content). Accepted; rate-limit later if needed.
         access: Access.USER,
         query: s.object({
           ids: s.string().describe("Underscore-separated text IDs"),

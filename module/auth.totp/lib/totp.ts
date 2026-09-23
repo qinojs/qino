@@ -1,5 +1,4 @@
-// RFC 6238 over Web Crypto — SHA-1, six digits, thirty-second steps. Not a choice but the shape
-// every authenticator app assumes; changing any of it means the codes no longer match.
+// RFC 6238 with Web Crypto — SHA-1, six digits, 30-second steps, as every authenticator app expects.
 import { safeEqual, unixTime } from "@qino/qino";
 
 const DIGITS = 6;
@@ -18,8 +17,8 @@ export function uri(secret: string, account: string, issuer: string): string {
   return `otpauth://totp/${label}?${q}`;
 }
 
-/** The start time of the step `code` belongs to, or undefined — so a spent code can be told apart.
- * One step of tolerance either way for clock drift. */
+/** Start time of the step `code` belongs to, or undefined (to detect reused codes). One step
+ * tolerance each way. */
 export async function valid(secret: string, code: string, drift = 1): Promise<number | undefined> {
   if (!/^\d{6}$/.test(code)) return;
   const counter = Math.floor(unixTime() / STEP);

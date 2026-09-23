@@ -1,5 +1,4 @@
-/* The panel's files widget, mounted into this block's page content. Only in edit mode: the
-  * widget talks to the admin api and belongs to whoever may edit the node. */
+/* The panel's files widget in the page content. Edit mode only (it uses the admin api). */
 import { ctx } from '@qino/pub/qino.js';
 
 if (globalThis.qino?.cms?.editmode) {

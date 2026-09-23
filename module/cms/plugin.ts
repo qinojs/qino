@@ -138,16 +138,15 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     for (const name of ["table:insert-after", "table:update-after", "table:delete-after"] as const)
         app.db.on(name, (e) => { if (String(e.table) === "page_url") cms(app).clearUrlCache(); }, { signal });
 
-    // Filling a file row in place (upload into a placeholder) touches no page_file row,
-    // so the nodes holding it have to be told their file list is stale.
+    // Uploading into a placeholder changes the file row, not page_file, so invalidate the nodes.
     app.db.on("table:update-after", async (e) => {
         if (String(e.table) !== "file" || !("md5" in (e.data ?? {}))) return;
         for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${Number(e.id)}`)
             (await cms(app).node(Number(vs.page_id))).clearFileCache();
     }, { signal });
 
-    // Public pages for the seo module; a subtree that is not public or online is skipped whole.
-    // lastmod: latest change on the page or its contents, as the history shows it. image: the page file "main".
+    // Public pages for the seo module; non-public or offline subtrees are skipped.
+    // lastmod: latest change of the page or its contents. image: the page file "main".
     app.on("seo:sitemap", async ({ ctx, base, urls }) => {
         const changed = new Map<number, number>();
         for (const row of await app.db.query`SELECT nc.page_id, MAX(l.time) AS time FROM node_changed nc JOIN log l ON l.id = nc.log_id GROUP BY nc.page_id`)

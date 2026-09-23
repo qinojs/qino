@@ -15,8 +15,7 @@ export const css = `
 .-media .-link > a { display:block; overflow:hidden; text-overflow:ellipsis; }
 .-media .-slot { font-size:calc(var(--rem) * .7); color:#999; font-style:italic; }
 .-media .-size { width:calc(var(--rem) * 5); text-align:right; white-space:nowrap; }
-/* u2 sizes icons in rem — pin them to our own anchor instead.
-   The cell path is spelled out to outweigh .-styled's own padding rule */
+/* u2 sizes icons in rem — use our own size instead. Full selector to beat .-styled's padding. */
 .-media .-list > * > tr > :is(.-handle, .-delete) {
   width:calc(var(--rem) * 1.7); padding-inline:0; text-align:center; --size:calc(var(--rem) * 1.4); }
 .-media .-handle { cursor:n-resize; }
@@ -108,7 +107,7 @@ export default async function (widget, { node, dialogs, signal }) {
   widget.on('click', '.-upload', async () => upload(await pick(true)));
   widget.on('click', '.-preview', async (td) => {
     const slot = td.closest('tr').getAttribute('itemid');
-    // a module may take this over — cms.filebrowser offers the file library instead of a local file
+    // a module may replace this — cms.filebrowser offers its file library
     if (cms.replaceFile) return cms.replaceFile(node.id, slot);
     upload(await pick(false), slot);
   });

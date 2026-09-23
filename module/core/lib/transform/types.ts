@@ -57,7 +57,7 @@ export interface OcrEngine {
   name: string;
   /** Higher priority wins among available engines */
   priority: number;
-  /** Produces better output than a PDF's embedded text layer (e.g. layout-aware AI) — PDFs are then always OCRed, not only scans */
+  /** Better than a PDF's embedded text (e.g. AI) — then all PDFs are OCR'd, not only scans */
   beatsTextLayer?: boolean;
   available: (ctx: TransformContext) => boolean | Promise<boolean>;
   /** Extracts text/Markdown from an image file */
@@ -101,7 +101,7 @@ export type TransformResult = {
   mime: string;
   /** false = original returned (no transform or error) */
   transformed: boolean;
-  /** Cache key = content identity (source + options), stable across mtime touches – usable as ETag */
+  /** Cache key (source + options), independent of mtime — usable as ETag */
   key?: string;
   error?: Error;
 };

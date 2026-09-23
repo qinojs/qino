@@ -42,14 +42,13 @@ export default async function (widget, { node, superuser, signal }) {
     <textarea class=-childXML rows=4>${settings?.childXML}</textarea>
   </div>`;
 
-  // Nested widgets: the panel frames the widgets it mounts, this one frames the two it mounts.
-  // Same markup, so the panel's delegated click handler opens and closes them like any other.
+  // Nested widgets, framed here with the same markup as the panel, so its click handler works.
   for (const [name, title] of [['sets', await t`Settings`], ['txts', await t`Texts`]]) {
     const open = cms.panel.widgets.has(name)?.get({ silent: true });
     widget.insertAdjacentHTML('beforeend', `<div class="-widgetHead ${open ? '-open' : ''}"><span class=-title>${title}</span></div>`);
     const child = widget.widget(new URL(`./${name}.js`, import.meta.url), { node });
     child.className = '-content';
-    child.setAttribute('widget', name); // the click handler remembers the open state under this name
+    child.setAttribute('widget', name); // key for the saved open state
     widget.append(child);
   }
 
@@ -57,8 +56,8 @@ export default async function (widget, { node, superuser, signal }) {
   widget.on('change', '.-searchable', (inp) => ref.patch({ searchable: inp.checked }));
   widget.on('change', '.-name', (inp) => ref.patch({ name: inp.value }));
   widget.on('change', '.-childXML', (inp) => ref.settings.childXML.put({ value: inp.value }));
-  // "base" is the parent: moving there is the edit. The picker fills the field without firing
-  // change, so focusout — but only on a real change, an unchanged value would reorder the siblings.
+  // "base" is the parent; changing it moves the node. The picker sets the value without a change
+  // event, so use focusout — only on real changes, else the siblings get reordered.
   widget.on('focusout', '.-basis', (inp) => {
     if (!inp.value || inp.value === String(vs.basis)) return;
     api.cms.node(inp.value)['insert-before'].put({ id: String(node.id) }).then(() => widget.reload());

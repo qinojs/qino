@@ -15,8 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Git", de: "Git" });
 }
 
-/** Every directory the app is made of, and what it holds — modules, stores and the app itself.
- *  Which of them share a repository is git's answer, not ours. */
+/** All directories of the app (modules, stores, the app itself). Git decides which share a repo. */
 type Holds = { kind: "app" | "module" | "store"; label: string };
 
 function candidates(app: App): Map<string, Holds> {
@@ -35,8 +34,7 @@ async function repos(app: App): Promise<Repo<Holds>[]> {
   return Promise.all(found.entries().map(async ([root, holds]) => ({ root, holds, ...await status(root) })));
 }
 
-/** What lies in a repository, in one line: names while there are few, counts once there are many.
- *  The full list would be 120 module names and answers nothing the root path does not. */
+/** Contents of a repository in one line: names if few, else counts. */
 async function summary(holds: Holds[], t: App["t"]): Promise<string> {
   const [modules, stores, app] = await Promise.all([t`modules`, t`stores`, t`the app`]);
   const some = (kind: Holds["kind"], word: string) => {
@@ -58,8 +56,7 @@ async function author(): Promise<string[]> {
   return ["-c", `user.name=${name}`, "-c", `user.email=${email}`];
 }
 
-/** A supervisor is what makes ending the process a restart rather than an outage — systemd sets
- *  INVOCATION_ID for the services it starts, and QINO_SUPERVISED says so for every other one. */
+/** Whether a supervisor restarts the process: systemd sets INVOCATION_ID, others QINO_SUPERVISED. */
 function supervised(): boolean {
   try {
     return !!(Deno.env.get("INVOCATION_ID") ?? Deno.env.get("QINO_SUPERVISED"));
@@ -68,9 +65,8 @@ function supervised(): boolean {
   }
 }
 
-/** Pulled code reaches a running process nowhere: Deno keeps the module graph it started with.
- *  So the restart is an exit, and the supervisor brings the new graph up.
- *  Non-zero, or the `Restart=on-failure` an install may be running would leave it down. */
+/** Deno keeps its loaded modules, so pulled code needs a restart: exit and let the supervisor start
+ *  it again. Non-zero, so `Restart=on-failure` works too. */
 function restart(): string {
   if (!supervised()) throw new Error("No service manager found — the process would stay down. Set QINO_SUPERVISED=1 if one is watching.");
   // In-flight requests end with the process; a delay long enough for this answer is what it gets.
@@ -85,8 +81,7 @@ async function act(app: App, action: string, root: string, message: string): Pro
   const repo = known.find((r) => r.root === root);
   if (!repo) throw new Error(`Not a repository of this app: ${root}`);
 
-  // Without a fetch "behind" stays at whatever the last one left behind: status reads the
-  // remote-tracking ref, not the remote.
+  // Fetch first: status compares with the remote-tracking ref, not the remote.
   if (action === "fetch") return run(await git(repo.root, ["fetch"], 120_000));
   if (action === "push") return run(await git(repo.root, ["push"], 120_000));
   if (action === "pull") return run(await git(repo.root, ["pull", "--ff-only"], 120_000));
@@ -142,7 +137,7 @@ function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
 </div>`;
 }
 
-/** The process, once, next to the repositories: what a pull changes on disk is what a restart loads. */
+/** The process, shown once next to the repositories (a restart loads what a pull changed). */
 function serverCard(t: App["t"]): Promise<HtmlString> {
   const can = supervised();
   return html.async`<div class=u2-card>

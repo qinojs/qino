@@ -15,8 +15,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     const label = String(vars.add).trim();
     if (!label) return { error: String(node.app.t`A field needs a label.`) };
     const name = fieldName(label);
-    // `in`, not a read: item.js objects are autovivifying, so asking for the value would
-    // create the very field the question is about.
+    // `in`, not a read: reading an item.js object would create the field.
     if (name in node.settings.fields) return { error: String(node.app.t`A field with this name already exists.`) };
     node.settings.fields[name]({});
     // The label is a text like any other, so it can be translated later.

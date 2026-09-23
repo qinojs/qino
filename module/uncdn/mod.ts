@@ -6,7 +6,7 @@ export const DEFAULT_MAX_CACHE_BYTES = 50 * 1024 * 1024;
 
 const states = new WeakMap<App, { origins: Set<string> }>();
 
-/** The app's uncdn state; `origins` = CSP-declared, proxyable by anyone. Empty until pages declare sources. */
+/** The app's uncdn state; `origins` = sources declared in CSP (proxyable). Empty until pages declare some. */
 export function uncdn(app: App): { origins: Set<string> } {
   return states.getOrInsertComputed(app, () => ({ origins: new Set() }));
 }

@@ -1,36 +1,36 @@
 # security
 
-Slows down and blocks IP addresses that other modules report as suspicious. An IPv6 address
-counts as its `/64` network, which one connection holds and can rotate the rest of:
+Slows down and blocks IP addresses that modules report as suspicious. IPv6 addresses count as
+their `/64` network, since one connection can rotate through it:
 
 ```ts
 ctx.app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" });
 ```
 
-Every report adds its `weight` (default 1) to the IP's strength, which fades with a half-life.
-Answers wait strength² ms; above a limit they are refused with `429` until the strength has
-faded below it. Waiting holds a connection, a `429` is almost free, so the delay stays short.
-Half-life and limits are the constants at the top of [`lib/guard.ts`](lib/guard.ts).
+Each report adds its `weight` (default 1) to the IP's strength, which decays with a half-life.
+Responses are delayed by strength² ms; above a limit they get `429` until the strength drops again.
+A delay holds a connection, a `429` is cheap, so delays stay short. Half-life and limits are
+constants at the top of [`lib/guard.ts`](lib/guard.ts).
 
-The check runs at `request-start`, before sessions and static files, so it knows no user:
-a superuser behind a blocked IP is blocked too. Reports with an authenticated superuser do not count; early path checks know no user and apply to everyone.
+The check runs at `request-start`, before sessions and static files, so it knows no user: a
+superuser behind a blocked IP is blocked too. Reports made while a superuser is signed in don't
+count; the early path checks know no user and apply to everyone.
 
-Strengths live in memory, so the per-request check needs no query. Above a small strength they
-are also stored through [`score`](../score/) on `log_ip`, so a restart does not forgive anyone
-and the score backend shows them; one-off slips cost no write.
+Strengths are kept in memory, so the check needs no query. Above a small value they are also
+stored via [`score`](../score/) on `log_ip`, so a restart forgives nobody and the score backend
+shows them; single slips cost no write.
 
 Built-in reports, each in its own file under `lib/`:
 
-- `robotsHoneypot` — with [`seo`](../seo/), `robots.txt` disallows a random path nothing links
-  to, new at every start. Whoever requests it read robots.txt and ignored it.
-- `pathReports` — suspicious paths (`.env`, `.git`, `phpinfo`, …) are reported with a high
-  weight and stopped with 404 before sessions, static files or routing, even if the path exists.
-  A 404 on a path of another system (`*.php`, `wp-admin`, `js/`, …) weighs lightly. After
-  replacing an old site the latter may be real links, so turn off `security.foreignPaths` for
-  a while.
+- `robotsHoneypot` — with [`seo`](../seo/), `robots.txt` disallows a random path (new on every
+  start) that nothing links to. Whoever requests it ignored robots.txt.
+- `pathReports` — suspicious paths (`.env`, `.git`, `phpinfo`, …) are reported with a high weight
+  and answered with 404 before sessions, static files or routing, even if the path exists. A 404
+  on a path of another system (`*.php`, `wp-admin`, `js/`, …) counts lightly. Right after
+  replacing an old site these may be real links; then turn off `security.foreignPaths` for a while.
 
-Other modules report on their own; core weighs every failed login the same, because a weight by
-cause would be measurable as a delay and so tell an outsider whether an address exists.
+Other modules report themselves. Core weighs every failed login the same; different weights would
+show up as different delays and reveal whether an address exists.
 
 `mod.ts` exposes `suspects(app)`, `reports(app)` (the most recent, in memory) and
 `release(app, key)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)

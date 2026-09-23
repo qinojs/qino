@@ -7,11 +7,11 @@ import { sql, isTemplate } from "../../deps.ts";
 import type { Sql } from "../../deps.ts";
 import type { Db } from "./Db.ts";
 
-// One primary value as its canonical id part; undefined if it cannot identify a row.
+// A primary key value as id part; undefined if it can't identify a row.
 const idValue = (field: DbField, value: any): string | undefined => {
-  if (value == null || typeof value === "object") return; // String([]) and Number([]) would pass as ids
+  if (value == null || typeof value === "object") return; // String([]) / Number([]) would look valid
   if (!NUM_TYPES.has(field.type)) return String(value);
-  const num = value === "" ? NaN : Number(value); // strict like DbField; an empty value is no id
+  const num = value === "" ? NaN : Number(value); // strict like DbField; empty is no id
   return Number.isFinite(num) ? String(num) : undefined;
 };
 
@@ -49,8 +49,8 @@ export class DbTable {
     return this.#children;
   }
 
-  /** Read the column metadata. Built aside and swapped in, so nothing ever sees a table
-   *  that has lost its fields while the introspection query is in flight. */
+  /** Read the column metadata. Built separately and swapped in, so the table never appears
+   *  without fields while the query runs. */
   async reloadFields(): Promise<void> {
     const fields = new Map<string, DbField>();
     const primaries = [];
@@ -74,11 +74,11 @@ export class DbTable {
     return this.#fields!;
   }
 
-  /** Canonical id of a row, values object or raw id; undefined if it identifies no row. */
+  /** Id of a row, values object or raw id; undefined if it identifies no row. */
   entryId(vs: any): string | undefined {
     const values = (vs != null && typeof vs === "object" ? vs : this.entryIdValues(vs)) ?? {};
     const primaries = this.#primaries;
-    const composite = primaries.length > 1; // encoding only disambiguates the ":" separator, so single-primary ids stay raw
+    const composite = primaries.length > 1; // encoding only protects the ":" separator, single keys stay raw
     const parts = [];
     for (const field of primaries) {
       const value = idValue(field, values[field.name]);
@@ -93,10 +93,10 @@ export class DbTable {
     const primaries = this.#primaries;
     const composite = primaries.length > 1;
     const str = id != null && typeof id === "object" ? undefined : String(id);
-    const parts = str === undefined ? undefined : composite ? str.split(":") : [str]; // single primary keeps the whole raw string (may contain ":")
-    if (parts && parts.length !== primaries.length) return; // an id names every primary exactly once
+    const parts = str === undefined ? undefined : composite ? str.split(":") : [str]; // a single key may contain ":"
+    if (parts && parts.length !== primaries.length) return; // one part per key column
     const values: Record<string, any> = {};
-    try { // ids travel in URLs: a malformed escape makes decodeURIComponent throw, but it is just an invalid id
+    try { // ids come from URLs: a bad escape makes decodeURIComponent throw — just an invalid id
       for (let i = 0; i < primaries.length; i++) {
         const field = primaries[i];
         const raw = !parts ? id[field.name] : composite && !NUM_TYPES.has(field.type) ? decodeURIComponent(parts[i]) : parts[i];
@@ -136,9 +136,8 @@ export class DbTable {
   valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): Sql {
     const frags = [];
     const fields = this.#fields!;
-    // Field order, not values order: the rendered text stays the same for the same set of
-    // columns, which is what makes a prepared statement hit its cache. Keys, then get() —
-    // destructuring the map allocates a pair per column and measures slower.
+    // Field order, not values order: same columns give the same SQL text, so the prepared
+    // statement cache hits. Keys + get(), since destructuring allocates a pair per column.
     for (const name of fields.keys()) {
       if (!(name in values)) continue;
       const value = fields.get(name)!.valueTransform(values[name]);
@@ -150,9 +149,8 @@ export class DbTable {
   }
 
   /**
-   * Returns the canonical entry id — on a composite key that is the joined, encoded form.
-   * Generated ids are also written back into `values`: callers that need a single generated
-   * column read it there, the return value cannot carry it.
+   * Returns the entry id (joined and encoded for composite keys). Generated ids are also written
+   * into `values`, where callers can read a single generated column.
    */
   async insert(values: Record<string, any> = {}): Promise<string | undefined> {
     const eBefore: any = { table: this, data: values, returnValue: undefined };
@@ -168,8 +166,7 @@ export class DbTable {
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));
     if (!res.affectedRows) return;
     if (auto && !this.#db.insertSyncsAutoIncrement && String(auto) in values) await this.#db.syncAutoIncrement(String(this), String(auto), Number(values[String(auto)]));
-    // A caller that named the key keeps it: the driver reports the row it generated, and on a
-    // composite key that is the rowid, not the id that was written.
+    // A given key is kept: on a composite key the driver would report the rowid, not the written id.
     if (auto && !(String(auto) in values)) values[String(auto)] = res.insertId;
     else if (res.insertId && this.primary && !(String(this.primary) in values)) values[String(this.primary)] = res.insertId;
     const id = this.entryId(values);
@@ -195,7 +192,7 @@ export class DbTable {
     const where = this.valuesToFragment(whereValues);
     if (!where.parts.length) return;
     const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
-    if (!rows?.affectedRows) return; // no row matched (drivers report matched rows, not changed)
+    if (!rows?.affectedRows) return; // no row matched (drivers report matched, not changed rows)
     await this.#db.fire("table:update-after", { table: this, id, data: values! });
     return this.entryId(id);
   }
@@ -249,7 +246,7 @@ export class DbTable {
     if (!where.parts.length) return false;
     const cascades = this.children.filter((f) => f.onParentDelete === "cascade");
     const setnulls = this.children.filter((f) => f.onParentDelete === "setnull");
-    const row = cascades.length || setnulls.length ? await this.selectByID(id) : undefined; // parent values are gone after the DELETE
+    const row = cascades.length || setnulls.length ? await this.selectByID(id) : undefined; // read before the DELETE
     const rows = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
     if (!rows?.affectedRows) return false; // no row matched
     await this.#db.fire("table:delete-after", { table: this, data: values, id });
@@ -283,28 +280,24 @@ export class DbTable {
   /** Milliseconds a loaded row stays trusted; 0 disables time-based expiry. */
   rowTtl: number = 0;
 
-  // Identity map: one object per row, so two lookups share one set of pending changes. WeakRef,
-  // because lifetime is reachability — a row nobody holds may go, a dirty one is held by the
-  // write queue until it lands.
+  // Identity map: one object per row, so all lookups share pending changes. WeakRef: unused rows
+  // may be collected; dirty ones are held by the write queue until saved.
   #rows = new Map<string, WeakRef<DbRow>>();
   #rowFinalizer = new FinalizationRegistry<string>((id) => {
     if (!this.#rows.get(id)?.deref()) this.#rows.delete(id);
   });
 
-  // Second way in, for the tables looked up by something other than their key (client.hash,
-  // log_ip.ip). Same rows, same WeakRef lifetime — only the key differs.
+  // Same rows by another unique column (client.hash, log_ip.ip).
   #rowsBy = new Map<string, WeakRef<DbRow>>();
   #rowsByFinalizer = new FinalizationRegistry<string>((key) => {
     if (!this.#rowsBy.get(key)?.deref()) this.#rowsBy.delete(key);
   });
 
-  // The class lives on the table, never in a module-global registry: several tenants run the same
-  // module code in one runtime, and each needs its own mapping.
+  // Stored on the table, not globally: tenants share module code but need their own mapping.
   #rowClass: typeof DbRow | null = null;
 
-  /** The table's Row subclass — data and behaviour in one object. Assign it in a module's init().
-   *  Nobody silently replaces someone else's class: a second module has to extend the first
-   *  (`class X extends table.rowClass {}`), and only until the first row was handed out. */
+  /** The table's Row subclass. Assign it in a module's init(). A second module must extend the
+   *  current class (`class X extends table.rowClass {}`), and only before the first row exists. */
   get rowClass(): typeof DbRow { return this.#rowClass ??= anonRowClass(this.#name); }
   set rowClass(cls: typeof DbRow) {
     const current = this.#rowClass;
@@ -316,7 +309,7 @@ export class DbTable {
   /** Row handle, synchronous, without touching the database — it may be unloaded. */
   row<T extends DbRow = DbRow>(id: any): T {
     if (id instanceof DbRow) return id as T;
-    const rowId = String(this.entryId(id) ?? id); // an unusable id keeps its raw key — that row simply never exists
+    const rowId = String(this.entryId(id) ?? id); // an invalid id keeps its raw key; the row never exists
     const hit = this.#rows.get(rowId)?.deref();
     if (hit) return hit as T;
     const row = new this.rowClass(this, rowId);
@@ -325,8 +318,8 @@ export class DbTable {
     return row as T;
   }
 
-  /** Loaded row found by a unique column, or undefined — repeated lookups of the same value are free.
-   *  A value with no row is not remembered: whoever missed inserts it, and the next lookup indexes it. */
+  /** Loaded row by a unique column, or undefined; repeated lookups are cached. Misses are not
+   *  cached, since the caller usually inserts the row next. */
   async rowBy<T extends DbRow = DbRow>(field: string, value: any): Promise<T | undefined> {
     const key = `${field}\0${value}`;
     const hit = this.#rowsBy.get(key)?.deref();
@@ -362,7 +355,7 @@ export class DbTable {
     return this.row<T>(id).$read();
   }
 
-  /** A write went past a row object — tell the one we hold, if any. */
+  /** A write bypassed the row object — invalidate it, if held. */
   invalidate(id: any, deleted = false): void {
     this.#rows.get(String(this.entryId(id) ?? id))?.deref()?.$invalidate(deleted);
   }

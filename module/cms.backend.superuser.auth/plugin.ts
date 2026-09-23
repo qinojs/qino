@@ -52,8 +52,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <td>${u2.el.time(at, { second: true })}
     <td>${declared.some((f) => f.name === name) ? "" : "record only"}`);
 
-  // Every signed-in session carries its own record, so the same structure read across the table is
-  // the log of how everyone got in — no second place to write it.
+  // Each session records how it signed in, so reading all sessions gives the login log.
   const sessions = await node.app.db.query`
     SELECT s.usr_id, s.data, s.access, u.username FROM sess s LEFT JOIN usr u ON u.id = s.usr_id
     WHERE s.usr_id IS NOT NULL ORDER BY s.access DESC LIMIT 50`;

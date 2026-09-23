@@ -1,8 +1,7 @@
 import { fs } from "@qino/qino";
 
-// Instances sharing one dir overwrite each other's data/, cache/ and tmp/. Nothing in the process
-// can see that, so each instance leaves a file whose mtime it keeps ticking; counting the fresh
-// ones finds neighbours in other processes and on other machines too.
+// Instances sharing one dir overwrite each other's data/, cache/ and tmp/. Each instance keeps
+// touching a marker file; counting fresh ones finds other processes and machines.
 const BEAT = 30_000;
 const FRESH = BEAT * 3;
 
@@ -22,7 +21,7 @@ export async function markInstance(appDir: string, signal: AbortSignal): Promise
   });
 }
 
-/** How many instances currently use that dir. More than one is a misconfiguration. Drops stale markers. */
+/** Number of instances using that dir (more than one = misconfiguration). Removes stale markers. */
 export async function liveInstances(appDir: string): Promise<number> {
   const dir = dirOf(appDir);
   let live = 0;

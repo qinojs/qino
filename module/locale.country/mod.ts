@@ -1,5 +1,4 @@
-// The world's countries. What a standard already knows stays out of the table: the name comes
-// from Intl in whatever language is asked for, only codes that no library carries are stored.
+// Countries. Names come from Intl in any language; only data Intl lacks is stored.
 import type { Db } from "@qino/qino";
 
 export const country = {

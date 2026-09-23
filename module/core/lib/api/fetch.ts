@@ -18,8 +18,8 @@ export type ApiFetchOptions = {
 const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
 
 /**
- * Run an api request from a `Req`. Result is thrown as an `Output` signal (on both
- * success and error) so the host builds the `Response`. `path` is within the tree, e.g. `/user/5`.
+ * Run an api request. The result is thrown as `Output` (success and error) and the host builds the
+ * `Response`. `path` is within the tree, e.g. `/user/5`.
  */
 export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiFetchOptions = {}): Promise<never> {
   const input = Object.create(null);
@@ -28,14 +28,14 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
   const isBodyMethod = BODY_METHODS.has(method);
   if (isBodyMethod) {
     if (!isJsonRequest(req)) throw new Output({ error: "Unsupported Media Type" }, { status: 415 });
-    const body = req.body; // parsed once in Req.create; invalid JSON already answered with 400
+    const body = req.body; // parsed in Req.create; invalid JSON already got 400
     if (body && typeof body === "object") Object.assign(input, body);
   }
   for (const [k, v] of Object.entries(req.queryAll)) query[k] = v.length === 1 ? v[0] : [...v];
   if (!isBodyMethod) Object.assign(input, query);
   try {
     await authorizeMutation(req, opts, { method, path, input, query });
-    const checkAccess = req.header("x-api-check") === "access"; // dry-run: run the access/guard gate, skip execute
+    const checkAccess = req.header("x-api-check") === "access"; // dry run: check access/guard, skip execute
     const result = await invoke(tree, req.method, path, { input, query }, { checkAccess });
     const body = result === undefined ? undefined : JSON.stringify(result);
     throw new Output(body, { status: result === undefined ? 204 : 200, headers: { "Content-Type": "application/json; charset=UTF-8" } });
@@ -61,7 +61,7 @@ async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestD
   if (!isTrustedOrigin(req) || !hasValidCsrfToken(req)) throw new Output({ error: "Forbidden" }, { status: 403 });
 }
 
-// Match host:port, not scheme — behind a TLS-terminating proxy the app sees http while the browser sends an https Origin.
+// Compare host:port, not scheme — behind a TLS proxy the app sees http, the Origin says https.
 export function isTrustedOrigin(req: Req): boolean {
   const target = req.url.host;
   const origin = hostOf(req.header("origin"));

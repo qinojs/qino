@@ -1,5 +1,4 @@
-/* Panel widget: the node's own ts/css/js, opened in the file editor. Superuser only —
-   the endpoint answers with nothing for everyone else. */
+/* Panel widget: the node's ts/css/js in the file editor. Superusers only (others get nothing). */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';

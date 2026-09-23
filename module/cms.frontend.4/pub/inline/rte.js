@@ -1,5 +1,5 @@
-// Inline rich text editing: the u2 editor, configured for this CMS, plus the tools
-// that only make sense here — CMS addresses, dbFile images, external media on paste.
+// Inline rich text editing: the u2 editor configured for the CMS, plus CMS links, dbFile images and
+// external media on paste.
 import { editor, selectedElement } from '@qino/u2/js/rte/rte.js';
 import '@qino/u2/js/rte/classes.js';
 import '@qino/u2/js/rte/images.js';
@@ -54,21 +54,19 @@ editor.add(blockStyles([
   ...[1,2,3,4,5,6].map(n => ({ name: 'h'+n, label: 'Heading '+n, selector: 'h'+n, tag: 'h'+n })),
 ]));
 
-/* Content classes come from the site's own stylesheets — a capitalised class name
-   is the convention for "meant for the editor". The property is inherited, so one
-   declaration reaches every field, and it also tells the sanitizer and the
-   presentation cleanup which classes are content rather than decoration. */
+/* Content classes come from the site's stylesheets; capitalized class names are meant for the
+   editor. The property is inherited, so one declaration covers all fields, and it tells the
+   sanitizer which classes are content. */
 const contentClasses = () => Object.keys(possibleClasses(null)).filter(cl => /^[A-Z]/.test(cl));
-// Scanning the stylesheets is the fallback, not the rule: a site that declares its own list — with
-// groups, or with names the scan cannot guess — keeps it.
+// Scanning the stylesheets is only the fallback; a list declared by the site wins.
 addEventListener('load', () => {
   const root = document.documentElement;
   if (getComputedStyle(root).getPropertyValue('--u2-rte-classes').trim()) return;
   root.style.setProperty('--u2-rte-classes', contentClasses().join(' '));
 });
 
-/* Links. What an address means is the CMS's business: a number is a page, a bare
-   domain or mail address gets its scheme, and where a link opens follows from it. */
+/* Links: a number is a page, a bare domain or mail address gets its scheme, and the target
+   follows from the address. */
 const URL_RE = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 const MAIL_RE = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
@@ -79,9 +77,7 @@ const address = href => {
   return href;
 };
 
-/** Wants a tab of its own: somewhere else on the web, or one of our files — a pdf
- *  or an image is not a page, and taking the reader off the site to show it loses
- *  where they were. */
+/** Opens in a new tab: external links and our files (pdf, images). */
 const ownTab = href => {
   if (href.includes('/dbFile/')) return true;
   if (/^(cmspid|mailto|tel):/.test(href) || href[0] === '#') return false;
@@ -90,15 +86,13 @@ const ownTab = href => {
 
 editor.add(linkEditor({
   fields: ['href'],
-  // Where a link opens follows from where it goes: a page of this site stays in
-  // the tab, anywhere else and every file gets its own. Nobody has to tick that.
+  // Own pages open in the same tab, everything else in a new one.
   normalize(value) {
     if (!value) return null;
     const href = address(value.href);
     return ownTab(href) ? { href, rel: 'noopener', target: '_blank' } : { href };
   },
-  // A new link on text that is already an address takes it; anything else is
-  // looked up as a page title.
+  // Text that is an address becomes the link; other text is searched as page title.
   async suggest(text) {
     text = text.trim();
     if (!text) return null;
@@ -106,14 +100,12 @@ editor.add(linkEditor({
     const [node] = await search(text);
     return node ? { href: node.value } : null;
   },
-  // Typing offers the site's own pages and files, so neither a page id nor a file
-  // path ever has to be typed out.
+  // Suggests the site's pages and files while typing.
   complete: search,
 }));
 
-/** What a link can point at here: this site's pages and its files. The api renders
- *  each hit itself — title, kind, the path above it, a thumbnail for an image —
- *  and the form sanitizes that markup. */
+/** Link targets: the site's pages and files. The api renders each hit (title, kind, path,
+ *  thumbnail); the form sanitizes it. */
 async function search(q) {
   const [nodes, files] = await Promise.all([
     api.cms.nodes.get({ q }).catch(() => []),
@@ -125,9 +117,8 @@ async function search(q) {
   ];
 }
 
-/* dbFile images. The editor writes width and height attributes; the server is the
-   one that scales the file, so the size has to reach the url as well. Both ways go
-   through the existing qgResize event, which the drop and zoom tools also use. */
+/* dbFile images: the editor writes width/height attributes; the server scales, so the size also
+   goes into the url. Via the qgResize event, also used by the drop and zoom tools. */
 const dbImage = edit => {
   const el = selectedElement(edit, el => el.matches('img'));
   return el?.src.includes('dbFile/') ? el : null;
@@ -145,7 +136,7 @@ const toOriginal = async img => {
   img.style.width = '';
   img.style.maxWidth = '100%';
   img.style.height = 'auto';
-  img.setAttribute('width',  width  / 2); // the server is told by cookie to deliver double resolution
+  img.setAttribute('width',  width  / 2); // the server delivers double resolution
   img.setAttribute('height', height / 2);
   img.dispatchEvent(new Event('qgResize', { bubbles: true }));
 };
@@ -220,7 +211,7 @@ const checkMedia = root => {
     for (const attr of ['src','href']) {
       if (!el.hasAttribute(attr)) continue;
       const uri = new URL(el[attr]);
-      if (!uri.host || location.host === uri.host) continue; // no host: data:/blob:, nothing foreign to copy
+      if (!uri.host || location.host === uri.host) continue; // data:/blob: or own host: nothing to copy
       const ext = uri.pathname.replace(/.*\./,'');
       if (!ext) continue;
       if (el.tagName === 'IMG' || ['pdf','doc','xls','jpg','png','gif'].includes(ext)) {
@@ -244,8 +235,7 @@ document.addEventListener('qgResize',e=>{
   const el = e.target;
   if (!el.isContentEditable) return;
   if (el.tagName === 'IMG' && el.src.includes('dbFile/')) {
-    // The editor states a size as width/height attributes, which an inline style
-    // would override — so the attribute leads and the style follows it here.
+    // The editor sets width/height attributes; an inline style would override them, so sync it.
     const width = Number(el.getAttribute('width')) || el.width;
     const height = Number(el.getAttribute('height')) || el.height;
 

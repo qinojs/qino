@@ -31,8 +31,8 @@ export class ResHtml {
 
     ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 
-    // an import map cannot be an external file, so it joins the inline scripts and is hashed like them.
-    // Only worth emitting when something can resolve against it — a classic script's dynamic import() counts.
+    // An import map can't be external, so it is inline and hashed like the scripts. Only emitted when
+    // there are scripts (a classic script's dynamic import() counts).
     if (this.importMap.size && hasScripts)
       this.inlineScripts.set(jsonScript({ imports: Object.fromEntries(this.importMap) }), { type: "importmap" });
 
@@ -52,7 +52,7 @@ export class ResHtml {
 
     for (const url of this.styles) ret += `<link rel=stylesheet href="${hee(url)}">\n`;
 
-    // nothing reads it without a script — and it carries the csrf token
+    // only scripts read it, and it contains the csrf token
     if (this.#jsData && hasScripts) ret += `<script type=application/json id=qino-data>${jsonScript(this.#jsData)}</script>\n`;
 
     for (const url of this.legacyScripts) ret += `<script src="${hee(url)}"></script>\n`;
@@ -67,14 +67,14 @@ export class ResHtml {
 }
 
 
-/** Inline css blocks. `</style` is escaped on the way in — css reads it the same but it cannot end the element. */
+/** Inline css blocks. `</style` is escaped, so it can't end the element. */
 class InlineStyles extends Set<string> {
   override add(css: string): this {
     return super.add(css.replace(/<\/style/gi, "<\\/style"));
   }
 }
 
-/** Inline scripts keyed by their body. `</script` is escaped on the way in — it reads the same to JS but cannot end the element. */
+/** Inline scripts keyed by body. `</script` is escaped, so it can't end the element. */
 class InlineScripts extends Map<string, Record<string, string>> {
   override set(js: string, attr: Record<string, string> = {}): this {
     return super.set(js.replace(/<\/script/gi, "<\\/script"), attr);

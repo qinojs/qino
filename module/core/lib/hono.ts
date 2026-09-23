@@ -3,8 +3,8 @@ import { Hono, basePath, getConnInfo } from "../deps.ts";
 import type { App } from "./App.ts";
 
 /**
- * Optional adapter: mount a Qino app under a path prefix in Hono, e.g.
- * `hono.route("/cms1", honoAdapter(app))`. Hono only strips the prefix; routing lives in `app.handle`.
+ * Optional adapter: mount a Qino app under a prefix in Hono, e.g.
+ * `hono.route("/cms1", honoAdapter(app))`. Hono only strips the prefix; `app.handle` does the routing.
  */
 export function honoAdapter(app: App): Hono {
   const hono = new Hono();

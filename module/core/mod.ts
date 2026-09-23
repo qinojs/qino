@@ -1,8 +1,4 @@
-// Public library API of @qino/core. The qino-module manifest is in ./plugin.ts.
-// Consumers import from here (or "@qino/core") instead of reaching into
-// core/lib/* — so they depend on this stable contract, not the file layout.
-// NOTE: core-internal files must NOT import from this barrel; they import their
-// siblings in ./lib/* directly, to avoid import cycles.
+// Core-internal files must not import from here, but from ./lib/* directly (import cycles).
 
 // App + request context
 export { App } from "./lib/App.ts";
@@ -18,7 +14,7 @@ export { hee, unhee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Ou
 export { fs } from "./lib/fs.ts";
 export { fillPlaceholders, modulePlaceholders, placeholderName, placeholderNames } from "./lib/templatePlaceholder.ts";
 export type { TemplatePlaceholder, TemplateValue } from "./lib/templatePlaceholder.ts";
-// HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
+// HtmlString is type-only: create it via html.raw / html.join (like sql.raw / sql.join).
 export type { HtmlString } from "./lib/util.ts";
 
 // Schema
@@ -51,8 +47,8 @@ export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export { Usr } from "./lib/rows.ts";
 export { addContact, contactError, contactKey, contactOwner, contacts, contactTypes, countContacts, mainContact, removeContact, setMainContact, typeContacts } from "./lib/contacts.ts";
 
-// item.js is core's dependency; other modules take it from here so there is only ever one copy of
-// it — `$item` is a module-local Symbol that a second copy would silently stop matching.
+// Other modules import item.js from here, so there is one copy — a second copy would have its own
+// `$item` Symbol.
 export { $item, bildJsonItem, schemaDiff, schemaFromDb, toInput } from "./deps.ts";
 export type { ItemProxy } from "./deps.ts";
 

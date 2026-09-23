@@ -12,12 +12,11 @@ import type { DbRow } from "./DbRow.ts";
 
 export const DATE_TYPES = new Set(["datetime", "date", "timestamp"]);
 export const STRING_TYPES = new Set(["char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set"]);
-// INTEGER is SQLite's spelling of INT — without it the same schema coerces on MySQL and lets
-// non-numeric text through on SQLite, where column affinity then stores it verbatim. Same for
-// REAL (SQLite) and NUMERIC (Postgres) beside MySQL's DOUBLE.
+// INTEGER is SQLite's INT — otherwise SQLite would store non-numeric text as is. Same for REAL
+// (SQLite) and NUMERIC (Postgres) next to MySQL's DOUBLE.
 export const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double", "real", "numeric"]);
 
-/** Core db events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
+/** Core db events. Module events work but are untyped — JSR forbids augmenting this map from a module. */
 export interface DbEvents {
   "table:insert-before": { table: DbTable; data: Record<string, any>; returnValue?: unknown };
   "table:insert-after": { table: DbTable; id: any; data: Record<string, any> };
@@ -25,10 +24,10 @@ export interface DbEvents {
   "table:update-after": { table: DbTable; id: any; data: Record<string, any> };
   "table:delete-before": { table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
   "table:delete-after": { table: DbTable; id: any; data: Record<string, any> };
-  [name: string]: Record<string, unknown>; // untyped module events stay allowed
+  [name: string]: Record<string, unknown>; // untyped module events
 }
 
-/** A row's first column, without building an array for it — these rows have one or two. */
+/** A row's first column, without building an array. */
 function firstValue(row: Row): unknown {
   for (const name in row) return row[name];
 }
@@ -43,11 +42,11 @@ export class Db extends Emitter<DbEvents> {
   constructor(conn: string) {
     super();
     this.#driver = DbDriver.from(conn);
-    // Dialect (quoting + placeholders) for rendering comes from item.js — one source for all backends.
+    // Dialect (quoting + placeholders) comes from item.js.
     this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
     
-    // Any write through a table reaches the row object holding that row, whoever wrote it.
-    this.on("table:insert-after", ({ table, id }) => table.invalidate(id)); // a handle may hold "does not exist"
+    // Every write through a table invalidates the matching row object.
+    this.on("table:insert-after", ({ table, id }) => table.invalidate(id)); // a handle may have cached "missing"
     this.on("table:update-after", ({ table, id }) => table.invalidate(id));
     this.on("table:delete-after", ({ table, id }) => table.invalidate(id, true));
   }
@@ -58,13 +57,13 @@ export class Db extends Emitter<DbEvents> {
   #dirty = new Set<DbRow>();
   #flushing: Promise<void> | null = null;
 
-  /** Queue a changed row. The set holds it strongly, so nothing unwritten can be collected. */
+  /** Queue a changed row. Held strongly, so unsaved rows are never collected. */
   markDirty(row: DbRow): void {
     this.#dirty.add(row);
     this.#flushing ??= Promise.resolve().then(() => this.flush().catch(() => {})); // errors are reported in flush()
   }
 
-  /** Write every pending row in one transaction. Rows that fail stay dirty and keep their values. */
+  /** Write all pending rows in one transaction. Failed rows stay dirty with their values. */
   async flush(): Promise<void> {
     this.#flushing = null;
     if (!this.#dirty.size) return;
@@ -73,7 +72,7 @@ export class Db extends Emitter<DbEvents> {
     try {
       await this.transaction(async () => { for (const row of rows) await row.$save(); });
     } catch (e) {
-      // Never silent: an unwritten change is data loss, and the caller of an explicit save() rethrows.
+      // Never silent: an unsaved change is data loss; an explicit save() rethrows.
       console.error("db: flushing rows failed:", e);
       for (const row of rows) if (row.$changed) this.#dirty.add(row);
       throw e;
@@ -102,7 +101,7 @@ export class Db extends Emitter<DbEvents> {
     return [text, params];
   }
 
-  /** Fragments run via interpolation: `db.query\`${frag}\`` — same for the shortcuts below. */
+  /** Run a fragment via interpolation: `db.query\`${frag}\`` — same for the shortcuts below. */
   async query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
     const [text, params] = await this.#sql(strings, values);
     return this.#run(() => this.#driver.query(text, params), text) as Promise<T[]>;
@@ -121,7 +120,7 @@ export class Db extends Emitter<DbEvents> {
     return row && firstValue(row) as T;
   }
 
-  /** First column keyed by it, second as the value — one row per key. */
+  /** Map of first column → second column. */
   async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Map<string, T>> {
     const rows = await this.query(strings, ...values);
     return new Map(rows.map((r) => { const [k, v] = Object.values(r); return [String(k), v as T]; }));
@@ -144,31 +143,31 @@ export class Db extends Emitter<DbEvents> {
       for (const hook of tx.hooks!) await hook();
       return r;
     } finally {
-      tx.hooks = null; // a late call must not queue onto a finished transaction
+      tx.hooks = null; // late calls must not queue onto a finished transaction
     }
   }
 
-  /** Run fn as one uninterrupted unit. On a driver with a single connection (SQLite) its statements
-   *  would otherwise be split around a transaction started meanwhile — and awaiting the result from
-   *  inside that transaction deadlocks. Use it for multi-step background writes; free on pools. */
+  /** Run fn without interruption. With a single connection (SQLite) its statements could otherwise
+   *  be split by a transaction started meanwhile, and awaiting them inside it deadlocks. Use it for
+   *  multi-step background writes; no cost on pools. */
   unit<T>(fn: () => Promise<T>): Promise<T> {
     return this.#driver.oneConnection ? this.transaction(fn) : fn();
   }
 
-  /** Defer a non-rollbackable side effect (file unlink) until the outermost transaction committed. */
+  /** Delay a side effect that can't be rolled back (file unlink) until the outer transaction commits. */
   async afterCommit(fn: () => unknown): Promise<void> {
     const hooks = this.#tx.getStore()?.hooks;
     if (hooks) hooks.push(fn);
     else await fn();
   }
 
-  /** Move the id generator past `value`, so it never hands that id out again. */
+  /** Move the id counter past `value`, so that id is never generated again. */
   syncAutoIncrement(table: string, field: string, value: number): Promise<void> {
     if (!Number.isInteger(value) || value < 1) return Promise.resolve();
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 
-  /** Create the database if missing. Must run before any schema migration queries against it. */
+  /** Create the database if missing. Run before migration. */
   ensureDatabase(): Promise<void> {
     return this.#driver.ensureDatabase();
   }
@@ -183,17 +182,16 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.columns(table);
   }
 
-  /** Introspect the current tables into memory. Run after the schema is migrated. */
+  /** Load the current tables into memory. Run after migration. */
   async loadTables(): Promise<void> {
     const tables: Record<string, DbTable> = {};
     for (const name of await this.#driver.listTables()) {
-      // Keep the object a table already has: installing a module re-runs this, and a fresh
-      // DbTable would drop its row class and identity map.
+      // Keep existing table objects: module installs re-run this, and a new DbTable would lose its
+      // row class and identity map.
       tables[name] = this.#tables[name] ?? new DbTable(this, name);
       await tables[name].reloadFields();
     }
-    this.#tables = tables; // swapped in one go — introspection takes a while, and a timer or a
-                           // parallel request must never meet a half-filled database
+    this.#tables = tables; // swapped at once, so parallel code never sees a half-filled list
   }
 
   table(name: string): DbTable {

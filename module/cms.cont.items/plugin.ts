@@ -4,12 +4,8 @@ import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /**
- * A list of equal entries: cards, teasers, staff, opening hours. The block holds the children,
- * the children hold the content, and `default module` says what an entry is.
- *
- * The successor of the old `cms.cont.items2`, and the same idea: without the declaration an
- * editor faces the whole module list and has to guess which one belongs in this list. Here the
- * block already knows, so "Add entry" in the options panel asks nothing.
+ * A list of similar entries: cards, teasers, staff, opening hours. `default module` defines the
+ * entry type, so "Add entry" needs no module picker. Successor of `cms.cont.items2`.
  */
 
 const settingsSchema = {

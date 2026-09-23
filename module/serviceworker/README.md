@@ -1,45 +1,38 @@
 # serviceworker
 
-A browser allows one service worker per scope. This module owns that one worker for the
-app; every module may contribute one part to it, by shipping a `pub/sw.js` and depending
-on this module:
+A browser allows one service worker per scope. This module provides it; any module can add a
+part by shipping `pub/sw.js` and depending on this module:
 
 ```json
 { "dependencies": ["core", "serviceworker"], "files": ["pub/sw.js"] }
 ```
 
-The file is the declaration — `files` is generated for every published module, so there
-is nothing to keep in sync. That is the whole contract — no registration call, and nothing to undo: the worker is
-assembled per request from the modules that are linked right then, so unlinking a module
-drops its part by itself.
+The file itself is the declaration (`files` is generated on publish). No registration call: the
+worker is built per request from the currently linked modules, so unlinking a module removes its
+part.
 
-The worker is served at `<appUrl>sw.js` and contains nothing but `import` statements —
-one per part. A part is a plain ES module that adds its own listeners:
+The worker is served at `<appUrl>sw.js` and contains only `import` statements, one per part. A part
+is a plain ES module that adds its own listeners:
 
 ```js
 self.addEventListener("push", (e) => { /* … */ });
 ```
 
-Service worker events are multi-listener, so parts never interfere. The one exception is
-`fetch`: only a single listener may call `respondWith()`. When a second module needs
-`fetch`, this module should grow a small router instead.
+Events allow several listeners, so parts don't interfere. Exception: `fetch` — only one listener
+may call `respondWith()`. When a second module needs `fetch`, add a small router here.
 
 Without a part there is no `sw.js` route and no registration script.
 
 ## Notes
 
-- A part that fails to load breaks the *whole* worker — one failing static import fails
-  the installation.
+- A part that fails to load breaks the *whole* worker installation.
 - Import maps do not apply to workers — a part must not import bare specifiers.
 
 ## Caching
 
-`sw.js` is served with `Cache-Control: no-cache` plus an `ETag` over its content, so an
-update check costs a conditional request and usually gets a bodyless 304. `no-cache`
-does not mean "do not store" — it means "store, but revalidate before use", which is
-exactly what a service worker needs.
+`sw.js` is served with `Cache-Control: no-cache` and an `ETag`, so an update check is usually a
+304 without body. `no-cache` means "store, but revalidate before use" — exactly right here.
 
-A `max-age` would not help much: with the default `updateViaCache: "imports"` the
-browser bypasses the HTTP cache for the worker script itself anyway. That setting *does*
-let the imported parts come from the HTTP cache, and those are static files, which the
-file server already serves with an `ETag`.
+A `max-age` would not help: with the default `updateViaCache: "imports"` the browser skips the
+HTTP cache for the worker script anyway. The imported parts may come from the HTTP cache; they are
+static files with an `ETag`.

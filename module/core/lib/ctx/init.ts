@@ -8,12 +8,12 @@ import type { Ctx } from "./Ctx.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: Ctx): Promise<void> {
-  await ctx.app.fire("authenticate", { ctx }); // explicit credentials first: a Bearer beats an ambient cookie
+  await ctx.app.fire("authenticate", { ctx }); // tokens first: a Bearer beats a cookie
   ctx.sess ??= await ctx.app.sessions.loadFromRequest(ctx);
   await initClient(ctx);
   if (!ctx.statelessAuth) await loginFromRequest(ctx);
   ctx.sess.touch(ctx.userId);
-  if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user reads synchronously
+  if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user is synchronous
   await ctx.initSettings();
   await ctx.app.languages.initCtx(ctx);
   initLog(ctx);
@@ -37,15 +37,14 @@ async function registerClient(ctx: Ctx): Promise<void> {
 }
 
 
-/** Secrets by key name, in bodies and query alike. `sig`/`code`/`state` grant access on their own,
- *  word-bounded so they do not eat `design` or `postcode`. The same test gates the raw query first:
- *  without any such word no key can match, so the common request never parses a URL. */
+/** Secret keys in body and query. `sig`/`code`/`state` only as whole words (not `design`,
+ *  `postcode`). Tested on the raw query first, so most requests never parse the URL. */
 const SECRET = /pw|pass|token|secret|key|auth|\b(sig|code|state)\b/i;
 
-/** Clip a long value — one field (data: URI, base64) must not overflow the row. */
+/** Shorten long values (data: URI, base64), so the row doesn't overflow. */
 const clip = (s: string, max: number) => s.length > max ? `${s.slice(0, max)}…(${s.length})` : s;
 
-/** Enough to recognise a value again across log lines, never enough to replay it. */
+/** Enough to recognize a value across log lines, not enough to reuse it. */
 const mask = (v: string) => v.length > 16 ? clip(v, 6) : "-----";
 
 export function redactQuery(href: string): string {
@@ -59,7 +58,7 @@ export function redactQuery(href: string): string {
 }
 
 const md5 = (s: string) => createHash("md5").update(s).digest("hex");
-const EMPTY_URL = md5(""); // the referer most requests do not have
+const EMPTY_URL = md5(""); // most requests have no referer
 
 function initLog(ctx: Ctx): void {
 
@@ -73,8 +72,8 @@ function initLog(ctx: Ctx): void {
       : clip(JSON.stringify(ctx.req.body, (k, v) => k && SECRET.test(k) ? mask(String(v)) : typeof v === "string" ? clip(v, 1000) : v), 10000),
   };
 
-  // id of the row holding that value, inserting it the first time it is ever seen. rowBy keeps
-  // the row, so every repeat — same ip, same browser, same page — costs nothing.
+  // id of the row with that value, inserted on first sight. rowBy caches the row, so repeats cost
+  // nothing.
   const dictId = async (name: string, field: string, value: string, rest?: Record<string, unknown>) => {
     const table = db.table(name);
     const row = await table.rowBy(field, value);
@@ -83,8 +82,8 @@ function initLog(ctx: Ctx): void {
 
   const urlIdOf = (url: string) => dictId("log_url", "hash", url ? md5(url) : EMPTY_URL, { url });
 
-  // Runs in the background; consumers await ctx.logId only when they actually need the id — so it
-  // has to finish as one unit, or its last step queues behind a transaction that is waiting for it.
+  // Runs in the background; ctx.logId is awaited only when needed. Must run as one unit, or its
+  // last step could wait behind a transaction that waits for it.
   ctx.logId = db.unit(async () => {
     try {
       const url = redactQuery(ctx.req.url.href);
@@ -95,7 +94,7 @@ function initLog(ctx: Ctx): void {
       const urlId = urlIdOf(url);
       const [url_id, referer_id, ip_id, user_agent_id] = await Promise.all([
         urlId,
-        referer === url ? urlId : urlIdOf(referer), // reuse to avoid racing a duplicate log_url row
+        referer === url ? urlId : urlIdOf(referer), // reuse, avoids a duplicate log_url row
         dictId("log_ip", "ip", ip),
         dictId("log_user_agent", "user_agent", ua),
       ]);

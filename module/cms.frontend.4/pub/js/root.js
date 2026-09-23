@@ -1,9 +1,7 @@
-/* The one shadow root all CMS chrome lives in: panel, inline overlays, dialogs.
-  * Page markup stays in the document — it is styled by inline/page.css, never from here.
-  * Dialogs hang on the root itself: root.alert(), root.confirm(), root.modal().
+/* The shadow root for all CMS UI: panel, inline overlays, dialogs. Page markup stays in the
+  * document (styled by inline/page.css). Dialogs: root.alert(), root.confirm(), root.modal().
   *
-  * u2 runs scoped in here: its own registry, its own version. Whatever the customer page
-  * loads stays out, and u2-elements in the panel resolve against ours. */
+  * u2 runs scoped here with its own registry and version, independent of the page's u2. */
 import { scope } from '@qino/u2/js/dialog/dialog.js';
 import { attachShadow } from '@qino/u2/u2/enhance.js';
 
@@ -12,7 +10,7 @@ import { addStyle } from '../../../cms/pub/js/styles.js';
 customElements.define('qino-cms', class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
-    // enhance() watches from here on: u2-elements in the markup below load and register themselves
+    // enhance() from here on loads and registers u2 elements in the markup below
     const shadow = attachShadow(this, { mode: 'open' });
     while (this.firstChild) shadow.append(this.firstChild); // server-rendered panel markup
   }
@@ -23,7 +21,7 @@ customElements.define('qino-cms', class extends HTMLElement {
 export const root = (document.querySelector('qino-cms') ?? document.body.appendChild(document.createElement('qino-cms'))).shadowRoot;
 
 
-// norm.css and base.css come with enhance(); this is the cms layer on top
+// norm.css and base.css come with enhance(); this adds the cms styles
 addStyle(root, 'cms/pub/css/ui.css');
 root.host.addStyle('cms.frontend.4/pub/css/off.css').then(() => root.host.hidden = false);
 
@@ -33,7 +31,7 @@ const isolate = (el) => ['click', 'mousedown', 'touchstart'].forEach((type) =>
 
 const scoped = scope({ root, init: isolate });
 
-// t`` returns a thenable -> await the text, else u2 treats the promise as the options object.
+// t`` returns a thenable -> await it, else u2 takes the promise as options object.
 Object.assign(root, scoped, {
   alert:   async (text)          => scoped.alert(await text),
   confirm: async (text)          => scoped.confirm(await text),

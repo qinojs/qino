@@ -9,10 +9,10 @@ import type { App } from "./App.ts";
 
 const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qinoSess";
-const TOUCH_INTERVAL = 10; // seconds — `access` is read as "last online", never as an exact time
-const DEFAULT_MAX_IDLE = 30 * 24 * 60 * 60; // seconds a session survives without a request
+const TOUCH_INTERVAL = 10; // seconds — `access` means "last online", not an exact time
+const DEFAULT_MAX_IDLE = 30 * 24 * 60 * 60; // seconds a session lives without a request
 
-/** One session: identity (token/id), server-trusted reactive data, and its own touch timer. */
+/** A session: token/id, trusted reactive data, and its own touch timer. */
 export class Session {
   #db: Db;
   #touchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -21,7 +21,7 @@ export class Session {
   data: ItemProxy;
   /** The row's `settings` json, loaded with the session — `ctx.settings` reads it from here. */
   settings: string | null = null;
-  /** Row state as loaded, so `touch()` can tell whether a write is needed at all. */
+  /** Row state as loaded, so `touch()` knows whether a write is needed. */
   access = 0;
   usrId = 0;
   isNew: boolean;
@@ -39,7 +39,7 @@ export class Session {
 
   get db(): Db { return this.#db; }
 
-  /** Debounced per-session write of last access time and current user, at most once per interval. */
+  /** Write last access and user, at most once per interval. */
   touch(userId = 0): void {
     const time = unixTime();
     if (userId === this.usrId && time - this.access < TOUCH_INTERVAL) return;
@@ -71,7 +71,7 @@ export class SessionManager {
     return this.load(req.cookies[cookiePrefix(app.https, req.appUrl) + COOKIE_NAME]);
   }
 
-  /** A `pinned` token names its session for good: loading never expires it, a missing one is recreated under the same token. */
+  /** A `pinned` session never expires; if missing, it is recreated with the same token. */
   async load(token?: string, pinned = false): Promise<Session> {
     const row = token
       ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${token}`
@@ -79,7 +79,7 @@ export class SessionManager {
     const idle = unixTime() - (Number(row?.access) || 0); // unreadable access = expired
     if (!row || !pinned && idle > await this.maxIdle()) {
       if (!pinned) return this.#create();
-      return this.#create(token).catch(() => this.load(token)); // a parallel first request won the insert: read its row
+      return this.#create(token).catch(() => this.load(token)); // a parallel request inserted it: read that row
     }
     const sess = new Session(this.#db, row.id, token!, row.data, false);
     sess.settings = row.settings;
@@ -94,13 +94,13 @@ export class SessionManager {
     const token = uid();
     await this.#db.table("sess").update(row.id, { token, data: EMPTY_SESSION, access: unixTime() });
     const sess = new Session(this.#db, row.id, token, EMPTY_SESSION, true);
-    sess.settings = row.settings; // the row keeps its settings, only identity and data are rotated
+    sess.settings = row.settings; // settings stay, only identity and data are rotated
     sess.access = unixTime();
     return sess;
   }
 
-  /** Send the cookie when the session was created or rotated this request (`regenerateId` yields a new-marked
-   *  session). Idempotent per session object, so `login()` and the core request path can both call it. */
+  /** Send the cookie if the session was created or rotated in this request. Idempotent, so
+   *  `login()` and the request path can both call it. */
   setCookieIfNew(ctx: Ctx): void {
     if (!ctx.sess.isNew || ctx.sess.cookieSent || ctx.statelessAuth) return;
     ctx.sess.cookieSent = true;

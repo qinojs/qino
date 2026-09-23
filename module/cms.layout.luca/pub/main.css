@@ -1,6 +1,5 @@
-/* Editorial layout for image-led sites. Everything is derived from the u2 variables —
-   a site sets --color and is done. #content is not wrapped in a measure: the content
-   modules decide, so a section can bleed to the edge while the next one stays narrow. */
+/* Layout for image-led sites, built on u2 variables (--color is enough). #content has no width
+   limit: each section decides, so one can span the full width and the next stay narrow. */
 
 #container {
   --line: color-mix(in srgb, var(--color-line), transparent 85%);
@@ -38,15 +37,12 @@
       margin-inline: auto;
     }
 
-    /* Narrow: the menu is a panel behind a button — a popover, so it opens in the top
-       layer, closes on Esc or a tap beside it, and needs no script. Wide: the panel is
-       display:contents, which beats the UA rule that keeps a closed popover hidden, and
-       the nav is a plain flex item of the bar again. */
+    /* Narrow: the menu is a popover behind a button (top layer, closes on Esc or outside tap, no
+       script). Wide: display:contents overrides the UA rule hiding closed popovers. */
     .head-burger {
       flex: none;
       margin-inline-start: auto;
-      /* The root font is fluid, so 2.75rem alone can land near 37px on a phone —
-         under the 44px a fingertip reliably hits. The px floor is the guarantee. */
+      /* The root font is fluid, so ensure at least 44px touch size. */
       width: max(2.75rem, 44px);
       height: max(2.75rem, 44px);
       padding: 0;
@@ -67,8 +63,7 @@
       box-shadow: 0 -.45rem, 0 .45rem;
     }
 
-    /* The panel is a sheet at the bottom edge, where the thumb is — not a curtain from
-       the top, which would put the first entry furthest from the hand. */
+    /* The panel opens at the bottom, within thumb reach. */
     #head-nav {
       position: fixed;
       inset: auto 0 0;
@@ -77,7 +72,7 @@
       overflow: auto;
       overscroll-behavior: contain; /* scrolling the panel must not scroll the page behind it */
       margin: 0;
-      /* the safe area is the iOS home bar: without it the last row sits under it */
+      /* keep clear of the iOS home bar */
       padding: .5rem max(var(--gap), env(safe-area-inset-right))
                max(var(--gap), 1.25rem, env(safe-area-inset-bottom))
                max(var(--gap), env(safe-area-inset-left));
@@ -89,8 +84,7 @@
       box-shadow: 0 -.5rem 1.5rem rgb(0 0 0 / .18);
     }
 
-    /* The close button is inside the panel because the burger that opened it lies under
-       the backdrop and reads as disabled. A tap beside the sheet still dismisses. */
+    /* Close button inside the panel (the burger is under the backdrop). Tapping outside also closes. */
     .head-nav-close {
       display: block;
       margin-inline-start: auto;
@@ -119,10 +113,8 @@
       background: rgb(0 0 0 / .45);
     }
 
-    /* The sheet slides in from the edge it belongs to. `allow-discrete` on display and
-       overlay is what lets a popover animate at all — without it it is simply there.
-       Scoped to the narrow layout: above 48rem the panel is display:contents and must
-       never be translated or faded. */
+    /* Slide in from the bottom; `allow-discrete` makes the popover animatable. Narrow layout only
+       (wide uses display:contents). */
     @media (width < 48rem) and (prefers-reduced-motion: no-preference) {
       #head-nav {
         translate: 0 100%;
@@ -155,11 +147,8 @@
         list-style: none;
       }
 
-      /* narrow: the whole menu is one column, sub-levels open and thumb-reachable.
-         No gap between the rows — a hairline separates them instead, so the tappable
-         area of one row reaches the next and there is no dead strip to miss into.
-         The separator is stated inside the narrow query, not reset in the wide one:
-         once the column turns into a row, a border-top is a line above every entry. */
+      /* narrow: one column, sub-levels open. Rows are separated by a hairline instead of a gap,
+         so there is no untappable strip. Only in the narrow query (in a row it would look wrong). */
       > ul {
         display: flex;
         flex-direction: column;

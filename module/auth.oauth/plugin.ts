@@ -57,8 +57,8 @@ export const api: ApiTree = {
   },
 };
 
-/** Decode a JWT payload without verifying the signature — safe here: the token comes
- *  straight from the token endpoint over TLS (OIDC allows skipping the signature check). */
+/** Decode a JWT payload without checking the signature — fine here: it comes from the token
+ *  endpoint over TLS (allowed by OIDC). */
 function jwtPayload(token: string): any {
   return JSON.parse(new TextDecoder().decode(unb64url(token.split(".")[1] ?? "")));
 }
@@ -76,8 +76,7 @@ function discover(issuer: string): Promise<any> {
   return doc;
 }
 
-/** Endpoints for a provider. Explicit `authorize_url` = plain OAuth2 (no id_token, identity via
- *  userinfo); otherwise standard OIDC discovery over the issuer. */
+/** A provider's endpoints. `authorize_url` set = OAuth2 (identity via userinfo); else OIDC discovery. */
 async function endpoints(p: any): Promise<{ authorize: string; token: string; userinfo?: string; oidc: boolean }> {
   if (p.authorize_url) return { authorize: p.authorize_url, token: p.token_url, userinfo: p.userinfo_url || undefined, oidc: false };
   const m = await discover(p.issuer);
@@ -96,7 +95,7 @@ async function provider(app: App, name: string): Promise<any> {
   return p;
 }
 
-/** Distill an id_token / userinfo response into canonical identity fields (providers vary in naming). */
+/** Normalize an id_token / userinfo response to common identity fields. */
 export function identity(c: any): { sub: string; email: string; verified: boolean; given_name: string; family_name: string } {
   const full = String(c.name ?? c.global_name ?? c.username ?? c.login ?? "").trim();
   const [first, ...rest] = full.split(/\s+/);
@@ -110,20 +109,16 @@ export function identity(c: any): { sub: string; email: string; verified: boolea
 }
 
 /**
- * Map a distilled identity to a usr id (0 = deny). A remembered `sub` wins: it is the one thing the
- * provider keeps stable, so a changed e-mail on either side no longer moves the account. Whoever is
- * not known yet is matched by verified e-mail, optionally created — and remembered from then on.
+ * Map an identity to a usr id (0 = deny). A saved `sub` wins (stable, unlike the e-mail). Unknown
+ * identities are matched by verified e-mail, optionally created, then linked.
  *
- * Coming back to a session that already knows someone means "connect this to me": the link is made
- * for whoever is signed in, and an identity belonging to somebody else is refused rather than
- * silently switching account. A login parked here waiting for a second factor accepts only a link
- * it already has.
+ * With a signed-in user it means "connect to me": linked to that user; an identity of another user
+ * is refused. A pending login (second factor) only accepts an existing link.
  */
 export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
   const db = ctx.app.db;
   const here = identified(ctx);
-  // An e-mail off the allowed domains is refused wherever one is given — but a provider that stops
-  // sending one (Apple does) must not lock out a link that already exists.
+  // Refuse e-mails outside the allowed domains — but without an e-mail (Apple) keep existing links.
   const domains = String(p.allowed_domains ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (id.email && domains.length && !domains.includes(id.email.split("@")[1] ?? "")) return 0;
 
@@ -137,13 +132,13 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     }
   }
 
-  // A login under way is finished only by a link it already has: whoever knows the password would
-  // otherwise connect their own provider account as the missing factor. Connecting needs a session.
+  // A pending login only accepts an existing link; otherwise a password holder could connect their
+  // own provider account as second factor. Connecting needs a session.
   if (here && !ctx.userId) return 0;
   let usrId = ctx.userId;
   if (!usrId) {
-    // Never link/create on an e-mail the provider does not vouch for. A missing claim counts as
-    // unconfirmed: a provider whose userinfo mail is editable would otherwise hand over accounts.
+    // Only verified e-mails; a missing claim counts as unverified (editable provider e-mails would
+    // otherwise allow takeovers).
     if (!id.email || !id.verified) return 0;
     // whoever owns the address owns the account — the contact is proven, a login handle is not
     usrId = await contactOwner(db, "email", id.email) ?? 0;
@@ -155,8 +150,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
       }));
     }
   }
-  // The provider confirmed the address, which is the same proof a code of ours would be. One that
-  // already belongs to somebody else stays theirs — connecting a provider cannot take it over.
+  // A provider-verified address counts like our own verification; addresses of other users stay theirs.
   if (id.email && id.verified) await addContact(db, usrId, "email", id.email).catch(() => {});
   if (id.sub) {
     const now = unixTime();
@@ -169,8 +163,8 @@ const CONNECT_TTL = 300;
 
 /** Redirect the browser to the provider's authorization endpoint (OIDC uses code flow + PKCE). */
 async function start(ctx: Ctx, name: string): Promise<never> {
-  // Signed in, this hands out another way into the account. A route cannot demand a proof (a
-  // StepUpError would be a 403 page, not the dialog), so the button calls `connect` first.
+  // Signed in, this adds a way into the account. Routes can't require a step-up (it would be a 403
+  // page), so the button calls `connect` first.
   const proved = Number(ctx.sess.data.oauth.proved() ?? 0);
   if (ctx.userId && unixTime() - proved > CONNECT_TTL) throw new Output("connect not confirmed", { status: 403 });
 
@@ -241,8 +235,8 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  // Already this user: a provider was connected, no session to open. A factor still owed is asked
-  // for by the page we return to; an empty list means nothing would finish the login.
+  // Same user: a provider was connected, no new session. A missing factor is asked for on the return
+  // page; an empty list means the login can't be finished.
   const missing = usrId && usrId !== ctx.userId ? await proof(ctx, "oauth", usrId) : undefined;
   if (!usrId || missing?.length === 0) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));

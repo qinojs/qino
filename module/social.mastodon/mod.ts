@@ -1,4 +1,3 @@
-// Public API of social.mastodon. The qino plugin lives in ./plugin.ts.
 import { safeFetch } from "@qino/qino";
 import { ProviderError } from "@qino/qino/social";
 

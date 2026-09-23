@@ -1,9 +1,8 @@
 # cms.cont.html
 
-A content node whose markup lives in its own file, rendered through
-[cms.templateParser](../cms.templateParser/README.md) — plain HTML plus the
-`cms-text` / `cms-link` / `<cms-image>` / `<cms-cont>` constructs. Without
-those it is just HTML, so the module covers both.
+A content node whose markup is in its own file, rendered by
+[cms.templateParser](../cms.templateParser/README.md) — plain HTML, optionally
+with `cms-text` / `cms-link` / `<cms-image>` / `<cms-cont>`.
 
 Files of node `12`, below the app directory:
 
@@ -13,13 +12,11 @@ Files of node `12`, below the app directory:
 | `data/cms.cont.html/pub/12.css` | `d/cms.cont.html/pub/12.css` |
 | `data/cms.cont.html/pub/12.js`  | `d/cms.cont.html/pub/12.js`  |
 
-HTML is created with its initial content on rendering in edit mode or opening. CSS and JS are
-created individually when opened in the panel or through the API. The HTML
-examples are commented out until you need them. css and js are linked only while they exist, the js as a module
-script. Superusers edit all three from the options panel via
-[fileEditor](../fileEditor/), and a saved file takes effect with the next
-request.
+The HTML file is created with starter content when the node is rendered in edit mode or opened;
+its examples are commented out. CSS and JS are created when opened in the panel or via the API,
+and are only linked while they exist (JS as module script). Superusers edit all three in the
+options panel via [fileEditor](../fileEditor/); changes apply on the next request.
 
-Paths and creation live in [codeFiles.ts](codeFiles.ts); `data/<module>/` is what the
-app keeps for a module ([Module.data](../core/lib/ModuleManager.ts)).
+Paths and creation: [codeFiles.ts](codeFiles.ts); `data/<module>/` is the module's data directory
+([Module.data](../core/lib/ModuleManager.ts)).
 [cms.cont.ts](../cms.cont.ts/README.md) is the same idea with a TS file instead.

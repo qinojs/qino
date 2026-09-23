@@ -1,16 +1,15 @@
-/* Widget kernel. A widget is one module that owns its content, behaviour and style.
-  * It renders no frame: `head` and `badge` are announced, and whoever mounted the widget
-  * decides how to show them — as a panel accordion, or not at all.
+/* Widget kernel. A widget is a module with its own content, behaviour and style. It renders no
+  * frame: it announces `head` and `badge`, and the mounting code decides how to show them.
   *
-  * Widgets are created in code only: activation lives in a WeakMap, never in an attribute,
-  * so a <qcms-widget> arriving through injected html has no source and stays inert. */
+  * Widgets are only created in code (state in a WeakMap, not attributes), so an injected
+  * <qcms-widget> stays inert. */
 import { html } from '@qino/pub/html.js';
 
 const states = new WeakMap();
 const adopted = new WeakMap(); // root -> srcs already adopted there
 
-// The stylesheet follows the mount point, so a widget works in the panel, in a dialog
-// or straight in the page — the kernel knows nothing about any of them.
+// The stylesheet is adopted into the mount point's root, so widgets work in the panel, a dialog
+// or the page.
 const adopt = (el, src, css) => {
   const root = el.getRootNode();
   if (!css || !root.adoptedStyleSheets) return;
@@ -27,7 +26,7 @@ class Widget extends HTMLElement {
 
   connectedCallback() {
     const s = states.get(this);
-    if (!s) return; // not created by widget(): no source, nothing
+    if (!s) return; // not created by widget(): inert
     run(s);
   }
   disconnectedCallback() {
@@ -39,14 +38,12 @@ class Widget extends HTMLElement {
   set head(v) { Promise.resolve(v).then((text) => { this.#head = text; this.#announce(); }); }
   get head() { return this.#head; }
 
-  /** The marker next to the head: a value, or `[{ text, class }, …]` for several.
-    * Falsy means none; set it any time, no re-render. */
+  /** Marker next to the head: a value, or `[{ text, class }, …]`. Falsy = none. No re-render. */
   set badge(v) { this.#badge = v; this.#announce(); }
   get badge() { return this.#badge; }
 
   #announce() {
-    // Not bubbling: the frame listens on the element it mounted, so a widget nested inside
-    // another one announces its head to its own frame, never to the one above it.
+    // Not bubbling, so nested widgets only reach their own frame.
     this.dispatchEvent(new CustomEvent('qcms-widget-head', {
       detail: { head: this.#head, badge: this.#badge },
     }));
@@ -65,12 +62,11 @@ class Widget extends HTMLElement {
     return html.async(strings, ...values).then((h) => { this.innerHTML = h; return this; });
   }
 
-  /** A widget inside this one: same factory, so a module nests widgets without importing the
-    * kernel. The caller places it and frames it; removing this one takes the child with it. */
+  /** A child widget, without importing the kernel. The caller places it; it is removed with its parent. */
   widget(src, context = {}) { return widget(src, context); }
 
-  /** Listener on the content, dropped automatically on reload and disconnect.
-    * With a selector it is delegated: `on(type, selector, fn)`; without: `on(type, fn)`. */
+  /** Listener on the content, removed on reload and disconnect. `on(type, selector, fn)` delegates,
+    * `on(type, fn)` doesn't. */
   on(type, selector, fn) {
     if (!fn) [selector, fn] = [null, selector];
     const signal = states.get(this)?.abort?.signal;
@@ -97,7 +93,7 @@ async function run(s) {
   const signal = (s.abort = new AbortController()).signal;
   try {
     const mod = await import(s.src);
-    if (gen !== s.gen) return; // a newer run took over while we waited
+    if (gen !== s.gen) return; // a newer run started meanwhile
     adopt(s.el, s.src, mod.css);
     const cleanup = await mod.default(s.el, { ...s.context, signal });
     if (gen !== s.gen) await cleanup?.();

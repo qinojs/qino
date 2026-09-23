@@ -6,8 +6,7 @@ export function cmsCtx(ctx: Ctx): CmsContext {
   return ctx.state.cms ??= new CmsContext();
 }
 
-// Per-request CMS context. Lives on the request object because the data is per-request —
-// no app-singleton detour. Core does not know about cms.
+// Per-request CMS context, stored on the request. Core knows nothing about cms.
 export class CmsContext {
   mainNode!: Node;
   requestedNode!: Node;

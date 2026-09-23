@@ -1,12 +1,8 @@
-/* The list panel every container shares: add an entry, sort them, rename, copy, delete.
+/* The shared list panel for containers: add, sort, rename, copy, delete entries.
  *
- * The successor of items2's options.php. The list lives here and not on the page because the
- * block already knows what an entry is — "Add entry" creates it without a module picker, and
- * nothing foreign can be dropped in between two entries.
- *
- * It sits in cms.cont.flexible because that is the plainest container there is: whoever borrows
- * the list gets no rendering with it. What a host does with the container itself — flexible's
- * "replace by content" — stays in the host's own widget and comes in as `extra`. */
+ * Successor of items2's options.php. "Add entry" creates the configured module without a picker.
+ * Lives in cms.cont.flexible (the simplest container), so borrowing it brings no rendering along.
+ * Container-specific actions (flexible's "replace by content") come in as `extra`. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
@@ -45,15 +41,12 @@ export const css = `
 const short = (module) => String(module ?? '').replace(/^cms\.cont\./, '').replace(/\./g, ' ');
 
 /**
- * @param widget   the widget element: it renders (`html`), listens (`on`), reloads itself
- * @param context  `node`, `dialogs`, `signal` from the mount, plus two optional fixings:
- *                 `module` — what an entry is, and `position` ("top" / "bottom") — where a new
- *                 one goes. A listing module passes them when it re-exports this widget; then
- *                 there is nothing to choose and no control for it. Left out, both come from
- *                 the node's settings and the editor decides.
- *                 `extra` — `(rows) => fragment`, rendered under the panel: what the host has
- *                 to say about the container itself. It gets the entries the list already read,
- *                 and binds its own handlers with `widget.on` after awaiting this.
+ * @param widget   the widget element (`html`, `on`, reload)
+ * @param context  `node`, `dialogs`, `signal` from the mount, plus optional:
+ *                 `module` (entry type) and `position` ("top" / "bottom") — if given, they are
+ *                 fixed and get no control; else they come from the node's settings.
+ *                 `extra` — `(rows) => fragment`, rendered below the list with the loaded entries;
+ *                 bind its handlers with `widget.on` after awaiting this.
  */
 export default async function (widget, { node, dialogs, signal, module: fixedModule, position: fixedPosition, extra }) {
   const ref = api.cms.node(node.id);
@@ -70,8 +63,7 @@ export default async function (widget, { node, dialogs, signal, module: fixedMod
   const rows = (contents ?? []).map((c) => ({ id: c.id, module: c.module, title: c.title }));
   const fixed = !!fixedModule;
   const module = fixedModule || String(settings?.['default module'] ?? '') || 'cms.cont.flexible';
-  // The assignable content modules, plus whatever is set — a module the picker would not offer
-  // must not silently disappear from the list and change what a new entry is.
+  // Assignable modules plus the current one, so a module not in the picker doesn't vanish.
   const conts = (modules ?? []).filter((m) => m.kind === 'cont');
   if (!fixed && !conts.some((m) => m.name === module)) conts.unshift({ name: module });
   conts.sort((a, b) => a.name.localeCompare(b.name));
@@ -142,9 +134,8 @@ export default async function (widget, { node, dialogs, signal, module: fixedMod
   widget.on('click', '.-add', async () => {
     const first = widget.querySelector('.-row');
     const made = await ref.contents.post({ module: widget.querySelector('.-default')?.value || module });
-    // A fresh cont has no sort yet and children come back `ORDER BY type DESC, sort, id DESC`, so
-    // where it lands is not decided by the creation. `insert-before` decides it: before the first
-    // entry, or — with no `before` — after the last one.
+    // A new cont has no sort value yet; `insert-before` places it before the first entry, or
+    // (without `before`) after the last.
     await ref['insert-before'].put({ id: String(made.id), before: onTop && first ? rid(first) : undefined });
     redraw();
     widget.reload();

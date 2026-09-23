@@ -11,15 +11,14 @@ import type { Node } from "./lib/Node.ts";
 
 // deno-lint-ignore-file no-explicit-any
 
-// Static gate: a node read is reachable for anyone, everything above read needs a user — without one
-// neither page_access_usr nor groups are consulted and page.access tops out at 1 (read).
-// The per-call level is checked against the resolved node in guard.
+// Reading is open to anyone; more than read needs a user (without one, page.access gives at most 1).
+// The actual level is checked per node in guard.
 const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2 || (a >= 1 && node.isOnline())) };
 const nodeWrite = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
 const nodeAdmin = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
 
-// Adding/assigning a module needs ADMIN ("insertable") on the module axis — an editorial
-// add-gate, not security. cms.accessRules lowers e.access; without it everything is insertable.
+// Adding/assigning a module needs ADMIN ("insertable") on the module axis — editorial, not security.
+// cms.accessRules lowers e.access; without it everything is insertable.
 const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
   if (!ctx.app.modules.get(module)) throw new ValidationError([{ message: `Unknown module "${module}"`, path: ["module"] }]);
   const e = await ctx.app.fire("module:access", { module, user: ctx.user, access: ADMIN });
@@ -29,7 +28,7 @@ const before = s.optional(s.string()).describe("Child of this node to insert abo
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 const fileSource = s.optional(s.string()).describe("http(s) URL to fetch, a data: URI (`data:image/png;name=cat.png;base64,…`) to store inline, or an existing file ID to copy. Omit to create an empty slot");
 
-/** Standalone render (no page request behind it): the rendered node is this request's main node. */
+/** Render without a page request: the rendered node is the request's main node. */
 const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
 
 const ACCESS_LIST = {
@@ -37,8 +36,8 @@ const ACCESS_LIST = {
   grp: { table: "grp", link: "page_access_grp", key: "grp_id", cols: ["grp.name"], label: sql`grp.name`, where: sql`cms_access > 0` },
 } as const;
 
-/** Users or groups with their access level here. Without a search only granted ones, unless the list is short.
-  * Groups inherit, so a node without its own setting reports the ancestor the levels come from. */
+/** Users or groups with their access level. Without search only those with a grant, unless the list is
+  * short. Groups inherit, so a node without own settings reports the ancestor they come from. */
 async function accessList(node: Node, kind: "usr" | "grp", search: string) {
   const c = ACCESS_LIST[kind];
   const db = node.app.db;
@@ -85,9 +84,8 @@ const contentsJson = (node: Node) => fns.treeToJson({
     title: String(await n.showTitle()).trim() || undefined,
   }),
 });
-// Reads run through the output allowlist. The store keeps what the editor sent; nobody reading
-// a text needs the parts that may not be shown, and the inline editor round-trips through the
-// same filter anyway. Unresolved on purpose: cmspid:// links must survive editing.
+// Reads are sanitized like output (the stored text is raw). cmspid:// links stay unresolved, so
+// they survive editing.
 const textsJson = async (node: Node, lang?: string) => {
   const texts = (await node.texts()).entries();
   if (!lang) return Object.fromEntries(texts.map(([name, text]) => [name, text.id]));
@@ -96,7 +94,7 @@ const textsJson = async (node: Node, lang?: string) => {
   ));
 };
 
-/** What a node holds. Only meaningful after a render: modules create conts and texts lazily. */
+/** A node's contents. Only complete after a render: modules create conts and texts lazily. */
 const shape = async (node: Node) => ({
   contents: await contentsJson(node),
   texts:    await textsJson(node),
@@ -225,8 +223,7 @@ const node = {
         names: s.optional(s.string()).describe("Comma-separated field names, e.g. \"title,intro\": answer only these, and create the missing ones when the caller may write. Without it, every field that exists."),
       }),
       execute: async ({ node, values, lang, names }: any, ctx: Ctx) => {
-        // An editor names the fields it edits, so they exist before it renders them — a module
-        // creates its texts lazily, and a panel cannot bind to a field that has no id yet.
+        // Create the named fields first: modules create texts lazily, and the panel needs ids.
         const wanted = String(names ?? "").split(",").map((n: string) => n.trim()).filter(Boolean);
         if (wanted.length && await node.access(ctx.user) >= 2) await Promise.all(wanted.map((n: string) => node.text(n)));
         const all = await textsJson(node, values ? lang ?? ctx.lang : undefined);
@@ -786,11 +783,10 @@ export const api = {
 };
 
 
-// Normalize + validate a user-supplied custom URL path (stored as page_url.url).
-// Only the manual override passes here; internal SEO-generated urls bypass it.
+// Normalize and validate a custom URL path (page_url.url). Only for manual urls, not generated ones.
 function cleanCustomUrl(raw: string): string {
-  const url = raw.trim().replace(/^\/+|\/+$/g, ""); // strip surrounding slashes (also neutralizes //protocol-relative)
-  const invalid = /[\x00-\x1f\x7f]/.test(url) // control chars: header/log injection primitive
+  const url = raw.trim().replace(/^\/+|\/+$/g, ""); // strip slashes (also neutralizes //protocol-relative)
+  const invalid = /[\x00-\x1f\x7f]/.test(url) // control chars: header/log injection
     || /^[a-z][a-z0-9+.-]*:/i.test(url)             // absolute scheme (javascript:, http:, ...)
     || url.length > 255;                             // page_url.url column width
   if (invalid) throw new ValidationError([{ message: "invalid custom url", path: ["url"] }]);

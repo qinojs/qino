@@ -1,20 +1,16 @@
 # cms.cont.map.openstreet
 
-A map, from [OpenStreetMap](https://www.openstreetmap.org). No account, no API key,
-no billing. Give it an address and it finds the place itself.
+A map from [OpenStreetMap](https://www.openstreetmap.org). No account, no API key, no cost.
+Enter an address and it finds the place.
 
 ## What the frame gives away
 
-The map is an `<iframe>` and nothing more, so openstreetmap.org learns what any server
-learns from a request: the visitor's IP address, their user-agent and language, and the
-time. It cannot read the page around it — cross-origin is cross-origin — and
-`referrerpolicy="no-referrer"` keeps it from learning which page embeds it at all. The
-OSM Foundation runs no ad business and sets no tracking cookies.
+The map is a plain `<iframe>`, so openstreetmap.org sees what any server sees: IP address,
+user-agent, language and time. It cannot read the page, and `referrerpolicy="no-referrer"` hides
+which page embeds it. The OSM Foundation sets no tracking cookies.
 
-That is the whole exposure, and it is why the frame is simply there: an interstitial
-"show map" button buys a visitor almost nothing and costs everyone a click. What it does
-buy is spent elsewhere — `loading="lazy"` means a map below the fold is never fetched
-for someone who does not scroll to it.
+So there is no "show map" button — it would protect almost nothing and cost every visitor a click.
+`loading="lazy"` means the map is only loaded when scrolled into view.
 
 ## Settings
 
@@ -28,40 +24,31 @@ Per content, in its options panel:
 | `zoom`    | 12 shows a town, 16 a street, 19 a building (default 16)          |
 | `height`  | height of the map in rem (default 22)                             |
 
-Without a position the content renders nothing for visitors, and a note for editors —
-a map at the wrong place is worse than none.
+Without a position, visitors see nothing and editors a note — a wrong map is worse than none.
 
 ## Address or coordinates
 
-The map itself only ever speaks coordinates; there is no OpenStreetMap parameter that
-takes an address. So an address typed into `address` is resolved once, by
-[Nominatim](https://nominatim.org), and the answer is written back into the content's
-settings under `geo`:
+The embed only takes coordinates. So `address` is looked up once via
+[Nominatim](https://nominatim.org), and the result is saved in the settings under `geo`:
 
 ```json
 "geo": { "q": "Hauptgasse 1, 3280 Murten", "lat": 46.9284, "lon": 7.1147, "label": "…" }
 ```
 
-`geo.q` records which address that pair belongs to. Change the address and it is looked
-up again; leave it and it never is — a page view costs nothing and openstreetmap.org sees
-one request per address, which is what Nominatim's usage policy asks for. Requests are
-serialised a second apart and carry the site's own user-agent, an address that comes back
-empty is not retried for an hour, and the same address asked for by several requests at
-once is looked up once. `geo.label` is Nominatim's own reading of the address — the way to
-tell a marker in the wrong village from one in the right one without opening the map.
+`geo.q` stores which address the coordinates belong to. Only a changed address is looked up
+again, so page views cost nothing and Nominatim gets one request per address, as its usage policy
+asks. Requests are sent one second apart with the site's user-agent; an address without result is
+not retried for an hour; parallel requests for the same address are looked up once. `geo.label` is
+Nominatim's reading of the address — to spot a marker in the wrong village without opening the map.
 
-`lat`/`lon`, when both are set, win over all of this. They are the correction for a
-geocoder that landed next door, and the way to place a marker where no address exists.
+`lat`/`lon`, when both set, win — to correct a wrong result or place a marker without an address.
 
-One text, translated like any other cms text and hidden while empty: `caption`, under
-the map. It is an offer, not an obligation — an empty caption renders no `<figcaption>`
-at all, and the map does not depend on it.
+Optional text `caption` below the map, translatable like any cms text; if empty, no `<figcaption>`
+is rendered.
 
-The frame is named for the address instead: `title="Map: Hauptgasse 1, 3280 Murten"`,
-which is what a screenreader announces when it reaches the frame — "Map" alone would be
-a closed door, and the coordinates are noise to a human. Without an address the title
-falls back to "Map". `title`, not `aria-description`: for an iframe the title *is* the
-accessible name, and `aria-description` is still barely implemented anywhere.
+The frame's `title` names the address (`title="Map: Hauptgasse 1, 3280 Murten"`), which screen
+readers announce; without an address it is "Map". `title`, not `aria-description`: for an iframe
+the title is the accessible name, and `aria-description` is barely supported.
 
 ## What it renders
 
@@ -72,15 +59,13 @@ accessible name, and `aria-description` is still barely implemented anywhere.
 </figure>
 ```
 
-No JavaScript of its own. `frame-src` for openstreetmap.org is added to the response's
-CSP by the module itself, and only where a map is actually on the page.
+No JavaScript. The module adds `frame-src` for openstreetmap.org to the CSP, only on pages with a
+map.
 
 ## Ideas, not built
 
-- **The identity address.** `address` is typed in. A map showing the organisation's own
-  address could take it from the [identity](../identity/) module instead of repeating it.
-- **Lookup at edit time.** The address is resolved during the first render that needs it,
-  which makes that one request a little slower and leaves the editor to find a bad address
-  by looking at the page. A lookup when the setting is saved would say so on the spot.
-- **Own tiles.** `layer=mapnik` uses the OSM Foundation's tiles, whose usage policy is
-  meant for modest traffic. A busy site should point the embed at its own tile server.
+- **Identity address.** Take the address from [identity](../identity/) instead of typing it again.
+- **Lookup on save.** Today the first render looks it up (slightly slower, and the editor only sees
+  a bad address on the page). Looking up when saving would report it right away.
+- **Own tiles.** `layer=mapnik` uses OSM Foundation tiles, meant for modest traffic. Busy sites
+  should use their own tile server.

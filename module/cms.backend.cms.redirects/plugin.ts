@@ -17,9 +17,8 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-/* Direct links are written from three places — the URL panel of a node, the admin box on a
-   404 page, and this list. Only this one shows all of them at once, which is what makes the
-   forgotten ones findable. The data stays in page_redirect; there is no store of its own. */
+/* Direct links are created in the node's URL panel, the admin box on 404 pages, and here. This
+   list shows all of them. Data is in page_redirect. */
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const { t } = node.app;
 
@@ -33,10 +32,8 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   const search = ctx.req.query.search ?? "";
 
-  /* No stylesheet of its own: cms.layout.backend already dresses .u2-card and .u2-table, and
-     the rest is html — `size` on the inputs, badges for state, u2-alert for a message.
-     flex-grow:0 undoes the layout's `.u2-card { flex-grow:1 }`: a table of short paths would
-     otherwise stretch across a wide screen instead of staying as wide as it needs to be. */
+  /* No own stylesheet (cms.layout.backend styles .u2-card and .u2-table). flex-grow:0 overrides
+     the layout's `.u2-card { flex-grow:1 }`, so the table isn't stretched. */
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-grow:0">
         <div class=-head>${t`New direct link`}</div>

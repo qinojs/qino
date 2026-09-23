@@ -35,10 +35,9 @@ export const dbSchema = {
   },
 };
 
-/** Module-axis access for a user (or guest), or undefined = no rule at all.
- *  module.cms_access is the default for everyone (0 = module off, null = no rule);
- *  a group override replaces that default — but never exceeds the group's cms_access
- *  cap. The most permissive group wins. */
+/** Module-axis access for a user (or guest); undefined = no rule. module.cms_access is the default
+ *  (0 = off, null = no rule); a group override replaces it, capped by the group's cms_access. The
+ *  most permissive group wins. */
 async function moduleCap(app: App, module: string, user?: Usr | null): Promise<number | undefined> {
   const std = (await standards(app)).get(module); // undefined = no rule
   const base = std ?? 3;
@@ -60,8 +59,8 @@ async function moduleCap(app: App, module: string, user?: Usr | null): Promise<n
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  // cap the node access by the module axis; a logged-in user never ends up
-  // below the guest baseline of the node (deny standard = 0 for guests too).
+  // limit node access by the module axis, but never below the guest level (standard = 0 hides it
+  // for guests too).
   app.on("node:access", async (e) => {
     if (!e.access || e.user?.superuser) return;
     const module = String(e.node.module?.name ?? "");

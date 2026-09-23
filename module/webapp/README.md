@@ -1,17 +1,15 @@
 # webapp
 
-`webapp` projects the instance identity into browser metadata and a Web App Manifest.
-The public identity remains owned by [`identity`](../identity/): name, alternate name,
-description, brand colors and the source icon are read from there. This module owns only
-launch behaviour and browser-specific document metadata.
+`webapp` turns the site identity into browser metadata and a Web App Manifest. Name, alternate
+name, description, colors and icon come from [`identity`](../identity/); this module only adds
+launch behaviour and browser-specific metadata.
 
-The manifest `id`, `scope` and `start_url` always use the request's application base URL. A
-Qino instance represents one web app, so keeping separate settings for those identical values
-would introduce unnecessary alternate identities and navigation boundaries.
+The manifest's `id`, `scope` and `start_url` are always the app's base URL — one Qino instance is
+one web app, so no settings for them.
 
-It serves `manifest.webmanifest`, redirects conventional favicon and Apple touch-icon
-requests to the identity icon, and adds the corresponding `<meta>` and `<link>` elements
-to rendered HTML. Other modules may extend the generated object in place:
+It serves `manifest.webmanifest`, redirects the usual favicon and Apple touch-icon requests to the
+identity icon, and adds the `<meta>` and `<link>` elements to HTML pages. Modules can extend the
+manifest:
 
 ```ts
 app.on("webapp:manifest", ({ manifest }) => {
@@ -21,31 +19,24 @@ app.on("webapp:manifest", ({ manifest }) => {
 
 ## Known limits
 
-- Offline behaviour is deliberately not part of this module. It belongs in a separate
-  contributor to [`serviceworker`](../serviceworker/).
-- In-page installation prompts and platform-specific installation instructions are not
-  implemented. Installation currently uses the browser or operating system's own UI.
-- The identity module currently stores one general source icon. Raster dimensions are not
-  persisted, so the manifest does not claim generated `192x192` or `512x512` sizes it cannot
-  prove. SVG icons are marked `sizes: "any"`; raster icons are published without `sizes`.
-  Dedicated maskable and monochrome icon variants are not implemented yet.
-- Apple touch-icon and favicon redirects request PNG transforms, but the transformer does not
-  upscale small raster sources, so a small uploaded identity icon remains small. SVG sources are
-  rasterized to the requested size, which needs librsvg (or Inkscape) on the host; without either
-  the SVG is delivered unchanged and Apple clients show no icon.
-- Manifest localization is not implemented because identity strings are not localized yet.
-- The legacy health-check warnings for missing operator, theme and background data have no
-  counterpart yet. The values can be edited in the Identity backend, but are not enforced.
-- Shortcuts, screenshots, maskable icons and other optional manifest extensions have no
-  dedicated settings UI. Modules can add them through `webapp:manifest`.
-- `SKYPE_TOOLBAR_PARSER_COMPATIBLE` is retained with disabled telephone detection for legacy
-  Skype browser integrations; current browsers may ignore it.
-- Apple's standalone and status-bar meta elements are non-standard compatibility extensions
-  still used by iOS Home Screen web apps. Their exact rendering remains platform-dependent;
-  `black-translucent` is still a supported web meta value despite the similarly named native
-  UIKit enum being deprecated.
-- The backend iframe schematically cycles through a home screen, generated launch screen and
-  loaded page. Icon masks, installation surfaces and browser chrome vary by browser, operating
-  system and manifest support. The preview leaves the source icon unmasked instead of predicting
-  a system treatment. Selecting a preview stage stops the cycle on that stage.
+- No offline support here; that belongs in a separate [`serviceworker`](../serviceworker/) part.
+- No in-page install prompt or install instructions; the browser's own UI is used.
+- `identity` stores one icon without known pixel size, so the manifest claims no `192x192` or
+  `512x512`. SVG icons get `sizes: "any"`, raster icons no `sizes`. No maskable or monochrome
+  variants yet.
+- Favicon and Apple touch-icon redirects request PNGs, but small raster icons are not upscaled.
+  SVGs are rendered to size with librsvg (or Inkscape); without them the SVG is sent as is and
+  Apple devices show no icon.
+- No manifest localization, since identity texts aren't localized yet.
+- The old health-check warnings for missing operator, theme and background data are not ported.
+  The values can be edited in the Identity backend but aren't required.
+- No settings UI for shortcuts, screenshots and other optional manifest fields; modules can add
+  them via `webapp:manifest`.
+- `SKYPE_TOOLBAR_PARSER_COMPATIBLE` (telephone detection off) is kept for old Skype browser
+  plugins; current browsers ignore it.
+- Apple's standalone and status-bar meta tags are non-standard but still used by iOS home screen
+  apps; `black-translucent` is still valid there.
+- The backend preview cycles through home screen, launch screen and loaded page. It is only a
+  sketch — real icon masks and browser chrome differ per platform, so the icon is shown unmasked.
+  Clicking a stage stops the cycle there.
 - html.meta["application-name"] = name; not needed anymore

@@ -26,7 +26,7 @@ type Preset = {
 // OIDC = issuer (discovery). OAuth2 = explicit endpoints. Authentik uses per-provider issuer mode.
 const PRESETS: Record<string, Preset> = {
   google:     { issuer: "https://accounts.google.com", scopes: "openid email profile", console_url: "https://console.cloud.google.com/apis/credentials" },
-  microsoft:  { issuer: "https://login.microsoftonline.com/common/v2.0", scopes: "openid email profile", console_url: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" }, // "common" statt fixem Tenant, damit es ohne Kunden-Tenant-ID sofort funktioniert
+  microsoft:  { issuer: "https://login.microsoftonline.com/common/v2.0", scopes: "openid email profile", console_url: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" }, // "common" instead of a fixed tenant, so it works without a customer tenant id
   apple:      { issuer: "https://appleid.apple.com", scopes: "openid email name", console_url: "https://developer.apple.com/account/resources/identifiers/list/serviceId" },
   auth0:      { issuer: "https://<tenant>.auth0.com", scopes: "openid email profile", console_url: "https://manage.auth0.com/" },
   okta:       { issuer: "https://<tenant>.okta.com", scopes: "openid email profile", console_url: "https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/" },
@@ -38,7 +38,7 @@ const PRESETS: Record<string, Preset> = {
   slack:      { issuer: "https://slack.com", scopes: "openid email profile", console_url: "https://api.slack.com/apps" },
   salesforce: { issuer: "https://login.salesforce.com", scopes: "openid email profile", console_url: "https://help.salesforce.com/s/articleView?id=sf.connected_app_create.htm" },
   yahoo:      { issuer: "https://api.login.yahoo.com", scopes: "openid email profile", console_url: "https://developer.yahoo.com/apps/create/" },
-  twitch:     { issuer: "https://id.twitch.tv/oauth2", scopes: "openid", console_url: "https://dev.twitch.tv/console/apps/create" }, // email-Claim braucht zusätzlich "user:read:email"-Scope + expliziten claims-Request, kein Standard-"profile"-Scope
+  twitch:     { issuer: "https://id.twitch.tv/oauth2", scopes: "openid", console_url: "https://dev.twitch.tv/console/apps/create" }, // the email claim also needs the "user:read:email" scope + an explicit claims request; no standard "profile" scope
   paypal:     { issuer: "https://www.paypal.com", scopes: "openid email profile", console_url: "https://developer.paypal.com/dashboard/applications/live" },
   github:   { scopes: "read:user user:email", authorize_url: "https://github.com/login/oauth/authorize", token_url: "https://github.com/login/oauth/access_token", userinfo_url: "https://api.github.com/user", email_url: "https://api.github.com/user/emails", console_url: "https://github.com/settings/applications/new" },
   discord:  { scopes: "identify email", authorize_url: "https://discord.com/oauth2/authorize", token_url: "https://discord.com/api/oauth2/token", userinfo_url: "https://discord.com/api/users/@me", console_url: "https://discord.com/developers/applications" },
@@ -65,8 +65,7 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
   const text = (k: string, ph = "") => html`<input name=${k} value="${v(k)}" placeholder="${ph}" autocomplete=off>`;
-  // autocomplete: a password field makes the browser read the whole form as a login and offer the
-  // saved one; `new-password` says this is not that form.
+  // `new-password`, so the browser doesn't treat this as a login form and autofill it.
   return html`<form method=post action="${action}" autocomplete=off>
 
   ${isNew ? "" : 
@@ -185,8 +184,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-/** Who is connected to what. The link is what a login follows, so it is the answer to "why does
- *  this account open" — and unlinking here is the only way to break it. */
+/** Which users are linked to which provider accounts. Logins follow these links; unlinking here
+ *  removes them. */
 async function links(app: App, csrf: string): Promise<HtmlString> {
   const rows = await app.db.query`
     SELECT l.provider, l.sub, l.usr_id, l.created, l.last_used, u.username

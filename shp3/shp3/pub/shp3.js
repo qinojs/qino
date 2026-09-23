@@ -1,8 +1,6 @@
-// The shop's client side. Everything a page can do without knowing which module rendered it:
-// [shp3-add] forms add to the cart from anywhere, and [shp3-price] elements follow the form live.
+// Shop client: [shp3-add] forms add to the cart from anywhere, [shp3-price] shows the live price.
 //
-// Nothing here announces changes — api does that itself. Whoever wants to follow the cart listens
-// to the call, no matter who made it:
+// To follow cart changes, listen to the api calls:
 //
 //   api.on("POST|PUT shp3/cart/*", ({ value }) => badge.set(value.cart.quantity));
 import { api } from "@qino/pub/api.js";

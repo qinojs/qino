@@ -46,7 +46,7 @@ export function reportIp(app: App, ip: string, weight: number, reason: string): 
   reports.unshift({ time: t, ip, weight, reason });
   reports.length = Math.min(reports.length, REPORTS);
   const e = keys.get(key);
-  // A full map drops the faded ones, then the weakest until it fits; what is stored comes back anyway.
+  // When full, drop faded entries, then the weakest (stored ones are reloaded anyway).
   if (!e && keys.size >= MAX) {
     for (let min = 1; keys.size >= MAX; min *= 2) {
       for (const [k, v] of keys) if (decay(v, t) < min) keys.delete(k);
@@ -71,8 +71,7 @@ function store(app: App, key: string, add: number): void {
   writes.set(key, write);
 }
 
-/** The log_ip row of a key; an IPv6 network gets its own row next to the addresses.
- *  A concurrent insert by the request log wins the race; its row is read then. */
+/** The log_ip row of a key (IPv6 networks get their own row). On a parallel insert, read that row. */
 async function keyId(app: App, key: string): Promise<number> {
   const table = app.db.table("log_ip");
   const find = () => table.rowBy("ip", key);

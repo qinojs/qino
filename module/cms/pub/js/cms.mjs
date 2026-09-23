@@ -98,7 +98,7 @@ function saveTxt(el) {
   cleanUpEl(el);
   api.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
-// composedPath()[0] (read sync, before debounce) resolves the target inside the qino-cms shadow root too
+// composedPath()[0] (read before debounce) finds the target inside the qino-cms shadow root too
 const saveTxtDebounced = debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
 document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
@@ -121,7 +121,7 @@ globalThis.cms      = cms;
 globalThis.dbFile   = DbFile;
 globalThis.dbFileUrl = DbFileUrl;
 
-// last: on() runs right away for nodes already in the page and needs the cms above
+// last: on() runs at once for existing nodes and needs cms
 new SelectorObserver({ on: el => {
   if (el.__cms_initialized) return;
   const module = cms.el.module(el);

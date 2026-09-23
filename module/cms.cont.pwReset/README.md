@@ -1,14 +1,12 @@
 # cms.cont.pwReset
 
-Put this element on a page and "I forgot my password" works. One page serves both halves: no
-`?t=` in the URL asks for the address, a `?t=` shows the new-password form.
+Put this element on a page for "I forgot my password". Without `?t=` in the URL it asks for the
+address; with `?t=` it shows the new-password form.
 
-The link carries a [ticket](../ticket/) of kind `auth.pwReset`, valid an hour. Opening it only
-looks — the ticket is spent when the form is submitted, so a mail scanner following the link
-cannot burn it. Both the mail and the form say when it runs out, the form as a live countdown.
-Redeeming sets the password and deletes every session of that user: a reset is also how
-someone takes their account back.
+The link carries a [ticket](../ticket/) of kind `auth.pwReset`, valid one hour. Opening it only
+checks; the ticket is used when the form is submitted, so mail scanners can't use it up. Mail and
+form show when it expires (the form as a countdown). Redeeming sets the password and ends all
+sessions of the user — a reset is also how someone takes their account back.
 
-Requesting always answers the same, whether the address has an account or not — otherwise the
-form is a way to find out who is registered. The mail is sent without waiting for it, or the
-answer would take longer for an address that exists and say so anyway.
+The answer is always the same, whether the address exists or not, so the form reveals nobody. The
+mail is sent without waiting, otherwise the response time would reveal it.

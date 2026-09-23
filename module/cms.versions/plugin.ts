@@ -1,19 +1,16 @@
 /**
- * cms.versions/plugin.ts — cms wiring only.
+ * cms wiring of the versioning engine.
  *
- * Versioned tables (qg_setting and page_class intentionally excluded):
- *   page, page_file, page_text, page_url, text, file
+ * Versioned tables: page, page_file, page_text, page_url, text, file
+ * (not qg_setting and page_class).
  *
- * What is fully active:
- *   - History capture: every insert/update/delete on versioned tables is
- *     written to the corresponding _vers_* shadow table (lib/History.ts).
- *   - Log-mode (historical view): cms_versions_log + cms_versions_page render a
- *     frozen snapshot of the page at that log entry.
+ * Active:
+ *   - History: every write on a versioned table goes to its _vers_* table (lib/History.ts).
+ *   - Log mode: cms_versions_log + cms_versions_page render the page as it was at a log entry.
  *   - serverInterface: getForNode, logDetails, publishNode.
  *
- * lib/Vers.ts + History.ts + Spaces.ts are the generic, cms-agnostic
- * versioning engine — keep them that way.
- * Draft-mode (space routing, partly TODO) is parked in draftmode.ts.
+ * lib/Vers.ts, History.ts and Spaces.ts are the generic engine — keep them cms-agnostic.
+ * Draft mode (space routing, partly TODO) is parked in draftmode.ts.
  */
 
 // deno-lint-ignore-file no-explicit-any
@@ -46,8 +43,8 @@ const VERSED: Record<string, true | Record<string, 1>> = {
     page_file: true, page_text: true, page_url: true, text: true, text_lang: true, file: true,
 };
 
-// Derive the _vers_* shadow tables from the merged schema (function-form dbSchema runs
-// after the static merge), so they are created in one pass and visible to all modules.
+// Build the _vers_* tables from the merged schema (function-form dbSchema runs after the static
+// merge), so they are created in one pass.
 export function dbSchema(merged: { properties: Record<string, any> }) {
     const properties: Record<string, any> = {
         vers_space: versSpaceSchema, // generic (Spaces.ts)
@@ -129,19 +126,17 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (vs.log) {
             const pid = Number(ctx.req.query.cms_versions_page ?? "0");
 
-            // A stopgap: the views are built up front, so without a gate here anyone has the database
-            // create and drop them. Building them per qualifying node would need an async tableRef().
+            // Stopgap: the views are built up front, so without this check anyone could make the
+            // database create and drop them. Per-node views would need an async tableRef().
             const page = await cms(app).node(pid);
             if (!page.exists() || await page.access() < 2) { vs.log = 0; return; }
 
             cacheHeaders(ctx);
 
-            // Disable editmode for the historical view — request-only override;
-            // writing ctx.settings would persist it for the whole session
+            // No editmode in the historical view — only for this request (ctx.settings would persist)
             cmsCtx(ctx).editmode = 0;
 
-            // Route reads through the historical views and give the request its
-            // own caches (core dbScope) — the shared app caches stay untouched.
+            // Read from the historical views with request-own caches (core dbScope).
             await using _views = await historicalViews(ctx, vs.space, vs.log);
 
             const load = async (node: Node): Promise<void> => {

@@ -1,6 +1,4 @@
-/* Flexible's own panel: the shared list, plus the one thing that belongs to the container and
-   not to its entries — a container holding a single block is a wrapper nobody asked for, so it
-   can step aside and let that block take its place. */
+/* Flexible's panel: the shared list, plus "replace by content" for a container with one block. */
 import list, { css as listCss } from './list.js';
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';

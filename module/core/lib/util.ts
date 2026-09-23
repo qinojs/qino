@@ -1,17 +1,17 @@
 import { sql } from "../deps.ts";
 import { fs } from "./fs.ts";
 import denoJson from "../../../deno.json" with { type: "json" };
-// html`` is shared verbatim with the browser (SSR): one implementation, two runtimes.
+// html`` is the same file in the browser (SSR): one implementation, two runtimes.
 import { hee, html, HtmlString, unhee } from "../pub/js/html.js";
 export { hee, html, HtmlString, unhee };
 
 import type { Sql } from "../deps.ts";
 import type { Manifest } from "./ModuleManager.ts";
 
-/** Single source of truth for CDN roots (version pin). */
+/** CDN roots with version pin. */
 export const u2Root: string = denoJson.imports["@qino/u2/"];
-// jsr.io serves packages to Deno, not to browsers (no CORS, text/html) — the git tag behind the
-// same pin does, so `@qino/item-cdn/` is what browser files import.
+// jsr.io doesn't serve browsers (no CORS, text/html), so browser files import `@qino/item-cdn/`,
+// the git tag of the same version.
 export const itemRoot: string = denoJson.imports["@qino/item-cdn/"];
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
@@ -22,8 +22,7 @@ export function cookiePrefix(secure: boolean, path: string): string {
   return path === "/" ? "__Host-" : "__Secure-";
 }
 
-/** Header builders (like sql.id/html.raw): each returns a [name, value] tuple
- *  for headers.set(...) / .append(...) or HeadersInit arrays. */
+/** Header builders: each returns a [name, value] tuple for headers.set/append or HeadersInit. */
 interface HeaderBuilders {
   contentDisposition(type: "inline" | "attachment", name: string): [string, string];
   setCookie(name: string, value: string, options: { path: string; secure: boolean; maxAge?: number }): [string, string];
@@ -72,14 +71,14 @@ export async function newestMtime(dir: string): Promise<number> {
 /** To boolean. Settings are stored as text, so "false", "0" and "" are false. */
 export const isOn = (v: unknown): boolean => !!v && v !== "0" && v !== "false";
 
-/** No keys. Unlike Object.keys(o).length it builds no array to answer that. */
+/** Has no keys. Unlike Object.keys(o).length, builds no array. */
 export function isEmptyObject(o: object): boolean {
   for (const _ in o) return false;
   return true;
 }
 
-/** The message of whatever was thrown — an Error or anything else. An AggregateError carries its
- *  message in the errors it collected: a failed connection says nothing at all without them. */
+/** Message of anything thrown. For an AggregateError (e.g. a failed connection) the inner errors'
+ *  messages are used. */
 export const errMsg = (e: unknown): string => {
   if (!(e instanceof Error)) return String(e);
   if (e.message) return e.message;
@@ -141,10 +140,9 @@ export function urlize(str: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Tokenized LIKE search: every word must match a `like` column (case-insensitive, wildcards
- *  escaped); `exact` columns match the whole input instead (ids, emails). `order` ranks exact
- *  hits before word prefixes. Both fragments are neutral on empty input, so call sites need no
- *  branching. Qualified names ("m.subject") are supported. */
+/** LIKE search by words: every word must match a `like` column (case-insensitive, wildcards
+ *  escaped); `exact` columns match the whole input (ids, emails). `order` ranks exact hits before
+ *  prefix hits. Empty input gives neutral fragments. Qualified names ("m.subject") work. */
 export function sqlSearch(input: string, like: string[], opt: { exact?: string[] } = {}): { where: Sql; order: Sql } {
   const trimmed = (input ?? "").trim();
   const words = trimmed.toLowerCase().split(/\s+/).slice(0, 4).filter(Boolean);
@@ -168,10 +166,8 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
 }
 
 /**
- * Recursively materializes an item.js item into a plain object.
- * read() only loads one level — itemReadDeep forces read() on every level and
- * assembles the whole subtree. Unlike .get() (synchronous, returns only
- * already-loaded values), itemReadDeep also fetches lazy/async subtrees.
+ * Load an item.js item with all levels into a plain object. read() loads one level and .get()
+ * returns only loaded values; this reads every level.
  */
 // deno-lint-ignore no-explicit-any
 export async function itemReadDeep(item: any): Promise<unknown> {

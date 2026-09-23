@@ -51,8 +51,8 @@ async function plain(node: Node, name: string): Promise<string> {
   return (await node.showText(name)).plain();
 }
 
-/** The address rule users' contacts follow. A visitor's typo must fail the field, not the mail:
- *  an invalid reply-to stops the notification for the site owner too. */
+/** Same address rule as user contacts. A typo must fail the field, not the mail (an invalid
+ *  reply-to would block the owner's notification). */
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */

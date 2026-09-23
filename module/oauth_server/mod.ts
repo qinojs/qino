@@ -6,9 +6,8 @@ import { consentPage, errorPage, loginPage } from "./lib/view.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
-/** OAuth 2.1 authorization server: authorization code + PKCE, public clients, opaque bearer
- *  tokens that authenticate as the qino user who consented. Sign-in reuses the core login
- *  (`core_login`), so the module needs no CMS and no login page of its own. */
+/** OAuth 2.1 authorization server: code + PKCE, public clients, opaque bearer tokens acting as the
+ *  consenting user. Sign-in uses the core login (`core_login`), no CMS needed. */
 
 const CODE_TTL = 120;
 const ACCESS_TTL = 3600;
@@ -132,8 +131,7 @@ async function issue(ctx: Ctx, row: Record<string, unknown>): Promise<never> {
   }, { headers: { "Cache-Control": "no-store" } });
 }
 
-/** RFC 7591 dynamic client registration — unauthenticated by design; the trust decision is the
- *  user's consent at `/authorize`, a registration alone grants nothing. */
+/** RFC 7591 dynamic client registration — open by design; only the user's consent grants access. */
 export async function register(ctx: Ctx): Promise<never> {
   if (!await dynamicRegistration(ctx.app)) throw fail("invalid_request", "dynamic registration is disabled", 403);
   if (ctx.req.method !== "POST") throw fail("invalid_request", "POST required", 405);

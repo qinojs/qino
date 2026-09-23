@@ -1,21 +1,20 @@
-/* Shared html`` template builder — the same code runs on the server and in the browser,
-  * so a template can be rendered to a string here or there (SSR). Values are escaped
-  * unless they are HtmlString; arrays render as their concatenated elements. */
+/* html`` template builder, the same code on server and browser (SSR). Values are escaped unless
+  * they are HtmlString; arrays are concatenated. */
 
 const HEE = { "&": "&amp;", '"': "&quot;", "'": "&#039;", "<": "&lt;", ">": "&gt;" };
 const SPECIAL = /[&"'<>]/;
 
-/** Escape for HTML. Rarely needed on its own — html`` escapes every value it interpolates. */
+/** Escape for HTML. Rarely needed — html`` escapes all values itself. */
 export const hee = (str) => {
   const s = String(str ?? "");
-  return SPECIAL.test(s) ? s.replace(/[&"'<>]/g, (c) => HEE[c]) : s; // most values have nothing to escape
+  return SPECIAL.test(s) ? s.replace(/[&"'<>]/g, (c) => HEE[c]) : s; // fast path: nothing to escape
 };
 
 const ENTITY = /&(?:#(\d+)|#x([\da-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi;
 const NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
 
-/** Undo hee(): decode what it and a sanitizer write — the basic named entities and numeric ones.
- *  Text only, nothing is parsed; escape it again before it goes back into markup. */
+/** Reverse of hee(): decodes basic named and numeric entities. Plain text, no parsing; escape again
+ *  before putting it back into markup. */
 export const unhee = (str) => String(str ?? "").replace(ENTITY, (m, dec, hex, name) => {
   if (name) return NAMED[name.toLowerCase()];
   const n = dec ? Number(dec) : parseInt(hex, 16);
@@ -30,17 +29,16 @@ export class HtmlString {
   toString() { return this.#html; }
 }
 
-// An array renders as its concatenated elements, so a row list needs no wrapper:
-// `<table>${rows.map((r) => html`<tr>…`)}</table>`. html.join() is for a separator.
+// Arrays are concatenated: `<table>${rows.map((r) => html`<tr>…`)}</table>`. For a separator use
+// html.join().
 function htmlValue(v) {
   if (v instanceof HtmlString) return v.html;
   if (Array.isArray(v)) return v.map(htmlValue).join("");
   return hee(v);
 }
 
-// Like htmlValue but awaits promises and renders "renderable" values (anything
-// with an async html() method, e.g. a cms Node) recursively. Lets templates
-// embed conts directly: html.async`<div>${node.cont("main")}</div>`.
+// Like htmlValue, but awaits promises and renders values with an async html() method (e.g. a cms
+// Node) recursively: html.async`<div>${node.cont("main")}</div>`.
 async function htmlValueAsync(v) {
   v = await v;
   if (Array.isArray(v)) return (await Promise.all(v.map(htmlValueAsync))).join("");
@@ -60,7 +58,7 @@ html.async = async function (strings, ...values) {
   return joinHtml(strings, await Promise.all(values.map(htmlValueAsync)));
 };
 
-// Mirrors sql.raw/sql.join: raw() trusts a string as-is, join() combines
-// pre-built fragments (plain parts escaped, HtmlString kept) into one HtmlString.
+// Like sql.raw/sql.join: raw() trusts a string, join() combines fragments (strings escaped,
+// HtmlString kept) into one HtmlString.
 html.raw = (v) => new HtmlString(v);
 html.join = (parts, separator = "") => new HtmlString(Array.from(parts, htmlValue).join(separator));

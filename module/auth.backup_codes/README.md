@@ -1,7 +1,7 @@
 # auth.backup_codes
 
-Ten codes on a piece of paper, for the day the phone with the authenticator app is gone. A factor
-for [auth](../auth/), and deliberately a narrow one.
+Ten codes on paper, for when the phone with the authenticator app is gone. A factor for
+[auth](../auth/).
 
 ```ts
 const codes = await generate(ctx);   // shown this once, never again
@@ -11,42 +11,36 @@ await spend(ctx, code);              // gone the moment it works
 ## Never a way in on its own
 
 ```ts
-export const authFactor = { name: "backup_codes", label: "Backup codes", stepUp: true };
+export const authFactors = [{ name: "backup_codes", label: "Backup codes", second: true, stepUp: true, order: 90 }];
 ```
 
-No `login`. A backup code stands in for the **second** factor, the way the list next to an e-banking
-login does — the password is asked first and the code alone is worth nothing. Declaring `login`
-would make it a one-time password for the whole account, because [`proof()`](../auth/) turns a proof
-into a session whenever nobody is signed in yet. It becomes a login factor the day a login can ask
-for two of them, not before.
+`second`: a backup code only replaces the **second** factor, like the code list of e-banking — the
+password comes first, the code alone is worthless. Otherwise it would be a one-time password for
+the whole account. `order: 90` puts it last in the dialog.
 
 ## Why the codes look the way they do
 
-Twelve characters, `XXXX-XXXX-XXXX`, out of a 32-character alphabet — Crockford base32, which has no
-I, L, O or U to misread, and whose size means a random byte masked to five bits picks one without
-bias. That is 60 bits.
+Twelve characters, `XXXX-XXXX-XXXX`, in Crockford base32: no I, L, O or U to misread, and 32
+characters, so five bits of a random byte pick one without bias. That is 60 bits.
 
-Kept as **bcrypt**, not as a fast digest, and that is what makes the length enough. A stolen database
-is the one attack no rate limit answers: nobody is waiting for a login form, the hashes are simply
-ground offline. A fast hash falls to 60 bits in months; bcrypt costs milliseconds a guess instead of
-nanoseconds and turns the same 60 bits into far longer than anyone will wait. A *keyed* hash would
-not have helped — settings live in the database too, so the key would be stolen along with them.
+Stored as **bcrypt**, not a fast hash — that is why 60 bits are enough. Against a stolen database
+no rate limit helps; the hashes are cracked offline. A fast hash falls in months; bcrypt takes
+milliseconds per guess instead of nanoseconds. A *keyed* hash would not help: the key lives in the
+settings, i.e. in the same database.
 
-The price is honest: `spend()` tries the remaining rows one at a time, up to about a second. That is
-a rare action on one's own account.
+The cost: `spend()` checks the remaining rows one by one, up to about a second. Acceptable for a
+rare action.
 
 ## Storage
 
-Rows of type `backup_codes` in `usr_auth_factor`, which [auth](../auth/) owns; `data` is `{ hash }`.
-One row per code, so spending one is a `DELETE` and the count of rows is the count that is left —
-there is no "used" flag anyone could forget to check. The delete also decides the race: of two
-requests with the same code only one removes a row, and only that one gets a proof.
+Rows of type `backup_codes` in `usr_auth_factor` (owned by [auth](../auth/)); `data` is `{ hash }`.
+One row per code: spending is a `DELETE`, the row count is what's left, and there is no "used"
+flag to forget. The delete also settles races: of two requests with the same code only one
+deletes a row and gets the proof.
 
-`generate()` replaces the whole set, so a user who has lost track of their sheet simply makes a new
-one.
+`generate()` replaces the whole set, so a user who lost the sheet just makes a new one — on
+[cms.cont.my.backup_codes](../cms.cont.my.backup_codes/) or in the backend.
 
 ## Possible extensions
 
-- **A page for users to generate their own.** Today only the backend page
-  [cms.backend.superuser.auth.backup_codes](../cms.backend.superuser.auth.backup_codes/) does it.
-- **Telling them when the sheet runs low.** The count is there; nothing acts on it.
+- **Warn when few codes are left.** The count exists; nothing uses it yet.

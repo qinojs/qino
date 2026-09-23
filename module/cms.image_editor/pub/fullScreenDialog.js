@@ -1,7 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
-// Full-screen layout. Surroundings tend to style dialogs as centered boxes; css() nests this
-// under the element, which lifts it above such a rule.
+// Full-screen layout, nested under the element to beat outside dialog styles.
 const BASE_CSS = `
 dialog.-fullscreen {
     position: fixed;
@@ -20,20 +19,18 @@ dialog.-fullscreen {
 }
 `;
 
-/** Base: a modal full-screen <dialog>. Append it where it should live — in a shadow root it
-  * uses that root's styles, in the document it isolates itself in an own one. */
+/** A modal full-screen <dialog>. In a shadow root it uses that root's styles; in the document it
+  * uses its own shadow root. */
 export class FullScreenDialog extends HTMLElement {
     #dialog;
 
-    // Overwrite with scoped ones to match the surroundings. bind: the browser's own refuse a
-    // foreign `this`.
+    // Replace with scoped versions; bind, since the native ones reject another `this`.
     alert = globalThis.alert.bind(globalThis);
     confirm = globalThis.confirm.bind(globalThis);
 
     connectedCallback() { this.#build(); }
 
-    // Built on connect, so it can take the styles of the root it was appended to. Unconnected
-    // (nobody placed it) it isolates itself, which is what show() falls back to anyway.
+    // Built on connect, to use the styles of its root. If not connected, it isolates itself (like show()).
     #build() {
       if (this.#dialog) return;
       if (!(this.getRootNode() instanceof ShadowRoot)) this.attachShadow({ mode: 'open' });

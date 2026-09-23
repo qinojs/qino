@@ -31,9 +31,8 @@ cms.initNode("backend.cms.history", (el) => {
   form.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
   form.addEventListener("submit", (e) => e.preventDefault());
 
-  // Incremental refresh: fetch only rows newer than the watermark and merge them
-  // at the top. Existing rows keep their DOM identity, so a text selection, the
-  // scroll position and the live <u2-time> elements all survive the update.
+  // Incremental refresh: fetch only newer rows and add them on top. Existing rows stay, so
+  // selection, scroll position and <u2-time> elements survive.
   const refresh = async () => {
     if (document.hidden) return;
     const vars = { filter: { ...filterVars(), sinceId: String(newestId()) } };

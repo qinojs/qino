@@ -2,8 +2,8 @@ import { fs } from "@qino/qino";
 
 import type { App } from "@qino/qino";
 
-/** The PHP CMS kept app files under qg/, uploads in qg/file/. They now live in
- *  data/<module>/, uploads owned by core. Names stay, so rows referencing a file keep working. */
+/** PHP kept files in qg/ and uploads in qg/file/; now data/<module>/ (uploads belong to core). Names
+ *  stay, so references keep working. */
 export async function migrateFiles(app: App): Promise<void> {
   const legacy = app.dir + "qg/";
   let moved = 0, kept = 0;
@@ -32,9 +32,8 @@ export async function dirNames(dir: string): Promise<string[]> {
   return entries.filter((e) => e.isDirectory).map((e) => e.name).sort();
 }
 
-/** Move every entry of src into dst, recursing where both sides hold a directory.
- *  An existing target is never overwritten; it is counted and src keeps its copy.
- *  Running it again once src is gone does nothing, so a repeated repair is harmless. */
+/** Move everything from src to dst, recursively. Existing targets are never overwritten (counted,
+ *  src keeps its copy). Safe to run again. */
 export async function moveMerge(src: string, dst: string): Promise<[moved: number, kept: number]> {
   let moved = 0, kept = 0;
   const entries = await fs.list(src).catch(() => []);

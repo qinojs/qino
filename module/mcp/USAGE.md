@@ -1,9 +1,8 @@
 # mcp
 
-Generic MCP server (Model Context Protocol, Streamable HTTP, stateless). Exposes the
-app's api tree as MCP tools, so any MCP-capable client (Claude, ChatGPT-CLIs, IDEs, …)
-can operate the CMS. Access filtering and per-call `access`/`guard` checks are the same
-as for the REST API — the client can only do what the authenticated user may do.
+MCP server (Model Context Protocol, Streamable HTTP, stateless). Offers the app's api tree
+as MCP tools to any MCP client (Claude, ChatGPT, IDEs, …). `access` and `guard` apply as in the
+REST API — the client can only do what its user may do.
 
 Endpoint: `POST {appUrl}mcp` — handled methods: `initialize`, `ping`, `tools/list`, `tools/call`.
 
@@ -31,15 +30,15 @@ claude mcp add --transport http qino https://example.com/mcp \
 Andere Clients analog: Transport „HTTP“ / „Streamable HTTP“, URL `{appUrl}mcp`,
 Header `Authorization: Bearer qk_…`.
 
-**OAuth** (`oauth_server`) — für Clients ohne Header-Support (claude.ai-Connectors, ChatGPT):
-Modul einbinden, im Client nur die URL `{appUrl}mcp` eintragen. Der 401 verweist dann auf
-`/.well-known/oauth-protected-resource`, der Client registriert sich selbst und schickt den
-User zu Login und Consent.
+**OAuth** (`oauth_server`) — für Clients ohne eigene Header (claude.ai-Connectors, ChatGPT):
+im Client nur `{appUrl}mcp` eintragen. Die 401-Antwort verweist auf
+`/.well-known/oauth-protected-resource`, der Client registriert sich selbst und schickt den User
+zu Login und Zustimmung.
 
 ## Verhältnis zu cms.webmcp
 
-`cms.webmcp` exponiert dieselben api-Tools browserseitig (WebMCP, `navigator.modelContext`)
-für den eingeloggten Besucher; `mcp` exponiert sie serverseitig für externe Agents.
+`cms.webmcp` bietet dieselben Tools im Browser an (WebMCP, `navigator.modelContext`), für den
+eingeloggten Besucher; `mcp` auf dem Server für externe Agents.
 
 ## TODO (Eingriffe in andere Module, bewusst noch nicht gemacht)
 

@@ -48,8 +48,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (row) e.access = true;
   }, { signal });
 
-  // Grant the uploading user access to their new file. A file insert always yields a
-  // fresh id, so the (usr_id, file_id) pair is new — plain insert, no ensure needed.
+  // Give the uploader access to the new file (new id, so a plain insert).
   app.db.on("table:insert-after", (e) => {
     if (e.table.name !== "file") return;
     const userId = requestStorage.getStore()?.userId; // no request (import/install) → no grant
@@ -79,7 +78,7 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
     LEFT JOIN page_file pf ON pf.file_id = f.id
     WHERE true${cond}
     ORDER BY${order} f.id DESC
-    LIMIT 500`; // the join yields a row per page, so this is a worst-case guard, not the result count
+    LIMIT 500`; // one row per page from the join; only a safety cap
 
   const res: Record<string, any> = {};
 

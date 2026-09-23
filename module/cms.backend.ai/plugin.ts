@@ -13,8 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 type Message = { type: "ok" | "error"; text: string };
 type Row = Record<string, any>;
 
-// Derive a provider name from its endpoint host (drop a leading "api."). Must match
-// the same rule in pub/main.js so the new provider can be auto-opened after adding.
+// Provider name from the endpoint host (without leading "api."). Same rule as pub/main.js.
 function nameFromEndpoint(endpoint: string): string {
   try { return new URL(endpoint).host.replace(/^api\./, ""); }
   catch { return endpoint.replace(/^https?:\/\//, "").split("/")[0]; }
@@ -54,8 +53,7 @@ async function insertModel(app: App, providerId: number, m: { model_id: string; 
 }
 
 // --- Actions -------------------------------------------------------------
-// Called from render() with the JS-posted vars (api html.post). Access is gated
-// by the backend node itself; no CSRF token needed — api carries credentials.
+// Called from render() with posted vars. Access via the backend node; no CSRF token needed (api).
 
 async function handleAction(app: App, vars: Record<string, any>): Promise<Message | null> {
   if (!("action" in vars)) return null;

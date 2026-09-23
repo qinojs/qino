@@ -1,10 +1,10 @@
 # emailguard
 
-Email addresses on public pages are harvested by crawlers that read the markup with a regular
-expression. This module rewrites every address in the rendered body so that reading the markup —
-or its text — yields a broken address, while a visitor still sees, copies and clicks the real one.
+Crawlers harvest email addresses from pages with regular expressions. This module rewrites every
+address in the page so the markup (and its text) contain a broken address, while visitors still
+see, copy and click the real one.
 
-Two forms appear on a page, and each gets the treatment it can carry:
+Two cases:
 
 **In text**, a hidden decoy is inserted in front of the `@`:
 
@@ -12,39 +12,34 @@ Two forms appear on a page, and each gets the treatment it can carry:
 info<span class=kqvhtz>bxlpr</span>@example.com
 ```
 
-The span is `display:none` (an inline style, hashed for CSP). On screen the address is unchanged —
-it also copies unchanged, since browsers exclude hidden text from a selection. Everything else gets
-`infobxlpr@example.com`: a source regex, a tag stripper, and even a headless browser reading
-`textContent`, which includes hidden text. **No script is involved**, so this form survives with
-JavaScript off.
+The span is `display:none` (inline style, hashed for CSP). On screen and when copied the address
+is correct, since hidden text is not copied. Everything else reads `infobxlpr@example.com`: source
+regexes, tag strippers, even a headless browser reading `textContent`. **No script needed**, so it
+works without JavaScript.
 
 **In a `mailto:` href** nothing can be hidden, so the address is XOR'd with a per-response key and
-base64url-encoded. `pub/main.js` restores it, and is only loaded on pages that actually have such a
-link. The key lives in the page, so this is obfuscation, not secrecy — what it defeats is the
-generic harvester, not someone targeting this site.
+base64url-encoded. `pub/main.js` decodes it and is only loaded on pages with such a link. The key is
+in the page, so this only stops generic harvesters, not someone targeting this site.
 
-The class name, the decoy word and the key are random per response, so none of them is a stable
-pattern to strip.
+Class name, decoy word and key are random per response, so there is no fixed pattern to strip.
 
 ## Not touched
 
-`<script>`, `<style>` and `<textarea>` blocks, comments, and addresses in any attribute other than an
-anchor's `mailto:` href — an attribute has nowhere to hide a decoy, and no script could tell which
-values were addresses.
+`<script>`, `<style>` and `<textarea>` blocks, comments, and addresses in attributes other than
+`mailto:` hrefs — an attribute can't hold a hidden decoy.
 
-Signed-in requests are skipped entirely: the backend and inline editing must see, and save, real
+Requests of signed-in users are skipped: the backend and inline editing must see and save real
 addresses.
 
 ## Cost
 
-The scan is anchored on the `@`: the address regex is a lookbehind for the local part, so the engine
-looks for a literal instead of testing every position. On a 250 KB body that is **0.4 ms** per page,
-against 3.9 ms for the same pass written the obvious way round. A page whose body holds no `@` at
-all costs **0.005 ms** — the whole module ends at a single `includes("@")`.
+The regex starts at the `@` and looks back for the local part, so the engine searches a literal
+instead of trying every position: **0.4 ms** for a 250 KB page, vs. 3.9 ms the straightforward way.
+A page without `@` costs **0.005 ms** (one `includes("@")`).
 
-Per address the context is then decided locally (the nearest `<` and `>` before it); the ranges of
-the skipped blocks are scanned once, and only if some address could sit in one.
+For each address the context is checked locally (the nearest `<` and `>` before it); skipped blocks
+are only located if an address might be inside one.
 
-The client side is a single `querySelectorAll` over the mailto anchors, on the pages that have one.
-The old PHP module walked every node and every attribute of the document instead — and replaced
-every `@` in the response, `@media` and `@import` included.
+In the browser it is one `querySelectorAll` over mailto links, only on pages that have them. (The
+old PHP module walked every node and attribute and replaced every `@`, including `@media` and
+`@import`.)

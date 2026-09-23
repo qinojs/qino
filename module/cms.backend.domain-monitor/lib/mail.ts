@@ -1,13 +1,11 @@
-// Mail posture of a domain: does it say who may send for it, does it say what to do with forgeries,
-// and does its own mail server speak TLS. Presence of an SPF or DMARC record proves very little —
-// `v=spf1 +all` and `p=none` are records that permit everything, so the values are what count.
+// Mail setup of a domain: SPF, DMARC, and TLS on its mail server. The values matter, not just the
+// presence — `v=spf1 +all` and `p=none` allow everything.
 import { resolve } from "./dns.ts";
 import { agent, isCertError, errText, timedSignal, ua } from "./net.ts";
 
 import type { Type } from "./dns.ts";
 
-// Selectors worth guessing when a domain publishes DKIM but does not tell us where.
-// There is no way to enumerate them — the name is only known to the sender and the verifier.
+// Common DKIM selectors to try; selectors can't be listed.
 const DKIM_SELECTORS = ["default", "google", "selector1", "selector2", "k1", "k2", "s1", "s2", "mail", "dkim", "smtp", "zoho", "protonmail", "mandrill", "fm1"];
 
 // Mechanisms that cost one of the ten DNS lookups an SPF record is allowed (RFC 7208 §4.6.4).
@@ -17,9 +15,8 @@ const txtOf = (name: string): Promise<string[]> =>
   Deno.resolveDns(name, "TXT").then((r) => r.map((parts) => parts.join(""))).catch(() => []);
 
 /**
- * DNS lookups an SPF record costs, following include: and redirect= the way a receiver would.
- * Stops once the limit is blown — the exact number past ten does not matter and the remaining
- * lookups would only cost requests.
+ * DNS lookups an SPF record needs, following include: and redirect= like a receiver. Stops above
+ * the limit.
  */
 async function spfCount(record: string, seen: Set<string>): Promise<number> {
   let count = 0;
@@ -90,9 +87,8 @@ async function reply(conn: Deno.Conn, buf: Uint8Array): Promise<string> {
 }
 
 /**
- * Talks to the mail server the way another mail server would: banner, EHLO, STARTTLS, certificate.
- * Everything stays null when port 25 is unreachable — plenty of hosts block it outbound, and that
- * says nothing about the domain being checked.
+ * Talk to the mail server like another mail server: banner, EHLO, STARTTLS, certificate. All null
+ * if port 25 is unreachable (often blocked outbound here — says nothing about the domain).
  */
 async function smtp(host: string, signal?: AbortSignal) {
   const out: { starttls: boolean | null; tlsValid: boolean | null; banner: string; silent: boolean } = { starttls: null, tlsValid: null, banner: "", silent: false };
@@ -116,8 +112,7 @@ async function smtp(host: string, signal?: AbortSignal) {
     await conn.write(new TextEncoder().encode("QUIT\r\n"));
   } catch (e) {
     if (out.starttls && isCertError(errText(e))) out.tlsValid = false;
-    // Nothing came back at all: either the host blocks outgoing port 25 or the server is a black
-    // hole. A refusal is instant and does not land here, so this is the signal worth counting.
+    // No answer at all: outgoing port 25 blocked or a dead server (a refusal would be instant).
     out.silent = !out.banner && limit.aborted;
   } finally {
     limit.removeEventListener("abort", abort);
@@ -127,9 +122,8 @@ async function smtp(host: string, signal?: AbortSignal) {
 }
 
 /**
- * `mx` is the MX record set as `"<preference> <host>"`, `servers` the authoritative nameservers of
- * the zone. `deep` turns on the parts that are wasteful to repeat hourly: guessing DKIM selectors
- * and fetching the MTA-STS policy file.
+ * `mx`: MX records as `"<preference> <host>"`, `servers`: the zone's nameservers. `deep` adds DKIM
+ * selector guessing and the MTA-STS policy file.
  */
 export async function check(apex: string, mx: string[], opt: {
   servers: string[];
@@ -160,8 +154,7 @@ export async function check(apex: string, mx: string[], opt: {
     servers.length ? resolve(servers, zoneQuestions, signal) : Promise.resolve(zoneQuestions.map(() => null)),
     // DANE lives next to the mail host, which is usually somebody else's zone — needs a resolver.
     primary && resolver ? resolve(resolver, [{ name: `_25._tcp.${primary}`, type: "TLSA" }], signal) : Promise.resolve([null]),
-    // Hosts that block outgoing port 25 are common, and there every probe costs the full timeout.
-    // Two silent servers in a row means it is this side, so the rest of the run skips the attempt.
+    // After two silent servers, assume port 25 is blocked here and skip the rest of the run.
     primary && (opt.reach?.silent ?? 0) < 2 ? smtp(primary, signal) : Promise.resolve({ starttls: null, tlsValid: null, banner: "", silent: false }),
   ]);
   if (opt.reach && mail.silent) opt.reach.silent++;

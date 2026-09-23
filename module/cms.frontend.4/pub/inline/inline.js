@@ -10,8 +10,7 @@ import './contextMenu.js';
 import './ddConts.js';
 import './dropPaste.js';
 
-// The editor is the heaviest thing on the page and nothing here waits for it, so it comes
-// alongside instead of ahead: the panel and the block tools are usable while it arrives.
+// The editor is loaded in parallel, so panel and block tools work while it loads.
 import('./rte.js');
 
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -42,7 +41,7 @@ cms.contPos.prototype = {
   },
   mark(e) {
     const _ = cms.contPos;
-    e?.stopPropagation(); // verschachtelt
+    e?.stopPropagation(); // nested
     _.active?.unmark();
     //_.active && _.active.unmark();
     if (_.moving || _.active === this /*|| this.el.classList.contains('qgCMS-dropTarget')*/) { _.active = null; return; }
@@ -150,11 +149,9 @@ root.append(trash);
 const dd = new cms.contDrag();
 p.dd = dd;
 
-// The drop targets are on the page, and an open sidebar covers them. So the panel steps aside
-// while something is being placed and comes back the way it was — a new block from the module
-// picker and an existing one being moved are the same gesture, and both need the room. It hangs
-// on the drag and not on "a block was created": creating one places nothing, and a list that
-// adds an entry in place — or a bot doing the same — must not move the user's panel.
+// An open sidebar covers the drop targets, so the panel hides while a block is dragged (new or
+// moved) and comes back afterwards. Tied to the drag, not to block creation, so blocks added in
+// place (lists, bots) don't move the panel.
 let sidebarBefore = null;
 
 dd.on('start',e=>{
@@ -182,7 +179,7 @@ dd.on('stop',el=>{
   }
   trash.classList.remove('-dropTarget');
   trash.togglePopover(false);
-  // Back to whatever was open: whoever placed three teasers in a row wants the picker again.
+  // Restore what was open (e.g. the picker, to add more blocks).
   if (sidebarBefore) cms.panel?.sidebar.set(sidebarBefore);
   sidebarBefore = null;
 })
@@ -225,7 +222,7 @@ p.on('mark', obj=>{
   menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
   menu.drag.style.display = isDraggable ? 'block' : 'none';
   for (const btn of contMenuButtons) {
-    if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a fresh dom.el still hangs on its template fragment
+    if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a new dom.el is still in its template fragment
     btn.el.style.display = btn.show(obj) ? 'block' : 'none';
   }
   menu.style.cursor = (isDraggable?'move':'default');
@@ -238,7 +235,7 @@ p.on('mark', obj=>{
 
 p.on('unmark', () => menu.togglePopover(false) );
 
-// The pointer can already rest on a block at load: no mouseover follows, and :hover lands a few frames later.
+// The pointer may already be on a block at load: no mouseover follows, and :hover comes a few frames later.
 setTimeout(() => {
   const el = [...document.querySelectorAll('[qcms-edit]:hover')].pop(); // innermost, document order
   el && cms.contPos(el).mark();
@@ -283,8 +280,8 @@ api.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
 
-// The pattern above needs a segment after the id, so the node's own routes are listed apart.
-// DELETE stays out: the node is gone, there is nothing left to render.
+// The pattern above needs a segment after the id, so the node's own routes are listed separately.
+// Not DELETE: the node is gone.
 api.on('PATCH cms/node/:id', ({ params: { id } }) => {
   cms.reloadNode(id);
 });

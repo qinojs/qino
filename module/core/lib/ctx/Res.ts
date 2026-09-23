@@ -2,9 +2,8 @@ import { ResCsp } from "./ResCsp.ts";
 import { ResHtml } from "./ResHtml.ts";
 
 /**
- * Collects the outgoing response of rendered and thrown outputs — status,
- * headers, body, CSP and the lazy HTML document. The final native `Response`
- * is built by the app from this state; static/dbFile/streaming paths bypass it.
+ * Collects the response: status, headers, body, CSP and the lazy HTML document. The app builds the
+ * native `Response` from it; static files, dbFiles and streams bypass it.
  */
 export class Res {
   headers: Headers = new Headers();
@@ -20,8 +19,8 @@ export class Res {
   get html(): ResHtml { return this.#html ??= new ResHtml(); }
   get hasHtml(): boolean { return this.#html !== null; }
 
-  /** Whether anyone answered at all. An untouched Res is nobody's answer, not an empty 200 —
-   *  a module that means an empty body says so by setting a status. */
+  /** Whether anything was answered. Untouched means 404, not an empty 200 — for an empty body, set
+   *  a status. */
   get answered(): boolean {
     return this.hasHtml || !!this.body || this.#statusSet || this.headers.has("Location");
   }

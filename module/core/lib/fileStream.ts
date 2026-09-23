@@ -15,10 +15,10 @@ export type UploadedFile = {
   md5: string;
 };
 
-/** A media type as stored and compared: the essence, lowercase — `Text/HTML; charset=x` is `text/html`. */
+/** Normalized media type, lowercase, no parameters — `Text/HTML; charset=x` → `text/html`. */
 export const mimeType = (raw: string): string => raw.split(";")[0].trim().toLowerCase();
 
-/** The last path segment of a name a client or server handed us, never empty. */
+/** Last path segment of a given name, never empty. */
 const baseName = (raw: string): string => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
 
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
@@ -40,7 +40,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 
-/** Inline bytes: `data:<mime>[;name=<file>][;base64],<data>` — reads neither network nor filesystem. */
+/** Inline bytes: `data:<mime>[;name=<file>][;base64],<data>` — no network or filesystem access. */
 export async function readDataUrl(uri: string, opt: { maxSize: number }): Promise<UploadedFile> {
   const m = uri.match(/^data:([^;,]*)((?:;[^;,]*)*),([\s\S]*)$/);
   if (!m) throw new Error("Invalid data URI");

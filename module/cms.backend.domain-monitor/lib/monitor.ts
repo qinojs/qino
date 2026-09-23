@@ -86,8 +86,8 @@ export type DomainRow = {
 const CONCURRENCY = 4;
 const table = (app: App) => app.db.table("monitor_domain");
 
-// A pasted entry is reduced to its host: scheme and path are dropped, everything that is not
-// a plausible domain — other schemes, bare words, userinfo, bare IPs — returns "".
+// Reduce a pasted entry to its host. Anything not a plausible domain (other schemes, words,
+// userinfo, IPs) returns "".
 export const normalizeDomain = (value: string): string => {
   const input = value.trim();
   if (!input) return "";
@@ -102,8 +102,7 @@ export const normalizeDomain = (value: string): string => {
   } catch { return ""; }
 };
 
-// Sort key that files a domain under its parent: the labels reversed, so abc.a.ch and xyz.a.ch
-// follow a.ch and b.com comes after all of them.
+// Sort key with reversed labels, so subdomains follow their parent.
 export const domainKey = (domain: string): string => domain.split(".").reverse().join(".");
 
 const DEEP_AFTER = 24 * 60 * 60;
@@ -111,8 +110,7 @@ const DEEP_AFTER = 24 * 60 * 60;
 export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent: number }; signal?: AbortSignal } = {}): Promise<void> {
   const signal = opt.signal;
   signal?.throwIfAborted();
-  // Registry data, the MTA-STS policy file and guessing DKIM selectors are wasted effort on an
-  // hourly schedule — those move in days. Everything else is checked every time.
+  // Registry, MTA-STS and DKIM guessing only in deep runs; they change slowly.
   const deep = !row.checked_deep || unixTime() - row.checked_deep > DEEP_AFTER;
   const check = await checkDomain(row.domain, {
     expect: row.expect || undefined,
@@ -186,9 +184,8 @@ export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent
     error: check.error,
     checked: checkedAt,
   };
-  // What moved since the last stored measurement — silent changes are the ones worth noticing.
-  // Comparing against the stored result rather than against the row keeps both sides in the same
-  // shape; the row comes back from the driver with 1/0 where the result has booleans.
+  // Changes since the last stored result (compared with the result, not the row, which has 1/0
+  // instead of booleans).
   const changes = diffResults(await lastResult(app, row.domain), result);
   await app.db.transaction(async () => {
     // Update hooks add metadata such as log_id_ch; keep it out of the measured result.
@@ -206,8 +203,7 @@ export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent
 
 export async function runChecks(app: App, rows: DomainRow[], signal?: AbortSignal): Promise<void> {
   let index = 0;
-  // Shared for the whole run: once two mail servers stay silent, this host clearly blocks
-  // outgoing port 25 and every further attempt would only buy another timeout.
+  // Shared per run: after two silent mail servers, port 25 is assumed blocked here.
   const reach = { silent: 0 };
   const worker = async () => {
     while (index < rows.length) {

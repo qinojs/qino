@@ -7,13 +7,13 @@ import { sanitizeHtml } from "./sanitize.ts";
 import type { Tokens } from "marked";
 import type { Msg } from "../mod.ts";
 
-// What a message text is, and how the channels carry it: markdown renders to the markup a channel
-// accepts, html degrades to plain text, plain text stays untouched.
+// Message formats: markdown becomes the channel's markup, html becomes plain text where needed,
+// plain text stays untouched.
 
-/** Markup a channel accepts. `telegram` is its documented subset: no blocks, no lists, no headings. */
+/** Markup a channel accepts. `telegram`: its subset without blocks, lists and headings. */
 export type Profile = "html" | "telegram";
 
-/** Telegram knows inline markup and nothing else, so blocks become lines and lists become bullets. */
+/** Telegram has only inline markup: blocks become lines, lists become bullets. */
 const bullets = {
   heading(this: { parser: { parseInline(t: Tokens.Generic[]): string } }, { tokens }: Tokens.Heading) {
     return `<b>${this.parser.parseInline(tokens)}</b>\n\n`;
@@ -31,24 +31,23 @@ const bullets = {
   image: ({ text }: Tokens.Image) => text,
 };
 
-/** Raw html inside markdown is text, not markup — the one thing markdown would carry through. */
+/** Raw html inside markdown is rendered as text. */
 const escaped = { html: ({ text }: Tokens.HTML | Tokens.Tag) => hee(text) };
 
-// Stateless and shared. Nothing they emit is trusted: markdown carries raw html through, and a
-// message is written by whoever sent it — the sanitizer is what makes the output safe.
+// Stateless and shared. Their output is not trusted; the sanitizer makes it safe.
 const markdown = new Marked({ gfm: true, breaks: true, renderer: escaped });
 const markdownTelegram = new Marked({ gfm: true, breaks: true, renderer: { ...escaped, ...bullets } });
 
-/** The message as plain text — what a channel without markup sends, and what a title is cut from. */
+/** The message as plain text (for channels without markup, and for titles). */
 export function textOf(msg: Msg): string {
   if (msg.format === "html") return htmlToText(msg.text);
   if (msg.format === "md") return htmlToText(render(msg.text, "html"));
   return msg.text;
 }
 
-/** The message as markup, or undefined when it is plain text and has none to give. */
+/** The message as markup, or undefined for plain text. */
 export function htmlOf(msg: Msg, profile: Profile = "html"): string | undefined {
-  // a document goes to a mail client as it was written; a narrower target only gets what it renders
+  // mail gets the html as written; narrower targets are sanitized to what they support
   if (msg.format === "html") return profile === "html" ? msg.text : sanitizeHtml(msg.text, profile);
   if (msg.format !== "md") return;
   return render(msg.text, profile);
@@ -59,7 +58,7 @@ function render(text: string, profile: Profile): string {
   return sanitizeHtml(parser.parse(text, { async: false }), profile).trim();
 }
 
-/** Plain text as markup: escaped, and its line breaks kept in the way the target keeps them. */
+/** Plain text as markup: escaped, line breaks kept in the target's way. */
 export function textToHtml(text: string, profile: Profile = "html"): string {
   const escaped = hee(text);
   return profile === "telegram" ? escaped : escaped.replace(/\r\n?/g, "\n").replace(/\n/g, "<br>");

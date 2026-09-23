@@ -35,9 +35,9 @@ export const cron = {
   prune: { every: "day", at: { hour: 4 }, jitter: 60 * 60, run: (app: App) => prune(app.db) },
 } satisfies Jobs;
 
-// TEMP: hand-rolled until item.js can express composite secondary indexes — then this belongs in
-// dbSchema and install() goes away. Every read filters scope_id first, so this index carries them
-// all. The name stays out of "idx_score_*", the namespace the sqlite migration owns and drops.
+// TEMP: manual until item.js supports composite secondary indexes, then move to dbSchema. All reads
+// filter scope_id first, so this index covers them. Not named "idx_score_*" (the sqlite migration
+// drops those).
 const INDEX = "score_scope_score";
 
 async function ensureIndex(db: Db): Promise<void> {

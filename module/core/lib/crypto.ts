@@ -19,20 +19,19 @@ export const randB64 = (n: number): string => b64url(crypto.getRandomValues(new 
 const digest = async (str: string): Promise<Uint8Array> =>
   new Uint8Array(await crypto.subtle.digest("SHA-256", ENCODER.encode(str)));
 
-/** SHA-256 of a string as base64 — 44 chars. What CSP hash-sources and SRI `integrity` expect. */
+/** SHA-256 of a string as base64 (44 chars), as used by CSP hashes and SRI `integrity`. */
 export const sha256b64 = async (str: string): Promise<string> => (await digest(str)).toBase64();
 
-/** SHA-256 as base64url — 43 chars, safe as a column key or URL parameter. Required for PKCE. */
+/** SHA-256 as base64url (43 chars), safe in columns and URLs. Used for PKCE. */
 export const sha256b64url = async (str: string): Promise<string> => b64url(await digest(str));
 
 export const uid = (length?: number): string => randB64(16).slice(0, length);
 
 /**
- * A signature over `parts`, keyed by the app's secret — the key is the app's, the parts are what is
- * being signed. They are joined with a separator none of them can contain, so `["ab", "c"]` and
- * `["a", "bc"]` never sign the same; name the first one `module.what` and what is signed after it
- * can never pass somewhere else. Verify by signing again and comparing with `safeEqual`, always at
- * the length *you* chose — never the length of what arrived.
+ * Signature over `parts` with the app's secret. Parts are joined with a separator they can't
+ * contain, so `["ab", "c"]` and `["a", "bc"]` differ. Use `module.what` as the first part, so a
+ * signature can't be reused elsewhere. Verify by signing again and comparing with `safeEqual`, at
+ * the length *you* chose, never the length received.
  */
 export const keyed = async (app: App, parts: string[], len?: number): Promise<string> =>
   mac(await appSecret(app), parts.join("\0"), len);
@@ -87,7 +86,7 @@ async function verifyPermanent(app: App, resource: string, { sig }: Params): Pro
   return safeEqual(given, mac(await appSecret(app), resource)) ? "ok" : "forged";
 }
 
-/** The one key everything of this app's is signed with — core makes it on first init. */
+/** The app's signing key, created by core on first init. */
 async function appSecret(app: App): Promise<string> {
   const secret = String(await app.settings.core._secret ?? "");
   if (!secret) throw new Error("Core secret is not initialized");

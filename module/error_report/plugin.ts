@@ -27,9 +27,8 @@ export const settingsSchema = {
   },
 };
 
-// The three report routes are open write paths: a browser has nothing to authenticate with, so
-// neither has anyone else posting there. The cap is the only thing between them and the table (and
-// the disk read in handleCssError). Counted per client in this process, not across workers.
+// The three report routes accept anonymous writes, so a rate cap protects the table (and the disk
+// read in handleCssError). Counted per client and process.
 const INTAKE_MAX = 20;
 const INTAKE_WINDOW = 600;
 const intake = new Map<string, { n: number; until: number }>();
@@ -43,8 +42,8 @@ function intakeAllowed(ctx: Ctx): boolean {
   return true;
 }
 
-/** What a browser report may say. Everything else — id, time, ip, log_id — the server fills in:
- *  a posted `id` near the top of the range would use up the table's autoincrement for good. */
+/** Allowed fields of a browser report. id, time, ip, log_id are set by the server (a posted high
+ *  `id` would exhaust the autoincrement). */
 const JS_FIELDS = ["message", "file", "line", "col", "prio", "sample", "backtrace", "request", "referer"];
 
 async function handleJsError(ctx: Ctx): Promise<void> {
@@ -135,8 +134,8 @@ async function addReport(app: App, vs: Report): Promise<void> {
   await app.db.table("m_error_report").insert(row).catch(() => {});
 }
 
-/** Console wrapping is process-wide — there is one console. So the hook is installed once and
- *  routes to the app of the running request; only outside a request does it fall back. */
+/** The console is process-wide, so the hook is installed once and reports to the current request's
+ *  app (fallback outside requests). */
 const apps = new Set<App>();
 
 function reportingApp(): App | undefined {
@@ -181,8 +180,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     await addReport(app, report);
   }, { signal });
 
-  // Log every "suspicious" signal (failed logins, enumeration probes, …). A future
-  // security module scores the client from the same event; here we just record it.
+  // Log every "suspicious" event (failed logins, probes, …); the security module scores it.
   app.on("suspicious", ({ reason }) => addReport(app, {
     source: "suspicious",
     message: reason ?? "suspicious",
@@ -191,7 +189,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   app.on("render", async ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
-    // the browser posts csp violations by itself — no reporter script and no browserErrors setting needed
+    // browsers post csp violations themselves — no script or browserErrors setting needed
     ctx.res.csp.reportTo = ctx.req.appUrl + "csp-error";
     if (!await ctx.app.settings.error_report.browserErrors) return;
     ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.appUrl + "js-error", max: 50 };

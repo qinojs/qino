@@ -1,4 +1,3 @@
-// Public API of messaging. The qino plugin lives in ./plugin.ts.
 import { sql, unixTime } from "@qino/qino";
 
 import { dispatch } from "./lib/dispatch.ts";
@@ -28,17 +27,15 @@ export type Attachment = File | {
 };
 
 /**
- * What every channel understands. `text` is the message; a bare string is the short form of
- * `{ text }`. Channels add their own fields on top — a push tag, a mail `replyTo` — and degrade
- * what they cannot express instead of refusing it. What is on the wire is never one of them:
- * a caller says `format`, and the channel derives its own switches from that.
+ * The message, understood by every channel; a plain string is short for `{ text }`. Channels add
+ * their own fields (a push tag, a mail `replyTo`) and adapt what they can't show. Transport
+ * switches are never fields: the channel derives them from `format`.
  *
- * `format` says what the text *is*, not how it is delivered: markdown renders to the markup a
- * channel accepts, html degrades to plain text where none is possible, and the default — plain
- * text — goes out exactly as it was written. `title` is always plain text.
+ * `format` says what the text *is*: markdown becomes the channel's markup, html becomes plain text
+ * where needed, plain text (default) is sent as written. `title` is always plain text.
  *
- * `template` names the template around it — the channel's main one when unnamed, and `null` for a
- * message that goes out bare. The template is chrome: applied per recipient, never part of the text.
+ * `template`: the template to wrap it in — default the channel's main one, `null` for none. Applied
+ * per recipient, never stored in the text.
  */
 export type Msg = {
   text: string;
@@ -49,19 +46,19 @@ export type Msg = {
   attachments?: Attachment[];
 };
 
-/** Materialize the compact attachment form as a Web-standard file. */
+/** Turn the short attachment form into a `File`. */
 export async function attachmentFile(file: Attachment): Promise<File> {
   if (!("content" in file)) return file;
   const content = await file.content;
   return new File([content instanceof Uint8Array ? new Uint8Array(content) : content], file.name, { type: file.type });
 }
 
-/** The normal form of a message; a bare string is its text. */
+/** Normalize a message; a string becomes its text. */
 export function msgOf<T extends Msg>(msg: string | T): T {
   return typeof msg === "string" ? { text: msg } as T : msg;
 }
 
-/** A title for the channels that need one — the first line of the text when none was given. */
+/** Title for channels that need one — else the first line of the text. */
 export function titleOf(msg: Msg, max = 78): string {
   if (msg.title) return msg.title;
   const line = textOf(msg).trim().split("\n", 1)[0].trim();
@@ -70,34 +67,32 @@ export function titleOf(msg: Msg, max = 78): string {
   return cut.slice(0, cut.lastIndexOf(" ") + 1 || max).trimEnd() + "…";
 }
 
-/** Who a message goes to; every channel understands these and adds its own keys.
- *  `notClient` names the device that must be skipped — a channel that reaches devices honours it,
- *  one that is out of band by nature (sms, mail, telegram) has none and ignores it. */
+/** Recipients; every channel understands these and adds its own keys. `notClient` is a device to
+ *  skip — only device channels (webpush) use it. */
 export type To = { grp?: number; usr?: number | number[]; all?: true; notClient?: string | number };
 
-/** What a `To` selects on any table with a user column — the part every channel means the same
- *  way. A channel adds its own terms (a chat, a subscription) and ORs the lot together. */
+/** SQL condition for the common `To` keys on a table with a user column. Channels OR their own
+ *  terms (chat, subscription) to it. */
 export const selectors = (to: To, usr: string): Sql[] => [
   to.grp != null ? sql`${sql.raw(usr)} IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
   to.usr != null ? sql.in(usr, [to.usr].flat()) : null,
   to.all ? sql`${true}` : null,
 ].flatMap((term) => term ?? []);
 
-/** One destination a `To` turned out to mean. An address nobody can deliver to says why instead. */
+/** One resolved destination. An undeliverable address carries the reason instead. */
 export type Recipient = Row & { address: string; usrId?: number; addressError?: string };
 
 /**
- * A way to reach a person, declared by a module as `export const messagingChannel`.
+ * A channel, declared by a module as `export const messagingChannel`.
  *
- * `name` is what lands in the journal's `channel` column, so it outlives module renames. `reach`
- * answers how many destinations one user has, skipping `notClient` as `To` does.
+ * `name` is stored in the journal's `channel` column (survives module renames). `reach` counts a
+ * user's destinations, skipping `notClient`.
  *
- * `contact` names the kind of address it delivers to — `usr_contact.type`, not the channel's own
- * name: sms, whatsapp and signal all reach a `phone`, and nobody proves the same number three
- * times. A Telegram chat and a push endpoint have none; those are linked, never entered.
+ * `contact` is the address kind it delivers to (`usr_contact.type`): sms, whatsapp and signal all use
+ * `phone`. Telegram chats and push endpoints have none — they are linked, not entered.
  *
- * Sending has two halves: `recipients` — who a `to` means, the one question only the channel can
- * answer — and `deliver`, a batch on the wire. Everything between them is `send()`, for all of them.
+ * The channel provides `recipients` (resolve a `to`) and `deliver` (send a batch); `send()` does
+ * everything in between.
  */
 export type Channel = {
   name: string;
@@ -109,13 +104,13 @@ export type Channel = {
   reach(app: App, usrId: number, notClient?: string | number): Promise<number>;
   recipients(app: App, to: To): Promise<Recipient[]>;
   send(app: App, to: To, msg: string | Msg): Promise<number>;
-  /** Each row closed with `delivered()`, resolving with how many went out. Handles of its own —
-   *  a chat, a subscription — the channel looks up by `address`. */
+  /** Close each row with `delivered()`; resolves with the number sent. The channel finds its own
+   *  handles (chat, subscription) by `address`. */
   deliver(app: App, rows: Row[], msg: Msg, rendering: Rendering): Promise<number>;
 };
 
-/** Journal a message, then send it — a tracked link needs its delivery's id before it is written
- *  into the text. What is owed goes to the channel at once, the way the outbox hands it over later. */
+/** Record a message, then send it (tracked links need the delivery id first). Due deliveries go
+ *  to the channel right away, the same way the outbox does later. */
 export async function send(
   app: App,
   channel: Channel,
@@ -132,13 +127,13 @@ export async function send(
   return dispatch(app, channel, ids, msg, onError);
 }
 
-/** The message with the title its channel needs: the text's first line where none was given. */
+/** The message with a title: the first line of the text if none was given. */
 export function titled<T extends Msg>(message: string | T): T {
   const msg = msgOf(message);
   return { ...msg, title: titleOf(msg) };
 }
 
-/** Every channel a linked module declares. */
+/** All channels of linked modules. */
 export function channels(app: App): Channel[] {
   return app.modules.linked().filter((mod) => mod.plugin.messagingChannel).map((mod) => mod.plugin.messagingChannel as Channel);
 }
@@ -147,7 +142,7 @@ export function channel(app: App, name: string): Channel | undefined {
   return channels(app).find((c) => c.name === name);
 }
 
-/** The channels one user can actually be reached on. */
+/** Channels that can reach this user. */
 export async function userChannels(app: App, usrId: number): Promise<Channel[]> {
   const all = channels(app);
   const reach = await Promise.all(all.map((c) => c.reach(app, usrId).catch(() => 0)));
@@ -155,9 +150,8 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
 }
 
 /**
- * The journal's free-form side: the caller's routing data, and beside it whatever of the message
- * only its channel understands — a push `url`, a mail `replyTo`. The columns hold what every
- * channel understands, this holds the rest, and together they are the whole message again.
+ * The journal's `data`: the caller's routing data plus channel-specific message fields (a push
+ * `url`, a mail `replyTo`). Together with the columns it is the whole message.
  */
 function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
   const { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...rest } = msg ?? {} as Msg;
@@ -165,13 +159,13 @@ function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
 }
 
 /**
- * Store one logical message and one row per recipient.
+ * Store one message and one row per recipient.
  *
- * `msg` is the channel-neutral part and lands in its own columns, so reading and searching the
- * journal needs no knowledge of any channel; `data` stays the channel-native payload and routing.
+ * `msg` goes into its own columns, so the journal can be read without knowing channels; `data` is
+ * the channel's payload and routing.
  *
- * Journal first, send after: `ids` are the delivery rows in the order they were given — a tracked
- * link needs one before it is written into the message, and `delivered()` says how it went.
+ * Record first, then send: `ids` are the delivery rows in the given order (tracked links need
+ * them); `delivered()` stores the outcome.
  */
 export async function record(
   app: App,

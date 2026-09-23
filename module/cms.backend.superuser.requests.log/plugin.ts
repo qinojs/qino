@@ -47,9 +47,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   if (f.loggedin === "no")  where.push(sql.raw("usr.id IS NULL"));
   if (f.from)          where.push(sql`log.time >= ${backend.toUnix(f.from)}`);
   if (f.to)            where.push(sql`log.time <= ${backend.toUnix(f.to)}`);
-  // Search hits a single indexed path (never an OR across joined tables, which would
-  // force a full log scan). Input shape decides the dimension: "user:x" → usr, number → id/client,
-  // ip shape → ip (prefix match on the unique log_ip.ip), else → url (fulltext on the small log_url).
+  // One indexed search per input type (no OR across joins, that would scan the whole log):
+  // "user:x" → usr, number → id/client, ip → log_ip.ip (prefix), else → url (fulltext on log_url).
   if (f.search) {
     const s = f.search.trim();
     const user = s.match(/^user:(.+)/i)?.[1].trim();

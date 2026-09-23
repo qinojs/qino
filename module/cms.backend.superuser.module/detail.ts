@@ -179,14 +179,13 @@ function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""
   return result;
 }
 
-// core must stay linked (everything needs it); the backend chain is protected by the
-// dependency guard in unlink() anyway.
+// core must stay linked; the backend modules are protected by unlink()'s dependency check.
 const PROTECTED = new Set(["core"]);
 
 const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); // never unlink the module rendering this very page
 
-// Runtime-only enable/disable: link/unlink the module. Not persisted — a restart
-// re-links every imported module. Superuser only.
+// Enable/disable at runtime (link/unlink). Not persisted — a restart links all modules again.
+// Superuser only.
 async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<void> {
   const ctx = getCtx();
   if (!(ctx.user?.superuser)) return;

@@ -1,11 +1,11 @@
 # messaging
 
-Three things nobody wants to build per channel: the journal of what was sent and received,
-the list of ways one person can be reached, and the proof that a contact is really theirs.
+What every channel needs, built once: a journal of sent and received messages, the list of ways a
+person can be reached, and verification that a contact really belongs to them.
 
 ## Sending
 
-There is no `send()` here — the channel module has it, and you import the one you mean:
+`send()` lives in the channel module; import the one you want:
 
 ```ts
 import { send } from "@qino/qino/messaging.email";
@@ -14,15 +14,15 @@ await send(app, { usr: 42 }, "Danke für die Bestellung.");
 await send(app, { grp: 3 }, { title: "Wartung", text: "**Sonntag** ab 20 Uhr.", format: "md" });
 ```
 
-Pick one at runtime instead when the channel is data — `channel(app, "sms")?.send(app, to, msg)`,
-or `userChannels(app, usrId)` for whatever reaches that user at all. Every `send` journals itself;
-you never call `record()` for an outgoing message.
+If the channel is chosen at runtime: `channel(app, "sms")?.send(app, to, msg)`, or
+`userChannels(app, usrId)` for all channels that reach a user. Every `send` writes the journal
+itself; never call `record()` for outgoing messages.
 
 ## Journal
 
-`record(app, message, deliveries)` stores one logical message plus one row per recipient, so
-"sent to the group" stays one entry while every member keeps their own result. `error` on a
-delivery is the whole verdict — null means reached.
+`record(app, message, deliveries)` stores one message plus one row per recipient, so "sent to the
+group" is one entry, but each member has their own result. `error` on a delivery is the result —
+null means delivered.
 
 ```ts
 const { id, ids } = await record(app, { channel: "sms", direction: "out", grpId: 3, msg, data: { to } }, [
@@ -31,27 +31,26 @@ const { id, ids } = await record(app, { channel: "sms", direction: "out", grpId:
 ]);
 ```
 
-Journal first, send after: `ids` are the delivery rows in the order they were given, and a tracked
-link needs one before it can be written into the message. `delivered(app, ids[i], error)` fills in
-how each attempt went — a plain success is already what the row says, so nothing is written back.
+Record first, then send: a tracked link needs the delivery id before the message is written. `ids`
+are the delivery rows in the given order. `delivered(app, ids[i], error)` stores the outcome of
+each attempt; plain success needs no write.
 
-`msg` is the channel-neutral part and lands in the `title` and `text` columns, so reading or
-searching the journal needs no knowledge of any channel; `data` stays the channel-native payload
-and routing. A message with no text of its own — a verification code, a link — simply has none.
+`msg` is the channel-independent part and goes into the `title` and `text` columns, so the journal
+can be read and searched without knowing any channel. `data` holds the channel's own payload and
+routing. A message without text (a code, a link) simply has none.
 
-`messages(app, limit)` and `userMessages(app, usrId, limit)` read it back with the deliveries
-nested. `channel` is a plain string and outlives module renames — it is data, not a reference.
+`messages(app, limit)` and `userMessages(app, usrId, limit)` read it with the deliveries nested.
+`channel` is a plain string, so it survives module renames.
 
 ## One form for every channel
 
 ```ts
-send(app, to, msg): Promise<number>   // how many destinations were reached
+send(app, to, msg): Promise<number>   // number of destinations reached
 ```
 
-`to` is `{ grp }`, `{ usr }` or `{ all: true }` everywhere, plus whatever the channel alone can
-address. Selectors are a union, not a filter: `{ grp: 3, usr: [7, 9] }` reaches the group *and* those
-two, once each. `usr` takes one or many; `grp` stays a single one, because an unsubscribe link says
-which group it leaves.
+`to` is `{ grp }`, `{ usr }` or `{ all: true }` for every channel, plus channel-specific
+destinations. Selectors add up: `{ grp: 3, usr: [7, 9] }` reaches the group *and* those two, each
+once. `usr` takes one or many; `grp` only one, because an unsubscribe link names the group to leave.
 
 | Modul | `to` |
 | --- | --- |
@@ -60,143 +59,126 @@ which group it leaves.
 | messaging.telegram | `{ grp?, usr?, all?, chat? }` |
 | messaging.webpush | `{ grp?, usr?, all?, channel?, client?, sub?, notClient? }` |
 
-`email` and `phone` are the destination itself — an address, an E.164 number — and reach it whether
-or not anyone verified it. If a verified contact matches, the delivery is journaled as that user's,
-so a mail to a typed-in address still joins their conversation. `chat` and `sub` are rows in the
-channel's own table, because a Telegram chat and a push endpoint exist only once they were linked.
+`email` and `phone` are the destination itself (an address, an E.164 number), verified or not. If
+it matches a verified contact, the delivery is recorded for that user. `chat` and `sub` are rows in
+the channel's own table, since a Telegram chat or push endpoint only exists once linked.
 
-`msg` is `{ text, title?, format?, … }`, and a bare string is the short form of `{ text }`. Only
-`text` is required; `title` is what the channels that need one fall back on — `titleOf(msg)`
-hands out the first line of the text when none was given, so `send(app, { usr: 42 }, "…")`
-works on all of them. Everything else is the channel's own: `tag` and `actions` for Web Push,
-`replyTo` for mail. Wire-level switches are not among them — Telegram's `parse_mode` follows from
-`format`, so a caller never names it.
+`msg` is `{ text, title?, format?, … }`; a plain string is short for `{ text }`. Only `text` is
+required. Channels that need a title use `titleOf(msg)`, which falls back to the first line of the
+text, so `send(app, { usr: 42 }, "…")` works everywhere. Other fields belong to the channel: `tag`
+and `actions` for Web Push, `replyTo` for mail. Transport details are not among them — Telegram's
+`parse_mode` follows from `format`.
 
-What a channel cannot express, it degrades instead of refusing: a `title` becomes the first
-line of an SMS, bold in Telegram, the subject of a mail, the heading of a notification.
+What a channel can't show, it adapts: a `title` becomes the first line of an SMS, bold in
+Telegram, the subject of a mail, the heading of a notification.
 
 ## Format
 
-`format` says what the text *is*, never how it is delivered — the same distinction `usr_contact.type`
-makes about addresses:
+`format` says what the text *is*, not how it is delivered:
 
 ```ts
-send(app, to, "plain text")                                  // goes out exactly as written
+send(app, to, "plain text")                                  // sent exactly as written
 send(app, to, { text: "**shipped**", format: "md" })         // markup where a channel has it
 send(app, to, { text: "<p>…</p>", format: "html" })          // a document, mail only
 ```
 
-Two functions answer for every channel, and no channel converts anything itself:
+Two functions serve all channels; no channel converts anything itself:
 
 | | |
 | --- | --- |
-| `textOf(msg)` | plain text — markdown flattened, html walked: both keep a link's address |
-| `htmlOf(msg, profile?)` | the markup, or `undefined` when the message is plain text |
+| `textOf(msg)` | plain text — markdown flattened, html converted; links keep their address |
+| `htmlOf(msg, profile?)` | the markup, or `undefined` for plain text |
 
-`profile` narrows the markup to what a channel accepts: `telegram` has no headings, lists or
-paragraphs, so those arrive as bold lines, bullets and blank lines — a handful of renderer
-overrides on [marked](https://marked.js.org), which does the parsing for both profiles.
+`profile` limits the markup to what a channel supports: `telegram` has no headings, lists or
+paragraphs, so they become bold lines, bullets and blank lines — a few renderer overrides on
+[marked](https://marked.js.org), which parses both profiles.
 
-Two things stand between a message and the page it lands on. Raw html inside markdown is rendered
-as *text*, not markup, because a message may only say what its own markup asks for. And what markdown
-itself emits still passes the sanitizer, so of the addresses a link can carry only `http`, `https`,
-`mailto` and `tel` survive.
+Raw html inside markdown is rendered as *text*, not markup. And markdown output still goes through
+the sanitizer, so links only keep `http`, `https`, `mailto` and `tel`.
 
-The html side walks a real parser: comments (conditional ones included), scripts, styles and
-anything hidden from the reader are gone, blocks become line breaks, lists count, table cells keep
-their columns, and a link keeps its address — a plain-text alternative without the URLs is worth
-nothing.
+For html, `textOf` uses a real parser: comments (also conditional ones), scripts, styles and hidden
+content are removed, blocks become line breaks, lists are numbered, table cells keep their columns,
+and links keep their address — a text version without URLs is useless.
 
-A mail client is not a page, so a document goes out as it was written. A narrower target is
-sanitized on the way out all the same, for a different reason: `sanitizeHtml(html, "telegram")`
-keeps its documented subset, because an unknown tag there is *refused*, not ignored — one `<img>`
-and the message never goes out. `sanitizeHtml(html)` is also for the way *in*: a panel that renders
-journal HTML must pass it through, because a message is written by whoever sent it.
+A mail goes out as written. Narrower targets are sanitized: `sanitizeHtml(html, "telegram")` keeps
+Telegram's documented subset, because Telegram *rejects* unknown tags — one `<img>` and the message
+fails. Also use `sanitizeHtml(html)` when displaying journal HTML, since anyone could have sent it.
 
 ## The way out
 
 ```
 send(app, to, msg)
- ├ recipients …………………… who the `to` means: addresses, chats, endpoints
- ├ record() ……………………… the message plus its delivery rows; before tracked channels send
+ ├ recipients …………………… who `to` means: addresses, chats, endpoints
+ ├ record() ……………………… the message and its delivery rows; before tracked channels send
  ├ renderer(…) ………………… once per message:
  │   ├ load the template … the one the message names, else the channel's main one
- │   ├ rewriteLinks(msg) … every address absolute, then shortened
- │   ├ rewriteLinks(tmpl)   the template's links are traded with the message's own
- │   ├ beacon ……………………… a shortened pixel, where the markup can carry one
- │   └ uses ………………………… which declared placeholders this message names
+ │   ├ rewriteLinks(msg) … make every address absolute, then shorten it
+ │   ├ rewriteLinks(tmpl)   same for the template's links
+ │   ├ beacon ……………………… a shortened tracking pixel, where markup allows
+ │   └ uses ………………………… which declared placeholders this message uses
  ├ render(recipient) …… once per recipient:
- │   ├ placeholders ……… each declaring module works its own out for this one recipient
- │   ├ textOf / htmlOf …… the message as text and, where it has markup, as html
- │   ├ fill() ……………………… every placeholder in, in the form this side needs
+ │   ├ placeholders ……… each module computes its own for this recipient
+ │   ├ textOf / htmlOf …… the message as text and, if it has markup, as html
+ │   ├ fill() ……………………… insert every placeholder in the right form
  │   └ markers(deliveryId)  `${link}/${marker}` on every shortened address
- ├ deliver ………………………… the channel's own transport, one batch at a time
- └ delivered(id, error) … only when the attempt has a verdict of its own
+ ├ deliver ………………………… the channel's transport, one batch at a time
+ └ delivered(id, error) … only when the attempt has its own result
 ```
 
-Everything above the recipient line happens once, however many people are written to; everything
-below it is what a single delivery costs.
+Everything above "render(recipient)" runs once per message; everything below it once per delivery.
 
 ## Links
 
-Every address a message points at is made absolute and, where [shorturl](../shorturl/) is linked,
-traded for a short code — once per message, never per recipient. Three links to ten thousand people
-are three rows.
+Every address in a message is made absolute and, if [shorturl](../shorturl/) is linked, replaced by
+a short code — once per message, not per recipient. Three links to ten thousand people are three rows.
 
 ```
 [shop](/shop)  →  [shop](https://site.test/s/Ab3-x9Qm/1f4c)
 ```
 
-Absolute means what a browser means: `/shop` is the host's, `shop` is the page's. An address that
-is already absolute is left exactly as it was written, and what is not a web address — `mailto:`,
-`tel:`, `cid:`, a bare `#anchor` — is not touched at all. Which addresses a message names is read
-by the parser of its format, not by a pattern, so one inside a code block is being *shown*, not
-offered. The template is part of what goes out, so its links are traded with the message's own.
+Absolute like in a browser: `/shop` is relative to the host, `shop` to the page. Absolute addresses
+stay as they are; `mailto:`, `tel:`, `cid:` and `#anchor` are not touched. Addresses are found by
+the parser of the format, not a regex, so a link inside a code block is left alone. The template's
+links are handled the same way.
 
-One address is deliberately left long: a link of our own that carries a `sig` — what
-`grant.sign()` puts on a `dbFile.url({ grant })` — *is* the secret. Trading a hundred-odd bits for
-the eight characters of a short code would make the code the weaker of the two, and every guessed
-code hits *some* document. Only our own: on a foreign host a `sig` means whatever that host
-decided it means.
+One exception stays long: an own link with a `sig` (from `grant.sign()` on
+`dbFile.url({ grant })`). The signature *is* the secret; an eight-character short code would be much
+easier to guess, and every guessed code opens *some* document. Only for our own host — elsewhere a
+`sig` may mean anything.
 
 ## Tracking
 
-What follows the code says which delivery got there; the code itself says which address:
+The code identifies the address; what follows identifies the delivery:
 
 ```
 https://site.test/s/Ab3-x9Qm/1f4c
                    └ address    └ delivery 1704 · c=click · signature
 ```
 
-`message_track` keeps one row per hit — `delivery_id`, `code`, `kind`, `time` — so "who clicked",
-"which link pulls" and "how often" are one query. `kind` tells a followed link from an image the
-client loaded, which is the difference between a reader and a mail client: `load` is systematically
-too high, because Apple Mail and Gmail's proxy fetch images nobody looked at.
+`message_track` stores one row per hit — `delivery_id`, `code`, `kind`, `time` — so "who clicked",
+"which link works" and "how often" are simple queries. `kind` separates clicked links from loaded
+images. `load` is always too high, because Apple Mail and Gmail's proxy fetch images nobody saw.
 
-Every markup message carries a beacon for that second kind — a transparent pixel appended to the
-html, shortened and marked like any other address, so an open is one `load` row and needs no
-special case. It answers from `messaging/open.gif` and is never cached; a plain-text message and a
-Telegram one carry none, because neither is a page that loads images.
+Every markup message gets a beacon: a transparent pixel at the end of the html, shortened and
+marked like any link, so an open is just one `load` row. It is served from `messaging/open.gif`,
+never cached. Plain-text and Telegram messages have none — they load no images.
 
-The marker is signed, and that is its whole point: a bare delivery number invites walking 1, 2, 3
-and writing a click for somebody else. Three characters leave one guess in 262 144. A marker that
-does not check out is simply not counted, and nothing is reported: the tag behind a code belongs to
-whoever made the link, every module may shorten, and one this key cannot read is somebody else's
-rather than a forged one. Nothing about it is stored until it is followed.
+The marker is signed; otherwise anyone could count through delivery numbers and fake clicks.
+Three characters leave one chance in 262 144. Invalid markers are silently ignored: any module may
+shorten links, so a marker this key can't read may simply belong to someone else. Nothing is stored
+until a link is followed.
 
-[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) shows it: opens and clicks
-per recipient, and what was reached how often. A code stands for itself unless shorturl is there
-to say what it means.
+[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) shows opens and clicks per
+recipient and link. Without shorturl a code is shown as is.
 
-Every outgoing channel hands the delivery's id to the renderer. Email and SMS record one address,
-Telegram one chat, and Web Push one browser subscription, so every tracked link identifies the
-actual destination it was rendered for.
+Every channel passes the delivery id to the renderer. Email and SMS go to one address, Telegram to
+one chat, Web Push to one browser subscription, so each tracked link identifies the real
+destination.
 
 ## Templates
 
-A template is what a channel puts around every message — the signature under a mail, the
-support line after an SMS. The message asks for it by name, and each channel keeps its own
-variant, so the same message arrives the way that channel talks:
+A template wraps every message of a channel — the signature under a mail, the support line after an
+SMS. The message picks one by name; each channel has its own variant:
 
 | `name` | `channel` | `main` | `format` | `text` |
 | --- | --- | --- | --- | --- |
@@ -204,8 +186,8 @@ variant, so the same message arrives the way that channel talks:
 | signature | sms | ✓ | | `{{content}}` `Fragen? https://…` |
 | newsletter | email | | md | `{{content}}`<br>`[abmelden](…)` |
 
-`{{content}}` is the message, already rendered for that channel. Everything else a template may
-name is declared by a module, keyed by the name written between the braces:
+`{{content}}` is the message, already rendered for the channel. All other placeholders are declared
+by modules, keyed by the name between the braces:
 
 ```ts
 export const templatePlaceholders: Record<string, Placeholder> = {
@@ -214,220 +196,198 @@ export const templatePlaceholders: Record<string, Placeholder> = {
 };
 ```
 
-A template writes messaging's own bare — they are the message's base vocabulary — and every other
-module's under the module's name: `{{identity.name}}`, `{{identity.contact.telephone}}`. That is what
-keeps the site's address apart from the recipient's `{{email}}`, and two modules may both know one.
+messaging's own placeholders are written bare; other modules' use the module name:
+`{{identity.name}}`, `{{identity.contact.telephone}}`. So the site's address doesn't clash with the
+recipient's `{{email}}`.
 
-A `Placeholder` answers per recipient. `{ text }` is escaped by the renderer; a trusted `html` form
-is only needed where markup differs, such as a link. Nothing back means the hole stays empty, which is how
-`{{givenName|Kunde}}` falls back to the name it gives.
+A `Placeholder` returns a value per recipient. `{ text }` is escaped by the renderer; `html` is only
+needed where markup differs, e.g. a link. No value leaves it empty, and `{{givenName|Kunde}}` then
+uses its fallback.
 
-The registry is the allowlist: a name nobody declared reads as its fallback, so widening a query
-never widens what a template can read. Any module may add its own, and only what a text actually
-names is worked out — a placeholder that costs a signature is not spent on a template that never
-mentions it.
+Only declared names work; unknown names show their fallback. Any module can add placeholders, and
+only those a text actually uses are computed — an expensive one (e.g. a signature) costs nothing
+when unused.
 
 ```ts
 send(app, { grp: 3 }, "wie gehts")                            // the channel's main template, if any
 send(app, { grp: 3 }, { text: "…", template: "newsletter" })  // this one
-send(app, { grp: 3 }, { text: "…", template: null })          // none, and it has to say so
+send(app, { grp: 3 }, { text: "…", template: null })          // none
 ```
 
-What the template assembles is tidied — trailing spaces, and never more than one blank line in a row,
-because a placeholder that came up empty leaves a hole and on sms a blank line costs money. The message's
-own text is never touched: without a template, it goes out exactly as it was written.
+The template output is cleaned up — trailing spaces removed, at most one blank line in a row — since
+empty placeholders leave gaps, and on SMS every character costs. The message text itself is never
+changed: without a template it goes out as written.
 
-`main` marks the one a message gets when it names none — one per channel, as `usr_contact.main`
-marks the address a user is written to; `saveTemplate()` hands the flag over. A channel without a
-main template sends without one — that is how SMS stays one segment. It is applied per recipient
-and never joins the message: the journal keeps the text as it was written plus the template's
-*name*, so a template can be rewritten without rewriting history, and searching the journal finds
-messages instead of signatures.
+`main` marks the default template per channel (like `usr_contact.main` for addresses);
+`saveTemplate()` moves the flag. A channel without a main template sends none — that keeps SMS at
+one segment. The template is applied per recipient and not stored in the message: the journal keeps
+the original text plus the template *name*, so templates can change without rewriting history, and
+searching finds messages, not signatures.
 
-Rendering is `renderer(app, msg, channel, profile?)` — it loads the template once and hands back
-`{ render, uses }`, so a mail to a thousand people costs one query. `render(to)` renders for one
-recipient; `uses` are the placeholders this message turned out to name, which is how a channel adds
-what one of them needs from it.
+`renderer(app, msg, channel, profile?)` loads the template once and returns `{ render, uses }`, so a
+mail to a thousand people costs one query. `render(to)` renders for one recipient; `uses` lists the
+placeholders the message uses, so a channel can add what they need.
 
 ## Unsubscribing
 
-`{{unsubscribe}}` is a link in the html part and the bare address in the text part. It drops the
-recipient from the group the message went to, and it is signed rather than stored: a newsletter to
-ten thousand people would otherwise be ten thousand rows for a link almost nobody follows, and the
-one in a mail from last year has to keep working.
+`{{unsubscribe}}` is a link in html and the plain address in text. It removes the recipient from
+the group the message was sent to. The link is signed, not stored: otherwise a newsletter to ten
+thousand people would need ten thousand rows, and last year's link must still work.
 
-**A GET only asks — nothing is dropped without a POST.** Mail clients, scanners and link previews
-fetch what they find, and a fetched link must not unsubscribe anyone.
+**A GET only asks; only a POST unsubscribes.** Mail clients, scanners and link previews fetch
+links, and that must not unsubscribe anyone.
 
-**Only those the group really reached get one.** `{ grp: 3, usr: 7 }` reaches user 7 whether or not
-they are in group 3; for them the placeholder stays empty and no header rides along, because leaving
-a group they were never in is a promise nothing can keep. `unsubscribeGroup()` asks that once per
-send.
+**Only recipients reached via the group get one.** `{ grp: 3, usr: 7 }` reaches user 7 even if they
+are not in group 3; for them the placeholder stays empty and no header is added.
+`unsubscribeGroup()` checks this once per send.
 
-**Whether a message can be unsubscribed from is what the template says**, not "it went to a group":
-four administrators who must not throw themselves out of the admin group are sent to a group too.
-Where the placeholder stands, the channel adds what it needs — for mail the `List-Unsubscribe`
-header plus `List-Unsubscribe-Post`, from `uses` (see below). Its url is never shortened: one-click
-unsubscribing is a POST, and a redirect loses it.
+**The template decides whether a message can be unsubscribed**, not "it went to a group" — admins
+messaged via the admin group must not remove themselves. Where the placeholder appears, the channel
+adds what it needs — for mail the `List-Unsubscribe` and `List-Unsubscribe-Post` headers, via
+`uses`. That URL is never shortened: one-click unsubscribe is a POST, and a redirect would lose it.
 
 ## Not decided yet
 
-**Whether a message can be reproduced.** Today the journal stores the template's name, so a
-rewritten template changes how history looks. The two ways out — fixing the template (an
-immutable version per name) or storing the whole rendered text in `message_delivery.body` —
-are both open and both postponed. `body` becomes the honest answer the moment recipient placeholders
-make every delivery a different text.
+**Can a message be reproduced?** The journal stores only the template name, so changing a template
+changes how old messages look. Options: immutable template versions, or storing the rendered text
+in `message_delivery.body`. Both postponed; `body` becomes necessary once recipient placeholders
+make every delivery different.
 
 ## Channels
 
-A module says it can reach people by exporting `messagingChannel` from its plugin, the same
-way [serviceworker](../serviceworker/) and the backend dashboard collect what modules declare:
+A module offers a channel by exporting `messagingChannel` from its plugin, like
+[serviceworker](../serviceworker/) and the backend dashboard collect declarations:
 
 ```ts
 export const messagingChannel: Channel = {
-  name: "sms",          // what lands in the journal's channel column
+  name: "sms",          // value of the journal's channel column
   label: "SMS",
   color: "--green",     // badge colour, optional
-  contact: "phone",     // the kind of address it delivers to, where one is entered at all
-  profile: "telegram",  // only where the channel's markup is a subset of its own
-  reach: (app, usrId) => Promise<number>,   // how many destinations this user has
-  recipients,           // who a `to` means here — the one question only this module can answer
-  send,                 // the module's own send() — typed, and two lines over messaging's
-  deliver,              // a batch on the wire; everything before it is the same for all channels
+  contact: "phone",     // kind of address it delivers to, if one is entered
+  profile: "telegram",  // only if the channel supports a subset of markup
+  reach: (app, usrId) => Promise<number>,   // number of destinations this user has
+  recipients,           // resolves a `to` for this channel
+  send,                 // the module's typed send()
+  deliver,              // sends a batch; everything before is shared by all channels
 };
 ```
 
-`channels(app)` lists what linked modules declare, `channel(app, name)` picks one and
-`userChannels(app, usrId)` narrows it to those that can actually reach a user.
+`channels(app)` lists all, `channel(app, name)` picks one, `userChannels(app, usrId)` returns those
+that can reach a user.
 
-[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) renders the journal per user
-and replies over whichever channel is reachable; `auth.otp` derives its factors from the same
-registry. Neither knows a channel by name.
+[cms.backend.superuser.messaging](../cms.backend.superuser.messaging/) shows the journal per user
+and replies over any reachable channel; `auth.otp` builds its factors from the same list. Neither
+knows a channel by name.
 
-Channels today: [messaging.email](../messaging.email/), [messaging.sms](../messaging.sms/),
+Channels: [messaging.email](../messaging.email/), [messaging.sms](../messaging.sms/),
 [messaging.telegram](../messaging.telegram/) and [messaging.webpush](../messaging.webpush/).
-`messaging.email` owns the `email` channel alone.
 
 ### Whose fault a failure was
 
-A delivery can fail for two unrelated reasons, and they must not end up in the same place. The
-address may be gone — a bounced mailbox, a disconnected number — and that belongs on the contact,
-where [cms.backend.users](../cms.backend.users/) shows it as a warning. Or *we* could not send: no
-provider configured, no connection, refused credentials, a rate limit. That says nothing about the
-address, so a channel throws `ChannelError` for it and the contact is left alone.
+A delivery can fail for two different reasons. The address may be dead — bounced mailbox,
+disconnected number — which is noted on the contact and shown as a warning in
+[cms.backend.users](../cms.backend.users/). Or *we* could not send: no provider, no connection,
+wrong credentials, rate limit. That says nothing about the address, so the channel throws
+`ChannelError` and the contact is left alone.
 
 ```ts
 if (!type) throw new ChannelError("messaging.sms: configure provider.type or call setProvider()");
 ```
 
-Either way the reason lands in the journal, which is where the detail belongs — and it decides
-whether the outbox tries again.
+Both land in the journal, and the type decides whether the outbox retries.
 
 ## Outbox
 
-A delivery is owed until it went out. `message_delivery` says so itself, no second table:
+`message_delivery` itself tracks what still has to be sent — no second table:
 
 | `due` | `sent` | `attempts` | |
 | --- | --- | --- | --- |
-| `null` | `null` | `0` | held back — something has to release it |
-| `n` | `null` | | owed from `n` on |
-| `null` | `n` | | went out |
+| `null` | `null` | `0` | held back until released |
+| `n` | `null` | | due from `n` |
+| `null` | `n` | | sent |
 | `null` | `null` | `> 0` | given up |
 
-Releasing is nobody's business but the caller's: a backend button writes `now` into `due`, a
-schedule writes a timestamp, an approval rule writes it when it is satisfied. `messaging` only ever
-asks what is owed.
+Releasing is up to the caller: a backend button sets `due` to now, a schedule sets a time, an
+approval rule sets it when satisfied. `messaging` only asks what is due.
 
-`delivered(app, id, error?, ref?)` closes one attempt. A `ChannelError` puts the delivery back with a growing wait — a
-minute, then four — and gives up after three tries; anything else is final. The `outbox` cron job
-picks up what is due and walks the very same way out as `send()` — the diagram above, from
-`recipients` onward. There is no second path, so nothing a channel does when sending can go missing
-when it sends again, and a batch shares its connection and its rate limit either way.
+`delivered(app, id, error?, ref?)` finishes one attempt. On `ChannelError` the delivery is retried
+after one, then four minutes, and given up after three tries; other errors are final. The `outbox`
+cron job takes what is due and runs the same path as `send()` (the diagram above, from
+`recipients`). One path only, so retries behave exactly like the first send, and a batch shares its
+connection and rate limit.
 
-`deliver()` gets the message back whole, not the part that fits in columns. `record()` puts what
-every channel understands into its own columns and whatever is left of `msg` into `data.msg` — a
-mail's `replyTo`, a push `url` or `icon` — and the outbox puts the two together again. A channel
-adds a field and it survives the wait; none of them has to think about it.
+`deliver()` gets the full message back. `record()` stores the common fields in columns and the rest
+of `msg` in `data.msg` (a mail's `replyTo`, a push `url` or `icon`); the outbox merges them again.
+So new channel fields survive the wait automatically.
 
 ## Verifying a contact
 
-A phone number or mail address is a claim until the owner proves it — anyone can type
-someone else's. Telegram and Web Push need none of this: a `chat_id` comes only from a real
-update, an endpoint only from the browser itself.
+A phone number or address is only a claim until the owner proves it — anyone can type someone
+else's. Telegram and Web Push don't need this: a `chat_id` only comes from a real update, an
+endpoint only from the browser.
 
 ```ts
 const code = await requestCode(app, "phone", usrId, "+41791234567");  // start or resend
-await redeemCode(app, "phone", usrId, "+41791234567", code);          // throws unless it proves it
+await redeemCode(app, "phone", usrId, "+41791234567", code);          // throws if wrong
 ```
 
-Pending claims live in `usr_contact_verification` and **nowhere else**; a proven one moves into
-core's `usr_contact`. That is the point of the two tables: `SELECT * FROM usr_contact WHERE
-usr_id = 22` is always legitimate, instead of `WHERE verified IS NOT NULL` being a rule one can
-forget once and send to a number that was never anyone's.
+Open claims are in `usr_contact_verification` **only**; proven ones move to core's `usr_contact`.
+So `SELECT * FROM usr_contact WHERE usr_id = 22` is always safe — no `WHERE verified IS NOT NULL`
+to forget.
 
-`usr_contact` belongs to [core](../core/docs/db.md), not here — where a person can be reached is
-part of the user, and `usr.contacts.add("email", "a@b.ch")` needs no messaging module. What lives
-here is the proof: only a channel can deliver the code that turns a claim into a contact.
+`usr_contact` belongs to [core](../core/docs/db.md): how a person is reached is part of the user,
+and `usr.contacts.add("email", "a@b.ch")` works without messaging. This module only does the proof,
+since only a channel can deliver the code.
 
-Both tables are keyed by the **kind** of address, never by the channel: `phone`, `email`. One
-number serves sms, whatsapp and signal, and nobody should prove the same number once per transport.
-A channel says which kind it delivers to with `contact`; Telegram and Web Push name none, because
-those destinations are linked, never typed.
+Both tables are keyed by the **kind** of address (`phone`, `email`), not the channel. One number
+serves sms, whatsapp and signal and should be verified only once. A channel names its kind in
+`contact`; Telegram and Web Push have none, since their destinations are linked, not typed.
 
-Core owns what a kind means — `contactKey(type, address)` returns the one form it is stored and
-found under, or throws: `0041 79 123 45 67` and `+41 79 123 45 67` are the same contact, and so are
-`Kim@Example.com` and `kim@example.com`. Everything a form, an import or a provider hands in goes
-through it, so no notation and no stray space can make a second contact or a claim that cannot be
-redeemed.
+Core defines what a kind means: `contactKey(type, address)` returns the normalized form or throws.
+`0041 79 123 45 67` and `+41 79 123 45 67` are the same contact, and so are `Kim@Example.com` and
+`kim@example.com`. All input goes through it, so formatting never creates duplicates or claims that
+can't be redeemed.
 
-The claim is spent when it is redeemed or has expired; a wrong code does not spend it but costs
-the account a growing wait, counted in core next to every other wrong proof of identity. Codes last
-ten minutes, resending is limited to once a minute, and only a keyed hash is stored. One open claim
-exists per user, address and kind; the resend limit applies to the address across users.
-`pendingContacts(app, type, usrId?)` lists what is open, and `dropClaim(app, type, usrId, address)`
-takes one as proven without its code — what an admin does.
+A claim ends when redeemed or expired. A wrong code does not end it, but adds to the account's
+growing wait (counted in core with all other failed proofs). Codes last ten minutes, can be resent
+once a minute, and only a keyed hash is stored. One open claim per user, address and kind; the
+resend limit counts per address across users. `pendingContacts(app, type, usrId?)` lists open
+claims; `dropClaim(app, type, usrId, address)` accepts one without code (admin action).
 
 ## Storage
 
-`message` — one row per logical message; `data` is the channel-native payload as JSON, so
-nothing is lost and nothing has to be normalized.
+`message` — one row per message; `data` is the channel's own payload as JSON.
 
-`message_delivery` — one row per recipient, with the time it was attempted and the error, if
-any. `address` is where it actually went; `usr_id` is set only when that address is a
-verified contact of that user, so the journal never claims a message reached someone on the
-strength of an unproven address. `ref` is what the far side calls this delivery — a mail's
-`Message-ID`, a Twilio `sid`, a Telegram message. Only a globally assigned id stands alone:
-where it means something only inside its provider or chat, it carries that context
-(`twilio:SM…`, `<chat>:<message>`), so one lookup can never mean two things.
+`message_delivery` — one row per recipient, with attempt time and error. `address` is where it
+really went; `usr_id` is set only if that address is a verified contact of the user, so the journal
+never claims a delivery to someone based on an unverified address. `ref` is the other side's id for
+it — a mail's `Message-ID`, a Twilio `sid`, a Telegram message. Ids that are only unique within a
+provider or chat get a prefix (`twilio:SM…`, `<chat>:<message>`), so they are never ambiguous.
 
-`message_attachment` — ordered links from a message to core's `file` table. Content and metadata
-stay in `DbFile`; channels decide whether they can deliver attachments.
+`message_attachment` — ordered links from a message to core's `file` table. Channels decide whether
+they can send attachments.
 
-`message_track` — one row per hit on a tracked link: which delivery, which code, followed or
-loaded, and when.
+`message_track` — one row per hit on a tracked link: delivery, code, click or load, time.
 
-`usr_contact_verification` — open claims, keyed by kind, address and user. No cron job: expired
-rows are swept whenever a code is requested.
+`usr_contact_verification` — open claims by kind, address and user. Expired rows are removed
+whenever a code is requested; no cron job.
 
 ## Possible extensions
 
-- **Contact fan-out policy.** Email and SMS currently choose one preferred contact per person,
-  while Telegram and Web Push reach every linked chat or browser. Revisit whether contact channels
-  should also reach every verified address before this becomes a user-visible preference.
-- **`notify(app, usrId, msg)`** across the user's channels, with per-user preferences — the
-  registry is what it would need; the preference table is what is missing.
-- **Raw destinations.** `send(app, "+41791234567", msg)` — a bare string as the recipient,
-  for people who have no account. `message_delivery.address` is there for it; what is
-  missing is the channels accepting the short form. Never expose it through an api tree: it
-  is a spam relay the moment it is reachable over HTTP.
-- **Placeholders in the message itself.** They work in the template alone today: the message's own
-  text goes in as `{{content}}` untouched, and a title never sees `fill()` at all. Both could have
-  them, but only the declared ones with no effect of their own — a computed one like
-  `{{unsubscribe}}` has to keep coming from a template, which an administrator wrote, and not from
-  a text that may have been assembled from a web form.
-- **`vars` instead of glued strings.** `send(app, to, { text: "{{name}} asks: {{message}}", vars })`
-  — the caller's own values, filled in the same single pass, so a `{{…}}` inside one of them stays
-  text. Whoever builds a message out of form input and switches placeholder expansion on has destroyed
-  the boundary before `fill()` ever sees it, exactly as string-built SQL does; passing values is the
-  way out, and the presence of `vars` is a better switch than a flag. Filling is one round, never
-  recursive — that is what makes it safe.
+- **Contact fan-out.** Email and SMS pick one preferred contact per person; Telegram and Web Push
+  reach every linked chat or browser. Decide whether email/SMS should reach all verified addresses
+  before this becomes a user setting.
+- **`notify(app, usrId, msg)`** over the user's channels with per-user preferences — the channel
+  list exists, a preference table is missing.
+- **Raw destinations.** `send(app, "+41791234567", msg)` for people without an account.
+  `message_delivery.address` is ready; the channels don't accept the short form yet. Never expose
+  this through an api tree — it would be a spam relay.
+- **Placeholders in the message itself.** Today only templates have them: the message text goes in
+  as `{{content}}` unchanged, and titles are never filled. Both could support simple declared
+  placeholders — but not computed ones like `{{unsubscribe}}`, which must stay in admin-written
+  templates, not in text that may come from a web form.
+- **`vars` instead of string concatenation.** `send(app, to, { text: "{{name}} asks: {{message}}", vars })`
+  — caller values filled in the same single pass, so a `{{…}}` inside a value stays text. Building
+  a message from form input and then expanding placeholders is like string-built SQL; `vars` avoids
+  that, and its presence is a better switch than a flag. Filling runs once, never recursively —
+  that is what makes it safe.

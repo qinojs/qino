@@ -49,7 +49,7 @@ export class DbFileManager {
     return scopeCache<Map<string, DbFile>>(this.#cache, "dbFiles", () => new Map());
   }
 
-  /** The cached object for this file; `vs` preloads a new one and is ignored on a cache hit. */
+  /** The cached object for this file; `vs` preloads a new one (ignored on a cache hit). */
   async file(id: number | string, vs?: any): Promise<DbFile> {
     const file = this.#files().getOrInsertComputed(String(id), () => new DbFile(this, id, vs));
     if (!file.vs) await file.ensureVs();
@@ -99,7 +99,7 @@ export class DbFileManager {
     if (mtime !== undefined) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
     headers.set("Cache-Control", `max-age=${60 * 60 * 24 * 180}, private, immutable`);
 
-    // The chosen format may depend on what the client accepts, so caches must key on it too.
+    // The format may depend on the Accept header, so caches must key on it.
     headers.append("Vary", "Accept");
     const { path: outputPath, mime: outputMime, key, transformed, error } = await f.transform(params, req.headers.get("accept") ?? undefined);
     if (error && isTransformRequest(params)) return new Response(error.message, {
@@ -121,10 +121,9 @@ export class DbFileManager {
 
     if (params.as === "text") mime = "text/plain";
 
-    // A file is never a page of this site: whatever the browser renders as a document runs sandboxed —
-    // no script, no forms, an opaque origin. PDF is the exception, Chrome refuses to show one sandboxed;
-    // its viewer isolates it by itself. Markup goes out as its source: a sandbox still follows a
-    // <meta> refresh. SVG stays an image.
+    // A file is never a page of this site: documents run sandboxed (no script, no forms, opaque
+    // origin). Except PDF — Chrome won't show it sandboxed, and its viewer isolates itself. Markup is
+    // sent as source, since a sandbox still follows <meta> refresh. SVG stays an image.
     if (MARKUP.test(mime) && mime !== "image/svg+xml") mime = "text/plain";
     if (mime !== "application/pdf") headers.set("Content-Security-Policy", "sandbox");
     headers.set("X-Content-Type-Options", "nosniff");
@@ -132,7 +131,7 @@ export class DbFileManager {
     if (mime === "image/svg+xml" || mime === "text/markdown") mime += "; charset=utf-8";
     headers.set("Content-Type", mime);
 
-    // Cache key as ETag (content identity) – cache-file mtime is unusable, it gets touched for LRU tracking
+    // Cache key as ETag; the cache file's mtime is touched for LRU, so unusable
     const etag = `"qg${key ?? await fs.mtime(outputPath) ?? 0}"`;
     headers.set("ETag", etag);
     const inm = req.headers.get("if-none-match");
@@ -142,7 +141,7 @@ export class DbFileManager {
 
     headers.set("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.get("range");
-    const ifRange = req.headers.get("if-range"); // a stale validator means: send the whole file
+    const ifRange = req.headers.get("if-range"); // stale validator: send the whole file
     if (rangeHeader && (!ifRange || ifRange === etag || Date.parse(ifRange) === mtime! * 1000)) {
       const range = await openRange(outputPath, rangeHeader);
       if (typeof range === "number") {
@@ -168,7 +167,7 @@ export class DbFile extends File {
   id: number;
   vs?: Record<string, any>;
 
-  /** `vs` makes this a detached view of that row (e.g. a historical one) — pass it only outside the manager cache. */
+  /** With `vs` this is a detached view of that row (e.g. a historical one) — only outside the manager cache. */
   constructor(manager: DbFileManager, id: number | string, vs?: Record<string, any>) {
     super("");
     this.#manager = manager;
@@ -178,7 +177,7 @@ export class DbFile extends File {
 
   override get extension(): string { return String(this.vs?.name ?? "").replace(/.*\./, "").toLowerCase(); }
 
-  /** Normalized on read too: rows from before types were normalized on write. */
+  /** Normalized on read too, for old rows. */
   override get mime(): string { return mimeType(this.vs?.mime ?? ""); }
 
   get name(): string { return this.vs?.name ?? ""; }
@@ -201,7 +200,7 @@ export class DbFile extends File {
     return this.vs!;
   }
 
-  /** Re-read the row after a write that went past the manager; keeps the object identity consumers hold. */
+  /** Re-read the row after a write that bypassed the manager; keeps the same object. */
   async reload(): Promise<this> { this.vs = undefined; await this.ensureVs(); return this; }
 
   async get(field: string): Promise<any> { return (await this.ensureVs())[field]; }
@@ -236,7 +235,7 @@ export class DbFile extends File {
     if (set !== undefined) { await this.setVs({ access: set ? 1 : 0 }); return !!set; }
     const vs = await this.ensureVs();
     const e = await this.#manager.app.fire("dbFile:access", { file: this, access: vs.access == "1" }); // fast path
-    if (!e.access) await this.#manager.app.fire("dbFile:access-fallback", e);  // slow path only when still unresolved
+    if (!e.access) await this.#manager.app.fire("dbFile:access-fallback", e);  // slow path, only if unresolved
     return e.access;
   }
 
@@ -260,7 +259,7 @@ export class DbFile extends File {
     const e = await this.#manager.app.fire("dbFile:unlink-before", { file: this, prevent: false });
     this.path = "";
     if (e.prevent || !md5) return;
-    // Deferred: a blob is the only unrecoverable data, so never unlink before the transaction committed.
+    // Deferred: a blob can't be restored, so unlink only after commit.
     await db.afterCommit(async () => {
       const still = await db.one`SELECT id FROM ${sql.id(tableRef("file"))} WHERE md5 = ${md5}`;
       if (!still) await fs.remove(this.#manager.directory + md5);
@@ -302,7 +301,7 @@ export class DbFile extends File {
     }
     data.id = String(to);
     await this.#manager.db.table("file").update(to, data);
-    return (await this.#manager.file(to)).reload(); // the update went past the manager
+    return (await this.#manager.file(to)).reload(); // the update bypassed the manager
   }
 
   async transform(param: Record<string, unknown>, accept?: string): Promise<{ path: string; mime: string; key?: string; transformed?: boolean; error?: Error }> {
@@ -313,10 +312,9 @@ export class DbFile extends File {
     return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed, error: result.error };
   }
 
-  /** Fill the searchable `text` column from the file itself: text as-is, everything else via the
-   *  `fmt=md` pipeline (pandoc, pdftotext, OCR, transcript). Capped — the column is an index, not an
-   *  archive. `""` means this file has no text to find; `null` means nobody looked yet. Throws when a
-   *  tool broke or timed out, which is neither. */
+  /** Fill the searchable `text` column: text files as is, others via the `fmt=md` pipeline
+   *  (pandoc, pdftotext, OCR, transcript), capped in length. `""` = no text, `null` = not extracted
+   *  yet. Throws if a tool fails or times out. */
   async extractText(): Promise<string> {
     if (!await this.exists()) return "";
     let path = this.path;
@@ -329,7 +327,7 @@ export class DbFile extends File {
     }
     text = text.slice(0, MAX_TEXT);
     await this.setVs({ text });
-    const { md5 } = this.vs!; // same blob, same text — no reason to make anyone extract it again
+    const { md5 } = this.vs!; // same blob, same text — reuse it
     if (md5) await this.#manager.db.query`UPDATE ${sql.id(tableRef("file"))} SET text=${text} WHERE md5=${md5} AND id!=${this.id}`;
     return text;
   }
@@ -346,11 +344,11 @@ function permanentResource(resource: string, md5: unknown): string {
   return `${resource}\0${String(md5 ?? "")}`;
 }
 
-/** Upper bound for the extracted `text` of one file. Small on purpose: the column sits in `file`, so
- *  every `SELECT f.*` carries it — and a hit list needs the beginning of a document, not all of it. */
+/** Max length of a file's extracted `text`. Small, because every `SELECT f.*` loads it, and search
+ *  results only need the beginning. */
 const MAX_TEXT = 8_000;
 
-/** What a browser renders as a document: html, and xml of any kind (xhtml, rss, xslt, svg). */
+/** What a browser renders as a document: html and any xml (xhtml, rss, xslt, svg). */
 const MARKUP = /^text\/html$|xml$|xsl$/;
 
 const numOptions = ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const;

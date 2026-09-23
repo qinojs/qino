@@ -6,8 +6,8 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 const YEAR = 365 * 24 * 60 * 60;
 
-// Spent and expired tickets stay as a record of what was handed out; only age removes them.
-// Never-expiring ones (an unsubscribe link) are only swept once they have been spent.
+// Used and expired tickets stay as a record; only age removes them. Tickets without expiry are
+// only removed once used.
 export const cron = {
   old: {
     every: "week",

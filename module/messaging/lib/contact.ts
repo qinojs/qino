@@ -5,7 +5,7 @@ import { selectors } from "../mod.ts";
 import type { App } from "@qino/qino";
 import type { Recipient, To } from "../mod.ts";
 
-/** Resolve selected users to preferred contacts and literal addresses to owners, keeping unknown literals anonymous. */
+/** Resolve users to their main contact and given addresses to their owner (if any). */
 export async function contactRecipients(
   app: App,
   type: string,

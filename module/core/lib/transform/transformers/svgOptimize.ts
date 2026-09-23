@@ -6,12 +6,12 @@ import { fs } from '../../fs.ts';
 
 import type { TransformerDef } from '../types.ts';
 
-// written by a subprocess, so never from the cache
+// written by a subprocess, so not cached
 const fileSize = async (path: string): Promise<number> => await fs.size(path, { ttl: 0 }) ?? Infinity;
 
 /**
- * Encode phase: minifies an SVG. Runs only when `q` is set – without it the stored bytes are served.
- * For a vector, quality is coordinate precision: q=100 keeps 7 digits, low q rounds paths hard.
+ * Encode phase: minifies an SVG. Only with `q`; otherwise the stored file is served.
+ * Quality = coordinate precision: q=100 keeps 7 digits, low q rounds strongly.
  */
 export const svgOptimize: TransformerDef = {
   name: 'svg-optimize',

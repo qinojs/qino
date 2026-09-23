@@ -13,7 +13,7 @@ export class ReqDeadline {
     this.#signal = AbortSignal.any([requestSignal, this.#ctrl.signal]);
   }
 
-  /** Remaining seconds; `Infinity` = no limit (default). Setting re-arms the timer: `deadline.left += 60`. */
+  /** Remaining seconds; `Infinity` = no limit (default). Setting restarts the timer: `deadline.left += 60`. */
   get left(): number {
     return this.#deadline === Infinity ? Infinity : Math.max(0, (this.#deadline - Date.now()) / 1000);
   }

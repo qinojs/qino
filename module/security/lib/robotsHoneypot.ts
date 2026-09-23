@@ -2,8 +2,8 @@ import { uid } from "@qino/qino";
 
 import type { App } from "@qino/qino";
 
-/** A random path robots.txt disallows and nothing links to: whoever asks for it ignored robots.txt.
- *  New at every start; a bot holding an older robots.txt just is not caught. */
+/** A random path disallowed in robots.txt and never linked: requesting it means robots.txt was
+ *  ignored. New on every start. */
 export function robotsHoneypot(app: App, signal: AbortSignal): void {
   const trap = uid(8) + "/";
   app.on("route", ({ ctx }) => {

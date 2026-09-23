@@ -21,7 +21,7 @@ const settingsSchema = {
   },
 };
 
-/** The form whose entries this block shows — the one it was pointed at, else the first on the page. */
+/** The form to show entries of: the configured one, else the first on the page. */
 async function formOf(node: Node): Promise<Node | undefined> {
   const id = Number(node.settings.form());
   if (id) {
@@ -34,9 +34,8 @@ async function formOf(node: Node): Promise<Node | undefined> {
 }
 
 /**
- * The fields of a form, in the order it asks them, each with its label. Names that only the
- * entries still carry come last: a field that was deleted later keeps its values, and they
- * must not disappear because nothing declares them any more.
+ * The form's fields in order, with labels. Fields only found in entries (deleted later) come last,
+ * so their values stay visible.
  */
 async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], only: string[]) {
   const cont = (await form.conts()).find((c) => c.vs.module === "cms.cont.form4.fields");
@@ -56,17 +55,13 @@ async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], o
 }
 
 /**
- * The entries of one form, newest first — read here rather than through a shared helper, so
- * that every reader keeps its own query and its own conditions.
+ * A form's entries, newest first (own query, no shared helper).
  *
- * `onlyIf` names a field an entry has to carry, a consent checkbox say; an unticked box sends
- * nothing, so the question is whether the key is among the values at all. It is asked in
- * JavaScript, not in SQL: a json path reads differently in every database, and one written
- * for SQLite would fail on MySQL and Postgres.
+ * `onlyIf`: a field the entry must have, e.g. a consent checkbox (unticked sends nothing). Checked
+ * in JS, since JSON paths differ per database.
  */
 async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; moderated: boolean; all: boolean; client: unknown }) {
-  /* The client comes from the log row the entry was written with — that is how an entry
-     waiting for release still shows to the one who wrote it, and to nobody else. */
+  /* The client comes from the entry's log row, so an unreleased entry is shown to its author only. */
   const rows = await app.db.query`
     SELECT e.id, e.created, e.data, e.released, l.client_id
     FROM ${sql.id(tableRef("form4_entry"))} e
@@ -106,11 +101,9 @@ async function uploads(app: App, ids: number[]) {
   return out;
 }
 
-/* What visitors sent through a form, entry by entry: the fields the form asks, in its order,
-   under the words it asks them in. What that looks like is the site's business — this module
-   knows of no field with a meaning of its own, and gives every value the same shape.
-   Without `moderated` an entry that is kept is an entry that shows, so a form whose entries
-   are not for the public simply does not get one of these blocks. */
+/* A form's entries, with the form's fields and labels in order. Styling is up to the site; all
+   values look the same. Without `moderated` every saved entry is shown, so don't add this block
+   to forms whose entries are private. */
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   const form = await formOf(node);
@@ -120,8 +113,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       : html`<div></div>`;
   }
 
-  /* Releasing belongs to the edit mode: reading the page as a visitor should look like what
-     a visitor sees, waiting entries included — that is, not included. */
+  /* Releasing only in edit mode; outside it, the page looks like for visitors (no waiting entries). */
   const mayRelease = await node.edit();
   const moderated = !!node.settings.moderated();
   if (mayRelease && moderated) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
@@ -138,13 +130,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const fields = await fieldsOf(form, rows, only);
 
   /**
-   * Pictures only, and only through the transform: what a visitor uploaded is re-encoded on
-   * the way out, so an svg carrying a script arrives as a picture. Anything else — a pdf, a
-   * document — is not shown and not linked either: a public listing must not hand out a file
-   * of unknown making under our own domain. It stays visible in the backend.
+   * Images only, re-encoded via transform (an svg with a script becomes a plain image). Other files
+   * are neither shown nor linked — no unknown files under our domain. They remain in the backend.
    *
-   * The urls are signed permanently, not for this session: these entries are read by people
-   * who never sign in. The file itself stays unlisted; only this link reaches it.
+   * The urls are signed permanently, since readers aren't signed in. Only this link reaches the file.
    */
   const pictures = async (entryId: number, name: string) => {
     const out = [];
@@ -162,8 +151,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       const shown = await pictures(row.id, name);
       const value = String(row.data[name] ?? "").trim();
       if (!value && !shown.length) continue; // a field nobody filled in says nothing
-      // `</div>` has to be written: a `<div>` does not close an open `<dd>`, so without it
-      // the next field would nest inside the previous value.
+      // explicit `</div>`: a `<div>` doesn't close a `<dd>`, fields would nest otherwise
       lines.push(html`<div class="-field-${name}">
         <dt>${label}
         <dd>${shown.length ? shown : value}
@@ -171,10 +159,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     }
     const when = new Date(row.created * 1000);
     const waiting = moderated && !row.released;
-    /* `<u2-time>` turns this into „three days ago" once it upgrades and keeps it current;
-       until then — and without JavaScript — the date inside it stands, in the reader's
-       language. (Not `u2.el.time()`: its fallback is the ISO string, and a page that never
-       upgrades would show `2026-09-09 06:14` to a guest.) */
+    /* `<u2-time>` shows "three days ago"; without JS the localized date inside stays.
+       (Not `u2.el.time()`: its fallback is the ISO string.) */
     return html.async`<article class="-entry${waiting ? " -pending" : ""}">
       <u2-time datetime="${when.toISOString()}" type=relative>${when.toLocaleDateString(ctx.lang || undefined)}</u2-time>
       <dl>${lines}</dl>

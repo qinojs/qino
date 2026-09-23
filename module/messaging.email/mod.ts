@@ -1,4 +1,3 @@
-// Public API of messaging.email. The qino plugin lives in ./plugin.ts.
 import { countContacts, errMsg } from "@qino/qino";
 import { attachmentFile, ChannelError, contactRecipients, delivered, send as dispatch, titled, unsubscribeHeaders } from "@qino/qino/messaging";
 
@@ -12,8 +11,7 @@ import type { Attachment, Channel, Msg, Recipient, Rendering, To } from "@qino/q
 export { receive } from "./lib/inbound.ts";
 export { setTransport } from "./lib/transport.ts";
 
-/** Who a `to` means as mail addresses — `usr_contact` says where a person reads mail, one address
- *  each: the preferred one, else the oldest. A user without a mail contact simply drops out. */
+/** Resolve `to` to mail addresses: one per user (main, else oldest). Users without one are skipped. */
 async function recipients(app: App, to: To & { email?: string | string[] }): Promise<Recipient[]> {
   const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
     address: value.trim().slice(0, 191), addressError: BAD_ADDRESS,
@@ -30,12 +28,11 @@ async function recipients(app: App, to: To & { email?: string | string[] }): Pro
 const BAD_ADDRESS = "Use an email address such as name@example.com";
 
 /**
- * Mail a group, a user, literal addresses, or everyone with an address.
+ * Mail a group, users, addresses, or everyone with an address.
  *
- * Resolves with the number of addresses reached. A mail needs a subject, so an absent title is
- * the first line of the text. `format` decides the body: markdown and html mails carry both an
- * HTML and a plain-text part, plain text goes out as text alone. `onError` observes rejected
- * deliveries without changing the numeric result.
+ * Resolves with the number of addresses reached. Subject: the title, else the first line. Markdown
+ * and html mails get an HTML and a text part; plain text only a text part. `onError` reports
+ * rejected deliveries.
  */
 export const send = (
   app: App,
@@ -69,14 +66,12 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
       attachments,
       headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": address } : undefined },
     });
-    // the transport took it, so it counts as sent — but nothing reached this address, and the
-    // journal says so: an error is the absence of a delivery, not only a failure
+    // counts as sent (the transport took it), but the journal notes the address wasn't reached
     const failure = result instanceof Error ? result : undefined;
     if (!failure) sent++;
     await delivered(app, Number(row.id), failure ?? detour, typeof result === "string" ? result : undefined);
   }
-  // the pool serves this batch and nothing after it: a connection left open until the next mail is
-  // one the server has long closed, and sending over it fails without saying why
+  // close the pool after the batch: the server closes idle connections, and reusing one fails silently
   await mailer.closeAllConnections?.().catch(() => {});
   return sent;
 }
@@ -87,11 +82,9 @@ async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> 
   return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
 }
 
-/** Sends one mail; resolves with the message id the transport gave it, or with the error instead of
- *  throwing, because the journal wants it.
- *  A failure that names no reason is a broken connection, never a refusal — the server that says no
- *  says why. Upyo keeps only `error.message` of what it caught, so an empty one is all that is left
- *  of it: worth one more mail on a fresh connection, and worth saying so when that fails too. */
+/** Send one mail; resolves with the message id, or the error (not thrown) for the journal.
+ *  An error without message is a broken connection (a refusal always has a reason; Upyo keeps only
+ *  `error.message`), so retry once on a new connection. */
 async function transmit(
   mailer: Awaited<ReturnType<typeof transport>>,
   message: Record<string, unknown>,

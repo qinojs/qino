@@ -20,7 +20,7 @@ export class Ctx {
   clientId: string | null = null;
   logId: Promise<string | null> = Promise.resolve(null);
   loginError?: LoginError;
-  loginRetryAfter?: number; // seconds left of the wait a `throttled` login has to sit out
+  loginRetryAfter?: number; // seconds to wait after a `throttled` login
   // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
   lang = "en";
@@ -44,24 +44,24 @@ export class Ctx {
   }
 
   #authUserId = 0;
-  /** A credential (API key, …) names its user and the device it stands for (`api_key:12`). That device
-   *  is the request's client and session — a secret hash of both names them, it never leaves the server. */
+  /** A token (API key, …) names its user and device (`api_key:12`). The device becomes the request's
+   *  client and session, identified by a secret hash that never leaves the server. */
   async authenticate(userId: number, device: string): Promise<void> {
     this.#authUserId = userId;
     const hash = await keyed(this.app, ["core.device", String(userId), device], 22);
     const clients = this.app.db.table("client");
     const find = () => clients.rowBy("hash", hash);
-    // a parallel first request may win the insert: then read its row
+    // a parallel request may have inserted it: then read that row
     this.clientId = String(await find() ?? await clients.add({ hash }).catch(find));
     this.sess = await this.app.sessions.load(hash, true);
   }
-  /** True when a non-cookie credential (API key, …) identifies this request. */
+  /** True if a non-cookie token (API key, …) identifies this request. */
   get statelessAuth(): boolean { return this.#authUserId !== 0; }
 
   get userId(): number {
     return this.#authUserId || Number(this.sess.data.core.userId() || 0);
   }
-  /** The signed-in user, loaded during initRequest — columns read synchronously. */
+  /** The signed-in user, loaded in initRequest — columns are read synchronously. */
   get user(): Usr | null {
     return this.userId ? this.app.db.table('usr').row<Usr>(this.userId) : null;
   }
@@ -94,7 +94,7 @@ export class Ctx {
   }
 }
 
-/** Resolve a request URL to a servable local file (module/data pub dirs); null if it is no static path. */
+/** Map a request URL to a local file (module/data pub dirs); null if not a static path. */
 export function urlToLocalPath(url: string | URL, appUrl: string, app: App): string | null {
   try {
     const u = typeof url === "string" ? new URL(url) : url;
@@ -105,14 +105,14 @@ export function urlToLocalPath(url: string | URL, appUrl: string, app: App): str
   return null;
 }
 
-// module/data segment must be a plain name, never "."/".." (would shift the served root)
+// the module/data segment must be a plain name, never "."/".."
 const safeSeg = (s: string) => s !== "." && s !== ".." ? s : null;
 
 function appRequestPathToLocalPath(appRequestPath: string, app: App) {
   const matchM = appRequestPath.match(/^m(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
   if (matchM && safeSeg(matchM[1])) {
     const mod = app.modules.get(matchM[1]);
-    // Not registered (yet): its mirror is still where import() put it. Same layout as Module.pubDir.
+    // Not registered yet: its mirror is where import() put it (same layout as Module.pubDir).
     return pubPath(mod?.pubDir ?? `${app.dir}cache/${matchM[1]}/remote/pub`, matchM[2]);
   }
   const matchD = appRequestPath.match(/^d(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
@@ -128,7 +128,7 @@ function pubPath(root: string, file: string) {
 
 export const requestStorage: AsyncLocalStorage<Ctx> = new AsyncLocalStorage();
 
-// A request in dev looks at files fresh; outside a request the default holds.
+// In dev, requests read files fresh; outside a request the default applies.
 const ttl = fs.ttl;
 fs.ttl = () => requestStorage.getStore()?.dev ? 0 : ttl();
 

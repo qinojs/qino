@@ -23,9 +23,8 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-/* What came in through the forms of this site. The forms are found by their module, not by a
-   list someone maintains — a form that is built today shows up here without being announced.
-   Which of them a user sees is the form's own right: reading entries is reading a form. */
+/* Entries of the site's forms. Forms are found by their module, so new ones appear automatically.
+   Visibility follows the form's access rights. */
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const app = node.app;
   const { t } = app;

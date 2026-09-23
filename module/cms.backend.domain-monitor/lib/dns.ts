@@ -1,16 +1,11 @@
 // Minimal DNS client speaking the wire format over TCP.
 //
-// Standalone on purpose: this file imports nothing from the module around it, so it can move to a
-// shared place unchanged the moment a second consumer wants it. Nothing here knows about domain
-// monitoring — it answers questions and hands back canonical text values.
+// Standalone (no imports from this module), so it can move to a shared place when needed.
 //
-// Why not the runtime resolver: Deno.resolveDns returns values without their TTL and cannot ask
-// for DS or DNSKEY at all, which is exactly what a domain check wants to know. TCP rather than UDP
-// because Deno's datagram API is unstable and TCP has no 512-byte truncation to work around —
-// and RFC 7766 pipelining turns the handshake into a one-time cost: every question of a batch goes
-// out on one connection and the answers are matched back by message id, in whatever order they
-// arrive. `QTYPE=ANY` would look like the cheaper trick but RFC 8482 killed it, authoritative
-// servers may answer it with a synthetic placeholder.
+// Not Deno.resolveDns: it returns no TTLs and can't query DS or DNSKEY. TCP, not UDP: Deno's
+// datagram API is unstable and TCP has no 512-byte truncation. With RFC 7766 pipelining all
+// questions of a batch share one connection; answers are matched by message id. No `QTYPE=ANY`:
+// RFC 8482 allows servers to answer it with a placeholder.
 
 import { readFile } from "node:fs/promises";
 
@@ -135,8 +130,8 @@ async function readExact(conn: Deno.Conn, size: number): Promise<Uint8Array | nu
   return buf;
 }
 
-// Stops waiting after `ms` without giving up on the read itself — the socket is closed right
-// after, which rejects it, so the rejection is swallowed here rather than going unhandled.
+// Stop waiting after `ms`. The read itself rejects when the socket is closed; that rejection is
+// swallowed here.
 function idle<T>(pending: Promise<T>, ms: number): Promise<T | null> {
   pending.catch(() => {});
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -144,17 +139,15 @@ function idle<T>(pending: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([pending, over]).finally(() => clearTimeout(timer));
 }
 
-// One connection: all open questions go out at once, everything that comes back lands in `into`.
-// Returns whether the connection stood up at all, so the caller stops hammering a dead host but
-// still follows up with a server that answered only part of the batch.
+// One connection: send all open questions, collect answers in `into`. Returns whether the
+// connection worked, so the caller skips dead hosts but retries partial answers.
 async function exchange(
   server: string,
   open: { name: string; type: Type; at: number }[],
   into: Map<number, ReturnType<typeof parse>>,
   signal?: AbortSignal,
 ): Promise<boolean> {
-  // The signal only covers the connect — a server that accepts and then goes quiet would leave
-  // the reads hanging forever, so the abort closes the socket and lets them fail.
+  // The signal only covers connect; to stop reads hanging on a silent server, abort closes the socket.
   const deadline = AbortSignal.timeout(4000);
   const limit = signal ? AbortSignal.any([signal, deadline]) : deadline;
   let conn: Deno.TcpConn | undefined;
@@ -178,9 +171,8 @@ async function exchange(
     const data = new Uint8Array(frames);
     for (let sent = 0; sent < data.length;) sent += await conn.write(data.subarray(sent));
     for (let received = 0; received < open.length; received++) {
-      // The first answer may take as long as the deadline allows. After that, silence means the
-      // server is done with this connection even though it kept it open — waiting out the full
-      // deadline for every remaining question is what makes a batch slower than asking one by one.
+      // The first answer may use the full deadline; after that, silence means the server is done
+      // (even if the connection stays open).
       const head = received ? await idle(readExact(conn, 2), 1000) : await readExact(conn, 2);
       if (!head) break; // closed or gone quiet — the caller follows up on whatever is still open
       const msg = await readExact(conn, (head[0] << 8) | head[1]);
@@ -209,10 +201,8 @@ export async function resolve(servers: string | string[], questions: { name: str
   // Three servers is plenty of redundancy; walking a ten-address NS set would only buy timeouts.
   for (const server of [servers].flat().slice(0, 3)) {
     signal?.throwIfAborted();
-    // Pipelining is not universal: plenty of authoritative servers — Cloudflare's among them —
-    // answer the first question and close, RFC 7766 or not. Asking again on one connection at a
-    // time would cost a round trip per record, so the leftovers go out on their own connections
-    // at once instead. Two round trips cover both kinds of server.
+    // Many servers (e.g. Cloudflare) answer only the first question and close. The rest go out
+    // on separate connections in parallel — two round trips cover both kinds of server.
     if (!await exchange(server, open(), answers, limit)) continue;
     for (let pass = 0; pass < 2 && open().length && !limit.aborted; pass++) {
       const before = answers.size;

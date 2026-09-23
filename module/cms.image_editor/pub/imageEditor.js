@@ -1,6 +1,5 @@
-/* Standalone by design: this file and the ones it imports pull in nothing else and use no
- * globals, so the editor runs on any page — see test/imageEditor.html.
- * Anything that needs the cms (api, upload, styles) belongs in DbFileImageEditor. */
+/* Standalone: no other imports, no globals, so it runs on any page (see test/imageEditor.html).
+ * CMS-specific parts (api, upload, styles) belong in DbFileImageEditor. */
 import { FullScreenDialog } from './fullScreenDialog.js';
 import { ImageCropper } from './imageCropper.js';
 import { ImageCanvas } from './imageCanvas.js';

@@ -26,7 +26,7 @@ cms.initNode("backend.users", (el) => {
     const [type, ...rest] = button.dataset[key].split(":");
     return { type, address: rest.join(":") };
   };
-  // the user travels with the reload too — the detail root carries the itemid, so it never comes from a lookup
+  // the user id comes from the detail root's itemid
   const contactResult = (id) => (response) => {
     if (response?.ok) return cms.reloadPart(nid, "contacts", { id });
     if (response?.message) return import("@qino/u2/js/dialog/dialog.js").then((d) => d.alert(response.message));

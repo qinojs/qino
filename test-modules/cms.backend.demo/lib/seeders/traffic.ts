@@ -1,5 +1,4 @@
-// Visits: log rows plus the scores they would have produced. Enough history for the log view,
-// the charts and any "most read" ranking to show something.
+// Visits: log rows plus their scores, so log view, charts and rankings have data.
 import { createHash } from "node:crypto";
 
 import type { Seed } from "../seed.ts";

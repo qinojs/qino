@@ -1,8 +1,8 @@
-// A generic RPC client over an api tree — no qino, no app, just a base url.
+// Generic RPC client for an api tree — needs only a base url.
 const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
 const csrfHeaders = () => globalThis.qino?.csrfToken ? { "X-CSRF-Token": globalThis.qino.csrfToken } : {};
 
-/** A failed api response, as thrown. `code` is what to branch on, `message` what to show. */
+/** A failed api response. Branch on `code`, show `message`. */
 export class ApiError extends Error {
   constructor(status, message, { code, data } = {}) {
     super(message);
@@ -18,8 +18,7 @@ export class ApiClient extends EventTarget {
   #handlers = [];
   #unwrap;
   headers = {};
-  /** Given a failed request, may fix what went wrong and resolve true to have it sent once more.
-   *  Unset — the normal case — means every error reaches the caller as it is. */
+  /** May fix a failed request and resolve true to send it once more. Unset: errors reach the caller. */
   recover = null;
 
   constructor(base, { unwrap } = {}) {
@@ -98,7 +97,7 @@ export class ApiClient extends EventTarget {
       this.#emit("complete", done);
       return this.#unwrap ? value?.[this.#unwrap] : value;
     }).catch(async error => {
-      // Once, never a loop: a second failure is the server's answer, not another prompt.
+      // Only once: a second failure is final.
       if (this.recover && !opts.retried && await this.recover(error)) {
         return this.#request(method, parts, input, { ...opts, retried: true });
       }

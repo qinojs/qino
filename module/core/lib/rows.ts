@@ -1,5 +1,4 @@
-// Core's own tables as row classes — data and behaviour in one object.
-// Naming rule of the row layer: columns are data, methods are verbs.
+// Row classes of core's tables. Columns are data, methods are verbs.
 import { addContact, contacts, mainContact, removeContact, setMainContact } from "./contacts.ts";
 import { DbRow } from "./db/DbRow.ts";
 import { unixTime } from "./util.ts";
@@ -10,7 +9,7 @@ import type { Row } from "./db/DbDriver.ts";
 export class Usr extends DbRow {
   declare id: number;
   declare active: boolean;
-  /** The login handle. Where to reach the person is `contacts`, never this. */
+  /** Login name. For reaching the person use `contacts`. */
   declare username: string;
   declare given_name: string;
   declare family_name: string;
@@ -24,20 +23,20 @@ export class Usr extends DbRow {
   /** The verified ways to reach this person — `usr.contacts.add("email", "a@b.ch")`. */
   get contacts(): Contacts { return this.#contacts ??= new Contacts(this); }
 
-  /** Where to reach them of one kind, bare: the main address, else the oldest — `usr.contact("email")`. */
+  /** The address of one kind: main, else oldest — `usr.contact("email")`. */
   async contact(type: string): Promise<string | undefined> {
     const row = await this.contacts.main(type);
     return row && String(row.address);
   }
 
   #grps: number[] | null = null;
-  /** The groups the user is in; 0 is the group everyone is in. */
+  /** The user's groups; 0 = everyone. */
   async grps(): Promise<number[]> {
     return this.#grps ??= [0, ...(await this.$table.db.col`SELECT grp_id FROM usr_grp WHERE usr_id = ${this.$id}`).map(Number)];
   }
 }
 
-/** One user's contacts, as a small namespace on the row rather than five methods beside it. */
+/** A user's contacts, as a namespace on the row. */
 class Contacts {
   #usr: Usr;
   constructor(usr: Usr) { this.#usr = usr; }
@@ -45,13 +44,13 @@ class Contacts {
   get #db(): Db { return this.#usr.$table.db; }
   get #id(): number { return Number(this.#usr.$id); }
 
-  /** All of them, or those of one kind, preferred first. */
+  /** All, or those of one kind, main first. */
   list(type?: string): Promise<Row[]> { return contacts(this.#db, this.#id, type); }
 
-  /** The address to use of this kind: the preferred one, else the oldest. */
+  /** The address to use: main, else oldest. */
   main(type: string): Promise<Row | undefined> { return mainContact(this.#db, this.#id, type); }
 
-  /** Take an address as proven; the first one of its kind becomes the main. */
+  /** Add a verified address; the first of its kind becomes main. */
   add(type: string, address: string): Promise<Row> { return addContact(this.#db, this.#id, type, address); }
 
   remove(type: string, address: string): Promise<void> { return removeContact(this.#db, this.#id, type, address); }
@@ -64,7 +63,7 @@ export class Client extends DbRow {
   declare hash: string;
   declare usr_id: number;
 
-  /** Everyone who ever signed in on this device, newest first, by user id. */
+  /** User ids that signed in on this device, newest first. */
   async users(): Promise<Record<string, ClientUsr>> {
     const rows = await this.$table.db.table("client_usr").all<ClientUsr>`WHERE client_id = ${this.$id} ORDER BY time DESC`;
     return Object.fromEntries(rows.map((row) => [String(row.usr_id), row]));

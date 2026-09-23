@@ -1,4 +1,4 @@
-// Step-up with the password. Core's own factor, so core's own handler.
+// Step-up with the password (core's own factor).
 import { proveForm } from "./js/stepUpDialog.js";
 import { api } from "./js/api.js";
 import { t } from "./js/t.js";

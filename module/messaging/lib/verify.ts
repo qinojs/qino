@@ -2,37 +2,32 @@ import { ApiError, attempt, contactKey, keyed, proofPassed, safeEqual, unixTime 
 
 import type { App, Row } from "@qino/qino";
 
-// Proof that a contact belongs to a user, for the address kinds a stranger could claim — a phone
-// number, a mail address. Telegram and Web Push need none: a chat id comes only from a real update,
-// an endpoint only from the browser itself.
+// Verifies that a phone number or mail address belongs to a user. Telegram and Web Push need none:
+// chat ids come from real updates, endpoints from the browser.
 //
-// Keyed by the kind, like the contact it becomes: proving a number proves the number, whether the
-// code arrived by sms or by whatsapp.
+// Keyed by address kind, like the resulting contact: a verified number is verified for sms and
+// whatsapp alike.
 //
-// Pending claims live here and nowhere else, so core's `usr_contact` holds verified contacts
-// only and `WHERE verified IS NOT NULL` stops being a rule one can forget.
+// Pending claims live only here, so core's `usr_contact` holds verified contacts only.
 //
-// Not a [ticket](../../ticket/): that one is a capability — whoever knows the handle may act. Six
-// digits are short enough to guess, so they only work together with "who is asking" — and with how
-// often that one has tried, which core counts per account for every kind of proof at once. Counting
-// it here instead would restart at zero with every resend, and would not see the guesses the same
-// user is spending on their password next door.
+// Not a [ticket](../../ticket/) (whoever has the handle may act): six digits can be guessed, so they
+// need the user and core's per-account attempt count, which also covers password and other factors.
+// A count here would restart with every resend.
 
 const CODE_TTL = 10 * 60;
 const RESEND_AFTER = 60;
 
 /**
- * Start or resend a claim on `address`; resolves with the code to deliver.
+ * Start or resend a claim on `address`; resolves with the code to send.
  *
- * Anyone may claim any address — a claim says nothing until it is redeemed, and refusing a second
- * one would let a stranger lock the owner out of their own verification. What is protected is the
- * address itself: it receives at most one code per `RESEND_AFTER`, no matter who asks.
+ * Anyone may claim any address — a claim means nothing until redeemed, and refusing a second one
+ * would let a stranger block the owner. The address gets at most one code per `RESEND_AFTER`.
  */
 export async function requestCode(app: App, type: string, usrId: number, input: string): Promise<string> {
-  const address = contactKey(type, input); // a claim is keyed like the contact it becomes
+  const address = contactKey(type, input); // normalized like the contact
   const now = unixTime();
   const table = app.db.table("usr_contact_verification");
-  await app.db.exec`DELETE FROM usr_contact_verification WHERE expires < ${now}`; // no cron needed for this
+  await app.db.exec`DELETE FROM usr_contact_verification WHERE expires < ${now}`; // cleanup, no cron needed
   const recent = await app.db.one`SELECT MAX(sent) FROM usr_contact_verification
     WHERE type = ${type} AND address = ${address}`;
   if (Number(recent) > now - RESEND_AFTER) throw new ApiError(429, "Wait before requesting another verification code");
@@ -50,7 +45,7 @@ export async function requestCode(app: App, type: string, usrId: number, input: 
   return code;
 }
 
-/** Redeem a claim. Throws unless the code proves the contact is the user's; a right one spends it. */
+/** Redeem a claim. Throws if the code is wrong; a correct code uses up the claim. */
 export async function redeemCode(app: App, type: string, usrId: number, input: string, code: string): Promise<void> {
   const address = contactKey(type, input);
   const open = await claim(app, type, usrId, address);
@@ -69,7 +64,7 @@ export async function redeemCode(app: App, type: string, usrId: number, input: s
   await drop();
 }
 
-/** Claims of one user on one kind of address — what a "pending" list shows. */
+/** A user's open claims of one kind. */
 export function pendingContacts(app: App, type: string, usrId?: number): Promise<Row[]> {
   const now = unixTime();
   return usrId == null
@@ -80,7 +75,7 @@ export function pendingContacts(app: App, type: string, usrId?: number): Promise
         WHERE type = ${type} AND usr_id = ${usrId} AND expires >= ${now} ORDER BY created`;
 }
 
-/** Drop one user's claim without redeeming it — an admin approving it, or the user giving up. */
+/** Remove a claim without code — an admin approving it, or the user cancelling. */
 export async function dropClaim(app: App, type: string, usrId: number, input: string): Promise<Row | undefined> {
   const address = contactKey(type, input);
   const open = await claim(app, type, usrId, address);

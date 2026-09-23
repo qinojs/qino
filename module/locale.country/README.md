@@ -1,10 +1,9 @@
 # locale.country
 
-The world's countries, as reference data every module may lean on — `country(id, iso3, currency,
-calling, internet_domain)`, seeded with all 250 ISO 3166-1 codes.
+All countries as reference data for other modules — `country(id, iso3, currency, calling,
+internet_domain)`, filled with all 250 ISO 3166-1 codes.
 
-What a standard already knows stays out of the table: the name comes from `Intl.DisplayNames`, in
-whatever language is asked for, so nothing has to be translated or maintained.
+Names are not stored: they come from `Intl.DisplayNames` in any language.
 
 ```ts
 country.name("CH", "de");        // Schweiz
@@ -12,9 +11,8 @@ await country.get(db, "CH");     // { id, iso3, currency, calling, internet_doma
 await country.sorted(db, "de");  // ids, ordered the way German sorts the names
 ```
 
-The module says nothing about *use*. A shop decides which countries it delivers to, a form which
-ones it offers — each by hanging its own column on the table, the way `shp3` adds `shp3_enabled`
-and `shp3_default_vat_rate`. Table and column names are the ones the PHP original used, so a
-migrated database fits without conversion.
+Usage is up to the consumer: a shop decides where it delivers, a form what it offers — each by
+adding its own columns, like `shp3` adds `shp3_enabled` and `shp3_default_vat_rate`. Table and
+column names match the PHP original, so migrated databases fit as is.
 
 `install()` only adds what is missing; an edited row keeps its values.

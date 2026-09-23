@@ -43,17 +43,17 @@ export async function removeObsoleteSettings(app: App): Promise<boolean> {
   return true;
 }
 
-// A legacy column that is NOT NULL without a default blocks every insert into its table, because
-// qino never writes it. Dead ones go, ones still holding data only lose the constraint.
+// Legacy NOT NULL columns without default block inserts (qino doesn't write them). Unused ones are
+// dropped, others become nullable.
 const dropColumns = [["qg_setting", "w"], ["module", "title_id"], ["page", "_cache"]];
 const nullableColumns = [["client", "client1_request_json"], ["client", "client1_response_json"], ["mail", "mail1_template"]];
 
-/** `qg_setting.w` is read before any module installs, so it has to be gone before qino first
- *  opens a legacy database — see MIGRATION.md. The rest is repaired here. */
+/** `qg_setting.w` must be removed before qino first opens a legacy database (see MIGRATION.md).
+ *  The rest is repaired here. */
 async function dropLegacyColumns(app: App): Promise<void> {
   for (const [table, column] of dropColumns) {
-    // cms.versions mirrors a table column by column, so a leftover in the mirror breaks its
-    // baseline insert ("Unknown column t._cache") — the column has to go from both.
+    // cms.versions mirrors tables column by column; drop the column in both, or the baseline insert
+    // fails ("Unknown column t._cache").
     for (const t of [table, "_vers_" + table]) {
       const field = await legacyField(app, t, column);
       if (!field) continue;
@@ -77,8 +77,8 @@ async function legacyField(app: App, table: string, column: string) {
   return t.field(column);
 }
 
-/** Point nodes and the frontend setting at the current module names — otherwise the node renders
- *  empty and the editing frontend never loads. */
+/** Update module names in nodes and the frontend setting — otherwise nodes render empty and the
+ *  editor doesn't load. */
 async function migrateRenamedModules(app: App): Promise<void> {
   for (const [legacy, current] of Object.entries(renamedModules)) {
     const r = await app.db.exec`UPDATE page SET module = ${current} WHERE module = ${legacy}`;
@@ -93,8 +93,8 @@ async function migrateRenamedModules(app: App): Promise<void> {
   console.log(`[migrate_from_php] cms.frontend ${frontend} → ${successor}`);
 }
 
-/** `cms.cont.phpfile` kept one PHP file per node in qg/cmsPhpFiles/; `cms.cont.ts` expects a .ts
- *  beside the same id. Move the sources over so they sit where the port has to happen. */
+/** Move `cms.cont.phpfile` sources (qg/cmsPhpFiles/) to where `cms.cont.ts` expects them, for
+ *  porting. */
 async function moveNodeCode(app: App): Promise<void> {
   const from = app.dir + "data/cmsPhpFiles/";
   const to = app.dir + "data/cms.cont.ts/";

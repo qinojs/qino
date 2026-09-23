@@ -1,13 +1,12 @@
 # messaging.telegram
 
-Messages through a Telegram bot. Links a user account to a Telegram chat and delivers to it.
+Messages through a Telegram bot. Links a user account to a Telegram chat and sends to it.
 
-## The rule that shapes everything
+## The key rule
 
-A bot cannot write to anyone who has not written to it first. Knowing someone's Telegram id
-or `@username` is not enough — the chat must exist, and the only way to learn its `chat_id`
-is an incoming update. So a chat is linked, not configured, and `/start` is what a browser's
-`pushManager.subscribe()` is to [messaging.webpush](../messaging.webpush/README.md).
+A bot can only write to people who wrote to it first. A Telegram id or `@username` is not enough;
+the `chat_id` only arrives with an incoming update. So a chat is linked, not configured — `/start`
+is the equivalent of `pushManager.subscribe()` in [messaging.webpush](../messaging.webpush/README.md).
 
 ## Sending
 
@@ -18,19 +17,18 @@ await send(app, { usr: 42 }, "Your order shipped.");
 await send(app, { grp: 3 }, { text: "**Deploy done** — [log](https://…)", format: "md" });
 ```
 
-Recipients: `{ grp }`, `{ usr }`, `{ chat }` (one row id or many), `{ all: true }` — no channel,
-because a chat belongs to a person, not to a device; that question is what groups answer. Selectors
-are additive and overlapping matches still reach a chat only once.
+Recipients: `{ grp }`, `{ usr }`, `{ chat }` (one row id or many), `{ all: true }`. No
+`channel` like webpush: a chat belongs to a person, not a device, so groups are enough. Selectors
+add up; each chat is reached once.
 
-A `title` has no place of its own here and becomes the first line, bold wherever markup is on.
-Text is plain by default, so `<` in user data is safe until a `format` asks for markup; the
-markup then is Telegram's own subset, and headings and lists — which it has none of — arrive as
-bold lines and bullets. Everything else reaches `sendMessage()` unchanged, so `reply_markup`,
-`disable_notification`, `reply_to_message_id` and friends already work. An explicit `parse_mode`
-still hands the text over untouched, escaping included, for what only Telegram can say.
+A `title` becomes the first line, bold if markup is on. Text is plain by default, so `<` in user
+data is safe. With a `format`, Telegram's markup subset is used; headings and lists become bold
+lines and bullets. All other fields go to `sendMessage()` unchanged, so `reply_markup`,
+`disable_notification`, `reply_to_message_id` etc. work. With an explicit `parse_mode` the text is
+passed as is, without escaping.
 
-Resolves with the number of chats reached. A chat that blocked the bot (403) or no longer
-exists is deleted on the way, so the table stays clean without a cleanup job.
+Returns the number of chats reached. Chats that blocked the bot (403) or no longer exist are
+deleted right away.
 
 ## Linking
 
@@ -38,60 +36,53 @@ exists is deleted on the way, so the table stays clean without a cleanup job.
 2. They open `https://t.me/<bot>?start=<token>` and press **Start**.
 3. Telegram posts the update to the webhook; the `chat_id` lands in `telegram_chat`.
 
-[cms.cont.my.telegram](../cms.cont.my.telegram/) is that flow as a page element. It never
-renders the link into the HTML — a cached page would hand out an expired one — and watches
-for the connection while the user is in Telegram, since nothing tells the page that Start
-was pressed.
+[cms.cont.my.telegram](../cms.cont.my.telegram/) offers this as a page element. The link is
+never rendered into the HTML (a cached page would show an expired one), and the page polls for the
+connection while the user is in Telegram, since nothing else tells it that Start was pressed.
 
-`/stop` in the chat unlinks it, as does `DELETE messagingTelegram/link` for the signed-in
-user. Linking a chat that is already linked re-points it — one Telegram account belongs to
-one person at a time.
+`/stop` in the chat unlinks it, as does `DELETE messagingTelegram/link`. Linking an already linked
+chat moves it — a Telegram account belongs to one person at a time.
 
-The token is `<usr>-<exp>-<sig>`, signed with the bot token and valid 15 minutes. Stateless
-on purpose: no table, no cleanup. Its lifetime is the whole protection — whoever opens the
-link within it gets bound to that account, so it is only ever shown to the user themselves.
+The token is `<usr>-<exp>-<sig>`, signed with the bot token, valid 15 minutes. No table, no
+cleanup. Whoever opens the link in time is bound to that account, so it is only shown to the user
+themselves.
 
 ## Webhook
 
-`POST <app>/telegram/webhook`, authenticated by the `secret_token` Telegram echoes back in
-`X-Telegram-Bot-Api-Secret-Token` — the only authentication the platform offers. The secret
-is generated on first use and stored in settings. Register it from the backend
-(`cms.backend.superuser.messaging.telegram`), which knows the public URL of the running app.
+`POST <app>/telegram/webhook`, authenticated by the `secret_token` that Telegram sends back in
+`X-Telegram-Bot-Api-Secret-Token` (the only option Telegram offers). The secret is generated on
+first use and stored in settings. Register the webhook in the backend
+(`cms.backend.superuser.messaging.telegram`), which knows the app's public URL.
 
-The endpoint always answers 200: any other status makes Telegram retry the same update.
+The endpoint always answers 200; anything else makes Telegram resend the update.
 
-**Local development needs a public HTTPS URL.** Without a tunnel, updates cannot arrive and
-nobody can link. Sending to already linked chats works regardless.
+**Local development needs a public HTTPS URL** (tunnel), otherwise no updates arrive and nobody can
+link. Sending to linked chats works anyway.
 
 ## Settings
 
-`messaging.telegram.botToken` — from [@BotFather](https://t.me/BotFather), the one thing
-that must be configured. The token is also the HMAC key for link tokens, so replacing it
-invalidates outstanding links (linked chats keep working).
+`messaging.telegram.botToken` — from [@BotFather](https://t.me/BotFather), the only required
+setting. It is also the HMAC key for link tokens, so changing it invalidates open links (linked
+chats keep working).
 
 ## Storage
 
-`telegram_chat` — one row per linked chat. `chat_id` is the identity and unique; `usr_id` is
-indexed, not unique, since someone may connect a second Telegram account.
+`telegram_chat` — one row per linked chat. `chat_id` is unique; `usr_id` is not, since a user
+may link a second Telegram account.
 
-`error` holds why the last delivery failed and goes back to null as soon as one succeeds. It
-is a state, not a log: nothing acts on it, an admin decides whether to delete the row.
+`error` holds the reason of the last failed delivery and is cleared on the next success. Nothing
+acts on it; an admin decides whether to delete the row.
 
 ## Possible extensions
 
-- **Bot commands beyond `/start` and `/stop`.** Everything else in an update is ignored
-  today. A command table or an `app.fire("telegram.message")` would open the other
-  direction — answering, not just notifying.
-- **Group and channel targets.** Adding the bot to a Telegram group yields a negative
-  `chat_id` that `send()` would deliver to unchanged; only the linking flow assumes a
-  private chat.
-- **Attachments.** `msg.attachments` is dropped: `sendMessage` carries no files. Delivering
-  them means a `FormData` branch in `call()`, `sendPhoto` / `sendDocument` by mime and
-  `sendMediaGroup` from two files on, and the message moving into the file's `caption` — which
-  holds 1024 characters where a text holds 4096, so a longer one needs its own `sendMessage`
-  first. A delivery then counts as reached only once every call went through.
-- **Rate limiting per chat.** Batches keep the global ~30/s ceiling; the per-chat limit of
-  about one message a second is only handled reactively, by honouring the `retry_after` of a
-  429 once.
-- **`pushsubscriptionchange`'s counterpart** does not exist here — a chat id is stable for
-  the lifetime of the account.
+- **More bot commands than `/start` and `/stop`.** Everything else is ignored. A command table or
+  `app.fire("telegram.message")` would allow answering, not just notifying.
+- **Groups and channels as targets.** A Telegram group has a negative `chat_id`, which `send()`
+  handles already; only the linking flow assumes a private chat.
+- **Attachments.** `msg.attachments` is dropped: `sendMessage` takes no files. It would need a
+  `FormData` branch in `call()`, `sendPhoto` / `sendDocument` by mime, `sendMediaGroup` for two or
+  more files, and the text as `caption` — max 1024 characters instead of 4096, so longer text
+  needs a separate `sendMessage`. A delivery only counts once all calls succeeded.
+- **Rate limit per chat.** Batches respect the global ~30/s; the per-chat limit (~1/s) is only
+  handled by honouring a 429's `retry_after` once.
+- No equivalent of `pushsubscriptionchange` is needed — a chat id never changes.

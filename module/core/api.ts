@@ -1,10 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-/**
- * Core API tree.
- *
- * The api framework lives in ./lib/api/mod.ts. This file contains only concrete
- * core endpoints.
- */
+/** Core API endpoints. The api framework is in ./lib/api/mod.ts. */
 import { createHash } from "node:crypto";
 
 import { getCtx } from "./lib/ctx/Ctx.ts";
@@ -18,10 +13,9 @@ import type { ApiTree } from "./lib/api/mod.ts";
 
 const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"]");
 
-// `core.t` is public and unauthenticated. The client never sends more than T_WARN in one call,
-// so anything above it is nobody we know.
-// T_MAX stays under the tightest binding limit any backend brings (sqlite before 3.32 caps
-// variables at 999). Keep T_WARN in step with MAX in core/pub/js/t.js.
+// `core.t` is public. Our client never sends more than T_WARN per call, so more is suspicious.
+// T_MAX stays below the lowest bind limit (sqlite < 3.32: 999 variables). Keep T_WARN in sync with
+// MAX in core/pub/js/t.js.
 const T_WARN = 400;
 const T_MAX = 420;
 
@@ -45,13 +39,13 @@ export const api: ApiTree = {
       execute: async ({ texts }: any) => {
         const ctx = getCtx();
         const { lang, langNs: ns, dev } = ctx;
-        const list = [...new Set<string>(texts)]; // the same string twice is one lookup
-        if (!list.length) return {}; // an empty `IN ()` is no SQL
+        const list = [...new Set<string>(texts)]; // dedupe
+        if (!list.length) return {}; // `IN ()` is invalid SQL
         if (list.length > T_WARN) ctx.app.fire("suspicious", { ctx, reason: "oversized translation batch" }).catch(() => {});
         if (list.length > T_MAX) throw new ApiError(422, "too much to translate at once");
         const hashes = list.map((text) => createHash("md5").update(text).digest("hex"));
         const rows = await ctx.app.db.indexCol<string>`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND ${sql.in("hash", hashes)}`;
-        // keys are caller-supplied: on a plain object `__proto__` is swallowed and `toString` is inherited
+        // keys come from the caller: a plain object would swallow `__proto__` and inherit `toString`
         const result: Record<string, string> = Object.create(null);
         for (let i = 0; i < list.length; i++) {
           if (dev && !rows.has(hashes[i])) {
@@ -112,7 +106,7 @@ export const api: ApiTree = {
     missing: {
       get: {
         description: "The factors that would finish the login this session has under way",
-        access: Access.PUBLIC, // nobody is signed in yet — that is the point
+        access: Access.PUBLIC, // nobody is signed in yet
         execute: async () => {
           const ctx = getCtx();
           const open = pendingLogin(ctx);
@@ -128,8 +122,7 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async () => {
         const ctx = getCtx();
-        // A credential signs its device in for as long as it is valid — logging out would only
-        // unbind the device from its user, and the next request binds it again.
+        // A token signs in its device while valid; logout would be undone by the next request.
         if (ctx.statelessAuth) throw new ApiError(409, "Nothing to log out — this request carries a credential, not a login");
         await logout(ctx);
         return { ok: true };

@@ -8,8 +8,8 @@ import { pendingContacts, templates, textOf } from "@qino/qino/messaging";
 import type { App, HtmlString, ItemProxy, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-// The module this panel operates. Its journal channel and the kind of address it delivers to are
-// two namespaces that happen to share a word: `message.channel` and `usr_contact.type`.
+// The module this panel manages. `message.channel` and `usr_contact.type` are both "email", but
+// different namespaces.
 const MODULE = "messaging.email";
 const CHANNEL = "email";
 const CONTACT = "email";

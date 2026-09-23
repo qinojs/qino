@@ -5,12 +5,10 @@ import type { App } from "@qino/qino";
 
 type Kind = "code" | "access" | "refresh";
 
-/** Opaque secret: 256 random bits, base64url. Access/refresh tokens carry the `qo_` marker so
- *  the `authenticate` hook can claim them without touching foreign Bearer formats. */
+/** 256 random bits, base64url. Tokens start with `qo_`, so the `authenticate` hook recognizes them. */
 const mark = (kind: Kind) => kind === "code" ? "" : "qo_";
 
-/** SHA-256 hex — the only representation stored (unique index). A 256-bit random secret needs no
- *  slow hash; a fast digest keeps the lookup indexable. */
+/** SHA-256 hex, the only stored form (unique index). A 256-bit random secret needs no slow hash. */
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 /** Issue a secret and store only its hash. Returned exactly once — it can never be read back. */
@@ -48,7 +46,7 @@ export async function verify(app: App, kind: Kind, token: string) {
   return row;
 }
 
-/** Single-use lookup: the row is gone whether or not the caller succeeds (codes, refresh rotation). */
+/** Single-use lookup: the row is deleted either way (codes, refresh rotation). */
 export async function consume(app: App, kind: Kind, token: string) {
   const row = await verify(app, kind, token);
   if (row) await app.db.table("oauth_token").delete(row.id);

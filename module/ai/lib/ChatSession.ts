@@ -79,9 +79,8 @@ export class ChatSession {
       : bot.systemPrompt;
 
     const rows = await this.#app.db.query`SELECT * FROM ai_message WHERE session_id = ${this.#id} ORDER BY id`;
-    // Persist the exact system prompt once per session (for the record); the provider
-    // always gets the freshly built one. `system` (rebuilt) and `error` (audit-only,
-    // not a valid OpenAI role) rows are dropped from the history sent to the model.
+    // Store the system prompt once per session (for the record); the provider always gets a fresh
+    // one. `system` and `error` rows are not sent to the model.
     if (!rows.length) await this.#insert({ role: "system", content: systemPrompt });
     const history = rows.filter((r) => r.role !== "system" && r.role !== "error").map(rowToMessage);
     await this.#insert({ role: "user", content });
@@ -95,8 +94,7 @@ export class ChatSession {
   async #loop(messages: Msg[], bot: Bot, ctx: Ctx, onDelta: (t: string) => void = () => {}): Promise<string> {
     const { provider, model } = await resolve(this.#app, { provider: bot.provider, model: bot.model, kind: "chat" });
     const client = await this.#api.client(provider);
-    // Tools belong to the bot, not the model — always offer them (tool_choice defaults to
-    // "auto"). A model without function-calling errors clearly instead of faking a text call.
+    // Always offer the bot's tools (tool_choice "auto"); models without function calling fail clearly.
     const tools = bot.tools?.length ? toOpenAiTools(bot.tools) : undefined;
     const modelId = model?.model_id ?? bot.model;
 

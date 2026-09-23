@@ -115,8 +115,8 @@ export class Node {
         return access;
     }
 
-    /** Node-level access before node:access adjustments (module axis). Inheritance builds on
-     *  this — a parent's module rules only apply to the parent, never to its children. */
+    /** Node access before node:access adjustments (module axis). Children inherit this, so a
+     *  parent's module rules don't apply to them. */
     async #rawAccess(user?: Usr | null): Promise<number> {
         const cache = cmsCtx(getCtx()).accessCache;
         const key = `${this.id}:${Number(user)}:raw`;
@@ -270,7 +270,7 @@ export class Node {
     }
 
     async edit(): Promise<boolean> {
-        return !!cmsCtx(getCtx()).editmode && (await this.access()) > 1; // editmode first: outside it, no access lookup at all
+        return !!cmsCtx(getCtx()).editmode && (await this.access()) > 1; // editmode first, avoids the access lookup
     }
 
     async page(): Promise<Node> {
@@ -307,7 +307,7 @@ export class Node {
 
     async parent(level?: number): Promise<Node | undefined> {
         const basis = Number(this.vs.basis ?? 0);
-        // keyed by basis, so a move invalidates it; stale after cms.clearCache() like every cache here
+        // keyed by basis, so a move invalidates it
         if (this.#parent?.id !== basis) this.#parent = basis ? await this.cms.node(basis) : undefined;
         const parent = this.#parent;
         if (level === undefined) return parent;
@@ -344,7 +344,7 @@ export class Node {
         let text = await textLang.get();
         if (text !== "") { // an empty text has nothing to resolve and nothing to sanitize
             text = await resolveText(this.app, text, !(await this.edit()));
-            text = sanitizeHtml(text, policyOf(this.app)); // last step: nothing may touch the string after sanitizing
+            text = sanitizeHtml(text, policyOf(this.app)); // last step: nothing may change it after sanitizing
         }
         return {
             lang: textLang.lang,
@@ -481,8 +481,7 @@ export class Node {
         return (await this.files()).get(name);
     }
 
-    /** Reorder files by name. Unknown names are ignored; existing files left out
-     *  of the list keep their relative order and are appended at the end. */
+    /** Reorder files by name. Unknown names are ignored; unlisted files keep their order at the end. */
     async sortFiles(sort: string[]): Promise<void> {
         const names = [...(await this.filesAndPlaceholders()).keys()];
         const wanted = [...new Set(sort)].filter((n) => names.includes(n));
@@ -495,8 +494,7 @@ export class Node {
     }
 
     /* URLs */
-    // The promise is the cache, not the map: a half-built map must never be visible to a
-    // second caller, and a clear while the query is in flight just makes the next one re-ask.
+    // Cache the promise, not the map, so no caller sees a half-built map.
     urls(): Promise<Map<string, Record<string, string>>> {
         return this.#urls ??= (async () => {
             const urls = new Map<string, Record<string, string>>();
@@ -523,9 +521,8 @@ export class Node {
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
         data = { page_id: this.id, lang, ...data };
         const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
-        // No-op guard: SEO regeneration walks the whole subtree × all languages and
-        // usually re-writes the identical url. Skip unchanged writes so they neither
-        // hit the db nor show up as bogus "URL changed" history entries.
+        // Skip unchanged urls: regeneration walks the subtree × all languages and would otherwise
+        // write identical urls and create false "URL changed" history entries.
         if (row && Object.keys(data).every((k) => row[k] === data[k])) return;
         await this.db.table("page_url")[row ? "update" : "insert"](data);
         this.#clearUrlCache();

@@ -29,10 +29,9 @@ class SettingItem extends Item<SettingItem> {
       sub.data = data;
     }
 
-    // No children yet is not the same as "a leaf": a branch that was just autovivified has none
-    // either. Returning null would make item.js turn it into a primitive and clear its children,
-    // which loses their `data` and inserts a second row for each on the next write. An unset value
-    // is undefined here — item.js leaves the item alone, and the schema default applies as before.
+    // No children doesn't mean leaf: a just created branch has none either. Returning null would make
+    // item.js clear its children and insert duplicate rows on the next write. So an unset value is
+    // undefined — item.js leaves it alone and the schema default applies.
     if (!rows[0]) return this.data?.value ?? undefined; // not an object
   }
 

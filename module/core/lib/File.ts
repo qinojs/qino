@@ -45,7 +45,7 @@ export class File {
     const stream = await fs.stream(this.path).catch(() => null);
     if (!stream) return "";
     const hash = nodeCrypto.createHash("md5");
-    // streamed: a big file must not land in memory. A directory opens fine and only throws here.
+    // streamed, so big files don't fill memory. A directory opens fine and only throws here.
     try { for await (const chunk of stream) hash.update(chunk); } catch { return ""; }
     return hash.digest("hex");
   }

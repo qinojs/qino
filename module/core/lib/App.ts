@@ -44,7 +44,7 @@ const RESPONSE_HEADERS: Record<string, string> = {
     "X-Content-Type-Options": "nosniff",
 };
 
-/** Core events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
+/** Core events. Module events work but are untyped — JSR forbids augmenting this map from a module. */
 export interface AppEvents {
     "request-start": { request: Request; peerAddr: string; time: number, base: string };
     "authenticate": { ctx: Ctx };
@@ -53,12 +53,12 @@ export interface AppEvents {
     "html-ready": { ctx: Ctx };
     "respond": { ctx: Ctx };
     "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // no ctx for static files and early errors
-    "suspicious": { ctx: Ctx; weight?: number; reason?: string }; // a module noticed something abusive; consumers score the client. weight defaults to 1
+    "suspicious": { ctx: Ctx; weight?: number; reason?: string }; // possible abuse; listeners score the client. weight default 1
     "auth:login": { oldSession: Record<string, any>; usrId: number }; // the session's values before it was emptied
     "dbFile:access": { file: DbFile; access: boolean };          // fast path
-    "dbFile:access-fallback": { file: DbFile; access: boolean }; // slow path, only fired when access still unresolved
+    "dbFile:access-fallback": { file: DbFile; access: boolean }; // slow path, only if access is still unresolved
     "dbFile:unlink-before": { file: DbFile; prevent: boolean };
-    // deno-lint-ignore no-explicit-any -- module events carry their own payloads; typing them needs a per-module emitter, not a global map
+    // deno-lint-ignore no-explicit-any -- module events have their own payloads; typing needs a per-module emitter
     [name: string]: any;
 }
 
@@ -82,13 +82,13 @@ export class App extends Emitter<AppEvents> {
     stores: StoreManager;
     languages: LangManager;
     t: LangManager["t"];
-    /** Newest mtime of any served file, in unix seconds. It rides along in `m.<rev>/` and `d.<rev>/`
-     *  urls so those can be cached forever; whoever writes a served file sets it to `unixTime()`. */
+    /** Newest mtime of any served file (unix seconds). Part of `m.<rev>/` and `d.<rev>/` urls, so
+     *  those can be cached forever; code that writes a served file sets it to `unixTime()`. */
     assetRev = 0;
-    /** What the modules declare — the loader mounts each module's `api` export under its name. */
+    /** The modules' api trees — each module's `api` export under its name. */
     apiTree: ApiTree = {};
     #api?: ApiProxy;
-    /** How you call it: `app.api.cms.node(42).get()`. Reads apiTree lazily, so runtime modules stay visible. */
+    /** Call the api: `app.api.cms.node(42).get()`. Reads apiTree lazily, so runtime-linked modules work. */
     get api(): ApiProxy { return this.#api ??= apiClient(this.apiTree); }
 
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
@@ -97,8 +97,8 @@ export class App extends Emitter<AppEvents> {
         const dir = cfg.dir.startsWith("file:") ? fromFileUrl(cfg.dir) : cfg.dir;
 
         this.dir   = ensureSlash(dir);
-        // before the database opens: a sqlite file in a directory nobody made says only
-        // "unable to open database file", and that is the first thing a new installation sees
+        // before opening the database: sqlite only says "unable to open database file" when the
+        // directory is missing — the first thing a new installation would see
         mkdirSync(this.dir, { recursive: true });
         this.appUrl    = ensureSlash(cfg.appUrl || "/");
         this.https     = cfg.https;
@@ -112,16 +112,16 @@ export class App extends Emitter<AppEvents> {
         this.fileTransformer = FileTransformer.create({ cacheDir: this.dir + "cache/core/file/" });
         this.sessions  = new SessionManager(this);
         this.modules   = new ModuleManager(this);
-        this.modules.add(new URL("../plugin.ts", import.meta.url)); // the root of the needs graph — every app has it
+        this.modules.add(new URL("../plugin.ts", import.meta.url)); // root of the dependency graph
         this.stores    = new StoreManager(this);
         this.languages = new LangManager(this);
         this.t         = this.languages.t;
     }
 
-    /** Mandatory boot step, after all modules are imported: ensures the database, migrates the
-     *  schema (DDL), and runs module init. Call once before serving — keeps DDL out of the request path. */
+    /** Required boot step: creates the database, migrates the schema and runs module init. Call
+     *  once before serving, so no DDL runs during requests. */
     async init(): Promise<void> {
-        await this.db.ensureDatabase();  // DB must exist before migration queries run against it
+        await this.db.ensureDatabase();  // must exist before migration
         await this.stores.init();
         await parkText(this.db);         // one-off text/text_lang split, around the schema migration
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
@@ -136,7 +136,7 @@ export class App extends Emitter<AppEvents> {
         return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
     }
 
-    /** The single entry point: `Request` in, `Response` out. `appUrl` = the prefix this request is served under. */
+    /** Entry point: `Request` in, `Response` out. `appUrl` = the path prefix the app is served under. */
     async handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {
         const time = performance.now();
         const base = ensureSlash(appUrl || "/");
@@ -149,9 +149,8 @@ export class App extends Emitter<AppEvents> {
             const localPath = urlToLocalPath(url, base, this);
             if (localPath) {
                 const res = await serveFile(request, localPath);
-                // With a revision the url names one version of the file and can never go stale; without
-                // one — an old link, a hand-typed path — the etag has to be revalidated every time.
-                // Errors are never forever: a 404 pinned for a year would outlive the file it missed.
+                // With a revision the url names one file version and never changes; without one (old
+                // link, typed path) the etag is revalidated each time. Errors are never cached forever.
                 const forever = res.status < 400 && REV.test(url.pathname.slice(base.length));
                 res.headers.set("Cache-Control", forever ? "public, max-age=31536000, immutable" : "no-cache");
                 return this.#finish(res, meta);
@@ -177,34 +176,33 @@ export class App extends Emitter<AppEvents> {
         return this.#finish(res, { request: ctx.req.raw, peerAddr: ctx.req.peerAddr, time: ctx.req.time, ctx });
     }
 
-    /** Explicit, ordered dispatch over the request path — the one routing model. */
+    /** Routing: explicit, ordered dispatch by request path. */
     #route(ctx: Ctx): Promise<Response> {
         const uri = ctx.req.appPath;
 
         if (uri === "dbFile" || uri.startsWith("dbFile/"))
             return this.dbFiles.output(uri.slice("dbFile/".length), ctx.req.raw);
 
-        // api always signals via thrown Output (success or error) — caught in #run.
-        // stateless requests carry no ambient cookie, so CSRF checks don't apply
+        // api always ends with a thrown Output (success or error), caught in #run.
+        // stateless requests carry no cookie, so no CSRF check
         if (uri === "api" || uri.startsWith("api/"))
             return apiFetch(ctx.req, this.apiTree, "/" + uri.slice("api/".length), { auth: () => ctx.statelessAuth });
 
         return this.#render(ctx);
     }
 
-    /** The normal path: whatever isn't dbFile or api, the modules render. */
+    /** Everything that isn't dbFile or api: the modules render it. */
     async #render(ctx: Ctx): Promise<Response> {
         await this.fire("render", { ctx });
-        // Nobody rendered anything: that is a 404, not an empty 200 — and it is the honest answer to
-        // /favicon.ico too, so no path needs naming here.
+        // Nothing rendered: 404, not an empty 200 (also for /favicon.ico).
         if (!ctx.res.answered) ctx.res.status = 404;
         return this.#buildResponse(ctx);
     }
 
     async #buildResponse(ctx: Ctx): Promise<Response> {
         const res = ctx.res;
-        // A document is the answer unless something set a body or a Location — so any route can end with
-        // `throw new Output()` and the page it built gets sent.
+        // Send the document unless a body or Location was set — so a route can end with
+        // `throw new Output()` and its page is sent.
         if (res.hasHtml && !res.body && !res.headers.has("Location")) {
             await this.fire("html-ready", { ctx });
             res.html.lang = ctx.lang;
@@ -222,7 +220,7 @@ export class App extends Emitter<AppEvents> {
         return new Response(NULL_BODY.has(status) ? null : res.body, { status, headers });
     }
 
-    /** The one exit — every response passes here, whatever built it. Headers are defaults: whoever set one keeps it. */
+    /** Every response passes here. Adds default headers; headers already set are kept. */
     async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">): Promise<Response> {
         for (const [name, value] of Object.entries(RESPONSE_HEADERS))
             if (!res.headers.has(name)) res.headers.set(name, value);
@@ -231,7 +229,7 @@ export class App extends Emitter<AppEvents> {
         return res;
     }
 
-    /** The public address with a trailing slash, from `core.url` — the route hook fills it in. */
+    /** Public address with trailing slash, from `core.url` (filled in by the route hook). */
     async url(): Promise<string> {
         const set = String(await this.settings.core.url ?? "");
         if (!set) throw new Error("core.url is not set");
@@ -248,12 +246,12 @@ export class App extends Emitter<AppEvents> {
     }
 }
 
-/** Map whatever ended the route — a control-flow signal or a real error — onto the pending response. */
+/** Apply what ended the route — a control-flow signal or an error — to the response. */
 function applyThrown(ctx: Ctx, e: unknown): void {
     if (e instanceof Output) {
         for (const [k, v] of e.buildHeaders()) ctx.res.headers.set(k, v);
-        // A signal overrides only what it carries (200 = no opinion), so a bare `throw new Output()`
-        // ends the route without wiping what it put on ctx.res.
+        // A signal only overrides what it sets (200 = unset), so a bare `throw new Output()` keeps
+        // what the route put on ctx.res.
         if (e.body !== undefined) ctx.res.body = e.body;
         if (e.status !== 200) ctx.res.status = e.status;
     } else {

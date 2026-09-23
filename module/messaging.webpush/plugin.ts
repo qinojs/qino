@@ -58,7 +58,7 @@ export const api: ApiTree = {
         const id = known ? (await table.update(known, values), known) : await table.insert({ ...values, created: unixTime() });
 
         if (channels) {
-          // the posted list is the whole truth for this browser; names the backend does not know are ignored
+          // the posted list replaces this browser's channels; unknown names are ignored
           const wanted = [...new Set(channels as string[])];
           const found = await db.query`SELECT id FROM webpush_channel WHERE ${sql.in("name", wanted)}`;
           const link = db.table("webpush_subscription_channel");

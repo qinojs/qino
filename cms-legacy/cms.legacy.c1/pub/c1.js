@@ -118,14 +118,14 @@ w.c1Use = function (prop_or_opts, cb) {
             function runCallbacks(){
                 var fn, object = c1Use.able(scope,prop);
 				if (e.type === 'error') object.c1UseFailed = true;
-				//object.c1UseSrc = src; // neu. why? ist von c1Use.able bereits gesetzt !?
+				//object.c1UseSrc = src; // new. why? already set by c1Use.able !?
             	while (fn = callbacks[prop].shift()) fn.call(scope, object);
             }
             if (prop in scope || prop_or_opts.from) {
-                // property gesetzt oder per url (from) geladen
+                // property set, or loaded via url (from)
                 runCallbacks();
             } else {
-                // script geladen, aber darin wurde die property noch nicht gesetzt
+                // script loaded, but it did not set the property yet
                 Object.defineProperty(scope,prop,{
                     set: function(value){
                         delete this[prop];

@@ -1,4 +1,3 @@
-// Public API of social.telegram. The qino plugin lives in ./plugin.ts.
 import { errMsg, unixTime } from "@qino/qino";
 import { bot, call } from "@qino/qino/messaging.telegram";
 import { ingest, ProviderError } from "@qino/qino/social";

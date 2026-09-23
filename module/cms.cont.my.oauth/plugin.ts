@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 export const cms = { node: { js: ["pub/main.js"], render } };
 
-// Connecting is a full round trip to the provider, so those are plain links; only the list is fetched.
+// Connecting redirects to the provider, so plain links; only the list is fetched.
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   if (!ctx.user) return html.async`<p>${app.t`Please sign in.`}</p>`;

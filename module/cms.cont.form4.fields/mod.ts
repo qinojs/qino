@@ -1,11 +1,9 @@
-/* What a field is called. The label is what the editor types, the name is what the value is
- * stored under — made once, then left alone, so old entries keep their meaning. */
+/* Field names. The label is what the editor types; the name is the storage key, created once and
+ * then kept, so old entries stay valid. */
 /**
- * Names a field may not take, in the shape `fieldName()` produces. `your_name` is the
- * honeypot below. `then` is the one key that turns an object into a thenable: harmless in
- * the value bag, where it is only ever a string, but the settings proxy makes every child
- * callable — `await settings.fields` would hang on it. Nothing else needs an entry:
- * `__proto__` comes out as `proto`, and lowercasing keeps `toString` and friends away.
+ * Reserved names (as `fieldName()` produces them). `your_name` is the honeypot. `then` would make
+ * the settings proxy a thenable, so `await settings.fields` would hang. `__proto__` becomes `proto`,
+ * and lowercasing avoids `toString` etc.
  */
 export const RESERVED = new Set(["your_name", "then"]);
 

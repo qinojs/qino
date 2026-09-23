@@ -1,6 +1,6 @@
 
-// Extract the url of a dragged image/file from a DataTransfer, across the differing browser formats
-// (firefox: x-moz-file-promise / x-moz-url, chrome: text/uri-list / text/html). Returns null for local files.
+// URL of a dragged image/file from a DataTransfer, for all browser formats (firefox:
+// x-moz-file-promise / x-moz-url, chrome: text/uri-list / text/html). null for local files.
 export function dataTransferToUrl(dt) {
   const getData = type => dt.getData(type);
   const fileurl1 = getData('application/x-moz-file-promise-url');

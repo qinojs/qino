@@ -3,21 +3,21 @@ import { NUM_TYPES } from "./Db.ts";
 
 import type { DbTable } from "./DbTable.ts";
 
-// One namespace rule: everything `$`-prefixed belongs to the row layer, everything else is a
-// column or a method of your subclass. That keeps the reserved set stable — a new `$…` member
-// can never shadow a column, and `id`, `name`, `value`, `path` stay usable as column names.
+// Everything `$`-prefixed belongs to the row layer, everything else is a column or a method of
+// your subclass. So row-layer members never shadow a column, and `id`, `name`, `value`, `path`
+// remain usable as column names.
 
 const boundNames = new WeakMap<object, Set<string>>();
 
-/** A table with no registered class gets its own empty one — never DbRow itself, whose prototype
- *  the column accessors would otherwise share between tables. */
+/** Tables without a registered class get their own empty subclass, so column accessors are not
+ *  shared between tables via DbRow's prototype. */
 export function anonRowClass(table: string): typeof DbRow {
   const cls = class extends DbRow {};
   Object.defineProperty(cls, "name", { value: table, configurable: true });
   return cls;
 }
 
-/** A base class already bound this column — an extending class inherits the accessor. */
+/** A base class already defines this column's accessor. */
 function boundAbove(cls: typeof DbRow, name: string): boolean {
   for (let c = Object.getPrototypeOf(cls); c; c = Object.getPrototypeOf(c)) {
     if (boundNames.get(c)?.has(name)) return true;
@@ -25,14 +25,14 @@ function boundAbove(cls: typeof DbRow, name: string): boolean {
   return false;
 }
 
-/** Columns as accessors on the class. Per column, so a later reloadFields() picks up new ones. */
+/** Columns as accessors on the class, per column, so reloadFields() can add new ones. */
 function bindColumns(cls: typeof DbRow, fields: Map<string, unknown>): void {
   let done = boundNames.get(cls);
   if (!done) boundNames.set(cls, done = new Set());
   if (done.size === fields.size) return;
   for (const name of fields.keys()) {
     if (done.has(name)) continue;
-    if (boundAbove(cls, name)) { done.add(name); continue; } // inherited accessor, not a member
+    if (boundAbove(cls, name)) { done.add(name); continue; } // inherited accessor
     if (name[0] === "$") throw new Error(`${cls.name}: column "${name}" starts with $, which the row layer reserves`);
     if (name in cls.prototype) throw new Error(`${cls.name}: column "${name}" collides with a member of the class — rename the member`);
     Object.defineProperty(cls.prototype, name, {
@@ -60,12 +60,12 @@ export class DbRow {
 
   get $table(): DbTable { return this.#table; }
   get $id(): string { return this.#id; }
-  /** Values arrived at least once — an io statement, unlike $exists. */
+  /** Values were loaded at least once (unlike $exists, which says whether the row exists). */
   get $loaded(): boolean { return this.#loadedAt > 0; }
   get $changed(): boolean { return !!this.#dirty.size; }
   /** Milliseconds since the values came from the database. */
   get $age(): number { return this.#loadedAt ? Date.now() - this.#loadedAt : Infinity; }
-  /** Someone wrote this row through the table — the values may no longer match. */
+  /** The row was written via the table — values may be outdated. */
   get $stale(): boolean { return this.#stale || (this.#table.rowTtl > 0 && this.$age > this.#table.rowTtl); }
   /** Whether the row is in the database; null while unknown. */
   get $exists(): boolean | null { return this.#exists; }
@@ -77,29 +77,28 @@ export class DbRow {
   $set(a: string | Record<string, unknown>, b?: unknown): any {
     if (typeof a === "string") return this.#assign(a, b);
     for (const [name, value] of Object.entries(a)) this.#assign(name, value);
-    return this.$save(); // the object form is the awaitable one
+    return this.$save(); // the object form returns a promise
   }
 
   #assign(name: string, value: unknown): void {
     const field = this.#table.field(name);
     if (!field) throw new Error(`${this.#table}.${name}: unknown column`);
-    // valueTransform normalises for SQL and hands back strings; in memory a column has to look
-    // the way a SELECT delivers it, or a written row differs in type from a read one.
+    // valueTransform returns SQL strings; in memory a column must look like a SELECT returns it.
     let v = field.valueTransform(value);
     if (v !== null && NUM_TYPES.has(field.type)) v = Number(v);
     if (this.$loaded && this.#vs[name] === v) return;
     this.#vs[name] = v;
     this.#dirty.add(name);
-    this.#table.db.markDirty(this); // holds the row until written — a pending change cannot be collected
+    this.#table.db.markDirty(this); // holds the row until written
   }
 
-  /** Values straight from the database; local unsaved writes keep precedence. */
+  /** Values from the database; unsaved local changes win. */
   $receive(vs: Record<string, any> | undefined): this {
     const mine: Record<string, any> = {};
     for (const name of this.#dirty) mine[name] = this.#vs[name];
     this.#vs = { ...vs, ...mine };
-    // Drivers hand DECIMAL back as a string ("0.0100000000"), so a value read would differ in
-    // type from the same value written — the shape a column has must not depend on where it came from.
+    // Drivers return DECIMAL as string ("0.0100000000"); convert, so read and written values have
+    // the same type.
     for (const name in this.#vs) {
       const value = this.#vs[name];
       if (typeof value !== "string" || !NUM_TYPES.has(this.#table.field(name)?.type ?? "")) continue;
@@ -112,7 +111,7 @@ export class DbRow {
     return this;
   }
 
-  /** Someone else wrote or deleted this row — the next $read() will fetch it again. */
+  /** Written or deleted elsewhere — the next $read() reloads it. */
   $invalidate(deleted = false): void {
     this.#stale = true;
     if (deleted) this.#exists = false;
@@ -125,21 +124,21 @@ export class DbRow {
     return this.#exists ? this : undefined;
   }
 
-  /** Write the changed columns. Goes through the table, so the db events fire. */
+  /** Write the changed columns, via the table (db events fire). */
   async $save(): Promise<this> {
     if (!this.#dirty.size) return this;
     const values: Record<string, any> = {};
     for (const name of this.#dirty) values[name] = this.#vs[name];
-    this.#dirty.clear(); // before the await, so a concurrent save cannot write the same values twice
+    this.#dirty.clear(); // before the await, so a parallel save doesn't write twice
     const stale = this.#stale;
     try {
       const id = await this.#table.update(this.#id, values);
       if (id === undefined) this.#exists = false; // nothing matched — the row is gone
     } catch (e) {
-      for (const name of Object.keys(values)) this.#dirty.add(name); // keep them, an explicit $save() can retry
+      for (const name of Object.keys(values)) this.#dirty.add(name); // keep them for a retry
       throw e;
     }
-    this.#stale = stale; // our own update-after event must not mark us stale
+    this.#stale = stale; // our own update-after event must not mark it stale
     return this;
   }
 

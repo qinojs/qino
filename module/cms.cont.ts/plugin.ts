@@ -7,8 +7,8 @@ import { codeFiles } from "./codeFiles.ts";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-// The examples are commented out on purpose: nothing is created before you want it.
-// Only the type is imported — it is erased at load, so the file runs against the app's own qino.
+// Examples are commented out. Only the type is imported (removed at load), so the file uses the
+// app's own qino.
 const initialSrc = (id: number) =>
   `import type { NodeRender } from "jsr:@qino/qino/cms.cont.ts";
 
@@ -39,8 +39,8 @@ async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown>
   return String(await mod.default(node, { ...opt, html }) ?? "");
 }
 
-/** What the panel asks for: the files of this node. A `.ts` runs on the server, so only a
-  * superuser gets one — each url is an editing capability for this session. */
+/** The node's files for the panel. `.ts` runs on the server, so only superusers get it — each url
+  * allows editing for this session. */
 const api = (node: Node, vars: Record<string, unknown>) => {
   if (vars.do !== "getFileEditorLinks" || !getCtx().user?.superuser) return [];
   const files = codeFiles(node);

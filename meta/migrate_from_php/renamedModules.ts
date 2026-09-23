@@ -1,6 +1,5 @@
-// Modules whose qino successor carries a different name *and* reads the same data. Verified pairs
-// only: a wrong entry here silently rewrites content nodes. Where a successor stores things
-// differently the old name stays and belongs in the cms-legacy store.
+// Modules renamed in qino that read the same data. Verified pairs only — a wrong entry rewrites
+// content nodes. If the data differs, the old module belongs in cms-legacy instead.
 //
 // Deliberately absent, check before adding: cms.filebrowser.pixabay is a different provider than
 // cms.filebrowser.pexels.

@@ -5,7 +5,7 @@ import { cmsCtx } from "./CmsContext.ts";
 
 import type { HtmlString, App, Module, Db, DbFile, DbText } from "@qino/qino";
 
-// Per-app instances; the plugin's init binds, cms()/cms.get() read. Internal — mod.ts does not export it.
+// Per-app instances, set in the plugin's init, read by cms()/cms.get(). Not exported from mod.ts.
 export const cmsInstances = new WeakMap<object, CMS>();
 
 /** The app's cms instance. Throws when cms is not loaded. */
@@ -23,7 +23,7 @@ export class CMS {
   db: Db;
 
   #nodes = new Map<number, Promise<Node>>();
-  #idsByUrl = new Map<string, number>(); // page url → id; hits only, a miss is any url a client makes up
+  #idsByUrl = new Map<string, number>(); // page url → id; hits only (misses are arbitrary urls)
 
   constructor(app: App) {
     this.app = app;
@@ -51,8 +51,7 @@ export class CMS {
   /** After any write to page_url. */
   clearUrlCache() { this.#idsByUrl.clear(); }
 
-  /** Slow: a query per call, nothing cached — only the Nodes it builds are. Both columns are
-    * indexed, so it is the round trip that costs. For setup and links, not a hot path. */
+  /** Slow: one query per call, not cached (only the Nodes are). For setup and links, not hot paths. */
   async #nodesBy(col: string, value: string): Promise<Map<number, Node>> {
     const ret = new Map<number, Node>();
     for (const vs of await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE ${sql.id(col)} = ${value}`)
@@ -70,8 +69,8 @@ export class CMS {
     return (await this.nodesByModule(moduleName)).values().next().value;
   }
 
-  /** Slow, see #nodesBy. A name is a slot in its parent, so it is unique across the tree only
-    * by convention — hence the plural, and hence nodeByName returning the first. */
+  /** Slow, see #nodesBy. Names are only unique within a parent, hence the plural (nodeByName
+    * returns the first). */
   nodesByName(name: string): Promise<Map<number, Node>> {
     return this.#nodesBy("name", name);
   }
@@ -114,7 +113,7 @@ export class CMS {
     return this.#modules("cms.layout.");
   }
 
-  /** Linked only — a deactivated module is nothing a page can be built with. */
+  /** Linked modules only. */
   #modules(prefix: string): Record<string, Module> {
     const ret: Record<string, Module> = {};
     for (const mod of this.app.modules.linked().sort((a, b) => a.name.localeCompare(b.name)))
@@ -247,7 +246,7 @@ export class CMS {
 
   async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {
     lang ||= getCtx().lang;
-    // creates every language slot — the lookup below returns early and would leave the rest missing
+    // create all language entries — the lookup below returns early and would skip the rest
     for (const l of node.cms.app.languages.all) await node.file(name + " " + l);
     const file = await node.file(name + " " + lang);
     if (await file.exists()) return file;

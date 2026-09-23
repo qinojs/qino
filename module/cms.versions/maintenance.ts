@@ -1,18 +1,14 @@
 
-// History maintenance — intentionally outside the lib/ versioning core.
+// History cleanup — deliberately outside the lib/ versioning core.
 //
-// Scale-invariant decay: the bucket width is a fraction of the entry's OWN age,
-// so resolution stays fine while edits are fresh (bursts of saves within minutes)
-// and coarsens as they age — instead of one fixed unit (a day) for everything.
-// Per row only the newest entry of each bucket survives. Width is quantised to
-// powers of two of UNIT_SEC so buckets are epoch-anchored and stable across runs.
+// The bucket width grows with the entry's age: fine resolution for fresh edits, coarser for old
+// ones. Per row only the newest entry of each bucket is kept. Widths are powers of two of UNIT_SEC,
+// aligned to the epoch, so buckets are stable across runs.
 //
-// DENSITY is the single generosity knob: ~that many snapshots are kept per age
-// doubling. With UNIT=1min, KEEP_RECENT=1h, DENSITY=24 a row keeps roughly:
+// DENSITY = snapshots kept per doubling of age. With UNIT=1min, KEEP_RECENT=1h, DENSITY=24:
 //   ~1h old → 1/2min,  ~1d old → 1/30min,  ~1week → 1/4h,  ~1year → 1/11days.
-// Entries are self-contained snapshots, so deleting intermediate ones is safe —
-// views fall back to the previous surviving entry, and since the newest entry
-// per bucket survives, every live row keeps ≥1 entry (baseline invariant).
+// Entries are full snapshots, so deleting some is safe: views use the previous entry, and every
+// live row keeps at least one.
 import { sql, unixTime } from "@qino/qino";
 
 import { getVersTable, versedTables } from "./lib/Vers.ts";
@@ -27,12 +23,11 @@ const UNIT_SEC = 60;          // finest bucket granularity (1 minute)
 export async function thinHistory(db: Db, dryRun = false): Promise<number> {
   const now = unixTime();
   const widths = Array.from({ length: Math.ceil(Math.log2(now / (DENSITY * UNIT_SEC))) + 1 }, (_, i) => UNIT_SEC * 2 ** i);
-  // epoch-anchored bucket; width = UNIT × 2^k chosen so width ≈ age / DENSITY,
-  // floored at UNIT → derives from the entry's own age, stable across runs.
-  // integers only: Postgres has no `%` for the double POWER() would return
+  // bucket width = UNIT × 2^k ≈ age / DENSITY, at least UNIT, aligned to the epoch.
+  // integers only: Postgres has no `%` for the double POWER() returns
   const bucket = (col: Sql) => {
     const age = sql`${now} - ${col}`;
-    const n = (v: number) => sql.raw(String(v)); // our own numbers: typed literals, not untyped parameters
+    const n = (v: number) => sql.raw(String(v)); // own numbers as literals, not untyped parameters
     const width = sql`CASE ${sql.join(widths.slice(1).map((w, i) => sql`WHEN ${age} < ${n(DENSITY * w)} THEN ${n(widths[i])}`), " ")} ELSE ${n(widths.at(-1)!)} END`;
     return sql`(${col} - (${col} % (${width})))`;
   };

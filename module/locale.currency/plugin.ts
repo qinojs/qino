@@ -28,8 +28,8 @@ export const dbSchema = {
   },
 };
 
-// One job for every frequency: it wakes up hourly and asks how old the rates may get. The ECB
-// publishes once a working day around 16:00 CET, so `hourly` is for sources that move faster.
+// One hourly job checks whether the rates are too old. The ECB publishes once per working day
+// (~16:00 CET); `hourly` is for faster sources.
 export const cron = {
   rates: {
     every: "hour",
@@ -45,7 +45,7 @@ export const cron = {
   },
 } satisfies Jobs;
 
-/** A row per currency, so a rate has something to hang on. Rates stay empty until someone fills them. */
+/** One row per currency; rates stay empty until filled. */
 export async function install({ app }: { app: App }): Promise<void> {
   const known = new Set(await app.db.col<string>`SELECT id FROM currency`);
   const rows = currency.codes().filter((id) => !known.has(id)).map((id) => sql`(${id})`);

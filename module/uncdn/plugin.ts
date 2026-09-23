@@ -45,8 +45,8 @@ async function directorySize(path: string): Promise<number> {
   return size;
 }
 
-// Own the media type rather than trusting an extension table, and pin the cache: a proxy url
-// names one immutable asset. `from` carries over what serveFile negotiated (etag, range, length).
+// Set the media type ourselves and cache forever (a proxy url is one immutable asset). `from` passes
+// on what serveFile set (etag, range, length).
 function cacheHeaders(type: string, from?: Headers): Headers {
   const headers = new Headers(from);
   headers.set("Content-Type", type);
@@ -58,7 +58,7 @@ function cacheHeaders(type: string, from?: Headers): Headers {
 }
 
 async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: string): Promise<Uint8Array> {
-  const res = await safeFetch(url); // SSRF-guarded, re-checked after redirects; safeFetch applies a default timeout
+  const res = await safeFetch(url); // SSRF-safe (also after redirects), with default timeout
   const tooBig = Number(res.headers.get("content-length")) > MAX_ASSET_BYTES;
   if (!res.ok || tooBig) {
     await res.body?.cancel();
@@ -81,9 +81,7 @@ async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: 
 }
 
 type CspSources = Record<string, true>;
-// https only: the proxy path carries no scheme and is fetched back as https, so an
-// http source rewritten into it could never be served — and a plain-http origin is
-// a local one anyway, which this proxy has no reason to stand in front of.
+// https only: the proxy path has no scheme and is fetched as https; http origins are local anyway.
 const origins = (s: CspSources) => Object.keys(s).filter(k => k.startsWith("https://"));
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set(set.values().map(fn));
 // A CSP source covers a url as a prefix only at a path boundary, so "https://cdn.example"
@@ -130,10 +128,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }, { signal });
 }
 
-// Rewrite assets to the proxy, but only for origins the page declared in its CSP
-// (per directive: script-src gates scripts, style-src gates styles). Fonts/images
-// referenced relatively inside a proxied CSS cascade through the proxy on their own.
-// Every declared source is remembered in `allowed` — that is what the proxy will fetch.
+// Rewrite assets to the proxy, only for origins declared in the CSP (script-src for scripts,
+// style-src for styles). Relative fonts/images in proxied CSS go through the proxy by themselves.
+// Declared sources are kept in `allowed` — only those are fetched.
 export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed = new Set<string>()): void {
   const rewritten = new Set<string>();
   const rewriter = (src: CspSources) => {
@@ -152,7 +149,7 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
   html.legacyScripts = mapSet(html.legacyScripts, rwScript);
   html.scripts       = mapSet(html.scripts, rwScript);
   html.styles        = mapSet(html.styles, rwStyle);
-  // a sheet with attributes (media) lives in html.link instead of html.styles, and needs the same rewrite
+  // sheets with attributes (media) are in html.link, not html.styles — rewrite them too
   for (const [url, attr] of Object.entries(html.link)) {
     const to = attr.rel === "stylesheet" ? rwStyle(url) : url;
     if (to === url) continue;
@@ -160,9 +157,8 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
     html.link[to] = attr;
   }
 
-  // Drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay.
-  // Only what this pass actually moved: a source no html asset names may still be needed by an
-  // import inside a script, which is nothing this rewrite can see.
+  // Remove origins now served locally, but only those rewritten here: others may still be used by
+  // imports inside scripts.
   const strip = (src: CspSources, urls: string[]) => {
     for (const o of origins(src)) if (rewritten.has(o) && !urls.some(u => u.startsWith(o))) delete src[o];
   };

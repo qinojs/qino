@@ -72,8 +72,7 @@ export async function install(app: App, module: string, titles?: Record<string, 
   return p;
 }
 
-/** Adds query params to a page url, "" staying "" — page urls are app-relative,
- *  the base only lets `URL` parse them. */
+/** Add query params to an app-relative page url ("" stays ""). */
 export function toUrl(url: string, params: Record<string, unknown> = {}): string {
   if (!url) return "";
   const u = new URL(url, "http://-");
@@ -81,17 +80,16 @@ export function toUrl(url: string, params: Record<string, unknown> = {}): string
   return u.pathname + u.search;
 }
 
-/** Link builder for another backend module's page: `link({ id })` → "/path?id=…".
- *  "" when that page is missing or the user may not see it — every caller falls back to plain text,
- *  like the menu and the dashboard, which list only pages the user has access to. */
+/** Link to another backend module's page: `link({ id })` → "/path?id=…". "" if the page is missing
+ *  or not accessible (callers then show plain text). */
 export async function toModuleUrl(node: Node, module: string): Promise<(params?: Record<string, unknown>) => string> {
   const page = await (await node.cms.nodeByModule(module))?.page();
   const url = page && await page.access() ? await page.url() : "";
   return (params) => toUrl(url, params);
 }
 
-/** Remove the backend page install() created — the counterpart every cms.backend.* module needs.
- *  A page that still carries sub-pages stays: those belong to other modules that are installed. */
+/** Remove the backend page install() created. Pages with sub-pages stay (they belong to other
+ *  installed modules). */
 export async function uninstall(app: App, module: string): Promise<void> {
   const cm = cms(app);
   const page = await (await cm.nodeByModule(module))?.page();
@@ -118,8 +116,7 @@ const OS_TESTS: [string, RegExp][] = [
   ["Linux", /Linux/],
 ];
 
-/** A logged or reported address as a link — only http(s): a client sends whatever it likes as its
- *  referer or report, and a `javascript:` there must stay text. */
+/** A logged/reported URL as link — only http(s), since clients can send anything (e.g. `javascript:`). */
 export function link(url: unknown): HtmlString {
   return /^https?:\/\//i.test(String(url ?? "")) ? html`<a href="${url}" target=_blank>${url}</a>` : html`${url}`;
 }

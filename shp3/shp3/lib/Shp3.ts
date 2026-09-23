@@ -1,5 +1,5 @@
-// The shop of one app: everything that needs its settings or events hangs here — like mail(app)
-// and ai(app). What gets by with its arguments stays a free function (ensureProduct, cart).
+// The shop of an app: everything that needs its settings or events. Other helpers stay free
+// functions (ensureProduct, cart).
 import { $item, Db, Emitter, itemReadDeep } from "@qino/qino";
 
 import type { App, ItemProxy } from "@qino/qino";
@@ -62,8 +62,8 @@ export class Shp3 extends Emitter<Shp3Events> {
     return (await this.countries()).includes(id);
   }
 
-  /** Where the shop stands. Prices are calculated for it until the customer names a country.
-   *  Only a marked country stands in for the setting — the full list is alphabetical, not a location. */
+  /** The shop's country, used for prices until the customer chooses one. Only a marked country
+   *  replaces the setting. */
   async country(): Promise<string> {
     return String(await this.settings.location.country ?? "") ||
       await this.db.one<string>`SELECT id FROM country WHERE shp3_enabled = ${true} ORDER BY id LIMIT 1` || "";
@@ -83,7 +83,7 @@ export class Shp3 extends Emitter<Shp3Events> {
     return (await this.db.table("shp3_currency").all<Currency>`WHERE active = ${true} ORDER BY main DESC LIMIT 1`)[0];
   }
 
-  /** Take the shop's factors from fresh reference rates, relative to its main currency (the yardstick at 1). */
+  /** Update the shop's factors from current rates, relative to the main currency (= 1). */
   async syncFactors(): Promise<void> {
     const main = await this.mainCurrency();
     if (!main) return;
@@ -99,8 +99,8 @@ export class Shp3 extends Emitter<Shp3Events> {
     }
   }
 
-  /* Payment and shipping methods are settings, not code: a module announces itself once,
-     the shop admin enables, describes and sorts it. Same tree as the PHP original. */
+  /* Payment and shipping methods are settings: a module registers once, the admin enables,
+     describes and sorts it. Same tree as in PHP. */
 
   /** The enabled methods of a kind, in their configured order: name → label. */
   async methods(kind: MethodKind): Promise<Record<string, string>> {
@@ -113,9 +113,8 @@ export class Shp3 extends Emitter<Shp3Events> {
     );
   }
 
-  /** Announce a method once. Existing settings are never overwritten — they belong to the shop.
-   *  Both keys are written, like the PHP install did: a schema default is invisible until the row
-   *  exists, and the shop has to see the method in its settings to switch it off. */
+  /** Register a method once; existing settings are kept. Both keys are written (like PHP), so the
+   *  method appears in the settings and can be switched off. */
   async registerMethod(kind: MethodKind, name: string, description: string): Promise<void> {
     const setting = this.settings[kind][name];
     if (await setting.description !== undefined) return;
@@ -133,7 +132,7 @@ export class Shp3 extends Emitter<Shp3Events> {
   }
 }
 
-/** The shop of an app — or of its db, which is what the row layer holds. Throws when shp3 is not loaded. */
+/** The shop of an app (or its db, for the row layer). Throws if shp3 is not loaded. */
 export function shp3(owner: App | Db): Shp3 {
   const shop = shp3.get(owner);
   if (!shop) throw new Error('module "shp3" is not loaded');

@@ -1,10 +1,9 @@
-// The dialog that answers a `step_up_required`, and the form its handlers share. It knows no
-// factor: each one ships a `pub/stepup.js` exporting `prove(root, factor)`, and the error says
-// which module to load it from.
+// Dialog for `step_up_required`, plus the shared form for its handlers. Knows no factor: each has a
+// `pub/stepup.js` exporting `prove(root, factor)`; the error names the module.
 import { t } from "./t.js";
 import { html } from "./html.js";
 
-/** Ask for a fresh proof. Resolves true when one was given, false when the user gave up. */
+/** Ask for a fresh proof. Resolves true on success, false if cancelled. */
 export async function stepUp({ factors = [] } = {}) {
   const dialog = document.createElement("dialog");
   const labels = {
@@ -14,7 +13,7 @@ export async function stepUp({ factors = [] } = {}) {
     back: await t`Use another method`,
   };
 
-  // No form around this: a factor brings its own, and a form inside a form is dropped by the parser.
+  // No form here: factors bring their own, and nested forms are dropped by the parser.
   dialog.innerHTML = html`<h2>${labels.title}</h2>
     <div data-body style="display:flex; flex-direction:column;"></div>
     <menu>
@@ -38,7 +37,7 @@ export async function stepUp({ factors = [] } = {}) {
     };
 
     const choose = async (factor) => {
-      back.hidden = factors.length < 2; // nothing to go back to
+      back.hidden = factors.length < 2; // no other factor
       body.replaceChildren();
       try {
         const { prove } = await import(`@qino/m/${factor.module}/pub/stepup.js`);
@@ -54,7 +53,7 @@ export async function stepUp({ factors = [] } = {}) {
       if (pick) choose(factors[pick.dataset.pick]);
     });
 
-    // Straight into the best one — it is first, and every handler waits for a click of its own.
+    // Open the best (first) one directly; each handler waits for its own click.
     factors.length ? choose(factors[0]) : list();
   });
 
@@ -62,9 +61,8 @@ export async function stepUp({ factors = [] } = {}) {
   return proven;
 }
 
-/** The shape a step-up handler has: some fields, a confirm button, errors in an `<output>`.
- *  `check(form)` resolves true when the proof went through. The form comes back for the handler
- *  that adds something of its own. */
+/** Standard step-up form: fields, confirm button, errors in an `<output>`. `check(form)` resolves
+ *  true on success. Returns the form, so handlers can add to it. */
 export async function proveForm(root, fields, check) {
   root.innerHTML = `<form>${fields}
     <button>${await t`Confirm`}</button>
@@ -74,8 +72,7 @@ export async function proveForm(root, fields, check) {
   const out = form.querySelector("output");
   form.querySelector("input")?.focus();
 
-  // Clean what is pasted instead of cutting it: a leading space in the clipboard must not cost
-  // the last character of the code.
+  // Clean pasted text instead of truncating: a leading space must not cut off the last digit.
   for (const el of form.querySelectorAll("input[name=code]")) {
     el.addEventListener("input", () => {
       el.value = el.inputMode === "numeric" ? el.value.replace(/\D/g, "").slice(0, 6) : el.value.trim();

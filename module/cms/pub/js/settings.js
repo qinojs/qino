@@ -1,5 +1,4 @@
-/* One meaning for `setting=` across every settings widget: the attribute names the
-  * path inside the node's settings, and one listener writes them all. */
+/* `setting=` in settings widgets: the path in the node's settings; one listener saves all. */
 
 /** Bind every `[setting]` field in a widget to `api.cms.node(id).settings`. */
 export const bindSettings = (el, ref) => {

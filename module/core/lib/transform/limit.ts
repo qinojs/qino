@@ -1,6 +1,5 @@
-/** Caps concurrent external processes. CPU the scheduler shares by itself, but memory it does not:
- *  decoders hold their peak at the same time, and the OS answer to that is the OOM killer.
- *  Waiting, never rejecting — the work is queued, not dropped. */
+/** Limits concurrent external processes — for memory, not CPU: parallel decoders peak together and
+ *  the OS would kill them. Excess work is queued, never rejected. */
 let running = 0;
 const waiting: (() => void)[] = [];
 

@@ -2,8 +2,8 @@ import { html } from "@qino/qino";
 
 import type { HtmlString } from "@qino/qino";
 
-/** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-".
- *  `narrow` shortens the wording for dense tables: "8d ago" instead of "8 days ago"; `second` adds seconds to the tooltip. */
+/** A timestamp (unix seconds, numeric string, Date or date string) as relative <u2-time>; 0/invalid → "-".
+ *  `narrow`: "8d ago" instead of "8 days ago"; `second`: seconds in the tooltip. */
 export function time(value: unknown, { narrow, second }: { narrow?: boolean; second?: boolean } = {}): HtmlString {
   if (value == null || value === "") return html`-`;
   const date = value instanceof Date ? value

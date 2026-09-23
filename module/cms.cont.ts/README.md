@@ -1,7 +1,7 @@
 # cms.cont.ts
 
-A content node rendered by its own TS file — [cms.cont.html](../cms.cont.html/README.md)
-for cases where a template is not enough.
+A content node rendered by its own TS file — like [cms.cont.html](../cms.cont.html/README.md),
+for when a template is not enough.
 
 ```ts
 // data/cms.cont.ts/12.ts
@@ -13,17 +13,16 @@ const render: NodeRender = async (node, { html, ctx, vars }) =>
 export default render;
 ```
 
-`html` is handed in rather than imported: the file lives outside the project, so
-any runtime import would either be a brittle relative path or a second copy of
-core from jsr. The type import costs nothing — it is erased at load.
+`html` is passed in, not imported: the file is outside the project, so a runtime
+import would be a fragile relative path or a second copy of core from jsr. The type
+import is removed at load.
 
-The file is imported dynamically, with its mtime busting the ESM cache, so a
-saved file takes effect with the next request. It renders whatever its default
-export returns — a string or an `HtmlString`; without a default export the node
-shows a module error in edit mode.
+The file is imported with its mtime in the URL, so changes apply on the next
+request. The default export's result (string or `HtmlString`) is rendered; without
+a default export, edit mode shows a module error.
 
-Files, creation and the css/js next to it work exactly as in
-[cms.cont.html](../cms.cont.html/README.md); see [codeFiles.ts](codeFiles.ts).
+Files, creation and css/js work as in [cms.cont.html](../cms.cont.html/README.md);
+see [codeFiles.ts](codeFiles.ts).
 
-Only superusers can edit the file (through [fileEditor](../fileEditor/)) — it is
-code, it runs with everything the app can do.
+Only superusers can edit the file (via [fileEditor](../fileEditor/)) — it is code
+with full app rights.

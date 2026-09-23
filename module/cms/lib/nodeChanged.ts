@@ -1,10 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
-// node_changed: one row per content mutation, keyed by the request's log entry.
-// Captured at db-event level (like cms.versions history capture), so every write
-// path through the table API is recorded — no per-method instrumentation needed.
-// Consumers aggregate (EXISTS / GROUP BY node_id); duplicates are fine.
-// Writes without request context (cron/CLI/boot) are not captured.
+// node_changed: one row per content change, with the request's log entry. Recorded via db events
+// (like cms.versions), so every write through the table API is covered. Readers aggregate
+// (EXISTS / GROUP BY node_id); duplicates are fine. Writes without request (cron/CLI/boot) are skipped.
 import { hee, requestStorage } from "@qino/qino";
 
 import type { App } from "@qino/qino";
@@ -32,11 +30,9 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
     const idOf = (table: string, vs: Record<string, any>) =>
         LINKED.has(table) ? vs.page_id : table === "text_lang" ? vs.text_id : vs.id;
 
-    // affected node ids for a mutation; row values = PK values merged with changed data.
-    // text_lang/file are shared reference rows — resolve the node(s) through the link tables.
-    // A row with no link yet (brand-new text/file) resolves to none; its page_text/
-    // page_file insert captures it. A new-language row on an existing text still links,
-    // so multilingual edits are tracked.
+    // affected node ids; row values = key values merged with changed data.
+    // text_lang/file rows are found via the link tables. New unlinked rows give none (the link
+    // insert records it); a new language on an existing text is still found.
     const nodeIds = async (table: string, vs: Record<string, any>): Promise<number[]> => {
         const id = idOf(table, vs);
         if (table === "page" || LINKED.has(table)) return [Number(id)];
@@ -58,14 +54,13 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         const table = String(e.table);
         if (table !== "page" && table !== "text_lang" && table !== "file" && !LINKED.has(table)) return;
         const vs = { ...(e.id != null ? e.table.entryIdValues?.(e.id) : {}), ...e.data };
-        if (idOf(table, vs) == null) return; // incomplete id (e.g. composite key given as a single value)
+        if (idOf(table, vs) == null) return; // incomplete id (e.g. composite key as single value)
         const logId = Number(await ctx.logId) || 0;
         if (!logId) return;
 
         const nodes = await nodeIds(table, vs);
         if (!nodes.length) return;
-        // page delete: the row is gone right after, so the containing page is
-        // resolved from basis (parent side) — keeps deleted nodes checkable.
+        // page delete: resolve the page via basis before the row is gone.
         const fromBasis = table === "page" && op === "delete";
         const data = JSON.stringify({
             table, op,
@@ -76,7 +71,7 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         for (const nodeId of nodes) {
             const start = fromBasis ? Number((await db.row`SELECT basis FROM page WHERE id = ${nodeId}`)?.basis) || nodeId : nodeId;
             const pageId = await containingPage(start);
-            // fires insert-after, but the table filter above skips node_changed → no re-capture
+            // fires insert-after, but node_changed itself is filtered out above
             await db.table("node_changed").insert({ log_id: logId, node_id: nodeId, page_id: pageId, data });
         }
     };
@@ -87,9 +82,8 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
     db.on("table:delete-before", (e) => capture("delete", e), { signal });
 }
 
-// Human-readable change label from a node_changed `data` payload
-// ({ table, op, name?, lang?, cols? }). `t` is app.t. Lives here next to the
-// capture logic so every history consumer describes a mutation identically.
+// Readable label for a node_changed `data` payload ({ table, op, name?, lang?, cols? }). `t` is
+// app.t. Here, so all history views describe changes the same way.
 export async function describeChange(dataStr: unknown, t: TFn): Promise<string> {
     let d: any = {};
     try { d = JSON.parse(String(dataStr ?? "{}")); } catch { /* keep {} */ }

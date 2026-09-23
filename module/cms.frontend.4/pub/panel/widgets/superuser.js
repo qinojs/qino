@@ -1,5 +1,4 @@
-/* The files behind a node's module: what the site added next to what the module ships,
-  * plus the module's app settings. */
+/* The files of a node's module (the site's and the module's own), plus its app settings. */
 import '@qino/pub/SettingsEditor.mjs';
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';

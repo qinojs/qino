@@ -1,7 +1,7 @@
 import { api } from '@qino/pub/api.js';
 
-// Submit without leaving the page: the api renders the same node with the entered values as vars,
-// so the result is byte-identical to the JS-free POST. File uploads stay on the native path.
+// Submit without page reload: the api renders the node with the values as vars — same result as a
+// normal POST. File uploads use the normal POST.
 document.addEventListener('submit', e => {
   const form = e.target;
   const node = form.closest('[qcms-mod="cont.form4"]');
@@ -10,7 +10,7 @@ document.addEventListener('submit', e => {
   if (form.hasAttribute('data-native')) return;
   if (form.querySelector('input[type=file]')?.files.length) return;
 
-  // the api carries its own csrf header and addresses the node by url — send the same vars the server strips
+  // the api sends its own csrf header and finds the node by url
   const vars = {};
   for (const [key, value] of new FormData(form)) {
     if (typeof value === 'string' && key !== 'qcms-node' && key !== 'csrfToken') vars[key] = value;

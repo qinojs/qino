@@ -1,7 +1,6 @@
-// Third-party surface of core. Versions are pinned in deno.json, never here — and item.js is
-// core's dependency alone: other modules take it from mod.ts, so a later package split cannot end
-// up with two copies (its `$item` is a module-local Symbol; two copies would silently stop matching).
-// Hono is only used by the optional mount adapter lib/hono.ts (honoAdapter).
+// Third-party imports of core. Versions are pinned in deno.json. Other modules import item.js from
+// mod.ts, so there is only one copy (each copy has its own `$item` Symbol).
+// Hono is only used by the optional adapter lib/hono.ts.
 export { Hono } from "hono";
 export { basePath } from "hono/route";
 export { getConnInfo } from "hono/deno";

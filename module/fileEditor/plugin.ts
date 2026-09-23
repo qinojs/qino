@@ -8,8 +8,8 @@ import type { Ctx, ApiTree, App, Params } from "@qino/qino";
 
 const { name } = manifest;
 
-// A stale link is an everyday event; a mac that never matched this session's key is
-// someone trying, so it gets reported. Superusers pass without a signature at all.
+// Expired links are normal; a signature that never matched this session is suspicious and
+// reported. Superusers need no signature.
 async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown): Promise<boolean> {
   if (ctx.user?.superuser) return true;
   const state = check(ctx, file, exp, sig);
@@ -52,8 +52,7 @@ function editorFile(): string | null {
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  // The editor is a root route, not a CMS page: it builds its document here and ends the
-  // request, so the cms render never turns the unknown path into its 404 page.
+  // A root route, not a CMS page: it builds the page and ends the request (else the cms would 404).
   app.on("route", async ({ ctx }) => {
     const file = editorFile();
     if (!file) return;

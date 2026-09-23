@@ -7,7 +7,7 @@ import { fs } from '../../fs.ts';
 import type { TransformContext, TransformerDef } from '../types.ts';
 
 const RASTER = ['png', 'jpg', 'avif'];
-/** Rendered edge when the source states no intrinsic size and none is requested */
+/** Size used when neither the SVG nor the request gives one */
 const FALLBACK = 512;
 const MAX = 9000;
 
@@ -20,7 +20,7 @@ async function ratio(path: string): Promise<number> {
   return w > 0 && h > 0 ? w / h : 1;
 }
 
-/** Render size: covers the requested box (`max` fits inside it), so the geometry phase only crops. */
+/** Render size: covers the requested box (`max`: fits inside), so geometry only crops. */
 function renderSize({ options: o }: TransformContext, ratio: number): [number, number] {
   const w = Math.min(o.w ?? 0, MAX), h = Math.min(o.h ?? 0, MAX);
   if (!w && !h) return ratio >= 1 ? [Math.round(FALLBACK * ratio), FALLBACK] : [FALLBACK, Math.round(FALLBACK / ratio)];
@@ -31,10 +31,9 @@ function renderSize({ options: o }: TransformContext, ratio: number): [number, n
 }
 
 /**
- * Decode phase: rasterizes an SVG when a raster format is asked for explicitly.
- * Plain `w`/`h` requests keep the SVG – it scales by itself.
- * ImageMagick's own SVG renderer is not used: without a librsvg delegate it silently
- * drops gradients and colour.
+ * Decode phase: renders an SVG when a raster format is requested explicitly. With only `w`/`h`
+ * the SVG stays (it scales by itself). ImageMagick's own SVG renderer is not used: without librsvg
+ * it drops gradients and colors.
  */
 export const svgDecode: TransformerDef = {
   name: 'svg-decode',

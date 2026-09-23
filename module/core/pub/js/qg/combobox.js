@@ -25,7 +25,7 @@ export function Combobox(input){
 Combobox.prototype = {
   showDialog(){
     if (dialog.parentNode !== doc.body) doc.body.append(dialog);
-    if (!dialog.matches(':popover-open')) dialog.showPopover(); // top-layer statt z-index, sonst hinter dem panel-popover
+    if (!dialog.matches(':popover-open')) dialog.showPopover(); // top layer instead of z-index, else behind the panel popover
     dialog.style.minWidth = this.input.offsetWidth + 'px';
     placer.follow(this.input);
   },

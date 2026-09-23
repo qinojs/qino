@@ -1,17 +1,17 @@
 # File transforms
 
-`FileTransformer` turns a source file into a derived one — resize/crop/re-encode an image,
-rasterize a PDF page, extract a video frame or audio cover, OCR to Markdown, transcribe media.
-It is a **framework-agnostic pipeline**: a list of small transformers run in phase order, each
-deciding whether it applies. Results are content-addressed and cached on disk.
+`FileTransformer` derives a file from a source — resize/crop/re-encode an image, render a PDF
+page, extract a video frame or audio cover, OCR to Markdown, transcribe media. It is a
+**pipeline** of small transformers that run in phase order; each decides whether it applies.
+Results are cached on disk.
 
 ```ts
 const tf = FileTransformer.create({ cacheDir: "/var/cache/pri/" });
 const { path, mime, transformed, key } = await tf.transform("/uploads/photo.heic", { w: 800, fmt: "auto" });
 ```
 
-The app builds one instance at boot (`app.fileTransformer`); the normal entry point is
-`dbFile.transform(options)`, which routes through it and serves the result (see `DbFileManager`).
+The app creates one instance at boot (`app.fileTransformer`). Usually you call
+`dbFile.transform(options)`, which uses it (see `DbFileManager`).
 
 ## Options
 
@@ -29,7 +29,7 @@ The app builds one instance at boot (`app.fileTransformer`); the normal entry po
 | `page` | PDF page (1-based) |
 | `frame` | video frame (1-based) |
 
-`fmt: "auto"` encodes candidates and keeps the smallest: AVIF vs JPEG when AVIF is available,
+`fmt: "auto"` encodes several formats and keeps the smallest: AVIF vs JPEG if AVIF is available,
 else PNG for images with alpha, else JPEG vs PNG. `fmt: "md"` extracts text (documents → Pandoc, PDF → pdftotext/OCR, images → OCR,
 media → transcript). `fmt: "json"` yields a raw transcript.
 
@@ -45,13 +45,13 @@ interface TransformResult {
 }
 ```
 
-Failures never throw out of `transform()` — they return `transformed: false` with `error` set, so
-a broken pipeline degrades to serving the original.
+`transform()` never throws; on failure it returns `transformed: false` with `error`, and the
+original is served.
 
 ## Phases & the pipeline
 
-Transformers declare a `phase`; the pipeline runs phases in a fixed order, and within a phase
-sorts by `after` dependencies:
+Each transformer has a `phase`. Phases run in a fixed order; within a phase, `after` sets the
+order:
 
 | Phase | Purpose | Built-ins |
 |---|---|---|
@@ -59,12 +59,11 @@ sorts by `after` dependencies:
 | `geometry` | resize / crop | `image-resize` |
 | `encode` | pick format + quality | `image-encode`, `svg-optimize`, then `pngquant` (`after: image-encode`) |
 
-Each transformer gets a shared `TransformContext` and mutates `currentPath` / `mime` / `meta` as
-it hands off to the next. `handles(ctx)` is the guard (mime, options, tool availability); only
-matching transformers run. If `currentPath` is unchanged at the end, the source is returned
-untouched.
+All transformers share one `TransformContext` and update `currentPath` / `mime` / `meta` for the
+next one. Only transformers whose `handles(ctx)` returns true run (checks mime, options, tools).
+If `currentPath` is unchanged at the end, the source is returned.
 
-The context is your whole working surface:
+The context:
 
 | Field | Use |
 |---|---|
@@ -87,25 +86,22 @@ interface TransformerDef {
 }
 ```
 
-Register your own with `tf.register(def)` (names must be unique). `props` matters: only listed
-option keys enter the cache key, so declare every option your transformer reads or you'll serve
-stale cache hits.
+Register your own with `tf.register(def)` (unique names). Only options listed in `props` are part
+of the cache key — list every option you read, or old cache entries are served.
 
 ## Caching
 
-The cache key is `SHA-1(sourcePath + size + sorted set-options consumed by any transformer)`. On a
-hit, the cached file is returned directly (its mtime is touched for LRU after a day). Writes are
-atomic — meta is written first, then the file is `rename`d into place, so concurrent readers never
-see a partial result. The key doubles as an ETag: same content + same options ⇒ same key.
+The cache key is `SHA-1(sourcePath + size + used options, sorted)`. A hit returns the cached file
+(its mtime is refreshed once a day for LRU). Writes are atomic: meta first, then the file is
+renamed into place, so readers never see half a file. The key also serves as ETag.
 
-There is no content fingerprint yet for **mutable** source paths (only db-files, which are
-content-addressed by path). For those, a size change is the only invalidation signal — see the
-`> 1.0` note in `FileTransformer.ts`.
+Sources whose content can change at the same path (db-files can't) have no content hash yet; only
+a size change invalidates them — see the `> 1.0` note in `FileTransformer.ts`.
 
 ## External tools
 
-Heavy lifting shells out to system binaries. Each lives behind a thin wrapper module exposing a
-`available()` probe plus its verbs, imported as a namespace:
+The real work is done by system binaries. Each has a small wrapper module with an `available()`
+check and its commands:
 
 | Wrapper | Binary | API |
 |---|---|---|
@@ -125,14 +121,12 @@ import * as ffmpeg from "./ffmpeg.ts";
 if (await ffmpeg.available()) await ffmpeg.frame(input, 0, out, signal);
 ```
 
-`available()` is a cached probe from `probe(cmd, args)` (`tryCommand.ts`): it runs the binary
-once, memoizes the result, and self-registers so `resetProbes()` clears every probe at once —
-adding a tool needs no central edit. `imagemagick` keeps its own cache (`resetCache`) because it
-also detects IM6-vs-IM7 command names.
+`available()` comes from `probe(cmd, args)` (`tryCommand.ts`): it runs the binary once and caches
+the result. `resetProbes()` clears all probes, so a new tool needs no central change. `magick`
+has its own cache (`resetCache`) because it also detects IM6 vs IM7.
 
-Nothing is required: a wrapper whose binary is missing simply reports `available() === false`, its
-transformers `handles()` to `false`, and the pipeline skips them (worst case: the original file is
-served). Missing tools are a capability gap, not an error.
+No tool is required: if a binary is missing, `available()` is false, its transformers don't run,
+and at worst the original is served.
 
 ### Capability introspection
 
@@ -145,9 +139,8 @@ The superuser "transform tools" page reads these to show what's installed.
 
 ## OCR & transcript engines
 
-Text/`md` and transcript output delegate to **engines**, so modules can supply better ones than
-the built-in Tesseract (e.g. AI vision / speech-to-text). Highest `priority` among the
-`available()` ones wins.
+OCR and transcripts use **engines**, so modules can add better ones than Tesseract (e.g. AI
+vision or speech-to-text). The available engine with the highest `priority` wins.
 
 ```ts
 app.fileTransformer.registerOcrEngine({
@@ -158,24 +151,21 @@ app.fileTransformer.registerOcrEngine({
 app.fileTransformer.registerTranscriptEngine({ name, priority, available, transcribe });
 ```
 
-`beatsTextLayer` makes a PDF always OCR (not only scans) — use it when the engine's layout-aware
-output is better than the embedded text layer. Core registers `tesseractEngine` (priority 0) as
-the floor.
+With `beatsTextLayer`, PDFs are always OCR'd, not only scans — for engines whose output is better
+than the embedded text. Core registers `tesseractEngine` with priority 0.
 
-> **Unlink caveat:** engine registration has no unregister — a module that registers an engine
-> leaves it after `unlink`. See the module docs' "Not yet torn down" section.
+> Engines cannot be unregistered; they stay after `unlink`. See "Not yet torn down" in
+> [module.md](module.md).
 
 ## Timeouts
 
-Every pipeline run shares one `AbortSignal` from `AbortSignal.timeout(transformer.timeout * 1000)`
-(default 600 s). Pass it to every external command (`{ signal: ctx.signal }`) so a runaway convert
-is killed rather than hanging the request.
+Each run has one `AbortSignal` (`transformer.timeout`, default 600 s). Pass it to every external
+command (`{ signal: ctx.signal }`) so a hanging process gets killed.
 
 ## Rules of thumb
 
-- New transformer → declare `phase`, `props` (every option it reads), and an availability-aware
-  `handles`. Mutate `ctx.currentPath`/`mime`; leave it untouched to pass through.
-- New external tool → a wrapper with `available = probe(...)` + verbs; `run` for the primary
-  invocation. No `FileTransformer` edit needed for reset.
-- Never assume a tool exists — gate on `available()`; a missing binary must degrade, not throw.
-- Reading an option in `transform` but not listing it in `props` = stale cache. Always list it.
+- New transformer → set `phase`, `props` (every option it reads) and `handles` (incl. tool check).
+  Update `ctx.currentPath`/`mime`, or leave them to pass through.
+- New tool → a wrapper with `available = probe(...)` and `run` for the main call.
+- Never assume a tool exists — check `available()`; a missing binary must not throw.
+- An option read but not listed in `props` = stale cache.

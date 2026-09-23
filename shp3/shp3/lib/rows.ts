@@ -1,6 +1,5 @@
-// The shop domain: one class per table, data and behaviour in the same object.
-// Naming rule of the row layer — columns are data, methods are verbs. `price` is a column,
-// so the calculation beside it is `pricesFor()`, not `price()`.
+// Row classes of the shop. Columns are data, methods are verbs: `price` is a column, so the
+// calculation is `pricesFor()`.
 import { DbRow, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
@@ -15,9 +14,7 @@ class ShopRow extends DbRow {
   get $shop(): Shp3 { return shp3(this.$table.db); }
 }
 
-// A rounding step carries float noise: the legacy column was FLOAT, so 0.01 comes back as
-// 0.009999999776482582 once widened to DOUBLE. Six significant digits are more than any
-// currency's smallest unit needs, and they wash the noise out.
+// Old FLOAT columns give 0.009999999776482582 instead of 0.01; round to six significant digits.
 const step = (v: number) => Number(v.toPrecision(6));
 const decimals = (s: number) => String(s).split(".")[1]?.length ?? 0;
 const snap = (price: number, s: number) => Number((Math.round(price / s) * s).toFixed(decimals(s)));
@@ -57,8 +54,8 @@ export class Product extends ShopRow {
     return this.#vatRates[country];
   }
 
-  /** Net and gross unit price. Modules bend the price in four passes, and the order matters:
-   *  a discount has to see the surcharges, and the aesthetic rounding has to come last. */
+  /** Net and gross unit price, adjusted by modules in four passes: base, surcharges, discounts,
+   *  rounding. */
   async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[]; time?: number }): Promise<{ net: number; gross: number }> {
     // time lets an offer module ask "what would this cost at that moment" — 0 is before any offer.
     const e = { product: this, price: this.price, time: unixTime(), ...opts };
@@ -79,8 +76,7 @@ export class Product extends ShopRow {
 
   node(): Promise<Node> { return cms(this.$shop.app).node(Number(this.$id)); }
 
-  /** A product is a page, so its title is the page's — translated, with its id as last resort:
-   *  an order line must read as something, and `page.name` is a structural name, not prose. */
+  /** The page's translated title, else the id (`page.name` is internal). */
   async title(lang?: string): Promise<string> {
     const langs = this.$shop.app.languages;
     const node = await this.node();
@@ -312,7 +308,7 @@ export class Order extends ShopRow {
     const e = { order: this, items: [] as GeneratedItem[] };
     await this.$shop.fire("generated-items", e);
     const included = await this.$shop.vatIncluded();
-    // Keyed by name, like the legacy array: a module replaces another module's line, never doubles it.
+    // Keyed by name, so a module replaces a line instead of adding a second one.
     const byName = new Map<string, GeneratedItem>();
     e.items.forEach((item, i) => byName.set(item.name, {
       ...item,
@@ -401,8 +397,7 @@ export type GeneratedItem = {
 
 const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
 
-/** A product is a page that uses the product module, so the row belongs to the page and is created
- *  on demand — a page built in the page tree would otherwise have no product at all. */
+/** Create the product row for a page with the product module on demand. */
 export async function ensureProduct(node: Node): Promise<Product | undefined> {
   const table = node.app.db.table("shp3_product");
   return await table.get<Product>(node.id) ?? await table.add<Product>({ id: node.id });

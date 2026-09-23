@@ -1,8 +1,6 @@
 /**
- * Immutable facade over the request URL. Readers share one parsed instance;
- * mutation goes through `toURL()`, which returns an independent native `URL`.
- * Deliberately not a `URL` subclass and without `searchParams` — query access
- * lives on the request (`req.query`/`req.queryAll`).
+ * Read-only request URL, parsed once. For changes use `toURL()`, which returns a mutable copy.
+ * Not a `URL` subclass and no `searchParams` — use `req.query`/`req.queryAll`.
  */
 export class ReqUrl {
   #url: URL;
@@ -22,7 +20,7 @@ export class ReqUrl {
   get search(): string { return this.#url.search; }
   get hash(): string { return this.#url.hash; }
 
-  /** Independent, mutable native `URL` copy. */
+  /** Mutable `URL` copy. */
   toURL(): URL { return new URL(this.#url); }
 
   toString(): string { return this.#url.href; }

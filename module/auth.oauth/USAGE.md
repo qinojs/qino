@@ -1,22 +1,19 @@
 # auth.oauth — Login via external providers (OIDC & plain OAuth2)
 
-Lets Qino users sign in through an external provider and opens a normal Qino session
-via `login()`. Handles both:
+Sign in through an external provider; opens a normal Qino session via `login()`. Two kinds:
 
 - **OIDC** (Google, Microsoft, GitLab, Auth0, Slack, Keycloak, …) — endpoints via
   discovery, identity from the `id_token`, Authorization Code + PKCE.
 - **plain OAuth2** (GitHub, Discord, …) — explicit endpoints, identity from a
   `userinfo` call with the access token (no `id_token`).
 
-The mode is chosen per provider: set `authorize_url` → OAuth2; leave it empty and set
-`issuer` → OIDC discovery.
+Per provider: `authorize_url` set → OAuth2; empty and `issuer` set → OIDC discovery.
 
 ## Konfigurieren
 
-Am einfachsten über das Backend-Modul **`cms.backend.superuser.auth.oauth`** (Superuser →
-Login providers). Gängige Provider sind bei Installation als Vorlagen angelegt — meist nur
-noch `client_id`/`client_secret` eintragen. Die Redirect-URI zum Eintragen beim Provider
-zeigt das Formular pro Provider an: **`{appUrl}oauth/callback/<name>`**.
+Im Backend-Modul **`cms.backend.superuser.auth.oauth`** (Superuser → Login providers). Gängige
+Provider sind als Vorlagen angelegt — meist nur `client_id`/`client_secret` eintragen. Die
+Redirect-URI für den Provider zeigt das Formular an: **`{appUrl}oauth/callback/<name>`**.
 
 Tabelle `oauth_provider`:
 
@@ -33,33 +30,31 @@ Tabelle `oauth_provider`:
 
 ## Wer mit wem verknüpft ist
 
-Tabelle `oauth_provider_usr` (`provider`, `sub`) → `usr_id`: was der Provider als stabile Id
-seines Benutzers liefert (OIDC `sub`, sonst `id`), gemerkt beim ersten Login. Danach folgt
-jeder Login dieser Verknüpfung, nicht mehr der E-Mail — ein E-Mail-Wechsel auf einer der
-beiden Seiten verschiebt das Konto also nicht mehr. Wer noch keine Verknüpfung hat, wird wie
-bisher per verifizierter E-Mail zugeordnet (oder angelegt) und dabei gemerkt.
+Tabelle `oauth_provider_usr` (`provider`, `sub`) → `usr_id` speichert beim ersten Login die
+stabile Id des Providers (OIDC `sub`, sonst `id`). Danach zählt diese Verknüpfung, nicht mehr die
+E-Mail — ändert sich die E-Mail auf einer Seite, bleibt das Konto dasselbe. Ohne Verknüpfung wird
+per verifizierter E-Mail zugeordnet (oder angelegt) und die Verknüpfung gespeichert.
 
-`allowed_domains` greift überall dort, wo eine E-Mail mitkommt — eine bestehende Verknüpfung
-verfällt aber nicht, wenn der Provider später keine mehr schickt (Apple). Die Backend-Seite listet alle Verknüpfungen
-unter der Konfiguration und kann sie einzeln lösen; danach greift für diesen Benutzer wieder
-die E-Mail-Zuordnung. Wird ein Provider gelöscht, verschwinden seine Verknüpfungen mit.
+`allowed_domains` gilt, wo eine E-Mail mitkommt; eine bestehende Verknüpfung bleibt aber, auch
+wenn der Provider später keine E-Mail mehr schickt (Apple). Die Backend-Seite listet alle
+Verknüpfungen und kann sie einzeln lösen; danach gilt wieder die E-Mail. Wird ein Provider
+gelöscht, verschwinden seine Verknüpfungen.
 
 ### Mitgelieferte Presets
 
 - **OIDC:** `google`, `microsoft`, `apple`, `auth0`, `gitlab`, `linkedin`, `slack`
   (`<tenant>` bei `microsoft`/`auth0` durch deine Domain/Tenant ersetzen).
 - **OAuth2:** `github`, `discord`.
-- **`apple`** braucht als `client_secret` ein kurzlebiges, ES256-signiertes JWT (kein
-  statisches Secret) — dieses Modul generiert es nicht, also Extra-Setup nötig.
+- **`apple`** braucht als `client_secret` ein kurzlebiges ES256-JWT statt eines festen
+  Secrets — das Modul erzeugt es nicht.
 
-Weitere OAuth2-Provider lassen sich als Zeile anlegen: `authorize_url`, `token_url`,
-`userinfo_url` (+ ggf. `email_url`) setzen.
+Weitere OAuth2-Provider: neue Zeile mit `authorize_url`, `token_url`, `userinfo_url`
+(+ ggf. `email_url`).
 
 ## Login starten
 
-Frontend-Modul **`cms.cont.oauth`** rendert einen „Log in with …"-Link pro
-konfiguriertem Provider, **`cms.cont.my.oauth`** zeigt dem angemeldeten Benutzer seine
-Verknüpfungen und verbindet weitere. Oder direkt verlinken:
+**`cms.cont.oauth`** zeigt einen „Log in with …"-Link pro Provider, **`cms.cont.my.oauth`**
+zeigt dem Benutzer seine Verknüpfungen und verbindet weitere. Oder direkt verlinken:
 
 ```html
 <a href="{appUrl}oauth/start/github">Login mit GitHub</a>
@@ -69,20 +64,19 @@ Optional `?return_to=/pfad` (nur lokale Pfade werden akzeptiert).
 
 ## Sicherheit (was durchgesetzt wird)
 
-- **OIDC:** Authorization Code + **PKCE** (`S256`); `state`, `nonce`, `code_verifier`
-  liegen server-seitig in der Session und werden im Callback einmalig geprüft/verbraucht.
-- **id_token:** `iss`, `aud`, `nonce`, `exp` geprüft (Trailing-Slash-tolerant). Die
-  **Signatur** wird bewusst nicht via `jwks_uri` geprüft — im Code-Flow kommt das Token
-  direkt vom `token_endpoint` über TLS (OIDC erlaubt das).
-- **OAuth2:** kein `id_token`/`nonce`; `state` schützt gegen CSRF, Identität kommt über
-  den `userinfo`-Call (access_token direkt vom Token-Endpoint über TLS).
+- **OIDC:** Authorization Code + **PKCE** (`S256`); `state`, `nonce`, `code_verifier` liegen in
+  der Session und werden im Callback einmal geprüft und verbraucht.
+- **id_token:** `iss`, `aud`, `nonce`, `exp` werden geprüft. Die **Signatur** bewusst nicht
+  (`jwks_uri`) — im Code-Flow kommt das Token per TLS direkt vom `token_endpoint` (OIDC erlaubt das).
+- **OAuth2:** kein `id_token`/`nonce`; `state` schützt vor CSRF, die Identität kommt vom
+  `userinfo`-Call.
 - **`email_verified`:** ein explizit unverifiziertes E-Mail-Claim wird abgelehnt.
 - **Open-Redirect:** `return_to` nur lokale Pfade (kein `//`, kein Schema).
 - **Backend:** `client_secret` wird nie zurückgerendert.
-- **Achtung Account-Linking:** beim *ersten* Mal loggt eine verifizierte E-Mail in den
-  bestehenden Qino-User mit derselben E-Mail ein (inkl. evtl. Superuser); danach zählt die
-  gemerkte Verknüpfung. Mit `auto_create` an einem öffentlichen
-  Provider käme jeder mit dortigem Konto rein (rechtlos) — dann `allowed_domains` setzen.
+- **Achtung Account-Linking:** beim *ersten* Login landet eine verifizierte E-Mail im
+  bestehenden Qino-User mit derselben E-Mail (auch einem Superuser); danach zählt die
+  Verknüpfung. Mit `auto_create` bei einem öffentlichen Provider kommt jeder mit Konto dort
+  rein (ohne Rechte) — dann `allowed_domains` setzen.
 
 ## Offen / verbesserungswürdig
 
@@ -91,13 +85,13 @@ Kern:
 - **Refresh-Tokens / RP-Logout** (`end_session_endpoint`): nicht implementiert.
 - **Apple client_secret-JWT** (ES256) generieren; **Microsoft Multi-Tenant** (`iss` mit
   Tenant-ID) unterstützen.
-- **Mehrere parallele Logins** (zwei Tabs) überschreiben den einen Session-Transient →
-  Fix: Transient per `state` keyen.
+- **Zwei Logins parallel** (zwei Tabs) überschreiben sich in der Session → Fix: per `state`
+  speichern.
 
 Backend (bewusst schlank):
 - Keine `name`-Validierung; doppelter Name → DB-Fehler (500).
 - Kein Speichern/Löschen-Feedback, kein „Vorlage vs. konfiguriert"-Badge.
 
 Sonstiges:
-- Getestet ist `resolveUser()`/`identity()`; der Callback selbst (Token-Tausch, id_token-Prüfung)
-  nur manuell.
+- Automatisch getestet sind `resolveUser()`/`identity()`; der Callback (Token-Tausch,
+  id_token-Prüfung) nur manuell.

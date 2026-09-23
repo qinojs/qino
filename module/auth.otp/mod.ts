@@ -1,26 +1,22 @@
-// Public API of auth.otp. The qino plugin lives in ./plugin.ts.
 import { ApiError, identified } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 import { channel, redeemCode, requestCode } from "@qino/qino/messaging";
 
 import type { Ctx } from "@qino/qino";
 
-// The claim is keyed by the user, not by an address: the contact is verified already, so what the
-// code proves is presence, not ownership. Prefixed, or it would collide with a pending claim on
-// the same address in the same table.
+// Keyed by user, not address: the contact is already verified, the code proves presence. Prefixed
+// so it doesn't collide with a pending verification of the same address.
 const claim = (name: string) => "otp:" + name;
 
 /** Send a fresh code over `name`. The code exists in the message and in a hash, nowhere else. */
 export async function send(ctx: Ctx, name: string): Promise<void> {
   const usrId = identified(ctx);
   const target = channel(ctx.app, name);
-  // Not to the device that is asking: a code that arrives where it is typed proves nothing beyond
-  // holding this browser, which the request already showed. Only webpush can be that device.
+  // Not to the asking device — that proves nothing new. Only webpush can be that device.
   const notClient = ctx.clientId ?? undefined;
   if (!target || !await target.reach(ctx.app, usrId, notClient)) throw new ApiError(404, "No such way to reach you");
   const code = await requestCode(ctx.app, claim(name), usrId, String(usrId));
-  // WebOTP: Android fills the field by itself, but only from an sms whose last line is exactly
-  // `@host #code` — the host being the origin that asks for it. Noise anywhere else, so sms only.
+  // WebOTP: Android autofills the field from an sms ending with `@host #code`. Only for sms.
   const webOtp = name === "sms" ? `\n\n@${ctx.req.url.host} #${code}` : "";
   await target.send(ctx.app, { usr: usrId, notClient }, {
     title: await ctx.app.t`Your confirmation code`,

@@ -1,7 +1,7 @@
 # messaging.webpush
 
-Web Push notifications (RFC 8291 / 8292). Stores what a browser hands out when it
-subscribes, and delivers notifications to it.
+Web Push notifications (RFC 8291 / 8292). Stores browser subscriptions and sends
+notifications to them.
 
 ## Sending
 
@@ -12,31 +12,27 @@ await send(app, { channel: "news" }, { title: "New article", text: "…", url: "
 await send(app, { usr: 42 }, "Your order shipped.");
 ```
 
-Recipients: `{ channel }`, `{ grp }`, `{ usr }`, `{ client }`, `{ sub }`, `{ all: true }`; `client`
-and `sub` accept one id or many. Selectors are additive and overlapping matches still reach a
-browser only once. Add `notClient` to skip one device — `reach()` takes it too, so a caller asking
-"can I reach this person elsewhere?" gets an honest count. That is how a one-time code stays out
-of the browser it would be typed into.
-Resolves with the number of browsers reached. Subscriptions the push service reports as
-gone (404/410) are deleted on the way, so the table stays clean without a cleanup job.
+Recipients: `{ channel }`, `{ grp }`, `{ usr }`, `{ client }`, `{ sub }`, `{ all: true }`;
+`client` and `sub` take one id or many. Selectors add up; each browser is reached once.
+`notClient` skips one device — `reach()` accepts it too, so "can I reach this person elsewhere?"
+gets a correct count. That keeps a one-time code out of the browser it is typed into.
 
-A notification needs a title, which the other channels do not have — an absent one is the
-first line of the text, so the channel-neutral short form works here too. `text` becomes
-`body`; everything else reaches `showNotification()` unchanged, so `requireInteraction`,
-`tag`, `renotify`, `silent`, `icon`, `badge`, `actions` and friends already work.
+Returns the number of browsers reached. Subscriptions reported as gone (404/410) are deleted right
+away.
+
+A notification needs a title; if missing, the first line of the text is used. `text` becomes
+`body`; all other fields go to `showNotification()` unchanged, so `requireInteraction`, `tag`,
+`renotify`, `silent`, `icon`, `badge`, `actions` etc. work.
 
 ## Channels vs. groups
 
-A channel belongs to a **browser**, a group to a **user**. Someone with a laptop and a
-phone routinely wants different channels on each, which a group cannot express, and
-visitors who never log in have no user to group at all. They answer different questions
-and are meant to be used side by side.
+A channel belongs to a **browser**, a group to a **user**. Someone may want different channels on
+laptop and phone, and visitors who never log in have no user. Use both side by side.
 
-Channels are defined in the backend (`cms.backend.superuser.messaging.webpush`); a browser
-subscribing to a name that is not defined is silently ignored.
+Channels are defined in the backend (`cms.backend.superuser.messaging.webpush`); unknown channel
+names are ignored.
 
-The name avoids "topic" on purpose — RFC 8030 already uses `Topic` for coalescing at the
-push service, which is a different thing entirely.
+Not called "topic", because RFC 8030 uses `Topic` for something else (replacing queued messages).
 
 ## Subscribing
 
@@ -45,52 +41,40 @@ import { subscribe, unsubscribe, channels } from "/m/messaging.webpush/pub/webpu
 await subscribe(["news"]);   // asks for permission; the list replaces what was there
 ```
 
-The service worker comes from the `serviceworker` module — this module only ships a
-`pub/sw.js` that adds its `push` and `notificationclick` listeners.
+The service worker comes from the `serviceworker` module; this module only adds `pub/sw.js` with
+the `push` and `notificationclick` listeners.
 
 ## VAPID
 
-Keys are generated on first use and stored in settings. Set
-`messaging.webpush.subject` to a `mailto:` or `https:` URL the push service operators
-can reach you at; the default is `mailto:admin@localhost`.
+Keys are generated on first use and stored in settings. Set `messaging.webpush.subject` to a
+`mailto:` or `https:` contact for the push service operators; default `mailto:admin@localhost`.
 
 ## Storage
 
-`webpush_subscription` — one row per browser. `endpoint_hash` (SHA-256 of the endpoint)
-is the identity, because endpoints are up to 1000 characters and cannot be indexed.
-`usr_id` is null for visitors who subscribed without logging in.
-`webpush_channel` is the channel catalogue, `webpush_subscription_channel` the
-membership.
+`webpush_subscription` — one row per browser, identified by `endpoint_hash` (SHA-256), since
+endpoints can be 1000 characters long and can't be indexed. `usr_id` is null for anonymous
+visitors. `webpush_channel` lists the channels, `webpush_subscription_channel` the memberships.
 
-`error` holds why the last delivery failed, and goes back to null as soon as one
-succeeds. It is a state, not a log: nothing acts on it, an admin decides whether to
-delete the row. A 404/410 needs no such handling — the browser is gone for good and the
-row is removed on the spot.
+`error` holds the reason of the last failed delivery, cleared on the next success. Nothing acts on
+it; an admin decides whether to delete the row. On 404/410 the row is deleted right away.
 
 ## Possible extensions
 
-Deliberately not built yet — none of it is needed for the current feature set:
+Not built yet, because not needed so far:
 
-- **Push protocol options.** `sendNotification()` accepts `TTL` (how long the push
-  service holds a message for an offline device, default four weeks), `urgency`
-  (`very-low`…`high`, whether to deliver while power saving) and `topic` (a new message
-  replaces an undelivered one with the same topic). Would be an `opts` argument on
-  `send()` — about three lines.
-- **Notification actions.** `showNotification` takes up to two buttons; the click
-  arrives in `notificationclick` as `event.action`. Needs a few lines in `pub/sw.js`.
-- **`pushsubscriptionchange`.** A browser that rotates its subscription stops receiving
-  until it subscribes again; today the stale row is dropped on the next send. Handling
-  the event means re-subscribing inside the worker and posting the new endpoint.
-- **Group coverage in the backend.** Per group: how many of its members can actually be
-  reached, and who is missing — the people to remind. The send form's number counts
-  subscriptions, so a member with two browsers must not count twice
-  (`COUNT(DISTINCT usr_id)` against the group's member count).
-- **Per-browser delivery history.** What the push service answered for each subscription.
-  That subsumes the `error` column: the column would stay as the
-  "is it broken right now" state, the trail answers "what happened when". Needs a table
-  that grows per delivery, so it wants a retention policy from day one — and probably
-  belongs to `messaging` rather than to this channel alone.
-- **Auto-dismissing notifications.** Not possible: the Notification API has no expiry.
-  Desktop Chrome hides them after ~20 s by itself, and `requireInteraction: true`
-  prevents exactly that. Closing them programmatically would need a timer inside the
-  service worker, which may be killed at any time.
+- **Push options.** `sendNotification()` accepts `TTL` (how long an offline device's message is
+  kept, default four weeks), `urgency` (`very-low`…`high`) and `topic` (replaces an undelivered
+  message with the same topic). An `opts` argument on `send()`, about three lines.
+- **Handling action clicks.** Buttons (`actions`) are shown, but the clicked one
+  (`event.action` in `notificationclick`) is not handled yet. A few lines in `pub/sw.js`.
+- **`pushsubscriptionchange`.** When a browser renews its subscription, it receives nothing until it
+  subscribes again; the old row is dropped on the next send. Fix: re-subscribe in the worker and
+  post the new endpoint.
+- **Group coverage in the backend.** Per group: how many members are reachable and who is missing.
+  Count users, not subscriptions (`COUNT(DISTINCT usr_id)`).
+- **Delivery history per browser.** What the push service answered each time. `error` would stay as
+  the current state. Needs a growing table with a retention policy, and probably belongs to
+  `messaging`.
+- **Auto-dismiss.** Not possible: notifications have no expiry. Desktop Chrome hides them after
+  ~20 s anyway (unless `requireInteraction`). A timer in the service worker is unreliable, since
+  it may be stopped any time.

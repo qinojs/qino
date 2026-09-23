@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 /**
- * Minimal Standard-Schema-compatible validator for api.
- * Browser-compatible, zero dependencies.
+ * Minimal Standard Schema validator for api. Runs in the browser, no dependencies.
  * Spec: https://standardschema.dev
  */
 

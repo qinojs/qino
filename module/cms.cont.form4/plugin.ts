@@ -27,7 +27,7 @@ async function init(node: Node): Promise<void> {
   await success.text("main", "de", "Vielen Dank<br>Wir werden uns schnellstmöglich um Ihr Anliegen kümmern.");
 }
 
-/** Seconds since this client was first seen — brand-new clients are almost always bots. Infinity when unknown. */
+/** Seconds since this client was first seen (new clients are mostly bots). Infinity if unknown. */
 async function clientAge(ctx: Ctx): Promise<number> {
   if (!ctx.clientId) return Infinity;
   const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
@@ -50,8 +50,7 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
   return "";
 }
 
-/** Who gets the entry: the form's own list plus what a field contributed — and when a form
- *  names nobody, the address the site identifies itself with. */
+/** Recipients: the form's list plus addresses from fields; if none, the site's own address. */
 async function recipients(node: Node, form?: Form): Promise<string[]> {
   const own = String(node.settings.recipients() ?? "").match(/[^\s,;<>]+@[^\s,;<>]+/g) ?? [];
   const to = [...new Set([...own, ...(form?.recipients ?? [])])];
@@ -93,14 +92,14 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const redirectId = node.settings.redirect();
   const keep = node.settings.keep() ?? true;
 
-  // Empty vars mean a plain page view; a JS-free form post and an api render with vars both arrive filled.
+  // Empty vars = page view; a form post (with or without JS) has vars.
   const form = openForm(node);
   if (Object.keys(vars).length) form.posted = vars;
 
   const error = form.sent ? await spamCheck(node, form, ctx) : "";
   if (error) form.errors++;
 
-  // Renders the fields, which report their values into `form` — so this has to run before the decision below.
+  // Rendering the fields fills `form` with their values, so it must run before the check below.
   const fields = await (await node.cont("main")).html();
 
   const warnings = [];

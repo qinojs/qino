@@ -26,7 +26,7 @@ cms.panelRoot = root;
 const el = root.getElementById("panel");
 el.showPopover();
 
-// A failed <img> fires no bubbling event, so the media list is listened to at the root.
+// <img> errors don't bubble, so listen at the root (capture).
 root.addEventListener("error", (e) => {
   const src = e.target?.dataset?.audio;
   if (!src) return;
@@ -47,7 +47,7 @@ const loadWidget = (widget) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
   if (!widgetEl) return;
   if (widgetEl.localName === "qcms-widget") return widgetEl.reload();
-  // sidebar items are placed by view/panel.ts, so the client ones are named here
+  // sidebar items come from view/panel.ts; their widgets are named here
   const src = SIDEBAR_WIDGETS[widget];
   if (!src) return;
   const context = { node: { id: activeId() }, dialogs: root };
@@ -76,7 +76,7 @@ function syncSidebar(value) {
   }
 }
 sidebar.addEventListener("set", e => syncSidebar(e.value));
-// The item the panel ships open is a frame only — no widget renders on the server, so fill it here.
+// The initially open item is only a frame (widgets don't render on the server), so fill it here.
 if (SIDEBAR_WIDGETS[sidebar.value]) loadWidget(sidebar.value);
 
 el.addEventListener("click", (e) => {
@@ -136,7 +136,7 @@ onShortcut((key, e) => {
 
 cms.cont.on("upload", (ev) => {
   cms.cont(ev.pid).showWidget("media");
-  // the widget's own upload button doubles as the progress bar
+  // the widget's upload button shows the progress
   ev.on("progress", (e) => {
     const button = findEl(el, '[widget=media] .-upload');
     if (!button) return;
@@ -147,7 +147,7 @@ cms.cont.on("upload", (ev) => {
   });
   ev.on("complete", () => {
     cms.console.show(t`File uploaded`);
-    loadWidget("media"); // the file did not come through the widget, so it has to re-read
+    loadWidget("media"); // upload bypassed the widget, so reload it
   });
 });
 
@@ -162,7 +162,7 @@ cms.cont.prototype.showWidget = function (what) {
   cms.Tree?.goTo(this.id);
 };
 
-// nothing on the page takes content: no point offering modules
+// no drop targets on the page: don't offer modules
 if (!document.querySelector("[qcms-edit][qcms-drop]")) findEl(el, "> .-sidebar > [itemid=add]").hidden = true;
 
 for (const switc of root.querySelectorAll(".qgCMS_editmode_switch")) {

@@ -37,9 +37,8 @@ const rawText = async (node: Node, name: string) => (await (await node.text(name
 const plain = async (node: Node, name: string) => (await node.showText(name)).plain();
 
 /**
- * The choices of a select or radio, one per line. An empty line stays a choice: it is how a
- * select gets the empty entry it needs when nothing may be preselected — so this cannot go
- * through `plain()`, whose trim would eat exactly that line.
+ * Options of a select or radio, one per line. Empty lines stay (a select's empty option), so no
+ * `plain()`, which would trim them away.
  */
 async function choicesOf(node: Node, name: string): Promise<string[]> {
   const lines = (await rawText(node, name + "_options")).replace(/\r/g, "").split("\n").map((c) => c.trim());
@@ -56,8 +55,8 @@ function attrs(list: Record<string, string | number | boolean | undefined>): Htm
   return html.raw(str);
 }
 
-/** The address rule users' contacts follow. A visitor's typo must fail the field, not the mail:
- *  an invalid reply-to stops the notification for the site owner too. */
+/** Same address rule as user contacts. A typo must fail the field, not the mail (an invalid
+ *  reply-to would block the owner's notification). */
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */
@@ -96,11 +95,9 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
 
   const placeholder = await plain(node, name + "_placeholder");
 
-  /* The condition names other fields of this form — that is what the readable names are for.
-     The attribute's script is not registered here: `u2.assets()` without a version would pull
-     qino's u2 onto a page that pins its own, and the site's version is not ours to know. The
-     layout's `u2/auto.js` fetches it from the release the site uses — at the price of a short
-     flicker, while a field that should start disabled is still enabled. */
+  /* The condition refers to other fields by name. Its script is not loaded here (`u2.assets()`
+     without version would load qino's u2 into a page with its own); the layout's `u2/auto.js`
+     loads it, with a short flicker until disabled fields are disabled. */
   const disableif = String(set.disableif() ?? "").trim();
 
   const common = {
@@ -146,11 +143,9 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  /* One walk up answers both questions. Which form is open reads the state form4 fills while
-     it renders — and it is read here rather than imported, because form4 depends on this
-     module and a dependency back would be a cycle. Whether we sit in a form at all is the
-     tree's answer, and only the tree knows it when this node renders alone: a panel reload
-     leaves the parent unrendered and no form open. */
+  /* One walk up the tree: the open form comes from form4's render state (read, not imported —
+     form4 depends on this module); whether we are in a form at all comes from the tree, which also
+     works when the node renders alone (panel reload). */
   const path = [...(await node.path()).values()].reverse();
   const open: Map<number, Form> | undefined = getCtx().state.form4;
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;

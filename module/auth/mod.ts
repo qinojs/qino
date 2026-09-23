@@ -1,4 +1,3 @@
-// Public API of auth. The qino plugin lives in ./plugin.ts.
 import { authFactors, loginProof, sql, unixTime } from "@qino/qino";
 
 import type { App, Ctx, Offer, Row } from "@qino/qino";
@@ -27,8 +26,8 @@ export async function store(app: App, usrId: number, type: string, data: unknown
   });
 }
 
-/** Remove secrets again — a whole kind, or one row of it. Always keyed by the user, so a foreign
- *  id removes nothing and no caller has to check ownership itself. Resolves with the rows gone. */
+/** Remove secrets — a whole kind or one row. Keyed by user, so callers need no ownership check.
+ *  Resolves with the deleted count. */
 export async function drop(app: App, usrId: number, type: string, id?: number): Promise<number> {
   const one = id == null ? sql`` : sql`AND id = ${id}`;
   const res = await app.db.exec`DELETE FROM usr_auth_factor WHERE usr_id = ${usrId} AND type = ${type} ${one}`;
@@ -38,8 +37,8 @@ export async function drop(app: App, usrId: number, type: string, id?: number): 
 // ─── What a session was shown ─────────────────────────────────────────────────
 
 /**
- * How a session came by its identity: what core wrote at login, plus what a step-up added since.
- * Pass the running request, or the stored document of some other session to read it from outside.
+ * How a session got its identity: login and later step-ups. Pass the request, or another session's
+ * stored data.
  */
 export function via(from: Ctx | string): Record<string, number> {
   if (typeof from !== "string") return (from.sess.data.core.via() ?? {}) as Record<string, number>;
@@ -51,11 +50,10 @@ export function via(from: Ctx | string): Record<string, number> {
 }
 
 /**
- * A factor established that this is user `usrId`. Signed in as them it is a step-up (a fresh proof in
- * the session), otherwise a login.
+ * A factor proved this is user `usrId`. If signed in as them: step-up, otherwise login.
  *
- * Nothing = done. Otherwise what is still missing; empty = nothing here helps (inactive user, or a
- * factor that may not do this).
+ * Returns nothing when done, else what is missing; empty = nothing helps (inactive user, or the
+ * factor isn't allowed here).
  */
 export async function proof(ctx: Ctx, factor: string, usrId: number): Promise<Offer[] | undefined> {
   const declared = authFactors(ctx.app).find((f) => f.name === factor);

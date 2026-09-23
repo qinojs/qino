@@ -1,14 +1,12 @@
 # oauth_server
 
-Mit diesem Modul können andere Apps qino mit der ausdrücklichen Zustimmung eines Users in dessen
-Namen verwenden.
+Andere Apps dürfen qino im Namen eines Users nutzen, wenn dieser zustimmt.
 
-Technisch macht es qino zu einem OAuth-2.1-Authorization-Server. Nach Anmeldung und Zustimmung des
-Users erhält die App einen nicht lesbaren Zugangsschlüssel (Bearer-Token), der dieselben Rechte wie
-der User hat. Öffentliche Clients werden dabei über den Autorisierungscode-Flow mit PKCE abgesichert.
+qino wird damit zum OAuth-2.1-Authorization-Server. Nach Login und Zustimmung bekommt die App ein
+Bearer-Token mit den Rechten des Users. Öffentliche Clients nutzen den Code-Flow mit PKCE.
 
-Gegenstück zum Modul `oauth`, das die andere Rolle spielt: dort meldet sich qino *bei* fremden
-Providern an, hier melden sich fremde Clients *bei* qino an.
+Gegenstück zu `auth.oauth`: dort meldet sich qino *bei* fremden Providern an, hier melden sich
+fremde Clients *bei* qino an.
 
 ## Einbindung in server.ts
 
@@ -28,22 +26,22 @@ app.modules.add(import.meta.resolve("../qino/module/oauth_server/plugin.ts"));
 | `GET /.well-known/oauth-authorization-server`  | AS-Metadata (RFC 8414)                        |
 | `GET /.well-known/oauth-protected-resource`    | Resource-Metadata (RFC 9728)                  |
 
-Die Metadata-Pfade liegen an der Domain-Wurzel — bei einem Mount auf einem Unterpfad findet ein
-Client sie nicht von selbst, dann muss die Discovery-URL im Client konfiguriert werden.
+Die Metadata-Pfade liegen an der Domain-Wurzel. Läuft die App unter einem Unterpfad, muss die
+Discovery-URL im Client eingetragen werden.
 
 ## Login ohne CMS
 
-`/authorize` rendert ein eigenes Formular mit den Core-Feldern (`core_login`, `email`, `pw`,
-`csrfToken`). Eingeloggt wird also von `loginFromRequest()` im Core, bevor die Route überhaupt läuft —
-das Modul sieht nie ein Passwort und braucht keine CMS-Loginseite.
+`/authorize` zeigt ein eigenes Formular mit den Core-Feldern (`core_login`, `email`, `pw`,
+`csrfToken`). Das Login macht `loginFromRequest()` im Core, bevor die Route läuft — das Modul sieht
+nie ein Passwort und braucht keine CMS-Loginseite.
 
 ## Client verbinden
 
-Clients, die Dynamic Registration beherrschen, brauchen nur die URL der geschützten Ressource;
-Registrierung, Login und Consent laufen dann im Browser ab.
+Clients mit Dynamic Registration brauchen nur die URL der Ressource; Registrierung, Login und
+Zustimmung laufen im Browser.
 
 Clients mit fester Client-ID werden vorher angelegt — im Backend unter
-`cms.backend.superuser.oauth_server`, oder headless direkt:
+`cms.backend.superuser.oauth_server` oder im Code:
 
 ```ts
 import { saveClient } from "@qino/qino/oauth_server";
@@ -80,19 +78,19 @@ Token-Lebensdauern sind fest: Code 120 s, Access 1 h, Refresh 30 Tage.
 - Von Tokens wird nur der SHA-256 gespeichert — wie bei `auth.api_keys` sind sie nicht auslesbar, nur widerrufbar.
 - Der Consent-Post ist CSRF-geprüft, sonst könnte eine fremde Seite die Zustimmung auslösen.
 - Tokens eines deaktivierten Users verifizieren nicht mehr.
-- **Dynamic Registration ist offen** — das ist die Spec-Vorgabe und für sich harmlos: eine Registrierung
-  gewährt nichts, erst die Zustimmung des Users im Browser tut das. Wer die anonymen Client-Zeilen nicht
-  will, setzt `dynamicRegistration` auf `false` und legt Clients per API an.
+- **Dynamic Registration ist offen** — so will es die Spec, und es ist harmlos: eine Registrierung
+  gewährt nichts, erst die Zustimmung des Users. Wer keine anonymen Clients will, setzt
+  `dynamicRegistration` auf `false` und legt Clients selbst an.
 
 ## Offen
 
 Bewusst weggelassen, bis es jemand braucht:
 
-- **Scopes.** Werden weder gespeichert noch ausgewertet — ein Token trägt immer die vollen Rechte
-  seines Users. Ein echtes Scope-Konzept müsste zuerst im Zugriffsmodell existieren, nicht hier.
+- **Scopes.** Weder gespeichert noch geprüft — ein Token hat immer die vollen Rechte des Users.
+  Scopes müssten zuerst ins Zugriffsmodell, nicht hierher.
 - **`resource` (RFC 8707).** Wird akzeptiert, aber nicht als Audience erzwungen.
 - **Konfigurierbare Lebensdauern.** Als Settings aufziehen, falls jemand andere Werte braucht. (braucht doch niemand!?)
 - **Consent-Gedächtnis.** Der User bestätigt bei jeder Autorisierung neu (Refreshes laufen ohne).
   Bräuchte eine Tabelle User × Client.
-- **Herkunft eines Clients.** Nicht festgehalten, ob eine Zeile aus `/register` oder von einem
-  Superuser stammt — nützlich, sobald man DCR-Zeilen gezielt aufräumen will.
+- **Herkunft eines Clients.** Nicht gespeichert, ob ein Client aus `/register` oder vom Superuser
+  kommt — nützlich, um selbst registrierte Clients aufzuräumen.

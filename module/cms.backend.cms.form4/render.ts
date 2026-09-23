@@ -7,10 +7,7 @@ import type { Node } from "@qino/qino/cms";
 /** How many entries one page of the table holds. */
 const PER_PAGE = 50;
 
-/**
- * The forms this user may look at: reading entries is reading what visitors wrote into a
- * form, so it takes the same right as editing that form.
- */
+/** Forms this user may view — reading entries requires edit access to the form. */
 export async function forms(app: App): Promise<Node[]> {
   const ids = await app.db.col<number>`
     SELECT id FROM ${sql.id(tableRef("page"))} WHERE module = ${"cms.cont.form4"} ORDER BY id`;
@@ -29,9 +26,8 @@ async function pageOf(node: Node): Promise<Node | undefined> {
 }
 
 /**
- * The columns of a form: its fields in the order the form shows them, plus names that only
- * the entries still carry — a field that was deleted later keeps its values, and they must
- * not vanish from the table just because nothing declares them any more.
+ * The form's columns: its fields in order, plus fields only found in entries (deleted later),
+ * so their values stay visible.
  */
 export async function columns(node: Node, rows: { data: Record<string, unknown> }[]): Promise<string[]> {
   const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form4.fields");
@@ -55,13 +51,10 @@ export async function labels(node: Node): Promise<Record<string, string>> {
 }
 
 /**
- * Entries of one form, searched and sorted. `sort` is a field name or "created".
+ * A form's entries, searched and sorted. `sort` is a field name or "created".
  *
- * The search runs in SQL — it is a LIKE over the whole json text and names no field. Sorting
- * by a field and cutting the page happen afterwards in JavaScript: reaching into the json in
- * SQL would need a json path, and that reads differently in SQLite, MySQL and Postgres.
- * The price is that one form's entries are read whole; a form with tens of thousands of them
- * would want a column of its own, and that is the moment to add one.
+ * Search in SQL (LIKE over the json text); sorting and paging in JS, since JSON paths differ per
+ * database. So all entries of a form are loaded — fine until a form has tens of thousands.
  */
 export async function entries(app: App, node: Node, opt: {
   search?: string;
@@ -75,8 +68,7 @@ export async function entries(app: App, node: Node, opt: {
     SELECT id, created, lang, data FROM ${sql.id(tableRef("form4_entry"))}
     WHERE node_id = ${node.id} AND ${sh.where} ORDER BY created DESC, id DESC`;
 
-  // The values stay in `data` rather than being mixed into the row: a field called `id` or
-  // `created` would otherwise fight with the entry's own columns — and did, in the table head.
+  // Values stay in `data`, so fields named `id` or `created` don't clash with the entry's columns.
   const all = rows.map((row) => ({
     id: Number(row.id),
     created: Number(row.created),
@@ -113,9 +105,8 @@ function parse(json: string): Record<string, unknown> {
 const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") || mime === "application/pdf";
 
 /**
- * The uploads of these entries, keyed `<entry>:<field>` — one query for the whole page of the
- * table rather than one per row. The links are signed for this session: what a visitor sent
- * is not public, and looking at it here must not make it so.
+ * Uploads of these entries, keyed `<entry>:<field>`, in one query. Links are signed for this
+ * session only — uploads are not public.
  */
 async function uploads(app: App, ids: number[]): Promise<Map<string, HtmlString>> {
   const out = new Map<string, HtmlString>();
@@ -144,9 +135,8 @@ async function uploads(app: App, ids: number[]): Promise<Map<string, HtmlString>
 const date = (unix: unknown) => new Date(Number(unix) * 1000).toISOString().slice(0, 16).replace("T", " ");
 
 /**
- * The table of one form. Its state — form, search, sort, page — lives in the browser and comes
- * back as vars, and so do its writes: `formOfVars()` has already asked whether this user may
- * write this form, so nothing below needs to ask again.
+ * A form's table. Form, search, sort, page and writes come as vars; `formOfVars()` already checked
+ * write access.
  */
 export async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const app = node.app;
@@ -202,8 +192,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
     </tfoot>`;
 }
 
-/** Correct one value of one entry. A value that was a number stays one, so that sorting by
- *  that field keeps comparing numbers. */
+/** Correct one value of an entry. Numbers stay numbers, so sorting still works. */
 async function save(app: App, form: Node, vs: Record<string, string>): Promise<void> {
   const id = Number(vs.id);
   const row = await app.db.row`
@@ -232,8 +221,8 @@ export async function formOfVars(app: App, vars: Record<string, unknown>): Promi
 }
 
 /**
- * One form as a line in the picker: what it is called, where it stands, how much came in.
- * The block's own title wins — a page with two forms would otherwise show one name twice.
+ * A form in the picker: name, page, number of entries. The block's title wins (a page may have two
+ * forms).
  */
 export async function formLine(app: App, node: Node, active: boolean): Promise<HtmlString> {
   const count = await app.db.one`

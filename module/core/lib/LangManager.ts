@@ -42,7 +42,7 @@ export class LangManager {
     if (!this.#langs.includes(ctx.langUsr)) ctx.langUsr = "";
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
-    // background write, the request does not wait for it — and only when the language actually changed
+    // background write, only when the language changed
     if (ctx.langUsr !== stored) usr ? usr.$set({ lang: ctx.langUsr }) : ctx.sess.data.core.lang(ctx.langUsr);
 
     ctx.lang = ctx.langUsr;
@@ -96,7 +96,7 @@ export class LangManager {
   clear() { this.#txtsCache.clear(); }
 
   #getTxts(ns: string, l: string): Promise<Map<string, string>> {
-    // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
+    // Cache the promise, so parallel lookups (html.async) share one query.
     return this.#txtsCache.getOrInsertComputed(`${l}::${ns}`, () => this.#app.db.indexCol<string>`
       SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`);
   }
@@ -107,7 +107,7 @@ export class LangManager {
     const l = ctx.lang;
     const txts = await this.#getTxts(ns, l);
     if (!txts.has(hash)) {
-      txts.set(hash, ""); // claim it before awaiting: the same new string, twice in one render, must insert once
+      txts.set(hash, ""); // set before awaiting, so a new string used twice is inserted once
       await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string }).catch(() => {});
     }
     const stored = txts.get(hash);

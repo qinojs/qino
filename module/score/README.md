@@ -1,12 +1,11 @@
 # Score
 
-`score` ranks rows of any table by how **often** and how **recently** they are accessed —
-a fading memory: every access adds 1, the total decays exponentially with a half-life.
+`score` ranks rows of any table by how **often** and how **recently** they were accessed: every
+access adds 1, and the total decays with a half-life.
 
 ```ts
+// manifest.json: "dependencies": ["core", "score"]
 import { scored, hit, forget, sqlScore } from "@qino/qino/score";
-
-export const dependencies = ["core", "score"];
 
 export async function init(app) {
   await scored(app.db, "file", 30 * 86400);   // half-life 30 days
@@ -28,84 +27,75 @@ await app.db.query`
 await app.db.query`SELECT * FROM file ORDER BY ${sqlScore(app.db, "file")} DESC LIMIT 20`;
 ```
 
-`scored()` is the only asynchronous call — it resolves the table's scope id once and caches it, so
-everything else stays synchronous. Call it from `init()`, before the first `hit()` or `sqlScore()`;
-an unregistered table throws.
+`scored()` is the only async call — it loads and caches the table's scope id, so everything else
+is synchronous. Call it in `init()`, before the first `hit()` or `sqlScore()`; unregistered tables
+throw.
 
-The third argument of `sqlScore()` says where the row's primary key sits in your query and
-defaults to `<table>.id` — pass it whenever the table is aliased or its key is named differently.
-It has to stay qualified (`f.id`, not `id`): a bare column name would bind to the subquery's own
-`id` and match every row.
+The third argument of `sqlScore()` is the row's primary key in your query, default `<table>.id` —
+pass it when the table has an alias or another key name. Keep it qualified (`f.id`, not `id`):
+a bare `id` would refer to the subquery's own column and match every row.
 
 ## How it is stored
 
-The obvious form — keeping the raw strength plus a timestamp and decaying it in the
-query — needs `exp()` and epoch arithmetic in SQL (not portable, SQLite has no math
-functions) and cannot use an index, because every row has to be computed before sorting.
+Storing strength + timestamp and decaying in the query would need `exp()` in SQL (SQLite has no
+math functions) and could not use an index.
 
 So the stored number is the logarithm of the strength, shifted by time:
 
     score = ln(strength) + rate · t          rate = ln2 / halfLife
 
-`rate · now` is the same for every row of a table, so it cancels out in any comparison:
-`ORDER BY score DESC` **is** the decayed ranking, exactly, with no math in SQL. An access adds
-`ln(exp(score) + exp(rate · now))`, computed in JS (`logAdd`); pruning compares against a plain
-number. `strength()` converts back to "accesses" for display.
+`rate · now` is the same for all rows, so it cancels out when comparing: `ORDER BY score DESC`
+**is** the exact decayed ranking, without math in SQL. A hit sets
+`ln(exp(score) + exp(rate · now))`, computed in JS (`logAdd`). `strength()` converts back to
+"accesses" for display.
 
-Consequences worth knowing:
+Consequences:
 
-- **Idle time is free.** Nothing decays on its own — a stored score never changes until the row
-  is hit again. If the platform is frozen for a year, the ranking is exactly as it was; only the
-  absolute strengths would be lower (they all shrink by the same factor).
-- **The order is exact**, not an approximation, and a time-window prefilter is never needed.
-- **The half-life belongs to the table.** Stored values are relative to the `rate` they were
-  written with. Changing a half-life makes old and new values incomparable — rescale
-  (`score' = ln(strength) + rate' · time`, both columns are there) or clear the table.
-- **Positive only.** In log space a strength can be scaled but not pushed below zero, so there is
-  no negative hit — `forget(…, keep)` scales it down instead.
-- Never-accessed rows sort last: `sqlScore()` yields 0 for them, and a hit writes at least
-  `rate · now` — above 0.86 for any half-life below ~39 years. Only a hard `forget(…, keep)` can
-  push a row below that, and ranking it behind the never-opened ones is what a demotion is for.
+- **No background updates.** A score only changes on a hit. After a year without traffic the
+  ranking is the same; only absolute strengths are lower (all by the same factor).
+- **The order is exact**, no time-window prefilter needed.
+- **The half-life belongs to the table.** Values depend on the `rate` used when writing. After
+  changing the half-life, rescale (`score' = ln(strength) + rate' · time`) or clear the table.
+- **Positive only.** In log space you can scale down but not subtract, so there is no negative hit;
+  use `forget(…, keep)`.
+- Never-accessed rows sort last: `sqlScore()` gives them 0, and a hit writes at least `rate · now`
+  (> 0.86 for any half-life below ~39 years). Only `forget(…, keep)` can push a row below that —
+  that's what demoting is for.
 
 ## Tables
 
     score_scope(id, tbl)                 one row per scored table
     score(scope_id, id, score, time)     primary key (scope_id, id), index (scope_id, score)
 
-The table name lives in `score_scope` and nowhere else: `scope_id` is a `SMALLINT`, two bytes in
-the primary key and in the `score` index instead of up to 64. `id` is an integer — the scored
-row's primary key. `time` (last access) takes no part in the ranking; it is what a rescale and the
-weighting below would need. Composite primary keys are not scored; score the owning entry instead.
+The table name is only in `score_scope`; `scope_id` is a `SMALLINT` (2 bytes in key and index
+instead of up to 64). `id` is the scored row's integer primary key. `time` (last access) is not
+used for ranking, only for rescaling and the weighting below. Tables with composite keys can't be
+scored; score the parent entry instead.
 
-Every read filters `scope_id` first, so `(scope_id, score)` carries them all. Stopgap: `install()`
-creates it with hand-written SQL, because the schema layer cannot declare composite indexes yet.
+Every read filters by `scope_id` first, so the `(scope_id, score)` index covers all. `install()`
+creates it with raw SQL for now, because the schema layer can't declare composite indexes yet.
 
-A daily cron job deletes rows that faded below 0.02 accesses. Scopes that are no longer registered,
-and their scores, stay until they are removed by hand.
+A daily cron job deletes rows below 0.02 accesses. Scopes that are no longer registered stay until
+removed by hand.
 
 ## Possible extensions
 
-All of these are additive: nothing below invalidates stored scores or changes how they are read.
+All of these only add; stored scores stay valid.
 
-**Aspects.** Score the same rows separately per kind of access (any view vs. opening the detail
-page), by registering `"file:detail"` as its own scope, with its own half-life. It costs one more
-`score_scope` row and nothing per score. Only the delete hook would need work: it looks up the
-plain table name and would then have to forget every scope belonging to it.
+**Aspects.** Score the same rows per kind of access (any view vs. detail page) by registering
+`"file:detail"` as its own scope with its own half-life. Costs one `score_scope` row. Only the
+delete hook would need to forget all scopes of a table.
 
-**A join variant of `sqlScore()`.** The correlated subquery costs one primary-key lookup per
-candidate row, which is right for a selective query and wrong for one that ranks a million rows.
-A `LEFT JOIN score` returning the same expression would suit that case — as a second function
-next to `sqlScore()`, not as a rewrite of it.
+**A join variant of `sqlScore()`.** The subquery does one key lookup per candidate row — fine for
+selective queries, slow when ranking a million rows. A `LEFT JOIN score` variant would help there,
+as a second function.
 
-**A second, faster-decaying score.** One number cannot tell "ten hits last week, nothing since"
-from "two hits yesterday, rising" — both can land on the same value. A second column with a short
-half-life (a day) next to the long one (a month) makes the direction readable: in log space
-`fast - slow` is the logarithm of the ratio of both strengths, so it is positive while something
-gains and negative while it fades. Same write, same trick, one more column — but it only fills
-from the day it is added, so a "trending" list has no history to start from.
+**A second, faster-decaying score.** One number can't tell "ten hits last week, nothing since" from
+"two hits yesterday, rising". A second column with a short half-life (a day) next to the long one
+(a month) shows the trend: `fast - slow` is positive while rising, negative while fading. It only
+has data from the day it is added.
 
-**Weighting a hit by its distance to the last one.** Today ten accesses within a minute count as
-ten; for a person they count as roughly one. And ten accesses spread over ten days say more than
-ten in one afternoon. Both are the same knob: derive the weight in `bump()` from `now - time`
-(the last access is already stored), e.g. 0.1 after seconds, 1 after an hour, 1.5 after weeks.
-Worth doing once real traffic shows single sessions or reload spam distorting the ranking.
+**Weighting hits by the time since the last one.** Ten hits in a minute count as ten, but are
+really one; ten hits over ten days mean more than ten in one afternoon. Derive the weight in
+`bump()` from `now - time`, e.g. 0.1 after seconds, 1 after an hour, 1.5 after weeks. Worth it once
+reload spam distorts rankings.

@@ -1,4 +1,3 @@
-// Public API of ticket. The qino plugin lives in ./plugin.ts.
 import { ApiError, randB64, requestStorage, sha256b64url, unixTime } from "@qino/qino";
 
 import type { App } from "@qino/qino";
@@ -7,7 +6,7 @@ import type { App } from "@qino/qino";
 export type TicketKind = {
   ttl?: number | null;
   uses?: number;
-  /** What holding the ticket entitles you to: the payload it was issued with, plus what the redeemer brings. */
+  /** The action: gets the ticket's payload plus the redeemer's input. */
   redeem?(app: App, ticket: Ticket, input?: unknown): unknown;
 };
 
@@ -42,8 +41,7 @@ export async function issue(app: App, purpose: string, data?: unknown): Promise<
   return handle;
 }
 
-/** What the handle stands for while it still works — a look that spends nothing.
- * `purpose` is the caller saying which kind it is willing to act on. */
+/** The ticket, if still valid — without using it. `purpose`: the kind the caller accepts. */
 export async function check(app: App, handle: string, purpose?: string): Promise<Ticket | undefined> {
   const row = await app.db.row`SELECT * FROM ticket WHERE hash = ${await sha256b64url(handle)}`;
   if (!row || Number(row.used) >= Number(row.uses)) return;
@@ -57,12 +55,12 @@ export async function check(app: App, handle: string, purpose?: string): Promise
   };
 }
 
-/** Spend it and resolve with what the kind's `redeem` returned — the ticket itself when it declares none. */
+/** Use it; resolves with `redeem`'s result, or the ticket if the kind has none. */
 export async function redeem(app: App, handle: string, purpose?: string, input?: unknown): Promise<unknown> {
   const ticket = await check(app, handle, purpose);
   if (!ticket) throw new ApiError(404, "Nothing to redeem");
-  // one statement, so two parallel redemptions cannot both pass — and before the handler, so one
-  // that throws leaves the ticket spent rather than reusable
+  // one statement, so parallel redemptions can't both pass; before the handler, so a throwing
+  // handler still uses up the ticket
   const spent = await app.db.exec`UPDATE ticket SET used = used + 1 WHERE hash = ${await sha256b64url(handle)} AND used < uses`;
   if (!spent?.affectedRows) throw new ApiError(404, "Nothing to redeem");
   return await kindOf(app, ticket.purpose).redeem?.(app, ticket, input) ?? ticket;

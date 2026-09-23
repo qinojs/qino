@@ -40,18 +40,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   u2.assets(ctx, U2_CSS, U2_VERSION);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
-  /* Die Schriften holt `pub/main.css` per @import von Google: das Stylesheet von
-     fonts.googleapis.com, die Schriftdateien von fonts.gstatic.com. Ohne diese beiden
-     Einträge meldet die CSP sie heute nur (report-only) — scharf geschaltet fielen alle
-     vier Schnitte aus. */
+  /* `pub/main.css` imports the fonts from Google: stylesheet from fonts.googleapis.com, files from
+     fonts.gstatic.com. Without these entries the CSP only reports them today (report-only); when
+     enforced, all four font styles would fail. */
   ctx.res.csp["style-src"]["https://fonts.googleapis.com"] = true;
   ctx.res.csp["font-src"]["https://fonts.gstatic.com"] = true;
 
   return template.render(node);
 }
 
-/** What the panel asks for: the two files that make this layout. They are the layout of the whole
-  * site, so the layout page decides — and each url is an editing capability for this session. */
+/** The layout's two files for the panel. Access is decided by the layout page; each url allows
+  * editing for this session. */
 const api = async (node: Node, vars: Record<string, unknown>) => {
   if (vars.do !== "getFileEditorLinks") return;
   const layout = await node.cms.layoutPage(node.module!.name);

@@ -1,14 +1,12 @@
-// score — ranks rows by how often and how recently they are accessed, modelled on a
-// fading memory: every access adds 1, the sum decays exponentially with a half-life.
+// score — ranks rows by how often and how recently they are accessed: every access adds 1, and
+// the sum decays with a half-life.
 //
-// Stored is not the strength itself but its logarithm, shifted by time:
+// Stored is the logarithm of the strength, shifted by time:
 //   score = ln(strength) + rate * t        rate = ln2 / halfLife
-// The decay term rate*now is identical for every row of a table, so it cancels out when
-// rows are compared: ORDER BY score DESC already is the decayed ranking. That keeps exp()
-// out of SQL (SQLite has no math functions) and lets an index do the sorting.
+// rate*now is the same for all rows, so ORDER BY score DESC is the decayed ranking — no exp() in
+// SQL (SQLite has none), and an index can sort.
 //
-// The table a score belongs to is a small number: `scored()` maps the name to a scope_id
-// once, so neither the primary key nor the score index carries a string.
+// `scored()` maps the table name to a small scope_id, so keys and index hold no strings.
 import { sql, unixTime } from "@qino/qino";
 
 import type { Db, Sql } from "@qino/qino";
@@ -34,8 +32,8 @@ function scope(db: Db, tbl: string): ScoreScope {
   return found;
 }
 
-/** Register a table for scoring, `halfLife` in seconds. Resolves its scope_id (inserting it on
- *  first use) and caches it, so everything below stays synchronous: `await scored(app.db, "file", 30 * 86400)` */
+/** Register a table for scoring, `halfLife` in seconds. Loads and caches its scope_id, so the rest
+ *  is synchronous: `await scored(app.db, "file", 30 * 86400)` */
 export async function scored(db: Db, tbl: string, halfLife: number): Promise<void> {
   const id = await db.one<number>`SELECT id FROM score_scope WHERE tbl = ${tbl}`;
   scopes(db).set(tbl, {
@@ -44,8 +42,8 @@ export async function scored(db: Db, tbl: string, halfLife: number): Promise<voi
   });
 }
 
-/** Record an access; `weight` is how many accesses it counts for. Errors are logged, not thrown —
- *  call it without awaiting, the access time is taken now, not when the write lands. */
+/** Record an access; `weight` = number of accesses. Errors are logged, not thrown — don't await;
+ *  the time is taken now. */
 export function hit(db: Db, tbl: string, id: number, weight = 1): Promise<void> {
   if (weight <= 0) throw new Error("score: weight must be > 0 — use forget(…, keep) to weaken a row");
   const { id: sid, half } = scope(db, tbl);
@@ -59,14 +57,13 @@ async function bump(db: Db, sid: number, id: number, term: number, now: number):
   const value = row ? logAdd(Number(row.score), term) : term;
   const update = () => db.exec`UPDATE score SET score = ${value}, time = ${now} WHERE scope_id = ${sid} AND id = ${id}`;
   if (row) await update();
-  // A concurrent hit may have inserted the row meanwhile; that access is then lost, the ranking is not.
+  // A parallel hit may have inserted the row; then this access is lost, which is fine.
   else await db.exec`INSERT INTO score (scope_id, id, score, time) VALUES (${sid}, ${id}, ${value}, ${now})`.catch(update);
 }
 
-/** Forget a row's score, or `keep` a fraction of its strength: 0.5 halves it, 0 (default) drops the
- *  row — which also happens automatically when the entry itself is deleted. A strength can be scaled
- *  down but never pushed below zero, so this, not a negative hit, is the counter-signal.
- *  Unscored tables are a no-op: the delete hook calls this for every table. */
+/** Forget a row's score, or `keep` a fraction: 0.5 halves it, 0 (default) deletes the row (also
+ *  done automatically when the entry is deleted). Use this instead of a negative hit. No-op for
+ *  unscored tables. */
 export async function forget(db: Db, tbl: string, id: number, keep = 0): Promise<void> {
   const found = scopes(db).get(tbl);
   if (!found) return;
@@ -76,10 +73,10 @@ export async function forget(db: Db, tbl: string, id: number, keep = 0): Promise
   await q.catch((e) => console.error("score forget: " + e.message));
 }
 
-/** The row's score as an ORDER BY fragment, 0 for never accessed rows (stored scores are always > 0):
+/** The row's score as ORDER BY fragment, 0 if never accessed (stored scores are > 0):
  *  ``db.query`SELECT * FROM file f WHERE f.usr_id = ${33} ORDER BY ${sqlScore(db, "file", "f.id")} DESC` ``
- *  `id` says where the primary key sits in the surrounding query, `<tbl>.id` by default. It must stay
- *  qualified — a bare `id` would bind to the subquery's own column and match every row. */
+ *  `id`: the primary key in the outer query, default `<tbl>.id`. Keep it qualified — a bare `id`
+ *  would match the subquery's own column. */
 export function sqlScore(db: Db, tbl: string, id: string | Sql = tbl + ".id"): Sql {
   const ref = typeof id === "string" ? sql.join(id.split(".").map(sql.id), ".") : id;
   return sql`COALESCE((SELECT _score.score FROM score _score WHERE _score.scope_id = ${scope(db, tbl).id} AND _score.id = ${ref}), 0)`;

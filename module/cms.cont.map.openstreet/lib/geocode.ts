@@ -1,10 +1,8 @@
 // Address → coordinates, from Nominatim, the geocoder of the OSM project.
 //
-// Nominatim's usage policy allows exactly one shape of use: a single, cached lookup per
-// address — no bulk runs, no request per page view, and an agent that says who is asking.
-// So this module answers once and the caller stores the answer; it is asked again only
-// when the address itself changes. Everything here exists to keep that promise even when
-// several requests arrive at the same second, or the same wrong address is retried forever.
+// Nominatim's policy: one cached lookup per address, no bulk, no request per page view, and an
+// identifying user agent. So the caller stores the result, and only a changed address is looked up
+// again — also with parallel requests or repeated wrong addresses.
 
 const SERVICE = "https://nominatim.openstreetmap.org/search";
 
@@ -17,9 +15,7 @@ const MISS_TTL = 3600_000;
 
 const sleep = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
 
-// Requests are chained, never parallel: whatever the site does, openstreetmap.org sees one
-// lookup at a time, a second apart. The gap is waited out by the request that needs it, not
-// held open afterwards — an idle site keeps no timer running for a map nobody asked about.
+// Requests run one at a time, a second apart. The waiting request waits; no timer afterwards.
 let queue = Promise.resolve();
 let last = 0;
 function serial<T>(fn: () => Promise<T>): Promise<T> {
@@ -33,9 +29,8 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
-// Two caches, both per process. The hit is stored by the caller and never comes back
-// here; the miss has nowhere else to live, and without it a typo would ask Nominatim
-// again on every single page view.
+// Per-process caches. Hits are stored by the caller; misses are cached here, so a typo doesn't
+// cause a lookup on every page view.
 const inFlight = new Map<string, Promise<Place | null>>();
 const misses = new Map<string, number>();
 
@@ -60,8 +55,7 @@ async function ask(address: string, agent: string, lang?: string): Promise<Place
 }
 
 /**
- * The place an address names, or null when Nominatim does not know it or did not answer.
- * The caller is expected to persist a result — this is not a cache to read from.
+ * Coordinates of an address, or null if unknown or no answer. The caller must store the result.
  */
 export function geocode(address: string, agent: string, lang?: string): Promise<Place | null> {
   const q = address.trim().replace(/\s+/g, " ");

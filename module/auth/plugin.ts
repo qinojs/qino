@@ -1,4 +1,3 @@
-// A library module: no route and no setting of its own. What it offers other modules is in
-// ./mod.ts, what it collects from them is their `authFactors` export. The one table it owns holds
-// the secrets of factors too small to deserve their own.
+// Library module without routes or settings. API in ./mod.ts; collects the `authFactors` exports.
+// Its table holds secrets of factors without an own table.
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
