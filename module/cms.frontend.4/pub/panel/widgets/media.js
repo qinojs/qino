@@ -26,14 +26,6 @@ export const css = `
 
 const kb = (size) => size ? Math.round(size / 1024) + ' KB' : '';
 
-/** Read a File as a data: URI the files endpoint accepts, name included. */
-const fileData = (file) => new Promise((ok, fail) => {
-  const reader = new FileReader();
-  reader.onerror = () => fail(reader.error);
-  reader.onload = () => ok(String(reader.result).replace(';base64,', `;name=${file.name.replace(/[;,]/g, '_')};base64,`));
-  reader.readAsDataURL(file);
-});
-
 const preview = (file) => file.thumb
   ? html`<img src="${file.thumb}" alt="" draggable=true ${file.ext === 'svg' ? 'height=40' : ''}>`
   : html`<svg viewBox="0 0 70 40"><rect width=70 height=40 fill="var(--cms-color)"></rect>
@@ -90,13 +82,8 @@ export default async function (widget, { node, dialogs, signal }) {
       : t`No files available`}
   </div>`;
 
-  const upload = async (list, slot) => {
-    for (const f of list) {
-      const file = await fileData(f);
-      await (slot ? ref.file(slot).put({ file }) : ref.files.post({ file }));
-    }
-    widget.reload();
-  };
+  // multipart with progress, large images scaled down in the browser (see cms.cont.upload)
+  const upload = (list, slot) => { for (const f of list) cms.cont(node.id).upload(f, () => widget.reload(), slot); };
   const pick = (multiple) => new Promise((ok) => {
     const inp = Object.assign(document.createElement('input'), { type: 'file', multiple });
     inp.addEventListener('change', () => ok(inp.files), { once: true });
