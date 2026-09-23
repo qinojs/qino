@@ -228,7 +228,7 @@ docEl.addEventListener('drop', e=>{
   if (!pid) return;
   e.stopPropagation();
   e.preventDefault();
-  function complete() { api.cms.node(pid).html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; }); }
+  const complete = () => cms.reloadNode(pid);
   const files = dropFiles(e.dataTransfer);
   for (const file of files) cms.cont(pid).upload(file, complete);
   if (files.length) return;
