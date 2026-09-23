@@ -56,8 +56,10 @@ const loadWidget = (widget) => {
   widgetEl.replaceChildren(mountWidget(src, context));
 };
 
+let uiTimer; // a burst of changes (e.g. sidebar + widget) is saved once
 uiState.addEventListener("changeIn", () => {
-  api.core["ctx-settings"](["cms.frontend.4", "ui"]).put({ value: uiState.get({ silent: true }) }); // why silent? should we debounce?
+  clearTimeout(uiTimer);
+  uiTimer = setTimeout(() => api.core["ctx-settings"](["cms.frontend.4", "ui"]).put({ value: uiState.get({ silent: true }) }), 200); // why silent?
 });
 
 function syncSidebar(value) {
