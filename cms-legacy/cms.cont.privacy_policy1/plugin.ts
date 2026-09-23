@@ -42,7 +42,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ${owner}
 </div>`);
   }
-  return html`<div><div thm1-width class="u1-width u2-width">
+  return html`<div><div class=u2-width>
   ${await cmsText(node, "title", "h1")}
   ${sections}
   <p><small>Quelle: Datenschutz-Konfigurator von <a href="http://www.mein-datenschutzbeauftragter.de" target=_blank>mein-datenschutzbeauftragter.de</a></small></p>

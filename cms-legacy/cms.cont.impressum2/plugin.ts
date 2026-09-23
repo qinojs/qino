@@ -50,7 +50,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (!await node.settings.Einblenden[key]) continue;
     legal.push(await html.async`<div class=-block>${cmsText(node, key + "_h", "h" + heading)}${cmsText(node, name, "p")}</div>`);
   }
-  return html`<div><div thm1-width class=u1-width>
+  return html`<div><div class=u2-width>
   <div class=-contact>${blocks}</div>
   <div class=-texts>${legal}</div>
 </div></div>`;

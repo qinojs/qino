@@ -63,7 +63,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     throw new Output(csv);
   }
 
-  let html = `<div>\n  <table thm1-width>\n    <tbody>\n`;
+  let html = `<div>\n  <table class=u2-width>\n    <tbody>\n`;
   for (let i = 0; i < rows; i++) {
     const r = bottomUp ? rows - 1 - i : i;
     html += `      <tr>\n`;
