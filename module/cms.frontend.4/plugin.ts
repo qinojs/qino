@@ -4,12 +4,15 @@ import { $item, Access, AccessError, ValidationError, fs, hee, s, unixTime } fro
 import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
+import manifest from "./manifest.json" with { type: "json" };
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
 
 type FeedbackInput = { msg: string; link?: string };
 type FileInput = { pid: number; in: string; path: string };
 type PidInput = { pid: number };
+
+const { name } = manifest;
 
 export const settingsSchema = {
   properties: {
@@ -44,7 +47,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   const access = await node.access();
   if (access < 2) throw new AccessError();
   const list = [];
-  const own = (name: string) => ({ name, src: ctx.req.moduleUrl + "cms.frontend.4/pub/panel/widgets/" + name + ".js" });
+  const own = (widget: string) => ({ name: widget, src: ctx.req.moduleUrl + name + "/pub/panel/widgets/" + widget + ".js" });
   // The options slot: the module's widget, else the generic settings editor if the node has
   // settings. Same position and label for every module.
   const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
@@ -53,8 +56,8 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
     : node.settings[$item].keys?.length ? own("sets").src : null;
   const [settingsTitle, showTime, showUrls] = await Promise.all([
     ctx.app.t`Settings`,
-    ctx.app.settings["cms.frontend.4"]["show access.time"],
-    ctx.app.settings["cms.frontend.4"]["show urls"],
+    ctx.app.settings[name]["show access.time"],
+    ctx.app.settings[name]["show urls"],
   ]);
   if (options) list.push({ name: "options", title: settingsTitle, src: options });
   list.push(own("media"));
@@ -204,7 +207,7 @@ export const api: ApiTree = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", async ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend || await app.settings.cms.frontend !== "cms.frontend.4") return;
+    if (ctx.req.query.cms_noFrontend || await app.settings.cms.frontend !== name) return;
 
     const settings = ctx.settings;
 
@@ -226,7 +229,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         const url = ctx.req.url;
         settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
         qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
-        html.scripts.add(moduleUrl + "cms.frontend.4/pub/js/init.js");
+        html.scripts.add(moduleUrl + name + "/pub/js/init.js");
       }
     }
 
@@ -239,8 +242,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
       if (cmsCtx(ctx).editmode) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
-        qino.cms.ui = await settings["cms.frontend.4"].ui ?? {};
-        qino.cms.tourSeen = !!await settings["cms.frontend.4"].tour_seen;
+        qino.cms.ui = await settings[name].ui ?? {};
+        qino.cms.tourSeen = !!await settings[name].tour_seen;
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.() ?? "");
@@ -251,9 +254,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         html.styles.add(moduleUrl + "cms/pub/css/ui.css");
 
         html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
-        html.styles.add(moduleUrl + "cms.frontend.4/pub/inline/page.css");
-        html.scripts.add(moduleUrl + "cms.frontend.4/pub/inline/inline.js");
-        html.scripts.add(moduleUrl + "cms.frontend.4/pub/panel/panel.js");
+        html.styles.add(moduleUrl + name + "/pub/inline/page.css");
+        html.scripts.add(moduleUrl + name + "/pub/inline/inline.js");
+        html.scripts.add(moduleUrl + name + "/pub/panel/panel.js");
       }
     }
   }, { signal });

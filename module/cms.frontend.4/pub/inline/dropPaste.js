@@ -9,7 +9,7 @@ import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-const root = document.documentElement;
+const docEl = document.documentElement;
 
 const setRange = range => {
   const sel = getSelection();
@@ -197,14 +197,14 @@ const paste = e => {
   }
   setTimeout(()=>cleanText(txtEl, tid), 1);
 };
-root.addEventListener('dragover', dragOver);
-root.addEventListener('drop',     drop);
-root.addEventListener('paste',    paste);
+docEl.addEventListener('dragover', dragOver);
+docEl.addEventListener('drop',     drop);
+docEl.addEventListener('paste',    paste);
 
-root.addEventListener('dragstart',  e => { internalDrag = true; draggedEl = e.composedPath()[0]; });
-root.addEventListener('dragend',    () => internalDrag = false );
+docEl.addEventListener('dragstart',  e => { internalDrag = true; draggedEl = e.composedPath()[0]; });
+docEl.addEventListener('dragend',    () => internalDrag = false );
 
-root.addEventListener('input', e => {
+docEl.addEventListener('input', e => {
   if (internalDrag) {
     // input while drop from drag inside;
     // Chrome needs a canceled dragover to fire drop
@@ -217,13 +217,13 @@ root.addEventListener('input', e => {
 
 // ─── nodes (content blocks) — [qcms-id] ─────────────────────────────────────
 
-root.addEventListener('dragover', e=>{
+docEl.addEventListener('dragover', e=>{
   const el = e.target.closest('[qcms-id]');
   if (!el) return;
   e.stopPropagation();
   e.preventDefault();
 });
-root.addEventListener('drop', e=>{
+docEl.addEventListener('drop', e=>{
   const pid = cms.el.nid(e.target);
   if (!pid) return;
   e.stopPropagation();

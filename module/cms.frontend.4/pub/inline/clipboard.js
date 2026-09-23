@@ -1,5 +1,6 @@
 import { api } from '@qino/pub/api.js';
 import { html } from '@qino/pub/html.js';
+import { t } from '@qino/pub/t.js';
 
 import { dialog } from './inline.js';
 
@@ -13,20 +14,20 @@ export default function (pid) {
   els().forEach(el => el.style.opacity = 0.4);
   api.cms.node(pid).get().then(res => {
     dialog(
-      'Paste from clipboard',
+      t`Paste from clipboard`,
       html`<table>
-        <tr><th> Title: &nbsp;<td> ${res.title}
-        <tr><th> Module: &nbsp;<td> ${res.module}
+        <tr><th> ${t`Title`}: &nbsp;<td> ${res.title}
+        <tr><th> ${t`Module`}: &nbsp;<td> ${res.module}
         <tr><th> Id: &nbsp;<td> ${pid}
       </table>`,
       [{
-        title: 'Paste on this page', then() {
+        title: t`Paste on this page`, then() {
           cms.cont(pid).addPosition();
           els().forEach(el => el.remove());
           close();
         }
-      },{ title: 'Keep in place', then: close 
-      },{ title: 'Close' }]
+      },{ title: t`Keep in place`, then: close 
+      },{ title: t`Close` }]
     );
   });
 };
