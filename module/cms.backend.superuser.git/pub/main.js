@@ -17,20 +17,22 @@ cms.initNode("backend.superuser.git", (el) => {
   el.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
-    const { alert, confirm } = await import("@qino/u2/js/dialog/dialog.js");
+    const { alert, confirm, prompt } = await import("@qino/u2/js/dialog/dialog.js");
     if (btn.dataset.confirm && !await confirm(btn.dataset.confirm)) return;
+    const message = btn.dataset.act === "commit" ? await prompt(await t`Commit message`, "") : "";
+    if (btn.dataset.act === "commit" && !message?.trim()) return;
     const card = btn.closest("[data-repo]");
     btn.disabled = true;
     const r = await node.api.post({
       act: btn.dataset.act,
       repo: card?.dataset.repo ?? "", // the server card belongs to no repository
-      message: card?.querySelector("[name=message]")?.value ?? "",
+      message: btn.dataset.act === "switch" ? card?.querySelector("[name=ref]")?.value ?? "" : message,
     }).catch((e) => ({ message: e?.message || String(e) }));
     btn.disabled = false;
     // git says something worth reading either way — the output is the whole feedback.
     await alert(r?.message || await t`Done.`);
     if (!r?.ok) return;
-    if (btn.dataset.act === "restart") {
+    if (r.restarting) {
       if (await untilBack()) location.reload();
       else await alert(await t`The server did not come back.`);
       return;

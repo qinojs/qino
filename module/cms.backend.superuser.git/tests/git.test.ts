@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "@qino/qino/tests";
 
-import { git, reposOf, status } from "../lib/git.ts";
+import { git, refs, reposOf, status } from "../lib/git.ts";
 
 /** A real repository: the parsing is only worth testing against git's actual output. */
 async function repo(): Promise<string> {
@@ -11,6 +11,42 @@ async function repo(): Promise<string> {
   await git(dir, ["-c", "user.name=T", "-c", "user.email=t@e.test", "commit", "-qm", "first"]);
   return dir;
 }
+
+Deno.test({
+  name: "git: branches and older tags can be selected without losing their identity",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const dir = await repo();
+    await git(dir, ["tag", "v1.0.0"]);
+    await Deno.writeTextFile(dir + "kept.txt", "two\n");
+    await git(dir, ["add", "-A"]);
+    await git(dir, ["-c", "user.name=T", "-c", "user.email=t@e.test", "commit", "-qm", "second"]);
+    await git(dir, ["tag", "v2.0.0"]);
+
+    assertEquals((await refs(dir)).filter((ref) => ref.startsWith("refs/tags/")), ["refs/tags/v2.0.0", "refs/tags/v1.0.0"]);
+    await git(dir, ["switch", "--detach", "--", "refs/tags/v1.0.0"]);
+    const old = await status(dir);
+    assertEquals([old.branch, old.ref], ["(detached)", "refs/tags/v1.0.0"]);
+    await git(dir, ["switch", "--", "main"]);
+    assertEquals((await status(dir)).ref, "refs/heads/main");
+
+    const remote = await Deno.makeTempDir();
+    await git(remote, ["init", "--bare", "-q"]);
+    await git(dir, ["remote", "add", "origin", remote]);
+    await git(dir, ["push", "-q", "-u", "origin", "main"]);
+    await git(dir, ["switch", "-qc", "preview"]);
+    await git(dir, ["push", "-q", "origin", "preview"]);
+    await git(dir, ["switch", "-q", "main"]);
+    await git(dir, ["branch", "-D", "preview"]);
+    assert((await refs(dir)).includes("refs/remotes/origin/preview"));
+    assertEquals((await git(dir, ["switch", "--track", "--", "origin/preview"])).ok, true);
+    assertEquals((await status(dir)).ref, "refs/heads/preview");
+
+    await Deno.remove(dir, { recursive: true });
+    await Deno.remove(remote, { recursive: true });
+  },
+});
 
 Deno.test({
   name: "git: status reports branch and every kind of change",

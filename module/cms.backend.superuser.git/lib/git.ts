@@ -15,16 +15,16 @@ export async function git(dir: string, args: string[], timeout = 30_000): Promis
 /** The letters VS Code shows, so both say the same thing about the same file:
  *  M modified · A added · D deleted · R renamed · U untracked · C conflicted */
 export type Change = { code: string; path: string };
-export type Repo<T = unknown> = { root: string; branch: string; ahead: number; behind: number; files: Change[]; holds: T[] };
+export type Repo<T = unknown> = { root: string; branch: string; ref: string; ahead: number; behind: number; files: Change[]; holds: T[] };
 
 // Where the path starts in a porcelain v2 entry — the field count differs per line type.
 const PATH_AT: Record<string, number> = { "1": 8, "2": 9, u: 10 };
 
-/** Branch, tracking distance and working-copy changes in one call — porcelain v2 answers all three. */
+/** Branch, tracking distance and working-copy changes from porcelain v2. */
 export async function status(root: string): Promise<Omit<Repo, "root" | "holds">> {
   // -uall, or a wholly new directory arrives as a single entry and hides what is in it.
   const { ok, out } = await git(root, ["status", "--porcelain=v2", "--branch", "-uall"]);
-  const res = { branch: "", ahead: 0, behind: 0, files: [] as Change[] };
+  const res = { branch: "", ref: "", ahead: 0, behind: 0, files: [] as Change[] };
   if (!ok) return res;
   for (const line of out.split("\n")) {
     if (line.startsWith("# branch.head ")) res.branch = line.slice(14);
@@ -42,7 +42,21 @@ export async function status(root: string): Promise<Omit<Repo, "root" | "holds">
       });
     }
   }
+  if (res.branch === "(detached)") {
+    const tag = await git(root, ["describe", "--tags", "--exact-match", "HEAD"]);
+    if (tag.ok) res.ref = `refs/tags/${tag.out}`;
+  } else if (res.branch) res.ref = `refs/heads/${res.branch}`;
   return res;
+}
+
+/** Branches and tags available for checkout; omit symbolic remote HEAD aliases. */
+export async function refs(root: string): Promise<string[]> {
+  const { ok, out } = await git(root, ["for-each-ref", "--sort=-version:refname", "--format=%(refname)%09%(symref)", "refs/heads", "refs/remotes", "refs/tags"]);
+  if (!ok) throw new Error(out);
+  return out.split("\n").filter(Boolean)
+    .map((line) => line.split("\t"))
+    .filter(([, target]) => !target)
+    .map(([ref]) => ref);
 }
 
 /** The repositories of these directories — one `rev-parse` per repo (directories inside a known root

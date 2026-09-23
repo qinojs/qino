@@ -2,7 +2,7 @@ import { fromFileUrl } from "@std/path";
 import { errMsg, getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import { git, reposOf, status } from "./lib/git.ts";
+import { git, refs, reposOf, status } from "./lib/git.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
@@ -74,22 +74,43 @@ function restart(): string {
   return "Restarting — the page reloads once the server answers again.";
 }
 
-async function act(app: App, action: string, root: string, message: string): Promise<string> {
-  if (action === "restart") return restart(); // the process, not a repository — no root to check
+async function act(app: App, action: string, root: string, message: string): Promise<{ message: string; restarting?: boolean }> {
+  if (action === "restart") return { message: restart(), restarting: true }; // the process, not a repository — no root to check
   // Never a path from the client: only a repository this app actually sits in may be touched.
   const known = await repos(app);
   const repo = known.find((r) => r.root === root);
   if (!repo) throw new Error(`Not a repository of this app: ${root}`);
 
-  // Fetch first: status compares with the remote-tracking ref, not the remote.
-  if (action === "fetch") return run(await git(repo.root, ["fetch"], 120_000));
-  if (action === "push") return run(await git(repo.root, ["push"], 120_000));
-  if (action === "pull") return run(await git(repo.root, ["pull", "--ff-only"], 120_000));
+  if (action === "update") {
+    if (repo.branch === "(detached)") throw new Error("Select a branch before updating.");
+    // Status compares with the remote-tracking ref, so refresh it first.
+    run(await git(repo.root, ["fetch"], 120_000));
+    run(await git(repo.root, ["rev-parse", "--verify", "@{upstream}"]));
+    const current = await status(repo.root);
+    if (!current.behind) return { message: "Already up to date." };
+    if (!supervised()) throw new Error("No service manager found — the process would stay down.");
+    const out = run(await git(repo.root, ["pull", "--ff-only"], 120_000));
+    return { message: `${out}\n${restart()}`, restarting: true };
+  }
+  if (action === "switch") {
+    if (!message || !(await refs(repo.root)).includes(message)) throw new Error(`Unknown version: ${message}`);
+    if (repo.ref === message) return { message: "Already selected." };
+    if (repo.files.length) throw new Error("Commit or discard local changes before switching versions.");
+    if (!supervised()) throw new Error("No service manager found — the process would stay down.");
+    const args = message.startsWith("refs/tags/") ? ["switch", "--detach", "--", message]
+      : message.startsWith("refs/heads/") ? ["switch", "--", message.slice(11)]
+      : ["switch", "--track", "--", message.slice(13)];
+    const out = run(await git(repo.root, args));
+    return { message: `${out}\n${restart()}`, restarting: true };
+  }
+  if (action === "fetch") return { message: run(await git(repo.root, ["fetch"], 120_000)) };
+  if (action === "push") return { message: run(await git(repo.root, ["push"], 120_000)) };
+  if (action === "pull") return { message: run(await git(repo.root, ["pull", "--ff-only"], 120_000)) };
   // Tracked edits go, untracked files stay: module data/cache/tmp live inside these directories.
   if (action === "reset") {
     const fetched = await git(repo.root, ["fetch"], 120_000);
     if (!fetched.ok) throw new Error(fetched.out);
-    return run(await git(repo.root, ["reset", "--hard", "@{upstream}"]));
+    return { message: run(await git(repo.root, ["reset", "--hard", "@{upstream}"])) };
   }
   if (action !== "commit") throw new Error(`Unknown action: ${action}`);
 
@@ -97,7 +118,7 @@ async function act(app: App, action: string, root: string, message: string): Pro
   if (!repo.files.length) throw new Error("Nothing to commit");
   const add = await git(repo.root, ["add", "-A"]);
   if (!add.ok) throw new Error(add.out);
-  return run(await git(repo.root, [...await author(), "commit", "-m", message]));
+  return { message: run(await git(repo.root, [...await author(), "commit", "-m", message])) };
 }
 
 const run = ({ ok, out }: { ok: boolean; out: string }) => {
@@ -107,12 +128,18 @@ const run = ({ ok, out }: { ok: boolean; out: string }) => {
 
 // --- view -----------------------------------------------------------------
 
-function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
+async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
   const dirty = repo.files.length;
+  const available = await refs(repo.root);
+  const branches = available.filter((ref) => ref.startsWith("refs/heads/"));
+  const local = new Set(branches.map((ref) => ref.slice(11)));
+  const remote = available.filter((ref) => ref.startsWith("refs/remotes/") && !local.has(ref.split("/").slice(3).join("/")));
+  const tags = available.filter((ref) => ref.startsWith("refs/tags/"));
+  const options = (list: string[], prefix: string) => list.map((ref) => html`<option value="${ref}"${ref === repo.ref ? html` selected` : ""}>${ref.slice(prefix.length)}</option>`);
   return html.async`<div class=u2-card data-repo="${repo.root}">
   <div class=-head><code>${repo.root}</code></div>
   <div>
-    <div><b>${repo.branch || "?"}</b>
+    <div><b>${repo.ref.startsWith("refs/tags/") ? repo.ref.slice(10) : repo.branch || "?"}</b>
       ${repo.ahead ? html`<span class=-ahead>↑${repo.ahead}</span>` : ""}
       ${repo.behind ? html`<span class=-behind>↓${repo.behind}</span>` : ""}
       <small title="${repo.holds.map((hold) => hold.label).join("\n")}">${summary(repo.holds, t)}</small>
@@ -123,16 +150,27 @@ function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
           <summary>${dirty} ${t`changed files`}</summary>
           <table class="u2-table -changes">${
         repo.files.map((file) => html`<tr><td class="-code -${file.code}">${file.code}<td>${file.path}`)
-      }</table>
+        }</table>
         </details>
-        <input name=message placeholder="${t`Commit message`}" style="width:100%">
         <button data-act=commit>${t`Commit`}</button>`
       : html.async`<small>${t`nothing changed`}</small>`
   }
-    <button data-act=fetch>${t`Fetch`}</button>
-    <button data-act=push${repo.ahead ? "" : html` disabled`}>${t`Push`}</button>
-    <button data-act=pull${repo.behind ? "" : html` disabled`}>${t`Pull`}</button>
-    <button data-act=reset data-confirm="${t`Discard all local changes and reset to the remote?`}">${t`Reset to remote`}</button>
+    <button data-act=update u2-confirm="${t`Fetch, pull and restart the server if code changed?`}"${repo.branch === "(detached)" ? html` disabled` : ""}>${t`Update`}</button>
+    <details><summary>${t`Advanced`}</summary>
+      <label>${t`Version`}<br><select name=ref>
+        <option value="">${t`Select version`}</option>
+        <optgroup label="${t`Branches`}">${options(branches, "refs/heads/")}</optgroup>
+        <optgroup label="${t`Remote branches`}">${options(remote, "refs/remotes/")}</optgroup>
+        <optgroup label="${t`Tags`}">${options(tags, "refs/tags/")}</optgroup>
+      </select></label>
+      <button data-act=switch>${t`Switch`}</button>
+      <div>
+        <button data-act=fetch>${t`Fetch`}</button>
+        <button data-act=push${repo.branch === "(detached)" || !repo.ahead ? html` disabled` : ""}>${t`Push`}</button>
+        <button data-act=pull${repo.branch === "(detached)" || !repo.behind ? html` disabled` : ""}>${t`Pull`}</button>
+        <button data-act=reset data-confirm="${t`Discard all local changes and reset to the remote?`}"${repo.branch === "(detached)" ? html` disabled` : ""}>${t`Reset to remote`}</button>
+      </div>
+    </details>
   </div>
 </div>`;
 }
@@ -141,11 +179,10 @@ function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
 function serverCard(t: App["t"]): Promise<HtmlString> {
   const can = supervised();
   return html.async`<div class=u2-card>
-  <div class=-head>${t`Server`}</div>
-  <div>
+  <details><summary>${t`Server`}</summary>
     <small>${can ? t`Pulled code is loaded on the next start.` : t`No service manager: nothing would start the process again.`}</small>
     <button data-act=restart data-confirm="${t`Restart the server now? The site is unreachable for a moment.`}"${can ? "" : html` disabled`}>${t`Restart`}</button>
-  </div>
+  </details>
 </div>`;
 }
 
@@ -158,9 +195,9 @@ async function render(node: Node): Promise<HtmlString> {
 
 // --- node API -------------------------------------------------------------
 
-async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boolean; message: string }> {
+async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boolean; message: string; restarting?: boolean }> {
   try {
-    return { ok: true, message: await act(node.app, String(vars.act ?? ""), String(vars.repo ?? ""), String(vars.message ?? "")) };
+    return { ok: true, ...await act(node.app, String(vars.act ?? ""), String(vars.repo ?? ""), String(vars.message ?? "")) };
   } catch (e) {
     return { ok: false, message: errMsg(e) };
   }
