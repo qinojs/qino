@@ -217,7 +217,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         </table>
     </div>
 
-    <div class=u2-card style="flex:1 1 20rem">
+    <div class=u2-card style="flex:0 0 auto">
         <div class=-head>${t`IPs`} (${ips.length})</div>
         <table class=u2-table>
             <tbody>${ips.map((row) => html`<tr>
