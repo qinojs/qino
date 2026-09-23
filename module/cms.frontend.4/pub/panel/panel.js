@@ -10,8 +10,6 @@ import "./contentMenu.js";
 const nodeId = globalThis.qino?.cms?.nodeId;
 const activeId = () => cms.cont.active || nodeId;
 
-root.host.addStyle("cms.frontend.4/pub/panel/panel.css");
-
 const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListener(e, fn));
 const sel = s => s[0] === ">" ? ":scope " + s : s;
 const findEl = (el, s) => el.querySelector(sel(s));
@@ -24,7 +22,8 @@ if (!widgets.filled) widgets.set({});
 cms.panel = { state: uiState, sidebar, widgets };
 cms.panelRoot = root;
 const el = root.getElementById("panel");
-el.showPopover();
+// open once styled: the queue adopts in call order, so ui, off and chrome css are in too
+root.host.addStyle("cms.frontend.4/pub/panel/panel.css").then(() => el.showPopover());
 
 // <img> errors don't bubble, so listen at the root (capture).
 root.addEventListener("error", (e) => {
