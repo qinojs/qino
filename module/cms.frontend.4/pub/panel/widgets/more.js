@@ -16,13 +16,13 @@ const setting = (path) => api.core['ctx-settings'](path);
 const reload = () => location.href = location.href.replace(/#.*$/, '');
 
 export default async function (widget, { dialogs, signal }) {
-  const [me, langs, draft, lang, treeShowC] = await Promise.all([
+  const [me, langs, draft, lang] = await Promise.all([
     api['cms.frontend.4'].feedback.get({}, { signal }),
     api.core.languages.get({}, { signal }),
     setting(['cms', 'feedback', 'text']).get({}, { signal }).catch(() => ''),
     setting(['core', 'lang_ns', 'cms']).get({}, { signal }).catch(() => ''),
-    setting(['cms.frontend.4', 'ui', 'tree_show_c']).get({}, { signal }).catch(() => false),
   ]);
+  const treeShowC = cms.panel.state.has('tree_show_c')?.get({ silent: true });
 
   widget.head = t`More`;
 
