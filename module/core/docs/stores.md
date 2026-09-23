@@ -161,7 +161,7 @@ which also makes copied modules work:
 
 An app file can also use a full `jsr:` import without config, but module source files with bare
 specifiers still need the mapping. To use a local checkout, make `qino/` a workspace member. For a
-local item.js checkout, uncomment `patch` in the root `deno.json`.
+local item.js checkout, add it to `links` in the root `deno.json`.
 
 `import.meta.resolve("jsr:…")` returns an opaque specifier. It can be imported, but it is not a
 normal URL, so a store needs a real `file:`, `http:` or `https:` URL.
