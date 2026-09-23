@@ -17,12 +17,14 @@ const sheet = (href) => {
   return sheets.get(href);
 };
 
-// serialised, so the cascade follows call order
+// serialised, so the cascade follows call order; the fetch starts at once, only the push waits
 let pending = Promise.resolve();
 
 /** Adopt a module stylesheet into a shadow root; href is relative to the module dir. */
-export const addStyle = (root, href) =>
-  pending = pending.then(async () => root.adoptedStyleSheets.push(await sheet(new URL(ctx.moduleUrl + href, location.href).href)));
+export const addStyle = (root, href) => {
+  const loading = sheet(new URL(ctx.moduleUrl + href, location.href).href);
+  return pending = pending.then(async () => root.adoptedStyleSheets.push(await loading));
+};
 
 /** Adopt inline css through the same queue, so it keeps its place in the cascade. */
 export const addCss = (root, css) => pending = pending.then(() => {
