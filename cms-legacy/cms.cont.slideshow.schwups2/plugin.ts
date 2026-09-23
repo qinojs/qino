@@ -22,7 +22,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const caption = await node.showText("file_" + file.id);
     const captionHtml = edit || caption.plain()
-      ? html`<div class=-caption>${caption}</div>`
+      ? html`<div class=-caption>${caption.html()}</div>`
       : "";
     slides.push(html`<div>${await cms_image2(file, {
       width: 2000,

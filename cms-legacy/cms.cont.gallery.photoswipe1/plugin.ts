@@ -43,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         target=_blank itemprop=contentUrl data-width="${endWidth}" data-height="${endHeight}">
         <img src="${previewUrl}" itemprop=thumbnail alt="" hidden>
       </a>
-      ${node.settings.text() ? html`<figcaption class=-text itemprop="caption description">${caption}</figcaption>` : ""}
+      ${node.settings.text() ? html`<figcaption class=-text itemprop="caption description">${caption.html()}</figcaption>` : ""}
     </figure>`);
   }
 

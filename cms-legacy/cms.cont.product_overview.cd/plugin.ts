@@ -18,7 +18,7 @@ async function render(node: Node): Promise<HtmlString> {
       if: 1,
       editable: await product.edit(),
     })}</a>`);
-    titles.push(html`<a href="${url}"><div>${await product.showTitle()}</div></a>`);
+    titles.push(html`<a href="${url}"><div>${(await product.showTitle()).html()}</div></a>`);
   }
   return html`<div><div class=-image>${images}</div><div class=-title>${titles}</div></div>`;
 }

@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const startDate = eventDate(row.start_date);
     items.push(await html.async`<div class=-item-wrapper><div class=-item data-c1-href="${url}"${html.raw(await backgroundAttr(event, "main"))}>
   <span class=-date${html.raw(color ? ` style="background:${color}"` : "")}>${date.format(startDate)}</span>
-  <span class=-text><a href="${url}">${event.showTitle()}</a>${await node.settings.show_category && parent ? html`<br>${parent.showTitle()}` : ""}</span>
+  <span class=-text><a href="${url}">${event.showTitle()}</a>${await node.settings.show_category && parent ? html.async`<br>${parent.showTitle()}` : ""}</span>
 </div></div>`);
     if (limit && items.length >= limit) break;
   }

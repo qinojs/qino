@@ -24,7 +24,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       const page = await child.page();
       const classes = [`cmsLink${page.id}`, await active.in(page) ? "cmsInside" : "", active.id === page.id ? "cmsActive" : ""].filter(Boolean).join(" ");
       items.push(await html.async`<li class="${classes}">${node.cms.link(child)}
-  ${preview ? html`<div>${child.showText("preview")}</div>` : ""}
+  ${preview ? html.async`<div>${child.showText("preview")}</div>` : ""}
   ${branch(child, level + 1)}</li>`);
     }
     return html`<ul class="cmsChilds${parent.id}">${items}</ul>`;
