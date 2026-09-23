@@ -41,7 +41,8 @@ export const ctxSettingsSchema = {
   * (`cms.node.widget = "pub/widget.js"` in its plugin). */
 async function settingsWidgets(ctx: Ctx, pid: number) {
   const node = await cms(ctx.app).node(pid);
-  if (await node.access() < 2) throw new AccessError();
+  const access = await node.access();
+  if (access < 2) throw new AccessError();
   const list = [];
   const own = (name: string) => ({ name, src: ctx.req.moduleUrl + "cms.frontend.4/pub/panel/widgets/" + name + ".js" });
   // The options slot: the module's widget, else the generic settings editor if the node has
@@ -50,11 +51,10 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   const modWidget = mod?.plugin?.cms?.node?.widget;
   const options = modWidget && mod?.modUrl ? mod.modUrl + modWidget
     : node.settings[$item].keys?.length ? own("sets").src : null;
-  const [settingsTitle, showTime, showUrls, access] = await Promise.all([
+  const [settingsTitle, showTime, showUrls] = await Promise.all([
     ctx.app.t`Settings`,
     ctx.app.settings["cms.frontend.4"]["show access.time"],
     ctx.app.settings["cms.frontend.4"]["show urls"],
-    node.access(),
   ]);
   if (options) list.push({ name: "options", title: settingsTitle, src: options });
   list.push(own("media"));
@@ -246,19 +246,15 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         const panelHtml = String(await panel.default?.() ?? "");
         app.languages.nsStop();
         html.content += panelHtml;
+
+        html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
+        html.styles.add(moduleUrl + "cms/pub/css/ui.css");
+
+        html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
+        html.styles.add(moduleUrl + "cms.frontend.4/pub/inline/page.css");
+        html.scripts.add(moduleUrl + "cms.frontend.4/pub/inline/inline.js");
+        html.scripts.add(moduleUrl + "cms.frontend.4/pub/panel/panel.js");
       }
-    }
-
-    if (access < 2) return;
-
-    if (cmsCtx(ctx).editmode) {
-      html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
-      html.styles.add(moduleUrl + "cms/pub/css/ui.css");
-
-      html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
-      html.styles.add(moduleUrl + "cms.frontend.4/pub/inline/page.css");
-      html.scripts.add(moduleUrl + "cms.frontend.4/pub/inline/inline.js");
-      html.scripts.add(moduleUrl + "cms.frontend.4/pub/panel/panel.js");
     }
   }, { signal });
 }

@@ -160,6 +160,7 @@ export async function cmsTreeInit(json) {
     const finish = (save) => {
       if (done) return; done = true;
       const title = save ? input.value : node.data.title;
+      if (title === node.data.title) return renderNode(node); // unchanged: no request
       api.cms.txt(node.data.title_id).put({ value: title }).then(() => { node.data.title = title; renderNode(node); });
     };
     input.addEventListener("keydown", (ev) => {

@@ -11,38 +11,29 @@ const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
 
 const treeMenu = globalContextMenu();
-treeMenu.addItem(t`Settings`, {
-  icon: moduleUrl+'cms.frontend.4/pub/img/settings.svg',
+/** A tree entry: remembers the node under the pointer and needs edit access. */
+const addItem = (label, icon, { onshow, onclick }) => treeMenu.addItem(label, {
+  icon: moduleUrl+'cms.frontend.4/pub/img/'+icon+'.svg',
   selector: '#tree .-title',
   onshow(e) {
     const node = e.currentTarget.closest('u2-tree');
     this.lastPid = node.dataset.id;
     this.disabled = node.data.myaccess < 2;
-    cms.Tree.activate(node);
+    onshow?.(node);
   },
+  onclick,
+});
+addItem(t`Settings`, 'settings', {
+  onshow: (node) => cms.Tree.activate(node),
   onclick() { showSettings(this.lastPid); }
 });
-treeMenu.addItem(t`Rename`, {
-  icon: moduleUrl+'cms.frontend.4/pub/img/pencil.svg',
-  selector:'#tree .-title',
-  onshow(e) {
-    const node = e.currentTarget.closest('u2-tree');
-    this.lastPid = node.dataset.id;
-    this.disabled = node.data.myaccess < 2;
-  },
+addItem(t`Rename`, 'pencil', {
   onclick() {
     const node = cms.Tree.getNodeById(this.lastPid);
     cms.Tree.editNode(node);
   }
 });
-treeMenu.addItem(t`Copy`, {
-  icon: moduleUrl+'cms.frontend.4/pub/img/copy.svg',
-  selector:'#tree .-title',
-  onshow(e) {
-    const node = e.currentTarget.closest('u2-tree');
-    this.lastPid = node.dataset.id;
-    this.disabled = node.data.myaccess < 2;
-  },
+addItem(t`Copy`, 'copy', {
   onclick() {
     const node = cms.Tree.getNodeById(this.lastPid);
     dialog(t`Copy page "${node.data.title}"?`,'',[
@@ -64,15 +55,8 @@ treeMenu.addItem(t`Copy`, {
     ]);
   }
 });
-treeMenu.addItem(t`Delete`, {
-  icon: moduleUrl+'cms.frontend.4/pub/img/delete.svg',
-  selector: '#tree .-title',
-  onshow(e) {
-    const node = e.currentTarget.closest('u2-tree');
-    this.lastPid = node.dataset.id;
-    this.disabled = node.data.myaccess < 2;
-    t`Really delete page "${''}"?` // preload translation
-  },
+addItem(t`Delete`, 'delete', {
+  onshow: () => t`Really delete page "${''}"?`, // preload translation
   async onclick() {
     const n = cms.Tree.getNodeById(this.lastPid);
     if (!await cms.dialogs.confirm(t`Really delete page "${n.data.title}"?`)) return;
@@ -87,4 +71,3 @@ treeMenu.addItem(t`Delete`, {
     });
   }
 });
-

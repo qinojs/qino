@@ -68,7 +68,7 @@ addEventListener('load', () => {
 /* Links: a number is a page, a bare domain or mail address gets its scheme, and the target
    follows from the address. */
 const URL_RE = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
-const MAIL_RE = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
+const MAIL_RE = /^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z0-9]{2,}$/;
 
 const address = href => {
   if (href !== '' && !isNaN(href)) return 'cmspid://'+href;

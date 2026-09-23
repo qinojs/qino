@@ -6,16 +6,16 @@
 import { html } from '@qino/pub/html.js';
 
 const states = new WeakMap();
-const adopted = new WeakMap(); // root -> srcs already adopted there
+const adopted = new WeakMap(); // root -> css already adopted there (widgets may share it)
 
 // The stylesheet is adopted into the mount point's root, so widgets work in the panel, a dialog
 // or the page.
-const adopt = (el, src, css) => {
+const adopt = (el, css) => {
   const root = el.getRootNode();
   if (!css || !root.adoptedStyleSheets) return;
   const seen = adopted.get(root) ?? adopted.set(root, new Set()).get(root);
-  if (seen.has(src)) return;
-  seen.add(src);
+  if (seen.has(css)) return;
+  seen.add(css);
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(css);
   root.adoptedStyleSheets.push(sheet);
@@ -94,7 +94,7 @@ async function run(s) {
   try {
     const mod = await import(s.src);
     if (gen !== s.gen) return; // a newer run started meanwhile
-    adopt(s.el, s.src, mod.css);
+    adopt(s.el, mod.css);
     const cleanup = await mod.default(s.el, { ...s.context, signal });
     if (gen !== s.gen) await cleanup?.();
     else s.cleanup = cleanup;

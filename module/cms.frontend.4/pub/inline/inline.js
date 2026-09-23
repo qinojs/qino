@@ -42,6 +42,8 @@ cms.contPos.prototype = {
   mark(e) {
     const _ = cms.contPos;
     e?.stopPropagation(); // nested
+    // already marked and shown: every mouseover inside the block lands here
+    if (_.active === this && !_.moving && menu.matches(':popover-open')) return clearTimeout(_.outTimer);
     _.active?.unmark();
     //_.active && _.active.unmark();
     if (_.moving || _.active === this /*|| this.el.classList.contains('qgCMS-dropTarget')*/) { _.active = null; return; }
