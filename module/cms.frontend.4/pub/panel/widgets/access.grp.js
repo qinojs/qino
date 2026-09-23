@@ -30,7 +30,7 @@ export default async function (widget, { node, signal }) {
         <div class=-rows>${list(first)}</div>`}
   </div>`;
 
-  widget.on('change', '.-inherit', (inp) => ref.access.put({ value: inp.checked ? null : 0 }).then(() => widget.reload()));
+  widget.on('change', '.-inherit', (inp) => ref.access.put({ value: inp.checked ? null : 0 })); // the panel reloads on PUT access
   searchable(widget, async (search) => list(await ref.access.groups.get({ search }, { signal })));
   widget.on('change', 'input[type=radio]', (inp) => inp.name === 'public'
     ? ref.access.put({ value: Number(inp.value) ? 1 : 0 })

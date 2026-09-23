@@ -89,8 +89,7 @@ export default async function (widget, { node, dialogs, signal }) {
   widget.on('change', '.-changemodule', async (sel) => {
     await ref.module.put({ module: sel.value });
     if (isPage) return location.href = location.href.replace(/#.*$/, '');
-    document.querySelector(`[qcms-id="${node.id}"]`).outerHTML = await ref.html.get();
-    widget.reload();
+    widget.reload(); // the block itself is reloaded by inline.js on PUT module
   });
   // a content parent is edited in here, a page parent is a link like any other
   widget.on('click', '.-editparent', (_, e) => {

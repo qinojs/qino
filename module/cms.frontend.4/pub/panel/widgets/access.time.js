@@ -31,10 +31,8 @@ export default async function (widget, { node, signal }) {
 
   await widget.html`<div class=-onlineTime>${edges.map(([f, l]) => edge(f, l))}</div>`;
 
-  const set = (inner, value) => {
-    ref.patch({ [inner.closest('[data-edge]').dataset.edge]: value });
-    widget.reload();
-  };
+  // the panel reloads on PATCH onlineStart/onlineEnd
+  const set = (inner, value) => ref.patch({ [inner.closest('[data-edge]').dataset.edge]: value });
   widget.on('click', '.-always', (b) => set(b, '0'));
   widget.on('click', '.-inherit', (b) => set(b, ''));
   widget.on('click', '.-now', (b) => set(b, String(Math.ceil(Date.now() / 1000))));
