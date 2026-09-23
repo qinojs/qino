@@ -117,7 +117,7 @@ export async function cmsTreeInit(json) {
     if (!node) return;
     if (e.key === "Enter") node.data.url && (location.href = node.data.url);
     else if (e.key === "Delete" && !e.ctrlKey) {
-      if (node.data.myaccess < 3) return;
+      if (node.data.myaccess < 2) return;
       if (!await cms.dialogs.confirm(t`Really delete page "${node.data.title}"?`)) return;
       api.cms.node(node.dataset.id).delete();
     } else if (e.key === "F2") editNode(node);
