@@ -6,8 +6,6 @@ import api from "./nodeApi.ts";
 import type { HtmlString, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export { default as dbSchema } from "./dbschema.json" with { type: "json" };
-
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.config.translate", { en: "Translate", de: "Übersetzen" });
 }
@@ -16,7 +14,6 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const ctx = getCtx();
   const db = node.app.db;
   const langs = node.app.languages.all;
-  const isSuperuser = !!ctx.user?.superuser;
 
   const v = vars ?? ctx.req.query;
   const search = String(v.search ?? "").trim();
@@ -34,33 +31,20 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);
   const rows = await db.query`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
   const total = Number(await db.one`SELECT count(*) FROM smalltext`);
-  const codeLogs = isSuperuser && rows.length
-    ? await db.query`SELECT * FROM smalltext_code_log WHERE ${sql.join(rows.map(row => sql`(hash = ${row.hash} AND namespace = ${row.namespace})`), " OR ")}`
-    : [];
-  const logsByText = Map.groupBy(codeLogs, row => JSON.stringify([row.hash, row.namespace]));
 
   const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
   const sortMark = (col: string) => col === order ? (dir === "ASC" ? " ↑" : " ↓") : "";
 
   const langTh = langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`);
-  const codeLogTh = isSuperuser ? html.raw("<th>code_logs") : "";
 
   const rowsHtml = [];
   for (const row of rows) {
     const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`);
-    let codeLogTd: HtmlString | string = "";
-    if (isSuperuser) {
-      const logs = logsByText.get(JSON.stringify([row.hash, row.namespace])) ?? [];
-      codeLogTd = html`<td>${html.join(
-        logs.map(r => html`<a href="${r.file}:${r.line}">${r.file}:${r.line}</a>`), "<br>"
-      )}`;
-    }
     rowsHtml.push(html`<tr data-hash="${row.hash}" data-ns="${row.namespace}">
       <td class=-namespace>${row.namespace}
       <td><div class=-original>${row.original}</div>
       ${langTds}
       <td>${row.count}
-      ${codeLogTd}
       <td><button class=u2-unstyle data-action=translate_entry><u2-ico icon=translate>↻</u2-ico></button>
       <td><button class=u2-unstyle data-action=delete_entry><u2-ico icon=delete>✕</u2-ico></button>
     `);
@@ -73,7 +57,6 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
       <th data-sort=original data-dir="${nextDir("original")}">original${sortMark("original")}
       ${langTh}
       <th data-sort=count data-dir="${nextDir("count")}">count${sortMark("count")}
-      ${codeLogTh}
       <th width=10>
       <th width=10>
     <tbody>${rowsHtml}
@@ -87,7 +70,6 @@ async function render(node: Node): Promise<HtmlString> {
   const t = app.t;
   const langs = app.languages.all;
   const counterActive = !!(await app.settings.core.smalltext.counter);
-  const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
   const search = (ctx.req.query.search ?? "").trim();
   const missingWhere = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ");
   const missing = missingWhere.parts.length ? Number(await app.db.one`SELECT count(*) FROM smalltext WHERE ${missingWhere}`) : 0;
@@ -99,10 +81,6 @@ async function render(node: Node): Promise<HtmlString> {
     <label><input type=checkbox data-set=toggle_counter ${counterActive ? "checked" : ""}> ${t`Counter`}</label>
     &nbsp;
     <button data-action=count_clean>${t`Clear counter`}</button>
-    &nbsp;&nbsp;
-    <label><input type=checkbox data-set=toggle_code_log ${codeLogActive ? "checked" : ""}> ${t`Code logger`}</label>
-    &nbsp;
-    <button data-action=code_log_clean>${t`Clear log`}</button>
     &nbsp;&nbsp;
     <button data-action=delete_not_used>${t`Delete unused`}</button>
     &nbsp;&nbsp;

@@ -24,11 +24,6 @@ export default async function api(node: Node, vars: any): Promise<any> {
     return true;
   }
 
-  if ("code_log_clean" in vars) {
-    await db.exec`DELETE FROM smalltext_code_log`;
-    return true;
-  }
-
   if ("delete_not_used" in vars) {
     const cond = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " AND ");
     await db.exec`DELETE FROM smalltext WHERE count = 0 AND ${cond}`;

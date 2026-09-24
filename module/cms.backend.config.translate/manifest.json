@@ -6,7 +6,6 @@
     "cms.text"
   ],
   "files": [
-    "dbschema.json",
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",
