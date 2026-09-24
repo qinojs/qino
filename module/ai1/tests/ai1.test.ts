@@ -32,9 +32,10 @@ async function app(models: Record<string, Record<string, number>>, adapters: Rec
     for (const [capability, priority] of Object.entries(capabilities)) await db.table("ai1_model_capability").insert({ model_id: id, capability, priority });
   }
   const mods = [{ name: "ai1", plugin: { ai1Adapters: { ...ai1Adapters, fake, ...adapters }, ai1Tasks } }];
-  return { db, settings: { core: { keys: {} } }, modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
+  return { db, settings: { core: { keys: {} } }, fire: (name: string, e: unknown) => (fired.push([name, e]), Promise.resolve(e)), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
 }
 
+const fired: [string, any][] = [];
 const ask = (content: string) => ({ messages: [{ role: "user" as const, content }] });
 
 Deno.test("ai1: highest priority first, failures fall back and rest", async () => {
@@ -43,6 +44,11 @@ Deno.test("ai1: highest priority first, failures fall back and rest", async () =
   assertEquals((await text(testApp, ask("hi"))).text, "low: hi");
   assertEquals((await text(testApp, "hi")).text, "low: hi");
   assertEquals(calls, ["fail", "low", "low"]); // the failed one rests
+  assertEquals(fired.slice(-3).map(([name, e]) => [name, e.model, e.input, e.output, e.error]), [
+    ["ai1:call", "fail", 0, 0, "down"],
+    ["ai1:call", "low", 3, 5, undefined],
+    ["ai1:call", "low", 3, 5, undefined],
+  ]);
   assertEquals(await testApp.db.row`SELECT used_input, used_output FROM ai1_model_provider WHERE model_id = 1`, { used_input: 6, used_output: 10 });
 });
 

@@ -50,6 +50,12 @@ The same capabilities for any signed-in user, shaped like the functions: `POST a
 await api.ai1.translate.post({ text: "Hallo", to: "en" });
 ```
 
+## Watching
+
+Every attempt fires `ai1:call` with `{ capability, id, model, provider, ms, input, output, error? }`
+(`id` is the `ai1_model_provider`). [cms.backend.ai1.eval](../cms.backend.ai1.eval/) measures
+speed and errors from it.
+
 ## Extending
 
 Modules declare `ai1Adapters` (provider types) and `ai1Tasks` (needs and fallbacks per

@@ -1,0 +1,10 @@
+[qcms-mod="backend.ai1.eval"] {
+  & > .-head { display: flex; align-items: center; gap: .5rem; }
+  & > .-head > button:first-of-type { margin-left: auto; }
+  /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
+  & > [cms-part] { padding: 0; overflow: auto; }
+  /* score columns hold a small number, so their label stands upright */
+  & thead th { vertical-align: bottom; z-index: 1; }
+  & th.-v { writing-mode: sideways-lr; }
+  & .-error { color: var(--red); max-width: 28rem; white-space: pre-wrap; }
+}

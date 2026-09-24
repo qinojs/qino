@@ -71,10 +71,19 @@ export async function run(app: App, capability: string, input: unknown, opts: Op
     const adapter = adapters[candidate.type] ?? {};
     const [through, convert] = via.find(([c]) => adapter[c]) ?? [];
     if (!adapter[capability] && !convert) continue;
+    // every attempt is reported (`ai1:call`), so others can measure speed and reliability
+    const start = performance.now(), used = { input: 0, output: 0 };
+    const report = (error?: unknown) => app.fire("ai1:call", {
+      capability, id: candidate.id, model: candidate.model, provider: candidate.provider,
+      ms: Math.round(performance.now() - start), ...used, error: error === undefined ? undefined : errMsg(error),
+    }).catch(console.error);
     try {
-      const call = await bind(app, candidate, opts.signal);
-      return await (adapter[capability] ? adapter[capability](call, input) : convert!(input, (i) => adapter[through!](call, i)));
+      const call = await bind(app, candidate, used, opts.signal);
+      const result = await (adapter[capability] ? adapter[capability](call, input) : convert!(input, (i) => adapter[through!](call, i)));
+      report();
+      return result;
     } catch (e) {
+      report(e);
       if (stop(e)) throw e;
       if (e instanceof AiError && (e.status === 429 || (e.status ?? 0) >= 500)) cooling.set(candidate.id, Date.now() + COOLDOWN);
       errors.push(`${candidate.provider}/${candidate.model}: ${errMsg(e)}`);
@@ -103,7 +112,7 @@ async function candidates(app: App, capability: string, needs: string[], { model
   return model ? [...rows.filter((c) => c.model === model), ...rows.filter((c) => c.model !== model)] : rows;
 }
 
-async function bind(app: App, candidate: Candidate, signal?: AbortSignal): Promise<Call> {
+async function bind(app: App, candidate: Candidate, used: { input: number; output: number }, signal?: AbortSignal): Promise<Call> {
   return {
     provider: candidate.provider,
     model: candidate.provider_model || candidate.model,
@@ -131,6 +140,8 @@ async function bind(app: App, candidate: Candidate, signal?: AbortSignal): Promi
       return new Response(body, res);
     },
     usage: (input = 0, output = 0) => {
+      used.input += input;
+      used.output += output;
       if (input || output) app.db.exec`UPDATE ai1_model_provider SET used_input = used_input + ${input}, used_output = used_output + ${output} WHERE id = ${candidate.id}`.catch(console.error);
     },
   };

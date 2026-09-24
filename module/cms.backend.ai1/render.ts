@@ -67,14 +67,15 @@ export async function models(node: Node): Promise<HtmlString> {
     db.query`SELECT * FROM ai1_model ORDER BY name`,
     db.query`SELECT * FROM ai1_model_capability`,
     db.query`SELECT * FROM ai1_model_provider ORDER BY id`,
-    db.query`SELECT id, name, type FROM ai1_provider ORDER BY name`,
+    db.query`SELECT id, name, type, enabled FROM ai1_provider ORDER BY name`,
   ]);
   const providerList = providers.map((p) => ({ value: p.id, label: p.name }));
   const span = caps.length + 3;
 
+  const listing = new Set(providers.filter((p) => p.type === "openai").map((p) => p.id)); // those with /models
   const offerRow = (o: any) => html`<tr data-row=ai1_model_provider data-id="${o.id}">
       <td><select name=provider_id>${options(providerList, o.provider_id)}</select>
-      <td><input name=provider_model value="${o.provider_model ?? ""}" list="ai1-offered-${o.provider_id}" data-provider="${o.provider_id}">
+      <td><input name=provider_model value="${o.provider_model ?? ""}" ${listing.has(o.provider_id) ? html`list="ai1-offered-${o.provider_id}" data-provider="${o.provider_id}"` : ""}>
       <td><input name=cost type=number step=any min=0 value="${o.cost ?? ""}">
       <td><input name=speed type=number step=any min=0 value="${o.speed ?? ""}">
       <td>${number(o.used_input)} / ${number(o.used_output)}
@@ -83,9 +84,12 @@ export async function models(node: Node): Promise<HtmlString> {
 
   const modelRows = rows.map((model) => {
     const own = offers.filter((o) => o.model_id === model.id);
+    const usable = own.some((o) => o.enabled && providers.find((p) => p.id === o.provider_id)?.enabled);
     const cells = caps.map((capability) => {
       const priority = priorities.find((p) => p.model_id === model.id && p.capability === capability)?.priority;
-      return html`<td><input type=number step=1 data-capability="${capability}" value="${priority ?? ""}" placeholder=–>`;
+      return NEEDS.includes(capability)
+        ? html`<td><input type=checkbox data-capability="${capability}" ${priority == null ? "" : "checked"}>`
+        : html`<td><input type=number step=1 data-capability="${capability}" value="${priority ?? ""}" placeholder=–>`;
     });
     return html.async`<tbody data-row=ai1_model data-id="${model.id}">
     <tr>
@@ -95,7 +99,7 @@ export async function models(node: Node): Promise<HtmlString> {
       <td><button type=button class=u2-unstyle data-remove u2-confirm="${t`Remove this model?`}" title=remove><u2-ico icon=delete>✕</u2-ico></button>
     <tr><td colspan=${span}>
       <details>
-        <summary>${own.length} ${t`providers`}${own.length ? "" : html` <small class=u2-badge style="--color-dark:var(--red)">${t`unusable`}</small>`}</summary>
+        <summary>${own.length} ${t`providers`}${usable ? "" : html.async` <small class=u2-badge style="--color-dark:var(--red)">${t`unusable`}</small>`}</summary>
         <table class=u2-table>
           <thead><tr>
             <th>${t`Provider`}
@@ -129,7 +133,7 @@ export async function models(node: Node): Promise<HtmlString> {
       <button>${t`Add model`}</button>
     </form>
 </table>
-${providers.map((p) => html`<datalist id="ai1-offered-${p.id}"></datalist>`)}`;
+${[...listing].map((id) => html`<datalist id="ai1-offered-${id}"></datalist>`)}`;
 }
 
 export async function providers(node: Node): Promise<HtmlString> {
@@ -151,12 +155,12 @@ export async function providers(node: Node): Promise<HtmlString> {
       <td>
         <small class=u2-badge style="--color-dark:var(${key ? "--green" : "--gray"})">${key ? `…${key.slice(-4)}` : t`no key`}</small>
         <button type=button class=u2-unstyle data-key title="${t`Set key`}"><u2-ico icon=key>⚿</u2-ico></button>
-        ${keyUrl ? html`<a href="${keyUrl}" target=_blank rel=noopener title="${t`Get a key`}"><u2-ico icon=open_in_new>↗</u2-ico></a>` : ""}
+        ${keyUrl ? html.async`<a href="${keyUrl}" target=_blank rel=noopener title="${t`Get a key`}"><u2-ico icon=open_in_new>↗</u2-ico></a>` : ""}
       <td>${p.models}
       <td>${number(p.used_input)} / ${number(p.used_output)}
       <td>${checkbox(p.enabled)}
       <td>
-        ${p.type === "openai" ? html`<button type=button class=u2-unstyle data-check title="${t`Check: list its models`}"><u2-ico icon=network_check>✓</u2-ico></button>` : ""}
+        ${p.type === "openai" ? html.async`<button type=button class=u2-unstyle data-offered title="${t`Its models`}"><u2-ico icon=list>☰</u2-ico></button>` : ""}
         <button type=button class=u2-unstyle data-remove u2-confirm="${t`Remove this provider and its models there?`}" title=remove><u2-ico icon=delete>✕</u2-ico></button>`;
   }));
 

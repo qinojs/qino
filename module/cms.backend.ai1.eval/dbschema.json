@@ -1,0 +1,98 @@
+{
+  "properties": {
+    "ai1_eval_model": {
+      "additionalProperties": {
+        "properties": {
+          "model_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_model",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "context": {
+            "type": "integer",
+            "description": "Context window in tokens (models.dev, else Artificial Analysis)"
+          },
+          "bench_speed": {
+            "type": "number",
+            "description": "Median output tokens per second (Artificial Analysis)"
+          },
+          "bench_ttft": {
+            "type": "number",
+            "description": "Median seconds to the first token (Artificial Analysis)"
+          },
+          "checked_at": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_id"
+        ]
+      }
+    },
+    "ai1_eval_stat": {
+      "additionalProperties": {
+        "properties": {
+          "model_provider_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_model_provider",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "calls": {
+            "type": "integer",
+            "default": 0
+          },
+          "errors": {
+            "type": "integer",
+            "default": 0
+          },
+          "text_ms": {
+            "type": "integer",
+            "default": 0,
+            "description": "Time of successful text calls, for the speed"
+          },
+          "text_output": {
+            "type": "integer",
+            "default": 0,
+            "description": "Output tokens of successful text calls"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "last_at": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_provider_id"
+        ]
+      }
+    },
+    "ai1_eval_score": {
+      "additionalProperties": {
+        "properties": {
+          "model_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_model",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "metric": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary",
+            "description": "An Artificial Analysis evaluation, e.g. artificial_analysis_coding_index"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "model_id",
+          "metric"
+        ]
+      }
+    }
+  }
+}

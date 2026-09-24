@@ -82,10 +82,24 @@ export default async function api(node: Node, vars: Vars): Promise<unknown> {
       await app.settings.core.keys[provider](String(value ?? "").trim() || undefined);
       return { ok: true };
     }
-    if (vars.offered) return { ok: true, list: await offered(app, Number(vars.offered)) };
-    if (vars.check) {
-      const list = await offered(app, Number(vars.check));
-      return { ok: true, message: `${list.length} ${await app.t`models offered`}` };
+    if (vars.offered) {
+      const provider = Number(vars.offered);
+      const adopted = await db.col`
+        SELECT COALESCE(NULLIF(mp.provider_model, ''), m.name) FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id
+        WHERE mp.provider_id = ${provider}`;
+      return { ok: true, list: await offered(app, provider), adopted: adopted.map(String) };
+    }
+    if (vars.adopt) {
+      // The model is the name without the provider's prefix (meta-llama/llama-3.3-70b → llama-3.3-70b),
+      // so the same model from several providers becomes one.
+      const provider = Number(vars.adopt.provider), id = String(vars.adopt.id ?? "").trim();
+      const name = id.split("/").pop()!;
+      if (!name) return { ok: false, message: await app.t`A name is required.` };
+      const model = Number(await db.one`SELECT id FROM ai1_model WHERE name = ${name}` ?? await db.table("ai1_model").insert({ name }));
+      if (!await db.one`SELECT id FROM ai1_model_provider WHERE model_id = ${model} AND provider_id = ${provider}`) {
+        await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider, provider_model: id === name ? "" : id });
+      }
+      return { ok: true };
     }
     if (vars.try) {
       const { prompt, model, prefer } = vars.try;

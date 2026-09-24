@@ -2,6 +2,7 @@
   /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
   & > .u2-card > [cms-part] { padding: 0; overflow: auto; }
   & .-models, & .-providers { min-width: 40rem; }
+  & .-models { flex: 0 1 auto; }
   /* a priority cell holds a small number */
   & [data-capability] { width: 4rem; }
   /* capability columns hold a small number, so their label stands upright instead of stretching
@@ -10,3 +11,6 @@
   & th.-capability { writing-mode: sideways-lr; }
   & .-try output { white-space: pre-wrap; }
 }
+
+/* the models dialog lives in the body, outside the module */
+.u2x-modal .-offered { max-height: 60vh; overflow: auto; }
