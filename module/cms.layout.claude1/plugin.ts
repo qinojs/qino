@@ -59,6 +59,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <footer id=foot role=contentinfo>
     <div class=u2-width>${layoutPage.cont("foot")}</div>
   </footer>
+  <u2-cookiebanner></u2-cookiebanner>
 </div>`;
 }
 

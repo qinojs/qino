@@ -9,7 +9,7 @@ import { validateTable } from "./lib/validate.ts";
 import type { Node } from "@qino/qino/cms";
 import type { TableStatus } from "@qino/qino/cms.backend.superuser.db";
 
-const LARGE_ROWS = 100_000;
+const LARGE_ROWS = 1_000_000;
 const LARGE_BYTES = 100_000_000;
 
 export const isLarge = (status: TableStatus): boolean => (status.rows ?? 0) >= LARGE_ROWS || (status.bytes ?? 0) >= LARGE_BYTES;
