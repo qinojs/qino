@@ -1,6 +1,7 @@
 {
   "modules": {
     "ai": {},
+    "ai1": {},
     "auth": {},
     "auth.api_keys": {},
     "auth.backup_codes": {},

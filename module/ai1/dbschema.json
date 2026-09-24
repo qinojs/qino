@@ -1,0 +1,135 @@
+{
+  "properties": {
+    "ai1_provider": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "unique",
+            "description": "Also the name of its key in core.keys"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 64,
+            "default": "openai",
+            "description": "Adapter (ai1Adapters)"
+          },
+          "endpoint": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "default": 60000,
+            "description": "Longest silence: until the answer starts, and between chunks of it"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "ai1_model": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "unique"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "ai1_model_capability": {
+      "additionalProperties": {
+        "properties": {
+          "model_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_model",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "capability": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "priority": {
+            "type": "integer",
+            "default": 0,
+            "description": "Higher is tried first"
+          }
+        },
+        "required": ["model_id", "capability"]
+      }
+    },
+    "ai1_model_provider": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "model_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai1_model",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "provider_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai1_provider",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "provider_model": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "The model's name at this provider, if it differs"
+          },
+          "cost": {
+            "type": "number",
+            "description": "Price per million units, lower first with prefer: cost"
+          },
+          "speed": {
+            "type": "number",
+            "description": "Units per second, higher first with prefer: speed"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "used_input": {
+            "type": "integer",
+            "default": 0,
+            "description": "As the provider counts: tokens, characters (translation), seconds (transcription)"
+          },
+          "used_output": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "required": ["id"]
+      }
+    }
+  }
+}

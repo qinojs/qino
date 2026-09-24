@@ -1,0 +1,19 @@
+{
+  "name": "ai1",
+  "description": "AI providers and models behind one interface: text, structured answers, embeddings, images, transcription, translation and decisions, with fallbacks.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/openai.ts",
+    "lib/run.ts",
+    "lib/tasks.ts",
+    "lib/translate.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

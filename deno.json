@@ -9,6 +9,7 @@
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",
+    "./ai1": "./module/ai1/mod.ts",
     "./auth": "./module/auth/mod.ts",
     "./auth.backup_codes": "./module/auth.backup_codes/mod.ts",
     "./auth.oauth": "./module/auth.oauth/mod.ts",
@@ -72,6 +73,7 @@
     "@qino/pub/": "./module/core/pub/js/",
     "@qino/qino": "./module/core/mod.ts",
     "@qino/qino/ai": "./module/ai/mod.ts",
+    "@qino/qino/ai1": "./module/ai1/mod.ts",
     "@qino/qino/auth": "./module/auth/mod.ts",
     "@qino/qino/auth.backup_codes": "./module/auth.backup_codes/mod.ts",
     "@qino/qino/auth.oauth": "./module/auth.oauth/mod.ts",

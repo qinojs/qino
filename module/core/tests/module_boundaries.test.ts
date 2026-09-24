@@ -323,6 +323,12 @@ const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
   "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
+  // ai1 is the base AI layer; its consumers follow (PLAN-ai1.md)
+  "ai1/mod.ts embed",
+  "ai1/mod.ts image",
+  "ai1/mod.ts object",
+  "ai1/mod.ts run",
+  "ai1/mod.ts transcribe",
 ]);
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {
