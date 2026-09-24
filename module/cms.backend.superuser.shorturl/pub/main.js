@@ -6,7 +6,7 @@ cms.initNode("backend.superuser.shorturl", (el) => {
   // the list keeps its own state (search, sort, page) — reload it, not the whole node
   const reloadList = (vars) => cms.reloadPart(nid, "list", { search: search.value, sort, dir, page, ...vars });
   // a new search or sort order starts at the top again
-  search?.addEventListener("input", () => { clearTimeout(timer); page = 0; timer = setTimeout(reloadList, 250); });
+  search.addEventListener("input", () => { clearTimeout(timer); page = 0; timer = setTimeout(reloadList, 250); });
 
   el.addEventListener("submit", (e) => {
     e.preventDefault();

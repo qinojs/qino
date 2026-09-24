@@ -1,5 +1,3 @@
-import { requestStorage } from "@qino/qino";
-
 import { PATH, sign, stemOf } from "./lib/code.ts";
 
 import type { App } from "@qino/qino";
@@ -33,7 +31,6 @@ export async function shorten(app: App, url: string, opt: { expires?: number } =
         url: target,
         hits: 0,
         expires: opt.expires ?? null,
-        log_id: await requestStorage.getStore()?.logId ?? null,
       });
     } else if (known.expires != null && (opt.expires === undefined || Number(known.expires) < opt.expires)) {
       // never shorten a life, only lengthen it — no expiry is the longest
