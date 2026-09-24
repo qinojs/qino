@@ -1,6 +1,6 @@
 /* Field values collected during render, and storage of submitted entries. Unlike form2, fields
  * have editor-defined names and entries are stored. */
-import { getCtx, requestStorage, unixTime } from "@qino/qino";
+import { getCtx, unixTime } from "@qino/qino";
 
 import type { UploadedFile } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -60,7 +60,6 @@ export async function keepEntry(node: Node, form: Form): Promise<number> {
   const app = node.app;
   const id = Number(await app.db.table("form4_entry").insert({
     node_id: node.id,
-    log_id: await requestStorage.getStore()?.logId ?? null,
     created: unixTime(),
     lang: getCtx().lang,
     data: JSON.stringify(form.values),

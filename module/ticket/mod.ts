@@ -1,4 +1,4 @@
-import { ApiError, randB64, requestStorage, sha256b64url, unixTime } from "@qino/qino";
+import { ApiError, randB64, sha256b64url, unixTime } from "@qino/qino";
 
 import type { App } from "@qino/qino";
 
@@ -36,7 +36,6 @@ export async function issue(app: App, purpose: string, data?: unknown): Promise<
     uses: kind.uses ?? 1,
     used: 0,
     created: now,
-    log_id: await requestStorage.getStore()?.logId ?? null,
   });
   return handle;
 }
