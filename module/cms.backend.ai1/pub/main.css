@@ -1,0 +1,12 @@
+[qcms-mod="backend.ai1"] {
+  /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
+  & > .u2-card > [cms-part] { padding: 0; overflow: auto; }
+  & .-models, & .-providers { min-width: 40rem; }
+  /* a priority cell holds a small number */
+  & [data-capability] { width: 4rem; }
+  /* capability columns hold a small number, so their label stands upright instead of stretching
+     the column to the width of the word */
+  & thead th { vertical-align: bottom; z-index: 1; }
+  & th.-capability { writing-mode: sideways-lr; }
+  & .-try output { white-space: pre-wrap; }
+}

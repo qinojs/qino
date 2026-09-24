@@ -40,6 +40,16 @@ The timeout (`timeout_ms`) counts silence, not length: a long answer that keeps 
 Once streamed text went out (`onText`), or the caller cancelled (`opts.signal`), nothing falls
 back any more.
 
+## Browser
+
+The same capabilities for any signed-in user, shaped like the functions: `POST api/ai1/text`,
+`text/stream` (SSE: `{ delta }`, then `{ done }` or `{ error }`), `translate`, `decide`, `embed`,
+`image`. `opts` (`model`, `prefer`) go along in the body.
+
+```js
+await api.ai1.translate.post({ text: "Hallo", to: "en" });
+```
+
 ## Extending
 
 Modules declare `ai1Adapters` (provider types) and `ai1Tasks` (needs and fallbacks per

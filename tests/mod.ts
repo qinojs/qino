@@ -1,5 +1,6 @@
 export * from "../module/core/tests/deps.ts";
 export { fakeAi } from "../module/ai/tests/deps.ts";
+export { ai1Adapters, ai1Tasks, dbSchema as ai1DbSchema } from "../module/ai1/tests/deps.ts";
 export { fakeCms, render as cmsRender } from "../module/cms/tests/deps.ts";
 export { dbSchema as messagingDbSchema, templatePlaceholders } from "../module/messaging/tests/deps.ts";
 export { journal, userJournal } from "../module/cms.backend.superuser.messaging/tests/deps.ts";
