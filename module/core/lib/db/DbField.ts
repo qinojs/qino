@@ -41,8 +41,7 @@ export class DbField {
   isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 
   valueTransform(value: any): any {
-    if (this.null && value === null) return null;
-    if (this.null && value === "" && !STRING_TYPES.has(this.#type)) return null;
+    if (this.null && (value === null || value === "" && !STRING_TYPES.has(this.#type))) return null;
     // The schema type wins over the column type: SQLite stores booleans as INTEGER, so `true` would
     // otherwise be stored as the text "true", which is always truthy.
     if (this.#type === "boolean" || this.schema.type === "boolean") return value === true || value === 1 || value === "1" || value === "true";

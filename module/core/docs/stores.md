@@ -202,8 +202,8 @@ start, and a health check lists incomplete modules.
   row, checked on re-import like `deno.lock`. Deno's `--allow-import` does not help, since it applies
   to all tenants of the process. A second factor for install/uninstall would also help — `auth`
   has the factors and `auth.webauthn` the ceremony; the step-up guard on the api verb is missing.
-- **Locales of a remote module.** Locales are still found with `Deno.readDir(<module>/locale/)`,
-  which fails for remote modules because HTTP cannot list directories. `manifest.files` already has
+- **Locales of a remote module.** Locales are read from `<module>/locale/` in the local `dir`,
+  which a remote module lacks — and HTTP cannot list directories. `manifest.files` already has
   the list (see *Public files* above).
 
   Two more uses of that list are open: copying a remote module into the own store under a new name
