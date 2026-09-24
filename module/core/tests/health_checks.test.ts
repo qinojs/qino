@@ -63,3 +63,34 @@ Deno.test("healthChecks: the address you are on differs from core.url", async ()
   assertEquals(found.info, "mails and jobs link to https://set.example/");
   assertEquals(Object.keys(found.solutions), ["set it to: https://other.example/"]);
 });
+
+Deno.test("healthChecks: a corrupt SQLite database is reported", async () => {
+  const file = await Deno.makeTempFile({ suffix: ".sqlite" });
+  const open = async (migrate = false) => {
+    const db = new Db(`sqlite:${file}`);
+    if (migrate) await db.migrate(schema);
+    db.schema = schema;
+    await db.loadTables();
+    return { db, settings: fakeSettings(), modules: { all: () => new Map() }, [Symbol.asyncDispose]: () => db.close() } as any;
+  };
+  try {
+    {
+      await using a = await open(true);
+      assertEquals(await (await healthChecks(a)).error["corrupt tables"](), undefined);
+      await a.db.exec`CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)`;
+      await a.db.exec`CREATE INDEX t_v ON t (v)`;
+      for (let i = 0; i < 200; i++) await a.db.exec`INSERT INTO t (v) VALUES (${"x".repeat(100) + i})`;
+    }
+    // overwrite a page of t at the end of the file
+    const bytes = await Deno.readFile(file);
+    const pageSize = (bytes[16] << 8) | bytes[17];
+    bytes.fill(0xff, bytes.length - 2 * pageSize, bytes.length - pageSize);
+    await Deno.writeFile(file, bytes);
+    await using a = await open();
+    const found = await (await healthChecks(a)).error["corrupt tables"]() as any;
+    assertEquals(found.info.startsWith("database: "), true);
+    assertEquals(found.solutions, undefined); // no repair outside MySQL
+  } finally {
+    await Deno.remove(file);
+  }
+});

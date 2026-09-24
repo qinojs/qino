@@ -102,6 +102,23 @@ export async function healthChecks(app: App) {
     });
   }
 
+  // ── database ─────────────────────────────────────────────────────────────
+  error["corrupt tables"] = async () => {
+    const corrupt = await corruptTables(db);
+    const tables = Object.keys(corrupt);
+    if (!tables.length) return;
+    const info = Object.entries(corrupt).map(([table, msg]) => `${hee(table)}: ${hee(msg)}`).join("<br>");
+    if (db.dialect !== "mysql") return { info };
+    const repair = async () => {
+      let out = "";
+      for (const table of tables) { // one at a time: repair locks the table
+        for (const row of await db.query`REPAIR TABLE ${sql.id(table)}`) out += `${row.Msg_type}: ${row.Msg_text}\n`;
+      }
+      return out;
+    };
+    return { info, solutions: { repair: { solve: repair } } };
+  };
+
   // ── users ────────────────────────────────────────────────────────────────
   // Only projects migrated from the PHP CMS can still have the "su"/"su" default.
   error["superuser default password"] = async () => {
@@ -295,6 +312,21 @@ export async function healthChecks(app: App) {
   };
 
   return { error, warning, notice, cleanup };
+}
+
+/** Corrupt tables as `table: message`, cheap enough for a health check. MySQL: tables the server
+ *  cannot open lose their engine in information_schema and carry the error as comment. SQLite:
+ *  `quick_check` reports per database, so the key is the database. Postgres has no cheap check. */
+async function corruptTables(db: App["db"]): Promise<Record<string, string>> {
+  if (db.dialect === "mysql") {
+    const rows = await db.query`SELECT TABLE_NAME AS name, TABLE_COMMENT AS msg FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND ENGINE IS NULL`;
+    return Object.fromEntries(rows.map((row) => [String(row.name), String(row.msg)]));
+  }
+  if (db.dialect !== "sqlite") return {};
+  const rows = await db.query`PRAGMA quick_check`.catch((e) => [{ msg: e.message }]); // badly broken files throw instead
+  const errors = rows.map((row) => String(Object.values(row)[0])).filter((msg) => msg !== "ok");
+  return errors.length ? { database: errors.join("\n") } : {};
 }
 
 // SQL for "now as unix epoch" per dialect.
