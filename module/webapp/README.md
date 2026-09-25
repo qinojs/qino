@@ -39,4 +39,4 @@ app.on("webapp:manifest", ({ manifest }) => {
 - The backend preview cycles through home screen, launch screen and loaded page. It is only a
   sketch — real icon masks and browser chrome differ per platform, so the icon is shown unmasked.
   Clicking a stage stops the cycle there.
-- html.meta["application-name"] = name; not needed anymore
+- No `application-name` meta; it is no longer needed.
