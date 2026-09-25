@@ -8,6 +8,10 @@ export const APPLE_STATUS_BAR_STYLES = ["", "default", "black", "black-transluce
 
 const trim = async (value: unknown): Promise<string> => String(await value ?? "").trim();
 
+/** Unique lower-case categories from a line- or comma-separated list. */
+export const categoriesOf = (value: string): string[] =>
+  [...new Set(value.split(/[\r\n,]+/).map((v) => v.trim().toLowerCase()).filter(Boolean))];
+
 /** Build the manifest for this request, then let linked modules extend it. */
 export async function manifest(ctx: Ctx): Promise<Record<string, unknown>> {
   const app = ctx.app;
@@ -20,8 +24,7 @@ export async function manifest(ctx: Ctx): Promise<Record<string, unknown>> {
   const orientation = await trim(settings.orientation);
   const themeColor = await trim(brand.brand.primaryColor);
   const backgroundColor = await trim(brand.brand.backgroundColor);
-  const categories = [...new Set((await trim(settings.categories))
-    .split(/[\r\n,]+/).map((v) => v.trim().toLowerCase()).filter(Boolean))];
+  const categories = categoriesOf(await trim(settings.categories));
   const icon = await (await identity.file(app, "icon"))?.exists();
   const icons = icon ? [{
     src: await icon.url({ q: 90 }),
@@ -31,7 +34,7 @@ export async function manifest(ctx: Ctx): Promise<Record<string, unknown>> {
 
   const data: Record<string, unknown> = {
     name,
-    short_name: alternateName || name,
+    short_name: alternateName,
     ...(description && { description }),
     id: ctx.req.appUrl,
     scope: ctx.req.appUrl,
