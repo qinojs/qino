@@ -4,7 +4,7 @@ import { reportIp } from "./guard.ts";
 
 import type { App } from "@qino/qino";
 
-/** Never a real link on any site: secrets, repositories, server internals, dumps. */
+/** Probe targets treated as inaccessible: secrets, repositories, server internals, dumps. */
 export const suspiciousPaths = (app: App, signal: AbortSignal): void => report(app, signal, {
   early: true,
   weight: 15,
