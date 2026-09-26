@@ -45,3 +45,19 @@ Deno.test("security: early paths never reach routing, foreign paths can exist or
   assertEquals(routed, ["assets/app.js", "old.php"]);
   assertEquals(reports(app).length, 3);
 }));
+
+Deno.test("security: environment variants and exposed configuration or backup files stop early", () => withApp(async (app) => {
+  const routed: string[] = [];
+  app.on("route", ({ ctx }) => {
+    routed.push(ctx.req.appPath);
+    throw new Output("Found", { status: 200 });
+  });
+  const paths = [".env.local", ".env.production", "nested/.env.backup", "%2eenv.staging", ".env-test", "config.php", "backup.zip"];
+  for (const [i, path] of paths.entries()) {
+    assertEquals((await get(app, `10.0.0.${i + 1}`, path)).status, 404);
+  }
+  assertEquals(reports(app).length, paths.length);
+  assertEquals(routed, []);
+  assertEquals((await get(app, "10.0.0.20", "assets/app.env.js")).status, 200);
+  assertEquals(routed, ["assets/app.env.js"]);
+}));

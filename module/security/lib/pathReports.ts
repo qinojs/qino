@@ -9,9 +9,9 @@ export const suspiciousPaths = (app: App, signal: AbortSignal): void => report(a
   early: true,
   weight: 15,
   reason: "suspicious path",
-  starts: ["_profiler/", "vendor/phpunit/", "wp-admin/install.php"],
-  segments: [".env", ".git", ".svn", ".hg", ".htaccess", ".htpasswd", ".aws", ".ssh", ".ds_store"],
-  contains: ["phpinfo", "php-info", "_environment", "server-status", "server-info", "wp-config"],
+  starts: ["_profiler/", "vendor/phpunit/", "wp-admin/install.php", ".env.", ".env-"],
+  segments: [".env", ".git", ".svn", ".hg", ".htaccess", ".htpasswd", ".aws", ".ssh", ".ds_store", "config.php", "backup.zip"],
+  contains: ["phpinfo", "php-info", "_environment", "server-status", "server-info", "wp-config", "/.env.", "/.env-"],
   ends: [".sql", ".bak", ".swp"],
 });
 
