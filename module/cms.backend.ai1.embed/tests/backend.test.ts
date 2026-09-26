@@ -24,7 +24,14 @@ Deno.test("cms.backend.ai1.embed: collections can be managed and searched", asyn
     const api = cms.node.api;
     assertEquals(await api(node, { add: { model: "image-model", dimensions: 2 } }), { ok: true });
     await upsert(app, { table: "file", id: 7, part: "image" }, [1, 0], { content: "cat picture" });
-    assertStringIncludes(String(await cms.node.render(node)), "image-model/2");
+    const rendered = String(await cms.node.render(node));
+    assertStringIncludes(rendered, "image-model/2");
+    assertStringIncludes(rendered, "Source IDs");
+    assertStringIncludes(rendered, "file");
+    assertStringIncludes(rendered, "1 vectors");
+    assertEquals(await api(node, { entries: { collection: 1, table: "file", cursor: 0 } }), {
+      ok: true, entries: [{ id: 1, row_id: "7", part: "image", content: "cat picture" }], next: 0,
+    });
     const result = await api(node, { search: { collection: "1", query: [1, 0] } });
     assertEquals((result as { hits: { id: string }[] }).hits[0].id, "7");
     assertEquals(await api(node, { primary: 1 }), { ok: true });

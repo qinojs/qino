@@ -14,6 +14,11 @@ async function render(node: Node): Promise<HtmlString> {
   const rows = await db.query`SELECT c.*, COUNT(e.id) AS entries, MAX(e.updated_at) AS updated_at
     FROM ai1_embed_collection c LEFT JOIN ai1_embed_entry e ON e.collection_id = c.id
     GROUP BY c.id, c.name, c.model, c.dimensions, c.revision, c.enabled ORDER BY c.id`;
+  const sources = await db.query`SELECT collection_id, table_name, COUNT(DISTINCT row_id) AS sources,
+    SUM(CASE WHEN part LIKE ${"text:%"} THEN 1 ELSE 0 END) AS texts,
+    SUM(CASE WHEN part = ${"image"} THEN 1 ELSE 0 END) AS images,
+    COUNT(*) AS entries
+    FROM ai1_embed_entry GROUP BY collection_id, table_name ORDER BY table_name`;
   const models = await db.col`SELECT DISTINCT m.name FROM ai1_model m JOIN ai1_model_capability c ON c.model_id = m.id WHERE c.capability = ${"embed"} ORDER BY m.name`;
   const auto = !!await node.app.settings["ai1.embed"].auto;
   const chosen = String(await node.app.settings["ai1.embed"].primary || "");
@@ -22,10 +27,21 @@ async function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-card>
     <div class=-head>Embeddings</div>
     <table class=u2-table>
-      <thead><tr><th>Collection<th>Primary<th>Entries<th>Updated<th>Enabled<th>
+      <thead><tr><th>Collection<th>Primary<th>Indexed sources<th>Updated<th>Enabled<th>
       <tbody>${rows.map((row) => html.async`<tr data-id="${row.id}">
         <th>${row.name}<td><input type=radio name=primary data-primary ${row.name === primary ? "checked" : ""}>
-        <td>${row.entries}<td>${row.updated_at ?? "–"}
+        <td><details><summary>${row.entries} vectors</summary>
+          <table class=u2-table>
+            <thead><tr><th>Table<th>Source IDs<th>Text parts<th>Images<th>Other vectors
+            <tbody>${sources.filter((source) => source.collection_id === row.id).map((source) => html`<tr>
+              <th>${source.table_name}<br><button type=button data-entries data-table="${source.table_name}" data-cursor=0>Show entries</button><pre data-list></pre>
+              <td>${source.sources}
+              <td>${source.texts}
+              <td>${source.images}
+              <td>${Number(source.entries) - Number(source.texts) - Number(source.images)}
+            `)}</tbody>
+          </table>
+        </details><td>${row.updated_at ?? "–"}
         <td><input type=checkbox data-enable ${row.enabled ? "checked" : ""}>
         <td><button type=button data-remove u2-confirm="Remove ${row.name} and its vectors?">Remove</button>`)}</tbody>
     </table>
@@ -83,6 +99,13 @@ async function api(node: Node, vars: Record<string, unknown>) {
       const row = await db.table("ai1_embed_collection").selectByID(Number(vars.sync));
       if (!row) throw new Error("Collection not found");
       return { ok: true, result: await sync(app, { model: String(row.model), dimensions: Number(row.dimensions) }) };
+    }
+    if (vars.entries) {
+      const { collection, table, cursor } = vars.entries as { collection: number; table: string; cursor: number };
+      const entries = await db.query`SELECT id, row_id, part, SUBSTR(content, 1, 120) AS content FROM ai1_embed_entry
+        WHERE collection_id = ${Number(collection)} AND table_name = ${String(table)} AND id > ${Number(cursor) || 0}
+        ORDER BY id LIMIT 50`;
+      return { ok: true, entries, next: entries.length === 50 ? entries.at(-1)?.id : 0 };
     }
     if ("auto" in vars) {
       await app.settings["ai1.embed"].auto(!!vars.auto);

@@ -21,6 +21,16 @@ cms.initNode("backend.ai1.embed", (el) => {
     if (!res?.ok) location.reload();
   });
   el.addEventListener("click", async (event) => {
+    const entries = event.target.closest("[data-entries]");
+    if (entries) {
+      const res = await post({ entries: { collection: entries.closest("[data-id]").dataset.id, table: entries.dataset.table, cursor: entries.dataset.cursor } });
+      if (res?.ok) {
+        entries.parentElement.querySelector("[data-list]").textContent += res.entries.map((row) => `${row.row_id} · ${row.part}${row.content ? ` · ${row.content}` : ""}\n`).join("");
+        entries.dataset.cursor = res.next;
+        if (!res.next) entries.remove();
+      }
+      return;
+    }
     const button = event.target.closest("[data-remove]");
     if (button && (await post({ remove: button.closest("tr").dataset.id }))?.ok) location.reload();
   });

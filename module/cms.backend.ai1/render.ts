@@ -243,7 +243,7 @@ async function providers(node: Node): Promise<HtmlString> {
       <td>${checkbox(p.enabled)}
       <th><a href="${models}">${p.name}</a>
       <td class=-num><a href="${models}" title="${t`active / all`}">${p.active ?? 0} / ${p.models}</a>
-      <td><select name=type>${options(types, p.type)}</select>
+      <td>${CATALOG.some((provider) => provider.name === p.name) ? p.type : html`<select name=type>${options(types, p.type)}</select>`}
       <td><input name=endpoint value="${p.endpoint}" required>
       <td class=-num><input name=timeout_ms type=number min=1000 step=1000 value="${p.timeout_ms}">
       <td>

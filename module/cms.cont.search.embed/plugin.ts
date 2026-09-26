@@ -33,7 +33,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       pages = (await db.col`SELECT page_id FROM page_text WHERE text_id = ${Number(id)}
         UNION SELECT id FROM page WHERE title_id = ${Number(id)}`).map(Number);
     } else if (hit.table === "file") {
-      pages = (await db.col`SELECT page_id FROM page_file WHERE file_id = ${Number(hit.id)}`).map(Number);
+      pages = hit.part === "image" && /^[a-f0-9]{32}$/i.test(hit.id)
+        ? (await db.col`SELECT DISTINCT pf.page_id FROM page_file pf JOIN file f ON f.id = pf.file_id WHERE f.md5 = ${hit.id}`).map(Number)
+        : (await db.col`SELECT page_id FROM page_file WHERE file_id = ${Number(hit.id)}`).map(Number);
     }
     for (const id of pages) {
       const source = await node.cms.node(id), page = await source.page();

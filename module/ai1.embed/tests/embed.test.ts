@@ -49,7 +49,11 @@ Deno.test("ai1.embed: local vectors link text and image embeddings to rows", asy
     ];
     const dbFiles = { file: async (id: number) => {
       const row = await db.table("file").selectByID(id);
-      return { reload: () => Promise.resolve(), exists: () => Promise.resolve(true), mime: row!.mime, path: cache + row!.md5 };
+      return { reload: () => Promise.resolve(), exists: () => Promise.resolve(true), mime: row!.mime, path: cache + row!.md5,
+        transform: () => Promise.resolve(row!.md5 === "d".repeat(32)
+          ? { path: cache + "svg.png", mime: "image/png" }
+          : { path: cache + row!.md5, mime: row!.mime }),
+      };
     } };
     const app = { db, dbFiles, settings: { core: { keys: {} }, "ai1.embed": { auto: true, primary: "", chunkChars: 4000 } }, fire: () => Promise.resolve(), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
 
@@ -90,22 +94,45 @@ Deno.test("ai1.embed: local vectors link text and image embeddings to rows", asy
     assertEquals((await search(app, [0, 1])).find((hit) => hit.id === "9")?.content, "dog");
     controller.abort();
 
-    await Deno.writeFile(cache + "img1", new Uint8Array([1]));
-    await db.table("file").insert({ id: 10, text: "", mime: "image/png", md5: "img1" });
+    const img1 = "a".repeat(32), img2 = "b".repeat(32), img3 = "c".repeat(32);
+    await Deno.writeFile(cache + img1, new Uint8Array([1]));
+    await db.table("file").insert({ id: 10, text: "", mime: "image/png", md5: img1 });
     await sync(app);
-    assertEquals((await search(app, [1, 0], { table: "file" })).find((hit) => hit.id === "10")?.part, "image:img1");
+    assertEquals((await search(app, [1, 0], { table: "file" })).find((hit) => hit.id === img1)?.part, "image");
     const embedded = purposes.length;
     await sync(app);
     assertEquals(purposes.length, embedded);
-    await Deno.writeFile(cache + "img2", new Uint8Array([2]));
-    await db.table("file").update(10, { md5: "img2" });
+    await Deno.writeFile(cache + img2, new Uint8Array([2]));
+    const imageController = new AbortController();
+    init(app, { signal: imageController.signal });
+    await db.table("file").update(10, { md5: img2 });
+    for (let i = 0; i < 50; i++) {
+      const hits = await search(app, [1, 0], { table: "file" });
+      if (hits.some((hit) => hit.id === img2) && !hits.some((hit) => hit.id === img1)) break;
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    assertEquals((await search(app, [1, 0], { table: "file" })).filter((hit) => /^[a-f0-9]{32}$/.test(hit.id)).map((hit) => hit.id), [img2]);
+    imageController.abort();
+    await db.table("file").insert({ id: 12, text: "", mime: "image/png", md5: img2 });
     await sync(app);
-    assertEquals((await search(app, [1, 0], { table: "file" })).filter((hit) => hit.id === "10").map((hit) => hit.part), ["image:img2"]);
+    assertEquals((await search(app, [1, 0], { table: "file" })).filter((hit) => hit.id === img2).length, 1);
+    const deleteController = new AbortController();
+    init(app, { signal: deleteController.signal });
     await db.table("file").delete(10);
-    await sync(app);
-    assertEquals((await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === "10"), false);
-    await Deno.writeFile(cache + "img3", new Uint8Array([3]));
-    await db.table("file").insert({ id: 11, text: "cat", mime: "image/png", md5: "img3" });
+    await new Promise((r) => setTimeout(r, 20));
+    assertEquals((await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === img2), true);
+    await db.table("file").delete(12);
+    for (let i = 0; i < 50 && (await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === img2); i++) await new Promise((r) => setTimeout(r, 10));
+    assertEquals((await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === img2), false);
+    deleteController.abort();
+    const svg = "d".repeat(32), unsupported = "e".repeat(32);
+    await Deno.writeFile(cache + "svg.png", new Uint8Array([4]));
+    await db.table("file").insert({ id: 13, text: "", mime: "image/svg+xml", md5: svg });
+    await db.table("file").insert({ id: 14, text: "", mime: "image/svg+xml", md5: unsupported });
+    assertEquals((await sync(app)).errors, []);
+    assertEquals((await search(app, [1, 0], { table: "file" })).filter((hit) => [svg, unsupported].includes(hit.id)).map((hit) => hit.id), [svg]);
+    await Deno.writeFile(cache + img3, new Uint8Array([3]));
+    await db.table("file").insert({ id: 11, text: "cat", mime: "image/png", md5: img3 });
     assertEquals((await sync(app)).errors[0].endsWith("image failed"), true);
     assertEquals((await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === "11" && hit.part === "text:0"), true);
     await db.close();

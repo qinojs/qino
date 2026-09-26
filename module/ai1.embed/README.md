@@ -35,9 +35,11 @@ Consumers must enforce access to source rows before showing search results.
 
 `sync` indexes the generic `text_lang` and `file` tables, extracting file text through
 `DbFile.extractText()` when needed. `ai1.embed.auto` maintains them after table writes. Raw SQL
-bypasses table events; run `sync` to reconcile it. Image files also get an `image:<hash>` part
-when the selected model has `vision`; unchanged files are not embedded again. The Jina provider
+bypasses table events; run `sync` to reconcile it. When the selected model has `vision`, image files
+are indexed as `file/<md5>` with part `image`; identical files share one vector. The Jina provider
 uses its multimodal v5 Omni API for this. Existing Jina providers need type `jina` in `ai1`.
+Other image formats, including SVG, use the file transform pipeline to produce a PNG. If no
+transformer is available, only the image vector is skipped.
 
 The local search index is rebuilt from the application database when stale or missing. sqlite-vec
 runs exact cosine search within one collection, so search time grows with collection size.

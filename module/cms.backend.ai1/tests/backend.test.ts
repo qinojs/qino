@@ -168,11 +168,11 @@ const BENCHMARKS = { data: [
   { slug: "llama-3-3-instruct-70b", name: "Llama 3.3 Instruct 70B", release_date: today, evaluations: { artificial_analysis_intelligence_index: 28, artificial_analysis_coding_index: 22, aa_omniscience_index: 5, gpqa: 0.5, note: "text" }, median_output_tokens_per_second: 150 },
 ] };
 
-/** llama at groq and at deepinfra (by its full name); providers that list nothing. */
+/** llama at groq and at deepinfra (by its full name); disabled providers do not import offers. */
 async function llama(keys: Record<string, string> = {}) {
   const { app, node } = await setup(keys);
-  await app.db.table("ai1_provider").insert({ name: "api.groq.com", type: "deepl", endpoint: "https://api.groq.com/openai/v1" });
-  await app.db.table("ai1_provider").insert({ name: "api.deepinfra.com", type: "deepl", endpoint: "https://api.deepinfra.com/v1/openai" });
+  await app.db.table("ai1_provider").insert({ name: "api.groq.com", type: "openai", endpoint: "https://api.groq.com/openai/v1", enabled: false });
+  await app.db.table("ai1_provider").insert({ name: "api.deepinfra.com", type: "openai", endpoint: "https://api.deepinfra.com/v1/openai", enabled: false });
   await app.db.table("ai1_model").insert({ name: "llama-3.3-70b" });
   await app.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: 1, provider_model: "llama-3.3-70b-versatile" });
   await app.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: 2, provider_model: "meta-llama/Llama-3.3-70B-Instruct" });
@@ -343,12 +343,16 @@ Deno.test("cms.backend.ai1: a model the arena doesn't name is found by its descr
 
 Deno.test("cms.backend.ai1: a provider with plain ids gets its models without the org/ its list puts before", async () => {
   const { app, node } = await setup();
-  await api(node, { add: "provider", name: "api.jina.ai", type: "jina", endpoint: "https://api.jina.ai/v1" });
+  await api(node, { add: "provider", name: "api.jina.ai", type: "openai", endpoint: "https://api.jina.ai/v1" });
+  assertEquals(await app.db.one`SELECT type FROM ai1_provider WHERE name = ${"api.jina.ai"}`, "jina");
+  assertEquals((await api(node, { set: { table: "ai1_provider", id: 1, column: "type", value: "openai" } }) as any).ok, false);
+  await app.db.exec`UPDATE ai1_provider SET type = ${"openai"} WHERE name = ${"api.jina.ai"}`;
   const listed = { data: [
     { id: "jina-ai/jina-embeddings-v3", pricing: { prompt: "0.00000005", completion: "0" }, input_modalities: ["text"], output_modalities: ["embeddings"] },
     { id: "jina-ai/jina-embeddings-v5-omni-small", input_modalities: ["text", "image"], output_modalities: ["embeddings"] },
   ] };
   await withFetch((url) => url.endsWith("/v1/models") ? listed : {}, () => evaluate(app).then(() => {}));
+  assertEquals(await app.db.one`SELECT type FROM ai1_provider WHERE name = ${"api.jina.ai"}`, "jina");
   assertEquals(await app.db.query`SELECT m.name, mp.provider_model FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id`, [
     { name: "jina-embeddings-v3", provider_model: "" }, // called as jina-embeddings-v3, as Jina's API wants
     { name: "jina-embeddings-v5-omni-small", provider_model: "" },

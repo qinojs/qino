@@ -98,8 +98,13 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
   const offers = new Map((await db.query`SELECT mp.id, mp.provider_id, mp.provider_model, m.name FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id`)
     .map((o) => [`${o.provider_id} ${o.provider_model || o.name}`, Number(o.id)]));
   const done: string[] = [];
-  for (const provider of await db.query`SELECT id, name, type, endpoint FROM ai1_provider WHERE enabled = ${true}`) {
+  for (const provider of await db.query`SELECT id, name, type, endpoint, enabled FROM ai1_provider`) {
     const known = CATALOG.find((c) => c.name === provider.name);
+    if (known && provider.type !== known.type) {
+      await db.table("ai1_provider").update(provider.id, { type: known.type });
+      provider.type = known.type;
+    }
+    if (!provider.enabled) continue;
     const extra = known?.models ?? [];
     if (!listing(app, provider.type) && !extra.length) continue;
     const listed = listing(app, provider.type) ? await offered(app, provider as any).catch((e) => (done.push(`${provider.name}: ${errMsg(e)}`), [])) : [];

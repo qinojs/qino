@@ -9,20 +9,32 @@ import type { Group, Selection } from "./group.ts";
 const TABLES = new Set(["text_lang", "file"]);
 
 async function imageRow(app: App, id: string, row: Record<string, unknown> | undefined, selected: Group): Promise<void> {
-  const old = (await app.db.col`SELECT part FROM ai1_embed_entry WHERE collection_id = ${selected.id}
-    AND table_name = ${"file"} AND row_id = ${id} AND part LIKE ${"image:%"}`).map(String);
   const md5 = String(row?.md5 ?? "");
-  const file = md5 && String(row?.mime).startsWith("image/") ? await app.dbFiles.file(Number(id)) : undefined;
-  if (file) await file.reload();
-  const part = file && await file.exists() ? `image:${md5}` : "";
-  const selection = { model: selected.model, dimensions: selected.dimensions };
-  const vision = part && await app.db.one`SELECT 1 FROM ai1_model_capability c JOIN ai1_model m ON m.id = c.model_id
+  if (!md5 || !String(row?.mime).startsWith("image/")) return;
+  const indexed = await app.db.one`SELECT id FROM ai1_embed_entry WHERE collection_id = ${selected.id}
+    AND table_name = ${"file"} AND row_id = ${md5} AND part = ${"image"}`;
+  if (indexed) return;
+  const vision = await app.db.one`SELECT 1 FROM ai1_model_capability c JOIN ai1_model m ON m.id = c.model_id
     WHERE m.name = ${selected.model} AND c.capability = ${"vision"}`;
-  if (file && vision && !old.includes(part)) {
-    const image = `data:${file.mime};base64,${(await Deno.readFile(file.path)).toBase64()}`;
-    await indexImage(app, { table: "file", id, part }, image, selection);
+  if (!vision) return;
+  const file = await app.dbFiles.file(Number(id));
+  await file.reload();
+  if (!await file.exists()) return;
+  let path = file.path, mime = file.mime;
+  if (!["image/png", "image/jpeg"].includes(mime)) {
+    const transformed = await file.transform({ fmt: "png" });
+    if (transformed.error || transformed.mime !== "image/png") return;
+    path = transformed.path;
+    mime = transformed.mime;
   }
-  for (const previous of old) if (previous !== part) await remove(app, { table: "file", id, part: previous }, selection);
+  const image = `data:${mime};base64,${(await Deno.readFile(path)).toBase64()}`;
+  await indexImage(app, { table: "file", id: md5, part: "image" }, image, { model: selected.model, dimensions: selected.dimensions });
+}
+
+/** Drop an image only when no source file still refers to its content. */
+export async function removeImage(app: App, md5: string, selection: Selection = {}): Promise<void> {
+  if (await app.db.one`SELECT id FROM file WHERE md5 = ${md5} AND mime LIKE ${"image/%"} LIMIT 1`) return;
+  await remove(app, { table: "file", id: md5, part: "image" }, selection);
 }
 
 function chunks(text: string, max: number): string[] {
@@ -81,10 +93,14 @@ export async function sync(app: App, selection: Selection = {}): Promise<{ texts
     }
   }
   const old = await db.query`SELECT table_name, row_id, part FROM ai1_embed_entry
-    WHERE collection_id = ${selected.id} AND (part LIKE ${"text:%"} OR part LIKE ${"image:%"})`;
+    WHERE collection_id = ${selected.id} AND part LIKE ${"text:%"}`;
   for (const row of old) {
     const table = String(row.table_name), id = String(row.row_id);
     if (TABLES.has(table) && !live.has(`${table}\0${id}`)) await remove(app, { table, id, part: String(row.part) }, pinned);
   }
+  const images = await db.col`SELECT row_id FROM ai1_embed_entry WHERE collection_id = ${selected.id}
+    AND table_name = ${"file"} AND part = ${"image"}`;
+  const liveImages = new Set((await db.col`SELECT DISTINCT md5 FROM file WHERE mime LIKE ${"image/%"} AND md5 IS NOT NULL`).map(String));
+  for (const md5 of images.map(String)) if (/^[a-f0-9]{32}$/i.test(md5) && !liveImages.has(md5)) await remove(app, { table: "file", id: md5, part: "image" }, pinned);
   return { texts, files, errors };
 }

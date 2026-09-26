@@ -2,6 +2,7 @@
 import { errMsg, requestStorage, sql } from "@qino/qino";
 import { candidates, run } from "@qino/qino/ai1";
 
+import { CATALOG } from "./catalog.ts";
 import { BENCHMARKS_KEY, evaluate } from "./lib/sources.ts";
 import { matching } from "./render.ts";
 
@@ -38,6 +39,10 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       const { table, id, column, value } = vars.set;
       const type = EDITABLE[table]?.[column];
       if (!type) return { ok: false, message: `Not editable: ${table}.${column}` };
+      if (table === "ai1_provider" && column === "type") {
+        const name = await db.one`SELECT name FROM ai1_provider WHERE id = ${Number(id)}`;
+        if (CATALOG.some((provider) => provider.name === name)) return { ok: false, message: "A known provider's type is fixed" };
+      }
       await db.table(table).update(Number(id), { [column]: coerce(type, value) });
       return { ok: true };
     }
@@ -51,7 +56,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       const name = String(vars.name ?? "").trim();
       if (vars.add === "offer") await db.table("ai1_model_provider").insert({ model_id: Number(vars.model), provider_id: Number(vars.provider_id) });
       else if (!name) return { ok: false, message: await app.t`A name is required.` };
-      else if (vars.add === "provider") await db.table("ai1_provider").insert({ name, type: String(vars.type || "openai"), endpoint: String(vars.endpoint ?? "").trim() });
+      else if (vars.add === "provider") await db.table("ai1_provider").insert({ name, type: CATALOG.find((provider) => provider.name === name)?.type ?? String(vars.type || "openai"), endpoint: String(vars.endpoint ?? "").trim() });
       else if (vars.add === "model") await db.table("ai1_model").insert({ name });
       return { ok: true };
     }
