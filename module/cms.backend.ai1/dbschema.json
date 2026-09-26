@@ -1,0 +1,50 @@
+{
+  "properties": {
+    "ai1_model_provider_stat": {
+      "additionalProperties": {
+        "properties": {
+          "model_provider_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_model_provider",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "calls": {
+            "type": "integer",
+            "default": 0
+          },
+          "errors": {
+            "type": "integer",
+            "default": 0
+          },
+          "used_input": {
+            "type": "integer",
+            "default": 0,
+            "description": "All the usage, as the provider counts: tokens, characters, seconds"
+          },
+          "used_output": {
+            "type": "integer",
+            "default": 0
+          },
+          "ms": {
+            "type": "integer",
+            "default": 0,
+            "description": "Time of the successful calls with output tokens, for the speed"
+          },
+          "output": {
+            "type": "integer",
+            "default": 0,
+            "description": "Their output tokens"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "last_at": {
+            "type": "integer"
+          }
+        },
+        "required": ["model_provider_id"]
+      }
+    }
+  }
+}

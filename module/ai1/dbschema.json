@@ -50,6 +50,10 @@
             "maxLength": 191,
             "x-index": "unique"
           },
+          "context_length": {
+            "type": "integer",
+            "description": "Context window in tokens; a longer request skips the model"
+          },
           "enabled": {
             "type": "boolean",
             "default": true
@@ -71,11 +75,6 @@
             "type": "string",
             "maxLength": 32,
             "x-index": "primary"
-          },
-          "priority": {
-            "type": "integer",
-            "default": 0,
-            "description": "Higher is tried first"
           }
         },
         "required": ["model_id", "capability"]
@@ -117,18 +116,53 @@
           "enabled": {
             "type": "boolean",
             "default": true
-          },
-          "used_input": {
-            "type": "integer",
-            "default": 0,
-            "description": "As the provider counts: tokens, characters (translation), seconds (transcription)"
-          },
-          "used_output": {
-            "type": "integer",
-            "default": 0
           }
         },
         "required": ["id"]
+      }
+    },
+    "ai1_usage": {
+      "additionalProperties": {
+        "properties": {
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "day": {
+            "type": "integer",
+            "description": "Days since 1970 (UTC) the units count for"
+          },
+          "units": {
+            "type": "integer",
+            "default": 0,
+            "description": "Tokens, characters and seconds the user's requests used that day"
+          }
+        },
+        "required": ["usr_id"]
+      }
+    },
+    "ai1_model_score": {
+      "additionalProperties": {
+        "properties": {
+          "model_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_model",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "metric": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary",
+            "description": "intelligence, coding, math \u2026 \u2014 the names `prefer` weighs; higher is better"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": ["model_id", "metric"]
       }
     }
   }

@@ -1,16 +1,19 @@
 [qcms-mod="backend.ai1"] {
+  & .-main { min-width: 40rem; flex: 0 1 auto; }
+  & .-main > .-head { display: flex; align-items: center; gap: .5rem; }
+  & .-main > .-head > button:first-of-type { margin-left: auto; }
+  & .-main > .-head > [aria-current] { font-weight: bold; }
   /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
-  & > .u2-card > [cms-part] { padding: 0; overflow: auto; }
-  & .-models, & .-providers { min-width: 40rem; }
-  & .-models { flex: 0 1 auto; }
-  /* a priority cell holds a small number */
-  & [data-capability] { width: 4rem; }
-  /* capability columns hold a small number, so their label stands upright instead of stretching
-     the column to the width of the word */
+  & .-main > [cms-part] { padding: 0; overflow: auto; }
+  /* narrow columns hold a small number, so their label stands upright */
   & thead th { vertical-align: bottom; z-index: 1; }
-  & th.-capability { writing-mode: sideways-lr; }
-  & .-try output { white-space: pre-wrap; }
+  & th.-v { writing-mode: sideways-lr; }
+  /* numbers line up on the right, also in their fields */
+  & .-num, & .-num input { text-align: right; }
+  & [data-off] { opacity: .6; }
+  & .-error { color: var(--red); max-width: 28rem; white-space: pre-wrap; }
+  /* fields for another capability: hidden, also where a class sets display (u2-flex) */
+  & [data-for][hidden] { display: none; }
+  & .-try > form > output { white-space: pre-wrap; }
+  & .-try > form > output img { max-width: 100%; }
 }
-
-/* the models dialog lives in the body, outside the module */
-.u2x-modal .-offered { max-height: 60vh; overflow: auto; }

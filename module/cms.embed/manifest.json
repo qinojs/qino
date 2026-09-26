@@ -1,0 +1,6 @@
+{
+  "name": "cms.embed",
+  "description": "Indexes CMS page texts and attached file text in ai1.embed.",
+  "dependencies": ["cms", "ai1.embed", "cron"],
+  "files": ["README.md", "manifest.json", "mod.ts", "plugin.ts"]
+}

@@ -1,0 +1,33 @@
+{
+  "properties": {
+    "ai1_embed_collection": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "name": { "type": "string", "maxLength": 191, "x-index": "unique" },
+          "model": { "type": "string", "maxLength": 191 },
+          "dimensions": { "type": "integer" },
+          "revision": { "type": "integer", "default": 0 },
+          "enabled": { "type": "boolean", "default": true }
+        },
+        "required": ["id", "name", "model"]
+      }
+    },
+    "ai1_embed_entry": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "collection_id": { "type": "integer", "x-index": true, "x-qg-parent": "ai1_embed_collection", "x-qg-on-parent-delete": "cascade" },
+          "ref": { "type": "string", "maxLength": 64, "x-index": "unique" },
+          "table_name": { "type": "string", "maxLength": 191, "x-index": true },
+          "row_id": { "type": "string", "maxLength": 191, "x-index": true },
+          "part": { "type": "string", "maxLength": 191 },
+          "content": { "type": "string" },
+          "vector": { "type": "string", "maxLength": 1000000 },
+          "updated_at": { "type": "integer" }
+        },
+        "required": ["id", "collection_id", "ref", "table_name", "row_id", "part", "vector"]
+      }
+    }
+  }
+}

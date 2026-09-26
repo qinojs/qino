@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.ai1.embed",
+  "description": "Manages local embedding collections and generic text and file indexing.",
+  "dependencies": ["cms.backend", "ai1.embed"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
+}

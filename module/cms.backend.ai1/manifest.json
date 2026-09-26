@@ -1,12 +1,15 @@
 {
   "name": "cms.backend.ai1",
-  "description": "Configures and monitors ai1: providers, keys, models, capabilities and priorities, cost, speed and usage.",
+  "description": "Configures and evaluates ai1: all models of all providers with capabilities and priorities, context length, prices, speed, benchmarks and measured errors.",
   "dependencies": [
     "cms.backend",
-    "ai1"
+    "ai1",
+    "cron"
   ],
   "files": [
     "catalog.ts",
+    "dbschema.json",
+    "lib/sources.ts",
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",
