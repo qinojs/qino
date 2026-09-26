@@ -6,9 +6,24 @@ import ai1Schema from "@qino/m/ai1/dbschema.json" with { type: "json" };
 
 import schema from "../dbschema.json" with { type: "json" };
 import { create, indexImage, indexText, remove, search, sync, upsert } from "../mod.ts";
-import { init } from "../plugin.ts";
+import { init, install } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
+
+Deno.test("ai1.embed: new installations start with Jina Omni Small", async () => {
+  const db = new Db("sqlite::memory:");
+  try {
+    await db.migrate(schema);
+    await db.loadTables();
+    const app = { db } as App;
+    await install({ app });
+    assertEquals(await db.query`SELECT name, model, dimensions FROM ai1_embed_collection`, [{
+      name: "jina-embeddings-v5-omni-small/1024", model: "jina-embeddings-v5-omni-small", dimensions: 1024,
+    }]);
+    await install({ app });
+    assertEquals(Number(await db.one`SELECT COUNT(*) FROM ai1_embed_collection`), 1);
+  } finally { await db.close(); }
+});
 
 Deno.test("ai1.embed: local vectors link text and image embeddings to rows", async () => {
   const dir = await Deno.makeTempDir(), cache = dir + "/";

@@ -1,3 +1,4 @@
+import { create } from "./lib/group.ts";
 import { indexRow } from "./lib/source.ts";
 
 import type { App, DbEvents } from "@qino/qino";
@@ -11,6 +12,12 @@ export const settingsSchema = {
     chunkChars: { type: "integer", minimum: 100, default: 4000, description: "Maximum characters per indexed text part." },
   },
 };
+
+/** Seed the initial search space without replacing a chosen collection. */
+export async function install({ app }: { app: App }): Promise<void> {
+  if (await app.db.one`SELECT id FROM ai1_embed_collection LIMIT 1`) return;
+  await create(app, "jina-embeddings-v5-omni-small", 1024);
+}
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const pending = new Map<string, [string, string]>();

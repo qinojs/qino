@@ -10,6 +10,8 @@ Create a collection by choosing an embedding model and its vector dimensions. It
 the primary collection automatically. The backend displays all collections and can choose another
 primary collection. Dimensions describe the length of each vector, not the number of stored entries.
 The embedding adapter must return vectors of that length.
+New installations start with `jina-embeddings-v5-omni-small/1024`. Configure the model and its
+provider in `ai1` before embedding content; the collection alone does not make API calls available.
 
 ```ts
 import { create, indexImage, indexText, search, sync, upsert } from "@qino/qino/ai1.embed";
