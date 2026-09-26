@@ -36,7 +36,7 @@ Use only what you need. Modules work without configuration, declare their depend
 ## Quick start
 
 ```ts
-import { Access, App } from "jsr:@qino/qino@^0.6";
+import { Access, App } from "jsr:@qino/qino@^0.7";
 
 const app = new App(); // SQLite by default
 
@@ -59,11 +59,11 @@ Your endpoint is now available at `GET /api/hello`.
 Direct `jsr:` imports, including package subpaths, work without a `deno.json`:
 
 ```ts
-import { App } from "jsr:@qino/qino@^0.6";
-import type { Node } from "jsr:@qino/qino@^0.6/cms";
+import { App } from "jsr:@qino/qino@^0.7";
+import type { Node } from "jsr:@qino/qino@^0.7/cms";
 ```
 
-In a project, add Qino once with `deno add jsr:@qino/qino@^0.6` and use the short form:
+In a project, add Qino once with `deno add jsr:@qino/qino@^0.7` and use the short form:
 
 ```ts
 import { App } from "@qino/qino";

@@ -155,7 +155,7 @@ which also makes copied modules work:
 
 ```json
 {
-  "imports": { "@qino/qino": "jsr:@qino/qino@^0.6" }
+  "imports": { "@qino/qino": "jsr:@qino/qino@^0.7" }
 }
 ```
 
@@ -179,7 +179,7 @@ Error: module "cms" is not loaded
 There is no warning; it just fails at runtime.
 
 So point the store to where the specifier resolves. A local checkout is fine, since everything is
-`file:`. For a release, use a registry with stable URLs: `jsr:@qino/qino@^0.6` resolves to
+`file:`. For a release, use a registry with stable URLs: `jsr:@qino/qino@^0.7` resolves to
 `https://jsr.io/@qino/qino/<version>/…`, and a store at
 `https://jsr.io/@qino/qino/<version>/module/store.json` serves modules from the same URLs.
 
