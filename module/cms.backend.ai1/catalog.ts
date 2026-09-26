@@ -19,13 +19,13 @@ export const CATALOG: {
   { name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1", console: "https://openrouter.ai/settings/keys", models: [{ id: "typesafe/jev-1.13", capabilities: ["decide"], cost: 0.036 }] }, // Jev: $0.0000156 for 434 tokens on a call
   { name: "api.mistral.ai", type: "openai", endpoint: "https://api.mistral.ai/v1", console: "https://console.mistral.ai/api-keys" },
   { name: "api.x.ai", type: "openai", endpoint: "https://api.x.ai/v1" },
-  { name: "integrate.api.nvidia.com", type: "openai", endpoint: "https://integrate.api.nvidia.com/v1" },
+  { name: "integrate.api.nvidia.com", type: "nvidia", endpoint: "https://integrate.api.nvidia.com/v1" },
   { name: "aihubmix.com", type: "openai", endpoint: "https://aihubmix.com/v1" },
   { name: "api.together.xyz", type: "openai", endpoint: "https://api.together.xyz/v1" },
   { name: "api.fireworks.ai", type: "openai", endpoint: "https://api.fireworks.ai/inference/v1" },
   { name: "api.deepinfra.com", type: "openai", endpoint: "https://api.deepinfra.com/v1/openai" },
   { name: "api.cerebras.ai", type: "openai", endpoint: "https://api.cerebras.ai/v1" },
-  { name: "api.jina.ai", type: "openai", endpoint: "https://api.jina.ai/v1", console: "https://jina.ai/api-dashboard/key-manager", plainIds: true }, // jina-ai/jina-embeddings-v3 is jina-embeddings-v3
+  { name: "api.jina.ai", type: "jina", endpoint: "https://api.jina.ai/v1", console: "https://jina.ai/api-dashboard/key-manager", plainIds: true }, // jina-ai/jina-embeddings-v3 is jina-embeddings-v3
   { name: "ollama", type: "openai", endpoint: "http://localhost:11434/v1" },
   { name: "api.deepl.com", type: "deepl", endpoint: "https://api.deepl.com/v2", console: "https://www.deepl.com/your-account/keys", models: [{ id: "deepl", capabilities: ["translate"], cost: 80, scores: TRANSLATOR.deepl }] }, // ~$20 per million characters
   { name: "api-free.deepl.com", type: "deepl", endpoint: "https://api-free.deepl.com/v2", console: "https://www.deepl.com/your-account/keys", models: [{ id: "deepl", capabilities: ["translate"], cost: 0, scores: TRANSLATOR.deepl }] }, // 500,000 characters a month

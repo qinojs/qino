@@ -1,4 +1,6 @@
+import { jina } from "./lib/jina.ts";
 import { count } from "./lib/limit.ts";
+import { nvidia } from "./lib/nvidia.ts";
 import { openai, openrouter } from "./lib/openai.ts";
 import { deepl, google } from "./lib/translate.ts";
 
@@ -21,4 +23,4 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 export { ai1Capabilities } from "./lib/capabilities.ts";
 
 /** Provider types by `ai1_provider.type`. Other modules add theirs the same way. */
-export const ai1Adapters = { openai, openrouter, deepl, google };
+export const ai1Adapters = { openai, openrouter, jina, nvidia, deepl, google };

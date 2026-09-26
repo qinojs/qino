@@ -51,10 +51,10 @@ export async function offered(app: App, provider: { name: string; endpoint: stri
 }
 
 /** Such a description in models.dev's words, or undefined. Prices come per token. */
-const described = (m: any) => m.pricing || m.architecture ? {
+const described = (m: any) => m.pricing || m.architecture || m.input_modalities || m.output_modalities ? {
   id: m.id,
   description: m.description,
-  modalities: { input: m.architecture?.input_modalities, output: m.architecture?.output_modalities },
+  modalities: { input: m.architecture?.input_modalities ?? m.input_modalities, output: m.architecture?.output_modalities ?? m.output_modalities },
   tool_call: m.supported_parameters?.includes("tools"),
   structured_output: m.supported_parameters?.some((p: string) => p === "response_format" || p === "structured_outputs"),
   limit: { context: m.context_length },
@@ -72,14 +72,15 @@ async function describe(app: App, offer: { id: number; model_id: number }, meta:
   if (priced && input >= 0 && output >= 0) await db.table("ai1_model_provider").update(offer.id, { cost: Math.round((input * 3 + output) / 4 * 1e4) / 1e4 });
   // embedding models: models.dev says their output is text, so it's the family or the name
   const embedding = meta.modalities?.output?.includes("embeddings") || meta.family === "text-embedding" || /embed/i.test(meta.id ?? "");
-  const capabilities = embedding ? ["embed"] : [
-    meta.modalities?.input?.includes("text") && meta.modalities?.output?.includes("text") && "text", // not speech to text
+  const capabilities = [
+    embedding && "embed",
+    !embedding && meta.modalities?.input?.includes("text") && meta.modalities?.output?.includes("text") && "text", // not speech to text
     meta.modalities?.input?.includes("image") && "vision",
-    meta.tool_call && "tools",
-    meta.structured_output && "structured",
-    meta.modalities?.output?.includes("image") && "image",
-    String(meta.modalities?.input) === "audio" && meta.modalities?.output?.includes("text") && "transcribe", // speech to text
-    String(meta.modalities?.output) === "audio" && meta.modalities?.input?.includes("text") && "speak", // text to speech
+    !embedding && meta.tool_call && "tools",
+    !embedding && meta.structured_output && "structured",
+    !embedding && meta.modalities?.output?.includes("image") && "image",
+    !embedding && String(meta.modalities?.input) === "audio" && meta.modalities?.output?.includes("text") && "transcribe", // speech to text
+    !embedding && String(meta.modalities?.output) === "audio" && meta.modalities?.input?.includes("text") && "speak", // text to speech
   ].filter(Boolean);
   for (const capability of capabilities) await db.table("ai1_model_capability").ensure({ model_id: offer.model_id, capability });
   if (meta.limit?.context) await db.table("ai1_model").update(offer.model_id, { context_length: meta.limit.context });

@@ -221,13 +221,36 @@ Deno.test("ai1: NVIDIA embeddings distinguish passages from queries", async () =
   }, async () => {
     const testApp = await openaiApp({ embed: ["embed"] });
     await embed(testApp, { texts: ["document"], purpose: "index" });
-    await testApp.db.exec`UPDATE ai1_provider SET endpoint = ${"https://integrate.api.nvidia.com/v1"}`;
+    await testApp.db.exec`UPDATE ai1_provider SET type = ${"nvidia"}, endpoint = ${"https://integrate.api.nvidia.com/v1"}`;
     await embed(testApp, { texts: ["document"], purpose: "index" });
     await embed(testApp, { texts: ["question"], purpose: "query" });
     await embed(testApp, { texts: ["document"] });
     await testApp.db.close();
   });
   assertEquals(bodies.map((body) => body.input_type), [undefined, "passage", "query", "passage"]);
+});
+
+Deno.test("ai1: Jina Omni embeds text and images for retrieval", async () => {
+  const bodies: Record<string, unknown>[] = [];
+  await withFetch((_url, init) => {
+    bodies.push(JSON.parse(String(init?.body)));
+    return Response.json({ data: [{ embedding: [1, 2] }] });
+  }, async () => {
+    const testApp = await openaiApp({ "jina-embeddings-v5-omni-small": ["embed", "vision"] });
+    await testApp.db.exec`UPDATE ai1_provider SET type = ${"jina"}, endpoint = ${"https://api.jina.ai/v1"}`;
+    await embed(testApp, { texts: ["document"], purpose: "index" });
+    await embed(testApp, { texts: ["question"], purpose: "query" });
+    await embed(testApp, { images: ["data:image/png;base64,AA=="], purpose: "index" });
+    await testApp.db.exec`UPDATE ai1_model SET name = ${"jina-embeddings-v3"}`;
+    await embed(testApp, { texts: ["legacy"] });
+    await testApp.db.close();
+  });
+  assertEquals(bodies.map(({ task, input }) => [task, input]), [
+    ["retrieval.passage", [{ text: "document" }]],
+    ["retrieval.query", [{ text: "question" }]],
+    ["retrieval.passage", [{ image: "data:image/png;base64,AA==" }]],
+    [undefined, ["legacy"]],
+  ]);
 });
 
 Deno.test("ai1: google translates", async () => {

@@ -49,10 +49,11 @@ in the messages) and `tools`. A model is a candidate if it has the capability an
 Embeddings never fall back to another model: its vectors wouldn't fit the index. Pin the model you
 index with (`opts.model`).
 Use `purpose: "index"` for stored content and `purpose: "query"` for search text. NVIDIA's
-asymmetric embedding endpoint receives these as `input_type: "passage"` and `"query"`; a missing
-purpose defaults to indexing. Other OpenAI-compatible endpoints receive no `input_type`.
-`embed(app, { images: [dataUrl] }, { model })` also works with adapters that support image
-embeddings; the built-in OpenAI-compatible adapter accepts text only.
+asymmetric embedding endpoint receives these as `input_type: "passage"` and `"query"`; Jina Omni
+receives `task: "retrieval.passage"` and `"retrieval.query"`. A missing purpose defaults to indexing.
+Set the provider type to `nvidia` or `jina` for those endpoints; both reuse the common OpenAI
+operations. `embed(app, { images: [dataUrl] }, { model })` works with Jina Omni. The plain `openai`
+adapter accepts text embeddings only.
 
 A model at a provider that times out, is overloaded or fails with 5xx is skipped for a minute.
 The timeout (`timeout_ms`) counts silence, not length: a long answer that keeps streaming is fine.

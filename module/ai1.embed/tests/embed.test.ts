@@ -31,7 +31,7 @@ Deno.test("ai1.embed: local vectors link text and image embeddings to rows", asy
     const db = new Db("sqlite::memory:");
     await db.migrate({ properties: { ...ai1Schema.properties, ...schema.properties } });
     await db.exec`CREATE TABLE text_lang (text_id INTEGER, lang TEXT, text TEXT, PRIMARY KEY (text_id, lang))`;
-    await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY, text TEXT)`;
+    await db.exec`CREATE TABLE file (id INTEGER PRIMARY KEY, text TEXT, mime TEXT, md5 TEXT)`;
     await db.loadTables();
     await db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
     await db.table("ai1_model").insert({ name: "multi" });
@@ -42,11 +42,16 @@ Deno.test("ai1.embed: local vectors link text and image embeddings to rows", asy
     const mods = [
       { name: "ai1", plugin: { ai1Capabilities, ai1Adapters: { fake: { embed: (_call: unknown, input: { texts?: string[]; images?: string[]; purpose?: string }) => {
         purposes.push(input.purpose);
+        if (input.images?.[0]?.endsWith("Aw==")) return Promise.reject(new Error("image failed"));
         return Promise.resolve(input.images ? input.images.map(() => [0.8, 0.2]) : input.texts!.map((t) => t === "cat" ? [1, 0] : [0, 1]));
       } } } } },
       { name: "ai1.embed", cache, plugin: {} },
     ];
-    const app = { db, settings: { core: { keys: {} }, "ai1.embed": { auto: true, primary: "", chunkChars: 4000 } }, fire: () => Promise.resolve(), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
+    const dbFiles = { file: async (id: number) => {
+      const row = await db.table("file").selectByID(id);
+      return { reload: () => Promise.resolve(), exists: () => Promise.resolve(true), mime: row!.mime, path: cache + row!.md5 };
+    } };
+    const app = { db, dbFiles, settings: { core: { keys: {} }, "ai1.embed": { auto: true, primary: "", chunkChars: 4000 } }, fire: () => Promise.resolve(), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
 
     const primary = await create(app, "multi", 2);
     assertEquals(primary.name, "multi/2");
@@ -84,6 +89,25 @@ Deno.test("ai1.embed: local vectors link text and image embeddings to rows", asy
     assertEquals(await sync(app), { texts: 0, files: 1, errors: [] });
     assertEquals((await search(app, [0, 1])).find((hit) => hit.id === "9")?.content, "dog");
     controller.abort();
+
+    await Deno.writeFile(cache + "img1", new Uint8Array([1]));
+    await db.table("file").insert({ id: 10, text: "", mime: "image/png", md5: "img1" });
+    await sync(app);
+    assertEquals((await search(app, [1, 0], { table: "file" })).find((hit) => hit.id === "10")?.part, "image:img1");
+    const embedded = purposes.length;
+    await sync(app);
+    assertEquals(purposes.length, embedded);
+    await Deno.writeFile(cache + "img2", new Uint8Array([2]));
+    await db.table("file").update(10, { md5: "img2" });
+    await sync(app);
+    assertEquals((await search(app, [1, 0], { table: "file" })).filter((hit) => hit.id === "10").map((hit) => hit.part), ["image:img2"]);
+    await db.table("file").delete(10);
+    await sync(app);
+    assertEquals((await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === "10"), false);
+    await Deno.writeFile(cache + "img3", new Uint8Array([3]));
+    await db.table("file").insert({ id: 11, text: "cat", mime: "image/png", md5: "img3" });
+    assertEquals((await sync(app)).errors[0].endsWith("image failed"), true);
+    assertEquals((await search(app, [1, 0], { table: "file" })).some((hit) => hit.id === "11" && hit.part === "text:0"), true);
     await db.close();
   } finally { await Deno.remove(dir, { recursive: true }); }
 });

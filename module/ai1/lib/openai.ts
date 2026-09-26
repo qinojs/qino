@@ -15,7 +15,7 @@ const auth = (call: Call): Record<string, string> => call.key ? { authorization:
 const request = (call: Call, path: string, body: unknown) =>
   call.fetch(path, { method: "POST", headers: { ...auth(call), "content-type": "application/json" }, body: JSON.stringify(body) });
 
-const post = async (call: Call, path: string, body: unknown) => (await request(call, path, body)).json();
+export const post = async (call: Call, path: string, body: unknown) => (await request(call, path, body)).json();
 
 /** Generated images as URLs: the provider's, or data URLs of the bytes. */
 const urls = (call: Call, prompt: string, data: any): string[] => {
@@ -110,9 +110,7 @@ export const openai: Adapter = {
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, jsonSchema(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");
-    const { texts } = input;
-    const nvidia = new URL(call.endpoint).hostname === "integrate.api.nvidia.com";
-    const data = await post(call, "/embeddings", { model: call.model, input: texts, ...(nvidia && { input_type: input.purpose === "query" ? "query" : "passage" }) });
+    const data = await post(call, "/embeddings", { model: call.model, input: input.texts });
     call.usage(data.usage?.prompt_tokens);
     return data.data.map((d: any) => d.embedding);
   },

@@ -343,11 +343,19 @@ Deno.test("cms.backend.ai1: a model the arena doesn't name is found by its descr
 
 Deno.test("cms.backend.ai1: a provider with plain ids gets its models without the org/ its list puts before", async () => {
   const { app, node } = await setup();
-  await api(node, { add: "provider", name: "api.jina.ai", type: "openai", endpoint: "https://api.jina.ai/v1" });
-  const listed = { data: [{ id: "jina-ai/jina-embeddings-v3", pricing: { prompt: "0.00000005", completion: "0" }, input_modalities: ["text"], output_modalities: ["embeddings"] }] };
+  await api(node, { add: "provider", name: "api.jina.ai", type: "jina", endpoint: "https://api.jina.ai/v1" });
+  const listed = { data: [
+    { id: "jina-ai/jina-embeddings-v3", pricing: { prompt: "0.00000005", completion: "0" }, input_modalities: ["text"], output_modalities: ["embeddings"] },
+    { id: "jina-ai/jina-embeddings-v5-omni-small", input_modalities: ["text", "image"], output_modalities: ["embeddings"] },
+  ] };
   await withFetch((url) => url.endsWith("/v1/models") ? listed : {}, () => evaluate(app).then(() => {}));
   assertEquals(await app.db.query`SELECT m.name, mp.provider_model FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id`, [
     { name: "jina-embeddings-v3", provider_model: "" }, // called as jina-embeddings-v3, as Jina's API wants
+    { name: "jina-embeddings-v5-omni-small", provider_model: "" },
   ]);
-  assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability`, ["embed"]);
+  assertEquals(await app.db.query`SELECT m.name, c.capability FROM ai1_model_capability c JOIN ai1_model m ON m.id = c.model_id ORDER BY m.name, c.capability`, [
+    { name: "jina-embeddings-v3", capability: "embed" },
+    { name: "jina-embeddings-v5-omni-small", capability: "embed" },
+    { name: "jina-embeddings-v5-omni-small", capability: "vision" },
+  ]);
 });
