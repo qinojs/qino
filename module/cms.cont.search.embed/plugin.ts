@@ -8,7 +8,6 @@ const QUERY = "cms_search_embed";
 
 const settingsSchema = {
   properties: {
-    collection: { type: "string", default: "cms", description: "Embedding collection to search." },
     startPage: { type: "integer", minimum: 1, description: "Restricts results to this page and its descendants.", "x-html": { type: "qgcms-page" } },
     "hide input": { type: "boolean", description: "Renders only the results." },
   },
@@ -26,7 +25,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db = ctx.app.db, startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
   const found = new Map<number, { page: Node; content: string; score: number }>();
-  for (const hit of await search(ctx.app, String(node.settings.collection() || "cms"), query, { limit: 100 })) {
+  for (const hit of await search(ctx.app, query, { limit: 100 })) {
     let pages: number[] = [];
     if (hit.table === "text_lang") {
       const [id, lang] = String(hit.id).split(":");

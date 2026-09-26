@@ -7,7 +7,7 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export const settingsSchema = {
   properties: {
     auto: { type: "boolean", default: false, description: "Maintain text and file embeddings after database writes." },
-    collection: { type: "string", default: "main", description: "Collection for automatic text and file embeddings." },
+    primary: { type: "string", default: "", description: "Primary embedding collection; the first collection is used when empty." },
     chunkChars: { type: "integer", minimum: 100, default: 4000, description: "Maximum characters per indexed text part." },
   },
 };
@@ -23,7 +23,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       while (pending.size && !signal.aborted) {
         const [key, [table, id]] = pending.entries().next().value!;
         pending.delete(key);
-        try { await indexRow(app, table, id, String(await app.settings["ai1.embed"].collection || "main")); }
+        try { await indexRow(app, table, id); }
         catch (e) { console.error(`ai1.embed: ${table}/${id}:`, e); }
       }
     } finally { busy = false; }

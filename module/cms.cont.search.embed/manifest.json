@@ -1,6 +1,6 @@
 {
   "name": "cms.cont.search.embed",
   "description": "Searches CMS page texts and files by meaning.",
-  "dependencies": ["cms", "cms.embed"],
+  "dependencies": ["cms", "ai1.embed"],
   "files": ["manifest.json", "plugin.ts", "pub/module.svg"]
 }

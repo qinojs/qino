@@ -3,14 +3,14 @@ import { assertEquals } from "@qino/qino/tests";
 import { ai1Capabilities } from "@qino/m/ai1/plugin.ts";
 import ai1Schema from "@qino/m/ai1/dbschema.json" with { type: "json" };
 import embedSchema from "@qino/m/ai1.embed/dbschema.json" with { type: "json" };
-import { search, upsert } from "@qino/qino/ai1.embed";
+import { create, search, upsert } from "@qino/qino/ai1.embed";
 
 import { sync } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
 Deno.test("cms.embed: indexes page text and extracted file text, preserving image vectors", async () => {
-  const cache = await Deno.makeTempDir();
+  const dir = await Deno.makeTempDir(), cache = dir + "/";
   try {
     const db = new Db("sqlite::memory:");
     await db.migrate({ properties: { ...ai1Schema.properties, ...embedSchema.properties } });
@@ -36,18 +36,19 @@ Deno.test("cms.embed: indexes page text and extracted file text, preserving imag
       } } } } },
       { name: "ai1.embed", cache, plugin: {} },
     ];
-    const app = { db, settings: { core: { keys: {} }, "cms.embed": { chunkChars: 4000 } }, fire: () => Promise.resolve(), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
-    await upsert(app, "cms", { table: "file", id: 7, part: "image" }, [1, 0], "photo", "multi");
+    const app = { db, settings: { core: { keys: {} }, "cms.embed": { chunkChars: 4000 }, "ai1.embed": { primary: "" } }, fire: () => Promise.resolve(), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
+    await create(app, "multi", 2);
+    await upsert(app, { table: "file", id: 7, part: "image" }, [1, 0], { content: "photo" });
     assertEquals(await sync(app), { texts: 1, files: 1, errors: [] });
     assertEquals(embeds, 2);
-    assertEquals((await search(app, "cms", [1, 0])).map((hit) => [hit.table, hit.part]).sort(), [["file", "image"], ["file", "text:0"], ["text_lang", "text:0"]]);
+    assertEquals((await search(app, [1, 0])).map((hit) => [hit.table, hit.part]).sort(), [["file", "image"], ["file", "text:0"], ["text_lang", "text:0"]]);
     await db.exec`UPDATE text_lang SET text = 'dog page' WHERE text_id = 5`;
     assertEquals(await sync(app), { texts: 1, files: 1, errors: [] });
     assertEquals(embeds, 3); // unchanged file text was not embedded again
-    assertEquals((await search(app, "cms", [0, 1], { table: "text_lang" }))[0].content, "dog page");
+    assertEquals((await search(app, [0, 1], { table: "text_lang" }))[0].content, "dog page");
     await db.exec`DELETE FROM page_file WHERE file_id = 7`;
     assertEquals(await sync(app), { texts: 1, files: 0, errors: [] });
-    assertEquals((await search(app, "cms", [1, 0], { table: "file" })).map((hit) => hit.part), ["image"]);
+    assertEquals((await search(app, [1, 0], { table: "file" })).map((hit) => hit.part), ["image"]);
     await db.close();
-  } finally { await Deno.remove(cache, { recursive: true }); }
+  } finally { await Deno.remove(dir, { recursive: true }); }
 });

@@ -21,9 +21,11 @@ async function open(app: App): Promise<DatabaseSync> {
   if (!dir) throw new Error('Module "ai1.embed" is not loaded');
   await Deno.mkdir(dir, { recursive: true });
   const db = new DatabaseSync(dir + "vectors.sqlite", { allowExtension: true });
-  sqliteVec.load(db);
-  db.exec("PRAGMA journal_mode = WAL; CREATE TABLE IF NOT EXISTS revision (collection_id INTEGER PRIMARY KEY, value INTEGER)");
-  return db;
+  try {
+    sqliteVec.load(db);
+    db.exec("PRAGMA journal_mode = WAL; CREATE TABLE IF NOT EXISTS revision (collection_id INTEGER PRIMARY KEY, value INTEGER)");
+    return db;
+  } catch (e) { db.close(); throw e; }
 }
 
 /** Update an existing index after one SQL row changed; absent/stale caches rebuild on search. */

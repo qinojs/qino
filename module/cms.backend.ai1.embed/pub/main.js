@@ -12,6 +12,10 @@ cms.initNode("backend.ai1.embed", (el) => {
       if (!(await post({ auto: event.target.checked }))?.ok) event.target.checked = !event.target.checked;
       return;
     }
+    if (event.target.matches("[data-primary]")) {
+      if (!(await post({ primary: event.target.closest("tr").dataset.id }))?.ok) location.reload();
+      return;
+    }
     if (!event.target.matches("[data-enable]")) return;
     const res = await post({ enable: { id: event.target.closest("tr").dataset.id, on: event.target.checked } });
     if (!res?.ok) location.reload();

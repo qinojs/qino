@@ -4,13 +4,13 @@
       "additionalProperties": {
         "properties": {
           "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
-          "name": { "type": "string", "maxLength": 191, "x-index": "unique" },
+          "name": { "type": "string", "maxLength": 255, "x-index": "unique" },
           "model": { "type": "string", "maxLength": 191 },
           "dimensions": { "type": "integer" },
           "revision": { "type": "integer", "default": 0 },
           "enabled": { "type": "boolean", "default": true }
         },
-        "required": ["id", "name", "model"]
+        "required": ["id", "name", "model", "dimensions"]
       }
     },
     "ai1_embed_entry": {
