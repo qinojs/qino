@@ -1,6 +1,6 @@
 import * as sqliteVec from "sqlite-vec";
 
-import { collections, create, drop } from "./lib/collection.ts";
+import { create } from "./lib/collection.ts";
 
 import type { App } from "@qino/qino";
 
@@ -17,11 +17,6 @@ export const settingsSchema = {
 export async function install({ app }: { app: App }): Promise<void> {
   if (await app.db.one`SELECT id FROM ai1_embed_collection LIMIT 1`) return;
   await create(app, "jina-embeddings-v5-omni-small", 1024);
-}
-
-/** The collection tables are created at runtime, so the schema does not know them. */
-export async function uninstall({ app }: { app: App }): Promise<void> {
-  for (const { id } of await collections(app)) await drop(app, id);
 }
 
 /** SQLite gets its vector functions per connection; MariaDB and PostgreSQL have them built in. */

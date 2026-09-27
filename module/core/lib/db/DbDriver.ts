@@ -120,7 +120,7 @@ class MysqlDriver extends DbDriver {
   override async ensureDatabase() {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
-      await tmp.query(`CREATE DATABASE IF NOT EXISTS ${this.quoteId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
+      await tmp.query(`CREATE DATABASE IF NOT EXISTS ${this.quoteId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci`);
     } finally {
       await tmp.end();
     }

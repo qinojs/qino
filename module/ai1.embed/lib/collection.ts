@@ -1,68 +1,55 @@
 import { sql } from "@qino/qino";
 
-import { addColumn } from "./vector.ts";
+import { unfit } from "./vector.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Db, Row } from "@qino/qino";
 
-/** One embedding model with its vector length; its vectors live in their own table. */
-export type Collection = { id: number; model: string; dimensions: number };
+/** One embedding model with its vector length; `vision` if the model embeds images too, as in ai1. */
+export type Collection = { id: number; model: string; dimensions: number; vision: boolean };
 
-/** The collection's table; the id comes from the database, never from input. */
-export const table = (collection: Pick<Collection, "id">): string => `ai1_embed_${collection.id}`;
+/** A table `embedding_<name>`, declared by the module that embeds something; `keys` are its primary
+ *  key columns besides chunk and collection_id. */
+export type Embedding = { name: string; table: string; keys: string[] };
 
-// `source` + `source_id` point to the row, `part` names a field, language or image of it, `chunk`
-// numbers the pieces of a long text. `hash` identifies the content: unchanged content is not
-// embedded again, and equal content elsewhere lends its vector.
-const columns = {
-  properties: {
-    id: { type: "integer", "x-index": "primary", "x-autoincrement": true },
-    source: { type: "string", maxLength: 64 },
-    source_id: { type: "integer" },
-    part: { type: "string", maxLength: 64, default: "" },
-    chunk: { type: "integer", default: 0 },
-    hash: { type: "string", maxLength: 64, "x-index": true },
-    content: { type: "string" },
-  },
-  required: ["id", "source", "source_id", "part", "chunk", "hash"],
-};
+/** All embedding tables of the database. */
+export const embeddings = (db: Db): Embedding[] => Object.keys(db.tables).flatMap((table) => {
+  const props = db.schema.properties[table]?.additionalProperties?.properties;
+  if (!table.startsWith("embedding_") || !props) return [];
+  const keys = Object.keys(props).filter((col) => props[col]["x-index"] === "primary" && col !== "chunk" && col !== "collection_id");
+  return [{ name: table.slice(10), table, keys }];
+});
 
-const select = sql`SELECT id, model, dimensions FROM ai1_embed_collection`;
+const select = sql`SELECT id, model, dimensions, EXISTS (SELECT 1 FROM ai1_model_capability k JOIN ai1_model m ON m.id = k.model_id
+  WHERE m.name = ai1_embed_collection.model AND k.capability = ${"vision"}) AS vision FROM ai1_embed_collection`;
+const read = (row?: Row): Collection | undefined => row && { id: Number(row.id), model: String(row.model), dimensions: Number(row.dimensions), vision: !!Number(row.vision) };
 
-/** The collection for `model` and `dimensions`, created with its table if missing. */
+/** The collection for `model` and `dimensions`, created if missing. */
 export async function create(app: App, model: string, dimensions: number): Promise<Collection> {
   model = String(model ?? "").trim();
   if (!model || !Number.isSafeInteger(dimensions) || dimensions < 1) throw new Error("A model and a positive vector length are required");
-  const db = app.db;
-  const found = await db.row<Collection>`${select} WHERE model = ${model} AND dimensions = ${dimensions}`;
-  if (found) return found;
-  const collection = { id: Number(await db.table("ai1_embed_collection").insert({ model, dimensions })), model, dimensions };
-  const name = table(collection);
-  try {
-    await db.migrate({ properties: { [name]: { additionalProperties: columns } } }, { patch: true });
-    await db.exec`CREATE UNIQUE INDEX ${sql.id(name + "_ref")} ON ${sql.id(name)} (source, source_id, part, chunk)`;
-    await addColumn(db, name, dimensions);
-    await db.loadTables();
-  } catch (e) {
-    await drop(app, collection.id);
-    throw e;
-  }
-  return collection;
+  const find = async () => read(await app.db.row`${select} WHERE model = ${model} AND dimensions = ${dimensions}`);
+  return await find() ?? (await app.db.table("ai1_embed_collection").insert({ model, dimensions }), (await find())!);
 }
 
 /** The collection `id`; without one the primary collection, else the first. */
 export async function collection(app: App, id?: number): Promise<Collection | undefined> {
-  if (id) return app.db.row<Collection>`${select} WHERE id = ${id}`;
+  if (id) return read(await app.db.row`${select} WHERE id = ${id}`);
   const primary = Number(await app.settings["ai1.embed"].primary);
-  return primary && await app.db.row<Collection>`${select} WHERE id = ${primary}` || app.db.row<Collection>`${select} ORDER BY id LIMIT 1`;
+  return read(primary && await app.db.row`${select} WHERE id = ${primary}` || await app.db.row`${select} ORDER BY id LIMIT 1`);
 }
 
 /** All collections, oldest first. */
-export const collections = (app: App): Promise<Collection[]> => app.db.query<Collection>`${select} ORDER BY id`;
+export const collections = async (app: App): Promise<Collection[]> => (await app.db.query`${select} ORDER BY id`).map((row) => read(row)!);
 
 /** Delete a collection with its vectors. */
 export async function drop(app: App, id: number): Promise<void> {
-  await app.db.exec`DROP TABLE IF EXISTS ${sql.id(table({ id }))}`;
-  await app.db.exec`DELETE FROM ai1_embed_collection WHERE id = ${id}`;
+  const c = await collection(app, id), db = app.db;
+  if (!c) return;
+  // one DELETE per table; the row-wise cascade of the collection row would take ages here
+  for (const { table } of embeddings(db)) {
+    await db.exec`DELETE FROM ${sql.id(table)} WHERE collection_id = ${id}`;
+    await unfit(db, table, c);
+  }
+  await db.table("ai1_embed_collection").delete(id);
   if (Number(await app.settings["ai1.embed"].primary) === id) await app.settings["ai1.embed"].primary(0);
-  await app.db.loadTables();
 }

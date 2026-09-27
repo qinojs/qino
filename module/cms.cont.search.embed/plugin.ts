@@ -26,11 +26,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const start = startId ? await node.cms.node(startId) : undefined;
   const found = new Map<number, { page: Node; content: string; score: number }>();
   // texts only in the page language; access, visibility and the start page are checked per page below
-  const where = sql`e.source = ${"file"} OR e.source = ${"text"} AND e.part = ${ctx.lang}`;
-  for (const hit of await search(ctx.app, query, { where, limit: 100 })) {
-    const pages = (hit.source === "text"
-      ? await db.col`SELECT page_id FROM page_text WHERE text_id = ${hit.id} UNION SELECT id FROM page WHERE title_id = ${hit.id}`
-      : await db.col`SELECT page_id FROM page_file WHERE file_id = ${hit.id}`).map(Number);
+  const names = { node_text: sql`e.lang = ${ctx.lang}`, file_text: true, file_image: true } as const;
+  for (const hit of await search(ctx.app, names, query, { limit: 100 })) {
+    const pages = hit.name === "node_text" ? [Number(hit.key.node_id)]
+      : (await db.col`SELECT page_id FROM page_file WHERE file_id = ${hit.key.file_id}`).map(Number);
     for (const id of pages) {
       const source = await node.cms.node(id), page = await source.page();
       if (!page.vs.searchable || !await source.isReadable() || start && !await source.in(start)) continue;

@@ -121,4 +121,21 @@ if [ "$COUNT" -gt 0 ]; then
   while read -r t; do sql "$DB" -e "ALTER TABLE \`$t\` ENGINE=InnoDB"; done < "$TMP/myisam.txt"
 fi
 
+# 6. One collation for all tables: MariaDB's default for utf8mb4 since 11.2, which the tables qino
+#    creates get anyway. Legacy tables (utf8mb3, general_ci, unicode_520_ci) cannot be compared with
+#    them ("Illegal mix of collations").
+sql "$DB" -e "ALTER DATABASE \`$DB\` CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci"
+sql -N -e "SELECT table_name FROM information_schema.tables
+     WHERE table_schema='$DB' AND table_type='BASE TABLE' AND table_collation <> 'utf8mb4_uca1400_ai_ci'" > "$TMP/collation.txt"
+COUNT=$(wc -l < "$TMP/collation.txt")
+if [ "$COUNT" -gt 0 ]; then
+  echo "   $COUNT Tabellen → utf8mb4_uca1400_ai_ci"
+  # utf8mb4 needs 4 bytes per character instead of 3: a table with many VARCHARs can outgrow the
+  # 64 KB row limit. It stays as it is and is reported — its own columns can become TEXT by hand.
+  while read -r t; do
+    sql "$DB" -e "ALTER TABLE \`$t\` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci" \
+      || echo "   $t: Zeile zu gross für utf8mb4 — eigene VARCHAR-Spalten zu TEXT machen, dann erneut"
+  done < "$TMP/collation.txt"
+fi
+
 echo "   bereit"

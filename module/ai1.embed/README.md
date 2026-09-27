@@ -1,27 +1,53 @@
 # ai1.embed
 
-Vector search over rows of any table, stored in the application database with its native vector
-type: sqlite-vec (Deno needs `--allow-ffi`), MariaDB ≥ 11.7 or PostgreSQL with pgvector. MariaDB
-and PostgreSQL search through an HNSW index, SQLite scans exactly.
+Vector search over rows of any table, in the application database with its native vector type:
+sqlite-vec (Deno needs `--allow-ffi`), MariaDB ≥ 11.7 or PostgreSQL with pgvector. MariaDB and
+PostgreSQL search through an HNSW index, SQLite scans exactly.
 
-A collection is one embedding model with its vector length; its vectors live in the table
-`ai1_embed_<id>`. New installations start with `jina-embeddings-v5-omni-small/1024`; the model and
-its provider are configured in `ai1`. Calls without `collection` use the primary one.
+Whatever is embedded gets its own table `embedding_<name>`, declared by the module that embeds it,
+usually named `<table>_<aspect>`: `file_text`, `file_image`, `node_text`, `user_bio`. The key is up
+to the module (primary key columns besides `chunk` and `collection_id`); a key column with
+`x-qg-parent` deletes the vectors along with its row. Only the column `embedding` is special:
 
-```ts
-import { create, index, remove, search } from "@qino/qino/ai1.embed";
-
-await create(app, "jina-embeddings-v5-omni-small", 1024);
-await index(app, { source: "article", id: 42, part: "body" }, articleText);
-await index(app, { source: "file", id: 7, part: "image" }, { image: dataUrl, hash: file.md5 });
-const hits = await search(app, "what to find", { where: sql`e.source = ${"article"}`, limit: 10 });
-await remove(app, { source: "article", id: 42 });
+```json
+"embedding_file_image": { "additionalProperties": {
+  "properties": {
+    "file_id":       { "type": "integer", "x-index": "primary", "x-qg-parent": "file", "x-qg-on-parent-delete": "cascade" },
+    "chunk":         { "type": "integer", "x-index": "primary", "default": 0 },
+    "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai1_embed_collection", "x-qg-on-parent-delete": "cascade" },
+    "hash":          { "type": "string", "maxLength": 64, "x-index": true },
+    "content":       { "type": "string" },
+    "embedding":     { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
+  },
+  "required": ["file_id", "chunk", "collection_id", "hash", "embedding"]
+}}
 ```
 
-A vector belongs to `source` + `id` (usually a table and its row), optionally to a `part` (a field,
-a language, an image). `index` splits text into chunks, skips unchanged ones and reuses the vector
-of equal content (same text, same image `hash`). `search` filters with `where` on the collection
-table (alias `e`) before the limit applies; subqueries into the source tables work there too.
-Check access to the source rows before showing hits.
+`chunk` numbers the pieces of a long text (cut between paragraphs where possible), `hash` identifies the embedded content (unchanged content is
+not embedded again, equal content reuses a vector), `content` is the text shown with a hit. MariaDB
+allows 256 bytes of primary key for a vector index: hash long string keys such as paths.
+
+A collection is one embedding model with its vector length. Collections share the tables, so a new
+model can be indexed while the old one still answers. New installations start with
+`jina-embeddings-v5-omni-small/1024`; the model and its provider are configured in `ai1`. Calls
+without `collection` use the primary one.
+
+```ts
+import { index, remove, search } from "@qino/qino/ai1.embed";
+
+await index(app, "file_text", { file_id: 7 }, text);
+await index(app, "file_image", { file_id: 7 }, { image: dataUrl, hash: md5 });
+const hits = await search(app, { file_text: true, node_text: sql`e.lang = ${lang}` }, "what to find");
+await remove(app, "file_text", { file_id: 7 });
+```
+
+`search` takes one name, or several with a filter each on the table's rows (alias `e`; `true` for
+none) that applies before the limit; the query is embedded once. Hits carry `name`, `key`, `chunk`,
+`content` and `score`. Check access before showing them.
+
+Vectors are stored at length 1, so every dialect's default distance ranks like cosine. PostgreSQL
+keeps each row at its own length and indexes each collection separately (up to 2000 dimensions).
+MariaDB needs one length per column: it grows to the longest collection, shorter vectors are padded
+with zeros, which changes no distance.
 
 `cms.embed` indexes CMS pages this way.
