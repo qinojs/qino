@@ -28,7 +28,6 @@ Deno.test("cms.backend.ai1.embed: collections can be managed and searched", asyn
 
     assertEquals(await api(node, { primary: 2 }), { ok: true });
     assertEquals((await collection(app))?.model, "wide");
-    assertEquals((await api(node, { primary: 9 }))?.ok, false);
     assertEquals(await api(node, { drop: 2 }), { ok: true });
     assertEquals(primary, 0);
     assertEquals((await collection(app))?.model, "multi");

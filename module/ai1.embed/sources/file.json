@@ -1,0 +1,30 @@
+{
+  "properties": {
+    "embedding_file_image": {
+      "additionalProperties": {
+        "properties": {
+          "file_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "file", "x-qg-on-parent-delete": "cascade" },
+          "chunk": { "type": "integer", "x-index": "primary", "default": 0 },
+          "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai1_embed_collection", "x-qg-on-parent-delete": "cascade" },
+          "hash": { "type": "string", "maxLength": 64, "x-index": true },
+          "content": { "type": "string" },
+          "embedding": { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
+        },
+        "required": ["file_id", "chunk", "collection_id", "hash", "embedding"]
+      }
+    },
+    "embedding_file_text": {
+      "additionalProperties": {
+        "properties": {
+          "file_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "file", "x-qg-on-parent-delete": "cascade" },
+          "chunk": { "type": "integer", "x-index": "primary", "default": 0 },
+          "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai1_embed_collection", "x-qg-on-parent-delete": "cascade" },
+          "hash": { "type": "string", "maxLength": 64, "x-index": true },
+          "content": { "type": "string" },
+          "embedding": { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
+        },
+        "required": ["file_id", "chunk", "collection_id", "hash", "embedding"]
+      }
+    }
+  }
+}

@@ -16,7 +16,7 @@ export const embeddings = (db: Db): Embedding[] => Object.keys(db.tables).flatMa
   const props = db.schema.properties[table]?.additionalProperties?.properties;
   if (!table.startsWith("embedding_") || !props) return [];
   const keys = Object.keys(props).filter((col) => props[col]["x-index"] === "primary" && col !== "chunk" && col !== "collection_id");
-  return [{ name: table.slice(10), table, keys }];
+  return [{ name: table.slice("embedding_".length), table, keys }];
 });
 
 const select = sql`SELECT id, model, dimensions, EXISTS (SELECT 1 FROM ai1_model_capability k JOIN ai1_model m ON m.id = k.model_id
@@ -25,17 +25,16 @@ const read = (row?: Row): Collection | undefined => row && { id: Number(row.id),
 
 /** The collection for `model` and `dimensions`, created if missing. */
 export async function create(app: App, model: string, dimensions: number): Promise<Collection> {
-  model = String(model ?? "").trim();
+  model = model.trim();
   if (!model || !Number.isSafeInteger(dimensions) || dimensions < 1) throw new Error("A model and a positive vector length are required");
   const find = async () => read(await app.db.row`${select} WHERE model = ${model} AND dimensions = ${dimensions}`);
-  return await find() ?? (await app.db.table("ai1_embed_collection").insert({ model, dimensions }), (await find())!);
+  return await find() ?? (await app.db.table("ai1_embed_collection").insert({ model, dimensions }).then(find))!;
 }
 
 /** The collection `id`; without one the primary collection, else the first. */
 export async function collection(app: App, id?: number): Promise<Collection | undefined> {
-  if (id) return read(await app.db.row`${select} WHERE id = ${id}`);
   const primary = Number(await app.settings["ai1.embed"].primary);
-  return read(primary && await app.db.row`${select} WHERE id = ${primary}` || await app.db.row`${select} ORDER BY id LIMIT 1`);
+  return read(await app.db.row`${select} ${id ? sql`WHERE id = ${id}` : sql`ORDER BY id = ${primary} DESC, id LIMIT 1`}`);
 }
 
 /** All collections, oldest first. */
@@ -43,12 +42,11 @@ export const collections = async (app: App): Promise<Collection[]> => (await app
 
 /** Delete a collection with its vectors. */
 export async function drop(app: App, id: number): Promise<void> {
-  const c = await collection(app, id), db = app.db;
-  if (!c) return;
+  const db = app.db;
   // one DELETE per table; the row-wise cascade of the collection row would take ages here
   for (const { table } of embeddings(db)) {
     await db.exec`DELETE FROM ${sql.id(table)} WHERE collection_id = ${id}`;
-    await unfit(db, table, c);
+    await unfit(db, table, id);
   }
   await db.table("ai1_embed_collection").delete(id);
   if (Number(await app.settings["ai1.embed"].primary) === id) await app.settings["ai1.embed"].primary(0);

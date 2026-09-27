@@ -24,19 +24,22 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (!query) return html.async`<div>${form}</div>`;
   const db = ctx.app.db, startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
-  const found = new Map<number, { page: Node; content: string; score: number }>();
-  // texts only in the page language; access, visibility and the start page are checked per page below
-  const names = { node_text: sql`e.lang = ${ctx.lang}`, file_text: true, file_image: true } as const;
-  for (const hit of await search(ctx.app, names, query, { limit: 100 })) {
-    const pages = hit.name === "node_text" ? [Number(hit.key.node_id)]
-      : (await db.col`SELECT page_id FROM page_file WHERE file_id = ${hit.key.file_id}`).map(Number);
+  // best hit first, so each page keeps its best content
+  const found = new Map<number, { page: Node; content: string }>();
+  // texts only in the page language, files only on pages; access, visibility and the start page are checked per page below
+  const onPage = sql`e.file_id IN (SELECT file_id FROM page_file)`;
+  const names = { node_text: sql`e.lang = ${ctx.lang}`, file_text: onPage, file_image: onPage };
+  const hits = await search(ctx.app, names, query, { limit: 100 });
+  const files = await db.query`SELECT file_id, page_id FROM page_file WHERE ${sql.in("file_id", hits.map((h) => h.key.file_id).filter(Boolean))}`;
+  for (const hit of hits) {
+    const pages = hit.name === "node_text" ? [hit.key.node_id] : files.filter((f) => Number(f.file_id) === Number(hit.key.file_id)).map((f) => f.page_id);
     for (const id of pages) {
-      const source = await node.cms.node(id), page = await source.page();
+      const source = await node.cms.node(Number(id)), page = await source.page();
       if (!page.vs.searchable || !await source.isReadable() || start && !await source.in(start)) continue;
-      if (!found.has(page.id)) found.set(page.id, { page, content: hit.content, score: hit.score });
+      if (!found.has(page.id)) found.set(page.id, { page, content: hit.content });
     }
   }
-  const items = [...found.values()].sort((a, b) => b.score - a.score).slice(0, 20);
+  const items = [...found.values()].slice(0, 20);
   return html.async`<div>${form}
     ${items.length ? items.map(({ page, content }) => html.async`<div>
       <div>${node.cms.link(page)}</div>

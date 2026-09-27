@@ -10,6 +10,7 @@ cms.initNode("backend.ai1.embed", (el) => {
   el.addEventListener("change", async (event) => {
     const input = event.target;
     if (input.matches("[data-auto]") && !(await post({ auto: input.checked }))?.ok) input.checked = !input.checked;
+    if (input.matches("[data-files]") && !(await post({ files: input.checked }))?.ok) input.checked = !input.checked;
     if (input.matches("[data-primary]") && !(await post({ primary: input.closest("[data-id]").dataset.id }))?.ok) location.reload();
   });
   el.addEventListener("click", async (event) => {

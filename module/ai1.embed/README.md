@@ -5,21 +5,21 @@ sqlite-vec (Deno needs `--allow-ffi`), MariaDB ≥ 11.7 or PostgreSQL with pgvec
 PostgreSQL search through an HNSW index, SQLite scans exactly.
 
 Whatever is embedded gets its own table `embedding_<name>`, declared by the module that embeds it,
-usually named `<table>_<aspect>`: `file_text`, `file_image`, `node_text`, `user_bio`. The key is up
+usually named `<table>_<aspect>`: `product_text`, `product_image`, `node_text`, `user_bio`. The key is up
 to the module (primary key columns besides `chunk` and `collection_id`); a key column with
 `x-qg-parent` deletes the vectors along with its row. Only the column `embedding` is special:
 
 ```json
-"embedding_file_image": { "additionalProperties": {
+"embedding_product_image": { "additionalProperties": {
   "properties": {
-    "file_id":       { "type": "integer", "x-index": "primary", "x-qg-parent": "file", "x-qg-on-parent-delete": "cascade" },
+    "product_id":    { "type": "integer", "x-index": "primary", "x-qg-parent": "product", "x-qg-on-parent-delete": "cascade" },
     "chunk":         { "type": "integer", "x-index": "primary", "default": 0 },
     "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai1_embed_collection", "x-qg-on-parent-delete": "cascade" },
     "hash":          { "type": "string", "maxLength": 64, "x-index": true },
     "content":       { "type": "string" },
     "embedding":     { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
   },
-  "required": ["file_id", "chunk", "collection_id", "hash", "embedding"]
+  "required": ["product_id", "chunk", "collection_id", "hash", "embedding"]
 }}
 ```
 
@@ -35,10 +35,10 @@ without `collection` use the primary one.
 ```ts
 import { index, remove, search } from "@qino/qino/ai1.embed";
 
-await index(app, "file_text", { file_id: 7 }, text);
-await index(app, "file_image", { file_id: 7 }, { image: dataUrl, hash: md5 });
-const hits = await search(app, { file_text: true, node_text: sql`e.lang = ${lang}` }, "what to find");
-await remove(app, "file_text", { file_id: 7 });
+await index(app, "product_text", { product_id: 7 }, text);
+await index(app, "product_image", { product_id: 7 }, { image: dataUrl, hash: md5 });
+const hits = await search(app, { product_text: true, node_text: sql`e.lang = ${lang}` }, "what to find");
+await remove(app, "product_text", { product_id: 7 });
 ```
 
 `search` takes one name, or several with a filter each on the table's rows (alias `e`; `true` for
@@ -50,4 +50,8 @@ keeps each row at its own length and indexes each collection separately (up to 2
 MariaDB needs one length per column: it grows to the longest collection, shorter vectors are padded
 with zeros, which changes no distance.
 
-`cms.embed` indexes CMS pages this way.
+Files of the core table `file` are built in (`sources/file.ts`): `file_text` and, when the model has
+`vision`, `file_image`. With the setting `files` each new or replaced file is indexed on the spot and
+the others each hour; `indexFiles(app)` catches up by hand, `indexFile(app, id)` indexes one.
+
+`cms.embed` indexes CMS pages.

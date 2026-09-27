@@ -78,7 +78,7 @@ export async function check(conn: string) {
     await db.table("article").delete(8); // the article takes its vectors along
     assertEquals(await count(), 0);
 
-    await assertRejects(() => index(app, "article_image", { article_id: 1 }, image, { collection: 999 }), Error, "Unknown");
+    await assertRejects(() => index(app, "article_image", { article_id: 1 }, image, { collection: 999 }), Error, "No embedding collection");
     await drop(app, multi.id);
     assertEquals(await collection(app), undefined);
   } finally { await db.close(); }

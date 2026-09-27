@@ -46,9 +46,9 @@ export async function fit(db: Db, table: string, c: Collection): Promise<void> {
   known.add(name);
 }
 
-/** Drop what `fit` added for a collection. */
-export async function unfit(db: Db, table: string, c: Collection): Promise<void> {
-  if (db.dialect === "postgres") await db.exec`DROP INDEX IF EXISTS ${sql.id(`${table}_collection_${c.id}`)}`;
+/** Drop what `fit` added for collection `id`. */
+export async function unfit(db: Db, table: string, id: number): Promise<void> {
+  if (db.dialect === "postgres") await db.exec`DROP INDEX IF EXISTS ${sql.id(`${table}_collection_${id}`)}`;
 }
 
 /** JSON text of `values` at length 1, padded to MariaDB's column length; undefined if that is too
@@ -72,10 +72,11 @@ export const vector = (db: Db, value: unknown): Sql => dialects[db.dialect].in(v
 export const stored = (db: Db): Sql => dialects[db.dialect].out;
 
 /** The collection's rows of `table` (alias `e`) nearest to `value`; `where` applies before the limit. */
-export function nearest(db: Db, table: string, keys: string[], c: Collection, value: string, where: Sql | undefined, limit: number): Promise<Row[]> {
+export function nearest(db: Db, table: string, keys: string[], c: Collection, value: string, where: Sql | true, limit: number): Promise<Row[]> {
   const cols = sql.join(keys.map((col) => sql`e.${sql.id(col)}`), ", ");
+  // the id as a literal, so pg matches the collection's partial index (a parameter may not)
   const run = () => db.query`SELECT ${cols}, e.chunk, e.content, ${dialects[db.dialect].distance(value, c.dimensions)} AS distance
-    FROM ${sql.id(table)} e WHERE e.collection_id = ${sql.raw(String(c.id))} ${where ? sql`AND (${where})` : sql``}
+    FROM ${sql.id(table)} e WHERE e.collection_id = ${sql.raw(String(c.id))} AND (${where})
     ORDER BY distance LIMIT ${limit}`;
   if (db.dialect !== "postgres") return run(); // MariaDB keeps walking its index until the filter is met
   // pgvector otherwise stops after ef_search candidates, and a filter could leave fewer than `limit`

@@ -1,15 +1,21 @@
 import * as sqliteVec from "sqlite-vec";
 
 import { create } from "./lib/collection.ts";
+import * as file from "./sources/file.ts";
+import schema from "./dbschema.json" with { type: "json" };
+import fileSchema from "./sources/file.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
 
-export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { cron } from "./sources/file.ts";
+
+export const dbSchema = { properties: { ...schema.properties, ...fileSchema.properties } };
 
 export const settingsSchema = {
   properties: {
     primary: { type: "integer", default: 0, description: "Collection id used when none is given; 0 uses the first." },
     chunkChars: { type: "integer", minimum: 100, default: 4000, description: "Maximum characters per indexed text chunk." },
+    files: { type: "boolean", default: false, description: "Index every file on upload and catch up on the others each hour." },
   },
 };
 
@@ -20,6 +26,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** SQLite gets its vector functions per connection; MariaDB and PostgreSQL have them built in. */
-export function init(app: App): void {
+export function init(app: App, options: { signal: AbortSignal }): void {
   if (app.db.dialect === "sqlite") sqliteVec.load(app.db);
+  file.init(app, options);
 }

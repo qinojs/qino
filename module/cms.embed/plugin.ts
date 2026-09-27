@@ -7,7 +7,7 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
   properties: {
-    auto: { type: "boolean", default: false, description: "Reindex changed CMS texts and files each hour." },
+    auto: { type: "boolean", default: false, description: "Reindex changed CMS texts each hour." },
   },
 };
 

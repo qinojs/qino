@@ -1,6 +1,6 @@
 import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { collection, collections, create, drop, embeddings, search } from "@qino/qino/ai1.embed";
+import { collection, collections, create, drop, embeddings, indexFiles, search } from "@qino/qino/ai1.embed";
 import { sync } from "@qino/qino/cms.embed";
 
 import type { App, HtmlString } from "@qino/qino";
@@ -21,8 +21,8 @@ async function render(node: Node): Promise<HtmlString> {
   }
   const primary = (await collection(app))?.id;
   const models = await db.col`SELECT DISTINCT m.name FROM ai1_model m JOIN ai1_model_capability c ON c.model_id = m.id WHERE c.capability = ${"embed"} ORDER BY m.name`;
-  const auto = !!await app.settings["cms.embed"].auto;
-  const chunkChars = Number(await app.settings["ai1.embed"].chunkChars) || 4000;
+  const auto = !!await app.settings["cms.embed"].auto, files = !!await app.settings["ai1.embed"].files;
+  const chunkChars = Number(await app.settings["ai1.embed"].chunkChars);
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head>Embeddings</div>
@@ -50,10 +50,11 @@ async function render(node: Node): Promise<HtmlString> {
     </form>
   </div>
   <div class=u2-card>
-    <div class=-head>CMS index</div>
+    <div class=-head>Index</div>
     <form data-sync class=u2-flex>
-      <button>Index nodes and files</button>
-      <label><input type=checkbox data-auto ${auto ? "checked" : ""}> each hour</label>
+      <button>Index nodes and missing files</button>
+      <label><input type=checkbox data-auto ${auto ? "checked" : ""}> nodes each hour</label>
+      <label><input type=checkbox data-files ${files ? "checked" : ""}> files on upload and each hour</label>
     </form>
   </div>
   <div class=u2-card>
@@ -67,40 +68,25 @@ async function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-async function api(node: Node, vars: Record<string, unknown>) {
-  const app = node.app;
+async function api(node: Node, vars: any) {
+  const app = node.app, settings = app.settings["ai1.embed"];
   try {
-    if (vars.create) {
-      const { model, dimensions } = vars.create as { model: string; dimensions: string };
-      await create(app, model, Number(dimensions));
-      return { ok: true };
+    if (vars.sync) {
+      const nodes = await sync(app), files = await indexFiles(app);
+      return { ok: true, result: { nodes: nodes.nodes, files: files.files, errors: [...nodes.errors, ...files.errors] } };
     }
-    if (vars.primary) {
-      const c = await collection(app, Number(vars.primary));
-      if (!c) throw new Error("Collection not found");
-      await app.settings["ai1.embed"].primary(c.id);
-      return { ok: true };
-    }
-    if (vars.drop) {
-      await drop(app, Number(vars.drop));
-      return { ok: true };
-    }
-    if (vars.config) {
-      const chunkChars = Number((vars.config as { chunkChars: unknown }).chunkChars);
+    if (vars.search) return { ok: true, hits: await search(app, Object.fromEntries(embeddings(app.db).map(({ name }) => [name, true as const])), String(vars.search)) };
+    if (vars.create) await create(app, vars.create.model, Number(vars.create.dimensions));
+    else if (vars.primary) await settings.primary(Number(vars.primary));
+    else if (vars.drop) await drop(app, Number(vars.drop));
+    else if (vars.config) {
+      const chunkChars = Number(vars.config.chunkChars);
       if (!Number.isInteger(chunkChars) || chunkChars < 100) throw new Error("A chunk needs at least 100 characters");
-      await app.settings["ai1.embed"].chunkChars(chunkChars);
-      return { ok: true };
-    }
-    if ("auto" in vars) {
-      await app.settings["cms.embed"].auto(!!vars.auto);
-      return { ok: true };
-    }
-    if (vars.sync) return { ok: true, result: await sync(app) };
-    if (vars.search) {
-      const all = Object.fromEntries(embeddings(app.db).map(({ name }) => [name, true as const]));
-      return { ok: true, hits: await search(app, all, String(vars.search), { limit: 10 }) };
-    }
-    return null;
+      await settings.chunkChars(chunkChars);
+    } else if ("auto" in vars) await app.settings["cms.embed"].auto(!!vars.auto);
+    else if ("files" in vars) await settings.files(!!vars.files);
+    else return null;
+    return { ok: true };
   } catch (e) { return { ok: false, message: e instanceof Error ? e.message : String(e) }; }
 }
 
