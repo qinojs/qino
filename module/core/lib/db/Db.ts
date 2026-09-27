@@ -182,6 +182,11 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.columns(table);
   }
 
+  /** Load a native extension, e.g. `sqliteVec.load(db)`; sqlite only. */
+  loadExtension(path: string): void {
+    this.#driver.loadExtension(path);
+  }
+
   /** Load the current tables into memory. Run after migration. */
   async loadTables(): Promise<void> {
     const tables: Record<string, DbTable> = {};

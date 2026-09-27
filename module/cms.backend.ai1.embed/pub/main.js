@@ -8,51 +8,34 @@ cms.initNode("backend.ai1.embed", (el) => {
     return res;
   };
   el.addEventListener("change", async (event) => {
-    if (event.target.matches("[data-auto]")) {
-      if (!(await post({ auto: event.target.checked }))?.ok) event.target.checked = !event.target.checked;
-      return;
-    }
-    if (event.target.matches("[data-primary]")) {
-      if (!(await post({ primary: event.target.closest("tr").dataset.id }))?.ok) location.reload();
-      return;
-    }
-    if (!event.target.matches("[data-enable]")) return;
-    const res = await post({ enable: { id: event.target.closest("tr").dataset.id, on: event.target.checked } });
-    if (!res?.ok) location.reload();
+    const input = event.target;
+    if (input.matches("[data-auto]") && !(await post({ auto: input.checked }))?.ok) input.checked = !input.checked;
+    if (input.matches("[data-primary]") && !(await post({ primary: input.closest("tr").dataset.id }))?.ok) location.reload();
   });
   el.addEventListener("click", async (event) => {
-    const entries = event.target.closest("[data-entries]");
-    if (entries) {
-      const res = await post({ entries: { collection: entries.closest("[data-id]").dataset.id, table: entries.dataset.table, cursor: entries.dataset.cursor } });
-      if (res?.ok) {
-        entries.parentElement.querySelector("[data-list]").textContent += res.entries.map((row) => `${row.row_id} · ${row.part}${row.content ? ` · ${row.content}` : ""}\n`).join("");
-        entries.dataset.cursor = res.next;
-        if (!res.next) entries.remove();
-      }
-      return;
-    }
-    const button = event.target.closest("[data-remove]");
-    if (button && (await post({ remove: button.closest("tr").dataset.id }))?.ok) location.reload();
+    const button = event.target.closest("[data-drop]");
+    if (button && (await post({ drop: button.closest("tr").dataset.id }))?.ok) location.reload();
   });
   el.addEventListener("submit", async (event) => {
-    const form = event.target;
+    const form = event.target, data = Object.fromEntries(new FormData(form));
     event.preventDefault();
-    if (form.matches("[data-add]")) {
-      if ((await post({ add: Object.fromEntries(new FormData(form)) }))?.ok) location.reload();
+    if (form.matches("[data-create]")) {
+      if ((await post({ create: data }))?.ok) location.reload();
     } else if (form.matches("[data-config]")) {
-      if ((await post({ config: Object.fromEntries(new FormData(form)) }))?.ok) location.reload();
+      await post({ config: data });
     } else if (form.matches("[data-sync]")) {
       const button = form.querySelector("button");
       button.disabled = true;
-      const res = await post({ sync: form.elements.collection.value });
+      const res = await post({ sync: true });
       button.disabled = false;
       if (res?.ok) {
-        await alert(JSON.stringify(res.result));
+        const { texts, files, errors } = res.result;
+        await alert(`${texts} texts, ${files} files${errors.length ? `\n\n${errors.join("\n")}` : ""}`);
         location.reload();
       }
     } else if (form.matches("[data-search]")) {
-      const res = await post({ search: Object.fromEntries(new FormData(form)) });
-      if (res?.ok) form.querySelector("output").textContent = res.hits.map((h) => `${h.score.toFixed(3)} ${h.table}/${h.id} ${h.part}: ${h.content.slice(0, 120)}`).join("\n") || "No matches";
+      const res = await post({ search: data.query });
+      if (res?.ok) form.querySelector("output").textContent = res.hits.map((h) => `${h.score.toFixed(3)} ${h.source}/${h.id} ${h.part}: ${h.content.slice(0, 120)}`).join("\n") || "No matches";
     }
   });
 });

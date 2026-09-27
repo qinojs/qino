@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, sql } from "@qino/qino";
 import { search } from "@qino/qino/ai1.embed";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -25,18 +25,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db = ctx.app.db, startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
   const found = new Map<number, { page: Node; content: string; score: number }>();
-  for (const hit of await search(ctx.app, query, { limit: 100 })) {
-    let pages: number[] = [];
-    if (hit.table === "text_lang") {
-      const [id, lang] = String(hit.id).split(":");
-      if (lang !== ctx.lang) continue;
-      pages = (await db.col`SELECT page_id FROM page_text WHERE text_id = ${Number(id)}
-        UNION SELECT id FROM page WHERE title_id = ${Number(id)}`).map(Number);
-    } else if (hit.table === "file") {
-      pages = hit.part === "image" && /^[a-f0-9]{32}$/i.test(hit.id)
-        ? (await db.col`SELECT DISTINCT pf.page_id FROM page_file pf JOIN file f ON f.id = pf.file_id WHERE f.md5 = ${hit.id}`).map(Number)
-        : (await db.col`SELECT page_id FROM page_file WHERE file_id = ${Number(hit.id)}`).map(Number);
-    }
+  // texts only in the page language; access, visibility and the start page are checked per page below
+  const where = sql`e.source = ${"file"} OR e.source = ${"text"} AND e.part = ${ctx.lang}`;
+  for (const hit of await search(ctx.app, query, { where, limit: 100 })) {
+    const pages = (hit.source === "text"
+      ? await db.col`SELECT page_id FROM page_text WHERE text_id = ${hit.id} UNION SELECT id FROM page WHERE title_id = ${hit.id}`
+      : await db.col`SELECT page_id FROM page_file WHERE file_id = ${hit.id}`).map(Number);
     for (const id of pages) {
       const source = await node.cms.node(id), page = await source.page();
       if (!page.vs.searchable || !await source.isReadable() || start && !await source.in(start)) continue;

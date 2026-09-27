@@ -6,7 +6,6 @@ import type { Jobs } from "@qino/qino/cron";
 export const settingsSchema = {
   properties: {
     auto: { type: "boolean", default: false, description: "Reindex changed CMS texts and files each hour." },
-    chunkChars: { type: "integer", minimum: 100, default: 4000, description: "Maximum characters per indexed text part." },
   },
 };
 

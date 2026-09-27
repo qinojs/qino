@@ -1,8 +1,10 @@
+import * as sqliteVec from "sqlite-vec";
 import { Db } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
+import { ai1Capabilities } from "@qino/m/ai1/plugin.ts";
 import ai1Schema from "@qino/m/ai1/dbschema.json" with { type: "json" };
 import embedSchema from "@qino/m/ai1.embed/dbschema.json" with { type: "json" };
-import { search, upsert } from "@qino/qino/ai1.embed";
+import { collection, index } from "@qino/qino/ai1.embed";
 
 import { cms } from "../plugin.ts";
 
@@ -10,46 +12,42 @@ import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 Deno.test("cms.backend.ai1.embed: collections can be managed and searched", async () => {
-  const dir = await Deno.makeTempDir(), cache = dir + "/";
+  const db = new Db("sqlite::memory:");
   try {
-    const db = new Db("sqlite::memory:");
-    db.schema = { properties: { ...ai1Schema.properties, ...embedSchema.properties } };
-    await db.migrate(db.schema);
+    sqliteVec.load(db);
+    await db.migrate({ properties: { ...ai1Schema.properties, ...embedSchema.properties } });
     await db.loadTables();
-    const mods = [{ name: "ai1.embed", cache, plugin: {} }];
-    let primary = "";
-    const primarySetting = Object.assign((value?: string) => { if (value !== undefined) primary = value; return primary; }, { then: (resolve: (value: string) => void) => resolve(primary) });
-    const app = { db, settings: { "ai1.embed": { auto: false, primary: primarySetting, chunkChars: 4000 } }, modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
-    const node = { app } as Node;
-    const api = cms.node.api;
-    assertEquals(await api(node, { add: { model: "image-model", dimensions: 2 } }), { ok: true });
-    await upsert(app, { table: "file", id: 7, part: "image" }, [1, 0], { content: "cat picture" });
+    await db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
+    for (const name of ["one", "two"]) await db.table("ai1_model").insert({ name });
+    for (const model_id of [1, 2]) {
+      await db.table("ai1_model_provider").insert({ model_id, provider_id: 1 });
+      await db.table("ai1_model_capability").insert({ model_id, capability: "embed" });
+    }
+    const embed = (_call: unknown, input: { texts: string[] }) => Promise.resolve(input.texts.map((t) => t.includes("cat") ? [1, 0] : [0, 1]));
+    const mods = [{ name: "ai1", plugin: { ai1Capabilities, ai1Adapters: { fake: { embed } } } }];
+    let primary = 0;
+    const setting = Object.assign((value?: number) => { if (value !== undefined) primary = value; return primary; }, { then: (resolve: (value: number) => void) => resolve(primary) });
+    const app = {
+      db, settings: { core: { keys: {} }, "ai1.embed": { primary: setting, chunkChars: 4000 }, "cms.embed": { auto: false } }, fire: () => Promise.resolve(),
+      modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods },
+    } as unknown as App;
+    const node = { app } as Node, api = cms.node.api;
+
+    assertEquals(await api(node, { create: { model: "one", dimensions: "2" } }), { ok: true });
+    assertEquals(await api(node, { create: { model: "two", dimensions: "2" } }), { ok: true });
+    await index(app, { source: "text", id: 1, part: "en" }, "a cat");
     const rendered = String(await cms.node.render(node));
-    assertStringIncludes(rendered, "image-model/2");
-    assertStringIncludes(rendered, "Source IDs");
-    assertStringIncludes(rendered, "file");
-    assertStringIncludes(rendered, "1 vectors");
-    assertEquals(await api(node, { entries: { collection: 1, table: "file", cursor: 0 } }), {
-      ok: true, entries: [{ id: 1, row_id: "7", part: "image", content: "cat picture" }], next: 0,
-    });
-    const result = await api(node, { search: { collection: "1", query: [1, 0] } });
-    assertEquals((result as { hits: { id: string }[] }).hits[0].id, "7");
-    assertEquals(await api(node, { primary: 1 }), { ok: true });
-    assertEquals(primary, "image-model/2");
-    assertEquals(await api(node, { add: { model: "second", dimensions: 2 } }), { ok: true });
-    await upsert(app, { table: "file", id: 8 }, [0, 1], { model: "second", dimensions: 2 });
-    assertEquals((await search(app, [1, 0])).map((hit) => hit.id), ["7"]);
+    assertStringIncludes(rendered, "<th>one");
+    assertStringIncludes(rendered, "<td>1\n");
+    const { hits } = await api(node, { search: "cat" }) as { hits: { id: number; content: string }[] };
+    assertEquals(hits.map((h) => [h.id, h.content]), [[1, "a cat"]]);
+
     assertEquals(await api(node, { primary: 2 }), { ok: true });
-    assertEquals((await search(app, [0, 1])).map((hit) => hit.id), ["8"]);
-    assertEquals(await api(node, { enable: { id: 1, on: false } }), { ok: true });
-    assertEquals((await db.one`SELECT enabled FROM ai1_embed_collection WHERE id = 1`), 0);
-    assertEquals(await api(node, { remove: 1 }), { ok: true });
-    assertEquals(primary, "second/2");
-    assertEquals(Number(await db.one`SELECT COUNT(*) FROM ai1_embed_collection`), 1);
-    assertEquals(Number(await db.one`SELECT COUNT(*) FROM ai1_embed_entry`), 1);
-    assertEquals(await api(node, { remove: 2 }), { ok: true });
-    assertEquals(primary, "");
-    assertEquals(Number(await db.one`SELECT COUNT(*) FROM ai1_embed_entry`), 0);
-    await db.close();
-  } finally { await Deno.remove(dir, { recursive: true }); }
+    assertEquals((await collection(app))?.model, "two");
+    assertEquals((await api(node, { primary: 9 }))?.ok, false);
+    assertEquals(await api(node, { drop: 2 }), { ok: true });
+    assertEquals(primary, 0);
+    assertEquals((await collection(app))?.model, "one");
+    assertEquals((await api(node, { config: { chunkChars: "50" } }))?.ok, false);
+  } finally { await db.close(); }
 });

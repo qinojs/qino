@@ -37,6 +37,8 @@ export abstract class DbDriver {
   /** Move the id counter past `value` (never down). Only for ids the engine did not see. */
   syncAutoIncrement(_table: string, _field: string, _value: number): Promise<void> { return Promise.resolve(); }
   ensureDatabase(): Promise<void> { return Promise.resolve(); }
+  /** Load a native extension into the engine (e.g. sqlite-vec); only an embedded engine can. */
+  loadExtension(_path: string): void { throw new Error(`${this.dialect}: extensions are installed on the database server`); }
 
   /** Pick a backend from the connection string scheme. */
   static from(conn: string): DbDriver {
@@ -141,7 +143,8 @@ class SqliteDriver extends DbDriver {
 
   constructor(path: string) {
     super();
-    this.#db = new DatabaseSync(path);
+    // Extensions need FFI rights in Deno; the flag alone throws without them.
+    this.#db = new DatabaseSync(path, { allowExtension: Deno.permissions.querySync({ name: "ffi" }).state === "granted" });
     this.#db.exec("PRAGMA foreign_keys = ON");
     // One sync per commit instead of per write (a request writes session, log, settings…).
     // NORMAL survives a process crash; only power loss can lose the last commits.
@@ -229,6 +232,7 @@ class SqliteDriver extends DbDriver {
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
+  override loadExtension(path: string) { this.#db.loadExtension(path); }
   protected override closeDriver() { this.#db.close(); return Promise.resolve(); }
 }
 

@@ -145,6 +145,7 @@
     "htmlparser2": "npm:htmlparser2@^10",
     "marked": "npm:marked@^18",
     "sanitize-html": "npm:sanitize-html@^2",
+    "sqlite-vec": "npm:sqlite-vec@^0.1.9",
     "web-push-neo": "npm:web-push-neo@0.1.2"
   },
   "// exclude": "migrate_from_php/tools are dev helpers for migration test runs — bash plus a server.ts template with placeholders, which is not valid TypeScript.",
