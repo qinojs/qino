@@ -3,6 +3,9 @@ import type { Db } from "@qino/qino";
 
 export { updateRates } from "./lib/rates.ts";
 
+/** Values of the `update` setting: how often the rates are fetched. */
+export const EVERY = ["never", "daily", "hourly"];
+
 export const currency = {
   /** Every currency Intl knows. */
   codes: (): string[] => Intl.supportedValuesOf("currency"),

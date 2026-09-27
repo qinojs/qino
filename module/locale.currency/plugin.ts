@@ -1,6 +1,6 @@
 import { sql, unixTime } from "@qino/qino";
 
-import { currency } from "./mod.ts";
+import { currency, EVERY } from "./mod.ts";
 import { updateRates } from "./lib/rates.ts";
 
 import type { App } from "@qino/qino";
@@ -8,7 +8,7 @@ import type { Jobs } from "@qino/qino/cron";
 
 export const settingsSchema = {
   properties: {
-    update: { type: "string", enum: ["never", "daily", "hourly"], default: "never", description: "How often the job fetches the exchange rates." },
+    update: { type: "string", enum: EVERY, default: "never", description: "How often the job fetches the exchange rates." },
     updated: { type: "integer", default: 0, description: "When the rates last arrived." },
     source: { type: "string", description: "Which source answered last." },
   },

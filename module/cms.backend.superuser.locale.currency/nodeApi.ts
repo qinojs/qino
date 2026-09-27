@@ -1,4 +1,4 @@
-import { updateRates } from "@qino/qino/locale.currency";
+import { EVERY, updateRates } from "@qino/qino/locale.currency";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -8,7 +8,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
 
   if ("every" in vars) {
     const every = String(vars.every);
-    if (!["never", "daily", "hourly"].includes(every)) return false;
+    if (!EVERY.includes(every)) return false;
     await app.settings["locale.currency"].update(every);
     return { every };
   }
