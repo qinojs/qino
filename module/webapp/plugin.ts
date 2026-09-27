@@ -80,8 +80,7 @@ async function head(ctx: Ctx): Promise<void> {
   }
   if (data.display && data.display !== "browser") { // needed, checked 2026
     html.meta["apple-mobile-web-app-capable"] = "yes";
-    const name = data.short_name as string;
-    if (name) html.meta["apple-mobile-web-app-title"] = name;
+    if (data.short_name) html.meta["apple-mobile-web-app-title"] = String(data.short_name);
     const style = String(await settings.appleStatusBarStyle ?? "");
     if (style) html.meta["apple-mobile-web-app-status-bar-style"] = style;
   }

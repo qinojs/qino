@@ -1,4 +1,4 @@
-import { APPLE_STATUS_BAR_STYLES, DISPLAY_MODES, ORIENTATIONS } from "@qino/qino/webapp";
+import { APPLE_STATUS_BAR_STYLES, categoriesOf, DISPLAY_MODES, ORIENTATIONS } from "@qino/qino/webapp";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -14,14 +14,11 @@ function bool(value: unknown): boolean {
 
 function normalized(path: string, value: unknown): string | boolean {
   if (BOOL_FIELDS.has(path)) return bool(value);
-  let out = String(value ?? "").trim();
+  const out = String(value ?? "").trim();
   if (path === "display" && !DISPLAY.has(out)) throw new Error("Invalid display mode");
   if (path === "orientation" && !ORIENTATION.has(out)) throw new Error("Invalid orientation");
   if (path === "appleStatusBarStyle" && !APPLE_STATUS.has(out)) throw new Error("Invalid Apple status bar style");
-  if (path === "categories") {
-    out = [...new Set(out.split(/[\r\n,]+/).map((v) => v.trim().toLowerCase()).filter(Boolean))].join("\n");
-  }
-  return out;
+  return path === "categories" ? categoriesOf(out).join("\n") : out;
 }
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
