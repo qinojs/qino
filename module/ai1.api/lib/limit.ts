@@ -15,7 +15,7 @@ export async function count(app: App, e: { input: number; output: number }): Pro
 
 /** Refuse the browser API to a user over the daily limit. */
 export async function check(ctx: Ctx): Promise<void> {
-  const limit = Number(await ctx.app.settings.ai1.dailyLimit);
+  const limit = Number(await ctx.app.settings["ai1.api"].dailyLimit);
   if (!limit) return;
   const used = await ctx.app.db.row`SELECT day, units FROM ai1_usage WHERE usr_id = ${ctx.userId}`;
   if (used?.day === today() && used.units >= limit) throw new ApiError(429, await ctx.app.t`The daily AI limit is reached.`);

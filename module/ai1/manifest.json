@@ -6,11 +6,9 @@
   ],
   "files": [
     "README.md",
-    "api.ts",
     "dbschema.json",
     "lib/capabilities.ts",
     "lib/jina.ts",
-    "lib/limit.ts",
     "lib/nvidia.ts",
     "lib/openai.ts",
     "lib/run.ts",

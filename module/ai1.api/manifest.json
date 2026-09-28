@@ -1,0 +1,6 @@
+{
+  "name": "ai1.api",
+  "description": "The AI capabilities for signed-in users in the browser, within a daily limit per user.",
+  "dependencies": ["ai1"],
+  "files": ["README.md", "api.ts", "dbschema.json", "lib/limit.ts", "manifest.json", "plugin.ts"]
+}

@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "ai1_usage": {
+      "additionalProperties": {
+        "properties": {
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "day": {
+            "type": "integer",
+            "description": "Days since 1970 (UTC) the units count for"
+          },
+          "units": {
+            "type": "integer",
+            "default": 0,
+            "description": "Tokens, characters and seconds the user's requests used that day"
+          }
+        },
+        "required": ["usr_id"]
+      }
+    }
+  }
+}

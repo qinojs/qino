@@ -1,14 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
 import { Access, ApiError, Output, s } from "@qino/qino";
+import { AiError, run } from "@qino/qino/ai1";
 
 import { check } from "./lib/limit.ts";
-import { AiError } from "./lib/run.ts";
-import { run } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params } from "@qino/qino";
 
 // The capabilities for the browser, shaped like their functions. Any signed-in user may call them,
-// up to the daily limit (settings ai1.dailyLimit).
+// up to the daily limit (settings ai1.api.dailyLimit).
 
 const opts = s.optional(s.object({ model: s.optional(s.string()), prefer: s.optional(s.record(s.number())) }));
 const answer = { messages: s.array(s.record()), temperature: s.optional(s.number()), maxTokens: s.optional(s.number()) };
@@ -29,14 +28,15 @@ export const api: ApiTree = {
   text: {
     ...capability("text", "Answer the messages", textInput),
     stream: post("Answer the messages as a stream (SSE): { delta } events, then { done } or { error }", { ...textInput, opts }, ({ opts, ...input }, ctx) => {
-      const encoder = new TextEncoder();
+      const encoder = new TextEncoder(), abort = new AbortController(); // a closed connection cancels the call
       throw new Output(new ReadableStream({
         start: async (out) => {
-          const send = (data: unknown) => out.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-          await run(ctx.app, "text", { ...input, onText: (delta: string) => send({ delta }) }, opts as any)
+          const send = (data: unknown) => abort.signal.aborted || out.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          await run(ctx.app, "text", { ...input, onText: (delta: string) => send({ delta }) }, { ...opts as any, signal: abort.signal })
             .then((done) => send({ done }), (e) => send({ error: e.message }));
-          out.close();
+          if (!abort.signal.aborted) out.close();
         },
+        cancel: () => abort.abort(),
       }), { headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache, no-store", "x-accel-buffering": "no" } });
     }),
   },

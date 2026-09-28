@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+import { SPEED } from "@qino/qino/ai1.stats";
 
 import { CATALOG } from "./catalog.ts";
-import { adapters, BENCHMARKS_KEY, listing, SPEED } from "./lib/sources.ts";
+import { adapters, BENCHMARKS_KEY, listing } from "./lib/sources.ts";
 
 import type { App, Ctx, HtmlString, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";

@@ -1,6 +1,6 @@
 import { Db } from "@qino/qino";
 import { ai1DbSchema, assertEquals, assertStringIncludes, Emitter, fakeT } from "@qino/qino/tests";
-import { dbSchema as errorsSchema, init } from "@qino/m/ai1.errors/tests/deps.ts";
+import { dbSchema as statsSchema, init } from "@qino/m/ai1.stats/tests/deps.ts";
 
 import { cms } from "../plugin.ts";
 
@@ -9,12 +9,7 @@ import type { Node } from "@qino/qino/cms";
 
 Deno.test("cms.backend.ai1.calls: records failures and shows usage without rendering provider HTML", async () => {
   const db = new Db("sqlite::memory:");
-  const stats = { additionalProperties: { properties: {
-    model_provider_id: { type: "integer", "x-index": "primary" },
-    calls: { type: "integer" }, errors: { type: "integer" },
-    used_input: { type: "integer" }, used_output: { type: "integer" },
-  } } };
-  const combined = { properties: { ...ai1DbSchema.properties, ai1_model_provider_stat: stats, ...errorsSchema.properties } };
+  const combined = { properties: { ...ai1DbSchema.properties, ...statsSchema.properties } };
   await db.migrate(combined);
   await db.loadTables();
   db.schema = combined;
@@ -27,8 +22,8 @@ Deno.test("cms.backend.ai1.calls: records failures and shows usage without rende
     const id = Number(await db.table("ai1_model_provider").insert({ model_id: 1, provider_id: 1, cost_input: 2, cost_output: 4 }));
     await db.table("ai1_model_provider_stat").insert({ model_provider_id: id, calls: 2, errors: 1, used_input: 30, used_output: 5 });
     init(app, { signal: stop.signal });
-    await app.fire("ai1:call", { id, model: "<model>", provider: "<provider>", capability: "text", error: "<failed>" });
-    await app.fire("ai1:call", { id, model: "<model>", provider: "<provider>", capability: "text" });
+    await app.fire("ai1:call", { id, model: "<model>", provider: "<provider>", capability: "text", ms: 0, input: 0, output: 0, error: "<failed>" });
+    await app.fire("ai1:call", { id, model: "<model>", provider: "<provider>", capability: "text", ms: 0, input: 0, output: 0 });
 
     assertEquals(await db.query`SELECT model_provider_id, message FROM ai1_call_error`, [{ model_provider_id: id, message: "<failed>" }]);
     const output = String(await cms.node.render({ app } as Node));

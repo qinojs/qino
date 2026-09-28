@@ -2,8 +2,9 @@
   "modules": {
     "ai": {},
     "ai1": {},
+    "ai1.api": {},
     "ai1.embed": {},
-    "ai1.errors": {},
+    "ai1.stats": {},
     "auth": {},
     "auth.api_keys": {},
     "auth.backup_codes": {},

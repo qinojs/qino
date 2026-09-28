@@ -1,5 +1,12 @@
 # ai1
 
+**Goal.** ai1 replaces `ai`, rebuilt in logical layers:
+
+- a complete AI harness
+- simple, but brilliant
+- automation
+- self-improving
+
 **One call per capability, whatever serves it.** The caller asks for a capability; ai1 picks the
 model, falls back when it fails and reports each attempt.
 
@@ -62,21 +69,13 @@ back any more.
 
 ## Browser
 
-The same capabilities for any signed-in user, shaped like the functions: `POST api/ai1/text`,
-`text/stream` (SSE: `{ delta }`, then `{ done }` or `{ error }`), `structured` (with a JSON Schema),
-`translate`, `decide`, `embed`, `image`, `speak`. `opts` (`model`, `prefer`) go along in the body. Per user and day at most
-`settings.ai1.dailyLimit` units (default 100000); above it the API answers 429. Image calls count
-the prompt's characters and the number of images returned.
-
-```js
-await api.ai1.translate.post({ text: "Hallo", to: "en" });
-```
+[ai1.api](../ai1.api/) offers the capabilities to signed-in users, within a daily limit.
 
 ## Watching
 
 Every attempt fires `ai1:call` with `{ capability, id, model, provider, ms, input, output, error? }`
-(`id` is the `ai1_model_provider`). ai1 counts a user's daily units from it;
-[cms.backend.ai1](../cms.backend.ai1/) the usage, speed and errors.
+(`id` is the `ai1_model_provider`). [ai1.stats](../ai1.stats/) measures usage, errors and the
+speed ai1 chooses by, [ai1.api](../ai1.api/) counts a user's daily units.
 
 ## Extending
 

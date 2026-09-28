@@ -2,8 +2,9 @@
 import { Db, requestStorage } from "@qino/qino";
 import { ai1Adapters, ai1Capabilities, ai1DbSchema, assert, assertEquals, assertStringIncludes, Emitter, fakeT, testContext } from "@qino/qino/tests";
 
-import dbSchema from "../dbschema.json" with { type: "json" };
-import { applySpeed, evaluate, fade, key, record, unit } from "../lib/sources.ts";
+import { dbSchema, record } from "@qino/m/ai1.stats/tests/deps.ts";
+
+import { evaluate, key, unit } from "../lib/sources.ts";
 import api from "../nodeApi.ts";
 import { capabilities, view, widget } from "../render.ts";
 
@@ -234,25 +235,14 @@ Deno.test("cms.backend.ai1: models.dev and Artificial Analysis fill prices, capa
   assert(at("intelligence") > 0 && at("intelligence") < at("coding")); // indexes as columns, intelligence first
 });
 
-Deno.test("cms.backend.ai1: measured calls beat the benchmark's speed, and fade", async () => {
+Deno.test("cms.backend.ai1: shows the measured calls", async () => {
   const { app, node } = await llama();
-  await app.db.table("ai1_model_score").insert({ model_id: 1, metric: "tokens_per_second", value: 150 });
-  await record(app, { id: 1, ms: 8_000, input: 10, output: 800 });
-  await record(app, { id: 1, ms: 4_000, input: 10, output: 400 });
-  await record(app, { id: 1, ms: 100, input: 0, output: 0, error: "HTTP 503" });
-  await record(app, { id: 1, ms: 50, input: 30, output: 0 }); // no output tokens (embeddings): not timed
-  await record(app, { id: 2, ms: 200, input: 5, output: 60 }); // a quick one (a decision) without a benchmark
-  await applySpeed(app);
-  assertEquals(await app.db.col`SELECT speed FROM ai1_model_provider ORDER BY id`, [100, 150]); // 1200 tokens in 12 s; the other: too little beside the benchmark
+  for (const [ms, input, output, error] of [[8_000, 10, 800], [4_000, 10, 400], [100, 0, 0, "HTTP 503"], [50, 30, 0]] as const) {
+    await record(app, { id: 1, capability: "text", ms, input, output, error });
+  }
   const out = await show(node);
   assert(out.includes("25 %") && out.includes("HTTP 503"));
-  await fade(app);
-  assertEquals(await app.db.row`SELECT calls, errors, ms, output, used_input, used_output FROM ai1_model_provider_stat WHERE model_provider_id = 1`,
-    { calls: 2, errors: 0, ms: 6_000, output: 600, used_input: 50, used_output: 1200 }); // the usage stays a total
   assertStringIncludes(await show(node, { show: "providers" }), ">50 / 1,200");
-  await app.db.exec`DELETE FROM ai1_model_score`; // no benchmark: what was measured, even little
-  await applySpeed(app);
-  assertEquals(await app.db.col`SELECT speed FROM ai1_model_provider ORDER BY id`, [100, 300]); // 60 tokens in 0.2 s
 });
 
 Deno.test("cms.backend.ai1: try shows who would answer by the weights, and who did", async () => {

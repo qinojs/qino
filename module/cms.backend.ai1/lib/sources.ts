@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, sql, unixTime } from "@qino/qino";
+import { errMsg, sql } from "@qino/qino";
+import { applySpeed, SPEED } from "@qino/qino/ai1.stats";
 
 import { CATALOG } from "../catalog.ts";
 
@@ -11,9 +12,6 @@ const BENCHMARKS = "https://artificialanalysis.ai/api/v2/data";
 const ARENAS: Record<string, string> = { image: "media/text-to-image", speak: "media/text-to-speech" };
 /** The Artificial Analysis key's name in core.keys. */
 export const BENCHMARKS_KEY = "artificialanalysis.ai";
-/** The benchmark's speed, a score like the others; measured speed replaces it from MEASURED_MS on. */
-export const SPEED = "tokens_per_second";
-const MEASURED_MS = 10_000;
 /** An index no new model got for this long is no longer measured (math, since 2026-01): left out. */
 const RETIRED_DAYS = 183;
 
@@ -244,40 +242,6 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   return found;
 }
 
-/** Count an `ai1:call` and its usage; successful ones that give output tokens are timed for the speed
- *  (whatever the capability; translation services and embeddings give none, so units don't mix). */
-export async function record(app: App, e: { id: number; ms: number; input: number; output: number; error?: string }): Promise<void> {
-  const timed = !e.error && e.output > 0;
-  await app.db.table("ai1_model_provider_stat").ensure({ model_provider_id: e.id });
-  await app.db.exec`UPDATE ai1_model_provider_stat SET
-    calls = calls + 1, errors = errors + ${e.error ? 1 : 0}, used_input = used_input + ${e.input}, used_output = used_output + ${e.output},
-    ms = ms + ${timed ? e.ms : 0}, output = output + ${timed ? e.output : 0},
-    last_error = COALESCE(${e.error ?? null}, last_error), last_at = ${unixTime()}
-    WHERE model_provider_id = ${e.id}`;
-}
-
-/** `speed` per provider: measured where there is enough, else the benchmark's, else whatever was measured. */
-export async function applySpeed(app: App): Promise<void> {
-  const rows = await app.db.query`
-    SELECT mp.id, s.ms, s.output, b.value AS benchmark
-    FROM ai1_model_provider mp
-    LEFT JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
-    LEFT JOIN ai1_model_score b ON b.model_id = mp.model_id AND b.metric = ${SPEED}`;
-  await app.db.transaction(async () => {
-    for (const r of rows) {
-      const measured = r.ms > 0 ? r.output / (r.ms / 1000) : null;
-      const speed = r.ms >= MEASURED_MS ? measured : r.benchmark ?? measured;
-      if (speed != null) await app.db.table("ai1_model_provider").update(r.id, { speed: Math.round(speed * 10) / 10 });
-    }
-  });
-}
-
-/** Halve the counts, so what happens now outweighs the past (run daily: a half-life of a day). The
- *  usage stays a total. */
-export async function fade(app: App): Promise<void> {
-  await app.db.exec`UPDATE ai1_model_provider_stat SET calls = calls / 2, errors = errors / 2, ms = ms / 2, output = output / 2`;
-}
-
 /** All sources, one after the other; a failing one does not stop the rest. */
 export async function evaluate(app: App): Promise<string> {
   const settle = <T>(promise: Promise<T>) => promise.catch((e) => `error: ${errMsg(e)}`);
@@ -286,7 +250,6 @@ export async function evaluate(app: App): Promise<string> {
   const models = await settle(importModels(app, priced, told));
   const meta = await settle(importMeta(app, priced));
   const benchmarks = await settle(importBenchmarks(app, told));
-  await applySpeed(app);
-  await fade(app);
+  await applySpeed(app); // the benchmarks' speed counts at once
   return `models: ${models} · models.dev: ${meta} · Artificial Analysis: ${benchmarks ?? "no key"}`;
 }

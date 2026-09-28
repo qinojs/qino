@@ -2,22 +2,25 @@
 import { Db, invoke, Output, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, fakeT, testContext } from "@qino/qino/tests";
 
+import { AiError } from "@qino/qino/ai1";
+import { ai1Capabilities, dbSchema as ai1Schema } from "@qino/m/ai1/tests/deps.ts";
+
 import { api } from "../api.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { AiError } from "../mod.ts";
 import { check, count } from "../lib/limit.ts";
-import { ai1Capabilities } from "../plugin.ts";
 
-import type { Adapter } from "../mod.ts";
+import type { Adapter } from "@qino/qino/ai1";
 
-// One model that translates as "<to>:<text>", streams "a", "b", and answers JSON when asked for it.
+// One model that translates as "<to>:<text>", streams "a", "b", and answers JSON when asked for it;
+// asked "hang", it waits on its provider after "a".
 const fake: Adapter = {
   translate: (_call, { text, to }) => Promise.resolve(Array.isArray(text) ? text.map((t) => `${to}:${t}`) : `${to}:${text}`),
-  text: (_call, { messages, onText }) => {
+  text: async (call, { messages, onText }) => {
     onText?.("a");
+    if (messages[0]?.content === "hang") await call.fetch("/hang");
     onText?.("b");
     const json = String(messages[0]?.content).startsWith("Reply with JSON");
-    return Promise.resolve({ text: json ? '{"n":1}' : "ab", toolCalls: [], truncated: false });
+    return { text: json ? '{"n":1}' : "ab", toolCalls: [], truncated: false };
   },
   image: () => Promise.reject(new AiError("down", 503)),
   embed: (_call, { purpose }) => Promise.resolve([[purpose === "query" ? 1 : 0]]),
@@ -25,7 +28,7 @@ const fake: Adapter = {
 
 async function ctx(userId = 1, dailyLimit = 0) {
   const db = new Db("sqlite::memory:");
-  await db.migrate(dbSchema);
+  await db.migrate({ properties: { ...ai1Schema.properties, ...dbSchema.properties } });
   await db.loadTables();
   await db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
   await db.table("ai1_model").insert({ name: "m" });
@@ -33,7 +36,7 @@ async function ctx(userId = 1, dailyLimit = 0) {
   for (const capability of ["text", "translate", "image", "embed"]) await db.table("ai1_model_capability").insert({ model_id: 1, capability });
   const mods = [{ name: "ai1", plugin: { ai1Adapters: { fake }, ai1Capabilities } }];
   const modules = { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods };
-  return testContext({ app: { db, modules, t: fakeT, settings: { core: { _secret: "test", keys: {} }, ai1: { dailyLimit } } } as any, set: { user: userId ? { id: userId } : null, userId } });
+  return testContext({ app: { db, modules, t: fakeT, settings: { core: { _secret: "test", keys: {} }, "ai1.api": { dailyLimit } } } as any, set: { user: userId ? { id: userId } : null, userId } });
 }
 
 Deno.test("ai1 api: capabilities for signed-in users, shaped like their functions", async () => {
@@ -67,6 +70,27 @@ Deno.test("ai1 api: text streams deltas, then the answer", async () => {
     { delta: "b" },
     { done: { text: "ab", toolCalls: [], truncated: false } },
   ]);
+});
+
+Deno.test("ai1 api: a closed stream cancels the call", async () => {
+  const signedIn = await ctx();
+  let aborted = false;
+  const fetch = globalThis.fetch;
+  globalThis.fetch = (_url, init) => new Promise((_, reject) => init!.signal!.addEventListener("abort", () => (aborted = true, reject(init!.signal!.reason))));
+  try {
+    let output: Output | undefined;
+    await requestStorage.run(signedIn, async () => {
+      try { await invoke(api, "POST", "/text/stream", { messages: [{ role: "user", content: "hang" }] }); }
+      catch (e) { if (e instanceof Output) output = e; else throw e; }
+    });
+    const reader = (output!.body as ReadableStream).getReader();
+    await reader.read(); // "a"
+    await reader.cancel();
+    await new Promise((resolve) => setTimeout(resolve));
+    assertEquals(aborted, true);
+  } finally {
+    globalThis.fetch = fetch;
+  }
 });
 
 Deno.test("ai1 api: a user's usage counts per day; over the limit the browser API refuses", async () => {

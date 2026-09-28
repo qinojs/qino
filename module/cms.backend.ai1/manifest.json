@@ -4,11 +4,11 @@
   "dependencies": [
     "cms.backend",
     "ai1",
+    "ai1.stats",
     "cron"
   ],
   "files": [
     "catalog.ts",
-    "dbschema.json",
     "lib/sources.ts",
     "manifest.json",
     "nodeApi.ts",
