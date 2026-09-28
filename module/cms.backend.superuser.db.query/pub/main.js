@@ -35,12 +35,6 @@ function setup(el, editor, vocab) {
     else if (f) insert(f.dataset.field);
   });
 
-  // send the current editor query as context when asking the AI
-  el.querySelector(".-ai")?.addEventListener("submit", () => {
-    const h = el.querySelector(".-aisql");
-    if (h) h.value = ta.value;
-  });
-
   el.querySelector(".-tsearch")?.addEventListener("input", (ev) => {
     const q = ev.target.value.toLowerCase();
     el.querySelectorAll(".-table").forEach((d) =>

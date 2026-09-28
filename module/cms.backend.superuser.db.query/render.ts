@@ -24,24 +24,25 @@ export async function render(node: Node): Promise<HtmlString> {
 
   const tables = await buildSchema(app);
   const token = safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken);
-  const isAsk = ctx.req.body?.ask != null; // AI form vs. run form
+  const isAsk = ctx.req.body?.ask != null; // Ask button vs. Run
   const question = String(ctx.req.body?.prompt ?? "").trim();
 
   // AI prompt prefills the editor with generated SQL (using the current query as context); the user reviews and runs it.
   let sql = String(ctx.req.body?.sql ?? "").trim();
-  let aiNote = "";
+  let aiNote = "", aiFailed = false;
   if (isAsk && question && token) {
     const ai = await askDbAi(app, question, await schemaText(app), sql);
     sql = ai.sql || sql;
     aiNote = ai.note;
+    aiFailed = !ai.sql;
   }
 
   const result = !isAsk && sql && token ? runQuery(app, sql) : "";
 
   return html.async`<div style="flex:1 1 auto">
-  ${renderAi(app, question, aiNote)}
   <form method=post class=-console>
     <input type=hidden name=csrfToken value="${ctx.csrfToken}">
+    ${renderAi(app, question, aiNote, aiFailed)}
     <u2-code trim language=sql class=-editor><textarea name=sql placeholder="SELECT * FROM …">${sql}</textarea></u2-code>
     <div class=-bar>
       <button>${app.t`Run`}</button>
@@ -54,18 +55,16 @@ export async function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-function renderAi(app: App, question: string, note: string): Promise<HtmlString> | string {
-  if (!app.modules.linked("ai1")) return "";
-  const msg = note ? html`<u2-alert open variant=danger style="margin-top:.25rem">${note}</u2-alert>` : "";
-  return html.async`<form method=post class=-ai>
-    <input type=hidden name=csrfToken value="${getCtx().csrfToken}">
-    <input type=hidden name=sql class=-aisql>
+function renderAi(app: App, question: string, note: string, failed: boolean): Promise<HtmlString> | string {
+  if (!app.modules.linked("ai1.tools")) return "";
+  const msg = note ? html`<u2-alert open ${failed ? "variant=danger" : ""} style="margin-top:.25rem">${note}</u2-alert>` : "";
+  return html.async`<div class=-ai>
     <div class=-bar>
       <input name=prompt class=-prompt placeholder="${app.t`Ask the database in plain language…`}" value="${question}">
       <button name=ask>${app.t`Generate SQL`}</button>
     </div>
     ${msg}
-  </form>`;
+  </div>`;
 }
 
 async function runQuery(app: App, text: string): Promise<HtmlString> {

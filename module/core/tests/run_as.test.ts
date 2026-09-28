@@ -27,7 +27,7 @@ Deno.test("runAs: a context of its own, with the user's rights, through its acto
     assertEquals(await app.db.one`SELECT log_id FROM grp`, Number(logId));
     assertEquals(String(await app.db.one`SELECT client_id FROM log WHERE id = ${logId}`), first.client);
   } finally {
-    await new Promise((r) => setTimeout(r)); // session writes are fire-and-forget
+    await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
     await app.db.close();
   }
 });

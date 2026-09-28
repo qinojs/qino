@@ -11,9 +11,9 @@ import type { EmbedInput } from "@qino/qino/ai1";
 import type { Collection } from "./lib/collection.ts";
 
 /** What is embedded, by the key columns of its table, e.g. `{ file_id: 7 }`. */
-export type Key = Record<string, string | number>;
+type Key = Record<string, string | number>;
 /** Text (split into chunks) or an image URL; `hash` identifies the image, e.g. a file's md5. */
-export type Input = string | { image: string; hash?: string };
+type Input = string | { image: string; hash?: string };
 type Hit = { name: string; key: Key; chunk: number; content: string; score: number };
 type Options = { collection?: number };
 

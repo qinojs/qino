@@ -1,4 +1,4 @@
-import { ApiError, requestStorage } from "@qino/qino";
+import { ApiError, getCtx, runAs } from "@qino/qino";
 import { text } from "@qino/qino/ai1";
 
 import type { App, Ctx, Tool } from "@qino/qino";
@@ -14,15 +14,17 @@ function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<unknown> {
 }
 
 /** Answer the messages, running the tools the model calls until it answers without; `messages` are
- *  the new ones (assistant and tool), for a history to keep. `maxSteps` (default 8) bounds the calls. */
-export async function run(app: App, { tools, maxSteps = 8, ...input }: Omit<TextInput, "tools"> & { tools: Tool[]; maxSteps?: number }, opts?: Opts): Promise<TextOutput & { messages: Message[] }> {
-  const messages: Message[] = [];
-  const ctx = requestStorage.getStore()!; // the request's; tools of the api need one
-  for (let step = 0; step < maxSteps; step++) {
-    const answer = await text(app, { ...input, tools, messages: [...input.messages, ...messages] }, opts);
-    messages.push({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls });
-    if (!answer.toolCalls.length) return { ...answer, messages };
-    for (const call of answer.toolCalls) messages.push({ role: "tool", id: call.id, content: JSON.stringify(await execute(tools, call, ctx) ?? null) });
-  }
-  throw new Error(`No answer after ${maxSteps} steps`);
+ *  the new ones (assistant and tool), for a history to keep. The run acts as user `usrId` (its
+ *  rights bound the tools), through the actor "ai1". `maxSteps` (default 8) bounds the calls. */
+export function run(app: App, { usrId, tools, maxSteps = 8, ...input }: Omit<TextInput, "tools"> & { tools: Tool[]; usrId: number; maxSteps?: number }, opts?: Opts): Promise<TextOutput & { messages: Message[] }> {
+  return runAs(app, usrId, "ai1", async () => {
+    const messages: Message[] = [], ctx = getCtx();
+    for (let step = 0; step < maxSteps; step++) {
+      const answer = await text(app, { ...input, tools, messages: [...input.messages, ...messages] }, opts);
+      messages.push({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls });
+      if (!answer.toolCalls.length) return { ...answer, messages };
+      for (const call of answer.toolCalls) messages.push({ role: "tool", id: call.id, content: JSON.stringify(await execute(tools, call, ctx) ?? null) });
+    }
+    throw new Error(`No answer after ${maxSteps} steps`);
+  });
 }

@@ -30,6 +30,7 @@ Deno.test("cms.backend.ai1.calls: records failures and shows usage without rende
     for (const escaped of ["<td>&lt;provider&gt;", "<td>&lt;model&gt;", "<td>&lt;failed&gt;"]) assertStringIncludes(output, escaped);
     assertStringIncludes(output, "30");
     assertStringIncludes(output, "2");
+    assertStringIncludes(output, '<progress value="2" max="4"></progress> 2 / 4');
     assertStringIncludes(output, "<td>0.00008");
     await db.table("ai1_model_provider").update(id, { cost_output: null });
     assertStringIncludes(String(await cms.node.render({ app } as Node)), "<td>–");

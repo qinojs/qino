@@ -245,7 +245,7 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 // vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
 const OPTIONAL = new Set([
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
-  "cms.backend.superuser.db.query/lib/ai.ts -> ai1", // "explain this query" is a bonus, not the console
+  "cms.backend.superuser.db.query/lib/ai.ts -> ai1.tools", // "explain this query" is a bonus, not the console
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
   "cms.backend.superuser.module/detail.ts -> fileEditor",
   "cms.cont.html/plugin.ts -> fileEditor",
