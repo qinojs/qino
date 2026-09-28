@@ -271,6 +271,8 @@ Deno.test("cms.backend.ai1: try shows who would answer by the weights, and who d
 Deno.test("cms.backend.ai1: a provider's own description wins; a variant is another offer of the model", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
+  const old = await app.db.table("ai1_model_provider").insert({ model_id: await app.db.table("ai1_model").insert({ name: "old" }), provider_id: 1, provider_model: "x/old:batch" });
+  await record(app, { id: Number(old), capability: "text", ms: 1, input: 1, output: 1, error: "asynchronous only" }); // an earlier import took it
   const embeddings = { data: [{ id: "voyageai/voyage-code-4", architecture: { input_modalities: ["text"], output_modalities: ["embeddings"] } }] };
   const listed = { data: [
     { id: "openai/gpt-6-sol", context_length: 400000, pricing: { prompt: "0.000002", completion: "0.000008" }, architecture: { input_modalities: ["text", "image"], output_modalities: ["text"] }, supported_parameters: ["tools", "response_format"] },
@@ -290,14 +292,16 @@ Deno.test("cms.backend.ai1: a provider's own description wins; a variant is anot
     { name: "jev-1.13", provider_model: "typesafe/jev-1.13" },
     { name: "gpt-6-sol", provider_model: "gpt-6_sol" }, // the same model, written otherwise
   ]);
+  assertEquals(await app.db.one`SELECT COUNT(*) FROM ai1_model_provider_stat WHERE model_provider_id = ${old}`, 0); // gone with its offer
   assertEquals(await app.db.query`SELECT cost_input, cost_output FROM ai1_model_provider ORDER BY id`, [
     { cost_input: 2, cost_output: 8 }, { cost_input: 0, cost_output: 0 },
     { cost_input: null, cost_output: null }, { cost_input: null, cost_output: null },
     { cost_input: 0.036, cost_output: 0.036 }, { cost_input: null, cost_output: null },
   ]);
   assertEquals(await app.db.col`SELECT c.capability FROM ai1_model_capability c JOIN ai1_model m ON m.id = c.model_id WHERE m.name = 'voyage-code-4'`, ["embed"]);
-  assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability WHERE model_id = 1 ORDER BY capability`, ["structured", "text", "tools", "vision"]);
-  assertEquals(Number(await app.db.one`SELECT context_length FROM ai1_model WHERE id = 1`), 400000);
+  const sol = await app.db.one`SELECT id FROM ai1_model WHERE name = 'gpt-6-sol'`;
+  assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability WHERE model_id = ${sol} ORDER BY capability`, ["structured", "text", "tools", "vision"]);
+  assertEquals(Number(await app.db.one`SELECT context_length FROM ai1_model WHERE id = ${sol}`), 400000);
 });
 
 Deno.test("cms.backend.ai1: the arenas' Elo becomes the score named like the capability", async () => {

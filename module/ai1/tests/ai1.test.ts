@@ -337,6 +337,19 @@ Deno.test("ai1: weights see distances — nearly as good and far cheaper wins", 
   assertEquals(await order({ coding: 1, cost: 1 }), ["close", "top", "weak"]); // by rank all three would tie
 });
 
+Deno.test("ai1: a few free or very dear offers don't flatten the prices of the others", async () => {
+  // good and fine among 18 weak ones, two of them free and two at $262
+  const weak = Array.from({ length: 18 }, (_, i) => [`weak${i}`, 5, i < 2 ? 0 : i < 4 ? 262 : [0.5, 1, 2, 4][i % 4]] as const);
+  const models = [["good", 50, 8], ["fine", 45, 2], ...weak] as const;
+  const testApp = await app(Object.fromEntries(models.map(([name]) => [name, ["text"]])));
+  for (const [i, [, intelligence, cost]] of models.entries()) {
+    await testApp.db.exec`UPDATE ai1_model_provider SET cost_input = ${cost}, cost_output = ${cost} WHERE model_id = ${i + 1}`;
+    await testApp.db.table("ai1_model_score").insert({ model_id: i + 1, metric: "intelligence", value: intelligence });
+  }
+  // on the scale from free to $262, $8 and $2 would be nearly the same, and good would win
+  assertEquals((await candidates(testApp, "text", ask("hi"))).map((c) => c.model).slice(0, 2), ["fine", "good"]);
+});
+
 Deno.test("ai1: openrouter draws at /images", async () => {
   let asked = "";
   await withFetch((url) => (asked = url, Response.json({ data: [{ b64_json: "AA==", media_type: "image/webp" }] })), async () => {
@@ -357,12 +370,14 @@ Deno.test("ai1: openai speaks at /audio/speech; the audio comes as a data URL", 
   });
 });
 
-Deno.test("ai1: without weights, a capability's own score is its quality, else intelligence", async () => {
+Deno.test("ai1: quality, the default, is a capability's own score, else intelligence", async () => {
   const testApp = await app({ smart: ["image"], painter: ["image"] });
   await testApp.db.table("ai1_model_score").insert({ model_id: 1, metric: "intelligence", value: 50 }); // a clever model that draws badly
   await testApp.db.table("ai1_model_score").insert({ model_id: 1, metric: "image", value: 900 });
   await testApp.db.table("ai1_model_score").insert({ model_id: 2, metric: "image", value: 1150 });
   assertEquals((await candidates(testApp, "image", { prompt: "cat" }))[0].model, "painter");
+  assertEquals((await candidates(testApp, "image", { prompt: "cat" }, { prefer: { quality: 1 } }))[0].model, "painter"); // quality: the same, by name
+  assertEquals((await candidates(testApp, "image", { prompt: "cat" }, { prefer: { intelligence: 1 } }))[0].model, "smart");
   assertEquals((await candidates(testApp, "text", ask("hi"))).length, 0); // (they can't write)
   const writers = await app({ plain: ["text"], clever: ["text"] });
   await writers.db.table("ai1_model_score").insert({ model_id: 2, metric: "intelligence", value: 50 });

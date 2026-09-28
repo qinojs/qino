@@ -32,9 +32,9 @@ export type Capability = {
 /**
  * `model` is tried first (it still falls back), `needs` are capabilities the model must have too,
  * `signal` cancels without fallback. `prefer` weighs what decides between the candidates: `cost`
- * (cheaper is better), `speed`, and any score of the models (`intelligence`, `coding` …), e.g.
- * `{ coding: 9, cost: 5, speed: 1 }`. Without it: good (the score named like the capability, as
- * `image`, where there is one, else `intelligence`), then cheap and fast.
+ * (cheaper is better), `speed`, `quality` (the score named like the capability, as `image`, where
+ * there is one, else `intelligence`) and any score of the models (`coding` …), e.g.
+ * `{ coding: 9, cost: 5, speed: 1 }`. Without it: `{ quality: 2, cost: 1, speed: 1 }`.
  */
 export type Opts = { model?: string; needs?: string[]; prefer?: Record<string, number>; signal?: AbortSignal };
 
@@ -115,7 +115,7 @@ const definitions = (app: App, capability: string): Capability[] => app.modules.
  * Who would serve `capability` for `input`, in the order `request` tries them: enabled models that have
  * it and every need, fit the input's size, by the weighted `prefer`. Each criterion is scaled
  * between the candidates' worst (0) and best (1) — cost (3:1 input/output blend) and speed by
- * ratio (log), scores as they are; unknown counts as worst.
+ * ratio (log) and without the outer tenth on each side, scores as they are; unknown counts as worst.
  */
 export async function candidates(app: App, capability: string, input: unknown, { model, needs: wanted = [], prefer }: Opts = {}): Promise<Candidate[]> {
   const defs = definitions(app, capability);
@@ -132,11 +132,13 @@ export async function candidates(app: App, capability: string, input: unknown, {
     WHERE c.capability = ${capability} AND m.enabled = ${true} AND mp.enabled = ${true} AND p.enabled = ${true}
       AND (m.context_length IS NULL OR m.context_length >= ${size})
     ${needs.length ? sql`AND (SELECT COUNT(*) FROM ai1_model_capability n WHERE n.model_id = m.id AND ${sql.in("n.capability", needs)}) = ${needs.length}` : sql.raw("")}`;
-  const metrics = [...new Set([capability, "intelligence", ...Object.keys(prefer ?? {})])].filter((k) => k !== "cost" && k !== "speed");
+  const metrics = [...new Set([capability, "intelligence", ...Object.keys(prefer ?? {})])].filter((k) => k !== "cost" && k !== "speed" && k !== "quality");
   const scores = new Map((rows.length
     ? await app.db.query`SELECT model_id, metric, value FROM ai1_model_score WHERE ${sql.in("model_id", new Set(rows.map((r) => r.model_id)))} AND ${sql.in("metric", metrics)}`
     : []).map((s) => [`${s.model_id} ${s.metric}`, Number(s.value)]));
-  prefer ??= { [rows.some((r) => scores.has(`${r.model_id} ${capability}`)) ? capability : "intelligence"]: 2, cost: 1, speed: 1 };
+  // quality: the capability's own benchmark (image, speak) where there is one, else intelligence
+  const quality = rows.some((r) => scores.has(`${r.model_id} ${capability}`)) ? capability : "intelligence";
+  const weights = Object.entries(prefer ?? { quality: 2, cost: 1, speed: 1 }).map(([k, w]) => [k === "quality" ? quality : k, w] as const);
   const value = (r: Candidate, k: string) => (k === "cost" || k === "speed" ? r[k] : scores.get(`${r.model_id} ${k}`)) ?? undefined;
   // $0.10 → $1 is the step $1 → $10 is; free (0) counts as a thousandth of a dollar
   const scaled = (r: Candidate, k: string) => {
@@ -144,13 +146,15 @@ export async function candidates(app: App, capability: string, input: unknown, {
     return v == null ? undefined : k === "cost" || k === "speed" ? Math.log(Math.max(v, 1e-3)) : v;
   };
   for (const r of rows) r.rank = 0;
-  for (const [k, weight] of Object.entries(prefer)) {
-    const known = rows.map((r) => scaled(r, k)).filter((v) => v != null);
-    const min = Math.min(...known), max = Math.max(...known);
+  for (const [k, weight] of weights) {
+    const known = rows.map((r) => scaled(r, k)).filter((v) => v != null).sort((a, b) => a - b);
+    // a few free or very dear offers would squeeze the prices of all others together
+    const outer = k === "cost" || k === "speed" ? Math.floor(known.length / 10) : 0;
+    const min = known[outer], max = known[known.length - 1 - outer];
     for (const r of rows) {
       const v = scaled(r, k);
       if (v == null) continue;
-      const share = max > min ? (v - min) / (max - min) : 1;
+      const share = max > min ? Math.min(1, Math.max(0, (v - min) / (max - min))) : 1;
       r.rank += weight * (k === "cost" ? 1 - share : share);
     }
   }

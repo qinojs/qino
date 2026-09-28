@@ -91,6 +91,8 @@ async function describe(app: App, offer: { id: number; model_id: number }, meta:
  */
 export async function importModels(app: App, priced = new Set<number>(), told = new Map<number, string>()): Promise<string> {
   const db = app.db;
+  // an earlier import took the :batch variants too (see below); what hangs on them goes with them
+  for (const id of await db.col`SELECT id FROM ai1_model_provider WHERE provider_model LIKE ${"%:batch"}`) await db.table("ai1_model_provider").delete(Number(id));
   const models = new Map((await db.query`SELECT id, name FROM ai1_model`).map((m) => [same(String(m.name)), { id: Number(m.id), name: String(m.name) }]));
   // an offer is a model at a provider under one id there: a variant is another
   const offers = new Map((await db.query`SELECT mp.id, mp.provider_id, mp.provider_model, m.name FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id`)

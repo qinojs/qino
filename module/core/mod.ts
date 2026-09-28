@@ -63,7 +63,7 @@ export type { AuthFactor, Offer } from "./lib/auth/factors.ts";
 
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";
-export type { Transcript, TranscriptSegment, TranscriptWord } from "./lib/transform/mod.ts";
+export type { Transcript } from "./lib/transform/mod.ts";
 export * as magick from "./lib/transform/magick.ts";
 
 // Server helpers used by modules

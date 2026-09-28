@@ -8,7 +8,6 @@
   "version": "0.7.0",
   "exports": {
     ".": "./module/core/mod.ts",
-    "./ai": "./module/ai/mod.ts",
     "./ai1": "./module/ai1/mod.ts",
     "./ai1.embed": "./module/ai1.embed/mod.ts",
     "./ai1.stats": "./module/ai1.stats/mod.ts",
@@ -76,7 +75,6 @@
     "@qino/m/": "./module/",
     "@qino/pub/": "./module/core/pub/js/",
     "@qino/qino": "./module/core/mod.ts",
-    "@qino/qino/ai": "./module/ai/mod.ts",
     "@qino/qino/ai1": "./module/ai1/mod.ts",
     "@qino/qino/ai1.embed": "./module/ai1.embed/mod.ts",
     "@qino/qino/ai1.stats": "./module/ai1.stats/mod.ts",

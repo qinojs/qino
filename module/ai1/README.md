@@ -31,11 +31,11 @@ const { text: answer, truncated, model } = await text(app, "Hi"); // model: who 
   `enabled`.
 
 The candidates (model at a provider) go by the weights in `prefer`: `cost`
-(cheaper is better), `speed`, and any score. Each is scaled between the candidates' worst (0) and
-best (1): cost and speed by ratio, scores as they are; unknown counts as worst. Only the ratio of
-the weights matters. Without `prefer`: `{ intelligence: 2, cost: 1, speed: 1 }` — where a
-score is named like the capability (`image`, `speak`: its own benchmark), that one instead of
-`intelligence`.
+(cheaper is better), `speed`, `quality` and any score. `quality` is the score named like the
+capability (`image`, `speak`: its own benchmark) where there is one, else `intelligence`. Each is scaled between the candidates' worst (0) and
+best (1): cost and speed by ratio and without the outer tenth on each side (a few free or very
+dear offers would squeeze the others together), scores as they are; unknown counts as worst. Only the ratio of
+the weights matters. Without `prefer`: `{ quality: 2, cost: 1, speed: 1 }`.
 
 ```ts
 await text(app, "Write a parser", { prefer: { coding: 9, cost: 5, speed: 1 } });

@@ -102,9 +102,7 @@ const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
 
 // Still open, because the consumer is the defect and fixing it is a design change: `api` is a
 // manifest field the loader already publishes as app.apiTree["cms"]. See PLAN-modules.md.
-const OPEN = new Set([
-  "cms.frontend.ai/bots/cmsHelper.ts -> cms/api.ts",           // toTools() at module scope, no app yet
-]);
+const OPEN = new Set<string>();
 
 /** The module folders below a store directory, as `<store dir><module>/`. */
 async function* moduleDirs(dir: string): AsyncGenerator<string> {

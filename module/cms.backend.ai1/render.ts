@@ -287,11 +287,13 @@ async function providers(node: Node): Promise<HtmlString> {
 /** One call of a capability through ai1's own choice: who would answer (for the weights), then who did. */
 async function tryCard(app: App): Promise<HtmlString> {
   const t = app.t;
-  const [names, metrics] = await Promise.all([
+  const [names, metrics, caps] = await Promise.all([
     app.db.col`SELECT name FROM ai1_model WHERE enabled = ${true} ORDER BY name`,
     app.db.col`SELECT DISTINCT metric FROM ai1_model_score WHERE metric <> ${SPEED} ORDER BY metric`,
+    capabilities(app),
   ]);
-  const criteria = [...new Set(["cost", "speed", INTELLIGENCE, ...metrics.map(String)])];
+  // quality stands for intelligence and for the scores named like a capability (image, speak)
+  const criteria = ["quality", "cost", "speed", ...metrics.map(String).filter((m) => m !== INTELLIGENCE && !caps.includes(m))];
   return html.async`<div class="u2-card -try">
     <div class=-head>${t`Try`}</div>
     <form class="u2-flex -Col">
@@ -317,7 +319,7 @@ async function tryCard(app: App): Promise<HtmlString> {
         <td><input type=range min=0 max=10 step=1 data-weight="${c}" value=0>
         <td class=-num><output>0</output>`)}
       </table>
-      <small>${t`All at 0: ai1's own choice — the capability's own score or intelligence, then cheap and fast.`}</small>
+      <small>${t`All at 0: ai1's own choice — quality (the capability's own score, else intelligence), then cheap and fast.`}</small>
       <ol class=-candidates></ol>
       <output></output>
     </form>

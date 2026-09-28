@@ -1,6 +1,5 @@
 {
   "modules": {
-    "ai": {},
     "ai1": {},
     "ai1.api": {},
     "ai1.embed": {},
@@ -18,11 +17,9 @@
     "cms.embed": {},
     "cms.accessRules": {},
     "cms.backend": {},
-    "cms.backend.ai": {},
     "cms.backend.ai1": {},
     "cms.backend.ai1.calls": {},
     "cms.backend.ai1.embed": {},
-    "cms.backend.ai.sessions": {},
     "cms.backend.cms": {},
     "cms.backend.cms.accessRules": {},
     "cms.backend.cms.history": {},
@@ -131,7 +128,6 @@
     "cms.filebrowser.ai": {},
     "cms.filebrowser.pexels": {},
     "cms.frontend.4": {},
-    "cms.frontend.ai": {},
     "cms.image2": {},
     "cms.image_editor": {},
     "cms.installation.default": {},

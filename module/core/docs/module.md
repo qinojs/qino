@@ -204,11 +204,3 @@ applied *before* any hook, so `init()`/`install()` see the defaults of all linke
 tables from the merged schema of the other modules; functions run after all objects. Both are
 merged and migrated on `init`/`link`.
 
-## Not yet torn down on unlink
-
-Registries without a remove API keep a stale entry after unlink:
-
-- **`ai` / `cms.frontend.ai`** — `AiApi.registerBot(...)` writes into a `Map` with no unregister.
-
-Fix when needed: accept a `signal`, as `registerOcrEngine(engine, { signal })` does, or return a
-dispose function.
