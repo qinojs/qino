@@ -8,10 +8,17 @@ import type { Tool } from "@qino/qino";
 import type { Adapter } from "@qino/qino/ai1";
 
 // Asked "a b", the model calls the tools a and b, then answers with their results; asked "loop", it
-// never stops calling. It streams what it answers.
+// never stops calling; asked "stay", it makes model n the better one after its first step, then
+// answers with its own name. It streams what it answers.
+let current: App;
 const fake: Adapter = {
-  text: (_call, { messages, onText }) => {
+  text: (call, { messages, onText }) => {
     const asked = messages[0].content, last = messages.at(-1);
+    if (asked === "stay") {
+      if (last.role === "tool") return Promise.resolve({ text: call.model, toolCalls: [], truncated: false });
+      return current.db.table("ai1_model_score").insert({ model_id: 2, metric: "intelligence", value: 99 })
+        .then(() => ({ text: "", toolCalls: [{ id: "1", name: "echo", args: {} }], truncated: false }));
+    }
     if (last.role === "tool" && asked !== "loop") {
       const text = messages.filter((m: any) => m.role === "tool").map((m: any) => m.content).join(" ");
       onText?.(text);
@@ -39,6 +46,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
   app.modules.add(new URL("../../ai1/plugin.ts", import.meta.url));
   await app.init();
   app.modules.get("ai1")!.plugin.ai1Adapters.fake = fake;
+  current = app;
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
@@ -64,6 +72,15 @@ Deno.test("ai1.tools: runs the tools the model calls, in order, until it answers
   assertEquals(order, ["echo", "echo"]);
   assertEquals(streamed, ["…", '"echo" "echo"']); // every step streams
   assertEquals(out.messages.map((m: any) => [m.role, m.id ?? m.toolCalls?.length]), [["assistant", 2], ["tool", "1.0"], ["tool", "1.1"], ["assistant", 0]]);
+}));
+
+Deno.test("ai1.tools: a run stays with the model that answered first, for its prompt cache", () => withApp(async (testApp) => {
+  const n = await testApp.db.table("ai1_model").insert({ name: "n" });
+  await testApp.db.table("ai1_model_provider").insert({ model_id: n, provider_id: 1 });
+  for (const capability of ["text", "tools"]) await testApp.db.table("ai1_model_capability").insert({ model_id: n, capability });
+  await testApp.db.table("ai1_model_score").insert({ model_id: 1, metric: "intelligence", value: 10 });
+  const out = await run(testApp, ask("stay"));
+  assertEquals([out.text, out.model], ["m", "m"]); // n became better, but m kept the run
 }));
 
 Deno.test("ai1.tools: the tools act as the user, not as the caller's request", () => withApp(async (testApp) => {

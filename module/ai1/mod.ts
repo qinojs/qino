@@ -23,8 +23,9 @@ export type TextInput = {
   /** Streams the answer. Once text went out, a failure no longer falls back. */
   onText?: (delta: string) => void;
 };
-/** `truncated`: cut off at `maxTokens`. Usage and timing of every call: the `ai1:call` event. */
-export type TextOutput = { text: string; toolCalls: ToolCall[]; truncated: boolean };
+/** `truncated`: cut off at `maxTokens`; `model`: the one that answered. Usage and timing of every
+ *  call: the `ai1:call` event. */
+export type TextOutput = { text: string; toolCalls: ToolCall[]; truncated: boolean; model: string };
 /** A Standard Schema (`s.object(…)`) validates the answer; a plain JSON Schema only shapes it. */
 export type StructuredInput<T> = Omit<TextInput, "tools"> & { schema: StandardSchema<T> | Record<string, unknown> };
 export type EmbedInput = ({ texts: string[]; images?: never } | { images: string[]; texts?: never }) & { purpose?: "index" | "query" };

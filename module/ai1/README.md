@@ -16,7 +16,7 @@ import { decide, text, translate } from "@qino/qino/ai1";
 await translate(app, { text: "<p>Hallo</p>", from: "de", to: "en", format: "html" });
 await decide(app, { content: mail, question: "Is this spam?", options: ["yes", "no"] });
 await translate(app, { text: ["Titel", "Hallo"], to: "en" }); // many at once: ["Title", "Hello"]
-const { text: answer, truncated } = await text(app, "Hi");
+const { text: answer, truncated, model } = await text(app, "Hi"); // model: who answered
 ```
 
 `text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`: each is `run(app, capability, input)`.

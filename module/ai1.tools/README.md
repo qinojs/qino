@@ -15,5 +15,7 @@ const { text, messages } = await run(app, { messages: [{ role: "user", content: 
 - A failing tool is told to the model (`{ error }`, with `code` and `data` of an `ApiError`); other
   errors only as "Tool failed", logged on the server.
 - Tool calls of one step run one after the other.
+- A run stays with the model that answered first (the provider has the history cached); it
+  falls back only if that one fails.
 - `maxSteps` (default 8) bounds the calls; beyond it `run()` throws.
 - `messages` are the new ones (assistant and tool): keep them for a history.

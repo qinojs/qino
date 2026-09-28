@@ -90,7 +90,8 @@ export async function run(app: App, capability: string, input: unknown, opts: Op
       const call = await bind(app, candidate, used, opts.signal);
       const result = await (adapter[capability] ? adapter[capability](call, input) : convert!(input, (i) => adapter[through!](call, i)));
       report();
-      return result;
+      // a text answer names its model, so a caller can stay with it (the provider's prompt cache)
+      return capability === "text" ? { ...result as object, model: candidate.model } : result;
     } catch (e) {
       report(e);
       if (stop(e)) throw e;

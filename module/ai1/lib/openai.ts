@@ -31,7 +31,7 @@ const toOpenAi = (m: Message) =>
   : m.role === "assistant" ? { ...m, toolCalls: undefined, ...(m.toolCalls?.length && { tool_calls: m.toolCalls.map((tc) => ({ id: tc.id, type: "function", function: { name: tc.name, arguments: JSON.stringify(tc.args) } })) }) }
   : { role: m.role, content: typeof m.content === "string" ? m.content : m.content.map((p) => p.type === "text" ? p : { type: "image_url", image_url: { url: p.url } }) };
 
-async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, format?: unknown): Promise<TextOutput> {
+async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, format?: unknown): Promise<Omit<TextOutput, "model">> {
   const body = {
     model: call.model,
     messages: messages.map(toOpenAi),

@@ -176,7 +176,7 @@ Deno.test("ai1: openai streams text, joins tool-call fragments, reports truncati
   ), async () => {
     const result = await text(await openaiApp({ gpt: ["text"] }), { ...ask("hi"), onText: (d) => deltas.push(d) });
     assertEquals(deltas, ["Hel", "lo"]);
-    assertEquals(result, { text: "Hello", toolCalls: [{ id: "c1", name: "f", args: { a: 1 } }], truncated: true });
+    assertEquals(result, { text: "Hello", toolCalls: [{ id: "c1", name: "f", args: { a: 1 } }], truncated: true, model: "gpt" }); // names who answered
     assertEquals([fired.at(-1)![1].input, fired.at(-1)![1].output], [4, 2]); // usage goes to ai1:call
   });
 });
