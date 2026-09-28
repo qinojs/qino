@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "ai1_call_error": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "model_provider_id": { "type": "integer", "x-index": true, "x-qg-parent": "ai1_model_provider", "x-qg-on-parent-delete": "cascade" },
+          "capability": { "type": "string", "maxLength": 32 },
+          "time": { "type": "integer" },
+          "message": { "type": "string" }
+        },
+        "required": ["id", "model_provider_id", "capability", "time", "message"]
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+import { Db } from "@qino/qino";
+import { ai1DbSchema, assertEquals, assertStringIncludes, Emitter, fakeT } from "@qino/qino/tests";
+import { dbSchema as errorsSchema, init } from "@qino/m/ai1.errors/tests/deps.ts";
+
+import { cms } from "../plugin.ts";
+
+import type { App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
+Deno.test("cms.backend.ai1.calls: records failures and shows usage without rendering provider HTML", async () => {
+  const db = new Db("sqlite::memory:");
+  const stats = { additionalProperties: { properties: {
+    model_provider_id: { type: "integer", "x-index": "primary" },
+    calls: { type: "integer" }, errors: { type: "integer" },
+    used_input: { type: "integer" }, used_output: { type: "integer" },
+  } } };
+  const combined = { properties: { ...ai1DbSchema.properties, ai1_model_provider_stat: stats, ...errorsSchema.properties } };
+  await db.migrate(combined);
+  await db.loadTables();
+  db.schema = combined;
+  const events = new Emitter<Record<string, any>>();
+  const app = { db, t: fakeT, on: events.on.bind(events), fire: events.fire.bind(events) } as unknown as App;
+  const stop = new AbortController();
+  try {
+    await db.table("ai1_provider").insert({ name: "<provider>", type: "fake", endpoint: "" });
+    await db.table("ai1_model").insert({ name: "<model>" });
+    const id = Number(await db.table("ai1_model_provider").insert({ model_id: 1, provider_id: 1, cost: 2 }));
+    await db.table("ai1_model_provider_stat").insert({ model_provider_id: id, calls: 2, errors: 1, used_input: 30, used_output: 5 });
+    init(app, { signal: stop.signal });
+    await app.fire("ai1:call", { id, model: "<model>", provider: "<provider>", capability: "text", error: "<failed>" });
+    await app.fire("ai1:call", { id, model: "<model>", provider: "<provider>", capability: "text" });
+
+    assertEquals(await db.query`SELECT model_provider_id, message FROM ai1_call_error`, [{ model_provider_id: id, message: "<failed>" }]);
+    const output = String(await cms.node.render({ app } as Node));
+    for (const escaped of ["<td>&lt;provider&gt;", "<td>&lt;model&gt;", "<td>&lt;failed&gt;"]) assertStringIncludes(output, escaped);
+    assertStringIncludes(output, "30");
+    assertStringIncludes(output, "2");
+  } finally {
+    stop.abort();
+    await db.close();
+  }
+});

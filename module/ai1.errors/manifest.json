@@ -1,0 +1,6 @@
+{
+  "name": "ai1.errors",
+  "description": "Records failed AI provider calls for diagnosis.",
+  "dependencies": ["ai1"],
+  "files": ["dbschema.json", "manifest.json", "plugin.ts"]
+}
