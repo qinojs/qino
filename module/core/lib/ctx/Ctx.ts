@@ -44,11 +44,12 @@ export class Ctx {
   }
 
   #authUserId = 0;
-  /** A token (API key, …) names its user and device (`api_key:12`). The device becomes the request's
-   *  client and session, identified by a secret hash that never leaves the server. */
-  async authenticate(userId: number, device: string): Promise<void> {
+  /** A token (API key, …) names its user and the actor acting for them (`api_key:12`). The actor
+   *  becomes the request's client and session, identified by a secret hash that never leaves the
+   *  server. */
+  async authenticate(userId: number, actor: string): Promise<void> {
     this.#authUserId = userId;
-    const hash = await keyed(this.app, ["core.device", String(userId), device], 22);
+    const hash = await keyed(this.app, ["core.device", String(userId), actor], 22); // "core.device": the key existing hashes were made with
     const clients = this.app.db.table("client");
     const find = () => clients.rowBy("hash", hash);
     // a parallel request may have inserted it: then read that row

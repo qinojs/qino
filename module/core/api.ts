@@ -122,7 +122,7 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async () => {
         const ctx = getCtx();
-        // A token signs in its device while valid; logout would be undone by the next request.
+        // A token signs in its actor while valid; logout would be undone by the next request.
         if (ctx.statelessAuth) throw new ApiError(409, "Nothing to log out — this request carries a credential, not a login");
         await logout(ctx);
         return { ok: true };

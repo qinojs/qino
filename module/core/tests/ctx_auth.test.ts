@@ -15,7 +15,7 @@ Deno.test("Ctx: userId falls back to the cookie session", async () => {
 });
 
 /** Authenticate against an app that records which hash names the client and the session. */
-async function authenticated(userId: number, device: string) {
+async function authenticated(userId: number, actor: string) {
   const { sess, writes } = sessionFake(5);
   const seen: { client?: string; sess?: string; pinned?: boolean } = {};
   const app = {
@@ -23,7 +23,7 @@ async function authenticated(userId: number, device: string) {
     sessions: { load: (token: string, pinned: boolean) => (Object.assign(seen, { sess: token, pinned }), { token }) },
   };
   const ctx = await testContext({ sess, app });
-  await ctx.authenticate(userId, device);
+  await ctx.authenticate(userId, actor);
   return { ctx, seen, writes };
 }
 
@@ -34,7 +34,7 @@ Deno.test("Ctx: authenticate beats the cookie session and never writes it", asyn
   assertEquals(writes.length, 0);
 });
 
-Deno.test("Ctx: a credential's device is one client and one pinned session, named by a secret hash", async () => {
+Deno.test("Ctx: a credential's actor is one client and one pinned session, named by a secret hash", async () => {
   const { ctx, seen } = await authenticated(7, "api_key:1");
   assertEquals(ctx.clientId, "3");
   assertEquals(seen.client?.length, 22);
