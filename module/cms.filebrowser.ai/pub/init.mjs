@@ -30,9 +30,7 @@ customElements.whenDefined('qino-cms').then(async () => {
       if (!prompt) return;
       list.innerHTML = 'Generating…';
       // a provider error is shown, the fallback image is still offered
-      const res = await api.ai['image-generations'].post({ data: { prompt } }).catch(err => { list.textContent = err.message; });
-      if (res) list.innerHTML = '';
-      const urls = res?.data?.map(i => i.url) ?? [];
+      const urls = await api['ai1.api'].image.post({ prompt }).then(urls => (list.innerHTML = '', urls), err => (list.textContent = err.message, []));
       if (!urls.length) urls.push('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt));
       for (const url of urls) {
         const label = document.createElement('label');

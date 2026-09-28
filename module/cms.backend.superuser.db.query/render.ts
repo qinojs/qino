@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, getCtx, html, safeEqual, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { ai } from "@qino/qino/ai";
 
 import { askDbAi } from "./lib/ai.ts";
 
@@ -56,7 +55,7 @@ export async function render(node: Node): Promise<HtmlString> {
 }
 
 function renderAi(app: App, question: string, note: string): Promise<HtmlString> | string {
-  if (!ai.get(app)) return "";
+  if (!app.modules.linked("ai1")) return "";
   const msg = note ? html`<u2-alert open variant=danger style="margin-top:.25rem">${note}</u2-alert>` : "";
   return html.async`<form method=post class=-ai>
     <input type=hidden name=csrfToken value="${getCtx().csrfToken}">
