@@ -5,6 +5,7 @@ export { App } from "./lib/App.ts";
 export type { AppEvents } from "./lib/App.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
+export { runAs } from "./lib/ctx/runAs.ts";
 export { Emitter } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
 export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";

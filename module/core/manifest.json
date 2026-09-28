@@ -49,6 +49,7 @@
     "lib/ctx/ResHtml.ts",
     "lib/ctx/contextSettings.ts",
     "lib/ctx/init.ts",
+    "lib/ctx/runAs.ts",
     "lib/db/Db.ts",
     "lib/db/DbDriver.ts",
     "lib/db/DbField.ts",
