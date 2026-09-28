@@ -124,14 +124,12 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
           added++;
         }
         const fromCatalog = extra.find((m) => m.id === id);
+        if (meta) await describe(app, { id: offer, model_id: model }, meta, true);
         if (fromCatalog) { // from the catalog
-          if (fromCatalog.cost) await describe(app, { id: offer, model_id: model }, fromCatalog, true);
           for (const capability of fromCatalog.capabilities) await db.table("ai1_model_capability").ensure({ model_id: model, capability });
           for (const [metric, value] of Object.entries(fromCatalog.scores ?? {})) await db.table("ai1_model_score").ensure({ model_id: model, metric, value });
-        } else if (meta) {
-          await describe(app, { id: offer, model_id: model }, meta, true);
         }
-        if (fromCatalog?.cost != null || meta?.cost) priced.add(offer);
+        if (meta?.cost) priced.add(offer);
         if (meta?.description) told.set(model, String(meta.description));
       }
     });
