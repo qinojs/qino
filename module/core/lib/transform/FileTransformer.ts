@@ -85,19 +85,18 @@ export class FileTransformer {
     this.#transformers.push(def);
   }
 
-  /** Registers an OCR engine; the highest-priority available one wins in `ocrEngine()` */
-  registerOcrEngine(engine: OcrEngine): void {
-    this.#ocrEngines.push(engine);
-    this.#ocrEngines.sort((a, b) => b.priority - a.priority);
+  /** Registers an OCR engine; the highest-priority available one wins in `ocrEngine()`. `signal`
+   *  removes it again (module unlink). */
+  registerOcrEngine(engine: OcrEngine, opts?: { signal?: AbortSignal }): void {
+    addEngine(this.#ocrEngines, engine, opts?.signal);
   }
 
   async ocrEngine(ctx: TransformContext): Promise<OcrEngine | undefined> {
     for (const engine of this.#ocrEngines) if (await engine.available(ctx)) return engine;
   }
 
-  registerTranscriptEngine(engine: TranscriptEngine): void {
-    this.#transcriptEngines.push(engine);
-    this.#transcriptEngines.sort((a, b) => b.priority - a.priority);
+  registerTranscriptEngine(engine: TranscriptEngine, opts?: { signal?: AbortSignal }): void {
+    addEngine(this.#transcriptEngines, engine, opts?.signal);
   }
 
   async transcriptEngine(ctx: TransformContext): Promise<TranscriptEngine | undefined> {
@@ -234,4 +233,12 @@ function topoSort(transformers: TransformerDef[]): TransformerDef[] {
 async function hashKey(parts: string[]): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(parts.join('|')));
   return new Uint8Array(buf).toHex();
+}
+
+/** Add by priority, highest first; `signal` removes it again. */
+function addEngine<T extends { priority: number }>(list: T[], engine: T, signal?: AbortSignal): void {
+  if (signal?.aborted) return;
+  list.push(engine);
+  list.sort((a, b) => b.priority - a.priority);
+  signal?.addEventListener('abort', () => list.includes(engine) && list.splice(list.indexOf(engine), 1), { once: true });
 }

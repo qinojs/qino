@@ -208,9 +208,7 @@ merged and migrated on `init`/`link`.
 
 Registries without a remove API keep a stale entry after unlink:
 
-- **`ai`** — `registerAiOcr` / `registerAiTranscript` add engines to `app.fileTransformer`;
-  `FileTransformer` has no unregister.
 - **`ai` / `cms.frontend.ai`** — `AiApi.registerBot(...)` writes into a `Map` with no unregister.
 
-Fix when needed: accept a `signal` (e.g. `registerOcrEngine(engine, { signal })`) or return a
+Fix when needed: accept a `signal`, as `registerOcrEngine(engine, { signal })` does, or return a
 dispose function.

@@ -5,6 +5,7 @@
     "ai1.api": {},
     "ai1.embed": {},
     "ai1.stats": {},
+    "ai1.transform": {},
     "auth": {},
     "auth.api_keys": {},
     "auth.backup_codes": {},
