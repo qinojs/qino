@@ -4,7 +4,7 @@ import type { App, StandardSchema, Tool, Transcript } from "@qino/qino";
 import type { Opts } from "./lib/run.ts";
 
 export { AiError, candidates, run } from "./lib/run.ts";
-export type { Adapter } from "./lib/run.ts";
+export type { Adapter, Opts } from "./lib/run.ts";
 
 /** Provider-neutral content. An image `url` may be a data URL. */
 export type Part = { type: "text"; text: string } | { type: "image"; url: string };

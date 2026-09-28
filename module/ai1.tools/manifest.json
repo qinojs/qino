@@ -1,0 +1,6 @@
+{
+  "name": "ai1.tools",
+  "description": "Lets the model use tools: runs the ones it calls and asks again until it answers.",
+  "dependencies": ["ai1"],
+  "files": ["README.md", "manifest.json", "mod.ts", "plugin.ts"]
+}
