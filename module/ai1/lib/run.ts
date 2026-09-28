@@ -113,8 +113,8 @@ const definitions = (app: App, capability: string): Capability[] => app.modules.
 /**
  * Who would serve `capability` for `input`, in the order `run` tries them: enabled models that have
  * it and every need, fit the input's size, by the weighted `prefer`. Each criterion is scaled
- * between the candidates' worst (0) and best (1) — cost and speed by ratio (log), scores as they
- * are; unknown counts as worst.
+ * between the candidates' worst (0) and best (1) — cost (3:1 input/output blend) and speed by
+ * ratio (log), scores as they are; unknown counts as worst.
  */
 export async function candidates(app: App, capability: string, input: unknown, { model, needs: wanted = [], prefer }: Opts = {}): Promise<Candidate[]> {
   const defs = definitions(app, capability);
@@ -122,7 +122,8 @@ export async function candidates(app: App, capability: string, input: unknown, {
   // a rough size in tokens, so models with a too small context are left out (data URLs don't count)
   const size = Math.ceil((JSON.stringify(input, (_, v) => typeof v === "string" && v.startsWith("data:") ? "" : v)?.length ?? 0) / 4);
   const rows = await app.db.query<Candidate>`
-    SELECT mp.id, m.id AS model_id, m.name AS model, mp.provider_model, p.name AS provider, p.type, p.endpoint, p.timeout_ms, mp.cost, mp.speed
+    SELECT mp.id, m.id AS model_id, m.name AS model, mp.provider_model, p.name AS provider, p.type, p.endpoint, p.timeout_ms,
+      (mp.cost_input * 3 + mp.cost_output) / 4 AS cost, mp.speed
     FROM ai1_model_capability c
     JOIN ai1_model m ON m.id = c.model_id
     JOIN ai1_model_provider mp ON mp.model_id = m.id

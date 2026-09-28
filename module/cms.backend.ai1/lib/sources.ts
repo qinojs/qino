@@ -63,13 +63,13 @@ const described = (m: any) => m.pricing || m.architecture || m.input_modalities 
 
 /**
  * Write what a description (models.dev's words) tells: capabilities (only added, never removed) and
- * context length of the model; with `priced`, the offer's price — blended 3:1 input to output, per
- * million tokens (a negative price means "varies": left out).
+ * context length of the model; with `priced`, the offer's input and output prices per million
+ * provider-reported units (a negative price means "varies": left out).
  */
 async function describe(app: App, offer: { id: number; model_id: number }, meta: any, priced: boolean): Promise<void> {
   const db = app.db;
   const { input, output } = meta.cost ?? {};
-  if (priced && input >= 0 && output >= 0) await db.table("ai1_model_provider").update(offer.id, { cost: Math.round((input * 3 + output) / 4 * 1e4) / 1e4 });
+  if (priced && input >= 0 && output >= 0) await db.table("ai1_model_provider").update(offer.id, { cost_input: input, cost_output: output });
   // embedding models: models.dev says their output is text, so it's the family or the name
   const embedding = meta.modalities?.output?.includes("embeddings") || meta.family === "text-embedding" || /embed/i.test(meta.id ?? "");
   const capabilities = [
@@ -125,7 +125,7 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
         }
         const fromCatalog = extra.find((m) => m.id === id);
         if (fromCatalog) { // from the catalog
-          if (fromCatalog.cost != null) await db.table("ai1_model_provider").update(offer, { cost: fromCatalog.cost });
+          if (fromCatalog.cost) await describe(app, { id: offer, model_id: model }, fromCatalog, true);
           for (const capability of fromCatalog.capabilities) await db.table("ai1_model_capability").ensure({ model_id: model, capability });
           for (const [metric, value] of Object.entries(fromCatalog.scores ?? {})) await db.table("ai1_model_score").ensure({ model_id: model, metric, value });
         } else if (meta) {

@@ -59,7 +59,8 @@ Deno.test("cms.backend.ai1: providers, models, capabilities and keys are managed
   assertEquals(await api(node, { add: "provider", name: "api.test", type: "openai", endpoint: "https://x.test/v1" }), { ok: true });
   assertEquals(await api(node, { add: "model", name: "llama" }), { ok: true });
   assertEquals(await api(node, { add: "offer", model: 1, provider_id: 1 }), { ok: true });
-  assertEquals(await api(node, { set: { table: "ai1_model_provider", id: 1, column: "cost", value: "0.5" } }), { ok: true });
+  assertEquals(await api(node, { set: { table: "ai1_model_provider", id: 1, column: "cost_input", value: "0.5" } }), { ok: true });
+  assertEquals(await api(node, { set: { table: "ai1_model_provider", id: 1, column: "cost_output", value: "1" } }), { ok: true });
   assertEquals(await api(node, { set: { table: "ai1_model_provider", id: 1, column: "speed", value: "" } }), { ok: true });
   assertEquals(await api(node, { set: { table: "ai1_model", id: 1, column: "context_length", value: "8192" } }), { ok: true });
   assertEquals(await api(node, { capability: { model: 1, name: "text", on: true } }), { ok: true });
@@ -67,7 +68,7 @@ Deno.test("cms.backend.ai1: providers, models, capabilities and keys are managed
   assertEquals(await api(node, { key: { provider: "api.test", value: " sk-123456 " } }), { ok: true });
   assertEquals(await api(node, { benchmarkKey: "aa" }), { ok: true, message: "Saved." });
   assertEquals(stored, { "api.test": "sk-123456", "artificialanalysis.ai": "aa" });
-  assertEquals(await app.db.row`SELECT cost, speed FROM ai1_model_provider`, { cost: 0.5, speed: null });
+  assertEquals(await app.db.row`SELECT cost_input, cost_output, speed FROM ai1_model_provider`, { cost_input: 0.5, cost_output: 1, speed: null });
   assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability`, ["text"]);
   await api(node, { capability: { model: 1, name: "text", on: false } });
   assertEquals(await app.db.query`SELECT * FROM ai1_model_capability`, []);
@@ -89,6 +90,8 @@ Deno.test("cms.backend.ai1: the views render the matrix and the providers, escap
 
   const matrix = await show(node);
   assertStringIncludes(matrix, "&lt;b&gt;llama&lt;/b&gt;");
+  assertStringIncludes(matrix, "name=cost_input");
+  assertStringIncludes(matrix, "name=cost_output");
   assertStringIncludes(matrix, 'data-capability="text" checked');
   assert(matrix.includes('title="Its providers">1</button>') && !matrix.includes("unusable")); // the count; the providers are in its dialog
   await api(node, { capability: { model: 1, name: "vision", on: true } });
@@ -130,7 +133,7 @@ Deno.test("cms.backend.ai1: all models of every provider are imported, switched 
     { name: "whisper-large-v3", provider: "api.groq.com", provider_model: "" },
   ]);
   assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability WHERE model_id = (SELECT id FROM ai1_model WHERE name = 'jev-1.13')`, ["decide"]);
-  assertEquals(await app.db.col`SELECT cost FROM ai1_model_provider WHERE provider_model = 'typesafe/jev-1.13'`, [0.036]); // the catalog's price
+  assertEquals(await app.db.row`SELECT cost_input, cost_output FROM ai1_model_provider WHERE provider_model = 'typesafe/jev-1.13'`, { cost_input: 0.036, cost_output: 0.036 }); // the catalog's price
 
   // the active ones, all on request, filtered by provider
   assert(!(await show(node)).includes('value="llama-3.3-70b"'));
@@ -191,7 +194,9 @@ Deno.test("cms.backend.ai1: models.dev and Artificial Analysis fill prices, capa
   await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : BENCHMARKS, async () => {
     assertStringIncludes(await evaluate(app), "models.dev: 2 · Artificial Analysis: 1");
   });
-  assertEquals(await app.db.col`SELECT cost FROM ai1_model_provider ORDER BY id`, [0.64, 0.15]); // each its own, blended 3:1
+  assertEquals(await app.db.query`SELECT cost_input, cost_output FROM ai1_model_provider ORDER BY id`, [
+    { cost_input: 0.59, cost_output: 0.79 }, { cost_input: 0.1, cost_output: 0.3 },
+  ]);
   assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability ORDER BY capability`, ["structured", "text", "tools", "vision"]);
   await app.db.table("ai1_model").insert({ name: "whisper-large-v3" });
   await app.db.table("ai1_model_provider").insert({ model_id: 2, provider_id: 1 });
@@ -261,7 +266,7 @@ Deno.test("cms.backend.ai1: try shows who would answer by the weights, and who d
   await app.db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
   for (const [name, coding] of [["smart", 50], ["cheap", 20]] as const) {
     const model = await app.db.table("ai1_model").insert({ name });
-    await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: 1, cost: name === "cheap" ? 1 : 10 });
+    await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: 1, cost_input: name === "cheap" ? 1 : 10, cost_output: name === "cheap" ? 1 : 10 });
     await app.db.table("ai1_model_capability").insert({ model_id: model, capability: "text" });
     await app.db.table("ai1_model_score").insert({ model_id: model, metric: "coding", value: coding });
   }
@@ -287,13 +292,18 @@ Deno.test("cms.backend.ai1: a provider's own description wins; a variant is anot
   const modelsDev = { openrouter: { id: "openrouter", api: "https://openrouter.ai/api/v1", models: { "openai/gpt-6-sol": { id: "openai/gpt-6-sol", cost: { input: 99, output: 99 } } } } };
   await withFetch((url) => url.includes("models.dev") ? modelsDev : url.includes("aihubmix") ? (url.endsWith("/embeddings/models") ? {} : { data: [{ id: "gpt-6_sol" }] }) : url.endsWith("/embeddings/models") ? embeddings : listed, () => evaluate(app).then(() => {}));
   assertEquals(await app.db.query`
-    SELECT m.name, mp.provider_model, mp.cost FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id ORDER BY mp.id`, [
-    { name: "gpt-6-sol", provider_model: "openai/gpt-6-sol", cost: 3.5 }, // (2 × 3 + 8) / 4, not models.dev's 99
-    { name: "gpt-6-sol", provider_model: "openai/gpt-6-sol:free", cost: 0 },
-    { name: "auto", provider_model: "openrouter/auto", cost: null },
-    { name: "voyage-code-4", provider_model: "voyageai/voyage-code-4", cost: null }, // from /embeddings/models
-    { name: "jev-1.13", provider_model: "typesafe/jev-1.13", cost: 0.036 },
-    { name: "gpt-6-sol", provider_model: "gpt-6_sol", cost: null }, // the same model, written otherwise
+    SELECT m.name, mp.provider_model FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id ORDER BY mp.id`, [
+    { name: "gpt-6-sol", provider_model: "openai/gpt-6-sol" },
+    { name: "gpt-6-sol", provider_model: "openai/gpt-6-sol:free" },
+    { name: "auto", provider_model: "openrouter/auto" },
+    { name: "voyage-code-4", provider_model: "voyageai/voyage-code-4" }, // from /embeddings/models
+    { name: "jev-1.13", provider_model: "typesafe/jev-1.13" },
+    { name: "gpt-6-sol", provider_model: "gpt-6_sol" }, // the same model, written otherwise
+  ]);
+  assertEquals(await app.db.query`SELECT cost_input, cost_output FROM ai1_model_provider ORDER BY id`, [
+    { cost_input: 2, cost_output: 8 }, { cost_input: 0, cost_output: 0 },
+    { cost_input: null, cost_output: null }, { cost_input: null, cost_output: null },
+    { cost_input: 0.036, cost_output: 0.036 }, { cost_input: null, cost_output: null },
   ]);
   assertEquals(await app.db.col`SELECT c.capability FROM ai1_model_capability c JOIN ai1_model m ON m.id = c.model_id WHERE m.name = 'voyage-code-4'`, ["embed"]);
   assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability WHERE model_id = 1 ORDER BY capability`, ["structured", "text", "tools", "vision"]);

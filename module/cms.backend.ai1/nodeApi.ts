@@ -12,7 +12,7 @@ import type { Node } from "@qino/qino/cms";
 const EDITABLE: Record<string, Record<string, "string" | "number" | "boolean">> = {
   ai1_provider: { type: "string", endpoint: "string", timeout_ms: "number", enabled: "boolean" },
   ai1_model: { name: "string", context_length: "number", enabled: "boolean" },
-  ai1_model_provider: { provider_id: "number", provider_model: "string", cost: "number", speed: "number", enabled: "boolean" },
+  ai1_model_provider: { provider_id: "number", provider_model: "string", cost_input: "number", cost_output: "number", speed: "number", enabled: "boolean" },
 };
 
 /** `prefer` from the sliders: `{ name: weight }`; none set means ai1's own. */

@@ -18,7 +18,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function render(node: Node): Promise<HtmlString> {
   const { db, t } = node.app;
   const usage = await db.query`
-    SELECT m.name AS model, p.name AS provider, mp.cost, s.calls, s.errors, s.used_input, s.used_output
+    SELECT m.name AS model, p.name AS provider, s.calls, s.errors, s.used_input, s.used_output,
+      (s.used_input * mp.cost_input + s.used_output * mp.cost_output) / 1000000.0 AS estimated_cost
     FROM ai1_model_provider mp
     JOIN ai1_model m ON m.id = mp.model_id
     JOIN ai1_provider p ON p.id = mp.provider_id
@@ -41,7 +42,7 @@ async function render(node: Node): Promise<HtmlString> {
           <th>${t`Calls`}
           <th>${t`Input`}
           <th>${t`Output`}
-          <th>${t`Price`} / M
+          <th>${t`Est. cost`}
           <th>${t`Errors`}
         <tbody>${usage.length ? usage.map((row) => html`<tr>
           <th>${row.model}
@@ -49,10 +50,10 @@ async function render(node: Node): Promise<HtmlString> {
           <td>${number(row.calls)}
           <td>${number(row.used_input)}
           <td>${number(row.used_output)}
-          <td>${row.cost == null ? "–" : Number(row.cost).toLocaleString("en-US", { maximumFractionDigits: 4 })}
+          <td>${row.estimated_cost == null ? "–" : Number(row.estimated_cost).toLocaleString("en-US", { maximumSignificantDigits: 4 })}
           <td>${number(row.errors)}`) : html`<tr><td colspan=7>${t`No calls yet`}`}</tbody>
       </table>
-      <small>${t`Input and output are provider-reported units; the configured price is a blended rate, not an invoice.`}</small>
+      <small>${t`Estimated from current prices and provider-reported units; not an invoice.`}</small>
     </div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Recent errors`}</div>

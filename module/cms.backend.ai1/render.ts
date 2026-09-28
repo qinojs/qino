@@ -128,7 +128,9 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
   const own = (model: number) => offers.filter((o) => o.model_id === model);
   const on = (o: any) => o.enabled && providerRows.find((p) => p.id === o.provider_id)?.enabled;
   const best = (model: number, column: "cost" | "speed") => {
-    const values = own(model).filter((o) => on(o) && o[column] != null).map((o) => Number(o[column]));
+    const values = own(model).filter(on).map((o) => column === "cost"
+      ? o.cost_input == null || o.cost_output == null ? null : (3 * o.cost_input + o.cost_output) / 4
+      : o.speed).filter((v) => v != null).map(Number);
     return values.length ? (column === "cost" ? Math.min : Math.max)(...values) : undefined;
   };
 
@@ -153,7 +155,8 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
       <td>${checkbox(o.enabled)}
       <td><select name=provider_id>${options(providerList, o.provider_id)}</select>
       <td><input name=provider_model value="${o.provider_model ?? ""}" placeholder="${t`same name`}">
-      <td class=-num><input name=cost type=number step=any min=0 value="${o.cost ?? ""}">
+      <td class=-num><input name=cost_input type=number step=any min=0 value="${o.cost_input ?? ""}">
+      <td class=-num><input name=cost_output type=number step=any min=0 value="${o.cost_output ?? ""}">
       <td class=-num><input name=speed type=number step=any min=0 value="${o.speed ?? ""}">
       <td class=-num>${value(s?.calls, 0)}
       <td class=-num>${s?.calls ? `${value(100 * s.errors / s.calls, 0)} %` : "–"}
@@ -182,7 +185,8 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
               <th>${t`On`}
               <th>${t`Provider`}
               <th>${t`Name there`}
-              <th class=-num>${t`Cost`} <small>/M</small>
+              <th class=-num>${t`Input`} <small>/M</small>
+              <th class=-num>${t`Output`} <small>/M</small>
               <th class=-num>${t`Speed`} <small>/s</small>
               <th class=-num>${t`Calls`}
               <th class=-num>${t`Errors`}

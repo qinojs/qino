@@ -54,15 +54,15 @@ Deno.test("ai1: failures fall back and rest", async () => {
 Deno.test("ai1: one model at several providers, the cheaper or the faster first", async () => {
   const testApp = await app({ llama: ["text"] });
   const second = await testApp.db.table("ai1_provider").insert({ name: "fast", type: "fake", endpoint: "" });
-  await testApp.db.exec`UPDATE ai1_model_provider SET cost = 1, speed = 100, provider_model = 'cheap-llama'`;
-  await testApp.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: second, provider_model: "fast-llama", cost: 5, speed: 900 });
+  await testApp.db.exec`UPDATE ai1_model_provider SET cost_input = 1, cost_output = 1, speed = 100, provider_model = 'cheap-llama'`;
+  await testApp.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: second, provider_model: "fast-llama", cost_input: 5, cost_output: 5, speed: 900 });
   assertEquals((await text(testApp, ask("hi"), { prefer: { cost: 1 } })).text, "cheap-llama: hi");
   assertEquals((await text(testApp, ask("hi"), { prefer: { speed: 1 } })).text, "fast-llama: hi");
 });
 
 Deno.test("ai1: weights choose among models; candidates show the order", async () => {
   const testApp = await app({ smart: ["text"], cheap: ["text"] });
-  await testApp.db.exec`UPDATE ai1_model_provider SET cost = CASE model_id WHEN 1 THEN 10 ELSE 1 END`;
+  await testApp.db.exec`UPDATE ai1_model_provider SET cost_input = CASE model_id WHEN 1 THEN 10 ELSE 1 END, cost_output = CASE model_id WHEN 1 THEN 10 ELSE 1 END`;
   await testApp.db.table("ai1_model_score").insert({ model_id: 1, metric: "coding", value: 50 });
   await testApp.db.table("ai1_model_score").insert({ model_id: 2, metric: "coding", value: 20 });
   const first = async (prefer: Record<string, number>) => (await candidates(testApp, "text", ask("hi"), { prefer }))[0].model;
@@ -329,7 +329,7 @@ Deno.test("ai1: weights see distances — nearly as good and far cheaper wins", 
   const testApp = await app({ top: ["text"], close: ["text"], weak: ["text"] });
   const models = [["top", 50, 10], ["close", 49, 1], ["weak", 20, 0.5]] as const;
   for (const [i, [, coding, cost]] of models.entries()) {
-    await testApp.db.exec`UPDATE ai1_model_provider SET cost = ${cost} WHERE model_id = ${i + 1}`;
+    await testApp.db.exec`UPDATE ai1_model_provider SET cost_input = ${cost}, cost_output = ${cost} WHERE model_id = ${i + 1}`;
     await testApp.db.table("ai1_model_score").insert({ model_id: i + 1, metric: "coding", value: coding });
   }
   const order = async (prefer: Record<string, number>) => (await candidates(testApp, "text", ask("hi"), { prefer })).map((c) => c.model);

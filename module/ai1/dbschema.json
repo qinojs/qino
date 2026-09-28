@@ -105,9 +105,13 @@
             "maxLength": 191,
             "description": "The model's name at this provider, if it differs"
           },
-          "cost": {
+          "cost_input": {
             "type": "number",
-            "description": "Price per million units, lower first with prefer: cost"
+            "description": "Input price per million provider-reported units"
+          },
+          "cost_output": {
+            "type": "number",
+            "description": "Output price per million provider-reported units"
           },
           "speed": {
             "type": "number",
