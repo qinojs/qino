@@ -1,0 +1,19 @@
+{
+  "name": "ai1.agent",
+  "description": "Agents: a role, tools and sessions that keep everything that was said.",
+  "dependencies": [
+    "ai1.tools",
+    "ai1.embed",
+    "score"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/memory.ts",
+    "lib/search.ts",
+    "lib/turn.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

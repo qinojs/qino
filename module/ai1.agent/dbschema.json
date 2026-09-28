@@ -1,0 +1,231 @@
+{
+  "properties": {
+    "ai1_agent": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "system": {
+            "type": "string",
+            "description": "Its role: what every session starts from"
+          },
+          "tools": {
+            "type": "string",
+            "description": "Names of the tool sets it may use (ai1Tools), as a JSON array"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    "ai1_session": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "agent_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai1_agent",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "Who talks with the agent: it acts with this user's rights"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "agent_id",
+          "usr_id"
+        ]
+      }
+    },
+    "ai1_session_message": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "session_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai1_session",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "time": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string",
+            "description": "The ai1 message as JSON; role error for a failed turn"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "The model that gave the answer"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "message"
+        ]
+      }
+    },
+    "ai1_agent_memory": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "agent_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai1_agent",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "content": {
+            "type": "string",
+            "description": "One short fact"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "agent_id",
+          "content"
+        ]
+      }
+    },
+    "embedding_ai1_agent_memory": {
+      "additionalProperties": {
+        "properties": {
+          "agent_id": {
+            "type": "integer",
+            "x-index": "primary"
+          },
+          "memory_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_agent_memory",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chunk": {
+            "type": "integer",
+            "x-index": "primary",
+            "default": 0
+          },
+          "collection_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_embed_collection",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "x-vector": true,
+            "x-index": true
+          }
+        },
+        "required": [
+          "agent_id",
+          "memory_id",
+          "chunk",
+          "collection_id",
+          "hash",
+          "embedding"
+        ]
+      }
+    },
+    "embedding_ai1_session_message": {
+      "additionalProperties": {
+        "properties": {
+          "agent_id": {
+            "type": "integer",
+            "x-index": "primary"
+          },
+          "message_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_session_message",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chunk": {
+            "type": "integer",
+            "x-index": "primary",
+            "default": 0
+          },
+          "collection_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_embed_collection",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "x-vector": true,
+            "x-index": true
+          }
+        },
+        "required": [
+          "agent_id",
+          "message_id",
+          "chunk",
+          "collection_id",
+          "hash",
+          "embedding"
+        ]
+      }
+    }
+  }
+}
