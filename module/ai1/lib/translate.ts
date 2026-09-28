@@ -1,5 +1,5 @@
 import type { TranslateInput } from "../mod.ts";
-import type { Adapter } from "./run.ts";
+import type { Adapter } from "./request.ts";
 
 // Translation services. Endpoints: https://api.deepl.com/v2, https://translation.googleapis.com/language/translate/v2
 

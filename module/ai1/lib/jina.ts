@@ -1,7 +1,7 @@
 import { openai, post } from "./openai.ts";
 
 import type { EmbedInput } from "../mod.ts";
-import type { Adapter } from "./run.ts";
+import type { Adapter } from "./request.ts";
 
 /** Jina's multimodal embedding request, with OpenAI compatibility for its other models. */
 export const jina: Adapter = {

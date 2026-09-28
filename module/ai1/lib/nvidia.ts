@@ -1,7 +1,7 @@
 import { openai, post } from "./openai.ts";
 
 import type { EmbedInput } from "../mod.ts";
-import type { Adapter } from "./run.ts";
+import type { Adapter } from "./request.ts";
 
 /** NVIDIA's asymmetric embeddings use passage and query modes. */
 export const nvidia: Adapter = {

@@ -1,10 +1,10 @@
 import { s, toJsonSchema } from "@qino/qino";
 
-import { AiError } from "./run.ts";
+import { AiError } from "./request.ts";
 
 import type { StandardSchema } from "@qino/qino";
 import type { DecideInput, Message, Part, StructuredInput, TranslateInput } from "../mod.ts";
-import type { Capability } from "./run.ts";
+import type { Capability } from "./request.ts";
 
 type Schema = StructuredInput<unknown>["schema"];
 const standard = (schema: Schema): schema is StandardSchema => "~standard" in schema;

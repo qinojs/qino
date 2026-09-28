@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg } from "@qino/qino";
 
-import { AiError } from "./run.ts";
+import { AiError } from "./request.ts";
 import { jsonSchema, parseStructured } from "./capabilities.ts";
 
 import type { Transcript } from "@qino/qino";
 import type { DecideInput, EmbedInput, Message, StructuredInput, TextInput, TextOutput } from "../mod.ts";
-import type { Adapter, Call } from "./run.ts";
+import type { Adapter, Call } from "./request.ts";
 
 // OpenAI-compatible providers: OpenAI itself, groq, Gemini's compat endpoint, local servers.
 

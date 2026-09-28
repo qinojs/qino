@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { Access, ApiError, Output, s } from "@qino/qino";
-import { AiError, run } from "@qino/qino/ai1";
+import { AiError, request } from "@qino/qino/ai1";
 
 import { check } from "./lib/limit.ts";
 
@@ -17,12 +17,12 @@ const textInput = { ...answer, tools: s.optional(s.array(s.record())) };
 const upstream = <T>(promise: Promise<T>): Promise<T> =>
   promise.catch((e) => { throw e instanceof AiError ? new ApiError(e.status === 504 ? 504 : 502, e.message) : e; });
 
-const post = (description: string, input: Record<string, any>, run: (params: Params, ctx: Ctx) => Promise<unknown>) => ({
-  post: { description, input: s.object(input), access: Access.USER, execute: async (params: Params, ctx: Ctx) => (await check(ctx), upstream(run(params, ctx))) },
+const post = (description: string, input: Record<string, any>, handle: (params: Params, ctx: Ctx) => Promise<unknown>) => ({
+  post: { description, input: s.object(input), access: Access.USER, execute: async (params: Params, ctx: Ctx) => (await check(ctx), upstream(handle(params, ctx))) },
 });
 /** An endpoint for a capability: the body is its input, plus `opts`. */
 const capability = (name: string, description: string, input: Record<string, any>) =>
-  post(description, { ...input, opts }, ({ opts, ...input }, ctx) => run(ctx.app, name, input, opts as any));
+  post(description, { ...input, opts }, ({ opts, ...input }, ctx) => request(ctx.app, name, input, opts as any));
 
 export const api: ApiTree = {
   text: {
@@ -32,7 +32,7 @@ export const api: ApiTree = {
       throw new Output(new ReadableStream({
         start: async (out) => {
           const send = (data: unknown) => abort.signal.aborted || out.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-          await run(ctx.app, "text", { ...input, onText: (delta: string) => send({ delta }) }, { ...opts as any, signal: abort.signal })
+          await request(ctx.app, "text", { ...input, onText: (delta: string) => send({ delta }) }, { ...opts as any, signal: abort.signal })
             .then((done) => send({ done }), (e) => send({ error: e.message }));
           if (!abort.signal.aborted) out.close();
         },
@@ -45,14 +45,14 @@ export const api: ApiTree = {
     text: s.any(), to: s.string(), from: s.optional(s.string()), format: s.optional(s.string()), opts,
   }, ({ opts, ...input }, ctx) => {
     if (typeof input.text !== "string" && !(Array.isArray(input.text) && input.text.every((t) => typeof t === "string"))) throw new ApiError(400, "text: a string or strings");
-    return run(ctx.app, "translate", input, opts as any);
+    return request(ctx.app, "translate", input, opts as any);
   }),
   decide: capability("decide", "Pick one of the options (classify, route, judge); content: a string or parts with images", {
     content: s.any(), question: s.optional(s.string()), options: s.array(s.string()),
   }),
   embed: post("Embedding vectors for texts", { texts: s.array(s.string()), purpose: s.optional(s.string()), opts }, ({ opts, purpose, texts }, ctx) => {
     if (purpose !== undefined && purpose !== "index" && purpose !== "query") throw new ApiError(400, "purpose: index or query");
-    return run(ctx.app, "embed", { texts, purpose }, opts as any);
+    return request(ctx.app, "embed", { texts, purpose }, opts as any);
   }),
   image: capability("image", "Generate images; URLs or data URLs", { prompt: s.string(), size: s.optional(s.string()), n: s.optional(s.number()) }),
   speak: capability("speak", "Text to speech; the audio as a data URL", { text: s.string(), voice: s.optional(s.string()), format: s.optional(s.string()) }),

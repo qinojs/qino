@@ -68,7 +68,7 @@ Deno.test("ai1 api: text streams deltas, then the answer", async () => {
   assertEquals(body.trim().split("\n\n").map((line) => JSON.parse(line.slice(6))), [
     { delta: "a" },
     { delta: "b" },
-    { done: { text: "ab", toolCalls: [], truncated: false } },
+    { done: { text: "ab", toolCalls: [], truncated: false, model: "m" } },
   ]);
 });
 

@@ -65,7 +65,7 @@ const cooldowns = new WeakMap<object, Map<number, number>>();
  * lacks the capability through the capability's `via`; then the `via` capabilities themselves. Every
  * failure falls back to the next; overloaded providers rest for a while.
  */
-export async function run(app: App, capability: string, input: unknown, opts: Opts = {}, chain: string[] = []): Promise<any> {
+export async function request(app: App, capability: string, input: unknown, opts: Opts = {}, chain: string[] = []): Promise<any> {
   if (!app.modules.linked("ai1")) throw new AiError('module "ai1" is not loaded');
   opts.signal?.throwIfAborted();
   const adapters: Record<string, Adapter> = Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.ai1Adapters));
@@ -100,7 +100,7 @@ export async function run(app: App, capability: string, input: unknown, opts: Op
     }
   }
   for (const [through, convert] of via) {
-    try { return await convert(input, (i) => run(app, through, i, opts, chain)); }
+    try { return await convert(input, (i) => request(app, through, i, opts, chain)); }
     catch (e) {
       if (stop(e)) throw e;
       errors.push(errMsg(e));
@@ -112,7 +112,7 @@ export async function run(app: App, capability: string, input: unknown, opts: Op
 const definitions = (app: App, capability: string): Capability[] => app.modules.linked().flatMap((mod) => mod.plugin.ai1Capabilities?.[capability] ?? []);
 
 /**
- * Who would serve `capability` for `input`, in the order `run` tries them: enabled models that have
+ * Who would serve `capability` for `input`, in the order `request` tries them: enabled models that have
  * it and every need, fit the input's size, by the weighted `prefer`. Each criterion is scaled
  * between the candidates' worst (0) and best (1) — cost (3:1 input/output blend) and speed by
  * ratio (log), scores as they are; unknown counts as worst.

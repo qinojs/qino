@@ -41,7 +41,7 @@ export async function render(node: Node): Promise<HtmlString> {
 
   return html.async`<div style="flex:1 1 auto">
   <form method=post class=-console>
-    <input type=hidden name=csrfToken value="${ctx.csrfToken}">
+    ${node.cms.formFields(node)}
     ${renderAi(app, question, aiNote, aiFailed)}
     <u2-code trim language=sql class=-editor><textarea name=sql placeholder="SELECT * FROM …">${sql}</textarea></u2-code>
     <div class=-bar>

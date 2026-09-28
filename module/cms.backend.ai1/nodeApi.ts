@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, requestStorage, sql } from "@qino/qino";
-import { candidates, run } from "@qino/qino/ai1";
+import { candidates, request } from "@qino/qino/ai1";
 
 import { CATALOG } from "./catalog.ts";
 import { BENCHMARKS_KEY, evaluate } from "./lib/sources.ts";
@@ -85,7 +85,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
     }
     if (vars.evaluate) return { ok: true, message: await evaluate(app) };
     if (vars.preview) {
-      // the order run tries: who serves it, then who serves it through another capability
+      // the order request tries: who serves it, then who serves it through another capability
       const { capability = "text", input = {}, model, prefer } = vars.preview;
       const opts = { model: model || undefined, prefer: weights(prefer) };
       const via = app.modules.linked().flatMap((mod) => Object.keys(mod.plugin.ai1Capabilities?.[capability]?.via ?? {}));
@@ -105,7 +105,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       app.on("ai1:call", (e) => { if (requestStorage.getStore() === ctx) tried.push({ model: e.model, provider: e.provider, ms: e.ms, error: e.error }); }, { signal: done.signal });
       const start = performance.now();
       try {
-        const result = await run(app, String(capability), input, { model: model || undefined, prefer: weights(prefer) });
+        const result = await request(app, String(capability), input, { model: model || undefined, prefer: weights(prefer) });
         return { ok: true, result, ms: Math.round(performance.now() - start), tried };
       } finally {
         done.abort();

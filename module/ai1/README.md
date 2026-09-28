@@ -19,7 +19,7 @@ await translate(app, { text: ["Titel", "Hallo"], to: "en" }); // many at once: [
 const { text: answer, truncated, model } = await text(app, "Hi"); // model: who answered
 ```
 
-`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`: each is `run(app, capability, input)`.
+`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`: each is `request(app, capability, input)`.
 
 ## Models, providers, capabilities
 

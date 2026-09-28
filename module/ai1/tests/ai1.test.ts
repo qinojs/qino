@@ -70,7 +70,7 @@ Deno.test("ai1: weights choose among models; candidates show the order", async (
   assertEquals(await first({ cost: 1 }), "cheap");
   assertEquals(await first({ coding: 1, cost: 3 }), "cheap");
   assertEquals(await first({ math: 1 }), "smart"); // unknown everywhere: no difference, then by id
-  assertEquals((await text(testApp, ask("hi"), { prefer: { coding: 1 } })).text, "smart: hi"); // run takes the same order
+  assertEquals((await text(testApp, ask("hi"), { prefer: { coding: 1 } })).text, "smart: hi"); // request takes the same order
 });
 
 Deno.test("ai1: a request too long for a model's context skips it", async () => {

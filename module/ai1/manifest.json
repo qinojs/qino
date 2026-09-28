@@ -11,7 +11,7 @@
     "lib/jina.ts",
     "lib/nvidia.ts",
     "lib/openai.ts",
-    "lib/run.ts",
+    "lib/request.ts",
     "lib/translate.ts",
     "manifest.json",
     "mod.ts",
