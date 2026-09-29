@@ -65,6 +65,7 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
   assertEquals((await session.ask("hi")).text, "lead #1 hi");
   assertEquals((await session.ask("time?")).text, "lead #2 it is noon");
   assertEquals(await kept(app, session.id), [
+    ["system", "lead", ""], // what the model is given, once while it does not change
     ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
     ["user", "time?", ""], ["assistant", "get_toolset_clock", ""], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
@@ -122,12 +123,12 @@ Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user
   const agents = () => app.api["ai1.agent"].agents;
   const { id } = await runAs(app, 7, "test", () => agents().post({ system: "lead" })) as { id: number };
   await runAs(app, 8, "test", () => agents()(id).patch({ tools: ["toolset"] })); // anyone may change it
-  assertEquals(await runAs(app, 7, "test", () => agents()(id).get()), { id, system: "lead", tools: ["toolset"] });
+  assertEquals(await runAs(app, 7, "test", () => agents()(id).get()), { id, system: "lead", tools: ["toolset"], prefer: {} });
   const session = (await runAs(app, 7, "test", () => agents()(id).sessions.post()) as { id: number }).id;
   const answer = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).ask.post({ content: "time?" })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
   const { messages } = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).get()) as { messages: { role: string }[] };
-  assertEquals(messages.map((m) => m.role), ["user", "assistant", "tool", "assistant"]);
+  assertEquals(messages.map((m) => m.role), ["system", "user", "assistant", "tool", "assistant"]);
   for (const call of [() => app.api["ai1.agent"].sessions(session).get(), () => app.api["ai1.agent"].sessions(session).ask.post({ content: "hi" })]) {
     await assertRejects(() => runAs(app, 8, "test", call), Error, "No such session"); // not bob's: neither to read nor to talk in
   }
@@ -137,11 +138,37 @@ Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user
   await assertRejects(() => runAs(app, 7, "test", () => agents()(99).get()), Error, "No such agent");
 }));
 
+Deno.test("ai1.agent: the model is chosen by the session's prefer, else the agent's, else the default", () => withApp(async (app) => {
+  const n = await app.db.table("ai1_model").insert({ name: "n" }); // clever and dear, beside m: plain and cheap
+  await app.db.table("ai1_model_provider").insert({ model_id: n, provider_id: 1, cost_input: 10, cost_output: 10 });
+  await app.db.exec`UPDATE ai1_model_provider SET cost_input = 1, cost_output = 1 WHERE model_id = 1`;
+  for (const capability of ["text", "tools"]) await app.db.table("ai1_model_capability").insert({ model_id: n, capability });
+  for (const [model, value] of [[1, 10], [n, 50]]) await app.db.table("ai1_model_score").insert({ model_id: model, metric: "intelligence", value });
+  const cheap = await Agent.create(app, { system: "lead", prefer: { cost: 1 } });
+  assertEquals((await (await cheap.start(7)).ask("hi")).model, "m");
+  assertEquals((await (await cheap.start(7, { prefer: { quality: 1 } })).ask("hi")).model, "n"); // the session's replaces it
+  assertEquals((await (await (await Agent.create(app, { system: "lead", prefer: {} })).start(7, { prefer: {} })).ask("hi")).model, "n"); // none: the default, quality first
+}));
+
+Deno.test("ai1.agent: what the model is given is kept whenever it changes: role with memories, tools, prefer", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "lead", tools: ["toolset"], prefer: { cost: 1 } });
+  const session = await agent.start(7);
+  await session.ask("hi");
+  await session.ask("hi"); // nothing changed: not kept again
+  await session.ask("remember:blue"); // the memory is in the context from the next question on
+  await session.ask("hi");
+  const given = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
+    .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
+  assertEquals(given.map((m) => m.content), ["lead", "lead\n\nYour memories:\n[1] blue"]);
+  assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["post_memories", "delete_memories", "post_search", "get_toolset_clock"]);
+  assertEquals(given[0].prefer, { cost: 1 });
+}));
+
 Deno.test("ai1.agent: a failure is kept, but not sent again", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   await assertRejects(() => session.ask("fail"), Error, "down");
   assertEquals((await session.ask("hi")).text, "lead #2 hi");
-  assertEquals((await kept(app, session.id)).map(([role]) => role), ["user", "error", "user", "assistant"]);
+  assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "user", "error", "user", "assistant"]);
 }));
 
 Deno.test("ai1.agent: one turn after the other in a session", () => withApp(async (app) => {

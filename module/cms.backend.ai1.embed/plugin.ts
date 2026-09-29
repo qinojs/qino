@@ -31,7 +31,7 @@ async function render(node: Node): Promise<HtmlString> {
         <th>Table
         <th>Key${rows.map((c) => html`
         <th data-id=${c.id}>
-          ${c.model}/${c.dimensions}<br>
+          <span style="color:${backend.uniqueColor(c.model)}">${c.model}</span>/${c.dimensions}<br>
           <label><input type=radio name=primary data-primary ${c.id === primary ? "checked" : ""}> primary</label>
           <button type=button data-drop u2-confirm="Delete ${c.model} and its vectors?">Delete</button>`)}
       <tbody>${tables.map(({ table, keys }) => html`<tr>

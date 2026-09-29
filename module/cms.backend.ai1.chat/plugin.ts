@@ -1,4 +1,5 @@
 import { getCtx, html, walk } from "@qino/qino";
+import { candidates } from "@qino/qino/ai1";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -12,6 +13,9 @@ const { name } = manifest;
 
 /** What pub/main.js renders answers with: markdown, then sanitized. */
 const LIBS = ["https://cdn.jsdelivr.net/npm/marked@18/+esm", "https://cdn.jsdelivr.net/npm/dompurify@3/+esm"];
+const WEIGHTS = ["quality", "cost", "speed"];
+
+type Agent = { id?: number; system?: string; tools?: string[]; prefer?: Record<string, number> };
 
 /** The paths of the api an agent may use as tools, down to the second level, with how many tools each gives. */
 function paths(tree: ApiTree): [string, number][] {
@@ -27,6 +31,27 @@ function paths(tree: ApiTree): [string, number][] {
   return [...count].sort(([a], [b]) => a.localeCompare(b));
 }
 
+const sliders = (scope: string, values: Record<string, number> = {}) => WEIGHTS.map((key) =>
+  html`<label>${key} <input type=range min=0 max=10 value="${values[key] ?? 0}" data-prefer="${scope}" data-key="${key}"> <output>${values[key] ?? 0}</output></label> `);
+
+/** One agent to change and start a session with, or a new one. */
+function form(node: Node, tools: [string, number][], agent: Agent = {}): Promise<HtmlString> {
+  const t = node.app.t;
+  return html.async`<form class="u2-flex -Col" data-agent="${agent.id ?? ""}">
+    <textarea name=system rows=4 placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
+    <details><summary>${t`Tools`}: ${agent.tools?.join(", ") || "–"}</summary><div style="overflow:auto;max-height:15rem">${tools.map(([path, count]) =>
+      html`<label><input type=checkbox name=tools value="${path}" ${agent.tools?.includes(path) ? "checked" : ""}> ${path} <small>(${count})</small></label><br>`)}</div></details>
+    <div>${t`Model`}: ${sliders("agent", agent.prefer)}</div>
+    <div>${t`This session`}: ${sliders("session")}</div>
+    <small>${t`All at 0: the agent's choice, for the agent the default.`}</small>
+    <ol data-preview></ol>
+    <div class=u2-flex>
+      <button name=save>${agent.id ? t`Save` : t`Create`}</button>
+      <button name=start>${t`Start session`}</button>
+    </div>
+  </form>`;
+}
+
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Chat", de: "Chat" });
 }
@@ -34,21 +59,36 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function render(node: Node): Promise<HtmlString> {
   const { db, t } = node.app;
   for (const url of LIBS) getCtx().res.csp["script-src"][url] = true;
-  const agents = await db.query`SELECT id, system FROM ai1_agent ORDER BY id DESC`;
-  return html.async`<div class=u2-card>
-    <form class=u2-flex data-start>
-      <select name=agent><option value="">${t`New agent`}${agents.map((a) => html`<option value="${a.id}">#${a.id} ${String(a.system ?? "").split("\n")[0].slice(0, 60)}`)}</select>
-      <textarea name=system rows=2 placeholder="${t`Role`}"></textarea>
-      <details><summary>${t`Tools`}</summary><div style="overflow:auto;max-height:15rem">${paths(node.app.apiTree).map(([path, tools]) =>
-        html`<label><input type=checkbox name=tools value="${path}"> ${path} <small>(${tools})</small></label><br>`)}</div></details>
-      <button>${t`Start session`}</button>
-    </form>
-    <div data-log style="overflow:auto"></div>
-    <form class=u2-flex data-ask hidden>
-      <textarea name=content rows=3 required placeholder="${t`Ctrl/⌘ + Enter sends`}"></textarea>
-      <button>${t`Send`}</button>
-    </form>
+  const tools = paths(node.app.apiTree);
+  const agents = (await db.query`SELECT id, system, tools, prefer FROM ai1_agent ORDER BY id DESC`).map((a) => ({
+    id: Number(a.id), system: String(a.system ?? ""), tools: JSON.parse(String(a.tools || "[]")), prefer: JSON.parse(String(a.prefer || "{}")),
+  }));
+  return html.async`<div class=u2-flex>
+    <div class=u2-card>
+      <div class=-head>${t`Agents`}</div>
+      ${agents.length ? agents.map((agent) => html.async`<details>
+        <summary>#${agent.id} ${agent.system.split("\n")[0].slice(0, 80)}</summary>${form(node, tools, agent)}</details>`) : html.async`<p>${t`No agents yet`}`}
+    </div>
+    <div class=u2-card>
+      <details><summary>${t`New agent`}</summary>${form(node, tools)}</details>
+    </div>
+    <div class=u2-card>
+      <div class=-head data-title>${t`Chat`}</div>
+      <div data-log style="overflow:auto"></div>
+      <form class=u2-flex data-ask hidden>
+        <textarea name=content rows=3 required placeholder="${t`Ctrl/⌘ + Enter sends`}"></textarea>
+        <button>${t`Send`}</button>
+      </form>
+    </div>
   </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render } };
+/** Who would answer with `preview` as prefer, best first; an agent always has tools. */
+async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
+  if (!vars.preview || typeof vars.preview !== "object") return null;
+  const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
+  const list = await candidates(node.app, "text", { messages: [], tools: [{}] }, { prefer: Object.keys(prefer).length ? prefer : undefined });
+  return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
+}
+
+export const cms = { node: { js: ["pub/main.js"], render, api } };

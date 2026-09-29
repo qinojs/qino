@@ -20,7 +20,7 @@ Deno.test("cms.backend.ai1.embed: collections can be managed and searched", asyn
     assertEquals(await api(node, { create: { model: "wide", dimensions: "3" } }), { ok: true });
     await index(app, "article_text", { article_id: 1 }, "a cat");
     const rendered = String(await cms.node.render(node));
-    assertStringIncludes(rendered, "multi/2");
+    assertStringIncludes(rendered, "multi</span>/2");
     assertStringIncludes(rendered, "<th>embedding_article_text");
     assertStringIncludes(rendered, "<td>article_id");
     const { hits } = await api(node, { search: "cat" }) as { hits: { name: string; key: object; content: string }[] };

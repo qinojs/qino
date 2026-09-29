@@ -16,6 +16,10 @@
             "type": "string",
             "description": "Names of the tool sets it may use (ai1Tools), as a JSON array"
           },
+          "prefer": {
+            "type": "string",
+            "description": "How it chooses its model (ai1 `prefer`, e.g. {\"quality\":2,\"cost\":1}) as JSON; empty: ai1's own"
+          },
           "time": {
             "type": "integer"
           }
@@ -45,6 +49,10 @@
             "x-qg-parent": "usr",
             "x-qg-on-parent-delete": "cascade",
             "description": "Who talks with the agent: it acts with this user's rights"
+          },
+          "prefer": {
+            "type": "string",
+            "description": "The session's own `prefer`, instead of the agent's, as JSON; empty: the agent's"
           },
           "time": {
             "type": "integer"

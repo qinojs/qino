@@ -11,12 +11,18 @@ const KEY = "ai1.chat:session"; // the session to go on with after a reload
 
 cms.initNode("backend.ai1.chat", (el) => {
   const agents = api["ai1.agent"];
-  const start = el.querySelector("[data-start]"), ask = el.querySelector("[data-ask]"), log = el.querySelector("[data-log]");
+  const ask = el.querySelector("[data-ask]"), log = el.querySelector("[data-log]"), title = el.querySelector("[data-title]");
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
   let session = Number(sessionStorage.getItem(KEY)) || undefined;
 
   // One message: an answer as markdown, what was said, called or got as plain text.
-  const entry = async ({ role, content, toolCalls, model }) => {
+  const entry = async ({ role, content, toolCalls, model, tools }) => {
+    if (role === "system") { // what the agent was given from here on, folded
+      const details = document.createElement("details");
+      details.append(Object.assign(document.createElement("summary"), { textContent: `system · ${tools?.length ?? 0} tools` }),
+        Object.assign(document.createElement("pre"), { textContent: `${content}\n\n${(tools ?? []).map((t) => t.name).join(", ")}`, style: "white-space:pre-wrap;overflow:auto" }));
+      return details;
+    }
     const div = document.createElement("div"), label = document.createElement("small");
     label.textContent = model ? `${role} · ${model}` : role;
     div.append(label);
@@ -27,39 +33,49 @@ cms.initNode("backend.ai1.chat", (el) => {
     return div;
   };
 
-  const show = async () => log.replaceChildren(...await Promise.all((await agents.sessions(session).get()).messages.map(entry)));
-  const open = (id) => {
-    session = id;
-    sessionStorage.setItem(KEY, id);
-    ask.hidden = false;
+  const show = async () => {
+    const { agent, messages } = await agents.sessions(session).get();
+    title.textContent = `#${agent} · ${session}`;
+    log.replaceChildren(...await Promise.all(messages.map(entry)));
   };
+  const open = (id) => {
+    sessionStorage.setItem(KEY, session = id);
+    ask.hidden = false;
+    return show();
+  };
+  if (session) open(session).catch(() => { sessionStorage.removeItem(KEY); ask.hidden = true; }); // gone or not ours
 
-  if (session) show().then(() => ask.hidden = false, () => sessionStorage.removeItem(KEY)); // gone or not ours: start anew
+  const node = api.cms.node(Number(cms.el.nid(el)));
+  const weights = (form, scope) => Object.fromEntries([...form.querySelectorAll(`[data-prefer=${scope}]`)].filter((s) => +s.value).map((s) => [s.dataset.key, +s.value]));
 
-  // Role and tools show the chosen agent's; what is changed there, starting a session saves.
-  const f = start.elements, boxes = () => [...start.querySelectorAll("[name=tools]")];
-  f.agent.addEventListener("change", async () => {
-    const agent = Number(f.agent.value) ? await agents.agents(Number(f.agent.value)).get() : { system: "", tools: [] };
-    f.system.value = agent.system ?? "";
-    for (const box of boxes()) box.checked = agent.tools.includes(box.value);
+  // Who would answer: by the session's weights, else the agent's, as the turn chooses.
+  let waiting;
+  const preview = (form) => {
+    clearTimeout(waiting);
+    waiting = setTimeout(async () => {
+      const session = weights(form, "session"), { list = [] } = await node.api.post({ preview: Object.keys(session).length ? session : weights(form, "agent") }).catch(() => ({}));
+      form.querySelector("[data-preview]").replaceChildren(...list.map((c) => Object.assign(document.createElement("li"), { textContent: `${c.model} @ ${c.provider} (${c.rank})` })));
+    }, 150);
+  };
+  el.addEventListener("input", (e) => {
+    if (!e.target.dataset.prefer) return;
+    e.target.nextElementSibling.value = e.target.value;
+    preview(e.target.form);
   });
+  el.addEventListener("toggle", (e) => e.target.open && e.target.querySelector("[data-agent]") && preview(e.target.querySelector("[data-agent]")), true);
 
-  start.addEventListener("submit", async (e) => {
+  // An agent's form: save it (a new one is created), and maybe start a session with it.
+  el.addEventListener("submit", async (e) => {
+    const form = e.target;
+    if (!("agent" in form.dataset)) return;
     e.preventDefault();
-    const system = f.system.value, tools = boxes().filter((box) => box.checked).map((box) => box.value);
-    const label = (id) => `#${id} ${system.split("\n")[0].slice(0, 60)}`;
+    const values = { system: form.elements.system.value, tools: [...form.querySelectorAll("[name=tools]:checked")].map((box) => box.value), prefer: weights(form, "agent") };
     try {
-      let agent = Number(f.agent.value);
-      if (agent) {
-        await agents.agents(agent).patch({ system, tools });
-        f.agent.selectedOptions[0].text = label(agent);
-      } else {
-        agent = (await agents.agents.post({ system, tools })).id;
-        f.agent.add(new Option(label(agent), agent), 1);
-        f.agent.value = agent;
-      }
-      open((await agents.agents(agent).sessions.post()).id);
-      log.replaceChildren();
+      let agent = Number(form.dataset.agent);
+      if (agent) await agents.agents(agent).patch(values);
+      else agent = (await agents.agents.post(values)).id;
+      if (e.submitter?.name === "start") await open((await agents.agents(agent).sessions.post({ prefer: weights(form, "session") })).id);
+      if (!Number(form.dataset.agent)) location.reload(); // the new agent into the list
     } catch (err) { await alert(err.message); }
   });
 

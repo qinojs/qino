@@ -27,7 +27,7 @@ Deno.test("cms.backend.ai1.calls: records failures and shows usage without rende
 
     assertEquals(await db.query`SELECT model_provider_id, message FROM ai1_call_error`, [{ model_provider_id: id, message: "<failed>" }]);
     const output = String(await cms.node.render({ app } as Node));
-    for (const escaped of ["<td>&lt;provider&gt;", "<td>&lt;model&gt;", "<td>&lt;failed&gt;"]) assertStringIncludes(output, escaped);
+    for (const escaped of ["&lt;provider&gt;</span>", "&lt;model&gt;</span>", "<small>&lt;failed&gt;</small>"]) assertStringIncludes(output, escaped);
     assertStringIncludes(output, "30");
     assertStringIncludes(output, "2");
     assertStringIncludes(output, '<progress value="2" max="4"></progress> 2 / 4');

@@ -14,8 +14,9 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 ```
 
 - **Sessions** are fresh starts of the same agent. Each keeps everything exactly
-  (`ai1_session_message`): questions, answers, tool calls and results, and failures as messages of
-  role `error` (kept for analysis, not sent again).
+  (`ai1_session_message`): questions, answers, tool calls and results; what the model was given
+  (role with memories, tool definitions, prefer) as a message of role `system` whenever it changes;
+  failures as messages of role `error`. Neither of the last two is sent again from the protocol.
 - **One turn after the other** per session: a message waits for the answer to the one before.
 - **Memories** are short facts that belong to the agent and outlast its sessions: everyone who
   talks with it shares them. They are always in its context, the strongest first; with the tools
@@ -32,15 +33,18 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 ## Api
 
 ```
-agents                          post    create { system, tools } → { id }
-agents/:agent                   get · patch   its role and tools; anyone signed in may change them
-agents/:agent/sessions          post    start a session, as yourself → { id }
+agents                          post    create { system, tools, prefer } → { id }
+agents/:agent                   get · patch   its role, tools and prefer; anyone signed in may change them
+agents/:agent/sessions          post    start a session, as yourself { prefer } → { id }
 agents/:agent/memories          get · post { content, replaces? }
 agents/:agent/memories/:memory  delete
 agents/:agent/search            post    { query }
 sessions/:session               get     its agent and everything said
 sessions/:session/ask           post    { content } → the answer
 ```
+
+**Choosing the model:** `prefer` (ai1's weights, e.g. `{ quality: 2, cost: 1 }`) belongs to the agent;
+a session may replace it for itself. Empty is no choice of its own: the agent's, else ai1's default.
 
 A session is only there for its user: to anyone else it answers like a missing one. The agent itself
 uses the same routes as tools.

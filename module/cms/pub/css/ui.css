@@ -145,6 +145,7 @@ u2-ico[icon]:not(:has(> svg)) {
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding:0;
+    margin:auto;
     min-width:20rem;
     &::backdrop { background:rgba(0,0,0,.4); }
     & > * { padding:1.2rem; margin:0;}

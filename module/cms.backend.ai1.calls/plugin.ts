@@ -8,8 +8,15 @@ import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
+const { uniqueColor, ageColor } = backend;
 const LIMIT = 100;
+const MESSAGE = 160; // characters of an error shown; all of it on hover
 const number = (value: unknown) => Number(value ?? 0).toLocaleString("en-US");
+const cost = (value: unknown) => value == null ? "–" : Number(value).toLocaleString("en-US", { maximumSignificantDigits: 4 });
+/** A model or provider in its own color, the same everywhere, to find it again at a glance. */
+const colored = (value: unknown) => html`<span style="color:${uniqueColor(value)}">${value}</span>`;
+const success = (row: Record<string, unknown>) =>
+  html`<progress value="${Number(row.calls) - Number(row.errors)}" max="${Math.max(1, Number(row.calls))}"></progress> ${number(Number(row.calls) - Number(row.errors))} / ${number(row.calls)}`;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "AI calls", de: "KI-Aufrufe" });
@@ -18,13 +25,20 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function render(node: Node): Promise<HtmlString> {
   const { db, t } = node.app;
   const usage = await db.query`
-    SELECT m.name AS model, p.name AS provider, s.calls, s.errors, s.calls - s.errors AS successful, s.used_input, s.used_output,
+    SELECT m.name AS model, p.name AS provider, s.calls, s.errors, s.used_input, s.used_output,
       (s.used_input * mp.cost_input + s.used_output * mp.cost_output) / 1000000.0 AS estimated_cost
     FROM ai1_model_provider mp
     JOIN ai1_model m ON m.id = mp.model_id
     JOIN ai1_provider p ON p.id = mp.provider_id
     JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
     ORDER BY s.errors DESC, m.name, p.name`;
+  const providers = await db.query`
+    SELECT p.name AS provider, SUM(s.calls) AS calls, SUM(s.errors) AS errors, SUM(s.used_input) AS used_input, SUM(s.used_output) AS used_output,
+      SUM((s.used_input * mp.cost_input + s.used_output * mp.cost_output) / 1000000.0) AS estimated_cost
+    FROM ai1_model_provider mp
+    JOIN ai1_provider p ON p.id = mp.provider_id
+    JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
+    GROUP BY p.name ORDER BY calls DESC, p.name`;
   const errors = await db.query`
     SELECT e.time, m.name AS model, p.name AS provider, e.capability, e.message
     FROM ai1_call_error e
@@ -34,28 +48,45 @@ async function render(node: Node): Promise<HtmlString> {
     ORDER BY e.id DESC LIMIT ${LIMIT}`;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head>${t`Usage`}</div>
+      <div class=-head>${t`Providers`}</div>
+      <table class=u2-table>
+        <thead><tr>
+          <th>${t`Provider`}
+          <th>${t`Successful`}
+          <th>${t`Errors`}
+          <th>${t`Input`}
+          <th>${t`Output`}
+          <th>${t`Est. cost`}
+        <tbody>${providers.length ? providers.map((row) => html`<tr>
+          <th>${colored(row.provider)}
+          <td>${success(row)}
+          <td>${number(row.errors)}
+          <td>${number(row.used_input)}
+          <td>${number(row.used_output)}
+          <td>${cost(row.estimated_cost)}`) : html`<tr><td colspan=6>${t`No calls yet`}`}</tbody>
+      </table>
+    </div>
+    <div class=u2-card style="flex:0 1 auto">
+      <div class=-head>${t`Models`}</div>
       <table class=u2-table>
         <thead><tr>
           <th>${t`Model`}
           <th>${t`Provider`}
-          <th>${t`Calls`}
           <th>${t`Successful`}
+          <th>${t`Errors`}
           <th>${t`Input`}
           <th>${t`Output`}
           <th>${t`Est. cost`}
-          <th>${t`Errors`}
         <tbody>${usage.length ? usage.map((row) => html`<tr>
-          <th>${row.model}
-          <td>${row.provider}
-          <td>${number(row.calls)}
-          <td><progress value="${row.successful}" max="${Math.max(1, Number(row.calls))}"></progress> ${number(row.successful)} / ${number(row.calls)}
+          <th>${colored(row.model)}
+          <td>${colored(row.provider)}
+          <td>${success(row)}
+          <td>${number(row.errors)}
           <td>${number(row.used_input)}
           <td>${number(row.used_output)}
-          <td>${row.estimated_cost == null ? "–" : Number(row.estimated_cost).toLocaleString("en-US", { maximumSignificantDigits: 4 })}
-          <td>${number(row.errors)}`) : html`<tr><td colspan=8>${t`No calls yet`}`}</tbody>
+          <td>${cost(row.estimated_cost)}`) : html`<tr><td colspan=7>${t`No calls yet`}`}</tbody>
       </table>
-      <small>${t`Estimated from current prices and provider-reported units; not an invoice.`}</small>
+      <small>${t`Calls and errors count recent ones more (they halve daily); usage is the total. Cost is estimated from current prices and provider-reported units; not an invoice.`}</small>
     </div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Recent errors`}</div>
@@ -63,15 +94,12 @@ async function render(node: Node): Promise<HtmlString> {
         <thead><tr>
           <th>${t`Time`}
           <th>${t`Model`}
-          <th>${t`Provider`}
-          <th>${t`Capability`}
           <th>${t`Error`}
         <tbody>${errors.length ? errors.map((row) => html`<tr>
-          <td>${u2.el.time(row.time)}
-          <td>${row.model}
-          <td>${row.provider}
-          <td>${row.capability}
-          <td>${row.message}`) : html`<tr><td colspan=5>${t`No errors yet`}`}</tbody>
+          <td style="color:${ageColor(row.time)}; white-space:nowrap">${u2.el.time(row.time, { narrow: true })}
+          <td>${colored(row.model)}<br><small>${colored(row.provider)} · ${row.capability}</small>
+          <td title="${row.message}"><small>${String(row.message).length > MESSAGE ? String(row.message).slice(0, MESSAGE) + " …" : row.message}</small>`)
+          : html`<tr><td colspan=3>${t`No errors yet`}`}</tbody>
       </table>
     </div>
   </div>`;

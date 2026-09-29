@@ -9,13 +9,16 @@ import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 // Anyone signed in may talk with any agent, and change it. A session belongs to the one who started
 // it: nobody else sees it, as if it did not exist. In a session the agent acts with its user's rights.
 
+/** How a model is chosen, as ai1 weighs it: `{ quality: 2, cost: 1, speed: 1 }`; empty: the default. */
+const prefer = s.optional(s.record(s.number()));
+
 const verb = <T extends Params>(description: string, execute: (params: T, ctx: Ctx) => unknown, input?: Record<string, StandardSchema>) =>
   ({ description, access: Access.USER, ...input && { input: s.object(input) }, execute: execute as (params: Params, ctx: Ctx) => unknown });
 
 export const api: ApiTree = {
   agents: {
-    post: verb<{ system?: string; tools?: string[] }>("Create an agent: its role, and the paths of the api it may use as tools", async ({ system, tools }, ctx) =>
-      ({ id: (await Agent.create(ctx.app, { system, tools })).id }), { system: s.optional(s.string()), tools: s.optional(s.array(s.string())) }),
+    post: verb<{ system?: string; tools?: string[]; prefer?: Record<string, number> }>("Create an agent: its role, the paths of the api it may use as tools, and how it chooses its model (ai1 prefer)",
+      async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }), { system: s.optional(s.string()), tools: s.optional(s.array(s.string())), prefer }),
     ":agent": {
       paramSchema: s.number().describe("Agent ID"),
       resolve: async (id: unknown, ctx: Ctx) => {
@@ -23,15 +26,16 @@ export const api: ApiTree = {
         return id;
       },
       get: verb<{ agent: number }>("The agent: its role and tools", async ({ agent }, ctx) => {
-        const row = await ctx.app.db.row`SELECT id, system, tools FROM ai1_agent WHERE id = ${agent}`;
-        return { id: agent, system: row!.system, tools: JSON.parse(String(row!.tools || "[]")) };
+        const row = await ctx.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${agent}`;
+        return { id: agent, system: row!.system, tools: JSON.parse(String(row!.tools || "[]")), prefer: JSON.parse(String(row!.prefer || "{}")) };
       }),
-      patch: verb<{ agent: number; system?: string; tools?: string[] }>("Change the agent's role or tools", async ({ agent, system, tools }, ctx) => {
-        await ctx.app.db.table("ai1_agent").update(agent, { ...system !== undefined && { system }, ...tools && { tools: JSON.stringify(tools) } });
+      patch: verb<{ agent: number; system?: string; tools?: string[]; prefer?: Record<string, number> }>("Change the agent's role, tools or prefer", async ({ agent, system, tools, prefer }, ctx) => {
+        await ctx.app.db.table("ai1_agent").update(agent, { ...system !== undefined && { system }, ...tools && { tools: JSON.stringify(tools) }, ...prefer && { prefer: JSON.stringify(prefer) } });
         return { id: agent };
-      }, { system: s.optional(s.string()), tools: s.optional(s.array(s.string())) }),
+      }, { system: s.optional(s.string()), tools: s.optional(s.array(s.string())), prefer }),
       sessions: {
-        post: verb<{ agent: number }>("Start a session with the agent, as yourself", async ({ agent }, ctx) => ({ id: (await new Agent(ctx.app, agent).start(ctx.userId)).id })),
+        post: verb<{ agent: number; prefer?: Record<string, number> }>("Start a session with the agent, as yourself; prefer replaces the agent's in it",
+          async ({ agent, prefer }, ctx) => ({ id: (await new Agent(ctx.app, agent).start(ctx.userId, { prefer })).id }), { prefer }),
       },
       memories: {
         get: verb<{ agent: number }>("The agent's memories, the strongest first", ({ agent }, ctx) => memory.list(ctx.app, agent)),

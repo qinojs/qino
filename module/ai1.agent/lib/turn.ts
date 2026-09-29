@@ -34,9 +34,15 @@ const ownTools = (app: App, agent: number): Tool[] =>
     return { ...tool, parameters: { ...tool.parameters, properties, required }, execute: (args, ctx) => tool.execute({ ...args as object, agent }, ctx) };
   });
 
+/** A stored `prefer`; empty or none is no choice of its own. */
+const weights = (json: unknown): Record<string, number> | undefined => {
+  const prefer = JSON.parse(String(json || "{}"));
+  return Object.keys(prefer).length ? prefer : undefined;
+};
+
 /** Keep a message in the protocol. In the background, what was said is made findable, and what the
  *  user says strengthens the memories close to it, with the same vector. */
-async function save(app: App, session: number, agent: number, message: Message | { role: "error"; content: string }, model?: string) {
+async function save(app: App, session: number, agent: number, message: Message | { role: "error" | "system"; content: string; [more: string]: unknown }, model?: string) {
   const id = Number(await app.db.table("ai1_session_message").insert({ session_id: session, time: unixTime(), message: JSON.stringify(message), model }));
   if (message.role !== "user" && message.role !== "assistant") return;
   search.keep(app, "ai1_session_message", { agent_id: agent, message_id: id }, search.textOf(message.content))
@@ -44,23 +50,28 @@ async function save(app: App, session: number, agent: number, message: Message |
 }
 
 /** Answer `content` in `session`, from its agent's role and memories, the session so far and the
- *  agent's tools, with the rights of the session's user. Everything is kept; a failure as a message
- *  of role `error`, which is not sent again. */
+ *  agent's tools, with the rights of the session's user. Everything is kept: what the model is given
+ *  (role with memories, tools, prefer) as a message of role `system` whenever it changes, a failure
+ *  as one of role `error`; neither is sent again from the protocol. */
 export function ask(app: App, session: number, content: string | Part[], { onText }: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
   return inTurn(app, session, async () => {
-    const agent = await app.db.row`SELECT s.usr_id, s.agent_id, a.system, a.tools FROM ai1_session s JOIN ai1_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
+    const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai1_session s JOIN ai1_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
     if (!agent) throw new Error(`No session ${session}`);
-    const past = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
-      .map((json) => JSON.parse(String(json))).filter((message) => message.role !== "error");
+    const kept = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`).map((json) => JSON.parse(String(json)));
     const id = Number(agent.agent_id), asked: Message = { role: "user", content };
     const system = [agent.system, await memory.index(app, id)].filter(Boolean).join("\n\n");
+    const tools = [...ownTools(app, id), ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))];
+    const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
+    const given = { role: "system" as const, content: system, tools: tools.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer };
+    if (JSON.stringify(kept.findLast((m) => m.role === "system")) !== JSON.stringify(given)) await save(app, session, id, given);
     await save(app, session, id, asked);
     const out = await run(app, {
-      messages: [...system ? [{ role: "system" as const, content: system }] : [], ...past, asked],
-      tools: [...ownTools(app, id), ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))],
+      messages: [...system ? [{ role: "system" as const, content: system }] : [], ...kept.filter((m) => m.role !== "error" && m.role !== "system"), asked],
+      tools,
       usrId: Number(agent.usr_id),
       onText,
-    }).catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });
+    }, { prefer })
+      .catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });
     // the model named is the one that gave the last answer
     for (const [i, message] of out.messages.entries()) await save(app, session, id, message, i === out.messages.length - 1 ? out.model : undefined);
     return out;

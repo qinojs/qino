@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+import { backend } from "@qino/qino/cms.backend";
 import { SPEED } from "@qino/qino/ai1.stats";
 
 import { CATALOG } from "./catalog.ts";
@@ -162,7 +163,7 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
       <td class=-num>${value(s?.calls, 0)}
       <td class=-num>${s?.calls ? `${value(100 * s.errors / s.calls, 0)} %` : "–"}
       <td class=-num>${s?.ms ? value(s.output / (s.ms / 1000)) : "–"}
-      <td>${s?.last_error ? html`<details><summary>${u2.el.time(s.last_at)}</summary><div class=-error>${s.last_error}</div></details>` : ""}
+      <td>${s?.last_error ? html`<details><summary style="color:${backend.ageColor(s.last_at)}">${u2.el.time(s.last_at)}</summary><div class=-error>${s.last_error}</div></details>` : ""}
       <td>${remove()}`;
   };
 
@@ -173,7 +174,7 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
     const all = scores.filter((s) => s.model_id === model.id);
     return html.async`<tr data-row=ai1_model data-id="${model.id}" data-name="${model.name}" ${model.enabled ? "" : "data-off"}>
       <td>${checkbox(model.enabled)}
-      <th><input name=name value="${model.name}" required>
+      <th><input name=name value="${model.name}" required style="color:${backend.uniqueColor(model.name)}">
       <td class=-num><input name=context_length type=number min=0 step=1024 value="${model.context_length ?? ""}" placeholder=–>
       ${cells}
       ${indexes.map((metric) => html`<td class=-num>${value(score.get(`${model.id} ${metric}`))}`)}
@@ -246,7 +247,7 @@ async function providers(node: Node): Promise<HtmlString> {
     const models = url.pathname + url.search;
     return html.async`<tr data-row=ai1_provider data-id="${p.id}" data-name="${p.name}">
       <td>${checkbox(p.enabled)}
-      <th><a href="${models}">${p.name}</a>
+      <th><a href="${models}" style="color:${backend.uniqueColor(p.name)}">${p.name}</a>
       <td class=-num><a href="${models}" title="${t`active / all`}">${p.active ?? 0} / ${p.models}</a>
       <td>${CATALOG.some((provider) => provider.name === p.name) ? p.type : html`<select name=type>${options(types, p.type)}</select>`}
       <td><input name=endpoint value="${p.endpoint}" required>
