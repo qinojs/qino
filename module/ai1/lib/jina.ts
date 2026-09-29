@@ -1,4 +1,4 @@
-import { openai, post } from "./openai.ts";
+import { openai, vectors } from "./openai.ts";
 
 import type { EmbedInput } from "../mod.ts";
 import type { Adapter } from "./request.ts";
@@ -8,12 +8,10 @@ export const jina: Adapter = {
   ...openai,
   embed: async (call, input: EmbedInput) => {
     if (!call.model.startsWith("jina-embeddings-v5-omni-")) return openai.embed(call, input);
-    const data = await post(call, "/embeddings", {
+    return await vectors(call, {
       model: call.model,
       task: input.purpose === "query" ? "retrieval.query" : "retrieval.passage",
       input: input.texts?.map((text) => ({ text })) ?? input.images!.map((image) => ({ image })),
     });
-    call.usage(data.usage?.prompt_tokens);
-    return data.data.map((item: { embedding: number[] }) => item.embedding);
   },
 };

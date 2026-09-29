@@ -2,6 +2,7 @@
 import { html, sql, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
+import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
 import { sqlScore, strength } from "@qino/qino/score";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -145,14 +146,15 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
   return html`<div class="u2-flex -Col">${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
     const head = html`<small>${time(row.time)} · ${m.role}${row.model ? html` · ${colored(row.model)}` : ""}</small>`;
-    // what the model was given from here on: its role with memories, its tools, prefer
+    // what the model was given as the session started (its role with memories, its tools, prefer), or a note
     if (m.role === "system") return html`<div>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
       ${folded(text, text)}
-      ${folded(`${m.tools?.length ?? 0} tools: ${(m.tools ?? []).map((t: any) => t.name).join(", ")}`, pretty(m.tools ?? []))}</div>`;
+      ${m.tools ? folded(`${m.tools.length} tools: ${m.tools.map((t: any) => t.name).join(", ")}`, pretty(m.tools)) : ""}</div>`;
     if (m.role === "tool") return html`<div style="align-self:flex-start; max-width:80%">${folded(`← ${text}`, pretty(text))}</div>`;
     return html`<div style="align-self:${m.role === "user" ? "flex-end" : "flex-start"}; max-width:80%">
       ${head}
-      ${text ? html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>` : ""}
+      ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
+        : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}
       ${(m.toolCalls ?? []).map((c: any) => folded(`→ ${c.name}(${JSON.stringify(c.args)})`, pretty(c.args)))}
     </div>`;
   })}</div>`;
@@ -160,6 +162,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
 
 async function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
+  allowMarkdown(); // the answers in a conversation
   return html.async`<div class="u2-flex">
     <div class=u2-card><div class=-head>${t`Agents`}</div><table class=u2-table cms-part=agents>${agents(node)}</table></div>
     <div class=u2-card><div class=-head>${t`Sessions`} <a href="" data-agent="" data-all hidden>${t`all agents`}</a></div><table class=u2-table cms-part=sessions>${sessions(node)}</table></div>

@@ -3,12 +3,13 @@ import { candidates, embed } from "@qino/qino/ai1";
 
 import { collection, embeddings } from "./lib/collection.ts";
 import { encode, fit, nearest, stored, vector } from "./lib/vector.ts";
-export { collection, collections, create, drop, embeddings } from "./lib/collection.ts";
-export { indexFile, indexFiles } from "./sources/file.ts";
 
 import type { App, Db, Sql } from "@qino/qino";
 import type { EmbedInput } from "@qino/qino/ai1";
 import type { Collection } from "./lib/collection.ts";
+
+export { collection, collections, create, drop, embeddings } from "./lib/collection.ts";
+export { indexFile, indexFiles } from "./sources/file.ts";
 
 /** What is embedded, by the key columns of its table, e.g. `{ file_id: 7 }`. */
 type Key = Record<string, string | number>;

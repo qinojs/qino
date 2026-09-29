@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, getCtx, NotFoundError, s, sql, toTools, unixTime } from "@qino/qino";
+import { Access, errMsg, getCtx, NotFoundError, s, sql, toTools, unixTime } from "@qino/qino";
+import { collection, index, search } from "@qino/qino/ai1.embed";
 import { hit, scored, sqlScore } from "@qino/qino/score";
+
 import { personal } from "./mod.ts";
 
 import type { ApiTree, App, Ctx } from "@qino/qino";
@@ -12,7 +14,12 @@ import type { ApiTree, App, Ctx } from "@qino/qino";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 /** How many of a user's memories are in the context: the strongest, those kept most and latest. */
-const IN_MIND = 10;
+const IN_MIND = 10; // todo? adjustable
+
+/** Only memories this close to what the user said come to mind (as with ai1.agent). */
+const CLOSE = 0.75; // todo? adjustable
+
+const log = (e: unknown) => console.error("[ai1.user_memory] embedding:", errMsg(e));
 
 const list = (app: App, usr: number, limit?: number) => app.db.query`SELECT id, content FROM ai1_user_memory m WHERE usr_id = ${usr}
   ORDER BY ${sqlScore(app.db, "ai1_user_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`;
@@ -25,6 +32,7 @@ async function keep(app: App, usr: number, content: string, replaces?: number): 
   const table = app.db.table("ai1_user_memory"), values = { usr_id: usr, content, time: unixTime() };
   const id = replaces ? (await own(app, usr, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
   hit(app.db, "ai1_user_memory", id);
+  if (await collection(app)) index(app, "ai1_user_memory", { usr_id: usr, memory_id: id }, content).catch(log); // findable by meaning
   return { id: `u${id}` };
 }
 
@@ -62,6 +70,13 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     const memories = await list(app, turn.usrId, IN_MIND);
     if (memories.length) turn.parts.push(`About the user you talk with:\n${memories.map((m) => `[u${m.id}] ${m.content}`).join("\n")}`);
     turn.tools.push(...toTools({ user: app.apiTree["ai1.user_memory"] }, { apis: { "/user/memories/:memory": ["delete"] } }));
+  }, { signal });
+
+  // what the user says strengthens their memories close to it, the closer the more
+  app.on("ai1.agent:associate", async ({ session, vector }) => {
+    const usr = await app.db.one`SELECT usr_id FROM ai1_session WHERE id = ${session}`;
+    const close = await search(app, { ai1_user_memory: sql`e.usr_id = ${usr}` }, vector, { limit: 5 }).catch((e) => (log(e), []));
+    for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai1_user_memory", Number(key.memory_id), score);
   }, { signal });
 
   // a new memory about the person is theirs, not the agent's

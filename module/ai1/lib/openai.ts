@@ -5,7 +5,7 @@ import { AiError } from "./request.ts";
 import { jsonSchema, parseStructured } from "./capabilities.ts";
 
 import type { Transcript } from "@qino/qino";
-import type { DecideInput, EmbedInput, Message, StructuredInput, TextInput, TextOutput } from "../mod.ts";
+import type { DecideInput, EmbedInput, Message, Part, StructuredInput, TextInput, TextOutput } from "../mod.ts";
 import type { Adapter, Call } from "./request.ts";
 
 // OpenAI-compatible providers: OpenAI itself, groq, Gemini's compat endpoint, local servers.
@@ -15,7 +15,14 @@ const auth = (call: Call): Record<string, string> => call.key ? { authorization:
 const request = (call: Call, path: string, body: unknown) =>
   call.fetch(path, { method: "POST", headers: { ...auth(call), "content-type": "application/json" }, body: JSON.stringify(body) });
 
-export const post = async (call: Call, path: string, body: unknown) => (await request(call, path, body)).json();
+const post = async (call: Call, path: string, body: unknown) => (await request(call, path, body)).json();
+
+/** The vectors of an `/embeddings` call; the body differs by provider. */
+export const vectors = async (call: Call, body: unknown): Promise<number[][]> => {
+  const data = await post(call, "/embeddings", body);
+  call.usage(data.usage?.prompt_tokens);
+  return data.data.map((d: any) => d.embedding);
+};
 
 /** Generated images as URLs: the provider's, or data URLs of the bytes. */
 const urls = (call: Call, prompt: string, data: any): string[] => {
@@ -31,17 +38,29 @@ const toOpenAi = (m: Message) =>
   : m.role === "assistant" ? { ...m, toolCalls: undefined, ...(m.toolCalls?.length && { tool_calls: m.toolCalls.map((tc) => ({ id: tc.id, type: "function", function: { name: tc.name, arguments: JSON.stringify(tc.args) } })) }) }
   : { role: m.role, content: typeof m.content === "string" ? m.content : m.content.map((p) => p.type === "text" ? p : { type: "image_url", image_url: { url: p.url } }) };
 
+// A system message amid the history goes as the user's, marked: not every model takes one there
+// (Anthropic moves it to the start, some chat templates reject it).
+const note = (content: string | Part[]): Message => ({
+  role: "user",
+  content: typeof content === "string" ? `<system-reminder>\n${content}\n</system-reminder>` : [{ type: "text", text: "<system-reminder>" }, ...content, { type: "text", text: "</system-reminder>" }],
+});
+
 async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, format?: unknown): Promise<Omit<TextOutput, "model">> {
+  const start = messages.findIndex((m) => m.role !== "system");
   const body = {
     model: call.model,
-    messages: messages.map(toOpenAi),
+    messages: messages.map((m, i) => toOpenAi(m.role === "system" && i > start && start >= 0 ? note(m.content) : m)),
     tools: tools?.length ? tools.map(({ name, description, parameters }) => ({ type: "function", function: { name, description, parameters } })) : undefined,
     response_format: format ? { type: "json_schema", json_schema: { name: "output", schema: format } } : undefined,
     temperature,
     max_tokens: maxTokens,
     ...(onText && { stream: true, stream_options: { include_usage: true } }),
   };
-  const res = await request(call, "/chat/completions", body);
+  const res = await request(call, "/chat/completions", body).catch((e) => {
+    // not merged yet: a late system note right after a user message makes two in a row
+    const twice = body.messages.some((m, i) => i && m.role === "user" && body.messages[i - 1].role === "user");
+    throw e.status === 400 && twice ? new AiError(`${e.message} (maybe two user messages in a row: merge them in ai1's toOpenAi)`, 400) : e;
+  });
   const { message, usage, finish } = onText
     ? await stream(res, onText)
     : await res.json().then((data) => ({ message: data.choices?.[0]?.message, usage: data.usage, finish: data.choices?.[0]?.finish_reason }));
@@ -110,9 +129,7 @@ export const openai: Adapter = {
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, jsonSchema(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");
-    const data = await post(call, "/embeddings", { model: call.model, input: input.texts });
-    call.usage(data.usage?.prompt_tokens);
-    return data.data.map((d: any) => d.embedding);
+    return await vectors(call, { model: call.model, input: input.texts });
   },
   image: async (call, { prompt, size, n }: { prompt: string; size?: string; n?: number }) => urls(call, prompt, await post(call, "/images/generations", { model: call.model, prompt, size, n })),
   speak: async (call, { text, voice, format }: { text: string; voice?: string; format?: string }) => {

@@ -9,6 +9,7 @@ export type { Adapter, Opts } from "./lib/request.ts";
 /** Provider-neutral content. An image `url` may be a data URL. */
 export type Part = { type: "text"; text: string } | { type: "image"; url: string };
 type ToolCall = { id: string; name: string; args: unknown };
+/** A `system` message amid the history is context given later: sent as the user's, marked. */
 export type Message =
   | { role: "system" | "user"; content: string | Part[] }
   | { role: "assistant"; content: string; toolCalls?: ToolCall[] }

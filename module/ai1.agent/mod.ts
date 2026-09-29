@@ -1,6 +1,6 @@
 import { unixTime } from "@qino/qino";
 
-import { ask } from "./lib/turn.ts";
+import { ask, note } from "./lib/turn.ts";
 
 import type { App } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai1";
@@ -40,5 +40,10 @@ export class Session {
   /** Answer `content`, going on from what was said; one turn after the other. */
   ask(content: string | Part[], opts: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
     return ask(this.#app, this.#id, content, opts);
+  }
+
+  /** Tell the agent something without asking. It reads it with the next question. */
+  note(content: string | Part[]): Promise<void> {
+    return note(this.#app, this.#id, content);
   }
 }

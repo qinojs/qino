@@ -15,9 +15,12 @@ import type { Adapter } from "@qino/qino/ai1";
 // Answers with its role, how many questions it has seen and the last one; asked "time?", it calls
 // the tool now first; "remember:fact", "replace:id:fact", "forget:id" and "search:query" go to those
 // tools; "slow" takes a moment; "fail" fails. It embeds what mentions a logo apart from the rest.
+// What it is sent goes to `sent`.
+const sent: unknown[][] = [];
 const fake: Adapter = {
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
   text: async (_call, { messages }) => {
+    sent.push(messages);
     const last = messages.at(-1), asked = messages.filter((m: any) => m.role === "user");
     const typed = String(last.content).split("\n\n(internal")[0]; // without the memories it brought to mind
     if (typed === "fail") throw new Error("down");
@@ -78,17 +81,17 @@ Deno.test("ai1.agent: memories outlast the session and are shared by all who tal
   const bob = await agent.start(8);
   assertEquals((await bob.ask("hi")).text, "lead\n\nYour memories:\n[1] blue #1 hi"); // in the context
   await bob.ask("replace:1:red");
-  assertStringIncludes((await bob.ask("hi")).text, "[1] red #");
+  assertStringIncludes((await (await agent.start(8)).ask("hi")).text, "[1] red #"); // from the next session on
   await bob.ask("forget:1");
   assertEquals([await app.db.one`SELECT COUNT(*) FROM ai1_agent_memory`, await app.db.one`SELECT COUNT(*) FROM score`], [0, 0]); // its strength goes too
   assertStringIncludes((await bob.ask("forget:1")).text, '"error":"No such memory"'); // told to the model
 }));
 
 Deno.test("ai1.agent: memories renewed come first, the rest fades", () => withApp(async (app) => {
-  const session = await (await Agent.create(app, { system: "lead" })).start(7);
+  const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
   for (const fact of ["apple", "zebra"]) await session.ask(`remember:${fact}`);
   for (let i = 0; i < 3; i++) await session.ask("replace:2:zebra");
-  assertStringIncludes((await session.ask("hi")).text, "[2] zebra\n[1] apple");
+  assertStringIncludes((await (await agent.start(7)).ask("hi")).text, "[2] zebra\n[1] apple");
 }));
 
 /** Until the background has embedded `count` rows of `table`. */
@@ -127,9 +130,11 @@ Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user
   const session = (await runAs(app, 7, "test", () => agents()(id).sessions.post()) as { id: number }).id;
   const answer = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).ask.post({ content: "time?" })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
+  assertEquals(await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
   const { messages } = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).get()) as { messages: { role: string }[] };
-  assertEquals(messages.map((m) => m.role), ["system", "user", "assistant", "tool", "assistant"]);
-  for (const call of [() => app.api["ai1.agent"].sessions(session).get(), () => app.api["ai1.agent"].sessions(session).ask.post({ content: "hi" })]) {
+  assertEquals(messages.map((m) => m.role), ["system", "user", "assistant", "tool", "assistant", "system"]);
+  const bobs = [() => app.api["ai1.agent"].sessions(session).get(), () => app.api["ai1.agent"].sessions(session).ask.post({ content: "hi" }), () => app.api["ai1.agent"].sessions(session).note.post({ content: "hi" })];
+  for (const call of bobs) {
     await assertRejects(() => runAs(app, 8, "test", call), Error, "No such session"); // not bob's: neither to read nor to talk in
   }
   const { id: memory } = await runAs(app, 8, "test", () => agents()(id).memories.post({ content: "blue" })) as { id: number };
@@ -150,18 +155,24 @@ Deno.test("ai1.agent: the model is chosen by the session's prefer, else the agen
   assertEquals((await (await (await Agent.create(app, { system: "lead", prefer: {} })).start(7, { prefer: {} })).ask("hi")).model, "n"); // none: the default, quality first
 }));
 
-Deno.test("ai1.agent: what the model is given is kept whenever it changes: role with memories, tools, prefer", () => withApp(async (app) => {
+Deno.test("ai1.agent: what the model is given is kept as the session starts: role with memories, tools, prefer", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "lead", tools: ["toolset"], prefer: { cost: 1 } });
   const session = await agent.start(7);
+  const from = sent.length;
+  for (const content of ["hi", "remember:blue", "time?"]) await session.ask(content);
+  await session.note("the logo is round"); // at its place from the next turn on
   await session.ask("hi");
-  await session.ask("hi"); // nothing changed: not kept again
-  await session.ask("remember:blue"); // the memory is in the context from the next question on
-  await session.ask("hi");
+  assertEquals(sent.at(-1)!.slice(-2), [{ role: "system", content: "the logo is round" }, { role: "user", content: "hi" }]);
+  await app.db.table("ai1_agent").update(agent.id, { system: "boss", tools: "[]" }); // changed meanwhile
+  assertStringIncludes((await session.ask("time?")).text, "lead #5 it is {\"error\":\"No longer available: get_toolset_clock\""); // as given; runs only while still the agent's
+  const calls = sent.slice(from).map((messages) => JSON.stringify(messages));
+  for (const [i, call] of calls.entries()) if (i) assertEquals(call.slice(0, calls[i - 1].length - 1), calls[i - 1].slice(0, -1)); // only added to
   const given = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
-  assertEquals(given.map((m) => m.content), ["lead", "lead\n\nYour memories:\n[1] blue"]);
+  assertEquals(given.map((m) => m.content), ["lead", "the logo is round"]); // given once, and the note
   assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["post_memories", "delete_memories", "post_search", "get_toolset_clock"]);
   assertEquals(given[0].prefer, { cost: 1 });
+  assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\nYour memories:\n[1] blue #1 hi"); // the next session
 }));
 
 Deno.test("ai1.agent: a failure is kept, but not sent again", () => withApp(async (app) => {

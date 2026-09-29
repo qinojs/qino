@@ -11,10 +11,12 @@
     "catalog.ts",
     "lib/sources.ts",
     "manifest.json",
+    "mod.ts",
     "nodeApi.ts",
     "plugin.ts",
     "pub/main.css",
     "pub/main.js",
+    "pub/markdown.js",
     "pub/module.svg",
     "render.ts"
   ]

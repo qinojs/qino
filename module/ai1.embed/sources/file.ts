@@ -1,4 +1,4 @@
-import { fs, sql } from "@qino/qino";
+import { errMsg, fs, sql } from "@qino/qino";
 
 import { collection, index, remove } from "../mod.ts";
 
@@ -39,7 +39,7 @@ export async function indexFiles(app: App): Promise<{ files: number; errors: str
   const ids = await app.db.col`SELECT id FROM file f WHERE md5 IS NOT NULL AND ((text IS NULL OR text <> '') AND ${missing("embedding_file_text")}
     OR ${c.vision} AND mime LIKE 'image/%' AND ${missing("embedding_file_image")})`;
   const errors: string[] = [];
-  for (const id of ids) await indexFile(app, Number(id)).catch((e) => errors.push(`file ${id}: ${e instanceof Error ? e.message : e}`));
+  for (const id of ids) await indexFile(app, Number(id)).catch((e) => errors.push(`file ${id}: ${errMsg(e)}`));
   return { files: ids.length, errors };
 }
 

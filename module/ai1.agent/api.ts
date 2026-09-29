@@ -12,13 +12,19 @@ import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 /** How a model is chosen, as ai1 weighs it: `{ quality: 2, cost: 1, speed: 1 }`; empty: the default. */
 const prefer = s.optional(s.record(s.number()));
 
+/** What makes an agent: its role, the api paths it may use as tools, prefer. */
+const fields = { system: s.optional(s.string()), tools: s.optional(s.array(s.string())), prefer };
+
 const verb = <T extends Params>(description: string, execute: (params: T, ctx: Ctx) => unknown, input?: Record<string, StandardSchema>) =>
   ({ description, access: Access.USER, ...input && { input: s.object(input) }, execute: execute as (params: Params, ctx: Ctx) => unknown });
 
 export const api: ApiTree = {
   agents: {
-    post: verb<{ system?: string; tools?: string[]; prefer?: Record<string, number> }>("Create an agent: its role, the paths of the api it may use as tools, and how it chooses its model (ai1 prefer)",
-      async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }), { system: s.optional(s.string()), tools: s.optional(s.array(s.string())), prefer }),
+    post: verb<{ system?: string; tools?: string[]; prefer?: Record<string, number> }>(
+      "Create an agent: its role, the paths of the api it may use as tools, and how it chooses its model (ai1 prefer)",
+      async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }),
+      fields,
+    ),
     ":agent": {
       paramSchema: s.number().describe("Agent ID"),
       resolve: async (id: unknown, ctx: Ctx) => {
@@ -26,16 +32,27 @@ export const api: ApiTree = {
         return id;
       },
       get: verb<{ agent: number }>("The agent: its role and tools", async ({ agent }, ctx) => {
-        const row = await ctx.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${agent}`;
-        return { id: agent, system: row!.system, tools: JSON.parse(String(row!.tools || "[]")), prefer: JSON.parse(String(row!.prefer || "{}")) };
+        const row = (await ctx.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${agent}`)!;
+        return { id: agent, system: row.system, tools: JSON.parse(String(row.tools || "[]")), prefer: JSON.parse(String(row.prefer || "{}")) };
       }),
-      patch: verb<{ agent: number; system?: string; tools?: string[]; prefer?: Record<string, number> }>("Change the agent's role, tools or prefer", async ({ agent, system, tools, prefer }, ctx) => {
-        await ctx.app.db.table("ai1_agent").update(agent, { ...system !== undefined && { system }, ...tools && { tools: JSON.stringify(tools) }, ...prefer && { prefer: JSON.stringify(prefer) } });
-        return { id: agent };
-      }, { system: s.optional(s.string()), tools: s.optional(s.array(s.string())), prefer }),
+      patch: verb<{ agent: number; system?: string; tools?: string[]; prefer?: Record<string, number> }>(
+        "Change the agent's role, tools or prefer",
+        async ({ agent, system, tools, prefer }, ctx) => {
+          await ctx.app.db.table("ai1_agent").update(agent, {
+            ...system !== undefined && { system },
+            ...tools && { tools: JSON.stringify(tools) },
+            ...prefer && { prefer: JSON.stringify(prefer) },
+          });
+          return { id: agent };
+        },
+        fields,
+      ),
       sessions: {
-        post: verb<{ agent: number; prefer?: Record<string, number> }>("Start a session with the agent, as yourself; prefer replaces the agent's in it",
-          async ({ agent, prefer }, ctx) => ({ id: (await new Agent(ctx.app, agent).start(ctx.userId, { prefer })).id }), { prefer }),
+        post: verb<{ agent: number; prefer?: Record<string, number> }>(
+          "Start a session with the agent, as yourself; prefer replaces the agent's in it",
+          async ({ agent, prefer }, ctx) => ({ id: (await new Agent(ctx.app, agent).start(ctx.userId, { prefer })).id }),
+          { prefer },
+        ),
       },
       memories: {
         get: verb<{ agent: number }>("The agent's memories, the strongest first", ({ agent }, ctx) => memory.list(ctx.app, agent)),
@@ -53,8 +70,11 @@ export const api: ApiTree = {
         },
       },
       search: {
-        post: verb<{ agent: number; query: string }>("Search the agent's memories and all its past sessions, with anyone, by meaning",
-          ({ agent, query }, ctx) => search.find(ctx.app, agent, query), { query: s.string() }),
+        post: verb<{ agent: number; query: string }>(
+          "Search the agent's memories and all its past sessions, with anyone, by meaning",
+          ({ agent, query }, ctx) => search.find(ctx.app, agent, query),
+          { query: s.string() },
+        ),
       },
     },
   },
@@ -62,17 +82,29 @@ export const api: ApiTree = {
     ":session": {
       paramSchema: s.number().describe("Session ID"),
       resolve: async (id: unknown, ctx: Ctx) => {
-        if (Number(await ctx.app.db.one`SELECT usr_id FROM ai1_session WHERE id = ${id}`) !== ctx.userId || !ctx.userId) throw new NotFoundError("No such session");
+        const usr = Number(await ctx.app.db.one`SELECT usr_id FROM ai1_session WHERE id = ${id}`);
+        if (!ctx.userId || usr !== ctx.userId) throw new NotFoundError("No such session");
         return id;
       },
       get: verb<{ session: number }>("The session: its agent and everything said", async ({ session }, ctx) => ({
         agent: Number(await ctx.app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${session}`),
-        messages: (await ctx.app.db.query`SELECT id, time, message, model FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
+        messages: (await ctx.app.db.query`SELECT id, time, message, model FROM ai1_session_message
+          WHERE session_id = ${session} ORDER BY id`)
           .map((m) => ({ id: m.id, time: m.time, model: m.model || undefined, ...JSON.parse(String(m.message)) })),
       })),
       ask: {
-        post: verb<{ session: number; content: string }>("Say something in the session; the agent answers", ({ session, content }, ctx) =>
-          new Session(ctx.app, session).ask(content), { content: s.string() }),
+        post: verb<{ session: number; content: string }>(
+          "Say something in the session; the agent answers",
+          ({ session, content }, ctx) => new Session(ctx.app, session).ask(content),
+          { content: s.string() },
+        ),
+      },
+      note: {
+        post: verb<{ session: number; content: string }>(
+          "Tell the agent something without asking. It reads it with the next question.",
+          async ({ session, content }, ctx) => (await new Session(ctx.app, session).note(content), { ok: true }),
+          { content: s.string() },
+        ),
       },
     },
   },

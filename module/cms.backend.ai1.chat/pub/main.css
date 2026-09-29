@@ -1,0 +1,4 @@
+[qcms-mod="backend.ai1.chat"] {
+  /* hidden until a session is open, also where a class sets display (u2-flex) */
+  & [data-ask][hidden] { display: none; }
+}

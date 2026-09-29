@@ -138,6 +138,10 @@ Deno.test("ai1: openai and deepl adapters speak their protocols", async () => {
 
     assertEquals(await translate(testApp, { text: "Hallo", from: "de", to: "en", format: "html" }), "hello");
     assertEquals(Object.fromEntries(bodies[1][1]), { text: "Hallo", target_lang: "en", source_lang: "de", tag_handling: "html" });
+
+    // a system message amid the history goes as the user's, marked
+    await text(testApp, { messages: [{ role: "system", content: "role" }, { role: "user", content: "hi" }, { role: "system", content: "later" }] });
+    assertEquals(JSON.parse(bodies[2][1]).messages.map((m: any) => [m.role, m.content]), [["system", "role"], ["user", "hi"], ["user", "<system-reminder>\nlater\n</system-reminder>"]]);
   } finally {
     globalThis.fetch = fetchOrg;
   }
@@ -178,6 +182,13 @@ Deno.test("ai1: openai streams text, joins tool-call fragments, reports truncati
     assertEquals(deltas, ["Hel", "lo"]);
     assertEquals(result, { text: "Hello", toolCalls: [{ id: "c1", name: "f", args: { a: 1 } }], truncated: true, model: "gpt" }); // names who answered
     assertEquals([fired.at(-1)![1].input, fired.at(-1)![1].output], [4, 2]); // usage goes to ai1:call
+  });
+});
+
+Deno.test("ai1: a model that wants alternating roles says what to do", async () => {
+  await withFetch(() => new Response("Conversation roles must alternate", { status: 400 }), async () => {
+    const testApp = await openaiApp({ gpt: ["text"] }), messages = [{ role: "user" as const, content: "hi" }, { role: "system" as const, content: "later" }];
+    await assertRejects(() => text(testApp, { messages }), AiError, "two user messages in a row");
   });
 });
 

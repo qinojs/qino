@@ -14,7 +14,7 @@
           },
           "tools": {
             "type": "string",
-            "description": "Names of the tool sets it may use (ai1Tools), as a JSON array"
+            "description": "Paths of the api it may use as tools (`cms`, `cms/node`), as a JSON array"
           },
           "prefer": {
             "type": "string",

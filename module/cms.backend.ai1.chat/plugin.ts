@@ -1,6 +1,7 @@
-import { getCtx, html, walk } from "@qino/qino";
+import { html, walk } from "@qino/qino";
 import { candidates } from "@qino/qino/ai1";
 import { backend } from "@qino/qino/cms.backend";
+import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -11,8 +12,6 @@ import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
-/** What pub/main.js renders answers with: markdown, then sanitized. */
-const LIBS = ["https://cdn.jsdelivr.net/npm/marked@18/+esm", "https://cdn.jsdelivr.net/npm/dompurify@3/+esm"];
 const WEIGHTS = ["quality", "cost", "speed"];
 
 type Agent = { id?: number; system?: string; tools?: string[]; prefer?: Record<string, number> };
@@ -58,7 +57,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 async function render(node: Node): Promise<HtmlString> {
   const { db, t } = node.app;
-  for (const url of LIBS) getCtx().res.csp["script-src"][url] = true;
+  allowMarkdown(); // answers render as markdown
   const tools = paths(node.app.apiTree);
   const agents = (await db.query`SELECT id, system, tools, prefer FROM ai1_agent ORDER BY id DESC`).map((a) => ({
     id: Number(a.id), system: String(a.system ?? ""), tools: JSON.parse(String(a.tools || "[]")), prefer: JSON.parse(String(a.prefer || "{}")),
@@ -91,4 +90,4 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, api } };
+export const cms = { node: { js: ["pub/main.js"], css: ["pub/main.css"], render, api } };

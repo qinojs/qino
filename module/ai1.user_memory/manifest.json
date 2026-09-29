@@ -3,7 +3,8 @@
   "description": "What agents keep about a user: theirs with every agent, seen only in their own sessions.",
   "dependencies": [
     "ai1.agent",
-    "score"
+    "score",
+    "ai1.embed"
   ],
   "files": [
     "README.md",

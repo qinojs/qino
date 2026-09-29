@@ -1,11 +1,5 @@
 import { api } from "@qino/pub/api.js";
-
-// Markdown + sanitizer (~90 KB), loaded when the first answer renders.
-let markdown;
-const loadMarkdown = () => markdown ??= Promise.all([
-  import("https://cdn.jsdelivr.net/npm/marked@18/+esm"),
-  import("https://cdn.jsdelivr.net/npm/dompurify@3/+esm"),
-]).then(([{ marked }, { default: DOMPurify }]) => (md) => DOMPurify.sanitize(marked.parse(md)));
+import { markdown } from "@qino/m/cms.backend.ai1/pub/markdown.js";
 
 const KEY = "ai1.chat:session"; // the session to go on with after a reload
 
@@ -27,7 +21,7 @@ cms.initNode("backend.ai1.chat", (el) => {
     label.textContent = model ? `${role} · ${model}` : role;
     div.append(label);
     const text = typeof content === "string" ? content : (content ?? []).map((p) => p.text ?? `[${p.type}]`).join(" ");
-    if (role === "assistant" && text) div.insertAdjacentHTML("beforeend", (await loadMarkdown())(text));
+    if (role === "assistant" && text) div.insertAdjacentHTML("beforeend", await markdown(text));
     const plain = [role === "assistant" ? "" : text, ...(toolCalls ?? []).map((c) => `→ ${c.name}(${JSON.stringify(c.args)})`)].filter(Boolean).join("\n");
     if (plain) div.append(Object.assign(document.createElement("pre"), { textContent: plain.length > 2000 ? plain.slice(0, 2000) + " …" : plain, style: "white-space:pre-wrap;overflow:auto" }));
     return div;

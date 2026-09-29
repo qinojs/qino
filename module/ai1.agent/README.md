@@ -15,8 +15,12 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 
 - **Sessions** are fresh starts of the same agent. Each keeps everything exactly
   (`ai1_session_message`): questions, answers, tool calls and results; what the model was given
-  (role with memories, tool definitions, prefer) as a message of role `system` whenever it changes;
-  failures as messages of role `error`. Neither of the last two is sent again from the protocol.
+  (role with memories, tool definitions, prefer) as its first message, of role `system`; failures as
+  messages of role `error`, not sent again. What was sent is never changed, only added to (prompt
+  cache): what changes meanwhile (role, memories, tools) comes with the next session. A tool taken
+  from the agent meanwhile no longer runs.
+- **Notes:** `session.note(content)` tells the agent something without asking. It reads it with the
+  next question (the model gets it as a `system` message in the history).
 - **One turn after the other** per session: a message waits for the answer to the one before.
 - **Memories** are short facts that belong to the agent and outlast its sessions: everyone who
   talks with it shares them. They are always in its context, the strongest first; with the tools
@@ -35,9 +39,11 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 Other modules add to an agent without it knowing them (as [ai1.user_memory](../ai1.user_memory/) does):
 
 - `ai1.agent:turn` `{ agent, session, usrId, parts, tools }`: before each turn, push texts into the
-  context (`parts`) and tools (`tools`).
+  context (`parts`, taken as the session starts) and tools (`tools`).
 - `ai1.agent:remember` `{ agent, content, prevent, result }`: a new memory; set `prevent` and
   `result` to keep it elsewhere.
+- `ai1.agent:associate` `{ agent, session, vector }`: in the background, what the user said as a
+  vector, to strengthen what is close to it.
 
 ## Api
 
@@ -50,6 +56,7 @@ agents/:agent/memories/:memory  delete
 agents/:agent/search            post    { query }
 sessions/:session               get     its agent and everything said
 sessions/:session/ask           post    { content } → the answer
+sessions/:session/note          post    { content }
 ```
 
 **Choosing the model:** `prefer` (ai1's weights, e.g. `{ quality: 2, cost: 1 }`) belongs to the agent;
