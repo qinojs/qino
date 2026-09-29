@@ -24,8 +24,11 @@ async function own(app: App, agent: number, id: number): Promise<void> {
   if (!await app.db.one`SELECT id FROM ai1_agent_memory WHERE id = ${id} AND agent_id = ${agent}`) throw new NotFoundError("No such memory");
 }
 
-/** Keep a short fact, or replace the memory `replaces`; either grows stronger. */
-export async function remember(app: App, agent: number, content: string, replaces?: number): Promise<{ id: number }> {
+/** Keep a short fact, or replace the memory `replaces`; either grows stronger. Another module may
+ *  keep a new one instead (`ai1.agent:remember`, `prevent`). */
+export async function remember(app: App, agent: number, content: string, replaces?: number): Promise<unknown> {
+  const taken = replaces ? undefined : await app.fire("ai1.agent:remember", { agent, content, prevent: false, result: undefined as unknown });
+  if (taken?.prevent) return taken.result;
   const table = app.db.table("ai1_agent_memory"), values = { agent_id: agent, content, time: unixTime() };
   const id = replaces ? (await own(app, agent, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
   hit(app.db, "ai1_agent_memory", id);

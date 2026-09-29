@@ -1,0 +1,14 @@
+{
+  "name": "ai1.user_memory",
+  "description": "What agents keep about a user: theirs with every agent, seen only in their own sessions.",
+  "dependencies": [
+    "ai1.agent"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "properties": {
+    "ai1_user_memory": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "usr_id": { "type": "integer", "x-index": true, "x-qg-parent": "usr", "x-qg-on-parent-delete": "cascade" },
+          "content": { "type": "string", "description": "One short fact about the user" },
+          "time": { "type": "integer" }
+        },
+        "required": ["id", "usr_id", "content"]
+      }
+    }
+  }
+}

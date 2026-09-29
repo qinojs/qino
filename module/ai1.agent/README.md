@@ -30,6 +30,15 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 - **Tools** come from the api: `tools` are paths in it (`["cms"]`, `["cms/node"]`), each module's
   api is its abilities. Its own routes (memories, search) every agent has, with its id set.
 
+## Hooks
+
+Other modules add to an agent without it knowing them (as [ai1.user_memory](../ai1.user_memory/) does):
+
+- `ai1.agent:turn` `{ agent, session, usrId, parts, tools }`: before each turn, push texts into the
+  context (`parts`) and tools (`tools`).
+- `ai1.agent:remember` `{ agent, content, prevent, result }`: a new memory; set `prevent` and
+  `result` to keep it elsewhere.
+
 ## Api
 
 ```

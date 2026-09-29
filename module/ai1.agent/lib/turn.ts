@@ -59,8 +59,10 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     if (!agent) throw new Error(`No session ${session}`);
     const kept = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`).map((json) => JSON.parse(String(json)));
     const id = Number(agent.agent_id), asked: Message = { role: "user", content };
-    const system = [agent.system, await memory.index(app, id)].filter(Boolean).join("\n\n");
-    const tools = [...ownTools(app, id), ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))];
+    // other modules add to what the model is given: texts to its context, tools
+    const { parts, tools: more } = await app.fire("ai1.agent:turn", { agent: id, session, usrId: Number(agent.usr_id), parts: [] as string[], tools: [] as Tool[] });
+    const system = [agent.system, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
+    const tools = [...ownTools(app, id), ...more, ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))];
     const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
     const given = { role: "system" as const, content: system, tools: tools.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer };
     if (JSON.stringify(kept.findLast((m) => m.role === "system")) !== JSON.stringify(given)) await save(app, session, id, given);
