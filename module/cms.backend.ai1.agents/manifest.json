@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.ai1.agents",
+  "description": "Shows all agents with their memories and sessions, and what is going on.",
+  "dependencies": ["cms.backend.ai1", "ai1.agent"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
+}

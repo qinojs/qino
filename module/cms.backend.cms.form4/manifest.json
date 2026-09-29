@@ -10,7 +10,7 @@
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",
-    "render.ts",
-    "pub/main.js"
+    "pub/main.js",
+    "render.ts"
   ]
 }
