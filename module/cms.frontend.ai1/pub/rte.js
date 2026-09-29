@@ -13,6 +13,9 @@ nothing else — no explanation, no code fence, no markdown.
 - Keep the user's language unless the instruction asks otherwise.
 - Never invent links or image sources, and leave the src and href of existing ones untouched.`;
 
+/** Simple tasks: speed and cost weigh more than quality (ai1 `prefer`). */
+const PREFER = { speed: 5, cost: 5, quality: 1 };
+
 let htmlDiff;
 const threads = new WeakMap();
 
@@ -32,7 +35,7 @@ editor.add(aiView({
     const thread = threads.get(surface), messages = thread.messages;
     // the field goes along when it changed since, else the last answer is what the prompt is about
     messages.push({ role: "user", content: html === thread.html ? prompt : `${prompt}\n\nCurrent field:\n${html}` });
-    const result = await api["ai1.api"].text.post({ messages }).catch((e) => { messages.pop(); throw e; });
+    const result = await api["ai1.api"].text.post({ messages, opts: { prefer: PREFER } }).catch((e) => { messages.pop(); throw e; });
 console.log(result);
     const text = result?.text ?? "";
     thread.html = html;
