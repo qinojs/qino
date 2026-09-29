@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -46,6 +46,10 @@ async function render(node: Node): Promise<HtmlString> {
     JOIN ai1_model m ON m.id = mp.model_id
     JOIN ai1_provider p ON p.id = mp.provider_id
     ORDER BY e.id DESC LIMIT ${LIMIT}`;
+  // the browser API's daily units per user (ai1.api), where it is loaded
+  const api = node.app.modules.linked("ai1.api"), limit = api ? Number(await node.app.settings["ai1.api"].dailyLimit) : 0;
+  const users = api ? await db.query`SELECT u.username, a.units FROM ai1_usage a LEFT JOIN usr u ON u.id = a.usr_id
+    WHERE a.day = ${Math.floor(unixTime() / 86400)} ORDER BY a.units DESC, a.usr_id LIMIT ${LIMIT}` : undefined;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Providers`}</div>
@@ -102,6 +106,19 @@ async function render(node: Node): Promise<HtmlString> {
           : html`<tr><td colspan=3>${t`No errors yet`}`}</tbody>
       </table>
     </div>
+    ${users ? html.async`<div class=u2-card style="flex:0 1 auto">
+      <div class=-head>${t`Usage today`}</div>
+      <table class=u2-table>
+        <thead><tr>
+          <th>${t`User`}
+          <th>${t`Units`}
+        <tbody>${users.length ? users.map((row) => html`<tr>
+          <th>${colored(row.username)}
+          <td>${limit ? html`<progress value="${Math.min(Number(row.units), limit)}" max="${limit}"></progress> ${number(row.units)} / ${number(limit)}` : number(row.units)}`)
+          : html.async`<tr><td colspan=2>${t`No usage today`}`}</tbody>
+      </table>
+      <small>${t`Units (tokens, characters, seconds, images) of each user's requests; at the daily limit the browser API refuses.`}</small>
+    </div>` : ""}
   </div>`;
 }
 

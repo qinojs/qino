@@ -1,6 +1,7 @@
 import { Db } from "@qino/qino";
 import { ai1DbSchema, assertEquals, assertStringIncludes, Emitter, fakeT } from "@qino/qino/tests";
 import { dbSchema as statsSchema, init } from "@qino/m/ai1.stats/tests/deps.ts";
+import usageSchema from "@qino/m/ai1.api/dbschema.json" with { type: "json" };
 
 import { cms } from "../plugin.ts";
 
@@ -9,12 +10,15 @@ import type { Node } from "@qino/qino/cms";
 
 Deno.test("cms.backend.ai1.calls: records failures and shows usage without rendering provider HTML", async () => {
   const db = new Db("sqlite::memory:");
-  const combined = { properties: { ...ai1DbSchema.properties, ...statsSchema.properties } };
+  const usr = { additionalProperties: { properties: { id: { type: "integer", "x-index": "primary", "x-autoincrement": true }, username: { type: "string" } } } };
+  const combined = { properties: { ...ai1DbSchema.properties, ...statsSchema.properties, ...usageSchema.properties, usr } };
   await db.migrate(combined);
   await db.loadTables();
   db.schema = combined;
   const events = new Emitter<Record<string, any>>();
-  const app = { db, t: fakeT, on: events.on.bind(events), fire: events.fire.bind(events) } as unknown as App;
+  let linked = false;
+  const modules = { linked: () => linked }, settings = { "ai1.api": { dailyLimit: 1000 } };
+  const app = { db, t: fakeT, modules, settings, on: events.on.bind(events), fire: events.fire.bind(events) } as unknown as App;
   const stop = new AbortController();
   try {
     await db.table("ai1_provider").insert({ name: "<provider>", type: "fake", endpoint: "" });
@@ -34,6 +38,15 @@ Deno.test("cms.backend.ai1.calls: records failures and shows usage without rende
     assertStringIncludes(output, "<td>0.00008");
     await db.table("ai1_model_provider").update(id, { cost_output: null });
     assertStringIncludes(String(await cms.node.render({ app } as Node)), "<td>–");
+
+    // the browser API's usage today, only where ai1.api is loaded
+    const usrId = Number(await db.table("usr").insert({ username: "<ann>" }));
+    await db.table("ai1_usage").insert({ usr_id: usrId, day: Math.floor(Date.now() / 86400000), units: 250 });
+    assertEquals(String(await cms.node.render({ app } as Node)).includes("Usage today"), false);
+    linked = true;
+    const usage = String(await cms.node.render({ app } as Node));
+    assertStringIncludes(usage, "&lt;ann&gt;</span>");
+    assertStringIncludes(usage, '<progress value="250" max="1000"></progress> 250 / 1,000');
   } finally {
     stop.abort();
     await db.close();
