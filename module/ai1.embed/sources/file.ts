@@ -56,5 +56,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 }
 
 export const cron = {
-  files: { every: "hour", run: async (app: App) => { if (await app.settings["ai1.embed"].files) await indexFiles(app); } },
+  files: {
+    every: "hour",
+    run: async (app: App) => {
+      if (await app.settings["ai1.embed"].files) await indexFiles(app); }
+    },
 } satisfies Jobs;
