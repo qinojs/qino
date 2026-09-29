@@ -3,7 +3,7 @@ import { t } from "@qino/pub/t.js";
 import { aiView } from "@qino/u2/js/rte/ai.js";
 import { editor } from "@qino/u2/js/rte/rte.js";
 
-// The editor's assistant, answered by ai1 (`ai1.api` text, within the user's daily limit). One thread
+// The editor's assistant, answered by ai1 (`ai1.api` text). One thread
 // per field, so follow-ups go on from the last answer and other fields start fresh.
 
 const RULES = `You are a text editor working on one field of a website.

@@ -2,12 +2,9 @@
 import { Access, ApiError, Output, s } from "@qino/qino";
 import { AiError, request } from "@qino/qino/ai1";
 
-import { check } from "./lib/limit.ts";
-
 import type { ApiTree, Ctx, Params } from "@qino/qino";
 
-// The capabilities for the browser, shaped like their functions. Any signed-in user may call them,
-// up to the daily limit (settings ai1.api.dailyLimit).
+// The capabilities for the browser, shaped like their functions. Any signed-in user may call them.
 
 const opts = s.optional(s.object({ model: s.optional(s.string()), prefer: s.optional(s.record(s.number())) }));
 const answer = { messages: s.array(s.record()), temperature: s.optional(s.number()), maxTokens: s.optional(s.number()) };
@@ -18,7 +15,7 @@ const upstream = <T>(promise: Promise<T>): Promise<T> =>
   promise.catch((e) => { throw e instanceof AiError ? new ApiError(e.status === 504 ? 504 : 502, e.message) : e; });
 
 const post = (description: string, input: Record<string, any>, handle: (params: Params, ctx: Ctx) => Promise<unknown>) => ({
-  post: { description, input: s.object(input), access: Access.USER, execute: async (params: Params, ctx: Ctx) => (await check(ctx), upstream(handle(params, ctx))) },
+  post: { description, input: s.object(input), access: Access.USER, execute: (params: Params, ctx: Ctx) => upstream(handle(params, ctx)) },
 });
 /** An endpoint for a capability: the body is its input, plus `opts`. */
 const capability = (name: string, description: string, input: Record<string, any>) =>

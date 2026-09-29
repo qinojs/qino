@@ -69,13 +69,13 @@ back any more.
 
 ## Browser
 
-[ai1.api](../ai1.api/) offers the capabilities to signed-in users, within a daily limit.
+[ai1.api](../ai1.api/) offers the capabilities to signed-in users.
 
 ## Watching
 
 Every attempt fires `ai1:call` with `{ capability, id, model, provider, ms, input, output, error? }`
 (`id` is the `ai1_model_provider`). [ai1.stats](../ai1.stats/) measures usage, errors and the
-speed ai1 chooses by, [ai1.api](../ai1.api/) counts a user's daily units.
+speed ai1 chooses by.
 
 ## Extending
 

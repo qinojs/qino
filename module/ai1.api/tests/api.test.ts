@@ -6,8 +6,6 @@ import { AiError } from "@qino/qino/ai1";
 import { ai1Capabilities, dbSchema as ai1Schema } from "@qino/m/ai1/tests/deps.ts";
 
 import { api } from "../api.ts";
-import dbSchema from "../dbschema.json" with { type: "json" };
-import { check, count } from "../lib/limit.ts";
 
 import type { Adapter } from "@qino/qino/ai1";
 
@@ -26,9 +24,9 @@ const fake: Adapter = {
   embed: (_call, { purpose }) => Promise.resolve([[purpose === "query" ? 1 : 0]]),
 };
 
-async function ctx(userId = 1, dailyLimit = 0) {
+async function ctx(userId = 1) {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...ai1Schema.properties, ...dbSchema.properties } });
+  await db.migrate(ai1Schema);
   await db.loadTables();
   await db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
   await db.table("ai1_model").insert({ name: "m" });
@@ -36,7 +34,7 @@ async function ctx(userId = 1, dailyLimit = 0) {
   for (const capability of ["text", "translate", "image", "embed"]) await db.table("ai1_model_capability").insert({ model_id: 1, capability });
   const mods = [{ name: "ai1", plugin: { ai1Adapters: { fake }, ai1Capabilities } }];
   const modules = { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods };
-  return testContext({ app: { db, modules, t: fakeT, settings: { core: { _secret: "test", keys: {} }, "ai1.api": { dailyLimit } } } as any, set: { user: userId ? { id: userId } : null, userId } });
+  return testContext({ app: { db, modules, t: fakeT, settings: { core: { _secret: "test", keys: {} } } } as any, set: { user: userId ? { id: userId } : null, userId } });
 }
 
 Deno.test("ai1 api: capabilities for signed-in users, shaped like their functions", async () => {
@@ -91,20 +89,4 @@ Deno.test("ai1 api: a closed stream cancels the call", async () => {
   } finally {
     globalThis.fetch = fetch;
   }
-});
-
-Deno.test("ai1 api: a user's usage counts per day; over the limit the browser API refuses", async () => {
-  const signedIn = await ctx(1, 10);
-  const app = signedIn.app;
-  await requestStorage.run(signedIn, async () => {
-    await count(app, { input: 4, output: 4 });
-    await check(signedIn); // 8 of 10
-    await count(app, { input: 1, output: 2 });
-    await assertRejects(() => check(signedIn), Error, "limit");
-    await assertRejects(() => invoke(api, "POST", "/translate", { text: "Hallo", to: "en" }), Error, "limit");
-  });
-  await count(app, { input: 5, output: 5 }); // no request, no user: not counted
-  assertEquals(Number(await app.db.one`SELECT units FROM ai1_usage WHERE usr_id = 1`), 11);
-  await app.db.exec`UPDATE ai1_usage SET day = day - 1`; // a new day starts at zero
-  await requestStorage.run(signedIn, () => check(signedIn));
 });

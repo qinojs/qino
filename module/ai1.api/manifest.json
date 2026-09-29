@@ -1,6 +1,6 @@
 {
   "name": "ai1.api",
-  "description": "The AI capabilities for signed-in users in the browser, within a daily limit per user.",
+  "description": "The AI capabilities for signed-in users in the browser.",
   "dependencies": ["ai1"],
-  "files": ["README.md", "api.ts", "dbschema.json", "lib/limit.ts", "manifest.json", "plugin.ts"]
+  "files": ["README.md", "api.ts", "manifest.json", "plugin.ts"]
 }
