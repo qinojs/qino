@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, getCtx, NotFoundError, s, toTools, unixTime } from "@qino/qino";
+import { Access, getCtx, NotFoundError, s, sql, toTools, unixTime } from "@qino/qino";
+import { hit, scored, sqlScore } from "@qino/qino/score";
 import { personal } from "./mod.ts";
 
 import type { ApiTree, App, Ctx } from "@qino/qino";
@@ -10,7 +11,11 @@ import type { ApiTree, App, Ctx } from "@qino/qino";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-const list = (app: App, usr: number) => app.db.query`SELECT id, content FROM ai1_user_memory WHERE usr_id = ${usr} ORDER BY id`;
+/** How many of a user's memories are in the context: the strongest, those kept most and latest. */
+const IN_MIND = 10;
+
+const list = (app: App, usr: number, limit?: number) => app.db.query`SELECT id, content FROM ai1_user_memory m WHERE usr_id = ${usr}
+  ORDER BY ${sqlScore(app.db, "ai1_user_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`;
 
 async function own(app: App, usr: number, id: number): Promise<void> {
   if (!await app.db.one`SELECT id FROM ai1_user_memory WHERE id = ${id} AND usr_id = ${usr}`) throw new NotFoundError("No such memory");
@@ -18,10 +23,9 @@ async function own(app: App, usr: number, id: number): Promise<void> {
 
 async function keep(app: App, usr: number, content: string, replaces?: number): Promise<{ id: string }> {
   const table = app.db.table("ai1_user_memory"), values = { usr_id: usr, content, time: unixTime() };
-  if (!replaces) return { id: `u${await table.insert(values)}` };
-  await own(app, usr, replaces);
-  await table.update(replaces, values);
-  return { id: `u${replaces}` };
+  const id = replaces ? (await own(app, usr, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
+  hit(app.db, "ai1_user_memory", id);
+  return { id: `u${id}` };
 }
 
 /** The signed-in user's memories: to see and change them, and the agents' tools for them. */
@@ -49,11 +53,13 @@ export const api: ApiTree = {
   },
 };
 
-export function init(app: App, { signal }: { signal: AbortSignal }): void {
+export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
+  await scored(app.db, "ai1_user_memory", 30 * 86400);
+
   // into every turn: what is known about the user, and the tool to forget it; what is new about
   // them, decide sorts out when the agent remembers it (below)
   app.on("ai1.agent:turn", async (turn) => {
-    const memories = await list(app, turn.usrId);
+    const memories = await list(app, turn.usrId, IN_MIND);
     if (memories.length) turn.parts.push(`About the user you talk with:\n${memories.map((m) => `[u${m.id}] ${m.content}`).join("\n")}`);
     turn.tools.push(...toTools({ user: app.apiTree["ai1.user_memory"] }, { apis: { "/user/memories/:memory": ["delete"] } }));
   }, { signal });

@@ -1,4 +1,4 @@
-import { NotFoundError, unixTime } from "@qino/qino";
+import { NotFoundError, sql, unixTime } from "@qino/qino";
 import { hit, sqlScore } from "@qino/qino/score";
 
 import { keep } from "./search.ts";
@@ -8,15 +8,18 @@ import type { App } from "@qino/qino";
 // The agent's memory: short facts it keeps across sessions, always in its context, the strongest
 // first. What it keeps renewing stays strong, the rest fades (score).
 
+/** How many memories are in the context; the weaker ones are left to its search. */
+const IN_MIND = 10;
+
 /** Its memories, the strongest first. */
-export async function list(app: App, agent: number): Promise<{ id: number; content: string }[]> {
+export async function list(app: App, agent: number, limit?: number): Promise<{ id: number; content: string }[]> {
   return (await app.db.query`SELECT id, content FROM ai1_agent_memory m WHERE agent_id = ${agent}
-    ORDER BY ${sqlScore(app.db, "ai1_agent_memory", "m.id")} DESC, id`).map((r) => ({ id: Number(r.id), content: String(r.content) }));
+    ORDER BY ${sqlScore(app.db, "ai1_agent_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`).map((r) => ({ id: Number(r.id), content: String(r.content) }));
 }
 
-/** The memories for the context, or nothing while the agent remembers nothing. */
+/** The strongest memories for the context, or nothing while the agent remembers nothing. */
 export async function index(app: App, agent: number): Promise<string> {
-  const memories = await list(app, agent);
+  const memories = await list(app, agent, IN_MIND);
   return memories.length ? `Your memories:\n${memories.map((m) => `[${m.id}] ${m.content}`).join("\n")}` : "";
 }
 

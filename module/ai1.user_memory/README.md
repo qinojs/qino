@@ -8,7 +8,7 @@ with every agent, and only in their own sessions.
 
 Hooked into [ai1.agent](../ai1.agent/), so it can be left out or replaced by another module:
 
-- `ai1.agent:turn`: what is known about the user goes into the context ("About the user you talk
+- `ai1.agent:turn`: the strongest 10 of what is known about the user go into the context ("About the user you talk
   with", ids as `u5`), and the tool to forget it. To change one, the agent forgets it and remembers
   the new one: `decide()` sorts every new memory.
 - `ai1.agent:remember`: a new memory is theirs if it is about them, as a quick `decide()` judges;
