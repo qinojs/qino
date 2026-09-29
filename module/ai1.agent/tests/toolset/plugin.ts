@@ -1,6 +1,8 @@
-import type { App, Tool } from "@qino/qino";
+import { Access } from "@qino/qino";
 
-// A module with an ability declares it as a tool set, by name.
-export const ai1Tools = {
-  clock: (_app: App): Tool[] => [{ name: "now", description: "The time", parameters: { type: "object" }, execute: () => Promise.resolve("noon") }],
+import type { ApiTree } from "@qino/qino";
+
+// A module's api: an agent may use it as tools.
+export const api: ApiTree = {
+  clock: { get: { description: "The time", access: Access.PUBLIC, execute: () => "noon" } },
 };

@@ -1,10 +1,10 @@
-import { errMsg, unixTime } from "@qino/qino";
+import { errMsg, toTools, unixTime } from "@qino/qino";
 import { run } from "@qino/qino/ai1.tools";
 
 import * as memory from "./memory.ts";
 import * as search from "./search.ts";
 
-import type { App, Tool } from "@qino/qino";
+import type { ApiTree, App, Method, Tool } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai1";
 
 // One turn after the other per session, as a person answers: a message waits for the one before.
@@ -17,14 +17,30 @@ function inTurn<T>(app: App, session: number, fn: () => Promise<T>): Promise<T> 
   return turn;
 }
 
-/** The tools of the named sets, as the linked modules declare them (`ai1Tools`). */
-const toolsOf = (app: App, names: string[]): Tool[] =>
-  names.flatMap((name) => app.modules.linked().flatMap((mod) => mod.plugin.ai1Tools?.[name]?.(app) ?? []));
+/** The api below each path (`cms`, `cms/node`) as tools. */
+const toolsOf = (app: App, paths: string[]): Tool[] => paths.flatMap((path) => {
+  const segments = path.split("/"), node = segments.reduce<unknown>((at, seg) => (at as ApiTree)?.[seg], app.apiTree);
+  return node ? toTools(segments.reduceRight((below, seg) => ({ [seg]: below }), node) as ApiTree) : [];
+});
 
-/** Keep a message in the protocol; what was said is also made findable. */
+// What every agent can do about itself: its memories and its search, with its own id set.
+const OWN: Record<string, Method[]> = { "/:agent/memories": ["post"], "/:agent/memories/:memory": ["delete"], "/:agent/search": ["post"] };
+
+/** The agent's own routes as tools, the agent param taken out and always its id. */
+const ownTools = (app: App, agent: number): Tool[] =>
+  toTools({ ":agent": (app.apiTree["ai1.agent"] as ApiTree).agents[":agent"] } as ApiTree, { apis: OWN }).map((tool) => {
+    const { agent: _, ...properties } = (tool.parameters.properties ?? {}) as Record<string, unknown>;
+    const required = (tool.parameters.required as string[]).filter((name) => name !== "agent");
+    return { ...tool, parameters: { ...tool.parameters, properties, required }, execute: (args, ctx) => tool.execute({ ...args as object, agent }, ctx) };
+  });
+
+/** Keep a message in the protocol. In the background, what was said is made findable, and what the
+ *  user says strengthens the memories close to it, with the same vector. */
 async function save(app: App, session: number, agent: number, message: Message | { role: "error"; content: string }, model?: string) {
   const id = Number(await app.db.table("ai1_session_message").insert({ session_id: session, time: unixTime(), message: JSON.stringify(message), model }));
-  if (message.role === "user" || message.role === "assistant") search.keep(app, "ai1_session_message", { agent_id: agent, message_id: id }, search.textOf(message.content));
+  if (message.role !== "user" && message.role !== "assistant") return;
+  search.keep(app, "ai1_session_message", { agent_id: agent, message_id: id }, search.textOf(message.content))
+    .then(([vector]) => { if (message.role === "user" && vector) return search.associate(app, agent, vector); });
 }
 
 /** Answer `content` in `session`, from its agent's role and memories, the session so far and the
@@ -41,7 +57,7 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     await save(app, session, id, asked);
     const out = await run(app, {
       messages: [...system ? [{ role: "system" as const, content: system }] : [], ...past, asked],
-      tools: [...memory.tools(app, id), search.tool(app, id), ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))],
+      tools: [...ownTools(app, id), ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))],
       usrId: Number(agent.usr_id),
       onText,
     }).catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });

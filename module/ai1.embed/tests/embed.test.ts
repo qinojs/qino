@@ -46,8 +46,13 @@ export async function check(conn: string) {
     await assertRejects(() => index(app, "article_text", { article_id: 1 }, "cat"), Error, "article_id, lang");
 
     calls.length = 0;
-    await index(app, "article_text", { article_id: 1, lang: "en" }, "a cat");
-    assertEquals(calls, []); // unchanged
+    assertEquals(await index(app, "article_text", { article_id: 1, lang: "en" }, "a cat"), []); // unchanged: nothing embedded
+    assertEquals(calls, []);
+    const [cat] = await index(app, "article_text", { article_id: 2, lang: "en" }, "one cat");
+    assertEquals(cat, [1, 0]); // what it embedded
+    assertEquals(ids(await search(app, both, cat)), ids(await search(app, both, "cat"))); // searches as its text does
+    await remove(app, "article_text", { article_id: 2 });
+    calls.length = 0;
 
     settings.chunkChars = 100;
     const key = { article_id: 3, lang: "en" };

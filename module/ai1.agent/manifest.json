@@ -8,6 +8,7 @@
   ],
   "files": [
     "README.md",
+    "api.ts",
     "dbschema.json",
     "lib/memory.ts",
     "lib/search.ts",

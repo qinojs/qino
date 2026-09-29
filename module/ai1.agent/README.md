@@ -1,7 +1,7 @@
 # ai1.agent
 
-An agent is someone anyone can talk to: a role and the tool sets it may use. In a session it acts
-with the rights of the user it talks with, so it can never do more than that user.
+An agent is someone anyone can talk to: a role and the parts of the api it may use as tools. In a
+session it acts with the rights of the user it talks with, so it can never do more than that user.
 
 ```ts
 import { Agent, Session } from "@qino/qino/ai1.agent";
@@ -23,11 +23,27 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   to date itself. What it renews stays strong, the rest fades (`score`, a half-life of a month).
 - **Search** by meaning: its memories and the messages of all its sessions, with anyone, are
   embedded in the background (`ai1.embed`, where there is a collection); the tool `search` finds
-  them. A memory it finds grows stronger, as recalling does.
-- **Tool sets** are declared by the module that has the ability, by name; the agent keeps the names:
-  ```ts
-  export const ai1Tools = { cms: (app: App) => toTools(app.apiTree.cms) };
-  ```
+  them. A memory it finds grows stronger, as recalling does: the closer, the more.
+- **Association:** what the user says strengthens the memories close to it, the closer the more,
+  with the vector the message gets anyway to be findable. In the background: nobody waits for it.
+- **Tools** come from the api: `tools` are paths in it (`["cms"]`, `["cms/node"]`), each module's
+  api is its abilities. Its own routes (memories, search) every agent has, with its id set.
+
+## Api
+
+```
+agents                          post    create { system, tools } → { id }
+agents/:agent                   get · patch   its role and tools; anyone signed in may change them
+agents/:agent/sessions          post    start a session, as yourself → { id }
+agents/:agent/memories          get · post { content, replaces? }
+agents/:agent/memories/:memory  delete
+agents/:agent/search            post    { query }
+sessions/:session               get     its agent and everything said
+sessions/:session/ask           post    { content } → the answer
+```
+
+A session is only there for its user: to anyone else it answers like a missing one. The agent itself
+uses the same routes as tools.
 
 ## Like a brain
 
@@ -40,7 +56,7 @@ What the agent grows into, modelled on how a person thinks and remembers.
 | Deliberate thinking ("system 2") | slow, thorough | the model with its tools (`ai1.tools`) | built |
 | Episodic memory | experiences: what happened when | `search` in all past sessions; later a summary per session | search built |
 | Semantic memory | knowledge, facts | memories: short facts, always in context | built |
-| Attention | only what matters comes to mind | which memories get into the context: the strongest, later the fitting ones by vectors | later |
+| Attention | only what matters comes to mind | association strengthens the memories close to what is said; later only the strongest and the close ones in the context | association built |
 | Knowing people | what the other one is like | memories about the user (preferences, language) | with memories |
 | Sleep | consolidate, clean up, replay | sessions condensed to memories, memories merged, skills derived | next |
 | Procedural memory | skills, routines, habits | skills: instructions it writes itself | later |

@@ -61,8 +61,8 @@ async function vectors(app: App, c: Collection, input: EmbedInput): Promise<numb
 
 /** Embed `input` in `embedding_<name>` under `key`. Unchanged chunks are skipped, content known from
  *  elsewhere in the table reuses its vector, chunks a shorter text no longer has are removed; empty
- *  text removes all. */
-export async function index(app: App, name: string, key: Key, input: Input, options: Options = {}): Promise<void> {
+ *  text removes all. Resolves to the vectors it had to embed, e.g. to `search` with one of them. */
+export async function index(app: App, name: string, key: Key, input: Input, options: Options = {}): Promise<number[][]> {
   const c = await collection(app, options.collection), db = app.db, { table, keys } = tableOf(db, name), t = sql.id(table);
   if (!c) throw new Error("No embedding collection");
   const text = typeof input === "string";
@@ -72,15 +72,13 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
   const where = sql`${match(keys, key)} AND collection_id = ${c.id}`;
   const old = new Map((await db.query`SELECT chunk, hash FROM ${t} WHERE ${where}`).map((row) => [Number(row.chunk), row.hash]));
   const changed = contents.flatMap((_, i) => old.get(i) === hashes[i] ? [] : [i]);
-  if (!changed.length && old.size <= contents.length) return;
+  if (!changed.length && old.size <= contents.length) return [];
   await fit(db, table, c);
   const known = new Map<string, unknown>((await db.query`SELECT hash, ${stored(db)} AS embedding FROM ${t} e
     WHERE collection_id = ${c.id} AND ${sql.in("hash", changed.map((i) => hashes[i]))}`).map((row) => [row.hash, row.embedding]));
   const missing = changed.filter((i) => !known.has(hashes[i]));
-  if (missing.length) {
-    const values = await vectors(app, c, text ? { texts: missing.map((i) => contents[i]), purpose: "index" } : { images: contents, purpose: "index" });
-    for (const [n, i] of missing.entries()) known.set(hashes[i], await encode(db, table, values[n]));
-  }
+  const fresh = missing.length ? await vectors(app, c, text ? { texts: missing.map((i) => contents[i]), purpose: "index" } : { images: contents, purpose: "index" }) : [];
+  for (const [n, i] of missing.entries()) known.set(hashes[i], await encode(db, table, fresh[n]));
   const cols = sql.join(keys.map((col) => sql.id(col)), ", "), values = sql.join(keys.map((col) => sql`${key[col]}`), ", ");
   await db.transaction(async () => {
     await db.exec`DELETE FROM ${t} WHERE ${where} AND (chunk >= ${contents.length} OR ${sql.in("chunk", changed)})`;
@@ -89,6 +87,7 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
         VALUES (${values}, ${i}, ${c.id}, ${hashes[i]}, ${text ? contents[i] : ""}, ${vector(db, known.get(hashes[i]))})`;
     }
   });
+  return fresh;
 }
 
 /** Remove the vectors under `key` from every collection; a part of the key removes all it covers. */
@@ -99,12 +98,14 @@ export async function remove(app: App, name: string, key: Key): Promise<void> {
 
 /** The chunks nearest to `query`, most similar first. `names` are the tables to search, or map each
  *  to a filter on its rows (alias `e`; `true` for none) that applies before the limit. The query is
- *  embedded once. Check access before showing hits. */
-export async function search(app: App, names: string | Record<string, Sql | true>, query: Input, { limit = 10, collection: id }: Options & { limit?: number } = {}): Promise<Hit[]> {
+ *  embedded once, or is a vector of the collection's model already, as `index` gives them. Check
+ *  access before showing hits. */
+export async function search(app: App, names: string | Record<string, Sql | true>, query: Input | number[], { limit = 10, collection: id }: Options & { limit?: number } = {}): Promise<Hit[]> {
   const c = await collection(app, id), db = app.db;
   const filters = Object.entries(typeof names === "string" ? { [names]: true as const } : names).map(([name, where]) => ({ ...tableOf(db, name), where }));
   if (!c) return [];
-  const [values] = await vectors(app, c, typeof query === "string" ? { texts: [query], purpose: "query" } : { images: [query.image], purpose: "query" });
+  const [values] = Array.isArray(query) ? [query]
+    : await vectors(app, c, typeof query === "string" ? { texts: [query], purpose: "query" } : { images: [query.image], purpose: "query" });
   const hits: Hit[] = [];
   for (const { name, table, keys, where } of filters) {
     const value = await encode(db, table, values);

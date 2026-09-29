@@ -2,6 +2,7 @@ import { scored } from "@qino/qino/score";
 
 import type { App } from "@qino/qino";
 
+export { api } from "./api.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 /** Memories fade with a half-life of a month unless they are used. */
