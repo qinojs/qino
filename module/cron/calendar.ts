@@ -18,11 +18,12 @@ export function validateJob(id: string, job: Job): void {
 
 /** Fingerprint of everything that moves a job's slot — a change reschedules it. */
 export function scheduleKey(job: Job, timeZone: string): string {
-  const at = job.at;
-  if (typeof job.every === "number") return JSON.stringify([job.every, job.jitter ?? 0]);
-  if (job.every === "hour") return JSON.stringify([job.every, at?.minute ?? 0, at?.second ?? 0, job.jitter ?? 0, timeZone]);
-  if (job.every === "day") return JSON.stringify([job.every, at?.hour ?? 0, at?.minute ?? 0, at?.second ?? 0, job.jitter ?? 0, timeZone]);
-  return JSON.stringify([job.every, at?.weekday ?? "monday", at?.hour ?? 0, at?.minute ?? 0, at?.second ?? 0, job.jitter ?? 0, timeZone]);
+  const { every, at = {}, jitter = 0 } = job;
+  if (typeof every === "number") return JSON.stringify([every, jitter]);
+  const rest = [at.minute ?? 0, at.second ?? 0, jitter, timeZone];
+  if (every === "hour") return JSON.stringify([every, ...rest]);
+  if (every === "day") return JSON.stringify([every, at.hour ?? 0, ...rest]);
+  return JSON.stringify([every, at.weekday ?? "monday", at.hour ?? 0, ...rest]);
 }
 
 /** Next epoch second for a job. `nextPeriod` skips the current slot, after a run has just finished. */
@@ -56,7 +57,7 @@ function validateAt(id: string, job: Job): void {
   const at = job.at;
   if (at == null) return;
   if (typeof job.every === "number") throw new Error(`Cron job "${id}": at is only valid with calendar periods`);
-  if (!at || typeof at !== "object" || Array.isArray(at)) throw new Error(`Cron job "${id}": at must be an object`);
+  if (typeof at !== "object" || Array.isArray(at)) throw new Error(`Cron job "${id}": at must be an object`);
   const allowed = job.every === "hour" ? new Set(["minute", "second"])
     : job.every === "day" ? new Set(["hour", "minute", "second"])
     : new Set(["weekday", "hour", "minute", "second"]);
