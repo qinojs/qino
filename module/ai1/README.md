@@ -30,6 +30,10 @@ const { text: answer, truncated, model } = await text(app, "Hi"); // model: who 
 - `ai1_model_provider`: where the model runs: its name there (`provider_model`), `cost`, `speed`,
   `enabled`.
 
+[cms.backend.ai1](../cms.backend.ai1/) fills them: providers from a catalog of known ones, their
+models via `/models` (new ones off), context, prices and capabilities from models.dev, every
+Artificial Analysis benchmark as a score (key `core.keys["artificialanalysis.ai"]`), daily by cron.
+
 The candidates (model at a provider) go by the weights in `prefer`: `cost`
 (cheaper is better), `speed`, `quality` and any score. `quality` is the score named like the
 capability (`image`, `speak`: its own benchmark) where there is one, else `intelligence`. Each is scaled between the candidates' worst (0) and

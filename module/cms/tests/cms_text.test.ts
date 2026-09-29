@@ -3,6 +3,8 @@ import { invoke, requestStorage } from "@qino/qino";
 import { assertEquals, testContext, fakeRender } from "@qino/qino/tests";
 import { api } from "@qino/qino/cms.text";
 
+import type { TranslateInput } from "@qino/qino/ai1";
+
 import { cmsInstances } from "../lib/CMS.ts";
 
 class FakeText {
@@ -52,15 +54,12 @@ async function ctxWith(app: any) {
   return ctx;
 }
 
-function setting<T>(initial: T) {
-  let value = initial;
-  const item = function(next?: T) {
-    if (arguments.length) value = next as T;
-    return value;
-  } as any;
-  item.then = (resolve: (value: T) => unknown, reject: (reason: unknown) => unknown) =>
-    Promise.resolve(value).then(resolve, reject);
-  return item;
+/** ai1 with a single translator, answering through `answer`. */
+function translator(answer: (input: TranslateInput) => string) {
+  const mods = [{ name: "ai1", plugin: { ai1Adapters: { fake: { translate: (_call: unknown, input: TranslateInput) => Promise.resolve(answer(input)) } } } }];
+  const query = (strings: TemplateStringsArray) =>
+    strings.join("").includes("ai1_model_capability") ? [{ id: 1, model_id: 1, model: "fake", provider: "fake", type: "fake", endpoint: "" }] : [];
+  return { modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods }, db: { query }, settings: { core: { keys: {} } } };
 }
 
 Deno.test("cms.text: missing and empty texts are returned as untranslated", async () => {
@@ -93,71 +92,38 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
   const main = new FakeText(11, { de: "Hallo", en: "" });
   const node = new FakeNode(1, title, new Map([["main", main]]));
   const texts = new Map([[10, title], [11, main]]);
-  const fetchOrg = globalThis.fetch;
-  globalThis.fetch = ((url: string | URL) => {
-    const params = new URL(String(url)).searchParams;
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({
-        data: { translations: [{ translatedText: `${params.get("source")}-${params.get("target")}:${params.get("q")}` }] },
-      }),
-    } as Response);
-  }) as typeof fetch;
-
   const ctx = await ctxWith({
+    ...translator(({ text, from, to }) => `${from}-${to}:${text}`),
     languages: { all: ["de", "en", "fr"] },
     cms: { node: () => node },
     dbTexts: { text: (id: number) => texts.get(id) },
-    settings: {
-      "cms.text": {
-        "translation service": "google",
-        "translate char count": setting(0),
-      },
-      core: { keys: { "googleapis.com": "" } },
-    },
   });
 
-  try {
-    await requestStorage.run(ctx, async () => {
-      assertEquals(await invoke(api, "POST", "/page/1/translate-all-langs", { ifNeeded: true }), { count: 4, fail: 0 });
-      assertEquals(title.values, { de: "Titel", en: "de-en:Titel", fr: "en-fr:de-en:Titel" });
-      assertEquals(main.values, { de: "Hallo", en: "de-en:Hallo", fr: "en-fr:de-en:Hallo" });
-      assertEquals(await invoke(api, "POST", "/page/1/translate", { targetLang: "en", sourceLang: "clean" }), { count: 2, fail: 0 });
-    });
-  } finally {
-    globalThis.fetch = fetchOrg;
-  }
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "POST", "/page/1/translate-all-langs", { ifNeeded: true }), { count: 4, fail: 0 });
+    assertEquals(title.values, { de: "Titel", en: "de-en:Titel", fr: "en-fr:de-en:Titel" });
+    assertEquals(main.values, { de: "Hallo", en: "de-en:Hallo", fr: "en-fr:de-en:Hallo" });
+    assertEquals(await invoke(api, "POST", "/page/1/translate", { targetLang: "en", sourceLang: "clean" }), { count: 2, fail: 0 });
+  });
 
   assertEquals(title.values, { de: "Titel", en: "", fr: "en-fr:de-en:Titel" });
   assertEquals(main.values, { de: "Hallo", en: "", fr: "en-fr:de-en:Hallo" });
 });
 
-Deno.test("cms.text: camelCase translation inputs map to DeepL's field names", async () => {
-  const writes: unknown[] = [];
+Deno.test("cms.text: a text is translated through ai1 as html", async () => {
+  const writes: unknown[] = [], asked: unknown[] = [];
+  const ai1 = translator((input) => (asked.push(input), "hello"));
   const ctx = await ctxWith({
+    modules: ai1.modules,
+    settings: ai1.settings,
     languages: { all: ["de", "en"] },
     api: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
     cms: { node: () => ({ access: () => 3 }) },
-    db: { one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }), ensure: (value: unknown) => writes.push(value) }) },
-    settings: {
-      "cms.text": { "translation service": "deepl", "translate char count": setting(0) },
-      core: { keys: { "api.deepl.com": "test-key" } },
-    },
+    db: { ...ai1.db, one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }), ensure: (value: unknown) => writes.push(value) }) },
   });
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = (_url, init) => {
-    const params = init?.body as URLSearchParams;
-    assertEquals(params.get("source_lang"), "de");
-    assertEquals(params.get("target_lang"), "en");
-    assertEquals(params.get("text"), "Hallo");
-    return Promise.resolve(Response.json({ translations: [{ text: "hello" }] }));
-  };
-  try {
-    await requestStorage.run(ctx, async () => {
-      assertEquals(await invoke(api, "POST", "/text/7/translate", { targetLang: "en", sourceLang: "de" }), true);
-    });
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "POST", "/text/7/translate", { targetLang: "en", sourceLang: "de" }), true);
+  });
+  assertEquals(asked, [{ text: "Hallo", to: "en", from: "de", format: "html" }]);
   assertEquals(writes, [{ text_id: 7, lang: "en", text: "Hello" }]);
 });

@@ -1,4 +1,5 @@
 import { s, Access, ApiError, sql } from "@qino/qino";
+import { AiError, translate } from "@qino/qino/ai1";
 import { cms, sanitizeHtml } from "@qino/qino/cms";
 
 import type { ApiTree, Params, Ctx } from "@qino/qino";
@@ -129,58 +130,11 @@ class CmsTextService {
     return 1;
   }
 
-  async transl(text: string, targetLang: string, sourceLang: string): Promise<string | false> {
+  /** Through ai1: whichever translation service or chat model serves `translate` there. */
+  async transl(text: string, targetLang: string, sourceLang: string): Promise<string> {
     if (sourceLang && sourceLang === targetLang) return text; // nothing to translate
-    const service = String(await this.#app.settings["cms.text"]["translation service"] ?? "");
-    if (service === "google") return this.googleTranslate(text, sourceLang, targetLang);
-    if (service === "deepl") return this.deeplTranslate(text, sourceLang, targetLang);
-    throw new ApiError(400, "No translation service configured");
-  }
-
-  async deeplTranslate(text: string, sourceLang: string, targetLang: string): Promise<string | false> {
-    console.warn("deprecated? deepl used");
-    const settings = this.#app.settings["cms.text"];
-    const params = new URLSearchParams({
-      text,
-      source_lang: sourceLang,
-      target_lang: targetLang,
-      tag_handling: "xml",
-      split_sentences: "1",
-      preserve_formatting: "0",
-      auth_key: String(await this.#app.settings.core.keys["api.deepl.com"] ?? ""),
-    });
-    const resp = await fetch("https://api.deepl.com/v2/translate", {
-      method: "POST",
-      body: params,
-    }).then(r => r.json()) as { translations?: { text: string }[] };
-    const translation = resp?.translations?.[0]?.text ?? false;
-    if (translation) {
-      const prev = Number(await settings["translate char count"] ?? "0");
-      settings["translate char count"](prev + text.length);
-    }
-    return translation;
-  }
-
-  async googleTranslate(text: string, sourceLang: string, targetLang: string): Promise<string | false> {
-    const settings = this.#app.settings["cms.text"];
-    const key = String(await this.#app.settings.core.keys["googleapis.com"] ?? "");
-    const params = new URLSearchParams({
-      q: text,
-      target: targetLang,
-      format: "html",
-      source: sourceLang,
-      model: "nmt",
-      key,
-    });
-    const resp = await fetch("https://translation.googleapis.com/language/translate/v2?" + params);
-    if (!resp.ok) { console.error("[googleTranslate]", resp.status, await resp.text()); throw new ApiError(502, "Translation service request failed"); }
-    const result = await resp.json() as { data?: { translations?: { translatedText: string }[] } };
-    const translation = result?.data?.translations?.[0]?.translatedText ?? false;
-    if (translation) {
-      const prev = Number(await settings["translate char count"] ?? "0");
-      settings["translate char count"](prev + text.length);
-    }
-    return translation;
+    return await translate(this.#app, { text, to: targetLang, from: sourceLang || undefined, format: "html" })
+      .catch((e) => { throw e instanceof AiError ? new ApiError(e.status === 504 ? 504 : 502, e.message) : e; });
   }
 
   async history(textId: number, lang: string) {
