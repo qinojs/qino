@@ -23,10 +23,14 @@ Deno.test("sandbox: a failing capability rejects in the code with name, message 
   using box = new Sandbox({
     capabilities: { fail: () => { throw Object.assign(new Error("nope"), { name: "ApiError", code: "denied" }); } },
   });
-  assertEquals(
-    await box.run(async (_: unknown, { fail }: any) => { try { await fail(); } catch (e: any) { return [e.name, e.message, e.code]; } }),
-    ["ApiError", "nope", "denied"],
-  );
+  const caught = await box.run(async (_: unknown, { fail }: any) => {
+    try {
+      await fail();
+    } catch (e: any) {
+      return [e.name, e.message, e.code];
+    }
+  });
+  assertEquals(caught, ["ApiError", "nope", "denied"]);
 });
 
 Deno.test("sandbox: no files, no network, no environment", async () => {

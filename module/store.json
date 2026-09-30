@@ -165,6 +165,7 @@
     "messaging.webpush": {},
     "oauth_server": {},
     "sandbox": {},
+    "sandbox.flow": {},
     "score": {},
     "security": {},
     "seo": {},

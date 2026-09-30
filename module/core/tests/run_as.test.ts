@@ -1,4 +1,4 @@
-import { App, getCtx, runAs } from "../mod.ts";
+import { App, getCtx, requestStorage, runAs } from "../mod.ts";
 import { assertEquals, assertRejects } from "./deps.ts";
 
 Deno.test("runAs: a context of its own, with the user's rights, through its actor", async () => {
@@ -26,6 +26,15 @@ Deno.test("runAs: a context of its own, with the user's rights, through its acto
     });
     assertEquals(await app.db.one`SELECT log_id FROM grp`, Number(logId));
     assertEquals(String(await app.db.one`SELECT client_id FROM log WHERE id = ${logId}`), first.client);
+
+    // `state` is there before the setup writes, so a listener can tell those writes are this run's
+    const writes: unknown[] = [];
+    const stop = new AbortController();
+    const mark = () => void writes.push(requestStorage.getStore()?.state.mark);
+    app.db.on("table:insert-after", mark, { signal: stop.signal });
+    await runAs(app, 7, "fresh", () => {}, { state: { mark: "mine" } }); // a new actor: its client is inserted
+    stop.abort();
+    assertEquals(writes.length > 0 && writes.every((mark) => mark === "mine"), true);
   } finally {
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
     await app.db.close();

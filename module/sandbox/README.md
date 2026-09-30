@@ -6,8 +6,9 @@ only the functions it is given (capabilities); their calls come back to the app 
 ```ts
 import { Sandbox } from "@qino/qino/sandbox";
 
-const box = new Sandbox({ capabilities: { tools: { get_core_languages: () => ({ all: ["de", "en"] }) } }, timeout: 5000 });
-await box.run(async (input, { tools }) => (await tools.get_core_languages()).all.length + input, 1); // 3
+const languages = () => ({ all: ["de", "en"] });
+const box = new Sandbox({ capabilities: { tools: { languages } }, timeout: 5000 });
+await box.run(async (input, { tools }) => (await tools.languages()).all.length + input, 1); // 3
 box.close();
 ```
 

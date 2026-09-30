@@ -3,7 +3,11 @@ import { dirname, join } from "node:path";
 
 type Fn = (...args: any[]) => unknown;
 type Capabilities = { [name: string]: Fn | Capabilities };
-type Run = { resolve: (value: any) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> };
+type Run = {
+  resolve: (value: any) => void;
+  reject: (e: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
 
 // Errors cross as plain data, both ways; the worker gets these as source, like boot().
 const pack = (e: any) => ({ name: e?.name, message: e?.message ?? String(e), code: e?.code, data: e?.data });
@@ -45,10 +49,14 @@ export class Sandbox {
   #runs = new Map<number, Run>();
   #seq = 0;
 
-  constructor({ capabilities = {}, timeout = 30_000 }: { capabilities?: Capabilities; timeout?: number } = {}) {
+  constructor(
+    { capabilities = {}, timeout = 30_000 }: { capabilities?: Capabilities; timeout?: number } = {},
+  ) {
     this.#timeout = timeout;
     const walk = (o: Capabilities, path: string[]) => {
-      for (const [k, v] of Object.entries(o)) typeof v === "function" ? this.#fns.set([...path, k].join("\0"), v) : walk(v, [...path, k]);
+      for (const [k, v] of Object.entries(o)) {
+        typeof v === "function" ? this.#fns.set([...path, k].join("\0"), v) : walk(v, [...path, k]);
+      }
     };
     walk(capabilities, []);
   }
@@ -58,7 +66,8 @@ export class Sandbox {
     const worker = this.#worker ??= this.#start();
     const id = ++this.#seq;
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => this.#end(new Error(`Sandbox: no result after ${this.#timeout} ms`)), this.#timeout);
+      const late = () => this.#end(new Error(`Sandbox: no result after ${this.#timeout} ms`));
+      const timer = setTimeout(late, this.#timeout);
       this.#runs.set(id, { resolve, reject, timer });
       worker.postMessage({ run: id, source: String(source), input });
     });
@@ -75,9 +84,14 @@ export class Sandbox {
 
   #start(): Worker {
     // without the flag Deno exits the whole process instead of throwing, so ask first
-    if (!restrictable()) throw new Error("Sandbox needs Deno's worker-options: --unstable-worker-options or \"unstable\": [\"worker-options\"] in deno.json");
-    const source = `const pack = ${pack}, unpack = ${unpack}; (${boot})(${JSON.stringify([...this.#fns.keys()])});`;
-    const worker = new Worker("data:text/javascript," + encodeURIComponent(source), { type: "module", deno: { permissions: "none" } } as WorkerOptions);
+    if (!restrictable()) {
+      const how = `--unstable-worker-options, or "unstable": ["worker-options"] in deno.json`;
+      throw new Error(`Sandbox needs Deno's worker-options: ${how}`);
+    }
+    const keys = JSON.stringify([...this.#fns.keys()]);
+    const source = `const pack = ${pack}, unpack = ${unpack}; (${boot})(${keys});`;
+    const options = { type: "module", deno: { permissions: "none" } } as WorkerOptions;
+    const worker = new Worker("data:text/javascript," + encodeURIComponent(source), options);
     worker.onmessage = ({ data }) => data.call ? this.#call(worker, data) : this.#done(data);
     worker.onerror = (e) => (e.preventDefault(), this.#end(new Error(`Sandbox: ${e.message}`)));
     return worker;
