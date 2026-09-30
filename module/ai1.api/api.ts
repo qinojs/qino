@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { Access, ApiError, Output, s } from "@qino/qino";
-import { AiError, request } from "@qino/qino/ai1";
+import { AiError, decide, request } from "@qino/qino/ai1";
 
 import type { ApiTree, Ctx, Params } from "@qino/qino";
 
@@ -44,9 +44,17 @@ export const api: ApiTree = {
     if (typeof input.text !== "string" && !(Array.isArray(input.text) && input.text.every((t) => typeof t === "string"))) throw new ApiError(400, "text: a string or strings");
     return request(ctx.app, "translate", input, opts as any);
   }),
-  decide: capability("decide", "Pick one of the options (classify, route, judge); content: a string or parts with images", {
-    content: s.any(), question: s.optional(s.string()), options: s.array(s.string()),
-  }),
+  decide: post(
+    "Pick one of the options (classify, route, judge); without options a yes/no question. content: a string or " +
+      "parts with images. Returns { choice, probabilities, confidence }",
+    {
+      content: s.any(),
+      question: s.optional(s.string()),
+      options: s.optional(s.any()).describe("Names, or { name: what it means }; none: yes/no"),
+      opts,
+    },
+    ({ opts, ...input }, ctx) => decide(ctx.app, input as any, opts as any),
+  ),
   embed: post("Embedding vectors for texts", { texts: s.array(s.string()), purpose: s.optional(s.string()), opts }, ({ opts, purpose, texts }, ctx) => {
     if (purpose !== undefined && purpose !== "index" && purpose !== "query") throw new ApiError(400, "purpose: index or query");
     return request(ctx.app, "embed", { texts, purpose }, opts as any);

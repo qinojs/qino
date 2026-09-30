@@ -31,7 +31,8 @@ export type TextOutput = { text: string; toolCalls: ToolCall[]; truncated: boole
 export type StructuredInput<T> = Omit<TextInput, "tools"> & { schema: StandardSchema<T> | Record<string, unknown> };
 export type EmbedInput = ({ texts: string[]; images?: never } | { images: string[]; texts?: never }) & { purpose?: "index" | "query" };
 export type TranslateInput = { text: string | string[]; to: string; from?: string; format?: "md" | "html" };
-export type DecideInput = { content: string | Part[]; question?: string; options: string[] };
+/** As adapters get it: `options` by name with what each means; none is a yes/no question. */
+export type DecideInput = { content: string | Part[]; question?: string; options?: Record<string, string> };
 
 /** A plain string is short for one user message. */
 export const text = (app: App, input: string | TextInput, opts?: Opts): Promise<TextOutput> =>
@@ -47,5 +48,20 @@ export const transcribe = (app: App, input: { file: File; language?: string }, o
 export const speak = (app: App, input: { text: string; voice?: string; format?: string }, opts?: Opts): Promise<string> => request(app, "speak", input, opts);
 /** One text or many at once; the answer has the same shape. */
 export const translate = <T extends string | string[]>(app: App, input: TranslateInput & { text: T }, opts?: Opts): Promise<T> => request(app, "translate", input, opts);
-/** Pick one of `options` (classify, route, judge on a scale), for text or images. */
-export const decide = (app: App, input: DecideInput, opts?: Opts): Promise<{ choice: string; probabilities?: Record<string, number> }> => request(app, "decide", input, opts);
+/** Pick one of `options` (classify, route, judge), for text or images; `options` as names, or names
+ *  with what each means. Without, a yes/no question: does it hold? Answers every option's probability,
+ *  the likeliest one, and how clear that is (1 all on one, 0 even). */
+export async function decide(
+  app: App,
+  { options, ...input }: Omit<DecideInput, "options"> & { options?: string[] | Record<string, string> },
+  opts?: Opts,
+): Promise<{ choice: string; probabilities: Record<string, number>; confidence: number }> {
+  const named = Array.isArray(options) ? Object.fromEntries(options.map((o) => [o, o])) : options;
+  const names = Object.keys(named ?? { yes: "", no: "" });
+  // a provider without probabilities: all on its choice
+  type Answer = { choice: string; probabilities?: Record<string, number> };
+  const answer: Answer = await request(app, "decide", { ...input, options: named }, opts);
+  const { choice, probabilities = Object.fromEntries(names.map((n) => [n, n === choice ? 1 : 0])) } = answer;
+  const entropy = -Object.values(probabilities).reduce((sum, p) => sum + (p > 0 ? p * Math.log(p) : 0), 0);
+  return { choice, probabilities, confidence: names.length > 1 ? 1 - entropy / Math.log(names.length) : 1 };
+}

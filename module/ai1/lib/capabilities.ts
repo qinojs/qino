@@ -57,13 +57,16 @@ export const ai1Capabilities: Record<string, Capability> = {
   decide: {
     needs,
     via: {
-      structured: async ({ content, question, options }: DecideInput, next) => {
+      structured: async ({ content, question, options = { yes: "yes", no: "no" } }: DecideInput, next) => {
+        const described = Object.entries(options)
+          .map(([name, meaning]) => meaning === name ? name : `${name}: ${meaning}`);
+        const ask = `${question ?? "Classify the user's input."} Answer with exactly one of these options:`;
         const { choice } = await next({
-          messages: prompt(`${question ?? "Classify the user's input."} Answer with exactly one of these options: ${JSON.stringify(options)}`, content),
+          messages: prompt(`${ask} ${JSON.stringify(described)}`, content),
           schema: s.object({ choice: s.string() }),
           temperature: 0,
         });
-        if (!options.includes(choice)) throw new AiError(`Not an option: ${choice}`);
+        if (!(choice in options)) throw new AiError(`Not an option: ${choice}`);
         return { choice };
       },
     },

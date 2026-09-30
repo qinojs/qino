@@ -14,12 +14,18 @@ model, falls back when it fails and reports each attempt.
 import { decide, text, translate } from "@qino/qino/ai1";
 
 await translate(app, { text: "<p>Hallo</p>", from: "de", to: "en", format: "html" });
-await decide(app, { content: mail, question: "Is this spam?", options: ["yes", "no"] });
+await decide(app, { content: mail, question: "Is this spam?" });
+// { choice: "yes", probabilities: { yes: .9, no: .1 }, confidence: .53 }
 await translate(app, { text: ["Titel", "Hallo"], to: "en" }); // many at once: ["Title", "Hello"]
 const { text: answer, truncated, model } = await text(app, "Hi"); // model: who answered
 ```
 
 `text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`: each is `request(app, capability, input)`.
+
+**`decide`** picks one of `options` — names, or `{ name: what it means }`; without options it is a yes/no
+question (does it hold?). It answers `{ choice, probabilities, confidence }`: every option's probability,
+the likeliest one, and how clear that is (1 − entropy / log n: 1 all on one, 0 even). Jev decides natively
+(a noul without options); a provider without probabilities puts all on its choice.
 
 ## Models, providers, capabilities
 

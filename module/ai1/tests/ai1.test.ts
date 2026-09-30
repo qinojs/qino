@@ -103,8 +103,21 @@ Deno.test("ai1: capabilities fall back through others", async () => {
 });
 
 Deno.test("ai1: decide via structured via text", async () => {
-  const judge: Adapter = { text: () => Promise.resolve({ text: '```json\n{"choice":"no"}\n```', toolCalls: [] }) };
-  assertEquals(await decide(await app({ m: ["text"] }, { fake: judge }), { content: "x", options: ["yes", "no"] }), { choice: "no" });
+  let asked = "";
+  const judge: Adapter = {
+    text: (_call, { messages }) => {
+      asked = String(messages[1].content); // after the JSON instruction
+      return Promise.resolve({ text: '```json\n{"choice":"no"}\n```', toolCalls: [] });
+    },
+  };
+  const judging = await app({ m: ["text"] }, { fake: judge });
+  // a provider without probabilities: all on its choice, and as clear as can be
+  const all = { choice: "no", probabilities: { yes: 0, no: 1 }, confidence: 1 };
+  assertEquals(await decide(judging, { content: "x", options: ["yes", "no"] }), all);
+  assertEquals(await decide(judging, { content: "x", question: "Is it done?" }), all); // no options: yes or no
+  assertEquals(asked.includes('["yes","no"]'), true);
+  await decide(judging, { content: "x", options: { yes: "It is finished", no: "A draft" } }); // with what each means
+  assertEquals(asked.includes('["yes: It is finished","no: A draft"]'), true);
   const liar: Adapter = { text: () => Promise.resolve({ text: '{"choice":"maybe"}', toolCalls: [] }) };
   const lying = await app({ m: ["text"] }, { fake: liar });
   await assertRejects(() => decide(lying, { content: "x", options: ["yes", "no"] }), AiError, "Not an option");
@@ -311,8 +324,29 @@ Deno.test("ai1: openrouter decides with Jev (System One)", async () => {
   }, async () => {
     const testApp = await app({ "typesafe/jev-1.13": ["decide"] });
     await testApp.db.exec`UPDATE ai1_provider SET type = 'openrouter', endpoint = 'https://or.test/v1'`;
-    assertEquals(await decide(testApp, { content: "charged twice", question: "Which team?", options: ["billing", "technical"] }), { choice: "billing", probabilities: { technical: 0, billing: 1 } });
-    assertEquals(body, { model: "typesafe/jev-1.13", state: "charged twice", questions: { decide: { type: "choice", instructions: "Which team?", criteria: { billing: "billing", technical: "technical" } } } });
+    const options = { billing: "Payments and invoices", technical: "Something is broken" };
+    assertEquals(await decide(testApp, { content: "charged twice", question: "Which team?", options }),
+      { choice: "billing", probabilities: { technical: 0, billing: 1 }, confidence: 1 });
+    const question = { type: "choice", instructions: "Which team?", criteria: options };
+    assertEquals(body, { model: "typesafe/jev-1.13", state: "charged twice", questions: { decide: question } });
+  });
+});
+
+Deno.test("ai1: without options Jev answers a noul: the probability that it holds", async () => {
+  let body: any;
+  await withFetch((_url, init) => {
+    body = JSON.parse(String(init?.body));
+    const answers = { decide: { type: "noul", noul: 0.8 } };
+    return Response.json({ answers, usage: { input_tokens: 10, output_tokens: 0 } });
+  }, async () => {
+    const testApp = await app({ "typesafe/jev-1.13": ["decide"] });
+    await testApp.db.exec`UPDATE ai1_provider SET type = 'openrouter', endpoint = 'https://or.test/v1'`;
+    const decision = await decide(testApp, { content: "Hallo Welt.", question: "Is the text finished?" });
+    const { choice, probabilities } = decision;
+    assertEquals([choice, probabilities.yes, probabilities.no.toFixed(2)], ["yes", 0.8, "0.20"]);
+    assertEquals(decision.confidence.toFixed(2), "0.28"); // 1 - entropy / log 2
+    const criteria = { true: "yes", false: "no" };
+    assertEquals(body.questions.decide, { type: "noul", instructions: "Is the text finished?", criteria });
   });
 });
 
@@ -331,7 +365,7 @@ Deno.test("ai1: decide on an image needs a vision model; structured takes a JSON
   const answer: Adapter = { structured: (call) => Promise.resolve({ choice: call.model === "seeing" ? "invoice" : "?" }) };
   const image = [{ type: "image" as const, url: "data:," }];
   const withVision = await app({ blind: ["structured"], seeing: ["structured", "vision"] }, { fake: answer });
-  assertEquals(await decide(withVision, { content: image, options: ["invoice", "letter"] }), { choice: "invoice" });
+  assertEquals((await decide(withVision, { content: image, options: ["invoice", "letter"] })).choice, "invoice");
   const json: Adapter = { text: () => Promise.resolve({ text: '{"n":1}', toolCalls: [], truncated: false }) };
   assertEquals(await structured(await app({ m: ["text"] }, { fake: json }), { messages: [{ role: "user", content: "?" }], schema: { type: "object" } }), { n: 1 });
 });
