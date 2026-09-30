@@ -164,6 +164,7 @@
     "messaging.telegram": {},
     "messaging.webpush": {},
     "oauth_server": {},
+    "sandbox": {},
     "score": {},
     "security": {},
     "seo": {},

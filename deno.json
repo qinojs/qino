@@ -54,6 +54,7 @@
     "./messaging.telegram": "./module/messaging.telegram/mod.ts",
     "./messaging.webpush": "./module/messaging.webpush/mod.ts",
     "./oauth_server": "./module/oauth_server/mod.ts",
+    "./sandbox": "./module/sandbox/mod.ts",
     "./score": "./module/score/mod.ts",
     "./security": "./module/security/mod.ts",
     "./shorturl": "./module/shorturl/mod.ts",
