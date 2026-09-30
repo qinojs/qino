@@ -1,10 +1,9 @@
-import { sql } from "@qino/qino";
+import { NUM_TYPES, sql } from "@qino/qino";
 import { tableIndexes } from "@qino/qino/cms.backend.superuser.db";
 
 import type { Db, Row, Sql } from "@qino/qino";
 
 const TEXT_TYPES = new Set(["char", "varchar", "text", "tinytext", "mediumtext", "longtext", "enum", "set", "character varying", "citext", "uuid", "json", "jsonb"]);
-const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double", "real", "numeric"]);
 const SMALL_ROWS = 300; // below this a full scan is cheap enough to search every field for substrings
 const LIMIT = 50;
 const WORDS = 4;

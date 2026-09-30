@@ -41,7 +41,7 @@ export { Sql, sql } from "./deps.ts";
 export { tableRef, scopeCache } from "./lib/db/dbScope.ts";
 export type { DbScope } from "./lib/db/dbScope.ts";
 export { DbRow } from "./lib/db/DbRow.ts";
-export { DbField } from "./lib/db/DbField.ts";
+export { DbField, NUM_TYPES } from "./lib/db/DbField.ts";
 
 export { DbFile, deleteUnlinkedDbFiles } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
