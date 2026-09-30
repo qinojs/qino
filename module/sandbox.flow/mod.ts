@@ -20,10 +20,10 @@ type Trace = {
 /** A flow: when the event fires on the host, its steps run one after the other. */
 export type Flow = {
   description: string;
-  on: { source: string; type: string }; // host from the app ("app", "db") and event name
+  on: { host: string; event: string }; // host from the app ("app", "db") and the event it fires
   owner: number; // tools run with this user's rights
   tools?: string[]; // the tools it may call, by name
-  test?: boolean; // only `get_*` tools take effect, the other calls are recorded
+  test?: boolean; // unless false: only `get_*` tools take effect, the other calls are recorded
   steps: Step[];
 };
 
@@ -47,8 +47,8 @@ export function listen(
 ): void {
   const box = open();
   signal?.addEventListener("abort", () => box.sandbox.close(), { once: true });
-  const host = flow.on.source === "app" ? app : (app as any)[flow.on.source];
-  host.on(flow.on.type, (e: unknown) => {
+  const host = flow.on.host === "app" ? app : (app as any)[flow.on.host];
+  host.on(flow.on.event, (e: unknown) => {
     const ctx = requestStorage.getStore();
     if (ctx?.state.flow === flow) return;
     // in the background: the emitter never waits for a flow
@@ -88,7 +88,7 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
     tools ??= new Map(toTools(app.apiTree).map((t) => [t.name, t]));
     const tool = flow.tools?.includes(name) ? tools.get(name) : undefined;
     if (!tool) throw new Error(`flow: tool ${name} not allowed`);
-    if (flow.test && !name.startsWith("get_")) return void (call.skipped = true);
+    if (flow.test !== false && !name.startsWith("get_")) return void (call.skipped = true);
     const ctx = await inRun();
     return call.result = await requestStorage.run(ctx, () => tool.execute(args, ctx));
   });

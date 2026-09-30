@@ -1,0 +1,61 @@
+{
+  "properties": {
+    "flow": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "description": {
+            "type": "string",
+            "description": "What the flow does, in a sentence — the heading of its steps"
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The object whose event starts it, from the app: app, db"
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "The event's name, e.g. table:update-after"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "The owner: its tools run with this user's rights"
+          },
+          "tools": {
+            "type": "string",
+            "description": "The tools it may call, by name, as a JSON array"
+          },
+          "steps": {
+            "type": "string",
+            "description": "The steps as a JSON array: { description, fn } with fn as source, or { description, debounce: { ms, by } }"
+          },
+          "active": {
+            "type": "boolean",
+            "default": false,
+            "description": "Listens to its event"
+          },
+          "test": {
+            "type": "boolean",
+            "default": true,
+            "description": "Only get_* tools take effect, the other calls are recorded"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "description": "The request that last changed it"
+          }
+        },
+        "required": ["id", "host", "event", "usr_id", "steps"]
+      }
+    }
+  }
+}

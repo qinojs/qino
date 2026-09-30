@@ -27,7 +27,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
   }
 }
 
-const on = { source: "db", type: "table:update-after" };
+const on = { host: "db", event: "table:update-after" };
 const flow = (steps: Flow["steps"], more: Partial<Flow> = {}): Flow =>
   ({ description: "test", on, owner: 7, steps, ...more });
 
@@ -65,7 +65,7 @@ Deno.test("sandbox.flow: only allowed tools exist; a test run records what would
         // @ts-ignore: names of the wrapper around the step must not reach its code
         typeof tool + typeof input,
       ],
-    }], { tools: ["post_test_echo", "get_test_who"], test: true }), 1);
+    }], { tools: ["post_test_echo", "get_test_who"] }), 1); // a flow tests unless told otherwise
     assertEquals(trace.steps[0].value, [["post_test_echo", "get_test_who"], undefined, 7, "undefinedundefined"]);
     assertEquals(trace.steps[0].calls, [
       { tool: "post_test_echo", args: { a: 1 }, skipped: true },
@@ -95,7 +95,7 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
           description: "rename",
           fn: async (e: any, { tools }: any) => (await tools.post_test_rename({ name: "Bob" }), e.table),
         },
-      ], { tools: ["post_test_rename"] }), { signal: stop.signal, report });
+      ], { tools: ["post_test_rename"], test: false }), { signal: stop.signal, report });
     });
     await app.db.table("usr").update(7, { family_name: "Smith" }); // its run renames user 7: an update again
     await done;

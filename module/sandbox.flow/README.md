@@ -9,9 +9,10 @@ import { listen } from "@qino/qino/sandbox.flow";
 
 listen(app, {
   description: "Deutsche Texte von mir übersetzen, wenn sie fertig aussehen",
-  on: { source: "db", type: "table:update-after" },
+  on: { host: "db", event: "table:update-after" },
   owner: 9,
   tools: ["post_ai1Api_decide", "get_core_languages", "post_cmsText_text_translate"],
+  test: false, // tried out, now for real
   steps: [
     {
       description: "Nur deutsche Texte, die ich geändert habe",
@@ -53,7 +54,7 @@ listen(app, {
   their run, so traces stay apart. A timeout in one run ends the worker and the flow's other runs.
 - **`debounce`:** a step that waits `ms`; if a later run of the flow reaches it with the same key
   (`by`, a path into the value) meanwhile, this run ends as `superseded`.
-- **`test: true`:** only `get_*` tools take effect; the others are recorded as `skipped`.
+- **`test`** is on unless `false`: only `get_*` tools take effect, the others are recorded as `skipped`.
 - **The trace** (`run()` returns it, `listen()` hands it to `report`): per step its result, error and
   tool calls; `end` is `done`, `stopped`, `superseded` or `error`.
 - **Own events are ignored:** the run's request context is marked from the start (`runAs` with
@@ -63,7 +64,9 @@ listen(app, {
 
 ## Not yet
 
-- **Nothing persists:** flows are given in code, a debounce wait dies with the process. Tables for flows
-  and waiting runs, resuming after a restart: [PLAN-automation.md](../../../PLAN-automation.md).
+- **Flows are given in code:** a table for them is under way.
+- **Runs live in memory:** a crash or restart loses a running run and a debounce wait (at-most-once).
+  Later, per flow: store the event before the run, delete it after, rerun what is left on start
+  (at-least-once, steps idempotent).
 - **No stored traces:** they go to `report`; what a run changed is in the core log (actor
   `sandbox.flow`). A table for them once a backend or planner needs one.
