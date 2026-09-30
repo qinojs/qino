@@ -50,7 +50,12 @@ Deno.test("sandbox.flow: a falsy result stops, an error ends the run", () =>
       { description: "never", fn: () => 1 },
     ]), 1);
     assertEquals([stopped.end, stopped.steps.length], ["stopped", 1]);
-    const failed = await run(app, flow([{ description: "boom", fn: () => { throw new Error("boom"); } }]), 1);
+    const passed = await run(app, flow([
+    { description: "odd?", fn: (n: number) => n % 2 === 1 },
+    { description: "+1", fn: (n: number) => n + 1 },
+  ]), 3);
+  assertEquals([passed.end, passed.steps.map((s) => s.value)], ["done", [3, 4]]); // true passed 3 on
+  const failed = await run(app, flow([{ description: "boom", fn: () => { throw new Error("boom"); } }]), 1);
     assertEquals([failed.end, failed.steps[0].error], ["error", "boom"]);
   }));
 
@@ -90,7 +95,7 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
     const done = new Promise((resolve) => {
       const report = (t: any) => (traces.push(t), t.end === "done" && resolve(t));
       listen(app, flow([
-        { description: "family names only", fn: (e: any) => e.table === "usr" && "family_name" in e.data && e },
+        { description: "family names only", fn: (e: any) => e.table === "usr" && "family_name" in e.data },
         {
           description: "rename",
           fn: async (e: any, { tools }: any) => (await tools.post_test_rename({ name: "Bob" }), e.table),

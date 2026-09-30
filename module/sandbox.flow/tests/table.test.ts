@@ -2,6 +2,8 @@
 import { Access, App, s } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
+import { history } from "../mod.ts";
+
 const settle = () => new Promise((r) => setTimeout(r, 300)); // runs go in the background
 
 Deno.test("sandbox.flow: active rows listen, changed rows anew, inactive or deleted ones not", async () => {
@@ -27,7 +29,7 @@ Deno.test("sandbox.flow: active rows listen, changed rows anew, inactive or dele
     await app.settings.core.url("https://example.test/");
     await usr.insert({ id: 7, username: "ann@example.test", active: true });
     const steps = [
-      { description: "family names only", fn: "(e) => e.table === 'usr' && 'family_name' in e.data && e" },
+      { description: "family names only", fn: "(e) => e.table === 'usr' && 'family_name' in e.data" },
       {
         description: "greet",
         fn: "async (e, { tools }) => (await tools.post_test_greet({ name: 'Hi ' + e.data.family_name }), 1)",
@@ -56,3 +58,33 @@ Deno.test("sandbox.flow: active rows listen, changed rows anew, inactive or dele
     await app.db.close();
   }
 });
+
+Deno.test("sandbox.flow: a run ends with the version it began with, though its flow is saved meanwhile", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
+  app.modules.add(new URL("../plugin.ts", import.meta.url));
+  await app.init();
+  try {
+    await app.settings.core.url("https://example.test/");
+    await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
+    const steps = [
+      { description: "usr only", fn: "(e) => e.table === 'usr'" },
+      { description: "slow", fn: "() => new Promise((r) => setTimeout(() => r('done'), 300))" },
+    ];
+    const flows = app.db.table("flow");
+    const id = Number(await flows.insert({
+      description: "slow", host: "db", event: "table:update-after", usr_id: 7,
+      steps: JSON.stringify(steps), active: true,
+    }));
+    await app.db.table("usr").update(7, { family_name: "Smith" }); // starts a run
+    await new Promise((r) => setTimeout(r, 100));
+    await flows.update(id, { description: "saved meanwhile" }); // listens anew
+    await flows.update(id, { test: false }); // and once more, right after
+    await new Promise((r) => setTimeout(r, 600));
+    assertEquals(history(app, id).runs.map((run) => [run.end, (run.steps.at(-1) as any).value]), [["done", "done"]]);
+  } finally {
+    await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
+    await app.db.close();
+  }
+});
+

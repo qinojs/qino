@@ -2,6 +2,12 @@
 import { getCtx, requestStorage, runAs, toTools } from "@qino/qino";
 import { Sandbox } from "@qino/qino/sandbox";
 
+import { hosts } from "./lib/hosts.ts";
+
+export { history } from "./lib/history.ts";
+export { hosts } from "./lib/hosts.ts";
+export { toFlow } from "./lib/row.ts";
+
 import type { App, Ctx, Tool } from "@qino/qino";
 
 type Context = { user?: number };
@@ -20,21 +26,24 @@ type Trace = {
 /** A flow: when the event fires on the host, its steps run one after the other. */
 export type Flow = {
   description: string;
-  on: { host: string; event: string }; // host from the app ("app", "db") and the event it fires
+  on: { host: string; event: string }; // the app or one of its emitters ("app", "db"), and its event
   owner: number; // tools run with this user's rights
   tools?: string[]; // the tools it may call, by name
   test?: boolean; // unless false: only `get_*` tools take effect, the other calls are recorded
   steps: Step[];
 };
 
-/** One sandbox, shared by the runs of a flow; tool calls name their run. */
-type Box = { sandbox: Sandbox; runs: Map<number, (name: string, args: unknown) => unknown>; seq: number };
+/** One sandbox, shared by the runs of a flow; tool calls name their run. Ended, it closes with its last run. */
+type Box = { sandbox: Sandbox; runs: Map<number, (name: string, args: unknown) => unknown>; seq: number; ended?: true };
 
 const open = (): Box => {
   const runs: Box["runs"] = new Map();
   const tool = (run: number, name: string, args: unknown) => runs.get(run)!(name, args);
   return { runs, seq: 0, sandbox: new Sandbox({ capabilities: { tool } }) };
 };
+
+/** No new runs; the running ones end with the version they began with. */
+const end = (box: Box) => (box.ended = true, box.runs.size || box.sandbox.close());
 
 const waiting = new WeakMap<Flow, Map<string, object>>(); // debounce: the latest run per key
 
@@ -45,10 +54,10 @@ export function listen(
   flow: Flow,
   { signal, report }: { signal?: AbortSignal; report?: (trace: Trace) => void } = {},
 ): void {
-  const host = flow.on.host === "app" ? app : (app as any)[flow.on.host];
-  if (typeof host?.on !== "function") throw new Error(`sandbox.flow: no host ${flow.on.host}`);
+  const host = hosts(app)[flow.on.host];
+  if (!host) throw new Error(`sandbox.flow: no host ${flow.on.host}`);
   const box = open();
-  signal?.addEventListener("abort", () => box.sandbox.close(), { once: true });
+  signal?.addEventListener("abort", () => end(box), { once: true });
   host.on(flow.on.event, (e: unknown) => {
     const ctx = requestStorage.getStore();
     if (ctx?.state.flow === flow) return;
@@ -63,11 +72,11 @@ export async function run(app: App, flow: Flow, event: unknown, context: Context
   try {
     return await exec(app, flow, event, context, box);
   } finally {
-    box.sandbox.close();
+    end(box);
   }
 }
 
-/** Each step's result is the next one's input, a falsy result stops. */
+/** Each step's result is the next one's input: a falsy result stops, `true` passes the input on. */
 async function exec(app: App, flow: Flow, event: unknown, context: Context, box: Box): Promise<Trace> {
   const trace: Trace = { flow: flow.description, context, steps: [], end: "done" };
   const id = ++box.seq;
@@ -104,10 +113,11 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
       } else {
         // the step's code goes in as an argument, so it sees nothing of the wrapper (`tool`, the run)
         const input = { value, context, run: id, tools: flow.tools ?? [] };
-        value = await box.sandbox.run(`((fn) => (input, { tool }) => fn(input.value, {
+        const result = await box.sandbox.run(`((fn) => (input, { tool }) => fn(input.value, {
           context: input.context,
           tools: Object.fromEntries(input.tools.map((n) => [n, (args) => tool(input.run, n, args)])),
         }))(${step.fn})`, input);
+        if (result !== true) value = result; // true passes the input on: a filter is just its condition
       }
       trace.steps.at(-1)!.value = value;
       if (!value) return { ...trace, end: "stopped" };
@@ -118,6 +128,7 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
     return { ...trace, end: "error" };
   } finally {
     box.runs.delete(id);
+    if (box.ended && !box.runs.size) box.sandbox.close();
     release();
   }
 }

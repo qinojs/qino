@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.flow",
+  "description": "Lists the flows, switches them on, off or to test, shows their steps and tries them.",
+  "dependencies": [
+    "cms.backend",
+    "sandbox.flow"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

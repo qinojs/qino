@@ -16,7 +16,7 @@ listen(app, {
   steps: [
     {
       description: "Nur deutsche Texte, die ich geändert habe",
-      fn: (e, { context }) => e.table === "text_lang" && e.data.lang === "de" && context.user === 9 && e,
+      fn: (e, { context }) => e.table === "text_lang" && e.data.lang === "de" && context.user === 9,
     },
     {
       description: "2 Minuten nach der letzten Änderung",
@@ -27,7 +27,7 @@ listen(app, {
       fn: async (e, { tools }) => {
         const options = ["done", "draft"];
         const { choice } = await tools.post_ai1Api_decide({ content: e.data.text, question: "Fertig?", options });
-        return choice === "done" && e;
+        return choice === "done";
       },
     },
     {
@@ -45,7 +45,8 @@ listen(app, {
 ```
 
 - **Steps:** each gets the previous result (the first one the event) and `{ tools, context }`; a falsy
-  result stops the run. `fn` is a function or its source — self-contained, it sees nothing else.
+  result stops the run, `true` passes the input on (a filter is just its condition). `fn` is a function
+  or its source — self-contained, it sees nothing else.
 - **The event** arrives as data: objects of a class become their string form (a `DbTable` its name).
 - **`context.user`:** who caused the event, taken as it fires.
 - **`tools`:** the api's tools (`toTools`), only those named in `tools`, one params object each.
@@ -74,6 +75,7 @@ and skipped; failing runs are logged too.
 ## Api
 
 ```
+catalog            get            per host its events (description, data as JSON Schema), and the tables
 flows              get · post     your flows · make one, owned by you
 flows/:flow        get · patch · delete
 flows/:flow/test   post { event, user? }   try it on an example event, always as a test run → the trace
@@ -84,6 +86,10 @@ owner's rights, so a flow never does more than its owner could.
 
 ## Not yet
 
+- **Test mode goes by name, not by effect:** only `get_*` tools run, so a `POST` that changes nothing
+  (`post_ai1Api_decide`) is skipped too and returns `undefined`. Plan: a route says it only reads
+  (`Verb.readOnly`, `GET` by default), `toTools` passes it on as MCP's `annotations.readOnlyHint`, and a
+  test run skips what is not read-only. Core vocabulary, needs an OK.
 - **Events are not filtered by rights:** a flow sees every event of its host, whatever its owner may
   read — a flow on `table:insert-after` sees every row of every table. Its api is for superusers until then.
   Plan: a flow sees what its owner caused; events of others only where the event declares who may
@@ -91,5 +97,6 @@ owner's rights, so a flow never does more than its owner could.
 - **Runs live in memory:** a crash or restart loses a running run and a debounce wait (at-most-once).
   Later, per flow: store the event before the run, delete it after, rerun what is left on start
   (at-least-once, steps idempotent).
-- **No stored traces:** they go to `report`; what a run changed is in the core log (actor
-  `sandbox.flow`). A table for them once a backend or planner needs one.
+- **Runs are kept in memory only:** `history(app, id)` has the latest 20 of a flow of the table, newest
+  first; runs that stopped at the first step (the event was not for it) are only counted. A restart
+  forgets them; what a run changed is in the core log (actor `sandbox.flow`).
