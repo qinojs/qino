@@ -1,12 +1,23 @@
-import { Output, Redirect, unixTime } from "@qino/qino";
+import { App, Ctx, Output, Redirect, s, unixTime } from "@qino/qino";
 
 import { LEN, PATH, valid } from "./lib/code.ts";
 import { shorten } from "./mod.ts";
 
-import type { App, Ctx } from "@qino/qino";
+import type { EventDecls } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+Object.assign(App.events, {
+  "shorturl:hit": {
+    description: "A short link was opened, right before the redirect.",
+    data: s.object({
+      ctx: s.instance(Ctx).describe("The request."),
+      link: s.record().describe("The shorturl row: code, url, hits, last, expires."),
+      tag: s.optional(s.string().describe("The caller's marker after the code.")),
+    }),
+  },
+} satisfies EventDecls);
 
 /** What a module declares that can trade a long address for a short one. */
 export const shortener = { shorten };

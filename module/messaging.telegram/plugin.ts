@@ -1,13 +1,20 @@
-import { Access, getCtx } from "@qino/qino";
+import { Access, App, getCtx, s } from "@qino/qino";
 
 import { webhook } from "./lib/webhook.ts";
 import { linkUrl, userChats } from "./mod.ts";
 
-import type { ApiTree, App } from "@qino/qino";
+import type { ApiTree, EventDecls } from "@qino/qino";
 
 export { messagingChannel } from "./mod.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+Object.assign(App.events, {
+  "telegram:update": {
+    description: "Telegram sent an update to the webhook.",
+    data: s.object({ update: s.record().describe("Telegram's Update object.") }),
+  },
+} satisfies EventDecls);
 
 export const settingsSchema = {
   properties: {

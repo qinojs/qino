@@ -1,9 +1,9 @@
-import { Output, Redirect, sha256b64url } from "@qino/qino";
+import { App, Ctx, Output, Redirect, s, sha256b64url } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
 
 import { APPLE_STATUS_BAR_STYLES, DISPLAY_MODES, manifest, ORIENTATIONS } from "./mod.ts";
 
-import type { App, Ctx } from "@qino/qino";
+import type { EventDecls } from "@qino/qino";
 
 export const settingsSchema = {
   properties: {
@@ -36,6 +36,13 @@ export const settingsSchema = {
     },
   },
 };
+
+Object.assign(App.events, {
+  "webapp:manifest": {
+    description: "The web app manifest is built; change it.",
+    data: s.object({ ctx: s.instance(Ctx).describe("The request."), manifest: s.record().describe("The manifest, as JSON.") }),
+  },
+} satisfies EventDecls);
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => route(ctx), { signal });

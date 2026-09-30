@@ -1,9 +1,24 @@
-import { hee, Output } from "@qino/qino";
+import { App, Ctx, hee, Output, s } from "@qino/qino";
 
-import type { App, Ctx } from "@qino/qino";
+import type { EventDecls } from "@qino/qino";
 
 const TTL = 3600;
 const caches = new WeakMap<App, Map<string, { at: number; body: Promise<string> }>>();
+
+Object.assign(App.events, {
+  "seo:robots": {
+    description: "robots.txt is built; add rules.",
+    data: s.object({ ctx: s.instance(Ctx).describe("The request."), base: s.string().describe("The site's base url."), lines: s.array(s.string()).describe("The lines so far; push yours.") }),
+  },
+  "seo:sitemap": {
+    description: "sitemap.xml is built; add urls.",
+    data: s.object({
+      ctx: s.instance(Ctx).describe("The request."),
+      base: s.string().describe("The site's base url."),
+      urls: s.array(s.any()).describe("Push a url, or { url, lastmod?, image? }; url may map languages to urls."),
+    }),
+  },
+} satisfies EventDecls);
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => route(ctx), { signal });

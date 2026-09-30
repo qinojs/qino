@@ -1,10 +1,14 @@
-import { sql, unixTime } from "@qino/qino";
+import { App, s, sql, unixTime } from "@qino/qino";
 
 import { currency } from "./mod.ts";
 import { updateRates } from "./lib/rates.ts";
 
-import type { App } from "@qino/qino";
+import type { EventDecls } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
+
+Object.assign(App.events, {
+  "currency:rates": { description: "Exchange rates were updated.", data: s.object({}) },
+} satisfies EventDecls);
 
 export const settingsSchema = {
   properties: {

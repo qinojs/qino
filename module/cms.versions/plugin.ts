@@ -14,7 +14,7 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
-import { Access, s } from "@qino/qino";
+import { Access, App, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 
 import { versedTables, historicalViews, initVers, shadowSchema } from "./lib/Vers.ts";
@@ -23,13 +23,20 @@ import { initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
 import { getCmsVers, initHistoricalNodes, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
 
-import type { ApiTree, App } from "@qino/qino";
+import type { ApiTree, EventDecls } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // import { ensureSpace } from "./lib/Spaces.ts"; // parked with draft/space mode
 
 // import { applyDraftSpace, initDraftmode } from "./draftmode.ts"; // parked until read/write routing is complete
 export { healthChecks } from "./healthChecks.ts";
+
+Object.assign(App.events, {
+  "vers:createSpace": {
+    description: "A version space was created.",
+    data: s.object({ space: s.number().describe("The space's id.") }),
+  },
+} satisfies EventDecls);
 
 // Which cms tables are versioned (qg_setting and page_class intentionally excluded).
 // true = version all fields; record = only these fields come from the version table
