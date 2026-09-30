@@ -14,13 +14,14 @@ import { FileTransformer } from "./transform/mod.ts";
 import { ModuleManager } from "./ModuleManager.ts";
 import { StoreManager } from "./StoreManager.ts";
 import { Emitter } from "./Emitter.ts";
+import { appEvents } from "./AppEvents.ts";
 import { LangManager } from "./LangManager.ts";
 import { apiFetch, apiClient } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { ApiTree, ApiProxy } from "./api/mod.ts";
-import type { DbFile } from "./DbFileManager.ts";
+import type { AppEvents } from "./AppEvents.ts";
 
 const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
@@ -44,28 +45,12 @@ const RESPONSE_HEADERS: Record<string, string> = {
     "X-Content-Type-Options": "nosniff",
 };
 
-/** Core events. Module events work but are untyped — JSR forbids augmenting this map from a module. */
-export interface AppEvents {
-    "request-start": { request: Request; peerAddr: string; time: number, base: string };
-    "authenticate": { ctx: Ctx };
-    "route": { ctx: Ctx };
-    "render": { ctx: Ctx };
-    "html-ready": { ctx: Ctx };
-    "respond": { ctx: Ctx };
-    "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // no ctx for static files and early errors
-    "suspicious": { ctx: Ctx; weight?: number; reason?: string }; // possible abuse; listeners score the client. weight default 1
-    "auth:login": { oldSession: Record<string, any>; usrId: number }; // the session's values before it was emptied
-    "dbFile:access": { file: DbFile; access: boolean };          // fast path
-    "dbFile:access-fallback": { file: DbFile; access: boolean }; // slow path, only if access is still unresolved
-    "dbFile:unlink-before": { file: DbFile; prevent: boolean };
-    // deno-lint-ignore no-explicit-any -- module events have their own payloads; typing needs a per-module emitter
-    [name: string]: any;
-}
-
 export const urlOf = (ctx: Ctx): string => ctx.req.url.origin + ctx.req.appUrl;
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App extends Emitter<AppEvents> {
+    static override events = appEvents;
+
     dir: string;
     appUrl: string;
     https: boolean;

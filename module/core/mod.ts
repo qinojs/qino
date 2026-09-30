@@ -2,7 +2,7 @@
 
 // App + request context
 export { App } from "./lib/App.ts";
-export type { AppEvents } from "./lib/App.ts";
+export type { AppEvents } from "./lib/AppEvents.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { runAs } from "./lib/ctx/runAs.ts";
@@ -35,7 +35,7 @@ export type { ApiNode, ApiTree, Method, Params, Verb } from "./lib/api/types.ts"
 
 // Database
 export { Db } from "./lib/db/Db.ts";
-export type { DbEvents } from "./lib/db/Db.ts";
+export type { DbEvents } from "./lib/db/DbEvents.ts";
 export type { Row } from "./lib/db/DbDriver.ts";
 export { Sql, sql } from "./deps.ts";
 export { tableRef, scopeCache } from "./lib/db/dbScope.ts";

@@ -15,7 +15,7 @@ export interface StandardIssue {
 
 // ───── Schema type ────────────────────────────────────────────────────────
 
-type Kind = "string" | "number" | "boolean" | "object" | "array" | "optional" | "record" | "any";
+type Kind = "string" | "number" | "boolean" | "object" | "array" | "optional" | "record" | "any" | "instance";
 type Validator<T> = (value: unknown, path: PropertyKey[]) => StandardResult<T>;
 
 declare const OPTIONAL_BRAND: unique symbol;
@@ -117,6 +117,10 @@ export const s = {
 
   any: (): StandardSchema<unknown> =>
     new StandardSchema<unknown>("any", (v) => ({ value: v })),
+
+  instance: <T>(cls: abstract new (...args: any[]) => T): StandardSchema<T> =>
+    new StandardSchema<T>("instance", (v, p) =>
+      v instanceof cls ? { value: v } : { issues: err(p, `expected ${cls.name}`) }),
 
   record: <T = unknown>(value?: StandardSchema<T>): StandardSchema<Record<string, T>> =>
     new StandardSchema<Record<string, T>>("record", (v, p) => {

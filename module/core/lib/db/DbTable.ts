@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbField } from "./DbField.ts";
 import { anonRowClass, DbRow } from "./DbRow.ts";
-import { NUM_TYPES } from "./Db.ts";
+import { NUM_TYPES } from "./DbField.ts";
 import { sql, isTemplate } from "../../deps.ts";
 
 import type { Sql } from "../../deps.ts";

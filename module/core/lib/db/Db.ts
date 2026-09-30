@@ -5,27 +5,12 @@ import { DbTable } from "./DbTable.ts";
 import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect } from "../../deps.ts";
 import { DbDriver } from "./DbDriver.ts";
 import { Emitter } from "../Emitter.ts";
+import { dbEvents } from "./DbEvents.ts";
 
 import type { Sql } from "../../deps.ts";
 import type { DbDialect, ExecResult, MigrateOptions, Row } from "./DbDriver.ts";
 import type { DbRow } from "./DbRow.ts";
-
-export const DATE_TYPES = new Set(["datetime", "date", "timestamp"]);
-export const STRING_TYPES = new Set(["char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set"]);
-// INTEGER is SQLite's INT — otherwise SQLite would store non-numeric text as is. Same for REAL
-// (SQLite) and NUMERIC (Postgres) next to MySQL's DOUBLE.
-export const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double", "real", "numeric"]);
-
-/** Core db events. Module events work but are untyped — JSR forbids augmenting this map from a module. */
-export interface DbEvents {
-  "table:insert-before": { table: DbTable; data: Record<string, any>; returnValue?: unknown };
-  "table:insert-after": { table: DbTable; id: any; data: Record<string, any> };
-  "table:update-before": { table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
-  "table:update-after": { table: DbTable; id: any; data: Record<string, any> };
-  "table:delete-before": { table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
-  "table:delete-after": { table: DbTable; id: any; data: Record<string, any> };
-  [name: string]: Record<string, unknown>; // untyped module events
-}
+import type { DbEvents } from "./DbEvents.ts";
 
 /** A row's first column, without building an array. */
 function firstValue(row: Row): unknown {
@@ -33,6 +18,8 @@ function firstValue(row: Row): unknown {
 }
 
 export class Db extends Emitter<DbEvents> {
+  static override events = dbEvents;
+
   #tables: Record<string, DbTable> = {};
   #driver: DbDriver;
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };

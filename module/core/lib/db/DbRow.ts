@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { NUM_TYPES } from "./Db.ts";
+import { NUM_TYPES } from "./DbField.ts";
 
 import type { DbTable } from "./DbTable.ts";
 

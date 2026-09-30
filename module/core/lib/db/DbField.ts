@@ -1,7 +1,11 @@
-import { DATE_TYPES, STRING_TYPES, NUM_TYPES } from "./Db.ts";
-
 import type { Db } from "./Db.ts";
 import type { DbTable } from "./DbTable.ts";
+
+export const DATE_TYPES = new Set(["datetime", "date", "timestamp"]);
+export const STRING_TYPES = new Set(["char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set"]);
+// INTEGER is SQLite's INT — otherwise SQLite would store non-numeric text as is. Same for REAL
+// (SQLite) and NUMERIC (Postgres) next to MySQL's DOUBLE.
+export const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double", "real", "numeric"]);
 
 export class DbField {
 

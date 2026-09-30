@@ -7,7 +7,7 @@ import { registerRows } from "./lib/rows.ts";
 import { pendingLogin } from "./lib/auth/factors.ts";
 
 import type { App } from "./lib/App.ts";
-import type { DbEvents } from "./lib/db/Db.ts";
+import type { DbEvents } from "./lib/db/DbEvents.ts";
 
 export { api } from "./api.ts";
 export { healthChecks } from "./healthChecks.ts";
