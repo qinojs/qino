@@ -5,7 +5,7 @@ import { fs, Output, safeFetch } from "@qino/qino";
 import { DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES, cacheByteLimit, uncdn } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, ResHtml, ResCsp } from "@qino/qino";
+import type { App, ResCsp, ResHtml } from "@qino/qino";
 
 const { name } = manifest;
 
@@ -145,7 +145,7 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
     };
   };
   const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
-  for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
+  for (const [spec, url] of html.importMap) html.importMap.set(spec, rwScript(url));
   html.legacyScripts = mapSet(html.legacyScripts, rwScript);
   html.scripts       = mapSet(html.scripts, rwScript);
   html.styles        = mapSet(html.styles, rwStyle);
