@@ -5,7 +5,7 @@
     "age": "P1D",
     "exclude": ["jsr:@nuxodin/item"]
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai1": "./module/ai1/mod.ts",
