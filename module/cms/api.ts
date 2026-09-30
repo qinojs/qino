@@ -21,7 +21,7 @@ const nodeAdmin = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx
 // cms.accessRules lowers e.access; without it everything is insertable.
 const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
   if (!ctx.app.modules.get(module)) throw new ValidationError([{ message: `Unknown module "${module}"`, path: ["module"] }]);
-  const e = await ctx.app.fire("module:access", { module, user: ctx.user, access: ADMIN });
+  const e = await cms(ctx.app).fire("module:access", { module, user: ctx.user ?? undefined, access: ADMIN });
   if (Number(e.access) < ADMIN) throw new AccessError();
 };
 const before = s.optional(s.string()).describe("Child of this node to insert above. Omit to append.");

@@ -6,7 +6,7 @@ import { policyOf, sanitizeHtml } from "./sanitize.ts";
 import { parseXml } from "./parseXml.ts";
 import { postedVars } from "./postedVars.ts";
 
-import type { HtmlString, AppEvents, DbText, DbTextLang, Usr, DbRow, Module } from "@qino/qino";
+import type { HtmlString, DbText, DbTextLang, Usr, DbRow, Module } from "@qino/qino";
 import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 
@@ -51,7 +51,7 @@ export class Node {
         if (!this.vs || isEmptyObject(this.vs)) {
             this.vs = await this.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${this.id}` ?? {};
         }
-        await this.app.fire("node:construct", { node: this });
+        await this.cms.fire("node:construct", { node: this });
         if (isEmptyObject(this.vs)) {
             this.vs = { id: this.id, basis: 0, type: "p" };
             this.#is = false;
@@ -109,8 +109,7 @@ export class Node {
         const key = `${this.id}:${usrId}`;
         const hit = cache.get(key);
         if (hit !== undefined) return hit;
-        const e: AppEvents["node:access"] = { node: this, user, access: await this.#rawAccess(user) };
-        const access = (await this.app.fire("node:access", e)).access;
+        const access = (await this.cms.fire("node:access", { node: this, user: user ?? undefined, access: await this.#rawAccess(user) })).access;
         cache.set(key, access);
         return access;
     }
@@ -212,8 +211,7 @@ export class Node {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
             let render = this.module.plugin.cms?.node?.render;
             if (!render) {
-                const e: AppEvents["node:render"] = { node: this, render: null };
-                render = (await this.app.fire("node:render", e)).render ?? undefined;
+                render = (await this.cms.fire("node:render-fallback", { node: this, render: null })).render ?? undefined;
             }
             if (!render) throw new Error(`No render function for module "${this.vs.module}"`);
             return render(this, {ctx:getCtx(), vars});
@@ -287,7 +285,7 @@ export class Node {
         this.#children ??= (async () => {
             const map = new Map<number, Node>();
             const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} ORDER BY type DESC, sort, id DESC`;
-            const e = await this.app.fire("node:children", { node: this, rows });
+            const e = await this.cms.fire("node:children", { node: this, rows });
             for (const row of e.rows) {
                 const id = Number(row.id);
                 if (map.has(id)) continue;
@@ -343,7 +341,7 @@ export class Node {
         const textLang = lang == null ? await dbText.orFallback(ctx.lang) : dbText.lang(lang);
         let text = await textLang.get();
         if (text !== "") { // an empty text has nothing to resolve and nothing to sanitize
-            text = await resolveText(this.app, text, !(await this.edit()));
+            text = await resolveText(this.cms, text, !(await this.edit()));
             text = sanitizeHtml(text, policyOf(this.app)); // last step: nothing may change it after sanitizing
         }
         return {

@@ -34,6 +34,7 @@ function setup(current: Record<number, any>, access: Record<number, number>, his
     texts: () => Promise.resolve(new Map()),
   });
 
+  fakeCms(app, emitter);
   const ctxPromise = testContext({ app });
   initHistoricalNodes(app as any, new AbortController().signal);
   return ctxPromise.then((ctx) => {
@@ -102,12 +103,12 @@ Deno.test("cms.versions: moved content follows the selected version's position",
 });
 
 Deno.test("cms.versions: historical responses stay privately cacheable", async () => {
-  const ctx = await testContext({ app: { fire: () => {}, settings: { cms: {} }, languages: { all: ["en"] } } });
+  const ctx = await testContext({ app: { settings: { cms: {} }, languages: { all: ["en"] } } });
   const page = {
     vs: { searchable: 1 }, exists: () => true, access: () => 1, isReadable: () => true,
     page: () => page, showText: () => ({ plain: () => "" }), showTitle: () => ({ plain: () => "" }), html: () => "",
   };
-  fakeCms(ctx.app, { nodeFromRequest: () => page });
+  fakeCms(ctx.app, { nodeFromRequest: () => page, fire: () => {} });
   cacheHeaders(ctx);
   await render(ctx);
   assertEquals(ctx.res.headers.get("Cache-Control"), "private, max-age=15552000");

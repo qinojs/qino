@@ -95,7 +95,6 @@ async function setup(access = 3) {
   nodes.set(2, new FakeNode(2, 0));
   const user = { id: 9, superuser: false, toString: () => "9" };
   const ctx = await testContext({ userId: 9, app: {
-    fire: (_name: string, e: unknown) => e, // no module:access handler → event unchanged
     db: {
       one: () => null,
       table: (name: string) => ({
@@ -104,6 +103,7 @@ async function setup(access = 3) {
     },
   } });
   cmsInstances.set(ctx.app, {
+    fire: (_name: string, e: unknown) => e, // no module:access handler → event unchanged
     node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
     getModules: () => ({ "cms.cont.text": { dir: undefined, description: "Rich text", plugin: { cms: { node: { settingsSchema: { properties: { cols: {} } } } } } } }),
     getLayouts: () => ({ "cms.layout.system": { dir: undefined, description: "", plugin: {} } }),
@@ -333,7 +333,7 @@ Deno.test("cms api: modules lists content and layout modules, module adds the sc
 Deno.test("cms api: modules hides what the user may not insert", async () => {
   const { ctx } = await setup();
   // deno-lint-ignore no-explicit-any
-  (ctx.app as any).fire = (_n: string, e: any) => ({ ...e, access: 2 }); // below ADMIN
+  (cmsInstances.get(ctx.app) as any).fire = (_n: string, e: any) => ({ ...e, access: 2 }); // below ADMIN
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/modules"), []);
   });

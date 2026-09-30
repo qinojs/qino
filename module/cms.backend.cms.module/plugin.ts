@@ -1,6 +1,6 @@
 import { html, getCtx, moduleIcon, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { ADMIN, WRITE, describeChange } from "@qino/qino/cms";
+import { ADMIN, WRITE, cms as cmsOf, describeChange } from "@qino/qino/cms";
 import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -19,7 +19,7 @@ const modType = (n: string) => n.match(/^cms\.(cont|layout|backend)\b/)?.[1] ?? 
 
 /** Module axis of the current user (3 without cms.accessRules). */
 const modAccess = (app: App, module: string) =>
-  app.fire("module:access", { module, user: getCtx().user, access: ADMIN }).then((e) => Number(e.access));
+  cmsOf(app).fire("module:access", { module, user: getCtx().user ?? undefined, access: ADMIN }).then((e) => Number(e.access));
 
 /** A module that can render a node — those are the ones listed here. */
 const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;

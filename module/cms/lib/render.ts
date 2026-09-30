@@ -64,7 +64,7 @@ export async function render(ctx: Ctx): Promise<void> {
   const content = await mainNode.html();
   ctx.res.html.content += content;
 
-  await app.fire("cms:page-ready", {ctx});
+  await cm.fire("page:render-after", {ctx});
 
   ctx.res.headers.set("X-Frame-Options", "SAMEORIGIN");
 }

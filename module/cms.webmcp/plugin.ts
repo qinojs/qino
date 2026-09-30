@@ -1,4 +1,5 @@
 import { Access } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 
 import { webmcpTools } from "./mod.ts";
 
@@ -16,7 +17,7 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("cms:page-ready", ({ ctx }) => {
+  cms(app).on("page:render-after", ({ ctx }) => {
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.webmcp/pub/webmcp.mjs"); // all visitors; tool list is access-filtered, each call enforced
   }, { signal });
 }

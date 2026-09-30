@@ -34,7 +34,7 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("cms:page-ready", ({ ctx }) => {
+  cms(app).on("page:render-after", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser/pub/init.mjs");
   }, { signal });

@@ -93,10 +93,10 @@ Backend UI: *cms.backend.cms.accessRules* — one matrix for all three sources
 
 ## Events (between cms and cms.accessRules)
 
-- `node:access` `{ node, user, access }` — fired by `Node.access()` with the raw
+- `node:access` `{ node, user, access }` — on the cms (`cms(app).on`), fired by `Node.access()` with the raw
   node-axis value; handlers change `access` for **this node only**.
   `cms.accessRules` applies the module axis here.
-- `module:access` `{ module, user, access }` — for the module axis without a node
+- `module:access` `{ module, user, access }` — on the cms too, for the module axis without a node
   (add-picker `add.ts`, `requireModuleAdmin` in `api.ts`). Default `access: 3`;
   without `cms.accessRules` everything is insertable.
 

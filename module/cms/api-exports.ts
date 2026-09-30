@@ -84,7 +84,7 @@ export async function modules(only?: string): Promise<any[]> {
     for (const [kind, mods] of Object.entries({ cont: c.getModules(), layout: c.getLayouts() })) {
         for (const [name, mod] of Object.entries(mods)) {
             if (only && only !== name) continue;
-            const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
+            const e = await c.fire("module:access", { module: name, user: ctx.user ?? undefined, access: ADMIN });
             if (Number(e.access) < ADMIN) continue;
             res.push({
                 name,

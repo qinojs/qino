@@ -12,10 +12,9 @@ const schema = {
 function node(settings?: string) {
   const app = {
     db: { table: () => ({ update: () => Promise.resolve() }) },
-    fire: () => Promise.resolve(),
     modules: { get: () => ({ plugin: { cms: { node: { settingsSchema: schema } } } }) },
   };
-  return new Node({ app } as any, 1, {
+  return new Node({ app, fire: () => Promise.resolve() } as any, 1, {
     id: 1,
     module: "test",
     type: "c",

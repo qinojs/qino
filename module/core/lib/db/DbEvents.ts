@@ -9,15 +9,15 @@ import type { StandardSchema } from "../StandardSchema.ts";
 const table: StandardSchema<DbTable> = s.instance(DbTable).describe("The table.");
 const id = s.any().describe("The row's primary key.");
 const data = s.record<any>().describe("The row's values, by column.");
-const returnValue = s.optional(s.any().describe("Set to answer instead of the database."));
+const returnValue = s.optional(s.any().describe("Set to skip the write and return this instead."));
 
 /** Core events of a Db. */
 export const dbEvents = {
-  "table:insert-before": { data: s.object({ table, data, returnValue }) },
+  "table:insert-before": { description: "A row is about to be inserted.", data: s.object({ table, data, returnValue }) },
   "table:insert-after": { description: "A row was inserted.", data: s.object({ table, id, data }) },
-  "table:update-before": { data: s.object({ table, id, data, returnValue }) },
+  "table:update-before": { description: "A row is about to be updated.", data: s.object({ table, id, data, returnValue }) },
   "table:update-after": { description: "A row was updated.", data: s.object({ table, id, data }) },
-  "table:delete-before": { data: s.object({ table, id, data, returnValue }) },
+  "table:delete-before": { description: "A row is about to be deleted.", data: s.object({ table, id, data, returnValue }) },
   "table:delete-after": { description: "A row was deleted.", data: s.object({ table, id, data }) },
 } satisfies EventDecls;
 

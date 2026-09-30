@@ -1,9 +1,11 @@
-import { hee, html, getCtx, sql, tableRef, scopeCache } from "@qino/qino";
+import { Emitter, hee, html, getCtx, sql, tableRef, scopeCache } from "@qino/qino";
 
 import { Node } from "./Node.ts";
 import { cmsCtx } from "./CmsContext.ts";
+import { cmsEvents } from "./CmsEvents.ts";
 
 import type { HtmlString, App, Module, Db, DbFile, DbText } from "@qino/qino";
+import type { CmsEvents } from "./CmsEvents.ts";
 
 // Per-app instances, set in the plugin's init, read by cms()/cms.get(). Not exported from mod.ts.
 export const cmsInstances = new WeakMap<object, CMS>();
@@ -18,7 +20,9 @@ export function cms(app: App): CMS {
 /** Undefined when cms is not loaded — for optional dependencies. */
 cms.get = (app: App): CMS | undefined => cmsInstances.get(app);
 
-export class CMS {
+export class CMS extends Emitter<CmsEvents> {
+  static override events = cmsEvents;
+
   app: App;
   db: Db;
 
@@ -26,6 +30,7 @@ export class CMS {
   #idsByUrl = new Map<string, number>(); // page url → id; hits only (misses are arbitrary urls)
 
   constructor(app: App) {
+    super();
     this.app = app;
     this.db = app.db;
   }

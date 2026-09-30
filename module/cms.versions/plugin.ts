@@ -151,8 +151,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         // page:children overrides. See draftmode.ts.
     }, { signal });
 
-    // ─── cms:page-ready: add frontend JS ──────────────────────────────────────────
-    app.on("cms:page-ready", async ({ ctx }) => {
+    // ─── page:render-after: add frontend JS ──────────────────────────────────────────
+    cms(app).on("page:render-after", async ({ ctx }) => {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.4");
         ctx.res.html.jsData.cmsFrontend = frontend;

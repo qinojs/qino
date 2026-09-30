@@ -20,7 +20,6 @@ function tree() {
         },
       }),
     },
-    fire: (_name: string, e: any) => Promise.resolve(e),
     modules: { get: () => undefined },
   };
   const nodes = new Map<number, Node>();
@@ -32,6 +31,7 @@ function tree() {
       return n.init();
     },
     filter: (map: Map<number, Node>) => Promise.resolve(map),
+    fire: (_name: string, e: any) => Promise.resolve(e),
   };
   return { cms, created };
 }

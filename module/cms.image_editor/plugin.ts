@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { Access, isTrustedOrigin, Output, s } from "@qino/qino";
-import { cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx } from "@qino/qino/cms";
 
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
@@ -68,7 +68,7 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("cms:page-ready", ({ ctx }) => {
+  cms(app).on("page:render-after", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.image_editor/pub/init.mjs");
   }, { signal });

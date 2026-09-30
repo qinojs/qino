@@ -19,7 +19,7 @@ Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
   });
 });
 
-Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () => {
+Deno.test("cms.filebrowser: init registers page:render-after asset hook", async () => {
   type Handler = (...args: any[]) => any;
   const handlers: Record<string, Handler[]> = {};
   const app = {
@@ -28,11 +28,12 @@ Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () 
     },
     db: { row: () => null, on() {} },
   };
+  fakeCms(app, { on: app.on });
   init(app as any, { signal: new AbortController().signal });
-  assertEquals(handlers["cms:page-ready"].length, 1);
+  assertEquals(handlers["page:render-after"].length, 1);
 
   const added: string[] = [];
-  await handlers["cms:page-ready"][0]({
+  await handlers["page:render-after"][0]({
     ctx: {
       req: { query: {}, moduleUrl: "/m/" },
       state: { cms: { editmode: true } },

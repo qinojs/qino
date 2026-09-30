@@ -12,6 +12,7 @@
     "dbschema.json",
     "healthChecks.ts",
     "lib/CMS.ts",
+    "lib/CmsEvents.ts",
     "lib/CmsContext.ts",
     "lib/Node.ts",
     "lib/access.ts",

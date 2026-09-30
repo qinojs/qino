@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { toTools } from "@qino/qino";
-import { assertEquals } from "@qino/qino/tests";
+import { assertEquals, fakeCms } from "@qino/qino/tests";
 
 import { api, init, settingsSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
@@ -22,6 +22,7 @@ Deno.test("cms.versions: parked draft space stays inactive", async () => {
       if (name === "route") routes.push(listener);
     },
   };
+  fakeCms(app, { on() {} });
   init(app as never, { signal: new AbortController().signal });
   const ctx = { state: {}, req: { query: { cms_versions_space: "1" } } };
 

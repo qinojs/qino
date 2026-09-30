@@ -1,4 +1,5 @@
 import { sql } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 
 import { standards } from "./lib/standards.ts";
 
@@ -61,7 +62,7 @@ async function moduleCap(app: App, module: string, user?: Usr | null): Promise<n
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // limit node access by the module axis, but never below the guest level (standard = 0 hides it
   // for guests too).
-  app.on("node:access", async (e) => {
+  cms(app).on("node:access", async (e) => {
     if (!e.access || e.user?.superuser) return;
     const module = String(e.node.module?.name ?? "");
     if (!module) return;
@@ -73,7 +74,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }, { signal });
 
   // module picker/add: lower e.access to what the user may do with this module
-  app.on("module:access", async (e) => {
+  cms(app).on("module:access", async (e) => {
     if (e.user?.superuser) return;
     const cap = await moduleCap(app, String(e.module), e.user);
     if (cap != null) e.access = Math.min(e.access, cap);

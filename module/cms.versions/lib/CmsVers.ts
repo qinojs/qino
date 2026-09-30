@@ -34,7 +34,7 @@ export async function nodeLoadRuntimeCache(node: Node): Promise<void> {
 
 /** Select current or fully loaded historical nodes by current edit access. */
 export function initHistoricalNodes(app: App, signal: AbortSignal): void {
-    app.on("node:construct", async ({ node }) => {
+    cms(app).on("node:construct", async ({ node }) => {
         const ctx = requestStorage.getStore();
         if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
 
@@ -47,7 +47,7 @@ export function initHistoricalNodes(app: App, signal: AbortSignal): void {
         await nodeLoadRuntimeCache(node);
     }, { signal });
 
-    app.on("node:children", async (e) => {
+    cms(app).on("node:children", async (e) => {
         const ctx = requestStorage.getStore();
         if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
         const rows = await app.db.query`SELECT * FROM page WHERE basis = ${e.node.id} ORDER BY type DESC, sort, id DESC`;

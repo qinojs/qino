@@ -1,9 +1,9 @@
-import { cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx } from "@qino/qino/cms";
 
 import type { App } from "@qino/qino";
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("cms:page-ready", ({ ctx }) => {
+  cms(app).on("page:render-after", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     const csp = ctx.res.csp;
     csp["img-src"]["https://image.pollinations.ai"] = true;

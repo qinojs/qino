@@ -1,4 +1,4 @@
-import { assertEquals } from "@qino/qino/tests";
+import { assertEquals, fakeCms } from "@qino/qino/tests";
 
 import { init } from "../plugin.ts";
 
@@ -8,9 +8,9 @@ Deno.test("cms.frontend.4: stores request URI without base path", async () => {
   let listener: (e: Record<string, unknown>) => Promise<void> = null!;
   let stored = "";
   const app = {
-    on: (_name: string, fn: typeof listener) => listener = fn,
     settings: { cms: { frontend: "cms.frontend.4", pageNotFound: 0 } },
   };
+  fakeCms(app, { on: (_name: string, fn: typeof listener) => listener = fn });
   init(app as unknown as App, { signal: new AbortController().signal });
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
@@ -39,9 +39,9 @@ Deno.test("cms.frontend.4: stores request URI without base path", async () => {
 Deno.test("cms.frontend.4: exposes stored app path unchanged", async () => {
   let listener: (e: Record<string, unknown>) => Promise<void> = null!;
   const app = {
-    on: (_name: string, fn: typeof listener) => listener = fn,
     settings: { cms: { frontend: "cms.frontend.4", pageNotFound: 0 } },
   };
+  fakeCms(app, { on: (_name: string, fn: typeof listener) => listener = fn });
   init(app as unknown as App, { signal: new AbortController().signal });
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};

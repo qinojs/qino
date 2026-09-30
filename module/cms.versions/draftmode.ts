@@ -1,4 +1,4 @@
-import { cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx } from "@qino/qino/cms";
 
 import { getCmsVers } from "./lib/CmsVers.ts";
 
@@ -174,8 +174,8 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     // });
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ─── cms:page-ready: draftmode frontend ────────────────────────────────────────
-    app.on("cms:page-ready", async ({ ctx }) => {
+    // ─── page:render-after: draftmode frontend ────────────────────────────────────────
+    cms(app).on("page:render-after", async ({ ctx }) => {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;

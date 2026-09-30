@@ -1,5 +1,5 @@
 import { Access, s } from "@qino/qino";
-import { cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx } from "@qino/qino/cms";
 
 import type { ApiTree, App, Ctx, Params } from "@qino/qino";
 
@@ -15,7 +15,7 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("cms:page-ready", async ({ ctx }) => {
+  cms(app).on("page:render-after", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     if (!await app.settings.core.keys["api.pexels.com"]) return; // no key, no Pexels UI
     ctx.res.csp["img-src"]["https://*.pexels.com"] = true;

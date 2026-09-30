@@ -1,17 +1,15 @@
-import { cms } from "./CMS.ts";
-
-import type { App } from "@qino/qino";
+import type { CMS } from "./CMS.ts";
 
 /** `links`: also resolve `cmspid://`. Off in edit mode, since the editor saves the html back and a
  *  fixed url would break when the page url changes. File urls are always resolved. */
-export async function resolveText(app: App, value: string, links = true): Promise<string> {
-  if (links) value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
-  value = await replaceAsync(value, /\/dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(app, id));
+export async function resolveText(cms: CMS, value: string, links = true): Promise<string> {
+  if (links) value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(cms, pid));
+  value = await replaceAsync(value, /\/dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(cms, id));
   return value;
 }
 
-async function replaceLinks(app: App, pid: string): Promise<string> {
-  const page = await cms(app).node(Number(pid));
+async function replaceLinks(cms: CMS, pid: string): Promise<string> {
+  const page = await cms.node(Number(pid));
   if (!page.exists()) {
     console.warn(`[content-issue] DeadInternalLink cmspid://${pid}`);
     return "#";
@@ -19,8 +17,8 @@ async function replaceLinks(app: App, pid: string): Promise<string> {
   return page.url();
 }
 
-async function replaceFileUrls(app: App, id: string): Promise<string> {
-  const file = await app.dbFiles.file(Number(id));
+async function replaceFileUrls(cms: CMS, id: string): Promise<string> {
+  const file = await cms.app.dbFiles.file(Number(id));
   if (await file.exists()) {
     return `/dbFile/${id}/u-${String(await file.get("md5") ?? "").slice(0, 5)}/`;
   }
