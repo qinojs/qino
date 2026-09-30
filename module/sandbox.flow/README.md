@@ -54,7 +54,9 @@ listen(app, {
   their run, so traces stay apart. A timeout in one run ends the worker and the flow's other runs.
 - **`debounce`:** a step that waits `ms`; if a later run of the flow reaches it with the same key
   (`by`, a path into the value) meanwhile, this run ends as `superseded`.
-- **`test`** is on unless `false`: only `get_*` tools take effect, the others are recorded as `skipped`.
+- **`test`** is on unless `false`: only `get_*` tools take effect, the others are recorded as `skipped`
+  and return `undefined`. So a step returns a value of its own, not a writing tool's result — else it
+  stops in a test that would go on for real.
 - **The trace** (`run()` returns it, `listen()` hands it to `report`): per step its result, error and
   tool calls; `end` is `done`, `stopped`, `superseded` or `error`.
 - **Own events are ignored:** the run's request context is marked from the start (`runAs` with
@@ -62,9 +64,30 @@ listen(app, {
 
 `run(app, flow, event, context)` runs a flow once, e.g. to test it on an example event.
 
+## The table
+
+Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `tools` and `steps` as JSON with each
+`fn` as source) are listened to on start when `active`; a changed row is listened to anew, a deleted
+one stops. `test` is on unless set off. A row that can't listen (unknown host, broken JSON) is logged
+and skipped; failing runs are logged too.
+
+## Api
+
+```
+flows              get · post     your flows · make one, owned by you
+flows/:flow        get · patch · delete
+flows/:flow/test   post { event, user? }   try it on an example event, always as a test run → the trace
+```
+
+A flow belongs to who made it: to anyone else it answers like a missing one. Its tools run with the
+owner's rights, so a flow never does more than its owner could.
+
 ## Not yet
 
-- **Flows are given in code:** a table for them is under way.
+- **Events are not filtered by rights:** a flow sees every event of its host, whatever its owner may
+  read — a flow on `table:insert-after` sees every row of every table. Its api is for superusers until then.
+  Plan: a flow sees what its owner caused; events of others only where the event declares who may
+  listen (like `access`/`guard` of an api route, e.g. `node:*` for who may read the node).
 - **Runs live in memory:** a crash or restart loses a running run and a debounce wait (at-most-once).
   Later, per flow: store the event before the run, delete it after, rerun what is left on start
   (at-least-once, steps idempotent).

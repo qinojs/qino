@@ -45,9 +45,10 @@ export function listen(
   flow: Flow,
   { signal, report }: { signal?: AbortSignal; report?: (trace: Trace) => void } = {},
 ): void {
+  const host = flow.on.host === "app" ? app : (app as any)[flow.on.host];
+  if (typeof host?.on !== "function") throw new Error(`sandbox.flow: no host ${flow.on.host}`);
   const box = open();
   signal?.addEventListener("abort", () => box.sandbox.close(), { once: true });
-  const host = flow.on.host === "app" ? app : (app as any)[flow.on.host];
   host.on(flow.on.event, (e: unknown) => {
     const ctx = requestStorage.getStore();
     if (ctx?.state.flow === flow) return;
