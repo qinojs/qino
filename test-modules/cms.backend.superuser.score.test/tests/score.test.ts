@@ -25,7 +25,7 @@ async function testApp() {
   return { db, app: { db, t } as unknown as App };
 }
 
-/** A request context as `cms:page-ready` leaves it. */
+/** A request context as `page:render-after` leaves it. */
 function pageCtx({ status = 200, node = 5, editmode = 0, ua = "Mozilla/5.0" } = {}) {
   const ctx = bareCtx(status, ua);
   const cms = cmsCtx(ctx);
@@ -34,7 +34,7 @@ function pageCtx({ status = 200, node = 5, editmode = 0, ua = "Mozilla/5.0" } = 
   return ctx;
 }
 
-/** Nothing rendered a node — `cms:page-ready` can still fire. */
+/** Nothing rendered a node — `page:render-after` can still fire. */
 const bareCtx = (status = 200, ua = "Mozilla/5.0") =>
   ({ res: { status }, req: { header: () => ua }, state: {} }) as unknown as Ctx;
 

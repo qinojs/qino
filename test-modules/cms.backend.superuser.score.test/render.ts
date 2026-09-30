@@ -18,7 +18,7 @@ export function render(node: Node): Promise<HtmlString> {
     <div>
       <p>${t`This module feeds the score tables from two hooks that already exist — nothing else in qino writes scores yet.`}
       <ul>
-        <li><code>cms:page-ready</code> → <code>page</code>:
+        <li><code>page:render-after</code> → <code>page</code>:
           ${t`one hit per rendered page, skipping error pages, the backend (editmode) and bots.`}
         <li><code>dbFile:access</code> → <code>file</code>:
           ${t`one hit per delivered file. That hook is really the permission check, so only requests on the`}

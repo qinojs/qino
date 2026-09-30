@@ -1,3 +1,4 @@
+import { cms as cmsOf } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 import { scored } from "@qino/qino/score";
 
@@ -6,7 +7,7 @@ import { list, render } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx } from "@qino/qino";
+import type { App } from "@qino/qino";
 
 const { name } = manifest;
 
@@ -18,7 +19,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   for (const [tbl, half] of Object.entries(TABLES)) await scored(app.db, tbl, half);
 
   // Blocks drop the hooks' return value: `fire` would await it, and no request should wait for scoring.
-  app.on("cms:page-ready", ({ ctx }: { ctx: Ctx }) => { pageHit(app, ctx); }, { signal });
+  cmsOf(app).on("page:render-after", ({ ctx }) => { pageHit(app, ctx); }, { signal });
   app.on("dbFile:access", ({ file, access }) => { fileHit(app, Number(file.id), access); }, { signal });
 }
 
