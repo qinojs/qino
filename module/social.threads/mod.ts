@@ -35,7 +35,7 @@ async function targets(app: App): Promise<Omit<Target, "provider">[]> {
   return [{
     id: String(user.id),
     label: String(user.name ?? (username || user.id)),
-    ...(username ? { url: `https://www.threads.net/@${username}` } : {}),
+    ...(username && { url: `https://www.threads.net/@${username}` }),
   }];
 }
 

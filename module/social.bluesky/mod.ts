@@ -35,8 +35,7 @@ async function call(base: URL, path: string, init: RequestInit = {}): Promise<an
   const message = String(data.message ?? data.error ?? `${res.status} ${res.statusText}`);
   const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
   const error = `social.bluesky: ${message}`;
-  if (retry) throw new ProviderError(error, retry);
-  throw new Error(error);
+  throw retry ? new ProviderError(error, retry) : new Error(error);
 }
 
 async function session(app: App): Promise<{ base: URL; user: Session }> {
