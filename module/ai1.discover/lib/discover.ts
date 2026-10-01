@@ -79,9 +79,9 @@ function indexAll(app: App, kind: Kind, every: Entry[]): Promise<void> {
   return done;
 }
 
-/** Of `among`, the entries nearest to `query` by meaning; without an embedding collection those that
- *  contain the most of its words. */
-export async function find(app: App, kind: Kind, query: string, among: Entry[], limit = LIMIT): Promise<Entry[]> {
+/** Of `among`, the entries nearest to `query` by meaning, with their `score` (1 the same); without an
+ *  embedding collection those that contain the most of its words. */
+export async function find(app: App, kind: Kind, query: string, among: Entry[], limit = LIMIT): Promise<(Entry & { score?: number })[]> {
   if (!await collection(app)) {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return among.map((e) => ({ e, n: words.filter((w) => e.text.toLowerCase().includes(w)).length }))
@@ -91,6 +91,7 @@ export async function find(app: App, kind: Kind, query: string, among: Entry[], 
   await indexAll(app, kind, every).catch(log);
   // all of the kind by nearness: what is not among them is skipped, a further chunk of an entry too
   const hits = await search(app, { ai1_discover: sql`e.kind = ${kind}` }, query, { limit: every.length });
-  const byName = new Map(among.map((e) => [e.name, e]));
-  return [...new Set(hits.map((h) => String(h.key.name)))].flatMap((name) => byName.get(name) ?? []).slice(0, limit);
+  const byName = new Map(among.map((e) => [e.name, e])), best = new Map<string, number>();
+  for (const { key, score } of hits) if (!best.has(String(key.name))) best.set(String(key.name), score); // the nearest chunk
+  return [...best].flatMap(([name, score]) => byName.has(name) ? [{ ...byName.get(name)!, score }] : []).slice(0, limit);
 }

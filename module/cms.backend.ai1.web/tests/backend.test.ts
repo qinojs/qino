@@ -1,7 +1,7 @@
 import { App, runAs, unixTime } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-import { cms } from "../plugin.ts";
+import { cms, list } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -25,8 +25,19 @@ Deno.test("cms.backend.ai1.web: the reader, the keys and the pages read", async 
     const page = String(await runAs(app, 7, "test", () => cms.node.render(node)));
     assertEquals(page.includes("[object Promise]"), false);
     for (const part of ["…1234", "<option selected>jina", "&lt;b&gt;Qino&lt;/b&gt;", "A CMS", `data-id="${id}"`]) assertStringIncludes(page, part);
+    // crawl, and wait for it
+    await app.settings.core.keys["api.jina.ai"]("sk-jina");
+    const fetchOrg = globalThis.fetch;
+    globalThis.fetch = () => Promise.resolve(Response.json({ data: { title: "Docs", content: "no links" } }));
+    try {
+      assertEquals(await api(node, { crawl: { url: "https://site.test/docs/", max: "5" } }), { ok: true, result: { read: 1, failed: [], left: 0 } });
+    } finally { globalThis.fetch = fetchOrg; }
+    assertEquals((await api(node, { crawl: { url: "ftp://site.test/" } }) as { ok: boolean }).ok, false);
+    assertStringIncludes(String(await runAs(app, 7, "test", () => list(node, { vars: { root: "https://site.test/" } }))), "https://site.test/docs/");
+    assertEquals(String(await runAs(app, 7, "test", () => list(node, { vars: { root: "https://nowhere.test/" } }))).includes("site.test"), false);
+
     assertEquals(await api(node, { remove: id }), { ok: true });
-    assertEquals(await app.db.col`SELECT id FROM ai1_web_page`, []);
+    assertEquals((await app.db.col`SELECT id FROM ai1_web_page`).map(Number).includes(Number(id)), false);
   } finally {
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
     await app.db.close();

@@ -5,7 +5,7 @@ import { candidates } from "@qino/qino/ai1";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
 import { sqlScore, strength } from "@qino/qino/score";
-import { IN_MIND } from "@qino/qino/ai1.agent";
+import { Agent, IN_MIND } from "@qino/qino/ai1.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -220,6 +220,24 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
       <td>${time(m.time)}`) : html.async`<tr><td colspan=7>${t`No memories yet`}`}</tbody>`;
 }
 
+/** The tools of agent `vars.agent`, the nearest to its role first, and which a session starts with. */
+export async function tools(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
+  const t = node.app.t, list = await new Agent(node.app, Number(vars.agent) || 0).tools().catch(() => []);
+  return html.async`
+    <thead><tr>
+      <th>#
+      <th>${t`Tool`}
+      <th title="${t`How near its description is to the role, by meaning: 1 the same`}">${t`Score`}
+      <th title="${t`A session starts with it; the others it finds itself`}">${t`Given`}
+      <th>${t`Description`}
+    <tbody>${list.length ? list.map((tool, i) => html`<tr>
+      <td>${i + 1}
+      <td>${tool.name}
+      <td>${tool.score == null ? "–" : tool.score.toFixed(3)}
+      <td>${tool.given ? "✓" : "–"}
+      <td><small>${short(tool.description)}</small>`) : html.async`<tr><td colspan=5>${t`No tools`}`}</tbody>`;
+}
+
 /** All about agent `vars.agent`: what it is, what happened, which models answered for whom. */
 export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, id = Number(vars.agent) || 0;
@@ -431,6 +449,11 @@ async function render(node: Node): Promise<HtmlString> {
     ${edit ? html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Edit agent`}</div>${form(node, edit)}</div>` : ""}
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
+    <div class=u2-card style="flex:0 1 auto">
+      <div class=-head>${t`Tools`}</div>
+      <div><small>${t`Ranked by how near each tool's description is to the agent's role, by meaning; a session starts with the ✓ ones and finds the others itself.`}</small></div>
+      <div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=tools>${tools(node, { vars })}</table></div>
+    </div>
   </div>`;
 }
 
@@ -441,4 +464,4 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, api, parts: { agents, agent, sessions, session, memories, conversation } } };
+export const cms = { node: { js: ["pub/main.js"], render, api, parts: { agents, agent, sessions, session, memories, tools, conversation } } };

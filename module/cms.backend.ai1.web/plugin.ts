@@ -2,7 +2,7 @@
 import { errMsg, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
-import { ENGINES, pages, read, READERS, search } from "@qino/qino/ai1.web";
+import { crawl, ENGINES, pages, read, READERS, search } from "@qino/qino/ai1.web";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -34,11 +34,11 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Web", de: "Web" });
 }
 
-/** The pages read, the latest first; with `vars.search` the nearest to it. Their content folded. */
+/** The pages read, the latest first; with `vars.search` the nearest to it, with `vars.root` only those
+ *  below it. Their content folded. */
 export async function list(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app;
-  const rows = vars.search ? await pages(node.app, String(vars.search), { limit: LIMIT })
-    : await db.query`SELECT id, url, title, reader, time FROM ai1_web_page ORDER BY time DESC LIMIT ${LIMIT}`;
+  const rows = await pages(node.app, vars.search ? String(vars.search) : undefined, { root: vars.root ? String(vars.root) : undefined, limit: LIMIT });
   const content = new Map((await db.query`SELECT id, content FROM ai1_web_page WHERE ${sql.in("id", rows.map((r: any) => r.id))}`)
     .map((r) => [Number(r.id), String(r.content ?? "")]));
   return html.async`
@@ -47,6 +47,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
       <th>${t`Page`}
       <th>${t`Reader`}
       <th>${t`Characters`}
+      <th title="${t`How close to the search by meaning: 1 the same, the smaller the farther`}">${t`Score`}
       <th>${t`Read`}
       <th>
     <tbody>${rows.length ? rows.map((p: any) => html`<tr data-id="${p.id}">
@@ -57,9 +58,10 @@ export async function list(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
           <pre style="white-space:pre-wrap; max-height:20rem; overflow:auto"><small>${content.get(Number(p.id))}</small></pre></details>
       <td>${colored(p.reader)}
       <td>${(content.get(Number(p.id)) ?? "").length.toLocaleString("en-US")}
+      <td>${p.score == null ? "–" : Number(p.score).toFixed(3)}
       <td>${time(p.time)}
       <td><button type=button class=u2-unstyle data-remove title=remove><u2-ico icon=delete>✕</u2-ico></button>`)
-      : html.async`<tr><td colspan=6>${t`No pages yet`}`}</tbody>`;
+      : html.async`<tr><td colspan=7>${t`No pages yet`}`}</tbody>`;
 }
 
 async function render(node: Node): Promise<HtmlString> {
@@ -98,11 +100,21 @@ async function render(node: Node): Promise<HtmlString> {
       <input name=url type=url required placeholder="https://…">
       <button>${t`Read`}</button>
     </form>
-    <output style="display:block; white-space:pre-wrap; max-height:20rem; overflow:auto"></output>
+    <form data-crawl class=u2-flex>
+      <input name=url type=url required placeholder="https://…" title="${t`Only links that start with it are followed`}">
+      <input name=max type=number min=1 value=100 title="${t`How many pages at most`}" style="width:6rem">
+      <label><input type=checkbox name=fresh> ${t`all again`}</label>
+      <button>${t`Crawl`}</button>
+    </form>
+    <output data-tried style="display:block; white-space:pre-wrap; max-height:20rem; overflow:auto"></output>
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Pages read`}</div>
-    <form data-find class=u2-flex><input type=search name=search placeholder="${t`Find by meaning`}"></form>
+    <form data-find class=u2-flex>
+      <input type=search name=search placeholder="${t`Find by meaning`}">
+      <input type=search name=root placeholder="${t`Only below, e.g. https://…`}">
+      <button>${t`Find`}</button>
+    </form>
     <div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=list>${list(node)}</table></div>
   </div>
 </div>`;
@@ -120,6 +132,10 @@ async function api(node: Node, vars: Vars): Promise<unknown> {
       await app.settings.core.keys[vars.key.name](String(vars.key.value ?? "").trim());
     } else if (vars.search) return { ok: true, result: await search(app, String(vars.search)) };
     else if (vars.read) return { ok: true, result: await read(app, String(vars.read), { maxAge: 0 }) };
+    else if (vars.crawl) {
+      if (!/^https?:\/\//i.test(vars.crawl.url)) throw new Error("url: http or https");
+      return { ok: true, result: await crawl(app, String(vars.crawl.url), { max: Number(vars.crawl.max) || undefined, maxAge: vars.crawl.fresh ? 0 : undefined }) };
+    }
     else if (vars.remove) await app.db.table("ai1_web_page").delete(Number(vars.remove));
     else return null;
     return { ok: true };

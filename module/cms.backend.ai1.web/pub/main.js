@@ -8,8 +8,26 @@ cms.initNode("backend.ai1.web", (el) => {
     if (!res?.ok) await alert(res?.message ?? "Error");
     return res;
   };
-  const find = (search = el.querySelector("[data-find]").elements.search.value) => cms.reloadPart(Number(cms.el.nid(el)), "list", { search });
-  const output = el.querySelector("output");
+  const filter = el.querySelector("[data-find]").elements;
+  const find = () => cms.reloadPart(Number(cms.el.nid(el)), "list", { search: filter.search.value, root: filter.root.value });
+  const output = el.querySelector("[data-tried]");
+
+  // Crawl and wait for it; meanwhile the pages below it show up as they are read.
+  const crawled = async (form) => {
+    const button = form.querySelector("button");
+    filter.root.value = form.elements.url.value;
+    filter.search.value = "";
+    button.disabled = true;
+    output.textContent = "…";
+    const poll = setInterval(find, 3000);
+    const res = await post({ crawl: { url: form.elements.url.value, max: form.elements.max.value, fresh: form.elements.fresh.checked } });
+    clearInterval(poll);
+    button.disabled = false;
+    find();
+    if (!res?.ok) return output.textContent = "";
+    const { read, failed, left } = res.result;
+    output.textContent = `${read} read, ${failed.length} failed, ${left} more found${failed.length ? `\n${failed.join("\n")}` : ""}`;
+  };
 
   el.addEventListener("change", (e) => {
     if (e.target.matches("[data-reader]")) post({ reader: e.target.value });
@@ -26,6 +44,7 @@ cms.initNode("backend.ai1.web", (el) => {
     e.preventDefault();
     const form = e.target;
     if (form.matches("[data-find]")) return find();
+    if (form.matches("[data-crawl]")) return crawled(form);
     output.textContent = "…";
     const res = form.matches("[data-search]") ? await post({ search: form.elements.query.value }) : await post({ read: form.elements.url.value });
     if (!res?.ok) return output.textContent = "";

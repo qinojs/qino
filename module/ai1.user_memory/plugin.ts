@@ -38,7 +38,7 @@ export const api: ApiTree = {
   memories: {
     get: { description: "The memories every agent keeps about you", access: Access.USER, execute: (_: unknown, ctx: Ctx) => list(ctx.app, ctx.userId) },
     post: {
-      description: "Keep a short fact about the user you talk with (their language, how to address them, their preferences), for every agent; or replace one of theirs (u5: replaces 5)",
+      description: "Keep a short fact about who the user is (name, language, how to address them), for every agent; or replace one of theirs (u5: replaces 5)",
       input: s.object({ content: s.string(), replaces: s.optional(s.number()) }),
       access: Access.USER,
       execute: ({ content, replaces }: any, ctx: Ctx) => keep(ctx.app, ctx.userId, content, replaces),

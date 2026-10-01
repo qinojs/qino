@@ -1,6 +1,6 @@
 import { unixTime } from "@qino/qino";
 
-import { ask, note } from "./lib/turn.ts";
+import { ask, note, ranked } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
 
@@ -26,6 +26,12 @@ export class Agent {
    *  replaces the agent's for this session. */
   async start(usrId: number, { prefer }: { prefer?: Record<string, number> } = {}): Promise<Session> {
     return new Session(this.#app, Number(await this.#app.db.table("ai1_session").insert({ agent_id: this.#id, usr_id: usrId, prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() })));
+  }
+
+  /** The tools of its api paths, the nearest to its role first, with how near; `given`: a session
+   *  starts with it. */
+  tools(): ReturnType<typeof ranked> {
+    return ranked(this.#app, this.#id);
   }
 }
 

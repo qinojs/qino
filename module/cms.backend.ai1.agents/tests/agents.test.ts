@@ -3,7 +3,7 @@ import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { hit } from "@qino/qino/score";
 import { Agent } from "@qino/qino/ai1.agent";
 
-import { agent as about, agents, cms, conversation, memories, session as aboutSession, sessions } from "../plugin.ts";
+import { agent as about, agents, cms, conversation, memories, session as aboutSession, sessions, tools } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -65,6 +65,9 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     }
     assert(!its2.includes("[object Promise]"));
     assertStringIncludes(await as(() => aboutSession(node, { vars: { session: 999 } })), "No such session");
+
+    // its tools, by nearness to its role
+    for (const part of ["Tool", "Given"]) assertStringIncludes(await as(() => tools(node, { vars: { agent: agent.id } })), part);
 
     const kept = await as(() => memories(node, { vars: { agent: agent.id } }));
     for (const part of ["the &lt;i&gt;logo&lt;/i&gt; is blue", "<td>3.00", "<td>–"]) assertStringIncludes(kept, part);

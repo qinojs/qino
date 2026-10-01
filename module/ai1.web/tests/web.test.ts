@@ -112,6 +112,8 @@ Deno.test("ai1.web: crawl reads the pages below a url, at most max; pages finds 
     assertEquals(asked, ["https://site.test/docs/", "https://site.test/docs/a"]); // below /docs/ only, no image
     assertEquals(await as(() => web.crawl.post({ url: "https://site.test/docs/", wait: true })), { read: 4, failed: [], left: 0 });
     assertEquals(asked.length, 4); // the two read before came from the cache
+    await as(() => web.crawl.post({ url: "https://site.test/docs/", maxAge: 0, wait: true }));
+    assertEquals(asked.length, 8); // all again
 
     await app.db.table("ai1_web_page").insert({ url: "https://elsewhere.test/crawling", url_hash: "y", title: "", content: "crawling", reader: "fetch", time: 1 });
     const found = (query: Record<string, string>) => as(() => web.pages.get(undefined, query)).then((rows) => rows.map((p: any) => p.url).sort());

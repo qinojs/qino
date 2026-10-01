@@ -32,7 +32,7 @@ async function render(node: Node): Promise<HtmlString> {
   const { db, t } = node.app;
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown
-  const agents = await db.query`SELECT id, system FROM ai1_agent ORDER BY id DESC`;
+  const agents = await db.query`SELECT id, system, prefer FROM ai1_agent ORDER BY id DESC`;
   const sessions = await db.query`SELECT s.id, s.agent_id, MAX(m.time) AS last_time,
       (SELECT first.message FROM ai1_session_message first
         WHERE first.session_id = s.id AND first.message LIKE ${'{"role":"user"%'} ORDER BY first.id LIMIT 1) AS first_message
@@ -40,16 +40,28 @@ async function render(node: Node): Promise<HtmlString> {
     WHERE s.usr_id = ${getCtx().userId} GROUP BY s.id, s.agent_id, s.time
     ORDER BY COALESCE(MAX(m.time), s.time) DESC, s.id DESC`;
   return html.async`<div class=u2-flex>
-    <div class="u2-card -agents">
+    <div class="u2-card -agents" style="flex:0 1 25rem;">
       <div class=-head>${t`Chat`}</div>
-      <div class="-body u2-flex -Col" style="flex-wrap:nowrap">
+      <div class="u2-flex -Col" style="flex-wrap:nowrap">
         <form data-start>
           <select name=agent aria-label="${t`Agent`}" required>${agents.map((agent) =>
-            html`<option value="${agent.id}">#${agent.id} ${String(agent.system ?? "").split("\n")[0].slice(0, 80)}</option>`)}</select>
-          <fieldset><legend>${t`Model choice for this session`}</legend><div class=u2-flex>${WEIGHTS.map((key) =>
-            html`<label>${key} <input type=range min=0 max=10 value=0 data-prefer data-key="${key}"> <output>0</output></label>`)}</div></fieldset>
-          <small>${t`All at 0: the agent's choice.`}</small>
-          <div><small>${t`Who would answer`}</small><ol data-preview></ol></div>
+            html`<option value="${agent.id}" data-prefer="${agent.prefer ?? ""}">#${agent.id} ${String(agent.system ?? "").split("\n")[0].slice(0, 80)}</option>`)}</select>
+          <fieldset><legend>${t`Model choice for this session`}</legend>
+            <div class=u2-table>
+              <div>${WEIGHTS.map((key) =>
+                html`<label>
+                  <span>${key}</span>
+                  <input type=range min=0 max=10 value=0 data-prefer data-key="${key}">
+                  <output>0</output>
+                </label>`)}
+              </div>
+            </div>
+          </fieldset>
+          <small>${t`Set to the agent's choice; moved, the session keeps its own.`}</small>
+          <div style="margin-block:1rem">
+            <small>${t`Who would answer`}</small>
+            <ol data-preview></ol>
+          </div>
           <button ${agents.length ? "" : "disabled"}>${t`Start session`}</button>
         </form>
         ${agents.length ? "" : html`<p>${t`No agents yet`}`}

@@ -318,11 +318,16 @@ async function tryCard(app: App): Promise<HtmlString> {
         <select name=model><option value="">${t`any model`}${options(names.map((n) => ({ value: n, label: n })), "")}</select>
         <button>${t`Send`}</button>
       </div>
-      <table class=-weights>${criteria.map((c) => html`<tr>
-        <th>${label(c)}
-        <td><input type=range min=0 max=10 step=1 data-weight="${c}" value=0>
-        <td class=-num><output>0</output>`)}
-      </table>
+      <fieldset><legend>${t`Model choice`}</legend>
+        <div class=u2-table>
+          <div>${criteria.map((c) => html`<label>
+            <span>${label(c)}</span>
+            <input type=range min=0 max=10 step=1 data-weight="${c}" value=0>
+            <output>0</output>
+          </label>`)}
+          </div>
+        </div>
+      </fieldset>
       <small>${t`All at 0: ai1's own choice — quality (the capability's own score, else intelligence), then cheap and fast.`}</small>
       <ol class=-candidates></ol>
       <output></output>

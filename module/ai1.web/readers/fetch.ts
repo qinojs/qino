@@ -1,4 +1,5 @@
-import { errMsg, fs, safeFetch, unhee } from "@qino/qino";
+import { errMsg, fs, safeFetch } from "@qino/qino";
+import { Parser } from "htmlparser2";
 
 import type { Reader } from "../mod.ts";
 
@@ -9,6 +10,17 @@ import type { Reader } from "../mod.ts";
 /** A page larger than this is not read. */
 const MAX_SIZE = 5 * 1024 * 1024;
 
+/** The page's <title>, its entities decoded (&auml; is ä). */
+function titleOf(html: string): string {
+  let title = "", within = false;
+  new Parser({
+    onopentag: (name) => within = name === "title",
+    ontext: (text) => within && (title += text),
+    onclosetag: () => within = false,
+  }, { decodeEntities: true }).end(html);
+  return title.trim();
+}
+
 export const own: Reader = async (app, url) => {
   const res = await safeFetch(url, { headers: { accept: "text/html, text/markdown;q=0.9, text/plain;q=0.8, */*;q=0.5" } });
   if (!res.ok) throw new Error(`fetch: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
@@ -18,7 +30,7 @@ export const own: Reader = async (app, url) => {
   if (bytes.length > MAX_SIZE) throw new Error(`fetch: larger than ${MAX_SIZE} bytes`);
   const text = new TextDecoder().decode(bytes);
   if (mime.startsWith("text/") && mime !== "text/html") return { title: "", content: text };
-  const title = mime === "text/html" ? unhee(/<title[^>]*>([^<]*)/i.exec(text)?.[1].trim() ?? "") : "";
+  const title = mime === "text/html" ? titleOf(text) : "";
   const dir = app.modules.get("ai1.web")!.tmp, path = `${dir}${crypto.randomUUID()}`;
   await fs.mkdir(dir);
   await fs.write(path, bytes);

@@ -53,11 +53,29 @@ function finders(app: App, tools: Tool[]): Tool[] {
   }];
 }
 
-/** Of the agent's tools, those closest to its role. */
-async function closest(app: App, role: string, tools: Tool[]): Promise<Tool[]> {
+/** `tools` by nearness to the agent's role (ai1.discover), the nearest first, with how near (`score`, 1
+ *  the same) where it is known; `near`: found near it at all. */
+async function byRole(app: App, role: string, tools: Tool[]): Promise<{ tool: Tool; score?: number; near: boolean }[]> {
   const names = new Set(tools.map((tool) => tool.name));
-  const close = new Set(role ? (await find(app, "tools", role, all(app, "tools").filter((e) => names.has(e.name)), CLOSE).catch((e) => (log(e), []))).map((e) => e.name) : []);
-  return tools.filter((tool) => close.has(tool.name));
+  const near = role ? await find(app, "tools", role, all(app, "tools").filter((e) => names.has(e.name)), tools.length).catch((e) => (log(e), [])) : [];
+  const at = new Map(near.map((e, i) => [e.name, i]));
+  return tools.map((tool) => ({ tool, score: near[at.get(tool.name) ?? -1]?.score, near: at.has(tool.name) }))
+    .sort((a, b) => (at.get(a.tool.name) ?? tools.length) - (at.get(b.tool.name) ?? tools.length));
+}
+
+/** Of the agent's tools, those closest to its role. */
+const closest = async (app: App, role: string, tools: Tool[]): Promise<Tool[]> =>
+  (await byRole(app, role, tools)).filter((r) => r.near).slice(0, CLOSE).map((r) => r.tool);
+
+/** The tools of the agent's api paths, the nearest to its role first, with how near; `given`: a session
+ *  starts with it — all of them, or with many those closest to its role. */
+export async function ranked(app: App, agent: number): Promise<{ name: string; description: string; score?: number; given: boolean }[]> {
+  const row = await app.db.row`SELECT system, tools FROM ai1_agent WHERE id = ${agent}`;
+  if (!row) throw new NotFoundError("No such agent");
+  const tools = toolsOf(app, JSON.parse(String(row.tools || "[]"))), many = tools.length > AT_ONCE;
+  const list = await byRole(app, String(row.system ?? ""), tools);
+  const given = new Set((many ? list.filter((r) => r.near).slice(0, CLOSE) : list).map((r) => r.tool.name));
+  return list.map(({ tool: { name, description }, score }) => ({ name, description, score, given: given.has(name) }));
 }
 
 // What every agent can do about itself: its memories and its search, with its own id set.

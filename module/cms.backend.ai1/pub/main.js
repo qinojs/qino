@@ -173,7 +173,7 @@ cms.initNode("backend.ai1", (el) => {
     tryForm.elements.model.addEventListener("change", preview);
     tryForm.addEventListener("input", (e) => {
       if (!e.target.dataset.weight) return;
-      e.target.closest("tr").querySelector("output").textContent = e.target.value;
+      e.target.nextElementSibling.value = e.target.value;
       clearTimeout(previewing);
       previewing = setTimeout(preview, 150);
     });

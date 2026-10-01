@@ -24,7 +24,7 @@ Deno.test("cms.backend.ai1.chat: choose an agent, resume own sessions, and previ
     await app.db.table("ai1_session_message").insert({ session_id: own.id, message: JSON.stringify({ role: "user", content: "My first question about the <blue> logo " + "x".repeat(90) }) });
     const node = { app, page: async () => ({ url: async () => "/chat" }) } as unknown as Node;
     const page = String(await runAs(app, 7, "test", () => cms.node.render(node)));
-    for (const part of ['<option value="1">#1 &lt;b&gt;lead&lt;/b&gt;</option>', `<tr u2-href>`, `href="/chat?session=${own.id}" data-session="${own.id}"`, "Model choice for this session", "Start session", "<table class=u2-table>", "My first question about the &lt;blue&gt; logo", " …"]) assertStringIncludes(page, part);
+    for (const part of ['<option value="1" data-prefer="{&quot;cost&quot;:3}">#1 &lt;b&gt;lead&lt;/b&gt;</option>', `<tr u2-href>`, `href="/chat?session=${own.id}" data-session="${own.id}"`, "Model choice for this session", "Start session", "<table class=u2-table>", "My first question about the &lt;blue&gt; logo", " …"]) assertStringIncludes(page, part);
     assertStringIncludes(page, 'style="overflow:auto; max-height:30rem; padding:0"');
     assert(!page.includes("<blue>"));
     assert(!page.includes(`data-session="${other.id}"`));

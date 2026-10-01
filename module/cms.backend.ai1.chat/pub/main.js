@@ -82,7 +82,16 @@ cms.initNode("backend.ai1.chat", (el) => {
 
   const node = api.cms.node(Number(cms.el.nid(el)));
   const start = el.querySelector("[data-start]");
-  const weights = () => Object.fromEntries([...start.querySelectorAll("[data-prefer]")].filter((s) => +s.value).map((s) => [s.dataset.key, +s.value]));
+  const sliders = start.querySelectorAll("input[data-prefer]"); // the options carry their agent's data-prefer too
+  // The sliders show the chosen agent's choice. Untouched, the session keeps none of its own: the
+  // agent's counts, also when it changes later.
+  let own = false;
+  const weights = () => own ? Object.fromEntries([...sliders].filter((s) => +s.value).map((s) => [s.dataset.key, +s.value])) : {};
+  const agentChoice = () => {
+    const prefer = JSON.parse(start.elements.agent.selectedOptions[0]?.dataset.prefer || "{}");
+    for (const slider of sliders) slider.nextElementSibling.value = slider.value = prefer[slider.dataset.key] ?? 0;
+    own = false;
+  };
 
   let waiting;
   const preview = () => {
@@ -93,9 +102,14 @@ cms.initNode("backend.ai1.chat", (el) => {
     }, 150);
   };
   start.addEventListener("input", (e) => {
-    if ("prefer" in e.target.dataset) e.target.nextElementSibling.value = e.target.value;
+    if ("prefer" in e.target.dataset) {
+      e.target.nextElementSibling.value = e.target.value;
+      own = true;
+    }
     preview();
   });
+  start.elements.agent.addEventListener("change", agentChoice);
+  agentChoice();
   preview();
   start.addEventListener("submit", async (e) => {
     e.preventDefault();

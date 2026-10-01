@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { App, runAs, sql } from "@qino/qino";
-import { assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
 
 import { collections, create, drop } from "@qino/qino/ai1.embed";
 
@@ -226,4 +226,14 @@ Deno.test("ai1.agent: with more than 20 tools, it is given those closest to its 
   const missing = Array.from({ length: 24 }, (_, i) => `get_many_tool${i}`).find((name) => !names.includes(name))!;
   assertStringIncludes((await session.ask(`call:${missing}`)).text, `it is {"results":[`);
   assertStringIncludes((await session.ask("call:post_core_t")).text, '"error":"Not one of your tools: post_core_t"');
+}));
+
+Deno.test("ai1.agent: its tools by nearness to its role, and which a session starts with", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "logo designer", tools: ["many", "toolset"] });
+  const tools = await agent.tools();
+  assertEquals(tools[0].name, "get_many_logo"); // the nearest to its role first
+  assert(tools[0].score! > tools.at(-1)!.score!);
+  assertEquals(tools.filter((t) => t.given).length, 15); // with many, the 15 closest
+  const few = await (await Agent.create(app, { system: "lead", tools: ["toolset"] })).tools();
+  assert(few.length > 0 && few.every((t) => t.given)); // with few, all
 }));

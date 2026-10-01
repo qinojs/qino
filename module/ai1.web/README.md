@@ -4,12 +4,12 @@ The web for agents and the browser, as an api. Apart from the models of [ai1](..
 and readers are no models, each is used with its key in `core.keys`.
 
 ```
-search   get  { query, count? }                    the pages found: [{ title, url, snippet }]
-read     get  { url, maxAge?, offset?, length? }   a page as Markdown, a part at a time (20,000 characters):
-                                                   { id, url, title, content, offset, size, reader, time }
-crawl    post { url, max?, wait? }                 read the pages below url, following their links;
-                                                   with wait: { read, failed, left }
-pages    get  { search?, root? }                   search the pages read, only those below root
+search   get  { query, count? }                      the pages found: [{ title, url, snippet }]
+read     get  { url, maxAge?, offset?, length? }     a page as Markdown, a part at a time (20,000 characters):
+                                                     { id, url, title, content, offset, size, reader, time }
+crawl    post { url, max?, maxAge?, wait? }          read the pages below url, following their links;
+                                                     with wait: { read, failed, left }
+pages    get  { search?, root? }                     search the pages read, only those below root
 ```
 
 ```ts
@@ -28,7 +28,8 @@ const { content } = await read(app, first.url);
   nothing, never reaches our own network (`safeFetch`) and turns HTML, PDF and documents into
   Markdown with the transform pipeline (Pandoc, pdftotext), without running scripts.
 - **Crawl:** from `url`, following the links that start with it (no images, media, CSS, JS), at
-  most `max` (default 100), one page after the other, through `read` and its cache. `left` tells
+  most `max` (default 100), one page after the other, through `read` and its cache (`maxAge: 0`
+  reads all again). `left` tells
   how many links found were not read yet. No `robots.txt`.
 - **Searching the pages read:** `read` with `length: 0` only keeps a page, so an agent can read many
   and then search them with `pages`.

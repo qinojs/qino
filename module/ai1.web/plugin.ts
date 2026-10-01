@@ -55,12 +55,13 @@ export const api: ApiTree = {
       input: s.object({
         url: s.string().describe("Where to start: only links that start with it are followed"),
         max: s.optional(s.number()).describe("How many pages at most; default 100"),
+        maxAge: s.optional(s.number()).describe("Read a page again if older than this many seconds; default a day, 0 always"),
         wait: s.optional(s.boolean()).describe("Answer when done, with how many were read and are left; else it runs in the background"),
       }),
       access: Access.USER,
-      execute: ({ url, max, wait }: { url: string; max?: number; wait?: boolean }, ctx: Ctx) => {
+      execute: ({ url, max, maxAge, wait }: { url: string; max?: number; maxAge?: number; wait?: boolean }, ctx: Ctx) => {
         if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
-        const done = crawl(ctx.app, url, { max });
+        const done = crawl(ctx.app, url, { max, maxAge });
         if (wait) return done;
         done.catch((e) => console.error("[ai1.web] crawl:", errMsg(e)));
         return { started: url };
