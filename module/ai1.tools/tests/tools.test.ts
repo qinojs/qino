@@ -8,8 +8,8 @@ import type { Tool } from "@qino/qino";
 import type { Adapter } from "@qino/qino/ai1";
 
 // Asked "a b", the model calls the tools a and b, then answers with their results; asked "loop", it
-// never stops calling; asked "stay", it makes model n the better one after its first step, then
-// answers with its own name. It streams what it answers.
+// never stops calling; asked "stay", it makes model n the better one after its first step; asked
+// "provider", it makes the other provider cheaper. It streams what it answers.
 let current: App;
 const fake: Adapter = {
   text: (call, { messages, onText }) => {
@@ -17,6 +17,11 @@ const fake: Adapter = {
     if (asked === "stay") {
       if (last.role === "tool") return Promise.resolve({ text: call.model, toolCalls: [], truncated: false });
       return current.db.table("ai1_model_score").insert({ model_id: 2, metric: "intelligence", value: 99 })
+        .then(() => ({ text: "", toolCalls: [{ id: "1", name: "echo", args: {} }], truncated: false }));
+    }
+    if (asked === "provider") {
+      if (last.role === "tool") return Promise.resolve({ text: call.provider, toolCalls: [], truncated: false });
+      return current.db.exec`UPDATE ai1_model_provider SET cost_input = 10 - cost_input, cost_output = 10 - cost_output`
         .then(() => ({ text: "", toolCalls: [{ id: "1", name: "echo", args: {} }], truncated: false }));
     }
     if (last.role === "tool" && asked !== "loop") {
@@ -83,6 +88,14 @@ Deno.test("ai1.tools: a run stays with the model that answered first, for its pr
   await testApp.db.table("ai1_model_score").insert({ model_id: 1, metric: "intelligence", value: 10 });
   const out = await run(testApp, ask("stay"));
   assertEquals([out.text, out.model], ["m", "m"]); // n became better, but m kept the run
+}));
+
+Deno.test("ai1.tools: a run stays with the provider that answered first", () => withApp(async (testApp) => {
+  const other = await testApp.db.table("ai1_provider").insert({ name: "other", type: "fake", endpoint: "" });
+  await testApp.db.exec`UPDATE ai1_model_provider SET cost_input = 1, cost_output = 1`;
+  await testApp.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: other, cost_input: 9, cost_output: 9 });
+  const out = await run(testApp, ask("provider"), { prefer: { cost: 1 } });
+  assertEquals([out.text, out.modelProvider], ["fake", 1]); // the other provider became cheaper
 }));
 
 Deno.test("ai1.tools: the tools act as the user, not as the caller's request", () => withApp(async (testApp) => {

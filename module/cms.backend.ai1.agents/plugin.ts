@@ -154,7 +154,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
   const rows = await node.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
     FROM ai1_session_message m ${answeredBy}
     WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
-  return html`<div class="u2-flex -Col">${rows.map((row) => { // one message below the other: then align-self puts them left and right
+  return html`<div class="u2-flex -Col" style="flex-wrap:nowrap">${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
     const head = html`<small>${time(row.time)} · ${m.role}${row.model ? html` · ${by(row)}` : ""}</small>`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note

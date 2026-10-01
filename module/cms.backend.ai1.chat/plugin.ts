@@ -47,7 +47,7 @@ const sliders = (scope: string, values: Record<string, number> = {}) => html`<di
 /** One agent to change and start a session with, or a new one. */
 function form(node: Node, tools: Branch, agent: Agent = {}): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<form class="u2-flex -Col" data-agent="${agent.id ?? ""}">
+  return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id ?? ""}">
     <textarea name=system rows=6 placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
     <details><summary>${t`Tools`}: <small>${agent.tools?.join(", ") || "–"}</small></summary><div style="overflow:auto;max-height:15rem">${branches(tools, agent.tools ?? [])}</div></details>
     <fieldset><legend>${t`Model`}</legend>${sliders("agent", agent.prefer)}</fieldset>
@@ -75,7 +75,7 @@ async function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
     <div class="u2-card -agents">
       <div class=-head>${t`Agents`}</div>
-      <div class="-body u2-flex -Col">
+      <div class="-body u2-flex -Col" style="flex-wrap:nowrap">
         ${agents.length ? agents.map((agent) => html.async`<details>
           <summary><span style="color:${uniqueColor(`#${agent.id}`)}">#${agent.id}</span> ${agent.system.split("\n")[0].slice(0, 80)}</summary>${form(node, tools, agent)}</details>`) : html.async`<p>${t`No agents yet`}`}
         <details><summary>+ ${t`New agent`}</summary>${form(node, tools)}</details>
@@ -83,7 +83,7 @@ async function render(node: Node): Promise<HtmlString> {
     </div>
     <div class="u2-card -chat">
       <div class=-head data-title>${t`Chat`}</div>
-      <div class="-body u2-flex -Col" data-log><small>${t`Start a session with an agent.`}</small></div>
+      <div class="-body u2-flex -Col" style="flex-wrap:nowrap" data-log><small>${t`Start a session with an agent.`}</small></div>
       <form class=u2-flex data-ask hidden>
         <textarea name=content rows=3 required placeholder="${t`Ctrl/⌘ + Enter sends`}"></textarea>
         <button>${t`Send`}</button>

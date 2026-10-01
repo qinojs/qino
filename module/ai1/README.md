@@ -57,8 +57,8 @@ in the messages) and `tools`. A model is a candidate if it has the capability an
 
 ## Fallback
 
-1. Candidates by `prefer`. A pinned `model` (`opts.model`)
-   goes first, but it still falls back.
+1. Candidates by `prefer`. A pinned model provider (`opts.modelProvider`) goes first, then a pinned
+   model (`opts.model`); both still fall back.
 2. A provider whose adapter can't serve the capability natively serves it through the capability's
    `via`: give a chat model `translate` and it translates by prompt.
 3. At the end, the `via` capabilities themselves: no translation service means `translate` via `text`.

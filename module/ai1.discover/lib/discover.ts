@@ -50,10 +50,12 @@ async function callable(ctx: Ctx): Promise<Set<string>> {
   return names;
 }
 
+/** Every entry of a kind. */
+export const all = (app: App, kind: Kind): Entry[] => ({ tables, events, tools })[kind](app);
+
 /** The entries of a kind `ctx` may see: tables and events all, tools only those it may call. */
 export async function entries(ctx: Ctx, kind: Kind): Promise<Entry[]> {
-  if (kind === "tables") return tables(ctx.app);
-  if (kind === "events") return events(ctx.app);
+  if (kind !== "tools") return all(ctx.app, kind);
   const names = await callable(ctx);
   return tools(ctx.app).filter((tool) => names.has(tool.name));
 }
@@ -62,13 +64,13 @@ const indexed = new WeakMap<App, Map<Kind, { text: string; done: Promise<void> }
 
 /** Embed every entry of a kind, unless it is as last time: modules linked later change it. Unchanged
  *  entries are not embedded again (ai1.embed); those gone are removed. */
-function indexAll(app: App, kind: Kind, all: Entry[]): Promise<void> {
+function indexAll(app: App, kind: Kind, every: Entry[]): Promise<void> {
   const kinds = indexed.get(app) ?? indexed.set(app, new Map()).get(app)!;
-  const now = all.map((e) => e.text).join("\n\n");
+  const now = every.map((e) => e.text).join("\n\n");
   if (kinds.get(kind)?.text === now) return kinds.get(kind)!.done;
   const done = (async () => {
-    for (const { name, text } of all) await index(app, "ai1_discover", { kind, name }, text);
-    const names = new Set(all.map((e) => e.name));
+    for (const { name, text } of every) await index(app, "ai1_discover", { kind, name }, text);
+    const names = new Set(every.map((e) => e.name));
     for (const name of await app.db.col`SELECT DISTINCT name FROM embedding_ai1_discover WHERE kind = ${kind}`) {
       if (!names.has(String(name))) await remove(app, "ai1_discover", { kind, name: String(name) });
     }
@@ -77,18 +79,18 @@ function indexAll(app: App, kind: Kind, all: Entry[]): Promise<void> {
   return done;
 }
 
-/** The entries nearest to `query` by meaning; without an embedding collection those that contain the
- *  most of its words. */
-export async function find(ctx: Ctx, kind: Kind, query: string): Promise<Entry[]> {
-  const app = ctx.app, mine = await entries(ctx, kind);
+/** Of `among`, the entries nearest to `query` by meaning; without an embedding collection those that
+ *  contain the most of its words. */
+export async function find(app: App, kind: Kind, query: string, among: Entry[], limit = LIMIT): Promise<Entry[]> {
   if (!await collection(app)) {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    return mine.map((e) => ({ e, n: words.filter((w) => e.text.toLowerCase().includes(w)).length }))
-      .filter(({ n }) => n).sort((a, b) => b.n - a.n).slice(0, LIMIT).map(({ e }) => e);
+    return among.map((e) => ({ e, n: words.filter((w) => e.text.toLowerCase().includes(w)).length }))
+      .filter(({ n }) => n).sort((a, b) => b.n - a.n).slice(0, limit).map(({ e }) => e);
   }
-  await indexAll(app, kind, kind === "tools" ? tools(app) : mine).catch(log);
-  // a few more, as some may not be the caller's (tools) or be chunks of the same entry
-  const hits = await search(app, { ai1_discover: sql`e.kind = ${kind}` }, query, { limit: LIMIT * 5 });
-  const byName = new Map(mine.map((e) => [e.name, e]));
-  return [...new Set(hits.map((h) => String(h.key.name)))].flatMap((name) => byName.get(name) ?? []).slice(0, LIMIT);
+  const every = all(app, kind);
+  await indexAll(app, kind, every).catch(log);
+  // all of the kind by nearness: what is not among them is skipped, a further chunk of an entry too
+  const hits = await search(app, { ai1_discover: sql`e.kind = ${kind}` }, query, { limit: every.length });
+  const byName = new Map(among.map((e) => [e.name, e]));
+  return [...new Set(hits.map((h) => String(h.key.name)))].flatMap((name) => byName.get(name) ?? []).slice(0, limit);
 }

@@ -14,7 +14,7 @@ import type { Adapter } from "@qino/qino/ai1";
 
 // Answers with its role, how many questions it has seen and the last one; asked "time?", it calls
 // the tool now first; "remember:fact", "replace:id:fact", "forget:id" and "search:query" go to those
-// tools; "slow" takes a moment; "fail" fails. It embeds what mentions a logo apart from the rest.
+// tools, "find:what" and "call:tool" to finding and calling more; "slow" takes a moment; "fail" fails. It embeds what mentions a logo apart from the rest.
 // What it is sent goes to `sent`.
 const sent: unknown[][] = [];
 const fake: Adapter = {
@@ -26,7 +26,8 @@ const fake: Adapter = {
     if (typed === "fail") throw new Error("down");
     if (typed === "time?") return { text: "", toolCalls: [{ id: "1", name: "get_toolset_clock", args: {} }], truncated: false };
     const [verb, a, b] = typed.split(":");
-    const call = { remember: ["post_memories", { content: a }], replace: ["post_memories", { content: b, replaces: Number(a) }], forget: ["delete_memories", { memory: Number(a) }], search: ["post_search", { query: a }] }[verb];
+    const call = { remember: ["post_memories", { content: a }], replace: ["post_memories", { content: b, replaces: Number(a) }], forget: ["delete_memories", { memory: Number(a) }], search: ["post_search", { query: a }],
+      find: ["find_tools", { search: a }], call: ["post_core_toolCalls", { calls: [{ name: a }] }] }[verb];
     if (last.role === "user" && call) return { text: "", toolCalls: [{ id: "1", name: call[0], args: call[1] }], truncated: false };
     if (typed === "slow") await new Promise((r) => setTimeout(r, 30));
     const result = last.role === "tool" && JSON.parse(last.content);
@@ -37,7 +38,7 @@ const fake: Adapter = {
 
 async function withApp(fn: (app: App) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["../../ai1/plugin.ts", "../../ai1.tools/plugin.ts", "../../cron/plugin.ts", "../../score/plugin.ts", "../../ai1.embed/plugin.ts", "../plugin.ts", "./toolset/plugin.ts"]) app.modules.add(new URL(mod, import.meta.url));
+  for (const mod of ["../../ai1/plugin.ts", "../../ai1.tools/plugin.ts", "../../cron/plugin.ts", "../../score/plugin.ts", "../../ai1.embed/plugin.ts", "../../ai1.discover/plugin.ts", "../plugin.ts", "./toolset/plugin.ts", "./many/plugin.ts"]) app.modules.add(new URL(mod, import.meta.url));
   await app.init();
   app.modules.get("ai1")!.plugin.ai1Adapters.fake = fake;
   try {
@@ -195,4 +196,19 @@ Deno.test("ai1.agent: one turn after the other in a session", () => withApp(asyn
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   const [first, second] = await Promise.all([session.ask("slow"), new Session(app, session.id).ask("then")]); // another handle, the same session
   assertEquals([first.text, second.text], ["lead #1 slow", "lead #2 then"]); // the second saw the first
+}));
+
+Deno.test("ai1.agent: with more than 20 tools, it is given those closest to its role and finds and calls the others", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "logo designer", tools: ["many", "toolset"] });
+  const session = await agent.start(7);
+  await session.ask("hi");
+  const [given] = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
+    .map((json) => JSON.parse(String(json)));
+  const names = given.tools.map((t: { name: string }) => t.name);
+  assertEquals(names.length, 3 + 15 + 2); // its own, the 15 closest, find_tools and core's tool-calls
+  assertEquals([names.includes("get_many_logo"), names.slice(-2)], [true, ["find_tools", "post_core_toolCalls"]]);
+  assertStringIncludes((await session.ask("find:draw a logo")).text, '"name":"get_many_logo"');
+  const missing = Array.from({ length: 24 }, (_, i) => `get_many_tool${i}`).find((name) => !names.includes(name))!;
+  assertStringIncludes((await session.ask(`call:${missing}`)).text, `it is {"results":[`);
+  assertStringIncludes((await session.ask("call:post_core_t")).text, '"error":"Not one of your tools: post_core_t"');
 }));

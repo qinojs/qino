@@ -8,7 +8,7 @@ import type { Node } from "@qino/qino/cms";
 
 Deno.test("cms.backend.ai1.chat: every agent to open, and who would answer by the weights", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "ai1.tools", "cron", "score", "ai1.embed", "ai1.agent"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai1", "ai1.tools", "cron", "score", "ai1.embed", "ai1.discover", "ai1.agent"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   try {
     await app.settings.core.url("https://example.test/");

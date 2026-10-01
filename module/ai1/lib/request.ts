@@ -30,13 +30,13 @@ export type Capability = {
 };
 
 /**
- * `model` is tried first (it still falls back), `needs` are capabilities the model must have too,
- * `signal` cancels without fallback. `prefer` weighs what decides between the candidates: `cost`
+ * `modelProvider` goes first, then `model`; both can fall back. `needs` are capabilities the model
+ * must also have. `signal` cancels without fallback. `prefer` weighs the candidates: `cost`
  * (cheaper is better), `speed`, `quality` (the score named like the capability, as `image`, where
  * there is one, else `intelligence`) and any score of the models (`coding` …), e.g.
  * `{ coding: 9, cost: 5, speed: 1 }`. Without it: `{ quality: 2, cost: 1, speed: 1 }`.
  */
-export type Opts = { model?: string; needs?: string[]; prefer?: Record<string, number>; signal?: AbortSignal;
+export type Opts = { model?: string; modelProvider?: number; needs?: string[]; prefer?: Record<string, number>; signal?: AbortSignal;
   onResponse?: (response: Response) => void };
 
 /** `status` as HTTP: 502 unreachable, 504 timed out. `final`: the caller already got part of the
@@ -120,7 +120,7 @@ const definitions = (app: App, capability: string): Capability[] => app.modules.
  * between the candidates' worst (0) and best (1) — cost (3:1 input/output blend) and speed by
  * ratio (log) and without the outer tenth on each side, scores as they are; unknown counts as worst.
  */
-export async function candidates(app: App, capability: string, input: unknown, { model, needs: wanted = [], prefer }: Opts = {}): Promise<Candidate[]> {
+export async function candidates(app: App, capability: string, input: unknown, { model, modelProvider, needs: wanted = [], prefer }: Opts = {}): Promise<Candidate[]> {
   const defs = definitions(app, capability);
   const needs = [...new Set([...wanted, ...defs.flatMap((def) => def.needs?.(input) ?? [])])];
   // a rough size in tokens, so models with a too small context are left out (data URLs don't count)
@@ -163,6 +163,8 @@ export async function candidates(app: App, capability: string, input: unknown, {
   }
   rows.sort((a, b) => b.rank - a.rank || a.id - b.id);
   const list = model ? [...rows.filter((c) => c.model === model), ...rows.filter((c) => c.model !== model)] : rows;
+  const pinned = modelProvider ? list.findIndex((c) => c.id === modelProvider) : -1;
+  if (pinned > 0) list.unshift(...list.splice(pinned, 1));
   return defs.some((def) => def.oneModel) ? list.filter((c) => c.model === list[0].model) : list;
 }
 

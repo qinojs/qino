@@ -4,6 +4,7 @@
   "dependencies": [
     "ai1.tools",
     "ai1.embed",
+    "ai1.discover",
     "score"
   ],
   "files": [

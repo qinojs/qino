@@ -21,7 +21,7 @@ const fake: Adapter = {
 
 async function withApp(fn: (app: App) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "ai1.tools", "cron", "score", "ai1.embed", "ai1.agent", "ai1.user_memory"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai1", "ai1.tools", "cron", "score", "ai1.embed", "ai1.discover", "ai1.agent", "ai1.user_memory"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai1")!.plugin.ai1Adapters.fake = fake;
   try {

@@ -33,6 +33,9 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   with the vector the message gets anyway to be findable. In the background: nobody waits for it.
 - **Tools** come from the api: `tools` are paths in it (`["cms"]`, `["cms/node"]`), each module's
   api is its abilities. Its own routes (memories, search) every agent has, with its id set.
+- **Many tools:** with more than 20, it is given the 15 closest to its role, `find_tools` to find the
+  others by meaning ([ai1.discover](../ai1.discover/)) and core's `post_core_toolCalls` to call them,
+  only its own. What it is given stays the same all session long (prompt cache).
 
 ## Hooks
 

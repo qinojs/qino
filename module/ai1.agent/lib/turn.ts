@@ -1,4 +1,5 @@
-import { ApiError, errMsg, toTools, unixTime } from "@qino/qino";
+import { ApiError, errMsg, NotFoundError, toTools, unixTime } from "@qino/qino";
+import { all, find } from "@qino/qino/ai1.discover";
 import { run } from "@qino/qino/ai1.tools";
 
 import * as memory from "./memory.ts";
@@ -23,6 +24,41 @@ const toolsOf = (app: App, paths: string[]): Tool[] => paths.flatMap((path) => {
   const segments = path.split("/"), node = segments.reduce<unknown>((at, seg) => (at as ApiTree)?.[seg], app.apiTree);
   return node ? toTools(segments.reduceRight((below, seg) => ({ [seg]: below }), node) as ApiTree) : [];
 });
+
+// With many tools, the agent is given those closest to its role, and finds and calls the others: the
+// tools it is given stay the same all session long (prompt cache).
+
+/** More tools than this, and the agent finds them. */
+const AT_ONCE = 20;
+/** How many of them it is given, the closest to its role. */
+const CLOSE = 15;
+
+const log = (e: unknown) => console.error("[ai1.agent] tools:", errMsg(e));
+
+/** To find the agent's tools and call them by name (core's tool-calls), only those. */
+function finders(app: App, tools: Tool[]): Tool[] {
+  const names = new Set(tools.map((tool) => tool.name)), among = all(app, "tools").filter((e) => names.has(e.name));
+  const [calls] = toTools(app.apiTree, { apis: { "/core/tool-calls": ["post"] } });
+  return [{
+    name: "find_tools",
+    description: `Find more of your tools by what they should do: name, description and parameters. Call them with ${calls.name}.`,
+    parameters: { type: "object", properties: { search: { type: "string", description: "What the tool should do" } }, required: ["search"] },
+    execute: async (args) => (await find(app, "tools", String((args as { search?: string }).search ?? ""), among)).map((e) => e.detail),
+  }, {
+    ...calls,
+    execute: (args, ctx) => {
+      const other = ((args as { calls?: { name?: string }[] }).calls ?? []).find((call) => !names.has(String(call?.name)));
+      return other ? Promise.reject(new NotFoundError(`Not one of your tools: ${other.name}`)) : calls.execute(args, ctx);
+    },
+  }];
+}
+
+/** Of the agent's tools, those closest to its role. */
+async function closest(app: App, role: string, tools: Tool[]): Promise<Tool[]> {
+  const names = new Set(tools.map((tool) => tool.name));
+  const close = new Set(role ? (await find(app, "tools", role, all(app, "tools").filter((e) => names.has(e.name)), CLOSE).catch((e) => (log(e), []))).map((e) => e.name) : []);
+  return tools.filter((tool) => close.has(tool.name));
+}
 
 // What every agent can do about itself: its memories and its search, with its own id set.
 const OWN: Record<string, Method[]> = { "/:agent/memories": ["post"], "/:agent/memories/:memory": ["delete"], "/:agent/search": ["post"] };
@@ -91,13 +127,16 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     const id = Number(agent.agent_id), asked: Message = { role: "user", content };
     // other modules add to what the model is given: texts to its context, tools
     const { parts, tools: more } = await app.fire("ai1.agent:turn", { agent: id, session, usrId: Number(agent.usr_id), parts: [] as string[], tools: [] as Tool[] });
-    const tools = [...ownTools(app, id), ...more, ...toolsOf(app, JSON.parse(String(agent.tools || "[]")))];
+    const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]"))), many = allowed.length > AT_ONCE;
+    const always = [...ownTools(app, id), ...more], found = many ? finders(app, allowed) : [];
+    const tools = [...always, ...allowed, ...found];
     const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
     // given once, as the session starts: later changes come with the next session
     let given = kept.find(isGiven);
     if (!given) {
       const system = [agent.system, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
-      await save(app, session, id, given = { role: "system" as const, content: system, tools: tools.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
+      const offer = many ? [...always, ...await closest(app, String(agent.system ?? ""), allowed), ...found] : tools;
+      await save(app, session, id, given = { role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
     }
     await save(app, session, id, asked);
     // the tools as given, run as they are now

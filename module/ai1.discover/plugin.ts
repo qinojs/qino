@@ -16,7 +16,7 @@ const kind = (kind: Kind, param: string, what: string, detail: string) => ({
     query: s.object({ search: s.optional(s.string()).describe("What to find, in words") }),
     access: Access.USER,
     execute: async ({ search }: { search?: string }, ctx: Ctx) =>
-      (search ? await find(ctx, kind, search) : await entries(ctx, kind)).map(({ name, description }) => ({ name, description })),
+      (search ? await find(ctx.app, kind, search, await entries(ctx, kind)) : await entries(ctx, kind)).map(({ name, description }) => ({ name, description })),
   },
   [":" + param]: {
     paramSchema: s.string(),
