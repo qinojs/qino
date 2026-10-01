@@ -96,7 +96,7 @@ async function filters(app: App, vars: Vars): Promise<HtmlString> {
     <select name=provider><option value="">${t`all providers`}${options(providerList.map((p) => ({ value: p.id, label: p.name })), vars.provider)}</select>
     <select name=capability><option value="">${t`all capabilities`}${options(caps.map((c) => ({ value: c, label: c })), vars.capability)}</select>
     <select name=sort title="${t`Order`}">${options(sorts, vars.sort ?? "")}</select>
-    <label><input type=checkbox name=all value=1 ${vars.all ? "checked" : ""}> ${t`also switched off`}</label>
+    <label><input type=checkbox name=all value=1 ${vars.all ? "checked" : ""}> ${t`also unusable`}</label>
     <button type=button data-switch=on u2-confirm="${t`Switch on every model the search, provider and capability match?`}">${t`all on`}</button>
     <button type=button data-switch=off u2-confirm="${t`Switch off every model the search, provider and capability match?`}">${t`all off`}</button>
   </form>`;
