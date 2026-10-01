@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, html, sql, unixTime } from "@qino/qino";
+import { getCtx, html, sql, unixTime, walk } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+import { candidates } from "@qino/qino/ai1";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
 import { sqlScore, strength } from "@qino/qino/score";
@@ -8,7 +9,7 @@ import { IN_MIND } from "@qino/qino/ai1.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Db, HtmlString, Sql } from "@qino/qino";
+import type { ApiTree, App, Db, HtmlString, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Vars = Record<string, any>;
@@ -18,6 +19,44 @@ const { uniqueColor, ageColor } = backend;
 const SESSIONS = 100; // shown, the latest first
 const SHORT = 80; // characters of a role or a message in a table
 const ACTIVE = 60; // seconds since its last message, a session counts as active
+const WEIGHTS = ["quality", "cost", "speed"];
+
+type Branch = { count: number; below: Map<string, Branch> };
+
+/** The paths an agent may use as tools, down to the first parameter. */
+function paths(tree: ApiTree): Branch {
+  const root: Branch = { count: 0, below: new Map() };
+  for (const { segments } of walk(tree)) {
+    let at = root;
+    for (const segment of segments) {
+      if (segment.startsWith(":")) break;
+      at = at.below.getOrInsertComputed(segment, () => ({ count: 0, below: new Map() }));
+      at.count++;
+    }
+  }
+  return root;
+}
+
+const branches = (branch: Branch, chosen: string[], above = ""): HtmlString[] =>
+  [...branch.below].sort(([a], [b]) => a.localeCompare(b)).map(([segment, sub]) => {
+    const path = above + segment, checked = chosen.some((c) => path === c || path.startsWith(c + "/"));
+    return html`<u2-tree${above ? "" : " tristate"}><input type=checkbox slot=icon name=tools value="${path}" ${checked ? "checked" : ""}> ${segment} <small>(${sub.count})</small>${
+      branches(sub, chosen, path + "/")}</u2-tree>`;
+  });
+
+/** Create or edit an agent; sessions are started in Chat. */
+function form(node: Node, agent: { id?: number; system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<HtmlString> {
+  const t = node.app.t;
+  return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id ?? ""}">
+    <textarea name=system rows=6 style="width:100%" placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
+    <details><summary>${t`Tools`}: <small>${agent.tools?.join(", ") || "–"}</small></summary><div style="overflow:auto;max-height:15rem">${branches(paths(node.app.apiTree), agent.tools ?? [])}</div></details>
+    <fieldset><legend>${t`Model`}</legend><div class=u2-flex>${WEIGHTS.map((key) =>
+      html`<label>${key} <input type=range min=0 max=10 value="${agent.prefer?.[key] ?? 0}" data-prefer data-key="${key}"> <output>${agent.prefer?.[key] ?? 0}</output></label>`)}</div></fieldset>
+    <small>${t`All at 0: the default.`}</small>
+    <div><small>${t`Who would answer`}</small><ol data-preview></ol></div>
+    <button>${agent.id ? t`Save` : t`Create`}</button>
+  </form>`;
+}
 
 /** A message of this role, as ai1.agent keeps it ({"role":"user",…}); a failed turn is of role error. */
 const role = (name: string) => sql`m.message LIKE ${`{"role":"${name}"%`}`;
@@ -199,9 +238,6 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
   return html.async`<div>
     <table class=u2-table>
       <tr>
-        <th>${t`Role`}
-        <td><div style="white-space:pre-wrap; max-height:20rem; overflow:auto">${a.system || "–"}</div>
-      <tr>
         <th title="${t`Paths of the api it may use; its memories and search it always has`}">${t`Tools`}
         <td>${a.tools || "–"}
       <tr>
@@ -378,18 +414,31 @@ async function render(node: Node): Promise<HtmlString> {
   </div>`;
   }
   if (!id) return html.async`<div class=u2-flex>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`New agent`}</div>${form(node)}</div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Agents`}</div><table class=u2-table cms-part=agents>${agents(node)}</table></div>
-    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><table class=u2-table cms-part=sessions>${sessions(node)}</table></div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto"><table class=u2-table cms-part=sessions>${sessions(node)}</table></div></div>
   </div>`;
   const vars = { agent: id };
+  const row = await node.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${id}`;
+  const edit = row ? {
+    id, system: String(row.system ?? ""), tools: JSON.parse(String(row.tools || "[]")), prefer: JSON.parse(String(row.prefer || "{}")),
+  } : undefined;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto; max-width:50rem">
       <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)}</div>
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>
-    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div>
+    ${edit ? html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Edit agent`}</div>${form(node, edit)}</div>` : ""}
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
   </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, parts: { agents, agent, sessions, session, memories, conversation } } };
+async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
+  if (!vars.preview || typeof vars.preview !== "object") return null;
+  const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
+  const list = await candidates(node.app, "text", { messages: [], tools: [{}] }, { prefer: Object.keys(prefer).length ? prefer : undefined });
+  return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
+}
+
+export const cms = { node: { js: ["pub/main.js"], render, api, parts: { agents, agent, sessions, session, memories, conversation } } };

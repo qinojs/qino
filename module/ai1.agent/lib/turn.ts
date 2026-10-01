@@ -77,6 +77,19 @@ const weights = (json: unknown): Record<string, number> | undefined => {
   return Object.keys(prefer).length ? prefer : undefined;
 };
 
+/** Every tool call answered: a turn that failed amid its calls left some without a result, which no
+ *  provider takes. Added the same way each time, so what is sent stays the same (prompt cache). */
+function answered(messages: Message[]): Message[] {
+  return messages.flatMap((m, i) => {
+    if (m.role !== "assistant" || !m.toolCalls?.length) return [m];
+    const after = messages.slice(i + 1), end = after.findIndex((next) => next.role !== "tool");
+    const ids = new Set(after.slice(0, end < 0 ? after.length : end).map((next) => (next as { id: string }).id));
+    // before the results there are: those of one step stay together
+    return [m, ...m.toolCalls.filter((call) => !ids.has(call.id))
+      .map((call) => ({ role: "tool" as const, id: call.id, content: '{"error":"No result: the turn failed"}' }))];
+  });
+}
+
 /** What the model was given as the session started (the notes have no tools). */
 const isGiven = (m: { role: string; tools?: unknown }) => m.role === "system" && !!m.tools;
 
@@ -143,7 +156,7 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     const now = new Map(tools.map((tool) => [tool.name, tool]));
     const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));
     return await run(app, {
-      messages: [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...kept.filter((m) => m.role !== "error" && !isGiven(m)), asked],
+      messages: [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...answered(kept.filter((m) => m.role !== "error" && !isGiven(m))), asked],
       tools: offered,
       usrId: Number(agent.usr_id),
       onText,

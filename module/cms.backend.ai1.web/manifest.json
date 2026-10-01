@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.ai1.web",
+  "description": "The web of ai1.web: who reads pages, the keys of the search engines and readers, the pages read.",
+  "dependencies": ["cms.backend", "ai1.web"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
+}

@@ -53,13 +53,15 @@ cms.initNode("backend.ai1.chat", (el) => {
   const agents = api["ai1.agent"];
   const ask = el.querySelector("[data-ask]"), log = el.querySelector("[data-log]"), title = el.querySelector("[data-title]");
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
-  let session = Number(sessionStorage.getItem(KEY)) || undefined, last = 0, sent, showing = Promise.resolve();
+  let session = Number(new URL(location.href).searchParams.get("session")) || Number(sessionStorage.getItem(KEY)) || undefined;
+  let last = 0, sent, showing = Promise.resolve();
 
   // only the messages since the last one are added, so what is opened or selected stays as it is; one
   // after the other, as it is also called while an answer is on its way
   const show = () => showing = showing.catch(() => {}).then(async () => {
-    const { agent, messages } = await agents.sessions(session).get();
-    title.replaceChildren(colored(`#${agent}`), ` · ${session}`);
+    const id = session, { agent, messages } = await agents.sessions(id).get();
+    if (id !== session) return;
+    title.replaceChildren(colored(`#${agent}`), ` · ${id}`);
     const news = messages.filter((m) => m.id > last);
     if (!news.length) return;
     last = news.at(-1).id;
@@ -70,48 +72,47 @@ cms.initNode("backend.ai1.chat", (el) => {
   const open = (id) => {
     sessionStorage.setItem(KEY, session = id);
     last = 0;
+    sent = undefined;
     log.replaceChildren();
     ask.hidden = false;
+    for (const button of el.querySelectorAll("[data-session]")) button.setAttribute("aria-current", String(+button.dataset.session === id));
     return show();
   };
   if (session) open(session).catch(() => { sessionStorage.removeItem(KEY); ask.hidden = true; }); // gone or not ours
 
   const node = api.cms.node(Number(cms.el.nid(el)));
-  const weights = (form, scope) => Object.fromEntries([...form.querySelectorAll(`[data-prefer=${scope}]`)].filter((s) => +s.value).map((s) => [s.dataset.key, +s.value]));
+  const start = el.querySelector("[data-start]");
+  const weights = () => Object.fromEntries([...start.querySelectorAll("[data-prefer]")].filter((s) => +s.value).map((s) => [s.dataset.key, +s.value]));
 
-  // Who would answer: by the session's weights, else the agent's, as the turn chooses.
   let waiting;
-  const preview = (form) => {
+  const preview = () => {
     clearTimeout(waiting);
     waiting = setTimeout(async () => {
-      const session = weights(form, "session"), { list = [] } = await node.api.post({ preview: Object.keys(session).length ? session : weights(form, "agent") }).catch(() => ({}));
-      form.querySelector("[data-preview]").replaceChildren(...list.map((c) => Object.assign(document.createElement("li"), { textContent: `${c.model} @ ${c.provider} (${c.rank})` })));
+      const { list = [] } = await node.api.post({ preview: weights(), agent: Number(start.elements.agent.value) }).catch(() => ({}));
+      start.querySelector("[data-preview]").replaceChildren(...list.map((c) => Object.assign(document.createElement("li"), { textContent: `${c.model} @ ${c.provider} (${c.rank})` })));
     }, 150);
   };
-  el.addEventListener("input", (e) => {
-    if (!e.target.dataset.prefer) return;
-    e.target.nextElementSibling.value = e.target.value;
-    preview(e.target.form);
+  start.addEventListener("input", (e) => {
+    if ("prefer" in e.target.dataset) e.target.nextElementSibling.value = e.target.value;
+    preview();
   });
-  el.addEventListener("toggle", (e) => e.target.open && e.target.querySelector("[data-agent]") && preview(e.target.querySelector("[data-agent]")), true);
-
-  // A whole branch checked is its path alone: what is added below it later comes with it.
-  const chosen = (form) => [...form.querySelectorAll("[name=tools]:checked")].map((box) => box.closest("u2-tree"))
-    .filter((item) => !item.parentElement.closest("u2-tree")?.querySelector(":scope > [name=tools]").checked)
-    .map((item) => item.querySelector(":scope > [name=tools]").value);
-
-  // An agent's form: save it (a new one is created), and maybe start a session with it.
-  el.addEventListener("submit", async (e) => {
-    const form = e.target;
-    if (!("agent" in form.dataset)) return;
+  preview();
+  start.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const values = { system: form.elements.system.value, tools: chosen(form), prefer: weights(form, "agent") };
     try {
-      let agent = Number(form.dataset.agent);
-      if (agent) await agents.agents(agent).patch(values);
-      else agent = (await agents.agents.post(values)).id;
-      if (e.submitter?.name === "start") await open((await agents.agents(agent).sessions.post({ prefer: weights(form, "session") })).id);
-      if (!Number(form.dataset.agent)) location.reload(); // the new agent into the list
+      const agent = Number(start.elements.agent.value);
+      const id = (await agents.agents(agent).sessions.post({ prefer: weights() })).id;
+      const url = new URL(location.href);
+      url.searchParams.set("session", id);
+      const link = h("a", { href: url.href }, `#${id}`);
+      const first = h("td", {}, "–");
+      link.dataset.session = id;
+      first.dataset.first = "";
+      const row = h("tr", {}, h("th", {}, link), h("td", {}, colored(`#${agent}`)), first);
+      row.setAttribute("u2-href", "");
+      el.querySelector("[data-sessions]").prepend(row);
+      history.replaceState(null, "", url);
+      await open(id);
     } catch (err) { await alert(err.message); }
   });
 
@@ -123,7 +124,13 @@ cms.initNode("backend.ai1.chat", (el) => {
     log.append(sent = await entry({ role: "user", content }));
     log.scrollTop = log.scrollHeight;
     const poll = setInterval(() => show().catch(() => {}), 2000); // the steps of the answer, as they are kept
-    try { await agents.sessions(session).ask.post({ content }); } catch (err) { await alert(err.message); }
+    const id = session;
+    try {
+      await agents.sessions(id).ask.post({ content });
+      const first = [...el.querySelectorAll("[data-session]")].find((button) => +button.dataset.session === id)?.closest("tr").querySelector("[data-first]");
+      const line = content.replace(/\s+/g, " ").trim();
+      if (first?.textContent === "–") first.textContent = line.slice(0, SHORT) + (line.length > SHORT ? " …" : "");
+    } catch (err) { await alert(err.message); }
     clearInterval(poll);
     button.disabled = false;
     await show();

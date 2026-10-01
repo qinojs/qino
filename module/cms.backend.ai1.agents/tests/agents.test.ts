@@ -3,7 +3,7 @@ import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { hit } from "@qino/qino/score";
 import { Agent } from "@qino/qino/ai1.agent";
 
-import { agent as about, agents, conversation, memories, session as aboutSession, sessions } from "../plugin.ts";
+import { agent as about, agents, cms, conversation, memories, session as aboutSession, sessions } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -38,6 +38,9 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     const node = { app, page: () => ({ url: () => "/agents" }) } as unknown as Node;
     const as = <T>(fn: () => Promise<T>) => runAs(app, 7, "test", fn).then(String);
 
+    const home = await as(() => cms.node.render(node));
+    for (const part of ["New agent", "data-agent=", "name=system", "name=tools", "data-prefer"]) assertStringIncludes(home, part);
+
     const list = await as(() => agents(node));
     for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "<small>[&quot;cms&quot;]</small>", "it is round"]) assertStringIncludes(list, part);
     assert(!list.includes("<b>lead"));
@@ -48,9 +51,10 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     }
     // its page: everything about it
     const page = await as(() => about(node, { vars: { agent: agent.id } }));
-    for (const part of ["&lt;b&gt;lead&lt;/b&gt;", ">m</span>", ">fake</span>", "ann@example.test", " questions", " errors"]) {
+    for (const part of [">m</span>", ">fake</span>", "ann@example.test", " questions", " errors"]) {
       assertStringIncludes(page, part);
     }
+    assert(!page.includes("&lt;b&gt;lead&lt;/b&gt;"));
     assert(!page.includes("[object Promise]"));
     assertStringIncludes(await as(() => about(node, { vars: { agent: 999 } })), "No such agent");
 

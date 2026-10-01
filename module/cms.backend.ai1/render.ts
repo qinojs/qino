@@ -256,9 +256,9 @@ async function providers(node: Node): Promise<HtmlString> {
       <td><input name=endpoint value="${p.endpoint}" required>
       <td class=-num><input name=timeout_ms type=number min=1000 step=1000 value="${p.timeout_ms}">
       <td>
-        <small class=u2-badge style="--color-dark:var(${key ? "--green" : "--gray"})">${key ? `…${key.slice(-4)}` : t`no key`}</small>
-        <button type=button class=u2-unstyle data-key title="${t`Set key`}"><u2-ico icon=key>⚿</u2-ico></button>
         ${keyUrl ? html.async`<a href="${keyUrl}" target=_blank rel=noopener title="${t`Get a key`}"><u2-ico icon=open_in_new>↗</u2-ico></a>` : ""}
+        <button type=button class=u2-unstyle data-key title="${t`Set key`}"><u2-ico icon=key>⚿</u2-ico></button>
+        <small class=u2-badge style="--color-dark:var(${key ? "--green" : "--gray"})">${key ? `…${key.slice(-4)}` : t`no key`}</small>
       <td class=-num>${value(p.used_input, 0)} / ${value(p.used_output, 0)}
       <td>${listing(app, p.type) ? "" : html.async`<small title="${t`Lists no models; add them by hand`}">${t`by hand`}</small>`}
       <td>${remove(t`Remove this provider and its models there?`)}`;

@@ -182,6 +182,9 @@ u2-ico[icon]:not(:has(> svg)) {
   u2-code {
     font-size: 11px;
   }
+  u2-flex.-Col {
+    flex-wrap: no-wrap;
+  }
 
 }
 
