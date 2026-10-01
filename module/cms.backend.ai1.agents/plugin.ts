@@ -447,9 +447,11 @@ async function render(node: Node): Promise<HtmlString> {
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head>${t`Tools`} <small>${await node.app.db.one`SELECT tools FROM ai1_agent WHERE id = ${id}` || "–"}</small></div>
-      <div><small>${t`Ranked by how near each tool's description is to the agent's role, by meaning; a session starts with the 📌 ones and finds the others itself.`}</small></div>
-      <div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=tools>${tools(node, { vars })}</table></div>
+      <div class=-head>${t`Tools`}</div>
+      <div style="max-height:60vh; overflow:auto; padding:0">
+        <table class=u2-table cms-part=tools>${tools(node, { vars })}</table>
+      </div>
+      <div style="width:0; min-width:100%; overflow-wrap:anywhere">${t`API paths`}: <small>${await node.app.db.one`SELECT tools FROM ai1_agent WHERE id = ${id}` || "–"}</small></div>
     </div>
   </div>`;
 }
