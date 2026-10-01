@@ -97,7 +97,8 @@ Deno.test("cms.backend.ai1: the views render the matrix and the providers, escap
   assert(matrix.includes('title="Its providers">1</button>') && !matrix.includes("unusable")); // the count; the providers are in its dialog
   await api(node, { capability: { model: 1, name: "vision", on: true } });
   await api(node, { set: { table: "ai1_provider", id: 1, column: "enabled", value: false } });
-  const changed = await show(node);
+  assert(!(await show(node)).includes("&lt;b&gt;llama")); // no provider serves it: hidden unless also switched off
+  const changed = await show(node, { all: 1 });
   assertStringIncludes(changed, 'type=checkbox data-capability="vision" checked');
   assertStringIncludes(changed, "unusable"); // its only provider is off
 
@@ -240,7 +241,7 @@ Deno.test("cms.backend.ai1: shows the measured calls", async () => {
   for (const [ms, input, output, error] of [[8_000, 10, 800], [4_000, 10, 400], [100, 0, 0, "HTTP 503"], [50, 30, 0]] as const) {
     await record(app, { id: 1, capability: "text", ms, input, output, error });
   }
-  const out = await show(node);
+  const out = await show(node, { all: 1 });
   assert(out.includes("25 %") && out.includes("HTTP 503"));
   assertStringIncludes(await show(node, { show: "providers" }), ">50 / 1,200");
 });

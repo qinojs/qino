@@ -115,7 +115,10 @@ export function matching(vars: Vars): Sql[] {
  *  providers and all its scores open in a dialog (pub/main.js), from its template. */
 async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
   const app = node.app, t = app.t, db = app.db;
-  const where = [...matching(vars), ...vars.all ? [] : [sql`m.enabled = ${true}`]];
+  // by default only usable models: switched on, with a switched-on offer from a switched-on provider
+  const usable = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o
+    JOIN ai1_provider p ON p.id = o.provider_id WHERE o.model_id = m.id AND o.enabled = ${true} AND p.enabled = ${true})`;
+  const where = [...matching(vars), ...vars.all ? [] : [usable]];
   const [caps, rows, scores, abilities, offers, stats, providerRows] = await Promise.all([
     capabilities(app),
     db.query`SELECT * FROM ai1_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`,
