@@ -9,7 +9,7 @@ export async function ensureProvider(app: App): Promise<void> {
     throw new Error(`Provider "${PROVIDER.name}" already exists with another type or endpoint`);
 }
 
-/** Add the selected account's visible text models without changing existing offers. */
+/** Add the selected account's visible text and function-tool models without changing existing offers. */
 export async function syncModels(app: App, names: string[]): Promise<void> {
   if (!names.length) return;
   const db = app.db;
@@ -28,8 +28,10 @@ export async function syncModels(app: App, names: string[]): Promise<void> {
         await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider });
         offers.add(name);
       }
-      if (!await db.one`SELECT 1 FROM ai1_model_capability WHERE model_id = ${model} AND capability = ${"text"}`)
-        await db.table("ai1_model_capability").insert({ model_id: model, capability: "text" });
+      for (const capability of ["text", "tools"]) {
+        if (!await db.one`SELECT 1 FROM ai1_model_capability WHERE model_id = ${model} AND capability = ${capability}`)
+          await db.table("ai1_model_capability").insert({ model_id: model, capability });
+      }
     }
   });
 }

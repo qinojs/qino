@@ -13,7 +13,7 @@ installation opened locally at `http://127.0.0.1:<port>/`. It does not use an Op
    a different type or endpoint. The ChatGPT plan and API-key providers use the same endpoint but
    different adapters and credentials; this provider needs no API key. After sign-in, account
    selection, or opening a ChatGPT account page, the module adds the visible model IDs as enabled
-   `text` offers for this provider. It preserves existing models and offers. Qino's AI selection
+   `text` and local function-tool offers for this provider. It preserves existing models and offers. Qino's AI selection
    determines which model handles a request; select a listed model to target ChatGPT plan usage.
 3. The account page offers disconnect and reauthorization. A returning connection reuses its
    issued client ID. The module refreshes short-lived tokens as needed. Calls require a signed-in

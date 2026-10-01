@@ -1,4 +1,5 @@
 import { App, Redirect } from "@qino/qino";
+import { candidates } from "@qino/qino/ai1";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { authorize, models, pending, store } from "../lib/account.ts";
@@ -57,7 +58,8 @@ Deno.test("ChatGPT model catalog uses the plan-specific models array and slugs",
       { name: "available", provider: "api.openai.com" }, { name: "available", provider: "chatgpt-plan" },
     ]);
     assertEquals(await app.db.one`SELECT cost_input FROM ai1_model_provider WHERE provider_id = ${api}`, 2);
-    assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability`, ["text"]);
+    assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability ORDER BY capability`, ["text", "tools"]);
+    assertEquals((await candidates(app, "text", { messages: [], tools: [{}] })).some((model) => model.provider === "chatgpt-plan"), true);
     await models(app, 3);
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai1_model_provider`), 2);
   } finally { globalThis.fetch = original; await app.db.close(); await Deno.remove(dir, { recursive: true }); }
