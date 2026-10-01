@@ -205,19 +205,17 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
     <thead><tr>
       <th>#
       <th>${t`Memory`}
-      <th title="${t`As stored (score); renewed and recalled it grows`}">${t`Score`}
-      <th title="${t`The score now: unused it fades`}">${t`Strength`}
+      <th title="${t`Current strength; unused memories fade`}">${t`Strength`}
       <th title="${t`The strongest are in the context of a new session, the others only found by search`}">${t`In context`}
       <th title="${t`Embedded: the tool search finds it`}">${t`Findable`}
       <th>${t`When`}
-    <tbody>${rows.length ? rows.map((m, i) => html`<tr>
+    <tbody>${rows.length ? rows.map((m, i) => html.async`<tr>
       <td>${m.id}
-      <td>${m.content}
-      <td>${m.score}
+      <td><button type=button class=u2-unstyle data-memory=${m.id} data-content="${m.content}" title="${t`Edit memory`}">${short(String(m.content))}</button>
       <td>${strength(db, "ai1_agent_memory", Number(m.score), now).toFixed(2)}
-      <td>${i < IN_MIND ? "✓" : "–"}
+      <td>${i < IN_MIND ? html.async`<u2-ico icon=push_pin title="${t`Included when a session starts`}">📌</u2-ico>` : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
-      <td>${time(m.time)}`) : html.async`<tr><td colspan=7>${t`No memories yet`}`}</tbody>`;
+      <td>${time(m.time)}`) : html.async`<tr><td colspan=6>${t`No memories yet`}`}</tbody>`;
 }
 
 /** The tools of agent `vars.agent`, the nearest to its role first, and which a session starts with. */
@@ -228,13 +226,13 @@ export async function tools(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
       <th>#
       <th>${t`Tool`}
       <th title="${t`How near its description is to the role, by meaning: 1 the same`}">${t`Score`}
-      <th title="${t`A session starts with it; the others it finds itself`}">${t`Given`}
+      <th title="${t`A session starts with it; the others it finds itself`}">${t`In context`}
       <th>${t`Description`}
     <tbody>${list.length ? list.map(({ tool, score, given, always }, i) => html.async`<tr>
       <td>${always ? "" : i + 1 - list.findIndex((r) => !r.always)}
       <td>${always ? html.async`<small class=u2-badge title="${t`Not of its api paths: every session has it`}">${t`always`}</small> ` : ""}${tool.name}
       <td>${score == null ? "–" : score.toFixed(3)}
-      <td>${given ? html.async`<u2-ico icon=push_pin title="${t`A session starts with it`}">📌</u2-ico>` : ""}
+      <td>${given ? html.async`<u2-ico icon=push_pin title="${t`Included when a session starts`}">📌</u2-ico>` : "–"}
       <td><small>${short(tool.description)}</small>`) : html.async`<tr><td colspan=5>${t`No tools`}`}</tbody>`;
 }
 

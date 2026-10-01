@@ -16,7 +16,7 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
     const agent = await Agent.create(app, { system: "<b>lead</b>", tools: ["cms"] });
     const session = await agent.start(7);
-    const memory = Number(await app.db.table("ai1_agent_memory").insert({ agent_id: agent.id, content: "the <i>logo</i> is blue" }));
+    const memory = Number(await app.db.table("ai1_agent_memory").insert({ agent_id: agent.id, content: "the <i>logo</i> is blue " + "x".repeat(90) }));
     await hit(app.db, "ai1_agent_memory", memory, 3);
     // the model "m" at the provider "fake" answered the last message
     const provider = await app.db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
@@ -67,10 +67,16 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     assertStringIncludes(await as(() => aboutSession(node, { vars: { session: 999 } })), "No such session");
 
     // its tools, by nearness to its role
-    for (const part of ["Tool", "Given"]) assertStringIncludes(await as(() => tools(node, { vars: { agent: agent.id } })), part);
+    const available = await as(() => tools(node, { vars: { agent: agent.id } }));
+    for (const part of ["Tool", "In context", "icon=push_pin"]) assertStringIncludes(available, part);
+    assert(!available.includes("[object Promise]"));
 
     const kept = await as(() => memories(node, { vars: { agent: agent.id } }));
-    for (const part of ["the &lt;i&gt;logo&lt;/i&gt; is blue", "<td>3.00", "<td>–"]) assertStringIncludes(kept, part);
+    for (const part of ["the &lt;i&gt;logo&lt;/i&gt; is blue", `data-memory=${memory}`, "x".repeat(90), " …</button>", "<td>3.00", "icon=push_pin", "<td>–"]) {
+      assertStringIncludes(kept, part);
+    }
+    assert(!kept.includes(">Score"));
+    assert(!kept.includes("[object Promise]"));
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
     for (const part of ["align-self:flex-end", "→ post_search", "← [{&quot;text&quot;:&quot;round&quot;}]", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {

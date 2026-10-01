@@ -1,4 +1,5 @@
 import { api } from "@qino/pub/api.js";
+import { t } from "@qino/pub/t.js";
 import { markdown } from "@qino/m/cms.backend.ai1/pub/markdown.js";
 
 /** The answers in `box` as markdown. */
@@ -46,6 +47,26 @@ cms.initNode("backend.ai1.agents", (el) => {
   const query = new URL(location.href).searchParams, agent = query.get("agent"), session = query.get("session");
   const parts = session ? [] : agent ? ["agent", "sessions", "memories", "tools"] : ["agents", "sessions"];
   const vars = agent ? { agent } : {};
+  el.addEventListener("click", async (e) => {
+    const button = e.target.closest("button[data-memory]");
+    if (!button) return;
+    const { form } = await import("@qino/u2/js/dialog/dialog.js");
+    const title = await t`Edit memory`;
+    const { content } = await form({
+      body: '<label><textarea name=content rows=10 style="display:block;width:min(40rem,80vw)"></textarea></label>',
+      init(dialog) {
+        dialog.querySelector("label").prepend(title);
+        dialog.querySelector("textarea").value = button.dataset.content;
+      },
+    }) ?? {};
+    if (!content?.trim() || content === button.dataset.content) return;
+    button.disabled = true;
+    try {
+      await agents.agent(Number(agent)).memories.post({ content, replaces: Number(button.dataset.memory) });
+      await cms.reloadPart(nid, "memories", vars);
+    } catch (err) { await alert(err.message); }
+    finally { button.disabled = false; }
+  });
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);
   const box = el.querySelector("[cms-part=conversation]");
