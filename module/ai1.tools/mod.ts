@@ -14,17 +14,24 @@ function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<unknown> {
 }
 
 /** Answer the messages, running the tools the model calls until it answers without; `messages` are
- *  the new ones (assistant and tool), for a history to keep. The run acts as user `usrId` (its
- *  rights bound the tools), through the actor "ai1". `maxSteps` (default 8) bounds the calls. */
-export function run(app: App, { usrId, tools, maxSteps = 8, ...input }: Omit<TextInput, "tools"> & { tools: Tool[]; usrId: number; maxSteps?: number }, opts?: Opts): Promise<TextOutput & { messages: Message[] }> {
+ *  the new ones (assistant and tool), for a history to keep; `onMessage` gets each as it comes, an
+ *  answer with the model at its provider that gave it. The run acts as user `usrId` (its rights bound
+ *  the tools), through the actor "ai1". `maxSteps` (default 8) bounds the calls. */
+export function run(app: App, { usrId, tools, maxSteps = 8, onMessage, ...input }: Omit<TextInput, "tools"> & {
+  tools: Tool[];
+  usrId: number;
+  maxSteps?: number;
+  onMessage?: (message: Message, modelProvider?: number) => unknown;
+}, opts?: Opts): Promise<TextOutput & { messages: Message[] }> {
   return runAs(app, usrId, "ai1", async () => {
     const messages: Message[] = [], ctx = getCtx();
+    const add = async (message: Message, modelProvider?: number) => { messages.push(message); await onMessage?.(message, modelProvider); };
     for (let step = 0, pin = opts; step < maxSteps; step++) {
       const answer = await text(app, { ...input, tools, messages: [...input.messages, ...messages] }, pin);
       pin = { ...opts, model: answer.model }; // stay with it: its provider has the history cached
-      messages.push({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls });
+      await add({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls }, answer.modelProvider);
       if (!answer.toolCalls.length) return { ...answer, messages };
-      for (const call of answer.toolCalls) messages.push({ role: "tool", id: call.id, content: JSON.stringify(await execute(tools, call, ctx) ?? null) });
+      for (const call of answer.toolCalls) await add({ role: "tool", id: call.id, content: JSON.stringify(await execute(tools, call, ctx) ?? null) });
     }
     throw new Error(`No answer after ${maxSteps} steps`);
   });

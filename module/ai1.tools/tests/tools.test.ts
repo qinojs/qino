@@ -66,12 +66,14 @@ const ask = (content: string) => ({ messages: [{ role: "user" as const, content 
 
 Deno.test("ai1.tools: runs the tools the model calls, in order, until it answers", () => withApp(async (testApp) => {
   order.length = 0;
-  const streamed: string[] = [];
-  const out = await run(testApp, { ...ask("echo echo"), onText: (delta) => streamed.push(delta) });
+  const streamed: string[] = [], came: unknown[] = [];
+  const onMessage = (m: any, modelProvider?: number) => came.push([m.role, modelProvider]);
+  const out = await run(testApp, { ...ask("echo echo"), onText: (delta) => streamed.push(delta), onMessage });
   assertEquals(out.text, '"echo" "echo"');
   assertEquals(order, ["echo", "echo"]);
   assertEquals(streamed, ["…", '"echo" "echo"']); // every step streams
   assertEquals(out.messages.map((m: any) => [m.role, m.id ?? m.toolCalls?.length]), [["assistant", 2], ["tool", "1.0"], ["tool", "1.1"], ["assistant", 0]]);
+  assertEquals(came, [["assistant", 1], ["tool", undefined], ["tool", undefined], ["assistant", 1]]); // each as it comes
 }));
 
 Deno.test("ai1.tools: a run stays with the model that answered first, for its prompt cache", () => withApp(async (testApp) => {

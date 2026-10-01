@@ -76,11 +76,11 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
   assertEquals(await kept(app, session.id), [
     ["system", "lead", ""], // what the model is given, once while it does not change
     ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
-    ["user", "time?", ""], ["assistant", "get_toolset_clock", ""], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
+    ["user", "time?", ""], ["assistant", "get_toolset_clock", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
   const answered = await app.db.col`SELECT model_provider_id FROM ai1_session_message
     WHERE session_id = ${session.id} AND model_provider_id IS NOT NULL`;
-  assertEquals(answered.map(Number), [1, 1]); // the model at its provider that answered
+  assertEquals(answered.map(Number), [1, 1, 1]); // each answer: the model at its provider that gave it
   assertEquals((await (await agent.start(7)).ask("hi")).text, "lead #1 hi"); // a new session starts fresh
 }));
 

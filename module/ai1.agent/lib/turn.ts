@@ -103,17 +103,13 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     // the tools as given, run as they are now
     const now = new Map(tools.map((tool) => [tool.name, tool]));
     const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));
-    const out = await run(app, {
+    return await run(app, {
       messages: [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...kept.filter((m) => m.role !== "error" && !isGiven(m)), asked],
       tools: offered,
       usrId: Number(agent.usr_id),
       onText,
+      onMessage: (message, modelProvider) => save(app, session, id, message, modelProvider), // each step, as it comes
     }, { prefer })
       .catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });
-    // the model named is the one that gave the last answer
-    for (const [i, message] of out.messages.entries()) {
-      await save(app, session, id, message, i === out.messages.length - 1 ? out.modelProvider : undefined);
-    }
-    return out;
   });
 }
