@@ -35,7 +35,7 @@ const json = (value: string) => { try { return JSON.parse(value); } catch { retu
 
 const toOpenAi = (m: Message) =>
   m.role === "tool" ? { role: "tool", tool_call_id: m.id, content: m.content }
-  : m.role === "assistant" ? { ...m, toolCalls: undefined, ...(m.toolCalls?.length && { tool_calls: m.toolCalls.map((tc) => ({ id: tc.id, type: "function", function: { name: tc.name, arguments: JSON.stringify(tc.args) } })) }) }
+  : m.role === "assistant" ? { ...m, toolCalls: undefined, ...(m.toolCalls?.length && { tool_calls: m.toolCalls.map((tc) => ({ id: tc.id, type: "function", function: { name: tc.name, arguments: JSON.stringify(tc.args) }, ...tc.extra_content && { extra_content: tc.extra_content } })) }) }
   : { role: m.role, content: typeof m.content === "string" ? m.content : m.content.map((p) => p.type === "text" ? p : { type: "image_url", image_url: { url: p.url } }) };
 
 // A system message amid the history goes as the user's, marked: not every model takes one there
@@ -45,7 +45,7 @@ const note = (content: string | Part[]): Message => ({
   content: typeof content === "string" ? `<system-reminder>\n${content}\n</system-reminder>` : [{ type: "text", text: "<system-reminder>" }, ...content, { type: "text", text: "</system-reminder>" }],
 });
 
-async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, format?: unknown): Promise<Omit<TextOutput, "model">> {
+async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, format?: unknown): Promise<Omit<TextOutput, "model" | "modelProvider">> {
   const start = messages.findIndex((m) => m.role !== "system");
   const body = {
     model: call.model,
@@ -66,7 +66,7 @@ async function text(call: Call, { messages, tools, temperature, maxTokens, onTex
     : await res.json().then((data) => ({ message: data.choices?.[0]?.message, usage: data.usage, finish: data.choices?.[0]?.finish_reason }));
   if (!message) throw new AiError(`No answer from "${call.provider}"`);
   call.usage(usage?.prompt_tokens, usage?.completion_tokens);
-  const toolCalls = (message.tool_calls ?? []).map((tc: any) => ({ id: tc.id, name: tc.function.name, args: json(tc.function.arguments || "{}") }));
+  const toolCalls = (message.tool_calls ?? []).map((tc: any) => ({ id: tc.id, name: tc.function.name, args: json(tc.function.arguments || "{}"), ...tc.extra_content && { extra_content: tc.extra_content } }));
   return { text: message.content ?? "", toolCalls, truncated: finish === "length" };
 }
 
@@ -87,6 +87,7 @@ async function stream(res: Response, onText: (delta: string) => void) {
         const slot = toolCalls[tc.index ?? 0] ??= { id: tc.id, function: { name: "", arguments: "" } };
         slot.function.name += tc.function?.name ?? "";
         slot.function.arguments += tc.function?.arguments ?? "";
+        if (tc.extra_content) slot.extra_content = tc.extra_content;
       }
     });
     if (!finish && !done) throw new AiError("Incomplete stream");

@@ -86,10 +86,12 @@
             "type": "string",
             "description": "The ai1 message as JSON; role error for a failed turn"
           },
-          "model": {
-            "type": "string",
-            "maxLength": 191,
-            "description": "The model that gave the answer"
+          "model_provider_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai1_model_provider",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The model at its provider that gave the answer"
           },
           "log_id": {
             "type": "integer",

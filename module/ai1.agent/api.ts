@@ -88,9 +88,16 @@ export const api: ApiTree = {
       },
       get: verb<{ session: number }>("The session: its agent and everything said", async ({ session }, ctx) => ({
         agent: Number(await ctx.app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${session}`),
-        messages: (await ctx.app.db.query`SELECT id, time, message, model FROM ai1_session_message
-          WHERE session_id = ${session} ORDER BY id`)
-          .map((m) => ({ id: m.id, time: m.time, model: m.model || undefined, ...JSON.parse(String(m.message)) })),
+        messages: (await ctx.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
+          FROM ai1_session_message m
+          LEFT JOIN ai1_model_provider mp ON mp.id = m.model_provider_id
+          LEFT JOIN ai1_model am ON am.id = mp.model_id
+          LEFT JOIN ai1_provider p ON p.id = mp.provider_id
+          WHERE m.session_id = ${session} ORDER BY m.id`)
+          .map((m) => ({
+            id: m.id, time: m.time, model: m.model || undefined, provider: m.provider || undefined,
+            ...JSON.parse(String(m.message)),
+          })),
       })),
       ask: {
         post: verb<{ session: number; content: string }>(

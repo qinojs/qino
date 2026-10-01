@@ -25,14 +25,21 @@ cms.initNode("backend.ai1.agents", (el) => {
       return chosen();
     }
     const session = row.dataset.session;
-    const load = () => api.cms.node(nid).html.part("conversation").post({ vars: { session } });
-    let [{ modal }, body] = await Promise.all([import("@qino/u2/js/dialog/dialog.js"), load()]), box;
-    // an open conversation follows along; replaced only when it changed, so opened details stay open
+    const load = (after = 0) => api.cms.node(nid).html.part("conversation").post({ vars: { session, after } });
+    const [{ modal }, body] = await Promise.all([import("@qino/u2/js/dialog/dialog.js"), load()]);
+    let box;
+    // an open conversation follows along: only the messages since the last one are added, so what is
+    // opened or selected stays as it is
     const poll = setInterval(async () => {
-      const now = await load().catch(() => body);
-      if (now === body) return;
-      box.innerHTML = body = now;
-      render(box);
+      const list = box?.firstElementChild;
+      const after = Number(list?.querySelector(":scope > [data-message]:last-child")?.dataset.message ?? 0);
+      const more = document.createElement("template");
+      more.innerHTML = await load(after).catch(() => "");
+      const added = more.content.firstElementChild?.children;
+      if (!list || !added?.length) return;
+      const news = [...added];
+      list.append(...news);
+      for (const message of news) render(message);
     }, 3000);
     await modal({
       body: `<h3>${session}</h3><div>${body}</div>`, root: el, buttons: [{ title: "×", value: null }],

@@ -12,8 +12,9 @@ const queues = new WeakMap<App, Map<number, Promise<unknown>>>();
 function inTurn<T>(app: App, session: number, fn: () => Promise<T>): Promise<T> {
   const queue = queues.get(app) ?? queues.set(app, new Map()).get(app)!;
   const turn = (queue.get(session) ?? Promise.resolve()).then(fn, fn);
-  const done = () => { if (queue.get(session) === turn) queue.delete(session); };
-  queue.set(session, turn.then(done, done));
+  const done = () => { if (queue.get(session) === tail) queue.delete(session); };
+  const tail = turn.then(done, done);
+  queue.set(session, tail);
   return turn;
 }
 
@@ -45,8 +46,19 @@ const isGiven = (m: { role: string; tools?: unknown }) => m.role === "system" &&
 
 /** Keep a message in the protocol. In the background, what was said is made findable, and what the
  *  user says strengthens the memories close to it, with the same vector (`ai1.agent:associate`). */
-async function save(app: App, session: number, agent: number, message: Message | { role: "error" | "system"; content: string | Part[]; [more: string]: unknown }, model?: string) {
-  const id = Number(await app.db.table("ai1_session_message").insert({ session_id: session, time: unixTime(), message: JSON.stringify(message), model }));
+async function save(
+  app: App,
+  session: number,
+  agent: number,
+  message: Message | { role: "error" | "system"; content: string | Part[]; [more: string]: unknown },
+  modelProvider?: number,
+) {
+  const id = Number(await app.db.table("ai1_session_message").insert({
+    session_id: session,
+    time: unixTime(),
+    message: JSON.stringify(message),
+    ...modelProvider && { model_provider_id: modelProvider },
+  }));
   if (message.role !== "user" && message.role !== "assistant") return;
   search.keep(app, "ai1_session_message", { agent_id: agent, message_id: id }, search.textOf(message.content))
     .then(async ([vector]) => {
@@ -99,7 +111,9 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     }, { prefer })
       .catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });
     // the model named is the one that gave the last answer
-    for (const [i, message] of out.messages.entries()) await save(app, session, id, message, i === out.messages.length - 1 ? out.model : undefined);
+    for (const [i, message] of out.messages.entries()) {
+      await save(app, session, id, message, i === out.messages.length - 1 ? out.modelProvider : undefined);
+    }
     return out;
   });
 }

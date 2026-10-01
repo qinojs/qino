@@ -1,4 +1,4 @@
-import { Access, NotFoundError, s, toJsonSchema } from "@qino/qino";
+import { Access, NotFoundError, s, toJsonSchema, toTools } from "@qino/qino";
 
 import { run } from "./mod.ts";
 import { hosts } from "./lib/hosts.ts";
@@ -74,6 +74,7 @@ function catalog(ctx: Ctx) {
       .map(([name, host]) => [name, events((host.constructor as typeof Emitter).events)])),
     tables: Object.fromEntries(Object.entries(ctx.app.db.schema.properties as Record<string, Table>)
       .map(([name, table]) => [name, columns(table)])),
+    tools: toTools(ctx.app.apiTree).map(({ name, description, parameters }) => ({ name, description, parameters })),
   };
 }
 
@@ -81,7 +82,8 @@ export const api: ApiTree = {
   catalog: {
     get: verb(
       "What a flow can listen to: per host (app, db) its events with description and data as JSON Schema; " +
-        "and every table with its columns' type and description — table events carry their rows",
+        "every table with its columns' type and description (table events carry their rows); and the tools a " +
+        "flow may call, with their parameters",
       (_, ctx) => catalog(ctx),
     ),
   },

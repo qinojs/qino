@@ -14,7 +14,7 @@ Object.assign(App.events, {
     description: "A model was called, successfully or not.",
     data: s.object({
       capability: s.string().describe("text, structured, embed, translate, …"),
-      id: s.number().describe("The model's id."),
+      id: s.number().describe("The model at its provider (ai1_model_provider) that was called."),
       model: s.string(),
       provider: s.string(),
       ms: s.number().describe("How long it took."),

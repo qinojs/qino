@@ -58,9 +58,15 @@ async function withApp(fn: (app: App) => Promise<void>) {
   }
 }
 
+/** What the session kept: per message its role, what it says, and the model at its provider that answered. */
 const kept = async (app: App, session: number) =>
-  (await app.db.query`SELECT message, model FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
-    .map((row) => { const m = JSON.parse(String(row.message)); return [m.role, m.content || m.toolCalls?.[0]?.name, row.model]; });
+  (await app.db.query`SELECT m.message, am.name AS model FROM ai1_session_message m
+    LEFT JOIN ai1_model_provider mp ON mp.id = m.model_provider_id LEFT JOIN ai1_model am ON am.id = mp.model_id
+    WHERE m.session_id = ${session} ORDER BY m.id`)
+    .map((row) => {
+      const m = JSON.parse(String(row.message));
+      return [m.role, m.content || m.toolCalls?.[0]?.name, row.model ?? ""];
+    });
 
 Deno.test("ai1.agent: a session goes on from what was said, with the agent's role and tools, and keeps it all", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "lead", tools: ["toolset"] });
@@ -72,6 +78,9 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
     ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
     ["user", "time?", ""], ["assistant", "get_toolset_clock", ""], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
+  const answered = await app.db.col`SELECT model_provider_id FROM ai1_session_message
+    WHERE session_id = ${session.id} AND model_provider_id IS NOT NULL`;
+  assertEquals(answered.map(Number), [1, 1]); // the model at its provider that answered
   assertEquals((await (await agent.start(7)).ask("hi")).text, "lead #1 hi"); // a new session starts fresh
 }));
 

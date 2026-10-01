@@ -12,7 +12,7 @@ import type { App, Ctx, Tool } from "@qino/qino";
 
 type Context = { user?: number };
 type Call = { tool: string; args: unknown; result?: unknown; skipped?: true };
-type Caps = { tools: any; context: Context };
+type Caps = { tools: any; context: Context; owner: number };
 type Step =
   | { description: string; fn: string | ((value: any, caps: Caps) => unknown) }
   | { description: string; debounce: { ms: number; by?: string } };
@@ -112,9 +112,10 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
         if (await superseded(flow, step.debounce, value)) return { ...trace, end: "superseded" };
       } else {
         // the step's code goes in as an argument, so it sees nothing of the wrapper (`tool`, the run)
-        const input = { value, context, run: id, tools: flow.tools ?? [] };
+        const input = { value, context, owner: flow.owner, run: id, tools: flow.tools ?? [] };
         const result = await box.sandbox.run(`((fn) => (input, { tool }) => fn(input.value, {
           context: input.context,
+          owner: input.owner,
           tools: Object.fromEntries(input.tools.map((n) => [n, (args) => tool(input.run, n, args)])),
         }))(${step.fn})`, input);
         if (result !== true) value = result; // true passes the input on: a filter is just its condition

@@ -10,7 +10,7 @@ cms.initNode("backend.ai1.chat", (el) => {
   let session = Number(sessionStorage.getItem(KEY)) || undefined;
 
   // One message: an answer as markdown, what was said, called or got as plain text.
-  const entry = async ({ role, content, toolCalls, model, tools }) => {
+  const entry = async ({ role, content, toolCalls, model, provider, tools }) => {
     if (role === "system") { // what the agent was given from here on, folded
       const details = document.createElement("details");
       details.append(Object.assign(document.createElement("summary"), { textContent: `system · ${tools?.length ?? 0} tools` }),
@@ -18,7 +18,7 @@ cms.initNode("backend.ai1.chat", (el) => {
       return details;
     }
     const div = document.createElement("div"), label = document.createElement("small");
-    label.textContent = model ? `${role} · ${model}` : role;
+    label.textContent = model ? `${role} · ${model}${provider ? ` @ ${provider}` : ""}` : role;
     div.append(label);
     const text = typeof content === "string" ? content : (content ?? []).map((p) => p.text ?? `[${p.type}]`).join(" ");
     if (role === "assistant" && text) div.insertAdjacentHTML("beforeend", await markdown(text));

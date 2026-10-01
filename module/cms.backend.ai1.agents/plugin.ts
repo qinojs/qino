@@ -20,6 +20,14 @@ const ERROR = sql`m.message LIKE ${'{"role":"error"%'}`;
 
 /** In its own color, the same everywhere, to find it again at a glance. */
 const colored = (value: unknown) => html`<span style="color:${uniqueColor(value)}">${value}</span>`;
+/** The model at its provider that gave a message's answer: joined to `ai1_session_message m`. */
+const answeredBy = sql`
+  LEFT JOIN ai1_model_provider mp ON mp.id = m.model_provider_id
+  LEFT JOIN ai1_model am ON am.id = mp.model_id
+  LEFT JOIN ai1_provider p ON p.id = mp.provider_id`;
+/** Who answered: the model, and the provider it answered through. */
+const by = ({ model, provider }: { model?: unknown; provider?: unknown }) =>
+  html`${colored(model)}${provider ? html` <small>@ ${colored(provider)}</small>` : ""}`;
 const time = (value: unknown) => value ? html`<span style="color:${ageColor(value)}; white-space:nowrap">${u2.el.time(value, { narrow: true })}</span>` : "–";
 const short = (text: string) => text.length > SHORT ? text.slice(0, SHORT) + " …" : text;
 const count = (value: unknown, danger = false) => Number(value) ? html`<span style="${danger ? "color:var(--red)" : ""}">${Number(value)}</span>` : "–";
@@ -85,8 +93,9 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Record<string
     ${agent ? sql`WHERE s.agent_id = ${agent}` : sql``}
     GROUP BY s.id, s.agent_id, s.prefer, s.time, u.username ORDER BY last_time DESC, s.id DESC LIMIT ${SESSIONS}`;
   const last = await messages(db, rows.map((r) => r.last));
-  const models = Map.groupBy(await db.query`SELECT DISTINCT session_id, model FROM ai1_session_message
-    WHERE model <> '' AND ${sql.in("session_id", rows.map((r) => r.id))}`, (r) => String(r.session_id));
+  const models = Map.groupBy(await db.query`SELECT DISTINCT m.session_id, am.name AS model, p.name AS provider
+    FROM ai1_session_message m ${answeredBy}
+    WHERE mp.id IS NOT NULL AND ${sql.in("m.session_id", rows.map((r) => r.id))}`, (r) => String(r.session_id));
   return html.async`
       <thead><tr>
         <th>${t`Session`}
@@ -104,7 +113,7 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Record<string
         <td>${colored(s.username)}${s.prefer && s.prefer !== "{}" ? html`<br><small>${s.prefer}</small>` : ""}
         <td>${count(s.messages)}
         <td>${count(s.errors, true)}
-        <td><small>${(models.get(String(s.id)) ?? []).map((r) => html`${colored(r.model)} `)}</small>
+        <td><small>${(models.get(String(s.id)) ?? []).map((r) => html`${by(r)} `)}</small>
         <td><small>${last.get(String(s.last))?.role ?? ""}: ${short(last.get(String(s.last))?.text ?? "")}</small>
         <td>${time(s.last_time)}
         <td>${time(s.time)}`) : html.async`<tr><td colspan=9>${t`No sessions yet`}`}</tbody>`;
@@ -140,18 +149,24 @@ const pretty = (value: unknown): string => {
 };
 
 /** One session's conversation, everything it kept: the user on the right, the agent on the left, its
- *  tool calls and their results folded. */
+ *  tool calls and their results folded. With `after` (a message id) only the messages since. */
 export async function conversation(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
-  const rows = await node.app.db.query`SELECT time, message, model FROM ai1_session_message WHERE session_id = ${Number(vars.session)} ORDER BY id`;
+  const rows = await node.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
+    FROM ai1_session_message m ${answeredBy}
+    WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
   return html`<div class="u2-flex -Col">${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
-    const head = html`<small>${time(row.time)} · ${m.role}${row.model ? html` · ${colored(row.model)}` : ""}</small>`;
+    const head = html`<small>${time(row.time)} · ${m.role}${row.model ? html` · ${by(row)}` : ""}</small>`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note
-    if (m.role === "system") return html`<div>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
+    if (m.role === "system") return html`<div data-message=${row.id}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
       ${folded(text, text)}
       ${m.tools ? folded(`${m.tools.length} tools: ${m.tools.map((t: any) => t.name).join(", ")}`, pretty(m.tools)) : ""}</div>`;
-    if (m.role === "tool") return html`<div style="align-self:flex-start; max-width:80%">${folded(`← ${text}`, pretty(text))}</div>`;
-    return html`<div style="align-self:${m.role === "user" ? "flex-end" : "flex-start"}; max-width:80%">
+    if (m.role === "tool") {
+      return html`<div data-message=${row.id} style="align-self:flex-start; max-width:80%">
+        ${folded(`← ${text}`, pretty(text))}</div>`;
+    }
+    const side = m.role === "user" ? "flex-end" : "flex-start";
+    return html`<div data-message=${row.id} style="align-self:${side}; max-width:80%">
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
         : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}

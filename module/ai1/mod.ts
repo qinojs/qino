@@ -8,7 +8,7 @@ export type { Adapter, Opts } from "./lib/request.ts";
 
 /** Provider-neutral content. An image `url` may be a data URL. */
 export type Part = { type: "text"; text: string } | { type: "image"; url: string };
-type ToolCall = { id: string; name: string; args: unknown };
+type ToolCall = { id: string; name: string; args: unknown; extra_content?: Record<string, unknown> };
 /** A `system` message amid the history is context given later: sent as the user's, marked. */
 export type Message =
   | { role: "system" | "user"; content: string | Part[] }
@@ -24,9 +24,15 @@ export type TextInput = {
   /** Streams the answer. Once text went out, a failure no longer falls back. */
   onText?: (delta: string) => void;
 };
-/** `truncated`: cut off at `maxTokens`; `model`: the one that answered. Usage and timing of every
- *  call: the `ai1:call` event. */
-export type TextOutput = { text: string; toolCalls: ToolCall[]; truncated: boolean; model: string };
+/** `truncated`: cut off at `maxTokens`; `model`: the one that answered, `modelProvider`: it at its
+ *  provider (ai1_model_provider). Usage and timing of every call: the `ai1:call` event. */
+export type TextOutput = {
+  text: string;
+  toolCalls: ToolCall[];
+  truncated: boolean;
+  model: string;
+  modelProvider: number;
+};
 /** A Standard Schema (`s.object(…)`) validates the answer; a plain JSON Schema only shapes it. */
 export type StructuredInput<T> = Omit<TextInput, "tools"> & { schema: StandardSchema<T> | Record<string, unknown> };
 export type EmbedInput = ({ texts: string[]; images?: never } | { images: string[]; texts?: never }) & { purpose?: "index" | "query" };

@@ -71,7 +71,9 @@ Deno.test("sandbox.flow api: only superusers", () => withApp(async (app, as) => 
 
 Deno.test("sandbox.flow api: the catalog tells what a flow can listen to and what the tables mean", () =>
   withApp(async (app, as) => {
-    const { hosts, tables } = await as(7, () => (app.api as any)["sandbox.flow"].catalog.get());
+    const { hosts, tables, tools } = await as(7, () => (app.api as any)["sandbox.flow"].catalog.get());
+    const greet = tools.find((tool: any) => tool.name === "post_test_greet");
+    assertEquals(Object.keys(greet.parameters.properties), ["name"]);
     assertEquals(Object.keys(hosts), ["app", "db"]);
     const inserted = hosts.db["table:insert-after"];
     assertEquals(inserted.description, "A row was inserted.");

@@ -35,11 +35,11 @@ Deno.test("sandbox.flow: steps pass their result on, tools run as the owner, the
   withApp(async (app) => {
     const trace = await run(app, flow([
       { description: "double", fn: (n: number) => n * 2 },
-      { description: "ask", fn: async (n: number, { tools }: any) => [n, await tools.get_test_who()] },
+      { description: "ask", fn: async (n: number, { tools, owner }: any) => [n, await tools.get_test_who(), owner] },
     ], { tools: ["get_test_who"] }), 21, { user: 3 });
     assertEquals(trace.end, "done");
     assertEquals(trace.context, { user: 3 });
-    assertEquals(trace.steps.map((s) => s.value), [42, [42, 7]]);
+    assertEquals(trace.steps.map((s) => s.value), [42, [42, 7, 7]]);
     assertEquals(trace.steps[1].calls, [{ tool: "get_test_who", args: undefined, result: 7 }]);
   }));
 

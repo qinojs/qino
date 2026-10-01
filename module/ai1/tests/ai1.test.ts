@@ -130,13 +130,13 @@ Deno.test("ai1: nothing configured, or an answer already streamed, is an error",
 });
 
 Deno.test("ai1: openai and deepl adapters speak their protocols", async () => {
-  const bodies: any[] = [];
+  const bodies: any[] = [], extra_content = { google: { thought_signature: "signature-1" } };
   const fetchOrg = globalThis.fetch;
   globalThis.fetch = (url, init) => {
     bodies.push([String(url), init?.body]);
     return Promise.resolve(String(url).endsWith("/translate")
       ? Response.json({ translations: [{ text: "hello" }] })
-      : Response.json({ choices: [{ message: { content: "", tool_calls: [{ id: "c1", function: { name: "f", arguments: '{"a":1}' } }] } }] }));
+      : Response.json({ choices: [{ message: { content: "", tool_calls: [{ id: "c1", function: { name: "f", arguments: '{"a":1}' }, extra_content }] } }] }));
   };
   try {
     const testApp = await app({ gpt: ["text", "tools"], deepl: ["translate"] });
@@ -145,7 +145,8 @@ Deno.test("ai1: openai and deepl adapters speak their protocols", async () => {
     await testApp.db.exec`UPDATE ai1_model_provider SET provider_id = ${dl} WHERE model_id = 2`;
 
     const tools = [{ name: "f", description: "d", parameters: {} }];
-    assertEquals((await text(testApp, { ...ask("hi"), tools })).toolCalls, [{ id: "c1", name: "f", args: { a: 1 } }]);
+    const first = await text(testApp, { ...ask("hi"), tools });
+    assertEquals(first.toolCalls, [{ id: "c1", name: "f", args: { a: 1 }, extra_content }]);
     assertEquals(bodies[0][0], "https://oa.test/v1/chat/completions");
     assertEquals(JSON.parse(bodies[0][1]).tools, [{ type: "function", function: { name: "f", description: "d", parameters: {} } }]);
 
@@ -155,6 +156,8 @@ Deno.test("ai1: openai and deepl adapters speak their protocols", async () => {
     // a system message amid the history goes as the user's, marked
     await text(testApp, { messages: [{ role: "system", content: "role" }, { role: "user", content: "hi" }, { role: "system", content: "later" }] });
     assertEquals(JSON.parse(bodies[2][1]).messages.map((m: any) => [m.role, m.content]), [["system", "role"], ["user", "hi"], ["user", "<system-reminder>\nlater\n</system-reminder>"]]);
+    await text(testApp, { messages: [...ask("hi").messages, { role: "assistant", content: "", toolCalls: first.toolCalls }, { role: "tool", id: "c1", content: "{}" }] });
+    assertEquals(JSON.parse(bodies[3][1]).messages[1].tool_calls[0].extra_content, extra_content);
   } finally {
     globalThis.fetch = fetchOrg;
   }
@@ -186,14 +189,14 @@ Deno.test("ai1: openai streams text, joins tool-call fragments, reports truncati
   const deltas: string[] = [];
   await withFetch(() => sse(
     { choices: [{ delta: { content: "Hel" } }] },
-    { choices: [{ delta: { content: "lo", tool_calls: [{ index: 0, id: "c1", function: { name: "f", arguments: '{"a"' } }] } }] },
+    { choices: [{ delta: { content: "lo", tool_calls: [{ index: 0, id: "c1", function: { name: "f", arguments: '{"a"' }, extra_content: { google: { thought_signature: "stream-signature" } } }] } }] },
     { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: ":1}" } }] }, finish_reason: "length" }] },
     { choices: [], usage: { prompt_tokens: 4, completion_tokens: 2 } },
     "[DONE]",
   ), async () => {
     const result = await text(await openaiApp({ gpt: ["text"] }), { ...ask("hi"), onText: (d) => deltas.push(d) });
     assertEquals(deltas, ["Hel", "lo"]);
-    assertEquals(result, { text: "Hello", toolCalls: [{ id: "c1", name: "f", args: { a: 1 } }], truncated: true, model: "gpt" }); // names who answered
+    assertEquals(result, { text: "Hello", toolCalls: [{ id: "c1", name: "f", args: { a: 1 }, extra_content: { google: { thought_signature: "stream-signature" } } }], truncated: true, model: "gpt", modelProvider: 1 }); // names who answered
     assertEquals([fired.at(-1)![1].input, fired.at(-1)![1].output], [4, 2]); // usage goes to ai1:call
   });
 });

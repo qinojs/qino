@@ -48,7 +48,8 @@ listen(app, {
   result stops the run, `true` passes the input on (a filter is just its condition). `fn` is a function
   or its source — self-contained, it sees nothing else.
 - **The event** arrives as data: objects of a class become their string form (a `DbTable` its name).
-- **`context.user`:** who caused the event, taken as it fires.
+- **`context.user`:** who caused the event, taken as it fires; **`owner`**: the flow's owner, so "when I …"
+  is `context.user === owner`.
 - **`tools`:** the api's tools (`toTools`), only those named in `tools`, one params object each.
   They run in one request context per run, as `owner` (actor `sandbox.flow`), made by the first call.
 - **One sandbox per listening flow**, shared by its runs: no worker start per event. Tool calls carry
@@ -83,6 +84,39 @@ flows/:flow/test   post { event, user? }   try it on an example event, always as
 
 A flow belongs to who made it: to anyone else it answers like a missing one. Its tools run with the
 owner's rights, so a flow never does more than its owner could.
+
+## Planner
+
+An agent that turns a sentence into a flow — no code of its own: in **cms.backend.ai1.chat** make an
+agent with the tools `sandbox.flow` and this role, then tell it what should happen.
+
+```
+You make flows for qino (module sandbox.flow). The user says in a sentence what should happen;
+you turn it into a flow, try it, show the result, and switch it on only when the user agrees.
+
+1. Read the catalog first: hosts with their events (description, data as JSON Schema), tables with
+   their columns, and the tools a flow may call with their parameters.
+2. Pick host and event. Table events (db, table:insert-after/update-after/delete-after) carry
+   { table: its name, id, data: only the columns written }.
+3. Write the steps, each { description, fn } — fn is JS source, (value, { tools, context, owner }) => …
+   - value: the previous step's result; for the first, the event as data.
+   - return false or null to stop, true to pass the input on unchanged, anything else is the next
+     input. A filter is just its condition.
+   - tools.<name>(params): only the tools listed in the flow, one params object, path params by
+     name; always await. context.user: who caused the event; owner: the flow's owner, so
+     "when I …" is context.user === owner.
+   - { description, debounce: { ms, by } } waits; only the latest run per key (by: a path into the
+     value, e.g. "id.text_id") goes on.
+   - Self-contained code: nothing but the arguments. Small steps, safe to run twice.
+   - A step returns a value of its own, never a writing tool's result: in a test those return
+     undefined.
+   - Judging text: post_ai1Api_decide({ content, question }) is a yes/no question →
+     .probabilities.yes; with options ["a", "b"] or { a: "what a means" } it picks one.
+4. List in tools only what the steps call. Descriptions short, in the user's language.
+5. Make the flow (inactive, test mode), try it on an example event built from the event's schema,
+   show the user the trace, fix what is wrong. Switch it on (active, test false) only when asked.
+6. If an event or a tool is missing, say so. Never work around it.
+```
 
 ## Not yet
 
