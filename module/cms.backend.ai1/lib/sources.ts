@@ -110,9 +110,19 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
     const listed = listing(app, provider.type) ? await offered(app, provider as any).catch((e) => (done.push(`${provider.name}: ${errMsg(e)}`), [])) : [];
     // :batch variants answer only through the asynchronous Batch API (OpenRouter), not a call
     const idOf = (m: any) => known?.plainIds ? String(m.id).split("/").pop()! : String(m.id);
-    const entries = new Map<string, any>([...listed.filter((m) => !String(m.id).endsWith(":batch")).map((m): [string, any] => [idOf(m), described(m)]), ...extra.map((m): [string, any] => [m.id, m])]);
+    // Jina lists rerankers, ReaderLM and beta VLMs as text-output models, although this endpoint
+    // cannot serve them through chat completions. Its chat models advertise sampling or streaming.
+    const unsupported = (m: any) => provider.type === "jina" && m.output_modalities?.includes("text") &&
+      Array.isArray(m.supported_sampling_parameters) && !m.supported_sampling_parameters.length &&
+      Array.isArray(m.supported_features) && !m.supported_features.includes("streaming");
+    const entries = new Map<string, any>([...listed.filter((m) => !String(m.id).endsWith(":batch") && !unsupported(m))
+      .map((m): [string, any] => [idOf(m), described(m)]), ...extra.map((m): [string, any] => [m.id, m])]);
     let added = 0;
     await db.transaction(async () => {
+      for (const model of listed.filter(unsupported)) {
+        const offer = offers.get(`${provider.id} ${idOf(model)}`);
+        if (offer) await db.table("ai1_model_provider").update(offer, { enabled: false });
+      }
       for (const [id, meta] of entries) {
         const name = unit(id); // the first one seen names the model
         let found = models.get(same(name));

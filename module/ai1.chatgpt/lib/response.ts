@@ -9,7 +9,8 @@ import type { Adapter } from "@qino/qino/ai1";
 type Call = Parameters<Adapter["text"]>[0];
 
 type Item = Record<string, unknown>;
-type Answer = { output?: Item[]; usage?: { input_tokens?: number; output_tokens?: number }; status?: string };
+type Answer = { output?: Item[]; usage?: { input_tokens?: number; output_tokens?: number }; status?: string;
+  error?: { code?: string; message?: string }; incomplete_details?: { reason?: string } };
 
 function content(value: string | Part[], output = false): Item[] {
   const parts = typeof value === "string" ? [{ type: "text", text: value } as Part] : value;
@@ -40,10 +41,11 @@ export function input(messages: Message[], tools: TextInput["tools"]): { input: 
   return { input: items, ...(leading.length && { instructions: leading.join("\n\n") }) };
 }
 
-async function completed(response: Response, onText?: (delta: string) => void): Promise<Answer> {
+export async function completed(response: Response, onText?: (delta: string) => void): Promise<Answer> {
   if (!response.body) throw new AiError("Empty ChatGPT response", 502, true);
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "", answer: Answer | undefined;
+  const items = new Map<number, Item>();
   try {
     for (;;) {
       const { done, value } = await reader.read();
@@ -56,15 +58,22 @@ async function completed(response: Response, onText?: (delta: string) => void): 
         let part: Record<string, unknown>;
         try { part = JSON.parse(data); } catch { throw new AiError("Invalid ChatGPT stream event", 502, true); }
         if (part.type === "response.output_text.delta" && typeof part.delta === "string") onText?.(part.delta);
+        if (part.type === "response.output_item.done" && typeof part.output_index === "number" && part.item && typeof part.item === "object")
+          items.set(part.output_index, part.item as Item);
         if (part.type === "response.completed") answer = part.response as Answer;
-        if (part.type === "response.failed" || part.type === "response.incomplete")
-          throw new AiError(`ChatGPT response ${part.type}`, 502, true);
+        if (part.type === "response.failed" || part.type === "response.incomplete") {
+          const response = part.response as Answer | undefined;
+          const reason = part.type === "response.failed"
+            ? [response?.error?.code, response?.error?.message].filter(Boolean).join(": ")
+            : response?.incomplete_details?.reason;
+          throw new AiError(`ChatGPT ${part.type}${reason ? `: ${reason}` : ""}`, 502, true);
+        }
       }
       if (done) break;
     }
   } finally { await reader.cancel().catch(() => {}); }
   if (!answer || answer.status !== "completed") throw new AiError("Incomplete ChatGPT stream", 502, true);
-  return answer;
+  return { ...answer, output: answer.output?.length ? answer.output : [...items].sort(([a], [b]) => a - b).map(([, item]) => item) };
 }
 
 async function text(call: Call, value: TextInput): Promise<Omit<TextOutput, "model" | "modelProvider">> {

@@ -36,7 +36,8 @@ export type Capability = {
  * there is one, else `intelligence`) and any score of the models (`coding` …), e.g.
  * `{ coding: 9, cost: 5, speed: 1 }`. Without it: `{ quality: 2, cost: 1, speed: 1 }`.
  */
-export type Opts = { model?: string; needs?: string[]; prefer?: Record<string, number>; signal?: AbortSignal };
+export type Opts = { model?: string; needs?: string[]; prefer?: Record<string, number>; signal?: AbortSignal;
+  onResponse?: (response: Response) => void };
 
 /** `status` as HTTP: 502 unreachable, 504 timed out. `final`: the caller already got part of the
  *  answer, so no other model may take over. */
@@ -87,7 +88,7 @@ export async function request(app: App, capability: string, input: unknown, opts
       ms: Math.round(performance.now() - start), ...used, error: error === undefined ? undefined : errMsg(error),
     }).catch(console.error);
     try {
-      const call = await bind(app, candidate, used, opts.signal);
+      const call = await bind(app, candidate, used, opts.signal, opts.onResponse);
       const result = await (adapter[capability] ? adapter[capability](call, input) : convert!(input, (i) => adapter[through!](call, i)));
       report();
       // a text answer names its model, so a caller can stay with it (the provider's prompt cache), and the
@@ -165,7 +166,8 @@ export async function candidates(app: App, capability: string, input: unknown, {
   return defs.some((def) => def.oneModel) ? list.filter((c) => c.model === list[0].model) : list;
 }
 
-async function bind(app: App, candidate: Candidate, used: { input: number; output: number }, signal?: AbortSignal): Promise<Call> {
+async function bind(app: App, candidate: Candidate, used: { input: number; output: number }, signal?: AbortSignal,
+  onResponse?: (response: Response) => void): Promise<Call> {
   return {
     provider: candidate.provider,
     endpoint: candidate.endpoint,
@@ -185,6 +187,7 @@ async function bind(app: App, candidate: Candidate, used: { input: number; outpu
           clearTimeout(timer);
           throw e instanceof AiError || signal?.aborted ? e : new AiError(errMsg(e), 502);
         });
+      onResponse?.(res.clone());
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         clearTimeout(timer);

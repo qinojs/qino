@@ -1,9 +1,9 @@
 import { App, Redirect } from "@qino/qino";
-import { candidates } from "@qino/qino/ai1";
+import { AiError, candidates } from "@qino/qino/ai1";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { authorize, models, pending, store } from "../lib/account.ts";
-import { input } from "../lib/response.ts";
+import { completed, input } from "../lib/response.ts";
 import { init } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -31,6 +31,20 @@ Deno.test("ChatGPT Responses history keeps function calls and tool results", () 
   assertEquals(value.input[0].type, "additional_tools");
   assertEquals(value.input[2], { type: "function_call", call_id: "call-1", name: "sum", arguments: '{"a":1,"b":2}' });
   assertEquals(value.input[3], { type: "function_call_output", call_id: "call-1", output: "3" });
+});
+
+Deno.test("ChatGPT stream failure reports the provider's code and message", async () => {
+  const body = `data: ${JSON.stringify({ type: "response.failed", response: {
+    error: { code: "subscription_sharing_usage_limit_exceeded", message: "Usage limit reached" },
+  } })}\n\n`;
+  await assertRejects(() => completed(new Response(body)), AiError, "subscription_sharing_usage_limit_exceeded: Usage limit reached");
+});
+
+Deno.test("ChatGPT stream uses completed output items when the final response has no output", async () => {
+  const message = { type: "message", content: [{ type: "output_text", text: "Test received. How can I help?" }] };
+  const body = `event: response.output_item.done\ndata: ${JSON.stringify({ type: "response.output_item.done", output_index: 0, item: message })}\n\n` +
+    `event: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: { status: "completed", output: [] } })}\n\n`;
+  assertEquals((await completed(new Response(body))).output, [message]);
 });
 
 Deno.test("ChatGPT model catalog uses the plan-specific models array and slugs", async () => {

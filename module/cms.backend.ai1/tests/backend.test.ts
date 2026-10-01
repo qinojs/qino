@@ -4,7 +4,7 @@ import { ai1Adapters, ai1Capabilities, ai1DbSchema, assert, assertEquals, assert
 
 import { dbSchema, record } from "@qino/m/ai1.stats/tests/deps.ts";
 
-import { evaluate, key, unit } from "../lib/sources.ts";
+import { evaluate, importModels, key, unit } from "../lib/sources.ts";
 import api from "../nodeApi.ts";
 import { capabilities, view, widget } from "../render.ts";
 
@@ -266,6 +266,47 @@ Deno.test("cms.backend.ai1: try shows who would answer by the weights, and who d
   assertEquals((await api(node, { preview: { capability: "translate", input: { text: "Hallo", to: "en" }, prefer: { cost: 1 } } }) as any).list.map((c: any) => [c.model, c.via]), [["cheap", "text"], ["smart", "text"]]);
   const res = await api(node, { try: { capability: "text", input: { messages: [{ role: "user", content: "hi" }] }, prefer: { cost: 1 } } }) as any;
   assertEquals([res.result.text, res.tried.map((c: any) => [c.model, c.provider])], ["cheap says hi", [["cheap", "fake"]]]);
+});
+
+Deno.test("cms.backend.ai1: Jina catalog excludes models unavailable at chat completions", async () => {
+  const { app, node } = await setup();
+  await app.db.table("ai1_provider").insert({ name: "api.jina.ai", type: "jina", endpoint: "https://api.jina.ai/v1" });
+  const old = await app.db.table("ai1_model").insert({ name: "jina-reranker-v3" });
+  await app.db.table("ai1_model_capability").insert({ model_id: old, capability: "text" });
+  await app.db.table("ai1_model_provider").insert({ model_id: old, provider_id: 1 });
+  const list = { data: [
+    { id: "jina-ai/jina-reranker-v3", input_modalities: ["text"], output_modalities: ["text"], supported_sampling_parameters: [], supported_features: [] },
+    { id: "jina-ai/ReaderLM-v2", input_modalities: ["text"], output_modalities: ["text"], supported_sampling_parameters: [], supported_features: [] },
+    { id: "jina-ai/jina-ocr-v1", input_modalities: ["text", "image"], output_modalities: ["text"], supported_sampling_parameters: ["temperature"], supported_features: ["streaming"] },
+    { id: "jina-ai/jina-embeddings-v4", input_modalities: ["text"], output_modalities: ["embeddings"], supported_sampling_parameters: [], supported_features: [] },
+  ] };
+  await withFetch((url) => url.endsWith("/embeddings/models") ? { data: [] } : list, async () => { await importModels(app); });
+  assertEquals(await app.db.query`SELECT m.name, mp.enabled FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id ORDER BY m.name`, [
+    { name: "jina-embeddings-v4", enabled: 1 }, { name: "jina-ocr-v1", enabled: 1 }, { name: "jina-reranker-v3", enabled: 0 },
+  ]);
+  assertEquals((await api(node, { preview: { capability: "text", input: { messages: [] }, prefer: {} } }) as any).list.map((c: any) => c.model), ["jina-ocr-v1"]);
+});
+
+Deno.test("cms.backend.ai1: try includes the provider's raw body on success and failure", async () => {
+  const { app, node } = await setup();
+  const mod = (app.modules.linked() as any)[0];
+  mod.plugin.ai1Adapters = { ...ai1Adapters, fake: { text: async (call: any) => {
+    const response = await call.fetch("/answer");
+    return { text: (await response.json()).text, toolCalls: [], truncated: false };
+  } } };
+  await app.db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "https://fake.test" });
+  const model = await app.db.table("ai1_model").insert({ name: "m" });
+  await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: 1 });
+  await app.db.table("ai1_model_capability").insert({ model_id: model, capability: "text" });
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = () => Promise.resolve(Response.json({ text: "hello" }));
+    const success = await api(node, { try: { capability: "text", input: { messages: [] }, prefer: {} } }) as any;
+    assertEquals([success.ok, success.result.text, success.raw[0].body], [true, "hello", '{"text":"hello"}']);
+    globalThis.fetch = () => Promise.resolve(Response.json({ error: "denied" }, { status: 403 }));
+    const failure = await api(node, { try: { capability: "text", input: { messages: [] }, prefer: {} } }) as any;
+    assertEquals([failure.ok, failure.raw[0].status, failure.raw[0].body], [false, 403, '{"error":"denied"}']);
+  } finally { globalThis.fetch = original; }
 });
 
 Deno.test("cms.backend.ai1: a provider's own description wins; a variant is another offer of the model", async () => {

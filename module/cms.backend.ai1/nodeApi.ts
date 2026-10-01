@@ -102,11 +102,17 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       }
       // who was tried: the ai1:call events of this request
       const ctx = requestStorage.getStore(), done = new AbortController(), tried: any[] = [];
+      const raw: Promise<{ status: number; contentType: string | null; body: string }>[] = [];
+      const onResponse = (response: Response) => {
+        raw.push(response.text().then((body) => ({ status: response.status, contentType: response.headers.get("content-type"), body })));
+      };
       app.on("ai1:call", (e) => { if (requestStorage.getStore() === ctx) tried.push({ model: e.model, provider: e.provider, ms: e.ms, error: e.error }); }, { signal: done.signal });
       const start = performance.now();
       try {
-        const result = await request(app, String(capability), input, { model: model || undefined, prefer: weights(prefer) });
-        return { ok: true, result, ms: Math.round(performance.now() - start), tried };
+        const result = await request(app, String(capability), input, { model: model || undefined, prefer: weights(prefer), onResponse });
+        return { ok: true, result, ms: Math.round(performance.now() - start), tried, raw: await Promise.all(raw) };
+      } catch (e) {
+        return { ok: false, message: errMsg(e), ms: Math.round(performance.now() - start), tried, raw: await Promise.all(raw) };
       } finally {
         done.abort();
       }

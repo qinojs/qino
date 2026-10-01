@@ -83,10 +83,19 @@ cms.initNode("backend.ai1", (el) => {
     const res = await node.api.post({ try: { capability: form.elements.capability.value, input: data, model: form.elements.model.value, prefer: prefer() } })
       .catch((err) => ({ ok: false, message: err?.message }));
     button.disabled = false;
-    if (!res?.ok) return output.textContent = res?.message || await t`Error`;
+    const raw = document.createElement("details"), summary = document.createElement("summary");
+    summary.textContent = await t`Raw provider response`;
+    raw.append(summary);
+    for (const response of res?.raw ?? []) {
+      const pre = document.createElement("pre");
+      pre.textContent = `HTTP ${response.status} · ${response.contentType ?? ""}\n${response.body}`;
+      raw.append(pre);
+    }
+    if (!res?.raw?.length) raw.append(await t`No provider response.`);
+    if (!res?.ok) { output.replaceChildren(res?.message || await t`Error`, raw); return; }
     const by = document.createElement("pre");
     by.textContent = `${res.tried.map((c) => `${c.model} @ ${c.provider}${c.error ? ` ✕ ${c.error}` : " ✓"}`).join("\n")}\n${res.ms} ms`;
-    output.replaceChildren(...await shown(form.elements.capability.value, res.result), by);
+    output.replaceChildren(...await shown(form.elements.capability.value, res.result), by, raw);
   });
 
   el.addEventListener("click", async (e) => {
