@@ -3,7 +3,7 @@ import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { hit } from "@qino/qino/score";
 import { Agent } from "@qino/qino/ai1.agent";
 
-import { agents, conversation, memories, sessions } from "../plugin.ts";
+import { agent as about, agents, conversation, memories, session as aboutSession, sessions } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -35,19 +35,35 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
         session_id: session.id, time: unixTime(), message: JSON.stringify(message), ...by && { model_provider_id: by },
       })));
     }
-    const node = { app } as unknown as Node;
+    const node = { app, page: () => ({ url: () => "/agents" }) } as unknown as Node;
     const as = <T>(fn: () => Promise<T>) => runAs(app, 7, "test", fn).then(String);
 
     const list = await as(() => agents(node));
-    for (const part of [`data-agent="${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "<small>cms</small>", "it is round"]) assertStringIncludes(list, part);
+    for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "<small>[&quot;cms&quot;]</small>", "it is round"]) assertStringIncludes(list, part);
     assert(!list.includes("<b>lead"));
 
     const its = await as(() => sessions(node, { vars: { agent: agent.id } }));
-    for (const part of [`data-session="${session.id}"`, "ann@example.test", "color:var(--red)\">1</span>", ">m</span>", ">fake</span>", "active"]) {
+    for (const part of [`href="/agents?session=${session.id}"`, "ann@example.test", "color:var(--red)\">1</span>", ">m</span>", ">fake</span>", "active"]) {
       assertStringIncludes(its, part);
     }
+    // its page: everything about it
+    const page = await as(() => about(node, { vars: { agent: agent.id } }));
+    for (const part of ["&lt;b&gt;lead&lt;/b&gt;", ">m</span>", ">fake</span>", "ann@example.test", " questions", " errors"]) {
+      assertStringIncludes(page, part);
+    }
+    assert(!page.includes("[object Promise]"));
+    assertStringIncludes(await as(() => about(node, { vars: { agent: 999 } })), "No such agent");
+
+    // a session's page: everything about it
+    const its2 = await as(() => aboutSession(node, { vars: { session: session.id } }));
+    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">m</span>", ">post_search</span>", "1: post_search", "1</span> errors"]) {
+      assertStringIncludes(its2, part);
+    }
+    assert(!its2.includes("[object Promise]"));
+    assertStringIncludes(await as(() => aboutSession(node, { vars: { session: 999 } })), "No such session");
+
     const kept = await as(() => memories(node, { vars: { agent: agent.id } }));
-    for (const part of ["the &lt;i&gt;logo&lt;/i&gt; is blue", "<td>3.00"]) assertStringIncludes(kept, part);
+    for (const part of ["the &lt;i&gt;logo&lt;/i&gt; is blue", "<td>3.00", "<td>–"]) assertStringIncludes(kept, part);
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
     for (const part of ["align-self:flex-end", "→ post_search", "← [{&quot;text&quot;:&quot;round&quot;}]", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {

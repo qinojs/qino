@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { html, sql, unixTime } from "@qino/qino";
+import { getCtx, html, sql, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
@@ -7,16 +7,24 @@ import { sqlScore, strength } from "@qino/qino/score";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Db, HtmlString } from "@qino/qino";
+import type { App, Db, HtmlString, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+
+type Vars = Record<string, any>;
 
 const { name } = manifest;
 const { uniqueColor, ageColor } = backend;
 const SESSIONS = 100; // shown, the latest first
 const SHORT = 80; // characters of a role or a message in a table
 const ACTIVE = 60; // seconds since its last message, a session counts as active
-// a failed turn is kept as {"role":"error",…} (ai1.agent)
-const ERROR = sql`m.message LIKE ${'{"role":"error"%'}`;
+
+/** A message of this role, as ai1.agent keeps it ({"role":"user",…}); a failed turn is of role error. */
+const role = (name: string) => sql`m.message LIKE ${`{"role":"${name}"%`}`;
+const tally = (condition: Sql) => sql`SUM(CASE WHEN ${condition} THEN 1 ELSE 0 END)`;
+/** What happened in `ai1_session_message m`: asked, answered, tools called, failed, and when. */
+const COUNTS = sql`COUNT(m.id) AS messages, ${tally(role("user"))} AS questions, ${tally(role("assistant"))} AS answers,
+  ${tally(sql`m.message LIKE ${'%"toolCalls":[{%'}`)} AS calls, ${tally(role("error"))} AS errors,
+  MAX(m.id) AS last, MIN(m.time) AS first_time, MAX(m.time) AS last_time`;
 
 /** In its own color, the same everywhere, to find it again at a glance. */
 const colored = (value: unknown) => html`<span style="color:${uniqueColor(value)}">${value}</span>`;
@@ -31,6 +39,14 @@ const by = ({ model, provider }: { model?: unknown; provider?: unknown }) =>
 const time = (value: unknown) => value ? html`<span style="color:${ageColor(value)}; white-space:nowrap">${u2.el.time(value, { narrow: true })}</span>` : "–";
 const short = (text: string) => text.length > SHORT ? text.slice(0, SHORT) + " …" : text;
 const count = (value: unknown, danger = false) => Number(value) ? html`<span style="${danger ? "color:var(--red)" : ""}">${Number(value)}</span>` : "–";
+/** A stored `prefer`, "–" when empty: then the agent's or ai1's own. */
+const choice = (json: unknown) => json ? html`<small>${json}</small>` : "–";
+const firstLine = (text: unknown) => short(String(text ?? "").split("\n")[0]);
+/** The link to an agent's page: in its own color. */
+const agentLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(url, { agent: id })}">${colored(id)}</a>`;
+/** The link to a session's page. */
+const sessionLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(url, { session: id })}">${id}</a>`;
+const pageUrl = async (node: Node) => (await node.page()).url();
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Agents", de: "Agents" });
@@ -49,93 +65,264 @@ function said(json: string): { role: string; text: string } {
 const messages = async (db: Db, ids: unknown[]) =>
   new Map((await db.query`SELECT id, message FROM ai1_session_message WHERE ${sql.in("id", ids.filter(Boolean))}`).map((m) => [String(m.id), said(String(m.message))]));
 
-/** Every agent, the most recently active first; a click shows only its sessions. */
+/** The agents with what happened in their sessions, the most recently active first; only `agent` if given. */
+const agentRows = (db: Db, agent = 0) => db.query`
+  SELECT a.id, a.system, a.tools, a.prefer, a.time,
+    (SELECT COUNT(*) FROM ai1_agent_memory WHERE agent_id = a.id) AS memories,
+    (SELECT COUNT(DISTINCT x.session_id) FROM ai1_session_message x JOIN ai1_session y ON y.id = x.session_id
+      WHERE y.agent_id = a.id AND x.time > ${unixTime() - ACTIVE}) AS active,
+    COUNT(DISTINCT s.id) AS sessions, COUNT(DISTINCT s.usr_id) AS users, ${COUNTS}
+  FROM ai1_agent a LEFT JOIN ai1_session s ON s.agent_id = a.id LEFT JOIN ai1_session_message m ON m.session_id = s.id
+  ${agent ? sql`WHERE a.id = ${agent}` : sql``}
+  GROUP BY a.id, a.system, a.tools, a.prefer, a.time ORDER BY last_time DESC, a.id DESC`;
+
+/** Every agent with the most important, the most recently active first; a click opens its page. */
 export async function agents(node: Node): Promise<HtmlString> {
-  const { db, t } = node.app;
-  const rows = await db.query`
-    SELECT a.id, a.system, a.tools, a.prefer,
-      (SELECT COUNT(*) FROM ai1_agent_memory WHERE agent_id = a.id) AS memories,
-      COUNT(DISTINCT s.id) AS sessions, COUNT(m.id) AS messages, SUM(CASE WHEN ${ERROR} THEN 1 ELSE 0 END) AS errors,
-      MAX(m.id) AS last, MAX(m.time) AS last_time
-    FROM ai1_agent a LEFT JOIN ai1_session s ON s.agent_id = a.id LEFT JOIN ai1_session_message m ON m.session_id = s.id
-    GROUP BY a.id, a.system, a.tools, a.prefer ORDER BY last_time DESC, a.id DESC`;
+  const { db, t } = node.app, url = await pageUrl(node);
+  const rows = await agentRows(db);
   const last = await messages(db, rows.map((r) => r.last));
   return html.async`
     <thead><tr>
-      <th>#
+      <th>${t`Agent`}
       <th>${t`Role`}
       <th>${t`Tools`}
+      <th title="${t`prefer: ai1's weights; – is ai1's default`}">${t`Model choice`}
       <th>${t`Memories`}
       <th>${t`Sessions`}
+      <th>${t`Users`}
       <th>${t`Messages`}
       <th>${t`Errors`}
       <th>${t`Last message`}
-      <th>${t`When`}
-    <tbody>${rows.length ? rows.map((a) => html`<tr data-agent="${a.id}" style="cursor:pointer">
-      <th>${colored(`#${a.id}`)}
-      <td>${short(String(a.system ?? "").split("\n")[0])}${a.prefer && a.prefer !== "{}" ? html`<br><small>${a.prefer}</small>` : ""}
-      <td><small>${JSON.parse(String(a.tools || "[]")).join(", ") || "–"}</small>
+      <th>${t`Last active`}
+      <th>${t`Created`}
+    <tbody>${rows.length ? rows.map((a) => html`<tr u2-href>
+      <th>${agentLink(url, a.id)}${Number(a.active) ? html` <small class=u2-badge>active</small>` : ""}
+      <td>${firstLine(a.system)}
+      <td><small>${a.tools || "–"}</small>
+      <td>${choice(a.prefer)}
       <td>${count(a.memories)}
       <td>${count(a.sessions)}
+      <td>${count(a.users)}
       <td>${count(a.messages)}
       <td>${count(a.errors, true)}
       <td><small>${short(last.get(String(a.last))?.text ?? "")}</small>
-      <td>${time(a.last_time)}`) : html.async`<tr><td colspan=9>${t`No agents yet`}`}</tbody>`;
+      <td>${time(a.last_time)}
+      <td>${time(a.time)}`) : html.async`<tr><td colspan=12>${t`No agents yet`}`}</tbody>`;
 }
 
-/** The sessions, the latest first, of one agent if `vars.agent`; a click opens the conversation. */
-export async function sessions(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
-  const { db, t } = node.app, agent = Number(vars.agent) || 0, now = unixTime();
-  const rows = await db.query`
-    SELECT s.id, s.agent_id, s.prefer, s.time, u.username, COUNT(m.id) AS messages, SUM(CASE WHEN ${ERROR} THEN 1 ELSE 0 END) AS errors,
-      MAX(m.id) AS last, MAX(m.time) AS last_time
-    FROM ai1_session s LEFT JOIN usr u ON u.id = s.usr_id LEFT JOIN ai1_session_message m ON m.session_id = s.id
-    ${agent ? sql`WHERE s.agent_id = ${agent}` : sql``}
-    GROUP BY s.id, s.agent_id, s.prefer, s.time, u.username ORDER BY last_time DESC, s.id DESC LIMIT ${SESSIONS}`;
+/** The sessions, the latest first, of one agent if `vars.agent`; a click opens the session's page. */
+export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
+  const { db, t } = node.app, agent = Number(vars.agent) || 0, now = unixTime(), url = await pageUrl(node);
+  const where = agent ? sql`WHERE s.agent_id = ${agent}` : sql``;
+  const [rows, all] = await Promise.all([
+    db.query`
+      SELECT s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username, ${COUNTS}
+      FROM ai1_session s LEFT JOIN usr u ON u.id = s.usr_id LEFT JOIN ai1_session_message m ON m.session_id = s.id
+      ${where} GROUP BY s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username ORDER BY last_time DESC, s.id DESC LIMIT ${SESSIONS}`,
+    db.one`SELECT COUNT(*) FROM ai1_session s ${where}`,
+  ]);
   const last = await messages(db, rows.map((r) => r.last));
   const models = Map.groupBy(await db.query`SELECT DISTINCT m.session_id, am.name AS model, p.name AS provider
     FROM ai1_session_message m ${answeredBy}
     WHERE mp.id IS NOT NULL AND ${sql.in("m.session_id", rows.map((r) => r.id))}`, (r) => String(r.session_id));
   return html.async`
+      ${Number(all) > rows.length ? html.async`<caption><small>${t`The latest`} ${rows.length} / ${all}</small></caption>` : ""}
       <thead><tr>
         <th>${t`Session`}
         <th>${t`Agent`}
         <th>${t`User`}
-        <th>${t`Messages`}
+        <th title="${t`prefer of the session; – is the agent's`}">${t`Model choice`}
+        <th>${t`Questions`}
+        <th>${t`Answers`}
+        <th title="${t`Answers that called tools`}">${t`Tool calls`}
         <th>${t`Errors`}
         <th>${t`Models`}
         <th>${t`Last message`}
-        <th>${t`When`}
+        <th>${t`Last active`}
         <th>${t`Started`}
-      <tbody>${rows.length ? rows.map((s) => html`<tr data-session="${s.id}" style="cursor:pointer">
-        <th>${s.id}${now - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
-        <td>${colored(`#${s.agent_id}`)}
-        <td>${colored(s.username)}${s.prefer && s.prefer !== "{}" ? html`<br><small>${s.prefer}</small>` : ""}
-        <td>${count(s.messages)}
+      <tbody>${rows.length ? rows.map((s) => html`<tr u2-href>
+        <th>${sessionLink(url, s.id)}${now - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
+        <td>${agentLink(url, s.agent_id)}
+        <td>${s.usr_id} ${colored(s.username)}
+        <td>${choice(s.prefer)}
+        <td>${count(s.questions)}
+        <td>${count(s.answers)}
+        <td>${count(s.calls)}
         <td>${count(s.errors, true)}
         <td><small>${(models.get(String(s.id)) ?? []).map((r) => html`${by(r)} `)}</small>
         <td><small>${last.get(String(s.last))?.role ?? ""}: ${short(last.get(String(s.last))?.text ?? "")}</small>
         <td>${time(s.last_time)}
-        <td>${time(s.time)}`) : html.async`<tr><td colspan=9>${t`No sessions yet`}`}</tbody>`;
+        <td>${time(s.time)}`) : html.async`<tr><td colspan=12>${t`No sessions yet`}`}</tbody>`;
 }
 
-/** The memories of agent `vars.agent`, the strongest first, with their strength. */
-export async function memories(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
+/** The memories of agent `vars.agent`, the strongest first, with their strength and whether search finds them. */
+export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, agent = Number(vars.agent) || 0, now = unixTime();
   if (!agent) return html.async`<tr><td>${t`Choose an agent`}`;
-  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai1_agent_memory", "m.id")} AS score
+  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai1_agent_memory", "m.id")} AS score,
+      EXISTS (SELECT 1 FROM embedding_ai1_agent_memory e WHERE e.memory_id = m.id) AS findable
     FROM ai1_agent_memory m WHERE m.agent_id = ${agent} ORDER BY score DESC, m.id`;
   return html.async`
     <thead><tr>
-      <th>${colored(`#${agent}`)}
+      <th>#
       <th>${t`Memory`}
-      <th>${t`Strength`}
+      <th title="${t`As stored (score); renewed and recalled it grows`}">${t`Score`}
+      <th title="${t`The score now: unused it fades`}">${t`Strength`}
+      <th title="${t`Embedded: the tool search finds it`}">${t`Findable`}
       <th>${t`When`}
     <tbody>${rows.length ? rows.map((m) => html`<tr>
-      <td>[${m.id}]
+      <td>${m.id}
       <td>${m.content}
+      <td>${m.score}
       <td>${strength(db, "ai1_agent_memory", Number(m.score), now).toFixed(2)}
-      <td>${time(m.time)}`) : html.async`<tr><td colspan=4>${t`No memories yet`}`}</tbody>`;
+      <td>${Number(m.findable) ? "✓" : "–"}
+      <td>${time(m.time)}`) : html.async`<tr><td colspan=6>${t`No memories yet`}`}</tbody>`;
+}
+
+/** All about agent `vars.agent`: what it is, what happened, which models answered for whom. */
+export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
+  const { db, t } = node.app, id = Number(vars.agent) || 0;
+  const [[a], models, users, findable] = await Promise.all([
+    agentRows(db, id),
+    db.query`SELECT am.name AS model, p.name AS provider, COUNT(*) AS answers, MAX(m.time) AS last_time
+      FROM ai1_session_message m JOIN ai1_session s ON s.id = m.session_id ${answeredBy}
+      WHERE s.agent_id = ${id} AND mp.id IS NOT NULL GROUP BY am.name, p.name ORDER BY answers DESC`,
+    db.query`SELECT s.usr_id, u.username, COUNT(DISTINCT s.id) AS sessions, ${COUNTS}
+      FROM ai1_session s LEFT JOIN usr u ON u.id = s.usr_id LEFT JOIN ai1_session_message m ON m.session_id = s.id
+      WHERE s.agent_id = ${id} GROUP BY s.usr_id, u.username ORDER BY last_time DESC`,
+    db.row`SELECT (SELECT COUNT(DISTINCT memory_id) FROM embedding_ai1_agent_memory WHERE agent_id = ${id}) AS memories,
+      (SELECT COUNT(DISTINCT message_id) FROM embedding_ai1_session_message WHERE agent_id = ${id}) AS messages`,
+  ]);
+  if (!a) return html.async`<div>${t`No such agent`}</div>`;
+  return html.async`<div class=u2-flex>
+    <table class=u2-table>
+      <tr>
+        <th>${t`Role`}
+        <td><div style="white-space:pre-wrap">${a.system || "–"}</div>
+      <tr>
+        <th title="${t`Paths of the api it may use; its memories and search it always has`}">${t`Tools`}
+        <td>${a.tools || "–"}
+      <tr>
+        <th title="${t`prefer: ai1's weights; – is ai1's default`}">${t`Model choice`}
+        <td>${choice(a.prefer)}
+      <tr>
+        <th>${t`Created`}
+        <td>${time(a.time)}
+      <tr>
+        <th>${t`Active`}
+        <td>${time(a.first_time)} – ${time(a.last_time)}
+      <tr>
+        <th>${t`Sessions`}
+        <td>${count(a.sessions)}, ${t`active now`}: ${count(a.active)}, ${t`users`}: ${count(a.users)}
+      <tr>
+        <th>${t`Messages`}
+        <td>${count(a.messages)}: ${count(a.questions)} ${t`questions`}, ${count(a.answers)} ${t`answers`},
+          ${count(a.calls)} ${t`with tool calls`}, ${count(a.errors, true)} ${t`errors`}
+      <tr>
+        <th>${t`Memories`}
+        <td>${count(a.memories)}
+      <tr>
+        <th title="${t`Embedded: the tool search finds them`}">${t`Findable`}
+        <td>${t`memories`}: ${count(findable?.memories)} / ${count(a.memories)},
+          ${t`questions and answers`}: ${count(findable?.messages)} / ${count(Number(a.questions) + Number(a.answers))}
+    </table>
+    <table class=u2-table>
+      <caption>${t`Models that answered`}</caption>
+      <thead><tr>
+        <th>${t`Model`}
+        <th>${t`Answers`}
+        <th>${t`Last`}
+      <tbody>${models.length ? models.map((r) => html`<tr>
+        <td>${by(r)}
+        <td>${count(r.answers)}
+        <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
+    </table>
+    <table class=u2-table>
+      <caption>${t`Who talked with it`}</caption>
+      <thead><tr>
+        <th>${t`User`}
+        <th>${t`Sessions`}
+        <th>${t`Questions`}
+        <th>${t`Errors`}
+        <th>${t`Last active`}
+      <tbody>${users.length ? users.map((u) => html`<tr>
+        <td>${u.usr_id} ${colored(u.username)}
+        <td>${count(u.sessions)}
+        <td>${count(u.questions)}
+        <td>${count(u.errors, true)}
+        <td>${time(u.last_time)}`) : html.async`<tr><td colspan=5>${t`No users yet`}`}</tbody>
+    </table>
+  </div>`;
+}
+
+/** All about session `vars.session`: who, with which agent, what it was given, which models answered,
+ *  which tools it called. */
+export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
+  const { db, t } = node.app, id = Number(vars.session) || 0, url = await pageUrl(node);
+  const [s, models, system, calls] = await Promise.all([
+    db.row`SELECT s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username, ${COUNTS}
+      FROM ai1_session s LEFT JOIN usr u ON u.id = s.usr_id
+      LEFT JOIN ai1_session_message m ON m.session_id = s.id
+      WHERE s.id = ${id} GROUP BY s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username`,
+    db.query`SELECT am.name AS model, p.name AS provider, COUNT(*) AS answers, MAX(m.time) AS last_time
+      FROM ai1_session_message m ${answeredBy}
+      WHERE m.session_id = ${id} AND mp.id IS NOT NULL GROUP BY am.name, p.name ORDER BY answers DESC`,
+    db.col`SELECT message FROM ai1_session_message m WHERE m.session_id = ${id} AND ${role("system")} ORDER BY m.id`,
+    db.col`SELECT message FROM ai1_session_message m WHERE m.session_id = ${id} AND m.message LIKE ${'%"toolCalls":[{%'}`,
+  ]);
+  if (!s) return html.async`<div>${t`No such session`}</div>`;
+  // what the model was given as the session started; the other system messages are notes
+  const kept = system.map((json) => JSON.parse(String(json))), given = kept.find((m) => m.tools);
+  const used = Map.groupBy(calls.flatMap((json) => JSON.parse(String(json)).toolCalls ?? []), (c: any) => String(c.name));
+  return html.async`<div class=u2-flex>
+    <table class=u2-table>
+      <tr>
+        <th>${t`Agent`}
+        <td>${agentLink(url, s.agent_id)}
+      <tr>
+        <th title="${t`It acts with this user's rights`}">${t`User`}
+        <td>${s.usr_id} ${colored(s.username)}
+      <tr>
+        <th title="${t`prefer of the session; – is the agent's`}">${t`Model choice`}
+        <td>${choice(s.prefer)}
+      <tr>
+        <th>${t`Started`}
+        <td>${time(s.time)}
+      <tr>
+        <th>${t`Last active`}
+        <td>${time(s.last_time)}${unixTime() - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
+      <tr>
+        <th>${t`Messages`}
+        <td>${count(s.messages)}: ${count(s.questions)} ${t`questions`}, ${count(s.answers)} ${t`answers`},
+          ${count(s.calls)} ${t`with tool calls`}, ${count(s.errors, true)} ${t`errors`}, ${count(kept.length - (given ? 1 : 0))} ${t`notes`}
+      <tr>
+        <th title="${t`As the session started: its role with the memories and what other modules added`}">${t`Given`}
+        <td>${given ? folded(textOf(given.content), textOf(given.content)) : "–"}
+      <tr>
+        <th title="${t`Given as the session started; later changes come with the next session`}">${t`Tools given`}
+        <td>${given?.tools ? folded(`${given.tools.length}: ${given.tools.map((tool: any) => tool.name).join(", ")}`, pretty(given.tools)) : "–"}
+    </table>
+    <table class=u2-table>
+      <caption>${t`Models that answered`}</caption>
+      <thead><tr>
+        <th>${t`Model`}
+        <th>${t`Answers`}
+        <th>${t`Last`}
+      <tbody>${models.length ? models.map((r) => html`<tr>
+        <td>${by(r)}
+        <td>${count(r.answers)}
+        <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
+    </table>
+    <table class=u2-table>
+      <caption>${t`Tools called`}</caption>
+      <thead><tr>
+        <th>${t`Tool`}
+        <th>${t`Calls`}
+      <tbody>${used.size ? [...used].sort((a, b) => b[1].length - a[1].length).map(([tool, list]) => html`<tr>
+        <td>${colored(tool)}
+        <td>${count(list.length)}`) : html.async`<tr><td colspan=2>${t`No tools called yet`}`}</tbody>
+    </table>
+  </div>`;
 }
 
 /** Small and cut, all of it when opened. */
@@ -175,14 +362,40 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
   })}</div>`;
 }
 
+/** The list of agents and all sessions; with `?agent=` an agent's page, with `?session=` a session's. */
 async function render(node: Node): Promise<HtmlString> {
-  const t = node.app.t;
+  const t = node.app.t, query = getCtx().req.query, url = await pageUrl(node);
+  const id = Number(query.agent) || 0, sessionId = Number(query.session) || 0;
   allowMarkdown(); // the answers in a conversation
-  return html.async`<div class="u2-flex">
-    <div class=u2-card><div class=-head>${t`Agents`}</div><table class=u2-table cms-part=agents>${agents(node)}</table></div>
-    <div class=u2-card><div class=-head>${t`Sessions`} <a href="" data-agent="" data-all hidden>${t`all agents`}</a></div><table class=u2-table cms-part=sessions>${sessions(node)}</table></div>
-    <div class=u2-card style="flex:0 0 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node)}</table></div>
+  if (sessionId) {
+    const agentId = await node.app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${sessionId}`;
+    const vars = { session: sessionId };
+    return html.async`<div class=u2-flex>
+    <div class=u2-card style="flex:0 1 auto">
+      <div class=-head>
+        <a href="${url}">${t`Agents`}</a> › ${agentId ? html.async`${t`Agent`} ${agentLink(url, agentId)} › ` : ""}${t`Session`} ${sessionId}
+      </div>
+      <div cms-part=session>${session(node, { vars })}</div>
+    </div>
+    <div class=u2-card style="flex:0 1 auto">
+      <div class=-head>${t`Conversation`}</div>
+      <div cms-part=conversation>${conversation(node, { vars })}</div>
+    </div>
+  </div>`;
+  }
+  if (!id) return html.async`<div class=u2-flex>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Agents`}</div><table class=u2-table cms-part=agents>${agents(node)}</table></div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><table class=u2-table cms-part=sessions>${sessions(node)}</table></div>
+  </div>`;
+  const vars = { agent: id };
+  return html.async`<div class=u2-flex>
+    <div class=u2-card style="flex:0 1 auto">
+      <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)}</div>
+      <div cms-part=agent>${agent(node, { vars })}</div>
+    </div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
   </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, parts: { agents, sessions, memories, conversation } } };
+export const cms = { node: { js: ["pub/main.js"], render, parts: { agents, agent, sessions, session, memories, conversation } } };
