@@ -9,7 +9,7 @@ import type { App } from "@qino/qino";
 // first. What it keeps renewing stays strong, the rest fades (score).
 
 /** How many memories are in the context; the weaker ones are left to its search. */
-const IN_MIND = 10;
+export const IN_MIND = 10;
 
 /** Its memories, the strongest first. */
 export async function list(app: App, agent: number, limit?: number): Promise<{ id: number; content: string }[]> {

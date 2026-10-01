@@ -50,7 +50,7 @@ u2-ico[icon]:not(:has(> svg)) {
   & a:hover { text-decoration:underline; }
 
   & button, & .btn,
-    & input:not([type=checkbox], [type=radio]),
+    & input:not([type=checkbox], [type=radio], [type=range]),
     & textarea,
     & select,
     & .-input {

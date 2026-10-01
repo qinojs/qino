@@ -2,6 +2,8 @@ import { unixTime } from "@qino/qino";
 
 import { ask, note } from "./lib/turn.ts";
 
+export { IN_MIND } from "./lib/memory.ts";
+
 import type { App } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai1";
 

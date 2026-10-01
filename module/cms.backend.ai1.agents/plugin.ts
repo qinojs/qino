@@ -4,6 +4,7 @@ import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
 import { sqlScore, strength } from "@qino/qino/score";
+import { IN_MIND } from "@qino/qino/ai1.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -126,9 +127,8 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}):
     FROM ai1_session_message m ${answeredBy}
     WHERE mp.id IS NOT NULL AND ${sql.in("m.session_id", rows.map((r) => r.id))}`, (r) => String(r.session_id));
   return html.async`
-      ${Number(all) > rows.length ? html.async`<caption><small>${t`The latest`} ${rows.length} / ${all}</small></caption>` : ""}
       <thead><tr>
-        <th>${t`Session`}
+        <th>${t`Session`}${Number(all) > rows.length ? html.async` <small>(${t`the latest`} ${rows.length} / ${all})</small>` : ""}
         <th>${t`Agent`}
         <th>${t`User`}
         <th title="${t`prefer of the session; – is the agent's`}">${t`Model choice`}
@@ -168,15 +168,17 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
       <th>${t`Memory`}
       <th title="${t`As stored (score); renewed and recalled it grows`}">${t`Score`}
       <th title="${t`The score now: unused it fades`}">${t`Strength`}
+      <th title="${t`The strongest are in the context of a new session, the others only found by search`}">${t`In context`}
       <th title="${t`Embedded: the tool search finds it`}">${t`Findable`}
       <th>${t`When`}
-    <tbody>${rows.length ? rows.map((m) => html`<tr>
+    <tbody>${rows.length ? rows.map((m, i) => html`<tr>
       <td>${m.id}
       <td>${m.content}
       <td>${m.score}
       <td>${strength(db, "ai1_agent_memory", Number(m.score), now).toFixed(2)}
+      <td>${i < IN_MIND ? "✓" : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
-      <td>${time(m.time)}`) : html.async`<tr><td colspan=6>${t`No memories yet`}`}</tbody>`;
+      <td>${time(m.time)}`) : html.async`<tr><td colspan=7>${t`No memories yet`}`}</tbody>`;
 }
 
 /** All about agent `vars.agent`: what it is, what happened, which models answered for whom. */
@@ -194,11 +196,11 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
       (SELECT COUNT(DISTINCT message_id) FROM embedding_ai1_session_message WHERE agent_id = ${id}) AS messages`,
   ]);
   if (!a) return html.async`<div>${t`No such agent`}</div>`;
-  return html.async`<div class=u2-flex>
+  return html.async`<div>
     <table class=u2-table>
       <tr>
         <th>${t`Role`}
-        <td><div style="white-space:pre-wrap">${a.system || "–"}</div>
+        <td><div style="white-space:pre-wrap; max-height:20rem; overflow:auto">${a.system || "–"}</div>
       <tr>
         <th title="${t`Paths of the api it may use; its memories and search it always has`}">${t`Tools`}
         <td>${a.tools || "–"}
@@ -226,10 +228,9 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
         <td>${t`memories`}: ${count(findable?.memories)} / ${count(a.memories)},
           ${t`questions and answers`}: ${count(findable?.messages)} / ${count(Number(a.questions) + Number(a.answers))}
     </table>
-    <table class=u2-table>
-      <caption>${t`Models that answered`}</caption>
+    <table class=u2-table style="width:auto">
       <thead><tr>
-        <th>${t`Model`}
+        <th>${t`Models that answered`}
         <th>${t`Answers`}
         <th>${t`Last`}
       <tbody>${models.length ? models.map((r) => html`<tr>
@@ -237,10 +238,9 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
         <td>${count(r.answers)}
         <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
     </table>
-    <table class=u2-table>
-      <caption>${t`Who talked with it`}</caption>
+    <table class=u2-table style="width:auto">
       <thead><tr>
-        <th>${t`User`}
+        <th>${t`Who talked with it`}
         <th>${t`Sessions`}
         <th>${t`Questions`}
         <th>${t`Errors`}
@@ -260,7 +260,7 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
 export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, id = Number(vars.session) || 0, url = await pageUrl(node);
   const [s, models, system, calls] = await Promise.all([
-    db.row`SELECT s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username, ${COUNTS}
+    db.row`SELECT s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username, MAX(m.time) AS last_time
       FROM ai1_session s LEFT JOIN usr u ON u.id = s.usr_id
       LEFT JOIN ai1_session_message m ON m.session_id = s.id
       WHERE s.id = ${id} GROUP BY s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username`,
@@ -272,7 +272,7 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
   ]);
   if (!s) return html.async`<div>${t`No such session`}</div>`;
   // what the model was given as the session started; the other system messages are notes
-  const kept = system.map((json) => JSON.parse(String(json))), given = kept.find((m) => m.tools);
+  const given = system.map((json) => JSON.parse(String(json))).find((m) => m.tools);
   const used = Map.groupBy(calls.flatMap((json) => JSON.parse(String(json)).toolCalls ?? []), (c: any) => String(c.name));
   return html.async`<div class=u2-flex>
     <table class=u2-table>
@@ -292,10 +292,6 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
         <th>${t`Last active`}
         <td>${time(s.last_time)}${unixTime() - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
       <tr>
-        <th>${t`Messages`}
-        <td>${count(s.messages)}: ${count(s.questions)} ${t`questions`}, ${count(s.answers)} ${t`answers`},
-          ${count(s.calls)} ${t`with tool calls`}, ${count(s.errors, true)} ${t`errors`}, ${count(kept.length - (given ? 1 : 0))} ${t`notes`}
-      <tr>
         <th title="${t`As the session started: its role with the memories and what other modules added`}">${t`Given`}
         <td>${given ? folded(textOf(given.content), textOf(given.content)) : "–"}
       <tr>
@@ -303,9 +299,8 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
         <td>${given?.tools ? folded(`${given.tools.length}: ${given.tools.map((tool: any) => tool.name).join(", ")}`, pretty(given.tools)) : "–"}
     </table>
     <table class=u2-table>
-      <caption>${t`Models that answered`}</caption>
       <thead><tr>
-        <th>${t`Model`}
+        <th>${t`Models that answered`}
         <th>${t`Answers`}
         <th>${t`Last`}
       <tbody>${models.length ? models.map((r) => html`<tr>
@@ -314,9 +309,8 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
         <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
     </table>
     <table class=u2-table>
-      <caption>${t`Tools called`}</caption>
       <thead><tr>
-        <th>${t`Tool`}
+        <th>${t`Tools called`}
         <th>${t`Calls`}
       <tbody>${used.size ? [...used].sort((a, b) => b[1].length - a[1].length).map(([tool, list]) => html`<tr>
         <td>${colored(tool)}
@@ -379,7 +373,7 @@ async function render(node: Node): Promise<HtmlString> {
     </div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Conversation`}</div>
-      <div cms-part=conversation>${conversation(node, { vars })}</div>
+      <div cms-part=conversation style="max-height:80vh; overflow:auto">${conversation(node, { vars })}</div>
     </div>
   </div>`;
   }
@@ -389,7 +383,7 @@ async function render(node: Node): Promise<HtmlString> {
   </div>`;
   const vars = { agent: id };
   return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex:0 1 auto">
+    <div class=u2-card style="flex:0 1 auto; max-width:50rem">
       <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)}</div>
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>

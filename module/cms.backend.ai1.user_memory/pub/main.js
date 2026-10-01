@@ -1,6 +1,6 @@
 import { api } from "@qino/pub/api.js";
 
-// Remove a memory that was sorted wrong; try how decide() sorts one.
+// Remove a memory that was sorted wrong; try how decide() sorts one (on the overview).
 cms.initNode("backend.ai1.user_memory", (el) => {
   const nid = Number(cms.el.nid(el));
   const post = (data) => api.cms.node(nid).api.post(data).catch((err) => ({ message: err.message }));
@@ -11,10 +11,11 @@ cms.initNode("backend.ai1.user_memory", (el) => {
     if (!button) return;
     const res = await post({ remove: button.dataset.remove });
     if (!res?.ok) return alert(res?.message ?? "Error");
-    cms.reloadPart(nid, "list");
+    const vars = { usr: new URL(location.href).searchParams.get("usr") };
+    for (const part of el.querySelectorAll("[cms-part]")) cms.reloadPart(nid, part.getAttribute("cms-part"), vars);
   });
 
-  el.querySelector("[data-try]").addEventListener("submit", async (e) => {
+  el.querySelector("[data-try]")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const output = el.querySelector("output");
     output.textContent = "…";

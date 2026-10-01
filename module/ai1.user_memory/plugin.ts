@@ -3,7 +3,7 @@ import { Access, errMsg, getCtx, NotFoundError, s, sql, toTools, unixTime } from
 import { collection, index, search } from "@qino/qino/ai1.embed";
 import { hit, scored, sqlScore } from "@qino/qino/score";
 
-import { personal } from "./mod.ts";
+import { IN_MIND, personal } from "./mod.ts";
 
 import type { ApiTree, App, Ctx } from "@qino/qino";
 
@@ -12,9 +12,6 @@ import type { ApiTree, App, Ctx } from "@qino/qino";
 // replaced by another module.
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
-
-/** How many of a user's memories are in the context: the strongest, those kept most and latest. */
-const IN_MIND = 10; // todo? adjustable
 
 /** Only memories this close to what the user said come to mind (as with ai1.agent). */
 const CLOSE = 0.75; // todo? adjustable

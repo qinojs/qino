@@ -2,6 +2,9 @@ import { decide } from "@qino/qino/ai1";
 
 import type { App } from "@qino/qino";
 
+/** How many of a user's memories are in the context: the strongest, those kept most and latest. */
+export const IN_MIND = 10; // todo? adjustable
+
 const QUESTION = "Is this about the person talking (their language, how to address them, their preferences, private matters) rather than about the work or the world?";
 
 /** Whether a memory is about the person talking ("personal") or not ("shared"), as a quick `decide()` judges. */

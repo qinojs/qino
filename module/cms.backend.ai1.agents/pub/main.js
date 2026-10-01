@@ -7,18 +7,21 @@ const render = async (box) => {
 };
 
 // The tables follow what is going on, every few seconds while the page is open: the list of agents and
-// all sessions, an agent's page (`?agent=`), or a session's (`?session=`) whose conversation follows along.
+// all sessions, or an agent's page (`?agent=`). On a session's page (`?session=`) only its conversation
+// follows along.
 cms.initNode("backend.ai1.agents", (el) => {
   const nid = Number(cms.el.nid(el));
   const query = new URL(location.href).searchParams, agent = query.get("agent"), session = query.get("session");
-  const parts = session ? ["session"] : agent ? ["agent", "sessions", "memories"] : ["agents", "sessions"];
-  const vars = session ? { session } : agent ? { agent } : {};
+  const parts = session ? [] : agent ? ["agent", "sessions", "memories"] : ["agents", "sessions"];
+  const vars = agent ? { agent } : {};
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);
   const box = el.querySelector("[cms-part=conversation]");
   if (!box) return;
-  render(box);
-  // only the messages since the last one are added, so what is opened or selected stays as it is
+  const end = () => box.scrollTop = box.scrollHeight;
+  render(box).then(end); // starts at the latest message
+  // only the messages since the last one are added, so what is opened or selected stays as it is; who
+  // is at the end stays there
   const poll = setInterval(async () => {
     if (!el.isConnected) return clearInterval(poll);
     const list = box.firstElementChild;
@@ -27,8 +30,9 @@ cms.initNode("backend.ai1.agents", (el) => {
     more.innerHTML = await api.cms.node(nid).html.part("conversation").post({ vars: { session, after } }).catch(() => "");
     const added = more.content.firstElementChild?.children;
     if (!list || !added?.length) return;
-    const news = [...added];
+    const news = [...added], atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 10;
     list.append(...news);
-    for (const message of news) render(message);
+    await Promise.all(news.map(render));
+    if (atEnd) end();
   }, 3000);
 });
