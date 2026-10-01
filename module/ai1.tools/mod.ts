@@ -28,7 +28,7 @@ export function run(app: App, { usrId, tools, maxSteps = 8, onMessage, ...input 
     const add = async (message: Message, modelProvider?: number) => { messages.push(message); await onMessage?.(message, modelProvider); };
     for (let step = 0, pin = opts; step < maxSteps; step++) {
       const answer = await text(app, { ...input, tools, messages: [...input.messages, ...messages] }, pin);
-      pin = { ...opts, model: answer.model }; // stay with it: its provider has the history cached
+      pin = { ...opts, model: answer.model }; // prefer the model used for the previous answer
       await add({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls }, answer.modelProvider);
       if (!answer.toolCalls.length) return { ...answer, messages };
       for (const call of answer.toolCalls) await add({ role: "tool", id: call.id, content: JSON.stringify(await execute(tools, call, ctx) ?? null) });

@@ -3,8 +3,7 @@ import { AiError } from "@qino/qino/ai1";
 
 import { active } from "./account.ts";
 
-import type { Message, Part, TextInput, TextOutput } from "@qino/qino/ai1";
-import type { Adapter } from "@qino/qino/ai1";
+import type { Adapter, Message, Part, TextInput, TextOutput } from "@qino/qino/ai1";
 
 type Call = Parameters<Adapter["text"]>[0];
 

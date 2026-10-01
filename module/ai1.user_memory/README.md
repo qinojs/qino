@@ -1,7 +1,7 @@
 # ai1.user_memory
 
-**A prototype**, to see how the hooks of ai1.agent work, and how a quick `decide()` (Jev) does at
-sorting memories: which are the user's, which the agent's.
+**A prototype** using ai1.agent hooks and `decide()` to sort memories: which are the user's,
+which the agent's.
 
 What agents keep about a user: their language, how to address them, their preferences. It is theirs
 with every agent, and only in their own sessions.

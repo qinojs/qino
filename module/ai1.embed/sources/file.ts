@@ -31,7 +31,7 @@ export async function indexFile(app: App, id: number): Promise<void> {
   image ? await index(app, "file_image", key, { image, hash: String(row.md5) }) : await remove(app, "file_image", key);
 }
 
-/** Embed the files the primary collection has nothing of yet; a file without text counts as done. */
+/** Embed the files the primary collection has nothing of yet. */
 export async function indexFiles(app: App): Promise<{ files: number; errors: string[] }> {
   const c = await collection(app);
   if (!c) throw new Error("No embedding collection");

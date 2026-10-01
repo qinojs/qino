@@ -33,6 +33,7 @@ model can be indexed while the old one still answers. New installations start wi
 without `collection` use the primary one.
 
 ```ts
+import { sql } from "@qino/qino";
 import { index, remove, search } from "@qino/qino/ai1.embed";
 
 await index(app, "product_text", { product_id: 7 }, text);
@@ -51,7 +52,7 @@ MariaDB needs one length per column: it grows to the longest collection, shorter
 with zeros, which changes no distance.
 
 Files of the core table `file` are built in (`sources/file.ts`): `file_text` and, when the model has
-`vision`, `file_image`. With the setting `files` each new or replaced file is indexed on the spot and
-the others each hour; `indexFiles(app)` catches up by hand, `indexFile(app, id)` indexes one.
+`vision`, `file_image`. With the setting `files` each new or replaced file is indexed in the
+background and the others each hour; `indexFiles(app)` catches up by hand, `indexFile(app, id)` indexes one.
 
 `cms.embed` indexes CMS pages.

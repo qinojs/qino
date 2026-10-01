@@ -24,9 +24,10 @@ page. It shows the connection and model IDs and returns users to that page after
 To get a menu entry without creating a CMS page, install `cms.backend.ai1.chatgpt`; Qino adds
 **ChatGPT plan** to the AI backend menu.
 
-Only text and local function tools are supported. The plan route does not currently support
-embeddings, image generation, speech, or transcription. It follows the current Sign in with
-ChatGPT preview contract: `store: false`, `stream: true`, and stateless Responses history. A
+Text answers and local function tools are supported; image inputs work when the selected model
+accepts them. The plan route does not currently support embeddings, image generation, speech, or
+transcription. It follows the current Sign in with ChatGPT preview contract: `store: false`,
+`stream: true`, and stateless Responses history. A
 hosted or paid Qino service requires separate OpenAI approval. A self-hosted VM needs OAuth
 completed locally and protected credentials transferred according to OpenAI's VM guide.
 
