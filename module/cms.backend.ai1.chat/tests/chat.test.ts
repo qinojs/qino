@@ -22,7 +22,7 @@ Deno.test("cms.backend.ai1.chat: every agent to open, and who would answer by th
     await Agent.create(app, { system: "<b>lead</b>\nmore", tools: ["ai1.agent"], prefer: { cost: 3 } });
     const node = { app } as unknown as Node;
     const page = String(await runAs(app, 7, "test", () => cms.node.render(node)));
-    for (const part of ["#1 &lt;b&gt;lead&lt;/b&gt;</summary>", 'value="ai1.agent" checked', 'data-key="cost"> <output>3</output>']) assertStringIncludes(page, part);
+    for (const part of ["#1</span> &lt;b&gt;lead&lt;/b&gt;</summary>", 'value="ai1.agent" checked', 'data-key="cost"> <output>3</output>']) assertStringIncludes(page, part);
     assertEquals(await cms.node.api(node, { preview: { cost: 1 } }), { ok: true, list: [{ model: "handy", provider: "p", rank: 0 }] }); // only who has tools (no price known: no points for cost)
   } finally {
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later

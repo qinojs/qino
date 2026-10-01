@@ -1,0 +1,6 @@
+{
+  "name": "ai1.chatgpt",
+  "description": "Use a signed-in user's ChatGPT plan for eligible ai1 text requests on a local Qino installation.",
+  "dependencies": ["ai1"],
+  "files": ["README.md", "manifest.json", "mod.ts", "plugin.ts", "lib/account.ts", "lib/provider.ts", "lib/response.ts"]
+}
