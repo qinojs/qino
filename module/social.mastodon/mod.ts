@@ -1,4 +1,4 @@
-import { safeFetch } from "@qino/qino";
+import { errMsg, safeFetch } from "@qino/qino";
 import { ProviderError } from "@qino/qino/social";
 
 import { postOf } from "./lib/status.ts";
@@ -10,8 +10,9 @@ import type { Provider, Target } from "@qino/qino/social";
 type Account = any;
 
 async function config(app: App): Promise<{ base: URL; token: string }> {
-  const url = String(await app.settings["social.mastodon"].url ?? "").trim();
-  const token = String(await app.settings["social.mastodon"].accessToken ?? "").trim();
+  const settings = app.settings["social.mastodon"];
+  const url = String(await settings.url ?? "").trim();
+  const token = String(await settings.accessToken ?? "").trim();
   if (!url || !token) throw new ProviderError("social.mastodon: configure url and accessToken");
   const base = new URL(url);
   if (base.protocol !== "https:") throw new ProviderError("social.mastodon: url must use HTTPS");
@@ -29,7 +30,7 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
   headers.set("authorization", `Bearer ${token}`);
   let res: Response;
   try { res = await safeFetch(new URL(path, base).href, { ...init, headers }, 0); }
-  catch (e) { throw new ProviderError(`social.mastodon: ${(e as Error).message}`); }
+  catch (e) { throw new ProviderError(`social.mastodon: ${errMsg(e)}`); }
   const data = await res.json().catch(() => ({}));
   if (res.ok) return data;
   const message = String(data.error_description ?? data.error ?? `${res.status} ${res.statusText}`);
@@ -45,8 +46,9 @@ const targetId = (account: Account) => String(account.uri ?? account.url ?? acco
 
 /** The account belonging to the configured Mastodon user token. */
 async function targets(app: App): Promise<Omit<Target, "provider">[]> {
-  const url = String(await app.settings["social.mastodon"].url ?? "").trim();
-  const token = String(await app.settings["social.mastodon"].accessToken ?? "").trim();
+  const settings = app.settings["social.mastodon"];
+  const url = String(await settings.url ?? "").trim();
+  const token = String(await settings.accessToken ?? "").trim();
   if (!url && !token) return [];
   const [cfg, user] = await Promise.all([config(app), account(app)]);
   return [{
