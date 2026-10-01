@@ -1,6 +1,6 @@
-import { Access, s } from "@qino/qino";
+import { Access, ApiError, errMsg, s } from "@qino/qino";
 
-import { pages, read, search } from "./mod.ts";
+import { crawl, pages, read, search } from "./mod.ts";
 
 import type { ApiTree, Ctx } from "@qino/qino";
 
@@ -17,6 +17,9 @@ export const settingsSchema = {
 
 // Searching and reading cost: signed-in users only.
 
+/** How many characters of a page `read` gives at once: a model's context is limited. */
+const PART = 20_000;
+
 export const api: ApiTree = {
   search: {
     get: {
@@ -31,21 +34,48 @@ export const api: ApiTree = {
   },
   read: {
     get: {
-      description: "Read a web page as Markdown, from the pages read if it is recent",
+      description: "Read a web page as Markdown, a part at a time; size is the whole page",
       query: s.object({
         url: s.string().describe("The page's address, http or https"),
         maxAge: s.optional(s.number()).describe("Read again if older than this many seconds; default a day, 0 always"),
+        offset: s.optional(s.number()).describe("Where to start, in characters; default 0"),
+        length: s.optional(s.number()).describe(`How many characters; default ${PART}, 0 only keeps it to search`),
       }),
       access: Access.USER,
-      execute: ({ url, maxAge }: { url: string; maxAge?: number }, ctx: Ctx) => read(ctx.app, url, { maxAge }),
+      execute: async ({ url, maxAge, offset = 0, length = PART }: { url: string; maxAge?: number; offset?: number; length?: number }, ctx: Ctx) => {
+        const page = await read(ctx.app, url, { maxAge });
+        const content = String(page.content ?? "");
+        return { ...page, content: content.slice(offset, offset + length), offset, size: content.length };
+      },
+    },
+  },
+  crawl: {
+    post: {
+      description: "Read the pages below a url, following their links; then search them with pages and root",
+      input: s.object({
+        url: s.string().describe("Where to start: only links that start with it are followed"),
+        max: s.optional(s.number()).describe("How many pages at most; default 100"),
+        wait: s.optional(s.boolean()).describe("Answer when done, with how many were read and are left; else it runs in the background"),
+      }),
+      access: Access.USER,
+      execute: ({ url, max, wait }: { url: string; max?: number; wait?: boolean }, ctx: Ctx) => {
+        if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
+        const done = crawl(ctx.app, url, { max });
+        if (wait) return done;
+        done.catch((e) => console.error("[ai1.web] crawl:", errMsg(e)));
+        return { started: url };
+      },
     },
   },
   pages: {
     get: {
-      description: "The pages read, the latest first; with search those nearest to it by meaning, with the closest part",
-      query: s.object({ search: s.optional(s.string()).describe("What to find, in words") }),
+      description: "Search the pages already read and kept here (not the web), by meaning; without search the latest",
+      query: s.object({
+        search: s.optional(s.string()).describe("What to find, in words"),
+        root: s.optional(s.string()).describe("Only pages whose url starts with it, e.g. where a crawl started"),
+      }),
       access: Access.USER,
-      execute: ({ search }: { search?: string }, ctx: Ctx) => pages(ctx.app, search),
+      execute: ({ search, root }: { search?: string; root?: string }, ctx: Ctx) => pages(ctx.app, search, { root }),
     },
   },
 };

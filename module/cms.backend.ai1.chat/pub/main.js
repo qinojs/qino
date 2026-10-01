@@ -135,5 +135,11 @@ cms.initNode("backend.ai1.chat", (el) => {
     button.disabled = false;
     await show();
   });
-  ask.elements.content.addEventListener("keydown", (e) => (e.ctrlKey || e.metaKey) && e.key === "Enter" && ask.requestSubmit());
+  // As other chats: Enter sends, Shift + Enter makes a new line; not while an input method composes,
+  // not on a touch screen (there the button sends), not while an answer is on its way
+  ask.elements.content.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.shiftKey || e.isComposing || matchMedia("(pointer: coarse)").matches) return;
+    e.preventDefault();
+    if (!ask.querySelector("button").disabled) ask.requestSubmit();
+  });
 });

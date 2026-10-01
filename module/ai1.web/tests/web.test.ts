@@ -61,6 +61,8 @@ Deno.test("ai1.web: read a page by the chosen reader, keep it, find it", async (
     await app.settings.core.keys["api.jina.ai"]("sk-jina");
     const page = await as(() => web.read.get(undefined, { url: "https://qino.test/A" }));
     assertEquals([page.title, page.content, page.reader], ["Qino", "# Qino\n\nA CMS for agents", "jina"]);
+    const part = await as(() => web.read.get(undefined, { url: "https://qino.test/A", offset: 2, length: 4 }));
+    assertEquals([part.content, part.offset, part.size], ["Qino", 2, 24]); // a part at a time
     assertEquals(asked, ["https://r.jina.ai/https://qino.test/A"]);
     await as(() => web.read.get(undefined, { url: "https://qino.test/A" })); // kept: not read again
     await as(() => web.read.get(undefined, { url: "https://qino.test/a" })); // another page: paths are case-sensitive
@@ -72,6 +74,51 @@ Deno.test("ai1.web: read a page by the chosen reader, keep it, find it", async (
     for (const { id } of await collections(app)) await drop(app, id);
     assertEquals((await as(() => web.pages.get(undefined, { search: "agents" }))).map((p: any) => p.url).sort(), ["https://qino.test/A", "https://qino.test/a"]);
     assertEquals(await as(() => web.pages.get(undefined, { search: "nothing" })), []);
+  } finally {
+    globalThis.fetch = fetchOrg;
+    await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
+    await app.db.close();
+  }
+});
+
+// A site: /docs/ links to its pages, an image, a page outside /docs/ and another site; /docs/a on to /docs/c.
+const SITE: Record<string, string> = {
+  "https://site.test/docs/": "# Docs\n\n[A](a) [B](/docs/b#part) ![logo](logo.png) [Other](/other) <https://elsewhere.test/>",
+  "https://site.test/docs/a": "# A\n\n[C](c) [back](/docs/)",
+  "https://site.test/docs/b": "# B about crawling",
+  "https://site.test/docs/c": "# C",
+};
+
+Deno.test("ai1.web: crawl reads the pages below a url, at most max; pages finds them by root", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  for (const mod of ["ai1", "cron", "ai1.embed", "ai1.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  await app.init();
+  const fetchOrg = globalThis.fetch, asked: string[] = [];
+  globalThis.fetch = (input) => {
+    const url = String(input).replace("https://r.jina.ai/", "");
+    asked.push(url);
+    return Promise.resolve(url in SITE ? Response.json({ data: { title: url, content: SITE[url] } }) : new Response("gone", { status: 404 }));
+  };
+  try {
+    await app.settings.core.url("https://example.test/");
+    await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
+    await app.settings["ai1.web"].reader("jina");
+    await app.settings.core.keys["api.jina.ai"]("sk-jina");
+    for (const { id } of await collections(app)) await drop(app, id); // by words
+    const web = (app.api as any)["ai1.web"];
+    const as = (call: () => Promise<any>) => runAs(app, 7, "test", call);
+
+    assertEquals(await as(() => web.crawl.post({ url: "https://site.test/docs/", max: 2, wait: true })), { read: 2, failed: [], left: 2 }); // b and c still to read
+    assertEquals(asked, ["https://site.test/docs/", "https://site.test/docs/a"]); // below /docs/ only, no image
+    assertEquals(await as(() => web.crawl.post({ url: "https://site.test/docs/", wait: true })), { read: 4, failed: [], left: 0 });
+    assertEquals(asked.length, 4); // the two read before came from the cache
+
+    await app.db.table("ai1_web_page").insert({ url: "https://elsewhere.test/crawling", url_hash: "y", title: "", content: "crawling", reader: "fetch", time: 1 });
+    const found = (query: Record<string, string>) => as(() => web.pages.get(undefined, query)).then((rows) => rows.map((p: any) => p.url).sort());
+    assertEquals(await found({ search: "crawling" }), ["https://elsewhere.test/crawling", "https://site.test/docs/b"]);
+    assertEquals(await found({ search: "crawling", root: "https://site.test/docs/" }), ["https://site.test/docs/b"]);
+    assertEquals((await found({ root: "https://site.test/" })).length, 4);
+    assertEquals(await as(() => web.crawl.post({ url: "https://site.test/docs/" })), { started: "https://site.test/docs/" }); // in the background
   } finally {
     globalThis.fetch = fetchOrg;
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later

@@ -1,9 +1,11 @@
 import { ApiError, errMsg, sql, sqlSearch, unixTime } from "@qino/qino";
 import { collection, index, search as nearest } from "@qino/qino/ai1.embed";
 
-import { brave } from "./lib/brave.ts";
-import { firecrawl, jina, own } from "./lib/readers.ts";
-import { serper } from "./lib/serper.ts";
+import { brave } from "./engines/brave.ts";
+import { serper } from "./engines/serper.ts";
+import { own } from "./readers/fetch.ts";
+import { firecrawl } from "./readers/firecrawl.ts";
+import { jina } from "./readers/jina.ts";
 
 import type { App } from "@qino/qino";
 
@@ -61,16 +63,49 @@ export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge
   return { id, ...values };
 }
 
+/** Links of a page in Markdown (`[text](url)`, `<url>`), absolute and without their #fragment. */
+export function links(markdown: string, base: string): string[] {
+  return [...markdown.matchAll(/\]\(<?([^)\s>]+)|<(https?:\/\/[^>\s]+)>/g)].flatMap(([, href, bare]) => {
+    const url = URL.parse(href ?? bare, base);
+    return url && /^https?:$/.test(url.protocol) ? [(url.hash = "", url.href)] : [];
+  });
+}
+
+/** Files that are no pages to read: images, media, archives, code. */
+const NO_PAGE = /\.(jpe?g|png|gif|webp|avif|svg|ico|bmp|mp[34]|webm|ogg|wav|zip|gz|css|js)$/i;
+
+/** Read the pages below `url`, following their links that start with it, at most `max`; the pages
+ *  younger than `maxAge` are taken from the cache. What was read can be searched with `pages`. */
+export async function crawl(app: App, url: string, { max = 100, maxAge }: { max?: number; maxAge?: number } = {}) {
+  const todo = [url], seen = new Set(todo), failed: string[] = [];
+  let done = 0;
+  while (todo.length && done < max) {
+    const at = todo.shift()!;
+    const page = await read(app, at, { maxAge }).catch((e) => void failed.push(`${at}: ${errMsg(e)}`));
+    if (!page) continue;
+    done++;
+    for (const link of links(String(page.content ?? ""), at)) {
+      if (!link.startsWith(url) || seen.has(link) || NO_PAGE.test(new URL(link).pathname)) continue;
+      seen.add(link);
+      todo.push(link);
+    }
+  }
+  return { read: done, failed, left: todo.length };
+}
+
 /** The pages read, the latest first; with `query` those nearest to it by meaning, with the closest part
- *  (without an embedding collection: those with most of its words). */
-export async function pages(app: App, query?: string, { limit = 20 }: { limit?: number } = {}) {
+ *  (without an embedding collection: those with most of its words); with `root` only those whose url
+ *  starts with it, e.g. what a crawl from there read. */
+export async function pages(app: App, query?: string, { root, limit = 20 }: { root?: string; limit?: number } = {}) {
   const db = app.db;
-  if (!query) return db.query`SELECT id, url, title, reader, time FROM ai1_web_page ORDER BY time DESC LIMIT ${limit}`;
+  // '!' escapes LIKE's wildcards in every dialect (as sqlSearch)
+  const within = root ? sql`url LIKE ${root.replace(/[!%_]/g, "!$&") + "%"} ESCAPE '!'` : sql`${true}`;
+  if (!query) return db.query`SELECT id, url, title, reader, time FROM ai1_web_page WHERE ${within} ORDER BY time DESC LIMIT ${limit}`;
   if (!await collection(app)) {
     const { where, order } = sqlSearch(query, ["title", "content"]);
-    return db.query`SELECT id, url, title, reader, time FROM ai1_web_page WHERE ${where} ORDER BY ${order} LIMIT ${limit}`;
+    return db.query`SELECT id, url, title, reader, time FROM ai1_web_page WHERE ${where} AND ${within} ORDER BY ${order} LIMIT ${limit}`;
   }
-  const hits = await nearest(app, "ai1_web_page", query, { limit });
+  const hits = await nearest(app, { ai1_web_page: root ? sql`e.page_id IN (SELECT id FROM ai1_web_page WHERE ${within})` : true }, query, { limit });
   const rows = new Map((await db.query`SELECT id, url, title, reader, time FROM ai1_web_page
     WHERE ${sql.in("id", hits.map((h) => h.key.page_id))}`).map((r) => [Number(r.id), r]));
   // a page once, at its closest part

@@ -43,6 +43,7 @@ const tools = [
   tool("who", () => [getCtx().userId, getCtx().statelessAuth]),
   tool("busy", () => { throw new ApiError(409, "busy", { code: "taken" }); }),
   tool("crash", () => { throw new Error("secret"); }),
+  tool("huge", () => "x".repeat(200_000)),
 ];
 
 /** A real app with ai1, the fake model and user 7, for `fn`. */
@@ -106,6 +107,10 @@ Deno.test("ai1.tools: the tools act as the user, not as the caller's request", (
 Deno.test("ai1.tools: failures are told to the model; a server error only as such", () => withApp(async (testApp) => {
   assertEquals((await run(testApp, ask("busy crash nope"))).text,
     '{"error":"busy","code":"taken"} {"error":"Tool failed"} {"error":"Unknown tool: nope"}');
+}));
+
+Deno.test("ai1.tools: a result too long is told, not given", () => withApp(async (testApp) => {
+  assertEquals((await run(testApp, ask("huge"))).text, '{"error":"Too long: 200002 characters, at most 100000. Ask for less."}');
 }));
 
 Deno.test("ai1.tools: the steps are bounded", () => withApp(async (testApp) => {

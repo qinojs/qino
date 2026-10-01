@@ -21,6 +21,10 @@ const fake: Adapter = {
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
   text: async (_call, { messages }) => {
     sent.push(messages);
+    // as the providers: every tool call needs its result
+    const results = new Set(messages.filter((m: any) => m.role === "tool").map((m: any) => m.id));
+    const open = messages.flatMap((m: any) => m.toolCalls ?? []).find((c: any) => !results.has(c.id));
+    if (open) throw new Error(`No tool output found for function call ${open.id}`);
     const last = messages.at(-1), asked = messages.filter((m: any) => m.role === "user");
     const typed = String(last.content).split("\n\n(internal")[0]; // without the memories it brought to mind
     if (typed === "fail") throw new Error("down");
@@ -83,6 +87,17 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
     WHERE session_id = ${session.id} AND model_provider_id IS NOT NULL`;
   assertEquals(answered.map(Number), [1, 1, 1]); // each answer: the model at its provider that gave it
   assertEquals((await (await agent.start(7)).ask("hi")).text, "lead #1 hi"); // a new session starts fresh
+}));
+
+Deno.test("ai1.agent: a turn that failed amid its tool calls doesn't block the session", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "lead", tools: ["toolset"] });
+  const session = await agent.start(7);
+  await session.ask("hi");
+  // the call kept, its result not: the turn failed in between
+  await app.db.table("ai1_session_message").insert({ session_id: session.id, message: JSON.stringify({ role: "assistant", content: "", toolCalls: [{ id: "x", name: "get_toolset_clock", args: {} }] }) });
+  assertEquals((await session.ask("and now?")).text, "lead #2 and now?");
+  const told = (sent.at(-1) as any[]).find((m) => m.role === "tool");
+  assertEquals([told.id, told.content], ["x", '{"error":"No result: the turn failed"}']); // only sent, not kept
 }));
 
 Deno.test("ai1.agent: memories outlast the session and are shared by all who talk with the agent", () => withApp(async (app) => {

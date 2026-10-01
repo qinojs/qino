@@ -416,7 +416,7 @@ async function render(node: Node): Promise<HtmlString> {
   if (!id) return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`New agent`}</div>${form(node)}</div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Agents`}</div><table class=u2-table cms-part=agents>${agents(node)}</table></div>
-    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto"><table class=u2-table cms-part=sessions>${sessions(node)}</table></div></div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node)}</table></div></div>
   </div>`;
   const vars = { agent: id };
   const row = await node.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${id}`;
@@ -429,7 +429,7 @@ async function render(node: Node): Promise<HtmlString> {
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>
     ${edit ? html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Edit agent`}</div>${form(node, edit)}</div>` : ""}
-    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
   </div>`;
 }

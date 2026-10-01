@@ -103,7 +103,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Pages read`}</div>
     <form data-find class=u2-flex><input type=search name=search placeholder="${t`Find by meaning`}"></form>
-    <div style="max-height:60vh; overflow:auto"><table class=u2-table cms-part=list>${list(node)}</table></div>
+    <div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=list>${list(node)}</table></div>
   </div>
 </div>`;
 }
