@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { App, runAs } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { collections, create, drop, index } from "@qino/qino/ai1.embed";

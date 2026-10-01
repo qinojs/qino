@@ -93,7 +93,7 @@ export async function authorize(p: Pending, host: string, name: string, hint?: A
   params.set("client_id", p.client_id);
   params.set("response_type", "code");
   params.set("redirect_uri", p.redirect_uri);
-  params.set("scope", "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct");
+  params.set("scope", `openid profile email offline_access resource.invoke ${PLAN_SCOPE}`);
   params.set("resource", RESOURCE);
   params.set("state", p.state);
   params.set("nonce", p.nonce);
