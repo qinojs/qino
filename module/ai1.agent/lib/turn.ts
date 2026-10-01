@@ -84,7 +84,7 @@ const OWN: Record<string, Method[]> = { "/:agent/memories": ["post"], "/:agent/m
 
 /** The agent's own routes as tools, the agent param taken out and always its id. */
 const ownTools = (app: App, agent: number): Tool[] =>
-  toTools({ ":agent": (app.apiTree["ai1.agent"] as ApiTree).agents[":agent"] } as ApiTree, { apis: OWN }).map((tool) => {
+  toTools({ ":agent": (app.apiTree["ai1.agent"] as ApiTree).agent[":agent"] } as ApiTree, { apis: OWN }).map((tool) => {
     const { agent: _, ...properties } = (tool.parameters.properties ?? {}) as Record<string, unknown>;
     const required = (tool.parameters.required as string[]).filter((name) => name !== "agent");
     return { ...tool, parameters: { ...tool.parameters, properties, required }, execute: (args, ctx) => tool.execute({ ...args as object, agent }, ctx) };

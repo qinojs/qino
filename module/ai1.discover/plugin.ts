@@ -9,16 +9,16 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 // A search embeds its query, which costs: signed-in users only. Nothing here is secret.
 
-/** A kind's list, searchable, and each of it by name. */
+/** A kind's list, searchable, and each of it by name, under its singular (`tables`, `table/:table`). */
 const kind = (kind: Kind, param: string, what: string, detail: string) => ({
-  get: {
+  [kind]: { get: {
     description: `${what}: name and description of each; with search only those nearest to it by meaning`,
     query: s.object({ search: s.optional(s.string()).describe("What to find, in words") }),
     access: Access.USER,
     execute: async ({ search }: { search?: string }, ctx: Ctx) =>
       (search ? await find(ctx.app, kind, search, await entries(ctx, kind)) : await entries(ctx, kind)).map(({ name, description }) => ({ name, description })),
-  },
-  [":" + param]: {
+  } },
+  [param]: { [":" + param]: {
     paramSchema: s.string(),
     get: {
       description: detail,
@@ -29,11 +29,11 @@ const kind = (kind: Kind, param: string, what: string, detail: string) => ({
         return entry.detail;
       },
     },
-  },
+  } },
 });
 
 export const api: ApiTree = {
-  tables: kind("tables", "table", "The database tables", "The table's schema: its columns with type and description"),
-  events: kind("events", "event", "The events, as host:event (db:table:update-after)", "The event: its description and data as JSON Schema"),
-  tools: kind("tools", "tool", "The tools you may call", "The tool: its description and parameters"),
+  ...kind("tables", "table", "The database tables", "The table's schema: its columns with type and description"),
+  ...kind("events", "event", "The events, as host:event (db:table:update-after)", "The event: its description and data as JSON Schema"),
+  ...kind("tools", "tool", "The tools you may call", "The tool: its description and parameters"),
 };

@@ -38,7 +38,7 @@ cms.initNode("backend.ai1.agents", (el) => {
     const values = { system: form.elements.system.value, tools: chosen(form), prefer: weights(form) };
     try {
       const id = Number(form.dataset.agent);
-      if (id) await agents.agents(id).patch(values);
+      if (id) await agents.agent(id).patch(values);
       else await agents.agents.post(values);
       location.reload();
     } catch (err) { await alert(err.message); }

@@ -115,7 +115,7 @@ cms.initNode("backend.ai1.chat", (el) => {
     e.preventDefault();
     try {
       const agent = Number(start.elements.agent.value);
-      const id = (await agents.agents(agent).sessions.post({ prefer: weights() })).id;
+      const id = (await agents.agent(agent).sessions.post({ prefer: weights() })).id;
       const url = new URL(location.href);
       url.searchParams.set("session", id);
       const link = h("a", { href: url.href }, `#${id}`);

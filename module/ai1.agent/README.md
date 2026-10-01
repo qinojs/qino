@@ -55,11 +55,11 @@ Other modules add to an agent without it knowing them (as [ai1.user_memory](../a
 ```
 agents                          get     find agents by their role { search? } → [{ id, role, score? }]
 agents                          post    create { system, tools, prefer } → { id }
-agents/:agent                   get · patch   its role, tools and prefer; anyone signed in may change them
-agents/:agent/sessions          post    start a session, as yourself { prefer } → { id }
-agents/:agent/memories          get · post { content, replaces? }
-agents/:agent/memories/:memory  delete
-agents/:agent/search            post    its own memory: memories and past sessions { query }
+agent/:agent                    get · patch   its role, tools and prefer; anyone signed in may change them
+agent/:agent/sessions           post    start a session, as yourself { prefer } → { id }
+agent/:agent/memories           get · post { content, replaces? }
+agent/:agent/memories/:memory   delete
+agent/:agent/search             post    its own memory: memories and past sessions { query }
 sessions/:session               get     its agent and everything said
 sessions/:session/ask           post    { content } → the answer
 sessions/:session/note          post    { content }

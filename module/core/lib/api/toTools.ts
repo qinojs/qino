@@ -14,10 +14,14 @@ export interface Tool {
 }
 
 export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> } = {}): Tool[] {
-  const tools: Tool[] = [];
+  const tools: Tool[] = [], names = new Map<string, string>();
   for (const r of walk(tree)) {
     checkCollisions(r);
     const pathStr = "/" + r.segments.join("/");
+    // path params are not in the name: the list and an item of it need names of their own (nodes, node/:node)
+    const route = `${r.method.toUpperCase()} ${pathStr}`;
+    if (names.has(r.name)) throw new Error(`api setup error: ${route} and ${names.get(r.name)} are both the tool "${r.name}" — rename one`);
+    names.set(r.name, route);
     if (opts.apis && !opts.apis[pathStr]?.includes(r.method)) continue;
 
     const properties: Record<string, unknown> = {};

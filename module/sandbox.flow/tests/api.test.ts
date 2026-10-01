@@ -34,37 +34,37 @@ const made = {
 };
 
 Deno.test("sandbox.flow api: make, read, change, try and delete your own flows", () => withApp(async (app, as) => {
-  const flows = (app.api as any)["sandbox.flow"].flows;
+  const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   const { id } = await as(7, () => flows.post(made));
-  const flow = await as(7, () => flows(id).get());
-  assertEquals([flow.description, flow.on, flow.tools, flow.steps, flow.test, flow.active],
+  const got = await as(7, () => flow(id).get());
+  assertEquals([got.description, got.on, got.tools, got.steps, got.test, got.active],
     [made.description, { host: "db", event: "table:update-after" }, made.tools, made.steps, true, false]);
   assertEquals((await as(7, () => flows.get())).map((f: any) => f.id), [id]);
 
-  await as(7, () => flows(id).patch({ active: true, test: false }));
-  assertEquals([(await as(7, () => flows(id).get())).active, (await as(7, () => flows(id).get())).test], [true, false]);
+  await as(7, () => flow(id).patch({ active: true, test: false }));
+  assertEquals([(await as(7, () => flow(id).get())).active, (await as(7, () => flow(id).get())).test], [true, false]);
 
   // a try is a test run, whatever the flow says: only get_* tools take effect
-  const trace = await as(7, () => flows(id).test.post({ event: { table: "usr" }, user: 7 }));
+  const trace = await as(7, () => flow(id).test.post({ event: { table: "usr" }, user: 7 }));
   assertEquals([trace.end, trace.context, trace.steps[0].calls[0].skipped], ["done", { user: 7 }, true]);
 
-  await as(7, () => flows(id).delete());
+  await as(7, () => flow(id).delete());
   assertEquals(await as(7, () => flows.get()), []);
 }));
 
 Deno.test("sandbox.flow api: someone else's flow does not exist for you", () => withApp(async (app, as) => {
-  const flows = (app.api as any)["sandbox.flow"].flows;
+  const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   const { id } = await as(7, () => flows.post(made));
   assertEquals(await as(8, () => flows.get()), []);
-  await assertRejects(() => as(8, () => flows(id).get()), NotFoundError);
-  await assertRejects(() => as(8, () => flows(id).patch({ active: true })), NotFoundError);
-  await assertRejects(() => as(8, () => flows(id).delete()), NotFoundError);
+  await assertRejects(() => as(8, () => flow(id).get()), NotFoundError);
+  await assertRejects(() => as(8, () => flow(id).patch({ active: true })), NotFoundError);
+  await assertRejects(() => as(8, () => flow(id).delete()), NotFoundError);
   assertEquals(Number(await app.db.one`SELECT usr_id FROM flow WHERE id = ${id}`), 7); // the owner is who made it
 }));
 
 // events are not filtered by rights yet: a flow sees every event of its host
 Deno.test("sandbox.flow api: only superusers", () => withApp(async (app, as) => {
-  const flows = (app.api as any)["sandbox.flow"].flows;
+  const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   await assertRejects(() => as(9, () => flows.get()), AccessError);
   await assertRejects(() => as(9, () => flows.post(made)), AccessError);
 }));

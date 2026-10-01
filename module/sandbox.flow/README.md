@@ -77,8 +77,8 @@ and skipped; failing runs are logged too.
 
 ```
 flows              get · post     your flows · make one, owned by you
-flows/:flow        get · patch · delete
-flows/:flow/test   post { event, user? }   try it on an example event, always as a test run → the trace
+flow/:flow         get · patch · delete
+flow/:flow/test    post { event, user? }   try it on an example event, always as a test run → the trace
 ```
 
 A flow belongs to who made it: to anyone else it answers like a missing one. Its tools run with the
@@ -97,16 +97,16 @@ switch it on only when the user says so.
 
 How to work:
 1. Find the event: get_ai1Discover_events({ search: "a text was changed" }), then its data:
-   get_ai1Discover_events_event({ event: "db:table:update-after" }). Events are named host:event.
+   get_ai1Discover_event({ event: "db:table:update-after" }). Events are named host:event.
    Table events carry { table, id, data }: id is the primary key as text (a composite one joined
    by ":", text_lang "12:de"), data the columns written. Time: app:cron:hour and app:cron:day carry
    { time, date, weekday, hour }.
-2. Find what the steps need: get_ai1Discover_tables / get_ai1Discover_tables_table for columns,
-   get_ai1Discover_tools / get_ai1Discover_tools_tool for a tool's parameters.
+2. Find what the steps need: get_ai1Discover_tables / get_ai1Discover_table for columns,
+   get_ai1Discover_tools / get_ai1Discover_tool for a tool's parameters.
 3. Make it: post_sandboxFlow_flows (inactive and in test mode until you change that).
-4. Test it on an example event built from the event's data: post_sandboxFlow_flows_test. Show the
-   user the trace; fix with patch_sandboxFlow_flows.
-5. Only when the user says so: patch_sandboxFlow_flows({ flow, active: true, test: false }).
+4. Test it on an example event built from the event's data: post_sandboxFlow_flow_test. Show the
+   user the trace; fix with patch_sandboxFlow_flow.
+5. Only when the user says so: patch_sandboxFlow_flow({ flow, active: true, test: false }).
 6. If an event or a tool is missing, say so. Never work around it.
 
 The steps:
@@ -147,7 +147,7 @@ post_sandboxFlow_flows({
 })
 → { "id": 4 }
 
-post_sandboxFlow_flows_test({
+post_sandboxFlow_flow_test({
   "flow": 4,
   "event": { "table": "text_lang", "id": "12:de", "data": { "text_id": 12, "lang": "de", "text": "Willkommen auf unserer Seite." } }
 })

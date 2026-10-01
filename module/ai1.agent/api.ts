@@ -31,6 +31,8 @@ export const api: ApiTree = {
       async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }),
       fields,
     ),
+  },
+  agent: {
     ":agent": {
       paramSchema: s.number().describe("Agent ID"),
       resolve: async (id: unknown, ctx: Ctx) => {

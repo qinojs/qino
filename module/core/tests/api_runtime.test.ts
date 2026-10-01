@@ -371,3 +371,9 @@ Deno.test("api: tool names stay within the MCP name charset", () => {
   const tools = toTools({ "cms.frontend.4": { widget: { post: { execute: () => null } } } } as never);
   assertEquals(/^[a-zA-Z0-9_-]{1,64}$/.test(tools[0].name), true);
 });
+
+Deno.test("api: two routes may not be the same tool (path params are not in the name)", () => {
+  const get = { get: { description: "x", execute: () => 1 } };
+  assertThrows(() => toTools({ events: { ...get, ":event": get } }), Error, 'GET /events/:event and GET /events are both the tool "get_events"');
+  assertEquals(toTools({ events: get, event: { ":event": get } }).map((t) => t.name), ["get_events", "get_event"]); // the list and an item
+});

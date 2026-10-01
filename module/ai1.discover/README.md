@@ -6,11 +6,11 @@ instead of reading everything.
 
 ```
 tables                get { search? }   name + description of each; with search the nearest 10
-tables/:table         get               the table's schema, as declared
+table/:table          get               the table's schema, as declared
 events                get { search? }   as host:event (db:table:update-after)
-events/:event         get               description + data as JSON Schema
+event/:event          get               description + data as JSON Schema
 tools                 get { search? }   only the tools the caller may call
-tools/:tool           get               description + parameters
+tool/:tool            get               description + parameters
 ```
 
 - **Search** embeds name, description and fields (columns, data, parameters) of each in

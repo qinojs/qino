@@ -148,11 +148,11 @@ Deno.test("ai1.agent: what the user says strengthens the memories close to it, i
 }));
 
 Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user", () => withApp(async (app) => {
-  const agents = () => app.api["ai1.agent"].agents;
+  const agents = () => app.api["ai1.agent"].agents, agent = () => app.api["ai1.agent"].agent;
   const { id } = await runAs(app, 7, "test", () => agents().post({ system: "lead" })) as { id: number };
-  await runAs(app, 8, "test", () => agents()(id).patch({ tools: ["toolset"] })); // anyone may change it
-  assertEquals(await runAs(app, 7, "test", () => agents()(id).get()), { id, system: "lead", tools: ["toolset"], prefer: {} });
-  const session = (await runAs(app, 7, "test", () => agents()(id).sessions.post()) as { id: number }).id;
+  await runAs(app, 8, "test", () => agent()(id).patch({ tools: ["toolset"] })); // anyone may change it
+  assertEquals(await runAs(app, 7, "test", () => agent()(id).get()), { id, system: "lead", tools: ["toolset"], prefer: {} });
+  const session = (await runAs(app, 7, "test", () => agent()(id).sessions.post()) as { id: number }).id;
   const answer = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).ask.post({ content: "time?" })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
   assertEquals(await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
@@ -162,10 +162,10 @@ Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user
   for (const call of bobs) {
     await assertRejects(() => runAs(app, 8, "test", call), Error, "No such session"); // not bob's: neither to read nor to talk in
   }
-  const { id: memory } = await runAs(app, 8, "test", () => agents()(id).memories.post({ content: "blue" })) as { id: number };
-  assertEquals(await runAs(app, 7, "test", () => agents()(id).memories.get()), [{ id: memory, content: "blue" }]);
-  await runAs(app, 7, "test", () => agents()(id).memories(memory).delete());
-  await assertRejects(() => runAs(app, 7, "test", () => agents()(99).get()), Error, "No such agent");
+  const { id: memory } = await runAs(app, 8, "test", () => agent()(id).memories.post({ content: "blue" })) as { id: number };
+  assertEquals(await runAs(app, 7, "test", () => agent()(id).memories.get()), [{ id: memory, content: "blue" }]);
+  await runAs(app, 7, "test", () => agent()(id).memories(memory).delete());
+  await assertRejects(() => runAs(app, 7, "test", () => agent()(99).get()), Error, "No such agent");
 }));
 
 Deno.test("ai1.agent: the model is chosen by the session's prefer, else the agent's, else the default", () => withApp(async (app) => {
@@ -240,14 +240,14 @@ Deno.test("ai1.agent: its tools by nearness to its role, and which a session sta
 }));
 
 Deno.test("ai1.agent: agents are found by their role, embedded once", () => withApp(async (app) => {
-  const agents = () => (app.api as any)["ai1.agent"].agents;
+  const agents = () => (app.api as any)["ai1.agent"].agents, agent = () => (app.api as any)["ai1.agent"].agent;
   const designer = await Agent.create(app, { system: "logo designer\nmakes logos" });
   await Agent.create(app, { system: "lead" });
   await new Promise((r) => setTimeout(r, 20)); // roles are embedded in the background
   const found = await runAs(app, 7, "test", () => agents().get(undefined, { search: "a logo" })) as { id: number; role: string; score: number }[];
   assertEquals([found[0].id, found[0].role], [designer.id, "logo designer"]); // the nearest first, its role's first line
   assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai1_agent`), 2);
-  await runAs(app, 7, "test", () => agents()(designer.id).patch({ system: "lead too" })); // changed: embedded again
+  await runAs(app, 7, "test", () => agent()(designer.id).patch({ system: "lead too" })); // changed: embedded again
   await new Promise((r) => setTimeout(r, 20));
   assertEquals(await app.db.col`SELECT content FROM embedding_ai1_agent WHERE agent_id = ${designer.id}`, ["lead too"]);
 }));

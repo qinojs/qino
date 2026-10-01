@@ -72,6 +72,8 @@ export const api: ApiTree = {
       },
       fields,
     ),
+  },
+  flow: {
     ":flow": {
       paramSchema: s.number().describe("Flow ID"),
       resolve: async (id: unknown, ctx: Ctx) => {

@@ -10,11 +10,11 @@ import { jina } from "./readers/jina.ts";
 import type { App } from "@qino/qino";
 
 /** A page found: its title, address, and a snippet of it. */
-export type Result = { title: string; url: string; snippet: string };
+type Result = { title: string; url: string; snippet: string };
 /** A search engine: with its key, the pages for `query`, at most `count`. */
 export type Engine = (key: string, query: string, count: number) => Promise<Result[]>;
 /** A page read: its title and its content as Markdown. */
-export type Page = { title: string; content: string };
+type Page = { title: string; content: string };
 /** Who reads a page; `key` is empty for our own fetch. */
 export type Reader = (app: App, url: string, key: string) => Promise<Page>;
 
@@ -64,7 +64,7 @@ export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge
 }
 
 /** Links of a page in Markdown (`[text](url)`, `<url>`), absolute and without their #fragment. */
-export function links(markdown: string, base: string): string[] {
+function links(markdown: string, base: string): string[] {
   return [...markdown.matchAll(/\]\(<?([^)\s>]+)|<(https?:\/\/[^>\s]+)>/g)].flatMap(([, href, bare]) => {
     const url = URL.parse(href ?? bare, base);
     return url && /^https?:$/.test(url.protocol) ? [(url.hash = "", url.href)] : [];

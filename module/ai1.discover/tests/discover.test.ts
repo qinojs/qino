@@ -41,22 +41,22 @@ const api = (app: App) => (app.api as any)["ai1.discover"];
 Deno.test("ai1.discover: tables, events and tools by name, each in detail", () => withApp(async (app, as) => {
   const tables = await as(7, () => api(app).tables.get());
   assert(tables.some((t: any) => t.name === "usr"));
-  const usr = await as(7, () => api(app).tables("usr").get());
+  const usr = await as(7, () => api(app).table("usr").get());
   assertEquals(usr, (app.db.schema.properties as any).usr);
   const events = await as(7, () => api(app).events.get());
   assertEquals(events.find((e: any) => e.name === "db:table:insert-after").description, "A row was inserted.");
-  const inserted = await as(7, () => api(app).events("db:table:insert-after").get());
+  const inserted = await as(7, () => api(app).event("db:table:insert-after").get());
   assertEquals(Object.keys(inserted.data.properties), ["table", "id", "data"]);
-  const tool = await as(7, () => api(app).tools("post_test_greet").get());
+  const tool = await as(7, () => api(app).tool("post_test_greet").get());
   assertEquals(Object.keys(tool.parameters.properties), ["name"]);
-  await assertRejects(() => as(7, () => api(app).tables("nope").get()), NotFoundError);
+  await assertRejects(() => as(7, () => api(app).table("nope").get()), NotFoundError);
 }));
 
 Deno.test("ai1.discover: tools only those the caller may call", () => withApp(async (app, as) => {
   const names = async (usr: number) => (await as(usr, () => api(app).tools.get())).map((t: any) => t.name);
   assert(!(await names(7)).includes("post_test_purge"));
   assert((await names(8)).includes("post_test_purge"));
-  await assertRejects(() => as(7, () => api(app).tools("post_test_purge").get()), NotFoundError);
+  await assertRejects(() => as(7, () => api(app).tool("post_test_purge").get()), NotFoundError);
 }));
 
 Deno.test("ai1.discover: search by meaning, indexed on first use", () => withApp(async (app, as) => {
