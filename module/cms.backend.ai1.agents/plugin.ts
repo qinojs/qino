@@ -230,11 +230,11 @@ export async function tools(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
       <th title="${t`How near its description is to the role, by meaning: 1 the same`}">${t`Score`}
       <th title="${t`A session starts with it; the others it finds itself`}">${t`Given`}
       <th>${t`Description`}
-    <tbody>${list.length ? list.map((tool, i) => html`<tr>
-      <td>${i + 1}
-      <td>${tool.name}
-      <td>${tool.score == null ? "–" : tool.score.toFixed(3)}
-      <td>${tool.given ? "✓" : "–"}
+    <tbody>${list.length ? list.map(({ tool, score, given, always }, i) => html.async`<tr>
+      <td>${always ? "" : i + 1 - list.findIndex((r) => !r.always)}
+      <td>${always ? html.async`<small class=u2-badge title="${t`Not of its api paths: every session has it`}">${t`always`}</small> ` : ""}${tool.name}
+      <td>${score == null ? "–" : score.toFixed(3)}
+      <td>${given ? html.async`<u2-ico icon=push_pin title="${t`A session starts with it`}">📌</u2-ico>` : ""}
       <td><small>${short(tool.description)}</small>`) : html.async`<tr><td colspan=5>${t`No tools`}`}</tbody>`;
 }
 
@@ -255,9 +255,6 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
   if (!a) return html.async`<div>${t`No such agent`}</div>`;
   return html.async`<div>
     <table class=u2-table>
-      <tr>
-        <th title="${t`Paths of the api it may use; its memories and search it always has`}">${t`Tools`}
-        <td>${a.tools || "–"}
       <tr>
         <th title="${t`prefer: ai1's weights; – is ai1's default`}">${t`Model choice`}
         <td>${choice(a.prefer)}
@@ -450,8 +447,8 @@ async function render(node: Node): Promise<HtmlString> {
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head>${t`Tools`}</div>
-      <div><small>${t`Ranked by how near each tool's description is to the agent's role, by meaning; a session starts with the ✓ ones and finds the others itself.`}</small></div>
+      <div class=-head>${t`Tools`} <small>${await node.app.db.one`SELECT tools FROM ai1_agent WHERE id = ${id}` || "–"}</small></div>
+      <div><small>${t`Ranked by how near each tool's description is to the agent's role, by meaning; a session starts with the 📌 ones and finds the others itself.`}</small></div>
       <div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=tools>${tools(node, { vars })}</table></div>
     </div>
   </div>`;

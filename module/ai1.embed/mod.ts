@@ -2,7 +2,7 @@ import { sql } from "@qino/qino";
 import { candidates, embed } from "@qino/qino/ai1";
 
 import { collection, embeddings } from "./lib/collection.ts";
-import { encode, fit, nearest, stored, vector } from "./lib/vector.ts";
+import { encode, fit, json, nearest, stored, vector } from "./lib/vector.ts";
 
 import type { App, Db, Sql } from "@qino/qino";
 import type { EmbedInput } from "@qino/qino/ai1";
@@ -91,10 +91,38 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
   return fresh;
 }
 
+/** The vectors stored under `key`, one per chunk in order; none where nothing is embedded. With them,
+ *  `search` finds what is near a text kept, without embedding it again. */
+export async function embedded(app: App, name: string, key: Key, options: Options = {}): Promise<number[][]> {
+  const c = await collection(app, options.collection), db = app.db, { table, keys } = tableOf(db, name);
+  if (!c) return [];
+  const rows = await db.query`SELECT ${json(db)} AS embedding FROM ${sql.id(table)} e
+    WHERE ${match(keys, key)} AND e.collection_id = ${c.id} ORDER BY e.chunk`;
+  // MariaDB pads to its column length: the collection's own length is what compares
+  return rows.map((row) => (JSON.parse(String(row.embedding)) as number[]).slice(0, c.dimensions));
+}
+
 /** Remove the vectors under `key` from every collection; a part of the key removes all it covers. */
 export async function remove(app: App, name: string, key: Key): Promise<void> {
   const { table, keys } = tableOf(app.db, name);
   await app.db.exec`DELETE FROM ${sql.id(table)} WHERE ${match(keys, key, true)}`;
+}
+
+/** How many query vectors are kept per app, the latest used. */
+const QUERIES = 1000;
+const queries = new WeakMap<App, Map<string, number[]>>();
+
+/** The vector of a text to search for, embedded once per collection: the same query (an agent's role)
+ *  is not embedded again. Not the stored ones of equal text: a model embeds a query apart from what it
+ *  finds (`purpose`). */
+async function queryVector(app: App, c: Collection, text: string): Promise<number[]> {
+  const cache = queries.get(app) ?? queries.set(app, new Map()).get(app)!, key = `${c.id} ${await sha256(text)}`;
+  const kept = cache.get(key);
+  if (kept) return cache.delete(key), cache.set(key, kept), kept; // the latest used last
+  const [values] = await vectors(app, c, { texts: [text], purpose: "query" });
+  cache.set(key, values);
+  if (cache.size > QUERIES) cache.delete(cache.keys().next().value!);
+  return values;
 }
 
 /** The chunks nearest to `query`, most similar first. `names` are the tables to search, or map each
@@ -105,8 +133,8 @@ export async function search(app: App, names: string | Record<string, Sql | true
   const c = await collection(app, id), db = app.db;
   const filters = Object.entries(typeof names === "string" ? { [names]: true as const } : names).map(([name, where]) => ({ ...tableOf(db, name), where }));
   if (!c) return [];
-  const [values] = Array.isArray(query) ? [query]
-    : await vectors(app, c, typeof query === "string" ? { texts: [query], purpose: "query" } : { images: [query.image], purpose: "query" });
+  const values = Array.isArray(query) ? query : typeof query === "string" ? await queryVector(app, c, query)
+    : (await vectors(app, c, { images: [query.image], purpose: "query" }))[0];
   const hits: Hit[] = [];
   for (const { name, table, keys, where } of filters) {
     const value = await encode(db, table, values);

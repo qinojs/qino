@@ -31,6 +31,8 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   them. A memory it finds grows stronger, as recalling does: the closer, the more.
 - **Association:** what the user says strengthens the memories close to it, the closer the more,
   with the vector the message gets anyway to be findable. In the background: nobody waits for it.
+- **Its role** is embedded too (`embedding_ai1_agent`, again only when it changes): agents are found
+  by what they do (`agents get { search }`), and with many tools it is the role they are ranked by.
 - **Tools** come from the api: `tools` are paths in it (`["cms"]`, `["cms/node"]`), each module's
   api is its abilities. Its own routes (memories, search) every agent has, with its id set.
 - **Many tools:** with more than 20, it is given the 15 closest to its role, `find_tools` to find the
@@ -51,12 +53,13 @@ Other modules add to an agent without it knowing them (as [ai1.user_memory](../a
 ## Api
 
 ```
+agents                          get     find agents by their role { search? } → [{ id, role, score? }]
 agents                          post    create { system, tools, prefer } → { id }
 agents/:agent                   get · patch   its role, tools and prefer; anyone signed in may change them
 agents/:agent/sessions          post    start a session, as yourself { prefer } → { id }
 agents/:agent/memories          get · post { content, replaces? }
 agents/:agent/memories/:memory  delete
-agents/:agent/search            post    { query }
+agents/:agent/search            post    its own memory: memories and past sessions { query }
 sessions/:session               get     its agent and everything said
 sessions/:session/ask           post    { content } → the answer
 sessions/:session/note          post    { content }

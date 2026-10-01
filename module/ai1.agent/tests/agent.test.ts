@@ -230,10 +230,24 @@ Deno.test("ai1.agent: with more than 20 tools, it is given those closest to its 
 
 Deno.test("ai1.agent: its tools by nearness to its role, and which a session starts with", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "logo designer", tools: ["many", "toolset"] });
-  const tools = await agent.tools();
-  assertEquals(tools[0].name, "get_many_logo"); // the nearest to its role first
-  assert(tools[0].score! > tools.at(-1)!.score!);
-  assertEquals(tools.filter((t) => t.given).length, 15); // with many, the 15 closest
+  const tools = await agent.tools(), paths = tools.filter((t) => !t.always);
+  assertEquals(paths[0].tool.name, "get_many_logo"); // the nearest to its role first
+  assert(paths[0].score! > paths.at(-1)!.score!);
+  assertEquals(paths.filter((t) => t.given).length, 15); // with many, the 15 closest
+  assertEquals(tools.filter((t) => t.always).map((t) => t.tool.name).slice(-2), ["find_tools", "post_core_toolCalls"]); // its own, and to find the others
   const few = await (await Agent.create(app, { system: "lead", tools: ["toolset"] })).tools();
-  assert(few.length > 0 && few.every((t) => t.given)); // with few, all
+  assert(few.length > 3 && few.every((t) => t.given)); // with few, all
+}));
+
+Deno.test("ai1.agent: agents are found by their role, embedded once", () => withApp(async (app) => {
+  const agents = () => (app.api as any)["ai1.agent"].agents;
+  const designer = await Agent.create(app, { system: "logo designer\nmakes logos" });
+  await Agent.create(app, { system: "lead" });
+  await new Promise((r) => setTimeout(r, 20)); // roles are embedded in the background
+  const found = await runAs(app, 7, "test", () => agents().get(undefined, { search: "a logo" })) as { id: number; role: string; score: number }[];
+  assertEquals([found[0].id, found[0].role], [designer.id, "logo designer"]); // the nearest first, its role's first line
+  assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai1_agent`), 2);
+  await runAs(app, 7, "test", () => agents()(designer.id).patch({ system: "lead too" })); // changed: embedded again
+  await new Promise((r) => setTimeout(r, 20));
+  assertEquals(await app.db.col`SELECT content FROM embedding_ai1_agent WHERE agent_id = ${designer.id}`, ["lead too"]);
 }));

@@ -1,5 +1,6 @@
 import { unixTime } from "@qino/qino";
 
+import { keep } from "./lib/search.ts";
 import { ask, note, ranked } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
@@ -18,8 +19,11 @@ export class Agent {
   }
   get id(): number { return this.#id; }
 
+  /** A new agent; its role is made findable in the background. */
   static async create(app: App, { system = "", tools = [], prefer }: { system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<Agent> {
-    return new Agent(app, Number(await app.db.table("ai1_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() })));
+    const id = Number(await app.db.table("ai1_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() }));
+    keep(app, "ai1_agent", { agent_id: id }, system);
+    return new Agent(app, id);
   }
 
   /** A fresh start with user `usrId`, in which the agent acts with that user's rights; `prefer`
@@ -28,8 +32,8 @@ export class Agent {
     return new Session(this.#app, Number(await this.#app.db.table("ai1_session").insert({ agent_id: this.#id, usr_id: usrId, prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() })));
   }
 
-  /** The tools of its api paths, the nearest to its role first, with how near; `given`: a session
-   *  starts with it. */
+  /** What it may use, as a session starts with it: its own tools (`always`), those of its api paths by
+   *  nearness to its role (`score`), `given` the ones a session starts with. */
   tools(): ReturnType<typeof ranked> {
     return ranked(this.#app, this.#id);
   }

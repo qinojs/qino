@@ -241,6 +241,53 @@
           "embedding"
         ]
       }
+    },
+    "embedding_ai1_agent": {
+      "additionalProperties": {
+        "properties": {
+          "agent_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_agent",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chunk": {
+            "type": "integer",
+            "x-index": "primary",
+            "default": 0
+          },
+          "collection_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai1_embed_collection",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "x-vector": true,
+            "x-index": true
+          }
+        },
+        "required": [
+          "agent_id",
+          "chunk",
+          "collection_id",
+          "hash",
+          "embedding"
+        ]
+      },
+      "description": "The agent's role by meaning: to find agents, and its tools near it"
     }
   }
 }

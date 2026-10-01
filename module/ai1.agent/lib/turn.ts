@@ -53,29 +53,30 @@ function finders(app: App, tools: Tool[]): Tool[] {
   }];
 }
 
-/** `tools` by nearness to the agent's role (ai1.discover), the nearest first, with how near (`score`, 1
- *  the same) where it is known; `near`: found near it at all. */
-async function byRole(app: App, role: string, tools: Tool[]): Promise<{ tool: Tool; score?: number; near: boolean }[]> {
-  const names = new Set(tools.map((tool) => tool.name));
-  const near = role ? await find(app, "tools", role, all(app, "tools").filter((e) => names.has(e.name)), tools.length).catch((e) => (log(e), [])) : [];
-  const at = new Map(near.map((e, i) => [e.name, i]));
-  return tools.map((tool) => ({ tool, score: near[at.get(tool.name) ?? -1]?.score, near: at.has(tool.name) }))
-    .sort((a, b) => (at.get(a.tool.name) ?? tools.length) - (at.get(b.tool.name) ?? tools.length));
+/** What the agent may use, as a session starts with it: its own tools, those of its api paths `allowed`
+ *  and, with many, those to find the others. `ranked`: the ones of its api paths by nearness to its role
+ *  (ai1.discover), the nearest first, with how near (`score`, 1 the same); `given`: a session starts
+ *  with it — all, or with many the nearest; `always`: no api path's, every session has it. */
+async function choice(app: App, agent: number, role: string, allowed: Tool[], ranked: boolean) {
+  const many = allowed.length > AT_ONCE, names = new Set(allowed.map((tool) => tool.name));
+  // the role's vector as kept, else (no collection) its words
+  const query = ranked && role ? await search.role(app, agent, role) ?? role : undefined;
+  const near = query ? await find(app, "tools", query, all(app, "tools").filter((e) => names.has(e.name)), allowed.length).catch((e) => (log(e), [])) : [];
+  const at = new Map(near.map((e, i) => [e.name, i])), place = (name: string) => at.get(name) ?? allowed.length;
+  const always = (tools: Tool[]) => tools.map((tool) => ({ tool, given: true, always: true }));
+  return [
+    ...always(ownTools(app, agent)),
+    ...allowed.map((tool) => ({ tool, score: near[at.get(tool.name) ?? -1]?.score, given: !many || place(tool.name) < CLOSE, always: false }))
+      .sort((a, b) => place(a.tool.name) - place(b.tool.name)),
+    ...always(many ? finders(app, allowed) : []),
+  ];
 }
 
-/** Of the agent's tools, those closest to its role. */
-const closest = async (app: App, role: string, tools: Tool[]): Promise<Tool[]> =>
-  (await byRole(app, role, tools)).filter((r) => r.near).slice(0, CLOSE).map((r) => r.tool);
-
-/** The tools of the agent's api paths, the nearest to its role first, with how near; `given`: a session
- *  starts with it — all of them, or with many those closest to its role. */
-export async function ranked(app: App, agent: number): Promise<{ name: string; description: string; score?: number; given: boolean }[]> {
+/** What agent `agent` may use, as a session starts with it (`choice`), its api paths' tools ranked. */
+export async function ranked(app: App, agent: number): Promise<{ tool: Tool; score?: number; given: boolean; always: boolean }[]> {
   const row = await app.db.row`SELECT system, tools FROM ai1_agent WHERE id = ${agent}`;
   if (!row) throw new NotFoundError("No such agent");
-  const tools = toolsOf(app, JSON.parse(String(row.tools || "[]"))), many = tools.length > AT_ONCE;
-  const list = await byRole(app, String(row.system ?? ""), tools);
-  const given = new Set((many ? list.filter((r) => r.near).slice(0, CLOSE) : list).map((r) => r.tool.name));
-  return list.map(({ tool: { name, description }, score }) => ({ name, description, score, given: given.has(name) }));
+  return choice(app, agent, String(row.system ?? ""), toolsOf(app, JSON.parse(String(row.tools || "[]"))), true);
 }
 
 // What every agent can do about itself: its memories and its search, with its own id set.
@@ -158,15 +159,15 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     const id = Number(agent.agent_id), asked: Message = { role: "user", content };
     // other modules add to what the model is given: texts to its context, tools
     const { parts, tools: more } = await app.fire("ai1.agent:turn", { agent: id, session, usrId: Number(agent.usr_id), parts: [] as string[], tools: [] as Tool[] });
-    const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]"))), many = allowed.length > AT_ONCE;
-    const always = [...ownTools(app, id), ...more], found = many ? finders(app, allowed) : [];
-    const tools = [...always, ...allowed, ...found];
     const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
-    // given once, as the session starts: later changes come with the next session
+    // given once, as the session starts: later changes come with the next session; ranked only then, and with many
     let given = kept.find(isGiven);
+    const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]")));
+    const list = await choice(app, id, String(agent.system ?? ""), allowed, !given && allowed.length > AT_ONCE);
+    const tools = [...more, ...list.map((r) => r.tool)];
     if (!given) {
       const system = [agent.system, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
-      const offer = many ? [...always, ...await closest(app, String(agent.system ?? ""), allowed), ...found] : tools;
+      const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
       await save(app, session, id, given = { role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
     }
     await save(app, session, id, asked);

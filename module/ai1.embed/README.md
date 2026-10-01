@@ -43,8 +43,13 @@ await remove(app, "product_text", { product_id: 7 });
 ```
 
 `search` takes one name, or several with a filter each on the table's rows (alias `e`; `true` for
-none) that applies before the limit; the query is embedded once. Hits carry `name`, `key`, `chunk`,
-`content` and `score`. Check access before showing them.
+none) that applies before the limit. A query text is embedded once and kept (the last 1000 per app);
+a vector is taken as it is. Hits carry `name`, `key`, `chunk`, `content` and `score`. Check access
+before showing them.
+
+`embedded(app, name, key)` gives the vectors stored under a key, one per chunk: to search near a text
+already kept (an agent's role) without embedding it again. A query is embedded apart from what is
+stored (`purpose`), so a stored vector stands for the text, not for a question about it.
 
 Vectors are stored at length 1, so every dialect's default distance ranks like cosine. PostgreSQL
 keeps each row at its own length and indexes each collection separately (up to 2000 dimensions).

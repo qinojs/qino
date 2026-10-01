@@ -20,6 +20,12 @@ const verb = <T extends Params>(description: string, execute: (params: T, ctx: C
 
 export const api: ApiTree = {
   agents: {
+    get: {
+      description: "Find agents by their role: id and the first line of it; with search those nearest to it by meaning",
+      query: s.object({ search: s.optional(s.string()).describe("What the agent should do, in words") }),
+      access: Access.USER,
+      execute: ({ search: query }: { search?: string }, ctx: Ctx) => search.agents(ctx.app, query),
+    },
     post: verb<{ system?: string; tools?: string[]; prefer?: Record<string, number> }>(
       "Create an agent: its role, the paths of the api it may use as tools, and how it chooses its model (ai1 prefer)",
       async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }),
@@ -43,6 +49,7 @@ export const api: ApiTree = {
             ...tools && { tools: JSON.stringify(tools) },
             ...prefer && { prefer: JSON.stringify(prefer) },
           });
+          if (system !== undefined) search.keep(ctx.app, "ai1_agent", { agent_id: agent }, system); // findable as it is now
           return { id: agent };
         },
         fields,
@@ -71,7 +78,7 @@ export const api: ApiTree = {
       },
       search: {
         post: verb<{ agent: number; query: string }>(
-          "Search the agent's memories and all its past sessions, with anyone, by meaning",
+          "Search this agent's own memory, by meaning: its memories and all its past sessions, with anyone",
           ({ agent, query }, ctx) => search.find(ctx.app, agent, query),
           { query: s.string() },
         ),

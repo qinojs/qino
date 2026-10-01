@@ -44,7 +44,7 @@ cms.initNode("backend.ai1.agents", (el) => {
     } catch (err) { await alert(err.message); }
   });
   const query = new URL(location.href).searchParams, agent = query.get("agent"), session = query.get("session");
-  const parts = session ? [] : agent ? ["agent", "sessions", "memories"] : ["agents", "sessions"];
+  const parts = session ? [] : agent ? ["agent", "sessions", "memories", "tools"] : ["agents", "sessions"];
   const vars = agent ? { agent } : {};
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);

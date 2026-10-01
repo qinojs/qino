@@ -1,5 +1,5 @@
-import { errMsg, sql } from "@qino/qino";
-import { collection, index, search } from "@qino/qino/ai1.embed";
+import { errMsg, sql, sqlSearch } from "@qino/qino";
+import { collection, embedded, index, search } from "@qino/qino/ai1.embed";
 import { hit } from "@qino/qino/score";
 
 import type { App } from "@qino/qino";
@@ -18,7 +18,7 @@ const log = (e: unknown) => console.error("[ai1.agent] embedding:", errMsg(e));
 
 /** Make `text` findable, only where there is an embedding collection. Resolves to the vectors it
  *  embedded; never rejects. */
-export async function keep(app: App, name: "ai1_agent_memory" | "ai1_session_message", key: Record<string, number>, text: string): Promise<number[][]> {
+export async function keep(app: App, name: "ai1_agent" | "ai1_agent_memory" | "ai1_session_message", key: Record<string, number>, text: string): Promise<number[][]> {
   return text && await collection(app) ? await index(app, name, key, text).catch((e) => (log(e), [])) : [];
 }
 
@@ -41,4 +41,34 @@ export async function find(app: App, agent: number, query: string): Promise<Reco
     const message = said.get(Number(key.message_id));
     return { session: message?.session_id, time: message?.time, text: content };
   });
+}
+
+/** The agent's role as one vector, the mean of its chunks: embedded once, again only when it changed;
+ *  none without an embedding collection or role. */
+export async function role(app: App, agent: number, text: string): Promise<number[] | undefined> {
+  await keep(app, "ai1_agent", { agent_id: agent }, text);
+  const chunks = await embedded(app, "ai1_agent", { agent_id: agent }).catch((e) => (log(e), []));
+  return chunks.length ? chunks[0].map((_, i) => chunks.reduce((sum, v) => sum + v[i], 0) / chunks.length) : undefined;
+}
+
+/** The agents, the latest first; with `query` those whose role is nearest to it by meaning (without an
+ *  embedding collection: with most of its words). */
+export async function agents(app: App, query?: string, limit = 10): Promise<{ id: number; role: string; score?: number }[]> {
+  const db = app.db, first = (system: unknown) => String(system ?? "").split("\n")[0];
+  if (!query) return (await db.query`SELECT id, system FROM ai1_agent ORDER BY id DESC LIMIT ${limit}`).map((a) => ({ id: Number(a.id), role: first(a.system) }));
+  if (!await collection(app)) {
+    const { where, order } = sqlSearch(query, ["system"]);
+    return (await db.query`SELECT id, system FROM ai1_agent WHERE ${where} ORDER BY ${order} LIMIT ${limit}`).map((a) => ({ id: Number(a.id), role: first(a.system) }));
+  }
+  // the roles not embedded yet, before they are searched
+  for (const a of await db.query`SELECT id, system FROM ai1_agent WHERE id NOT IN (SELECT agent_id FROM embedding_ai1_agent)`) {
+    await keep(app, "ai1_agent", { agent_id: Number(a.id) }, String(a.system ?? ""));
+  }
+  const best = new Map<number, number>();
+  for (const { key, score } of await search(app, "ai1_agent", query, { limit: limit * 3 })) {
+    if (!best.has(Number(key.agent_id))) best.set(Number(key.agent_id), score); // its nearest chunk
+  }
+  const ids = [...best.keys()].slice(0, limit);
+  const roles = new Map((await db.query`SELECT id, system FROM ai1_agent WHERE ${sql.in("id", ids)}`).map((a) => [Number(a.id), first(a.system)]));
+  return ids.flatMap((id) => roles.has(id) ? [{ id, role: roles.get(id)!, score: best.get(id) }] : []);
 }

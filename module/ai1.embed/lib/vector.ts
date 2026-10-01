@@ -10,18 +10,21 @@ const dialects = {
   sqlite: {
     in: (value: unknown) => sql`vec_f32(${value})`,
     out: sql`e.embedding`,
+    json: sql`vec_to_json(e.embedding)`,
     distance: (value: string) => sql`vec_distance_l2(e.embedding, vec_f32(${value}))`,
   },
   // one column length for all collections: shorter vectors are padded with zeros, which keeps distances
   mysql: {
     in: (value: unknown) => sql`VEC_FromText(${value})`,
     out: sql`VEC_ToText(e.embedding)`,
+    json: sql`VEC_ToText(e.embedding)`,
     distance: (value: string) => sql`VEC_DISTANCE_EUCLIDEAN(e.embedding, VEC_FromText(${value}))`,
   },
   // any length per row; each collection gets its own hnsw index over its fixed length
   postgres: {
     in: (value: unknown) => sql`CAST(${value} AS vector)`,
     out: sql`e.embedding::text`,
+    json: sql`e.embedding::text`,
     distance: (value: string, dimensions: number) => sql`(e.embedding::vector(${sql.raw(String(dimensions))})) <-> CAST(${value} AS vector)`,
   },
 };
@@ -70,6 +73,9 @@ export const vector = (db: Db, value: unknown): Sql => dialects[db.dialect].in(v
 
 /** The column `e.embedding` in a form `vector()` takes back. */
 export const stored = (db: Db): Sql => dialects[db.dialect].out;
+
+/** The column `e.embedding` as JSON text of its numbers. */
+export const json = (db: Db): Sql => dialects[db.dialect].json;
 
 /** The collection's rows of `table` (alias `e`) nearest to `value`; `where` applies before the limit. */
 export function nearest(db: Db, table: string, keys: string[], c: Collection, value: string, where: Sql | true, limit: number): Promise<Row[]> {

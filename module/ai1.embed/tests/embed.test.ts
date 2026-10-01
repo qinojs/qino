@@ -1,7 +1,7 @@
 import { sql } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
-import { collection, create, drop, index, remove, search } from "../mod.ts";
+import { collection, create, drop, embedded, index, remove, search } from "../mod.ts";
 import { install } from "../plugin.ts";
 import { embeddingTable, fakeApp } from "./fake.ts";
 
@@ -58,6 +58,14 @@ export async function check(conn: string) {
     const key = { article_id: 3, lang: "en" };
     await index(app, "article_text", key, Array.from({ length: 50 }, (_, i) => `dog${i}`).join(" "));
     assertEquals(calls, ["index:3t0i"]);
+    // what is stored, to search near it without embedding again
+    const [kept] = await embedded(app, "article_text", { article_id: 1, lang: "en" });
+    assertEquals(ids(await search(app, both, kept)).includes("article_text/1:en/0"), true);
+    assertEquals(await embedded(app, "article_text", { article_id: 99, lang: "en" }), []);
+    calls.length = 0;
+    await search(app, both, "a query asked twice");
+    await search(app, both, "a query asked twice");
+    assertEquals(calls, ["query:1t0i"]); // the same query is embedded once
     await index(app, "article_text", key, "short dog");
     assertEquals(ids(await search(app, { article_text: sql`e.article_id = ${3}` }, "dog")), ["article_text/3:en/0"]);
     await index(app, "article_text", key, "");
