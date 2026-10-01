@@ -1,10 +1,9 @@
-import { Access, NotFoundError, s, toJsonSchema, toTools } from "@qino/qino";
+import { Access, NotFoundError, s } from "@qino/qino";
 
 import { run } from "./mod.ts";
-import { hosts } from "./lib/hosts.ts";
 import { toFlow } from "./lib/row.ts";
 
-import type { ApiTree, Ctx, Emitter, EventDecls, Params, StandardSchema } from "@qino/qino";
+import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 
 // Flows belong to their owner, who made them: nobody else sees them, as if they did not exist. Their
 // tools run with the owner's rights, so a flow can never do more than its owner.
@@ -61,32 +60,7 @@ const show = (row: Record<string, unknown>) => {
   return { id: Number(row.id), ...flow, active: Boolean(row.active) };
 };
 
-/** What a flow can listen to and what the tables mean: for whoever writes one, e.g. an AI. */
-function catalog(ctx: Ctx) {
-  const events = (decls: EventDecls) => Object.fromEntries(Object.entries(decls)
-    .map(([name, { description, data }]) => [name, { description, data: toJsonSchema(data) }]));
-  type Table = { additionalProperties?: { properties?: Record<string, { type?: string; description?: string }> } };
-  const columns = (table: Table) =>
-    Object.fromEntries(Object.entries(table.additionalProperties?.properties ?? {})
-      .map(([name, { type, description }]) => [name, { type, description }]));
-  return {
-    hosts: Object.fromEntries(Object.entries(hosts(ctx.app))
-      .map(([name, host]) => [name, events((host.constructor as typeof Emitter).events)])),
-    tables: Object.fromEntries(Object.entries(ctx.app.db.schema.properties as Record<string, Table>)
-      .map(([name, table]) => [name, columns(table)])),
-    tools: toTools(ctx.app.apiTree).map(({ name, description, parameters }) => ({ name, description, parameters })),
-  };
-}
-
 export const api: ApiTree = {
-  catalog: {
-    get: verb(
-      "What a flow can listen to: per host (app, db) its events with description and data as JSON Schema; " +
-        "every table with its columns' type and description (table events carry their rows); and the tools a " +
-        "flow may call, with their parameters",
-      (_, ctx) => catalog(ctx),
-    ),
-  },
   flows: {
     get: verb("Your flows", async (_, ctx) =>
       (await ctx.app.db.query`SELECT * FROM flow WHERE usr_id = ${ctx.userId} ORDER BY id`).map(show)),

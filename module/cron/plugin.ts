@@ -1,6 +1,9 @@
+import { App, s } from "@qino/qino";
+
+import { WEEKDAYS } from "./calendar.ts";
 import { Scheduler } from "./scheduler.ts";
 
-import type { App } from "@qino/qino";
+import type { Jobs } from "./mod.ts";
 
 export const settingsSchema = {
   properties: {
@@ -31,6 +34,32 @@ export const dbSchema = {
     },
   },
 };
+
+const data = s.object({
+  time: s.number().describe("When it fired, unix time."),
+  date: s.string().describe("The date in settings.cron.timezone, e.g. 2026-10-01."),
+  weekday: s.string().describe("The weekday in settings.cron.timezone, e.g. monday."),
+  hour: s.number().describe("The hour in settings.cron.timezone, 0-23."),
+});
+
+Object.assign(App.events, {
+  "cron:hour": { description: "A new hour began; fires once at the start of every hour, a missed one is caught up once.", data },
+  "cron:day": { description: "A new day began; fires once at midnight, a missed one is caught up once.", data },
+});
+
+/** A job firing a time event. A failing listener is logged, not retried: that would fire it again for all. */
+const fire = (event: "cron:hour" | "cron:day") => async (app: App) => {
+  const now = Temporal.Now.zonedDateTimeISO(String(await app.settings.cron.timezone));
+  const time = Math.floor(now.epochMilliseconds / 1000), weekday = WEEKDAYS[now.dayOfWeek - 1];
+  await app.fire(event, { time, date: now.toPlainDate().toString(), weekday, hour: now.hour })
+    .catch((e) => console.error(`cron: a listener of ${event}:`, e));
+};
+
+/** The time events, for whoever wants to act on time without a job of their own (e.g. flows). */
+export const cron = {
+  hour: { every: "hour", run: fire("cron:hour") },
+  day: { every: "day", run: fire("cron:day") },
+} satisfies Jobs;
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   const scheduler = new Scheduler(app);

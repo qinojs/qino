@@ -23,6 +23,9 @@ Deno.test("cms.backend.ai1.chat: every agent to open, and who would answer by th
     const node = { app } as unknown as Node;
     const page = String(await runAs(app, 7, "test", () => cms.node.render(node)));
     for (const part of ["#1</span> &lt;b&gt;lead&lt;/b&gt;</summary>", 'value="ai1.agent" checked', 'data-key="cost"> <output>3</output>']) assertStringIncludes(page, part);
+    // the tools as a tree: each module a tristate tree, what is below a chosen path checked with it
+    assertStringIncludes(page, '<u2-tree tristate><input type=checkbox slot=icon name=tools value="ai1.agent" checked> ai1.agent');
+    assertStringIncludes(page, '<u2-tree><input type=checkbox slot=icon name=tools value="ai1.agent/agents" checked> agents');
     assertEquals(await cms.node.api(node, { preview: { cost: 1 } }), { ok: true, list: [{ model: "handy", provider: "p", rank: 0 }] }); // only who has tools (no price known: no points for cost)
   } finally {
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later

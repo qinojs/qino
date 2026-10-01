@@ -95,12 +95,17 @@ cms.initNode("backend.ai1.chat", (el) => {
   });
   el.addEventListener("toggle", (e) => e.target.open && e.target.querySelector("[data-agent]") && preview(e.target.querySelector("[data-agent]")), true);
 
+  // A whole branch checked is its path alone: what is added below it later comes with it.
+  const chosen = (form) => [...form.querySelectorAll("[name=tools]:checked")].map((box) => box.closest("u2-tree"))
+    .filter((item) => !item.parentElement.closest("u2-tree")?.querySelector(":scope > [name=tools]").checked)
+    .map((item) => item.querySelector(":scope > [name=tools]").value);
+
   // An agent's form: save it (a new one is created), and maybe start a session with it.
   el.addEventListener("submit", async (e) => {
     const form = e.target;
     if (!("agent" in form.dataset)) return;
     e.preventDefault();
-    const values = { system: form.elements.system.value, tools: [...form.querySelectorAll("[name=tools]:checked")].map((box) => box.value), prefer: weights(form, "agent") };
+    const values = { system: form.elements.system.value, tools: chosen(form), prefer: weights(form, "agent") };
     try {
       let agent = Number(form.dataset.agent);
       if (agent) await agents.agents(agent).patch(values);

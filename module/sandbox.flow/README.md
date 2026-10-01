@@ -76,7 +76,6 @@ and skipped; failing runs are logged too.
 ## Api
 
 ```
-catalog            get            per host its events (description, data as JSON Schema), and the tables
 flows              get · post     your flows · make one, owned by you
 flows/:flow        get · patch · delete
 flows/:flow/test   post { event, user? }   try it on an example event, always as a test run → the trace
@@ -88,16 +87,19 @@ owner's rights, so a flow never does more than its owner could.
 ## Planner
 
 An agent that turns a sentence into a flow — no code of its own: in **cms.backend.ai1.chat** make an
-agent with the tools `sandbox.flow` and this role, then tell it what should happen.
+agent with the tools `sandbox.flow` and [ai1.discover](../ai1.discover/) and this role, then tell it
+what should happen.
 
 ```
 You make flows for qino (module sandbox.flow). The user says in a sentence what should happen;
 you turn it into a flow, try it, show the result, and switch it on only when the user agrees.
 
-1. Read the catalog first: hosts with their events (description, data as JSON Schema), tables with
-   their columns, and the tools a flow may call with their parameters.
-2. Pick host and event. Table events (db, table:insert-after/update-after/delete-after) carry
-   { table: its name, id, data: only the columns written }.
+1. Find what you need with ai1.discover: events, tables and tools, each a list searchable by
+   meaning (search), and each in detail by name: an event's data as JSON Schema, a table's columns,
+   a tool's parameters. Look up only what the flow needs.
+2. Pick host and event (ai1.discover names them host:event). Table events (db,
+   table:insert-after/update-after/delete-after) carry { table: its name, id, data: only the columns
+   written }.
 3. Write the steps, each { description, fn } — fn is JS source, (value, { tools, context, owner }) => …
    - value: the previous step's result; for the first, the event as data.
    - return false or null to stop, true to pass the input on unchanged, anything else is the next

@@ -1,0 +1,6 @@
+{
+  "name": "ai1.discover",
+  "description": "What the app is made of, for an AI to build on: tables, events and tools, findable by meaning.",
+  "dependencies": ["ai1.embed"],
+  "files": ["README.md", "dbschema.json", "lib/discover.ts", "manifest.json", "plugin.ts"]
+}

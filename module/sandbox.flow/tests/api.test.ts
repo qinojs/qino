@@ -68,18 +68,3 @@ Deno.test("sandbox.flow api: only superusers", () => withApp(async (app, as) => 
   await assertRejects(() => as(9, () => flows.get()), AccessError);
   await assertRejects(() => as(9, () => flows.post(made)), AccessError);
 }));
-
-Deno.test("sandbox.flow api: the catalog tells what a flow can listen to and what the tables mean", () =>
-  withApp(async (app, as) => {
-    const { hosts, tables, tools } = await as(7, () => (app.api as any)["sandbox.flow"].catalog.get());
-    const greet = tools.find((tool: any) => tool.name === "post_test_greet");
-    assertEquals(Object.keys(greet.parameters.properties), ["name"]);
-    assertEquals(Object.keys(hosts), ["app", "db"]);
-    const inserted = hosts.db["table:insert-after"];
-    assertEquals(inserted.description, "A row was inserted.");
-    assertEquals(inserted.data.properties.table.description, "The table.");
-    assertEquals(Object.keys(inserted.data.properties), ["table", "id", "data"]);
-    assertEquals(hosts.app.suspicious.data.required, ["ctx"]);
-    const host = "The object whose event starts it, from the app: app, db";
-    assertEquals(tables.flow.host, { type: "string", description: host });
-  }));

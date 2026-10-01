@@ -1,6 +1,7 @@
 {
   "properties": {
     "ai1_agent": {
+      "description": "An AI agent: its role (system prompt) and tools",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -30,6 +31,7 @@
       }
     },
     "ai1_session": {
+      "description": "A conversation of a user with an agent",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -66,6 +68,7 @@
       }
     },
     "ai1_session_message": {
+      "description": "A message of a session: the user's, the agent's or a tool result",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -84,6 +87,7 @@
           },
           "message": {
             "type": "string",
+            "maxLength": 1073741823,
             "description": "The ai1 message as JSON; role error for a failed turn"
           },
           "model_provider_id": {
@@ -107,6 +111,7 @@
       }
     },
     "ai1_agent_memory": {
+      "description": "What an agent keeps for later",
       "additionalProperties": {
         "properties": {
           "id": {

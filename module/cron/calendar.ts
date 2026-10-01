@@ -1,7 +1,7 @@
 import type { Job, Weekday } from "./mod.ts";
 
 const PERIODS = { hour: 60 * 60, day: 24 * 60 * 60, week: 7 * 24 * 60 * 60 } as const;
-const WEEKDAYS: readonly Weekday[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+export const WEEKDAYS: readonly Weekday[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 export function validateJob(id: string, job: Job): void {
   if (!job || typeof job !== "object" || typeof job.run !== "function") throw new Error(`Cron job "${id}" needs a run function`);

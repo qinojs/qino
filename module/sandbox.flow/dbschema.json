@@ -1,6 +1,7 @@
 {
   "properties": {
     "flow": {
+      "description": "A flow: steps of code that run when an event fires, with the tools they may use",
       "additionalProperties": {
         "properties": {
           "id": {

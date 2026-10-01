@@ -78,7 +78,7 @@
     "@qino/item-cdn/": "https://gcdn.li/nuxodin/item.js@0.6.15/",
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.15/",
     "@qino/u2-alt/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.5.19/",
-    "@qino/u2/": "https://gcdn.li/u2ui/u2@1.5.19/",
+    "@qino/u2/": "https://gcdn.li/u2ui/u2@1.5.20/",
     "@qino/m/": "./module/",
     "@qino/pub/": "./module/core/pub/js/",
     "@qino/qino": "./module/core/mod.ts",

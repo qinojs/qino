@@ -1,4 +1,4 @@
-import { Db } from "@qino/qino";
+import { App as QinoApp, Db } from "@qino/qino";
 import { assert, assertEquals, assertThrows, Emitter } from "@qino/qino/tests";
 
 import { run, status, trigger } from "../mod.ts";
@@ -167,6 +167,30 @@ Deno.test({
       await db.close();
     }
   },
+});
+
+Deno.test("cron fires cron:hour and cron:day, in its timezone; a failing listener is not retried", async () => {
+  const app = new QinoApp({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  app.modules.add(new URL("../plugin.ts", import.meta.url));
+  await app.init();
+  const consoleError = console.error;
+  console.error = noop;
+  try {
+    await app.settings.cron.timezone("Pacific/Kiritimati"); // UTC+14: another date than UTC most of the day
+    const heard: Record<string, Record<string, unknown>> = {};
+    app.on("cron:hour", (e) => { heard.hour = e; });
+    app.on("cron:day", (e) => { heard.day = e; throw new Error("broken"); });
+    assertEquals((await trigger(app, "cron:hour")).ran, ["cron:hour"]);
+    assertEquals((await trigger(app, "cron:day")).ran, ["cron:day"]);
+    const zoned = Temporal.Instant.fromEpochMilliseconds(Number(heard.hour.time) * 1000).toZonedDateTimeISO("Pacific/Kiritimati");
+    assertEquals([heard.hour.hour, heard.hour.date], [zoned.hour, zoned.toPlainDate().toString()]);
+    assertEquals(Object.keys(heard.day), ["time", "date", "weekday", "hour"]);
+    assert(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].includes(String(heard.day.weekday)));
+  } finally {
+    console.error = consoleError;
+    await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
+    await app.db.close();
+  }
 });
 
 async function createTestApp(cron: Record<string, Job>) {

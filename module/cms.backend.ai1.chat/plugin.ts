@@ -17,30 +17,39 @@ const WEIGHTS = ["quality", "cost", "speed"];
 
 type Agent = { id?: number; system?: string; tools?: string[]; prefer?: Record<string, number> };
 
-/** The paths of the api an agent may use as tools, down to the second level, with how many tools each gives. */
-function paths(tree: ApiTree): [string, number][] {
-  const count = new Map<string, number>();
+type Branch = { count: number; below: Map<string, Branch> };
+
+/** The paths of the api an agent may use as tools, as a tree down to the first param, with how many tools each gives. */
+function paths(tree: ApiTree): Branch {
+  const root: Branch = { count: 0, below: new Map() };
   for (const { segments } of walk(tree)) {
-    const path: string[] = [];
-    for (const segment of segments.slice(0, 2)) {
+    let at = root;
+    for (const segment of segments) {
       if (segment.startsWith(":")) break;
-      path.push(segment);
-      count.set(path.join("/"), (count.get(path.join("/")) ?? 0) + 1);
+      at = at.below.getOrInsertComputed(segment, () => ({ count: 0, below: new Map() }));
+      at.count++;
     }
   }
-  return [...count].sort(([a], [b]) => a.localeCompare(b));
+  return root;
 }
+
+/** A path with all below it, checked when it or a path above is among `chosen` (u2-tree tristate). */
+const branches = (branch: Branch, chosen: string[], above = ""): HtmlString[] =>
+  [...branch.below].sort(([a], [b]) => a.localeCompare(b)).map(([segment, sub]) => {
+    const path = above + segment, checked = chosen.some((c) => path === c || path.startsWith(c + "/"));
+    return html`<u2-tree${above ? "" : " tristate"}><input type=checkbox slot=icon name=tools value="${path}" ${checked ? "checked" : ""}> ${segment} <small>(${sub.count})</small>${
+      branches(sub, chosen, path + "/")}</u2-tree>`;
+  });
 
 const sliders = (scope: string, values: Record<string, number> = {}) => html`<div class=u2-flex>${WEIGHTS.map((key) =>
   html`<label>${key} <input type=range min=0 max=10 value="${values[key] ?? 0}" data-prefer="${scope}" data-key="${key}"> <output>${values[key] ?? 0}</output></label>`)}</div>`;
 
 /** One agent to change and start a session with, or a new one. */
-function form(node: Node, tools: [string, number][], agent: Agent = {}): Promise<HtmlString> {
+function form(node: Node, tools: Branch, agent: Agent = {}): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<form class="u2-flex -Col" data-agent="${agent.id ?? ""}">
     <textarea name=system rows=6 placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
-    <details><summary>${t`Tools`}: <small>${agent.tools?.join(", ") || "–"}</small></summary><div style="overflow:auto;max-height:15rem">${tools.map(([path, count]) =>
-      html`<label><input type=checkbox name=tools value="${path}" ${agent.tools?.includes(path) ? "checked" : ""}> ${path} <small>(${count})</small></label><br>`)}</div></details>
+    <details><summary>${t`Tools`}: <small>${agent.tools?.join(", ") || "–"}</small></summary><div style="overflow:auto;max-height:15rem">${branches(tools, agent.tools ?? [])}</div></details>
     <fieldset><legend>${t`Model`}</legend>${sliders("agent", agent.prefer)}</fieldset>
     <fieldset><legend>${t`This session`}</legend>${sliders("session")}</fieldset>
     <small>${t`All at 0: the agent's choice, for the agent the default.`}</small>
