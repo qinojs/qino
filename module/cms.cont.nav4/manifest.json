@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.nav4",
+  "description": "Nested navigation from the current CMS page tree, with visible and readable pages by default.",
+  "dependencies": ["cms"],
+  "files": ["manifest.json", "mod.ts", "plugin.ts", "README.md", "pub/module.svg"]
+}

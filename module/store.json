@@ -122,6 +122,7 @@
     "cms.cont.my.totp": {},
     "cms.cont.my.webauthn": {},
     "cms.cont.nav3": {},
+    "cms.cont.nav4": {},
     "cms.cont.not_found1": {},
     "cms.cont.oauth": {},
     "cms.cont.pwReset": {},
