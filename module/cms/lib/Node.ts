@@ -566,11 +566,11 @@ export class Node {
     }
 
     /* Tree manipulation */
-    createChild(vs: Record<string, any> = {}): Promise<Node> {
-        return this.db.transaction(() => this.#createChild(vs));
+    createChild(fields: Record<string, any> = {}): Promise<Node> {
+        return this.db.transaction(() => this.#createChild(fields));
     }
-    async #createChild(vs: Record<string, any>): Promise<Node> {
-        vs = {
+    async #createChild(fields: Record<string, any>): Promise<Node> {
+        fields = {
             basis: this.id,
             online_start: unixTime(),
             access: this.vs.access,
@@ -578,10 +578,11 @@ export class Node {
             type: "p",
             searchable: this.vs.searchable,
             visible: true,
-            ...vs,
+            ...fields,
         };
-        vs.sort ??= Number(await this.db.one`SELECT max(sort) FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} AND type = ${vs.type}`) + 1;
-        const id = await this.db.table("page").insert(vs);
+        if (fields.settings && typeof fields.settings === "object") fields.settings = JSON.stringify(fields.settings);
+        fields.sort ??= Number(await this.db.one`SELECT max(sort) FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} AND type = ${fields.type}`) + 1;
+        const id = await this.db.table("page").insert(fields);
         const page = await this.cms.node(Number(id ?? "0"));
         if (!id) return page;
 
@@ -594,7 +595,7 @@ export class Node {
         await page.files();
 
         // Apply this node's "subpage definition" (childXML) to the new page child; tolerate malformed user input
-        if (vs.type === "p" && "childXML" in this.settings) {
+        if (fields.type === "p" && "childXML" in this.settings) {
             await page.fromXml(String(this.settings.childXML() ?? ""))
                 .catch(e => console.warn(`childXML of node ${this.id} could not be applied:`, e));
         }
@@ -602,14 +603,14 @@ export class Node {
         // Re-sort children so the new child gets a proper sort position
         this.#clearTreeCache();
         let i = 0;
-        for (const child of (await this.children({ type: vs.type })).values()) await child.set("sort", ++i);
+        for (const child of (await this.children({ type: fields.type })).values()) await child.set("sort", ++i);
 
         return page;
     }
 
-    createCont(vs: Record<string, string | number | boolean | null> = {}): Promise<Node> {
-        vs = { type: "c", module: "cms.cont.flexible", visible: "", online_start: null, access: null, ...vs };
-        return this.createChild(vs);
+    createCont(fields: Record<string, any> = {}): Promise<Node> {
+        fields = { type: "c", module: "cms.cont.flexible", visible: "", online_start: null, access: null, ...fields };
+        return this.createChild(fields);
     }
 
     /** childXML attributes accepted as node fields */
@@ -737,12 +738,12 @@ export class Node {
     }
 
     /** The cont of that name, created when it is not there yet. */
-    async cont(name: string, attris: any = {}): Promise<Node> {
+    async cont(name: string, defaults: any = {}): Promise<Node> {
         const conts = await this.conts();
         const cont = conts.find((c) => c.vs.name === name);
         if (cont) return cont;
-        if (typeof attris !== "object") attris = { module: attris };
-        return this.createCont({ ...attris, name, sort: conts.length + 1 });
+        if (typeof defaults !== "object") defaults = { module: defaults };
+        return this.createCont({ ...defaults, name, sort: conts.length + 1 });
     }
 
     /* Access */

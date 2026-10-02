@@ -32,13 +32,14 @@ should use list relationships and state classes instead of specific IDs.
 
 ## Initial settings
 
-`Node.cont()` already uses its second argument only when creating the named
-content. Currently the database settings field expects JSON text:
+`Node.cont()` uses its second argument only when creating the named content.
+Settings objects are serialized to JSON on creation, also with `createCont()` and
+`createChild()`. JSON text is also accepted; the supplied objects stay unchanged.
 
 ```ts
 const nav = await layoutPage.cont("nav", {
   module: "cms.cont.nav4",
-  settings: JSON.stringify({ startPage: section.id, level: 2 }),
+  settings: { startPage: section.id, level: 2 },
 });
 ```
 
