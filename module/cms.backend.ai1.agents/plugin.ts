@@ -372,7 +372,7 @@ const pretty = (value: unknown): string => {
 };
 
 /** One session's conversation, everything it kept: the user on the right, the agent on the left, its
- *  tool calls and their results folded. With `after` (a message id) only the messages since. */
+ *  tool calls as buttons which open them with their results. With `after` (a message id) only the messages since. */
 export async function conversation(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
   const rows = await node.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
     FROM ai1_session_message m ${answeredBy}
@@ -384,16 +384,13 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
     if (m.role === "system") return html`<div data-message=${row.id}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
       ${folded(text, text)}
       ${m.tools ? folded(`${m.tools.length} tools: ${m.tools.map((t: any) => t.name).join(", ")}`, pretty(m.tools)) : ""}</div>`;
-    if (m.role === "tool") {
-      return html`<div data-message=${row.id} style="align-self:flex-start; max-width:80%">
-        ${folded(`← ${text}`, pretty(text))}</div>`;
-    }
+    if (m.role === "tool") return ""; // shown with its call, in the dialog of the calls
     const side = m.role === "user" ? "flex-end" : "flex-start";
     return html`<div data-message=${row.id} style="align-self:${side}; max-width:80%">
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
         : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}
-      ${(m.toolCalls ?? []).map((c: any) => folded(`→ ${c.name}(${JSON.stringify(c.args)})`, pretty(c.args)))}
+      ${(m.toolCalls ?? []).map((c: any) => html`<button type=button class=u2-unstyle data-call=${c.id}><small>${colored(c.name)}</small></button> `)}
     </div>`;
   })}</div>`;
 }
@@ -447,7 +444,29 @@ async function render(node: Node): Promise<HtmlString> {
   </div>`;
 }
 
+/** The tool calls of the request (everything after a user message) of call `call` in session `id`, in
+ *  the order they were made, each with its result. */
+async function calls(db: Db, id: number, call: string) {
+  const rows = await db.query`SELECT m.id, m.time, m.message FROM ai1_session_message m
+    WHERE m.session_id = ${id} AND (m.message LIKE ${'%"toolCalls":[{%'} OR ${role("tool")} OR ${role("user")}) ORDER BY m.id`;
+  const requests: any[][] = [[]], byId = new Map<string, any>();
+  for (const row of rows) {
+    const m = JSON.parse(String(row.message));
+    if (m.role === "user") requests.push([]);
+    else if (m.role === "tool") {
+      const call = byId.get(m.id);
+      if (call) call.result = JSON.parse(m.content), call.failed = !!call.result?.error;
+    } else for (const c of m.toolCalls) {
+      const call = { id: c.id, step: row.id, time: row.time, name: c.name, color: uniqueColor(c.name), args: c.args };
+      byId.set(c.id, call);
+      requests.at(-1)!.push(call);
+    }
+  }
+  return requests.find((list) => list.some((c) => c.id === call)) ?? [];
+}
+
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
+  if (vars.calls) return { ok: true, calls: await calls(node.app.db, Number(vars.calls), String(vars.call)) };
   if (!vars.preview || typeof vars.preview !== "object") return null;
   const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
   const list = await candidates(node.app, "text", { messages: [], tools: [{}] }, { prefer: Object.keys(prefer).length ? prefer : undefined });

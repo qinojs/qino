@@ -88,6 +88,68 @@ cms.initNode("backend.ai1.agents", (el) => {
     } catch (err) { await alert(err.message); }
     finally { button.disabled = false; }
   });
+  // the tool calls of the session with their results: the list left, the chosen one right
+  const showCalls = async (select) => {
+    const [{ calls }, { modal }, ...label] = await Promise.all([
+      node.api.post({ calls: Number(session), call: select }), import("@qino/u2/js/dialog/dialog.js"), t`Arguments`, t`Result`, t`Close`, t`Run`,
+    ]);
+    const dom = (tag, props, ...kids) => {
+      const el = Object.assign(document.createElement(tag), props);
+      el.append(...kids);
+      return el;
+    };
+    const pretty = (v) => typeof v === "string" ? v : JSON.stringify(v, null, 2);
+    const code = (value, readonly) => {
+      const text = dom("textarea", { value: pretty(value), readOnly: !!readonly, rows: 8 });
+      const el = dom("u2-code", { style: "font-size:.8rem;overflow:auto;max-height:45vh" }, text);
+      el.setAttribute("language", "json");
+      return el;
+    };
+    const part = (title, el, ...more) => dom("div", {}, dom("small", { textContent: title }), el, ...more);
+    const items = new Map(), list = dom("div", { style: "overflow:auto;max-height:55vh" }), detail = dom("div", { style: "display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;align-content:start" });
+    let step;
+    calls.forEach((call, i) => {
+      if (call.step !== step) list.append(dom("small", { textContent: `${step = call.step} · ${new Date(call.time * 1000).toLocaleTimeString()}`, style: "display:block" }));
+      const button = dom("button", { type: "button", className: "u2-unstyle", style: "display:block;width:100%;text-align:left" },
+        dom("span", { textContent: `${i + 1} ${call.name}`, style: `color:${call.failed ? "var(--red)" : call.color}` }),
+        dom("small", { textContent: ` ${Object.values(call.args ?? {})[0] ?? ""}`.slice(0, 40) }));
+      button.onclick = () => {
+        for (const other of items.values()) other.removeAttribute("aria-current");
+        button.setAttribute("aria-current", "true");
+        button.scrollIntoView({ block: "nearest" });
+        const input = code(call.args), output = code(call.result ?? "", true);
+        const run = dom("button", { type: "button", textContent: label[3] });
+        run.onclick = async () => {
+          run.disabled = true;
+          try { output.value = pretty((await api.core["tool-calls"].post({ calls: [{ name: call.name, arguments: JSON.parse(input.value) }] })).results[0] ?? null); }
+          catch (err) { output.value = pretty({ error: err.message, ...err.data !== undefined && { data: err.data } }); }
+          finally { run.disabled = false; }
+        };
+        detail.replaceChildren(dom("b", { textContent: call.name, style: `grid-column:1/-1;color:${call.color}` }), part(label[0], input, run), part(label[1], output));
+      };
+      items.set(call.id, button);
+      list.append(button);
+    });
+    const body = dom("div", { style: "display:grid;grid-template-columns:16rem 1fr;gap:1rem;width:min(90vw,80rem)" }, list, detail);
+    await modal({
+      body: "<div data-calls></div>",
+      buttons: [{ title: label[2] }],
+      init(dialog) {
+        dialog.classList.add("backdropClose");
+        dialog.style.cssText = "top:3rem;bottom:auto";
+        dialog.querySelector("[data-calls]").replaceWith(body);
+        (items.get(select) ?? items.values().next().value)?.click();
+        dialog.addEventListener("keydown", (e) => {
+          const all = [...items.values()], now = all.findIndex((b) => b.getAttribute("aria-current")), to = { ArrowUp: -1, ArrowDown: 1 }[e.key];
+          if (to && all[now + to]) e.preventDefault(), all[now + to].click();
+        });
+      },
+    });
+  };
+  el.addEventListener("click", (e) => {
+    const button = e.target.closest("button[data-call]");
+    if (button) showCalls(button.dataset.call);
+  });
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);
   const box = el.querySelector("[cms-part=conversation]");

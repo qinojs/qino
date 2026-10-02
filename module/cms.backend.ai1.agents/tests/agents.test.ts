@@ -88,9 +88,13 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     assert(!kept.includes("[object Promise]"));
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
-    for (const part of ["align-self:flex-end", "→ post_search", "← [{&quot;text&quot;:&quot;round&quot;}]", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
+    for (const part of ["align-self:flex-end", "→ <span", "post_search</span>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
       assertStringIncludes(talk, part);
     }
+    // the dialog of the calls: each with its result
+    const { calls } = await cms.node.api(node, { calls: session.id, call: "1" }) as { calls: any[] };
+    assertEquals(calls.map((c) => c.name), ["post_search"]);
+    assertEquals(calls[0].result, [{ text: "round" }]);
     // following along: only what came after the last message shown
     const since = await as(() => conversation(node, { vars: { session: session.id, after: ids.at(-2) } }));
     assertEquals([...since.matchAll(/data-message=(\d+)/g)].map((m) => Number(m[1])), [ids.at(-1)]);

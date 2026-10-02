@@ -18,6 +18,25 @@ If the channel is chosen at runtime: `channel(app, "sms")?.send(app, to, msg)`, 
 `userChannels(app, usrId)` for all channels that reach a user. Every `send` writes the journal
 itself; never call `record()` for outgoing messages.
 
+## API
+
+The API tree is available through HTTP, `app.api.messaging` and tools. Listing channels requires a
+signed-in user; sending currently requires a superuser:
+
+- `GET /api/messaging/channels` lists the linked channels' names, labels, colours and contact kinds.
+- `POST /api/messaging/channels/:channel/send` accepts `{ to, msg }` and returns the number of
+  destinations reached. `to` accepts only `usr` (an ID or array) and `grp` (a group ID). At least
+  one user or group is required; other recipient fields are rejected. `msg` is a string
+  or the usual message object, including channel-specific fields.
+  JSON attachments use `{ name, type?, content }` with string content.
+
+```ts
+await app.api.messaging.channels("email").send.post({
+  to: { usr: 42 },
+  msg: { title: "Your order", text: "Your order has shipped." },
+});
+```
+
 ## Journal
 
 `record(app, message, deliveries)` stores one message plus one row per recipient, so "sent to the
