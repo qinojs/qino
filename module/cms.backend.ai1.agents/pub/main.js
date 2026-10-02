@@ -28,19 +28,40 @@ cms.initNode("backend.ai1.agents", (el) => {
     e.target.nextElementSibling.value = e.target.value;
     preview(e.target.form);
   });
-  for (const form of el.querySelectorAll("[data-agent]")) preview(form);
   const chosen = (form) => [...form.querySelectorAll("[name=tools]:checked")].map((box) => box.closest("u2-tree"))
     .filter((item) => !item.parentElement.closest("u2-tree")?.querySelector(":scope > [name=tools]").checked)
     .map((item) => item.querySelector(":scope > [name=tools]").value);
+  for (const form of el.querySelectorAll("[data-agent]")) {
+    preview(form);
+    if (!form.dataset.agent) continue;
+    const current = { system: () => form.elements.system.value, tools: () => chosen(form), prefer: () => weights(form) };
+    const timers = new Map();
+    let saving = Promise.resolve();
+    const fieldOf = (target) => target.name === "system" || target.name === "tools" ? target.name : "prefer" in target.dataset ? "prefer" : null;
+    const save = (field) => {
+      clearTimeout(timers.get(field));
+      saving = saving.catch(() => {}).then(() => agents.agent(Number(form.dataset.agent)).patch({ [field]: current[field]() }))
+        .catch((err) => alert(err.message));
+    };
+    form.addEventListener("input", (e) => {
+      const field = fieldOf(e.target);
+      if (!field) return;
+      clearTimeout(timers.get(field));
+      timers.set(field, setTimeout(() => save(field), 400));
+    });
+    form.addEventListener("change", (e) => {
+      const field = fieldOf(e.target);
+      if (field) save(field);
+    });
+  }
   el.addEventListener("submit", async (e) => {
     const form = e.target;
     if (!("agent" in form.dataset)) return;
     e.preventDefault();
+    if (form.dataset.agent) return;
     const values = { system: form.elements.system.value, tools: chosen(form), prefer: weights(form) };
     try {
-      const id = Number(form.dataset.agent);
-      if (id) await agents.agent(id).patch(values);
-      else await agents.agents.post(values);
+      await agents.agents.post(values);
       location.reload();
     } catch (err) { await alert(err.message); }
   });

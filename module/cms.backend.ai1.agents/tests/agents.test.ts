@@ -39,10 +39,16 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     const as = <T>(fn: () => Promise<T>) => runAs(app, 7, "test", fn).then(String);
 
     const home = await as(() => cms.node.render(node));
-    for (const part of ["New agent", "data-agent=", "name=system", "name=tools", "data-prefer"]) assertStringIncludes(home, part);
+    for (const part of ["New agent", "data-agent=", "name=system", "name=tools", "<fieldset><legend>Tools", "<fieldset><legend>Model choice", "<div class=u2-table>", "data-prefer"]) {
+      assertStringIncludes(home, part);
+    }
 
     const list = await as(() => agents(node));
-    for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "<small>[&quot;cms&quot;]</small>", "it is round"]) assertStringIncludes(list, part);
+    for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap", 'title="[&quot;cms&quot;]"', "[&quot;cms&quot;]</small>", "it is round"]) {
+      assertStringIncludes(list, part);
+    }
+    assertStringIncludes(list, "<th>#");
+    assertEquals(list.match(/writing-mode:sideways-lr/g)?.length, 5);
     assert(!list.includes("<b>lead"));
 
     const its = await as(() => sessions(node, { vars: { agent: agent.id } }));
@@ -55,6 +61,9 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
       assertStringIncludes(page, part);
     }
     assert(!page.includes("&lt;b&gt;lead&lt;/b&gt;"));
+    assert(!page.includes("Model choice"));
+    assert(!page.includes("Findable"));
+    assert(!page.includes("active now"));
     assert(!page.includes("[object Promise]"));
     assertStringIncludes(await as(() => about(node, { vars: { agent: 999 } })), "No such agent");
 

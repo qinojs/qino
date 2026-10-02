@@ -49,12 +49,17 @@ function form(node: Node, agent: { id?: number; system?: string; tools?: string[
   const t = node.app.t;
   return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id ?? ""}">
     <textarea name=system rows=6 style="width:100%" placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
-    <details><summary>${t`Tools`}: <small>${agent.tools?.join(", ") || "–"}</small></summary><div style="overflow:auto;max-height:15rem">${branches(paths(node.app.apiTree), agent.tools ?? [])}</div></details>
-    <fieldset><legend>${t`Model`}</legend><div class=u2-flex>${WEIGHTS.map((key) =>
-      html`<label>${key} <input type=range min=0 max=10 value="${agent.prefer?.[key] ?? 0}" data-prefer data-key="${key}"> <output>${agent.prefer?.[key] ?? 0}</output></label>`)}</div></fieldset>
+    <fieldset><legend>${t`Tools`}</legend><div style="overflow:auto;max-height:15rem">${branches(paths(node.app.apiTree), agent.tools ?? [])}</div></fieldset>
+    <fieldset><legend>${t`Model choice`}</legend>
+      <div class=u2-table><div>${WEIGHTS.map((key) => html`<label>
+        <span>${key}</span>
+        <input type=range min=0 max=10 value="${agent.prefer?.[key] ?? 0}" data-prefer data-key="${key}">
+        <output>${agent.prefer?.[key] ?? 0}</output>
+      </label>`)}</div></div>
+    </fieldset>
     <small>${t`All at 0: the default.`}</small>
     <div><small>${t`Who would answer`}</small><ol data-preview></ol></div>
-    <button>${agent.id ? t`Save` : t`Create`}</button>
+    ${agent.id ? "" : html.async`<button>${t`Create`}</button>`}
   </form>`;
 }
 
@@ -123,22 +128,22 @@ export async function agents(node: Node): Promise<HtmlString> {
   const last = await messages(db, rows.map((r) => r.last));
   return html.async`
     <thead><tr>
-      <th>${t`Agent`}
+      <th>#
       <th>${t`Role`}
       <th>${t`Tools`}
       <th title="${t`prefer: ai1's weights; – is ai1's default`}">${t`Model choice`}
-      <th>${t`Memories`}
-      <th>${t`Sessions`}
-      <th>${t`Users`}
-      <th>${t`Messages`}
-      <th>${t`Errors`}
+      <th style="writing-mode:sideways-lr;vertical-align:bottom">${t`Memories`}
+      <th style="writing-mode:sideways-lr;vertical-align:bottom">${t`Sessions`}
+      <th style="writing-mode:sideways-lr;vertical-align:bottom">${t`Users`}
+      <th style="writing-mode:sideways-lr;vertical-align:bottom">${t`Messages`}
+      <th style="writing-mode:sideways-lr;vertical-align:bottom">${t`Errors`}
       <th>${t`Last message`}
       <th>${t`Last active`}
       <th>${t`Created`}
     <tbody>${rows.length ? rows.map((a) => html`<tr u2-href>
       <th>${agentLink(url, a.id)}${Number(a.active) ? html` <small class=u2-badge>active</small>` : ""}
       <td>${firstLine(a.system)}
-      <td><small>${a.tools || "–"}</small>
+      <td><small style="display:block;max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.tools || "–"}">${a.tools || "–"}</small>
       <td>${choice(a.prefer)}
       <td>${count(a.memories)}
       <td>${count(a.sessions)}
@@ -239,7 +244,7 @@ export async function tools(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
 /** All about agent `vars.agent`: what it is, what happened, which models answered for whom. */
 export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, id = Number(vars.agent) || 0;
-  const [[a], models, users, findable] = await Promise.all([
+  const [[a], models, users] = await Promise.all([
     agentRows(db, id),
     db.query`SELECT am.name AS model, p.name AS provider, COUNT(*) AS answers, MAX(m.time) AS last_time
       FROM ai1_session_message m JOIN ai1_session s ON s.id = m.session_id ${answeredBy}
@@ -247,15 +252,10 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
     db.query`SELECT s.usr_id, u.username, COUNT(DISTINCT s.id) AS sessions, ${COUNTS}
       FROM ai1_session s LEFT JOIN usr u ON u.id = s.usr_id LEFT JOIN ai1_session_message m ON m.session_id = s.id
       WHERE s.agent_id = ${id} GROUP BY s.usr_id, u.username ORDER BY last_time DESC`,
-    db.row`SELECT (SELECT COUNT(DISTINCT memory_id) FROM embedding_ai1_agent_memory WHERE agent_id = ${id}) AS memories,
-      (SELECT COUNT(DISTINCT message_id) FROM embedding_ai1_session_message WHERE agent_id = ${id}) AS messages`,
   ]);
   if (!a) return html.async`<div>${t`No such agent`}</div>`;
   return html.async`<div>
     <table class=u2-table>
-      <tr>
-        <th title="${t`prefer: ai1's weights; – is ai1's default`}">${t`Model choice`}
-        <td>${choice(a.prefer)}
       <tr>
         <th>${t`Created`}
         <td>${time(a.time)}
@@ -263,19 +263,12 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
         <th>${t`Active`}
         <td>${time(a.first_time)} – ${time(a.last_time)}
       <tr>
-        <th>${t`Sessions`}
-        <td>${count(a.sessions)}, ${t`active now`}: ${count(a.active)}, ${t`users`}: ${count(a.users)}
-      <tr>
         <th>${t`Messages`}
         <td>${count(a.messages)}: ${count(a.questions)} ${t`questions`}, ${count(a.answers)} ${t`answers`},
           ${count(a.calls)} ${t`with tool calls`}, ${count(a.errors, true)} ${t`errors`}
       <tr>
         <th>${t`Memories`}
         <td>${count(a.memories)}
-      <tr>
-        <th title="${t`Embedded: the tool search finds them`}">${t`Findable`}
-        <td>${t`memories`}: ${count(findable?.memories)} / ${count(a.memories)},
-          ${t`questions and answers`}: ${count(findable?.messages)} / ${count(Number(a.questions) + Number(a.answers))}
     </table>
     <table class=u2-table style="width:auto">
       <thead><tr>
@@ -439,9 +432,9 @@ async function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto; max-width:50rem">
       <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)}</div>
+      ${edit ? form(node, edit) : ""}
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>
-    ${edit ? html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Edit agent`}</div>${form(node, edit)}</div>` : ""}
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
     <div class=u2-card style="flex:0 1 auto">
