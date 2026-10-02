@@ -436,7 +436,7 @@ async function render(node: Node): Promise<HtmlString> {
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div></div>
-    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div>
+    <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Memories`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=memories>${memories(node, { vars })}</table></div></div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Tools`}</div>
       <div style="max-height:60vh; overflow:auto; padding:0">
