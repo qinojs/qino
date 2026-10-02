@@ -36,7 +36,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   return null;
 }
 
-/* todo: ticket will be shortet by shorturl */
+/* todo: ticket will be shortened by shorturl */
 async function sendLink(node: Node, usrId: number, email: string) {
   const app = node.app;
   const handle = await issue(app, PURPOSE, { usrId });

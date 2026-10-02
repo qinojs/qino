@@ -4,14 +4,14 @@ import * as u2 from "@qino/qino/u2";
 
 import api, { PURPOSE, TICKET_PARAM, TTL } from "./nodeApi.ts";
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Ticket, TicketKind } from "@qino/qino/ticket";
+import type { TicketKind } from "@qino/qino/ticket";
 
 export const tickets: Record<string, TicketKind> = {
   [PURPOSE]: {
     ttl: TTL,
-    redeem: async (app: App, ticket: Ticket, input?: unknown) => {
+    redeem: async (app, ticket, input) => {
       const { usrId } = ticket.data as { usrId: number };
       const pw = String((input as { pw: string }).pw);
       await app.db.table("usr").update(usrId, { pw: await pwHash(pw) });
