@@ -27,6 +27,37 @@ question (does it hold?). It answers `{ choice, probabilities, confidence }`: ev
 the likeliest one, and how clear that is (1 − entropy / log n: 1 all on one, 0 even). Jev decides natively
 (a noul without options); a provider without probabilities puts all on its choice.
 
+Native decisions use the same `state`, `questions`, `answers` protocol across compatible services.
+The `systemone` adapter appends `/systemone` to `ai1_provider.endpoint`; `decisions` appends
+`/decisions`. Both serve `decide` on text and preserve the returned probabilities. Invalid or
+incomplete probabilities fail the attempt and allow the usual fallback.
+
+| Service / route | Provider type | Endpoint (without the operation path) | Example `provider_model` |
+| --- | --- | --- | --- |
+| TypeSafe | `systemone` | `https://api.typesafe.ai/v1` | `jev-latest` |
+| Liquid AI | `systemone` | `https://api.liquid.ai/decisions/v1` | `d1:free` |
+| OpenRouter System One | `openrouter` | `https://openrouter.ai/api/v1` | `typesafe/jev-1.13` |
+| OpenRouter Decisions | `decisions` | `https://openrouter.ai/api/alpha` | `typesafe/jev-1.13` |
+| NanoGPT System One | `systemone` | `https://nano-gpt.com/api/v1` | `jev-latest` |
+| NanoGPT Decisions | `decisions` | `https://nano-gpt.com/api/v1` | `typesafe/jev-latest` |
+
+Endpoints and model names are configured data, not inferred from hostnames. Register the model's
+`decide` capability, link it to the provider, and store its key under `core.keys[provider.name]`.
+`provider_model` is the provider's exact model ID; ai1 does not rewrite it. The `openrouter` adapter
+keeps its existing chat, image and System One operations; `systemone` and `decisions` serve only
+native decisions.
+
+Protocol references: [TypeSafe HTTP API](https://docs.typesafe.ai/api),
+[Liquid decision models](https://docs.liquid.ai/lfm/models/decision-models),
+[OpenRouter System One](https://openrouter.ai/docs/guides/community/typesafe-sdk),
+[OpenRouter Decisions](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request),
+[NanoGPT Jev](https://nano-gpt.com/models/text/typesafe/jev-latest).
+Perplexity's reported `/v1/decisions` route can use
+`decisions` with endpoint `https://api.perplexity.ai/v1` only if it implements the same protocol;
+its hosted HTTP contract has not been verified here. SDK/binding gateways (Vercel, Cloudflare,
+Netlify) and differently shaped LiteLLM routes need their own adapter integration.
+Tests mock HTTP responses; no provider has been called with live credentials for this change.
+
 ## Models, providers, capabilities
 
 - `ai1_model`: the model as a unit (`llama-3.3-70b`), its `context_length` (a longer request skips it), `enabled`.

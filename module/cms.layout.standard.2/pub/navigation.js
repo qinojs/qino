@@ -3,8 +3,8 @@ import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.
 
 function enhance(head) {
   const panel = head.querySelector('#head-nav');
-  const open = head.querySelector('.-open');
-  const close = panel?.querySelector('.-close');
+  const open = head.querySelector(':scope > .u2-flex > .-open');
+  const close = panel?.querySelector(':scope > .-close');
 
   if (!panel || !open || !close || !('showPopover' in panel)) return;
   const controller = new AbortController();
@@ -50,4 +50,3 @@ function enhance(head) {
     off: head => { cleanups.get(head)?.(); cleanups.delete(head); },
   }).observe('#container > #head');
 }
-

@@ -30,6 +30,9 @@ Home. `cms-link=parent(1)` follows the usual CMS tree; adapt it for a different 
 Without JavaScript or Popover support the navigation remains visible. On small
 viewports `pub/navigation.js` enhances the same list with a native popover. Replace
 the script to change its breakpoint or behavior; no second mobile navigation exists.
+The shipped enhancement targets the direct header-row menu button and direct panel
+close button. Embedded content buttons are independent. Replacing the header in the
+editor reinitializes the enhancement and removes listeners from the old header.
 
 ## Site files
 
@@ -71,4 +74,6 @@ these app-wide files.
 GET creates the selected file if missing and returns `{ content }`. PUT accepts
 `{ content }`, saves the whole file and returns rendered page HTML. CSS and JS
 changes also update the app's asset revision. An empty JS file disables the
-shipped navigation enhancement while keeping the link list visible.
+shipped navigation enhancement while keeping the link list visible. JavaScript
+changes take effect on the next page load; saving does not replace an already
+loaded module script.

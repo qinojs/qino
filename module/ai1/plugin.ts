@@ -1,5 +1,6 @@
 import { App, s } from "@qino/qino";
 
+import { systemone, decisions } from "./lib/decide.ts";
 import { jina } from "./lib/jina.ts";
 import { nvidia } from "./lib/nvidia.ts";
 import { openai, openrouter } from "./lib/openai.ts";
@@ -29,4 +30,4 @@ Object.assign(App.events, {
 export { ai1Capabilities } from "./lib/capabilities.ts";
 
 /** Provider types by `ai1_provider.type`. Other modules add theirs the same way. */
-export const ai1Adapters = { openai, openrouter, jina, nvidia, deepl, google };
+export const ai1Adapters = { openai, openrouter, systemone, decisions, jina, nvidia, deepl, google };

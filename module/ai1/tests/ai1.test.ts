@@ -353,6 +353,98 @@ Deno.test("ai1: without options Jev answers a noul: the probability that it hold
   });
 });
 
+Deno.test("ai1: decision protocols use configured endpoints, keys and provider model names", async () => {
+  for (const [type, endpoint, path] of [
+    ["systemone", "https://decision.test/custom/v1/", "/systemone"],
+    ["decisions", "https://decision.test/custom/alpha/", "/decisions"],
+  ]) {
+    await withFetch((url, init) => {
+      assertEquals(url, endpoint.slice(0, -1) + path);
+      assertEquals(init?.method, "POST");
+      assertEquals(new Headers(init?.headers).get("authorization"), "Bearer test-key");
+      assertEquals(new Headers(init?.headers).get("content-type"), "application/json");
+      assertEquals(JSON.parse(String(init?.body)), {
+        model: "provider-model", state: "Invoice", questions: {
+          decide: { type: "choice", instructions: "Classify the input.", criteria: { billing: "billing", support: "support" } },
+        },
+      });
+      return Response.json({ answers: { decide: { choice: "billing", probabilities: { billing: .8, support: .2 } } }, usage: { input_tokens: 12, output_tokens: 0 } });
+    }, async () => {
+      const testApp = await app({ model: ["decide"] });
+      Object.assign(testApp.settings.core.keys, { fake: "test-key" });
+      await testApp.db.exec`UPDATE ai1_provider SET type = ${type}, endpoint = ${endpoint}`;
+      await testApp.db.exec`UPDATE ai1_model_provider SET provider_model = ${"provider-model"}`;
+      const answer = await decide(testApp, { content: "Invoice", options: ["billing", "support"] });
+      assertEquals(answer.choice, "billing");
+      assertEquals(answer.probabilities, { billing: .8, support: .2 });
+      assertEquals(answer.confidence.toFixed(2), "0.28");
+      assertEquals([fired.at(-1)![1].input, fired.at(-1)![1].output], [12, 0]);
+      await testApp.db.close();
+    });
+  }
+});
+
+Deno.test("ai1: both decision protocols handle yes/no probabilities without a key", async () => {
+  for (const type of ["systemone", "decisions"]) {
+    let p = 0;
+    await withFetch((_url, init) => {
+      assertEquals(new Headers(init?.headers).has("authorization"), false);
+      assertEquals(JSON.parse(String(init?.body)).questions.decide.type, "noul");
+      return Response.json({ answers: { decide: { noul: p } } });
+    }, async () => {
+      const testApp = await app({ model: ["decide"] });
+      await testApp.db.exec`UPDATE ai1_provider SET type = ${type}, endpoint = ${"https://decision.test/v1"}`;
+      for (p of [0, .4, .5, 1]) {
+        const answer = await decide(testApp, { content: "Test" });
+        assertEquals(answer.choice, p >= .5 ? "yes" : "no");
+        assertEquals(answer.probabilities, { yes: p, no: 1 - p });
+      }
+      await testApp.db.close();
+    });
+  }
+});
+
+Deno.test("ai1: malformed native decisions fail instead of inventing certainty", async () => {
+  let answer: unknown;
+  await withFetch(() => Response.json({ answers: { decide: answer } }), async () => {
+    const testApp = await app({ model: ["decide"] });
+    await testApp.db.exec`UPDATE ai1_provider SET type = ${"systemone"}, endpoint = ${"https://decision.test/v1"}`;
+    for (answer of [{}, { noul: "0.8" }, { noul: -1 }, { noul: 1.1 }]) {
+      await assertRejects(() => decide(testApp, { content: "Test" }), AiError, "Invalid probability");
+    }
+    for (answer of [
+      { choice: "billing" },
+      { choice: "billing", probabilities: { billing: .8 } },
+      { choice: "billing", probabilities: { billing: .8, support: "0.2" } },
+      { choice: "billing", probabilities: { billing: .8, support: -.2 } },
+      { choice: "billing", probabilities: { billing: .8, other: .2 } },
+    ]) {
+      await assertRejects(() => decide(testApp, { content: "Test", options: ["billing", "support"] }), AiError, "Invalid probabilities");
+    }
+    answer = { choice: "toString", probabilities: { billing: 1, support: 0 } };
+    await assertRejects(() => decide(testApp, { content: "Test", options: ["billing", "support"] }), AiError, "Not an option");
+    await testApp.db.close();
+  });
+});
+
+Deno.test("ai1: failed decisions fall back and text-only adapters reject images before sending", async () => {
+  let count = 0;
+  await withFetch(() => {
+    count++;
+    return count === 1 ? new Response("busy", { status: 503 }) : Response.json({ answers: { decide: { noul: .9 } } });
+  }, async () => {
+    const testApp = await app({ model: ["decide", "vision"] });
+    await testApp.db.exec`UPDATE ai1_provider SET type = ${"systemone"}, endpoint = ${"https://first.test/v1"}`;
+    const id = await testApp.db.table("ai1_provider").insert({ name: "second", type: "decisions", endpoint: "https://second.test/v1" });
+    await testApp.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: id });
+    assertEquals((await decide(testApp, { content: "Test" })).choice, "yes");
+    assertEquals(count, 2);
+    await assertRejects(() => decide(testApp, { content: [{ type: "image", url: "data:," }] }), AiError, "accepts text only");
+    assertEquals(count, 2);
+    await testApp.db.close();
+  });
+});
+
 Deno.test("ai1: translate many texts at once, natively and by prompt", async () => {
   let body: URLSearchParams | undefined;
   await withFetch((_url, init) => (body = init?.body as URLSearchParams, Response.json({ translations: [{ text: "Title" }, { text: "Hello" }] })), async () => {

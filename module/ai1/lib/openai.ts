@@ -2,10 +2,11 @@
 import { errMsg } from "@qino/qino";
 
 import { AiError } from "./request.ts";
+import { systemone } from "./decide.ts";
 import { jsonSchema, parseStructured } from "./capabilities.ts";
 
 import type { Transcript } from "@qino/qino";
-import type { DecideInput, EmbedInput, Message, Part, StructuredInput, TextInput, TextOutput } from "../mod.ts";
+import type { EmbedInput, Message, Part, StructuredInput, TextInput, TextOutput } from "../mod.ts";
 import type { Adapter, Call } from "./request.ts";
 
 // OpenAI-compatible providers: OpenAI itself, groq, Gemini's compat endpoint, local servers.
@@ -163,20 +164,5 @@ export const openai: Adapter = {
 export const openrouter: Adapter = {
   ...openai,
   image: async (call, { prompt, n }: { prompt: string; n?: number }) => urls(call, prompt, await post(call, "/images", { model: call.model, prompt, n })),
-  // with options a choice, without a noul (does it hold?): its probability of yes
-  decide: async (call, { content, question, options }: DecideInput) => {
-    if (typeof content !== "string") throw new AiError("Jev decides on text only");
-    const decide = options
-      ? { type: "choice", instructions: question ?? "Classify the input.", criteria: options }
-      : { type: "noul", instructions: question ?? "Does it hold?", criteria: { true: "yes", false: "no" } };
-    const data = await post(call, "/systemone", { model: call.model, state: content, questions: { decide } });
-    call.usage(data.usage?.input_tokens, data.usage?.output_tokens);
-    const answer = data.answers?.decide ?? {};
-    if (!options) {
-      if (typeof answer.noul !== "number") throw new AiError("No probability in the answer");
-      return { choice: answer.noul >= .5 ? "yes" : "no", probabilities: { yes: answer.noul, no: 1 - answer.noul } };
-    }
-    if (!(answer.choice in options)) throw new AiError(`Not an option: ${answer.choice}`);
-    return { choice: answer.choice, probabilities: answer.probabilities };
-  },
+  decide: systemone.decide,
 };

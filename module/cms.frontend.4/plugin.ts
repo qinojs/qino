@@ -179,7 +179,7 @@ export const api: ApiTree = {
           const file = inRoot(await moduleRoot(ctx, Number(pid), scope), path);
           await fs.mkdir(dirname(file)).catch(() => {});
           await fs.write(file, "");
-          ctx.app.assetRev = unixTime();
+          ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1);
           return { ok: true };
         },
       },

@@ -150,3 +150,31 @@ Deno.test("standard.2: initial contents follow parser ownership, declaration ord
     await f.close();
   }
 });
+
+Deno.test("standard.2: starter titles are editable language snapshots; removed slots stay absent", async () => {
+  const f = await fixture();
+  try {
+    f.app.languages.setLangs(["en", "de"]);
+    await f.page.title("de", "Deutsch <em>Titel</em> & mehr");
+    await requestStorage.run(f.ctx, async () => {
+      const template = moduleTemplate(f.page.module!);
+      await template.create("/* Site */");
+      await fs.write(template.file, "<main><cms-cont name=main /></main>");
+      await f.render();
+      assertEquals((await (await f.cm.layoutPage(NAME)).conts()).length, 0);
+      const main = await f.page.cont("main");
+      const text = await (await main.conts())[0].cont("main");
+      assertEquals(await (await text.text("main", "de")).get(), "<h1>Deutsch Titel &amp; mehr</h1>");
+      await text.text("main", "en", "<h1>Editorial title</h1>");
+      await f.page.title("en", "Changed page title");
+      await f.render();
+      assertEquals(await (await text.text("main", "en")).get(), "<h1>Editorial title</h1>");
+      await fs.write(template.file, "<div></div>");
+      assertEquals(await f.render(), "<div></div>");
+      assertEquals((await main.conts()).length, 1);
+      assertEquals(await (await text.text("main", "en")).get(), "<h1>Editorial title</h1>");
+    });
+  } finally {
+    await f.close();
+  }
+});

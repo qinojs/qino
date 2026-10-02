@@ -8,6 +8,7 @@
     "README.md",
     "dbschema.json",
     "lib/capabilities.ts",
+    "lib/decide.ts",
     "lib/jina.ts",
     "lib/nvidia.ts",
     "lib/openai.ts",
