@@ -17,10 +17,14 @@ export async function list(app: App, agent: number, limit?: number): Promise<{ i
     ORDER BY ${sqlScore(app.db, "ai1_agent_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`).map((r) => ({ id: Number(r.id), content: String(r.content) }));
 }
 
-/** The strongest memories for the context, or nothing while the agent remembers nothing. */
+/** Told to the agent above its memories. */
+export const HINT = "Proactively remember workflows, preferences, and project rules, including casual mentions. Target: one memory per five user messages when useful. " +
+  "Keep entries concise; update rather than duplicate. Skip temporary details; never force the quota.";
+
+/** The strongest memories for the context, under the hint on how to keep them. */
 export async function index(app: App, agent: number): Promise<string> {
   const memories = await list(app, agent, IN_MIND);
-  return memories.length ? `Your memories:\n${memories.map((m) => `[${m.id}] ${m.content}`).join("\n")}` : "";
+  return `## Your memories\n${HINT}${memories.map((m) => `\n[${m.id}] ${m.content}`).join("")}`;
 }
 
 async function own(app: App, agent: number, id: number): Promise<void> {

@@ -14,7 +14,7 @@ export const api: ApiTree = {
     },
     ":channel": {
       paramSchema: s.string().describe("Channel name"),
-      send: {
+      messages: {
         post: {
           description: "Send a message to recipients resolved by the channel; returns the number of destinations reached",
           access: Access.SUPERUSER,

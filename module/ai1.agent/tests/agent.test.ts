@@ -6,7 +6,7 @@ import { collections, create, drop } from "@qino/qino/ai1.embed";
 
 import { hit } from "@qino/qino/score";
 
-import { index } from "../lib/memory.ts";
+import { HINT, index } from "../lib/memory.ts";
 import { keep } from "../lib/search.ts";
 import { Agent, Session } from "../mod.ts";
 
@@ -17,6 +17,9 @@ import type { Adapter } from "@qino/qino/ai1";
 // tools, "find:what" and "call:tool" to finding and calling more; "slow" takes a moment; "fail" fails. It embeds what mentions a logo apart from the rest.
 // What it is sent goes to `sent`.
 const sent: unknown[][] = [];
+// the standing hint and an empty memories header are left out of what the fake echoes
+const shown = (system: string) => system.replace(`\n${HINT}`, "").replace(/\n\n## Your memories(?!\n)/, "");
+
 const fake: Adapter = {
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
   text: async (_call, { messages }) => {
@@ -36,7 +39,7 @@ const fake: Adapter = {
     if (typed === "slow") await new Promise((r) => setTimeout(r, 30));
     const result = last.role === "tool" && JSON.parse(last.content);
     const said = last.role === "tool" ? `it is ${typeof result === "string" ? result : JSON.stringify(result)}` : last.content;
-    return { text: `${messages[0].content} #${asked.length} ${said}`, toolCalls: [], truncated: false };
+    return { text: `${shown(messages[0].content)} #${asked.length} ${said}`, toolCalls: [], truncated: false };
   },
 };
 
@@ -79,7 +82,7 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
   assertEquals((await session.ask("hi")).text, "lead #1 hi");
   assertEquals((await session.ask("time?")).text, "lead #2 it is noon");
   assertEquals(await kept(app, session.id), [
-    ["system", "lead", ""], // what the model is given, once while it does not change
+    ["system", `lead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while it does not change
     ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
     ["user", "time?", ""], ["assistant", "get_toolset_clock", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
@@ -104,7 +107,7 @@ Deno.test("ai1.agent: memories outlast the session and are shared by all who tal
   const agent = await Agent.create(app, { system: "lead" });
   assertEquals((await (await agent.start(7)).ask("remember:blue")).text, 'lead #1 it is {"id":1}');
   const bob = await agent.start(8);
-  assertEquals((await bob.ask("hi")).text, "lead\n\nYour memories:\n[1] blue #1 hi"); // in the context
+  assertEquals((await bob.ask("hi")).text, "lead\n\n## Your memories\n[1] blue #1 hi"); // in the context
   await bob.ask("replace:1:red");
   assertStringIncludes((await (await agent.start(8)).ask("hi")).text, "[1] red #"); // from the next session on
   await bob.ask("forget:1");
@@ -141,10 +144,10 @@ Deno.test("ai1.agent: what the user says strengthens the memories close to it, i
     await hit(app.db, "ai1_agent_memory", id, strength);
     await keep(app, "ai1_agent_memory", { agent_id: agent.id, memory_id: id }, content);
   }
-  assertEquals(await index(app, agent.id), "Your memories:\n[2] apples are red\n[1] the logo is blue"); // the stronger first
-  assertEquals((await (await agent.start(7)).ask("how round is the logo?")).text, "lead\n\nYour memories:\n[2] apples are red\n[1] the logo is blue #1 how round is the logo?"); // no waiting
+  assertEquals(await index(app, agent.id), `## Your memories\n${HINT}\n[2] apples are red\n[1] the logo is blue`); // the stronger first
+  assertEquals((await (await agent.start(7)).ask("how round is the logo?")).text, "lead\n\n## Your memories\n[2] apples are red\n[1] the logo is blue #1 how round is the logo?"); // no waiting
   for (let i = 0; i < 100 && (await index(app, agent.id)).endsWith("logo is blue"); i++) await new Promise((r) => setTimeout(r, 10));
-  assertEquals(await index(app, agent.id), "Your memories:\n[1] the logo is blue\n[2] apples are red");
+  assertEquals(await index(app, agent.id), `## Your memories\n${HINT}\n[1] the logo is blue\n[2] apples are red`);
 }));
 
 Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user", () => withApp(async (app) => {
@@ -194,10 +197,10 @@ Deno.test("ai1.agent: what the model is given is kept as the session starts: rol
   for (const [i, call] of calls.entries()) if (i) assertEquals(call.slice(0, calls[i - 1].length - 1), calls[i - 1].slice(0, -1)); // only added to
   const given = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
-  assertEquals(given.map((m) => m.content), ["lead", "the logo is round"]); // given once, and the note
+  assertEquals(given.map((m) => m.content), [`lead\n\n## Your memories\n${HINT}`, "the logo is round"]); // given once, and the note
   assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["post_memories", "delete_memories", "post_search", "get_toolset_clock"]);
   assertEquals(given[0].prefer, { cost: 1 });
-  assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\nYour memories:\n[1] blue #1 hi"); // the next session
+  assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
 }));
 
 Deno.test("ai1.agent: a failure is kept, but not sent again", () => withApp(async (app) => {
