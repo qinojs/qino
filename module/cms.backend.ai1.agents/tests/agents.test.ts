@@ -88,7 +88,7 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     assert(!kept.includes("[object Promise]"));
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
-    for (const part of ["align-self:flex-end", "→ <span", "post_search</span>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
+    for (const part of ["align-self:flex-end", "color:white\">post_search</small>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
       assertStringIncludes(talk, part);
     }
     // the dialog of the calls: each with its result

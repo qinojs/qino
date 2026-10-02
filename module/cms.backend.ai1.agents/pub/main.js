@@ -105,17 +105,18 @@ cms.initNode("backend.ai1.agents", (el) => {
       el.setAttribute("language", "json");
       return el;
     };
-    const part = (title, el, ...more) => dom("div", {}, dom("small", { textContent: title }), el, ...more);
-    const items = new Map(), list = dom("div", { style: "overflow:auto;max-height:55vh" }), detail = dom("div", { style: "display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;align-content:start" });
+    const part = (title, el, ...more) => dom("div", { style: "flex:1 1 30rem;min-width:0" }, dom("small", { textContent: title }), el, ...more);
+    const items = new Map(), list = dom("div", { style: "flex:0 0 16rem;overflow:auto;max-height:55vh" }), detail = dom("div", { className: "u2-flex", style: "flex:1 1 30rem;min-width:0;align-content:start" });
     let step;
     calls.forEach((call, i) => {
       if (call.step !== step) list.append(dom("small", { textContent: `${step = call.step} · ${new Date(call.time * 1000).toLocaleTimeString()}`, style: "display:block" }));
       const button = dom("button", { type: "button", className: "u2-unstyle", style: "display:block;width:100%;text-align:left" },
-        dom("span", { textContent: `${i + 1} ${call.name}`, style: `color:${call.failed ? "var(--red)" : call.color}` }),
+        dom("div", { textContent: `${i + 1} ${call.name}${call.failed ? " !" : ""}`, className: "u2-badge", style: `background-color:${call.color};color:white` }),
         dom("small", { textContent: ` ${Object.values(call.args ?? {})[0] ?? ""}`.slice(0, 40) }));
       button.onclick = () => {
-        for (const other of items.values()) other.removeAttribute("aria-current");
+        for (const other of items.values()) other.removeAttribute("aria-current"), other.style.background = "";
         button.setAttribute("aria-current", "true");
+        button.style.background = "color-mix(in srgb, currentColor 15%, transparent)";
         button.scrollIntoView({ block: "nearest" });
         const input = code(call.args), output = code(call.result ?? "", true);
         const run = dom("button", { type: "button", textContent: label[3] });
@@ -125,12 +126,12 @@ cms.initNode("backend.ai1.agents", (el) => {
           catch (err) { output.value = pretty({ error: err.message, ...err.data !== undefined && { data: err.data } }); }
           finally { run.disabled = false; }
         };
-        detail.replaceChildren(dom("b", { textContent: call.name, style: `grid-column:1/-1;color:${call.color}` }), part(label[0], input, run), part(label[1], output));
+        detail.replaceChildren(part(label[0], input, run), part(label[1], output));
       };
       items.set(call.id, button);
       list.append(button);
     });
-    const body = dom("div", { style: "display:grid;grid-template-columns:16rem 1fr;gap:1rem;width:min(90vw,80rem)" }, list, detail);
+    const body = dom("div", { className: "u2-flex", style: "width:min(90vw,80rem)" }, list, detail);
     await modal({
       body: "<div data-calls></div>",
       buttons: [{ title: label[2] }],
@@ -148,7 +149,7 @@ cms.initNode("backend.ai1.agents", (el) => {
   };
   el.addEventListener("click", (e) => {
     const button = e.target.closest("button[data-call]");
-    if (button) showCalls(button.dataset.call);
+    if (button) showCalls(button.dataset.call).catch((err) => alert(err.message));
   });
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);

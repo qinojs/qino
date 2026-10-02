@@ -379,7 +379,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
     WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
   return html`<div class="u2-flex -Col" style="flex-wrap:nowrap">${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
-    const head = html`<small>${time(row.time)} · ${m.role}${row.model ? html` · ${by(row)}` : ""}</small>`;
+    const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}</small>`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note
     if (m.role === "system") return html`<div data-message=${row.id}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
       ${folded(text, text)}
@@ -390,7 +390,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
         : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}
-      ${(m.toolCalls ?? []).map((c: any) => html`<button type=button class=u2-unstyle data-call=${c.id}><small>${colored(c.name)}</small></button> `)}
+      ${m.toolCalls?.length ? html`<div>${m.toolCalls.map((c: any) => html`<button type=button class=u2-unstyle data-call=${c.id}><small class=u2-badge style="background-color:${uniqueColor(c.name)};color:white">${c.name}</small></button> `)}</div>` : ""}
     </div>`;
   })}</div>`;
 }
