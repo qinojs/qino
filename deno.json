@@ -1,11 +1,12 @@
 {
   "name": "@qino/qino",
-  "// minimumDependencyAge": "stays here: in the published repo this file is the root and Deno reads it. Inside the monorepo it is a workspace member, where the root wins and Deno warns about this line — that warning is the cheaper price.",
+  "// minimumDependencyAge, unstable": "stay here: in the published repo this file is the root and Deno reads it. Inside the monorepo it is a workspace member, where the root wins and Deno warns about these lines — that warning is the cheaper price.",
   "minimumDependencyAge": {
     "age": "P1D",
     "exclude": ["jsr:@nuxodin/item"]
   },
-  "version": "0.7.2",
+  "unstable": ["worker-options"],
+  "version": "0.7.3",
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai1": "./module/ai1/mod.ts",
