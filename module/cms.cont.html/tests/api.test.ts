@@ -21,7 +21,7 @@ const fakeNode = (dir: string, module = name, access = 2) => ({
 
 const fakeCtx = (dir: string, module = name, access = 2) => {
   const node = fakeNode(dir, module, access);
-  const app = {};
+  const app = { assetRev: 0 };
   fakeCms(app, { node: () => node });
   return { app, user: {} };
 };
@@ -57,6 +57,9 @@ Deno.test("cms.cont.html api: writes and reads code files", async () => {
       "<div>rendered</div>",
     );
     assertEquals(await fs.isFile(css), true);
+    const first = ctx.app.assetRev;
+    await requestStorage.run(ctx as any, () => invoke(api, "PUT", "/node/7/codefiles/css", { content: "body {}\n" }));
+    assertEquals(ctx.app.assetRev > first, true);
     assertEquals(
       await requestStorage.run(ctx as any, () => invoke(api, "GET", "/node/7/codefiles/css")),
       { content: "body {}\n" },

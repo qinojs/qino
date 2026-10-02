@@ -28,7 +28,7 @@ async function saveFile(ctx: Ctx, file: string, content: string, exp: unknown, s
   await fs.mkdir(backupDir).catch(() => {});
   await fs.copy(file, backupDir + backupName).catch(() => {});
   await fs.write(file, content);
-  ctx.app.assetRev = unixTime(); // the file may be a served one, and its url has to change with it
+  ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1); // the file may be a served one, and its url has to change with it
   return 1;
 }
 

@@ -1,0 +1,59 @@
+/* u2 supplies tokens and content styling. */
+#container {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  > .-skip {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    translate: 0 -150%;
+    z-index: 1;
+    padding: var(--gap);
+    background: var(--color-bg);
+    color: var(--color-text);
+    &:focus { translate: 0; }
+  }
+
+  #head {
+    padding-block: var(--gap);
+    border-block-end: var(--line-width) solid var(--color-area);
+    > .u2-flex { align-items: center; }
+    > .u2-flex > a { min-inline-size: 0; overflow-wrap: anywhere; }
+    > .u2-flex > a img { vertical-align: middle; margin-inline-end: var(--gap); }
+    #head-nav {
+      nav > ul { display: flex; flex-wrap: wrap; gap: var(--gap); }
+      nav a { display: inline-block; padding-block: .5em; overflow-wrap: anywhere; }
+      nav :is(.cmsInside, .cmsActive) > a { text-decoration: underline; }
+      nav .cmsActive > a { font-weight: bold; }
+    }
+
+    &.-compact #head-nav {
+      inset-block: auto 0;
+      inset-inline: 0;
+      inline-size: auto;
+      max-inline-size: none;
+      max-block-size: 80dvh;
+      overflow: auto;
+      overscroll-behavior: contain;
+      margin: 0;
+      border: var(--line-width) solid var(--color-line);
+      padding: var(--gap);
+      padding-block-end: max(var(--gap), env(safe-area-inset-bottom));
+      background: var(--color-bg);
+      color: var(--color-text);
+      > .-close:not([hidden]) { display: block; margin-inline-start: auto; }
+      nav > ul { flex-direction: column; }
+      nav a { display: block; }
+    }
+  }
+
+  #content { flex: 1; min-inline-size: 0; }
+  #foot { padding-block: var(--gap); border-block-start: var(--line-width) solid var(--color-area); }
+}
+
+@media print {
+  #container > .-skip { display: none; }
+  #container { min-block-size: 0; }
+}
