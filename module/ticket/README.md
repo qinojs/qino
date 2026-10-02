@@ -6,20 +6,20 @@ link or an invitation.
 ```ts
 // the module says what its ticket entitles you to
 export const tickets: Record<string, TicketKind> = {
-  "auth.resetPw": {
+  "auth.pwReset": {
     ttl: 3600,
     redeem: (app, t, input: { pw: string }) => setPassword(app, t.data.usrId, input.pw),
   },
 };
 
 // issue one and hand out the handle — the only moment it exists in the clear
-const handle = await issue(app, "auth.resetPw", { usrId: usr.id });
+const handle = await issue(app, "auth.pwReset", { usrId: usr.id });
 
 // the page behind the link looks, without spending anything
 if (!await check(app, handle)) return t`This link is no longer valid.`;
 
 // the form redeems it
-await redeem(app, handle, "auth.resetPw", { pw });
+await redeem(app, handle, "auth.pwReset", { pw });
 ```
 
 Three functions: `issue`, `check`, `redeem`. The handle finds its own row. The kind argument of
@@ -49,7 +49,7 @@ payload from `issue`; `expires` is only null if the kind allows it.
 
 Used-up tickets are not deleted. `uses` is how often it may be redeemed, `used` how often it was;
 `used >= uses` or a past `expires` means invalid. The row stays, so the backend can show what was
-issued and what happened. A daily cron removes them a year after issue, but only if invalid: an
+issued and what happened. A weekly cron removes them a year after issue, but only if invalid: an
 unused link without expiry is kept.
 
 Consumers: [cms.cont.pwReset](../cms.cont.pwReset/) issues them,
