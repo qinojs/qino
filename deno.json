@@ -135,6 +135,8 @@
     "@qino/qino/messaging.telegram": "./module/messaging.telegram/mod.ts",
     "@qino/qino/messaging.webpush": "./module/messaging.webpush/mod.ts",
     "@qino/qino/oauth_server": "./module/oauth_server/mod.ts",
+    "@qino/qino/sandbox": "./module/sandbox/mod.ts",
+    "@qino/qino/sandbox.flow": "./module/sandbox.flow/mod.ts",
     "@qino/qino/score": "./module/score/mod.ts",
     "@qino/qino/security": "./module/security/mod.ts",
     "@qino/qino/shorturl": "./module/shorturl/mod.ts",
