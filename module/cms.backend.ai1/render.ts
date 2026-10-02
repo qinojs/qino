@@ -298,11 +298,11 @@ async function tryCard(app: App): Promise<HtmlString> {
   ]);
   // quality stands for intelligence and for the scores named like a capability (image, speak)
   const criteria = ["quality", "cost", "speed", ...metrics.map(String).filter((m) => m !== INTELLIGENCE && !caps.includes(m))];
-  return html.async`<div class="u2-card -try">
+  return html.async`<div class="u2-card -try" style="flex:0 1 auto">
     <div class=-head>${t`Try`}</div>
     <form class="u2-flex -Col">
       <select name=capability>${options(ACTIONS.map((a) => ({ value: a, label: a })), "text")}</select>
-      <textarea name=prompt rows=3 data-for="text structured translate decide embed image speak" placeholder="${t`Input — for embed one text per line`}"></textarea>
+      <textarea name=prompt style="width:100%" rows=3 data-for="text structured translate decide embed image speak" placeholder="${t`Input — for embed one text per line`}"></textarea>
       <textarea name=schema rows=3 data-for=structured hidden title="JSON Schema">${SCHEMA}</textarea>
       <div class=u2-flex data-for=translate hidden>
         <input name=to value=en placeholder="${t`to, e.g. en`}">
