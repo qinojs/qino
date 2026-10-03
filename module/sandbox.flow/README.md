@@ -11,7 +11,7 @@ listen(app, {
   description: "Deutsche Texte von mir übersetzen, wenn sie fertig aussehen",
   on: { host: "db", event: "table:update-after" },
   owner: 9,
-  tools: ["post_ai1Api_decide", "get_core_languages", "post_cmsText_text_translate"],
+  tools: ["ai1Api_decide_post", "core_languages_get", "cmsText_text_translate_post"],
   test: false, // tried out, now for real
   steps: [
     {
@@ -26,16 +26,16 @@ listen(app, {
       description: "Nur wenn der Text fertig aussieht",
       fn: async (e, { tools }) => {
         const options = ["done", "draft"];
-        const { choice } = await tools.post_ai1Api_decide({ content: e.data.text, question: "Fertig?", options });
+        const { choice } = await tools.ai1Api_decide_post({ content: e.data.text, question: "Fertig?", options });
         return choice === "done";
       },
     },
     {
       description: "In alle anderen Sprachen übersetzen",
       fn: async (e, { tools }) => {
-        const { all } = await tools.get_core_languages();
+        const { all } = await tools.core_languages_get();
         for (const lang of all.filter((l) => l !== "de")) {
-          await tools.post_cmsText_text_translate({ text: e.data.text_id, targetLang: lang, sourceLang: "de" });
+          await tools.cmsText_text_translate_post({ text: e.data.text_id, targetLang: lang, sourceLang: "de" });
         }
         return true;
       },
@@ -56,7 +56,7 @@ listen(app, {
   their run, so traces stay apart. A timeout in one run ends the worker and the flow's other runs.
 - **`debounce`:** a step that waits `ms`; if a later run of the flow reaches it with the same key
   (`by`, a path into the value) meanwhile, this run ends as `superseded`.
-- **`test`** is on unless `false`: only `get_*` tools take effect, the others are recorded as `skipped`
+- **`test`** is on unless `false`: only `*_get` tools take effect, the others are recorded as `skipped`
   and return `undefined`. So a step returns a value of its own, not a writing tool's result — else it
   stops in a test that would go on for real.
 - **The trace** (`run()` returns it, `listen()` hands it to `report`): per step its result, error and
@@ -96,17 +96,17 @@ The user says in a sentence what should happen; you build the flow, test it, sho
 switch it on only when the user says so.
 
 How to work:
-1. Find the event: get_ai1Discover_events({ search: "a text was changed" }), then its data:
-   get_ai1Discover_event({ event: "db:table:update-after" }). Events are named host:event.
+1. Find the event: ai1Discover_events_get({ search: "a text was changed" }), then its data:
+   ai1Discover_event_get({ event: "db:table:update-after" }). Events are named host:event.
    Table events carry { table, id, data }: id is the primary key as text (a composite one joined
    by ":", text_lang "12:de"), data the columns written. Time: app:cron:hour and app:cron:day carry
    { time, date, weekday, hour }.
-2. Find what the steps need: get_ai1Discover_tables / get_ai1Discover_table for columns,
-   get_ai1Discover_tools / get_ai1Discover_tool for a tool's parameters.
-3. Make it: post_sandboxFlow_flows (inactive and in test mode until you change that).
-4. Test it on an example event built from the event's data: post_sandboxFlow_flow_test. Show the
-   user the trace; fix with patch_sandboxFlow_flow.
-5. Only when the user says so: patch_sandboxFlow_flow({ flow, active: true, test: false }).
+2. Find what the steps need: ai1Discover_tables_get / ai1Discover_table_get for columns,
+   ai1Discover_tools_get / ai1Discover_tool_get for a tool's parameters.
+3. Make it: sandboxFlow_flows_post (inactive and in test mode until you change that).
+4. Test it on an example event built from the event's data: sandboxFlow_flow_test_post. Show the
+   user the trace; fix with sandboxFlow_flow_patch.
+5. Only when the user says so: sandboxFlow_flow_patch({ flow, active: true, test: false }).
 6. If an event or a tool is missing, say so. Never work around it.
 
 The steps:
@@ -120,20 +120,20 @@ The steps:
 - { description, debounce: { ms, by } } waits; of runs with the same key (by: a path into value)
   only the latest goes on.
 - Code sees nothing but its arguments. Keep steps small and safe to run twice.
-- In test mode only get_* tools run; the others are recorded and return undefined. So a step
+- In test mode only *_get tools run; the others are recorded and return undefined. So a step
   returns a value of its own, never a writing tool's result.
-- Judging text: post_ai1Api_decide({ content, question }) answers a yes/no question
+- Judging text: ai1Api_decide_post({ content, question }) answers a yes/no question
   (.probabilities.yes); with options ["a", "b"] it picks one (.choice). In test mode it is skipped
   too: test such a step with the user, then switch test mode off.
 - Descriptions short, in the user's language.
 
 Example 1. The user: "Wenn ein deutscher Text geändert wird, übersetze ihn in alle Sprachen."
 
-post_sandboxFlow_flows({
+sandboxFlow_flows_post({
   "description": "Deutsche Texte übersetzen",
   "host": "db",
   "event": "table:update-after",
-  "tools": ["get_core_languages", "post_cmsText_text_translate"],
+  "tools": ["core_languages_get", "cmsText_text_translate_post"],
   "steps": [
     {
       "description": "Nur deutsche Texte",
@@ -141,30 +141,30 @@ post_sandboxFlow_flows({
     },
     {
       "description": "In alle anderen Sprachen übersetzen",
-      "fn": "async (e, { tools }) => { const { all } = await tools.get_core_languages(); for (const lang of all.filter((l) => l !== 'de')) await tools.post_cmsText_text_translate({ text: e.data.text_id, targetLang: lang, sourceLang: 'de' }); return true; }"
+      "fn": "async (e, { tools }) => { const { all } = await tools.core_languages_get(); for (const lang of all.filter((l) => l !== 'de')) await tools.cmsText_text_translate_post({ text: e.data.text_id, targetLang: lang, sourceLang: 'de' }); return true; }"
     }
   ]
 })
 → { "id": 4 }
 
-post_sandboxFlow_flow_test({
+sandboxFlow_flow_test_post({
   "flow": 4,
   "event": { "table": "text_lang", "id": "12:de", "data": { "text_id": 12, "lang": "de", "text": "Willkommen auf unserer Seite." } }
 })
-→ the trace: per step its result and tool calls; post_* calls are "skipped" in the test.
+→ the trace: per step its result and tool calls; *_post calls are "skipped" in the test.
 
 Example 2. The user: "Jeden Montag um 7 Uhr die Seite 5 in alle Sprachen übersetzen, was noch fehlt."
 
-post_sandboxFlow_flows({
+sandboxFlow_flows_post({
   "description": "Montags Seite 5 übersetzen",
   "host": "app",
   "event": "cron:hour",
-  "tools": ["post_cmsText_page_translateAllLangs"],
+  "tools": ["cmsText_page_translateAllLangs_post"],
   "steps": [
     { "description": "Montags um 7", "fn": "(e) => e.weekday === 'monday' && e.hour === 7" },
     {
       "description": "Fehlende Übersetzungen ergänzen",
-      "fn": "async (e, { tools }) => { await tools.post_cmsText_page_translateAllLangs({ page: 5, ifNeeded: true }); return true; }"
+      "fn": "async (e, { tools }) => { await tools.cmsText_page_translateAllLangs_post({ page: 5, ifNeeded: true }); return true; }"
     }
   ]
 })
@@ -172,8 +172,8 @@ post_sandboxFlow_flows({
 
 ## Not yet
 
-- **Test mode goes by name, not by effect:** only `get_*` tools run, so a `POST` that changes nothing
-  (`post_ai1Api_decide`) is skipped too and returns `undefined`. Plan: a route says it only reads
+- **Test mode goes by name, not by effect:** only `*_get` tools run, so a `POST` that changes nothing
+  (`ai1Api_decide_post`) is skipped too and returns `undefined`. Plan: a route says it only reads
   (`Verb.readOnly`, `GET` by default), `toTools` passes it on as MCP's `annotations.readOnlyHint`, and a
   test run skips what is not read-only. Core vocabulary, needs an OK.
 - **Events are not filtered by rights:** a flow sees every event of its host, whatever its owner may

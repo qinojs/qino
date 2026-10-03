@@ -27,7 +27,7 @@ export { Access } from "./lib/api/access.ts";
 export { ApiError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/api/errors.ts";
 export { invoke } from "./lib/api/invoke.ts";
 export { isTrustedOrigin } from "./lib/api/fetch.ts";
-export { walk, camelName, checkCollisions } from "./lib/api/route.ts";
+export { walk, toolName, checkCollisions } from "./lib/api/route.ts";
 export type { Route } from "./lib/api/route.ts";
 export { toTools } from "./lib/api/toTools.ts";
 export type { Tool } from "./lib/api/toTools.ts";

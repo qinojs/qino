@@ -8,10 +8,13 @@ cms.initNode("backend.system.api", (el) => {
   el.querySelector("#api-search")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     el.querySelectorAll(".-route").forEach((r) => {
-      const text = r.querySelector(".-path").textContent.toLowerCase()
-        + " " + r.querySelector(".-desc").textContent.toLowerCase()
-        + " " + r.querySelector(".-method").textContent.toLowerCase();
-      r.hidden = q && !text.includes(q);
+      const heading = r.previousElementSibling;
+      const text = heading.querySelector(".-path").textContent.toLowerCase()
+        + " " + heading.querySelector(".-desc").textContent.toLowerCase()
+        + " " + heading.querySelector(".-method").textContent.toLowerCase();
+      heading.hidden = r.hidden = !!q && !text.includes(q);
+      const item = heading.assignedSlot?.closest('[part="item"]');
+      if (item) item.hidden = r.hidden;
     });
   });
 

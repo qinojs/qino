@@ -2,6 +2,7 @@ import { Access, NotFoundError, s } from "@qino/qino";
 
 import * as memory from "./lib/memory.ts";
 import * as search from "./lib/search.ts";
+import { checkTools } from "./lib/turn.ts";
 import { Agent, Session } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
@@ -12,8 +13,12 @@ import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 /** How a model is chosen, as ai1 weighs it: `{ quality: 2, cost: 1, speed: 1 }`; empty: the default. */
 const prefer = s.optional(s.record(s.number()));
 
-/** What makes an agent: its role, the api paths it may use as tools, prefer. */
-const fields = { system: s.optional(s.string()), tools: s.optional(s.array(s.string())), prefer };
+/** What makes an agent: its role, the tools it may use, prefer. */
+const fields = {
+  system: s.optional(s.string()),
+  tools: s.optional(s.array(s.string()).describe("Tool names, or prefix_* for all below a path (cms_*, cms_node_*)")),
+  prefer,
+};
 
 const verb = <T extends Params>(description: string, execute: (params: T, ctx: Ctx) => unknown, input?: Record<string, StandardSchema>) =>
   ({ description, access: Access.USER, ...input && { input: s.object(input) }, execute: execute as (params: Params, ctx: Ctx) => unknown });
@@ -27,7 +32,7 @@ export const api: ApiTree = {
       execute: ({ search: query }: { search?: string }, ctx: Ctx) => search.agents(ctx.app, query),
     },
     post: verb<{ system?: string; tools?: string[]; prefer?: Record<string, number> }>(
-      "Create an agent: its role, the paths of the api it may use as tools, and how it chooses its model (ai1 prefer)",
+      "Create an agent: its role, the tools it may use, and how it chooses its model (ai1 prefer)",
       async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }),
       fields,
     ),
@@ -46,6 +51,7 @@ export const api: ApiTree = {
       patch: verb<{ agent: number; system?: string; tools?: string[]; prefer?: Record<string, number> }>(
         "Change the agent's role, tools or prefer",
         async ({ agent, system, tools, prefer }, ctx) => {
+          if (tools) checkTools(ctx.app, tools);
           await ctx.app.db.table("ai1_agent").update(agent, {
             ...system !== undefined && { system },
             ...tools && { tools: JSON.stringify(tools) },

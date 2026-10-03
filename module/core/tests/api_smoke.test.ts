@@ -58,7 +58,7 @@ Deno.test("api smoke: invoke resolves, validates defaults and surfaces typed err
 
 Deno.test("api smoke: toTools exposes executable tool contracts", () => {
   const tools = toTools(api);
-  assertEquals(tools.map((tool) => tool.name), ["get_page", "post_page_copy"]);
+  assertEquals(tools.map((tool) => tool.name), ["page_get", "page_copy_post"]);
   assertEquals(tools[1].parameters, {
     type: "object",
     properties: {

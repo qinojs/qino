@@ -12,7 +12,7 @@ const plain = { t } as unknown as App;
 
 const row = {
   id: 3, description: 'greet <b>"you"</b>', host: "db", event: "table:update-after", owner: "ann@example.test",
-  tools: JSON.stringify(["post_test_greet"]), active: 1, test: 0,
+  tools: JSON.stringify(["test_greet_post"]), active: 1, test: 0,
   steps: JSON.stringify([
     { description: "wait", debounce: { ms: 500, by: "id" } },
     { description: "greet", fn: "(e) => '<script>'" },
@@ -37,7 +37,7 @@ Deno.test("cms.backend.superuser.flow: list and steps show the flow, escaped", a
   const detail = String(await renderDetail(plain, row, { events: ["db table:update-after", "app route"] }));
   assertEquals(detail.includes('<input type=number name=ms min=0 value="500">'), true);
   assertEquals(detail.includes("<textarea name=fn rows=3>(e) =&gt; &#039;&lt;script&gt;&#039;</textarea>"), true);
-  const tools = '<textarea name=tools rows=3 placeholder="one tool per line">post_test_greet</textarea>';
+  const tools = '<textarea name=tools rows=3 placeholder="one tool per line">test_greet_post</textarea>';
   assertEquals(detail.includes(tools), true);
   assertEquals(detail.includes("<option selected>db table:update-after</option><option>app route</option>"), true);
   assertEquals(String(await renderDetail(plain, undefined)).includes("Pick a flow."), true);
@@ -91,11 +91,11 @@ Deno.test("cms.backend.superuser.flow: switches, tries, saves and deletes a flow
     assertEquals([tried.ok, JSON.parse(tried.message).steps[0].value], [true, 42]);
 
     const steps = [{ description: "triple", fn: "(n) => n * 3" }, { description: "wait", debounce: { ms: 5 } }];
-    const save = { description: "tripled", on: "app route", tools: " get_core_languages \n\n", steps };
+    const save = { description: "tripled", on: "app route", tools: " core_languages_get \n\n", steps };
     assertEquals((await call({ flow: id, save })).ok, true);
     const saved = await app.db.row`SELECT * FROM flow WHERE id = ${id}`;
     assertEquals([saved!.description, saved!.host, saved!.event], ["tripled", "app", "route"]);
-    assertEquals([JSON.parse(String(saved!.tools)), JSON.parse(String(saved!.steps))], [["get_core_languages"], steps]);
+    assertEquals([JSON.parse(String(saved!.tools)), JSON.parse(String(saved!.steps))], [["core_languages_get"], steps]);
 
     assertEquals((await call({ flow: id, delete: true })).ok, true);
     assertEquals((await call({ flow: id, delete: true })).ok, false); // gone

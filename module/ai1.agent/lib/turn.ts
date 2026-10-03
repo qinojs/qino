@@ -19,11 +19,17 @@ function inTurn<T>(app: App, session: number, fn: () => Promise<T>): Promise<T> 
   return turn;
 }
 
-/** The api below each path (`cms`, `cms/node`) as tools. */
-const toolsOf = (app: App, paths: string[]): Tool[] => paths.flatMap((path) => {
-  const segments = path.split("/"), node = segments.reduce<unknown>((at, seg) => (at as ApiTree)?.[seg], app.apiTree);
-  return node ? toTools(segments.reduceRight((below, seg) => ({ [seg]: below }), node) as ApiTree) : [];
-});
+/** Does `entry` name the tool: by its name, or `prefix_*` for all below a path (`cms_*`, `cms_node_*`)? */
+const names = (entry: string, name: string) => entry.endsWith("_*") ? name.startsWith(entry.slice(0, -1)) : name === entry;
+
+/** The api's tools the entries name. */
+const toolsOf = (app: App, entries: string[]): Tool[] => toTools(app.apiTree).filter((tool) => entries.some((entry) => names(entry, tool.name)));
+
+/** Refuses entries that name no tool, as a misspelt one would leave the agent without it. */
+export function checkTools(app: App, entries: string[]): void {
+  const all = toTools(app.apiTree), unknown = entries.filter((entry) => !all.some((tool) => names(entry, tool.name)));
+  if (unknown.length) throw new ApiError(400, `No such tools: ${unknown.join(", ")} (a tool's name, or prefix_* for all below a path)`);
+}
 
 // With many tools, the agent is given those closest to its role, and finds and calls the others: the
 // tools it is given stay the same all session long (prompt cache).

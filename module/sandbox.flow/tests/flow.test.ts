@@ -6,7 +6,7 @@ import { listen, run } from "../mod.ts";
 
 import type { Flow } from "../mod.ts";
 
-/** A real app with user 7 and three routes as tools: get_test_who, post_test_echo, post_test_rename. */
+/** A real app with user 7 and three routes as tools: test_who_get, test_echo_post, test_rename_post. */
 async function withApp(fn: (app: App) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   await app.init();
@@ -35,12 +35,12 @@ Deno.test("sandbox.flow: steps pass their result on, tools run as the owner, the
   withApp(async (app) => {
     const trace = await run(app, flow([
       { description: "double", fn: (n: number) => n * 2 },
-      { description: "ask", fn: async (n: number, { tools, owner }: any) => [n, await tools.get_test_who(), owner] },
-    ], { tools: ["get_test_who"] }), 21, { user: 3 });
+      { description: "ask", fn: async (n: number, { tools, owner }: any) => [n, await tools.test_who_get(), owner] },
+    ], { tools: ["test_who_get"] }), 21, { user: 3 });
     assertEquals(trace.end, "done");
     assertEquals(trace.context, { user: 3 });
     assertEquals(trace.steps.map((s) => s.value), [42, [42, 7, 7]]);
-    assertEquals(trace.steps[1].calls, [{ tool: "get_test_who", args: undefined, result: 7 }]);
+    assertEquals(trace.steps[1].calls, [{ tool: "test_who_get", args: undefined, result: 7 }]);
   }));
 
 Deno.test("sandbox.flow: a falsy result stops, an error ends the run", () =>
@@ -65,16 +65,16 @@ Deno.test("sandbox.flow: only allowed tools exist; a test run records what would
       description: "try",
       fn: async (_: unknown, { tools }: any) => [
         Object.keys(tools),
-        await tools.post_test_echo({ a: 1 }),
-        await tools.get_test_who(),
+        await tools.test_echo_post({ a: 1 }),
+        await tools.test_who_get(),
         // @ts-ignore: names of the wrapper around the step must not reach its code
         typeof tool + typeof input,
       ],
-    }], { tools: ["post_test_echo", "get_test_who"] }), 1); // a flow tests unless told otherwise
-    assertEquals(trace.steps[0].value, [["post_test_echo", "get_test_who"], undefined, 7, "undefinedundefined"]);
+    }], { tools: ["test_echo_post", "test_who_get"] }), 1); // a flow tests unless told otherwise
+    assertEquals(trace.steps[0].value, [["test_echo_post", "test_who_get"], undefined, 7, "undefinedundefined"]);
     assertEquals(trace.steps[0].calls, [
-      { tool: "post_test_echo", args: { a: 1 }, skipped: true },
-      { tool: "get_test_who", args: undefined, result: 7 },
+      { tool: "test_echo_post", args: { a: 1 }, skipped: true },
+      { tool: "test_who_get", args: undefined, result: 7 },
     ]);
   }));
 
@@ -98,9 +98,9 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
         { description: "family names only", fn: (e: any) => e.table === "usr" && "family_name" in e.data },
         {
           description: "rename",
-          fn: async (e: any, { tools }: any) => (await tools.post_test_rename({ name: "Bob" }), e.table),
+          fn: async (e: any, { tools }: any) => (await tools.test_rename_post({ name: "Bob" }), e.table),
         },
-      ], { tools: ["post_test_rename"], test: false }), { signal: stop.signal, report });
+      ], { tools: ["test_rename_post"], test: false }), { signal: stop.signal, report });
     });
     await app.db.table("usr").update(7, { family_name: "Smith" }); // its run renames user 7: an update again
     await done;

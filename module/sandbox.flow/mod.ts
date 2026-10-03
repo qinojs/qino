@@ -29,7 +29,7 @@ export type Flow = {
   on: { host: string; event: string }; // the app or one of its emitters ("app", "db"), and its event
   owner: number; // tools run with this user's rights
   tools?: string[]; // the tools it may call, by name
-  test?: boolean; // unless false: only `get_*` tools take effect, the other calls are recorded
+  test?: boolean; // unless false: only `*_get` tools take effect, the other calls are recorded
   steps: Step[];
 };
 
@@ -98,7 +98,7 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
     tools ??= new Map(toTools(app.apiTree).map((t) => [t.name, t]));
     const tool = flow.tools?.includes(name) ? tools.get(name) : undefined;
     if (!tool) throw new Error(`flow: tool ${name} not allowed`);
-    if (flow.test !== false && !name.startsWith("get_")) return void (call.skipped = true);
+    if (flow.test !== false && !name.endsWith("_get")) return void (call.skipped = true);
     const ctx = await inRun();
     return call.result = await requestStorage.run(ctx, () => tool.execute(args, ctx));
   });

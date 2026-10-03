@@ -1,12 +1,12 @@
 # ai1.agent
 
-An agent is someone anyone can talk to: a role and the parts of the api it may use as tools. In a
+An agent is someone anyone can talk to: a role and the tools of the api it may use. In a
 session it acts with the rights of the user it talks with, so it can never do more than that user.
 
 ```ts
 import { Agent, Session } from "@qino/qino/ai1.agent";
 
-const agent = await Agent.create(app, { system: "You lead the website project.", tools: ["cms"] });
+const agent = await Agent.create(app, { system: "You lead the website project.", tools: ["cms_*"] });
 const session = await agent.start(usrId);
 const { text } = await session.ask("What is still open?");
 await session.ask("Do the first one."); // knows what came before
@@ -33,10 +33,11 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   with the vector the message gets anyway to be findable. In the background: nobody waits for it.
 - **Its role** is embedded too (`embedding_ai1_agent`, again only when it changes): agents are found
   by what they do (`agents get { search }`), and with many tools it is the role they are ranked by.
-- **Tools** come from the api: `tools` are paths in it (`["cms"]`, `["cms/node"]`), each module's
-  api is its abilities. Its own routes (memories, search) every agent has, with its id set.
+- **Tools** come from the api, each module's api is its abilities: `tools` names them, each by its
+  name (`cms_node_html_get`) or `prefix_*` for all below a path (`cms_*`, `cms_node_*`); an entry
+  naming none is refused. Its own routes (memories, search) every agent has, with its id set.
 - **Many tools:** with more than 20, it is given the 15 closest to its role, `find_tools` to find the
-  others by meaning ([ai1.discover](../ai1.discover/)) and core's `post_core_toolCalls` to call them,
+  others by meaning ([ai1.discover](../ai1.discover/)) and core's `core_toolCalls_post` to call them,
   only its own. What it is given stays the same all session long (prompt cache).
 
 ## Hooks

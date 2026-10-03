@@ -28,18 +28,18 @@ Deno.test("core tool-calls: runs calls in order, stops at the first failure", as
   const run = (calls: unknown[]) => requestStorage.run(ctx, () => invoke(apiTree, "POST", "/core/tool-calls", { input: { calls } }));
 
   assertEquals(await run([
-    { name: "put_thing", arguments: { id: 1, ok: true } },
-    { name: "put_thing", arguments: { id: 2, ok: true } },
+    { name: "thing_put", arguments: { id: 1, ok: true } },
+    { name: "thing_put", arguments: { id: 2, ok: true } },
   ]), { results: [{ id: 1 }, { id: 2 }] });
 
   const err: any = await run([
-    { name: "put_thing", arguments: { id: 3, ok: true } },
-    { name: "put_thing", arguments: { id: 4, ok: false } },
-    { name: "put_thing", arguments: { id: 5, ok: true } },
+    { name: "thing_put", arguments: { id: 3, ok: true } },
+    { name: "thing_put", arguments: { id: 4, ok: false } },
+    { name: "thing_put", arguments: { id: 5, ok: true } },
   ]).catch((e) => e);
   assertEquals([err.status, err.code, err.data], [409, "conflict", { index: 1, results: [{ id: 3 }] }]);
   assertEquals(saved, [1, 2, 3]);
 
-  const self: any = await run([{ name: "post_core_toolCalls", arguments: { calls: [] } }]).catch((e) => e);
+  const self: any = await run([{ name: "core_toolCalls_post", arguments: { calls: [] } }]).catch((e) => e);
   assertEquals([self.status, self.data.index], [404, 0]);
 });

@@ -80,18 +80,18 @@ Deno.test("mcp: notifications get 202 without body", async () => {
 Deno.test("mcp: tools/list is access-filtered", async () => {
   const res = await call(await makeCtx(rpc("tools/list")));
   // deno-lint-ignore no-explicit-any
-  assertEquals(res.body.result.tools.map((t: any) => t.name), ["get_hello"]); // secret (SUPERUSER) filtered out
+  assertEquals(res.body.result.tools.map((t: any) => t.name), ["hello_get"]); // secret (SUPERUSER) filtered out
   assertEquals(res.body.result.tools[0].inputSchema, { type: "object", properties: { name: { type: "string" } }, required: [] });
 });
 
 Deno.test("mcp: tools/call executes and returns structured content", async () => {
-  const res = await call(await makeCtx(rpc("tools/call", { name: "get_hello", arguments: { name: "qino" } })));
+  const res = await call(await makeCtx(rpc("tools/call", { name: "hello_get", arguments: { name: "qino" } })));
   assertEquals(res.body.result.structuredContent, { msg: "hi qino" });
   assertEquals(res.body.result.content, [{ type: "text", text: '{"msg":"hi qino"}' }]);
 });
 
 Deno.test("mcp: tools/call enforces access as tool error", async () => {
-  const res = await call(await makeCtx(rpc("tools/call", { name: "get_secret" })));
+  const res = await call(await makeCtx(rpc("tools/call", { name: "secret_get" })));
   assertEquals(res.status, 200);
   assertEquals(res.body.result.isError, true);
 });

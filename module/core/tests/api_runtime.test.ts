@@ -9,7 +9,7 @@ import {
   ValidationError,
   apiClient,
   invoke,
-  camelName,
+  toolName,
   toTools,
 } from "../lib/api/mod.ts";
 import { requestStorage } from "../lib/ctx/Ctx.ts";
@@ -327,7 +327,7 @@ Deno.test("api: catchall params collect remaining path segments", async () => {
 
 Deno.test("api: toTools exposes and separates path/input/query parameters", async () => {
   const tools = toTools(api);
-  const update = tools.find((tool) => tool.name === "post_thing_update");
+  const update = tools.find((tool) => tool.name === "thing_update_post");
   assertEquals(update?.description, "Update thing");
   assertEquals(update?.parameters, {
     type: "object",
@@ -365,15 +365,15 @@ Deno.test("api: apiClient mirrors the action tree", async () => {
 });
 
 Deno.test("api: tool names stay within the MCP name charset", () => {
-  assertEquals(camelName("get", ["cms.frontend.4", "widget"]), "get_cmsFrontend4_widget");
-  assertEquals(camelName("post", ["cms.backend.superuser.oauth_server"]), "post_cmsBackendSuperuserOauth_server");
-  assertEquals(camelName("delete", ["file-store.9", ":id"]), "delete_fileStore9");
+  assertEquals(toolName("get", ["cms.frontend.4", "widget"]), "cmsFrontend4_widget_get");
+  assertEquals(toolName("post", ["cms.backend.superuser.oauth_server"]), "cmsBackendSuperuserOauthServer_post");
+  assertEquals(toolName("delete", ["file-store.9", ":id"]), "fileStore9_delete");
   const tools = toTools({ "cms.frontend.4": { widget: { post: { execute: () => null } } } } as never);
   assertEquals(/^[a-zA-Z0-9_-]{1,64}$/.test(tools[0].name), true);
 });
 
 Deno.test("api: two routes may not be the same tool (path params are not in the name)", () => {
   const get = { get: { description: "x", execute: () => 1 } };
-  assertThrows(() => toTools({ events: { ...get, ":event": get } }), Error, 'GET /events/:event and GET /events are both the tool "get_events"');
-  assertEquals(toTools({ events: get, event: { ":event": get } }).map((t) => t.name), ["get_events", "get_event"]); // the list and an item
+  assertThrows(() => toTools({ events: { ...get, ":event": get } }), Error, 'GET /events/:event and GET /events are both the tool "events_get"');
+  assertEquals(toTools({ events: get, event: { ":event": get } }).map((t) => t.name), ["events_get", "event_get"]); // the list and an item
 });

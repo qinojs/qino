@@ -30,9 +30,9 @@ Deno.test("standard.2 API: HTML/CSS/JS tools, independent opening and replacemen
   const f = context(dir);
   try {
     assertEquals(toTools({ [name]: api }).map((tool) => tool.name), [
-      "get_cmsLayoutStandard2_node_codefiles_html", "put_cmsLayoutStandard2_node_codefiles_html",
-      "get_cmsLayoutStandard2_node_codefiles_css", "put_cmsLayoutStandard2_node_codefiles_css",
-      "get_cmsLayoutStandard2_node_codefiles_js", "put_cmsLayoutStandard2_node_codefiles_js",
+      "cmsLayoutStandard2_node_codefiles_html_get", "cmsLayoutStandard2_node_codefiles_html_put",
+      "cmsLayoutStandard2_node_codefiles_css_get", "cmsLayoutStandard2_node_codefiles_css_put",
+      "cmsLayoutStandard2_node_codefiles_js_get", "cmsLayoutStandard2_node_codefiles_js_put",
     ]);
     const files = codeFiles(f.node as any);
     assertStringIncludes((await f.call("GET", "js") as { content: string }).content, "showPopover");

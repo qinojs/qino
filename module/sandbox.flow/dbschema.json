@@ -46,7 +46,7 @@
           "test": {
             "type": "boolean",
             "default": true,
-            "description": "Only get_* tools take effect, the other calls are recorded"
+            "description": "Only *_get tools take effect, the other calls are recorded"
           },
           "log_id": {
             "type": "integer",

@@ -31,10 +31,10 @@ const fake: Adapter = {
     const last = messages.at(-1), asked = messages.filter((m: any) => m.role === "user");
     const typed = String(last.content).split("\n\n(internal")[0]; // without the memories it brought to mind
     if (typed === "fail") throw new Error("down");
-    if (typed === "time?") return { text: "", toolCalls: [{ id: "1", name: "get_toolset_clock", args: {} }], truncated: false };
+    if (typed === "time?") return { text: "", toolCalls: [{ id: "1", name: "toolset_clock_get", args: {} }], truncated: false };
     const [verb, a, b] = typed.split(":");
-    const call = { remember: ["post_memories", { content: a }], replace: ["post_memories", { content: b, replaces: Number(a) }], forget: ["delete_memories", { memory: Number(a) }], search: ["post_search", { query: a }],
-      find: ["find_tools", { search: a }], call: ["post_core_toolCalls", { calls: [{ name: a }] }] }[verb];
+    const call = { remember: ["memories_post", { content: a }], replace: ["memories_post", { content: b, replaces: Number(a) }], forget: ["memories_delete", { memory: Number(a) }], search: ["search_post", { query: a }],
+      find: ["find_tools", { search: a }], call: ["core_toolCalls_post", { calls: [{ name: a }] }] }[verb];
     if (last.role === "user" && call) return { text: "", toolCalls: [{ id: "1", name: call[0], args: call[1] }], truncated: false };
     if (typed === "slow") await new Promise((r) => setTimeout(r, 30));
     const result = last.role === "tool" && JSON.parse(last.content);
@@ -77,14 +77,14 @@ const kept = async (app: App, session: number) =>
     });
 
 Deno.test("ai1.agent: a session goes on from what was said, with the agent's role and tools, and keeps it all", () => withApp(async (app) => {
-  const agent = await Agent.create(app, { system: "lead", tools: ["toolset"] });
+  const agent = await Agent.create(app, { system: "lead", tools: ["toolset_*"] });
   const session = await agent.start(7);
   assertEquals((await session.ask("hi")).text, "lead #1 hi");
   assertEquals((await session.ask("time?")).text, "lead #2 it is noon");
   assertEquals(await kept(app, session.id), [
     ["system", `lead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while it does not change
     ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
-    ["user", "time?", ""], ["assistant", "get_toolset_clock", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
+    ["user", "time?", ""], ["assistant", "toolset_clock_get", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
   const answered = await app.db.col`SELECT model_provider_id FROM ai1_session_message
     WHERE session_id = ${session.id} AND model_provider_id IS NOT NULL`;
@@ -93,11 +93,11 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
 }));
 
 Deno.test("ai1.agent: a turn that failed amid its tool calls doesn't block the session", () => withApp(async (app) => {
-  const agent = await Agent.create(app, { system: "lead", tools: ["toolset"] });
+  const agent = await Agent.create(app, { system: "lead", tools: ["toolset_*"] });
   const session = await agent.start(7);
   await session.ask("hi");
   // the call kept, its result not: the turn failed in between
-  await app.db.table("ai1_session_message").insert({ session_id: session.id, message: JSON.stringify({ role: "assistant", content: "", toolCalls: [{ id: "x", name: "get_toolset_clock", args: {} }] }) });
+  await app.db.table("ai1_session_message").insert({ session_id: session.id, message: JSON.stringify({ role: "assistant", content: "", toolCalls: [{ id: "x", name: "toolset_clock_get", args: {} }] }) });
   assertEquals((await session.ask("and now?")).text, "lead #2 and now?");
   const told = (sent.at(-1) as any[]).find((m) => m.role === "tool");
   assertEquals([told.id, told.content], ["x", '{"error":"No result: the turn failed"}']); // only sent, not kept
@@ -153,8 +153,12 @@ Deno.test("ai1.agent: what the user says strengthens the memories close to it, i
 Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user", () => withApp(async (app) => {
   const agents = () => app.api["ai1.agent"].agents, agent = () => app.api["ai1.agent"].agent;
   const { id } = await runAs(app, 7, "test", () => agents().post({ system: "lead" })) as { id: number };
-  await runAs(app, 8, "test", () => agent()(id).patch({ tools: ["toolset"] })); // anyone may change it
-  assertEquals(await runAs(app, 7, "test", () => agent()(id).get()), { id, system: "lead", tools: ["toolset"], prefer: {} });
+  await runAs(app, 8, "test", () => agent()(id).patch({ tools: ["toolset_clock_get"] })); // anyone may change it; one tool by its name
+  assertEquals(await runAs(app, 7, "test", () => agent()(id).get()), { id, system: "lead", tools: ["toolset_clock_get"], prefer: {} });
+  for (const tools of [["toolset"], ["toolset_clock"], ["toolset*"], ["get_toolset_clock"]]) { // what names no tool is refused
+    await assertRejects(() => runAs(app, 8, "test", () => agent()(id).patch({ tools })), Error, "No such tools");
+    await assertRejects(() => Agent.create(app, { tools }), Error, "No such tools");
+  }
   const session = (await runAs(app, 7, "test", () => agent()(id).sessions.post()) as { id: number }).id;
   const answer = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).ask.post({ content: "time?" })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
@@ -184,7 +188,7 @@ Deno.test("ai1.agent: the model is chosen by the session's prefer, else the agen
 }));
 
 Deno.test("ai1.agent: what the model is given is kept as the session starts: role with memories, tools, prefer", () => withApp(async (app) => {
-  const agent = await Agent.create(app, { system: "lead", tools: ["toolset"], prefer: { cost: 1 } });
+  const agent = await Agent.create(app, { system: "lead", tools: ["toolset_*"], prefer: { cost: 1 } });
   const session = await agent.start(7);
   const from = sent.length;
   for (const content of ["hi", "remember:blue", "time?"]) await session.ask(content);
@@ -192,13 +196,13 @@ Deno.test("ai1.agent: what the model is given is kept as the session starts: rol
   await session.ask("hi");
   assertEquals(sent.at(-1)!.slice(-2), [{ role: "system", content: "the logo is round" }, { role: "user", content: "hi" }]);
   await app.db.table("ai1_agent").update(agent.id, { system: "boss", tools: "[]" }); // changed meanwhile
-  assertStringIncludes((await session.ask("time?")).text, "lead #5 it is {\"error\":\"No longer available: get_toolset_clock\""); // as given; runs only while still the agent's
+  assertStringIncludes((await session.ask("time?")).text, "lead #5 it is {\"error\":\"No longer available: toolset_clock_get\""); // as given; runs only while still the agent's
   const calls = sent.slice(from).map((messages) => JSON.stringify(messages));
   for (const [i, call] of calls.entries()) if (i) assertEquals(call.slice(0, calls[i - 1].length - 1), calls[i - 1].slice(0, -1)); // only added to
   const given = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
   assertEquals(given.map((m) => m.content), [`lead\n\n## Your memories\n${HINT}`, "the logo is round"]); // given once, and the note
-  assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["post_memories", "delete_memories", "post_search", "get_toolset_clock"]);
+  assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]);
   assertEquals(given[0].prefer, { cost: 1 });
   assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
 }));
@@ -217,28 +221,28 @@ Deno.test("ai1.agent: one turn after the other in a session", () => withApp(asyn
 }));
 
 Deno.test("ai1.agent: with more than 20 tools, it is given those closest to its role and finds and calls the others", () => withApp(async (app) => {
-  const agent = await Agent.create(app, { system: "logo designer", tools: ["many", "toolset"] });
+  const agent = await Agent.create(app, { system: "logo designer", tools: ["many_*", "toolset_*"] });
   const session = await agent.start(7);
   await session.ask("hi");
   const [given] = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json)));
   const names = given.tools.map((t: { name: string }) => t.name);
   assertEquals(names.length, 3 + 15 + 2); // its own, the 15 closest, find_tools and core's tool-calls
-  assertEquals([names.includes("get_many_logo"), names.slice(-2)], [true, ["find_tools", "post_core_toolCalls"]]);
-  assertStringIncludes((await session.ask("find:draw a logo")).text, '"name":"get_many_logo"');
-  const missing = Array.from({ length: 24 }, (_, i) => `get_many_tool${i}`).find((name) => !names.includes(name))!;
+  assertEquals([names.includes("many_logo_get"), names.slice(-2)], [true, ["find_tools", "core_toolCalls_post"]]);
+  assertStringIncludes((await session.ask("find:draw a logo")).text, '"name":"many_logo_get"');
+  const missing = Array.from({ length: 24 }, (_, i) => `many_tool${i}_get`).find((name) => !names.includes(name))!;
   assertStringIncludes((await session.ask(`call:${missing}`)).text, `it is {"results":[`);
-  assertStringIncludes((await session.ask("call:post_core_t")).text, '"error":"Not one of your tools: post_core_t"');
+  assertStringIncludes((await session.ask("call:core_t_post")).text, '"error":"Not one of your tools: core_t_post"');
 }));
 
 Deno.test("ai1.agent: its tools by nearness to its role, and which a session starts with", () => withApp(async (app) => {
-  const agent = await Agent.create(app, { system: "logo designer", tools: ["many", "toolset"] });
+  const agent = await Agent.create(app, { system: "logo designer", tools: ["many_*", "toolset_*"] });
   const tools = await agent.tools(), paths = tools.filter((t) => !t.always);
-  assertEquals(paths[0].tool.name, "get_many_logo"); // the nearest to its role first
+  assertEquals(paths[0].tool.name, "many_logo_get"); // the nearest to its role first
   assert(paths[0].score! > paths.at(-1)!.score!);
   assertEquals(paths.filter((t) => t.given).length, 15); // with many, the 15 closest
-  assertEquals(tools.filter((t) => t.always).map((t) => t.tool.name).slice(-2), ["find_tools", "post_core_toolCalls"]); // its own, and to find the others
-  const few = await (await Agent.create(app, { system: "lead", tools: ["toolset"] })).tools();
+  assertEquals(tools.filter((t) => t.always).map((t) => t.tool.name).slice(-2), ["find_tools", "core_toolCalls_post"]); // its own, and to find the others
+  const few = await (await Agent.create(app, { system: "lead", tools: ["toolset_*"] })).tools();
   assert(few.length > 3 && few.every((t) => t.given)); // with few, all
 }));
 

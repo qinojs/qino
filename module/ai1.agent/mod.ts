@@ -1,14 +1,14 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { ask, note, ranked } from "./lib/turn.ts";
+import { ask, checkTools, note, ranked } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
 
 import type { App } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai1";
 
-/** Someone anyone can talk to: a role, the parts of the api it may use as tools, and how it chooses
+/** Someone anyone can talk to: a role, the tools of the api it may use, and how it chooses
  *  its model (ai1's `prefer`, e.g. `{ quality: 2, cost: 1 }`). */
 export class Agent {
   #app: App;
@@ -21,6 +21,7 @@ export class Agent {
 
   /** A new agent; its role is made findable in the background. */
   static async create(app: App, { system = "", tools = [], prefer }: { system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<Agent> {
+    checkTools(app, tools);
     const id = Number(await app.db.table("ai1_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() }));
     keep(app, "ai1_agent", { agent_id: id }, system);
     return new Agent(app, id);

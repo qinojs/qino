@@ -32,13 +32,13 @@ Deno.test("sandbox.flow: active rows listen, changed rows anew, inactive or dele
       { description: "family names only", fn: "(e) => e.table === 'usr' && 'family_name' in e.data" },
       {
         description: "greet",
-        fn: "async (e, { tools }) => (await tools.post_test_greet({ name: 'Hi ' + e.data.family_name }), 1)",
+        fn: "async (e, { tools }) => (await tools.test_greet_post({ name: 'Hi ' + e.data.family_name }), 1)",
       },
     ];
     const flows = app.db.table("flow");
     const id = await flows.insert({
       description: "greet", host: "db", event: "table:update-after", usr_id: 7,
-      tools: JSON.stringify(["post_test_greet"]), steps: JSON.stringify(steps), active: true, test: false,
+      tools: JSON.stringify(["test_greet_post"]), steps: JSON.stringify(steps), active: true, test: false,
     });
     assertEquals(await rename("Smith"), "Hi Smith"); // inserted active: listens
 

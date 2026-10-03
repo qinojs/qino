@@ -15,7 +15,7 @@
           },
           "tools": {
             "type": "string",
-            "description": "Paths of the api it may use as tools (`cms`, `cms/node`), as a JSON array"
+            "description": "The tools it may use, by name or `prefix_*` for all below a path (`cms_*`, `cms_node_*`), as a JSON array"
           },
           "prefer": {
             "type": "string",

@@ -14,7 +14,7 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
-    const agent = await Agent.create(app, { system: "<b>lead</b>", tools: ["cms"] });
+    const agent = await Agent.create(app, { system: "<b>lead</b>", tools: ["ai1Discover_*"] });
     const session = await agent.start(7);
     const memory = Number(await app.db.table("ai1_agent_memory").insert({ agent_id: agent.id, content: "the <i>logo</i> is blue " + "x".repeat(90) }));
     await hit(app.db, "ai1_agent_memory", memory, 3);
@@ -24,9 +24,9 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     const at = Number(await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider }));
     const ids: number[] = [];
     for (const [message, by] of [
-      [{ role: "system", content: "lead", tools: [{ name: "post_search", description: "Search", parameters: {} }], prefer: { cost: 1 } }, 0],
+      [{ role: "system", content: "lead", tools: [{ name: "search_post", description: "Search", parameters: {} }], prefer: { cost: 1 } }, 0],
       [{ role: "user", content: "hi" }, 0],
-      [{ role: "assistant", content: "", toolCalls: [{ id: "1", name: "post_search", args: { query: "logo" } }] }, 0],
+      [{ role: "assistant", content: "", toolCalls: [{ id: "1", name: "search_post", args: { query: "logo" } }] }, 0],
       [{ role: "tool", id: "1", content: '[{"text":"round"}]' }, 0],
       [{ role: "error", content: "down" }, 0],
       [{ role: "assistant", content: "it is round" }, at],
@@ -42,9 +42,11 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     for (const part of ["New agent", "data-agent=", "name=system", "name=tools", "<fieldset><legend>Tools", "<fieldset><legend>Model choice", "<div class=u2-table>", "data-prefer"]) {
       assertStringIncludes(home, part);
     }
+    // the tools as a tree of their names: a branch for all below it, a leaf for one tool
+    for (const part of ['value="ai1Discover_*"', 'value="ai1Discover_tools_*"', 'value="ai1Discover_tools_get"']) assertStringIncludes(home, part);
 
     const list = await as(() => agents(node));
-    for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap", 'title="[&quot;cms&quot;]"', "[&quot;cms&quot;]</small>", "it is round"]) {
+    for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap", 'title="[&quot;ai1Discover_*&quot;]"', "[&quot;ai1Discover_*&quot;]</small>", "it is round"]) {
       assertStringIncludes(list, part);
     }
     assertStringIncludes(list, "<th>#");
@@ -69,7 +71,7 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
 
     // a session's page: everything about it
     const its2 = await as(() => aboutSession(node, { vars: { session: session.id } }));
-    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">m</span>", ">post_search</span>", "1: post_search"]) {
+    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">m</span>", ">search_post</span>", "1: search_post"]) {
       assertStringIncludes(its2, part);
     }
     assert(!its2.includes("[object Promise]"));
@@ -88,12 +90,12 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     assert(!kept.includes("[object Promise]"));
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
-    for (const part of ["align-self:flex-end", "color:white\">post_search</small>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: post_search", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
+    for (const part of ["align-self:flex-end", "color:white\">search_post</small>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: search_post", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
       assertStringIncludes(talk, part);
     }
     // the dialog of the calls: each with its result
     const { calls } = await cms.node.api(node, { calls: session.id, call: "1" }) as { calls: any[] };
-    assertEquals(calls.map((c) => c.name), ["post_search"]);
+    assertEquals(calls.map((c) => c.name), ["search_post"]);
     assertEquals(calls[0].result, [{ text: "round" }]);
     // following along: only what came after the last message shown
     const since = await as(() => conversation(node, { vars: { session: session.id, after: ids.at(-2) } }));

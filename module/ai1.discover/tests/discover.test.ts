@@ -47,27 +47,27 @@ Deno.test("ai1.discover: tables, events and tools by name, each in detail", () =
   assertEquals(events.find((e: any) => e.name === "db:table:insert-after").description, "A row was inserted.");
   const inserted = await as(7, () => api(app).event("db:table:insert-after").get());
   assertEquals(Object.keys(inserted.data.properties), ["table", "id", "data"]);
-  const tool = await as(7, () => api(app).tool("post_test_greet").get());
+  const tool = await as(7, () => api(app).tool("test_greet_post").get());
   assertEquals(Object.keys(tool.parameters.properties), ["name"]);
   await assertRejects(() => as(7, () => api(app).table("nope").get()), NotFoundError);
 }));
 
 Deno.test("ai1.discover: tools only those the caller may call", () => withApp(async (app, as) => {
   const names = async (usr: number) => (await as(usr, () => api(app).tools.get())).map((t: any) => t.name);
-  assert(!(await names(7)).includes("post_test_purge"));
-  assert((await names(8)).includes("post_test_purge"));
-  await assertRejects(() => as(7, () => api(app).tool("post_test_purge").get()), NotFoundError);
+  assert(!(await names(7)).includes("test_purge_post"));
+  assert((await names(8)).includes("test_purge_post"));
+  await assertRejects(() => as(7, () => api(app).tool("test_purge_post").get()), NotFoundError);
 }));
 
 Deno.test("ai1.discover: search by meaning, indexed on first use", () => withApp(async (app, as) => {
   const [first] = await as(7, () => api(app).tools.get(undefined, { search: "say hello, greet" }));
-  assertEquals(first.name, "post_test_greet");
+  assertEquals(first.name, "test_greet_post");
   const kept = Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai1_discover WHERE kind = ${"tools"}`);
   assert(kept > 1); // all tools, not only the caller's
   await as(7, () => api(app).tools.get(undefined, { search: "greet" })); // unchanged: not indexed again
   assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai1_discover WHERE kind = ${"tools"}`), kept);
   const hits = await as(7, () => api(app).tools.get(undefined, { search: "purge" }));
-  assert(!hits.some((t: any) => t.name === "post_test_purge"));
+  assert(!hits.some((t: any) => t.name === "test_purge_post"));
 }));
 
 Deno.test("ai1.discover: without an embedding collection, search by words", () => withApp(async (app, as) => {

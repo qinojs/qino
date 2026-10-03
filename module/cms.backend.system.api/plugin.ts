@@ -1,4 +1,4 @@
-import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, camelName, toTools, Access } from "@qino/qino";
+import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, toolName, toTools, Access } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -47,7 +47,7 @@ function* walk(node: ApiNode, ctx: Ctx, segments: string[] = [], nodes: ApiNode[
         yield {
           method: verb,
           path: "/" + segs.join("/"),
-          name: camelName(verb, segs),
+          name: toolName(verb, segs),
           description: action.description ?? "",
           input: action.input,
           query: action.query,

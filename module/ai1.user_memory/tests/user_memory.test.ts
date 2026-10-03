@@ -11,8 +11,8 @@ import type { Adapter } from "@qino/qino/ai1";
 const fake: Adapter = {
   text: (_call, { messages }) => {
     const last = messages.at(-1), [verb, a] = String(last.content).split(":");
-    if (last.role === "user" && verb === "remember") return Promise.resolve({ text: "", toolCalls: [{ id: "1", name: "post_memories", args: { content: a } }], truncated: false });
-    if (last.role === "user" && verb === "forget") return Promise.resolve({ text: "", toolCalls: [{ id: "1", name: "delete_user_memories", args: { memory: Number(a) } }], truncated: false });
+    if (last.role === "user" && verb === "remember") return Promise.resolve({ text: "", toolCalls: [{ id: "1", name: "memories_post", args: { content: a } }], truncated: false });
+    if (last.role === "user" && verb === "forget") return Promise.resolve({ text: "", toolCalls: [{ id: "1", name: "user_memories_delete", args: { memory: Number(a) } }], truncated: false });
     return Promise.resolve({ text: `${messages[0].content} | ${last.content}`, toolCalls: [], truncated: false });
   },
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),

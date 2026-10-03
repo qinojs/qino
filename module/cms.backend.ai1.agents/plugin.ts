@@ -23,25 +23,26 @@ const WEIGHTS = ["quality", "cost", "speed"];
 
 type Branch = { count: number; below: Map<string, Branch> };
 
-/** The paths an agent may use as tools, down to the first parameter. */
-function paths(tree: ApiTree): Branch {
+/** The tools an agent may use, as a tree of their names: the path, then the method. */
+function toolTree(tree: ApiTree): Branch {
   const root: Branch = { count: 0, below: new Map() };
-  for (const { segments } of walk(tree)) {
+  for (const { name } of walk(tree)) {
     let at = root;
-    for (const segment of segments) {
-      if (segment.startsWith(":")) break;
-      at = at.below.getOrInsertComputed(segment, () => ({ count: 0, below: new Map() }));
+    for (const part of name.split("_")) {
+      at = at.below.getOrInsertComputed(part, () => ({ count: 0, below: new Map() }));
       at.count++;
     }
   }
   return root;
 }
 
+/** A branch stands for all below it (`cms_node_*`), a leaf for one tool. */
 const branches = (branch: Branch, chosen: string[], above = ""): HtmlString[] =>
-  [...branch.below].sort(([a], [b]) => a.localeCompare(b)).map(([segment, sub]) => {
-    const path = above + segment, checked = chosen.some((c) => path === c || path.startsWith(c + "/"));
-    return html`<u2-tree${above ? "" : " tristate"}><input type=checkbox slot=icon name=tools value="${path}" ${checked ? "checked" : ""}> ${segment} <small>(${sub.count})</small>${
-      branches(sub, chosen, path + "/")}</u2-tree>`;
+  [...branch.below].sort(([a], [b]) => a.localeCompare(b)).map(([part, sub]) => {
+    const name = above + part, value = sub.below.size ? name + "_*" : name;
+    const checked = chosen.some((c) => c === value || c.endsWith("_*") && (name + "_").startsWith(c.slice(0, -1)));
+    return html`<u2-tree${above ? "" : " tristate"}><input type=checkbox slot=icon name=tools value="${value}" ${checked ? "checked" : ""}> ${part}${
+      sub.below.size ? html` <small>(${sub.count})</small>` : ""}${branches(sub, chosen, name + "_")}</u2-tree>`;
   });
 
 /** Create or edit an agent; sessions are started in Chat. */
@@ -49,7 +50,7 @@ function form(node: Node, agent: { id?: number; system?: string; tools?: string[
   const t = node.app.t;
   return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id ?? ""}">
     <textarea name=system rows=6 style="width:100%" placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
-    <fieldset><legend>${t`Tools`}</legend><div style="overflow:auto;max-height:15rem">${branches(paths(node.app.apiTree), agent.tools ?? [])}</div></fieldset>
+    <fieldset><legend>${t`Tools`}</legend><div style="overflow:auto;max-height:15rem">${branches(toolTree(node.app.apiTree), agent.tools ?? [])}</div></fieldset>
     <fieldset><legend>${t`Model choice`}</legend>
       <div class=u2-table><div>${WEIGHTS.map((key) => html`<label>
         <span>${key}</span>
@@ -323,7 +324,7 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
         <td>${agentLink(url, s.agent_id)}
       <tr>
         <th title="${t`It acts with this user's rights`}">${t`User`}
-        <td>${s.usr_id} ${colored(s.username)}
+        <td>${colored(s.username)} (${s.usr_id})
       <tr>
         <th title="${t`prefer of the session; – is the agent's`}">${t`Model choice`}
         <td>${choice(s.prefer)}
@@ -377,7 +378,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
   const rows = await node.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
     FROM ai1_session_message m ${answeredBy}
     WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
-  return html`<div class="u2-flex -Col" style="flex-wrap:nowrap">${rows.map((row) => { // one message below the other: then align-self puts them left and right
+  return html`<div class="u2-flex -Col" style="flex-wrap:nowrap; max-width:80rem">${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
     const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}</small>`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note
@@ -404,7 +405,7 @@ async function render(node: Node): Promise<HtmlString> {
     const agentId = await node.app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${sessionId}`;
     const vars = { session: sessionId };
     return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex:0 1 auto">
+    <div class=u2-card style="flex:0 1 40rem">
       <div class=-head>
         <a href="${url}">${t`Agents`}</a> › ${agentId ? html.async`${t`Agent`} ${agentLink(url, agentId)} › ` : ""}${t`Session`} ${sessionId}
       </div>

@@ -36,17 +36,17 @@ Deno.test("auth.webauthn: module metadata is wired", () => {
 Deno.test("auth.webauthn: api exposes expected api endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
-    "post_register_challenge",
-    "post_register_verify",
-    "post_login_challenge",
-    "post_login_verify",
-    "post_confirm_challenge",
-    "post_confirm_verify",
-    "get_credentials",
-    "delete_credential",
+    "register_challenge_post",
+    "register_verify_post",
+    "login_challenge_post",
+    "login_verify_post",
+    "confirm_challenge_post",
+    "confirm_verify_post",
+    "credentials_get",
+    "credential_delete",
   ]);
 
-  const registerVerify = tools.find((tool) => tool.name === "post_register_verify");
+  const registerVerify = tools.find((tool) => tool.name === "register_verify_post");
   assertEquals(registerVerify?.parameters, {
     type: "object",
     properties: {
@@ -59,7 +59,7 @@ Deno.test("auth.webauthn: api exposes expected api endpoints", () => {
     required: ["token", "credentialId", "clientDataJSON", "attestationObject"],
   });
 
-  const loginVerify = tools.find((tool) => tool.name === "post_login_verify");
+  const loginVerify = tools.find((tool) => tool.name === "login_verify_post");
   assertEquals(loginVerify?.parameters, {
     type: "object",
     properties: {

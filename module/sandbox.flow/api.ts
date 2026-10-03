@@ -20,7 +20,7 @@ const optional = {
   description: s.optional(s.string()),
   tools: s.optional(s.array(s.string())).describe("The tools it may call, by name"),
   active: s.optional(s.boolean()).describe("Listen to the event; default false"),
-  test: s.optional(s.boolean()).describe("Only get_* tools take effect; default true"),
+  test: s.optional(s.boolean()).describe("Only *_get tools take effect; default true"),
 };
 const fields = { ...optional, host, event, steps };
 const changes = { ...optional, host: s.optional(host), event: s.optional(event), steps: s.optional(steps) };
@@ -95,7 +95,7 @@ export const api: ApiTree = {
       }),
       test: {
         post: verb<{ flow: number; event: unknown; user?: number }>(
-          "Try the flow on an example event, as a test run: only get_* tools take effect. Returns the trace.",
+          "Try the flow on an example event, as a test run: only *_get tools take effect. Returns the trace.",
           async ({ flow, event, user }, ctx) =>
             run(ctx.app, { ...toFlow(await row(ctx, flow)), test: true }, event, { user }),
           {
