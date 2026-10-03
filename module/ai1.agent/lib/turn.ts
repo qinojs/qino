@@ -165,13 +165,14 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
   return inTurn(app, session, async () => {
     const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai1_session s JOIN ai1_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
     if (!agent) throw new Error(`No session ${session}`);
-    const kept = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`).map((json) => JSON.parse(String(json)));
+    const kept = (await app.db.query`SELECT id, message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
+      .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
     const id = Number(agent.agent_id), asked: Message = { role: "user", content };
     // other modules add to what the model is given: texts to its context, tools
     const { parts, tools: more } = await app.fire("ai1.agent:turn", { agent: id, session, usrId: Number(agent.usr_id), parts: [] as string[], tools: [] as Tool[] });
     const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
     // given once, as the session starts: later changes come with the next session; ranked only then, and with many
-    let given = kept.find(isGiven);
+    let given = kept.map((row) => row.message).find(isGiven);
     const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]")));
     const list = await choice(app, id, String(agent.system ?? ""), allowed, !given && allowed.length > AT_ONCE);
     const tools = [...more, ...list.map((r) => r.tool)];
@@ -181,17 +182,26 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
       const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
       await save(app, session, id, given = { role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
     }
+    // other modules may send less of the history than was said (compaction); what is kept stays
+    const { history } = await app.fire("ai1.agent:history", { agent: id, session, history: kept.filter((row) => row.message.role !== "error" && !isGiven(row.message)) });
     await save(app, session, id, asked);
     // the tools as given, run as they are now
     const now = new Map(tools.map((tool) => [tool.name, tool]));
     const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));
-    return await run(app, {
-      messages: [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...answered(kept.filter((m) => m.role !== "error" && !isGiven(m))), asked],
+    const messages: Message[] = [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...answered(history.map((row: { message: Message }) => row.message)), asked];
+    const usrId = Number(agent.usr_id);
+    const out = await run(app, {
+      messages,
       tools: offered,
-      usrId: Number(agent.usr_id),
+      usrId,
       onText,
       onMessage: (message, modelProvider) => save(app, session, id, message, modelProvider), // each step, as it comes
     }, { prefer })
       .catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });
+    // in the background: all the model was given and answered, as it was sent (e.g. to compact it)
+    const { model, modelProvider } = out;
+    app.fire("ai1.agent:answered", { agent: id, session, usrId, messages: [...messages, ...out.messages], tools: offered, model, modelProvider, prefer })
+      .catch((e) => console.error("[ai1.agent] answered:", errMsg(e)));
+    return out;
   });
 }

@@ -52,6 +52,11 @@ Other modules add to an agent without it knowing them (as [ai1.user_memory](../a
   `result` to keep it elsewhere.
 - `ai1.agent:associate` `{ agent, session, vector }`: in the background, what the user said as a
   vector, to strengthen what is close to it.
+- `ai1.agent:history` `{ agent, session, history }`: before each turn, the kept messages to send
+  (`{ id, message }`, oldest first); replace `history` to send less (compaction, as
+  [ai1.agent.sleep](../ai1.agent.sleep/) does). What is kept stays.
+- `ai1.agent:answered` `{ agent, session, usrId, messages, tools, model, modelProvider, prefer }`: in
+  the background after an answer, all the model was given and answered, as sent.
 
 ## Api
 
@@ -87,7 +92,7 @@ What the agent grows into, modelled on how a person thinks and remembers.
 | Semantic memory | knowledge, facts | memories: short facts, the strongest 10 in context | built |
 | Attention | only what matters comes to mind | association strengthens the memories close to what is said; later only the strongest and the close ones in the context | association built |
 | Knowing people | what the other one is like | memories about the user (preferences, language) | with memories |
-| Sleep | consolidate, clean up, replay | sessions condensed to memories, memories merged, skills derived | next |
+| Sleep | consolidate, clean up, replay | long sessions compacted, what lasts kept first ([ai1.agent.sleep](../ai1.agent.sleep/)); memories merged, skills derived | compaction built |
 | Procedural memory | skills, routines, habits | skills: instructions it writes itself | later |
 | Emotion | what matters sticks | surprises, failures, the user's corrections and praise hit harder (`hit(…, 5)`) | later |
 | Forgetting | the unimportant fades, a feature | memories never used lose weight (`score`) | built |

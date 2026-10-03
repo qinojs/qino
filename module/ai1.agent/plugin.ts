@@ -32,6 +32,24 @@ Object.assign(App.events, {
     description: "What the user said, as a vector; in the background.",
     data: s.object({ agent, session, vector: s.array(s.number()).describe("The message's embedding.") }),
   },
+  "ai1.agent:history": {
+    description: "What is sent of a session's history, before each turn; replace it to send less (compaction). What is kept stays.",
+    data: s.object({
+      agent, session,
+      history: s.array(s.object({ id: s.number(), message: s.any() })).describe("The kept messages to send, oldest first, with their ids."),
+    }),
+  },
+  "ai1.agent:answered": {
+    description: "An agent answered; all it was given and answered, as sent. In the background.",
+    data: s.object({
+      agent, session,
+      usrId: s.number().describe("The user it talks with."),
+      messages: s.array(s.any()).describe("The messages as sent, then the answer's."),
+      tools: s.array(s.any()).describe("The tools as offered, running."),
+      model: s.string(), modelProvider: s.number().describe("Who answered: the model at its provider."),
+      prefer: s.optional(s.record()).describe("How the model was chosen."),
+    }),
+  },
 } satisfies EventDecls);
 
 /** Memories fade with a half-life of a month unless they are used. */

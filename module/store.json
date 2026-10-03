@@ -2,6 +2,7 @@
   "modules": {
     "ai1": {},
     "ai1.agent": {},
+    "ai1.agent.sleep": {},
     "ai1.api": {},
     "ai1.discover": {},
     "ai1.chatgpt": {},
