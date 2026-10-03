@@ -49,7 +49,7 @@ Deno.test("ai1.user_memory: what is about the user is theirs, with every agent, 
   assertEquals(await app.db.col`SELECT content FROM ai1_user_memory WHERE usr_id = 7`, ["always German"]);
 
   const withDesigner = (await (await designer.start(7)).ask("hi")).text; // another agent knows it too
-  assertStringIncludes(withDesigner, "About the user you talk with:\n[u1] always German");
+  assertStringIncludes(withDesigner, "## User: ann@example.test, id 7\nKnown to every agent, in every session with them.\n[u1] always German");
   assert(!withDesigner.includes("logo")); // the lead's memory stays the lead's
   const bob = (await (await lead.start(8)).ask("hi")).text; // another user does not see it
   assertStringIncludes(bob, "[1] the logo is blue");

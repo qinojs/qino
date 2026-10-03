@@ -13,6 +13,8 @@ await session.ask("Do the first one."); // knows what came before
 await new Session(app, session.id).ask("And then?"); // later, e.g. from the browser
 ```
 
+- **What it is told first:** where it is and how it exists (`situation`: its id and the session's, the app's url, many
+  sessions with shared memories, the user's rights), then its role (`## Your role`) and its memories.
 - **Sessions** are fresh starts of the same agent. Each keeps everything exactly
   (`ai1_session_message`): questions, answers, tool calls and results; what the model was given
   (role with memories, tool definitions, prefer) as its first message, of role `system`; failures as

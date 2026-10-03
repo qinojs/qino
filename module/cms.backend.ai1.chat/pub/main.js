@@ -127,6 +127,7 @@ cms.initNode("backend.ai1.chat", (el) => {
       el.querySelector("[data-sessions]").prepend(row);
       history.replaceState(null, "", url);
       await open(id);
+      ask.elements.content.focus();
     } catch (err) { await alert(err.message); }
   });
 

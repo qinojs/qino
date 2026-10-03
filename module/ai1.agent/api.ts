@@ -123,7 +123,7 @@ export const api: ApiTree = {
       },
       note: {
         post: verb<{ session: number; content: string }>(
-          "Tell the agent something without asking. It reads it with the next question.",
+          "Give the agent system context, without a question; it gets it with the next one.",
           async ({ session, content }, ctx) => (await new Session(ctx.app, session).note(content), { ok: true }),
           { content: s.string() },
         ),

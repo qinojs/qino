@@ -19,6 +19,10 @@ function inTurn<T>(app: App, session: number, fn: () => Promise<T>): Promise<T> 
   return turn;
 }
 
+/** Told to every agent first: where it is and how it exists. */
+export const situation = (agent: number, session: number, url: string): string =>
+  `You are agent ${agent} in Qino at ${url}, session ${session}; other sessions, with other users, share your memories. You act with this user's rights.`;
+
 /** Does `entry` name the tool: by its name, or `prefix_*` for all below a path (`cms_*`, `cms_node_*`)? */
 const names = (entry: string, name: string) => entry.endsWith("_*") ? name.startsWith(entry.slice(0, -1)) : name === entry;
 
@@ -172,7 +176,8 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     const list = await choice(app, id, String(agent.system ?? ""), allowed, !given && allowed.length > AT_ONCE);
     const tools = [...more, ...list.map((r) => r.tool)];
     if (!given) {
-      const system = [agent.system, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
+      const role = agent.system ? `## Your role\n${agent.system}` : "";
+      const system = [situation(id, session, await app.url()), role, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
       const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
       await save(app, session, id, given = { role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
     }

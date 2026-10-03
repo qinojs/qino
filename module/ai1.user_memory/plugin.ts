@@ -5,7 +5,7 @@ import { hit, scored, sqlScore } from "@qino/qino/score";
 
 import { IN_MIND, personal } from "./mod.ts";
 
-import type { ApiTree, App, Ctx } from "@qino/qino";
+import type { ApiTree, App, Ctx, Usr } from "@qino/qino";
 
 // What agents keep about a user: their language, how to address them, their preferences. It is theirs
 // with every agent, and only in their own sessions. Hooked into ai1.agent, it can be left out or
@@ -61,11 +61,15 @@ export const api: ApiTree = {
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   await scored(app.db, "ai1_user_memory", 30 * 86400);
 
-  // into every turn: what is known about the user, and the tool to forget it; what is new about
+  // into every turn: who the user is and what is known about them, and the tool to forget it; what is new about
   // them, decide sorts out when the agent remembers it (below)
   app.on("ai1.agent:turn", async (turn) => {
     const memories = await list(app, turn.usrId, IN_MIND);
-    if (memories.length) turn.parts.push(`About the user you talk with:\n${memories.map((m) => `[u${m.id}] ${m.content}`).join("\n")}`);
+    const usr = await app.db.table("usr").get<Usr>(turn.usrId);
+    const name = [usr?.given_name, usr?.family_name].filter(Boolean).join(" ") || usr?.username;
+    const who = [name, await usr?.contact("email"), `id ${turn.usrId}`].filter(Boolean).join(", ");
+    turn.parts.push(`## User: ${who}\nKnown to every agent, in every session with them.` +
+      memories.map((m) => `\n[u${m.id}] ${m.content}`).join(""));
     turn.tools.push(...toTools({ user: app.apiTree["ai1.user_memory"] }, { apis: { "/user/memories/:memory": ["delete"] } }));
   }, { signal });
 

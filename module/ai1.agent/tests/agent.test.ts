@@ -8,6 +8,7 @@ import { hit } from "@qino/qino/score";
 
 import { HINT, index } from "../lib/memory.ts";
 import { keep } from "../lib/search.ts";
+import { situation } from "../lib/turn.ts";
 import { Agent, Session } from "../mod.ts";
 
 import type { Adapter } from "@qino/qino/ai1";
@@ -17,8 +18,8 @@ import type { Adapter } from "@qino/qino/ai1";
 // tools, "find:what" and "call:tool" to finding and calling more; "slow" takes a moment; "fail" fails. It embeds what mentions a logo apart from the rest.
 // What it is sent goes to `sent`.
 const sent: unknown[][] = [];
-// the standing hint and an empty memories header are left out of what the fake echoes
-const shown = (system: string) => system.replace(`\n${HINT}`, "").replace(/\n\n## Your memories(?!\n)/, "");
+// the situation, the role header, the standing hint and an empty memories header are left out of what the fake echoes
+const shown = (system: string) => system.replace(/^[^]*?## Your role\n/, "").replace(`\n${HINT}`, "").replace(/\n\n## Your memories(?!\n)/, "");
 
 const fake: Adapter = {
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
@@ -82,7 +83,7 @@ Deno.test("ai1.agent: a session goes on from what was said, with the agent's rol
   assertEquals((await session.ask("hi")).text, "lead #1 hi");
   assertEquals((await session.ask("time?")).text, "lead #2 it is noon");
   assertEquals(await kept(app, session.id), [
-    ["system", `lead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while it does not change
+    ["system", `${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while it does not change
     ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
     ["user", "time?", ""], ["assistant", "toolset_clock_get", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
@@ -201,7 +202,7 @@ Deno.test("ai1.agent: what the model is given is kept as the session starts: rol
   for (const [i, call] of calls.entries()) if (i) assertEquals(call.slice(0, calls[i - 1].length - 1), calls[i - 1].slice(0, -1)); // only added to
   const given = (await app.db.col`SELECT message FROM ai1_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
-  assertEquals(given.map((m) => m.content), [`lead\n\n## Your memories\n${HINT}`, "the logo is round"]); // given once, and the note
+  assertEquals(given.map((m) => m.content), [`${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, "the logo is round"]); // given once, and the note
   assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]);
   assertEquals(given[0].prefer, { cost: 1 });
   assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
