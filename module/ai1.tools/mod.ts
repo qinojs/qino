@@ -21,7 +21,7 @@ async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<string>
 /** Answer the messages, running the tools the model calls until it answers without; `messages` are
  *  the new ones (assistant and tool), for a history to keep; `onMessage` gets each as it comes, an
  *  answer with the model at its provider that gave it. The run acts as user `usrId` (its rights bound
- *  the tools), through the actor "ai1". `maxSteps` (default 8) bounds the calls. */
+ *  the tools), through the actor "ai1". `maxSteps` (default 10) bounds the calls. */
 export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, ...input }: Omit<TextInput, "tools"> & {
   tools: Tool[];
   usrId: number;

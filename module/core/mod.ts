@@ -9,7 +9,7 @@ export { runAs } from "./lib/ctx/runAs.ts";
 export { Emitter } from "./lib/Emitter.ts";
 export type { EventDecls, EventsOf } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
-export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";
+export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, sha256hex, uid, unb64url } from "./lib/crypto.ts";
 
 // HTML & general utilities
 export { hee, unhee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, enableItemSchemaDefaults, u2Root, header } from "./lib/util.ts";

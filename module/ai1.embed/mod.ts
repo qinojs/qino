@@ -1,4 +1,4 @@
-import { sql } from "@qino/qino";
+import { sha256hex, sql } from "@qino/qino";
 import { candidates, embed } from "@qino/qino/ai1";
 
 import { collection, embeddings } from "./lib/collection.ts";
@@ -18,7 +18,6 @@ type Input = string | { image: string; hash?: string };
 type Hit = { name: string; key: Key; chunk: number; content: string; score: number };
 type Options = { collection?: number };
 
-const sha256 = async (text: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))).toHex();
 
 /** The table `embedding_<name>` and its key columns. */
 function tableOf(db: Db, name: string) {
@@ -69,7 +68,7 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
   const text = typeof input === "string";
   if (!text && !c.vision) throw new Error(`"${c.model}" has no vision: it embeds no images`);
   const contents = text ? chunks(input, Number(await app.settings["ai1.embed"].chunkChars)) : [input.image];
-  const hashes = text || !input.hash ? await Promise.all(contents.map(sha256)) : [input.hash];
+  const hashes = text || !input.hash ? await Promise.all(contents.map(sha256hex)) : [input.hash];
   const where = sql`${match(keys, key)} AND collection_id = ${c.id}`;
   const old = new Map((await db.query`SELECT chunk, hash FROM ${t} WHERE ${where}`).map((row) => [Number(row.chunk), row.hash]));
   const changed = contents.flatMap((_, i) => old.get(i) === hashes[i] ? [] : [i]);
@@ -116,7 +115,7 @@ const queries = new WeakMap<App, Map<string, number[]>>();
  *  is not embedded again. Not the stored ones of equal text: a model embeds a query apart from what it
  *  finds (`purpose`). */
 async function queryVector(app: App, c: Collection, text: string): Promise<number[]> {
-  const cache = queries.get(app) ?? queries.set(app, new Map()).get(app)!, key = `${c.id} ${await sha256(text)}`;
+  const cache = queries.get(app) ?? queries.set(app, new Map()).get(app)!, key = `${c.id} ${await sha256hex(text)}`;
   const kept = cache.get(key);
   if (kept) return cache.delete(key), cache.set(key, kept), kept; // the latest used last
   const [values] = await vectors(app, c, { texts: [text], purpose: "query" });

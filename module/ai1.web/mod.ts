@@ -1,4 +1,4 @@
-import { ApiError, errMsg, sql, sqlSearch, unixTime } from "@qino/qino";
+import { ApiError, errMsg, sha256hex, sql, sqlSearch, unixTime } from "@qino/qino";
 import { collection, index, search as nearest } from "@qino/qino/ai1.embed";
 
 import { brave } from "./engines/brave.ts";
@@ -30,7 +30,6 @@ export const READERS: Record<string, { key?: string; read: Reader }> = {
 const MAX_AGE = 86400;
 
 const keyOf = async (app: App, name: string) => String(await app.settings.core.keys[name] ?? "");
-const sha256 = async (text: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))).toHex();
 
 /** Search the web with the first engine that has a key; if it fails, with the next. */
 export async function search(app: App, query: string, { count = 10 }: { count?: number } = {}): Promise<Result[]> {
@@ -49,7 +48,7 @@ export async function search(app: App, query: string, { count = 10 }: { count?: 
  *  the settings, kept, and made findable by meaning in the background (ai1.embed). */
 export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge?: number } = {}) {
   if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
-  const db = app.db, hash = await sha256(url);
+  const db = app.db, hash = await sha256hex(url);
   const kept = await db.row`SELECT id, url, title, content, reader, time FROM ai1_web_page WHERE url_hash = ${hash}`;
   if (kept && Number(kept.time) > unixTime() - maxAge) return kept;
   const name = String(await app.settings["ai1.web"].reader), reader = READERS[name];

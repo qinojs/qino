@@ -1,5 +1,5 @@
 import { AiError } from "@qino/qino/ai1";
-import { randB64, sha256b64url, unb64url } from "@qino/qino";
+import { fs, randB64, sha256b64url, unb64url } from "@qino/qino";
 
 import { syncModels } from "./provider.ts";
 
@@ -21,39 +21,34 @@ export type Pending = { state: string; nonce: string; verifier: string; client_i
 const AUTH = "https://auth.openai.com";
 const RESOURCE = "https://api.openai.com/v1";
 const PLAN_SCOPE = "chatgpt.tokens.use.direct";
-const REFRESH = Symbol("ai1.chatgpt.refresh");
 
 const dir = (app: App) => app.modules.get("ai1.chatgpt")!.data;
 const path = (app: App, user: number) => `${dir(app)}user-${user}.json`;
-const missing = (e: unknown) => e instanceof Deno.errors.NotFound;
 
+/** Credentials: only this process's user may read them. */
 async function atomic(path: string, value: unknown): Promise<void> {
-  const folder = path.slice(0, path.lastIndexOf("/") + 1);
-  await Deno.mkdir(folder, { recursive: true, mode: 0o700 });
-  await Deno.chmod(folder, 0o700);
+  await fs.mkdir(path.slice(0, path.lastIndexOf("/") + 1), { mode: 0o700 });
   const tmp = `${path}.${crypto.randomUUID()}.tmp`;
   try {
-    await Deno.writeTextFile(tmp, JSON.stringify(value), { mode: 0o600, createNew: true });
-    await Deno.chmod(tmp, 0o600);
-    await Deno.rename(tmp, path);
+    await fs.write(tmp, JSON.stringify(value), { createNew: true, mode: 0o600 });
+    await fs.rename(tmp, path);
   } finally {
-    await Deno.remove(tmp).catch((e) => { if (!missing(e)) throw e; });
+    await fs.remove(tmp);
   }
 }
 
 /** A stable host ID belongs to the app installation, never to a browser session. */
 export async function hostId(app: App): Promise<string> {
   const file = `${dir(app)}host.json`;
-  try { return String(JSON.parse(await Deno.readTextFile(file)).id); }
-  catch (e) { if (!missing(e)) throw e; }
+  if (await fs.isFile(file)) return String(JSON.parse(await fs.text(file)).id);
   const id = `urn:uuid:${crypto.randomUUID()}`;
   await atomic(file, { id });
   return id;
 }
 
 export async function accounts(app: App, user: number): Promise<Accounts> {
-  try { return JSON.parse(await Deno.readTextFile(path(app, user))); }
-  catch (e) { if (missing(e)) return { accounts: [] }; throw e; }
+  const file = path(app, user);
+  return await fs.isFile(file) ? JSON.parse(await fs.text(file)) : { accounts: [] };
 }
 
 /** Public account summary for user interfaces; credentials stay inside this module. */
@@ -159,14 +154,14 @@ export async function exchange(p: Pending, code: string, returnedClientId?: stri
     refresh_token: result.refresh_token, scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
 }
 
-type AppLocks = App & { [REFRESH]?: Map<string, Promise<Account>> };
+const refreshing = new WeakMap<App, Map<string, Promise<Account>>>();
 
 /** Refresh is serialized for each account in one local Qino process. */
 export async function active(app: App, user: number): Promise<Account | undefined> {
   const value = await accounts(app, user);
   const account = value.accounts.find((a) => a.client_id === value.active);
   if (!account || account.expires_at > Date.now() + 60_000) return account;
-  const locks = (app as AppLocks)[REFRESH] ??= new Map();
+  const locks = refreshing.get(app) ?? refreshing.set(app, new Map()).get(app)!;
   const key = `${user}:${account.client_id}`;
   let task = locks.get(key);
   if (!task) {

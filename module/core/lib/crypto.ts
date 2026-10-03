@@ -25,6 +25,9 @@ export const sha256b64 = async (str: string): Promise<string> => (await digest(s
 /** SHA-256 as base64url (43 chars), safe in columns and URLs. Used for PKCE. */
 export const sha256b64url = async (str: string): Promise<string> => b64url(await digest(str));
 
+/** SHA-256 as hex (64 chars), e.g. a content hash in a column. */
+export const sha256hex = async (str: string): Promise<string> => (await digest(str)).toHex();
+
 export const uid = (length?: number): string => randB64(16).slice(0, length);
 
 /**

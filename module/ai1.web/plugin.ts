@@ -1,6 +1,6 @@
 import { Access, ApiError, errMsg, s } from "@qino/qino";
 
-import { crawl, pages, read, search } from "./mod.ts";
+import { crawl, pages, read, READERS, search } from "./mod.ts";
 
 import type { ApiTree, Ctx } from "@qino/qino";
 
@@ -9,7 +9,7 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export const settingsSchema = {
   properties: {
     reader: {
-      type: "string", enum: ["fetch", "jina", "firecrawl"], default: "fetch",
+      type: "string", enum: Object.keys(READERS), default: "fetch",
       description: "Who reads pages: our own fetch, or a service with its key in core.keys.",
     },
   },

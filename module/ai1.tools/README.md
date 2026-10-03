@@ -18,6 +18,6 @@ const { text, messages } = await run(app, { messages: [{ role: "user", content: 
   ask for less.
 - Tool calls of one step run one after the other.
 - Each step prefers the model and provider of the previous answer; it can still fall back.
-- `maxSteps` (default 8) bounds the calls; beyond it `run()` throws.
+- `maxSteps` (default 10) bounds the calls; beyond it `run()` throws.
 - `messages` are the new ones (assistant and tool): keep them for a history. `onMessage` gets each as it
   comes, an answer with the model at its provider that gave it.
