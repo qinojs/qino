@@ -2,28 +2,22 @@ import { sql } from "@qino/qino";
 
 import type { Node } from "@qino/qino/cms";
 
-export async function eventDates(node: Node): Promise<Record<string, unknown>[]> {
-  try {
-    return await node.db.query`SELECT * FROM ${sql.id("event2_dates")} WHERE page_id = ${node.id} ORDER BY start_date`;
-  } catch { return []; }
+export function eventDates(node: Node): Promise<Record<string, unknown>[]> {
+  return node.db.query`SELECT * FROM ${sql.id("event2_dates")} WHERE page_id = ${node.id} ORDER BY start_date`.catch(() => []);
 }
 
 export async function eventInfo(node: Node): Promise<Record<string, unknown>> {
-  try {
-    return await node.db.row`SELECT * FROM ${sql.id("event2")} WHERE id = ${node.id}` ?? {};
-  } catch { return {}; }
+  return await node.db.row`SELECT * FROM ${sql.id("event2")} WHERE id = ${node.id}`.catch(() => undefined) ?? {};
 }
 
 export async function eventPerformers(node: Node): Promise<string[]> {
-  try {
-    const rows = await node.db.query`
-      SELECT u.given_name, u.family_name
-      FROM ${sql.id("event2_performer")} ep
-      JOIN ${sql.id("usr")} u ON u.id = ep.usr_id
-      WHERE ep.event_id = ${node.id}
-      ORDER BY ep.sort`;
-    return rows.map((row) => [row.given_name, row.family_name].filter(Boolean).join(" "));
-  } catch { return []; }
+  const rows = await node.db.query`
+    SELECT u.given_name, u.family_name
+    FROM ${sql.id("event2_performer")} ep
+    JOIN ${sql.id("usr")} u ON u.id = ep.usr_id
+    WHERE ep.event_id = ${node.id}
+    ORDER BY ep.sort`.catch(() => []);
+  return rows.map((row) => [row.given_name, row.family_name].filter(Boolean).join(" "));
 }
 
 export function eventDate(value: unknown): Date {
