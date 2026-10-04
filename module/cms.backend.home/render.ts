@@ -18,20 +18,40 @@ export function render(node: Node): Promise<HtmlString> {
 
 export async function list(node: Node): Promise<HtmlString> {
   const app = node.app, names = providers(app);
-  if (!names.length) return html`<p>${await app.t`No home providers are linked.`}</p>`;
-  return html.join(await Promise.all(names.map(async (provider) => {
+  const recording = app.modules.linked().some((mod) => mod.name === "home.record");
+  const series = recording ? await app.api["home.record"].series.get() as { provider: string; entity: string; enabled: boolean }[] : undefined;
+  const cards = await Promise.all(names.map(async (provider) => {
     const [endpoints, commands] = await Promise.allSettled([entities(app, provider), actions(app, provider)]);
     return html.async`<section class=u2-card>
       <div class=-head>${provider}<button type=button data-refresh>${app.t`Refresh`}</button></div>
-      ${endpoints.status === "fulfilled" ? renderEntities(app, endpoints.value) : html`<p role=alert>${errMsg(endpoints.reason)}</p>`}
+      ${endpoints.status === "fulfilled" ? renderEntities(app, endpoints.value, series ? { provider, series } : undefined) : html`<p role=alert>${errMsg(endpoints.reason)}</p>`}
       ${commands.status === "fulfilled"
         ? renderActions(app, provider, commands.value, endpoints.status === "fulfilled" ? endpoints.value : [])
         : html`<p role=alert>${errMsg(commands.reason)}</p>`}
     </section>`;
-  })));
+  }));
+  return html.async`${names.length ? cards : html.async`<p>${app.t`No home providers are linked.`}</p>`}
+    ${series?.length ? html.async`<section class=u2-card>
+      <div class=-head>${app.t`Local recordings`}</div>
+      <table class=u2-table>
+        <thead><tr>
+          <th>${app.t`Provider`}
+          <th>${app.t`Entity`}
+          <th>${app.t`Record`}
+        <tbody>${series.map((row) => html.async`<tr>
+          <td>${row.provider}</td>
+          <td><code>${row.entity}</code></td>
+          <td>${recordInput(app, row.provider, row.entity, row.enabled)}</td>
+        </tr>`)}</tbody>
+      </table>
+    </section>` : ""}`;
 }
 
-export function renderEntities(app: App, endpoints: Entity[]): Promise<HtmlString> {
+function recordInput(app: App, provider: string, entity: string, enabled: boolean): Promise<HtmlString> {
+  return html.async`<input type=checkbox data-record data-provider="${provider}" data-entity="${entity}" aria-label="${app.t`Record`} ${entity}" ${enabled ? html.raw("checked") : ""}>`;
+}
+
+export function renderEntities(app: App, endpoints: Entity[], recording?: { provider: string; series: { provider: string; entity: string; enabled: boolean }[] }): Promise<HtmlString> {
   const t = app.t;
   if (!endpoints.length) return html.async`<p>${t`No entities were found.`}</p>`;
   return html.async`<table class=u2-table>
@@ -40,6 +60,7 @@ export function renderEntities(app: App, endpoints: Entity[]): Promise<HtmlStrin
       <th>${t`State`}
       <th>${t`Availability`}
       <th>${t`Updated`}
+      ${recording ? html.async`<th>${t`Record`}</th>` : ""}
     <tbody>${endpoints.map((entity) => html.async`<tr>
       <td>${entity.name}<br><code>${entity.id}</code>
       <td><pre>${text(entity.state)}</pre>
@@ -48,6 +69,7 @@ export function renderEntities(app: App, endpoints: Entity[]): Promise<HtmlStrin
         </details>` : ""}
       <td>${entity.available ? t`Available` : t`Unavailable`}
       <td>${entity.updated ?? "—"}
+      ${recording ? html.async`<td>${recordInput(app, recording.provider, entity.id, recording.series.some((row) => row.provider === recording.provider && row.entity === entity.id && row.enabled))}</td>` : ""}
     </tr>`)}
     </tbody>
   </table>`;

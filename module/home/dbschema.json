@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "home_provider": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "name": { "type": "string", "maxLength": 191 },
+          "adapter": { "type": "string", "maxLength": 191, "x-index": true },
+          "url": { "type": "string", "maxLength": 2048 },
+          "config": { "type": "object" },
+          "enabled": { "type": "boolean", "default": true }
+        },
+        "required": ["id", "name", "adapter", "url", "config", "enabled"]
+      }
+    }
+  }
+}

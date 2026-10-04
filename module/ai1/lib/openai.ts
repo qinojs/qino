@@ -46,16 +46,17 @@ const note = (content: string | Part[]): Message => ({
   content: typeof content === "string" ? `<system-reminder>\n${content}\n</system-reminder>` : [{ type: "text", text: "<system-reminder>" }, ...content, { type: "text", text: "</system-reminder>" }],
 });
 
-async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, format?: unknown): Promise<Omit<TextOutput, "model" | "modelProvider">> {
+/** `more` goes into the request as it is: a response format, a cache mark. */
+async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, more: Record<string, unknown> = {}): Promise<Omit<TextOutput, "model" | "modelProvider">> {
   const start = messages.findIndex((m) => m.role !== "system");
   const body = {
     model: call.model,
     messages: messages.map((m, i) => toOpenAi(m.role === "system" && i > start && start >= 0 ? note(m.content) : m)),
     tools: tools?.length ? tools.map(({ name, description, parameters }) => ({ type: "function", function: { name, description, parameters } })) : undefined,
-    response_format: format ? { type: "json_schema", json_schema: { name: "output", schema: format } } : undefined,
     temperature,
     max_tokens: maxTokens,
     ...(onText && { stream: true, stream_options: { include_usage: true } }),
+    ...more,
   };
   const res = await request(call, "/chat/completions", body).catch((e) => {
     // not merged yet: a late system note right after a user message makes two in a row
@@ -126,9 +127,12 @@ async function readSse(res: Response, onData: (data: any) => void): Promise<bool
   }
 }
 
+const format = (schema: StructuredInput<unknown>["schema"]) =>
+  ({ response_format: { type: "json_schema", json_schema: { name: "output", schema: jsonSchema(schema) } } });
+
 export const openai: Adapter = {
   text: (call, input: TextInput) => text(call, input),
-  structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, jsonSchema(schema))).text, schema),
+  structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, format(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");
     return await vectors(call, { model: call.model, input: input.texts });
@@ -159,10 +163,16 @@ export const openai: Adapter = {
   },
 };
 
+// OpenRouter caches only when asked (Anthropic); the mark at the top caches up to the last message.
+const cache = (input: TextInput) => input.cache ? { cache_control: { type: "ephemeral" } } : {};
+
 /** OpenRouter: OpenAI-compatible, but images at /images, and decision models (TypeSafe Jev) through
  *  its System One API. */
 export const openrouter: Adapter = {
   ...openai,
+  text: (call, input: TextInput) => text(call, input, cache(input)),
+  structured: async (call, { schema, ...input }: StructuredInput<unknown>) =>
+    parseStructured((await text(call, input, { ...format(schema), ...cache(input) })).text, schema),
   image: async (call, { prompt, n }: { prompt: string; n?: number }) => urls(call, prompt, await post(call, "/images", { model: call.model, prompt, n })),
   decide: systemone.decide,
 };

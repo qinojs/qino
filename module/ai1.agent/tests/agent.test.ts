@@ -268,10 +268,12 @@ Deno.test("ai1.agent: cancel stops the answer on its way, even one that never co
   const hung = session.ask("hang");
   await new Promise((r) => setTimeout(r, 20));
   const next = session.ask("hello"); // waits for its turn
+  assert(session.running);
   assert(session.cancel());
   await assertRejects(() => hung, Error, "Cancelled");
   assertStringIncludes((await next).text, "hello");
   assertEquals(session.cancel(), false); // nothing on its way
+  assertEquals(session.running, false);
 }));
 
 Deno.test("ai1.agent: what a step said before it broke off stays, marked", () => withApp(async (app) => {

@@ -127,3 +127,11 @@ and unavailable entities using `entity` and `previous`; they should choose their
 Derived entities and an alarm acknowledgement/archive UI remain separate extensions. The current
 modules do not assume a numeric state, a device taxonomy or a fixed alarm vocabulary. `home.history`
 reads provider-specific histories without requiring a Qino measurement database.
+
+## Optional local recording and charts
+
+`home.record` owns the optional measurement database (`dbschema.json`), selected entity capture and
+periodic availability samples. `home.history` accesses local or upstream archives through the same
+API. `cms.cont.home.chart` renders numeric measurements or cumulative-counter consumption with a
+real time axis and visible gaps. These capabilities do not require Home Assistant. Providers may
+supply optional `Entity.unit`; Home Assistant maps its native unit attribute to that field.

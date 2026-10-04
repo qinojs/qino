@@ -21,8 +21,9 @@ async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<string>
 /** Answer the messages, running the tools the model calls until it answers without; `messages` are
  *  the new ones (assistant and tool), for a history to keep; `onMessage` gets each as it comes, an
  *  answer with the model at its provider that gave it. The run acts as user `usrId` (its rights bound
- *  the tools), through the actor "ai1". `maxSteps` (default 10) bounds the calls. */
-export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, ...input }: Omit<TextInput, "tools"> & {
+ *  the tools), through the actor "ai1". `maxSteps` (default 10) bounds the calls. Each step sends the
+ *  history again: `cache` (default true) keeps it in the provider's cache. */
+export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, cache = true, ...input }: Omit<TextInput, "tools"> & {
   tools: Tool[];
   usrId: number;
   maxSteps?: number;
@@ -32,7 +33,7 @@ export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, ...input
     const messages: Message[] = [], ctx = getCtx();
     const add = async (message: Message, modelProvider?: number) => { messages.push(message); await onMessage?.(message, modelProvider); };
     for (let step = 0, pin = opts; step < maxSteps; step++) {
-      const answer = await text(app, { ...input, tools, messages: [...input.messages, ...messages] }, pin);
+      const answer = await text(app, { ...input, cache, tools, messages: [...input.messages, ...messages] }, pin);
       pin = { ...opts, model: answer.model, modelProvider: answer.modelProvider }; // prefer the provider with the cached history
       await add({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls }, answer.modelProvider);
       if (!answer.toolCalls.length) return { ...answer, messages };

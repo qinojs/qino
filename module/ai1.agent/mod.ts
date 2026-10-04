@@ -1,7 +1,7 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { ask, cancel, checkTools, note, ranked } from "./lib/turn.ts";
+import { ask, cancel, checkTools, note, ranked, running } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
 
@@ -49,6 +49,8 @@ export class Session {
     this.#id = id;
   }
   get id(): number { return this.#id; }
+  /** Whether an answer is on its way. */
+  get running(): boolean { return running(this.#app, this.#id); }
 
   /** Answer `content`, going on from what was said; one turn after the other. */
   ask(content: string | Part[], opts: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {

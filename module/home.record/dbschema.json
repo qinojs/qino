@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "home_series": {
+      "additionalProperties": {
+        "properties": {
+          "provider": { "type": "string", "maxLength": 191, "x-index": "primary" },
+          "entity": { "type": "string", "maxLength": 191, "x-index": "primary" },
+          "enabled": { "type": "boolean", "default": true }
+        },
+        "required": ["provider", "entity", "enabled"]
+      }
+    },
+    "home_sample": {
+      "additionalProperties": {
+        "properties": {
+          "provider": { "type": "string", "maxLength": 191, "x-index": "primary" },
+          "entity": { "type": "string", "maxLength": 191, "x-index": "primary" },
+          "time": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "x-index": "primary" },
+          "data": { "type": "string", "maxLength": 1073741823 }
+        },
+        "required": ["provider", "entity", "time", "data"]
+      }
+    }
+  }
+}

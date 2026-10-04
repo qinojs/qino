@@ -108,6 +108,11 @@ The timeout (`timeout_ms`) counts silence, not length: a long answer that keeps 
 Once streamed text went out (`onText`), or the caller cancelled (`opts.signal`), nothing falls
 back any more.
 
+`cache: true` in the input keeps the prompt in the provider's cache where it caches only when asked
+(OpenRouter for Anthropic): a cache hit costs a tenth, a write a quarter more. Off by default, as a
+single call gains nothing; `run()` of ai1.tools sets it, its steps send the same start again. OpenAI,
+Gemini and others cache on their own.
+
 ## Browser
 
 [ai1.api](../ai1.api/) offers the capabilities to signed-in users.

@@ -21,6 +21,9 @@ export type TextInput = {
   tools?: Pick<Tool, "name" | "description" | "parameters">[];
   temperature?: number;
   maxTokens?: number;
+  /** Keep the prompt in the provider's cache, where it caches only when asked: worth it when the same
+   *  start is sent again soon (tool loops), else the cache write costs extra. */
+  cache?: boolean;
   /** Streams the answer. Once text went out, a failure no longer falls back. */
   onText?: (delta: string) => void;
 };

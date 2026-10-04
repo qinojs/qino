@@ -523,3 +523,17 @@ Deno.test("ai1: quality, the default, is a capability's own score, else intellig
   await writers.db.table("ai1_model_score").insert({ model_id: 2, metric: "intelligence", value: 50 });
   assertEquals((await candidates(writers, "text", ask("hi")))[0].model, "clever");
 });
+
+Deno.test("ai1: cache asks openrouter to cache the prompt; unasked, and at openai, nothing is sent", async () => {
+  const bodies: any[] = [];
+  const answer = { choices: [{ message: { content: "ok" }, finish_reason: "stop" }] };
+  await withFetch((_url, init) => (bodies.push(JSON.parse(String(init!.body))), Response.json(answer)), async () => {
+    const testApp = await app({ chat: ["text", "structured"] });
+    await testApp.db.exec`UPDATE ai1_provider SET type = 'openrouter', endpoint = 'https://or.test/v1'`;
+    await text(testApp, { ...ask("hi"), cache: true });
+    await text(testApp, ask("hi"));
+    await testApp.db.exec`UPDATE ai1_provider SET type = 'openai'`;
+    await text(testApp, { ...ask("hi"), cache: true });
+    assertEquals(bodies.map((b) => b.cache_control), [{ type: "ephemeral" }, undefined, undefined]);
+  });
+});

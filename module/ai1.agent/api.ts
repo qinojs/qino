@@ -101,8 +101,9 @@ export const api: ApiTree = {
         if (!ctx.userId || usr !== ctx.userId) throw new NotFoundError("No such session");
         return id;
       },
-      get: verb<{ session: number }>("The session: its agent and everything said", async ({ session }, ctx) => ({
+      get: verb<{ session: number }>("The session: its agent, everything said, and whether an answer is on its way", async ({ session }, ctx) => ({
         agent: Number(await ctx.app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${session}`),
+        running: new Session(ctx.app, session).running,
         messages: (await ctx.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
           FROM ai1_session_message m
           LEFT JOIN ai1_model_provider mp ON mp.id = m.model_provider_id

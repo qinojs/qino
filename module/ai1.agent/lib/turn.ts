@@ -15,10 +15,10 @@ const STEPS = 100;
 
 // One turn after the other per session, as a person answers: a message waits for the one before.
 const queues = new WeakMap<App, Map<number, Promise<unknown>>>();
-const running = new WeakMap<App, Map<number, AbortController>>();
+const aborts = new WeakMap<App, Map<number, AbortController>>();
 function inTurn<T>(app: App, session: number, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const queue = queues.get(app) ?? queues.set(app, new Map()).get(app)!;
-  const now = running.get(app) ?? running.set(app, new Map()).get(app)!;
+  const now = aborts.get(app) ?? aborts.set(app, new Map()).get(app)!;
   const start = () => {
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(new Error(`Cancelled after ${TURN_MS / 60_000} minutes`)), TURN_MS);
@@ -37,9 +37,12 @@ function inTurn<T>(app: App, session: number, fn: (signal: AbortSignal) => Promi
   return turn;
 }
 
+/** Whether a turn is on its way in `session`, or waiting for one. */
+export const running = (app: App, session: number): boolean => !!queues.get(app)?.has(session);
+
 /** Cancel the turn running in `session`; the one waiting next goes on. Whether one ran. */
 export function cancel(app: App, session: number): boolean {
-  const abort = running.get(app)?.get(session);
+  const abort = aborts.get(app)?.get(session);
   abort?.abort(new Error("Cancelled"));
   return !!abort;
 }

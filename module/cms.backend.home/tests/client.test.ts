@@ -68,4 +68,10 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   await failed;
   assertEquals(messages.at(-1), "Invalid setting");
   assertEquals(button.disabled, false);
+  target = { ...button, dataset: { provider: "other", entity: "counter" }, checked: false };
+  const recorded = listeners.change(event);
+  assertEquals(calls.at(-1), { record: { provider: "other", entity: "counter", enabled: false } });
+  release!({ ok: true, message: "Recording updated." });
+  await recorded;
+  assertEquals(messages.at(-1), "Recording updated.");
 });

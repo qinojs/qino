@@ -233,6 +233,7 @@ function entityOf(state: State): Entity {
     attributes: structuredClone(state.attributes),
     available: state.state !== "unavailable" && state.state !== "unknown",
     updated: state.last_updated,
+    ...(typeof state.attributes.unit_of_measurement === "string" ? { unit: state.attributes.unit_of_measurement } : {}),
   };
 }
 

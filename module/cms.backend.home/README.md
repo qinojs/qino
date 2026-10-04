@@ -38,3 +38,9 @@ belong to the providers. The panel adds no separate permission model, device pro
 tables or rule engine.
 
 Rules remain in [sandbox.flow](../sandbox.flow/); schedules remain in [cron](../cron/).
+
+When `home.record` is linked, entity rows include a **Record** checkbox. Changes use the real
+user-protected recording API, and stopped recordings retain their observations. Install
+`cms.cont.home.chart` for measurement and counter consumption content nodes.
+The separate local-recordings table also lets you stop or resume selections whose provider or
+entity is currently missing; it is a sibling card, not nested inside a provider card.

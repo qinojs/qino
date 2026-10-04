@@ -55,12 +55,25 @@ cms.initNode("backend.ai1.chat", (el) => {
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
   let session = Number(new URL(location.href).searchParams.get("session")) || Number(sessionStorage.getItem(KEY)) || undefined;
   let last = 0, sent, showing = Promise.resolve();
+  // while an answer is on its way, the send button stops it, and its steps show as they are kept; what
+  // was said and done so far stays
+  const button = ask.querySelector("button"), label = button.textContent;
+  // per session: the ones asked from here, waiting for their answer, and the ones stopped from here
+  const asking = new Set(), stopped = new Set();
+  let busy = false, poll;
+  const working = (on) => {
+    busy = on;
+    button.textContent = on ? button.dataset.stop : label;
+    clearInterval(poll);
+    if (on) poll = setInterval(() => show().catch(() => {}), 2000);
+  };
 
   // only the messages since the last one are added, so what is opened or selected stays as it is; one
   // after the other, as it is also called while an answer is on its way
   const show = () => showing = showing.catch(() => {}).then(async () => {
-    const id = session, { agent, messages } = await agents.sessions(id).get();
+    const id = session, { agent, messages, running } = await agents.sessions(id).get();
     if (id !== session) return;
+    if ((asking.has(id) || running) !== busy) working(!busy); // an answer on its way, also after a reload
     title.replaceChildren(colored(`#${agent}`), ` · ${id}`);
     const news = messages.filter((m) => m.id > last);
     if (!news.length) return;
@@ -75,6 +88,7 @@ cms.initNode("backend.ai1.chat", (el) => {
     sent = undefined;
     log.replaceChildren();
     ask.hidden = false;
+    if (asking.has(id) !== busy) working(!busy); // until show() knows
     for (const button of el.querySelectorAll("[data-session]")) button.setAttribute("aria-current", String(+button.dataset.session === id));
     return show();
   };
@@ -131,34 +145,36 @@ cms.initNode("backend.ai1.chat", (el) => {
     } catch (err) { await alert(err.message); }
   });
 
+  button.addEventListener("click", (e) => {
+    if (!busy) return;
+    e.preventDefault(); // no submit, also not blocked by the empty field
+    stopped.add(session);
+    agents.sessions(session).cancel.post().catch((err) => alert(err.message));
+  });
   ask.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const field = ask.elements.content, button = ask.querySelector("button"), stop = ask.querySelector("[data-stop]"), content = field.value;
+    const field = ask.elements.content, content = field.value;
     field.value = "";
-    button.disabled = true;
-    stop.hidden = false;
+    const id = session;
+    asking.add(id);
+    stopped.delete(id);
+    working(true);
     log.append(sent = await entry({ role: "user", content }));
     log.scrollTop = log.scrollHeight;
-    const poll = setInterval(() => show().catch(() => {}), 2000); // the steps of the answer, as they are kept
-    const id = session;
     try {
       await agents.sessions(id).ask.post({ content });
       const first = [...el.querySelectorAll("[data-session]")].find((button) => +button.dataset.session === id)?.closest("tr").querySelector("[data-first]");
       const line = content.replace(/\s+/g, " ").trim();
       if (first?.textContent === "–") first.textContent = line.slice(0, SHORT) + (line.length > SHORT ? " …" : "");
-    } catch (err) { await alert(err.message); }
-    clearInterval(poll);
-    button.disabled = false;
-    stop.hidden = true;
-    await show();
+    } catch (err) { if (!stopped.has(id)) await alert(err.message); }
+    asking.delete(id);
+    if (id === session) await show(); // another one shown has its own state
   });
-  // the answer on its way stops; what was said and done so far stays
-  ask.querySelector("[data-stop]").addEventListener("click", () => agents.sessions(session).cancel.post().catch((err) => alert(err.message)));
   // As other chats: Enter sends, Shift + Enter makes a new line; not while an input method composes,
   // not on a touch screen (there the button sends), not while an answer is on its way
   ask.elements.content.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" || e.shiftKey || e.isComposing || matchMedia("(pointer: coarse)").matches) return;
     e.preventDefault();
-    if (!ask.querySelector("button").disabled) ask.requestSubmit();
+    if (!busy) ask.requestSubmit();
   });
 });

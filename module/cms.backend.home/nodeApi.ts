@@ -10,6 +10,12 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       await saveSettings(node.app, vars.config);
       return { ok: true, message: await node.app.t`Settings saved. Reconnecting.` };
     }
+    if (vars.record !== undefined) {
+      const record = vars.record as Record<string, unknown>;
+      if (!record || typeof record.provider !== "string" || typeof record.entity !== "string") throw new ApiError(400, "Select a provider and entity");
+      await node.app.api["home.record"].provider(record.provider).entity(record.entity).post({ enabled: record.enabled });
+      return { ok: true, message: await node.app.t`Recording updated.` };
+    }
     if (vars.action === undefined) return false;
     if (typeof vars.provider !== "string" || typeof vars.action !== "string" || !vars.action)
       throw new ApiError(400, "Select a provider and an action");

@@ -1,5 +1,5 @@
 import { requestStorage, toTools } from "@qino/qino";
-import { assertEquals, assertRejects, assertThrows, testContext } from "@qino/qino/tests";
+import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { history, providers } from "../mod.ts";
 import { api } from "../plugin.ts";
@@ -16,22 +16,23 @@ const provider: Provider = {
   }]),
 };
 const appOf = (...providers: Provider[]) => ({
+  fire: () => Promise.resolve(),
   modules: { linked: () => providers.map((homeProvider) => ({ plugin: { homeProvider } })) },
 }) as unknown as App;
 
 Deno.test("home history discovers optional capabilities and preserves native samples with UTC periods", async () => {
   const app = appOf(provider, { ...provider, name: "live", history: undefined });
-  assertEquals(providers(app), ["archive"]);
+  assertEquals(await providers(app), ["archive"]);
   assertEquals(await history(app, "archive", "same", period), [{
     id: "same", name: "same", state: false, available: true, updated: "2026-10-03T00:00:00.000Z",
     attributes: { period: { start: "2026-10-03T00:00:00.000Z", end: "2026-10-04T00:00:00.000Z" } },
   }]);
-  assertThrows(() => history(app, "live", "same", period), Error, "does not support history");
-  assertThrows(() => history(app, "missing", "same", period), Error, "not linked");
-  assertThrows(() => history(app, "archive", "same", { start: period.end, end: period.start }), Error, "precede");
-  assertThrows(() => history(app, "archive", "same", { ...period, start: "2026-10-03T00:00:00" }), Error, "timezone");
-  assertThrows(() => history(app, "archive", "same", { ...period, start: "badZ" }), Error, "timezone");
-  assertThrows(() => providers(appOf(provider, provider)), Error, "duplicate");
+  await assertRejects(() => history(app, "live", "same", period), Error, "does not support history");
+  await assertRejects(() => history(app, "missing", "same", period), Error, "not linked");
+  await assertRejects(() => history(app, "archive", "same", { start: period.end, end: period.start }), Error, "precede");
+  await assertRejects(() => history(app, "archive", "same", { ...period, start: "2026-10-03T00:00:00" }), Error, "timezone");
+  await assertRejects(() => history(app, "archive", "same", { ...period, start: "badZ" }), Error, "timezone");
+  await assertRejects(() => providers(appOf(provider, provider)), Error, "duplicate");
   assertEquals(await history(appOf({ ...provider, history: () => Promise.resolve([]) }), "archive", "same", period), []);
 });
 

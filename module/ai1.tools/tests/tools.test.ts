@@ -9,10 +9,13 @@ import type { Adapter } from "@qino/qino/ai1";
 
 // Asked "a b", the model calls the tools a and b, then answers with their results; asked "loop", it
 // never stops calling; asked "stay", it makes model n the better one after its first step; asked
-// "provider", it makes the other provider cheaper. It streams what it answers.
+// "provider", it makes the other provider cheaper. It streams what it answers. Whether each call asked
+// for the cache goes to `cached`.
 let current: App;
+const cached: unknown[] = [];
 const fake: Adapter = {
-  text: (call, { messages, onText }) => {
+  text: (call, { messages, onText, cache }) => {
+    cached.push(cache);
     const asked = messages[0].content, last = messages.at(-1);
     if (asked === "stay") {
       if (last.role === "tool") return Promise.resolve({ text: call.model, toolCalls: [], truncated: false });
@@ -117,4 +120,11 @@ Deno.test("ai1.tools: the steps are bounded", () => withApp(async (testApp) => {
   order.length = 0;
   await assertRejects(() => run(testApp, { ...ask("loop"), maxSteps: 3 }), Error, "after 3 steps");
   assertEquals(order.length, 3);
+}));
+
+Deno.test("ai1.tools: each step asks for the provider's cache, unless told not to", () => withApp(async (testApp) => {
+  cached.length = 0;
+  await run(testApp, ask("echo"));
+  await run(testApp, { ...ask("echo"), cache: false });
+  assertEquals(cached, [true, true, false, false]);
 }));

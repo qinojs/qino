@@ -85,8 +85,7 @@ async function render(node: Node): Promise<HtmlString> {
       <div class="-body u2-flex -Col" style="flex-wrap:nowrap" data-log><small>${t`Start a session with an agent.`}</small></div>
       <form class=u2-flex data-ask hidden>
         <textarea name=content rows=3 required placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
-        <button>${t`Send`}</button>
-        <button type=button data-stop hidden>${t`Stop`}</button>
+        <button data-stop="${t`Stop`}">${t`Send`}</button>
       </form>
     </div>
   </div>`;

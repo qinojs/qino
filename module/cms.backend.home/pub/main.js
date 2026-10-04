@@ -8,6 +8,8 @@ cms.initNode("backend.home", (el) => {
   });
 
   el.addEventListener("change", (event) => {
+    const record = event.target.closest("[data-record]");
+    if (record) return execute(record, { record: { provider: record.dataset.provider, entity: record.dataset.entity, enabled: record.checked } });
     const select = event.target.closest("select[name=action]");
     if (!select) return;
     const fields = JSON.parse(select.selectedOptions[0]?.dataset.fields || "{}");
