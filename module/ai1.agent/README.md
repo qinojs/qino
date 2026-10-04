@@ -24,6 +24,9 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 - **Notes:** `session.note(content)` tells the agent something without asking. It reads it with the
   next question (the model gets it as a `system` message in the history).
 - **One turn after the other** per session: a message waits for the answer to the one before.
+  `session.cancel()` stops the one on its way; after an hour it is cancelled anyway, so a stream
+  that never ends cannot keep the session. What a cancelled step said so far stays, marked
+  "(interrupted)"; a tool call it had not finished is lost.
 - **Memories** are short facts that belong to the agent and outlast its sessions: everyone who
   talks with it shares them. They are always in its context, the strongest first; with the tools
   `remember` (also to replace one by its id) and `forget`, which every agent has, it keeps them up
@@ -71,6 +74,7 @@ agent/:agent/search             post    its own memory: memories and past sessio
 sessions/:session               get     its agent and everything said
 sessions/:session/ask           post    { content } → the answer
 sessions/:session/note          post    { content }
+sessions/:session/cancel        post    → { cancelled }
 ```
 
 **Choosing the model:** `prefer` (ai1's weights, e.g. `{ quality: 2, cost: 1 }`) belongs to the agent;
@@ -101,3 +105,4 @@ What the agent grows into, modelled on how a person thinks and remembers.
 | Intentions | remembering to do something later | a message to itself by cron | with a cron tool set |
 | Goals, drive | what one wants to reach | its own list of open tasks | later |
 | Tiredness | energy is limited | cost as a budget; a full context is a reason to sleep | later |
+| Working in steps | a big job in parts, each one done | a page in several tool calls (frame, sections, script): a cancel loses one part, not all | idea |

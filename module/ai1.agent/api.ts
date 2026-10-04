@@ -121,6 +121,12 @@ export const api: ApiTree = {
           { content: s.string() },
         ),
       },
+      cancel: {
+        post: verb<{ session: number }>(
+          "Stop the answer on its way; what was said and done so far stays",
+          ({ session }, ctx) => ({ cancelled: new Session(ctx.app, session).cancel() }),
+        ),
+      },
       note: {
         post: verb<{ session: number; content: string }>(
           "Give the agent system context, without a question; it gets it with the next one.",

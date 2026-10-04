@@ -19,7 +19,7 @@ Deno.test("cms.backend.ai1.chat: choose an agent, resume own sessions, and previ
       await app.db.table("ai1_model_provider").insert({ model_id: id, provider_id: 1 });
       for (const capability of capabilities) await app.db.table("ai1_model_capability").insert({ model_id: id, capability });
     }
-    const agent = await Agent.create(app, { system: "<b>lead</b>\nmore", tools: ["ai1.agent"], prefer: { cost: 3 } });
+    const agent = await Agent.create(app, { system: "<b>lead</b>\nmore", tools: ["ai1Agent_*"], prefer: { cost: 3 } });
     const own = await agent.start(7), other = await agent.start(8);
     await app.db.table("ai1_session_message").insert({ session_id: own.id, message: JSON.stringify({ role: "user", content: "My first question about the <blue> logo " + "x".repeat(90) }) });
     const node = { app, page: async () => ({ url: async () => "/chat" }) } as unknown as Node;

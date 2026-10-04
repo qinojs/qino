@@ -8,15 +8,40 @@ import * as search from "./search.ts";
 import type { ApiTree, App, Ctx, Method, Tool } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai1";
 
+/** A turn runs this long at most, then it is cancelled: a stream that never ends must not keep the session. */
+const TURN_MS = 60 * 60_000;
+/** Model calls per turn at most: a big task takes many steps, the time bounds it. */
+const STEPS = 100;
+
 // One turn after the other per session, as a person answers: a message waits for the one before.
 const queues = new WeakMap<App, Map<number, Promise<unknown>>>();
-function inTurn<T>(app: App, session: number, fn: () => Promise<T>): Promise<T> {
+const running = new WeakMap<App, Map<number, AbortController>>();
+function inTurn<T>(app: App, session: number, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const queue = queues.get(app) ?? queues.set(app, new Map()).get(app)!;
-  const turn = (queue.get(session) ?? Promise.resolve()).then(fn, fn);
+  const now = running.get(app) ?? running.set(app, new Map()).get(app)!;
+  const start = () => {
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(new Error(`Cancelled after ${TURN_MS / 60_000} minutes`)), TURN_MS);
+    now.set(session, abort);
+    // cancelled, the session is free at once, even if something below ignores the signal
+    const stopped = new Promise<never>((_, reject) => abort.signal.addEventListener("abort", () => reject(abort.signal.reason), { once: true }));
+    return Promise.race([fn(abort.signal), stopped]).finally(() => {
+      clearTimeout(timer);
+      if (now.get(session) === abort) now.delete(session);
+    });
+  };
+  const turn = (queue.get(session) ?? Promise.resolve()).then(start, start);
   const done = () => { if (queue.get(session) === tail) queue.delete(session); };
   const tail = turn.then(done, done);
   queue.set(session, tail);
   return turn;
+}
+
+/** Cancel the turn running in `session`; the one waiting next goes on. Whether one ran. */
+export function cancel(app: App, session: number): boolean {
+  const abort = running.get(app)?.get(session);
+  abort?.abort(new Error("Cancelled"));
+  return !!abort;
 }
 
 /** Told to every agent first: where it is and how it exists. */
@@ -162,7 +187,7 @@ export function note(app: App, session: number, content: string | Part[]): Promi
  *  (role with memories, tools, prefer) as the first message, of role `system`; a failure as one of
  *  role `error`, not sent again. What was sent is never changed, only added to (prompt cache). */
 export function ask(app: App, session: number, content: string | Part[], { onText }: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
-  return inTurn(app, session, async () => {
+  return inTurn(app, session, async (signal) => {
     const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai1_session s JOIN ai1_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
     if (!agent) throw new Error(`No session ${session}`);
     const kept = (await app.db.query`SELECT id, message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
@@ -190,14 +215,20 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));
     const messages: Message[] = [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...answered(history.map((row: { message: Message }) => row.message)), asked];
     const usrId = Number(agent.usr_id);
+    // always streamed: a long answer is no silence, and what a cancelled step said so far stays
+    let partial = "";
     const out = await run(app, {
       messages,
       tools: offered,
       usrId,
-      onText,
-      onMessage: (message, modelProvider) => save(app, session, id, message, modelProvider), // each step, as it comes
-    }, { prefer })
-      .catch(async (e) => { throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e); });
+      onText: (delta) => { partial += delta; onText?.(delta); },
+      maxSteps: STEPS,
+      onMessage: (message, modelProvider) => (partial = "", save(app, session, id, message, modelProvider)), // each step, as it comes
+    }, { prefer, signal })
+      .catch(async (e) => {
+        if (partial) await save(app, session, id, { role: "assistant", content: `${partial}\n\n(interrupted)` });
+        throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e);
+      });
     // in the background: all the model was given and answered, as it was sent (e.g. to compact it)
     const { model, modelProvider } = out;
     app.fire("ai1.agent:answered", { agent: id, session, usrId, messages: [...messages, ...out.messages], tools: offered, model, modelProvider, prefer })

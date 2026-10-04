@@ -86,6 +86,7 @@ async function render(node: Node): Promise<HtmlString> {
       <form class=u2-flex data-ask hidden>
         <textarea name=content rows=3 required placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
         <button>${t`Send`}</button>
+        <button type=button data-stop hidden>${t`Stop`}</button>
       </form>
     </div>
   </div>`;

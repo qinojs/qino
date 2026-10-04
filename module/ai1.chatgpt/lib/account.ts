@@ -78,7 +78,7 @@ export async function remove(app: App, user: number, clientId: string): Promise<
 
 export async function select(app: App, user: number, clientId: string): Promise<void> {
   const value = await accounts(app, user);
-  if (!value.accounts.some((a) => a.client_id === clientId)) throw new AiError("Unknown ChatGPT account", 404, true);
+  if (!value.accounts.some((a) => a.client_id === clientId)) throw new AiError("Unknown ChatGPT account", 404);
   value.active = clientId;
   await save(app, user, value);
 }
@@ -108,7 +108,7 @@ export function pending(user: number, clientId: string, redirectUri: string, ret
 
 async function token(body: URLSearchParams): Promise<Record<string, unknown>> {
   const res = await fetch(AUTH + "/api/accounts/oauth/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
-  if (!res.ok) throw new AiError(`ChatGPT authorization failed (HTTP ${res.status})`, res.status, true);
+  if (!res.ok) throw new AiError(`ChatGPT authorization failed (HTTP ${res.status})`, res.status);
   return await res.json();
 }
 
@@ -119,16 +119,16 @@ function claims(part: string): Record<string, unknown> {
 /** Verify signature and the OIDC claims before associating credentials with a Qino user. */
 async function verify(idToken: string, clientId: string, nonce: string): Promise<{ subject: string; email: string }> {
   const parts = idToken.split(".");
-  if (parts.length !== 3) throw new AiError("Invalid ChatGPT identity token", 400, true);
+  if (parts.length !== 3) throw new AiError("Invalid ChatGPT identity token", 400);
   const head = claims(parts[0]), body = claims(parts[1]);
   const alg = head.alg;
-  if (alg !== "RS256" && alg !== "ES256") throw new AiError("Unsupported ChatGPT identity signature", 400, true);
+  if (alg !== "RS256" && alg !== "ES256") throw new AiError("Unsupported ChatGPT identity signature", 400);
   const discovery = await fetch(AUTH + "/.well-known/openid-configuration").then((r) => r.json());
   const jwksUrl = String(discovery.jwks_uri ?? "");
-  if (new URL(jwksUrl).origin !== AUTH) throw new AiError("Invalid ChatGPT key endpoint", 400, true);
+  if (new URL(jwksUrl).origin !== AUTH) throw new AiError("Invalid ChatGPT key endpoint", 400);
   const jwks = await fetch(jwksUrl).then((r) => r.json());
   const jwk = jwks.keys?.find((k: JsonWebKey & { kid?: string }) => k.kid === head.kid && k.alg === alg);
-  if (!jwk) throw new AiError("ChatGPT identity key was not found", 400, true);
+  if (!jwk) throw new AiError("ChatGPT identity key was not found", 400);
   const algorithm = alg === "RS256" ? { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" } : { name: "ECDSA", namedCurve: "P-256" };
   const key = await crypto.subtle.importKey("jwk", jwk, algorithm, false, ["verify"]);
   const check = alg === "RS256" ? { name: "RSASSA-PKCS1-v1_5" } : { name: "ECDSA", hash: "SHA-256" };
@@ -137,20 +137,20 @@ async function verify(idToken: string, clientId: string, nonce: string): Promise
   const now = Date.now() / 1000;
   if (!valid || body.iss !== AUTH || !aud.includes(clientId) || body.nonce !== nonce || typeof body.sub !== "string" || !body.sub ||
     typeof body.exp !== "number" || body.exp < now - 5 || typeof body.iat !== "number" || body.iat > now + 5)
-    throw new AiError("ChatGPT identity verification failed", 400, true);
+    throw new AiError("ChatGPT identity verification failed", 400);
   return { subject: body.sub, email: String(body.email ?? "") };
 }
 
 export async function exchange(p: Pending, code: string, returnedClientId?: string, previous?: Account): Promise<Account> {
   const clientId = p.client_id === "dynamic_agent_client" ? returnedClientId : p.client_id;
   if (!clientId || !/^oaiapp_[\w-]+$/.test(clientId) || returnedClientId && returnedClientId !== clientId)
-    throw new AiError("Invalid ChatGPT client registration", 400, true);
+    throw new AiError("Invalid ChatGPT client registration", 400);
   const result = await token(new URLSearchParams({ grant_type: "authorization_code", client_id: clientId, code, code_verifier: p.verifier, redirect_uri: p.redirect_uri, resource: RESOURCE }));
   const identity = await verify(String(result.id_token ?? ""), clientId, p.nonce);
-  if (previous && previous.subject !== identity.subject) throw new AiError("A different ChatGPT account answered", 400, true);
+  if (previous && previous.subject !== identity.subject) throw new AiError("A different ChatGPT account answered", 400);
   const scopes = String(result.scope ?? "").split(/\s+/).filter(Boolean);
   if (!scopes.includes(PLAN_SCOPE) || typeof result.access_token !== "string" || typeof result.refresh_token !== "string")
-    throw new AiError("ChatGPT plan usage was not granted", 403, true);
+    throw new AiError("ChatGPT plan usage was not granted", 403);
   return { client_id: clientId, ...identity, id_token: String(result.id_token), access_token: result.access_token,
     refresh_token: result.refresh_token, scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
 }
@@ -172,9 +172,9 @@ export async function active(app: App, user: number): Promise<Account | undefine
       const result = await token(new URLSearchParams({ grant_type: "refresh_token", client_id: current.client_id,
         refresh_token: current.refresh_token, resource: RESOURCE }));
       if (typeof result.access_token !== "string" || typeof result.refresh_token !== "string")
-        throw new AiError("ChatGPT token refresh failed", 401, true);
+        throw new AiError("ChatGPT token refresh failed", 401);
       const scopes = String(result.scope ?? "").split(/\s+/).filter(Boolean);
-      if (!scopes.includes(PLAN_SCOPE)) throw new AiError("ChatGPT plan usage is no longer granted", 403, true);
+      if (!scopes.includes(PLAN_SCOPE)) throw new AiError("ChatGPT plan usage is no longer granted", 403);
       const refreshed = { ...current, access_token: result.access_token, refresh_token: result.refresh_token,
         scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
       const next = await accounts(app, user);
@@ -190,10 +190,10 @@ export async function active(app: App, user: number): Promise<Account | undefine
 export async function revoke(account: Account): Promise<void> {
   const discovery = await fetch(AUTH + "/.well-known/openid-configuration").then((r) => r.json());
   const url = String(discovery.revocation_endpoint ?? "");
-  if (new URL(url).origin !== AUTH) throw new AiError("Invalid ChatGPT revocation endpoint", 400, true);
+  if (new URL(url).origin !== AUTH) throw new AiError("Invalid ChatGPT revocation endpoint", 400);
   const res = await fetch(url, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ token: account.refresh_token, token_type_hint: "refresh_token", client_id: account.client_id }) });
-  if (!res.ok) throw new AiError(`ChatGPT sign-out was not confirmed (HTTP ${res.status})`, res.status, true);
+  if (!res.ok) throw new AiError(`ChatGPT sign-out was not confirmed (HTTP ${res.status})`, res.status);
 }
 
 /** The account's plan-compatible model slugs, added to ai1 when listed. */
@@ -201,7 +201,7 @@ export async function models(app: App, user: number): Promise<string[]> {
   const account = await active(app, user);
   if (!account) return [];
   const res = await fetch(RESOURCE + "/models", { headers: { authorization: `Bearer ${account.access_token}` } });
-  if (!res.ok) throw new AiError(`ChatGPT model catalog failed (HTTP ${res.status})`, res.status, true);
+  if (!res.ok) throw new AiError(`ChatGPT model catalog failed (HTTP ${res.status})`, res.status);
   const catalog = await res.json();
   const names: string[] = Array.isArray(catalog.models) ? catalog.models.filter((m: { visibility?: string }) => m.visibility === "list")
     .map((m: { slug?: unknown }) => m.slug).filter((slug: unknown): slug is string => typeof slug === "string") : [];

@@ -133,9 +133,10 @@ cms.initNode("backend.ai1.chat", (el) => {
 
   ask.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const field = ask.elements.content, button = ask.querySelector("button"), content = field.value;
+    const field = ask.elements.content, button = ask.querySelector("button"), stop = ask.querySelector("[data-stop]"), content = field.value;
     field.value = "";
     button.disabled = true;
+    stop.hidden = false;
     log.append(sent = await entry({ role: "user", content }));
     log.scrollTop = log.scrollHeight;
     const poll = setInterval(() => show().catch(() => {}), 2000); // the steps of the answer, as they are kept
@@ -148,8 +149,11 @@ cms.initNode("backend.ai1.chat", (el) => {
     } catch (err) { await alert(err.message); }
     clearInterval(poll);
     button.disabled = false;
+    stop.hidden = true;
     await show();
   });
+  // the answer on its way stops; what was said and done so far stays
+  ask.querySelector("[data-stop]").addEventListener("click", () => agents.sessions(session).cancel.post().catch((err) => alert(err.message)));
   // As other chats: Enter sends, Shift + Enter makes a new line; not while an input method composes,
   // not on a touch screen (there the button sends), not while an answer is on its way
   ask.elements.content.addEventListener("keydown", (e) => {

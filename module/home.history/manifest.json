@@ -1,0 +1,6 @@
+{
+  "name": "home.history",
+  "description": "Provider-independent access to stored home observations.",
+  "dependencies": ["home"],
+  "files": ["README.md", "manifest.json", "mod.ts", "plugin.ts"]
+}

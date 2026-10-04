@@ -2,6 +2,7 @@
 import { App, runAs, sql } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
 
+import { AiError } from "@qino/qino/ai1";
 import { collections, create, drop } from "@qino/qino/ai1.embed";
 
 import { hit } from "@qino/qino/score";
@@ -15,7 +16,7 @@ import type { Adapter } from "@qino/qino/ai1";
 
 // Answers with its role, how many questions it has seen and the last one; asked "time?", it calls
 // the tool now first; "remember:fact", "replace:id:fact", "forget:id" and "search:query" go to those
-// tools, "find:what" and "call:tool" to finding and calling more; "slow" takes a moment; "fail" fails. It embeds what mentions a logo apart from the rest.
+// tools, "find:what" and "call:tool" to finding and calling more; "slow" takes a moment; "hang" never answers; "fail" fails, "break" after streaming a part. It embeds what mentions a logo apart from the rest.
 // What it is sent goes to `sent`.
 const sent: unknown[][] = [];
 // the situation, the role header, the standing hint and an empty memories header are left out of what the fake echoes
@@ -23,7 +24,7 @@ const shown = (system: string) => system.replace(/^[^]*?## Your role\n/, "").rep
 
 const fake: Adapter = {
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
-  text: async (_call, { messages }) => {
+  text: async (_call, { messages, onText }) => {
     sent.push(messages);
     // as the providers: every tool call needs its result
     const results = new Set(messages.filter((m: any) => m.role === "tool").map((m: any) => m.id));
@@ -32,12 +33,14 @@ const fake: Adapter = {
     const last = messages.at(-1), asked = messages.filter((m: any) => m.role === "user");
     const typed = String(last.content).split("\n\n(internal")[0]; // without the memories it brought to mind
     if (typed === "fail") throw new Error("down");
+    if (typed === "break") throw (onText?.("so far"), new AiError("broken", 502, true));
     if (typed === "time?") return { text: "", toolCalls: [{ id: "1", name: "toolset_clock_get", args: {} }], truncated: false };
     const [verb, a, b] = typed.split(":");
     const call = { remember: ["memories_post", { content: a }], replace: ["memories_post", { content: b, replaces: Number(a) }], forget: ["memories_delete", { memory: Number(a) }], search: ["search_post", { query: a }],
       find: ["find_tools", { search: a }], call: ["core_toolCalls_post", { calls: [{ name: a }] }] }[verb];
     if (last.role === "user" && call) return { text: "", toolCalls: [{ id: "1", name: call[0], args: call[1] }], truncated: false };
     if (typed === "slow") await new Promise((r) => setTimeout(r, 30));
+    if (typed === "hang") await new Promise(() => {}); // deaf to the signal too
     const result = last.role === "tool" && JSON.parse(last.content);
     const said = last.role === "tool" ? `it is ${typeof result === "string" ? result : JSON.stringify(result)}` : last.content;
     return { text: `${shown(messages[0].content)} #${asked.length} ${said}`, toolCalls: [], truncated: false };
@@ -258,4 +261,21 @@ Deno.test("ai1.agent: agents are found by their role, embedded once", () => with
   await runAs(app, 7, "test", () => agent()(designer.id).patch({ system: "lead too" })); // changed: embedded again
   await new Promise((r) => setTimeout(r, 20));
   assertEquals(await app.db.col`SELECT content FROM embedding_ai1_agent WHERE agent_id = ${designer.id}`, ["lead too"]);
+}));
+
+Deno.test("ai1.agent: cancel stops the answer on its way, even one that never comes, and the session goes on", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
+  const hung = session.ask("hang");
+  await new Promise((r) => setTimeout(r, 20));
+  const next = session.ask("hello"); // waits for its turn
+  assert(session.cancel());
+  await assertRejects(() => hung, Error, "Cancelled");
+  assertStringIncludes((await next).text, "hello");
+  assertEquals(session.cancel(), false); // nothing on its way
+}));
+
+Deno.test("ai1.agent: what a step said before it broke off stays, marked", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
+  await assertRejects(() => session.ask("break"), Error, "broken");
+  assertEquals((await kept(app, session.id)).slice(-3), [["user", "break", ""], ["assistant", "so far\n\n(interrupted)", ""], ["error", "broken", ""]]);
 }));

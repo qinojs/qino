@@ -1,7 +1,7 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { ask, checkTools, note, ranked } from "./lib/turn.ts";
+import { ask, cancel, checkTools, note, ranked } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
 
@@ -58,5 +58,10 @@ export class Session {
   /** Tell the agent something without asking. It reads it with the next question. */
   note(content: string | Part[]): Promise<void> {
     return note(this.#app, this.#id, content);
+  }
+
+  /** Stop the answer on its way; what was said and done so far stays. Whether one was on its way. */
+  cancel(): boolean {
+    return cancel(this.#app, this.#id);
   }
 }

@@ -1,5 +1,5 @@
 import { App, Redirect } from "@qino/qino";
-import { AiError, candidates } from "@qino/qino/ai1";
+import { AiError, candidates, text } from "@qino/qino/ai1";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { authorize, models, pending, store } from "../lib/account.ts";
@@ -37,7 +37,32 @@ Deno.test("ChatGPT stream failure reports the provider's code and message", asyn
   const body = `data: ${JSON.stringify({ type: "response.failed", response: {
     error: { code: "subscription_sharing_usage_limit_exceeded", message: "Usage limit reached" },
   } })}\n\n`;
-  await assertRejects(() => completed(new Response(body)), AiError, "subscription_sharing_usage_limit_exceeded: Usage limit reached");
+  const e = await assertRejects(() => completed(new Response(body)), AiError, "subscription_sharing_usage_limit_exceeded: Usage limit reached");
+  assertEquals(e.final, false); // another model may take over
+  const streamed = `data: ${JSON.stringify({ type: "response.output_text.delta", delta: "Hi" })}\n\n` + body;
+  assertEquals((await assertRejects(() => completed(new Response(streamed), () => {}), AiError)).final, true); // text went out
+});
+
+Deno.test("ChatGPT plan without a user falls back to another provider, as any provider does", async () => {
+  const dir = await Deno.makeTempDir();
+  const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
+  const source = app.stores.add(new URL("../../store.json", import.meta.url));
+  try {
+    await app.init();
+    await source.install("ai1");
+    await source.install("ai1.chatgpt");
+    app.modules.get("ai1")!.plugin.ai1Adapters.fake = { text: () => Promise.resolve({ text: "from fake", toolCalls: [], truncated: false }) };
+    const model = Number(await app.db.table("ai1_model").insert({ name: "m" }));
+    await app.db.table("ai1_model_capability").insert({ model_id: model, capability: "text" });
+    const plan = await app.db.one`SELECT id FROM ai1_provider WHERE name = ${"chatgpt-plan"}`;
+    const fake = Number(await app.db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" }));
+    await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: plan }); // tried first
+    await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: fake });
+    assertEquals((await text(app, "Hi")).text, "from fake");
+  } finally {
+    delete app.modules.get("ai1")?.plugin.ai1Adapters.fake;
+    await app.db.close(); await Deno.remove(dir, { recursive: true });
+  }
 });
 
 Deno.test("ChatGPT stream uses completed output items when the final response has no output", async () => {
