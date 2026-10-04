@@ -13,9 +13,11 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   let points = await datapoints(app);
+  const initial = new Set(points.filter((point) => point.record).map((point) => point.id));
   const capture = async (id: number, entity: Entity | null, observed?: number) => {
     const point = points.find((point) => point.id === id);
     if (!point?.record || signal.aborted) return;
+    initial.delete(id);
     const time = observed ?? (entity?.updated === undefined ? Date.now() : Date.parse(entity.updated));
     await record(app, id, value(point, entity), time);
   };
@@ -32,6 +34,12 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     await capture(id, current.find((entity) => entity.id === point.entity) ?? null, Date.now());
   }, { signal });
   app.on("home.history:read", (request) => read(app, request), { signal });
+  for (const provider of new Set(points.filter((point) => point.record).map((point) => point.provider))) {
+    entities(app, provider).then(async (current) => {
+      for (const point of points.filter((point) => point.provider === provider && initial.has(point.id)))
+        if (initial.has(point.id)) await capture(point.id, current.find((entity) => entity.id === point.entity) ?? null, Date.now());
+    }).catch((error) => console.error("home.record:", error));
+  }
 }
 
 /** Expected intervals detect stale streams; cached states are never copied as new measurements. */

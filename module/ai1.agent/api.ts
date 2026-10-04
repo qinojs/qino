@@ -2,7 +2,7 @@ import { Access, errMsg, NotFoundError, s } from "@qino/qino";
 
 import * as memory from "./lib/memory.ts";
 import * as search from "./lib/search.ts";
-import { checkTools } from "./lib/turn.ts";
+import { checkTools } from "./lib/context.ts";
 import { Agent, Session } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
@@ -125,6 +125,13 @@ export const api: ApiTree = {
             return { running: true };
           },
           { content: s.string(), wait: s.optional(s.boolean()) },
+        ),
+      },
+      live: {
+        post: verb<{ session: number; sdp: string }>(
+          "Talk live with the agent, by voice: sdp is the browser's WebRTC offer, the answer's goes back to it",
+          async ({ session, sdp }, ctx) => ({ sdp: await new Session(ctx.app, session).live(sdp) }),
+          { sdp: s.string() },
         ),
       },
       cancel: {

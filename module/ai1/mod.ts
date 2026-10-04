@@ -41,6 +41,20 @@ export type TextOutput = {
 export type StructuredInput<T> = Omit<TextInput, "tools"> & { schema: StandardSchema<T> | Record<string, unknown> };
 export type EmbedInput = ({ texts: string[]; images?: never } | { images: string[]; texts?: never }) & { purpose?: "index" | "query" };
 export type TranslateInput = { text: string | string[]; to: string; from?: string; format?: "md" | "html" };
+/** A live talk: the media go straight between the browser and the provider, what is said and the tool
+ *  calls come here. `sdp`: the browser's WebRTC offer; the answer's `sdp` goes back to it. */
+export type LiveInput = {
+  sdp: string;
+  instructions?: string;
+  tools?: Pick<Tool, "name" | "description" | "parameters">[];
+  voice?: string;
+  /** A tool the model calls: its result goes back to it. */
+  onToolCall: (call: ToolCall) => Promise<string>;
+  /** What was said and done, as it is done: the user's and the model's words as text, tool calls and results. */
+  onMessage?: (message: Message) => unknown;
+};
+/** `close()` hangs up; `done` resolves once it ended, from either side. */
+export type LiveOutput = { sdp: string; close: () => Promise<void>; done: Promise<void> };
 /** As adapters get it: `options` by name with what each means; none is a yes/no question. */
 export type DecideInput = { content: string | Part[]; question?: string; options?: Record<string, string> };
 
@@ -56,6 +70,8 @@ export const image = (app: App, input: { prompt: string; size?: string; n?: numb
 export const transcribe = (app: App, input: { file: File; language?: string }, opts?: Opts): Promise<Transcript> => request(app, "transcribe", input, opts);
 /** Text to speech: the audio as a data URL. */
 export const speak = (app: App, input: { text: string; voice?: string; format?: string }, opts?: Opts): Promise<string> => request(app, "speak", input, opts);
+/** Talk live, by voice: see `LiveInput`. */
+export const live = (app: App, input: LiveInput, opts?: Opts): Promise<LiveOutput> => request(app, "live", input, opts);
 /** One text or many at once; the answer has the same shape. */
 export const translate = <T extends string | string[]>(app: App, input: TranslateInput & { text: T }, opts?: Opts): Promise<T> => request(app, "translate", input, opts);
 /** Pick one of `options` (classify, route, judge), for text or images; `options` as names, or names

@@ -27,11 +27,17 @@ cms.initNode("backend.home", (el) => {
   });
 
   el.addEventListener("submit", async (event) => {
-    const form = event.target.closest("form[data-provider-config], form[data-datapoint], form[data-home-action]");
+    const form = event.target.closest("form[data-provider-config], form[data-datapoint], form[data-home-action], form[data-measurement]");
     if (!form) return;
     event.preventDefault();
     const button = form.querySelector("button[type=submit]");
     try {
+      if (form.hasAttribute("data-measurement")) {
+        const value = form.elements.value.valueAsNumber;
+        const time = form.elements.time.value ? new Date(form.elements.time.value).getTime() : Date.now();
+        if (!Number.isFinite(value) || !Number.isFinite(time)) throw new Error("Enter a valid value and time");
+        return await execute(button, { measurement: { id: Number(form.dataset.id), value, time } });
+      }
       if (form.hasAttribute("data-provider-config")) {
         const input = { name: form.elements.name.value, adapter: form.dataset.adapter, url: form.elements.url.value, enabled: form.elements.enabled.checked, config: Object.create(null) };
         if (form.dataset.provider) input.id = Number(form.dataset.provider);
@@ -55,7 +61,7 @@ cms.initNode("backend.home", (el) => {
           mapping[key] = code;
         }
         const input = {
-          provider: Number(form.dataset.provider), entity: form.dataset.entity,
+          provider: Number(form.elements.provider?.value ?? form.dataset.provider), entity: form.elements.entity?.value || form.dataset.entity || crypto.randomUUID(),
           name: form.elements.name.value, unit: form.elements.unit.value, type: form.elements.type.value,
           interval: form.elements.interval.valueAsNumber, record: form.elements.record.checked,
           mapping: form.elements.type.value === "state" ? mapping : {},

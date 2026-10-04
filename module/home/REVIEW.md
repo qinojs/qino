@@ -1,7 +1,7 @@
 # Home redesign
 
-Status: storage and provider-instance redesign in progress. This document records the current
-requirements and findings; it is not a mandate to introduce new core APIs or schema vocabulary.
+Status: provider/datapoint model and typed storage implemented. This document records the
+requirements, findings and remaining scaling limits; it is not a mandate to introduce new core APIs or schema vocabulary.
 
 ## Requirements
 
@@ -71,7 +71,7 @@ That is column payload only, not total table size. A TINYINT state reduces the v
   sampling rules; no full entity JSON on the hot measurement path.
 - `home.history`: compact history queries, counter semantics and bounded chart data; local and
   upstream archives remain explicitly selectable.
-- `cms.backend.home`: provider-instance forms and measurement-datapoint configuration using the
+- `cms.backend.home`: provider-instance forms and datapoint configuration using the
   existing CMS parts, forms, schema inputs and user-protected APIs.
 - `cms.cont.home.values` / `cms.cont.home.chart`: existing CMS content conventions, numeric
   provider/datapoint references, live values and bounded measurement/consumption views.

@@ -113,7 +113,8 @@ metadata in the adapter; the common API has no fixed device taxonomy.
 
 ## Modules and ims1
 
-Install `cms.backend.home` for instance/datapoint configuration and manual actions;
+Install `home.manual` for values entered without external software.
+Install `cms.backend.home` for instance/datapoint configuration, measurement entry and manual actions;
 `cms.cont.home.values` for current values; `home.record` for selected local recording;
 `cms.cont.home.chart` for measurements and counter consumption. Dependencies install through
 Qino's store; Home Assistant is optional.

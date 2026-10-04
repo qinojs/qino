@@ -20,7 +20,15 @@ await translate(app, { text: ["Titel", "Hallo"], to: "en" }); // many at once: [
 const { text: answer, truncated, model } = await text(app, "Hi"); // model: who answered
 ```
 
-`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`: each is `request(app, capability, input)`.
+`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`, `live`: each is `request(app, capability, input)`.
+
+**`live`** talks by voice. The browser's WebRTC offer (`sdp`) goes to the server, which hands it to
+the provider with instructions and tools; the media then flow straight between browser and provider.
+What is said and the tool calls come to the server (`onMessage`, `onToolCall`), so the browser runs
+no tools and sees no instructions. The browser side is [`pub/live.js`](pub/live.js). The neutral
+interface is ai1's; each provider type speaks its own protocol in its adapter (OpenAI Realtime:
+[`lib/openai.realtime.ts`](lib/openai.realtime.ts)). Give a realtime model (e.g. `gpt-realtime-2.1`
+at an `openai` provider) the capability `live`. Its usage is not counted yet.
 
 **`decide`** picks one of `options` — names, or `{ name: what it means }`; without options it is a yes/no
 question (does it hold?). It answers `{ choice, probabilities, confidence }`: every option's probability,
@@ -115,7 +123,8 @@ Gemini and others cache on their own.
 
 ## Browser
 
-[ai1.api](../ai1.api/) offers the capabilities to signed-in users.
+[ai1.api](../ai1.api/) offers the capabilities to signed-in users; [`pub/live.js`](pub/live.js) is the
+browser side of `live`.
 
 ## Watching
 

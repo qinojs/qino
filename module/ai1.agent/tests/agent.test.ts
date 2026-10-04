@@ -9,7 +9,7 @@ import { hit } from "@qino/qino/score";
 
 import { HINT, index } from "../lib/memory.ts";
 import { keep } from "../lib/search.ts";
-import { situation } from "../lib/turn.ts";
+import { situation } from "../lib/context.ts";
 import { Agent, Session } from "../mod.ts";
 
 import type { Adapter } from "@qino/qino/ai1";
@@ -22,7 +22,10 @@ const sent: unknown[][] = [];
 // the situation, the role header, the standing hint and an empty memories header are left out of what the fake echoes
 const shown = (system: string) => system.replace(/^[^]*?## Your role\n/, "").replace(`\n${HINT}`, "").replace(/\n\n## Your memories(?!\n)/, "");
 
+// Talking live, it hands what it was given to `talked` and answers the offer reversed.
+let talked: any;
 const fake: Adapter = {
+  live: (_call, input) => (talked = input, Promise.resolve({ sdp: [...input.sdp].reverse().join(""), close: () => Promise.resolve(), done: new Promise(() => {}) })),
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
   text: async (_call, { messages, onText }) => {
     sent.push(messages);
@@ -289,4 +292,17 @@ Deno.test("ai1.agent: asked over the api, the agent answers in the background; t
   assert(session.running);
   while (session.running) await new Promise((r) => setTimeout(r, 10));
   assertEquals((await kept(app, session.id)).at(-1), ["assistant", "lead #1 slow", "m"]);
+}));
+
+Deno.test("ai1.agent: talking live, the agent's voice knows its role and the session so far, hands big tasks over in writing, and all is kept", () => withApp(async (app) => {
+  await app.db.table("ai1_model_capability").insert({ model_id: 1, capability: "live" });
+  const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
+  await session.ask("hello");
+  assertEquals(await session.live("offer"), "reffo");
+  assertStringIncludes(talked.instructions, "## Your role\nlead");
+  assertStringIncludes(talked.instructions, "## The session so far\nuser: hello\nassistant: lead #1 hello");
+  await talked.onMessage({ role: "user", content: "and now?" });
+  const delegate = talked.tools.find((tool: any) => tool.name === "delegate_task");
+  assertEquals(await talked.onToolCall({ id: "1", name: delegate.name, args: { task: "sum up" } }), '"lead #3 sum up"'); // the agent in writing answered
+  assertEquals((await kept(app, session.id)).slice(-3).map(([role, content]) => [role, content]), [["user", "and now?"], ["user", "sum up"], ["assistant", "lead #3 sum up"]]);
 }));

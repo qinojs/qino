@@ -11,7 +11,7 @@ const MAX_RESULT = 100_000;
 
 /** A tool's result for the model, as JSON; a failure is told to it, so it can go on, as is a result
  *  too long, so it asks for less. */
-async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<string> {
+export async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<string> {
   const tool = tools.find((t) => t.name === call.name);
   const result = JSON.stringify(await (tool ? tool.execute(call.args, ctx) : Promise.reject(new ApiError(404, `Unknown tool: ${call.name}`)))
     .catch((e) => e instanceof ApiError ? { error: e.message, code: e.code, data: e.data } : (console.error("[ai1.tools]", call.name, e), { error: "Tool failed" })) ?? null);

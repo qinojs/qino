@@ -16,6 +16,10 @@ Deno.test("home backend edits persisted instances and retains secrets through th
       const output = String(await settings(node));
       assertStringIncludes(output, 'value="http://house.test/"');
       assertStringIncludes(output, 'type="password"');
+      assertStringIncludes(output, "<th>Name");
+      assertStringIncludes(output, "<td>House</td>");
+      assertStringIncludes(output, 'data-provider-enabled data-provider="1"');
+      assertStringIncludes(output, "<summary>Edit</summary>");
       assertEquals(output.includes("saved-secret"), false);
       assertEquals((output.match(/class=u2-card/g) ?? []).length, 2);
       assertEquals(await api(node, { config: { id, name: "House", adapter: "fake", url: "http://new.test/", config: { accessToken: "" } } }), { ok: true, message: "Provider saved." });

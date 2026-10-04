@@ -67,10 +67,10 @@ function merge(input: unknown, previous: unknown, schema: Record<string, unknown
   const old = previous && typeof previous === "object" ? previous as Record<string, unknown> : {};
   const fields = schema.properties as Record<string, Record<string, unknown>>;
   for (const key of Object.keys(input)) if (fields[key]?.readOnly) throw new ApiError(400, "Read-only provider configuration cannot be submitted");
-  return Object.fromEntries(Object.entries({ ...old, ...input }).flatMap(([key, value]) => {
+  return { ...old, ...Object.fromEntries(Object.entries(input).flatMap(([key, value]) => {
     const result = merge(value, old[key], fields[key] ?? {});
     return result === undefined ? [] : [[key, result]];
-  }));
+  })) };
 }
 
 /** Create or edit an instance; empty secret fields preserve stored credentials. */

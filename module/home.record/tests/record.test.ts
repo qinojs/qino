@@ -6,6 +6,8 @@ import { history } from "@qino/qino/home.history";
 import { record } from "../mod.ts";
 import { api, cron } from "../plugin.ts";
 
+import type { Adapter } from "@qino/qino/home";
+
 const start = Date.parse("2026-01-01T00:00:00Z");
 const period = { start: new Date(start).toISOString(), end: new Date(start + 3600_000).toISOString(), source: "local" as const };
 
@@ -140,5 +142,21 @@ Deno.test("bounded history aggregates gauges and counter differences before redu
     await record(app, state, 0, start); await record(app, state, 1, start + 1);
     assertEquals((await history(app, state, { ...period, width: 1 })).samples[0].value, 1);
     await assertRejects(() => history(app, state, { ...period, consumption: true }), Error, "numeric counter");
+  } finally { await close(); }
+});
+
+Deno.test("starting the recorder after a ready provider captures a snapshot without change rules", async () => {
+  const { app, provider, close } = await fixture();
+  try {
+    const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
+    app.modules.unlink("home.record");
+    const adapter = app.modules.linked("fake.adapter")!.plugin.homeProvider as Adapter;
+    adapter.entities = async () => [{ id: "temperature", name: "Temperature", unit: "°C", state: 12, attributes: {}, available: true }];
+    let changes = 0;
+    app.on("home:change", () => { changes++; });
+    await app.modules.link("home.record");
+    for (let i = 0; i < 100 && (await datapoint(app, id)).value !== 12; i++) await new Promise((resolve) => setTimeout(resolve, 1));
+    assertEquals((await datapoint(app, id)).value, 12);
+    assertEquals(changes, 0);
   } finally { await close(); }
 });

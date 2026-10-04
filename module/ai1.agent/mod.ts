@@ -1,7 +1,9 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { ask, cancel, checkTools, note, ranked, running } from "./lib/turn.ts";
+import { checkTools, ranked } from "./lib/context.ts";
+import { live } from "./lib/live.ts";
+import { ask, cancel, note, running } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
 
@@ -60,6 +62,11 @@ export class Session {
   /** Tell the agent something without asking. It reads it with the next question. */
   note(content: string | Part[]): Promise<void> {
     return note(this.#app, this.#id, content);
+  }
+
+  /** Talk live, by voice: `sdp` is the browser's WebRTC offer, the answer's goes back to it. */
+  live(sdp: string): Promise<string> {
+    return live(this.#app, this.#id, sdp);
   }
 
   /** Stop the answer on its way; what was said and done so far stays. Whether one was on its way. */

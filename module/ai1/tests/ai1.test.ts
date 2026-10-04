@@ -3,7 +3,7 @@ import { Db } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { AiError, candidates, decide, embed, image, speak, structured, text, transcribe, translate } from "../mod.ts";
+import { AiError, candidates, decide, embed, image, live, speak, structured, text, transcribe, translate } from "../mod.ts";
 import { ai1Adapters, ai1Capabilities } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
@@ -536,4 +536,49 @@ Deno.test("ai1: cache asks openrouter to cache the prompt; unasked, and at opena
     await text(testApp, { ...ask("hi"), cache: true });
     assertEquals(bodies.map((b) => b.cache_control), [{ type: "ephemeral" }, undefined, undefined]);
   });
+});
+
+Deno.test("ai1: openai talks live: the offer with the session goes to OpenAI, what is said and tool calls come by its sideband", async () => {
+  const posted: [string, RequestInit | undefined][] = [], sent: any[] = [], said: unknown[] = [];
+  let socket: any;
+  const WebSocketOrg = globalThis.WebSocket;
+  globalThis.WebSocket = class {
+    url: string; headers: unknown; onmessage?: (e: { data: string }) => void; onclose?: () => void;
+    constructor(url: string, options: { headers: unknown }) { this.url = url; this.headers = options.headers; socket = this; }
+    send(data: string) { sent.push(JSON.parse(data)); }
+    close() { this.onclose?.(); }
+  } as any;
+  const answer = (sdp: string) => new Response(sdp, { status: 201, headers: { location: "/v1/realtime/calls/rtc_1" } });
+  try {
+    await withFetch((url, init) => (posted.push([url, init]), url.endsWith("/hangup") ? new Response(null) : answer("answer-sdp")), async () => {
+      const testApp = await openaiApp({ voice: ["live"] });
+      const call = await live(testApp, {
+        sdp: "offer-sdp", instructions: "be kind", tools: [{ name: "clock", description: "The time", parameters: { type: "object" } }],
+        onToolCall: (call) => Promise.resolve(`${call.name}: noon`),
+        onMessage: (message) => said.push(message),
+      });
+      assertEquals(call.sdp, "answer-sdp");
+      const [url, init] = posted[0], body = init!.body as FormData;
+      assertEquals([url, body.get("sdp")], ["https://oa.test/v1/realtime/calls", "offer-sdp"]);
+      const session = JSON.parse(String(body.get("session")));
+      assertEquals([session.model, session.instructions, session.tools[0].name], ["voice", "be kind", "clock"]);
+      assertEquals(socket.url, "wss://oa.test/v1/realtime?call_id=rtc_1");
+      const event = (data: unknown) => socket.onmessage({ data: JSON.stringify(data) });
+      event({ type: "conversation.item.input_audio_transcription.completed", transcript: "What time is it? " });
+      event({ type: "response.done", response: { output: [{ type: "function_call", call_id: "c1", name: "clock", arguments: "{}" }] } });
+      event({ type: "response.done", response: { output: [{ type: "message", content: [{ type: "output_audio", transcript: "It is noon." }] }] } });
+      await new Promise((r) => setTimeout(r, 10));
+      assertEquals(said, [
+        { role: "user", content: "What time is it?" },
+        { role: "assistant", content: "", toolCalls: [{ id: "c1", name: "clock", args: {} }] },
+        { role: "tool", id: "c1", content: "clock: noon" },
+        { role: "assistant", content: "It is noon." },
+      ]);
+      assertEquals(sent, [{ type: "conversation.item.create", item: { type: "function_call_output", call_id: "c1", output: "clock: noon" } }, { type: "response.create" }]);
+      await call.close();
+      assertEquals(posted.at(-1)![0], "https://oa.test/v1/realtime/calls/rtc_1/hangup");
+      socket.close();
+      await call.done;
+    });
+  } finally { globalThis.WebSocket = WebSocketOrg; }
 });

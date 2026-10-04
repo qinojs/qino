@@ -72,4 +72,35 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   release!({ ok: true, message: "Recording updated." });
   await recorded;
   assertEquals(messages.at(-1), "Recording updated.");
+  target = {
+    dataset: { id: "7" }, hasAttribute: (name: string) => name === "data-measurement",
+    elements: { value: { valueAsNumber: 0 }, time: { value: "2026-01-01T12:00:00.123" } },
+    querySelector: () => button,
+  };
+  const entered = listeners.submit(event);
+  assertEquals(calls.at(-1), { measurement: { id: 7, value: 0, time: new Date("2026-01-01T12:00:00.123").getTime() } });
+  release!({ ok: true, message: "Measurement saved." });
+  await entered;
+  const count = calls.length;
+  target = {
+    dataset: { id: "7" }, hasAttribute: (name: string) => name === "data-measurement",
+    elements: { value: { valueAsNumber: NaN }, time: { value: "" } },
+    querySelector: () => button,
+  };
+  await listeners.submit(event);
+  assertEquals(calls.length, count);
+  assertEquals(messages.at(-1), "Enter a valid value and time");
+  target = {
+    dataset: { provider: "0", entity: "" }, hasAttribute: (name: string) => name === "data-datapoint",
+    elements: { provider: { value: "2" }, entity: { value: "" }, name: { value: "Temperature" }, unit: { value: "°C" }, type: { value: "number" }, interval: { valueAsNumber: 0 }, record: { checked: true } },
+    querySelectorAll: () => [], querySelector: () => button,
+  };
+  const created = listeners.submit(event);
+  const input = calls.at(-1) as { datapoint: { entity: string; provider: number; record: boolean } };
+  assertEquals(input.datapoint.provider, 2);
+  assertEquals(input.datapoint.record, true);
+  assertEquals(/^[a-f0-9-]{36}$/.test(input.datapoint.entity), true);
+  release!({ ok: true, message: "Datapoint saved." });
+  await created;
+
 });

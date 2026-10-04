@@ -31,8 +31,8 @@ Unit/type/mapping are immutable per datapoint. Mismatched units, unmapped states
 entities produce null. Metadata and credentials are never repeated in measurement rows.
 
 `home:observe` captures actual changes and initial/reconnection snapshots. Snapshot time is Qino's
-observation time; changes use the source update time when supplied. Selection captures one current
-observation. Reading cached states periodically never invents new measurements. Repeated timestamps
+observation time; changes use the source update time when supplied. Selection and recorder startup capture one current
+observation. Startup reads run in the background; snapshots do not trigger change rules. Reading cached states periodically never invents new measurements. Repeated timestamps
 replace the value atomically; late observations enter history without changing a newer current cache.
 Disabled recording is checked in the insert itself, preventing stale listener selections from writing.
 

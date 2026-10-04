@@ -11,12 +11,14 @@
     "lib/decide.ts",
     "lib/jina.ts",
     "lib/nvidia.ts",
+    "lib/openai.realtime.ts",
     "lib/openai.ts",
     "lib/request.ts",
     "lib/translate.ts",
     "manifest.json",
     "mod.ts",
     "plugin.ts",
+    "pub/live.js",
     "pub/module.svg"
   ]
 }

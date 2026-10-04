@@ -2,7 +2,7 @@ import { App } from "@qino/qino";
 import { fakeT } from "@qino/qino/tests";
 import { save } from "@qino/qino/home";
 
-export async function fixture() {
+export async function fixture({ manual = false } = {}) {
   const dir = await Deno.makeTempDir({ prefix: "qino-home-backend-test-" }), app = new App({ dir, db: "sqlite::memory:" });
   await Deno.writeTextFile(`${dir}/plugin.ts`, `
 export const homeProvider = {
@@ -15,6 +15,7 @@ export const homeProvider = {
 };
 `);
   for (const name of ["home", "home.history", "cron", "home.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
+  if (manual) app.modules.add(new URL("../../home.manual/plugin.ts", import.meta.url));
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init(); app.t = fakeT;
   const provider = await save(app, { name: "House", adapter: "fake", url: "http://house.test/", config: { accessToken: "saved-secret" } });

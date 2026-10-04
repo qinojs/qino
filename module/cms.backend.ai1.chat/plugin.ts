@@ -33,6 +33,7 @@ async function render(node: Node): Promise<HtmlString> {
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown
   const agents = await db.query`SELECT id, system, prefer FROM ai1_agent ORDER BY id DESC`;
+  const live = (await candidates(node.app, "live", {})).length > 0; // talking needs a live model
   const sessions = await db.query`SELECT s.id, s.agent_id, MAX(m.time) AS last_time,
       (SELECT first.message FROM ai1_session_message first
         WHERE first.session_id = s.id AND first.message LIKE ${'{"role":"user"%'} ORDER BY first.id LIMIT 1) AS first_message
@@ -86,6 +87,7 @@ async function render(node: Node): Promise<HtmlString> {
       <form class=u2-flex data-ask hidden>
         <textarea name=content rows=3 required placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
         <button data-stop="${t`Stop`}">${t`Send`}</button>
+        ${live ? html.async`<button type=button data-talk data-end="${t`Hang up`}">${t`Talk`}</button>` : ""}
       </form>
     </div>
   </div>`;

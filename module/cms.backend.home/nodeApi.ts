@@ -1,5 +1,6 @@
 import { ApiError, errMsg } from "@qino/qino";
 
+import type { Datapoint } from "@qino/qino/home";
 import type { Node } from "@qino/qino/cms";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -20,6 +21,13 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       if (id !== undefined) await node.app.api.home.datapoint(Number(id)).put(config);
       else await node.app.api.home.datapoints.post(config);
       return { ok: true, message: await node.app.t`Datapoint saved.` };
+    }
+    if (vars.measurement !== undefined) {
+      const input = vars.measurement as Record<string, unknown>, { id, ...sample } = input;
+      const point = await node.app.api.home.datapoint(Number(id)).get() as Datapoint;
+      if (!point.record) throw new ApiError(409, "Enable recording before entering measurements");
+      await node.app.api["home.record"].datapoint(Number(id)).post(sample);
+      return { ok: true, message: await node.app.t`Measurement saved.` };
     }
     if (vars.action === undefined) return false;
     if (!Number.isSafeInteger(vars.provider) || typeof vars.action !== "string" || !vars.action) throw new ApiError(400, "Select a provider and action");

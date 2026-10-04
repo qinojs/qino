@@ -4,6 +4,7 @@ import { errMsg } from "@qino/qino";
 import { AiError } from "./request.ts";
 import { systemone } from "./decide.ts";
 import { jsonSchema, parseStructured } from "./capabilities.ts";
+import { live } from "./openai.realtime.ts";
 
 import type { Transcript } from "@qino/qino";
 import type { EmbedInput, Message, Part, StructuredInput, TextInput, TextOutput } from "../mod.ts";
@@ -133,6 +134,7 @@ const format = (schema: StructuredInput<unknown>["schema"]) =>
 
 export const openai: Adapter = {
   text: (call, input: TextInput) => text(call, input),
+  live,
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, format(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");

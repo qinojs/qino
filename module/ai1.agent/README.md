@@ -27,6 +27,10 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   `session.cancel()` stops the one on its way; after an hour it is cancelled anyway, so a stream
   that never ends cannot keep the session. What a cancelled step said so far stays, marked
   "(interrupted)"; a tool call it had not finished is lost.
+- **Talking live:** `session.live(sdp)` gives the agent a voice (ai1's `live`): a live model with its
+  role, memories, tools and the last messages. A big task it hands over with `delegate_task` to
+  itself in writing (`ask`), whose stronger model does it. What is said and done is kept in the
+  session as in writing.
 - **Memories** are short facts that belong to the agent and outlast its sessions: everyone who
   talks with it shares them. They are always in its context, the strongest first; with the tools
   `remember` (also to replace one by its id) and `forget`, which every agent has, it keeps them up
@@ -75,6 +79,7 @@ sessions/:session               get     its agent, everything said, whether an a
 sessions/:session/ask           post    { content, wait? } → { running } at once, with wait the answer
 sessions/:session/note          post    { content }
 sessions/:session/cancel        post    → { cancelled }
+sessions/:session/live          post    { sdp } → { sdp }: talk by voice (WebRTC offer → answer)
 ```
 
 **Choosing the model:** `prefer` (ai1's weights, e.g. `{ quality: 2, cost: 1 }`) belongs to the agent;

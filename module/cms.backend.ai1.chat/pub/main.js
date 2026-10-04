@@ -65,6 +65,15 @@ cms.initNode("backend.ai1.chat", (el) => {
     clearInterval(poll);
     if (on) poll = setInterval(() => show().catch(() => {}), 2000);
   };
+  // talking live: the agent's voice, straight between browser and provider; what is said shows as it is kept
+  const talk = ask.querySelector("[data-talk]"), talkLabel = talk?.textContent; // none without a live model
+  let call, listening;
+  const hangUp = () => {
+    call?.close();
+    call = undefined;
+    clearInterval(listening);
+    if (talk) talk.textContent = talkLabel;
+  };
 
   // only the messages since the last one are added, so what is opened or selected stays as it is; one
   // after the other, as it is also called while an answer is on its way
@@ -86,6 +95,7 @@ cms.initNode("backend.ai1.chat", (el) => {
     sent = undefined;
     log.replaceChildren();
     ask.hidden = false;
+    hangUp(); // the talk was with the session before
     for (const button of el.querySelectorAll("[data-session]")) button.setAttribute("aria-current", String(+button.dataset.session === id));
     return show();
   };
@@ -142,6 +152,16 @@ cms.initNode("backend.ai1.chat", (el) => {
     } catch (err) { await alert(err.message); }
   });
 
+  talk?.addEventListener("click", async () => {
+    if (call) return hangUp();
+    const id = session;
+    try {
+      const { live } = await import("@qino/m/ai1/pub/live.js");
+      call = await live(async (sdp) => (await agents.sessions(id).live.post({ sdp })).sdp);
+      talk.textContent = talk.dataset.end;
+      listening = setInterval(() => show().catch(() => {}), 2000);
+    } catch (err) { await alert(err.message); }
+  });
   button.addEventListener("click", (e) => {
     if (!busy) return;
     e.preventDefault(); // no submit, also not blocked by the empty field
