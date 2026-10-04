@@ -1,4 +1,5 @@
 import { Output, sha256b64url } from "@qino/qino";
+
 import type { App, Ctx, Module } from "@qino/qino";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
