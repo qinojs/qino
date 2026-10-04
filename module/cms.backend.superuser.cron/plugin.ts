@@ -2,7 +2,7 @@ import { html } from "@qino/qino";
 import { status } from "@qino/qino/cron";
 import { backend } from "@qino/qino/cms.backend";
 
-import { counts, render, list } from "./render.ts";
+import { counts, list, render } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
