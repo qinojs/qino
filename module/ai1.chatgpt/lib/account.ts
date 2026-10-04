@@ -25,7 +25,8 @@ const PLAN_SCOPE = "chatgpt.tokens.use.direct";
 const dir = (app: App) => app.modules.get("ai1.chatgpt")!.data;
 const path = (app: App, user: number) => `${dir(app)}user-${user}.json`;
 
-/** Credentials: only this process's user may read them. */
+/** Credentials in owner-only files, written atomically, as OpenAI's sign-in contract requires
+ *  (https://developers.openai.com/siwc/token-sharing-open-source/sign-in) — not in the database. */
 async function atomic(path: string, value: unknown): Promise<void> {
   await fs.mkdir(path.slice(0, path.lastIndexOf("/") + 1), { mode: 0o700 });
   const tmp = `${path}.${crypto.randomUUID()}.tmp`;
