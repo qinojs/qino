@@ -1,6 +1,6 @@
 import { App, s, sql, unixTime } from "@qino/qino";
 
-import { currency } from "./mod.ts";
+import { currency, EVERY } from "./mod.ts";
 import { updateRates } from "./lib/rates.ts";
 
 import type { EventDecls } from "@qino/qino";
@@ -12,7 +12,7 @@ Object.assign(App.events, {
 
 export const settingsSchema = {
   properties: {
-    update: { type: "string", enum: ["never", "daily", "hourly"], default: "never", description: "How often the job fetches the exchange rates." },
+    update: { type: "string", enum: EVERY, default: "never", description: "How often the job fetches the exchange rates." },
     updated: { type: "integer", default: 0, description: "When the rates last arrived." },
     source: { type: "string", description: "Which source answered last." },
   },
