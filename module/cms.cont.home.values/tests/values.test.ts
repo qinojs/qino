@@ -4,13 +4,13 @@ import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qi
 import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
-import type { Provider } from "@qino/qino/home";
+import type { Adapter } from "@qino/qino/home";
 
 Deno.test("home values enforce user access, preserve types and isolate provider failures", async () => {
   const dir = await Deno.makeTempDir(), app = new App({ dir, db: "sqlite::memory:" });
   app.modules.add(new URL("../../home/plugin.ts", import.meta.url));
   let reads = 0;
-  const provider: Provider = {
+  const provider: Adapter = {
     name: "healthy",
     entities: () => {
       reads++;
@@ -23,11 +23,15 @@ Deno.test("home values enforce user access, preserve types and isolate provider 
     call: () => Promise.reject(new Error("Read only")),
   };
   const source = {
+    db: { query: () => Promise.resolve([
+      { id: 1, name: "Healthy", adapter: "healthy", url: "", config: {}, enabled: true },
+      { id: 2, name: "Offline", adapter: "offline", url: "", config: {}, enabled: true },
+    ]), row: (_strings: TemplateStringsArray, id: number) => Promise.resolve({ id, name: id === 1 ? "Healthy" : "Offline", adapter: id === 1 ? "healthy" : "offline", url: "", config: {}, enabled: true }) },
     modules: { linked: () => [provider, {
       ...provider, name: "offline", entities: () => Promise.reject(new Error("<offline>")),
     }].map((homeProvider) => ({ plugin: { homeProvider } })) },
   } as unknown as App;
-  let selectedProvider = "", selectedEntity = "";
+  let selectedProvider = 0, selectedEntity = "";
   const node = {
     app,
     settings: { provider: () => selectedProvider, entity: () => selectedEntity },
@@ -38,10 +42,10 @@ Deno.test("home values enforce user access, preserve types and isolate provider 
     const guest = await testContext({ app: source });
     await requestStorage.run(guest, async () => {
       assertStringIncludes(String(await cms.node.render(node)), "Access denied");
-      selectedProvider = "healthy";
+      selectedProvider = 1;
       assertStringIncludes(String(await cms.node.render(node)), "Access denied");
       assertEquals(reads, 0);
-      selectedProvider = "";
+      selectedProvider = 0;
     });
     const user = await testContext({ app: source, set: { user: { id: 7 } } });
     await requestStorage.run(user, async () => {
@@ -52,7 +56,7 @@ Deno.test("home values enforce user access, preserve types and isolate provider 
       assertStringIncludes(output, "&lt;/pre&gt;&lt;img src=x&gt;");
       assertStringIncludes(output, "&lt;offline&gt;");
       assertEquals(output.includes("<script>"), false);
-      selectedProvider = "healthy";
+      selectedProvider = 1;
       selectedEntity = "two";
       const selected = String(await cms.node.render(node));
       assertStringIncludes(selected, "Structured");

@@ -1,11 +1,22 @@
 import { connection } from "./connection.ts";
 
-import type { Provider } from "@qino/qino/home";
+import type { Adapter } from "@qino/qino/home";
 
-export const homeProvider: Provider = {
-  name: "homeassistant",
-  entities: async (app) => connection(app).entities(),
-  actions: async (app) => connection(app).actions(),
-  call: async (app, action, input) => connection(app).call(action, input),
-  history: async (app, entity, period) => connection(app).history(entity, period),
+const schema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["url", "accessToken"],
+  title: "Home Assistant",
+  properties: {
+    url: { type: "string", minLength: 1, title: "URL", format: "uri", pattern: "^(?:$|(?:https?|wss?)://[^\\s@/?#]+(?:[/?#]|$))", description: "Home Assistant base URL, including a reverse proxy path if needed" },
+    accessToken: { type: "string", minLength: 1, title: "Access token", writeOnly: true, description: "Server-side long-lived Home Assistant access token" },
+  },
+};
+
+export const homeProvider: Adapter = {
+  name: "homeassistant", schema,
+  entities: async (app, id) => connection(app, id).entities(),
+  actions: async (app, id) => connection(app, id).actions(),
+  call: async (app, id, action, input) => connection(app, id).call(action, input),
+  history: async (app, id, entity, period) => connection(app, id).history(entity, period),
 };

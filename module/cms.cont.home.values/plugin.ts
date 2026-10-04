@@ -2,20 +2,21 @@ import { errMsg, html, invoke } from "@qino/qino";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Entity } from "@qino/qino/home";
+import type { Entity, Provider } from "@qino/qino/home";
 
 async function render(node: Node): Promise<HtmlString> {
   const app = node.app, t = app.t;
-  const provider = String(node.settings.provider() ?? ""), entity = String(node.settings.entity() ?? "");
+  const provider = Number(node.settings.provider() ?? 0), entity = String(node.settings.entity() ?? "");
   try {
-    const names = provider ? [provider] : await app.api.home.providers.get() as string[];
-    if (!names.length) return html.async`<div><p>${t`No home providers are linked.`}</p></div>`;
-    const results = await Promise.all(names.map(async (name) => {
+    const rows = await app.api.home.providers.get() as Provider[];
+    const selected = rows.filter((row) => row.enabled && (!provider || row.id === provider));
+    if (!selected.length) return html.async`<div><p>${t`No home providers are linked.`}</p></div>`;
+    const results = await Promise.all(selected.map(async (row) => {
       try {
-        const values = await invoke(app.apiTree, "get", "/home/entities", { provider: name }) as Entity[];
+        const values = await invoke(app.apiTree, "get", "/home/entities", { provider: row.id }) as Entity[];
         const selected = entity ? values.filter((value) => value.id === entity) : values;
         return html.async`<section>
-          <h3>${name}</h3>
+          <h3>${row.name}</h3>
           ${selected.length ? html.async`<table class=u2-table>
             <thead><tr>
               <th>${t`Entity`}
@@ -31,7 +32,7 @@ async function render(node: Node): Promise<HtmlString> {
           </table>` : html.async`<p>${t`No entities were found.`}</p>`}
         </section>`;
       } catch (error) {
-        return html`<section><h3>${name}</h3><p role=alert>${errMsg(error)}</p></section>`;
+        return html`<section><h3>${row.name}</h3><p role=alert>${errMsg(error)}</p></section>`;
       }
     }));
     return html`<div>${results}</div>`;
@@ -45,7 +46,7 @@ export const cms = {
     render,
     settingsSchema: {
       properties: {
-        provider: { type: "string", default: "", description: "Provider name; empty includes every linked provider." },
+        provider: { type: "integer", minimum: 0, default: 0, description: "Provider ID; zero includes every enabled provider." },
         entity: { type: "string", default: "", description: "Provider-local entity ID; empty includes every entity." },
       },
     },

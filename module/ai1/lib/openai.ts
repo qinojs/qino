@@ -99,7 +99,8 @@ async function stream(res: Response, onText: (delta: string) => void) {
   return { message: { content, tool_calls: toolCalls.filter(Boolean) }, usage, finish };
 }
 
-async function readSse(res: Response, onData: (data: any) => void): Promise<boolean> {
+/** Read a stream of server-sent events, each `data:` as JSON to `onData`; resolves whether `[DONE]` came. */
+export async function readSse(res: Response, onData: (data: any) => void): Promise<boolean> {
   const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();
   let buf = "";
   try {

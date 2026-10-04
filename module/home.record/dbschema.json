@@ -1,24 +1,61 @@
 {
   "properties": {
-    "home_series": {
+    "home_number": {
       "additionalProperties": {
         "properties": {
-          "provider": { "type": "string", "maxLength": 191, "x-index": "primary" },
-          "entity": { "type": "string", "maxLength": 191, "x-index": "primary" },
-          "enabled": { "type": "boolean", "default": true }
+          "datapoint": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "home_datapoint"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "x-index": "primary"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
         },
-        "required": ["provider", "entity", "enabled"]
+        "required": [
+          "datapoint",
+          "time",
+          "value"
+        ]
       }
     },
-    "home_sample": {
+    "home_state": {
       "additionalProperties": {
         "properties": {
-          "provider": { "type": "string", "maxLength": 191, "x-index": "primary" },
-          "entity": { "type": "string", "maxLength": 191, "x-index": "primary" },
-          "time": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "x-index": "primary" },
-          "data": { "type": "string", "maxLength": 1073741823 }
+          "datapoint": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "home_datapoint"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "x-index": "primary"
+          },
+          "value": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": -128,
+            "maximum": 127
+          }
         },
-        "required": ["provider", "entity", "time", "data"]
+        "required": [
+          "datapoint",
+          "time",
+          "value"
+        ]
       }
     }
   }

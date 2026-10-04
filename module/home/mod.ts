@@ -4,6 +4,9 @@ import { validate } from "@qino/item/tools/schema/validator.js";
 
 import type { App } from "@qino/qino";
 
+export { configure, datapoint, datapoints, value } from "./datapoint.ts";
+export type { Datapoint } from "./datapoint.ts";
+
 /** A logical endpoint, not necessarily a physical device. Values and attributes keep their types. */
 export type Entity = {
   id: string;
@@ -57,22 +60,34 @@ export async function provider(app: App, id: number): Promise<Provider> {
   return decode(row);
 }
 
+function merge(input: unknown, previous: unknown, schema: Record<string, unknown>): unknown {
+  if (schema.writeOnly && input === "") return previous;
+  if (Array.isArray(input)) return input.map((item, index) => merge(item, Array.isArray(previous) ? previous[index] : undefined, schema.items as Record<string, unknown> ?? {}));
+  if (!schema.properties || !input || typeof input !== "object") return input;
+  const old = previous && typeof previous === "object" ? previous as Record<string, unknown> : {};
+  const fields = schema.properties as Record<string, Record<string, unknown>>;
+  for (const key of Object.keys(input)) if (fields[key]?.readOnly) throw new ApiError(400, "Read-only provider configuration cannot be submitted");
+  return Object.fromEntries(Object.entries({ ...old, ...input }).flatMap(([key, value]) => {
+    const result = merge(value, old[key], fields[key] ?? {});
+    return result === undefined ? [] : [[key, result]];
+  }));
+}
+
 /** Create or edit an instance; empty secret fields preserve stored credentials. */
 export async function save(app: App, input: { id?: number; name: string; adapter: string; url: string; config?: Record<string, unknown>; enabled?: boolean }): Promise<number> {
   const selected = adapters(app).find((adapter) => adapter.name === input.adapter);
   if (!selected) throw new ApiError(400, "Home adapter is not linked");
   if (!input.name.trim() || input.name.length > 191 || input.url.length > 2048) throw new ApiError(400, "Invalid provider name or URL");
+  const endpoint = input.url ? URL.parse(input.url) : null;
+  if (input.url && (!endpoint || endpoint.username || endpoint.password)) throw new ApiError(400, "Provider URL must be absolute and contain no credentials");
   const previous = input.id === undefined ? undefined : await provider(app, input.id);
+  if (previous && previous.adapter !== input.adapter && await app.db.one`SELECT id FROM home_datapoint WHERE provider = ${previous.id} LIMIT 1`)
+    throw new ApiError(409, "Provider has datapoints; create another instance to change its adapter");
   const schema = selected.schema ?? { type: "object", properties: {} };
-  const config = { ...(previous?.adapter === input.adapter ? previous.config : {}), ...input.config };
-  for (const [key, field] of Object.entries((schema.properties ?? {}) as Record<string, { writeOnly?: boolean }>)) {
-    if (field.writeOnly && config[key] === "") {
-      if (previous?.adapter === input.adapter && previous.config[key] !== undefined) config[key] = previous.config[key];
-      else delete config[key];
-    }
-  }
+  const config = merge(input.config ?? {}, previous?.adapter === input.adapter ? previous.config : {}, schema) as Record<string, unknown>;
+  delete config.url;
   if (validate(schema, { ...config, url: input.url }).length) throw new ApiError(400, "Invalid home provider configuration");
-  const values = { name: input.name, adapter: input.adapter, url: input.url, config, enabled: input.enabled ?? true };
+  const values = { name: input.name, adapter: input.adapter, url: input.url, config: JSON.stringify(config), enabled: input.enabled ?? previous?.enabled ?? true };
   const id = await app.db.unit(async () => {
     if (previous) { await app.db.table("home_provider").ensure({ id: previous.id, ...values }); return previous.id; }
     return Number(await app.db.table("home_provider").insert(values));
@@ -81,9 +96,16 @@ export async function save(app: App, input: { id?: number; name: string; adapter
   return id;
 }
 
+export async function enable(app: App, id: number, enabled: boolean): Promise<void> {
+  const previous = await provider(app, id);
+  await app.db.query`UPDATE home_provider SET enabled = ${enabled} WHERE id = ${id}`;
+  await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
+}
+
 /** Retiring a provider leaves its measurement identities and archive intact. */
 export async function remove(app: App, id: number): Promise<void> {
   const previous = await provider(app, id);
+  if (await app.db.one`SELECT id FROM home_datapoint WHERE provider = ${id} LIMIT 1`) throw new ApiError(409, "Provider has datapoints; disable it instead");
   await app.db.query`DELETE FROM home_provider WHERE id = ${id}`;
   await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
@@ -115,7 +137,13 @@ export async function call(app: App, id: number, action: string, input: Call = {
   return adapter.call(app, id, action, input);
 }
 
+/** Publish an observation without triggering change rules, e.g. an initial provider snapshot. */
+export async function observed(app: App, provider: number, id: string, entity: Entity | null, time = entity?.updated === undefined ? Date.now() : Date.parse(entity.updated)): Promise<void> {
+  await app.fire("home:observe", { provider, id, entity, time });
+}
+
 /** Publish an observation, including creation (`previous: null`) or removal (`entity: null`). */
 export async function changed(app: App, provider: number, id: string, entity: Entity | null, previous: Entity | null): Promise<void> {
+  await observed(app, provider, id, entity);
   await app.fire("home:change", { provider, id, entity, previous });
 }

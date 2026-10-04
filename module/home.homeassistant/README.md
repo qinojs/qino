@@ -20,21 +20,21 @@ With `cms.backend.home` installed, its Home Assistant card lets you enter the UR
 directly. Save and reconnect applies them without restarting Qino. Stored tokens are not read back
 into the form; an empty token field keeps the saved token.
 
-The existing settings editor and application code use the same server-side settings:
+Connections are persisted provider instances, with any number of instances per App:
 
 ```ts
-await app.settings["home.homeassistant"].url("http://homeassistant.local:8123");
-await app.settings["home.homeassistant"].accessToken("YOUR_LONG_LIVED_ACCESS_TOKEN");
+import { save } from "@qino/qino/home";
+await save(app, {
+  name: "House", adapter: "homeassistant", url: "http://homeassistant.local:8123",
+  config: { accessToken: "YOUR_LONG_LIVED_ACCESS_TOKEN" },
+});
 ```
 
-Obtain a long-lived access token from your Home Assistant profile. Use a dedicated Home Assistant
-account with the permissions the integration needs. Qino users do not receive the token through
-the home API; actions use this account's Home Assistant permissions.
-
-After changing settings outside the backend card, restart Qino or unlink/link `home.homeassistant`. With missing credentials
-the module stays dormant; calls report that configuration is needed. A configured but unreachable
-Home Assistant does not prevent Qino from starting. Invalid credentials require fixing the settings
-and relinking, rather than repeatedly retrying authentication.
+Obtain a long-lived access token from your Home Assistant profile. The public home API redacts it;
+action permissions are those of its Home Assistant account. Updating a provider reconnects only
+that connection. Disabling closes it; module unlink closes all its connections. Missing credentials
+leave the instance dormant. Unreachable Home Assistant does not prevent Qino from starting.
+Rejected credentials stop automatic retries until configuration is corrected.
 
 The URL may include a reverse proxy prefix. HTTP/HTTPS and WS/WSS URLs are accepted; the adapter
 connects to `<base>/api/websocket`. Allow the Home Assistant host in Deno's network permissions.
@@ -42,7 +42,7 @@ connects to `<base>/api/websocket`. Allow the Home Assistant host in Deno's netw
 ## Behaviour
 
 - Authenticates, subscribes to `state_changed`, then loads states. Changes during
-  loading are buffered; initial snapshots do not emit synthetic changes.
+  loading are buffered; initial snapshots enter history via `home:observe` without synthetic change rules.
 - Maps Home Assistant entities to logical home entities. Native state strings and attributes are
   preserved; `unknown` and `unavailable` are reported with `available: false`.
 - Discovers actions via `get_services`, including their native field metadata. Action IDs are

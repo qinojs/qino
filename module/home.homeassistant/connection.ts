@@ -1,5 +1,5 @@
 import { ApiError } from "@qino/qino";
-import { changed } from "@qino/qino/home";
+import { changed, observed, providers } from "@qino/qino/home";
 
 import type { App } from "@qino/qino";
 import type { Action, Call, Entity } from "@qino/qino/home";
@@ -21,6 +21,7 @@ type Pending = { resolve(value: unknown): void; reject(reason: unknown): void; t
 /** One app's authenticated session. Socket loss invalidates observations and pending commands. */
 export class Connection {
   #app: App;
+  #provider: number;
   #url: string;
   #token: string;
   #signal: AbortSignal;
@@ -35,14 +36,15 @@ export class Connection {
   #pending = new Map<number, Pending>();
   #states = new Map<string, State>();
 
-  constructor(app: App, url: string, token: string, signal: AbortSignal) {
+  constructor(app: App, provider: number, url: string, token: string, signal: AbortSignal) {
     this.#app = app;
+    this.#provider = provider;
     this.#url = url;
     this.#token = token;
     this.#signal = signal;
     signal.addEventListener("abort", () => {
       clearTimeout(this.#timer);
-      this.#drop(new ApiError(503, "Home Assistant module was unlinked"));
+      this.#drop(new ApiError(503, "Home Assistant connection was closed"));
     }, { once: true });
   }
 
@@ -164,6 +166,9 @@ export class Connection {
     this.#ready = true;
     this.#retry = 1000;
     for (const change of buffered) this.#observe(change);
+    const time = Date.now();
+    for (const state of this.#states.values()) observed(this.#app, this.#provider, state.entity_id, entityOf(state), time)
+      .catch((error) => console.error("home.homeassistant:", error));
     const heartbeat = () => {
       if (this.#socket !== socket || this.#signal.aborted) return;
       this.#heartbeat = setTimeout(() => {
@@ -181,7 +186,7 @@ export class Connection {
     if (state && current && Date.parse(state.last_updated) < Date.parse(current.last_updated)) return;
     if (state) this.#states.set(change.entity_id, state);
     else this.#states.delete(change.entity_id);
-    changed(this.#app, "homeassistant", change.entity_id, state ? entityOf(state) : null,
+    changed(this.#app, this.#provider, change.entity_id, state ? entityOf(state) : null,
       change.old_state ? entityOf(change.old_state) : null).catch((e) => console.error("home:change listener:", e));
   }
 
@@ -207,6 +212,11 @@ export class Connection {
     const socket = this.#socket;
     this.#socket = undefined;
     this.#ready = false;
+    for (const state of this.#states.values()) {
+      const previous = entityOf(state);
+      changed(this.#app, this.#provider, state.entity_id, { ...previous, available: false, updated: new Date().toISOString() }, previous)
+        .catch((error) => console.error("home.homeassistant:", error));
+    }
     this.#states.clear();
     clearTimeout(this.#heartbeat);
     for (const pending of this.#pending.values()) {
@@ -237,31 +247,46 @@ function entityOf(state: State): Entity {
   };
 }
 
-const CONNECTION = Symbol("home.homeassistant");
-const owned = (app: App) => app as App & { [CONNECTION]?: Connection };
+const CONNECTIONS = Symbol("home.homeassistant");
+const owned = (app: App) => app as App & { [CONNECTIONS]?: Map<number, { session: Connection; controller: AbortController }> };
 
-export function connection(app: App): Connection {
-  const connection = owned(app)[CONNECTION];
-  if (!connection) throw new ApiError(503, "Configure home.homeassistant.url and accessToken, then relink the module");
-  return connection;
+export function connection(app: App, id: number): Connection {
+  const session = owned(app)[CONNECTIONS]?.get(id)?.session;
+  if (!session) throw new ApiError(503, "Home Assistant provider is disabled or not configured");
+  return session;
 }
 
 /** Starts in the background, so an unreachable home never prevents Qino from booting. */
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
-  const settings = app.settings["home.homeassistant"];
-  const [url, token] = await Promise.all([settings.url, settings.accessToken]);
-  if (!url || !token || signal.aborted) return;
-  const endpoint = new URL(String(url));
-  if (!["http:", "https:", "ws:", "wss:"].includes(endpoint.protocol) || endpoint.username || endpoint.password)
-    throw new Error("home.homeassistant.url must be an HTTP(S) or WebSocket URL without credentials");
-  endpoint.protocol = endpoint.protocol === "https:" || endpoint.protocol === "wss:" ? "wss:" : "ws:";
-  endpoint.pathname = endpoint.pathname.replace(/\/$/, "").replace(/\/api\/websocket$/, "") + "/api/websocket";
-  endpoint.search = "";
-  endpoint.hash = "";
-  const session = new Connection(app, endpoint.href, String(token), signal);
-  owned(app)[CONNECTION] = session;
+  const sessions = new Map<number, { session: Connection; controller: AbortController }>();
+  owned(app)[CONNECTIONS] = sessions;
   signal.addEventListener("abort", () => {
-    if (owned(app)[CONNECTION] === session) delete owned(app)[CONNECTION];
+    for (const { controller } of sessions.values()) controller.abort();
+    sessions.clear();
+    if (owned(app)[CONNECTIONS] === sessions) delete owned(app)[CONNECTIONS];
   }, { once: true });
-  session.start();
+  const reload = async (id?: number) => {
+    const rows = await providers(app);
+    if (signal.aborted) return;
+    const selected = rows.filter((row) => row.adapter === "homeassistant" && row.enabled && (id === undefined || row.id === id));
+    if (id !== undefined) { sessions.get(id)?.controller.abort(); sessions.delete(id); }
+    for (const row of selected) {
+      const endpoint = URL.parse(row.url), token = row.config.accessToken;
+      if (!endpoint || !["http:", "https:", "ws:", "wss:"].includes(endpoint.protocol) || endpoint.username || endpoint.password || typeof token !== "string" || !token)
+        continue;
+      endpoint.protocol = endpoint.protocol === "https:" || endpoint.protocol === "wss:" ? "wss:" : "ws:";
+      endpoint.pathname = endpoint.pathname.replace(/\/$/, "").replace(/\/api\/websocket$/, "") + "/api/websocket";
+      endpoint.search = "";
+      endpoint.hash = "";
+      const controller = new AbortController();
+      const session = new Connection(app, row.id, endpoint.href, token, controller.signal);
+      sessions.set(row.id, { session, controller });
+      session.start();
+    }
+  };
+  let pending = Promise.resolve();
+  app.on("home:provider", ({ id, adapter, previousAdapter }) => {
+    if (adapter === "homeassistant" || previousAdapter === "homeassistant") return pending = pending.catch(() => {}).then(() => reload(id));
+  }, { signal });
+  await reload();
 }

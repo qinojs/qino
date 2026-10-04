@@ -1,5 +1,5 @@
-import { errMsg, getCtx } from "@qino/qino";
-import { AiError } from "@qino/qino/ai1";
+import { errMsg, requestStorage } from "@qino/qino";
+import { AiError, readSse } from "@qino/qino/ai1";
 
 import { active } from "./account.ts";
 
@@ -42,51 +42,38 @@ export function input(messages: Message[], tools: TextInput["tools"]): { input: 
 
 export async function completed(response: Response, onText?: (delta: string) => void): Promise<Answer> {
   if (!response.body) throw new AiError("Empty ChatGPT response", 502);
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "", answer: Answer | undefined, streamed = false;
+  let answer: Answer | undefined, streamed = false;
   const items = new Map<number, Item>();
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      buffer += (value ?? "").replaceAll("\r", "") + (done ? "\n\n" : "");
-      let end: number;
-      while ((end = buffer.indexOf("\n\n")) >= 0) {
-        const event = buffer.slice(0, end); buffer = buffer.slice(end + 2);
-        const data = event.split("\n").filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trimStart()).join("\n");
-        if (!data || data === "[DONE]") continue;
-        let part: Record<string, unknown>;
-        try { part = JSON.parse(data); } catch { throw new AiError("Invalid ChatGPT stream event", 502); }
-        if (part.type === "response.output_text.delta" && typeof part.delta === "string") {
-          streamed = true;
-          onText?.(part.delta);
-        }
-        if (part.type === "response.output_item.done" && typeof part.output_index === "number" && part.item && typeof part.item === "object")
-          items.set(part.output_index, part.item as Item);
-        if (part.type === "response.completed") answer = part.response as Answer;
-        if (part.type === "response.failed" || part.type === "response.incomplete") {
-          const response = part.response as Answer | undefined;
-          const reason = part.type === "response.failed"
-            ? [response?.error?.code, response?.error?.message].filter(Boolean).join(": ")
-            : response?.incomplete_details?.reason;
-          throw new AiError(`ChatGPT ${part.type}${reason ? `: ${reason}` : ""}`, 502);
-        }
+    await readSse(response, (part) => {
+      if (part.type === "response.output_text.delta" && typeof part.delta === "string") {
+        streamed = true;
+        onText?.(part.delta);
       }
-      if (done) break;
-    }
+      const done = part.type === "response.output_item.done" && typeof part.output_index === "number";
+      if (done && part.item && typeof part.item === "object") items.set(part.output_index, part.item);
+      if (part.type === "response.completed") answer = part.response;
+      if (part.type === "response.failed" || part.type === "response.incomplete") {
+        const response = part.response as Answer | undefined;
+        const reason = part.type === "response.failed"
+          ? [response?.error?.code, response?.error?.message].filter(Boolean).join(": ")
+          : response?.incomplete_details?.reason;
+        throw new AiError(`ChatGPT ${part.type}${reason ? `: ${reason}` : ""}`, 502);
+      }
+    });
     if (!answer || answer.status !== "completed") throw new AiError("Incomplete ChatGPT stream", 502);
   } catch (e) {
     // text went out already: no other model may take over (as with the openai adapter)
     throw new AiError(errMsg(e), (e as AiError).status ?? 502, streamed);
-  } finally { await reader.cancel().catch(() => {}); }
+  }
   return { ...answer, output: answer.output?.length ? answer.output : [...items].sort(([a], [b]) => a - b).map(([, item]) => item) };
 }
 
 async function text(call: Call, value: TextInput): Promise<Omit<TextOutput, "model" | "modelProvider">> {
   if (call.endpoint.replace(/\/+$/, "") !== "https://api.openai.com/v1")
     throw new AiError("The ChatGPT plan endpoint must be https://api.openai.com/v1", 400);
-  let ctx;
-  try { ctx = getCtx(); } catch { throw new AiError("A signed-in Qino user is required for ChatGPT plan use", 401); }
-  if (!ctx.userId) throw new AiError("A signed-in Qino user is required for ChatGPT plan use", 401);
+  const ctx = requestStorage.getStore();
+  if (!ctx?.userId) throw new AiError("A signed-in Qino user is required for ChatGPT plan use", 401);
   const account = await active(ctx.app, ctx.userId);
   if (!account) throw new AiError("Connect a ChatGPT account at /ai1-chatgpt", 401);
   const body = { model: call.model, ...input(value.messages, value.tools), store: false, stream: true };

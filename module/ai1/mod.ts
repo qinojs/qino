@@ -4,6 +4,7 @@ import type { App, StandardSchema, Tool, Transcript } from "@qino/qino";
 import type { Opts } from "./lib/request.ts";
 
 export { AiError, candidates, request } from "./lib/request.ts";
+export { readSse } from "./lib/openai.ts";
 export type { Adapter, Opts } from "./lib/request.ts";
 
 /** Provider-neutral content. An image `url` may be a data URL. */

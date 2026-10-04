@@ -7,7 +7,8 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   let refreshes = 0, prevented = 0;
   const button = { disabled: false };
   const form = {
-    dataset: { provider: "other" },
+    dataset: { provider: "1" },
+    hasAttribute: () => false,
     elements: { action: { value: "set" }, data: { value: '{"value":false}' }, entities: { selectedOptions: [{ value: "sensor.temp" }] } },
     querySelector: () => button,
   };
@@ -29,11 +30,11 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   const event = { target: { closest: () => target }, preventDefault: () => { prevented++; } };
   const first = listeners.submit(event);
   await listeners.submit(event);
-  assertEquals(calls, [{ provider: "other", action: "set", entities: ["sensor.temp"], data: { value: false } }]);
+  assertEquals(calls, [{ provider: 1, action: "set", entities: ["sensor.temp"], data: { value: false } }]);
   assertEquals(button.disabled, true);
   release!({ ok: true, message: 'Accepted\n{\n  "value": true\n}', result: { value: true } });
   await first;
-  assertEquals(refreshes, 2);
+  assertEquals(refreshes, 3);
   assertEquals(button.disabled, false);
   assertEquals(prevented, 2);
   assertEquals(messages[0], 'Accepted\n{\n  "value": true\n}');
@@ -45,32 +46,29 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   assertEquals(messages.length, 5);
   assertEquals(button.disabled, false);
   target = {
-    dataset: { module: "custom.provider" },
-    elements: [
-      { name: "url", type: "url", value: "https://house.test/" },
-      { name: "accessToken", type: "password", value: "" },
-      { name: "enabled", type: "checkbox", checked: false },
-      { name: "threshold", type: "number", valueAsNumber: 0 },
-      { name: "ignored", type: "text", value: "hidden", disabled: true },
-    ],
+    dataset: { adapter: "fake", provider: "1" },
+    hasAttribute: (name: string) => name === "data-provider-config",
+    elements: Object.assign([
+      { name: "config.accessToken", type: "password", value: "" },
+      { name: "config.threshold", type: "number", valueAsNumber: 0 },
+      { name: "config.ignored", type: "text", value: "hidden", disabled: true },
+    ], { name: { value: "House" }, url: { value: "https://house.test/" }, enabled: { checked: false } }),
     querySelector: () => button,
   };
   const saved = listeners.submit(event);
-  assertEquals(calls.at(-1), { config: { module: "custom.provider", values: {
-    url: "https://house.test/", accessToken: "", enabled: false, threshold: 0,
-  } } });
+  assertEquals(calls.at(-1), { config: { id: 1, name: "House", adapter: "fake", url: "https://house.test/", enabled: false, config: { accessToken: "", threshold: 0 } } });
   release!({ ok: true, message: "Saved" });
   await saved;
-  assertEquals(refreshes, 4);
+  assertEquals(refreshes, 6);
   assertEquals(messages.at(-1), "Saved");
   const failed = listeners.submit(event);
   release!({ ok: false, message: "Invalid setting" });
   await failed;
   assertEquals(messages.at(-1), "Invalid setting");
   assertEquals(button.disabled, false);
-  target = { ...button, dataset: { provider: "other", entity: "counter" }, checked: false };
+  target = { ...button, dataset: { point: JSON.stringify({ id: 1, provider: 1, entity: "counter" }) }, checked: false };
   const recorded = listeners.change(event);
-  assertEquals(calls.at(-1), { record: { provider: "other", entity: "counter", enabled: false } });
+  assertEquals(calls.at(-1), { datapoint: { id: 1, provider: 1, entity: "counter", record: false } });
   release!({ ok: true, message: "Recording updated." });
   await recorded;
   assertEquals(messages.at(-1), "Recording updated.");

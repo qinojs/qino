@@ -1,8 +1,8 @@
-import { $item, ApiError, html, toInput } from "@qino/qino";
-import { validate } from "@qino/item/tools/schema/validator.js";
+import { html, toInput } from "@qino/qino";
 
-import type { App, HtmlString } from "@qino/qino";
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+import type { Provider } from "@qino/qino/home";
 
 type Schema = { properties?: Record<string, Schema>; title?: string; writeOnly?: boolean; readOnly?: boolean; "x-html"?: Record<string, unknown> };
 
@@ -12,58 +12,46 @@ function fields(schema: Schema, path: string[] = []): { path: string[]; schema: 
     : path.length ? [{ path, schema }] : [];
 }
 
+/** One form per persisted connection, plus creation forms for linked adapters. */
 export async function settings(node: Node): Promise<HtmlString> {
   const app = node.app, t = app.t;
-  const modules = app.modules.linked().filter((mod) => mod.plugin.homeProvider && mod.plugin.settingsSchema);
-  return html.join(await Promise.all(modules.map(async (mod) => {
-    const schema = mod.plugin.settingsSchema as Schema;
-    const all = fields(schema);
-    const rows = await Promise.all(all.map(async ({ path, schema }) => {
-      const item = app.settings[$item].sub([mod.name, ...path]);
-      const value = schema.writeOnly ? "" : await item.proxy;
-      const id = `${node.id}-${mod.name}-${path.join(".")}`;
-      const input = toInput({ ...schema, "x-html": { ...schema["x-html"], id, autocomplete: schema.writeOnly ? "new-password" : "off" } }, {
-        name: path.join("."), value, disabled: schema.readOnly,
-      });
+  const adapters = await app.api.home.adapters.get() as { name: string; schema?: Schema }[];
+  const providers = await app.api.home.providers.get() as Provider[];
+  const form = async (adapter: { name: string; schema?: Schema }, row?: Provider) => {
+    const all = fields(adapter.schema ?? {});
+    const rows = all.map(({ path, schema }) => {
+      let value: unknown = path.length === 1 && path[0] === "url" ? row?.url : row?.config;
+      if (!(path.length === 1 && path[0] === "url")) for (const key of path) value = (value as Record<string, unknown> | undefined)?.[key];
+      const name = path.length === 1 && path[0] === "url" ? "url" : "config." + path.join(".");
+      const id = `${node.id}-${adapter.name}-${row?.id ?? "new"}-${path.join(".")}`;
       return html`<tr>
-        <th><label for="${id}">${schema.title ?? path.join(".")}</label>
-        <td>${html.raw(input)}
+        <th><label for="${id}">${schema.title ?? path.join(".")}</label></th>
+        <td>${html.raw(toInput({ ...schema, "x-html": { ...schema["x-html"], id, autocomplete: schema.writeOnly ? "new-password" : "off" } }, {
+          name, value: schema.writeOnly ? "" : value, disabled: schema.readOnly,
+        }))}</td>
       </tr>`;
-    }));
-    return html.async`<div class=u2-card>
-      <div class=-head>${schema.title ?? mod.plugin.homeProvider.name}</div>
-      <form data-config data-module="${mod.name}">
+    });
+    return html.async`<section class=u2-card>
+      <div class=-head>${row ? row.name + " (#" + row.id + ")" : t`Add provider`} · ${adapter.schema?.title ?? adapter.name}</div>
+      <form data-provider-config data-adapter="${adapter.name}" data-provider="${row?.id ?? ""}">
+        <label>${t`Name`}<input name=name value="${row?.name ?? ""}" required maxlength=191></label>
+        ${!all.some((field) => field.path.join(".") === "url") ? html.async`<label>${t`URL`}<input name=url type=url value="${row?.url ?? ""}"></label>` : ""}
         <table class="u2-table -Fields -Flex">${rows}</table>
+        <label><input name=enabled type=checkbox ${!row || row.enabled ? html.raw("checked") : ""}>${t`Enabled`}</label>
         ${all.some(({ schema }) => schema.writeOnly) ? html.async`<p>${t`Leave secret fields empty to keep saved values.`}</p>` : ""}
-        <button type=submit>${t`Save and reconnect`}</button>
+        <button type=submit>${row ? t`Save and reconnect` : t`Add provider`}</button>
       </form>
-    </div>`;
-  })));
-}
-
-export async function saveSettings(app: App, input: unknown): Promise<void> {
-  if (!input || typeof input !== "object" || Array.isArray(input)) throw new ApiError(400, "Invalid provider configuration");
-  const { module, values } = input as { module: unknown; values: unknown };
-  const mod = typeof module === "string" ? app.modules.linked(module) : undefined;
-  if (!mod?.plugin.homeProvider || !mod.plugin.settingsSchema) throw new ApiError(400, "Provider configuration is not available");
-  if (!values || typeof values !== "object" || Array.isArray(values)) throw new ApiError(400, "Invalid provider settings");
-  const known = new Map(fields(mod.plugin.settingsSchema as Schema).map((field) => [field.path.join("."), field]));
-  const writes = Object.entries(values).flatMap(([key, value]) => {
-    const field = known.get(key);
-    if (!field || field.schema.readOnly) throw new ApiError(400, `Unknown or read-only setting: ${key}`);
-    if (field.schema.writeOnly && value === "") return [];
-    if (validate(field.schema, value).length) throw new ApiError(400, `Invalid setting: ${key}`);
-    return [{ path: field.path, value }];
-  });
-  const dependent = app.modules.linked().find((other) => other !== mod && other.dependencies.includes(mod.name));
-  if (dependent) throw new ApiError(409, `Cannot reconnect while ${dependent.name} depends on ${mod.name}`);
-  const previous = await Promise.all(writes.map(async ({ path }) => ({ path, value: await app.settings[$item].sub([mod.name, ...path]).proxy })));
-  for (const { path, value } of writes) await app.settings[$item].sub([mod.name, ...path]).set(value);
-  app.modules.unlink(mod.name);
-  try { await app.modules.link(mod.name); }
-  catch (error) {
-    for (const { path, value } of previous) await app.settings[$item].sub([mod.name, ...path]).set(value);
-    await app.modules.link(mod.name);
-    throw error;
-  }
+    </section>`;
+  };
+  return html.join(await Promise.all([
+    ...providers.map((row) => {
+      const adapter = adapters.find((adapter) => adapter.name === row.adapter);
+      return adapter ? form(adapter, row) : html.async`<section class=u2-card>
+        <div class=-head>${row.name} (#${row.id}) · ${row.adapter}</div>
+        <p>${t`The adapter is not linked.`}</p>
+        <label><input type=checkbox data-provider-enabled data-provider="${row.id}" ${row.enabled ? html.raw("checked") : ""}>${t`Enabled`}</label>
+      </section>`;
+    }),
+    ...adapters.map((adapter) => form(adapter)),
+  ]));
 }

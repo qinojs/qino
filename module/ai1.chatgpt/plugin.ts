@@ -88,12 +88,10 @@ async function update(ctx: Ctx, action: "select" | "disconnect"): Promise<never>
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   await ensureProvider(app);
-  app.on("route", ({ ctx }) => {
-    const path = ctx.req.appPath;
-    if (path === "ai1-chatgpt" && ctx.req.method === "GET") return page(ctx);
-    if (path === "ai1-chatgpt/start" && ctx.req.method === "GET") return start(ctx);
-    if (path === "ai1-chatgpt/callback" && ctx.req.method === "GET") return callback(ctx);
-    if (path === "ai1-chatgpt/select" && ctx.req.method === "POST") return update(ctx, "select");
-    if (path === "ai1-chatgpt/disconnect" && ctx.req.method === "POST") return update(ctx, "disconnect");
-  }, { signal });
+  const routes: Record<string, (ctx: Ctx) => Promise<never>> = {
+    "GET ai1-chatgpt": page, "GET ai1-chatgpt/start": start, "GET ai1-chatgpt/callback": callback,
+    "POST ai1-chatgpt/select": (ctx) => update(ctx, "select"),
+    "POST ai1-chatgpt/disconnect": (ctx) => update(ctx, "disconnect"),
+  };
+  app.on("route", ({ ctx }) => routes[`${ctx.req.method} ${ctx.req.appPath}`]?.(ctx), { signal });
 }

@@ -1,51 +1,34 @@
-import { requestStorage, toTools } from "@qino/qino";
+import { App, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { configure, save } from "@qino/qino/home";
 
-import { history, providers } from "../mod.ts";
+import { history } from "../mod.ts";
 import { api } from "../plugin.ts";
 
-import type { App } from "@qino/qino";
-import type { Provider } from "@qino/qino/home";
+const period = { start: "2026-10-03T02:00:00+02:00", end: "2026-10-04T02:00:00+02:00", source: "provider" as const };
 
-const period = { start: "2026-10-03T02:00:00+02:00", end: "2026-10-04T02:00:00+02:00" };
-const provider: Provider = {
-  name: "archive",
-  entities: () => Promise.resolve([]), actions: () => Promise.resolve([]), call: () => Promise.resolve(null),
-  history: (_app, entity, period) => Promise.resolve([{
-    id: entity, name: entity, state: false, attributes: { period }, available: true, updated: period.start,
-  }]),
-};
-const appOf = (...providers: Provider[]) => ({
-  fire: () => Promise.resolve(),
-  modules: { linked: () => providers.map((homeProvider) => ({ plugin: { homeProvider } })) },
-}) as unknown as App;
-
-Deno.test("home history discovers optional capabilities and preserves native samples with UTC periods", async () => {
-  const app = appOf(provider, { ...provider, name: "live", history: undefined });
-  assertEquals(await providers(app), ["archive"]);
-  assertEquals(await history(app, "archive", "same", period), [{
-    id: "same", name: "same", state: false, available: true, updated: "2026-10-03T00:00:00.000Z",
-    attributes: { period: { start: "2026-10-03T00:00:00.000Z", end: "2026-10-04T00:00:00.000Z" } },
-  }]);
-  await assertRejects(() => history(app, "live", "same", period), Error, "does not support history");
-  await assertRejects(() => history(app, "missing", "same", period), Error, "not linked");
-  await assertRejects(() => history(app, "archive", "same", { start: period.end, end: period.start }), Error, "precede");
-  await assertRejects(() => history(app, "archive", "same", { ...period, start: "2026-10-03T00:00:00" }), Error, "timezone");
-  await assertRejects(() => history(app, "archive", "same", { ...period, start: "badZ" }), Error, "timezone");
-  await assertRejects(() => providers(appOf(provider, provider)), Error, "duplicate");
-  assertEquals(await history(appOf({ ...provider, history: () => Promise.resolve([]) }), "archive", "same", period), []);
-});
-
-Deno.test("home history tools enforce access, required periods and upstream failures", async () => {
-  const tools = toTools({ "home.history": api });
-  assertEquals(tools.map((tool) => tool.name), ["homeHistory_providers_get", "homeHistory_provider_entity_get"]);
-  const read = tools.find((tool) => tool.name.endsWith("provider_entity_get"))!;
-  const app = appOf(provider), ctx = await testContext({ app, set: { user: { id: 7 } } });
-  await requestStorage.run(ctx, async () => {
-    assertEquals((await read.execute({ provider: "archive", entity: "same", ...period }, ctx) as unknown[]).length, 1);
-    await assertRejects(() => read.execute({ provider: "archive", entity: "same" }, ctx), Error, "Validation failed");
-  });
-  const guest = await testContext({ app });
-  await requestStorage.run(guest, () => assertRejects(() => read.execute({ provider: "archive", entity: "same", ...period }, guest), Error, "Access denied"));
-  await assertRejects(() => history(appOf({ ...provider, history: () => Promise.reject(new Error("offline")) }), "archive", "same", period), Error, "offline");
+Deno.test("home history resolves persisted datapoints, validates periods and protects upstream access", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "qino-home-history-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await Deno.writeTextFile(`${dir}/plugin.ts`, `export const homeProvider = {
+    name: "archive", entities: async () => [], actions: async () => [], call: async () => null,
+    history: async (_app, _id, entity, period) => [{ id: entity, name: entity, state: 0, available: true, attributes: {}, updated: period.start }],
+  };`);
+  for (const name of ["home", "home.history"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
+  app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
+  try {
+    await app.init();
+    const provider = await save(app, { name: "Archive", adapter: "archive", url: "" }), id = await configure(app, { provider, entity: "same" });
+    assertEquals((await history(app, id, period)).samples, [{ time: Date.parse(period.start), value: 0 }]);
+    await assertRejects(() => history(app, id, { ...period, end: period.start }), Error, "precede");
+    await assertRejects(() => history(app, id, { ...period, start: "2026-10-03T00:00:00" }), Error, "timezone");
+    await assertRejects(() => history(app, id, { ...period, width: 0 }), Error, "width");
+    await assertRejects(() => history(app, id, { ...period, maxGap: -1 }), Error, "gap");
+    const read = toTools({ "home.history": api })[0], user = await testContext({ app, set: { app, user: { id: 7 } } });
+    await requestStorage.run(user, async () => {
+      assertEquals(((await read.execute({ datapoint: id, ...period }, user)) as { samples: unknown[] }).samples.length, 1);
+      await assertRejects(() => read.execute({ datapoint: id }, user), Error, "Validation failed");
+    });
+    const guest = await testContext({ app, set: { app } });
+    await requestStorage.run(guest, () => assertRejects(() => read.execute({ datapoint: id, ...period }, guest), Error, "Access denied"));
+  } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
 });

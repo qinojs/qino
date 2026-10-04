@@ -72,7 +72,7 @@ agent/:agent/memories           get · post { content, replaces? }
 agent/:agent/memories/:memory   delete
 agent/:agent/search             post    its own memory: memories and past sessions { query }
 sessions/:session               get     its agent, everything said, whether an answer is on its way (running)
-sessions/:session/ask           post    { content } → the answer
+sessions/:session/ask           post    { content, wait? } → { running } at once, with wait the answer
 sessions/:session/note          post    { content }
 sessions/:session/cancel        post    → { cancelled }
 ```

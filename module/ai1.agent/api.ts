@@ -1,4 +1,4 @@
-import { Access, NotFoundError, s } from "@qino/qino";
+import { Access, errMsg, NotFoundError, s } from "@qino/qino";
 
 import * as memory from "./lib/memory.ts";
 import * as search from "./lib/search.ts";
@@ -116,10 +116,15 @@ export const api: ApiTree = {
           })),
       })),
       ask: {
-        post: verb<{ session: number; content: string }>(
-          "Say something in the session; the agent answers",
-          ({ session, content }, ctx) => new Session(ctx.app, session).ask(content),
-          { content: s.string() },
+        post: verb<{ session: number; content: string; wait?: boolean }>(
+          "Say something in the session; the agent answers in the background, its steps and errors kept in the session; with wait the answer",
+          ({ session, content, wait }, ctx) => {
+            const answer = new Session(ctx.app, session).ask(content);
+            if (wait) return answer;
+            answer.catch((e) => console.error("[ai1.agent] ask:", errMsg(e))); // kept in the session too
+            return { running: true };
+          },
+          { content: s.string(), wait: s.optional(s.boolean()) },
         ),
       },
       cancel: {

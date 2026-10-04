@@ -1,30 +1,30 @@
 import { ApiError, errMsg } from "@qino/qino";
 
-import { saveSettings } from "./settings.ts";
-
 import type { Node } from "@qino/qino/cms";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   try {
     if (vars.config !== undefined) {
-      await saveSettings(node.app, vars.config);
-      return { ok: true, message: await node.app.t`Settings saved. Reconnecting.` };
+      const input = vars.config as Record<string, unknown>;
+      const { id, ...config } = input;
+      if (id !== undefined) await node.app.api.home.provider(Number(id)).put(config);
+      else await node.app.api.home.providers.post(config);
+      return { ok: true, message: await node.app.t`Provider saved.` };
     }
-    if (vars.record !== undefined) {
-      const record = vars.record as Record<string, unknown>;
-      if (!record || typeof record.provider !== "string" || typeof record.entity !== "string") throw new ApiError(400, "Select a provider and entity");
-      await node.app.api["home.record"].provider(record.provider).entity(record.entity).post({ enabled: record.enabled });
-      return { ok: true, message: await node.app.t`Recording updated.` };
+    if (vars.enabled !== undefined) {
+      await node.app.api.home.provider(Number(vars.provider)).patch({ enabled: vars.enabled });
+      return { ok: true, message: await node.app.t`Provider updated.` };
+    }
+    if (vars.datapoint !== undefined) {
+      const input = vars.datapoint as Record<string, unknown>, { id, ...config } = input;
+      if (id !== undefined) await node.app.api.home.datapoint(Number(id)).put(config);
+      else await node.app.api.home.datapoints.post(config);
+      return { ok: true, message: await node.app.t`Datapoint saved.` };
     }
     if (vars.action === undefined) return false;
-    if (typeof vars.provider !== "string" || typeof vars.action !== "string" || !vars.action)
-      throw new ApiError(400, "Select a provider and an action");
-    const result = await node.app.api.home.provider(vars.provider).action(vars.action).post({
-      entities: vars.entities, data: vars.data,
-    });
+    if (!Number.isSafeInteger(vars.provider) || typeof vars.action !== "string" || !vars.action) throw new ApiError(400, "Select a provider and action");
+    const result = await node.app.api.home.provider(Number(vars.provider)).action(vars.action).post({ entities: vars.entities, data: vars.data });
     const detail = result == null ? "" : "\n" + JSON.stringify(result, null, 2);
     return { ok: true, message: (await node.app.t`Action accepted`) + detail, result };
-  } catch (e) {
-    return { ok: false, message: errMsg(e) };
-  }
+  } catch (error) { return { ok: false, message: errMsg(error) }; }
 }

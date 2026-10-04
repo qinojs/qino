@@ -1,25 +1,18 @@
 import { Access, s } from "@qino/qino";
 
-import { configure, series } from "./mod.ts";
+import { record } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params } from "@qino/qino";
 
-export const api: ApiTree = {
-  series: { get: {
+export const api: ApiTree = { datapoint: { ":datapoint": {
+  paramSchema: s.number(),
+  post: {
     access: Access.USER,
-    description: "List configured local home measurement series, including stopped recordings",
-    execute: (_: Params, ctx: Ctx) => series(ctx.app),
-  } },
-  provider: { ":provider": { paramSchema: s.string(), entity: { ":entity": {
-    paramSchema: s.string(),
-    post: {
-      access: Access.USER,
-      description: "Enable or stop local capture of one home entity; existing observations are kept",
-      input: s.object({ enabled: s.boolean() }),
-      execute: async ({ provider, entity, enabled }: Params, ctx: Ctx) => {
-        await configure(ctx.app, String(provider), String(entity), Boolean(enabled));
-        return { enabled };
-      },
+    description: "Store one typed observation for a selected datapoint; time is Unix milliseconds and null represents missing data",
+    input: s.object({ time: s.number(), value: s.any() }),
+    execute: async ({ datapoint, time, value }: Params, ctx: Ctx) => {
+      await record(ctx.app, Number(datapoint), value as number | null, Number(time));
+      return { ok: true };
     },
-  } } } },
-};
+  },
+} } };

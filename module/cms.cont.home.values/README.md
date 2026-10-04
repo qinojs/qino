@@ -13,11 +13,11 @@ store.add("cms.cont.home.values");
 await app.init();
 const block = await page.cont("values", { module: "cms.cont.home.values" });
 // Optional: restrict the block to one provider and/or one provider-local entity ID.
-block.settings.provider("homeassistant");
+block.settings.provider(1);
 block.settings.entity("sensor.temperature");
 ```
 
-With empty settings, the block displays every provider's entities. Values retain their
+With provider ID zero and an empty entity setting, the block displays every provider's entities. Values retain their
 types and unavailable entities are marked explicitly. A provider failure leaves other
 providers visible. Reload the page to read the latest observations; there is no polling.
 

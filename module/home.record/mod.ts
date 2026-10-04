@@ -1,41 +1,22 @@
-import { ApiError } from "@qino/qino";
-import { entities } from "@qino/qino/home";
+import { ApiError, sql } from "@qino/qino";
+import { datapoint } from "@qino/qino/home";
 
 import type { App } from "@qino/qino";
-import type { Entity } from "@qino/qino/home";
 
-export async function series(app: App) {
-  const rows = await app.db.query<{ provider: string; entity: string; enabled: boolean }>`SELECT * FROM home_series ORDER BY provider, entity`;
-  return rows.map((row) => ({ ...row, enabled: Boolean(row.enabled) }));
-}
-
-/** Enable or stop capture; stopping keeps the series and its existing observations. */
-export async function configure(app: App, provider: string, entity: string, enabled: boolean): Promise<void> {
-  if (!provider || !entity || provider.length > 191 || entity.length > 191) throw new ApiError(400, "Invalid home series identity");
-  await app.db.unit(() => app.db.table("home_series").ensure({ provider, entity, enabled }));
-  if (enabled) await capture(app, provider, [entity]);
-}
-
-/** Capture time belongs to Qino; the original provider timestamp stays inside the stored entity. */
-export async function record(app: App, provider: string, entity: Entity, time = Date.now()): Promise<void> {
-  if (!Number.isSafeInteger(time) || !Number.isFinite(new Date(time).getTime())) throw new ApiError(400, "Invalid observation time");
+/** Store a typed observation, retaining source time; repeated timestamps replace the prior value. */
+export async function record(app: App, id: number, value: number | null, time = Date.now()): Promise<void> {
+  const point = await datapoint(app, id);
+  if (!Number.isSafeInteger(time) || !Number.isFinite(new Date(time).getTime())) throw new ApiError(400, "Invalid measurement time");
+  if (value !== null && (!Number.isFinite(value) || point.type === "state" && (!Number.isInteger(value) || value < -128 || value > 127)))
+    throw new ApiError(400, "Value does not match the datapoint datatype");
+  const table = point.type === "number" ? "home_number" : "home_state";
   await app.db.unit(async () => {
-    if (!await app.db.one`SELECT enabled FROM home_series WHERE provider = ${provider} AND entity = ${entity.id}`) return;
-    await app.db.table("home_sample").ensure({ provider, entity: entity.id, time, data: JSON.stringify(entity) });
+    const conflict = app.db.dialect === "mysql"
+      ? sql`ON DUPLICATE KEY UPDATE value = ${value}`
+      : sql`ON CONFLICT (datapoint, time) DO UPDATE SET value = ${value}`;
+    await app.db.query`INSERT INTO ${sql.id(table)} (datapoint, time, value)
+      SELECT id, ${time}, ${value} FROM home_datapoint WHERE id = ${id} AND record = ${true} ${conflict}`;
+    await app.db.query`UPDATE home_datapoint SET time = ${time}, value = ${value}
+      WHERE id = ${id} AND record = ${true} AND (time IS NULL OR time <= ${time})`;
   });
-}
-
-/** Periodic samples cover constant states and make loss of availability visible. */
-export async function capture(app: App, provider?: string, ids?: string[]): Promise<void> {
-  const selected = (await series(app)).filter((row) => row.enabled && (provider === undefined || row.provider === provider) && (!ids || ids.includes(row.entity)));
-  await Promise.all([...new Set(selected.map((row) => row.provider))].map(async (name) => {
-    const current = await entities(app, name).catch(() => []);
-    const time = Date.now();
-    for (const row of selected.filter((row) => row.provider === name)) {
-      const entity = current.find((entity) => entity.id === row.entity) ?? {
-        id: row.entity, name: row.entity, state: null, attributes: {}, available: false,
-      };
-      await record(app, name, entity, time);
-    }
-  }));
 }

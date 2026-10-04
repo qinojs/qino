@@ -164,7 +164,7 @@ Deno.test("ai1.agent: the api, for anyone signed in; a session only for its user
     await assertRejects(() => Agent.create(app, { tools }), Error, "No such tools");
   }
   const session = (await runAs(app, 7, "test", () => agent()(id).sessions.post()) as { id: number }).id;
-  const answer = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).ask.post({ content: "time?" })) as { text: string };
+  const answer = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).ask.post({ content: "time?", wait: true })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
   assertEquals(await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
   const { messages } = await runAs(app, 7, "test", () => app.api["ai1.agent"].sessions(session).get()) as { messages: { role: string }[] };
@@ -280,4 +280,13 @@ Deno.test("ai1.agent: what a step said before it broke off stays, marked", () =>
   const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
   await assertRejects(() => session.ask("break"), Error, "broken");
   assertEquals((await kept(app, session.id)).slice(-3), [["user", "break", ""], ["assistant", "so far\n\n(interrupted)", ""], ["error", "broken", ""]]);
+}));
+
+Deno.test("ai1.agent: asked over the api, the agent answers in the background; the answer is kept", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
+  const api = app.api["ai1.agent"].sessions(session.id);
+  assertEquals(await runAs(app, 7, "test", () => api.ask.post({ content: "slow" })), { running: true });
+  assert(session.running);
+  while (session.running) await new Promise((r) => setTimeout(r, 10));
+  assertEquals((await kept(app, session.id)).at(-1), ["assistant", "lead #1 slow", "m"]);
 }));

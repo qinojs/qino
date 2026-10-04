@@ -58,58 +58,62 @@ export async function connections(app: App, user: number): Promise<{ clientId: s
   return value.accounts.map((a) => ({ clientId: a.client_id, label: a.email || a.subject, active: a.client_id === value.active }));
 }
 
-async function save(app: App, user: number, value: Accounts): Promise<void> {
+/** Change the user's accounts and keep them. */
+async function update(app: App, user: number, change: (value: Accounts) => void): Promise<void> {
+  const value = await accounts(app, user);
+  change(value);
   await atomic(path(app, user), value);
 }
 
-export async function store(app: App, user: number, account: Account): Promise<void> {
-  const value = await accounts(app, user);
+export const store = (app: App, user: number, account: Account): Promise<void> => update(app, user, (value) => {
   value.accounts = [...value.accounts.filter((a) => a.client_id !== account.client_id), account];
   value.active = account.client_id;
-  await save(app, user, value);
-}
+});
 
-export async function remove(app: App, user: number, clientId: string): Promise<void> {
-  const value = await accounts(app, user);
+export const remove = (app: App, user: number, clientId: string): Promise<void> => update(app, user, (value) => {
   value.accounts = value.accounts.filter((a) => a.client_id !== clientId);
   if (value.active === clientId) value.active = value.accounts[0]?.client_id;
-  await save(app, user, value);
-}
+});
 
-export async function select(app: App, user: number, clientId: string): Promise<void> {
-  const value = await accounts(app, user);
+export const select = (app: App, user: number, clientId: string): Promise<void> => update(app, user, (value) => {
   if (!value.accounts.some((a) => a.client_id === clientId)) throw new AiError("Unknown ChatGPT account", 404);
   value.active = clientId;
-  await save(app, user, value);
-}
+});
 
 export async function authorize(p: Pending, host: string, name: string, hint?: Account): Promise<string> {
-  const url = new URL(AUTH + "/api/accounts/authorize");
-  const params = url.searchParams;
-  params.set("client_id", p.client_id);
-  params.set("response_type", "code");
-  params.set("redirect_uri", p.redirect_uri);
-  params.set("scope", `openid profile email offline_access resource.invoke ${PLAN_SCOPE}`);
-  params.set("resource", RESOURCE);
-  params.set("state", p.state);
-  params.set("nonce", p.nonce);
-  params.set("code_challenge_method", "S256");
-  params.set("code_challenge", await sha256b64url(p.verifier));
-  params.set("ext_agent_host_id", host);
-  if (hint) { params.set("id_token_hint", hint.id_token); params.set("login_hint", hint.email); }
-  else params.set("agent_name_hint", name);
-  return url.href;
+  return AUTH + "/api/accounts/authorize?" + new URLSearchParams({
+    client_id: p.client_id, response_type: "code", redirect_uri: p.redirect_uri, resource: RESOURCE,
+    scope: `openid profile email offline_access resource.invoke ${PLAN_SCOPE}`, state: p.state, nonce: p.nonce,
+    code_challenge_method: "S256", code_challenge: await sha256b64url(p.verifier), ext_agent_host_id: host,
+    ...hint ? { id_token_hint: hint.id_token, login_hint: hint.email } : { agent_name_hint: name },
+  });
 }
 
 export function pending(user: number, clientId: string, redirectUri: string, returnTo: string): Pending {
-  const verifier = randB64(48);
-  return { state: randB64(24), nonce: randB64(24), verifier, client_id: clientId, redirect_uri: redirectUri, return_to: returnTo, user, time: Date.now() };
+  return { state: randB64(24), nonce: randB64(24), verifier: randB64(48), client_id: clientId, redirect_uri: redirectUri,
+    return_to: returnTo, user, time: Date.now() };
 }
 
-async function token(body: URLSearchParams): Promise<Record<string, unknown>> {
-  const res = await fetch(AUTH + "/api/accounts/oauth/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
+const post = (url: string, form: Record<string, string>) =>
+  fetch(url, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(form) });
+
+/** The tokens of a token request; plan usage must be granted. */
+async function token(form: Record<string, string>) {
+  const res = await post(AUTH + "/api/accounts/oauth/token", { ...form, resource: RESOURCE });
   if (!res.ok) throw new AiError(`ChatGPT authorization failed (HTTP ${res.status})`, res.status);
-  return await res.json();
+  const result = await res.json(), scopes = String(result.scope ?? "").split(/\s+/).filter(Boolean);
+  if (!scopes.includes(PLAN_SCOPE) || typeof result.access_token !== "string" || typeof result.refresh_token !== "string")
+    throw new AiError("ChatGPT plan usage was not granted", 403);
+  return { access_token: result.access_token as string, refresh_token: result.refresh_token as string,
+    id_token: String(result.id_token ?? ""), scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
+}
+
+/** An endpoint from OpenAI's discovery document, only at its own origin. */
+async function endpoint(name: string): Promise<string> {
+  const url = String((await fetch(AUTH + "/.well-known/openid-configuration").then((r) => r.json()))[name] ?? "");
+  if (URL.parse(url)?.origin !== AUTH) throw new AiError(`Invalid ChatGPT ${name}`, 400);
+  return url;
 }
 
 function claims(part: string): Record<string, unknown> {
@@ -123,10 +127,7 @@ async function verify(idToken: string, clientId: string, nonce: string): Promise
   const head = claims(parts[0]), body = claims(parts[1]);
   const alg = head.alg;
   if (alg !== "RS256" && alg !== "ES256") throw new AiError("Unsupported ChatGPT identity signature", 400);
-  const discovery = await fetch(AUTH + "/.well-known/openid-configuration").then((r) => r.json());
-  const jwksUrl = String(discovery.jwks_uri ?? "");
-  if (new URL(jwksUrl).origin !== AUTH) throw new AiError("Invalid ChatGPT key endpoint", 400);
-  const jwks = await fetch(jwksUrl).then((r) => r.json());
+  const jwks = await fetch(await endpoint("jwks_uri")).then((r) => r.json());
   const jwk = jwks.keys?.find((k: JsonWebKey & { kid?: string }) => k.kid === head.kid && k.alg === alg);
   if (!jwk) throw new AiError("ChatGPT identity key was not found", 400);
   const algorithm = alg === "RS256" ? { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" } : { name: "ECDSA", namedCurve: "P-256" };
@@ -145,14 +146,11 @@ export async function exchange(p: Pending, code: string, returnedClientId?: stri
   const clientId = p.client_id === "dynamic_agent_client" ? returnedClientId : p.client_id;
   if (!clientId || !/^oaiapp_[\w-]+$/.test(clientId) || returnedClientId && returnedClientId !== clientId)
     throw new AiError("Invalid ChatGPT client registration", 400);
-  const result = await token(new URLSearchParams({ grant_type: "authorization_code", client_id: clientId, code, code_verifier: p.verifier, redirect_uri: p.redirect_uri, resource: RESOURCE }));
-  const identity = await verify(String(result.id_token ?? ""), clientId, p.nonce);
+  const tokens = await token({ grant_type: "authorization_code", client_id: clientId, code, code_verifier: p.verifier,
+    redirect_uri: p.redirect_uri });
+  const identity = await verify(tokens.id_token, clientId, p.nonce);
   if (previous && previous.subject !== identity.subject) throw new AiError("A different ChatGPT account answered", 400);
-  const scopes = String(result.scope ?? "").split(/\s+/).filter(Boolean);
-  if (!scopes.includes(PLAN_SCOPE) || typeof result.access_token !== "string" || typeof result.refresh_token !== "string")
-    throw new AiError("ChatGPT plan usage was not granted", 403);
-  return { client_id: clientId, ...identity, id_token: String(result.id_token), access_token: result.access_token,
-    refresh_token: result.refresh_token, scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
+  return { client_id: clientId, ...identity, ...tokens };
 }
 
 const refreshing = new WeakMap<App, Map<string, Promise<Account>>>();
@@ -169,17 +167,13 @@ export async function active(app: App, user: number): Promise<Account | undefine
     task = (async () => {
       const current = (await accounts(app, user)).accounts.find((a) => a.client_id === account.client_id)!;
       if (current.expires_at > Date.now() + 60_000) return current;
-      const result = await token(new URLSearchParams({ grant_type: "refresh_token", client_id: current.client_id,
-        refresh_token: current.refresh_token, resource: RESOURCE }));
-      if (typeof result.access_token !== "string" || typeof result.refresh_token !== "string")
-        throw new AiError("ChatGPT token refresh failed", 401);
-      const scopes = String(result.scope ?? "").split(/\s+/).filter(Boolean);
-      if (!scopes.includes(PLAN_SCOPE)) throw new AiError("ChatGPT plan usage is no longer granted", 403);
-      const refreshed = { ...current, access_token: result.access_token, refresh_token: result.refresh_token,
-        scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
-      const next = await accounts(app, user);
-      next.accounts = next.accounts.map((a) => a.client_id === refreshed.client_id ? refreshed : a);
-      await save(app, user, next);
+      // the id_token kept is the one of the sign-in (id_token_hint)
+      const { id_token: _, ...tokens } = await token({ grant_type: "refresh_token", client_id: current.client_id,
+        refresh_token: current.refresh_token });
+      const refreshed = { ...current, ...tokens };
+      await update(app, user, (value) => {
+        value.accounts = value.accounts.map((a) => a.client_id === refreshed.client_id ? refreshed : a);
+      });
       return refreshed;
     })().finally(() => locks.delete(key));
     locks.set(key, task);
@@ -188,11 +182,8 @@ export async function active(app: App, user: number): Promise<Account | undefine
 }
 
 export async function revoke(account: Account): Promise<void> {
-  const discovery = await fetch(AUTH + "/.well-known/openid-configuration").then((r) => r.json());
-  const url = String(discovery.revocation_endpoint ?? "");
-  if (new URL(url).origin !== AUTH) throw new AiError("Invalid ChatGPT revocation endpoint", 400);
-  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ token: account.refresh_token, token_type_hint: "refresh_token", client_id: account.client_id }) });
+  const res = await post(await endpoint("revocation_endpoint"),
+    { token: account.refresh_token, token_type_hint: "refresh_token", client_id: account.client_id });
   if (!res.ok) throw new AiError(`ChatGPT sign-out was not confirmed (HTTP ${res.status})`, res.status);
 }
 

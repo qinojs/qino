@@ -1,7 +1,7 @@
 import { App } from "@qino/qino";
-import { entities } from "@qino/qino/home";
+import { entities, save } from "@qino/qino/home";
 import { run } from "@qino/qino/sandbox.flow";
-import { assertEquals, assertRejects, Emitter, fakeSettings } from "@qino/qino/tests";
+import { assertEquals, assertRejects, Emitter } from "@qino/qino/tests";
 
 import { homeProvider } from "../mod.ts";
 import { init } from "../plugin.ts";
@@ -25,7 +25,7 @@ async function withDeadlines(fn: () => Promise<void>) {
   finally { globalThis.setTimeout = original; }
 }
 const appOf = (url = "http://house.test/proxy/", token = "private-token") => Object.assign(new Emitter(), {
-  settings: fakeSettings({ "home.homeassistant": { url, accessToken: token } }),
+  db: { query: () => Promise.resolve([{ id: 1, name: "First", adapter: "homeassistant", url, config: { accessToken: token }, enabled: true }]) },
 }) as unknown as App;
 
 Deno.test("homeassistant reads full history with app credentials and leaves live observations unchanged", () => withServer(async () => {
@@ -44,7 +44,7 @@ Deno.test("homeassistant reads full history with app credentials and leaves live
   try {
     await init(app, { signal: ctrl.signal });
     const period = { start: "2026-10-03T00:00:00.000Z", end: "2026-10-04T00:00:00.000Z" };
-    const values = await homeProvider.history!(app, "light.kitchen", period);
+    const values = await homeProvider.history!(app, 1, "light.kitchen", period);
     assertEquals(values.length, 2);
     assertEquals(values[0].available, false);
     assertEquals(values[1].updated, "2026-10-03T02:00:00Z");
@@ -56,10 +56,10 @@ Deno.test("homeassistant reads full history with app credentials and leaves live
     assertEquals(url.searchParams.get("filter_entity_id"), "light.kitchen");
     assertEquals(request?.headers, { Authorization: "Bearer private-token" });
     assertEquals(request?.redirect, "error");
-    assertEquals((await homeProvider.entities(app))[0].state, "off");
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "off");
     assertEquals(changes, []);
     fail = true;
-    await assertRejects(() => homeProvider.history!(app, "light.kitchen", period), Error, "failed (503)");
+    await assertRejects(() => homeProvider.history!(app, 1, "light.kitchen", period), Error, "failed (503)");
     assertEquals(requests.length, 2);
     ctrl.abort();
     assertEquals(request?.signal?.aborted, true);
@@ -119,7 +119,7 @@ Deno.test("homeassistant authenticates, discovers and sends native actions witho
   app.on("home:change", (e) => { changes.push(e); });
   try {
     await init(app, { signal: ctrl.signal });
-    const entities = await homeProvider.entities(app);
+    const entities = await homeProvider.entities(app, 1);
     assertEquals(server.sockets[0].url, "ws://house.test/proxy/api/websocket");
     assertEquals(server.commands[0], { type: "auth", access_token: "private-token" });
     assertEquals(entities[0], {
@@ -127,26 +127,26 @@ Deno.test("homeassistant authenticates, discovers and sends native actions witho
       available: true, updated: "2026-10-04T10:00:00Z",
     });
     entities[0].attributes.brightness = 255;
-    assertEquals((await homeProvider.entities(app))[0].attributes.brightness, 20);
-    assertEquals(await homeProvider.actions(app), [{
+    assertEquals((await homeProvider.entities(app, 1))[0].attributes.brightness, 20);
+    assertEquals(await homeProvider.actions(app, 1), [{
       id: "light.turn_on", name: "Turn on", description: undefined, fields: { brightness: { required: false } },
     }]);
-    await homeProvider.call(app, "light.turn_on", { entities: ["light.kitchen"], data: { brightness: 100 } });
+    await homeProvider.call(app, 1, "light.turn_on", { entities: ["light.kitchen"], data: { brightness: 100 } });
     const command = server.commands.find((c) => c.type === "call_service")!;
     assertEquals({ ...command, id: 0 }, {
       type: "call_service", domain: "light", service: "turn_on", target: { entity_id: ["light.kitchen"] },
       service_data: { brightness: 100 }, id: 0,
     });
-    assertEquals((await homeProvider.entities(app))[0].state, "off");
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "off");
     assertEquals(changes, []);
     const updated = state("on", "light.kitchen", "2026-10-04T10:01:00Z");
     server.sockets[0].emit({ type: "event", event: { data: { entity_id: "light.kitchen", old_state: state(), new_state: updated } } });
     await tick();
-    assertEquals((await homeProvider.entities(app))[0].state, "on");
-    assertEquals((changes[0] as { provider: string }).provider, "homeassistant");
-    await assertRejects(() => homeProvider.call(app, "light.turn_on", { entities: [] }), Error, "must not be empty");
-    await assertRejects(() => homeProvider.call(app, "light.missing", {}), Error, "not found");
-    await assertRejects(() => homeProvider.call(app, "__proto__.toString", {}), Error, "not found");
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "on");
+    assertEquals((changes[0] as { provider: number }).provider, 1);
+    await assertRejects(() => homeProvider.call(app, 1, "light.turn_on", { entities: [] }), Error, "must not be empty");
+    await assertRejects(() => homeProvider.call(app, 1, "light.missing", {}), Error, "not found");
+    await assertRejects(() => homeProvider.call(app, 1, "__proto__.toString", {}), Error, "not found");
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 1);
   } finally { ctrl.abort(); await tick(); }
 }));
@@ -165,14 +165,14 @@ Deno.test("homeassistant buffers changes during snapshots and handles creation, 
   };
   try {
     await init(app, { signal: ctrl.signal });
-    assertEquals((await homeProvider.entities(app))[0].state, "on");
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "on");
     const socket = server.sockets[0];
     socket.emit({ type: "event", event: { data: { entity_id: "sensor.extra", old_state: null, new_state: state("unavailable", "sensor.extra") } } });
     await tick();
-    assertEquals((await homeProvider.entities(app)).find((e) => e.id === "sensor.extra")?.available, false);
+    assertEquals((await homeProvider.entities(app, 1)).find((e) => e.id === "sensor.extra")?.available, false);
     socket.emit({ type: "event", event: { data: { entity_id: "sensor.extra", old_state: state("unavailable", "sensor.extra"), new_state: null } } });
     await tick();
-    assertEquals((await homeProvider.entities(app)).length, 1);
+    assertEquals((await homeProvider.entities(app, 1)).length, 1);
     assertEquals(seen.map((e) => [e.id, e.entity?.state ?? null, e.previous === null]), [
       ["light.kitchen", "on", false], ["sensor.extra", "unavailable", true], ["sensor.extra", null, false],
     ]);
@@ -185,23 +185,23 @@ Deno.test("homeassistant isolates apps and rejects pending calls on unlink", () 
   try {
     await init(one, { signal: a.signal });
     await init(two, { signal: b.signal });
-    await Promise.all([homeProvider.entities(one), homeProvider.entities(two)]);
+    await Promise.all([homeProvider.entities(one, 1), homeProvider.entities(two, 1)]);
     assertEquals(server.sockets.map((s) => s.url), ["ws://house.test/proxy/api/websocket", "wss://other.test/api/websocket"]);
     server.sockets[0].emit({ type: "event", event: { data: {
       entity_id: "light.kitchen", old_state: state(), new_state: state("on", "light.kitchen", "2026-10-04T10:02:00Z"),
     } } });
     await tick();
-    assertEquals((await homeProvider.entities(one))[0].state, "on");
-    assertEquals((await homeProvider.entities(two))[0].state, "off");
+    assertEquals((await homeProvider.entities(one, 1))[0].state, "on");
+    assertEquals((await homeProvider.entities(two, 1))[0].state, "off");
     server.handle = (_socket, command) => command.type === "call_service";
-    const pending = assertRejects(() => homeProvider.call(one, "light.turn_on", {}), Error, "unlinked");
+    const pending = assertRejects(() => homeProvider.call(one, 1, "light.turn_on", {}), Error, "closed");
     await tick();
     a.abort();
     await pending;
-    await assertRejects(() => homeProvider.entities(one), Error, "Configure");
-    assertEquals((await homeProvider.entities(two))[0].state, "off");
+    await assertRejects(() => homeProvider.entities(one, 1), Error, "not configured");
+    assertEquals((await homeProvider.entities(two, 1))[0].state, "off");
     await init(one, { signal: c.signal });
-    await homeProvider.entities(one);
+    await homeProvider.entities(one, 1);
     assertEquals(server.sockets.length, 3);
   } finally { a.abort(); b.abort(); c.abort(); await tick(); }
 }));
@@ -216,14 +216,15 @@ Deno.test("homeassistant reconnects and resubscribes without replaying an interr
   };
   try {
     await init(app, { signal: ctrl.signal });
-    await homeProvider.entities(app);
-    await assertRejects(() => homeProvider.call(app, "light.turn_on", {}), Error, "lost");
-    await assertRejects(() => homeProvider.entities(app), Error, "not connected");
+    await homeProvider.entities(app, 1);
+    await assertRejects(() => homeProvider.call(app, 1, "light.turn_on", {}), Error, "lost");
+    await assertRejects(() => homeProvider.entities(app, 1), Error, "not connected");
     await new Promise((resolve) => setTimeout(resolve, 1100));
-    assertEquals((await homeProvider.entities(app))[0].state, "off");
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "off");
     assertEquals(server.commands.filter((c) => c.type === "subscribe_events").length, 2);
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 1);
-    assertEquals(seen, []);
+    assertEquals(seen.length, 1);
+    assertEquals((seen[0] as { entity: { available: boolean } }).entity.available, false);
   } finally { ctrl.abort(); await tick(); }
 }));
 
@@ -244,7 +245,7 @@ Deno.test("homeassistant supports response actions, surfaces remote failures and
   };
   try {
     await init(app, { signal: ctrl.signal });
-    await assertRejects(() => homeProvider.call(app, "weather.get_forecasts", {}), Error, "Denied by Home Assistant");
+    await assertRejects(() => homeProvider.call(app, 1, "weather.get_forecasts", {}), Error, "Denied by Home Assistant");
     assertEquals(server.commands.find((c) => c.type === "call_service")?.return_response, true);
   } finally { ctrl.abort(); await tick(); }
   const rejected = new AbortController(), other = appOf();
@@ -255,20 +256,20 @@ Deno.test("homeassistant supports response actions, surfaces remote failures and
   };
   try {
     await init(other, { signal: rejected.signal });
-    await assertRejects(() => homeProvider.entities(other), Error, "rejected its access token");
+    await assertRejects(() => homeProvider.entities(other, 1), Error, "rejected its access token");
     const attempts = server.commands.filter((c) => c.type === "auth").length;
     await new Promise((resolve) => setTimeout(resolve, 1100));
     assertEquals(server.commands.filter((c) => c.type === "auth").length, attempts);
   } finally { rejected.abort(); await tick(); }
 }));
 
-Deno.test("homeassistant is dormant without settings and refuses URL credentials", async () => {
-  const ctrl = new AbortController(), app = appOf("", "");
-  await init(app, { signal: ctrl.signal });
-  await assertRejects(() => homeProvider.entities(app), Error, "Configure");
-  await assertRejects(() => init(appOf("http://user:password@house.test"), { signal: ctrl.signal }), Error, "without credentials");
-  await assertRejects(() => init(appOf("file:///tmp/ha"), { signal: ctrl.signal }), Error, "HTTP(S)");
-  ctrl.abort();
+Deno.test("homeassistant leaves invalid persisted configurations dormant", async () => {
+  for (const url of ["", "http://user:password@house.test", "file:///tmp/ha"]) {
+    const app = appOf(url), ctrl = new AbortController();
+    await init(app, { signal: ctrl.signal });
+    await assertRejects(() => homeProvider.entities(app, 1), Error, "not configured");
+    ctrl.abort();
+  }
 });
 
 Deno.test("homeassistant bounds command and authentication waits without retrying actions", () => withDeadlines(() => withServer(async (server) => {
@@ -276,15 +277,15 @@ Deno.test("homeassistant bounds command and authentication waits without retryin
   server.handle = (_socket, command) => command.type === "call_service";
   try {
     await init(app, { signal: ctrl.signal });
-    await assertRejects(() => homeProvider.call(app, "light.turn_on", {}), Error, "outcome may be unknown");
+    await assertRejects(() => homeProvider.call(app, 1, "light.turn_on", {}), Error, "outcome may be unknown");
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 1);
-    await assertRejects(() => homeProvider.entities(app), Error, "not connected");
+    await assertRejects(() => homeProvider.entities(app, 1), Error, "not connected");
   } finally { ctrl.abort(); await tick(); }
   const other = appOf(), auth = new AbortController();
   server.handle = (_socket, command) => command.type === "auth";
   try {
     await init(other, { signal: auth.signal });
-    await assertRejects(() => homeProvider.entities(other), Error, "not connected");
+    await assertRejects(() => homeProvider.entities(other, 1), Error, "not connected");
   } finally { auth.abort(); await tick(); }
 })));
 
@@ -293,10 +294,10 @@ Deno.test("homeassistant detects a silent connection through its heartbeat", () 
   server.handle = (_socket, command) => command.type === "ping";
   try {
     await init(app, { signal: ctrl.signal });
-    await homeProvider.entities(app);
+    await homeProvider.entities(app, 1);
     await new Promise((resolve) => setTimeout(resolve, 40));
     assertEquals(server.commands.filter((c) => c.type === "ping").length, 1);
-    await assertRejects(() => homeProvider.entities(app), Error, "not connected");
+    await assertRejects(() => homeProvider.entities(app, 1), Error, "not connected");
   } finally { ctrl.abort(); await tick(); }
 })));
 
@@ -308,18 +309,17 @@ Deno.test("home modules link through Qino and a flow dispatches with its owner's
     await app.init();
     await app.settings.core.url("https://qino.test/");
     await app.db.table("usr").insert({ id: 7, username: "home@example.test", active: true });
-    await app.settings["home.homeassistant"].url("http://house.test/");
-    await app.settings["home.homeassistant"].accessToken("private-token");
     await app.modules.import(new URL("../plugin.ts", import.meta.url).href);
     await app.modules.link("home.homeassistant");
-    assertEquals((await entities(app))[0].provider, "homeassistant");
+    await save(app, { name: "House", adapter: "homeassistant", url: "http://house.test/", config: { accessToken: "private-token" } });
+    assertEquals((await entities(app))[0].provider, 1);
     const flow: Flow = {
       description: "Turn on the light", on: { host: "app", event: "home:change" }, owner: 7,
       tools: ["home_provider_action_post"],
       steps: [{
         description: "Call the common home API",
         fn: async (_e, { tools }) => {
-          await tools.home_provider_action_post({ provider: "homeassistant", action: "light.turn_on", entities: ["light.kitchen"] });
+          await tools.home_provider_action_post({ provider: 1, action: "light.turn_on", entities: ["light.kitchen"] });
           return true;
         },
       }],
@@ -332,13 +332,36 @@ Deno.test("home modules link through Qino and a flow dispatches with its owner's
     assertEquals(live.end, "done");
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 1);
     app.modules.unlink("home.homeassistant");
-    assertEquals(await entities(app), []);
+    await assertRejects(() => entities(app), Error, "not linked");
     await app.modules.link("home.homeassistant");
-    assertEquals((await entities(app))[0].provider, "homeassistant");
+    assertEquals((await entities(app))[0].provider, 1);
   } finally {
     app.modules.unlink("home.homeassistant");
     await new Promise((resolve) => setTimeout(resolve, 60)); // session writes are deferred by 50 ms
     await app.db.close();
     await Deno.remove(dir, { recursive: true });
   }
+}));
+
+Deno.test("homeassistant runs independent provider instances in the same App and reconfigures only the selected connection", () => withServer(async (server) => {
+  const app = appOf(), ctrl = new AbortController();
+  const rows = [
+    { id: 1, name: "First", adapter: "homeassistant", url: "http://first.test/", config: { accessToken: "first-token" }, enabled: true },
+    { id: 2, name: "Second", adapter: "homeassistant", url: "http://second.test/", config: { accessToken: "second-token" }, enabled: true },
+  ];
+  Object.defineProperty(app.db, "query", { value: () => Promise.resolve(rows) });
+  try {
+    await init(app, { signal: ctrl.signal });
+    await Promise.all([homeProvider.entities(app, 1), homeProvider.entities(app, 2)]);
+    assertEquals(server.sockets.map((socket) => socket.url), ["ws://first.test/api/websocket", "ws://second.test/api/websocket"]);
+    server.sockets[0].emit({ type: "event", event: { data: { entity_id: "light.kitchen", old_state: state(), new_state: state("on") } } });
+    await tick();
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "on");
+    assertEquals((await homeProvider.entities(app, 2))[0].state, "off");
+    rows[1].enabled = false;
+    await app.fire("home:provider", { id: 2, adapter: "homeassistant", previousAdapter: "homeassistant" });
+    await assertRejects(() => homeProvider.entities(app, 2), Error, "not configured");
+    assertEquals((await homeProvider.entities(app, 1))[0].state, "on");
+    assertEquals(server.sockets.length, 2);
+  } finally { ctrl.abort(); await tick(); }
 }));

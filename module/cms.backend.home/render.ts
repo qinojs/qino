@@ -2,6 +2,7 @@ import { errMsg, html } from "@qino/qino";
 import { actions, entities, providers } from "@qino/qino/home";
 
 import { settings } from "./settings.ts";
+import { datapointForm, measurements } from "./datapoints.ts";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -13,45 +14,24 @@ export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
     <div cms-part=settings style="display:contents">${settings(node)}</div>
     <div cms-part=list style="display:contents">${list(node)}</div>
+    <div cms-part=measurements style="display:contents">${measurements(node)}</div>
   </div>`;
 }
 
 export async function list(node: Node): Promise<HtmlString> {
-  const app = node.app, names = providers(app);
-  const recording = app.modules.linked().some((mod) => mod.name === "home.record");
-  const series = recording ? await app.api["home.record"].series.get() as { provider: string; entity: string; enabled: boolean }[] : undefined;
-  const cards = await Promise.all(names.map(async (provider) => {
-    const [endpoints, commands] = await Promise.allSettled([entities(app, provider), actions(app, provider)]);
+  const app = node.app, rows = await providers(app);
+  if (!rows.length) return html.async`<p>${app.t`No providers are configured.`}</p>`;
+  return html.join(await Promise.all(rows.map(async (row) => {
+    const [endpoints, commands] = await Promise.allSettled([entities(app, row.id), actions(app, row.id)]);
     return html.async`<section class=u2-card>
-      <div class=-head>${provider}<button type=button data-refresh>${app.t`Refresh`}</button></div>
-      ${endpoints.status === "fulfilled" ? renderEntities(app, endpoints.value, series ? { provider, series } : undefined) : html`<p role=alert>${errMsg(endpoints.reason)}</p>`}
-      ${commands.status === "fulfilled"
-        ? renderActions(app, provider, commands.value, endpoints.status === "fulfilled" ? endpoints.value : [])
-        : html`<p role=alert>${errMsg(commands.reason)}</p>`}
+      <div class=-head>${row.name} (#${row.id})<button type=button data-refresh>${app.t`Refresh`}</button></div>
+      ${endpoints.status === "fulfilled" ? renderEntities(app, endpoints.value, row.id) : html`<p role=alert>${errMsg(endpoints.reason)}</p>`}
+      ${commands.status === "fulfilled" ? renderActions(app, row.id, commands.value, endpoints.status === "fulfilled" ? endpoints.value : []) : html`<p role=alert>${errMsg(commands.reason)}</p>`}
     </section>`;
-  }));
-  return html.async`${names.length ? cards : html.async`<p>${app.t`No home providers are linked.`}</p>`}
-    ${series?.length ? html.async`<section class=u2-card>
-      <div class=-head>${app.t`Local recordings`}</div>
-      <table class=u2-table>
-        <thead><tr>
-          <th>${app.t`Provider`}
-          <th>${app.t`Entity`}
-          <th>${app.t`Record`}
-        <tbody>${series.map((row) => html.async`<tr>
-          <td>${row.provider}</td>
-          <td><code>${row.entity}</code></td>
-          <td>${recordInput(app, row.provider, row.entity, row.enabled)}</td>
-        </tr>`)}</tbody>
-      </table>
-    </section>` : ""}`;
+  })));
 }
 
-function recordInput(app: App, provider: string, entity: string, enabled: boolean): Promise<HtmlString> {
-  return html.async`<input type=checkbox data-record data-provider="${provider}" data-entity="${entity}" aria-label="${app.t`Record`} ${entity}" ${enabled ? html.raw("checked") : ""}>`;
-}
-
-export function renderEntities(app: App, endpoints: Entity[], recording?: { provider: string; series: { provider: string; entity: string; enabled: boolean }[] }): Promise<HtmlString> {
+export function renderEntities(app: App, endpoints: Entity[], provider?: number): Promise<HtmlString> {
   const t = app.t;
   if (!endpoints.length) return html.async`<p>${t`No entities were found.`}</p>`;
   return html.async`<table class=u2-table>
@@ -60,7 +40,7 @@ export function renderEntities(app: App, endpoints: Entity[], recording?: { prov
       <th>${t`State`}
       <th>${t`Availability`}
       <th>${t`Updated`}
-      ${recording ? html.async`<th>${t`Record`}</th>` : ""}
+      ${provider === undefined ? "" : html.async`<th>${t`Datapoint`}</th>`}
     <tbody>${endpoints.map((entity) => html.async`<tr>
       <td>${entity.name}<br><code>${entity.id}</code>
       <td><pre>${text(entity.state)}</pre>
@@ -69,13 +49,13 @@ export function renderEntities(app: App, endpoints: Entity[], recording?: { prov
         </details>` : ""}
       <td>${entity.available ? t`Available` : t`Unavailable`}
       <td>${entity.updated ?? "—"}
-      ${recording ? html.async`<td>${recordInput(app, recording.provider, entity.id, recording.series.some((row) => row.provider === recording.provider && row.entity === entity.id && row.enabled))}</td>` : ""}
+      ${provider === undefined ? "" : html.async`<td><details><summary>${t`Add datapoint`}</summary>${datapointForm(app, { provider, entity: entity.id, name: entity.name, unit: entity.unit ?? "", type: typeof entity.state === "boolean" || typeof entity.state === "string" && !Number.isFinite(Number(entity.state)) ? "state" : "number" })}</details></td>`}
     </tr>`)}
     </tbody>
   </table>`;
 }
 
-export function renderActions(app: App, provider: string, commands: Action[], endpoints: Entity[]): Promise<HtmlString> {
+export function renderActions(app: App, provider: number, commands: Action[], endpoints: Entity[]): Promise<HtmlString> {
   const t = app.t;
   if (!commands.length) return html.async`<p>${t`No actions were found.`}</p>`;
   return html.async`<form data-home-action data-provider="${provider}">

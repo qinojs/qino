@@ -3,49 +3,50 @@
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-Optional provider-independent local recording, inspired by ims1's separation of measurement
-series and observations. Register `home.record` through the store before `app.init()`; its
-`dbschema.json` creates `home_series` and `home_sample` using the existing schema installer.
-Dependencies are `home.history` and `cron`. Nothing is recorded until an entity is selected.
-
-The Home automation backend shows a **Record** checkbox when this module is linked. Flows and
-other server code can use the same user-protected API, or the module SDK:
+Optional local recording with `home_number` and `home_state`, installed through `dbschema.json`.
+Dependencies are `home.history` and `cron`. `home` owns provider/datapoint metadata; this module owns
+measurement rows. Nothing is recorded until a datapoint's `record` flag is enabled.
 
 ```ts
-import { configure } from "@qino/qino/home.record";
-await configure(app, "homeassistant", "sensor.energy", true);
-await configure(app, "homeassistant", "sensor.energy", false); // Keep existing history.
+import { configure } from "@qino/qino/home";
+import { record } from "@qino/qino/home.record";
+
+const id = await configure(app, { provider: 1, entity: "sensor.energy", unit: "kWh", record: true });
+await record(app, id, 123.5, Date.now()); // Trusted server ingestion.
+await configure(app, { id, provider: 1, entity: "sensor.energy", record: false });
 ```
 
-```
-GET  /api/home.record/series
-POST /api/home.record/provider/:provider/entity/:entity  { "enabled": true }
-```
+Authenticated ingestion: `POST /api/home.record/datapoint/:datapoint { time, value }`.
+Use `home`'s datapoint API or backend forms to select recordings. Stopping preserves the archive.
 
-Tools: `homeRecord_series_get`, `homeRecord_provider_entity_post`. API routes require a signed-in
-user; SDK calls are trusted server code. Select individual series, not every discovered entity.
-A series identity consists of provider name and provider-local entity ID; neither is a display name.
+| Table | Columns | Primary key |
+| --- | --- | --- |
+| `home_number` | integer datapoint, millisecond BIGINT time, nullable DOUBLE value | datapoint, time |
+| `home_state` | integer datapoint, millisecond BIGINT time, nullable TINYINT value | datapoint, time |
 
-Selected observations are captured on `home:change` and periodically by the existing cron scheduler
-(default every 60 seconds). Selecting a series immediately captures its current state. A missing
-entity, disconnected provider or removed entity produces an unavailable sample, never a synthetic
-zero. Periodic samples describe Qino's current observation, not a fresh device measurement. A
-provider must report availability accurately; this recorder cannot detect a stale device itself.
-Recording errors are logged without stopping other change listeners.
+Physical SQL types follow the active driver's existing schema conventions. State codes are signed
+-128..127; textual states use an explicit metadata mapping. Boolean states map to 0/1. Numeric
+strings are accepted only if nonempty and finite; booleans are not numeric gauge measurements.
+Unit/type/mapping are immutable per datapoint. Mismatched units, unmapped states and unavailable
+entities produce null. Metadata and credentials are never repeated in measurement rows.
 
-`home_series` stores the selection and enabled flag. `home_sample` stores Unix milliseconds and the
-complete JSON-compatible entity with its value types, including attributes, unit and original provider timestamp. The
-composite primary key is `(provider, entity, time)`; the latest observation at the same millisecond
-replaces the earlier one. Capture time belongs to Qino; local history exposes it as `updated`, while
-the stored JSON preserves the source's original `updated`. Numeric conversion belongs to charts,
-so booleans, text and structured states remain intact in storage.
+`home:observe` captures actual changes and initial/reconnection snapshots. Snapshot time is Qino's
+observation time; changes use the source update time when supplied. Selection captures one current
+observation. Reading cached states periodically never invents new measurements. Repeated timestamps
+replace the value atomically; late observations enter history without changing a newer current cache.
+Disabled recording is checked in the insert itself, preventing stale listener selections from writing.
 
-`home.history` prefers a configured local series, including empty or stopped recordings. Explicit
-`source: "provider"` requests upstream history instead; sources are never silently merged. Local
-archives and their provider names remain readable when the provider is unlinked. Periods are
-half-open `[start, end)` and raw-query limits report overflow rather than truncating.
+Expected `interval` is metadata in seconds, default zero (no guessed reporting frequency). Every
+60 seconds the existing cron scheduler marks a stream unavailable once it has exceeded twice that
+interval. One null gap is written; no repeated gaps or cached measurement copies follow. Recording
+errors are logged without blocking other observation listeners or rules.
 
-There is no automatic retention, historical backfill, aggregation or import of old ims1 tables.
-Storage grows while recording is enabled. This is a new schema, not an ims1 database migration.
-Stopping a selection preserves its observations. `cms.cont.home.chart` provides measurement and
-counter consumption views without changing those observations.
+Local queries use half-open `[start, end)` periods and explicit overflow errors. Chart `width` requests
+aggregate in SQL: mean/min/max/count for gauges, latest state for discrete datapoints, sums of valid
+counter differences for consumption. Nulls, excessive intervals and counter resets mark incomplete
+buckets. The immediately preceding sample is included for local counter differences at the boundary.
+No interpolation, counter-reset compensation or physical counter offsets are inferred.
+
+Raw values are retained without automatic deletion. There is no upstream backfill, partition manager
+or precomputed aggregate cache. Bounded output avoids oversized responses but still scans the queried
+raw range; billion-row operational sizing needs workload measurements and an aggregate/partition plan.

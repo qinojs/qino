@@ -3,58 +3,41 @@
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-Optional access to stored observations, inspired by `ims1` measurement histories. This module
-queries archives; optional `home.record` owns local storage and recording. Providers can also
-supply their own history.
-
-Register `home.history` with the existing store before `app.init()`. Providers opt in through
-`homeProvider.history(app, entity, { start, end })`, returning observations in the existing `Entity`
-shape with `updated` as their observation timestamp. `home.homeassistant` supports this capability.
+Provider-independent typed history queries. `home.record` supplies an optional local archive;
+adapters may implement `history(app, providerId, entityId, { start, end })` returning native entities.
 
 ```ts
-import { history, providers } from "@qino/qino/home.history";
-
-const available = await providers(app);
-const samples = await history(app, "homeassistant", "sensor.temperature", {
-  start: "2026-10-03T00:00:00Z", end: "2026-10-04T00:00:00Z",
+import { history } from "@qino/qino/home.history";
+const result = await history(app, 17, {
+  start: "2026-10-03T00:00:00Z", end: "2026-10-04T00:00:00Z", width: 700, consumption: true,
 });
+// result.datapoint contains metadata once; result.samples contains { time, value, ... }.
 ```
 
-API routes require a signed-in user and use the existing access checks:
+Authenticated route/tool: `GET /api/home.history/datapoint/:datapoint`,
+`homeHistory_datapoint_get`. Both ISO timestamps require a time and timezone. Periods are half-open.
 
-```
-GET /api/home.history/providers
-GET /api/home.history/provider/:provider/entity/:entity?start=...&end=...
-```
+- `source: auto` prefers an actively selected or existing local archive, even when empty or stopped.
+  Without one it consults the adapter. `local` requires the local module; `provider` bypasses it.
+  Sources are never silently merged. Local archives remain readable when their provider is disabled/unlinked.
+- `limit` defaults to 100000; overflowing raw results raise an error rather than truncate silently.
+- `width` requests 1..10000 time buckets within that limit. Gauges return means and min/max/count;
+  states return the latest code. Metadata and full entities are not copied into every sample.
+- `consumption` requires a numeric counter. Valid consecutive differences are summed per bucket.
+  The first unknown baseline, nulls, excessive gaps and decreasing counters are not consumption.
+  `gap` marks incomplete intervals; a sum in such an interval is a partial total.
+- `maxGap` is non-negative seconds; omitted uses twice the datapoint's expected interval. Zero disables
+  the limit. No interval is assumed when the datapoint's interval is zero.
 
-Flow tools are `homeHistory_providers_get` and `homeHistory_provider_entity_get`.
-Both timestamps are required and include a timezone; they are normalized to UTC before dispatch.
-Unknown providers, providers without history, invalid periods and upstream failures report errors.
-An empty history returns an empty array. Missing samples are not replaced by zero, interpolated,
-aggregated or used to change the current observation cache.
+Provider samples are converted with the datapoint's declared unit/type/mapping. Unknown values stay
+null. Upstream queries have a raw sample limit before in-memory aggregation; local aggregation runs
+in SQL. Upstream sources may supply a period-start state and need not provide a complete event log.
 
-Retention, sampling and access to historical data are controlled by the selected archive. A provider may
-return a sample representing the state at the period start. The API does not promise an exhaustive
-event log, uniform intervals or historical observations for every currently available entity.
+An archive listens for `home.history:read`, which receives the numeric datapoint ID, start/end Unix
+milliseconds, source, limit and optional width/consumption/maxGap. Set `data` to typed samples to
+answer, including an empty array; leave it undefined to allow upstream history. Listeners belong to
+the App and are removed through the init signal. This module creates no measurement tables itself.
 
-Home Assistant uses its [History REST API](https://developers.home-assistant.io/docs/api/rest/).
-Its History integration must be enabled and the requested entity must have recorded data. Requests
-reuse the app's credentials and proxy prefix, time out and are aborted when the adapter is unlinked.
-Credentials stay server-side, and redirects are rejected. No additional settings are required.
-
-## Local and upstream sources
-
-`source` defaults to `auto`: a configured local series answers first, even when its result is empty
-or recording has stopped. With no local series, the live provider is consulted. `local` requires a
-local archive; `provider` bypasses local storage. Results are never silently merged. Local data
-remains readable without a linked provider. `providers(app)` includes local archive provider names.
-
-`limit` defaults to 100000 raw observations; overflow reports an error, not a truncated curve.
-`home.record` uses half-open periods `[start, end)` and returns Qino capture time as `updated`.
-Upstream samples retain their provider timestamps and period-start conventions.
-
-Archives use existing App hooks: `home.history:read` receives provider, id, start/end Unix
-milliseconds, source and limit. Set `data` to an Entity array to answer, including an empty array;
-leave it undefined to allow the upstream provider. `home.history:providers` receives a mutable
-`providers` array to which archives may add names. Both listeners belong to the App and are removed
-on module unlink. `cms.cont.home.chart` plots raw measurements or counter differences.
+Home Assistant uses its History REST API with per-instance server credentials and proxy prefix.
+The History integration and recorded entity data are required. Timeouts, unlink cancellation and
+redirect rejection apply. No credentials reach the browser.
