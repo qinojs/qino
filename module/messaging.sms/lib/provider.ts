@@ -5,15 +5,14 @@ import type { App } from "@qino/qino";
 
 export type SmsProvider = { send(to: string, text: string): Promise<unknown> };
 
-const PROVIDER = Symbol("messaging.sms.provider");
+const providers = new WeakMap<App, SmsProvider>();
 
 export function setProvider(app: App, provider?: SmsProvider): void {
-  const owner = app as App & { [PROVIDER]?: SmsProvider };
-  provider ? owner[PROVIDER] = provider : delete owner[PROVIDER];
+  provider ? providers.set(app, provider) : providers.delete(app);
 }
 
 export async function deliver(app: App, to: string, text: string): Promise<string | undefined> {
-  const custom = (app as App & { [PROVIDER]?: SmsProvider })[PROVIDER];
+  const custom = providers.get(app);
   if (custom) { await custom.send(to, text); return; }
 
   const root = app.settings["messaging.sms"].provider;
