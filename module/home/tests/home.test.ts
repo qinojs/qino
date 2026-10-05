@@ -1,7 +1,7 @@
 import { App, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
-import { actions, call, changed, entities, provider, providers, remove, save } from "../mod.ts";
+import { actions, call, changed, configure, entities, provider, providers, remove, save } from "../mod.ts";
 import { api } from "../plugin.ts";
 
 async function fixture() {
@@ -24,19 +24,26 @@ export const homeProvider = {
   await app.init();
   return { app, close: async () => { await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
 }
-const input = { name: "First", adapter: "fake", url: "https://first.test/", config: { token: "private", nested: { password: "nested-private", label: "Public" } } };
+const url = "https://first.test/";
+const input = { name: "First", adapter: "fake", config: { url, token: "private", nested: { password: "nested-private", label: "Public" } } };
 
 Deno.test("home persists distinct provider instances and dispatches overlapping entity identities by numeric ID", async () => {
   const { app, close } = await fixture();
   try {
-    const first = await save(app, input), second = await save(app, { ...input, name: "Second", url: "https://second.test/" });
+    const first = await save(app, input);
+    const second = await save(app, { ...input, name: "Second", config: { ...input.config, url: "https://second.test/" } });
     assertEquals([first, second], [1, 2]);
-    assertEquals((await providers(app)).map((row) => [row.id, row.adapter, row.url]), [[1, "fake", input.url], [2, "fake", "https://second.test/"]]);
+    assertEquals((await providers(app)).map((row) => [row.id, row.adapter, row.config.url]), [[1, "fake", url], [2, "fake", "https://second.test/"]]);
     assertEquals((await entities(app)).map((row) => [row.id, row.provider, row.state]), [["same", 1, 1], ["same", 2, 2]]);
     assertEquals((await actions(app, second))[0].provider, second);
     assertEquals(await call(app, second, "set", { data: { value: false } }), { provider: 2, action: "set", input: { data: { value: false } } });
     await save(app, { ...input, id: first, enabled: false });
     await assertRejects(() => entities(app, first), Error, "disabled");
+    await save(app, { ...input, id: first, enabled: true });
+    // An unlinked or failing provider is left out of the combined list.
+    await app.db.query`UPDATE home_provider SET adapter = ${"unlinked"} WHERE id = ${first}`;
+    assertEquals((await entities(app)).map((row) => row.provider), [2]);
+    await assertRejects(() => entities(app, first), Error, "not linked");
     await remove(app, second);
     await assertRejects(() => provider(app, second), Error, "not found");
   } finally { await close(); }
@@ -49,7 +56,7 @@ Deno.test("home provider configuration validates before writes, retains blank ne
     app.on("home:provider", (event) => { events.push(event); });
     const id = await save(app, input);
     await save(app, { ...input, id, config: { token: "", nested: { password: "", label: "Changed" } } });
-    assertEquals((await provider(app, id)).config, { token: "private", nested: { password: "nested-private", label: "Changed" } });
+    assertEquals((await provider(app, id)).config, { url, token: "private", nested: { password: "nested-private", label: "Changed" } });
     assertEquals(JSON.stringify(events).includes("private"), false);
     await assertRejects(() => save(app, { ...input, id, config: { unknown: true } }), Error, "configuration");
     assertEquals((await provider(app, id)).config.nested, { password: "nested-private", label: "Changed" });
@@ -57,21 +64,28 @@ Deno.test("home provider configuration validates before writes, retains blank ne
   } finally { await close(); }
 });
 
-Deno.test("home tools redact credentials, enforce user access and dispatch validated provider IDs", async () => {
+Deno.test("home tools redact credentials, enforce superuser access and dispatch validated provider IDs", async () => {
   const { app, close } = await fixture();
   try {
     const id = await save(app, { ...input, config: { ...input.config, accounts: [{ token: "array-private", label: "Public account" }] } }), tools = toTools({ home: api });
     const list = tools.find((tool) => tool.name === "home_providers_get")!;
     const action = tools.find((tool) => tool.name === "home_provider_action_post")!;
-    const ctx = await testContext({ app, set: { user: { id: 7 } } });
+    const put = tools.find((tool) => tool.name === "home_datapoint_put")!;
+    const point = await configure(app, { provider: id, entity: "same", unit: "°C" });
+    const ctx = await testContext({ app, set: { user: { id: 7, superuser: true } } });
     await requestStorage.run(ctx, async () => {
       const rows = await list.execute({}, ctx) as { config: unknown }[];
-      assertEquals(rows[0].config, { nested: { label: "Public" }, accounts: [{ label: "Public account" }] });
+      assertEquals(rows[0].config, { url, nested: { label: "Public" }, accounts: [{ label: "Public account" }] });
+      // Only name, interval and recording are editable; the interpretation is fixed.
+      await assertRejects(() => put.execute({ datapoint: point, unit: "K" }, ctx), Error, "Validation failed");
+      assertEquals(await put.execute({ datapoint: point, name: "Renamed" }, ctx), { id: point });
       assertEquals(await action.execute({ provider: id, action: "set", data: { value: false } }, ctx), { provider: id, action: "set", input: { data: { value: false }, entities: undefined } });
       await assertRejects(() => action.execute({ provider: id, action: "set", entities: "bad" }, ctx), Error, "Validation failed");
     });
-    const guest = await testContext({ app });
-    await requestStorage.run(guest, () => assertRejects(() => list.execute({}, guest), Error, "Access denied"));
+    for (const user of [null, { id: 8 }]) {
+      const other = await testContext({ app, set: { user } });
+      await requestStorage.run(other, () => assertRejects(() => list.execute({}, other), Error, "Access denied"));
+    }
   } finally { await close(); }
 });
 

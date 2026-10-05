@@ -1,5 +1,4 @@
-import { requestStorage } from "@qino/qino";
-import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
 import { list, renderActions, renderEntities } from "../render.ts";
@@ -36,7 +35,7 @@ Deno.test("home backend renders observations and action metadata safely without 
 Deno.test("home backend keeps healthy provider instances visible when another fails", async () => {
   const { app, close } = await fixture();
   try {
-    await save(app, { name: "Offline", adapter: "fake", url: "http://offline.test/" });
+    await save(app, { name: "Offline", adapter: "fake", config: { url: "http://offline.test/" } });
     const output = String(await list({ app } as Node));
     assertStringIncludes(output, "&lt;offline&gt;");
     assertStringIncludes(output, "sensor.temp");
@@ -46,21 +45,14 @@ Deno.test("home backend keeps healthy provider instances visible when another fa
   } finally { await close(); }
 });
 
-Deno.test("home backend commands use real home API validation and access checks", async () => {
+Deno.test("home backend commands validate their input; access is the backend page's", async () => {
   const { app, provider, close } = await fixture(), node = { app } as Node;
   try {
-    const ctx = await testContext({ app, set: { app, user: { id: 7 } } });
-    await requestStorage.run(ctx, async () => {
-      assertEquals(await api(node, {}), false);
-      const result = await api(node, { provider, action: "set", entities: [entity.id], data: { value: true } }) as { ok: boolean; result: unknown };
-      assertEquals(result.ok, true);
-      assertEquals(result.result, { action: "set", input: { entities: [entity.id], data: { value: true } } });
-      for (const input of [{ provider, action: "set", data: [] }, { provider, action: "set", entities: "bad" }, { action: "set" }])
-        assertEquals((await api(node, input) as { ok: boolean }).ok, false);
-    });
-    const guest = await testContext({ app, set: { app } });
-    await requestStorage.run(guest, async () => {
-      assertEquals(await api(node, { provider, action: "set" }), { ok: false, message: "Access denied" });
-    });
+    assertEquals(await api(node, {}), false);
+    const result = await api(node, { provider, action: "set", entities: [entity.id], data: { value: true } }) as { ok: boolean; result: unknown };
+    assertEquals(result.ok, true);
+    assertEquals(result.result, { action: "set", input: { entities: [entity.id], data: { value: true } } });
+    for (const input of [{ provider, action: "set", data: [] }, { provider, action: "set", entities: "bad" }, { action: "set" }])
+      assertEquals((await api(node, input) as { ok: boolean }).ok, false);
   } finally { await close(); }
 });

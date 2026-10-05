@@ -72,7 +72,7 @@ That is column payload only, not total table size. A TINYINT state reduces the v
 - `home.history`: compact history queries, counter semantics and bounded chart data; local and
   upstream archives remain explicitly selectable.
 - `cms.backend.home`: provider-instance forms and datapoint configuration using the
-  existing CMS parts, forms, schema inputs and user-protected APIs.
+  existing CMS parts, forms, schema inputs and the `home` SDK behind CMS node access.
 - `cms.cont.home.values` / `cms.cont.home.chart`: existing CMS content conventions, numeric
   provider/datapoint references, live values and bounded measurement/consumption views.
 

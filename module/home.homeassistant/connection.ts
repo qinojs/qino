@@ -97,9 +97,11 @@ export class Connection {
   async call(action: string, { entities, data = {} }: Call): Promise<unknown> {
     await this.#available();
     const [domain, service, extra] = action.split(".");
-    if (!domain || !service || extra !== undefined) throw new ApiError(400, "Expected a discovered Home Assistant action ID");
+    if (!domain || !service || extra !== undefined)
+      throw new ApiError(400, "Expected a discovered Home Assistant action ID");
     const services = await this.#request<Services>({ type: "get_services" });
-    const info = Object.hasOwn(services, domain) && Object.hasOwn(services[domain], service) ? services[domain][service] : undefined;
+    const info = Object.hasOwn(services, domain) && Object.hasOwn(services[domain], service)
+      ? services[domain][service] : undefined;
     if (!info) throw new ApiError(404, "Home Assistant action was not found");
     if (entities?.length === 0) throw new ApiError(400, "Explicit targets must not be empty");
     return this.#request({
@@ -111,7 +113,8 @@ export class Connection {
 
   async #available(): Promise<void> {
     await this.#connecting;
-    if (this.#invalid) throw new ApiError(503, "Home Assistant rejected its access token; update accessToken and relink the module");
+    if (this.#invalid)
+      throw new ApiError(503, "Home Assistant rejected its access token; update the provider's access token");
     if (this.#signal.aborted || !this.#ready) throw new ApiError(503, "Home Assistant is not connected");
   }
 
@@ -167,12 +170,15 @@ export class Connection {
     this.#retry = 1000;
     for (const change of buffered) this.#observe(change);
     const time = Date.now();
-    for (const state of this.#states.values()) observed(this.#app, this.#provider, state.entity_id, entityOf(state), time)
-      .catch((error) => console.error("home.homeassistant:", error));
+    for (const state of this.#states.values()) {
+      observed(this.#app, this.#provider, state.entity_id, entityOf(state), time)
+        .catch((error) => console.error("home.homeassistant:", error));
+    }
     const heartbeat = () => {
       if (this.#socket !== socket || this.#signal.aborted) return;
       this.#heartbeat = setTimeout(() => {
-        this.#request({ type: "ping" }).then(heartbeat, () => this.#drop(new ApiError(503, "Home Assistant heartbeat failed")));
+        this.#request({ type: "ping" })
+          .then(heartbeat, () => this.#drop(new ApiError(503, "Home Assistant heartbeat failed")));
       }, HEARTBEAT);
       Deno.unrefTimer(this.#heartbeat);
     };
@@ -192,7 +198,8 @@ export class Connection {
 
   #request<T = unknown>(command: Record<string, unknown>): Promise<T> {
     const socket = this.#socket;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return Promise.reject(new ApiError(503, "Home Assistant is not connected"));
+    if (!socket || socket.readyState !== WebSocket.OPEN)
+      return Promise.reject(new ApiError(503, "Home Assistant is not connected"));
     const id = ++this.#seq;
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -212,9 +219,10 @@ export class Connection {
     const socket = this.#socket;
     this.#socket = undefined;
     this.#ready = false;
-    for (const state of this.#states.values()) {
-      const previous = entityOf(state);
-      changed(this.#app, this.#provider, state.entity_id, { ...previous, available: false, updated: new Date().toISOString() }, previous)
+    // A lost connection is an observation gap, not a device change; closing it deliberately is neither.
+    const time = Date.now();
+    if (!this.#signal.aborted) for (const state of this.#states.values()) {
+      observed(this.#app, this.#provider, state.entity_id, { ...entityOf(state), available: false }, time)
         .catch((error) => console.error("home.homeassistant:", error));
     }
     this.#states.clear();
@@ -248,7 +256,8 @@ function entityOf(state: State): Entity {
 }
 
 const CONNECTIONS = Symbol("home.homeassistant");
-const owned = (app: App) => app as App & { [CONNECTIONS]?: Map<number, { session: Connection; controller: AbortController }> };
+type Sessions = Map<number, { session: Connection; controller: AbortController }>;
+const owned = (app: App) => app as App & { [CONNECTIONS]?: Sessions };
 
 export function connection(app: App, id: number): Connection {
   const session = owned(app)[CONNECTIONS]?.get(id)?.session;
@@ -258,7 +267,7 @@ export function connection(app: App, id: number): Connection {
 
 /** Starts in the background, so an unreachable home never prevents Qino from booting. */
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
-  const sessions = new Map<number, { session: Connection; controller: AbortController }>();
+  const sessions: Sessions = new Map();
   owned(app)[CONNECTIONS] = sessions;
   signal.addEventListener("abort", () => {
     for (const { controller } of sessions.values()) controller.abort();
@@ -268,12 +277,14 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   const reload = async (id?: number) => {
     const rows = await providers(app);
     if (signal.aborted) return;
-    const selected = rows.filter((row) => row.adapter === "homeassistant" && row.enabled && (id === undefined || row.id === id));
+    const selected = rows.filter((row) =>
+      row.adapter === "homeassistant" && row.enabled && (id === undefined || row.id === id));
     if (id !== undefined) { sessions.get(id)?.controller.abort(); sessions.delete(id); }
     for (const row of selected) {
-      const endpoint = URL.parse(row.url), token = row.config.accessToken;
-      if (!endpoint || !["http:", "https:", "ws:", "wss:"].includes(endpoint.protocol) || endpoint.username || endpoint.password || typeof token !== "string" || !token)
-        continue;
+      const { url, accessToken: token } = row.config;
+      const endpoint = typeof url === "string" ? URL.parse(url) : null;
+      if (!endpoint || !["http:", "https:", "ws:", "wss:"].includes(endpoint.protocol)) continue;
+      if (endpoint.username || endpoint.password || typeof token !== "string" || !token) continue;
       endpoint.protocol = endpoint.protocol === "https:" || endpoint.protocol === "wss:" ? "wss:" : "ws:";
       endpoint.pathname = endpoint.pathname.replace(/\/$/, "").replace(/\/api\/websocket$/, "") + "/api/websocket";
       endpoint.search = "";
@@ -286,7 +297,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   };
   let pending = Promise.resolve();
   app.on("home:provider", ({ id, adapter, previousAdapter }) => {
-    if (adapter === "homeassistant" || previousAdapter === "homeassistant") return pending = pending.catch(() => {}).then(() => reload(id));
+    if (adapter !== "homeassistant" && previousAdapter !== "homeassistant") return;
+    return pending = pending.catch(() => {}).then(() => reload(id));
   }, { signal });
   await reload();
 }

@@ -17,13 +17,13 @@ Creation forms, live observations and datapoints are sibling cards.
 Live states retain their native types and include availability, update time and expandable metadata.
 A failed provider does not hide healthy ones. Refresh reads current observations without polling.
 Actions show discovered fields and accept optional entity targets plus an input JSON object. Calls
-use the real protected API; acknowledgement is distinct from the resulting observed device state.
+go to the adapter once; acknowledgement is distinct from the resulting observed device state.
 
 Each live entity can create a datapoint with name, unit, numeric/state datatype, explicit state-code
 mapping, expected reporting interval and recording flag. Existing datapoint interpretation is
 read-only; name/interval/recording remain editable. The datapoint table can stop/resume selections
 while disconnected. Install `home.record` to persist measurements and `cms.cont.home.chart` for plots.
-All configuration and datapoint changes use the existing signed-in-user API and CMS node access.
+Access is the backend page's CMS node access; the module calls the `home` SDK directly.
 
 ## Manual test without an external service
 
@@ -33,7 +33,6 @@ An empty Entity ID receives a generated identity. In the new row, open Enter mea
 any finite number; state datapoints require an integer code. Empty time means now. Explicit date/time
 is entered in the browser's local timezone and stored in milliseconds.
 
-The entered value goes through the same protected `home.record` API as other archive ingestion.
-The table refreshes after saving. Recording must be enabled; invalid inputs and guest access are
-rejected. Older samples enter history without replacing the latest value. Archive writes do not
+The entered value is stored with `home.record`'s `record()`, like other archive ingestion.
+The table refreshes after saving. Recording must be enabled; invalid inputs are rejected. Older samples enter history without replacing the latest value. Archive writes do not
 synthesize device changes. Use `cms.cont.home.chart` with the datapoint ID and source `local` for plots.

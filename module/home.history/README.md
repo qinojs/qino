@@ -14,7 +14,7 @@ const result = await history(app, 17, {
 // result.datapoint contains metadata once; result.samples contains { time, value, ... }.
 ```
 
-Authenticated route/tool: `GET /api/home.history/datapoint/:datapoint`,
+Superuser route/tool: `GET /api/home.history/datapoint/:datapoint`,
 `homeHistory_datapoint_get`. Both ISO timestamps require a time and timezone. Periods are half-open.
 
 - `source: auto` prefers an actively selected or existing local archive, even when empty or stopped.

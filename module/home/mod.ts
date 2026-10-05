@@ -38,7 +38,7 @@ export type Adapter = {
   history?(app: App, provider: number, entity: string, period: { start: string; end: string }): Promise<Entity[]>;
 };
 
-export type Provider = { id: number; name: string; adapter: string; url: string; config: Record<string, unknown>; enabled: boolean };
+export type Provider = { id: number; name: string; adapter: string; config: Record<string, unknown>; enabled: boolean };
 
 /** Adapter names identify implementations; provider IDs identify configured connections. */
 export function adapters(app: App): Adapter[] {
@@ -47,7 +47,10 @@ export function adapters(app: App): Adapter[] {
   return all;
 }
 
-const decode = (row: Provider): Provider => ({ ...row, id: Number(row.id), enabled: Boolean(row.enabled), config: typeof row.config === "string" ? JSON.parse(row.config) : row.config });
+const decode = (row: Provider): Provider => ({
+  ...row, id: Number(row.id), enabled: Boolean(row.enabled),
+  config: typeof row.config === "string" ? JSON.parse(row.config) : row.config,
+});
 
 /** Trusted server access, including credentials. Public APIs redact write-only configuration. */
 export async function providers(app: App): Promise<Provider[]> {
@@ -60,13 +63,34 @@ export async function provider(app: App, id: number): Promise<Provider> {
   return decode(row);
 }
 
+function readable(value: unknown, schema: Record<string, unknown>): unknown {
+  if (schema.writeOnly) return undefined;
+  if (Array.isArray(value)) return value.map((item) => readable(item, schema.items as Record<string, unknown> ?? {}));
+  if (!value || typeof value !== "object") return value;
+  const fields = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
+  return Object.fromEntries(Object.entries(value).flatMap(([key, value]) => {
+    const child = readable(value, fields[key] ?? {});
+    return child === undefined ? [] : [[key, child]];
+  }));
+}
+
+/** Public view: write-only fields are removed, configuration of unlinked adapters is hidden entirely. */
+export function redact(app: App, row: Provider): Provider {
+  const schema = adapters(app).find((adapter) => adapter.name === row.adapter)?.schema;
+  return { ...row, config: schema ? readable(row.config, schema) as Record<string, unknown> : {} };
+}
+
 function merge(input: unknown, previous: unknown, schema: Record<string, unknown>): unknown {
   if (schema.writeOnly && input === "") return previous;
-  if (Array.isArray(input)) return input.map((item, index) => merge(item, Array.isArray(previous) ? previous[index] : undefined, schema.items as Record<string, unknown> ?? {}));
+  if (Array.isArray(input)) {
+    const items = schema.items as Record<string, unknown> ?? {};
+    return input.map((item, index) => merge(item, Array.isArray(previous) ? previous[index] : undefined, items));
+  }
   if (!schema.properties || !input || typeof input !== "object") return input;
   const old = previous && typeof previous === "object" ? previous as Record<string, unknown> : {};
   const fields = schema.properties as Record<string, Record<string, unknown>>;
-  for (const key of Object.keys(input)) if (fields[key]?.readOnly) throw new ApiError(400, "Read-only provider configuration cannot be submitted");
+  for (const key of Object.keys(input))
+    if (fields[key]?.readOnly) throw new ApiError(400, "Read-only provider configuration cannot be submitted");
   return { ...old, ...Object.fromEntries(Object.entries(input).flatMap(([key, value]) => {
     const result = merge(value, old[key], fields[key] ?? {});
     return result === undefined ? [] : [[key, result]];
@@ -74,20 +98,25 @@ function merge(input: unknown, previous: unknown, schema: Record<string, unknown
 }
 
 /** Create or edit an instance; empty secret fields preserve stored credentials. */
-export async function save(app: App, input: { id?: number; name: string; adapter: string; url: string; config?: Record<string, unknown>; enabled?: boolean }): Promise<number> {
+export async function save(app: App, input: {
+  id?: number; name: string; adapter: string; config?: Record<string, unknown>; enabled?: boolean;
+}): Promise<number> {
   const selected = adapters(app).find((adapter) => adapter.name === input.adapter);
   if (!selected) throw new ApiError(400, "Home adapter is not linked");
-  if (!input.name.trim() || input.name.length > 191 || input.url.length > 2048) throw new ApiError(400, "Invalid provider name or URL");
-  const endpoint = input.url ? URL.parse(input.url) : null;
-  if (input.url && (!endpoint || endpoint.username || endpoint.password)) throw new ApiError(400, "Provider URL must be absolute and contain no credentials");
+  if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 191)
+    throw new ApiError(400, "Invalid provider name");
+  if (input.enabled !== undefined && typeof input.enabled !== "boolean") throw new ApiError(400, "Invalid enabled flag");
   const previous = input.id === undefined ? undefined : await provider(app, input.id);
-  if (previous && previous.adapter !== input.adapter && await app.db.one`SELECT id FROM home_datapoint WHERE provider = ${previous.id} LIMIT 1`)
+  if (previous && previous.adapter !== input.adapter && await used(app, previous.id))
     throw new ApiError(409, "Provider has datapoints; create another instance to change its adapter");
   const schema = selected.schema ?? { type: "object", properties: {} };
-  const config = merge(input.config ?? {}, previous?.adapter === input.adapter ? previous.config : {}, schema) as Record<string, unknown>;
-  delete config.url;
-  if (validate(schema, { ...config, url: input.url }).length) throw new ApiError(400, "Invalid home provider configuration");
-  const values = { name: input.name, adapter: input.adapter, url: input.url, config: JSON.stringify(config), enabled: input.enabled ?? previous?.enabled ?? true };
+  const old = previous?.adapter === input.adapter ? previous.config : {};
+  const config = merge(input.config ?? {}, old, schema) as Record<string, unknown>;
+  if (validate(schema, config).length) throw new ApiError(400, "Invalid home provider configuration");
+  const values = {
+    name: input.name, adapter: input.adapter, config: JSON.stringify(config),
+    enabled: input.enabled ?? previous?.enabled ?? true,
+  };
   const id = await app.db.unit(async () => {
     if (previous) { await app.db.table("home_provider").ensure({ id: previous.id, ...values }); return previous.id; }
     return Number(await app.db.table("home_provider").insert(values));
@@ -95,6 +124,8 @@ export async function save(app: App, input: { id?: number; name: string; adapter
   await app.fire("home:provider", { id, adapter: input.adapter, previousAdapter: previous?.adapter });
   return id;
 }
+
+const used = (app: App, id: number) => app.db.one`SELECT id FROM home_datapoint WHERE provider = ${id} LIMIT 1`;
 
 export async function enable(app: App, id: number, enabled: boolean): Promise<void> {
   const previous = await provider(app, id);
@@ -105,7 +136,7 @@ export async function enable(app: App, id: number, enabled: boolean): Promise<vo
 /** Retiring a provider leaves its measurement identities and archive intact. */
 export async function remove(app: App, id: number): Promise<void> {
   const previous = await provider(app, id);
-  if (await app.db.one`SELECT id FROM home_datapoint WHERE provider = ${id} LIMIT 1`) throw new ApiError(409, "Provider has datapoints; disable it instead");
+  if (await used(app, id)) throw new ApiError(409, "Provider has datapoints; disable it instead");
   await app.db.query`DELETE FROM home_provider WHERE id = ${id}`;
   await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
@@ -118,12 +149,15 @@ async function selected(app: App, id: number) {
   return { row, adapter };
 }
 
-export async function entities(app: App, id?: number) {
-  const rows = id === undefined ? (await providers(app)).filter((row) => row.enabled) : [(await selected(app, id)).row];
-  return (await Promise.all(rows.map(async (row) => {
-    const { adapter } = await selected(app, row.id);
-    return (await adapter.entities(app, row.id)).map((entity) => ({ ...entity, provider: row.id }));
-  }))).flat();
+/** Without an ID, enabled providers that fail (offline, unlinked) are left out; query one to see its error. */
+export async function entities(app: App, id?: number): Promise<(Entity & { provider: number })[]> {
+  const ids = id === undefined ? (await providers(app)).filter((row) => row.enabled).map((row) => row.id) : [id];
+  const results = await Promise.allSettled(ids.map(async (id) => {
+    const { adapter } = await selected(app, id);
+    return (await adapter.entities(app, id)).map((entity) => ({ ...entity, provider: id }));
+  }));
+  if (id !== undefined && results[0].status === "rejected") throw results[0].reason;
+  return results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
 }
 
 export async function actions(app: App, id: number) {
@@ -138,12 +172,17 @@ export async function call(app: App, id: number, action: string, input: Call = {
 }
 
 /** Publish an observation without triggering change rules, e.g. an initial provider snapshot. */
-export async function observed(app: App, provider: number, id: string, entity: Entity | null, time = entity?.updated === undefined ? Date.now() : Date.parse(entity.updated)): Promise<void> {
+export async function observed(
+  app: App, provider: number, id: string, entity: Entity | null,
+  time = entity?.updated === undefined ? Date.now() : Date.parse(entity.updated),
+): Promise<void> {
   await app.fire("home:observe", { provider, id, entity, time });
 }
 
 /** Publish an observation, including creation (`previous: null`) or removal (`entity: null`). */
-export async function changed(app: App, provider: number, id: string, entity: Entity | null, previous: Entity | null): Promise<void> {
+export async function changed(
+  app: App, provider: number, id: string, entity: Entity | null, previous: Entity | null,
+): Promise<void> {
   await observed(app, provider, id, entity);
   await app.fire("home:change", { provider, id, entity, previous });
 }

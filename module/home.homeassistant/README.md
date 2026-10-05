@@ -25,8 +25,8 @@ Connections are persisted provider instances, with any number of instances per A
 ```ts
 import { save } from "@qino/qino/home";
 await save(app, {
-  name: "House", adapter: "homeassistant", url: "http://homeassistant.local:8123",
-  config: { accessToken: "YOUR_LONG_LIVED_ACCESS_TOKEN" },
+  name: "House", adapter: "homeassistant",
+  config: { url: "http://homeassistant.local:8123", accessToken: "YOUR_LONG_LIVED_ACCESS_TOKEN" },
 });
 ```
 
@@ -43,6 +43,7 @@ connects to `<base>/api/websocket`. Allow the Home Assistant host in Deno's netw
 
 - Authenticates, subscribes to `state_changed`, then loads states. Changes during
   loading are buffered; initial snapshots enter history via `home:observe` without synthetic change rules.
+  A lost connection reports its entities as unavailable the same way, without `home:change`.
 - Maps Home Assistant entities to logical home entities. Native state strings and attributes are
   preserved; `unknown` and `unavailable` are reported with `available: false`.
 - Discovers actions via `get_services`, including their native field metadata. Action IDs are

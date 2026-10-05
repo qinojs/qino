@@ -8,13 +8,14 @@ Deno.test("manual providers need no URL and expose independent typed measurement
   for (const name of ["home", "home.manual", "home.history", "cron", "home.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
   try {
     await app.init();
-    const first = await save(app, { name: "First", adapter: "manual", url: "" });
-    const second = await save(app, { name: "Second", adapter: "manual", url: "" });
-    await assertRejects(() => save(app, { name: "Remote", adapter: "manual", url: "https://not-needed.test/" }), Error, "configuration");
+    const first = await save(app, { name: "First", adapter: "manual" });
+    const second = await save(app, { name: "Second", adapter: "manual" });
+    const remote = { name: "Remote", adapter: "manual", config: { url: "https://not-needed.test/" } };
+    await assertRejects(() => save(app, remote), Error, "configuration");
     const id = await configure(app, { provider: first, entity: "temperature", unit: "°C", record: true });
     const other = await configure(app, { provider: second, entity: "temperature", unit: "°C", record: true });
     const start = Date.now() + 1000;
-    const user = await testContext({ app, set: { app, user: { id: 7 } } });
+    const user = await testContext({ app, set: { app, user: { id: 7, superuser: true } } });
     await requestStorage.run(user, async () => {
       await app.api["home.record"].datapoint(id).post({ time: start, value: -2.5 });
       await app.api["home.record"].datapoint(id).post({ time: start + 1, value: 0 });

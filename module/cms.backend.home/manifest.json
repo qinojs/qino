@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.home",
-  "description": "Provider-independent home entity inspection and manual action execution in the CMS backend.",
+  "description": "Home providers, datapoints, measurement entry and manual actions in the CMS backend.",
   "dependencies": ["cms.backend", "home"],
   "files": ["README.md", "manifest.json", "nodeApi.ts", "plugin.ts", "pub/main.js", "pub/module.svg", "render.ts", "datapoints.ts", "settings.ts"]
 }

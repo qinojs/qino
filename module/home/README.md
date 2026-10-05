@@ -9,7 +9,7 @@ adapters implement protocols; `sandbox.flow` owns rules and `cron` owns schedule
 ## Model
 
 - **Adapter**: a linked implementation, such as `homeassistant`, exported as `homeProvider`.
-- **Provider**: a persisted connection with numeric ID, name, adapter, URL, configuration and enabled flag.
+- **Provider**: a persisted connection with numeric ID, name, adapter, configuration and enabled flag.
   Multiple providers can use the same adapter. Configuration, including credentials, stays server-side.
 - **Entity**: a live logical endpoint `{ id, name, state, attributes, available, updated?, unit? }`.
   An entity is not necessarily a physical device; IDs are local to a provider.
@@ -26,8 +26,8 @@ or the discarded snapshot schema runs in normal module initialization.
 import { save, configure, entities, call } from "@qino/qino/home";
 
 const provider = await save(app, {
-  name: "House", adapter: "homeassistant", url: "http://homeassistant.local:8123",
-  config: { accessToken: "YOUR_LONG_LIVED_ACCESS_TOKEN" },
+  name: "House", adapter: "homeassistant",
+  config: { url: "http://homeassistant.local:8123", accessToken: "YOUR_LONG_LIVED_ACCESS_TOKEN" },
 });
 const datapoint = await configure(app, {
   provider, entity: "sensor.energy", name: "Energy", unit: "kWh", record: true,
@@ -36,32 +36,36 @@ const current = await entities(app, provider);
 await call(app, provider, "light.turn_on", { entities: ["light.kitchen"], data: { brightness: 100 } });
 ```
 
-SDK functions are trusted server access; `provider()` and `providers()` include credentials. All
-public API routes require a signed-in user and redact schema fields marked `writeOnly`. Unlinked
-adapter configuration is entirely hidden by the public API. Empty secret inputs preserve saved values.
+SDK functions are trusted server access; `provider()` and `providers()` include credentials, `redact()`
+removes schema fields marked `writeOnly`. All public API routes are superuser-only and redacted;
+unlinked adapter configuration is hidden entirely. Empty secret inputs preserve saved values.
+Endpoints such as a URL are ordinary adapter configuration. `entities()` without a provider leaves
+out providers that fail; ask one provider to see its error.
 
 ## APIs and rules
 
 ```
 adapters                                       get
-providers                                      get, post { name, adapter, url, config?, enabled? }
+providers                                      get, post { name, adapter, config?, enabled? }
 provider/:provider                             get, put, patch { enabled }, delete
 entities                                       get { provider? }
 actions                                        get { provider }
 provider/:provider/entity/:entity               get
 provider/:provider/action/:action               post { entities?: string[], data?: object }
 datapoints                                     get { provider? }, post { provider, entity, ... }
-datapoint/:datapoint                            get, put { provider, entity, ... }
+datapoint/:datapoint                            get, put { name?, interval?, record? }
 ```
 
 Provider and datapoint route IDs are numeric. Removing providers with datapoints is rejected:
 disable them to preserve identity and archive access. Changing an existing datapoint's interpretation
-requires a new datapoint; changing a referenced provider's adapter requires a new provider.
+requires a new datapoint; posting an existing interpretation reuses its datapoint. Changing a
+referenced provider's adapter requires a new provider.
 
 `home:observe` carries `{ provider, id, entity, time }` for the recorder. `home:change` carries
 `{ provider, id, entity, previous }` for rules. `changed()` publishes both; `observed()` publishes
-only an observation. Initial/reconnection snapshots enter history without synthetic change rules.
-Creation/removal use null `previous`/`entity`. A disconnected adapter can report unavailable entities.
+only an observation. Snapshots and lost connections enter history without synthetic change rules:
+a lost connection is observed as unavailable entities, a deliberate close (disable, unlink) not at all.
+Creation/removal use null `previous`/`entity`.
 Commands are sent once; acknowledgements do not fabricate observed state or replay failed actions.
 
 ```ts
@@ -83,7 +87,7 @@ listen(app, {
 }, { signal });
 ```
 
-Use an existing owner and explicit provider ID in persisted rules. Filter transitions to avoid
+Use an existing superuser as owner and an explicit provider ID in persisted rules. Filter transitions to avoid
 feedback loops. Device events arrive outside their initiating flow; local suppression does not
 cover them. Rules require Qino to run; missed events are not replayed.
 

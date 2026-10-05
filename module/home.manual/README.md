@@ -21,7 +21,7 @@ For a temperature use °C, for a cumulative electricity meter use kWh, for a wat
 actual measurement unit. Values can be negative or zero. A state datapoint accepts signed integer
 codes -128..127. Multiple manual providers remain independent.
 
-Entries use the existing protected `home.record` API; stopping recording rejects backend entry and
-keeps the archive. Backdated samples do not replace the current cache. These are archive writes:
+Entries are stored with `home.record`'s `record()`; stopping recording rejects entry and keeps
+the archive. Backdated samples do not replace the current cache. These are archive writes:
 they do not synthesize device change events or execute automation rules. The manual adapter exposes
 latest recorded values as entities, including unavailable values, and has no device actions.

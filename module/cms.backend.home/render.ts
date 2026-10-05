@@ -1,14 +1,17 @@
 import { errMsg, html } from "@qino/qino";
 import { actions, entities, providers } from "@qino/qino/home";
+import * as u2 from "@qino/qino/u2";
 
 import { settings } from "./settings.ts";
-import { datapointForm, measurements } from "./datapoints.ts";
+import { measurements } from "./datapoints.ts";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Action, Entity } from "@qino/qino/home";
 
 const text = (value: unknown): string => typeof value === "string" ? value : JSON.stringify(value, null, 2) ?? "";
+const typeOf = ({ state }: Entity) =>
+  typeof state === "boolean" || typeof state === "string" && !Number.isFinite(Number(state)) ? "state" : "number";
 
 export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
@@ -25,8 +28,12 @@ export async function list(node: Node): Promise<HtmlString> {
     const [endpoints, commands] = await Promise.allSettled([entities(app, row.id), actions(app, row.id)]);
     return html.async`<section class=u2-card>
       <div class=-head>${row.name} (#${row.id})<button type=button data-refresh>${app.t`Refresh`}</button></div>
-      ${endpoints.status === "fulfilled" ? renderEntities(app, endpoints.value, row.id) : html`<p role=alert>${errMsg(endpoints.reason)}</p>`}
-      ${commands.status === "fulfilled" ? renderActions(app, row.id, commands.value, endpoints.status === "fulfilled" ? endpoints.value : []) : html`<p role=alert>${errMsg(commands.reason)}</p>`}
+      ${endpoints.status === "fulfilled"
+        ? renderEntities(app, endpoints.value, row.id)
+        : html`<p role=alert>${errMsg(endpoints.reason)}</p>`}
+      ${commands.status === "fulfilled"
+        ? renderActions(app, row.id, commands.value, endpoints.status === "fulfilled" ? endpoints.value : [])
+        : html`<p role=alert>${errMsg(commands.reason)}</p>`}
     </section>`;
   })));
 }
@@ -48,8 +55,10 @@ export function renderEntities(app: App, endpoints: Entity[], provider?: number)
           <summary>${t`Attributes`}</summary><pre>${text(entity.attributes)}</pre>
         </details>` : ""}
       <td>${entity.available ? t`Available` : t`Unavailable`}
-      <td>${entity.updated ?? "—"}
-      ${provider === undefined ? "" : html.async`<td><details><summary>${t`Add datapoint`}</summary>${datapointForm(app, { provider, entity: entity.id, name: entity.name, unit: entity.unit ?? "", type: typeof entity.state === "boolean" || typeof entity.state === "string" && !Number.isFinite(Number(entity.state)) ? "state" : "number" })}</details></td>`}
+      <td>${u2.el.time(entity.updated)}
+      ${provider === undefined ? "" : html.async`<td><button type=button data-add-point="${JSON.stringify({
+        provider, entity: entity.id, name: entity.name, unit: entity.unit ?? "", type: typeOf(entity),
+      })}">${t`Add datapoint`}</button></td>`}
     </tr>`)}
     </tbody>
   </table>`;

@@ -25,7 +25,7 @@ async function withDeadlines(fn: () => Promise<void>) {
   finally { globalThis.setTimeout = original; }
 }
 const appOf = (url = "http://house.test/proxy/", token = "private-token") => Object.assign(new Emitter(), {
-  db: { query: () => Promise.resolve([{ id: 1, name: "First", adapter: "homeassistant", url, config: { accessToken: token }, enabled: true }]) },
+  db: { query: () => Promise.resolve([{ id: 1, name: "First", adapter: "homeassistant", config: { url, accessToken: token }, enabled: true }]) },
 }) as unknown as App;
 
 Deno.test("homeassistant reads full history with app credentials and leaves live observations unchanged", () => withServer(async () => {
@@ -207,8 +207,9 @@ Deno.test("homeassistant isolates apps and rejects pending calls on unlink", () 
 }));
 
 Deno.test("homeassistant reconnects and resubscribes without replaying an interrupted command", () => withServer(async (server) => {
-  const app = appOf(), ctrl = new AbortController(), seen: unknown[] = [];
+  const app = appOf(), ctrl = new AbortController(), seen: unknown[] = [], observed: { entity: { available: boolean } }[] = [];
   app.on("home:change", (e) => { seen.push(e); });
+  app.on("home:observe", (e) => { observed.push(e as typeof observed[number]); });
   server.handle = (socket, command) => {
     if (command.type !== "call_service") return false;
     socket.close();
@@ -223,8 +224,9 @@ Deno.test("homeassistant reconnects and resubscribes without replaying an interr
     assertEquals((await homeProvider.entities(app, 1))[0].state, "off");
     assertEquals(server.commands.filter((c) => c.type === "subscribe_events").length, 2);
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 1);
-    assertEquals(seen.length, 1);
-    assertEquals((seen[0] as { entity: { available: boolean } }).entity.available, false);
+    // A lost connection is observed as unavailable, but is no device change for rules.
+    assertEquals(seen.length, 0);
+    assertEquals(observed.map((e) => e.entity.available), [true, false, true]);
   } finally { ctrl.abort(); await tick(); }
 }));
 
@@ -308,10 +310,10 @@ Deno.test("home modules link through Qino and a flow dispatches with its owner's
   try {
     await app.init();
     await app.settings.core.url("https://qino.test/");
-    await app.db.table("usr").insert({ id: 7, username: "home@example.test", active: true });
+    await app.db.table("usr").insert({ id: 7, username: "home@example.test", active: true, superuser: true });
     await app.modules.import(new URL("../plugin.ts", import.meta.url).href);
     await app.modules.link("home.homeassistant");
-    await save(app, { name: "House", adapter: "homeassistant", url: "http://house.test/", config: { accessToken: "private-token" } });
+    await save(app, { name: "House", adapter: "homeassistant", config: { url: "http://house.test/", accessToken: "private-token" } });
     assertEquals((await entities(app))[0].provider, 1);
     const flow: Flow = {
       description: "Turn on the light", on: { host: "app", event: "home:change" }, owner: 7,
@@ -332,7 +334,8 @@ Deno.test("home modules link through Qino and a flow dispatches with its owner's
     assertEquals(live.end, "done");
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 1);
     app.modules.unlink("home.homeassistant");
-    await assertRejects(() => entities(app), Error, "not linked");
+    assertEquals(await entities(app), []);
+    await assertRejects(() => entities(app, 1), Error, "not linked");
     await app.modules.link("home.homeassistant");
     assertEquals((await entities(app))[0].provider, 1);
   } finally {
@@ -346,8 +349,8 @@ Deno.test("home modules link through Qino and a flow dispatches with its owner's
 Deno.test("homeassistant runs independent provider instances in the same App and reconfigures only the selected connection", () => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController();
   const rows = [
-    { id: 1, name: "First", adapter: "homeassistant", url: "http://first.test/", config: { accessToken: "first-token" }, enabled: true },
-    { id: 2, name: "Second", adapter: "homeassistant", url: "http://second.test/", config: { accessToken: "second-token" }, enabled: true },
+    { id: 1, name: "First", adapter: "homeassistant", config: { url: "http://first.test/", accessToken: "first-token" }, enabled: true },
+    { id: 2, name: "Second", adapter: "homeassistant", config: { url: "http://second.test/", accessToken: "second-token" }, enabled: true },
   ];
   Object.defineProperty(app.db, "query", { value: () => Promise.resolve(rows) });
   try {

@@ -21,6 +21,5 @@ With provider ID zero and an empty entity setting, the block displays every prov
 types and unavailable entities are marked explicitly. A provider failure leaves other
 providers visible. Reload the page to read the latest observations; there is no polling.
 
-Reads use the existing `home` API and require a signed-in user, even when the CMS page is
-public. No device actions, formulas, storage, unit conversion or permission exceptions
+Placing the block publishes its values: page access decides who sees them. No device actions, formulas, storage, unit conversion or permission exceptions
 are introduced. Use `cms.backend.home` for manual actions and `sandbox.flow` for rules.

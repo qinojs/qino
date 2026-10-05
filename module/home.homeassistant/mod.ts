@@ -8,8 +8,14 @@ const schema = {
   required: ["url", "accessToken"],
   title: "Home Assistant",
   properties: {
-    url: { type: "string", minLength: 1, title: "URL", format: "uri", pattern: "^(?:$|(?:https?|wss?)://[^\\s@/?#]+(?:[/?#]|$))", description: "Home Assistant base URL, including a reverse proxy path if needed" },
-    accessToken: { type: "string", minLength: 1, title: "Access token", writeOnly: true, description: "Server-side long-lived Home Assistant access token" },
+    url: {
+      type: "string", minLength: 1, title: "URL", format: "uri", pattern: "^(?:https?|wss?)://[^\\s@/?#]+(?:[/?#]|$)",
+      description: "Home Assistant base URL, including a reverse proxy path if needed",
+    },
+    accessToken: {
+      type: "string", minLength: 1, title: "Access token", writeOnly: true,
+      description: "Server-side long-lived Home Assistant access token",
+    },
   },
 };
 

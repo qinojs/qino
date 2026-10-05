@@ -18,6 +18,6 @@ export const homeProvider = {
   if (manual) app.modules.add(new URL("../../home.manual/plugin.ts", import.meta.url));
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init(); app.t = fakeT;
-  const provider = await save(app, { name: "House", adapter: "fake", url: "http://house.test/", config: { accessToken: "saved-secret" } });
+  const provider = await save(app, { name: "House", adapter: "fake", config: { url: "http://house.test/", accessToken: "saved-secret" } });
   return { app, provider, close: async () => { app.modules.unlink("home.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
 }

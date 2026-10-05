@@ -17,10 +17,6 @@
             "maxLength": 191,
             "x-index": true
           },
-          "url": {
-            "type": "string",
-            "maxLength": 2048
-          },
           "config": {
             "type": "object"
           },
@@ -33,7 +29,6 @@
           "id",
           "name",
           "adapter",
-          "url",
           "config",
           "enabled"
         ]

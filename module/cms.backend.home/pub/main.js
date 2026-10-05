@@ -5,6 +5,17 @@ cms.initNode("backend.home", (el) => {
 
   el.addEventListener("click", (event) => {
     if (event.target.closest("[data-refresh]")) refresh().catch((error) => alert(error?.message || String(error)));
+    const point = event.target.closest("[data-add-point]");
+    if (point) {
+      // One shared creation form, prefilled from the entity row.
+      const details = el.querySelector("[data-new-point]"), { elements } = details.querySelector("form");
+      const values = JSON.parse(point.dataset.addPoint);
+      for (const name of ["provider", "entity", "name", "unit", "type"]) elements[name].value = values[name];
+      elements.type.dispatchEvent(new Event("change", { bubbles: true }));
+      details.open = true;
+      details.scrollIntoView({ block: "nearest" });
+      elements.name.focus();
+    }
     const add = event.target.closest("[data-add-map]");
     if (add) {
       const fieldset = add.closest("[data-mapping]");
@@ -14,16 +25,15 @@ cms.initNode("backend.home", (el) => {
 
   el.addEventListener("change", (event) => {
     const record = event.target.closest("[data-record]");
-    if (record) {
-      const { id, provider, entity } = JSON.parse(record.dataset.point);
-      return execute(record, { datapoint: { id, provider, entity, record: record.checked } });
-    }
+    if (record) return execute(record, { datapoint: { id: Number(record.dataset.id), record: record.checked } });
     const enabled = event.target.closest("[data-provider-enabled]");
     if (enabled) return execute(enabled, { provider: Number(enabled.dataset.provider), enabled: enabled.checked });
     const type = event.target.closest("form[data-datapoint] select[name=type]");
     if (type) type.form.querySelector("[data-mapping]").hidden = type.value !== "state";
     const select = event.target.closest("select[name=action]");
-    if (select) select.form.querySelector("[data-action-fields]").textContent = JSON.stringify(JSON.parse(select.selectedOptions[0]?.dataset.fields || "{}"), null, 2);
+    if (!select) return;
+    const fields = JSON.parse(select.selectedOptions[0]?.dataset.fields || "{}");
+    select.form.querySelector("[data-action-fields]").textContent = JSON.stringify(fields, null, 2);
   });
 
   el.addEventListener("submit", async (event) => {
@@ -39,7 +49,10 @@ cms.initNode("backend.home", (el) => {
         return await execute(button, { measurement: { id: Number(form.dataset.id), value, time } });
       }
       if (form.hasAttribute("data-provider-config")) {
-        const input = { name: form.elements.name.value, adapter: form.dataset.adapter, url: form.elements.url.value, enabled: form.elements.enabled.checked, config: Object.create(null) };
+        const input = {
+          name: form.elements.name.value, adapter: form.dataset.adapter, enabled: form.elements.enabled.checked,
+          config: Object.create(null),
+        };
         if (form.dataset.provider) input.id = Number(form.dataset.provider);
         for (const field of form.elements) {
           if (!field.name.startsWith("config.") || field.disabled) continue;
@@ -51,6 +64,10 @@ cms.initNode("backend.home", (el) => {
         return await execute(button, { config: input });
       }
       if (form.hasAttribute("data-datapoint")) {
+        const { name, interval, record } = form.elements;
+        const meta = { name: name.value, interval: interval.valueAsNumber, record: record.checked };
+        // Source and interpretation of an existing datapoint are immutable.
+        if (form.dataset.id) return await execute(button, { datapoint: { id: Number(form.dataset.id), ...meta } });
         const mapping = Object.create(null);
         for (const row of form.querySelectorAll("[data-mapping] tbody tr")) {
           const key = row.querySelector("[data-state]").value;
@@ -60,19 +77,19 @@ cms.initNode("backend.home", (el) => {
           if (!Number.isInteger(code)) throw new Error("State codes must be integers");
           mapping[key] = code;
         }
-        const input = {
-          provider: Number(form.elements.provider?.value ?? form.dataset.provider), entity: form.elements.entity?.value || form.dataset.entity || crypto.randomUUID(),
-          name: form.elements.name.value, unit: form.elements.unit.value, type: form.elements.type.value,
-          interval: form.elements.interval.valueAsNumber, record: form.elements.record.checked,
-          mapping: form.elements.type.value === "state" ? mapping : {},
-        };
-        if (form.dataset.id) input.id = Number(form.dataset.id);
-        return await execute(button, { datapoint: input });
+        const type = form.elements.type.value;
+        return await execute(button, { datapoint: {
+          provider: Number(form.elements.provider.value), entity: form.elements.entity.value || crypto.randomUUID(),
+          unit: form.elements.unit.value, type, mapping: type === "state" ? mapping : {}, ...meta,
+        } });
       }
       const data = JSON.parse(form.elements.data.value || "{}");
       if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Action data must be a JSON object");
       const targets = [...form.elements.entities.selectedOptions].map((option) => option.value);
-      await execute(button, { provider: Number(form.dataset.provider), action: form.elements.action.value, entities: targets.length ? targets : undefined, data });
+      await execute(button, {
+        provider: Number(form.dataset.provider), action: form.elements.action.value,
+        entities: targets.length ? targets : undefined, data,
+      });
     } catch (error) { await alert(error?.message || String(error)); }
   });
 });

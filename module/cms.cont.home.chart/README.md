@@ -5,8 +5,8 @@ Real-world use will show how it is actually used and how it should work.
 
 CMS content module for a persisted home datapoint's measurement or counter consumption curve.
 Add a `cont.home.chart` node and configure numeric `datapoint` in the existing node settings.
-Dependencies are `cms` and `home.history`; local `home.record` is optional. Reading history requires
-a signed-in user, even on a public page. No provider credentials reach the browser.
+Dependencies are `cms` and `home.history`; local `home.record` is optional. Placing the chart
+publishes the datapoint: page access decides who sees it. No provider credentials reach the browser.
 
 | Setting | Meaning |
 | --- | --- |

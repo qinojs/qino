@@ -23,7 +23,7 @@ export const homeProvider = {
   for (const name of ["home", "home.history", "cron", "home.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init();
-  const provider = await save(app, { name: "First", adapter: "fake", url: "http://first.test/" });
+  const provider = await save(app, { name: "First", adapter: "fake", config: { url: "http://first.test/" } });
   return { app, provider, close: async () => { app.modules.unlink("home.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
 }
 
@@ -57,7 +57,9 @@ Deno.test("numeric and discrete datapoints have different typed storage and immu
     assertEquals(await app.db.one`SELECT value FROM home_state WHERE datapoint = ${id} AND time = ${start}`, 0);
     await assertRejects(() => record(app, id, 0.5, start), Error, "datatype");
     await assertRejects(() => record(app, id, 128, start), Error, "datatype");
-    await assertRejects(() => configure(app, { id, provider, entity: "switch", unit: "changed" }), Error, "immutable");
+    // The same interpretation reuses the datapoint; editing by ID changes only its metadata.
+    assertEquals(await configure(app, { provider, entity: "switch", type: "state", mapping: { off: 0, on: 1 }, name: "Renamed" }), id);
+    assertEquals((await datapoint(app, id)).name, "Renamed");
     const gauge = await configure(app, { provider, entity: "gauge" });
     assertEquals(value(await datapoint(app, gauge), { ...entity, state: false }), null);
   } finally { await close(); }
@@ -76,8 +78,8 @@ Deno.test("late measurements do not rewrite latest state; stopping preserves arc
     // Older observations remain in the archive without rewriting the current state.
     assertEquals(before.value, 6);
     assertEquals(before.time, current);
-    await configure(app, { id, provider, entity: "temperature", record: false });
-    await record(app, id, 999, start + 10);
+    await configure(app, { id, record: false });
+    await assertRejects(() => record(app, id, 999, start + 10), Error, "Enable recording");
     assertEquals((await history(app, id, period)).samples, [{ time: start, value: 4 }]);
     assertEquals((await history(app, id, { ...period, source: "provider" })).samples, [{ time: start, value: 73 }]);
     await assertRejects(() => history(app, id, { ...period, limit: 0 }), Error, "positive");
@@ -109,7 +111,7 @@ Deno.test("recording tools enforce user access; stale detection writes one gap i
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", interval: 30, record: true });
-    const tool = toTools({ "home.record": api })[0], user = await testContext({ app, set: { app, user: { id: 7 } } });
+    const tool = toTools({ "home.record": api })[0], user = await testContext({ app, set: { app, user: { id: 7, superuser: true } } });
     await requestStorage.run(user, () => tool.execute({ datapoint: id, time: Date.now(), value: 2 }, user));
     await app.db.query`UPDATE home_datapoint SET time = ${Date.now() - 120_000} WHERE id = ${id}`;
     await cron.stale.run(app);
@@ -119,6 +121,23 @@ Deno.test("recording tools enforce user access; stale detection writes one gap i
     assertEquals((await datapoint(app, id)).value, null);
     const guest = await testContext({ app, set: { app } });
     await requestStorage.run(guest, () => assertRejects(() => tool.execute({ datapoint: id, time: start, value: 9 }, guest), Error, "Access denied"));
+  } finally { await close(); }
+});
+
+Deno.test("unchanged values are stored once per expected interval", async () => {
+  const { app, provider, close } = await fixture();
+  try {
+    const steady = await configure(app, { provider, entity: "steady", record: true });
+    const beating = await configure(app, { provider, entity: "beating", interval: 10, record: true });
+    for (const id of [steady, beating]) {
+      const values: [number, number | null][] = [[0, 1], [1000, 1], [9000, 1], [11000, 1], [12000, 2], [13000, null], [14000, null], [15000, 2]];
+      for (const [offset, value] of values) await record(app, id, value, start + offset);
+    }
+    const times = async (id: number) => (await history(app, id, period)).samples.map((sample) => sample.time - start);
+    assertEquals(await times(steady), [0, 12000, 13000, 15000]);
+    // The heartbeat keeps steady streams alive for gap and stale detection.
+    assertEquals(await times(beating), [0, 11000, 12000, 13000, 15000]);
+    assertEquals((await datapoint(app, steady)).time, start + 15000);
   } finally { await close(); }
 });
 

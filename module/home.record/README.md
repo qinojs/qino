@@ -13,10 +13,10 @@ import { record } from "@qino/qino/home.record";
 
 const id = await configure(app, { provider: 1, entity: "sensor.energy", unit: "kWh", record: true });
 await record(app, id, 123.5, Date.now()); // Trusted server ingestion.
-await configure(app, { id, provider: 1, entity: "sensor.energy", record: false });
+await configure(app, { id, record: false });
 ```
 
-Authenticated ingestion: `POST /api/home.record/datapoint/:datapoint { time, value }`.
+Superuser ingestion: `POST /api/home.record/datapoint/:datapoint { time, value }`.
 Use `home`'s datapoint API or backend forms to select recordings. Stopping preserves the archive.
 
 | Table | Columns | Primary key |
@@ -34,7 +34,8 @@ entities produce null. Metadata and credentials are never repeated in measuremen
 observation time; changes use the source update time when supplied. Selection and recorder startup capture one current
 observation. Startup reads run in the background; snapshots do not trigger change rules. Reading cached states periodically never invents new measurements. Repeated timestamps
 replace the value atomically; late observations enter history without changing a newer current cache.
-Disabled recording is checked in the insert itself, preventing stale listener selections from writing.
+`record()` rejects datapoints that are not recorded; the insert re-checks the flag, so a selection
+stopped concurrently never writes.
 
 Expected `interval` is metadata in seconds, default zero (no guessed reporting frequency). Every
 60 seconds the existing cron scheduler marks a stream unavailable once it has exceeded twice that

@@ -52,11 +52,11 @@ Deno.test("home backend submits once from the form, parses typed data and displa
       { name: "config.accessToken", type: "password", value: "" },
       { name: "config.threshold", type: "number", valueAsNumber: 0 },
       { name: "config.ignored", type: "text", value: "hidden", disabled: true },
-    ], { name: { value: "House" }, url: { value: "https://house.test/" }, enabled: { checked: false } }),
+    ], { name: { value: "House" }, enabled: { checked: false } }),
     querySelector: () => button,
   };
   const saved = listeners.submit(event);
-  assertEquals(calls.at(-1), { config: { id: 1, name: "House", adapter: "fake", url: "https://house.test/", enabled: false, config: { accessToken: "", threshold: 0 } } });
+  assertEquals(calls.at(-1), { config: { id: 1, name: "House", adapter: "fake", enabled: false, config: { accessToken: "", threshold: 0 } } });
   release!({ ok: true, message: "Saved" });
   await saved;
   assertEquals(refreshes, 6);
@@ -66,9 +66,9 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   await failed;
   assertEquals(messages.at(-1), "Invalid setting");
   assertEquals(button.disabled, false);
-  target = { ...button, dataset: { point: JSON.stringify({ id: 1, provider: 1, entity: "counter" }) }, checked: false };
+  target = { ...button, dataset: { id: "1" }, checked: false };
   const recorded = listeners.change(event);
-  assertEquals(calls.at(-1), { datapoint: { id: 1, provider: 1, entity: "counter", record: false } });
+  assertEquals(calls.at(-1), { datapoint: { id: 1, record: false } });
   release!({ ok: true, message: "Recording updated." });
   await recorded;
   assertEquals(messages.at(-1), "Recording updated.");
@@ -102,5 +102,10 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   assertEquals(/^[a-f0-9-]{36}$/.test(input.datapoint.entity), true);
   release!({ ok: true, message: "Datapoint saved." });
   await created;
+  target = { ...(target as object), dataset: { id: "3", provider: "2", entity: "sensor.temp" } };
+  const edited = listeners.submit(event);
+  assertEquals(calls.at(-1), { datapoint: { id: 3, name: "Temperature", interval: 0, record: true } });
+  release!({ ok: true, message: "Datapoint saved." });
+  await edited;
 
 });
