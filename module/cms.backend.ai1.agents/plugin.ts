@@ -45,10 +45,12 @@ const branches = (branch: Branch, chosen: string[], above = ""): HtmlString[] =>
       sub.below.size ? html` <small>(${sub.count})</small>` : ""}${branches(sub, chosen, name + "_")}</u2-tree>`;
   });
 
-/** Create or edit an agent; sessions are started in Chat. */
-function form(node: Node, agent: { id?: number; system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<HtmlString> {
+/** Create or edit an agent; sessions are started in Chat. One a module declares (`name`) its file sets, shown locked. */
+function form(node: Node, agent: { id?: number; name?: string; system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id ?? ""}">
+    ${agent.name ? html.async`<small>${t`Declared by a module: its file sets role, tools and model choice on every start.`}</small>` : ""}
+    <fieldset ${agent.name ? "disabled" : ""} style="display:contents">
     <textarea name=system rows=6 style="width:100%" placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
     <fieldset><legend>${t`Tools`}</legend><div style="overflow:auto;max-height:15rem">${branches(toolTree(node.app.apiTree), agent.tools ?? [])}</div></fieldset>
     <fieldset><legend>${t`Model choice`}</legend>
@@ -61,6 +63,7 @@ function form(node: Node, agent: { id?: number; system?: string; tools?: string[
     <small>${t`All at 0: the default.`}</small>
     <div><small>${t`Who would answer`}</small><ol data-preview></ol></div>
     ${agent.id ? "" : html.async`<button>${t`Create`}</button>`}
+    </fieldset>
   </form>`;
 }
 
@@ -113,14 +116,14 @@ const messages = async (db: Db, ids: unknown[]) =>
 
 /** The agents with what happened in their sessions, the most recently active first; only `agent` if given. */
 const agentRows = (db: Db, agent = 0) => db.query`
-  SELECT a.id, a.system, a.tools, a.prefer, a.time,
+  SELECT a.id, a.name, a.system, a.tools, a.prefer, a.time,
     (SELECT COUNT(*) FROM ai1_agent_memory WHERE agent_id = a.id) AS memories,
     (SELECT COUNT(DISTINCT x.session_id) FROM ai1_session_message x JOIN ai1_session y ON y.id = x.session_id
       WHERE y.agent_id = a.id AND x.time > ${unixTime() - ACTIVE}) AS active,
     COUNT(DISTINCT s.id) AS sessions, COUNT(DISTINCT s.usr_id) AS users, ${COUNTS}
   FROM ai1_agent a LEFT JOIN ai1_session s ON s.agent_id = a.id LEFT JOIN ai1_session_message m ON m.session_id = s.id
   ${agent ? sql`WHERE a.id = ${agent}` : sql``}
-  GROUP BY a.id, a.system, a.tools, a.prefer, a.time ORDER BY last_time DESC, a.id DESC`;
+  GROUP BY a.id, a.name, a.system, a.tools, a.prefer, a.time ORDER BY last_time DESC, a.id DESC`;
 
 /** Every agent with the most important, the most recently active first; a click opens its page. */
 export async function agents(node: Node): Promise<HtmlString> {
@@ -130,6 +133,7 @@ export async function agents(node: Node): Promise<HtmlString> {
   return html.async`
     <thead><tr>
       <th>#
+      <th title="${t`Declared by a module, which sets its role, tools and model choice on every start`}">${t`Name`}
       <th>${t`Role`}
       <th>${t`Tools`}
       <th title="${t`prefer: ai1's weights; – is ai1's default`}">${t`Model choice`}
@@ -143,6 +147,7 @@ export async function agents(node: Node): Promise<HtmlString> {
       <th>${t`Created`}
     <tbody>${rows.length ? rows.map((a) => html`<tr u2-href>
       <th>${agentLink(url, a.id)}${Number(a.active) ? html` <small class=u2-badge>active</small>` : ""}
+      <td>${a.name || "–"}
       <td>${firstLine(a.system)}
       <td><small style="display:block;max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.tools || "–"}">${a.tools || "–"}</small>
       <td>${choice(a.prefer)}
@@ -153,7 +158,7 @@ export async function agents(node: Node): Promise<HtmlString> {
       <td>${count(a.errors, true)}
       <td><small>${short(last.get(String(a.last))?.text ?? "")}</small>
       <td>${time(a.last_time)}
-      <td>${time(a.time)}`) : html.async`<tr><td colspan=12>${t`No agents yet`}`}</tbody>`;
+      <td>${time(a.time)}`) : html.async`<tr><td colspan=13>${t`No agents yet`}`}</tbody>`;
 }
 
 /** The sessions, the latest first, of one agent if `vars.agent`; a click opens the session's page. */
@@ -423,13 +428,13 @@ async function render(node: Node): Promise<HtmlString> {
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><div style="max-height:60vh; overflow:auto; padding:0"><table class=u2-table cms-part=sessions>${sessions(node)}</table></div></div>
   </div>`;
   const vars = { agent: id };
-  const row = await node.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${id}`;
+  const row = await node.app.db.row`SELECT id, name, system, tools, prefer FROM ai1_agent WHERE id = ${id}`;
   const edit = row ? {
-    id, system: String(row.system ?? ""), tools: JSON.parse(String(row.tools || "[]")), prefer: JSON.parse(String(row.prefer || "{}")),
+    id, name: String(row.name ?? ""), system: String(row.system ?? ""), tools: JSON.parse(String(row.tools || "[]")), prefer: JSON.parse(String(row.prefer || "{}")),
   } : undefined;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto; max-width:50rem">
-      <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)}</div>
+      <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)} ${row?.name ?? ""}</div>
       ${edit ? form(node, edit) : ""}
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>

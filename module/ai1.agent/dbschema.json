@@ -9,6 +9,12 @@
             "x-index": "primary",
             "x-autoincrement": true
           },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "x-index": "unique",
+            "description": "`<module>/<key>` for an agent a module brings as `agents/<key>.md`; empty for one made here"
+          },
           "system": {
             "type": "string",
             "description": "Its role: what every session starts from"

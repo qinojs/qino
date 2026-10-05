@@ -45,7 +45,9 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
     // the tools as a tree of their names: a branch for all below it, a leaf for one tool
     for (const part of ['value="ai1Discover_*"', 'value="ai1Discover_tools_*"', 'value="ai1Discover_tools_get"']) assertStringIncludes(home, part);
 
+    await app.db.table("ai1_agent").update(agent.id, { name: "some.module/lead" }); // declared by a module
     const list = await as(() => agents(node));
+    assertStringIncludes(list, "<td>some.module/lead");
     for (const part of [`href="/agents?agent=${agent.id}"`, "&lt;b&gt;lead&lt;/b&gt;", "max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap", 'title="[&quot;ai1Discover_*&quot;]"', "[&quot;ai1Discover_*&quot;]</small>", "it is round"]) {
       assertStringIncludes(list, part);
     }

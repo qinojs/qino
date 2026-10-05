@@ -1,4 +1,4 @@
-import { App, fs, requestStorage, u2Root } from "@qino/qino";
+import { App, fs, requestStorage } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { assert, assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
@@ -65,7 +65,16 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
         const template = moduleTemplate(mod);
         await template.create("#container { color: red; }");
         await f.render();
-        assert(f.ctx.res.html.styles.has(u2Root + "class/flex/flex.css"));
+        assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.6.0/class/flex/flex.css"))); // its own pin
+        await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5.19"); // the site moves on
+        await f.render();
+        assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.5.19/class/flex/flex.css")));
+        for (const directive of ["style-src", "script-src", "connect-src"] as const) // its release is allowed
+          assert(Object.keys(f.ctx.res.csp[directive]).some((src) => src.endsWith("@1.5.19/")));
+        await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5."); // half typed in the panel: the pin
+        f.ctx.res.html.styles.clear();
+        await f.render();
+        assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.6.0/class/flex/flex.css")));
         await fs.write(template.file, "<div id=own></div>");
         assertEquals(await f.render(), '<div id="own"></div>');
         await fs.write(template.file, "");

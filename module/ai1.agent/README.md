@@ -49,6 +49,23 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   others by meaning ([ai1.discover](../ai1.discover/)) and core's `core_toolCalls_post` to call them,
   only its own. What it is given stays the same all session long (prompt cache).
 
+## Agents modules bring
+
+A module brings agents as `agents/<key>.md`, listed in its manifest's `files`:
+
+```md
+---
+tools: ["cmsLayoutStandard2_*", "cms_node_get"]
+prefer: {"quality": 2}
+---
+You design and maintain the layout of this website. …
+```
+
+Front matter has one JSON value per line, then the role. At start it becomes the agent named
+`<module>/<key>`, and on every start its role, tools and prefer follow the file again; memories and
+sessions stay with its id. Changing it here is refused: the file sets it. A copy at the same path in
+the module's data dir wins.
+
 ## Hooks
 
 Other modules add to an agent without it knowing them (as [ai1.user_memory](../ai1.user_memory/) does):
@@ -70,7 +87,7 @@ Other modules add to an agent without it knowing them (as [ai1.user_memory](../a
 ```
 agents                          get     find agents by their role { search? } → [{ id, role, score? }]
 agents                          post    create { system, tools, prefer } → { id }
-agent/:agent                    get · patch   its role, tools and prefer; anyone signed in may change them
+agent/:agent                    get · patch   its role, tools and prefer; anyone signed in may change them, unless declared
 agent/:agent/sessions           post    start a session, as yourself { prefer } → { id }
 agent/:agent/memories           get · post { content, replaces? }
 agent/:agent/memories/:memory   delete

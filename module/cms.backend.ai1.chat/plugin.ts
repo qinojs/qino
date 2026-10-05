@@ -32,7 +32,7 @@ async function render(node: Node): Promise<HtmlString> {
   const { db, t } = node.app;
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown
-  const agents = await db.query`SELECT id, system, prefer FROM ai1_agent ORDER BY id DESC`;
+  const agents = await db.query`SELECT id, name, system, prefer FROM ai1_agent ORDER BY id DESC`;
   const live = (await candidates(node.app, "live", {})).length > 0; // talking needs a live model
   const sessions = await db.query`SELECT s.id, s.agent_id, MAX(m.time) AS last_time,
       (SELECT first.message FROM ai1_session_message first
@@ -46,7 +46,7 @@ async function render(node: Node): Promise<HtmlString> {
       <div class="u2-flex -Col" style="flex-wrap:nowrap">
         <form data-start>
           <select name=agent aria-label="${t`Agent`}" required>${agents.map((agent) =>
-            html`<option value="${agent.id}" data-prefer="${agent.prefer ?? ""}">#${agent.id} ${String(agent.system ?? "").split("\n")[0].slice(0, 80)}</option>`)}</select>
+            html`<option value="${agent.id}" data-prefer="${agent.prefer ?? ""}">#${agent.id} ${agent.name || String(agent.system ?? "").split("\n")[0].slice(0, 80)}</option>`)}</select>
           <fieldset><legend>${t`Model choice for this session`}</legend>
             <div class=u2-table>
               <div>${WEIGHTS.map((key) =>

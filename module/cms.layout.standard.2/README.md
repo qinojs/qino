@@ -1,8 +1,11 @@
 # cms.layout.standard.2
 
-An HTML/CSS frontend layout: identity branding, Nav4, full-width main. Uses the
-u2 release of the CMS editor; typography, colors, focus and print come from u2,
-the layout CSS only arranges the shell. No banner, hero, sticky header or hover menu.
+An HTML/CSS frontend layout: identity branding, Nav4, full-width main. Typography, colors,
+focus and print come from u2; the layout CSS only arranges the shell. No banner, hero, sticky
+header or hover menu.
+
+It pins its own u2 release (`U2_VERSION`), so a CMS update cannot change its look. The panel sets
+another one for the site (`u2Version` on the global layout page), once its CSS is checked against it.
 
 | Content | Owner | Initial module |
 |---|---|---|
@@ -52,3 +55,9 @@ Like `cms.cont.html`, for agents and tools:
 returns `{ content }` — the starting point while the file is missing. PUT saves
 `{ content }` and returns the rendered page. Both require WRITE on the global layout
 page.
+
+## Agent
+
+Where `ai1.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
+([agents/designer.md](agents/designer.md)). It knows the template syntax and reads u2's index
+online before a change. A copy in `data/cms.layout.standard.2/agents/` wins.

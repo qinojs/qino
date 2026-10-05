@@ -12,6 +12,7 @@
     "api.ts",
     "dbschema.json",
     "lib/context.ts",
+    "lib/declared.ts",
     "lib/live.ts",
     "lib/memory.ts",
     "lib/record.ts",

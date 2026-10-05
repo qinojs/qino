@@ -1,15 +1,25 @@
 import { hee } from "@qino/qino";
-import { WRITE } from "@qino/qino/cms";
+import { cms as cmsOf, WRITE } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
 
 import { codeFiles } from "./codeFiles.ts";
 
-import type { Ctx } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export { api } from "./api.ts";
+
+// Pinned on purpose: the site's css is written against it, so a CMS update cannot change its look.
+// The site moves on in the panel (u2Version on the global layout page), once its css is checked.
+const U2_VERSION = "1.6.0";
+
+/** The u2 release the layout loads: its global layout page's, else the pin. */
+const u2Version = (layout: Node): string => {
+  const version = String(layout.settings.u2Version() ?? "");
+  return /^\d+\.\d+\.\d+$/.test(version) ? version : U2_VERSION;
+};
 
 const U2_ASSETS = [
   "css/norm/norm.css", "css/base/base.css", "css/base/print.css", "css/base/nomotion.css",
@@ -21,7 +31,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
   if (await node.edit()) await codeFiles(node).create();
 
-  u2.assets(ctx, U2_ASSETS);
+  u2.assets(ctx, U2_ASSETS, u2Version(await node.cms.layoutPage(node.module!.name)));
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
   // The template decides whether and how main exists; the starter only fills a flexible it just created.
@@ -45,16 +55,30 @@ async function starter(page: Node): Promise<boolean> {
   return true;
 }
 
-/** Editor URLs are session capabilities; the global layout page decides access. */
+/** The global layout page for the panel: its id (for its settings), the u2 release and the file
+ *  editor links; editor URLs are session capabilities. Only for who may write it. */
 const panelApi = async (node: Node, vars: Record<string, unknown>) => {
-  if (vars.do !== "getFileEditorLinks" && vars.do !== "openFile") return;
+  if (vars.do !== "getLayout" && vars.do !== "openFile") return;
   const layout = await node.cms.layoutPage(node.module!.name);
-  if (await layout.access() < WRITE) return [];
+  if (await layout.access() < WRITE) return;
   const files = codeFiles(node);
   if (vars.do === "openFile") return (vars.key === "html" || vars.key === "css") && await files.open(vars.key);
-  return (["html", "css"] as const)
-    .map((key) => ({ key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url);
+  return {
+    id: layout.id, u2Version: layout.settings.u2Version() ?? "", u2Default: U2_VERSION,
+    files: (["html", "css"] as const)
+      .map((key) => ({ key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url),
+  };
 };
+
+/** The designer agent (agents/designer.md) learns which u2 release the site loads. */
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
+  const name = "cms.layout.standard.2";
+  app.on("ai1.agent:turn", async (turn: { agent: number; parts: string[] }) => {
+    if (await app.db.one`SELECT name FROM ai1_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
+    const version = u2Version(await cmsOf(app).layoutPage(name));
+    turn.parts.push(`## u2\nThis site loads u2 ${version}. Its index: ${u2.root(version)}SKILL.md`);
+  }, { signal });
+}
 
 export const cms = {
   node: {

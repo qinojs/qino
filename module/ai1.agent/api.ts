@@ -1,4 +1,4 @@
-import { Access, errMsg, NotFoundError, s } from "@qino/qino";
+import { Access, ConflictError, errMsg, NotFoundError, s } from "@qino/qino";
 
 import * as memory from "./lib/memory.ts";
 import * as search from "./lib/search.ts";
@@ -49,8 +49,9 @@ export const api: ApiTree = {
         return { id: agent, system: row.system, tools: JSON.parse(String(row.tools || "[]")), prefer: JSON.parse(String(row.prefer || "{}")) };
       }),
       patch: verb<{ agent: number; system?: string; tools?: string[]; prefer?: Record<string, number> }>(
-        "Change the agent's role, tools or prefer",
+        "Change the agent's role, tools or prefer; not of one a module declares",
         async ({ agent, system, tools, prefer }, ctx) => {
+          if (await ctx.app.db.one`SELECT name FROM ai1_agent WHERE id = ${agent}`) throw new ConflictError("Declared by a module: its file sets it");
           if (tools) checkTools(ctx.app, tools);
           await ctx.app.db.table("ai1_agent").update(agent, {
             ...system !== undefined && { system },

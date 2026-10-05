@@ -6,7 +6,7 @@
     "cms.cont.nav4", "cms.cont.flexible", "cms.cont.section", "cms.cont.text"
   ],
   "files": [
-    "README.md", "manifest.json", "plugin.ts", "api.ts", "codeFiles.ts", "template.html",
-    "pub/main.css", "pub/widget.js", "pub/module.svg"
+    "README.md", "manifest.json", "plugin.ts", "api.ts", "codeFiles.ts", "agents/designer.md",
+    "template.html", "pub/main.css", "pub/widget.js", "pub/module.svg"
   ]
 }

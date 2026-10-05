@@ -37,7 +37,7 @@ export const api: ApiTree = {
       description: "Read a web page as Markdown, a part at a time; size is the whole page",
       query: s.object({
         url: s.string().describe("The page's address, http or https"),
-        maxAge: s.optional(s.number()).describe("Read again if older than this many seconds; default a day, 0 always"),
+        maxAge: s.optional(s.number()).describe("Read again if older than this many seconds; default two months, 0 always"),
         offset: s.optional(s.number()).describe("Where to start, in characters; default 0"),
         length: s.optional(s.number()).describe(`How many characters; default ${PART}, 0 only keeps it to search`),
       }),
@@ -55,7 +55,7 @@ export const api: ApiTree = {
       input: s.object({
         url: s.string().describe("Where to start: only links that start with it are followed"),
         max: s.optional(s.number()).describe("How many pages at most; default 100"),
-        maxAge: s.optional(s.number()).describe("Read a page again if older than this many seconds; default a day, 0 always"),
+        maxAge: s.optional(s.number()).describe("Read a page again if older than this many seconds; default two months, 0 always"),
         wait: s.optional(s.boolean()).describe("Answer when done, with how many were read and are left; else it runs in the background"),
       }),
       access: Access.USER,

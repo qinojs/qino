@@ -33,7 +33,7 @@ const { content } = await read(app, first.url);
   how many links found were not read yet. No `robots.txt`.
 - **Searching the pages read:** `read` with `length: 0` only keeps a page, so an agent can read many
   and then search them with `pages`.
-- **Cache:** every page read is kept (`ai1_web_page`) and read again after a day (`maxAge`). Where
+- **Cache:** every page read is kept (`ai1_web_page`) and read again after two months (`maxAge`). Where
   there is an embedding collection ([ai1.embed](../ai1.embed/)), it is findable by meaning
   (`pages`), else by its words.
 - **Agents** get it as tools with the path `ai1.web` in their `tools`.

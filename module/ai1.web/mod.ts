@@ -27,7 +27,7 @@ export const READERS: Record<string, { key?: string; read: Reader }> = {
   firecrawl: { key: "api.firecrawl.dev", read: firecrawl },
 };
 /** A page read is read again after this many seconds. */
-const MAX_AGE = 86400;
+const MAX_AGE = 60 * 86400; // two months
 
 const keyOf = async (app: App, name: string) => String(await app.settings.core.keys[name] ?? "");
 

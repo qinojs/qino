@@ -1,6 +1,8 @@
 import { App, s } from "@qino/qino";
 import { scored } from "@qino/qino/score";
 
+import { declare } from "./lib/declared.ts";
+
 import type { EventDecls } from "@qino/qino";
 
 export { api } from "./api.ts";
@@ -52,5 +54,8 @@ Object.assign(App.events, {
   },
 } satisfies EventDecls);
 
-/** Memories fade with a half-life of a month unless they are used. */
-export const init = (app: App): Promise<void> => scored(app.db, "ai1_agent_memory", 30 * 86400);
+export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
+  await scored(app.db, "ai1_agent_memory", 30 * 86400); // memories fade with a half-life of a month unless used
+
+  await declare(app); // the agents modules bring (`agents/*.md`), as their files say now
+}

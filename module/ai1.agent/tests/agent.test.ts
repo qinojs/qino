@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { App, runAs, sql } from "@qino/qino";
+import { App, ConflictError, runAs, sql } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
 
 import { AiError } from "@qino/qino/ai1";
@@ -10,6 +10,7 @@ import { hit } from "@qino/qino/score";
 import { HINT, index } from "../lib/memory.ts";
 import { keep } from "../lib/search.ts";
 import { situation } from "../lib/context.ts";
+import { declare } from "../lib/declared.ts";
 import { Agent, Session } from "../mod.ts";
 
 import type { Adapter } from "@qino/qino/ai1";
@@ -260,7 +261,7 @@ Deno.test("ai1.agent: agents are found by their role, embedded once", () => with
   await new Promise((r) => setTimeout(r, 20)); // roles are embedded in the background
   const found = await runAs(app, 7, "test", () => agents().get(undefined, { search: "a logo" })) as { id: number; role: string; score: number }[];
   assertEquals([found[0].id, found[0].role], [designer.id, "logo designer"]); // the nearest first, its role's first line
-  assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai1_agent`), 2);
+  assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai1_agent`), 3); // and toolset/clockwork, declared
   await runAs(app, 7, "test", () => agent()(designer.id).patch({ system: "lead too" })); // changed: embedded again
   await new Promise((r) => setTimeout(r, 20));
   assertEquals(await app.db.col`SELECT content FROM embedding_ai1_agent WHERE agent_id = ${designer.id}`, ["lead too"]);
@@ -305,4 +306,17 @@ Deno.test("ai1.agent: talking live, the agent's voice knows its role and the ses
   const delegate = talked.tools.find((tool: any) => tool.name === "delegate_task");
   assertEquals(await talked.onToolCall({ id: "1", name: delegate.name, args: { task: "sum up" } }), '"lead #3 sum up"'); // the agent in writing answered
   assertEquals((await kept(app, session.id)).slice(-3).map(([role, content]) => [role, content]), [["user", "and now?"], ["user", "sum up"], ["assistant", "lead #3 sum up"]]);
+}));
+
+Deno.test("ai1.agent: a module's declared agents follow their file, by name", () => withApp(async (app) => {
+  const row = await app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE name = ${"toolset/clockwork"}`;
+  assertEquals([row?.system, JSON.parse(String(row?.tools)), JSON.parse(String(row?.prefer))], ["You tell the time.", ["toolset_*"], { cost: 2 }]);
+
+  const mod = app.modules.get("toolset")!; // the site's copy wins; the id, and with it memories and sessions, stays
+  await Deno.mkdir(mod.data + "agents/", { recursive: true });
+  await Deno.writeTextFile(mod.data + "agents/clockwork.md", "---\ntools: []\n---\nOwn role.");
+  await declare(app);
+  assertEquals(await app.db.row`SELECT id, system FROM ai1_agent WHERE name = ${"toolset/clockwork"}`, { id: row!.id, system: "Own role." });
+  // its file sets it: changed here, the next start would undo it
+  await assertRejects(() => runAs(app, 7, "test", () => (app.api as any)["ai1.agent"].agent(Number(row!.id)).patch({ system: "x" })), ConflictError);
 }));
