@@ -1,6 +1,6 @@
 import { hee } from "@qino/qino";
 import { WRITE } from "@qino/qino/cms";
-import { loadTemplate, renderTemplateFile } from "@qino/qino/cms.templateParser";
+import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
 
@@ -19,71 +19,41 @@ const U2_ASSETS = [
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
-  const files = codeFiles(node);
-  if (await node.edit()) await files.create();
+  if (await node.edit()) await codeFiles(node).create();
 
-  // CMS has already registered the layout/site CSS; insert both after u2.
   u2.assets(ctx, U2_ASSETS);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
-  await files.addAssets();
 
-  await initialize(node, files);
-  return await renderTemplateFile(files.src, node) ?? await renderTemplateFile(files.shipped, node) ?? "<div></div>";
+  // The template decides whether and how main exists; the starter only fills a flexible it just created.
+  const template = moduleTemplate(node.module!);
+  const fresh = !(await node.conts()).some((c) => c.vs.name === "main");
+  const out = await template.render(node);
+  return fresh && await starter(node) ? template.render(node) : out;
 }
 
-async function initialize(node: Node, files: ReturnType<typeof codeFiles>) {
-  // Only initialize starting points declared by the selected template.
-  const pending = [...(await loadTemplate(files.src) ?? await loadTemplate(files.shipped) ?? [])].reverse();
-  const mains = new Set<Node>();
-  const seen = new Set<Node>();
-  let nav = false, seenNav = false;
-  while (pending.length) {
-    const el = pending.pop()!;
-    if (el.type !== "element") continue;
-    const attrs = Object.fromEntries(el.attrs.map(({ name, value }) => [name, value]));
-    if (el.tag === "cms-image" || attrs["cms-text"]) continue;
-    if (el.tag !== "cms-cont") {
-      pending.push(...el.children.toReversed());
-      continue;
-    }
-    const module = attrs.module !== undefined ? attrs.module ?? ""
-      : attrs["default-module"] !== undefined ? attrs["default-module"] ?? "" : "cms.cont.flexible";
-    if (attrs.name === "nav" && attrs.node === "layout" && !seenNav) {
-      seenNav = true;
-      nav = module === "cms.cont.nav4";
-    }
-    if (attrs.name !== "main") continue;
-    const target = attrs.node === undefined ? node : attrs.node === "page" ? await node.page() : undefined;
-    if (!target || seen.has(target)) continue;
-    seen.add(target);
-    if (module === "cms.cont.flexible") mains.add(target);
-  }
-  if (!nav && !mains.size) return;
-  await node.app.db.transaction(async () => {
-    const module = (await node.page()).module;
-    if (nav && module) {
-      const layout = await node.cms.layoutPage(module.name);
-      await layout.cont("nav", { module: "cms.cont.nav4", settings: { pathOnly: true } });
-    }
-    for (const target of mains) {
-      if ((await target.conts()).some((c) => c.vs.name === "main")) continue;
-      const main = await target.cont("main", { module: "cms.cont.flexible", settings: { __inited: true } });
-      const section = await main.createCont({ module: "cms.cont.section" });
-      const text = await section.cont("main", "cms.cont.text");
-      for (const lang of node.app.languages.all)
-        await text.text("main", lang, `<h1>${hee((await target.showTitle(lang)).plain())}</h1>`);
-    }
+/** A new main starts with a section whose text holds an editable h1; an emptied main stays empty. */
+async function starter(page: Node): Promise<boolean> {
+  const main = (await page.conts()).find((c) => c.vs.name === "main");
+  if (main?.vs.module !== "cms.cont.flexible" || (await main.conts()).length) return false;
+  await page.app.db.transaction(async () => {
+    await main.settings.__inited(true);
+    const section = await main.createCont({ module: "cms.cont.section" });
+    const text = await section.cont("main", "cms.cont.text");
+    for (const lang of page.app.languages.all)
+      await text.text("main", lang, `<h1>${hee((await page.showTitle(lang)).plain())}</h1>`);
   });
+  return true;
 }
 
 /** Editor URLs are session capabilities; the global layout page decides access. */
 const panelApi = async (node: Node, vars: Record<string, unknown>) => {
-  if (vars.do !== "getFileEditorLinks") return;
+  if (vars.do !== "getFileEditorLinks" && vars.do !== "openFile") return;
   const layout = await node.cms.layoutPage(node.module!.name);
   if (await layout.access() < WRITE) return [];
   const files = codeFiles(node);
-  return (["src", "css", "js"] as const)
-    .map((key) => ({ key: key === "src" ? "html" : key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url);
+  if (vars.do === "openFile") return (vars.key === "html" || vars.key === "css") && await files.open(vars.key);
+  return (["html", "css"] as const)
+    .map((key) => ({ key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url);
 };
 
 export const cms = {

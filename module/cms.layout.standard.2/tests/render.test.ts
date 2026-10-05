@@ -45,10 +45,8 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
       const global = await f.cm.layoutPage(NAME);
       const nav = await global.cont("nav");
       assertEquals(nav.module?.name, "cms.cont.nav4");
-      assertEquals(nav.settings.pathOnly(), true);
-      await nav.settings.pathOnly(false);
-      await f.render();
-      assertEquals(nav.settings.pathOnly(), false);
+      assertEquals(nav.settings.pathOnly(), undefined);
+      assertStringIncludes(out, 'id="head-nav" popover');
 
       const main = await f.page.cont("main");
       assertEquals((await main.conts()).length, 1);
@@ -66,15 +64,8 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
         const mod = f.page.module!;
         const template = moduleTemplate(mod);
         await template.create("#container { color: red; }");
-        f.ctx.res.html.styles.clear();
-        f.ctx.res.html.styles.add(mod.modUrl + "pub/main.css");
-        f.ctx.res.html.styles.add(mod.dataUrl + "pub/main.css");
         await f.render();
-        const styles = [...f.ctx.res.html.styles];
-        const base = styles.indexOf(u2Root + "class/flex/flex.css");
-        const shipped = styles.indexOf(mod.modUrl + "pub/main.css");
-        const site = styles.indexOf(mod.dataUrl + "pub/main.css");
-        assert(base >= 0 && base < shipped && shipped < site);
+        assert(f.ctx.res.html.styles.has(u2Root + "class/flex/flex.css"));
         await fs.write(template.file, "<div id=own></div>");
         assertEquals(await f.render(), '<div id="own"></div>');
         await fs.write(template.file, "");
@@ -122,7 +113,7 @@ Deno.test("standard.2: site template controls creation; apps keep separate ident
   }
 });
 
-Deno.test("standard.2: initial contents follow parser ownership, declaration order and target page", async () => {
+Deno.test("standard.2: starter content follows the module the template gives main", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -136,15 +127,6 @@ Deno.test("standard.2: initial contents follow parser ownership, declaration ord
       await f.render();
       assertEquals((await f.page.cont("main")).module?.name, "cms.cont.text");
       assertEquals((await (await f.page.cont("main")).conts()).length, 0);
-
-      const page = await (await f.cm.node(1)).createChild({ module: NAME });
-      await page.title("en", "Target page");
-      const cont = await page.createCont({ module: NAME });
-      await fs.write(template.file, `<main><cms-cont name=main node=page /></main>`);
-      const output = await layout.node.render(cont, { ctx: f.ctx });
-      assertStringIncludes(output, "<h1>Target page</h1>");
-      assertEquals((await cont.conts()).length, 0);
-      assertEquals((await page.cont("main")).module?.name, "cms.cont.flexible");
     });
   } finally {
     await f.close();

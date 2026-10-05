@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { fs, getCtx } from "@qino/qino";
+import { fs } from "@qino/qino";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 
 import type { Node } from "@qino/qino/cms";
@@ -22,41 +22,27 @@ const read = (source: URL) => source.protocol === "file:" ? fs.text(fileURLToPat
   return r.text();
 });
 
-/** App-wide layout files; site JavaScript replaces the shipped navigation script. */
+/** The app-wide layout files: shared by every page using the layout. */
 export function codeFiles(node: Node) {
-  const mod = node.module!;
-  const template = moduleTemplate(mod);
+  const template = moduleTemplate(node.module!);
   return {
-    src: template.file,
+    html: template.file,
     css: template.css,
-    js: `${mod.data}pub/main.js`,
-    shipped: template.shipped,
 
-    /** First edit creates the template/CSS once; explicitly opening a file creates that file. */
-    async create(key?: "src" | "css" | "js") {
-      if (!key) return template.create(INITIAL_CSS);
-      if (await fs.isFile(this[key])) return;
-      const content = key === "css" ? INITIAL_CSS : await read(key === "src" ? template.shipped : new URL("pub/navigation.js", mod.source));
-      await fs.mkdir(`${mod.data}pub/`);
-      await fs.write(this[key], content, { createNew: true }).catch(async (error) => {
-        if (!await fs.isFile(this[key], { ttl: 0 })) throw error;
-      });
+    /** The site's copy once, on first edit; a file deleted later stays deleted and falls back. */
+    create: () => template.create(INITIAL_CSS),
+
+    /** The site's file, else its starting point. */
+    async read(key: "html" | "css") {
+      if (await fs.isFile(this[key])) return fs.text(this[key]);
+      return key === "css" ? INITIAL_CSS : read(template.shipped);
     },
 
-    /** Called after u2; content modules may add their own assets afterward. */
-    async addAssets() {
-      const html = getCtx().res.html;
-      const layoutCss = mod.modUrl + "pub/main.css";
-      const siteCss = mod.dataUrl + "pub/main.css";
-      html.styles.delete(layoutCss);
-      html.styles.delete(siteCss);
-      html.styles.add(layoutCss);
-      if (await fs.isFile(this.css)) html.styles.add(siteCss);
-      const shippedJs = mod.modUrl + "pub/navigation.js";
-      const siteJs = mod.dataUrl + "pub/main.js";
-      html.scripts.delete(shippedJs);
-      html.scripts.delete(siteJs);
-      html.scripts.add(await fs.isFile(this.js) ? siteJs : shippedJs);
+    /** Opening a missing file in the editor writes its starting point first. */
+    async open(key: "html" | "css") {
+      if (await fs.isFile(this[key], { ttl: 0 })) return;
+      await fs.mkdir(this[key].replace(/[^/]+$/, ""));
+      await fs.write(this[key], await this.read(key), { createNew: true }).catch(() => {});
     },
   };
 }

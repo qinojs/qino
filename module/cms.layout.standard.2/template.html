@@ -2,12 +2,10 @@
   <a class=-skip href=#content>Skip to content</a>
   <header id=head>
     <div class="u2-width u2-flex -Between">
-      <a cms-link=parent(1) aria-label="{{identity.name|Home}}">
-        {{identity.brand.logo}}<span>{{identity.name|Home}}</span>
-      </a>
-      <button type=button class=-open popovertarget=head-nav hidden>Menu</button>
-      <div id=head-nav>
-        <button type=button class=-close popovertarget=head-nav popovertargetaction=hide hidden>Close</button>
+      <a cms-link=parent(1)>{{identity.brand.logo}}<span>{{identity.name|Home}}</span></a>
+      <button type=button class=-open popovertarget=head-nav>Menu</button>
+      <div id=head-nav popover>
+        <button type=button class=-close popovertarget=head-nav popovertargetaction=hide>Close</button>
         <cms-cont name=nav module=cms.cont.nav4 node=layout />
       </div>
     </div>
