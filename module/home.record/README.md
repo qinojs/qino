@@ -30,10 +30,15 @@ strings are accepted only if nonempty and finite; booleans are not numeric gauge
 Unit/type/mapping are immutable per datapoint. Mismatched units, unmapped states and unavailable
 entities produce null. Metadata and credentials are never repeated in measurement rows.
 
-`home:observe` captures actual changes and initial/reconnection snapshots. Snapshot time is Qino's
-observation time; changes use the source update time when supplied. Selection and recorder startup capture one current
-observation. Startup reads run in the background; snapshots do not trigger change rules. Reading cached states periodically never invents new measurements. Repeated timestamps
-replace the value atomically; late observations enter history without changing a newer current cache.
+`home:observe` captures actual changes and initial/reconnection snapshots; changes use the source
+update time when supplied. Selection and recorder startup capture one current observation in the
+background, without change rules. Repeated timestamps replace the value atomically; late observations
+enter history without changing a newer current cache.
+
+Rows are written only when something is learned: an unchanged value is skipped until the expected
+interval has passed (then one row confirms the stream is alive), a repeated null is always skipped,
+and no null precedes the first value. With interval zero, a steady value costs a single row. The
+check runs inside the insert against the datapoint's cached latest value; late values are never skipped.
 `record()` rejects datapoints that are not recorded; the insert re-checks the flag, so a selection
 stopped concurrently never writes.
 

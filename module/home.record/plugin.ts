@@ -13,26 +13,26 @@ export { api } from "./api.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 const key = (provider: number, entity: string) => `${provider} ${entity}`;
-const time = (entity: Entity | null) => entity?.updated === undefined ? Date.now() : Date.parse(entity.updated);
+const updated = (entity: Entity | null) => entity?.updated === undefined ? Date.now() : Date.parse(entity.updated);
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   let recorded = new Map<string, Datapoint[]>();
   const load = async () => {
     recorded = new Map();
     for (const point of await datapoints(app)) {
-      const id = key(point.provider, point.entity);
-      if (point.record) recorded.set(id, [...recorded.get(id) ?? [], point]);
+      const at = key(point.provider, point.entity);
+      if (point.record) recorded.set(at, [...recorded.get(at) ?? [], point]);
     }
   };
-  const capture = (point: Datapoint, entity: Entity | null, at: number) => signal.aborted ? undefined
-    : write(app, point, value(point, entity), at).catch((error) => console.error("home.record:", error));
+  const capture = (point: Datapoint, entity: Entity | null, time: number) => signal.aborted ? undefined
+    : write(app, point, value(point, entity), time).catch((error) => console.error("home.record:", error));
   // Adapters that connected before this listener existed: take one current observation.
   const snapshot = (points: Datapoint[]) => {
     for (const provider of new Set(points.map((point) => point.provider))) {
       entities(app, provider).then((current) => {
         for (const point of points.filter((point) => point.provider === provider)) {
           const entity = current.find((entity) => entity.id === point.entity) ?? null;
-          capture(point, entity, time(entity));
+          capture(point, entity, updated(entity));
         }
       }).catch((error) => console.error("home.record:", error));
     }

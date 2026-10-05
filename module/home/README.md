@@ -39,7 +39,8 @@ await call(app, provider, "light.turn_on", { entities: ["light.kitchen"], data: 
 SDK functions are trusted server access; `provider()` and `providers()` include credentials, `redact()`
 removes schema fields marked `writeOnly`. All public API routes are superuser-only and redacted;
 unlinked adapter configuration is hidden entirely. Empty secret inputs preserve saved values.
-Endpoints such as a URL are ordinary adapter configuration. `entities()` without a provider leaves
+`adapter(app, name)` resolves a linked implementation, `active(app, provider)` the adapter serving an
+enabled provider. Endpoints such as a URL are ordinary adapter configuration. `entities()` without a provider leaves
 out providers that fail; ask one provider to see its error.
 
 ## APIs and rules

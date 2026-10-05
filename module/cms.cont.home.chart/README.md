@@ -16,8 +16,10 @@ publishes the datapoint: page access decides who sees it. No provider credential
 | `consumption` | Sum valid cumulative-counter differences per chart interval. |
 | `maxGap` | Maximum source interval in seconds; zero uses datapoint interval policy. |
 
-The form accepts explicit ISO timestamps with timezone. The server requests at most 700 time buckets;
-SVG positions follow elapsed time. Gauge means retain min/max envelopes. Nulls and incomplete buckets
+Buttons show the last hour, day, week, month or year, or move the period one length earlier or later;
+date/time fields take the viewer's local time. Times are shown localized via `<u2-time>`. The server
+requests at most 700 time buckets; SVG positions follow elapsed time; line, dots and min/max envelope
+are one path each. Gauge means retain min/max envelopes. Nulls and incomplete buckets
 interrupt paths. The expandable table exposes plotted values; an asterisk marks incomplete buckets.
 Counter resets are not counted as consumption. Partial totals are marked, never presented as complete.
 Consumption retains the counter unit; it is not a rate. No interpolation or reset compensation is inferred.

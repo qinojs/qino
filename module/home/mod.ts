@@ -47,6 +47,9 @@ export function adapters(app: App): Adapter[] {
   return all;
 }
 
+export const adapter = (app: App, name: string): Adapter | undefined =>
+  adapters(app).find((adapter) => adapter.name === name);
+
 const decode = (row: Provider): Provider => ({
   ...row, id: Number(row.id), enabled: Boolean(row.enabled),
   config: typeof row.config === "string" ? JSON.parse(row.config) : row.config,
@@ -76,7 +79,7 @@ function readable(value: unknown, schema: Record<string, unknown>): unknown {
 
 /** Public view: write-only fields are removed, configuration of unlinked adapters is hidden entirely. */
 export function redact(app: App, row: Provider): Provider {
-  const schema = adapters(app).find((adapter) => adapter.name === row.adapter)?.schema;
+  const schema = adapter(app, row.adapter)?.schema;
   return { ...row, config: schema ? readable(row.config, schema) as Record<string, unknown> : {} };
 }
 
@@ -101,7 +104,7 @@ function merge(input: unknown, previous: unknown, schema: Record<string, unknown
 export async function save(app: App, input: {
   id?: number; name: string; adapter: string; config?: Record<string, unknown>; enabled?: boolean;
 }): Promise<number> {
-  const selected = adapters(app).find((adapter) => adapter.name === input.adapter);
+  const selected = adapter(app, input.adapter);
   if (!selected) throw new ApiError(400, "Home adapter is not linked");
   if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 191)
     throw new ApiError(400, "Invalid provider name");
@@ -118,7 +121,7 @@ export async function save(app: App, input: {
     enabled: input.enabled ?? previous?.enabled ?? true,
   };
   const id = await app.db.unit(async () => {
-    if (previous) { await app.db.table("home_provider").ensure({ id: previous.id, ...values }); return previous.id; }
+    if (previous) { await app.db.table("home_provider").update(previous.id, values); return previous.id; }
     return Number(await app.db.table("home_provider").insert(values));
   });
   await app.fire("home:provider", { id, adapter: input.adapter, previousAdapter: previous?.adapter });
@@ -141,34 +144,30 @@ export async function remove(app: App, id: number): Promise<void> {
   await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
 
-async function selected(app: App, id: number) {
+/** The adapter serving an enabled provider. */
+export async function active(app: App, id: number): Promise<Adapter> {
   const row = await provider(app, id);
   if (!row.enabled) throw new ApiError(503, "Home provider is disabled");
-  const adapter = adapters(app).find((adapter) => adapter.name === row.adapter);
-  if (!adapter) throw new ApiError(503, "Home adapter is not linked");
-  return { row, adapter };
+  return adapter(app, row.adapter) ?? Promise.reject(new ApiError(503, "Home adapter is not linked"));
 }
 
 /** Without an ID, enabled providers that fail (offline, unlinked) are left out; query one to see its error. */
 export async function entities(app: App, id?: number): Promise<(Entity & { provider: number })[]> {
   const ids = id === undefined ? (await providers(app)).filter((row) => row.enabled).map((row) => row.id) : [id];
   const results = await Promise.allSettled(ids.map(async (id) => {
-    const { adapter } = await selected(app, id);
-    return (await adapter.entities(app, id)).map((entity) => ({ ...entity, provider: id }));
+    return (await (await active(app, id)).entities(app, id)).map((entity) => ({ ...entity, provider: id }));
   }));
   if (id !== undefined && results[0].status === "rejected") throw results[0].reason;
   return results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
 }
 
 export async function actions(app: App, id: number) {
-  const { adapter } = await selected(app, id);
-  return (await adapter.actions(app, id)).map((action) => ({ ...action, provider: id }));
+  return (await (await active(app, id)).actions(app, id)).map((action) => ({ ...action, provider: id }));
 }
 
 /** Dispatch once. A failed or interrupted action is never automatically replayed. */
 export async function call(app: App, id: number, action: string, input: Call = {}): Promise<unknown> {
-  const { adapter } = await selected(app, id);
-  return adapter.call(app, id, action, input);
+  return (await active(app, id)).call(app, id, action, input);
 }
 
 /** Publish an observation without triggering change rules, e.g. an initial provider snapshot. */

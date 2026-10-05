@@ -19,7 +19,7 @@ A failed provider does not hide healthy ones. Refresh reads current observations
 Actions show discovered fields and accept optional entity targets plus an input JSON object. Calls
 go to the adapter once; acknowledgement is distinct from the resulting observed device state.
 
-Each live entity can create a datapoint with name, unit, numeric/state datatype, explicit state-code
+Each live entity prefills the shared Add datapoint form with name, unit, numeric/state datatype, explicit state-code
 mapping, expected reporting interval and recording flag. Existing datapoint interpretation is
 read-only; name/interval/recording remain editable. The datapoint table can stop/resume selections
 while disconnected. Install `home.record` to persist measurements and `cms.cont.home.chart` for plots.

@@ -1,5 +1,5 @@
 import { ApiError, NotFoundError } from "@qino/qino";
-import { adapters, datapoint, provider, value } from "@qino/qino/home";
+import { active, datapoint, value } from "@qino/qino/home";
 
 import type { App } from "@qino/qino";
 import type { Datapoint } from "@qino/qino/home";
@@ -28,12 +28,10 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
   if (source !== "provider") await app.fire("home.history:read", request);
   if (request.data !== undefined) return { datapoint: point, samples: request.data };
   if (source === "local") throw new NotFoundError("Local home history is not linked");
-  const row = await provider(app, point.provider);
-  if (!row.enabled) throw new ApiError(503, "Home provider is disabled");
-  const adapter = adapters(app).find((adapter) => adapter.name === row.adapter);
-  if (!adapter?.history) throw new ApiError(501, "Home adapter does not support upstream history");
+  const adapter = await active(app, point.provider);
+  if (!adapter.history) throw new ApiError(501, "Home adapter does not support upstream history");
   const range = { start: new Date(start).toISOString(), end: new Date(end).toISOString() };
-  const observations = await adapter.history(app, row.id, point.entity, range);
+  const observations = await adapter.history(app, point.provider, point.entity, range);
   if (observations.length > limit) throw new ApiError(413, "Upstream history exceeds the sample limit; narrow the period");
   const samples = observations.map((entity) => ({ time: Date.parse(entity.updated ?? ""), value: value(point, entity) }))
     .filter((sample) => Number.isFinite(sample.time) && sample.time >= start && sample.time < end)
