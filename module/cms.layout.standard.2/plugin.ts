@@ -18,6 +18,7 @@ const U2_ASSETS = [
 ];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
   const files = codeFiles(node);
   if (await node.edit()) await files.create();
 
