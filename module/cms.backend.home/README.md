@@ -4,6 +4,9 @@ This module's design, behaviour and structure are provisional and may be reworke
 Real-world use will show how it is actually used and how it should work.
 
 Optional CMS backend for provider instances, live observations, commands and datapoint selection.
+It starts with the providers; a provider's page (`?provider=`) has its live values, datapoints and
+actions, a datapoint's page (`?datapoint=`) its source, live and last values, a chart of the last day
+(drawn by `cms.cont.home.chart`) and its latest samples. Values that already are datapoints link to them.
 Its normal installer creates a Home automation page with a house icon. Install alongside `home`
 and an adapter; Home Assistant is optional. Rules remain in `sandbox.flow`, schedules in `cron`.
 
@@ -14,7 +17,9 @@ Write-only secrets stay empty; blank inputs preserve stored values. Unlinked ada
 provider metadata and can be disabled. The page has four views (`?show=live|datapoints|actions|providers`),
 each a cms-part; small forms (provider settings, datapoints, measurements, attributes) open in u2 dialogs.
 
-Live states retain their native types and include availability, update time and expandable metadata.
+The live view lists every entity's state as one row with its address; a search also finds attribute leaves
+(`light.kitchen/brightness`), and searching `/` lists all of them. Live and datapoint views have a
+search and a provider filter, kept in the page address; more than 200 values ask to narrow the search.
 A failed provider does not hide healthy ones. Refresh reads current observations without polling.
 The actions view lists each provider's stored commands (run, edit, delete) above one action form. The
 form offers only the action's own targets and builds its data fields from the action's `input` schema
@@ -23,7 +28,7 @@ parameter shows a value field next to Run: typed when the action's schema descri
 read as JSON where it parses (`153`, `true`) and as text otherwise. Calls go to the adapter
 once; acknowledgement is distinct from the resulting observed device state.
 
-Each live entity opens the Add datapoint dialog prefilled with name, unit, numeric/state datatype, explicit state-code
+Each live value opens the Add datapoint dialog prefilled with address, name, unit, numeric/state datatype, explicit state-code
 mapping, expected reporting interval and recording flag. Existing datapoint interpretation is
 read-only; name/interval/recording remain editable. The datapoint table can stop/resume selections
 while disconnected. Install `home.record` to persist measurements and `cms.cont.home.chart` for plots.

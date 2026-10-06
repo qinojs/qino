@@ -24,8 +24,11 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
       if (point.record) recorded.getOrInsert(at, []).push(point);
     }
   };
-  const capture = (point: Datapoint, entity: Entity | null, time: number) => signal.aborted ? undefined
-    : write(app, point, value(point, entity), time).catch((error) => console.error("home.record:", error));
+  const capture = (point: Datapoint, entity: Entity | null, time: number, reported = false) => {
+    if (signal.aborted) return;
+    return write(app, point, value(point, entity), time, { reported })
+      .catch((error) => console.error("home.record:", error));
+  };
   // Adapters that connected before this listener existed: take one current observation.
   const snapshot = (points: Datapoint[]) => {
     for (const provider of new Set(points.map((point) => point.provider))) {
@@ -40,6 +43,11 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   await load();
   app.on("home:observe", async ({ provider, id, entity, time }) => {
     for (const point of recorded.get(key(provider, id)) ?? []) await capture(point, entity, time);
+  }, { signal });
+  // A change report follows its observation at the same time: the row is replaced, not repeated.
+  app.on("home:change", async ({ provider, id, entity }) => {
+    const time = updated(entity);
+    for (const point of recorded.get(key(provider, id)) ?? []) await capture(point, entity, time, true);
   }, { signal });
   app.on("home:datapoint", async ({ id }) => {
     const known = [...recorded.values()].flat().some((point) => point.id === id);

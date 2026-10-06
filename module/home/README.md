@@ -13,8 +13,12 @@ adapters implement protocols; `sandbox.flow` owns rules and `cron` owns schedule
   Multiple providers can use the same adapter. Configuration, including credentials, stays server-side.
 - **Entity**: a live logical endpoint `{ id, name, state, attributes, available, updated?, unit? }`.
   An entity is not necessarily a physical device; IDs are local to a provider.
-- **Datapoint**: a persisted numeric ID for one provider/entity and immutable datatype, unit and state
-  mapping. Name, expected reporting interval (seconds) and recording selection are editable.
+- **Value address**: every value of an entity has an address: the entity for its state, `entity/path`
+  for an attribute leaf, nested objects joined by `/` (`light.kitchen/brightness`, `plug/ENERGY/Power`).
+  `leaves(entity)` lists them, `at(entity, path)` reads one; lists stay one value.
+- **Datapoint**: a persisted numeric ID for one value address and immutable datatype, unit and state
+  mapping. An entity's unit describes its state; attribute datapoints declare their own.
+  Name, expected reporting interval (seconds) and recording selection are editable.
   Latest recorded value/time are cached separately from historical observations.
 - **Measurement**: datapoint ID, Unix milliseconds and typed value, or null for an unavailable observation.
   Optional `home.record` owns these tables. `home.history` queries local or upstream archives.
@@ -72,9 +76,11 @@ disable them to preserve identity and archive access. Changing an existing datap
 requires a new datapoint; posting an existing interpretation reuses its datapoint. Changing a
 referenced provider's adapter requires a new provider.
 
-`home:observe` carries `{ provider, id, entity, time }` for the recorder. `home:change` carries
-`{ provider, id, entity, previous }` for rules. `changed()` publishes both; `observed()` publishes
-only an observation. Snapshots and lost connections enter history without synthetic change rules:
+`home:observe` carries `{ provider, id, entity, time }` for the recorder. Reports of a source carry
+`{ provider, id, entity, previous, changed }` for rules, `changed` being the paths whose values differ
+(`""` for the state): `home:input` fires for every report, so each press of a button counts even when
+it equals the last; `home:change` only when `changed` is not empty. `reported()` publishes all three,
+`observed()` only an observation. Snapshots and lost connections enter history without reports:
 a lost connection is observed as unavailable entities, a deliberate close (disable, unlink) not at all.
 Creation/removal use null `previous`/`entity`.
 Commands are sent once; acknowledgements do not fabricate observed state or replay failed actions.
@@ -89,7 +95,7 @@ listen(app, {
   test: false, // Omit while testing to record writes without execution.
   steps: [
     { fn: (e) => e.provider === provider && e.id === "binary_sensor.kitchen_motion"
-      && e.entity?.available && e.entity.state === "on" && e.previous?.state !== "on" },
+      && e.changed.includes("") && e.entity?.available && e.entity.state === "on" },
     { fn: async (_e, { tools }) => {
       await tools.home_provider_action_post({ provider, action: "light.turn_on", entities: ["light.kitchen"] });
       return true;
@@ -98,8 +104,8 @@ listen(app, {
 }, { signal });
 ```
 
-Use an existing superuser as owner and an explicit provider ID in persisted rules. Filter transitions to avoid
-feedback loops. Device events arrive outside their initiating flow; local suppression does not
+Use an existing superuser as owner and an explicit provider ID in persisted rules. Listen to `home:input`
+for events such as button presses, to `home:change` for states. Filter transitions to avoid feedback loops. Device events arrive outside their initiating flow; local suppression does not
 cover them. Rules require Qino to run; missed events are not replayed.
 
 ## Add an adapter
@@ -107,7 +113,7 @@ cover them. Rules require Qino to run; missed events are not replayed.
 Export `homeProvider` from `plugin.ts` with a dependency on `home`:
 
 ```ts
-import { changed, observed } from "@qino/qino/home";
+import { observed, reported } from "@qino/qino/home";
 import type { Adapter } from "@qino/qino/home";
 
 export const homeProvider: Adapter = {
@@ -117,7 +123,7 @@ export const homeProvider: Adapter = {
   call: (app, id, action, input) => connection(app, id).call(action, input),
 };
 // Initial state: await observed(app, provider, entity.id, entity, Date.now());
-// Actual change: await changed(app, provider, entity.id, entity, previous);
+// Every report of the source: await reported(app, provider, entity.id, entity, previous);
 ```
 
 An optional JSON schema describes instance configuration, including URL and write-only secrets.

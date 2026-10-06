@@ -43,7 +43,7 @@ connects to `<base>/api/websocket`. Allow the Home Assistant host in Deno's netw
 
 - Authenticates, subscribes to `state_changed`, then loads states. Changes during
   loading are buffered; initial snapshots enter history via `home:observe` without synthetic change rules.
-  A lost connection reports its entities as unavailable the same way, without `home:change`.
+  A lost connection reports its entities as unavailable the same way, without `home:input`/`home:change`.
 - Maps Home Assistant entities to logical home entities. Native state strings and attributes are
   preserved; `unknown` and `unavailable` are reported with `available: false`.
 - Discovers actions via `get_services`, including their native field metadata. Action IDs are
@@ -63,5 +63,16 @@ Home Assistant state strings and action IDs remain native, avoiding incomplete h
 Service field selectors become the action's JSON schema (plain values; others stay free-form JSON),
 and a service's target domains select its `targets` from the current entities. No device protocols, Home Assistant automations, scenes or database tables
 are duplicated in Qino. See [home](../home/) for an example flow and the provider contract.
+
+## Troubleshooting
+
+**Bluetooth events missing (BTHome buttons, e.g. a Puck.js).** If Home Assistant hears a Bluetooth device
+only about every 10 s and presses get lost, check the host adapter before Qino: some built-in adapters
+(seen with Realtek `0bda:c123`, a combined Wi-Fi/Bluetooth chip) filter duplicates per device and report
+each device once per Linux LE scan cycle of 10.24 s. Measured: of presses every 6 s, 5–7 of 10 arrived, in a
+~10.5 s rhythm; varying the advertisement content did not help. Qino recorded every event Home Assistant
+reported. Fix: an ESPHome Bluetooth proxy (ESP32) or a USB dongle recommended by Home Assistant. Workaround
+on the device: keep advertising an event for longer than a scan cycle (12 s); presses closer together then
+merge into the last one.
 
 Protocol reference: [Home Assistant WebSocket API](https://developers.home-assistant.io/docs/api/websocket/).

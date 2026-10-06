@@ -5,11 +5,14 @@ import type { Datapoint } from "@qino/qino/home";
 
 /**
  * Unchanged values are skipped until the expected interval has passed, so steady streams cost a row
- * per interval instead of one per report; repeated nulls are skipped entirely. Both statements read
+ * per interval instead of one per report; repeated nulls are skipped entirely. `reported` values, those
+ * of an entity the source reported as changed, are always written. Both statements read
  * the same, still unchanged cache row and re-check the recording flag, so a selection stopped
  * concurrently never writes.
  */
-export async function write(app: App, point: Datapoint, value: number | null, time: number): Promise<void> {
+export async function write(
+  app: App, point: Datapoint, value: number | null, time: number, { reported = false } = {},
+): Promise<void> {
   if (!Number.isSafeInteger(time) || !Number.isFinite(new Date(time).getTime()))
     throw new ApiError(400, "Invalid measurement time");
   const state = point.type === "state" && value !== null && (!Number.isInteger(value) || value < -128 || value > 127);
@@ -20,7 +23,9 @@ export async function write(app: App, point: Datapoint, value: number | null, ti
   const same = value === null ? sql`value IS NULL AND (time IS NULL OR ${time} >= time)`
     : sql`value IS NOT NULL AND value = ${value} AND ${time} >= time
       AND (${interval} = 0 OR ${time} - time < ${interval} * 1000)`;
-  const fresh = sql`id = ${point.id} AND record = ${true} AND NOT (${same})`;
+  // A value the source reported with a change is a measurement even if equal: each press of a button.
+  const fresh = reported ? sql`id = ${point.id} AND record = ${true}`
+    : sql`id = ${point.id} AND record = ${true} AND NOT (${same})`;
   const conflict = app.db.dialect === "mysql"
     ? sql`ON DUPLICATE KEY UPDATE value = ${value}`
     : sql`ON CONFLICT (datapoint, time) DO UPDATE SET value = ${value}`;

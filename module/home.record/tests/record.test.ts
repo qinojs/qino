@@ -1,6 +1,6 @@
 import { App, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
-import { changed, observed, configure, datapoint, save, value } from "@qino/qino/home";
+import { reported, observed, configure, datapoint, save, value } from "@qino/qino/home";
 import { history } from "@qino/qino/home.history";
 
 import { record } from "../mod.ts";
@@ -97,12 +97,12 @@ Deno.test("recording follows source observations, records gaps and removes liste
     app.on("home:change", () => { changes++; });
     await observed(app, provider, entity.id, entity, start);
     assertEquals(changes, 0);
-    await changed(app, provider, entity.id, entity, null);
-    await changed(app, provider, entity.id, { ...entity, available: false, updated: new Date(start + 1).toISOString() }, entity);
+    await reported(app, provider, entity.id, entity, null);
+    await reported(app, provider, entity.id, { ...entity, available: false, updated: new Date(start + 1).toISOString() }, entity);
     assertEquals((await history(app, id, period)).samples, [{ time: start, value: 5 }, { time: start + 1, value: null }]);
     app.modules.unlink("home.record");
     const count = await app.db.one`SELECT COUNT(*) FROM home_number`;
-    await changed(app, provider, entity.id, { ...entity, updated: new Date(start + 2).toISOString() }, entity);
+    await reported(app, provider, entity.id, { ...entity, updated: new Date(start + 2).toISOString() }, entity);
     assertEquals(await app.db.one`SELECT COUNT(*) FROM home_number`, count);
   } finally { await close(); }
 });
@@ -177,5 +177,30 @@ Deno.test("starting the recorder after a ready provider captures a snapshot with
     for (let i = 0; i < 100 && (await datapoint(app, id)).value !== 12; i++) await new Promise((resolve) => setTimeout(resolve, 1));
     assertEquals((await datapoint(app, id)).value, 12);
     assertEquals(changes, 0);
+  } finally { await close(); }
+});
+
+Deno.test("each reported press of a button is a measurement, even when it repeats", async () => {
+  const { app, provider, close } = await fixture();
+  try {
+    // After the recorder's own snapshot at selection time, which a provider without entities records as a gap.
+    const start = Date.now() + 1000;
+    const period = {
+      start: new Date(start).toISOString(), end: new Date(start + 60_000).toISOString(), source: "local" as const,
+    };
+    const mapping = { press: 1, double_press: 2 };
+    const id = await configure(app, {
+      provider, entity: "event.button", path: "event_type", type: "state", mapping, record: true,
+    });
+    const press = (at: number, event_type: string) =>
+      ({ id: "event.button", name: "Button", state: new Date(at).toISOString(), attributes: { event_type }, available: true,
+        updated: new Date(at).toISOString() });
+    await reported(app, provider, "event.button", press(start, "press"), null);
+    await reported(app, provider, "event.button", press(start + 10, "press"), press(start, "press"));
+    await reported(app, provider, "event.button", press(start + 20, "double_press"), press(start + 10, "press"));
+    // A snapshot of the same value learns nothing.
+    await observed(app, provider, "event.button", press(start + 20, "double_press"), start + 30);
+    assertEquals((await history(app, id, period)).samples,
+      [{ time: start, value: 1 }, { time: start + 10, value: 1 }, { time: start + 20, value: 2 }]);
   } finally { await close(); }
 });

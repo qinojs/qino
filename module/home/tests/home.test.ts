@@ -2,8 +2,8 @@ import { App, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import {
-  actions, call, changed, command, commands, configure, entities, provider, providers, remove, removeCommand, run, save,
-  saveCommand,
+  actions, call, command, commands, configure, entities, provider, providers, remove, removeCommand, run, save,
+  reported, saveCommand, value, leaves, at, datapoint,
 } from "../mod.ts";
 import { api } from "../plugin.ts";
 
@@ -99,9 +99,9 @@ Deno.test("home observations and cleanup remain isolated between Apps", async ()
     one.app.on("home:change", (event) => { seen.push(event); }, { signal: controller.signal });
     two.app.on("home:change", (event) => { other.push(event); });
     const entity = { id: "same", name: "Endpoint", state: false, attributes: {}, available: true };
-    await changed(one.app, 1, "same", entity, null);
+    await reported(one.app, 1, "same", entity, null);
     controller.abort();
-    await changed(one.app, 1, "same", null, entity);
+    await reported(one.app, 1, "same", null, entity);
     assertEquals(seen.length, 1);
     assertEquals(other.length, 0);
     assertEquals(await providers(two.app), []);
@@ -133,5 +133,30 @@ Deno.test("home stores commands as named action calls and runs them with run-tim
     await removeCommand(app, id);
     assertEquals(await commands(app), []);
     await remove(app, provider);
+  } finally { await close(); }
+});
+
+Deno.test("home addresses every value of an entity by path and reports input and change apart", async () => {
+  const { app, close } = await fixture();
+  try {
+    const entity = {
+      id: "light.kitchen", name: "Kitchen", state: "on", available: true, unit: "%",
+      attributes: { brightness: 120, ENERGY: { Power: 12 }, colors: [1, 2] },
+    };
+    assertEquals(leaves(entity), [["", "on"], ["brightness", 120], ["ENERGY/Power", 12], ["colors", [1, 2]]]);
+    assertEquals([at(entity, ""), at(entity, "ENERGY/Power"), at(entity, "missing/x")], ["on", 12, undefined]);
+    const provider = await save(app, input);
+    // A path is part of the source; the entity's unit describes only its state.
+    const id = await configure(app, { provider, entity: entity.id, path: "ENERGY/Power", unit: "W", record: true });
+    const point = await datapoint(app, id);
+    assertEquals([point.path, point.name, value(point, entity)], ["ENERGY/Power", "light.kitchen/ENERGY/Power", 12]);
+    assertEquals(await configure(app, { provider, entity: entity.id, path: "ENERGY/Power", unit: "W" }), id);
+    await assertRejects(() => configure(app, { provider, entity: entity.id, path: "a//b" }), Error, "Invalid");
+    const inputs: unknown[] = [], changes: { changed: string[] }[] = [];
+    app.on("home:input", (event) => { inputs.push(event); });
+    app.on("home:change", (event) => { changes.push(event); });
+    await reported(app, provider, entity.id, entity, entity);
+    await reported(app, provider, entity.id, { ...entity, attributes: { ...entity.attributes, brightness: 80 } }, entity);
+    assertEquals([inputs.length, changes.map((event) => event.changed)], [2, [["brightness"]]]);
   } finally { await close(); }
 });

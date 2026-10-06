@@ -17,9 +17,12 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   let release: ((result: unknown) => void) | undefined;
   const root = {
     addEventListener: (name: string, listener: typeof listeners[string]) => { listeners[name] = listener; },
-    querySelector: () => ({ getAttribute: () => "live", set innerHTML(_value: string) { refreshes++; } }),
+    querySelector: () => ({ getAttribute: () => "live", addEventListener: () => {} }),
   };
-  const cms = { el: { nid: () => "5" }, initNode: (_name: string, init: (el: unknown) => void) => init(root) };
+  const cms = {
+    el: { nid: () => "5" }, initNode: (_name: string, init: (el: unknown) => void) => init(root),
+    reloadPart: () => { refreshes++; return Promise.resolve(); },
+  };
   const api = { cms: { node: () => ({
     api: { post: (input: unknown) => { calls.push(input); return new Promise((resolve) => { release = resolve; }); } },
     html: { part: () => ({ get: () => Promise.resolve("") }) },
@@ -27,7 +30,9 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   const helper = await Deno.readTextFile(new URL("../../cms.backend/pub/js/node.mjs", import.meta.url));
   const nodePanel = new Function("api", "cms", "show", helper.replace(/^import[^\n]*\n/, "").replace("export function", "function")
     .replace(/const alert = async[^\n]*/, "const alert = show;") + "\nreturn nodePanel;")(api, cms, (message: string) => { messages.push(message); });
-  new Function("cms", "nodePanel", "dataOf", "read", source.replace(/^import[^\n]*\n/gm, ""))(cms, nodePanel, dataOf, read);
+  new Function("cms", "nodePanel", "dataOf", "read", "location", source.replace(/^import[^\n]*\n/gm, ""))(
+    cms, nodePanel, dataOf, read, "https://example.test/backend?show=live",
+  );
   let target: unknown = form;
   const event = { target: { closest: () => target }, preventDefault: () => { prevented++; } };
   const first = listeners.submit(event);
@@ -94,7 +99,7 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   assertEquals(messages.at(-1), "Enter a valid value and time");
   target = {
     dataset: { provider: "0", entity: "" }, hasAttribute: (name: string) => name === "data-datapoint",
-    elements: { provider: { value: "2" }, entity: { value: "" }, name: { value: "Temperature" }, unit: { value: "°C" }, type: { value: "number" }, interval: { valueAsNumber: 0 }, record: { checked: true } },
+    elements: { provider: { value: "2" }, entity: { value: "" }, path: { value: "" }, name: { value: "Temperature" }, unit: { value: "°C" }, type: { value: "number" }, interval: { valueAsNumber: 0 }, record: { checked: true } },
     querySelectorAll: () => [], querySelector: () => button, closest: () => null,
   };
   const created = listeners.submit(event);

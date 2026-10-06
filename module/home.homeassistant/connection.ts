@@ -1,5 +1,5 @@
 import { ApiError } from "@qino/qino";
-import { changed, observed, providers } from "@qino/qino/home";
+import { observed, providers, reported } from "@qino/qino/home";
 
 import type { App } from "@qino/qino";
 import type { Action, Call, Entity } from "@qino/qino/home";
@@ -206,8 +206,8 @@ export class Connection {
     if (state && current && Date.parse(state.last_updated) < Date.parse(current.last_updated)) return;
     if (state) this.#states.set(change.entity_id, state);
     else this.#states.delete(change.entity_id);
-    changed(this.#app, this.#provider, change.entity_id, state ? entityOf(state) : null,
-      change.old_state ? entityOf(change.old_state) : null).catch((e) => console.error("home:change listener:", e));
+    reported(this.#app, this.#provider, change.entity_id, state ? entityOf(state) : null,
+      change.old_state ? entityOf(change.old_state) : null).catch((e) => console.error("home:input listener:", e));
   }
 
   #request<T = unknown>(command: Record<string, unknown>): Promise<T> {

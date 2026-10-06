@@ -1,6 +1,6 @@
 import { App } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
-import { changed, commands, entities, save, saveCommand } from "@qino/qino/home";
+import { reported, commands, entities, save, saveCommand } from "@qino/qino/home";
 
 import { apply, homeProvider, saveVirtual, virtuals } from "../mod.ts";
 
@@ -71,10 +71,15 @@ Deno.test("virtual entities pass on their source's observations and changes", as
     let observations = 0;
     app.on("home:observe", (event) => { if (event.provider === provider) observations++; });
     const entity = { id: "sensor.x", name: "X", state: "on", attributes: {}, available: true };
-    await changed(app, source, "sensor.x", entity, null);
-    assertEquals(seen, [{ provider, id: String(id), entity: { ...entity, id: String(id), name: "Mirror" }, previous: null }]);
-    assertEquals(observations, 1);
-    await changed(app, source, "sensor.other", entity, null);
+    await reported(app, source, "sensor.x", entity, null);
+    const mirrored = { ...entity, id: String(id), name: "Mirror" };
+    assertEquals(seen, [{ provider, id: String(id), entity: mirrored, previous: null, changed: [""] }]);
+    let inputs = 0;
+    app.on("home:input", (event) => { if (event.provider === provider) inputs++; });
+    await reported(app, source, "sensor.x", entity, entity); // reported again, unchanged: input only
+    assertEquals([seen.length, inputs], [1, 1]);
+    assertEquals(observations, 2);
+    await reported(app, source, "sensor.other", entity, null);
     assertEquals(seen.length, 1);
   } finally { await close(); }
 });

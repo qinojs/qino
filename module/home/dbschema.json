@@ -51,6 +51,11 @@
             "type": "string",
             "maxLength": 191
           },
+          "path": {
+            "type": "string",
+            "maxLength": 191,
+            "default": ""
+          },
           "identity": {
             "type": "string",
             "maxLength": 64,
@@ -100,6 +105,7 @@
           "id",
           "provider",
           "entity",
+          "path",
           "identity",
           "name",
           "unit",

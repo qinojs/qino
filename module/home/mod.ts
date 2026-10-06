@@ -2,9 +2,11 @@ import { ApiError, NotFoundError } from "@qino/qino";
 
 import { validate } from "@qino/item/tools/schema/validator.js";
 
+import { leaves } from "./datapoint.ts";
+
 import type { App } from "@qino/qino";
 
-export { configure, datapoint, datapoints, value } from "./datapoint.ts";
+export { at, configure, datapoint, datapoints, leaves, value } from "./datapoint.ts";
 export type { Datapoint } from "./datapoint.ts";
 export { command, commands, removeCommand, run, saveCommand } from "./command.ts";
 export type { Command } from "./command.ts";
@@ -186,10 +188,24 @@ export async function observed(
   await app.fire("home:observe", { provider, id, entity, time });
 }
 
-/** Publish an observation, including creation (`previous: null`) or removal (`entity: null`). */
-export async function changed(
+/** The paths whose values differ; all on creation (`previous: null`) or removal (`entity: null`). */
+export function differ(entity: Entity | null, previous: Entity | null): string[] {
+  // The state also changes when it becomes unavailable or available again.
+  const values = (of: Entity | null) => new Map(of ? leaves(of).map(([path, value]) =>
+    [path, JSON.stringify(path ? value : [of.available, value])]) : []);
+  const before = values(previous), now = values(entity);
+  return [...new Set([...before.keys(), ...now.keys()])].filter((path) => before.get(path) !== now.get(path));
+}
+
+/**
+ * Publish a report of the source, including creation (`previous: null`) or removal (`entity: null`):
+ * `home:input` for every report, `home:change` when values differ; `changed` lists their paths.
+ */
+export async function reported(
   app: App, provider: number, id: string, entity: Entity | null, previous: Entity | null,
 ): Promise<void> {
   await observed(app, provider, id, entity);
-  await app.fire("home:change", { provider, id, entity, previous });
+  const event = { provider, id, entity, previous, changed: differ(entity, previous) };
+  await app.fire("home:input", event);
+  if (event.changed.length) await app.fire("home:change", event);
 }

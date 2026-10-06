@@ -18,7 +18,9 @@ const config = s.object({
 });
 const meta = { name: s.optional(s.string()), interval: s.optional(s.number()), record: s.optional(s.boolean()) };
 const source = s.object({
-  provider: s.number(), entity: s.string(), unit: s.optional(s.string()), type: s.optional(s.string()),
+  provider: s.number(), entity: s.string(),
+  path: s.optional(s.string()).describe("Attribute leaf, e.g. brightness or ENERGY/Power; empty for the state"),
+  unit: s.optional(s.string()), type: s.optional(s.string()),
   mapping: s.optional(s.record(s.number())), ...meta,
 });
 const order = {

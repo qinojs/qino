@@ -37,7 +37,8 @@ enter history without changing a newer current cache.
 
 Rows are written only when something is learned: an unchanged value is skipped until the expected
 interval has passed (then one row confirms the stream is alive), a repeated null is always skipped,
-and no null precedes the first value. With interval zero, a steady value costs a single row. The
+and no null precedes the first value. Values of an entity the source reported as changed (`home:change`)
+are always written, at the same time as their observation: each press of a button counts, even a repeated one. With interval zero, a steady value costs a single row. The
 check runs inside the insert against the datapoint's cached latest value; late values are never skipped.
 `record()` rejects datapoints that are not recorded; the insert re-checks the flag, so a selection
 stopped concurrently never writes.

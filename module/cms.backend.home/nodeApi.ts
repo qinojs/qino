@@ -1,5 +1,5 @@
 import { ApiError, errMsg } from "@qino/qino";
-import { call, configure, enable, removeCommand, run, save, saveCommand } from "@qino/qino/home";
+import { call, configure, datapoints, enable, removeCommand, run, save, saveCommand } from "@qino/qino/home";
 import { record } from "@qino/qino/home.record";
 
 import type { App } from "@qino/qino";
@@ -19,7 +19,11 @@ export default async function api(node: Node, vars: Vars): Promise<unknown> {
       return { ok: true, message: await app.t`Provider updated.` };
     }
     if (vars.datapoint !== undefined) {
-      await configure(app, vars.datapoint as Parameters<typeof configure>[1]);
+      const input = vars.datapoint as Parameters<typeof configure>[1];
+      // A new source with an existing interpretation reuses that datapoint instead of creating one.
+      const known = input.id === undefined ? (await datapoints(app, input.provider)).map((point) => point.id) : [];
+      const id = await configure(app, input);
+      if (known.includes(id)) return { ok: true, message: `${await app.t`Existing datapoint updated`} (#${id}).` };
       return { ok: true, message: await app.t`Datapoint saved.` };
     }
     if (vars.measurement !== undefined) {

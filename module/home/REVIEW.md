@@ -79,3 +79,28 @@ That is column payload only, not total table size. A TINYINT state reduces the v
 Bounded chart queries currently aggregate raw SQL ranges. They do not provide constant-cost long-term
 queries or a precomputed aggregate cache. Raw data is not deleted automatically. A billion-row service
 requires engine-specific workload sizing, including index, log, backup and maintenance costs.
+
+## Open ideas (not urgent, not decided)
+
+Notes for later, no planned work. Revisit when a real case needs them.
+
+**Topics: a logical address.** In ims1 the reporters were built for ims1 and reported `topic → value`, so
+a topic was the technical and the logical address at once (`ims1_datapoint.topic`, unique). Here the
+provider dictates the technical address (`event.puck_ce76_taste/event_type`). The datapoint is the link:
+it could get a unique logical `topic` (e.g. `house/ground/kitchen/light`) beside its source. The topic tree
+with titles and page mapping (`ims1_topic`, `ims1_topic_page`) would be a separate module on top, once
+several flats or buildings need it.
+
+**Devices: a physical identity across providers.** Qino sees entities, not the devices behind them.
+Home Assistant's device registry has `identifiers` and `connections`, physical addresses such as
+`("bluetooth", "F3:6A:EA:74:CE:76")` or a Zigbee IEEE address, sometimes `serial_number`, `manufacturer`,
+`model`. An adapter could add an optional device with such connections to its entities. Qino could then
+recognise the same device arriving through another provider (Home Assistant today, MQTT or direct
+Bluetooth later) and let a datapoint follow its device, group the backend by device, detect replaced
+counters by serial number (as `ims1_real_counter.serial_nr`), propose templates by model, and show
+battery and last seen per device. Limits: phones randomise their Bluetooth address (only the app ID is
+stable, until a reinstall), many providers know no physical address, and one device may have several.
+
+**Stable entity references.** Datapoints and commands keep the provider's entity ID. Renaming an entity in
+Home Assistant while Qino references it breaks the reference; Home Assistant's immutable `unique_id`
+would survive renames.

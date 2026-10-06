@@ -15,11 +15,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       await observed(app, row.provider, String(row.id), view(row, entity), time);
     }
   }, { signal });
-  // changed() would observe a second time: the source's observation already arrived above.
-  app.on("home:change", async ({ provider, id, entity, previous }) => {
-    for (const row of await sourced(app, provider, id)) {
-      const [now, before] = [view(row, entity), view(row, previous)];
-      await app.fire("home:change", { provider: row.provider, id: String(row.id), entity: now, previous: before });
-    }
-  }, { signal });
+  // Reports pass on as they are: the virtual entity has the source's values, so the same paths changed.
+  for (const name of ["home:input", "home:change"]) {
+    app.on(name, async ({ provider, id, entity, previous, changed }) => {
+      for (const row of await sourced(app, provider, id)) {
+        const [now, before] = [view(row, entity), view(row, previous)];
+        await app.fire(name, { provider: row.provider, id: String(row.id), entity: now, previous: before, changed });
+      }
+    }, { signal });
+  }
 }

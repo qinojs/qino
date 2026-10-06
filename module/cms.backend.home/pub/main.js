@@ -3,10 +3,30 @@ import { t } from "@qino/pub/t.js";
 import { dataOf, describe, fill, read } from "./action.js";
 
 cms.initNode("backend.home", (el) => {
-  // The current view is the page's one cms-part.
-  const { execute, refresh, alert } = nodePanel(el, [el.querySelector("[cms-part]").getAttribute("cms-part")]);
+  // The current view is the page's one cms-part, reloaded with the filter in the address.
+  const nid = Number(cms.el.nid(el)), part = el.querySelector("[cms-part]").getAttribute("cms-part");
+  const refresh = () => cms.reloadPart(nid, part, Object.fromEntries(new URL(location).searchParams));
+  const panel = nodePanel(el, []), { alert } = panel;
+  const execute = async (button, data) => { await panel.execute(button, data); await refresh(); };
   // Actions change nothing on the page: the form keeps its input for the next call.
-  const call = nodePanel(el, []).execute;
+  const call = panel.execute;
+
+  // Search and filter: the address keeps them, so a reload or a link shows the same.
+  const filter = el.querySelector("[data-filter]");
+  let timer;
+  filter?.addEventListener("submit", (event) => event.preventDefault());
+  filter?.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const url = new URL(location), data = new FormData(filter);
+      for (const key of ["q"]) {
+        const value = data.get(key);
+        value ? url.searchParams.set(key, String(value)) : url.searchParams.delete(key);
+      }
+      history.replaceState(null, "", url);
+      refresh().catch((error) => alert(error?.message || String(error)));
+    }, 250);
+  });
 
   // A template's content in a dialog inside the panel, so the handlers below serve it too.
   const open = async (template, init) => {
@@ -16,7 +36,8 @@ cms.initNode("backend.home", (el) => {
       root: el,
       buttons: [{ title: await t`Close`, value: null }],
       init: (dialog) => {
-        dialog.querySelector("form").prepend(template.content.cloneNode(true));
+        // Beside the dialog's own form, not in it: Chrome fires no submit event for a nested form.
+        dialog.prepend(template.content.cloneNode(true));
         init?.(dialog);
       },
     });
@@ -31,8 +52,18 @@ cms.initNode("backend.home", (el) => {
     if (point) open(el.querySelector("[data-new-point]"), (dialog) => {
       if (!point.dataset.addPoint) return;
       const form = dialog.querySelector("form[data-datapoint]"), values = JSON.parse(point.dataset.addPoint);
-      for (const name of ["provider", "entity", "name", "unit", "type"]) form.elements[name].value = values[name];
-      form.querySelector("[data-mapping]").hidden = values.type !== "state";
+      const names = ["provider", "entity", "path", "name", "unit", "type"];
+      for (const name of names) form.elements[name].value = values[name];
+      const mapping = form.querySelector("[data-mapping]");
+      mapping.hidden = values.type !== "state";
+      // Proposed codes 1, 2, 3 … for the state's likely values; editable before saving.
+      const rows = mapping.querySelector("tbody"), row = mapping.querySelector("template");
+      if (values.options?.length) rows.replaceChildren();
+      values.options?.forEach((option, index) => {
+        rows.append(row.content.cloneNode(true));
+        rows.lastElementChild.querySelector("[data-state]").value = option;
+        rows.lastElementChild.querySelector("[data-code]").value = index + 1;
+      });
     });
     const run = event.target.closest("[data-run]");
     if (run) call(run, { run: Number(run.dataset.run) });
@@ -116,7 +147,8 @@ cms.initNode("backend.home", (el) => {
       const type = form.elements.type.value;
       return { datapoint: {
         provider: Number(form.elements.provider.value), entity: form.elements.entity.value || crypto.randomUUID(),
-        unit: form.elements.unit.value, type, mapping: type === "state" ? mapping : {}, ...meta,
+        path: form.elements.path.value.trim(), unit: form.elements.unit.value, type,
+        mapping: type === "state" ? mapping : {}, ...meta,
       } };
     }
     const targets = [...form.elements.entities.selectedOptions].map((option) => option.value);
