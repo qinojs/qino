@@ -65,7 +65,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
     let out = "";
     for (const child of children) {
-      if (!(await child.showTitle()).plain().trim()) continue;
+      if (!(await child.showTitle()).plain()) continue;
       const sub = child.vs.type === "p" ? await list(child, depth + 1) : "";
       const classes = [
         `cmsLink${child.id}`,

@@ -8,7 +8,7 @@ if (key) {
     const href = a.getAttribute("href").slice(7);
     const q = href.indexOf("?");
     const token = q < 0 ? href : href.slice(0, q);
-    if (!/^[A-Za-z0-9_-]+$/.test(token)) continue; // a hand-written mailto, not one of ours
+    if (!/^[\w-]+$/.test(token)) continue; // a hand-written mailto, not one of ours
     a.setAttribute("href", "mailto:" + decode(token, key) + (q < 0 ? "" : href.slice(q)));
   }
 }

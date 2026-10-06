@@ -20,9 +20,9 @@ export class Req {
   #clientIp: string;
   #appUrl: string;
   #appPath: string;
-  #query: Readonly<Record<string, string>> | undefined;
-  #queryAll: Readonly<Record<string, readonly string[]>> | undefined;
-  #cookies: Readonly<Record<string, string>> | undefined;
+  #query?: Readonly<Record<string, string>>;
+  #queryAll?: Readonly<Record<string, readonly string[]>>;
+  #cookies?: Readonly<Record<string, string>>;
   #rev: string;
   #deadline: ReqDeadline | null = null;
 

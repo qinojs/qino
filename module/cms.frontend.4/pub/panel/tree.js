@@ -174,7 +174,7 @@ export async function cmsTreeInit(json) {
   // Reload lazy branches (root without id -> full reload via goTo).
   function reloadChildren(node, cb) {
     if (!node.dataset.id) return goTo(activeNode?.dataset.id ?? (cms.cont.active || nodeId)).then(() => cb?.());
-    for (const c of [...node.querySelectorAll(":scope > u2-tree")]) c.remove();
+    for (const c of node.querySelectorAll(":scope > u2-tree")) c.remove();
     node.setAttribute("aria-live", "off");
     node.removeAttribute("aria-busy");
     node.setAttribute("aria-expanded", "false");

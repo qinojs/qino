@@ -61,7 +61,7 @@ async function recent(app: App) {
     total: rows.length,
     urls: named(urls),
     referers: named(refs)
-      .filter(([url]) => { try { return new URL(url).host !== ownHost; } catch { return false; } })
+      .filter(([url]) => { const u = URL.parse(url); return u && u.host !== ownHost; })
       .slice(0, TOP),
   };
 }

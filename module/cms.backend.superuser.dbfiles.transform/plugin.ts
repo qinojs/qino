@@ -35,10 +35,6 @@ function isRoot(): boolean {
 
 // --- Cache ---
 
-function cacheDir(app: App): string {
-  return app.fileTransformer.cacheDir;
-}
-
 async function cacheStats(dir: string): Promise<{ count: number; size: number }> {
   let count = 0, size = 0;
   try {
@@ -320,7 +316,7 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
 
 async function renderCache(app: App): Promise<HtmlString> {
   const t = app.t;
-  const dir = cacheDir(app);
+  const dir = app.fileTransformer.cacheDir;
   const stats = await cacheStats(dir);
   return html.async`
 <div class=u2-card>
@@ -354,7 +350,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   if (vars.clear_cache) {
     const days = vars.clear_cache === true ? undefined : Number(vars.clear_cache) || undefined;
-    await clearCache(cacheDir(node.app), days);
+    await clearCache(node.app.fileTransformer.cacheDir, days);
     return JSON.stringify({ ok: true });
   }
 

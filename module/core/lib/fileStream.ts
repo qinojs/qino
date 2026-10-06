@@ -49,7 +49,7 @@ export async function readDataUrl(uri: string, opt: { maxSize: number }): Promis
   let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = /;base64(;|$)/i.test(params)
-      ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
+      ? Uint8Array.fromBase64(payload)
       : new TextEncoder().encode(decodeURIComponent(payload));
   } catch {
     throw new Error("Invalid data URI payload");
@@ -169,7 +169,7 @@ export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 
     const location = resp.headers.get("location");
     resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");
-    return safeFetch(new URL(location, url).toString(), init, maxRedirects - 1);
+    return safeFetch(new URL(location, url).href, init, maxRedirects - 1);
   }
   return resp;
 }

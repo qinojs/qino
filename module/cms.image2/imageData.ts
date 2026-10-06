@@ -51,7 +51,7 @@ async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: 
 
           const { path: tmpPath, mime } = await file.transform({ w: smallW, h: smallH, q: QUALITY, fmt: "png", hpos, vpos });
           const buf = await fs.bytes(tmpPath);
-          const preview = "data:" + mime + ";base64," + btoa(String.fromCharCode(...buf));
+          const preview = "data:" + mime + ";base64," + buf.toBase64();
           await fs.mkdir(cacheDir);
           await fs.write(cacheFile, JSON.stringify({ w, h, vpos, hpos, preview }));
         } catch { /* skip */ }

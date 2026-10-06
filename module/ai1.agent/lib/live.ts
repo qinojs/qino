@@ -24,7 +24,7 @@ export async function live(app: App, session: number, sdp: string): Promise<stri
   const [first, ...history] = messages;
   const said = (first?.role === "system" ? history : messages)
     .filter((m) => (m.role === "user" || m.role === "assistant") && textOf(m.content))
-    .map((m) => `${m.role}: ${textOf(m.content as string)}`)
+    .map((m) => `${m.role}: ${textOf(m.content)}`)
     .slice(-SO_FAR).join("\n");
   const instructions = [
     first?.role === "system" ? textOf(first.content) : "",

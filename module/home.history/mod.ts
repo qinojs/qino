@@ -40,7 +40,7 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
   let previous: Sample | undefined;
   const measured = samples.map((sample) => {
     const gap = sample.value === null || !previous || previous.value === null || sample.time <= previous.time ||
-      Boolean(maxGap && sample.time - previous.time > maxGap) || Boolean(consumption && sample.value < previous.value!);
+      Boolean(maxGap && sample.time - previous.time > maxGap) || Boolean(consumption && sample.value < previous.value);
     const value = consumption ? gap ? null : sample.value! - previous!.value! : sample.value;
     previous = sample;
     return { time: sample.time, value, ...(consumption || maxGap ? { gap } : {}) };
@@ -49,8 +49,7 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
   const step = Math.ceil((end - start) / width), buckets = new Map<number, Sample[]>();
   for (const sample of measured) {
     const time = start + Math.floor((sample.time - start) / step) * step;
-    const bucket = buckets.get(time) ?? [];
-    bucket.push(sample); buckets.set(time, bucket);
+    buckets.getOrInsert(time, []).push(sample);
   }
   return { datapoint: point, samples: [...buckets].map(([time, samples]) => {
     const numbers = samples.flatMap((sample) => sample.value === null ? [] : [sample.value]);

@@ -73,7 +73,7 @@ export class Ctx {
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get csrfToken(): string {
     const token = this.sess.data.core.csrfToken;
-    if (!token()) this.sess.data.core.csrfToken(uid(11));
+    if (!token()) token(uid(11));
     return token()!;
   }
 

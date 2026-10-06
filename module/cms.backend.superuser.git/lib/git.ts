@@ -64,12 +64,12 @@ export async function refs(root: string): Promise<string[]> {
 export async function reposOf<T>(dirs: Map<string, T>): Promise<Map<string, T[]>> {
   const roots = new Map<string, T[]>();
   for (const [dir, holds] of [...dirs].sort(([a], [b]) => a.localeCompare(b))) {
-    const known = [...roots.keys()].find((root) => dir.startsWith(root));
+    const known = roots.keys().find((root) => dir.startsWith(root));
     if (known) { roots.get(known)!.push(holds); continue; }
     const { ok, out } = await git(dir, ["rev-parse", "--show-toplevel"], 5_000);
     if (!ok) continue; // not a repository, or git cannot read it
     const root = out.endsWith("/") ? out : out + "/";
-    roots.set(root, [...(roots.get(root) ?? []), holds]);
+    roots.getOrInsert(root, []).push(holds);
   }
   return roots;
 }

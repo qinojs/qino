@@ -123,8 +123,8 @@ async function hostname(ip: unknown): Promise<string> {
   let name;
   if (addr.includes(":")) {
     const [head, tail = ""] = addr.split("::");
-    const groups = (s: string) => s ? s.split(":") : [];
-    const all = [...groups(head), ...Array(8 - groups(head).length - groups(tail).length).fill("0"), ...groups(tail)];
+    const left = head ? head.split(":") : [], right = tail ? tail.split(":") : [];
+    const all = [...left, ...Array(8 - left.length - right.length).fill("0"), ...right];
     name = [...all.map((g) => g.padStart(4, "0")).join("")].reverse().join(".") + ".ip6.arpa";
   } else if (/^\d+(\.\d+){3}$/.test(addr)) {
     name = addr.split(".").reverse().join(".") + ".in-addr.arpa";

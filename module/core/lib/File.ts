@@ -19,7 +19,7 @@ export class File {
   }
 
   basename(suffix = ""): string {
-    const base = this.path.split(/[\\/]/).pop() ?? "";
+    const base = this.path.split(/[\\/]/).pop()!;
     return suffix && base.endsWith(suffix) ? base.slice(0, -suffix.length) : base;
   }
 

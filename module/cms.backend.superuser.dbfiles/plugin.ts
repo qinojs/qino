@@ -91,7 +91,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const s = search.trim();
     const emailSub = (col: string) => sql`f.${sql.id(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.username=${s})`;
     if (/^\d+$/.test(s)) cond = sql` AND f.id = ${Number(s)}`;
-    else if (/^[0-9a-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
+    else if (/^[\da-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
     else if (s.includes("@")) cond = sql` AND (${emailSub("log_id")} OR ${emailSub("log_id_ch")})`;
     else if (db.dialect === "mysql") cond = sql` AND (MATCH(f.name) AGAINST (${s + "*"} IN BOOLEAN MODE) OR MATCH(f.text) AGAINST (${s + "*"} IN BOOLEAN MODE))`;
     else cond = sql` AND (f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${"%" + s + "%"})`;

@@ -107,7 +107,7 @@ class NodeCleaner {
       if (allowed === true || allowed === 1) continue;
       // values allowed
       let value = el.style.getPropertyValue(style);
-      if (style === 'font-family') value = value.replace(/^["']/,'').replace(/["']$/,'');
+      if (style === 'font-family') value = value.replace(/^["']|["']$/g,'');
       //if (allowed.includes) { // isArray (array with allowed values)
       if (allowed[value] || allowed.includes(value)) continue;
       el.style.removeProperty(style);
@@ -156,8 +156,8 @@ function removeUnusedAttributes(el) {
   el.getAttribute('class')?.trim() === '' && el.removeAttribute('class');
   /* bugs ie8/9/10? */
   if (el.tagName === 'IMG') {
-    if (!/^[0-9]+/.test(el.getAttribute('height'))) el.removeAttribute('height');
-    if (!/^[0-9]+/.test(el.getAttribute('width'))) el.removeAttribute('width');
+    if (!/^\d/.test(el.getAttribute('height'))) el.removeAttribute('height');
+    if (!/^\d/.test(el.getAttribute('width'))) el.removeAttribute('width');
   }
 }
 function removeEmptyInlineSpans(el) {

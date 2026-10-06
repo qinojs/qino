@@ -35,7 +35,7 @@ export class LangManager {
     const urlLang = ctx.req.query.lang;
     if (urlLang) ctx.langUsr = urlLang;
     else {
-      const match = ctx.req.appPath?.match(/^([a-z][a-z])(\/|$|\?)/);
+      const match = ctx.req.appPath?.match(/^([a-z]{2})([\/?]|$)/);
       if (match) ctx.langUsr = match[1];
     }
 
@@ -73,7 +73,7 @@ export class LangManager {
     let currentLang = this.def;
     let currentQ = 0;
     for (const aLang of accepted) {
-      const match = aLang.match(/^([a-z]{1,8}(?:-[a-z]{1,8})*)(?:;\s*q=(0(?:\.[0-9]{1,3})?|1(?:\.0{1,3})?))?$/i);
+      const match = aLang.match(/^([a-z]{1,8}(?:-[a-z]{1,8})*)(?:;\s*q=(0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/i);
       if (!match) continue;
       const langCode = match[1].split("-");
       const langQuality = parseFloat(match[2] ?? "1");

@@ -8,7 +8,7 @@ export type FieldConflict = {
 };
 
 export function sortTableNames(names: string[]): string[] {
-  return [...names].sort((a, b) =>
+  return names.toSorted((a, b) =>
     Number(a.startsWith("_")) - Number(b.startsWith("_")) || a.localeCompare(b)
   );
 }

@@ -29,7 +29,7 @@ function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>): FieldOri
 function chip(kind: "table" | "field", name: string, mods: string[], definedByLabel: string): HtmlString {
   const cls = `-${kind}-chip`;
   if (mods.length < 2) return html`<span class="${cls}">${name}</span>`;
-  const title = `${definedByLabel}: ${[...mods].sort().join(", ")}`;
+  const title = `${definedByLabel}: ${mods.toSorted().join(", ")}`;
   return html`<span class="${cls} -shared" data-modules="${title}" title="${title}">${name}</span>`;
 }
 
@@ -53,7 +53,7 @@ export async function renderModules(app: App, modules: Map<string, any>): Promis
       <td style="font-family:monospace">${chip("table", table, tableMods[table] ?? [], definedByLabel)}
       <td style="text-align:right">${fields.length}
       <td style="font-family:monospace;font-size:.9em">${
-        [...fields].sort().map(field => chip("field", field, origins[table]?.[field] ?? [], definedByLabel))
+        fields.toSorted().map(field => chip("field", field, origins[table]?.[field] ?? [], definedByLabel))
       }`);
   });
 

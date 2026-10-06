@@ -98,7 +98,7 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
     </fieldset>
     <div>
       <button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>
-      ${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" u2-confirm style="background:var(--red)">Delete</button>`}
+      ${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" style="background:var(--red)">Delete</button>`}
     </div>
   </div>
 </form>`;

@@ -70,7 +70,7 @@ function rdata(r: Reader, type: number, len: number): string {
   const end = r.pos + len;
   const value = (() => {
     switch (type) {
-      case TYPES.A: return [...r.take(4)].join(".");
+      case TYPES.A: return r.take(4).join(".");
       case TYPES.AAAA: return ipv6(r.take(16));
       case TYPES.NS: case TYPES.CNAME: case TYPES.PTR: return r.name();
       case TYPES.SOA: return `${r.name()} ${r.name()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()}`;
@@ -222,4 +222,4 @@ export const systemServer = (): Promise<string | null> =>
 
 /** Addresses of a nameserver name, so callers can ask that server directly. */
 export const serverIps = (name: string): Promise<string[]> =>
-  Deno.resolveDns(name, "A").catch(() => []) as Promise<string[]>;
+  Deno.resolveDns(name, "A").catch(() => []);

@@ -33,7 +33,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 
   const rows = await Promise.all(
     tables.sort((a, b) => {
-      const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
+      const sa = a.name.startsWith("_"), sb = b.name.startsWith("_");
       return (sa ? 1 : 0) - (sb ? 1 : 0) || a.name.localeCompare(b.name);
     }).map(async (table: any) => {
       const fields = await table.init();

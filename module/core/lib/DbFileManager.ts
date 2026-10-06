@@ -6,7 +6,7 @@ import { fs } from "./fs.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, mimeType, readDataUrl, readUploadFile } from "./fileStream.ts";
-import { header, unixTime } from "./util.ts";
+import { ensureSlash, header, unixTime } from "./util.ts";
 
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
@@ -37,7 +37,7 @@ export class DbFileManager {
 
   constructor(app: App, directory: string) {
     this.#app = app;
-    this.#directory = directory.endsWith("/") ? directory : directory + "/";
+    this.#directory = ensureSlash(directory);
     fs.mkdir(this.#directory).catch(() => {});
   }
 
@@ -72,7 +72,7 @@ export class DbFileManager {
 
   async output(request: string, req: Request): Promise<Response> {
     const parts = request.split("/");
-    const id = Number(parts.shift() ?? "0");
+    const id = Number(parts.shift());
     const name = parts.pop() ?? "";
 
     const params: Record<string, string | true> = {};

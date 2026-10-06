@@ -101,15 +101,16 @@ async function smtp(host: string, signal?: AbortSignal) {
     conn = await Deno.connect({ hostname: host, port: 25, signal: limit });
     out.banner = (await reply(conn, buf)).trim().slice(0, 200);
     if (!out.banner.startsWith("2")) return out; // greeted us with a refusal, not a server we can judge
-    await conn.write(new TextEncoder().encode(`EHLO ${agent}\r\n`));
+    const enc = new TextEncoder();
+    await conn.write(enc.encode(`EHLO ${agent}\r\n`));
     const ehlo = await reply(conn, buf);
     out.starttls = /^\d{3}[ -]STARTTLS\r?$/im.test(ehlo);
     if (!out.starttls) return out;
-    await conn.write(new TextEncoder().encode("STARTTLS\r\n"));
+    await conn.write(enc.encode("STARTTLS\r\n"));
     if (!(await reply(conn, buf)).startsWith("220")) return out;
     conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
     out.tlsValid = true; // startTls verifies against the system roots, a bad chain throws
-    await conn.write(new TextEncoder().encode("QUIT\r\n"));
+    await conn.write(enc.encode("QUIT\r\n"));
   } catch (e) {
     if (out.starttls && isCertError(errText(e))) out.tlsValid = false;
     // No answer at all: outgoing port 25 blocked or a dead server (a refusal would be instant).

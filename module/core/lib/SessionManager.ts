@@ -15,7 +15,7 @@ const DEFAULT_MAX_IDLE = 30 * 24 * 60 * 60; // seconds a session lives without a
 /** A session: token/id, trusted reactive data, and its own touch timer. */
 export class Session {
   #db: Db;
-  #touchTimer: ReturnType<typeof setTimeout> | undefined;
+  #touchTimer?: ReturnType<typeof setTimeout>;
   token: string;
   id: string;
   data: ItemProxy;

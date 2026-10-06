@@ -94,7 +94,7 @@ export default async function summary(node: Node): Promise<HtmlString> {
 
   const diskTotal = await dirSize(dir);
   const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output();
-  const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop() ?? "0");
+  const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop());
 
   return html`
 <table class=u2-table style="width:auto;">

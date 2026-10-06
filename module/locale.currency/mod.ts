@@ -25,7 +25,7 @@ export const currency = {
   /** How many of `to` one `from` buys, via the stored USD rates. */
   async rate(db: Db, from: string, to: string): Promise<number | undefined> {
     if (from === to) return 1;
-    const [a, b] = [await usd(db, from), await usd(db, to)];
+    const a = await usd(db, from), b = await usd(db, to);
     if (a && b) return b / a;
   },
 

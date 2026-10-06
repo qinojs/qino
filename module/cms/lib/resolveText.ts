@@ -3,8 +3,8 @@ import type { CMS } from "./CMS.ts";
 /** `links`: also resolve `cmspid://`. Off in edit mode, since the editor saves the html back and a
  *  fixed url would break when the page url changes. File urls are always resolved. */
 export async function resolveText(cms: CMS, value: string, links = true): Promise<string> {
-  if (links) value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(cms, pid));
-  value = await replaceAsync(value, /\/dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(cms, id));
+  if (links) value = await replaceAsync(value, /cmspid:\/\/(\d+)/g, (_, pid) => replaceLinks(cms, pid));
+  value = await replaceAsync(value, /\/dbFile\/(\d+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(cms, id));
   return value;
 }
 
@@ -30,7 +30,7 @@ async function replaceAsync(str: string, regex: RegExp, fn: (match: string, ...g
   let result = "", last = 0;
   for (const m of str.matchAll(regex)) {
     result += str.slice(last, m.index) + await fn(m[0], ...m.slice(1));
-    last = m.index! + m[0].length;
+    last = m.index + m[0].length;
   }
   return result + str.slice(last);
 }

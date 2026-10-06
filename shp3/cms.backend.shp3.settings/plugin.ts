@@ -133,7 +133,7 @@ async function currencies(node: Node): Promise<HtmlString> {
   // A country the shop delivers to pays in its own currency — worth offering.
   const wanted = new Map<string, string[]>();
   for (const c of await app.db.query`SELECT id, currency FROM country WHERE shp3_enabled = ${true} AND currency != ${""}`) {
-    wanted.set(String(c.currency), [...wanted.get(String(c.currency)) ?? [], String(c.id)]);
+    wanted.getOrInsert(String(c.currency), []).push(String(c.id));
   }
 
   const collator = new Intl.Collator(lang);

@@ -72,8 +72,7 @@ export function isTrustedOrigin(req: Req): boolean {
 }
 
 function hostOf(value?: string): string | null {
-  try { return value ? new URL(value).host : null; }
-  catch { return null; }
+  return value ? URL.parse(value)?.host ?? null : null;
 }
 
 function hasValidCsrfToken(req: Req): boolean {

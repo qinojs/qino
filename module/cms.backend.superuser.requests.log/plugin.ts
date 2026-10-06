@@ -58,7 +58,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       where.push(sql`log.sess_id IN (SELECT id FROM sess WHERE usr_id IN (SELECT id FROM usr WHERE ${u.where}))`);
     } else if (/^\d+$/.test(s)) {
       where.push(sql`(log.id = ${Number(s)} OR log.client_id = ${Number(s)} OR log.sess_id = ${Number(s)})`); // same table → index merge
-    } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4})+$/i.test(s)) {
+    } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[\da-f]{0,4}(:[\da-f]{0,4})+$/i.test(s)) {
       where.push(sql`log.ip_id IN (SELECT id FROM log_ip WHERE ip LIKE ${s + "%"})`); // prefix → index seek
     } else if (db.dialect === "mysql") {
       where.push(sql`log.url_id IN (SELECT id FROM log_url WHERE MATCH(url) AGAINST (${s + "*"} IN BOOLEAN MODE))`);

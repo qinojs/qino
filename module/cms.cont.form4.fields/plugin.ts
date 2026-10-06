@@ -42,7 +42,7 @@ const plain = async (node: Node, name: string) => (await node.showText(name)).pl
  */
 async function choicesOf(node: Node, name: string): Promise<string[]> {
   const lines = (await rawText(node, name + "_options")).replace(/\r/g, "").split("\n").map((c) => c.trim());
-  while (lines.length && lines.at(-1) === "") lines.pop(); // the newline behind the last line is none
+  while (lines.at(-1) === "") lines.pop(); // the newline behind the last line is none
   return lines;
 }
 

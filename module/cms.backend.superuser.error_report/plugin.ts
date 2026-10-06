@@ -130,7 +130,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
     const ftCol = search.includes("/") ? "file" : "message";
     const words = search.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 3).slice(0, 4);
     if (/^\d+$/.test(search)) conds.push(sql`(id = ${Number(search)} OR log_id = ${Number(search)})`);
-    else if (/[.:]/.test(search) && /^[0-9a-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
+    else if (/[.:]/.test(search) && /^[\da-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
     // words shorter than ft_min_token_size never match the fulltext index — return nothing instead of a full scan
     else if (db.dialect === "mysql") conds.push(words.length ? sql`MATCH(${sql.id(ftCol)}) AGAINST (${words.map(w => `+${w}*`).join(" ")} IN BOOLEAN MODE)` : sql`${false}`);
     else conds.push(sqlSearch(search, [ftCol]).where);
@@ -236,7 +236,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
   if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return html`<div>${await node.app.t`Invalid parameters`}</div>`;
-  const where = groupWhere(node.app.db, get);
+  const where = groupWhere(db, get);
 
   const rows = await db.query`
     SELECT e.*, usr.username

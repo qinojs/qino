@@ -54,7 +54,7 @@ export async function history(app: App): Promise<HtmlString> {
     if (!posts.has(logId)) posts.set(logId, { text: String(row.text), byProvider: new Map() });
     const deliveries = posts.get(logId)!.byProvider;
     const name = String(row.provider);
-    deliveries.set(name, [...deliveries.get(name) ?? [], row]);
+    deliveries.getOrInsert(name, []).push(row);
   }
   const names = [...new Set([...providerNames(app), ...rows.map((row) => String(row.provider))])];
   const [sent, error, notSent, empty] = await Promise.all([

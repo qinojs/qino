@@ -61,8 +61,8 @@ export async function collect(app: App, opts: {
       root: request === "",
     });
   }
-  const bad = (row: Row) => row.kind === "orphan" || row.shadowed;
-  return { rows: opts.broken ? rows.filter(bad) : rows, broken: rows.filter(bad).length };
+  const broken = rows.filter((row) => row.kind === "orphan" || row.shadowed);
+  return { rows: opts.broken ? broken : rows, broken: broken.length };
 }
 
 /** The 404 box refuses these too — a direct link ends up in a Location header. */

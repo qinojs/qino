@@ -209,7 +209,7 @@ function collect(app: App, timeZone: string): RegisteredJob[] {
     if (typeof declared !== "object" || Array.isArray(declared)) throw new Error(`Module "${mod.name}": cron must be an object`);
     if (mod.name !== "cron" && !mod.dependencies.includes("cron")) throw new Error(`Module "${mod.name}": dependencies must include "cron" when declaring cron jobs`);
     for (const name of Object.keys(declared).sort()) {
-      if (!/^[a-zA-Z0-9._-]+$/.test(name)) throw new Error(`Module "${mod.name}": invalid cron job name "${name}"`);
+      if (!/^[\w.-]+$/.test(name)) throw new Error(`Module "${mod.name}": invalid cron job name "${name}"`);
       const job = declared[name];
       const id = `${mod.name}:${name}`;
       validateJob(id, job);

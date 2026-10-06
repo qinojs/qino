@@ -21,7 +21,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     recorded = new Map();
     for (const point of await datapoints(app)) {
       const at = key(point.provider, point.entity);
-      if (point.record) recorded.set(at, [...recorded.get(at) ?? [], point]);
+      if (point.record) recorded.getOrInsert(at, []).push(point);
     }
   };
   const capture = (point: Datapoint, entity: Entity | null, time: number) => signal.aborted ? undefined

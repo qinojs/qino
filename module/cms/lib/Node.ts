@@ -37,7 +37,7 @@ export class Node {
 
     #children: Promise<Map<number, Node>> | null = null;
     #conts: Node[] | null = null;
-    #parent: Node | undefined;
+    #parent?: Node;
 
     constructor(cms: CMS, id = 0, vs?: Record<string, string | number>) {
         this.cms = cms;
@@ -324,7 +324,7 @@ export class Node {
     async bough(filter?: any): Promise<Map<number, Node>> {
         const bough = new Map<number, Node>([[this.id, this]]);
         for (const child of (await this.children({ type: "*" })).values())
-            for (const [k, v] of (await child.bough()).entries()) bough.set(k, v);
+            for (const [k, v] of await child.bough()) bough.set(k, v);
         return filter ? this.cms.filter(bough, filter) : bough;
     }
 

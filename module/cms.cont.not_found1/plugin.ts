@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   // Extract words from request URI for fulltext search
-  const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
+  const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ");
 
   const possiblePages = new Set<string>();
 

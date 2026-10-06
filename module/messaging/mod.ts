@@ -154,7 +154,7 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
  * `url`, a mail `replyTo`). Together with the columns it is the whole message.
  */
 function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
-  const { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...rest } = msg ?? {} as Msg;
+  const { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...rest } = msg ?? {};
   return Object.keys(rest).length ? { ...data, msg: rest } : data ?? null;
 }
 

@@ -14,7 +14,7 @@ export function fieldName(label: string): string {
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
+    .replace(/^_|_$/g, "")
     .slice(0, 64);
   if (!name) return "feld";
   return RESERVED.has(name) ? name + "_" : name; // trailing _ keeps the word, drops the meaning

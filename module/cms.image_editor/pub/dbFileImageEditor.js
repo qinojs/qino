@@ -84,16 +84,16 @@ const EDITOR_CSS = `
 
 export class DbFileImageEditor extends ImageEditor {
   show(src) {
-    const eSrc = src.replace(/(dbFile\/[0-9]+\/).*/, '$1');
+    const eSrc = src.replace(/(dbFile\/\d+\/).*/, '$1');
     const unique = src.match(/\/(u-[^/]+\/)/)?.[1] ?? '';
-    this.file_id = eSrc.match(/dbFile\/([0-9]+)\//)[1];
+    this.file_id = eSrc.match(/dbFile\/(\d+)\//)[1];
 
     this.css(EDITOR_CSS);
 
     super.show(eSrc + unique + 'img.jpg', {
       onload: this.loading(() => {
-        const width = src.match(/\/w-([0-9]+)(\/|$)/)?.[1];
-        const height = src.match(/\/h-([0-9]+)(\/|$)/)?.[1];
+        const width = src.match(/\/w-(\d+)(\/|$)/)?.[1];
+        const height = src.match(/\/h-(\d+)(\/|$)/)?.[1];
 
         // "max" means the image is scaled to fit width/height; without it the server crops.
         const maxMatch = src.match(/\/max-?([^/]*)(\/|$)/);

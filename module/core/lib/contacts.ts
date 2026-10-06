@@ -23,7 +23,7 @@ const TYPES: Record<string, (input: string) => string> = {
   },
   /** E.164, the only unambiguous notation. */
   phone(input) {
-    let number = input.trim().replace(/[\s().-]/g, "");
+    let number = input.replace(/[\s().-]/g, "");
     if (number.startsWith("00")) number = "+" + number.slice(2);
     if (!/^\+[1-9]\d{7,14}$/.test(number)) throw new ApiError(422, "Use an international phone number such as +41791234567");
     return number;

@@ -283,8 +283,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const link = (r: Record<string, unknown>, extra: HtmlString | string) =>
     html`<div><a href="${modUrl(base, String(r.name))}">${r.name}</a> ${extra}</div>`;
 
-  const top = [...rows].sort((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
-  const recent = [...rows].filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
+  const top = rows.toSorted((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
+  const recent = rows.filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
 
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${t`modules`}

@@ -25,7 +25,7 @@ export const words = (term: string): string[] => term.toLowerCase().split(/\s+/)
 
 /** Search plan for one table: index-backed groups, or a full scan while the table is small. */
 async function plan(db: Db, table: string, numeric: boolean): Promise<Part[]> {
-  const fields = [...await db.tables[table].init()].map(([, field]) => field);
+  const fields = [...(await db.tables[table].init()).values()];
   const text = fields.filter((field) => TEXT_TYPES.has(field.type)).map(String);
   const num = fields.filter((field) => NUM_TYPES.has(field.type)).map(String);
   const indexes = await tableIndexes(db, table).catch(() => []);

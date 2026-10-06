@@ -18,7 +18,7 @@ const idValue = (field: DbField, value: any): string | undefined => {
 export class DbTable {
   #fields: Map<string, DbField> | null = null;
   #primaries: DbField[] = []; // in id-part order
-  #autoIncrement: DbField | undefined;
+  #autoIncrement?: DbField;
   #db: Db;
   #name: string;
   #children: DbField[] | null = null;
@@ -178,7 +178,7 @@ export class DbTable {
     let id: any;
     if (values === undefined) {
       values = idOrValues;
-      id = this.entryId(values!);
+      id = this.entryId(values);
     } else {
       id = idOrValues;
     }

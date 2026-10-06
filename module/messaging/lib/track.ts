@@ -9,7 +9,7 @@ import type { Kind, Link } from "./links.ts";
 const SIG = 3;
 /** Path of the open beacon; it is shortened like any link. */
 export const PIXEL = "messaging/open.gif";
-const GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), (c) => c.charCodeAt(0));
+const GIF = Uint8Array.fromBase64("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==");
 /** Kind by its marker character (first letter). */
 const KIND: Record<string, Kind> = { c: "click", l: "load" };
 

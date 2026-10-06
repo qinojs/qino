@@ -208,7 +208,7 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   const data = await load("llms/models");
   const llms = byName(data);
   // artificial_analysis_coding_index → coding; retired: no model of the last RETIRED_DAYS has it
-  const indexName = (name: string) => name.replace(/^artificial_analysis_|^aa_/, "").replace(/_index$/, "");
+  const indexName = (name: string) => name.replace(/^artificial_analysis_|^aa_|_index$/g, "");
   const since = new Date(Date.now() - RETIRED_DAYS * 86400_000).toISOString().slice(0, 10);
   const measured = new Set(data.filter((m) => String(m.release_date ?? "") >= since)
     .flatMap((m) => Object.entries(m.evaluations ?? {}).filter(([name, value]) => name.endsWith("_index") && typeof value === "number").map(([name]) => indexName(name))));
@@ -221,7 +221,7 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
     return [metric, byName(list), bare] as const;
   }));
   const within = (text: string | undefined, bare: (readonly [string, any])[]) =>
-    text && bare.find(([name]) => new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!\\w|\\.\\d)`, "i").test(text))?.[1];
+    text && bare.find(([name]) => new RegExp(`\\b${RegExp.escape(name)}(?!\\w|\\.\\d)`, "i").test(text))?.[1];
   // unmeasured, a model's value is the median of its reasoning levels' (claude-opus-5-5-high …)
   const measure = (m: any, get: (m: any) => unknown) => {
     const own = get(m);

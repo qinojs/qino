@@ -27,7 +27,7 @@ const selectNode = el => {
 const dropFiles = dt => [...dt.files].filter(f => !/[a-z0-9]{8}\.bmp/.test(f.name));
 
 /** dbFile id if the url is ours — our own files must not be copied. */
-const dbFileId = url => url.includes(location.host) && url.match(/dbFile\/([0-9]+)\//)?.[1];
+const dbFileId = url => url.includes(location.host) && url.match(/dbFile\/(\d+)\//)?.[1];
 
 // ─── text fields — [cmstxt][contenteditable] ────────────────────────────────
 

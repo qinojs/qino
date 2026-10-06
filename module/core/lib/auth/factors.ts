@@ -92,7 +92,7 @@ export function parkLogin(ctx: Ctx, factor: AuthFactor, usrId: number): Record<s
   const same = open?.usrId === usrId; // another user starts a new login
   if (!same && factor.second) return;
   const now = unixTime();
-  const via = { ...(same ? open!.via : {}), [factor.name]: now };
+  const via = { ...(same ? open.via : {}), [factor.name]: now };
   ctx.sess.data.core.pending({ usrId, via, time: now });
   return via;
 }

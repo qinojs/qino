@@ -61,5 +61,5 @@ function render(text: string, profile: Profile): string {
 /** Plain text as markup: escaped, line breaks kept in the target's way. */
 export function textToHtml(text: string, profile: Profile = "html"): string {
   const escaped = hee(text);
-  return profile === "telegram" ? escaped : escaped.replace(/\r\n?/g, "\n").replace(/\n/g, "<br>");
+  return profile === "telegram" ? escaped : escaped.replace(/\r\n?|\n/g, "<br>");
 }

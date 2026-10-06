@@ -103,7 +103,7 @@ function labeller(app: App): (url: string) => string {
   const groups = new Map<string, string[]>();
   for (const store of app.stores.all()) {
     const short = storeLabel(app, store.url);
-    groups.set(short, [...(groups.get(short) ?? []), store.url]);
+    groups.getOrInsert(short, []).push(store.url);
   }
   return (url) => {
     const short = storeLabel(app, url);

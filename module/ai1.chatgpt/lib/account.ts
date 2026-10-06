@@ -105,7 +105,7 @@ async function token(form: Record<string, string>) {
   const result = await res.json(), scopes = String(result.scope ?? "").split(/\s+/).filter(Boolean);
   if (!scopes.includes(PLAN_SCOPE) || typeof result.access_token !== "string" || typeof result.refresh_token !== "string")
     throw new AiError("ChatGPT plan usage was not granted", 403);
-  return { access_token: result.access_token as string, refresh_token: result.refresh_token as string,
+  return { access_token: result.access_token, refresh_token: result.refresh_token,
     id_token: String(result.id_token ?? ""), scopes, expires_at: Date.now() + Number(result.expires_in ?? 3600) * 1000 };
 }
 

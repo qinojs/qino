@@ -31,7 +31,7 @@ interface HeaderBuilders {
 export const header: HeaderBuilders = {
   /** Safe Content-Disposition: ASCII fallback + RFC 5987 filename* (no header injection). */
   contentDisposition(type: "inline" | "attachment", name: string): [string, string] {
-    const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
+    const ascii = name.replace(/[^\x20-\x7e]|["\\]/g, "_");
     const encoded = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
     return ["Content-Disposition", `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`];
   },
@@ -137,7 +137,7 @@ export function urlize(str: string): string {
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-|-$/g, "");
 }
 
 /** LIKE search by words: every word must match a `like` column (case-insensitive, wildcards
