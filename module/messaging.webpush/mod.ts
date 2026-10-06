@@ -1,5 +1,5 @@
 import { sendNotification } from "web-push-neo";
-import { sql } from "@qino/qino";
+import { errMsg, sql } from "@qino/qino";
 import { ChannelError, delivered, send as dispatch, selectors, titled } from "@qino/qino/messaging";
 
 import { vapid } from "./lib/vapid.ts";
@@ -23,7 +23,7 @@ const pushOptions = (
 const ours = (status: number | undefined) => !status || status === 429 || status >= 500;
 
 /** What web-push-neo says went wrong, short enough for the journal and the subscription. */
-const failure = (e: unknown) => `${(e as { statusCode?: number }).statusCode ?? "no status"}: ${(e as Error).message}`.slice(0, 255);
+const failure = (e: unknown) => `${(e as { statusCode?: number }).statusCode ?? "no status"}: ${errMsg(e)}`.slice(0, 255);
 
 /** Resolve `to` to subscriptions. Channels are per browser, groups per user. The journal stores the
  *  endpoint's hash. */
@@ -151,9 +151,8 @@ export const messagingChannel: Channel = {
   name: "webpush",
   label: "Web Push",
   color: "--purple",
-  reach: async (app: App, usrId: number, notClient?: string | number) =>
-    Number(await app.db.one`SELECT COUNT(*) FROM webpush_subscription WHERE usr_id = ${usrId}
-      ${notClient == null ? sql`` : sql`AND client_id <> ${Number(notClient)}`}`),
+  reach: async (app, usrId, client) =>
+    Number(await app.db.one`SELECT COUNT(*) FROM webpush_subscription s WHERE s.usr_id = ${usrId} ${notClient(client)}`),
   recipients,
   send,
   deliver,
