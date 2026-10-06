@@ -9,10 +9,16 @@ const HEARTBEAT = 30_000;
 const RETRY_MAX = 30_000;
 
 type State = { entity_id: string; state: string; attributes: Record<string, unknown>; last_updated: string };
+type Field = {
+  name?: string; description?: string; required?: boolean; example?: unknown; default?: unknown;
+  selector?: Record<string, Record<string, unknown> | null>; fields?: Record<string, Field>;
+};
+type Filter = { domain?: string | string[] };
 type Services = Record<string, Record<string, {
   name?: string;
   description?: string;
-  fields?: Record<string, unknown>;
+  fields?: Record<string, Field>;
+  target?: { entity?: Filter | Filter[] };
   response?: { optional: boolean };
 }>>;
 type Change = { entity_id: string; new_state: State | null; old_state: State | null };
@@ -90,8 +96,16 @@ export class Connection {
         id: `${domain}.${service}`,
         name: info.name || `${domain}.${service}`,
         description: info.description,
-        fields: structuredClone(info.fields ?? {}),
+        input: inputOf(info.fields ?? {}),
+        ...(info.target ? { targets: this.#targets(info.target.entity ?? {}) } : {}),
       })));
+  }
+
+  /** Entities matching a target's domain filters; other filters (integration, features) are left to the call. */
+  #targets(filters: Filter | Filter[]): string[] {
+    const domains = [filters].flat().map(({ domain }) => domain === undefined ? undefined : [domain].flat());
+    return [...this.#states.keys()].filter((id) =>
+      domains.some((list) => !list || list.includes(id.slice(0, id.indexOf(".")))));
   }
 
   async call(action: string, { entities, data = {} }: Call): Promise<unknown> {
@@ -241,6 +255,39 @@ export class Connection {
     Deno.unrefTimer(this.#timer);
     this.#retry = Math.min(this.#retry * 2, RETRY_MAX);
   }
+}
+
+// Selectors whose value is a plain string or number; anything else stays free-form JSON.
+const STRINGS = new Set(["text", "entity", "device", "area", "floor", "label", "state", "theme", "icon",
+  "config_entry", "conversation_agent", "language", "template", "datetime", "date", "time", "statistic", "addon"]);
+const NUMBERS = new Set(["number", "color_temp"]);
+
+/** Home Assistant's field selectors as the JSON schema of an action's data. */
+function inputOf(fields: Record<string, Field>): Record<string, unknown> {
+  // Sections group fields for display only; their fields are top-level data keys.
+  const flat = Object.entries(fields)
+    .flatMap(([key, field]) => field.fields ? Object.entries(field.fields) : [[key, field] as const]);
+  const properties = Object.fromEntries(flat.map(([key, field]) => {
+    const [kind = "", options] = Object.entries(field.selector ?? {})[0] ?? [];
+    const { min, max, step, multiple, options: values = [] } = (options ?? {}) as Record<string, unknown>;
+    const one = kind === "boolean" ? { type: "boolean" }
+      : NUMBERS.has(kind) ? {
+        type: "number", minimum: min, maximum: max, multipleOf: typeof step === "number" ? step : undefined,
+      }
+      : kind === "select" ? {
+        type: "string", enum: (values as unknown[]).map((value) => (value as { value?: unknown })?.value ?? value),
+      }
+      : STRINGS.has(kind) ? { type: "string" }
+      : {};
+    const schema = multiple && "type" in one ? { type: "array", items: one } : one;
+    // JSON round trip drops undefined keys.
+    return [key, JSON.parse(JSON.stringify({
+      ...schema, title: field.name, description: field.description, default: field.default,
+      examples: field.example === undefined ? undefined : [field.example],
+    }))];
+  }));
+  const required = flat.filter(([, field]) => field.required).map(([key]) => key);
+  return { type: "object", properties, ...required.length ? { required } : {} };
 }
 
 function entityOf(state: State): Entity {

@@ -111,6 +111,53 @@
           "time"
         ]
       }
+    },
+    "home_command": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "provider": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "home_provider"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "action": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data": {
+            "type": "object"
+          },
+          "parameter": {
+            "type": "string",
+            "maxLength": 191,
+            "default": ""
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "name",
+          "action",
+          "targets",
+          "data",
+          "parameter"
+        ]
+      }
     }
   }
 }

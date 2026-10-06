@@ -1,7 +1,7 @@
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
-import { list, renderActions, renderEntities } from "../render.ts";
+import { control, live, renderActions, renderEntities, views } from "../render.ts";
 import { cms } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
@@ -24,24 +24,47 @@ Deno.test("home backend renders observations and action metadata safely without 
   assertStringIncludes(output, "Unavailable");
   assertEquals(output.includes("<script>"), false);
   const form = String(await renderActions(app, 1, [{
-    id: 'a" onclick="attack()', name: "<b>Action</b>", fields: { value: "</option><script>attack()</script>" },
+    id: 'a" onclick="attack()', name: "<b>Action</b>", targets: [entity.id],
+    input: { type: "object", properties: { value: { title: "</option><script>attack()</script>" } } },
   }], [entity]));
   assertStringIncludes(form, 'data-provider="1"');
   assertStringIncludes(form, "&lt;b&gt;Action&lt;/b&gt;");
   assertEquals(form.includes("<script>"), false);
-  assertStringIncludes(form, "<option value=\"\">Select an action</option>");
+  assertStringIncludes(form, 'list="home-action-1-list"');
+  assertStringIncludes(form, "data-targets=\"[&quot;sensor.temp&quot;]\"");
 });
 
 Deno.test("home backend keeps healthy provider instances visible when another fails", async () => {
   const { app, close } = await fixture();
   try {
     await save(app, { name: "Offline", adapter: "fake", config: { url: "http://offline.test/" } });
-    const output = String(await list({ app } as Node));
+    const output = String(await live({ app } as Node));
     assertStringIncludes(output, "&lt;offline&gt;");
     assertStringIncludes(output, "sensor.temp");
-    assertStringIncludes(output, 'data-provider="1"');
-    assertStringIncludes(output, 'data-provider="2"');
-    assertEquals(cms.node.parts.list, list);
+    assertStringIncludes(output, "<h3>House</h3>");
+    assertStringIncludes(output, "<h3>Offline</h3>");
+    assertStringIncludes(output, "data-new-point");
+    assertEquals(cms.node.parts, views);
+  } finally { await close(); }
+});
+
+Deno.test("home backend stores, lists and runs commands", async () => {
+  const { app, provider, close } = await fixture(), node = { app } as Node;
+  try {
+    const command = { provider, name: "<Lamp>", action: "set", targets: [entity.id], data: { value: true } };
+    assertEquals(await api(node, { command }), { ok: true, message: "Command saved." });
+    const output = String(await control(node));
+    assertStringIncludes(output, "&lt;Lamp&gt;");
+    assertStringIncludes(output, 'data-run="1"');
+    const result = await api(node, { run: 1 }) as { ok: boolean; result: unknown };
+    assertEquals(result.result, { action: "set", input: { entities: [entity.id], data: { value: true } } });
+    // A parameter turns the command into a setter: a typed field next to Run, the value goes to its path.
+    assertEquals((await api(node, { command: { ...command, id: 1, parameter: "value" } }) as { ok: boolean }).ok, true);
+    assertStringIncludes(String(await control(node)), 'data-run-command data-id="1"');
+    const set = await api(node, { run: 1, value: false }) as { result: unknown };
+    assertEquals(set.result, { action: "set", input: { entities: [entity.id], data: { value: false } } });
+    assertEquals(await api(node, { removeCommand: 1 }), { ok: true, message: "Command deleted." });
+    assertEquals((await api(node, { run: 1 }) as { ok: boolean }).ok, false);
   } finally { await close(); }
 });
 

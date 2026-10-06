@@ -18,6 +18,13 @@ adapters implement protocols; `sandbox.flow` owns rules and `cron` owns schedule
   Latest recorded value/time are cached separately from historical observations.
 - **Measurement**: datapoint ID, Unix milliseconds and typed value, or null for an unavailable observation.
   Optional `home.record` owns these tables. `home.history` queries local or upstream archives.
+- **Action**: a discovered operation `{ id, name, description?, input?, targets? }`. `input` is the JSON
+  schema of its data, `targets` the entity IDs it can address; without them, data is free-form and
+  the action takes no targets. Writing a value is always an action; entities stay read-only.
+- **Command**: a stored, named action call `{ provider, name, action, targets, data, parameter }`: to
+  actions what a datapoint is to entities. `run(app, id, { data?, value? })` calls it once; `data` adds to
+  or overrides the stored data, `value` fills the dotted `parameter` path, e.g. `data.command`. Values keep
+  the device's units; reading the result is the job of a datapoint, not of the command.
 
 Provider and datapoint metadata use the existing `dbschema.json` installer. No migration from ims1
 or the discarded snapshot schema runs in normal module initialization.
@@ -55,9 +62,12 @@ provider/:provider/entity/:entity               get
 provider/:provider/action/:action               post { entities?: string[], data?: object }
 datapoints                                     get { provider? }, post { provider, entity, ... }
 datapoint/:datapoint                            get, put { name?, interval?, record? }
+commands                                       get { provider? }, post { provider, name, action, targets?, data?, parameter? }
+command/:command                                get, put { name?, action?, targets?, data?, parameter? }, delete
+command/:command/run                            post { data?, value? }
 ```
 
-Provider and datapoint route IDs are numeric. Removing providers with datapoints is rejected:
+Provider, datapoint and command route IDs are numeric. Removing providers with datapoints or commands is rejected:
 disable them to preserve identity and archive access. Changing an existing datapoint's interpretation
 requires a new datapoint; posting an existing interpretation reuses its datapoint. Changing a
 referenced provider's adapter requires a new provider.
@@ -111,6 +121,8 @@ export const homeProvider: Adapter = {
 ```
 
 An optional JSON schema describes instance configuration, including URL and write-only secrets.
+Actions describe their data as JSON schema (`input`) and list the entities they address (`targets`),
+translated from the protocol's own metadata, so forms and commands work the same for every adapter.
 Adapter names must be unique within an App. Connections belong to the App, keyed by provider ID;
 stop sockets/timers/listeners through the module's init signal. Observe `home:provider` to apply
 connection changes, including enable/disable. Keep device-specific actions, units and discovery

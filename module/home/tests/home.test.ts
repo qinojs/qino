@@ -1,7 +1,10 @@
 import { App, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
-import { actions, call, changed, configure, entities, provider, providers, remove, save } from "../mod.ts";
+import {
+  actions, call, changed, command, commands, configure, entities, provider, providers, remove, removeCommand, run, save,
+  saveCommand,
+} from "../mod.ts";
 import { api } from "../plugin.ts";
 
 async function fixture() {
@@ -103,4 +106,32 @@ Deno.test("home observations and cleanup remain isolated between Apps", async ()
     assertEquals(other.length, 0);
     assertEquals(await providers(two.app), []);
   } finally { await one.close(); await two.close(); }
+});
+
+Deno.test("home stores commands as named action calls and runs them with run-time data", async () => {
+  const { app, close } = await fixture();
+  try {
+    const provider = await save(app, input);
+    const id = await saveCommand(app, { provider, name: "Lamp", action: "set", targets: ["same"], data: { level: 1 } });
+    assertEquals(await command(app, id),
+      { id, provider, name: "Lamp", action: "set", targets: ["same"], data: { level: 1 }, parameter: "" });
+    assertEquals(await run(app, id, { data: { level: 5, fade: true } }),
+      { provider, action: "set", input: { entities: ["same"], data: { level: 5, fade: true } } });
+    await assertRejects(() => run(app, id, { value: 3 }), Error, "no value");
+    // The value fills the parameter path, creating objects on the way; stored siblings stay.
+    await saveCommand(app, { id, data: { message: "brightness", data: { keep: 1 } }, parameter: "data.command" });
+    assertEquals(await run(app, id, { value: 153 }), { provider, action: "set",
+      input: { entities: ["same"], data: { message: "brightness", data: { keep: 1, command: 153 } } } });
+    await saveCommand(app, { id, data: { level: 1 }, parameter: "" });
+    await saveCommand(app, { id, targets: [] });
+    assertEquals(await run(app, id), { provider, action: "set", input: { data: { level: 1 } } });
+    for (const bad of [{ provider, name: "", action: "set" }, { provider, name: "X", action: "set", targets: "same" },
+      { provider, name: "X", action: "set", data: [] }, { provider: 99, name: "X", action: "set" },
+      { provider, name: "X", action: "set", parameter: "data.__proto__" }, { provider, name: "X", action: "set", parameter: "a..b" }])
+      await assertRejects(() => saveCommand(app, bad as never));
+    await assertRejects(() => remove(app, provider), Error, "commands");
+    await removeCommand(app, id);
+    assertEquals(await commands(app), []);
+    await remove(app, provider);
+  } finally { await close(); }
 });

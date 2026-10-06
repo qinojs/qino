@@ -1,9 +1,7 @@
 import { backend } from "@qino/qino/cms.backend";
 
 import api from "./nodeApi.ts";
-import { list, render } from "./render.ts";
-import { settings } from "./settings.ts";
-import { measurements } from "./datapoints.ts";
+import { render, views } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
@@ -19,5 +17,5 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 }
 
 export const cms = {
-  node: { render, api, js: ["pub/main.js"], parts: { list, settings, measurements } },
+  node: { render, api, js: ["pub/main.js"], parts: views },
 };

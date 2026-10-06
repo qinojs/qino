@@ -1,7 +1,8 @@
 import { ApiError, errMsg } from "@qino/qino";
-import { call, configure, enable, save } from "@qino/qino/home";
+import { call, configure, enable, removeCommand, run, save, saveCommand } from "@qino/qino/home";
 import { record } from "@qino/qino/home.record";
 
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Vars = Record<string, unknown>;
@@ -28,6 +29,15 @@ export default async function api(node: Node, vars: Vars): Promise<unknown> {
       await record(app, Number(id), value, time);
       return { ok: true, message: await app.t`Measurement saved.` };
     }
+    if (vars.command !== undefined) {
+      await saveCommand(app, vars.command as Parameters<typeof saveCommand>[1]);
+      return { ok: true, message: await app.t`Command saved.` };
+    }
+    if (vars.removeCommand !== undefined) {
+      await removeCommand(app, Number(vars.removeCommand));
+      return { ok: true, message: await app.t`Command deleted.` };
+    }
+    if (vars.run !== undefined) return accepted(app, await run(app, Number(vars.run), { value: vars.value }));
     if (vars.action === undefined) return false;
     if (!Number.isSafeInteger(vars.provider) || typeof vars.action !== "string" || !vars.action)
       throw new ApiError(400, "Select a provider and action");
@@ -36,8 +46,13 @@ export default async function api(node: Node, vars: Vars): Promise<unknown> {
       throw new ApiError(400, "Target entities must be a list of IDs");
     if (data !== undefined && (!data || typeof data !== "object" || Array.isArray(data)))
       throw new ApiError(400, "Action data must be a JSON object");
-    const result = await call(app, Number(vars.provider), vars.action, { entities, data } as Parameters<typeof call>[3]);
-    const detail = result == null ? "" : "\n" + JSON.stringify(result, null, 2);
-    return { ok: true, message: (await app.t`Action accepted`) + detail, result };
+    const input = { entities, data } as Parameters<typeof call>[3];
+    return accepted(app, await call(app, Number(vars.provider), vars.action, input));
   } catch (error) { return { ok: false, message: errMsg(error) }; }
+}
+
+/** An acknowledgement, not the device state: that arrives as an observation. */
+async function accepted(app: App, result: unknown) {
+  const detail = result == null ? "" : "\n" + JSON.stringify(result, null, 2);
+  return { ok: true, message: (await app.t`Action accepted`) + detail, result };
 }

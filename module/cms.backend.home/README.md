@@ -11,15 +11,19 @@ Provider creation and editing use the adapter's instance schema and existing sch
 Home Assistant's URL and token directly. Multiple instances share an adapter independently. Saving
 updates persisted configuration and reconnects that instance; it does not claim remote reachability.
 Write-only secrets stay empty; blank inputs preserve stored values. Unlinked adapters retain their
-provider metadata and can be disabled. Existing providers are listed in a table with per-row activation and expandable configuration.
-Creation forms, live observations and datapoints are sibling cards.
+provider metadata and can be disabled. The page has four views (`?show=live|datapoints|actions|providers`),
+each a cms-part; small forms (provider settings, datapoints, measurements, attributes) open in u2 dialogs.
 
 Live states retain their native types and include availability, update time and expandable metadata.
 A failed provider does not hide healthy ones. Refresh reads current observations without polling.
-Actions show discovered fields and accept optional entity targets plus an input JSON object. Calls
-go to the adapter once; acknowledgement is distinct from the resulting observed device state.
+The actions view lists each provider's stored commands (run, edit, delete) above one action form. The
+form offers only the action's own targets and builds its data fields from the action's `input` schema
+(free-form JSON without one); it can call the action or save it as a command. A command with a
+parameter shows a value field next to Run: typed when the action's schema describes the path, otherwise
+read as JSON where it parses (`153`, `true`) and as text otherwise. Calls go to the adapter
+once; acknowledgement is distinct from the resulting observed device state.
 
-Each live entity prefills the shared Add datapoint form with name, unit, numeric/state datatype, explicit state-code
+Each live entity opens the Add datapoint dialog prefilled with name, unit, numeric/state datatype, explicit state-code
 mapping, expected reporting interval and recording flag. Existing datapoint interpretation is
 read-only; name/interval/recording remain editable. The datapoint table can stop/resume selections
 while disconnected. Install `home.record` to persist measurements and `cms.cont.home.chart` for plots.

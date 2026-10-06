@@ -11,7 +11,16 @@ import type { Flow } from "@qino/qino/sandbox.flow";
 const state = (value = "off", id = "light.kitchen", time = "2026-10-04T10:00:00Z") => ({
   entity_id: id, state: value, attributes: { friendly_name: "Kitchen", brightness: 20 }, last_updated: time,
 });
-const services = { light: { turn_on: { name: "Turn on", fields: { brightness: { required: false } } } } };
+const services = {
+  light: { turn_on: {
+    name: "Turn on", target: { entity: [{ domain: ["light"] }] },
+    fields: {
+      brightness: { required: false, selector: { number: { min: 0, max: 255, step: 1 } } },
+      advanced: { fields: { effect: { selector: { select: { options: ["none", { value: "pulse", label: "Pulse" }] } } } } },
+    },
+  } },
+  notify: { send: { name: "Send", fields: { message: { required: true, example: "Hi", selector: { text: {} } }, data: {} } } },
+};
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** Speed up protocol deadlines while keeping real timer cancellation and resource checks. */
@@ -129,7 +138,14 @@ Deno.test("homeassistant authenticates, discovers and sends native actions witho
     entities[0].attributes.brightness = 255;
     assertEquals((await homeProvider.entities(app, 1))[0].attributes.brightness, 20);
     assertEquals(await homeProvider.actions(app, 1), [{
-      id: "light.turn_on", name: "Turn on", description: undefined, fields: { brightness: { required: false } },
+      id: "light.turn_on", name: "Turn on", description: undefined, targets: ["light.kitchen"],
+      input: { type: "object", properties: {
+        brightness: { type: "number", minimum: 0, maximum: 255, multipleOf: 1 },
+        effect: { type: "string", enum: ["none", "pulse"] },
+      } },
+    }, {
+      id: "notify.send", name: "Send", description: undefined,
+      input: { type: "object", properties: { message: { type: "string", examples: ["Hi"] }, data: {} }, required: ["message"] },
     }]);
     await homeProvider.call(app, 1, "light.turn_on", { entities: ["light.kitchen"], data: { brightness: 100 } });
     const command = server.commands.find((c) => c.type === "call_service")!;

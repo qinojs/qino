@@ -59,8 +59,9 @@ connects to `<base>/api/websocket`. Allow the Home Assistant host in Deno's netw
   retaining native states and attributes without updating current observations. The History
   integration and recorded data are required; retention remains a Home Assistant responsibility.
 
-Home Assistant state strings, action IDs and input fields remain native, avoiding incomplete
-hardcoded translations. No device protocols, Home Assistant automations, scenes or database tables
+Home Assistant state strings and action IDs remain native, avoiding incomplete hardcoded translations.
+Service field selectors become the action's JSON schema (plain values; others stay free-form JSON),
+and a service's target domains select its `targets` from the current entities. No device protocols, Home Assistant automations, scenes or database tables
 are duplicated in Qino. See [home](../home/) for an example flow and the provider contract.
 
 Protocol reference: [Home Assistant WebSocket API](https://developers.home-assistant.io/docs/api/websocket/).

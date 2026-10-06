@@ -6,6 +6,8 @@ import type { App } from "@qino/qino";
 
 export { configure, datapoint, datapoints, value } from "./datapoint.ts";
 export type { Datapoint } from "./datapoint.ts";
+export { command, commands, removeCommand, run, saveCommand } from "./command.ts";
+export type { Command } from "./command.ts";
 
 /** A logical endpoint, not necessarily a physical device. Values and attributes keep their types. */
 export type Entity = {
@@ -23,7 +25,10 @@ export type Action = {
   id: string;
   name: string;
   description?: string;
-  fields?: Record<string, unknown>;
+  /** JSON schema of the action's data; without it, data is a free-form object. */
+  input?: Record<string, unknown>;
+  /** Entity IDs the action can address; without it, the action takes no targets. */
+  targets?: string[];
 };
 
 export type Call = { entities?: string[]; data?: Record<string, unknown> };
@@ -111,7 +116,7 @@ export async function save(app: App, input: {
   if (input.enabled !== undefined && typeof input.enabled !== "boolean") throw new ApiError(400, "Invalid enabled flag");
   const previous = input.id === undefined ? undefined : await provider(app, input.id);
   if (previous && previous.adapter !== input.adapter && await used(app, previous.id))
-    throw new ApiError(409, "Provider has datapoints; create another instance to change its adapter");
+    throw new ApiError(409, "Provider has datapoints or commands; create another instance to change its adapter");
   const schema = selected.schema ?? { type: "object", properties: {} };
   const old = previous?.adapter === input.adapter ? previous.config : {};
   const config = merge(input.config ?? {}, old, schema) as Record<string, unknown>;
@@ -128,7 +133,10 @@ export async function save(app: App, input: {
   return id;
 }
 
-const used = (app: App, id: number) => app.db.one`SELECT id FROM home_datapoint WHERE provider = ${id} LIMIT 1`;
+// Datapoints and commands refer to the provider's entity and action IDs.
+const used = async (app: App, id: number) =>
+  await app.db.one`SELECT id FROM home_datapoint WHERE provider = ${id} LIMIT 1`
+  ?? await app.db.one`SELECT id FROM home_command WHERE provider = ${id} LIMIT 1`;
 
 export async function enable(app: App, id: number, enabled: boolean): Promise<void> {
   const previous = await provider(app, id);
@@ -139,7 +147,7 @@ export async function enable(app: App, id: number, enabled: boolean): Promise<vo
 /** Retiring a provider leaves its measurement identities and archive intact. */
 export async function remove(app: App, id: number): Promise<void> {
   const previous = await provider(app, id);
-  if (await used(app, id)) throw new ApiError(409, "Provider has datapoints; disable it instead");
+  if (await used(app, id)) throw new ApiError(409, "Provider has datapoints or commands; disable it instead");
   await app.db.query`DELETE FROM home_provider WHERE id = ${id}`;
   await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }

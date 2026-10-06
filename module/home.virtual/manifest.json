@@ -1,0 +1,6 @@
+{
+  "name": "home.virtual",
+  "description": "Virtual home entities: read from one source entity, set through one stored command, of any provider.",
+  "dependencies": ["home"],
+  "files": ["README.md", "manifest.json", "plugin.ts", "mod.ts", "api.ts", "dbschema.json", "templates/android.json"]
+}

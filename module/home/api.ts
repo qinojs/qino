@@ -1,11 +1,12 @@
 import { Access, NotFoundError, s } from "@qino/qino";
 
 import {
-  actions, adapters, call, configure, datapoint, datapoints, enable, entities, provider, providers, redact, remove, save,
+  actions, adapters, call, command, commands, configure, datapoint, datapoints, enable, entities, provider, providers,
+  redact, remove, removeCommand, run, save, saveCommand,
 } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params } from "@qino/qino";
-import type { Call } from "./mod.ts";
+import type { Call, Command } from "./mod.ts";
 
 // Providers reach into the house: configuration, live states and device actions are superuser-only.
 const access = Access.SUPERUSER;
@@ -20,6 +21,12 @@ const source = s.object({
   provider: s.number(), entity: s.string(), unit: s.optional(s.string()), type: s.optional(s.string()),
   mapping: s.optional(s.record(s.number())), ...meta,
 });
+const order = {
+  name: s.string(), action: s.string().describe("Discovered action ID"),
+  targets: s.optional(s.array(s.string())).describe("Provider-local target entity IDs"),
+  data: s.optional(s.record(s.any())).describe("Provider-defined action data"),
+  parameter: s.optional(s.string()).describe("Dotted path in data that a run-time value fills, e.g. data.command"),
+};
 
 export const api: ApiTree = {
   datapoints: {
@@ -44,6 +51,47 @@ export const api: ApiTree = {
       input: s.object(meta),
       execute: async ({ datapoint: id, ...input }: Params, ctx: Ctx) => ({ id: await configure(ctx.app, { ...input, id: Number(id) }) }),
     },
+  } },
+  commands: {
+    get: {
+      access, description: "List stored home commands: named action calls", query,
+      execute: ({ provider }: Params, ctx: Ctx) => commands(ctx.app, provider as number | undefined),
+    },
+    post: {
+      access, description: "Store a named action call of one provider",
+      input: s.object({ provider: s.number(), ...order }),
+      execute: async (input: Params, ctx: Ctx) => ({ id: await saveCommand(ctx.app, input as Partial<Command>) }),
+    },
+  },
+  command: { ":command": {
+    paramSchema: s.number(),
+    get: {
+      access, description: "Read one stored home command",
+      execute: ({ command: id }: Params, ctx: Ctx) => command(ctx.app, Number(id)),
+    },
+    put: {
+      access, description: "Edit one stored home command",
+      input: s.object({
+        name: s.optional(order.name), action: s.optional(order.action), targets: order.targets, data: order.data,
+        parameter: order.parameter,
+      }),
+      execute: async ({ command: id, ...input }: Params, ctx: Ctx) =>
+        ({ id: await saveCommand(ctx.app, { ...input, id: Number(id) } as Partial<Command>) }),
+    },
+    delete: {
+      access, description: "Delete one stored home command",
+      execute: async ({ command: id }: Params, ctx: Ctx) => { await removeCommand(ctx.app, Number(id)); return { ok: true }; },
+    },
+    run: { post: {
+      access,
+      description: "Execute a stored command once. Acknowledgement is not a device state; observe home:change for that.",
+      input: s.object({
+        data: s.optional(s.record(s.any())).describe("Values added to or overriding the stored data"),
+        value: s.optional(s.any()).describe("Fills the command's parameter, in the device's own units"),
+      }),
+      execute: ({ command: id, data, value }: Params, ctx: Ctx) =>
+        run(ctx.app, Number(id), { data: data as Record<string, unknown> | undefined, value }),
+    } },
   } },
   adapters: { get: {
     access, description: "List linked home adapter implementations and their instance configuration schemas",

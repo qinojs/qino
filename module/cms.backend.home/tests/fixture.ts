@@ -10,7 +10,10 @@ export const homeProvider = {
     url: { type: "string", format: "uri" }, accessToken: { type: "string", writeOnly: true },
   } },
   entities: async (_app, id) => { if (id === 2) throw new Error("<offline>"); return [{ id: "sensor.temp", name: "Temperature", state: 21.5, unit: "°C", available: true, attributes: {} }]; },
-  actions: async () => [{ id: "set", name: "Set", fields: { value: { required: true } } }],
+  actions: async () => [{
+    id: "set", name: "Set", targets: ["sensor.temp"],
+    input: { type: "object", properties: { value: { type: "boolean" } }, required: ["value"] },
+  }],
   call: async (_app, _id, action, input) => ({ action, input }),
 };
 `);
