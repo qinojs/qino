@@ -104,3 +104,10 @@ stable, until a reinstall), many providers know no physical address, and one dev
 **Stable entity references.** Datapoints and commands keep the provider's entity ID. Renaming an entity in
 Home Assistant while Qino references it breaks the reference; Home Assistant's immutable `unique_id`
 would survive renames.
+
+**Flows depend on the provider's shape.** A flow on a Home Assistant button reads
+`e.entity.attributes.event_type`: it only works because Home Assistant represents events that way. This
+is possibly unpleasant: the owner wants no exceptions, no assumptions about a provider and no
+inconsistencies. A direction: an event per datapoint value (e.g. `home:value { datapoint, value, time }`),
+so flows use the datapoint's translated values and stay unchanged when a device moves to another provider.
+Cost: every value a flow reacts to needs a datapoint first. Revisit with a second device provider.
