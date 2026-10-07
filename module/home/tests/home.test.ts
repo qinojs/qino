@@ -3,7 +3,7 @@ import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import {
   actions, call, command, commands, configure, entities, provider, providers, remove, removeCommand, run, save,
-  reported, saveCommand, value, leaves, at, datapoint,
+  reported, saveCommand, value, leaves, at, datapoint, adapter, differ,
 } from "../mod.ts";
 import { api } from "../plugin.ts";
 
@@ -33,6 +33,8 @@ const input = { name: "First", adapter: "fake", config: { url, token: "private",
 Deno.test("home persists distinct provider instances and dispatches overlapping entity identities by numeric ID", async () => {
   const { app, close } = await fixture();
   try {
+    assertEquals(adapter(app, "fake")?.name, "fake");
+    assertEquals(adapter(app, "absent"), undefined);
     const first = await save(app, input);
     const second = await save(app, { ...input, name: "Second", config: { ...input.config, url: "https://second.test/" } });
     assertEquals([first, second], [1, 2]);
@@ -144,6 +146,8 @@ Deno.test("home addresses every value of an entity by path and reports input and
       attributes: { brightness: 120, ENERGY: { Power: 12 }, colors: [1, 2] },
     };
     assertEquals(leaves(entity), [["", "on"], ["brightness", 120], ["ENERGY/Power", 12], ["colors", [1, 2]]]);
+    assertEquals([differ(entity, entity), differ({ ...entity, available: false }, entity), differ(null, entity)],
+      [[], [""], ["", "brightness", "ENERGY/Power", "colors"]]);
     assertEquals([at(entity, ""), at(entity, "ENERGY/Power"), at(entity, "missing/x")], ["on", 12, undefined]);
     const provider = await save(app, input);
     // A path is part of the source; the entity's unit describes only its state.

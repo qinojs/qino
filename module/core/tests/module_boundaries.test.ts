@@ -242,6 +242,7 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 // whole module in for a link, a widget or a prompt. They want an extension point, and until that
 // vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
 const OPTIONAL = new Set([
+  "cms.backend.home/nodeApi.ts -> home.record", // manual measurements, guarded by modules.linked("home.record")
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
   "cms.backend.superuser.db.query/lib/ai.ts -> ai1.tools", // "explain this query" is a bonus, not the console
   "cms.text/api.ts -> ai1", // translation, guarded by modules.linked("ai1")

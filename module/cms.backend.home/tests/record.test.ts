@@ -23,6 +23,10 @@ Deno.test("home backend selects and stops recording while a provider is disabled
     assertEquals((await datapoints(app))[0].record, false);
     assertEquals((await backendApi(node, { datapoint: { id, record: "false" } }) as { ok: boolean }).ok, false);
     assertEquals((await backendApi(node, { datapoint: { provider, entity: 7 } }) as { ok: boolean }).ok, false);
+    app.modules.unlink("home.record");
+    assertEquals(await backendApi(node, { datapoint: { id, record: true } }), { ok: true, message: "Datapoint saved." });
+    assertEquals(await backendApi(node, { measurement: { id, value: 1, time: Date.now() } }),
+      { ok: false, message: "Install home.record to store measurements" });
   } finally { await close(); }
 });
 
