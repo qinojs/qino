@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.fin.invoice",
+  "description": "Invoices issued and received: lines, payments, the document and its PDF, and new drafts.",
+  "dependencies": [
+    "cms.backend.superuser.fin",
+    "fin.invoice"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

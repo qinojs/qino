@@ -76,3 +76,33 @@ Deno.test("cms.backend.demo: the panel lists the seeders and what the last run w
     await app.db.close();
   }
 });
+
+Deno.test("cms.backend.demo: finance — invoices in every state, a statement, and a wipe leaves nothing", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.installation.default");
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
+  app.stores.add(import.meta.resolve("../../../fin/store.json"))
+    .add("fin.invoice").add("fin.bank").add("fin.payment.qrbill").add("fin.accounting.ch");
+  await app.init();
+  try {
+    await app.settings["fin.payment.qrbill"].iban("CH44 3199 9123 0008 8901 2");
+    await app.settings.core.url("https://demo.test/");
+    const before = await census(app);
+    const seed = await reset(app, { only: ["users", "fin"] });
+    assert(seed.counts.invoices > 20, `invoices: ${seed.counts.invoices}`);
+    assert(seed.counts["bank lines"] > 3, `bank lines: ${seed.counts["bank lines"]}`);
+    const states = await app.db.col`SELECT DISTINCT status FROM invoice ORDER BY status`;
+    assertEquals(states, ["canceled", "draft", "open", "paid"]);
+    assert(Number(await app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL`) > 0, "something to assign");
+    assert(Number(await app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NOT NULL`) > 0, "QR bills settled");
+    assert(seed.counts.entries > 0, "entries by hand");
+    assert(Number(await app.db.one`SELECT COUNT(*) FROM entry WHERE ref LIKE 'fin.invoice:%'`) > 10, "invoices booked themselves");
+
+    await wipe(app);
+    const after = await census(app);
+    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting"]) delete after[shared], delete before[shared];
+    assertEquals(after, before);
+  } finally {
+    await app.db.close();
+  }
+});

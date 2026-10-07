@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.fin.accounting",
+  "description": "Balance sheet and result of a period, the journal with its entries and receipts, booking by hand, the chart.",
+  "dependencies": [
+    "cms.backend.superuser.fin",
+    "fin.accounting"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

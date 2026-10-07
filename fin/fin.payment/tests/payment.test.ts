@@ -11,7 +11,7 @@ import type { Provider, State } from "../mod.ts";
 
 /** A provider that answers whatever the test puts in `next`. */
 function fake() {
-  const provider: Provider & { next: State; urls?: { back: string; notify: string } } = {
+  const provider: Provider & { next: State; urls?: { back: string; notify: string; pay: string } } = {
     name: "fake",
     label: "Fake",
     next: {},
@@ -22,6 +22,7 @@ function fake() {
       return Promise.resolve({ redirect: `https://pay.test/${payment.id}`, externalId: "tok" });
     },
     sync: () => Promise.resolve(provider.next),
+    slip: (_app, payment) => Promise.resolve(`<p>Pay ${payment.amount} to us</p>`),
     refund: () => Promise.resolve({}),
   };
   return provider;
@@ -42,7 +43,7 @@ async function setup() {
     url: () => Promise.resolve("https://site.test/"),
     modules: { linked: () => [{ plugin: { paymentProvider: provider } }] },
     // deno-lint-ignore no-explicit-any
-    fire: (name: string, data: any) => (name === "payment:status" && events.push(data), Promise.resolve(data)),
+    fire: (name: string, data: any) => (name === "payment:change" && events.push(data), Promise.resolve(data)),
     on: (name: string, fn: (e: { ctx: Ctx }) => Promise<void>) => void (handlers[name] = fn),
   };
   const context = (url = "https://site.test/") => testContext({ url, app: fakeApp });
@@ -93,6 +94,7 @@ Deno.test("the job asks after open payments with growing gaps, for two days", as
 Deno.test("create stores an incoming payment and hands the provider signed addresses", async () => {
   const { app, provider } = await setup();
   const { id, redirect } = await create(app, order);
+  assertEquals(provider.urls!.back.replace("/return/", "/pay/"), provider.urls!.pay);
   assertEquals(redirect, `https://pay.test/${id}`);
   const row = await app.db.row`SELECT * FROM payment WHERE id = ${id}`;
   assertEquals(
@@ -158,4 +160,29 @@ Deno.test("the payer comes back to the return url, the provider gets an ok, a fo
   const forged = await request(provider.urls!.back.replace(`/${id}-`, `/${id + 1}-`));
   assertEquals(forged instanceof Output && forged.status, 404);
   assertEquals(await request("https://site.test/payment/other/x"), undefined);
+});
+
+Deno.test("the slip of an open payment is shown at its pay address, a settled one has none", async () => {
+  const { app, provider, request } = await setup();
+  await create(app, order);
+  const shown = await request(provider.urls!.pay);
+  assertEquals(shown instanceof Output && shown.status, 200);
+  assertEquals(String(shown.body).endsWith("<p>Pay 4990 to us</p>"), true);
+  provider.next = { status: "paid", paid: 4990 };
+  await request(provider.urls!.notify);
+  assertEquals((await request(provider.urls!.pay)).status, 404);
+});
+
+Deno.test("money that moves without a new status is a change too", async () => {
+  const { app, provider, events } = await setup();
+  const { id } = await create(app, order);
+  provider.next = { status: "processing", paid: 2000 };
+  await sync(app, id);
+  provider.next = { status: "processing", paid: 3000 };
+  await sync(app, id);
+  await sync(app, id);
+  assertEquals(events.map((e) => [e.payment.status, e.payment.paid, e.previous]), [
+    ["processing", 2000, "pending"],
+    ["processing", 3000, "processing"],
+  ]);
 });

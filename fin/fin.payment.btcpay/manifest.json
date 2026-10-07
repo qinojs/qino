@@ -1,0 +1,15 @@
+{
+  "name": "fin.payment.btcpay",
+  "description": "BTCPay Server as payment provider: bitcoin on-chain, Lightning and more, self-hosted, without a middleman.",
+  "dependencies": [
+    "fin.payment",
+    "locale.currency"
+  ],
+  "files": [
+    "README.md",
+    "lib/provider.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

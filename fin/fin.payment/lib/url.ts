@@ -17,9 +17,10 @@ export async function idOf(app: App, token: string): Promise<number | undefined>
   return id;
 }
 
-/** Where a provider sends the payer back (`back`) and tells its news (`notify`). */
-export async function urls(app: App, id: number): Promise<{ back: string; notify: string }> {
+/** Where a provider sends the payer back (`back`), tells its news (`notify`), and the payer finds
+ *  the slip, if the provider has one (`pay`). */
+export async function urls(app: App, id: number): Promise<{ back: string; notify: string; pay: string }> {
   const base = `${await app.url()}${PATH}/`;
   const token = await tokenOf(app, id);
-  return { back: `${base}return/${token}`, notify: `${base}notify/${token}` };
+  return { back: `${base}return/${token}`, notify: `${base}notify/${token}`, pay: `${base}pay/${token}` };
 }

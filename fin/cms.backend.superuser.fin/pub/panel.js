@@ -1,0 +1,29 @@
+import { api } from "@qino/pub/api.js";
+
+/**
+ * The fin backend pages' actions: post to the node api, say what came back in a u2 dialog, then
+ * reload — the pages are small, and filters live in the URL, so nothing is lost. An answer with a
+ * `url` goes there instead.
+ */
+export function finPanel(el) {
+  const node = api.cms.node(Number(cms.el.nid(el)));
+  const dialog = () => import("@qino/u2/js/dialog/dialog.js");
+  /** The named fields of a form, trimmed; a checkbox counts only when checked. */
+  const fields = (form) => Object.fromEntries([...form.elements].filter((e) => e.name)
+    .map((e) => [e.name, e.type === "checkbox" ? (e.checked ? e.value : "") : e.value.trim()]));
+  const execute = async (button, data) => {
+    if (button) button.disabled = true;
+    try {
+      const response = await node.api.post(data);
+      if (response?.message) await (await dialog()).alert(response.message);
+      // an action that made something new goes there, any other shows the page again
+      if (response?.url) location.href = response.url;
+      else if (response?.ok !== false) location.reload();
+    } catch (e) {
+      await (await dialog()).alert(e?.message || String(e));
+    } finally {
+      if (button) button.disabled = false;
+    }
+  };
+  return { node, execute, fields };
+}

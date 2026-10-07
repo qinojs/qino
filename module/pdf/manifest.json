@@ -1,0 +1,15 @@
+{
+  "name": "pdf",
+  "description": "HTML to PDF, printed by a headless Chromium.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "lib/browser.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

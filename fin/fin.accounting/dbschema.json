@@ -1,0 +1,136 @@
+{
+  "properties": {
+    "account": {
+      "description": "An account of the chart: where entries are booked",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": "unique",
+            "description": "1020, 3200 … as the chart numbers it"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "type": {
+            "type": "string",
+            "enum": ["asset", "liability", "equity", "income", "expense"],
+            "maxLength": 16,
+            "x-index": true,
+            "description": "Assets, liabilities and equity are the balance sheet; income and expense the result"
+          }
+        },
+        "required": ["id", "number", "name", "type"]
+      }
+    },
+    "entry": {
+      "description": "A booking: lines that add up to zero. Never changed; a correction reverses it",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "x-index": true
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "The book's currency"
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What it books, as <module>:<id> — fin.invoice:7, fin.payment:12"
+          },
+          "reverses": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "entry",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The entry this one takes back"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Who booked it; none for an automatic entry"
+          },
+          "created": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "date", "text", "currency", "created"]
+      }
+    },
+    "entry_line": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "entry_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "entry",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "account_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "account",
+            "description": "Not removed with its account: what was booked stays"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In minor units: debit positive, credit negative"
+          },
+          "tax_code": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "What a tax report adds it up under; the country module's vocabulary"
+          }
+        },
+        "required": ["id", "entry_id", "account_id", "amount"]
+      }
+    },
+    "entry_file": {
+      "description": "Receipts of an entry",
+      "additionalProperties": {
+        "properties": {
+          "entry_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "entry",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "cascade"
+          }
+        },
+        "required": ["entry_id", "file_id"]
+      }
+    }
+  }
+}

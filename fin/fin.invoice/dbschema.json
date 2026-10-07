@@ -1,0 +1,188 @@
+{
+  "properties": {
+    "invoice": {
+      "description": "A claim: out = we issued it (receivable), in = we received it (payable)",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["in", "out"],
+            "maxLength": 3,
+            "x-index": true
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true,
+            "description": "Drawn when an outgoing invoice is issued; the sender's for an incoming one"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "open", "paid", "canceled"],
+            "maxLength": 8,
+            "x-index": true
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "x-index": true,
+            "description": "Issue date"
+          },
+          "due": {
+            "type": "string",
+            "format": "date",
+            "x-index": true,
+            "description": "Due date, YYYY-MM-DD; overdue is derived from it"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code"
+          },
+          "gross": {
+            "type": "boolean",
+            "default": false,
+            "description": "Line prices include tax"
+          },
+          "net": {
+            "type": "integer",
+            "default": 0,
+            "description": "In minor units"
+          },
+          "tax": {
+            "type": "integer",
+            "default": 0,
+            "description": "In minor units"
+          },
+          "total": {
+            "type": "integer",
+            "default": 0,
+            "description": "Net plus tax, in minor units"
+          },
+          "paid": {
+            "type": "integer",
+            "default": 0,
+            "description": "Sum of its payments less refunds, in minor units"
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What the invoice is for, as <module>:<id>"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "The language it is written in"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The PDF as it was printed"
+          },
+          "party": {
+            "type": "string",
+            "description": "The other side as printed, JSON shaped like identity.organization"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "text": {
+            "type": "string",
+            "description": "Notes printed on the invoice"
+          },
+          "data": {
+            "type": "string",
+            "description": "What other modules keep with it, JSON"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "direction", "status", "currency", "created", "changed"]
+      }
+    },
+    "invoice_line": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "invoice_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "invoice",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0
+          },
+          "title": {
+            "type": "string"
+          },
+          "qty": {
+            "type": "number",
+            "default": 1
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "h, pcs, kg …"
+          },
+          "price": {
+            "type": "number",
+            "description": "Per unit, in minor units, finer if need be (23.45 = 0.2345 CHF); net or gross"
+          },
+          "tax_rate": {
+            "type": "number",
+            "default": 0,
+            "description": "Percent"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "qty × price, rounded, in minor units"
+          }
+        },
+        "required": ["id", "invoice_id", "price", "amount"]
+      }
+    },
+    "invoice_counter": {
+      "description": "The last number drawn per format, so a format with {year} restarts each year",
+      "additionalProperties": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary",
+            "description": "The number format with the year filled in"
+          },
+          "n": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "required": ["format", "n"]
+      }
+    }
+  }
+}

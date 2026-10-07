@@ -42,7 +42,8 @@ const tx = (status: string, extra: Record<string, unknown> = {}) => ({
 
 const offer = { amount: 1, currency: "CHF" };
 
-Deno.test("methods follow the setting, or leave the choice to Saferpay's page", async () => {
+Deno.test("methods follow the setting, or leave the choice to Saferpay's page; none without an account", async () => {
+  await withSaferpay({}, async (app) => assertEquals(await saferpay.methods(app, offer), []), { password: "" });
   await withSaferpay({}, async (app) => {
     assertEquals(await saferpay.methods(app, offer), [{ name: "", label: "Saferpay" }]);
   });
@@ -54,7 +55,8 @@ Deno.test("methods follow the setting, or leave the choice to Saferpay's page", 
 Deno.test("start initializes the payment page with our addresses and keeps the token", async () => {
   const answers = { "PaymentPage/Initialize": { Token: "tok", RedirectUrl: "https://pay.test/x" } };
   await withSaferpay(answers, async (app, calls) => {
-    const urls = { back: "https://site.test/payment/return/7-x", notify: "https://site.test/payment/notify/7-x" };
+    const base = "https://site.test/payment/";
+    const urls = { back: `${base}return/7-x`, notify: `${base}notify/7-x`, pay: `${base}pay/7-x` };
     const state = await saferpay.start(app, row({ method: "twint", title: "Order 12" }), urls);
     assertEquals(state, { redirect: "https://pay.test/x", externalId: "tok", data: { token: "tok" } });
     const { body } = calls[0];

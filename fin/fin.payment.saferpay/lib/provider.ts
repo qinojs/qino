@@ -35,8 +35,10 @@ export const paymentProvider: Provider = {
   name: "saferpay",
   label: "Saferpay",
 
+  // nothing until the account is set up, so a checkout never offers what would fail
   async methods(app) {
-    const { methods } = await settings(app);
+    const { customerId, terminalId, user, password, methods } = await settings(app);
+    if (!customerId || !terminalId || !user || !password) return [];
     if (!methods.length) return [{ name: "", label: "Saferpay" }];
     return methods.map((name) => ({ name: name.toLowerCase(), label: name }));
   },

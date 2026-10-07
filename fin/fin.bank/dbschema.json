@@ -1,0 +1,104 @@
+{
+  "properties": {
+    "bank_account": {
+      "description": "An account that has statements: a bank account, a PayPal balance, a cash book, a wallet",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "iban": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique",
+            "description": "IBAN or other account identifier, without spaces"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code"
+          },
+          "created": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "iban", "currency", "created"]
+      }
+    },
+    "bank_tx": {
+      "description": "One line of a statement, as the bank reported it",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "account_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "bank_account",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "x-index": true,
+            "description": "Booking date"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Signed: in is positive, out negative; in minor units"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "Structured reference: QR, creditor (RF…) or end-to-end id"
+          },
+          "party_name": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Who paid, or who was paid"
+          },
+          "party_account": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Their IBAN or account"
+          },
+          "text": {
+            "type": "string",
+            "description": "Unstructured message and booking text"
+          },
+          "external_id": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "unique",
+            "description": "The bank's id for the line, with the account, so a statement read twice adds nothing"
+          },
+          "payment_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "payment",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The payment it settles, once matched or assigned"
+          },
+          "created": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "account_id", "date", "amount", "currency", "external_id", "created"]
+      }
+    }
+  }
+}

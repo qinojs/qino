@@ -1,0 +1,14 @@
+{
+  "name": "fin.accounting.ch",
+  "description": "Swiss bookkeeping: the main accounts of the SME chart (KMU) and where automatic entries go.",
+  "dependencies": [
+    "fin.accounting"
+  ],
+  "files": [
+    "README.md",
+    "chart.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

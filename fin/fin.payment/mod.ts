@@ -1,8 +1,12 @@
 import { unixTime } from "@qino/qino";
+import qrcode from "nayuki-qr-code-generator";
 
 import { urls } from "./lib/url.ts";
 
-import type { App, Row } from "@qino/qino";
+// deno-lint-ignore no-explicit-any -- the package has no types
+const { QrCode } = qrcode as any;
+
+import type { App, Ctx, Row } from "@qino/qino";
 
 /** `paid` and `refunded` are where money moved; `failed`, `canceled` and `expired` end it unmoved. */
 type Status = "pending" | "processing" | "paid" | "failed" | "canceled" | "expired" | "refunded";
@@ -12,6 +16,9 @@ type Offer = { amount: number; currency: string; country?: string };
 
 /** A way to pay as a provider offers it; `name` is unique within the provider. */
 type Method = { name: string; label: string };
+
+/** Where the payer and the provider's server come back: see `lib/url.ts`. */
+type Urls = { back: string; notify: string; pay: string };
 
 /** What a provider reports. Left-out fields stay as they are; `data` is the provider's own state. */
 export type State = {
@@ -37,18 +44,28 @@ export type Provider = {
   /** The methods that fit; none, and the provider is not offered. */
   methods(app: App, offer: Offer): Method[] | Promise<Method[]>;
   /** Start an incoming payment; returns where to send the payer. `back` is for the payer,
-   *  `notify` for the provider's server. */
-  start(app: App, payment: Row, urls: { back: string; notify: string }): Promise<State & { redirect: string }>;
+   *  `notify` for the provider's server, `pay` shows the slip. */
+  start(app: App, payment: Row, urls: Urls): Promise<State & { redirect: string }>;
   /** Ask the provider how the payment stands. */
   sync(app: App, payment: Row): Promise<State>;
   /** Pay `amount` back; the refunded total and the status follow from it. */
   refund?(app: App, payment: Row, amount: number): Promise<State>;
+  /** What the payer needs to pay outside a provider's page — a QR bill, an address with its QR
+   *  code — as HTML. Shown at `pay`, appended to an invoice. */
+  slip?(app: App, payment: Row): Promise<string>;
+  /** The slip is paid within minutes (crypto): its page asks again every few seconds and moves
+   *  on to `return` once paid. */
+  watch?: boolean;
+  /** A notification for all payments at `payment/webhook/<name>`: verify it, and answer which
+   *  payments it is about — they are synced, nothing it says is taken over. */
+  webhook?(ctx: Ctx): Promise<number[]>;
 };
 
 const providers = (app: App): Provider[] =>
   app.modules.linked().filter((mod) => mod.plugin.paymentProvider).map((mod) => mod.plugin.paymentProvider as Provider);
 
-const provider = (app: App, name: string): Provider | undefined => providers(app).find((p) => p.name === name);
+/** The linked provider of that name. */
+export const provider = (app: App, name: string): Provider | undefined => providers(app).find((p) => p.name === name);
 
 /** Every method that fits the offer, as `provider.method` — what `create()` takes. */
 export async function methods(app: App, offer: Offer): Promise<{ method: string; label: string }[]> {
@@ -57,7 +74,7 @@ export async function methods(app: App, offer: Offer): Promise<{ method: string;
   return offered.flat();
 }
 
-/** What every payment has. `ref` is the consumer's: `<module>:<id>`, found again in `payment:status`. */
+/** What every payment has. `ref` is the consumer's: `<module>:<id>`, found again in `payment:change`. */
 type Base = { amount: number; currency: string; ref?: string; title?: string; usrId?: number };
 
 /**
@@ -106,7 +123,7 @@ export async function record(
     status: "paid",
     paid,
   });
-  await app.fire("payment:status", { payment: await get(app, id) });
+  await app.fire("payment:change", { payment: await get(app, id) });
   return id;
 }
 
@@ -117,6 +134,14 @@ export async function sync(app: App, id: number): Promise<Row | undefined> {
   const selected = payment && provider(app, String(payment.provider));
   if (!selected) return payment;
   return apply(app, payment, await selected.sync(app, payment));
+}
+
+/** Withdraw a payment nobody has started paying (`pending`): what it asked for is no longer owed.
+ *  Anything further along is left as it is. */
+export async function cancel(app: App, id: number): Promise<Row | undefined> {
+  const payment = await get(app, id);
+  if (payment?.status !== "pending") return payment;
+  return apply(app, payment, { status: "canceled" });
 }
 
 /** Pay back, by default all that is left. */
@@ -133,6 +158,43 @@ export async function refund(app: App, id: number, amount?: number): Promise<Row
   const refunded = Number(payment.refunded) + amount;
   const status = refunded >= Number(payment.paid) ? "refunded" : undefined;
   return apply(app, payment, { refunded, status, ...await refunder(app, payment, amount) });
+}
+
+/** The slip of an open payment, as HTML; nothing if it is settled or its provider has none. */
+export async function slip(app: App, id: number): Promise<string | undefined> {
+  const payment = await get(app, id);
+  if (!payment || (payment.status !== "pending" && payment.status !== "processing")) return;
+  return provider(app, String(payment.provider))?.slip?.(app, payment);
+}
+
+/**
+ * The slip a payment by `method` would have — for a preview, before there is a payment. Only
+ * where the provider can draw one without starting (a QR bill); nothing otherwise.
+ */
+export async function sample(
+  app: App,
+  method: string,
+  offer: { amount: number; currency: string; title?: string },
+): Promise<string | undefined> {
+  const [name, kind] = method.split(/\.(.*)/);
+  const payment = {
+    id: 0, provider: name, method: kind || null, status: "pending", paid: 0, refunded: 0,
+    amount: offer.amount, currency: offer.currency, title: offer.title ?? null, external_id: null, data: null,
+  } as Row;
+  return await provider(app, name)?.slip?.(app, payment).catch(() => undefined) || undefined;
+}
+
+/** A QR code as SVG, for slips: the same encoder u2's <u2-qrcode> uses in the browser. */
+export function qr(text: string): string {
+  const code = QrCode.encodeText(text, QrCode.Ecc.MEDIUM);
+  const border = 4;
+  const size = code.size + border * 2;
+  let path = "";
+  for (let y = 0; y < code.size; y++) {
+    for (let x = 0; x < code.size; x++) if (code.getModule(x, y)) path += `M${x + border},${y + border}h1v1h-1z`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`
+    + `<rect width="100%" height="100%" fill="#fff"/><path d="${path}"/></svg>`;
 }
 
 const get = (app: App, id: number): Promise<Row | undefined> => app.db.row`SELECT * FROM payment WHERE id = ${id}`;
@@ -156,25 +218,29 @@ async function insert(app: App, opt: Base, values: Record<string, unknown>): Pro
 }
 
 /**
- * Store a state. The update is conditional on the status read before, so of two concurrent
- * reports (return and notification) only one fires `payment:status`.
+ * Store a state. The update is conditional on what was read before, so of two concurrent reports
+ * (return and notification) only one fires `payment:change` — for a new status, or money that
+ * moved (a second partial transfer leaves the status as it was).
  */
 async function apply(app: App, payment: Row, state: State): Promise<Row | undefined> {
   const status = state.status ?? payment.status;
+  const paid = state.paid ?? payment.paid;
+  const refunded = state.refunded ?? payment.refunded;
   const changed = await app.db.exec`
     UPDATE payment SET
       status = ${status},
       method = ${state.method ?? payment.method},
-      paid = ${state.paid ?? payment.paid},
-      refunded = ${state.refunded ?? payment.refunded},
+      paid = ${paid},
+      refunded = ${refunded},
       fee = ${state.fee ?? payment.fee},
       external_id = ${state.externalId ?? payment.external_id},
       data = ${state.data ? JSON.stringify(state.data) : payment.data},
       changed = ${unixTime()}
-    WHERE id = ${payment.id} AND status = ${payment.status}`;
+    WHERE id = ${payment.id}
+      AND status = ${payment.status} AND paid = ${payment.paid} AND refunded = ${payment.refunded}`;
   const fresh = await get(app, Number(payment.id));
-  if (changed.affectedRows && status !== payment.status) {
-    await app.fire("payment:status", { payment: fresh, previous: payment.status });
-  }
+  const moved = status !== payment.status || Number(paid) !== Number(payment.paid)
+    || Number(refunded) !== Number(payment.refunded);
+  if (changed.affectedRows && moved) await app.fire("payment:change", { payment: fresh, previous: payment.status });
   return fresh;
 }

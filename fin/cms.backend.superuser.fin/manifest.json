@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.fin",
+  "description": "Finance overview: what is open, how payments, invoices and bank work together, and which parts are there.",
+  "dependencies": [
+    "cms.backend",
+    "fin.payment",
+    "locale.currency"
+  ],
+  "files": [
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/panel.js"
+  ]
+}

@@ -185,6 +185,7 @@
     "messaging.telegram": {},
     "messaging.webpush": {},
     "oauth_server": {},
+    "pdf": {},
     "sandbox": {},
     "sandbox.flow": {},
     "score": {},

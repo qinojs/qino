@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.fin.payment",
+  "description": "Payments in and out with every detail, the providers and their settings, refunds, and payments recorded by hand.",
+  "dependencies": [
+    "cms.backend.superuser.fin",
+    "fin.payment"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}
