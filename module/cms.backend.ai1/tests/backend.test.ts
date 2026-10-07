@@ -118,7 +118,7 @@ Deno.test("cms.backend.ai1: all models of every provider are imported, switched 
   await withFetch((url) => url.includes("models.dev") ? {} : {
     data: url.includes("groq") ? [{ id: "llama-3.3-70b" }, { id: "whisper-large-v3" }] : [{ id: "meta-llama/Llama-3.3-70B" }],
   }, async () => {
-    assertStringIncludes(await evaluate(app), "api.groq.com: 2 (2 new)");
+    assertStringIncludes(await evaluate(app), "api.groq.com: 2 new");
     await evaluate(app); // twice is once
   });
   assertEquals(await app.db.query`SELECT name, enabled FROM ai1_model ORDER BY name`, [
@@ -194,7 +194,7 @@ Deno.test("cms.backend.ai1: models.dev and Artificial Analysis fill prices, capa
   const { app, node } = await llama({ "artificialanalysis.ai": "aa-key" });
   await app.db.table("ai1_model_score").insert({ model_id: 1, metric: "math", value: 60 }); // from an earlier import
   await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : BENCHMARKS, async () => {
-    assertStringIncludes(await evaluate(app), "models.dev: 2 · Artificial Analysis: 1");
+    assertStringIncludes(await evaluate(app), "models.dev: 2\nArtificial Analysis: 1");
   });
   assertEquals(await app.db.query`SELECT cost_input, cost_output FROM ai1_model_provider ORDER BY id`, [
     { cost_input: 0.59, cost_output: 0.79 }, { cost_input: 0.1, cost_output: 0.3 },

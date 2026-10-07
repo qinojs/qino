@@ -38,7 +38,7 @@ const isModuleFile = (file: unknown): file is string =>
 
 /** Copy all published files of a module, renaming it in text files. Works for local and remote
  *  modules; the manifest serves as the file list. */
-async function copyTemplate(template: Module, dir: string, name: string): Promise<void> {
+async function copyTemplate(template: Module, dir: string, name: string) {
   const files = template.manifest.files;
   if (!files?.length) throw new Error(`Template "${template.name}" does not list its files`);
   const base = new URL(".", template.source);
@@ -56,13 +56,13 @@ async function copyTemplate(template: Module, dir: string, name: string): Promis
 }
 
 /** A minimal module; real starting points come from templates. */
-async function blankModule(dir: string, modName: string): Promise<void> {
+async function blankModule(dir: string, modName: string) {
   await fs.mkdir(dir);
   await fs.write(dir + "manifest.json", JSON.stringify({ name: modName, files: ["manifest.json", "plugin.ts"] }, null, 2) + "\n");
   await fs.write(dir + "plugin.ts", "export function init() {}\n");
 }
 
-async function create(app: App, modName: string, template: string): Promise<void> {
+async function create(app: App, modName: string, template: string) {
   if (!isModuleName(modName)) throw new Error(`Invalid module name: ${modName}`);
   if (app.modules.get(modName)) throw new Error(`Module "${modName}" exists already`);
   const dir = storeDir(app) + modName + "/";

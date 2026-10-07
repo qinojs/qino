@@ -46,7 +46,7 @@ async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
   return [rpId === "localhost" ? "http://localhost" : `https://${rpId}`];
 }
 
-async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
+async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm") {
   const token = randB64(24);
   await db.table("webauthn_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
   return token;

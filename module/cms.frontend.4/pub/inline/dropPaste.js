@@ -186,7 +186,7 @@ const paste = e => {
   }
   // PDF viewers label plain text as text/html without tags; html would drop the line breaks. It is
   // already escaped, so only add the breaks.
-  const html = e.clipboardData.getData('text/html').replace(/\s+$/, '');
+  const html = e.clipboardData.getData('text/html').trimEnd();
   if (html.includes('\n') && !html.includes('<')) {
     e.preventDefault();
     const range = getSelection().getRangeAt(0);

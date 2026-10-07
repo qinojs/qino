@@ -51,6 +51,6 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir:
   );
 }
 
-function name2alt(name: string): string {
+function name2alt(name: string) {
   return name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
 }

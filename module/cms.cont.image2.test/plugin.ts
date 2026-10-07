@@ -129,17 +129,17 @@ const scenes: Scene[] = [
 
 const LOREM = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.";
 
-function sceneCss(s: Scene): string {
+function sceneCss(s: Scene) {
   const sel = `[qcms-mod="cont.image2.test"] [data-scene="${s.key}"]:not(.-nocss)`;
   return (s.box ? `${sel} .-box{${s.box}}\n` : "") + (s.img ? `${sel} .-img{${s.img}}\n` : "");
 }
 
 /** the scene css as the visitor sees it, without the qcms-mod prefix */
-function sceneCssShort(s: Scene): string {
+function sceneCssShort(s: Scene) {
   return (s.box ? `.-box { ${s.box} }\n` : "") + (s.img ? `.-img { ${s.img} }` : "");
 }
 
-function cell(label: string, s: Scene, el: HtmlString): Promise<HtmlString> {
+function cell(label: string, s: Scene, el: HtmlString) {
   const body = s.text ? html`${el}${LOREM}` : el;
   return html.async`<div class=-cell>
       <div class=-label>${label}</div>
@@ -148,7 +148,7 @@ function cell(label: string, s: Scene, el: HtmlString): Promise<HtmlString> {
     </div>`;
 }
 
-async function scene(node: Node, s: Scene, file: DbFile, options: Record<string, unknown>, alt: string): Promise<HtmlString> {
+async function scene(node: Node, s: Scene, file: DbFile, options: Record<string, unknown>, alt: string) {
   const custom = await cms_image2(file, { ...options, ...s.options, class: "-img" });
   const native = html`<img class=-img src="${await file.url()}" alt="${alt}" loading=lazy>`;
   return html.async`<section data-scene="${s.key}">

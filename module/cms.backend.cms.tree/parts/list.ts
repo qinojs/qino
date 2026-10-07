@@ -95,7 +95,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     }
   }
 
-  function renderOnlineStart(subPage: Node, access: number): HtmlString | string {
+  function renderOnlineStart(subPage: Node, access: number) {
     if (access === 0) return "---";
     const onlineStart = subPage.vs.online_start;
     const ok = !onlineStart || Number(onlineStart) < unixTime();
@@ -104,7 +104,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return html`<span style="color:${ok ? "green" : "red"}">${date}</span>`;
   }
 
-  async function renderOnlineEnd(subPage: Node, access: number, numNotInherit: number): Promise<HtmlString | string> {
+  async function renderOnlineEnd(subPage: Node, access: number, numNotInherit: number) {
     if (access === 0) return "---";
     const onlineEnd = subPage.vs.online_end;
     const ts = onlineEnd == null ? null : Number(onlineEnd);
@@ -125,7 +125,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return html`<span style="color:rgb(${r},${g},0)">${date}</span>${badge}`;
   }
 
-  async function renderAccess(subPage: Node, access: number, numNotInherit: number): Promise<HtmlString | string> {
+  async function renderAccess(subPage: Node, access: number, numNotInherit: number) {
     if (access === 0) return "---";
     const v = subPage.vs.access;
     const label = v == null ? await t`inherited` : (v ? await t`yes` : await t`no`);
@@ -136,14 +136,14 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   }
 
   /** Checkbox column for a boolean node flag ("visible" / "searchable"). */
-  function renderFlag(flag: string, subPage: Node, access: number): HtmlString | string {
+  function renderFlag(flag: string, subPage: Node, access: number) {
     if (access === 0) return "---";
     return html`<input type=checkbox data-toggle=${flag} data-pid="${subPage.id}"${subPage.vs[flag] ? " checked" : ""}${access === 1 ? " disabled" : ""}>`;
   }
 }
 
 /** Warning badge counting contents that override an inherited value. */
-function notInheritBadge(num: number, access: number, what: string): HtmlString | string {
+function notInheritBadge(num: number, access: number, what: string) {
   if (!num || access <= 2) return "";
   return html` <span title="Contents where ${html.raw(what)} is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${num}</span>`;
 }

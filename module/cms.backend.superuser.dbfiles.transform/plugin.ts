@@ -29,7 +29,7 @@ async function detectPlatform(): Promise<Platform> {
   return "unknown";
 }
 
-function isRoot(): boolean {
+function isRoot() {
   return Deno.uid() === 0;
 }
 
@@ -61,7 +61,7 @@ async function clearCache(dir: string, olderThanDays?: number): Promise<void> {
   } catch { /* ignore */ }
 }
 
-function fmtBytes(n: number): string {
+function fmtBytes(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
   if (n < 1024 ** 3) return `${(n / 1024 ** 2).toFixed(1)} MB`;
@@ -208,7 +208,7 @@ const BINARIES: Binary[] = [
   },
 ];
 
-async function runInstall(platform: Platform, bin: Binary): Promise<string> {
+async function runInstall(platform: Platform, bin: Binary) {
   const cmd = bin.install[platform];
   if (!cmd) return `No install command for platform "${platform}"`;
   const [prog, ...args] = cmd.split(" ");
@@ -232,7 +232,7 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
   }
 }
 
-async function resolveVersion(bin: Binary): Promise<string> {
+async function resolveVersion(bin: Binary) {
   const cmds: Record<string, { cmd: string; args: string[]; extract?: (out: string) => string }[]> = {
     imagemagick: [{ cmd: "magick", args: ["-version"] }, { cmd: "convert", args: ["-version"] }],
     ffmpeg:      [{ cmd: "ffmpeg", args: ["-version"] }],
@@ -261,7 +261,7 @@ async function resolveVersion(bin: Binary): Promise<string> {
       if (code !== 0) continue;
       const dec = new TextDecoder();
       const out = dec.decode(stdout).trim() || dec.decode(stderr).trim(); // pdftotext -v prints to stderr
-      return entry.extract ? entry.extract(out) : out.split("\n")[0].trim();
+      return entry.extract ? entry.extract(out) : out.split("\n", 1)[0].trim();
     } catch { /* try next */ }
   }
   return "";
@@ -275,7 +275,7 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   unknown: "",
 };
 
-async function renderBinary(bin: Binary, platform: Platform, root: boolean): Promise<HtmlString> {
+async function renderBinary(bin: Binary, platform: Platform, root: boolean) {
   const ok = await bin.available;
   const cls  = ok ? "-ok" : bin.optional ? "-optional" : "-missing";
   const icon = ok
@@ -314,7 +314,7 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
 
 // --- Render ---
 
-async function renderCache(app: App): Promise<HtmlString> {
+async function renderCache(app: App) {
   const t = app.t;
   const dir = app.fileTransformer.cacheDir;
   const stats = await cacheStats(dir);

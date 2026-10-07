@@ -26,7 +26,7 @@ const settingsSchema = {
 };
 
 /** Field names in display order: those listed in `sort` first, then the rest. */
-function sortedNames(node: Node): string[] {
+function sortedNames(node: Node) {
   const all = Object.keys(node.settings.fields);
   const sorted = String(node.settings.sort() ?? "").split(",").filter((name) => all.includes(name));
   return [...sorted, ...all.filter((name) => !sorted.includes(name))];
@@ -40,13 +40,13 @@ const plain = async (node: Node, name: string) => (await node.showText(name)).pl
  * Options of a select or radio, one per line. Empty lines stay (a select's empty option), so no
  * `plain()`, which would trim them away.
  */
-async function choicesOf(node: Node, name: string): Promise<string[]> {
+async function choicesOf(node: Node, name: string) {
   const lines = (await rawText(node, name + "_options")).replace(/\r/g, "").split("\n").map((c) => c.trim());
   while (lines.at(-1) === "") lines.pop(); // the newline behind the last line is none
   return lines;
 }
 
-function attrs(list: Record<string, string | number | boolean | undefined>): HtmlString {
+function attrs(list: Record<string, string | number | boolean | undefined>) {
   let str = "";
   for (const [n, v] of Object.entries(list)) {
     if (v === false || v === undefined || v === "") continue;
@@ -60,7 +60,7 @@ function attrs(list: Record<string, string | number | boolean | undefined>): Htm
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */
-async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx): Promise<HtmlString> {
+async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx) {
   const set = node.settings.fields[name];
   const type = String(set.type() ?? "") || "text";
   const label = await plain(node, name + "_title") || name;

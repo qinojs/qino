@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 // Linked label for a node. Contents often have no title, so prefix the page title:
 // "Page title › content label". node.url() points to page + anchor for contents.
-async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
+async function nodeAnchor(node: Node, id: number) {
   const page = await node.cms.node(id);
   const own = (await (await page.title()).string() ?? "").trim();
   let label = own || `#${id}`;

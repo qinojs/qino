@@ -185,7 +185,7 @@ function systemInfoRows(app: App): Promise<HtmlString> {
 }
 
 // SQL for "now in UTC" as an ISO string, independent of driver date parsing.
-function dbUtcNowSql(dialect: string): string {
+function dbUtcNowSql(dialect: string) {
   if (dialect === "postgres") return `SELECT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
   if (dialect === "sqlite") return "SELECT strftime('%Y-%m-%dT%H:%M:%SZ','now')";
   return "SELECT DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')";
@@ -195,7 +195,7 @@ const kvTable = (rows: [string, string][]) =>
   html`<table class=u2-table><tbody>${rows.map(([k, v]) => html`<tr><td>${k}<td>${v}`)}</table>`;
 
 // Summary card with a "Details" button that lazy-loads the dialect-specific `db-details` part.
-function dbCard(title: string, summaryRows: HtmlString): HtmlString {
+function dbCard(title: string, summaryRows: HtmlString) {
   return html`
 <div class=u2-card>
   <div class=-head>${title}</div>

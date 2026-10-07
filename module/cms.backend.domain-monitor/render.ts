@@ -21,17 +21,17 @@ const GROUP_LABELS: Record<Group, string> = { http: "HTTP", tls: "TLS", dns: "DN
 const LEVELS = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
 type Level = keyof typeof LEVELS;
 
-const dot = (level: Level, title: string): HtmlString =>
+const dot = (level: Level, title: string) =>
   html`<span title="${title}" style="color:var(--${level});font-size:1.3em;line-height:1">●</span>`;
 
 // Tri-state flag for the boolean columns: unknown stays gray rather than accusing anyone.
-const flag = (value: unknown, title: string): HtmlString => dot(value == null ? "gray" : value ? "green" : "red", title);
+const flag = (value: unknown, title: string) => dot(value == null ? "gray" : value ? "green" : "red", title);
 
 // Sort rank for tri-state flag columns: unknown < bad < good.
 const rank = (value: unknown) => value == null ? 0 : value ? 2 : 1;
 
 // "Checked and false" — not `=== false`: the driver returns 1/0; only null means unknown.
-const no = (value: unknown): boolean => value != null && !value;
+const no = (value: unknown) => value != null && !value;
 
 // Overall status of the last check. 401 and 404 mean the server is up: a warning, not downtime.
 function status(row: DomainRow): { level: Level; title: string } {
@@ -56,7 +56,7 @@ function checkedStatus(
 
 const LONG_VALUE = 60; // beyond this the two values only compare when they line up
 
-function changeCell(current: unknown, previous: unknown): HtmlString {
+function changeCell(current: unknown, previous: unknown) {
   const changes = diffResults(previous, current);
   if (!changes.length) return html`–`;
   return html`<div class=-changes>${changes.map((change) => {
@@ -68,29 +68,29 @@ function changeCell(current: unknown, previous: unknown): HtmlString {
   })}</div>`;
 }
 
-function changeValue(value: unknown): string {
+function changeValue(value: unknown) {
   if (Array.isArray(value)) return value.length ? value.join(", ") : "[]";
   if (value === "") return '""';
   return String(value);
 }
 
-const fact = (label: string, value: HtmlString | string | number): HtmlString => html`<tr><th>${label}<td>${value}`;
+const fact = (label: string, value: HtmlString | string | number) => html`<tr><th>${label}<td>${value}`;
 
-const factGroup = (title: string, rows: HtmlString[]): HtmlString => html`<tbody>
+const factGroup = (title: string, rows: HtmlString[]) => html`<tbody>
   <tr><th colspan=2 class=-group>${title}
   ${rows}`;
 
 // Dot plus word — a bare dot is readable in the overview table, but too cryptic on its own.
-const state = (value: unknown, title: string): HtmlString =>
+const state = (value: unknown, title: string) =>
   html`${flag(value, title)} ${value == null ? "unknown" : value ? "yes" : "no"}`;
 
 // The dns_* columns store one record per line.
-const records = (value?: string | null): HtmlString =>
+const records = (value?: string | null) =>
   value ? html.join(value.split("\n").filter(Boolean).map((v) => html`<div>${v}</div>`)) : html`–`;
 
-const time = (value?: number | null, fallback = "–"): HtmlString => value ? u2.el.time(value) : html`${fallback}`;
+const time = (value?: number | null, fallback = "–") => value ? u2.el.time(value) : html`${fallback}`;
 
-const lines = (value?: string | null): string[] => (value ?? "").split("\n").filter(Boolean);
+const lines = (value?: string | null) => (value ?? "").split("\n").filter(Boolean);
 
 // Fetch and TLS messages are far too long for a cell — show a label, keep the text in the title.
 const ERR_LABELS: [RegExp, string][] = [
@@ -105,17 +105,17 @@ const ERR_LABELS: [RegExp, string][] = [
   [/reset|closed before|incomplete/i, "connection lost"],
   [/expected text missing/i, "text missing"],
 ];
-const errShort = (message: string): string => ERR_LABELS.find(([regexp]) => regexp.test(message))?.[1] ?? "error";
+const errShort = (message: string) => ERR_LABELS.find(([regexp]) => regexp.test(message))?.[1] ?? "error";
 
 // One DNS record per line so the same type lines up across rows for comparison.
-const dnsCell = (value?: string | null): HtmlString => {
+const dnsCell = (value?: string | null) => {
   const list = lines(value);
   return list.length ? html`<small>${html.join(list, "<br>")}</small>` : html`–`;
 };
 
 // Badge label for a TXT record: the key of "key=value", the scheme after "v=", or a vendor prefix;
 // "token" otherwise (most verification strings). Always lowercase.
-function txtLabel(record: string): string {
+function txtLabel(record: string) {
   const value = record.trim();
   const eq = value.indexOf("=");
   const key = eq > 0 ? value.slice(0, eq) : "";
@@ -136,7 +136,7 @@ function txtLabel(record: string): string {
 // Records with the same label share one badge.
 const txtGroups = (value?: string | null): [string, string[]][] => [...Map.groupBy(lines(value), txtLabel)];
 
-const txtCell = (groups: [string, string[]][]): HtmlString =>
+const txtCell = (groups: [string, string[]][]) =>
   groups.length
     ? html`<div class=-txt>${
       html.join(
@@ -158,7 +158,7 @@ const nsServers = (row: DomainRow): NsServer[] => lines(row.ns_servers).map((lin
 
 // Serials compare per primary only (providers number differently); all servers of one primary must
 // have the same version. An empty NS set is "unknown", not drift.
-function nsInSync(list: NsServer[]): boolean {
+function nsInSync(list: NsServer[]) {
   const zones = new Set(list.map((s) => s.zone.join(",")).filter(Boolean));
   const groups = [...Map.groupBy(list, (s) => s.primary).values()];
   return zones.size <= 1 && groups.every((g) => new Set(g.map((s) => s.serial)).size === 1);
@@ -168,7 +168,7 @@ function nsInSync(list: NsServer[]): boolean {
 const shorten = (name: string) => name.length > 33 ? name.slice(0, 6) + "…" + name.slice(-24) : name;
 
 // The parent's delegation against the NS set the zone itself serves — null while either is unknown.
-function nsParentMatch(row: DomainRow, answering: NsServer[]): boolean | null {
+function nsParentMatch(row: DomainRow, answering: NsServer[]) {
   const parent = lines(row.dns_ns_parent).map(bare).sort().join(",");
   const zone = answering.find((s) => s.zone.length)?.zone.map(bare).sort().join(",") ?? "";
   return parent && zone ? parent === zone : null;
@@ -185,10 +185,10 @@ function nsState(row: DomainRow) {
 }
 
 // One line per nameserver: red = no answer, orange = servers disagree.
-function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
+function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>) {
   const names = ns.list.length ? ns.list.map((s) => s.name) : lines(row.dns_ns).map(bare);
   if (!names.length) return html`${dot("gray", "no NS records")}`;
-  const line = (name: string): HtmlString => {
+  const line = (name: string) => {
     const server = ns.list.find((s) => s.name === name);
     const [level, title]: [Level, string] = !server
       ? ["gray", "not checked"]
@@ -207,9 +207,9 @@ function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
 }
 
 // A short TTL is fine during a migration, otherwise it makes every resolver ask again that often.
-const ttlLevel = (seconds: number): Level => seconds < 60 ? "red" : seconds < 300 ? "orange" : "green";
+const ttlLevel = (seconds: number) => seconds < 60 ? "red" : seconds < 300 ? "orange" : "green";
 
-function ttlCell(row: DomainRow): HtmlString {
+function ttlCell(row: DomainRow) {
   const list = lines(row.dns_ttl).map((line) => line.split("="));
   const seconds = list.map(([, value]) => Number(value)).filter((n) => n > 0);
   if (!seconds.length) return html`–`;
@@ -218,7 +218,7 @@ function ttlCell(row: DomainRow): HtmlString {
 }
 
 // Registration expiry takes the whole domain down. Many ccTLDs have no RDAP, hence often blank.
-function expiresCell(row: DomainRow): HtmlString {
+function expiresCell(row: DomainRow) {
   if (no(row.reg_found)) return html`${dot("red", "the registry does not know this domain")} <small>gone</small>`;
   if (!row.reg_expires) return html`–`;
   const days = Math.floor((row.reg_expires * 1000 - Date.now()) / 86400000);
@@ -228,7 +228,7 @@ function expiresCell(row: DomainRow): HtmlString {
 }
 
 // A change is news, not a fault: the marker fades with age; changed fields are in the title.
-function changedCell(row: DomainRow): HtmlString {
+function changedCell(row: DomainRow) {
   if (!row.changed) return html`–`;
   const age = Date.now() / 1000 - row.changed;
   const fields = lines(row.changes);
@@ -237,7 +237,7 @@ function changedCell(row: DomainRow): HtmlString {
   return html`${mark} <small title="${title}">${u2.el.time(row.changed, { narrow: true })}</small>`;
 }
 
-function headersCell(row: DomainRow): HtmlString {
+function headersCell(row: DomainRow) {
   const missing = lines((row.headers_missing ?? "").replace(/, /g, "\n"));
   const hsts = row.hsts ?? 0;
   const title = [
@@ -249,13 +249,13 @@ function headersCell(row: DomainRow): HtmlString {
 
 // Unsigned is normal, so neutral. Alarm only for a DS at the parent without key — that breaks the
 // domain for validating resolvers.
-function dnssecCell(row: DomainRow): HtmlString {
+function dnssecCell(row: DomainRow) {
   if (row.dnssec) return dot("green", "signed and delegated");
   if (no(row.dnssec)) return dot("gray", "not signed");
   return dot(row.dns_ds ? "orange" : "gray", row.dns_ds ? "DS at the parent, but no key found in the zone" : "unknown");
 }
 
-function spfCell(row: DomainRow): HtmlString {
+function spfCell(row: DomainRow) {
   if (!row.spf) return html`${dot("gray", "no SPF record")}`;
   const lookups = row.spf_lookups ?? 0;
   const policy = row.spf_policy ?? "";
@@ -265,7 +265,7 @@ function spfCell(row: DomainRow): HtmlString {
   return html`${dot(level, title)} <small>${policy || "?"}</small>`;
 }
 
-function dmarcCell(row: DomainRow): HtmlString {
+function dmarcCell(row: DomainRow) {
   const policy = row.dmarc_policy ?? "";
   if (!policy) return html`${dot("gray", "no DMARC record")}`;
   const pct = row.dmarc_pct ?? 100;
@@ -275,7 +275,7 @@ function dmarcCell(row: DomainRow): HtmlString {
   return html`${dot(level, title)} <small>${policy}</small>`;
 }
 
-function smtpCell(row: DomainRow): HtmlString {
+function smtpCell(row: DomainRow) {
   if (row.mail_null_mx) return html`${dot("gray", "null MX — this domain receives no mail on purpose")} <small>none</small>`;
   if (!lines(row.mail_hosts).length) return html`${dot("gray", "no MX record")}`;
   const dane = !!lines(row.mail_dane).length;
@@ -293,7 +293,7 @@ function smtpCell(row: DomainRow): HtmlString {
 }
 
 // Options come from the frequency list itself, so the select cannot drift from the schema enum.
-function frequencySelect(row: DomainRow): HtmlString {
+function frequencySelect(row: DomainRow) {
   const selected = row.check_frequency ?? "disabled";
   return html`<select data-frequency data-domain="${row.domain}" title="Automatic checks">${
     html.join(FREQUENCIES.map((value) => html`<option value="${value}" ${selected === value ? "selected" : ""}>${value === "disabled" ? "off" : value}`))
@@ -304,7 +304,7 @@ function frequencySelect(row: DomainRow): HtmlString {
 export const nodeUrl = async (node: Node, ctx: Ctx): Promise<URL> => new URL(await node.url(), ctx.req.url.href);
 
 // Same page, one parameter more — a bare "?domain=…" would drop cmspid, lang and editmode.
-const detailLink = (pageUrl: URL, domain: string): string => {
+const detailLink = (pageUrl: URL, domain: string) => {
   const url = new URL(pageUrl);
   url.searchParams.set("domain", domain);
   return url.pathname + url.search;

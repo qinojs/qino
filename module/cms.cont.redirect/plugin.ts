@@ -38,7 +38,7 @@ async function resolve(cont: Node, value: string, ctx: Ctx): Promise<{ url?: str
 }
 
 /** The target is the page we are already answering — following it would loop. */
-function isSelf(url: string, ctx: Ctx): boolean {
+function isSelf(url: string, ctx: Ctx) {
   const here = ctx.req.url.toURL();
   const there = new URL(url, here);
   here.hash = there.hash = ""; // a content target only adds a fragment, the request never carries one

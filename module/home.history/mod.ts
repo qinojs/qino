@@ -61,7 +61,7 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
   }) };
 }
 
-function timestamp(value: string): number {
+function timestamp(value: string) {
   const time = Date.parse(value);
   if (!/T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(value) || !Number.isFinite(time))
     throw new ApiError(400, "History timestamps must include a time and timezone");

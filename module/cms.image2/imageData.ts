@@ -85,7 +85,7 @@ function imageSize(ow: number, oh: number, options: Record<string, any>) {
 
 const INLINE_LIMIT = 350;
 
-function length(value = ""): number {
+function length(value = "") {
   const match = value.trim().match(/^(\+?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(?:px)?$/i);
   const size = match ? Number(match[1]) : 0;
   return Number.isFinite(size) ? size : 0;

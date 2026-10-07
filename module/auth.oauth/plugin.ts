@@ -83,10 +83,10 @@ async function endpoints(p: any): Promise<{ authorize: string; token: string; us
   return { authorize: m.authorization_endpoint, token: m.token_endpoint, userinfo: m.userinfo_endpoint, oidc: true };
 }
 
-const callbackUrl = (ctx: Ctx, name: string): string => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
+const callbackUrl = (ctx: Ctx, name: string) => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
 
 /** Only allow local, same-app return targets — blocks open-redirect via ?return_to=. */
-const safeReturn = (base: string, raw: unknown): string =>
+const safeReturn = (base: string, raw: unknown) =>
   typeof raw === "string" && /^\/(?![/\\])[^\x00-\x1f]*$/.test(raw) ? raw : base;
 
 async function provider(app: App, name: string): Promise<any> {

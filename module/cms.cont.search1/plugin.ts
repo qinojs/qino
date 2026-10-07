@@ -36,7 +36,7 @@ const settingsSchema = {
 const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 4);
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
-function snippet(text: string, words: string[], parts = 7, before = 30, after = 10): HtmlString {
+function snippet(text: string, words: string[], parts = 7, before = 30, after = 10) {
   const plain = unhee(text.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); // \s takes the decoded &nbsp; too
   if (!words.length) return html`${plain.slice(0, before + after)}`;
   const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i")).slice(0, parts).map((piece) =>

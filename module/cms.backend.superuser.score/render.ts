@@ -99,11 +99,11 @@ async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<Ht
 }
 
 /** Strength in accesses: fractions matter near the fade limit, whole numbers above it. */
-function accesses(value: number): string {
+function accesses(value: number) {
   return value < 10 ? value.toFixed(2) : String(Math.round(value));
 }
 
-function duration(seconds: number): string {
+function duration(seconds: number) {
   const parts = [];
   for (const [unit, size] of [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]] as const) {
     const value = Math.floor(seconds / size);

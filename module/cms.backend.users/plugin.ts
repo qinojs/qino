@@ -54,7 +54,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
 
   const grpId = ctx.req.query.grp_id ? Number(ctx.req.query.grp_id) : 0;
   const grps = await db.query`SELECT id, name FROM grp ORDER BY name`;
-  const grpOpts: Array<HtmlString | Promise<HtmlString>> = [html.async`<option value="">${t`All groups`}</option>`];
+  const grpOpts: (HtmlString | Promise<HtmlString>)[] = [html.async`<option value="">${t`All groups`}</option>`];
   for (const g of grps) {
     grpOpts.push(html`<option value=${g.id}${Number(g.id) === grpId ? " selected" : ""}>${g.name}</option>`);
   }
@@ -172,7 +172,7 @@ function mailAddressOf(username: string): string | undefined {
 }
 
 /** A user's contacts, editable. Inner content only; the `cms-part` wrapper is in `renderDetail`. */
-async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
+async function contactsCard(node: Node, usrId: number) {
   const app = node.app;
   const t = app.t;
   const types = contactTypes();
@@ -206,7 +206,7 @@ async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
     </form>`}`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;

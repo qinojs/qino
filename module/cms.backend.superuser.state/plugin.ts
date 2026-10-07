@@ -34,14 +34,14 @@ function renderState(node: Node): HtmlString {
 }
 
 // empty box, filled client-side by pub/main.js with dump(ctx)
-function clientCtxBox(title: string): HtmlString {
+function clientCtxBox(title: string) {
   return html`<div class=u2-card style="min-width:0; overflow:auto; height:80vh">
   <div class=-head>${title}</div>
   <div class=-body data-client-ctx style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
 </div>`;
 }
 
-function dumpBox(title: string, value: unknown, depth: number): HtmlString {
+function dumpBox(title: string, value: unknown, depth: number) {
   let out = "";
   try {
     out = dump(value, {
@@ -61,7 +61,7 @@ function dumpBox(title: string, value: unknown, depth: number): HtmlString {
 </div>`;
 }
 
-function safeRender(value: unknown): string | undefined {
+function safeRender(value: unknown) {
   if (typeof value !== "function") return;
   if ((value as unknown as Record<symbol, unknown>)[$item]) return `<em>[item.js proxy]</em>`; // don't read .name/.length → no autoviv
   return String(html`<function>function <b>${value.name}</b>(${value.length})</function>`);

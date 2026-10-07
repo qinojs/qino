@@ -104,7 +104,7 @@ function time(value: number): HtmlString {
   return html`<span style="color:${ageColor(value)}">${u2.el.time(value)}</span>`;
 }
 
-function duration(seconds: number): string {
+function duration(seconds: number) {
   if (seconds >= 3600) return `${Math.round(seconds / 360) / 10} h`;
   if (seconds >= 60) return `${Math.round(seconds / 60)} min`;
   return `${Math.round(seconds)} s`;

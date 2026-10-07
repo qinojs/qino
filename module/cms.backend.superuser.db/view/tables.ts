@@ -6,14 +6,14 @@ import { tableStatus } from "../lib/tableStatus.ts";
 
 import type { HtmlString, App } from "@qino/qino";
 
-function keyBadge(key: string): HtmlString {
+function keyBadge(key: string) {
   if (key === "PRI") return html.raw(' <small class=u2-badge style="background:var(--yellow)">PRI</small>');
   if (key === "UNI") return html.raw(' <small class=u2-badge style="background:var(--blue)">UNI</small>');
   if (key === "MUL") return html.raw(' <small class=u2-badge style="background:var(--green)">IDX</small>');
   return html.raw("");
 }
 
-function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<HtmlString> | HtmlString {
+function statusBadge(app: App, inSchema: boolean, uncovered: number) {
   if (!inSchema)   return html.async`<small class=u2-badge style="background:var(--red)">${app.t`no schema`}</small>`;
   if (uncovered)   return html.async`<small class=u2-badge style="background:var(--orange)">${uncovered} ${app.t`without schema`}</small>`;
   return html`<u2-ico inline icon=check_circle aria-label=ok style="color:var(--green)">✓</u2-ico>`;

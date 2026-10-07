@@ -4,7 +4,7 @@ import { service as cmsTextService } from "@qino/qino/cms.text";
 
 import type { Node } from "@qino/qino/cms";
 
-function matchCase(translated: string, original: string): string {
+function matchCase(translated: string, original: string) {
   if (!translated || !original) return translated;
   const first = original[0];
   if (first === first.toUpperCase() && first !== first.toLowerCase()) return translated[0].toUpperCase() + translated.slice(1);

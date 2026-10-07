@@ -52,7 +52,7 @@ export function hit(db: Db, tbl: string, id: number, weight = 1): Promise<void> 
     .catch((e) => console.error("score hit: " + e.message));
 }
 
-async function bump(db: Db, sid: number, id: number, term: number, now: number): Promise<void> {
+async function bump(db: Db, sid: number, id: number, term: number, now: number) {
   const row = await db.row<{ score: number }>`SELECT score FROM score WHERE scope_id = ${sid} AND id = ${id}`;
   const value = row ? logAdd(Number(row.score), term) : term;
   const update = () => db.exec`UPDATE score SET score = ${value}, time = ${now} WHERE scope_id = ${sid} AND id = ${id}`;

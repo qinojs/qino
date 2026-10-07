@@ -23,7 +23,7 @@ function possibleClasses(el) {
     sel = sel.trim();
     if (!sel.includes('.')) return;
     if (!/\.[A-Z]/.test(sel)) return;
-    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
+    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : /^\.[^ ]+$/;
     if (reg.test(sel)) {
       const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
       ret[name] = sel;

@@ -25,7 +25,7 @@ const num = (v: unknown) => {
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
 
 /** Bounding box for the embed: two tiles (360/2^zoom degrees each) wide, half that high. */
-function bbox(lat: number, lon: number, zoom: number): string {
+function bbox(lat: number, lon: number, zoom: number) {
   const lonSpan = 360 / 2 ** zoom;
   const latSpan = lonSpan / 2;
   const box = [lon - lonSpan, lat - latSpan, lon + lonSpan, lat + latSpan];

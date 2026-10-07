@@ -17,7 +17,7 @@ const settingsSchema = {
 };
 
 /** Contents the module needs to be usable; created once per node. */
-async function init(node: Node): Promise<void> {
+async function init(node: Node) {
   if (node.settings.__inited()) return;
   node.settings.__inited(true);
   await node.cont("main", "cms.cont.form2.fields1");
@@ -27,14 +27,14 @@ async function init(node: Node): Promise<void> {
 }
 
 /** Seconds since this client was first seen (new clients are mostly bots). Infinity if unknown. */
-async function clientAge(ctx: Ctx): Promise<number> {
+async function clientAge(ctx: Ctx) {
   if (!ctx.clientId) return Infinity;
   const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
   return first ? unixTime() - Number(first) : Infinity;
 }
 
 /** Bot heuristics. Returns a message if refused; flags borderline cases on the form. */
-async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
+async function spamCheck(node: Node, form: Form, ctx: Ctx) {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
     app.fire("suspicious", { ctx, weight: 3, reason: "form2 honeypot filled" });
@@ -54,7 +54,7 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
 }
 
 /** Build and send the mail. */
-async function send(node: Node, form: Form): Promise<boolean> {
+async function send(node: Node, form: Form) {
   const app = node.app;
   const subject = (await node.showText("mailSubject")).plain() ||
     (await (await node.page()).showTitle()).plain();

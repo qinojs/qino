@@ -236,14 +236,14 @@ export async function sampleValues(app: App): Promise<Computed> {
 
 const EMPTY = { text: "" };
 
-function redirect(to: string): string {
+function redirect(to: string) {
   const ctx = getCtx();
   ctx.res.status = 302;
   ctx.res.headers.set("Location", to);
   return "";
 }
 
-function firstLine(text: unknown): string {
+function firstLine(text: unknown) {
   const line = String(text ?? "").trim().split("\n", 1)[0];
   return line.length > 60 ? line.slice(0, 60) + "…" : line;
 }

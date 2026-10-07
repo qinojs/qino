@@ -37,7 +37,7 @@ const TONE: Record<string, string> = {
 
 // Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
 /** Icon of a module not yet imported — served by its store, so allow that origin for images. */
-function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string }): HtmlString | undefined {
+function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string }) {
   if (!iconMod.manifest.files?.includes("pub/module.svg")) return;
   getCtx().res.csp["img-src"][iconMod.modUrl] = true;
   return html`<img src="${iconMod.modUrl}pub/module.svg" width=20 height=20 alt="" style="display:block">`;
@@ -63,7 +63,7 @@ const offered = (app: App, mod: Module) => app.stores.all().some((store) => stor
 
 /** Short store name: host of a remote catalog, path of a local one (with parent folder; the app's
  *  own relative, to tell `./module/` from `qino/module`). */
-function storeLabel(app: App, url: string): string {
+function storeLabel(app: App, url: string) {
   const u = new URL(url);
   if (u.host) return u.host;
   const dir = decodeURIComponent(new URL(".", url).pathname);
@@ -99,13 +99,13 @@ const segments = (url: string) => decodeURIComponent(new URL(url).pathname).spli
 
 /** Unique store labels: on collision (same host), add the differing path segments, e.g.
  *  `gcdn.li/qino@v0.6.1`. */
-function labeller(app: App): (url: string) => string {
+function labeller(app: App) {
   const groups = new Map<string, string[]>();
   for (const store of app.stores.all()) {
     const short = storeLabel(app, store.url);
     groups.getOrInsert(short, []).push(store.url);
   }
-  return (url) => {
+  return (url: string) => {
     const short = storeLabel(app, url);
     const group = groups.get(short) ?? [];
     if (group.length < 2) return short;
@@ -132,8 +132,8 @@ type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset" |
 
 /** Link order as name → position (only imported, unbroken modules). If the graph can't be ordered,
  *  only this column is lost. */
-function ranks(app: App): Map<string, number> {
-  try { return new Map(app.modules.order().map((name, i) => [name, i + 1])); } catch { return new Map(); }
+function ranks(app: App) {
+  try { return new Map(app.modules.order().map((name, i) => [name, i + 1])); } catch { return new Map<string, number>(); }
 }
 
 async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string, rank: Map<string, number>): Promise<HtmlString> {
@@ -188,7 +188,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
     <td style="text-align:right; padding-block:.1em">${html.join(acts, " ")}`;
 }
 
-function storeRow(store: Store, error: string, l: Labels, label: (url: string) => string, su: boolean): HtmlString {
+function storeRow(store: Store, error: string, l: Labels, label: (url: string) => string, su: boolean) {
   const local = store.base.startsWith("file:");
   return html`<tr>
     <td><button class=u2-unstyle data-pick="${store.url}"><code>${label(store.url)}</code><br><small>${store.url}</small></button>

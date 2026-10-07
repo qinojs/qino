@@ -84,7 +84,7 @@ async function stateInfo(app: App, job: JobStatus, due: boolean) {
   return [await app.t`waiting`, "var(--green)"] as const;
 }
 
-function cadence(job: JobStatus): HtmlString {
+function cadence(job: JobStatus) {
   if (!job.active) return html`–`;
   const every = typeof job.every === "number" ? duration(job.every) : job.every;
   const at = typeof job.every === "number" ? "" : ` · at ${atText(job)}`;
@@ -92,7 +92,7 @@ function cadence(job: JobStatus): HtmlString {
   return html`<code>every ${every}${at}${jitter}</code><br><small>timeout ${duration(job.timeout!)}</small>`;
 }
 
-function atText(job: JobStatus): string {
+function atText(job: JobStatus) {
   const at = job.at ?? {};
   const two = (value: number | undefined) => String(value ?? 0).padStart(2, "0");
   if (job.every === "hour") return `:${two(at.minute)}:${two(at.second)}`;
@@ -100,7 +100,7 @@ function atText(job: JobStatus): string {
   return job.every === "week" ? `${at.weekday ?? "monday"} ${time}` : time;
 }
 
-function duration(seconds: number): string {
+function duration(seconds: number) {
   if (!seconds) return "0s";
   const parts = [];
   for (const [unit, size] of [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]] as const) {

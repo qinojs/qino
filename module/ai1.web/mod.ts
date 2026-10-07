@@ -63,7 +63,7 @@ export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge
 }
 
 /** Links of a page in Markdown (`[text](url)`, `<url>`), absolute and without their #fragment. */
-function links(markdown: string, base: string): string[] {
+function links(markdown: string, base: string) {
   return [...markdown.matchAll(/\]\(<?([^)\s>]+)|<(https?:\/\/[^>\s]+)>/g)].flatMap(([, href, bare]) => {
     const url = URL.parse(href ?? bare, base);
     return url && /^https?:$/.test(url.protocol) ? [(url.hash = "", url.href)] : [];

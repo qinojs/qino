@@ -4,14 +4,14 @@ import * as identity from "@qino/qino/identity";
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function field(app: App, path: string, label: string, required = false): Promise<HtmlString> {
+async function field(app: App, path: string, label: string, required = false) {
   const item = app.settings[$item].sub(["identity", ...path.split(".")]);
   return html`<tr>
   <th>${label}
   <td>${html.raw(toInput(item.schema ?? {}, { name: path, value: String(await item.proxy ?? "").trim(), required }))}`;
 }
 
-const card = (title: string, fields: Array<HtmlString | Promise<HtmlString>>) => 
+const card = (title: string, fields: (HtmlString | Promise<HtmlString>)[]) =>
   html.async`<div class=u2-card style="flex-grow:25rem">
   <div class=-head>${title} <small data-status aria-live=polite></small></div>
   <table class="u2-table -Fields -Flex">${fields}</table>
@@ -61,7 +61,7 @@ export async function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-async function asset(node: Node, name: string, label: string, accept: string): Promise<HtmlString> {
+async function asset(node: Node, name: string, label: string, accept: string) {
   const existing = await (await identity.file(node.app, name))?.exists();
   // An image shows itself, anything else (the font) its file name.
   const shown = existing && (existing.mime.startsWith("image/")

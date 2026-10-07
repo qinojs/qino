@@ -141,7 +141,7 @@ function absolute(url: string, root: string): URL | undefined {
 }
 
 /** Replace all at once, longest first — a URL may be the prefix of another. */
-function trade(text: string, trades: Map<string, string>): string {
+function trade(text: string, trades: Map<string, string>) {
   const changed = [...trades].filter(([from, to]) => from !== to).sort((a, b) => b[0].length - a[0].length);
   for (const [from, to] of changed) text = text.replaceAll(from, to);
   return text;

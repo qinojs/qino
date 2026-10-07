@@ -74,7 +74,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
 /* The two file roots of a node's module: the site's files and the module's own. */
 const ROOTS = ["data", "app"] as const;
 
-async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string> {
+async function moduleRoot(ctx: Ctx, pid: number, scope: string) {
   const node = await cms(ctx.app).node(pid);
   const mod = node.module as { data?: string; dir?: string } | undefined;
   const root = scope === "app" ? mod?.dir : mod?.data;
@@ -83,7 +83,7 @@ async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string>
 }
 
 /** Resolve a path inside a root; escaping it is a bad request. */
-function inRoot(root: string, path: string): string {
+function inRoot(root: string, path: string) {
   const file = resolve(root, path);
   const rel = relative(resolve(root), file);
   if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new ValidationError([{ message: "invalid path", path: ["path"] }]);

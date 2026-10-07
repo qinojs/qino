@@ -452,7 +452,7 @@ export class ModuleManager {
  *
  * A file that fails to download stays missing; it must not stop the module.
  */
-async function mirrorPub(mod: Module): Promise<void> {
+async function mirrorPub(mod: Module) {
   const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
   if (!files.length) return;
   const dir = `${mod.cache}remote/`;

@@ -17,7 +17,7 @@ const enc = new TextEncoder();
 const dec = new TextDecoder();
 
 // RFC 5952 form, so values compare equal to what Deno.resolveDns returns.
-function ipv6(bytes: Uint8Array): string {
+function ipv6(bytes: Uint8Array) {
   const groups = Array.from({ length: 8 }, (_, i) => ((bytes[i * 2] << 8) | bytes[i * 2 + 1]).toString(16));
   let at = -1, len = 0;
   for (let i = 0, run = 0; i < 8; i++) {
@@ -27,7 +27,7 @@ function ipv6(bytes: Uint8Array): string {
   return len < 2 ? groups.join(":") : groups.slice(0, at).join(":") + "::" + groups.slice(at + len).join(":");
 }
 
-function writeName(name: string, out: number[]): void {
+function writeName(name: string, out: number[]) {
   for (const label of name.replace(/\.$/, "").split(".")) {
     if (!label) continue;
     const bytes = enc.encode(label);
@@ -66,7 +66,7 @@ class Reader {
 }
 
 // Canonical text per record type, formatted like Deno.resolveDns so both sources stay comparable.
-function rdata(r: Reader, type: number, len: number): string {
+function rdata(r: Reader, type: number, len: number) {
   const end = r.pos + len;
   const value = (() => {
     switch (type) {

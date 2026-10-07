@@ -323,7 +323,7 @@ async function corruptTables(db: App["db"]): Promise<Record<string, string>> {
 }
 
 // SQL for "now as unix epoch" per dialect.
-function dbEpochSql(dialect: string): string {
+function dbEpochSql(dialect: string) {
   if (dialect === "postgres") return "SELECT floor(extract(epoch FROM now()))";
   if (dialect === "sqlite") return "SELECT strftime('%s','now')";
   return "SELECT UNIX_TIMESTAMP()";

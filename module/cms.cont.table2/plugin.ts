@@ -19,7 +19,7 @@ const settingsSchema = {
 };
 
 /** Column width: a number uses the `units` setting (default px), a CSS length stays, else dropped. */
-function cssWidth(raw: string, units: string): string {
+function cssWidth(raw: string, units: string) {
   const w = raw.trim();
   if (/^\d+(\.\d+)?$/.test(w)) return w + units;
   return /^\d+(\.\d+)?(px|%|em|rem)$/.test(w) ? w : "";

@@ -123,7 +123,7 @@ export async function chats(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-function chat(c: Row, labels: Record<string, string>): HtmlString {
+function chat(c: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${c.username ?? "#" + c.usr_id}
     <td>${c.username ? "@" + c.username : "-"}

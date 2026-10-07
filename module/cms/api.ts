@@ -784,7 +784,7 @@ export const api = {
 
 
 // Normalize and validate a custom URL path (page_url.url). Only for manual urls, not generated ones.
-function cleanCustomUrl(raw: string): string {
+function cleanCustomUrl(raw: string) {
   const url = raw.trim().replace(/^\/+|\/+$/g, ""); // strip slashes (also neutralizes //protocol-relative)
   const invalid = /[\x00-\x1f\x7f]/.test(url) // control chars: header/log injection
     || /^[a-z][a-z0-9+.-]*:/i.test(url)             // absolute scheme (javascript:, http:, ...)

@@ -86,6 +86,6 @@ const attrs = (o: Record<string, string>) =>
   Object.entries(o).map(([k, v]) => /^[a-zA-Z][\w-]*$/.test(k) ? ` ${k}="${hee(v)}"` : "").join("");
 
 /** JSON serialized safely for inlining into a <script> element (escapes `<` so `</script>` can't break out). */
-function jsonScript(value: unknown): string {
+function jsonScript(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }

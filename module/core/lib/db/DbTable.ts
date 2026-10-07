@@ -205,7 +205,7 @@ export class DbTable {
       : this.insert(values);
   }
 
-  copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | undefined> {
+  copy(id: any, override: Record<string, any> = {}, visiting = new Set<string>()): Promise<string | undefined> {
     return this.#db.transaction(() => this.#copy(id, override, visiting));
   }
   async #copy(id: any, override: Record<string, any>, visiting: Set<string>): Promise<string | undefined> {

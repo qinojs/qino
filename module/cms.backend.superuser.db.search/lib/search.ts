@@ -60,7 +60,7 @@ async function plan(db: Db, table: string, numeric: boolean): Promise<Part[]> {
 }
 
 /** Cheap in every dialect: stop counting at SMALL_ROWS instead of scanning the whole table. */
-async function isSmall(db: Db, table: string): Promise<boolean> {
+async function isSmall(db: Db, table: string) {
   const rows = await db.one`SELECT COUNT(*) FROM (SELECT 1 FROM ${sql.id(table)} LIMIT ${sql.raw(String(SMALL_ROWS))}) small`
     .catch(() => SMALL_ROWS);
   return Number(rows) < SMALL_ROWS;
@@ -74,7 +74,7 @@ function condition(db: Db, part: Part, terms: string[], term: string): Sql | und
   if (part.mode === "exact") return sql.join(ids.map((id) => sql`${id} = ${term}`), " OR ");
   if (part.mode === "fulltext") {
     // Boolean mode: every word required, each as a prefix. Operators would be syntax, so they go.
-    const query = terms.map((word) => word.replace(/[+\-><()~*"@]/g, "")).filter((word) => word.length >= MIN_TOKEN).map((word) => `+${word}*`).join(" ");
+    const query = terms.map((word) => word.replace(/[-+><()~*"@]/g, "")).filter((word) => word.length >= MIN_TOKEN).map((word) => `+${word}*`).join(" ");
     if (!query) return;
     return sql`MATCH(${sql.join(ids)}) AGAINST (${query} IN BOOLEAN MODE)`;
   }

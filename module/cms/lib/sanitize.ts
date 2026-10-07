@@ -68,7 +68,7 @@ export function policyOf(app?: App): Policy {
   return resolved.get(app)!.policy;
 }
 
-async function refresh(app: App): Promise<void> {
+async function refresh(app: App) {
   const site = app.settings.cms.sanitize;
   const [elements, attributes, protocols] = await Promise.all([site.elements, site.attributes, site.protocols]);
   const use: Policy = { ...policy };

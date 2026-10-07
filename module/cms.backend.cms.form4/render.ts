@@ -21,8 +21,7 @@ export async function forms(app: App): Promise<Node[]> {
 
 /** The page a form sits on — its title is what makes the form recognisable in the list. */
 async function pageOf(node: Node): Promise<Node | undefined> {
-  const path = [...(await node.path()).values()].reverse();
-  return path.find((n) => n.vs.type === "p");
+  return [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
 }
 
 /**
@@ -193,7 +192,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 }
 
 /** Correct one value of an entry. Numbers stay numbers, so sorting still works. */
-async function save(app: App, form: Node, vs: Record<string, string>): Promise<void> {
+async function save(app: App, form: Node, vs: Record<string, string>) {
   const id = Number(vs.id);
   const row = await app.db.row`
     SELECT data FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
@@ -205,7 +204,7 @@ async function save(app: App, form: Node, vs: Record<string, string>): Promise<v
 }
 
 /** Throw one entry away. Its files hang on it and go along. */
-async function remove(app: App, form: Node, id: number): Promise<void> {
+async function remove(app: App, form: Node, id: number) {
   const own = await app.db.one`
     SELECT id FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
   if (own) await app.db.table("form4_entry").delete(id);

@@ -49,12 +49,12 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
   }
 }
 
-function isJsonRequest(req: Req): boolean {
+function isJsonRequest(req: Req) {
   const type = req.header("content-type")?.split(";")[0].trim().toLowerCase();
   return !type || type === "application/json" || type.endsWith("+json");
 }
 
-async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData): Promise<void> {
+async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData) {
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;
@@ -71,11 +71,11 @@ export function isTrustedOrigin(req: Req): boolean {
   return hostOf(referer) === target;
 }
 
-function hostOf(value?: string): string | null {
+function hostOf(value?: string) {
   return value ? URL.parse(value)?.host ?? null : null;
 }
 
-function hasValidCsrfToken(req: Req): boolean {
+function hasValidCsrfToken(req: Req) {
   const token = req.header("x-csrf-token");
   return typeof token === "string" && token !== "" && token === getCtx().csrfToken;
 }

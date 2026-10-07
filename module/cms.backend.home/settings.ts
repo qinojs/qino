@@ -23,7 +23,7 @@ function fields(schema: Schema, path: string[] = []): { path: string[]; schema: 
 }
 
 /** A provider's settings form: its name, its adapter's configuration fields and whether it is enabled. */
-function form(node: Node, adapter: Linked, row?: Provider): Promise<HtmlString> {
+function form(node: Node, adapter: Linked, row?: Provider) {
   const t = node.app.t;
   const config = fields(adapter.schema ?? {});
   const prefix = `${node.id}-${adapter.name}-${row?.id ?? "new"}`;

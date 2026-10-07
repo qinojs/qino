@@ -69,7 +69,7 @@ function isSession(owner: Session | App): owner is Session {
   return "data" in owner;
 }
 
-function sessionSecret(sess: Session): string {
+function sessionSecret(sess: Session) {
   const item = sess.data.core.grantKey;
   let value = String(item() ?? "");
   if (!value) item(value = uid());
@@ -90,12 +90,12 @@ async function verifyPermanent(app: App, resource: string, { sig }: Params): Pro
 }
 
 /** The app's signing key, created by core on first init. */
-async function appSecret(app: App): Promise<string> {
+async function appSecret(app: App) {
   const secret = String(await app.settings.core._secret ?? "");
   if (!secret) throw new Error("Core secret is not initialized");
   return secret;
 }
 
-function mac(secret: string, resource: string, len = SIGNATURE_LENGTH): string {
+function mac(secret: string, resource: string, len = SIGNATURE_LENGTH) {
   return createHmac("sha256", secret).update(resource).digest("base64url").slice(0, len);
 }

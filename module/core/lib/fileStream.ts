@@ -19,7 +19,7 @@ export type UploadedFile = {
 export const mimeType = (raw: string): string => raw.split(";")[0].trim().toLowerCase();
 
 /** Last path segment of a given name, never empty. */
-const baseName = (raw: string): string => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
+const baseName = (raw: string) => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
 
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);
@@ -106,7 +106,7 @@ for (const [network, prefix] of [
   ["2001:3::", 32], ["2001:4:112::", 48], ["2001:20::", 28], ["2001:30::", 28],
 ] as const) PUBLIC_IPV6_EXCEPTIONS.addSubnet(network, prefix, "ipv6");
 
-function isPublicIp(ip: string): boolean {
+function isPublicIp(ip: string) {
   const version = isIP(ip);
   if (!version) return false;
   if (version === 4) return PUBLIC_IPV4_EXCEPTIONS.check(ip, "ipv4") || !NON_PUBLIC_IPV4.check(ip, "ipv4");

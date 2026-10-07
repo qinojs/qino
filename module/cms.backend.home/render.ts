@@ -16,7 +16,7 @@ const { uniqueColor, ageColor } = backend;
 /** More values than this: narrow the search. */
 const LIMIT = 200;
 
-const text = (value: unknown): string => typeof value === "string" ? value : JSON.stringify(value) ?? "";
+const text = (value: unknown) => typeof value === "string" ? value : JSON.stringify(value) ?? "";
 const typeOf = (value: unknown) =>
   typeof value === "boolean" || typeof value === "string" && !Number.isFinite(Number(value)) ? "state" : "number";
 
@@ -142,7 +142,7 @@ const schemaAt = (input: Record<string, unknown> | undefined, path: string) => p
   Record<string, unknown> | undefined>((schema, key) => (schema?.properties as Record<string, never>)?.[key], input);
 
 /** A command with a parameter runs with a value: a number field when its schema says so, otherwise free input. */
-function runner(app: App, command: Command, actions: Action[]): Promise<HtmlString> {
+function runner(app: App, command: Command, actions: Action[]) {
   const t = app.t;
   if (!command.parameter) return html.async`<button type=button data-run="${command.id}">${t`Run`}</button>`;
   const schema = schemaAt(actions.find((action) => action.id === command.action)?.input, command.parameter);

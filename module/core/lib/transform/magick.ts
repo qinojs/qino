@@ -16,7 +16,7 @@ export async function available(): Promise<boolean> {
   return checkMagick().then(() => true).catch(() => false);
 }
 
-async function checkMagick(): Promise<void> {
+async function checkMagick() {
   if (_checked) return;
 
   if (await tryCommand('magick', ['-version'])) {

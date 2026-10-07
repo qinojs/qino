@@ -24,12 +24,12 @@ export async function deliver(app: App, to: string, text: string): Promise<strin
 }
 
 /** A provider's id means nothing outside it, so it carries its provider. */
-async function prefixed(type: string, sending: Promise<string | undefined>): Promise<string | undefined> {
+async function prefixed(type: string, sending: Promise<string | undefined>) {
   const id = await sending;
   return id ? `${type}:${id}` : undefined;
 }
 
-async function twilio(settings: Record<string, unknown>, to: string, text: string): Promise<string | undefined> {
+async function twilio(settings: Record<string, unknown>, to: string, text: string) {
   const accountSid = String(await settings.accountSid ?? "");
   const apiKeySid = String(await settings.apiKeySid ?? "");
   const apiKeySecret = String(await settings.apiKeySecret ?? "");
@@ -53,7 +53,7 @@ async function twilio(settings: Record<string, unknown>, to: string, text: strin
   });
 }
 
-async function http(settings: Record<string, unknown>, to: string, text: string): Promise<string | undefined> {
+async function http(settings: Record<string, unknown>, to: string, text: string) {
   const url = String(await settings.url ?? "");
   const token = String(await settings.token ?? "");
   if (!url) throw new ChannelError("messaging.sms: HTTP provider needs a URL");

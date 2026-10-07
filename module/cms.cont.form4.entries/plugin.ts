@@ -28,7 +28,7 @@ async function formOf(node: Node): Promise<Node | undefined> {
     const form = await cmsOf(node.app).node(id);
     return form.exists() && form.vs.module === "cms.cont.form4" ? form : undefined;
   }
-  const page = [...(await node.path()).values()].reverse().find((n) => n.vs.type === "p");
+  const page = [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
   if (!page) return;
   for (const cont of (await page.bough()).values()) if (cont.vs.module === "cms.cont.form4") return cont;
 }

@@ -113,7 +113,7 @@ export async function phones(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-function phone(p: Row, labels: Record<string, string>): HtmlString {
+function phone(p: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${p.username ?? "#" + p.usr_id}
     <td>${p.address}
@@ -127,7 +127,7 @@ function phone(p: Row, labels: Record<string, string>): HtmlString {
 }
 
 /** A number someone claimed but has not proven yet — it belongs to no user until they do. */
-function claim(c: Row, labels: Record<string, string>): HtmlString {
+function claim(c: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}

@@ -152,7 +152,7 @@ export function uaInfo(ua: string): { browser: string; version: string; os: stri
 // within it). Pass a `titles` map to cache ancestors across many breadcrumbs.
 // Contents usually have no title, so fall back to their (shortened) module name,
 // then the id.
-export async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string> = new Map()): Promise<HtmlString> {
+export async function breadcrumb(host: Node, nodeId: number, titles = new Map<number, string>()): Promise<HtmlString> {
   const node = await host.cms.node(nodeId);
   const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
@@ -170,7 +170,7 @@ export async function breadcrumb(host: Node, nodeId: number, titles: Map<number,
   return html.join(crumbs, ' <span class=-sep>›</span> ');
 }
 
-async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
+async function nodeTitle(n: Node, cache: Map<number, string>) {
   const hit = cache.get(n.id);
   if (hit !== undefined) return hit;
   const s = (await (await n.title()).string()).trim();

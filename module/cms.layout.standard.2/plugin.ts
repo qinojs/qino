@@ -16,7 +16,7 @@ export { api } from "./api.ts";
 const U2_VERSION = "1.6.0";
 
 /** The u2 release the layout loads: its global layout page's, else the pin. */
-const u2Version = (layout: Node): string => {
+const u2Version = (layout: Node) => {
   const version = String(layout.settings.u2Version() ?? "");
   return /^\d+\.\d+\.\d+$/.test(version) ? version : U2_VERSION;
 };

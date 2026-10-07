@@ -119,7 +119,7 @@ function load(app: App, channel: string, name?: string): Promise<Msg | undefined
  *
  * Values are inserted as is. One pass only, so a value that looks like a placeholder stays text.
  */
-function fill(template: string, placeholders: Computed, side: "text" | "html"): string {
+function fill(template: string, placeholders: Computed, side: "text" | "html") {
   return fillPlaceholders(template, (name) => side === "text"
     ? placeholders[name]?.text
     : String(placeholders[name]?.html ?? hee(placeholders[name]?.text)));

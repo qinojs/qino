@@ -15,13 +15,13 @@ export function backendDashboardWidget(app: App): HtmlString {
   return html`<div class=-body>${count ? html`<small class=u2-badge>${count} schema leftovers</small><br>` : ""}<small>Integrity, schema leftovers and database maintenance</small></div>`;
 }
 
-function issueBadge(name: string, label: string, count: number, body: HtmlString): HtmlString {
+function issueBadge(name: string, label: string, count: number, body: HtmlString) {
   if (!count) return html``;
   return html`<button class=u2-unstyle data-inspect="${name}"><small class=u2-badge>${label} ${count}</small></button>
     <template data-inspect-body="${name}">${body}</template>`;
 }
 
-function issueTable(title: string, head: HtmlString, rows: HtmlString[]): HtmlString {
+function issueTable(title: string, head: HtmlString, rows: HtmlString[]) {
   return html`<h3>${title}</h3>
     <table class=u2-table>
       <thead><tr>${head}
@@ -164,7 +164,7 @@ export async function renderRow(
     </u2-menubutton>`;
 }
 
-async function tableRows(node: Node): Promise<HtmlString> {
+async function tableRows(node: Node) {
   const orphans = await findOrphans(node.app.db);
   const extras = schemaExtras(node.app.db);
   return html.join(await Promise.all(Object.keys(node.app.db.tables).sort().map((table) => renderRow(node, table, orphans, extras))));

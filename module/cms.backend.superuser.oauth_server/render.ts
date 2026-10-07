@@ -33,7 +33,7 @@ export async function clients(node: Node): Promise<HtmlString> {
 }
 
 /** One editable card per client; a blank `client` renders the add form. */
-async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
+async function card(app: App, client: Partial<Row> = {}) {
   const t = app.t;
   const isNew = !client.id;
   return html.async`<form class=u2-card>
@@ -80,7 +80,7 @@ export async function grants(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-async function grantRow(app: App, g: Row): Promise<HtmlString> {
+async function grantRow(app: App, g: Row) {
   return html.async`<tr>
     <td>${g.name ?? g.client_id}
     <td>${g.username ?? "#" + g.usr_id}

@@ -61,7 +61,7 @@ function* walk(node: ApiNode, ctx: Ctx, segments: string[] = [], nodes: ApiNode[
   }
 }
 
-function schemaToFormFields(s: StandardSchema | undefined): HtmlString | "" {
+function schemaToFormFields(s: StandardSchema | undefined) {
   if (!s || s.kind !== "object" || !s.shape) return "";
   return html.join(Object.entries(s.shape).map(([k, v]) => {
     const field = v as StandardSchema;
@@ -93,7 +93,7 @@ const ACCESS_COLORS: Record<Route["accessLevel"], string> = {
   none:      "var(--red)",
 };
 
-function pathParamFields(params: PathParam[]): HtmlString {
+function pathParamFields(params: PathParam[]) {
   return html.join(params.map(({ name, schema }) => {
     const jsonSchema = schema ? toJsonSchema(schema) : { type: "string" };
     const description = schema?.description;
@@ -102,7 +102,7 @@ function pathParamFields(params: PathParam[]): HtmlString {
   }));
 }
 
-function routeHtml(r: Route, idx: number, toolJson: string): HtmlString {
+function routeHtml(r: Route, idx: number, toolJson: string) {
   const accessColor = ACCESS_COLORS[r.accessLevel];
   const paramForm = pathParamFields(r.pathParams);
   const inputForm = schemaToFormFields(r.input);

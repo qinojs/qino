@@ -62,7 +62,7 @@ export function reportIp(app: App, ip: string, weight: number, reason: string): 
 }
 
 /** Writes of one key run one after another, so they neither insert its row twice nor lose a hit. */
-function store(app: App, key: string, add: number): void {
+function store(app: App, key: string, add: number) {
   const { writes } = states.get(app)!;
   const write = (writes.get(key) ?? Promise.resolve())
     .then(async () => hit(app.db, "log_ip", await keyId(app, key), add))

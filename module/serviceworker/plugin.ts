@@ -43,7 +43,7 @@ const hasWorkerPart = (mod: Module) => mod.manifest.files?.includes("pub/sw.js")
 const partNames = (app: App) => app.modules.linked().filter(hasWorkerPart).map((mod) => mod.name);
 
 // runs on every rendered page
-function register(ctx: Ctx): void {
+function register(ctx: Ctx) {
   if (!ctx.app.modules.linked().some(hasWorkerPart)) return;
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "serviceworker/pub/register.js");
 }

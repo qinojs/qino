@@ -127,7 +127,7 @@ function pubPath(root: string, file: string) {
   return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }
 
-export const requestStorage: AsyncLocalStorage<Ctx> = new AsyncLocalStorage();
+export const requestStorage = new AsyncLocalStorage<Ctx>();
 
 // In dev, requests read files fresh; outside a request the default applies.
 const ttl = fs.ttl;

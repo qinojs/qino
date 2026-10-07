@@ -46,7 +46,7 @@ const branches = (branch: Branch, chosen: string[], above = ""): HtmlString[] =>
   });
 
 /** Create or edit an agent; sessions are started in Chat. One a module declares (`name`) its file sets, shown locked. */
-function form(node: Node, agent: { id?: number; name?: string; system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<HtmlString> {
+function form(node: Node, agent: { id?: number; name?: string; system?: string; tools?: string[]; prefer?: Record<string, number> } = {}) {
   const t = node.app.t;
   return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id}">
     ${agent.name ? html.async`<small>${t`Declared by a module: its file sets role, tools and model choice on every start.`}</small>` : ""}
@@ -90,7 +90,7 @@ const short = (text: string) => text.length > SHORT ? text.slice(0, SHORT) + " �
 const count = (value: unknown, danger = false) => Number(value) ? html`<span style="${danger ? "color:var(--red)" : ""}">${Number(value)}</span>` : "–";
 /** A stored `prefer`, "–" when empty: then the agent's or ai1's own. */
 const choice = (json: unknown) => json ? html`<small>${json}</small>` : "–";
-const firstLine = (text: unknown) => short(String(text ?? "").split("\n")[0]);
+const firstLine = (text: unknown) => short(String(text ?? "").split("\n", 1)[0]);
 /** The link to an agent's page: in its own color. */
 const agentLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(url, { agent: id })}">${colored(id)}</a>`;
 /** The link to a session's page. */
@@ -372,7 +372,7 @@ const folded = (summary: string, all: string) =>
   html`<details><summary><small>${short(summary)}</small></summary><pre style="white-space:pre-wrap;overflow:auto;max-height:20rem"><small>${all}</small></pre></details>`;
 
 /** JSON text indented, other text as it is. */
-const pretty = (value: unknown): string => {
+const pretty = (value: unknown) => {
   if (typeof value === "string") try { value = JSON.parse(value); } catch { return value as string; }
   return JSON.stringify(value, null, 2);
 };

@@ -186,7 +186,7 @@ const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); //
 
 // Enable/disable at runtime (link/unlink). Not persisted — a restart links all modules again.
 // Superuser only.
-async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<void> {
+async function toggleModule(node: Node, vars: Record<string, unknown>) {
   const ctx = getCtx();
   if (!(ctx.user?.superuser)) return;
   try {
@@ -198,7 +198,7 @@ async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<
 }
 
 /** Create an empty file inside the module, so the editor has something to open. Superuser only. */
-async function createFile(node: Node, modName: string, rel: string): Promise<void> {
+async function createFile(node: Node, modName: string, rel: string) {
   const ctx = getCtx();
   if (!(ctx.user?.superuser)) return;
   try {

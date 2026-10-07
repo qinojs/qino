@@ -198,7 +198,7 @@ export class FileTransformer {
 /** Cache key part for the Accept header, so a browser without AVIF never gets the AVIF entry.
  *  Only explicit types count (`image/*` and `*​/*` say nothing about codecs). A missing header is no
  *  constraint and gives the empty string. */
-function accepts(accept: string | undefined, opts: TransformOptions): string {
+function accepts(accept: string | undefined, opts: TransformOptions) {
   if (opts.fmt || !accept) return ''; // explicit format, or nothing known
   return NEGOTIATED.filter((type) => !accept.includes(type)).join(',');
 }
@@ -207,11 +207,11 @@ function accepts(accept: string | undefined, opts: TransformOptions): string {
 const NEGOTIATED = ['image/avif'];
 
 /** Sorts transformers by phase order + `after` dependencies within a phase */
-function sortTransformers(transformers: TransformerDef[]): TransformerDef[] {
+function sortTransformers(transformers: TransformerDef[]) {
   return PHASE_ORDER.flatMap((phase) => topoSort(transformers.filter((t) => t.phase === phase)));
 }
 
-function topoSort(transformers: TransformerDef[]): TransformerDef[] {
+function topoSort(transformers: TransformerDef[]) {
   const byName = new Map(transformers.map((t) => [t.name, t]));
   const result: TransformerDef[] = [];
   const state = new Map<string, 'visiting' | 'done'>();
@@ -230,13 +230,13 @@ function topoSort(transformers: TransformerDef[]): TransformerDef[] {
   return result;
 }
 
-async function hashKey(parts: string[]): Promise<string> {
+async function hashKey(parts: string[]) {
   const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(parts.join('|')));
   return new Uint8Array(buf).toHex();
 }
 
 /** Add by priority, highest first; `signal` removes it again. */
-function addEngine<T extends { priority: number }>(list: T[], engine: T, signal?: AbortSignal): void {
+function addEngine<T extends { priority: number }>(list: T[], engine: T, signal?: AbortSignal) {
   if (signal?.aborted) return;
   list.push(engine);
   list.sort((a, b) => b.priority - a.priority);

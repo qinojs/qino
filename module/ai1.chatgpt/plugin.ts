@@ -11,18 +11,18 @@ export const ai1Adapters = { "chatgpt-plan": chatgpt };
 
 const base = (ctx: Ctx) => ctx.req.appUrl + "ai1-chatgpt";
 const local = (ctx: Ctx) => ctx.req.url.protocol === "http:" && ctx.req.url.hostname === "127.0.0.1";
-const returnTo = (ctx: Ctx, raw: unknown): string => {
+const returnTo = (ctx: Ctx, raw: unknown) => {
   if (typeof raw !== "string" || !raw.startsWith(ctx.req.appUrl) || /[\\\x00-\x1f]/.test(raw)) return base(ctx);
   const url = new URL(raw, ctx.req.url.origin);
   return url.origin === ctx.req.url.origin && url.pathname.startsWith(ctx.req.appUrl) ? url.pathname + url.search : base(ctx);
 };
 
-function user(ctx: Ctx): number {
+function user(ctx: Ctx) {
   if (!ctx.userId) throw new Output("Sign in to Qino first", { status: 401 });
   return ctx.userId;
 }
 
-function requireLocal(ctx: Ctx): void {
+function requireLocal(ctx: Ctx) {
   if (!local(ctx)) throw new Output("ChatGPT plan sign-in requires Qino on http://127.0.0.1", { status: 403 });
 }
 

@@ -28,7 +28,11 @@ const same = (name: string) => unit(name).replace(/[._]/g, "-");
 
 const get = async (url: string, headers: Record<string, string> = {}) => {
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
-  if (!res.ok) throw new Error(`${new URL(url).host}: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok) { // the service's own words where it gives them
+    const body = await res.json().catch(() => ({}));
+    const msg = body?.error?.message ?? body?.message;
+    throw new Error(typeof msg === "string" ? JSON.stringify(msg.slice(0, 200)) : `HTTP ${res.status}`);
+  }
   return res.json();
 };
 
@@ -143,9 +147,9 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
         if (meta?.description) told.set(model, String(meta.description));
       }
     });
-    if (entries.size) done.push(`${provider.name}: ${entries.size} (${added} new)`);
+    if (added) done.push(`${provider.name}: ${added} new`);
   }
-  return done.join(", ") || "no listing provider";
+  return done.join("\n") || "nothing new";
 }
 
 /**
@@ -263,5 +267,5 @@ export async function evaluate(app: App): Promise<string> {
   const meta = await settle(importMeta(app, priced));
   const benchmarks = await settle(importBenchmarks(app, told));
   await applySpeed(app); // the benchmarks' speed counts at once
-  return `models: ${models} · models.dev: ${meta} · Artificial Analysis: ${benchmarks ?? "no key"}`;
+  return `models: ${models}\nmodels.dev: ${meta}\nArtificial Analysis: ${benchmarks ?? "no key"}`;
 }

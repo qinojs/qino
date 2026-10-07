@@ -27,7 +27,7 @@ const path = (app: App, user: number) => `${dir(app)}user-${user}.json`;
 
 /** Credentials in owner-only files, written atomically, as OpenAI's sign-in contract requires
  *  (https://developers.openai.com/siwc/token-sharing-open-source/sign-in) — not in the database. */
-async function atomic(path: string, value: unknown): Promise<void> {
+async function atomic(path: string, value: unknown) {
   await fs.mkdir(path.slice(0, path.lastIndexOf("/") + 1), { mode: 0o700 });
   const tmp = `${path}.${crypto.randomUUID()}.tmp`;
   try {
@@ -59,7 +59,7 @@ export async function connections(app: App, user: number): Promise<{ clientId: s
 }
 
 /** Change the user's accounts and keep them. */
-async function update(app: App, user: number, change: (value: Accounts) => void): Promise<void> {
+async function update(app: App, user: number, change: (value: Accounts) => void) {
   const value = await accounts(app, user);
   change(value);
   await atomic(path(app, user), value);

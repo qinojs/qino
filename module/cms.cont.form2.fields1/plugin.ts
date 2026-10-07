@@ -28,7 +28,7 @@ const settingsSchema = {
 
 const LABEL_CLASS: Record<string, string> = { top: "-labelTop", placeholder: "-labelPlaceholder", right: "-labelRight" };
 
-async function formOf(node: Node): Promise<Form | undefined> {
+async function formOf(node: Node) {
   const open: Map<number, Form> | undefined = getCtx().state.form2;
   if (!open?.size) return;
   for (const id of [...(await node.path()).keys()].reverse()) {
@@ -37,7 +37,7 @@ async function formOf(node: Node): Promise<Form | undefined> {
   }
 }
 
-function attrs(list: Record<string, string | number | boolean | undefined>): HtmlString {
+function attrs(list: Record<string, string | number | boolean | undefined>) {
   let str = "";
   for (const [n, v] of Object.entries(list)) {
     if (v === false || v === undefined || v === "") continue;
@@ -56,7 +56,7 @@ async function plain(node: Node, name: string): Promise<string> {
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */
-async function field(node: Node, id: string, form: Form | undefined): Promise<HtmlString> {
+async function field(node: Node, id: string, form: Form | undefined) {
   const input = node.settings.inputs[id];
   const label = await plain(node, id + "_title");
   const fieldName = String(input.name() ?? "") || label || id;

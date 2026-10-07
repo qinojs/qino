@@ -16,7 +16,7 @@ export const VOID = new Set(["area","base","br","col","embed","hr","img","input"
 // content is text, never markup — `if (a < b)` in a script must survive
 const RAW_TEXT = new Set(["script","style","textarea"]);
 
-function tokenize(html: string): Token[] {
+function tokenize(html: string) {
   const tokens: Token[] = [];
   let i = 0;
   while (i < html.length) {
@@ -50,7 +50,7 @@ function tokenize(html: string): Token[] {
   return tokens;
 }
 
-function findTagEnd(html: string, start: number): number {
+function findTagEnd(html: string, start: number) {
   let inStr: string | null = null;
   for (let i = start; i < html.length; i++) {
     const c = html[i];
@@ -61,14 +61,15 @@ function findTagEnd(html: string, start: number): number {
   return html.length - 1;
 }
 
-function parseTagContent(raw: string): { tag: string; attrs: TAttr[] } {
+function parseTagContent(raw: string) {
   raw = raw.trim();
   const si = raw.search(/\s/);
   if (si === -1) return { tag: raw, attrs: [] };
   const attrs: TAttr[] = [];
+  const source = raw.slice(si);
   const re = /([^\s=/"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(raw.slice(si))) !== null) attrs.push({ name: m[1], value: m[2] ?? m[3] ?? m[4] ?? null });
+  while ((m = re.exec(source)) !== null) attrs.push({ name: m[1], value: m[2] ?? m[3] ?? m[4] ?? null });
   return { tag: raw.slice(0, si), attrs };
 }
 

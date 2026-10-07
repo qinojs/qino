@@ -59,7 +59,7 @@ export function datapointForm(app: App, point: Partial<Datapoint>, providers?: P
 const { uniqueColor, ageColor } = backend;
 
 /** A dialog to store a value by hand, e.g. a meter reading. */
-function entry(app: App, point: Datapoint): Promise<HtmlString> {
+function entry(app: App, point: Datapoint) {
   const t = app.t, id = (name: string) => `home-measurement-${point.id}-${name}`;
   return dialog(t`Enter measurement`, point.name, html.async`<form data-measurement data-id="${point.id}">
     <table class="u2-table -Fields -Flex">

@@ -55,7 +55,7 @@ export async function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-function renderAi(app: App, question: string, note: string, failed: boolean): Promise<HtmlString> | string {
+function renderAi(app: App, question: string, note: string, failed: boolean) {
   if (!app.modules.linked("ai1.tools")) return "";
   const msg = note ? html`<u2-alert open ${failed ? "variant=danger" : ""} style="margin-top:.25rem">${note}</u2-alert>` : "";
   return html.async`<div class=-ai>
@@ -67,7 +67,7 @@ function renderAi(app: App, question: string, note: string, failed: boolean): Pr
   </div>`;
 }
 
-async function runQuery(app: App, text: string): Promise<HtmlString> {
+async function runQuery(app: App, text: string) {
   const t0 = performance.now();
   try {
     const bare = text.replace(/^(?:\s|--[^\n]*|\/\*[\s\S]*?\*\/)+/, ""); // leading comments would defeat the routing regex
@@ -85,7 +85,7 @@ async function runQuery(app: App, text: string): Promise<HtmlString> {
   }
 }
 
-function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString> {
+function renderRows(app: App, rows: any[], ms: number) {
   if (!rows.length) return html.async`<u2-alert open class=-result>${app.t`0 rows`} · ${ms.toFixed(1)} ms</u2-alert>`;
 
   const cols = Object.keys(rows[0]);
@@ -126,7 +126,7 @@ function buildSchema(app: App): Promise<Table[]> {
 }
 
 // AI context from the documented JSON schema — types, primary keys, foreign keys (x-qg-parent), descriptions and ~row counts.
-async function schemaText(app: App): Promise<string> {
+async function schemaText(app: App) {
   const props = app.db.schema?.properties ?? {};
   const counts = await rowCounts(app);
   return Object.entries(props as Record<string, any>)
@@ -153,7 +153,7 @@ async function rowCounts(app: App): Promise<Record<string, number>> {
 }
 
 // Reference list, clickable to insert into the editor.
-function renderHelper(app: App, tables: Table[]): Promise<HtmlString> {
+function renderHelper(app: App, tables: Table[]) {
   const items = html.join(tables.map((t) => {
     const fieldList = html.join(t.fields.map((f) =>
       html`<button type=button class=-field data-field="${f.name}" title="${f.type}">${f.name}</button>`

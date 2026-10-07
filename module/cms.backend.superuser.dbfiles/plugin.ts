@@ -18,12 +18,12 @@ const VID = new Set(["mp4","webm","mov","avi","mkv"]);
 const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
-async function mediaPreview(f: DbFile, exists: boolean): Promise<HtmlString> {
+async function mediaPreview(f: DbFile, exists: boolean) {
   if (!exists) return html`<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
   return html`<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
-async function mediaView(f: DbFile): Promise<HtmlString | string> {
+async function mediaView(f: DbFile) {
   const ext = f.extension;
   const url = await f.url();
   let inner: HtmlString | string = "";
@@ -38,14 +38,14 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
   return inner ? html`<div class=u2-card style="flex:0 1 auto"><div>${inner}</div></div>` : "";
 }
 
-async function textView(f: DbFile): Promise<HtmlString | string> {
+async function textView(f: DbFile) {
   if (!TXT.has(f.extension)) return "";
   return html`<div class=u2-card style="flex:0 1 auto"><div><u2-code trim><textarea readonly>${await
     fs.text(f.path)}</textarea></u2-code></div></div>`;
 }
 
 /** The file's searchable text, shown as is (to spot bad OCR). `null` = not extracted yet, `""` = no text. */
-function searchText(app: App, id: number, text: string | null): Promise<HtmlString> {
+function searchText(app: App, id: number, text: string | null) {
   if (text == null) return html.async`<button data-extract="${id}">${app.t`Extract text`}</button>`;
   const again = html.async`<button data-extract="${id}" title="${app.t`extract again`}"><u2-ico icon=refresh>↻</u2-ico></button>`;
   if (!text) return html.async`<small>${app.t`no text in this file`}</small> ${again}`;

@@ -36,7 +36,7 @@ export const videoDecode: TransformerDef = {
   },
 };
 
-function toFrameIndex(frame: number | undefined): number {
+function toFrameIndex(frame: number | undefined) {
   const value = Math.floor(frame ?? 1);
   return Number.isFinite(value) && value > 0 ? value - 1 : 0;
 }

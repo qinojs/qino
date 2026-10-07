@@ -6,21 +6,21 @@ import { preview } from "./preview.ts";
 import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function field(app: App, path: string, label: string): Promise<HtmlString> {
+async function field(app: App, path: string, label: string) {
   const item = app.settings[$item].sub(["webapp", path]);
   return html`<tr>
   <th>${label}
   <td>${html.raw(toInput(item.schema ?? {}, { name: path, value: await item.proxy }))}`;
 }
 
-async function inheritedField(app: App, path: string, label: string): Promise<HtmlString> {
+async function inheritedField(app: App, path: string, label: string) {
   const item = app.settings[$item].sub(["identity", ...path.split(".")]);
   return html`<tr>
   <th>${label}
   <td>${html.raw(toInput({ ...item.schema, readOnly: true }, { value: String(await item.proxy ?? "").trim(), disabled: true }))}`;
 }
 
-async function iconField(app: App, label: string): Promise<HtmlString> {
+async function iconField(app: App, label: string) {
   const icon = await (await identity.file(app, "icon"))?.exists();
   return html.async`<tr>
   <th>${label}
@@ -29,7 +29,7 @@ async function iconField(app: App, label: string): Promise<HtmlString> {
 
 const card = (
   title: string,
-  fields: Array<HtmlString | Promise<HtmlString>>,
+  fields: (HtmlString | Promise<HtmlString>)[],
   footer?: HtmlString | Promise<HtmlString>,
   editable = true,
 ) => html.async`<div class=u2-card style="flex-grow:auto">

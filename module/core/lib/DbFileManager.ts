@@ -336,11 +336,11 @@ export class DbFile extends File {
 
 }
 
-function grantResource(id: number, parts: string[]): string {
+function grantResource(id: number, parts: string[]) {
   return `dbFile\0${id}/${parts.join("/")}`;
 }
 
-function permanentResource(resource: string, md5: unknown): string {
+function permanentResource(resource: string, md5: unknown) {
   return `${resource}\0${String(md5 ?? "")}`;
 }
 
@@ -367,7 +367,7 @@ function etagMatch(header: string, etag: string) {
   return header === "*" || header.split(",").some((t) => t.trim().replace(/^W\//, "") === etag);
 }
 
-function isTransformRequest(param: Record<string, unknown>): boolean {
+function isTransformRequest(param: Record<string, unknown>) {
   return transformOptions.some((k) => k in param);
 }
 

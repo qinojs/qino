@@ -92,12 +92,12 @@ function importUpyo(pkg: string): Promise<Record<string, unknown>> {
   return import(`jsr:@upyo/${pkg}`);
 }
 
-function clean(obj: Record<string, unknown>): Record<string, unknown> {
+function clean(obj: Record<string, unknown>) {
   for (const key of Object.keys(obj)) if (obj[key] === "" || obj[key] == null) delete obj[key];
   return obj;
 }
 
-function toBool(v: unknown): boolean | undefined {
+function toBool(v: unknown) {
   if (v === "" || v == null) return;
   return v === true || v === 1 || v === "1" || v === "true";
 }

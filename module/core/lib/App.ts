@@ -232,7 +232,7 @@ export class App extends Emitter<AppEvents> {
 }
 
 /** Apply what ended the route — a control-flow signal or an error — to the response. */
-function applyThrown(ctx: Ctx, e: unknown): void {
+function applyThrown(ctx: Ctx, e: unknown) {
     if (e instanceof Output) {
         for (const [k, v] of e.buildHeaders()) ctx.res.headers.set(k, v);
         // A signal only overrides what it sets (200 = unset), so a bare `throw new Output()` keeps
@@ -249,7 +249,7 @@ function applyThrown(ctx: Ctx, e: unknown): void {
 const ERROR_500 = "<h1>500 Internal Server Error</h1>";
 
 /** Errors raised before a request context exists (init, pre-filter, 413). */
-function earlyError(e: unknown): Response {
+function earlyError(e: unknown) {
     if (e instanceof Output) return e.toResponse();
     console.error("Error:", e);
     return new Response(ERROR_500, { status: 500 });

@@ -11,7 +11,7 @@ import type { Reader } from "../mod.ts";
 const MAX_SIZE = 5 * 1024 * 1024;
 
 /** The page's <title>, its entities decoded (&auml; is ä). */
-function titleOf(html: string): string {
+function titleOf(html: string) {
   let title = "", within = false;
   new Parser({
     onopentag: (name) => within = name === "title",

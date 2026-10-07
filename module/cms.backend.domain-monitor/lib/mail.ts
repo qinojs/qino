@@ -9,9 +9,9 @@ import type { Type } from "./dns.ts";
 const DKIM_SELECTORS = ["default", "google", "selector1", "selector2", "k1", "k2", "s1", "s2", "mail", "dkim", "smtp", "zoho", "protonmail", "mandrill", "fm1"];
 
 // Mechanisms that cost one of the ten DNS lookups an SPF record is allowed (RFC 7208 §4.6.4).
-const SPF_COST = /^[+\-~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
+const SPF_COST = /^[-+~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
 
-const txtOf = (name: string): Promise<string[]> =>
+const txtOf = (name: string) =>
   Deno.resolveDns(name, "TXT").then((r) => r.map((parts) => parts.join(""))).catch(() => []);
 
 /**
@@ -24,7 +24,7 @@ async function spfCount(record: string, seen: Set<string>): Promise<number> {
   for (const term of record.split(/\s+/)) {
     if (!SPF_COST.test(term)) continue;
     count++;
-    const target = term.match(/^[+\-~?]?(?:include:|redirect=)(\S+)/i)?.[1];
+    const target = term.match(/^[-+~?]?(?:include:|redirect=)(\S+)/i)?.[1];
     if (target && !seen.has(target)) { seen.add(target); nested.push(target); }
   }
   if (count > 10 || !nested.length) return count;
@@ -44,7 +44,7 @@ export function spf(txt: string[]) {
   // Two records are not "twice as safe" — receivers must treat it as permerror and ignore both.
   if (records.length > 1) return { record: records[0], policy: "", error: "multiple SPF records" };
   if (!records.length) return { record: "", policy: "", error: "" };
-  const policy = records[0].match(/([+\-~?]all)(\s|$)/i)?.[1].toLowerCase() ?? "";
+  const policy = records[0].match(/([-+~?]all)(\s|$)/i)?.[1].toLowerCase() ?? "";
   const error = policy === "+all" ? "+all accepts every sender" : !policy ? "no all mechanism" : "";
   return { record: records[0], policy, error };
 }

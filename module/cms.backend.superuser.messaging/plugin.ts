@@ -30,7 +30,7 @@ export function render(node: Node): Promise<HtmlString> {
   return renderOverview(node, url);
 }
 
-function intParam(url: URL, key: string): number {
+function intParam(url: URL, key: string) {
   const value = Number(url.searchParams.get(key));
   return Number.isSafeInteger(value) && value > 0 ? value : 0;
 }
@@ -123,7 +123,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 }
 
 /** How far a message got: how many of its recipients it reached, and what is still owed. */
-function reached(row: Row, view: View): HtmlString {
+function reached(row: Row, view: View) {
   const all = Number(row.recipient_count) || 0;
   const sent = Number(row.sent_count) || 0;
   const owed = Number(row.owed_count) || 0;
@@ -134,8 +134,8 @@ function reached(row: Row, view: View): HtmlString {
 }
 
 /** Thumbnails of the first attachments of the visible messages. One query, including the file rows. */
-async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>> {
-  if (!rows.length) return new Map();
+async function previews(app: App, rows: Row[]) {
+  if (!rows.length) return new Map<number, HtmlString>();
   const files = await app.db.query`
     SELECT a.message_id, f.* FROM message_attachment a JOIN file f ON f.id = a.file_id
     WHERE ${sql.in("a.message_id", rows.map((row) => row.id))} ORDER BY a.message_id, a.sort, a.file_id`;
@@ -171,7 +171,7 @@ async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
   return new Map(stats.map((row) => [Number(row.message_id), row]));
 }
 
-function trackedStat(count: unknown, first: unknown): HtmlString {
+function trackedStat(count: unknown, first: unknown) {
   const n = Number(count) || 0;
   return first == null ? html`${n}` : html`${n} <small>${u2.el.time(first, { narrow: true })}</small>`;
 }
@@ -349,13 +349,13 @@ async function userCard(node: Node, url: URL, usrId: number): Promise<HtmlString
 }
 
 /** Carries the rest of the query string through a GET form; `own` are the fields the form owns. */
-function hidden(url: URL, own: string[]): HtmlString[] {
+function hidden(url: URL, own: string[]) {
   return [...url.searchParams]
     .filter(([key]) => !own.includes(key))
     .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`);
 }
 
-function paramUrl(url: URL, params: Record<string, string>): string {
+function paramUrl(url: URL, params: Record<string, string>) {
   const next = new URL(url);
   for (const [key, value] of Object.entries(params)) {
     if (value) next.searchParams.set(key, value);
@@ -364,20 +364,20 @@ function paramUrl(url: URL, params: Record<string, string>): string {
   return next.pathname + next.search;
 }
 
-function recipient(row: Row, url: URL, view: View): HtmlString {
+function recipient(row: Row, url: URL, view: View) {
   return row.usr_id
     ? html`<a href="${paramUrl(url, { usr: String(row.usr_id), msg: "" })}">${row.username ?? "#" + row.usr_id}</a>`
     : html`${view.anonymous}`;
 }
 
-async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
+async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View) {
   const bubble = await chatBubble(app, row, view);
   return html`<tr class="${row.direction === "in" ? "-user" : "-platform"}">
     <td>${row.direction === "in" ? bubble : ""}
     <td>${row.direction === "out" ? bubble : ""}`;
 }
 
-async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
+async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View) {
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
   const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div>
@@ -390,7 +390,7 @@ async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments:
 /** What the transformer can turn into an image: pictures, and a PDF's first page. */
 const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") || mime === "application/pdf";
 
-async function attachments(app: App, rows: Row[], compact = false): Promise<HtmlString> {
+async function attachments(app: App, rows: Row[], compact = false) {
   if (!rows.length) return html``;
   const items = await Promise.all(rows.map(async (row) => {
     const file = await app.dbFiles.file(Number(row.file_id));
@@ -407,26 +407,26 @@ async function attachments(app: App, rows: Row[], compact = false): Promise<Html
   return html`<div class=-attachments>${items}</div>`;
 }
 
-function messageTarget(row: Row, view: View): string {
+function messageTarget(row: Row, view: View) {
   if (row.grp_id) return `[${row.grp_name ?? view.group} #${row.grp_id}]`;
   const count = Number(row.recipient_count ?? row.deliveries?.length ?? 0);
   return count > 1 ? `[${count} ${view.recipients}]` : "";
 }
 
 /** Incoming or outgoing, as the call-log icons say it. */
-function direction(row: Row, view: View): HtmlString {
+function direction(row: Row, view: View) {
   return row.direction === "out"
     ? html`<u2-ico inline icon=call_made aria-label="${view.outgoing}">→</u2-ico>`
     : html`<u2-ico inline icon=call_received aria-label="${view.incoming}">←</u2-ico>`;
 }
 
 /** What the message says, without its markup — for previews and search results. */
-function plain(row: Row): string {
+function plain(row: Row) {
   return textOf(rowMsg(row));
 }
 
 /** The body for the panel: sanitized markup or escaped text. Messages are untrusted. */
-function body(row: Row): HtmlString {
+function body(row: Row) {
   const markup = htmlOf(rowMsg(row));
   return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text}`;
 }
@@ -435,7 +435,7 @@ function rowMsg(row: Row): Msg {
   return { text: String(row.text ?? ""), format: (row.format || undefined) as Msg["format"] };
 }
 
-function cut(text: string, max = 120): string {
+function cut(text: string, max = 120) {
   const line = text.replace(/\s+/g, " ").trim();
   return line.length > max ? line.slice(0, max) + "…" : line;
 }
@@ -463,11 +463,11 @@ async function labels(app: App) {
 }
 type View = Awaited<ReturnType<typeof labels>>;
 
-function readableData(data: unknown): string {
+function readableData(data: unknown) {
   try { return JSON.stringify(JSON.parse(String(data)), null, 2); } catch { return String(data ?? ""); }
 }
 
-function userName(user: Row): string {
+function userName(user: Row) {
   const name = [user.given_name, user.family_name].filter(Boolean).join(" ");
   return name ? `${name}${user.username ? " · " + user.username : ""}` : String(user.username ?? "#" + user.id);
 }

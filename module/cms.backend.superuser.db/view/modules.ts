@@ -16,7 +16,7 @@ function tableOrigins(index: ReturnType<typeof buildModuleTableIndex>): TableOri
   return Object.fromEntries(Object.entries(origins).map(([table, mods]) => [table, [...mods].sort()]));
 }
 
-function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>): FieldOrigins {
+function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>) {
   const origins: FieldOrigins = {};
   for (const [modName, tables] of Object.entries(index)) {
     for (const [table, fields] of Object.entries(tables)) {
@@ -26,7 +26,7 @@ function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>): FieldOri
   return origins;
 }
 
-function chip(kind: "table" | "field", name: string, mods: string[], definedByLabel: string): HtmlString {
+function chip(kind: "table" | "field", name: string, mods: string[], definedByLabel: string) {
   const cls = `-${kind}-chip`;
   if (mods.length < 2) return html`<span class="${cls}">${name}</span>`;
   const title = `${definedByLabel}: ${mods.toSorted().join(", ")}`;

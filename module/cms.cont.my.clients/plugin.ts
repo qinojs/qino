@@ -55,7 +55,7 @@ const label = (list: Record<string, RegExp>, ua: string) => Object.keys(list).fi
 const device = (ua: string) => [label(BROWSERS, ua), label(SYSTEMS, ua)].filter(Boolean).join(" · ") || ua.slice(0, 40);
 
 /** Reverse-DNS name of an IP, in-addr.arpa for v4, ip6.arpa for v6. */
-function arpaName(ip: string): string {
+function arpaName(ip: string) {
   if (!ip.includes(":")) return ip.split(".").reverse().join(".") + ".in-addr.arpa";
   const [head, tail = ""] = ip.split("::");
   const groups = head ? head.split(":") : [], rest = tail ? tail.split(":") : [];

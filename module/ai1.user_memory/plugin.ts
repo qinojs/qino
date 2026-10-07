@@ -21,7 +21,7 @@ const log = (e: unknown) => console.error("[ai1.user_memory] embedding:", errMsg
 const list = (app: App, usr: number, limit?: number) => app.db.query`SELECT id, content FROM ai1_user_memory m WHERE usr_id = ${usr}
   ORDER BY ${sqlScore(app.db, "ai1_user_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`;
 
-async function own(app: App, usr: number, id: number): Promise<void> {
+async function own(app: App, usr: number, id: number) {
   if (!await app.db.one`SELECT id FROM ai1_user_memory WHERE id = ${id} AND usr_id = ${usr}`) throw new NotFoundError("No such memory");
 }
 

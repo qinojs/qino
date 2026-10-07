@@ -2,7 +2,7 @@ import { sql } from "@qino/qino";
 
 import type { Db } from "@qino/qino";
 
-function nullable(type: unknown): boolean {
+function nullable(type: unknown) {
   return Array.isArray(type) && type.includes("null");
 }
 
