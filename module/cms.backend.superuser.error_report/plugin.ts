@@ -231,7 +231,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 </table>`;
 }
 
-async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>): Promise<HtmlString> {
+async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>) {
   const db = node.app.db;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
@@ -295,7 +295,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;

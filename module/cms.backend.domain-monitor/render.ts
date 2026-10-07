@@ -364,7 +364,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
         ><button class=u2-unstyle data-action=delete data-domain="${domain}" u2-confirm="Delete ${domain}?"><u2-ico icon=delete>✕</u2-ico></button>`;
 }
 
-async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlString> {
+async function renderDetail(node: Node, ctx: Ctx, domain: string) {
   const row = await node.app.db.row<DomainRow>`SELECT * FROM monitor_domain WHERE domain = ${domain}`;
   const back = ctx.req.url.toURL();
   back.searchParams.delete("domain");
