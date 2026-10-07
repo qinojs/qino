@@ -1,4 +1,4 @@
-import { hee, sql } from "@qino/qino";
+import { errMsg, hee, sql } from "@qino/qino";
 import { ChannelError, delivered, send as dispatch, selectors } from "@qino/qino/messaging";
 
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
@@ -7,7 +7,7 @@ import { linkToken } from "./lib/link.ts";
 import type { App, Row } from "@qino/qino";
 import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
 
-export { call } from "./lib/bot.ts";
+export { call, getMe as bot } from "./lib/bot.ts";
 
 /** Who a `to` means as chats — a chat exists only where someone linked their account. */
 async function recipients(app: App, to: To & { chat?: number | number[] }): Promise<Recipient[]> {
@@ -34,7 +34,7 @@ export const send = (app: App, to: To & { chat?: number | number[] }, message: s
 function telegramText(msg: Msg, rendered: { text: string; html?: string }): { text: string; parse_mode?: string } {
   const body = rendered.html ?? rendered.text;
   const head = msg.title ? (rendered.html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
-  return { ...(rendered.html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
+  return { ...(rendered.html && { parse_mode: "HTML" }), text: head ? `${head}\n${body}` : body };
 }
 
 /** One batch of messages, paced: Telegram takes about 30 a second across chats. */
@@ -54,7 +54,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
     } catch (e) {
       // 403 = blocked or deactivated, 400 "chat not found" = the chat is gone for good
       const status = e instanceof BotError ? e.status : 0;
-      const reason = (e as Error).message;
+      const reason = errMsg(e);
       const error = `${status || "no status"}: ${reason}`;
       await delivered(app, Number(row.id), e instanceof ChannelError ? e : error);
       if (!chat) return;
@@ -89,12 +89,6 @@ async function sendMessage(app: App, params: Record<string, unknown>): Promise<s
 export async function linkUrl(app: App, usrId: number): Promise<string> {
   const me = await getMe(app);
   return `https://t.me/${me.username}?start=${await linkToken(app, usrId)}`;
-}
-
-/** The bot behind the configured token — throws when no token is set. */
-// deno-lint-ignore no-explicit-any
-export function bot(app: App): Promise<any> {
-  return getMe(app);
 }
 
 /** The chats one user linked — usually one, two when they connected a second Telegram account. */
@@ -142,7 +136,7 @@ export const messagingChannel: Channel = {
   label: "Telegram",
   color: "--blue",
   profile: "telegram",
-  reach: async (app: App, usrId: number) => Number(await app.db.one`SELECT COUNT(*) FROM telegram_chat WHERE usr_id = ${usrId}`),
+  reach: async (app, usrId) => Number(await app.db.one`SELECT COUNT(*) FROM telegram_chat WHERE usr_id = ${usrId}`),
   recipients,
   send,
   deliver,
