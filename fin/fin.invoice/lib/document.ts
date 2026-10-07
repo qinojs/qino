@@ -51,7 +51,16 @@ export async function document(
   tfoot th, tfoot td { border-top: 1px solid }
   .total { font-weight: bold }
   .text { margin-top: 2em; white-space: pre-line }
+  .description { font-size: .9em; white-space: pre-line }
+  /* on screen: the sheets as they come out of the printer */
+  @media screen {
+    html { background: #ccc }
+    body { margin: 0; padding: 1rem }
+    main, .slip { box-sizing: border-box; width: 210mm; min-height: 297mm; margin: 0 auto 1rem; background: #fff }
+    main { padding: 2cm 2cm 2.5cm }
+  }
 </style>
+<main>
 <header>
   <address>${addressBlock(sender, abroad)}${vat(sender)}</address>
   ${logo ? html`<img src="${logo}" alt="" style="max-height: 4em">` : ""}
@@ -70,7 +79,7 @@ export async function document(
     <th class=n>${t`Tax`}
     <th class=n>${t`Amount`}
   <tbody>${lines.map((line) => html`<tr>
-    <td>${line.title}
+    <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
     <td class=n>${new Intl.NumberFormat(locale).format(Number(line.qty))} ${line.unit ?? ""}
     <td class=n>${money(Number(line.price))}
     <td class=n>${Number(line.tax_rate)} %
@@ -87,6 +96,7 @@ export async function document(
       <td class=n>${money(sum.total)}
 </table>
 ${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}
+</main>
 ${(await slips()).map((slip) => html`<div class=slip>${html.raw(slip)}</div>`)}
 `);
   });

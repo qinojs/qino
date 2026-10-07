@@ -36,7 +36,14 @@ export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>)
 /** Run `fn` inside a request to `url`, as the app itself. What it renders must not hold a promise
  *  that was never awaited — the trap of a t`` inside a plain html``. */
 export async function inRequest<T>(app: App, url: string, fn: () => Promise<T>): Promise<T> {
-  const out = await requestStorage.run(await testContext({ url, app, set: { app } }), fn);
+  // a session that can sign links to private files (receipts, PDFs)
+  let grantKey = "";
+  const core = {
+    userId: () => 0,
+    pending: () => undefined,
+    grantKey: (v?: string) => v === undefined ? grantKey : (grantKey = v),
+  };
+  const out = await requestStorage.run(await testContext({ url, app, set: { app }, sess: { data: { core } } }), fn);
   if (String(out).includes("[object Promise]")) throw new Error(`${url} rendered a promise`);
   return out;
 }

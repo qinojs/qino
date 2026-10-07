@@ -2,7 +2,7 @@ import "@qino/m/core/pub/js/SettingsEditor.mjs";
 import { finPanel } from "@qino/m/cms.backend.superuser.fin/pub/panel.js";
 
 cms.initNode("backend.superuser.fin.invoice", (el) => {
-  const { node, execute, fields } = finPanel(el);
+  const { node, execute, fields, files } = finPanel(el);
   const form = el.querySelector("[data-edit]");
 
   el.addEventListener("submit", (e) => {
@@ -10,6 +10,11 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     if (form.matches("[data-create]")) execute(e.submitter, { create: fields(form) });
     else if (form.dataset.request) execute(e.submitter, { request: { ...fields(form), id: form.dataset.request } });
     else if (form.dataset.record) execute(e.submitter, { record: { ...fields(form), id: form.dataset.record } });
+    else if (form.dataset.attach) {
+      e.preventDefault();
+      files(form.elements.file).then(([file]) => execute(e.submitter, { attach: { id: form.dataset.attach, file } }));
+      return;
+    }
     else if (!form.matches("[data-edit]")) return; // the filter is a plain GET form; the editor saves by itself
     e.preventDefault();
   });
@@ -20,6 +25,22 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
   });
 
   if (form) editor(form);
+  el.querySelectorAll("iframe[data-sheets]").forEach(sheets);
+
+  /** A printed document's A4 sheets, scaled down to the card's width and shown whole. */
+  function sheets(frame) {
+    const fit = () => {
+      const doc = frame.contentDocument?.documentElement;
+      if (!doc?.scrollWidth) return;
+      doc.style.zoom = "";
+      const zoom = Math.min(1, frame.clientWidth / doc.scrollWidth);
+      frame.style.height = `${Math.ceil(doc.scrollHeight * zoom)}px`;
+      doc.style.zoom = String(zoom);
+    };
+    frame.addEventListener("load", fit);
+    new ResizeObserver(fit).observe(frame);
+    fit();
+  }
 
   /** A draft: saved a moment after each change, and the preview drawn from what was saved. */
   function editor(form) {

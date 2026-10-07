@@ -80,8 +80,8 @@ async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: 
       },
     },
     title: s.rnd.chance(0.3) ? s.rnd.title(2) : undefined,
-    lines: s.rnd.some(WORK, s.rnd.int(1, 4)).map(([title, unit, price, taxRate]) => ({
-      title,
+    lines: s.rnd.some(WORK, s.rnd.int(1, 4)).map(([name, unit, price, taxRate]) => ({
+      name,
       unit: unit || undefined,
       qty: unit === "h" ? s.rnd.int(2, 24) / 2 : unit ? s.rnd.int(10, 500) : 1,
       price,
@@ -136,14 +136,14 @@ function ways(s: Seed): [string, string | undefined][] {
 async function received(s: Seed): Promise<void> {
   const { create, issue, refOf } = await import("@qino/qino/fin.invoice");
   const { record } = await import("@qino/qino/fin.payment");
-  const [title, price] = s.rnd.pick(BILLS);
+  const [name, price] = s.rnd.pick(BILLS);
   const id = await create(s.app, {
     direction: "in",
     currency: "CHF",
     number: `${s.rnd.pick(["R", "INV-", "F"])}${s.rnd.int(1000, 99999)}`,
     date: day(s.rnd.past(90, s.now)),
     party: { name: s.rnd.person().organization || "Supplier AG", iban: "CH93 0076 2011 6238 5295 7" },
-    lines: [{ title, price, taxRate: 8.1 }],
+    lines: [{ name, price, taxRate: 8.1 }],
   });
   const invoice = (await issue(s.app, id))!;
   s.count("received invoices");

@@ -4,6 +4,7 @@
     "cms.backend.superuser.fin.accounting": {},
     "cms.backend.superuser.fin.bank": {},
     "cms.backend.superuser.fin.invoice": {},
+    "cms.backend.superuser.fin.invoice.inbox": {},
     "cms.backend.superuser.fin.payment": {},
     "fin.accounting": {},
     "fin.accounting.ch": {},

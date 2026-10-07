@@ -36,7 +36,7 @@ Deno.test("an invoice paid by QR bill: slip, a partial transfer, the rest", asyn
   await withApp("CH44 3199 9123 0008 8901 2", async (app) => {
     assertEquals(await methods(app, { amount: 100, currency: "CHF" }), [{ method: "qrbill", label: "QR-bill" }]);
     assertEquals(await methods(app, { amount: 100, currency: "USD" }), []);
-    const draft = await invoice(app, { currency: "CHF", lang: "de", lines: [{ title: "Design", price: 50000 }] });
+    const draft = await invoice(app, { currency: "CHF", lang: "de", lines: [{ name: "Design", price: 50000 }] });
     const id = Number((await issue(app, draft))?.id);
     const order = { method: "qrbill", amount: 50000, currency: "CHF", ref: refOf(id), title: "Rechnung 2026-1" };
     const { id: payment, redirect } = await create(app, { ...order, return: "/" });

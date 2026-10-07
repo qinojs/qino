@@ -39,9 +39,9 @@ const row = (app: App, id: number) => app.db.row`SELECT * FROM invoice WHERE id 
 const order = {
   currency: "CHF",
   lines: [
-    { title: "Design", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
-    { title: "Hosting", price: 9900, taxRate: 8.1 },
-    { title: "Book", price: 3990, taxRate: 2.6 },
+    { name: "Design", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
+    { name: "Hosting", price: 9900, taxRate: 8.1 },
+    { name: "Book", price: 3990, taxRate: 2.6 },
   ],
 };
 
@@ -60,7 +60,7 @@ Deno.test("tax is rounded once per rate; gross prices have it taken out", () => 
 });
 
 Deno.test("a unit price finer than a minor unit rounds only in the line amount", () => {
-  const power = [{ title: "Power", qty: 1234, unit: "kWh", price: 23.45, taxRate: 8.1 }]; // 0.2345 CHF/kWh
+  const power = [{ name: "Power", qty: 1234, unit: "kWh", price: 23.45, taxRate: 8.1 }]; // 0.2345 CHF/kWh
   const sum = totals(power, false);
   assertEquals([sum.amounts, sum.net, sum.tax, sum.total], [[28937], 28937, 2344, 31281]);
 });
@@ -68,7 +68,7 @@ Deno.test("a unit price finer than a minor unit rounds only in the line amount",
 Deno.test("a draft stores its lines and totals and can be changed until issued", async () => {
   const { app } = await setup();
   const id = await create(app, { ...order, party: { name: "Muster AG", country: "CH" }, ref: "shop.order:3" });
-  assertEquals((await lines(app, id)).map((l) => [l.title, l.qty, l.unit, l.amount]), [
+  assertEquals((await lines(app, id)).map((l) => [l.name, l.qty, l.unit, l.amount]), [
     ["Design", 2.5, "h", 30000],
     ["Hosting", 1, null, 9900],
     ["Book", 1, null, 3990],
@@ -79,7 +79,7 @@ Deno.test("a draft stores its lines and totals and can be changed until issued",
   assertEquals(JSON.parse(String(invoice?.party)).name, "Muster AG");
   await update(app, id, { gross: true });
   assertEquals((await row(app, id))?.total, 43890); // the same lines, now with tax included
-  await update(app, id, { lines: [{ title: "Flat", price: 10000 }] });
+  await update(app, id, { lines: [{ name: "Flat", price: 10000 }] });
   invoice = await row(app, id);
   assertEquals([invoice?.net, invoice?.tax, invoice?.total, (await lines(app, id)).length], [10000, 0, 10000, 1]);
   await issue(app, id);
@@ -152,7 +152,7 @@ Deno.test("bad values are refused", async () => {
   const { app } = await setup();
   await assertRejects(() => create(app, { ...order, currency: "chf" }));
   await assertRejects(() => create(app, { ...order, date: "7.10.2026" }));
-  await assertRejects(() => create(app, { currency: "CHF", lines: [{ title: "x", price: NaN }] }));
+  await assertRejects(() => create(app, { currency: "CHF", lines: [{ name: "x", price: NaN }] }));
   await assertRejects(() => issue(app, 999), Error, "only drafts");
   const unnumbered = (await setup({ number: "R-{year}" })).app;
   const draft = await create(unnumbered, order);
@@ -185,7 +185,7 @@ Deno.test("a draft can be thrown away; an issued invoice is revised into a new d
   const again = await row(app, copy);
   assertEquals([again?.status, again?.number, again?.total, again?.ref], ["draft", null, 47226, "shop.order:5"]);
   assertEquals(JSON.parse(String(again?.party)).name, "Muster AG");
-  assertEquals((await lines(app, copy)).map((l) => l.title), ["Design", "Hosting", "Book"]);
+  assertEquals((await lines(app, copy)).map((l) => l.name), ["Design", "Hosting", "Book"]);
 
   const paid = Number((await issue(app, await create(app, order)))?.id);
   await record(app, { direction: "in", provider: "bank", amount: 100, currency: "CHF", ref: refOf(paid) });

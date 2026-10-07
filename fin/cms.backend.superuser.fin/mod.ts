@@ -2,7 +2,7 @@ import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, DbFile, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Minor units as the request's language writes the currency: `CHF 472.26`, `JPY 1,000`. */
@@ -27,6 +27,12 @@ export function toMinor(value: unknown, currency: string): number {
   const amount = Math.round(typed * 10 ** currencies.decimals(currency));
   if (!Number.isSafeInteger(amount)) throw new Error(`Not an amount: ${value}`);
   return amount;
+}
+
+/** A file as the fin pages send it (see `files` in pub/panel.js), stored as dbFile. */
+export async function fileOf(app: App, sent: { name: string; type: string; data: string }): Promise<DbFile> {
+  const bytes = Uint8Array.fromBase64(String(sent.data));
+  return await app.dbFiles.add(new File([bytes], String(sent.name || "file"), { type: String(sent.type || "") }));
 }
 
 /** Amounts per currency: `CHF 120.00 · EUR 30.00`, or a dash for none. */

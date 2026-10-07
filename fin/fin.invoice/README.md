@@ -15,8 +15,8 @@ const id = await create(app, {
     address: { streetAddress: "Hauptgasse 1", postalCode: "3280", addressLocality: "Murten" },
   },
   lines: [
-    { title: "Design", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 }, // minor units, percent
-    { title: "Hosting", price: 9900, taxRate: 8.1 },
+    { name: "Design", description: "Logo and colours", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 }, // minor units, percent
+    { name: "Hosting", price: 9900, taxRate: 8.1 },
   ],
   ref: "shop.order:12",
 });

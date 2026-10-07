@@ -137,8 +137,13 @@
             "type": "integer",
             "default": 0
           },
-          "title": {
-            "type": "string"
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "description": {
+            "type": "string",
+            "description": "More about the item, printed below its name"
           },
           "qty": {
             "type": "number",

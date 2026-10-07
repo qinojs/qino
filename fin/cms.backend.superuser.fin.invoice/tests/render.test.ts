@@ -24,9 +24,9 @@ const edited = {
   currency: "chf", title: "", name: "Kunde & Co", streetAddress: "Seeweg 2", postalCode: "3000",
   addressLocality: "Bern", addressCountry: "ch", vatID: "", usrId: "", gross: "", text: "Danke",
   date: "", due: "", lang: "",
-  title0: "Design", qty0: "2,5", unit0: "h", price0: "120.00", taxRate0: "8.1",
-  title1: "", qty1: "", unit1: "", price1: "", taxRate1: "",
-  title5: "Hosting", qty5: "", unit5: "", price5: "99", taxRate5: "8.1",
+  name0: "Design", description0: "Logo & colours", qty0: "2,5", unit0: "h", price0: "120.00", taxRate0: "8.1",
+  name1: "", qty1: "", unit1: "", price1: "", taxRate1: "",
+  name5: "Hosting", qty5: "", unit5: "", price5: "99", taxRate5: "8.1",
 };
 
 Deno.test("a new invoice opens in the editor, saves as one types, is issued, asked for and paid", async () => {
@@ -39,7 +39,7 @@ Deno.test("a new invoice opens in the editor, saves as one types, is issued, ask
 
     const saved = await as(base, () => api(node, { save: { ...edited, id: String(id) } })) as Answer & { html: string };
     assertEquals(saved.ok, true, saved.message);
-    for (const part of ["Kunde &amp; Co", "Design", "Hosting", "Danke"]) assertStringIncludes(saved.html, part); // the preview
+    for (const part of ["Kunde &amp; Co", "Design", "Logo &amp; colours", "Hosting", "Danke"]) assertStringIncludes(saved.html, part); // the preview
     const row = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
     assertEquals([row?.status, row?.currency, row?.net, row?.tax, row?.total], ["draft", "CHF", 39900, 3232, 43132]);
     assertEquals(JSON.parse(String(row?.party)).address.addressCountry, "CH");
@@ -90,5 +90,22 @@ Deno.test("a draft is thrown away; an unpaid issued invoice is revised into a ne
     const copy = Number(new URL(revised.url!, "http://-").searchParams.get("invoice"));
     assertEquals((await app.db.row`SELECT status FROM invoice WHERE id = ${id}`)?.status, "canceled");
     assertEquals((await app.db.row`SELECT status, total FROM invoice WHERE id = ${copy}`)?.total, 43132);
+  });
+});
+
+Deno.test("a received invoice shows its original beside the editor; the receipt is uploaded there", async () => {
+  await withApp(async (_app, as, node) => {
+    const base = "http://qino.test/backend/invoices";
+    const created = await as(base, () => api(node, { create: { direction: "in", currency: "CHF" } })) as Answer;
+    const id = Number(new URL(created.url!, "http://-").searchParams.get("invoice"));
+    let page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    assertStringIncludes(page, `data-attach="${id}"`);
+    assert(!page.includes("data-preview")); // no print preview: the original is what counts
+    const file = { name: "bill.png", type: "image/png", data: new Uint8Array([137, 80, 78, 71]).toBase64() };
+    const attached = await as(base, () => api(node, { attach: { id: String(id), file } })) as Answer;
+    assertEquals(attached.ok, true, attached.message);
+    page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    assertStringIncludes(page, "bill.png");
+    assertStringIncludes(page, "<img");
   });
 });

@@ -25,5 +25,11 @@ export function finPanel(el) {
       if (button) button.disabled = false;
     }
   };
-  return { node, execute, fields };
+  /** The chosen files of an input, as they go to the node api: name, type and content in base64. */
+  const files = (input) => Promise.all([...input.files].map(async (file) => ({
+    name: file.name,
+    type: file.type,
+    data: new Uint8Array(await file.arrayBuffer()).toBase64(),
+  })));
+  return { node, execute, fields, files };
 }

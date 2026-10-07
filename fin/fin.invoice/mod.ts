@@ -29,6 +29,8 @@ type Values = {
   due?: string;
   number?: string;
   lang?: string;
+  /** What other modules keep with it, e.g. what was read from a received invoice. */
+  data?: Record<string, unknown>;
 };
 
 /** The `ref` its payments carry. */
@@ -168,6 +170,8 @@ export async function document(app: App, id: number): Promise<string> {
 export async function print(app: App, id: number, { html }: { html?: string } = {}): Promise<DbFile> {
   const invoice = await get(app, id);
   if (!invoice || invoice.status === "draft") throw new Error("fin.invoice: only issued invoices are printed");
+  // a received invoice's file is the original, the receipt: it is never replaced by a print
+  if (invoice.direction === "in") throw new Error("fin.invoice: a received invoice keeps its original");
   const bytes = await render(app, html ?? await document(app, id));
   const name = `${String(invoice.number || id).replace(/[^\w.-]+/g, "_")}.pdf`;
   const pdf = await app.dbFiles.add(new File([bytes], name, { type: "application/pdf" }));
@@ -175,6 +179,20 @@ export async function print(app: App, id: number, { html }: { html?: string } = 
   await app.db.table("invoice").update(id, { file_id: pdf.id, changed: unixTime() });
   if (old) await (await app.dbFiles.file(Number(old)))?.remove().catch(() => {});
   return pdf;
+}
+
+/**
+ * Keep the original a received invoice came as — the receipt, kept unchanged. A draft may get
+ * another one; an issued invoice only one where it has none yet, so what was booked stays.
+ */
+export async function attach(app: App, id: number, file: DbFile): Promise<Row | undefined> {
+  const invoice = await get(app, id);
+  if (!invoice) throw new Error(`fin.invoice: no invoice ${id}`);
+  if (invoice.status !== "draft" && invoice.file_id) throw new Error("fin.invoice: an issued invoice keeps its file");
+  const old = invoice.file_id;
+  await app.db.table("invoice").update(id, { file_id: file.id, changed: unixTime() });
+  if (old && Number(old) !== file.id) await (await app.dbFiles.file(Number(old)))?.remove().catch(() => {});
+  return get(app, id);
 }
 
 /** Its lines, in order. */
@@ -227,6 +245,7 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   if (values.currency != null) fields.currency = values.currency;
   if (values.gross != null) fields.gross = values.gross;
   if (values.party != null) fields.party = JSON.stringify(values.party);
+  if (values.data != null) fields.data = JSON.stringify(values.data);
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
   for (const key of ["ref", "title", "text", "date", "due", "number", "lang"] as const) {
     if (values[key] != null) fields[key] = values[key];
@@ -247,7 +266,8 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
       await table.insert({
         invoice_id: id,
         sort,
-        title: line.title,
+        name: line.name,
+        description: line.description || null,
         qty: line.qty ?? 1,
         unit: line.unit ?? null,
         price: line.price,

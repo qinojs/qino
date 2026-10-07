@@ -1,7 +1,7 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { toMinor } from "@qino/qino/cms.backend.superuser.fin";
-import { cancel, create, document, issue, print, refOf, remove, revise, update } from "@qino/qino/fin.invoice";
+import { fileOf, toMinor } from "@qino/qino/cms.backend.superuser.fin";
+import { attach, cancel, create, document, issue, print, refOf, remove, revise, update } from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
 
 import type { Node } from "@qino/qino/cms";
@@ -23,6 +23,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const v = vars.save as Record<string, string>;
       await update(app, Number(v.id), valuesOf(v));
       return { ok: true, html: await document(app, Number(v.id)) };
+    }
+    if (vars.attach) {
+      const { id, file } = vars.attach as { id: string; file: { name: string; type: string; data: string } };
+      await attach(app, Number(id), await fileOf(app, file));
+      return { ok: true };
     }
     const { action, id } = (vars.action ?? {}) as { action?: string; id?: string };
     if (action === "issue") {
@@ -71,16 +76,17 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   }
 }
 
-/** The editor's fields as invoice values: lines without a description are empty rows, an emptied
+/** The editor's fields as invoice values: lines without a name are empty rows, an emptied
  *  field is cleared. `ref` is not among them: what an invoice is for is set by the code that makes
  *  it, and kept. */
 function valuesOf(v: Record<string, string>) {
   const currency = String(v.currency ?? "").toUpperCase();
   const decimal = (value: string) => Number(String(value).replace(",", "."));
-  const lines = Object.keys(v).filter((key) => /^title\d+$/.test(key) && v[key]).map((key) => {
-    const i = key.slice(5);
+  const lines = Object.keys(v).filter((key) => /^name\d+$/.test(key) && v[key]).map((key) => {
+    const i = key.slice(4);
     return {
-      title: v[key],
+      name: v[key],
+      description: v[`description${i}`] || undefined,
       qty: v[`qty${i}`] ? decimal(v[`qty${i}`]) : 1,
       unit: v[`unit${i}`] || undefined,
       price: toMinor(v[`price${i}`] || 0, currency),

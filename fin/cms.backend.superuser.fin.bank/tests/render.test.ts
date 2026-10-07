@@ -28,7 +28,7 @@ Deno.test("a statement is read, its unclaimed line suggests the invoice of its a
   await withApp(async (app, as, node) => {
     const base = "http://qino.test/backend/bank";
     const invoice = Number((await issue(app, await create(app, {
-      currency: "CHF", party: { name: "Kunde & Co" }, lines: [{ title: "Design", price: 39900, taxRate: 8.1 }],
+      currency: "CHF", party: { name: "Kunde & Co" }, lines: [{ name: "Design", price: 39900, taxRate: 8.1 }],
     })))?.id);
     const read = await as(base, () => api(node, { camt: [camt, camt] })) as { ok: boolean; message: string };
     assertEquals(read.ok, true);

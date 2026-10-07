@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { cancel, create, issue, refOf } from "@qino/qino/fin.invoice";
+import { attach, cancel, create, issue, refOf } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
@@ -50,7 +50,7 @@ Deno.test("the balance sheet sums all time, the result only the period", async (
 Deno.test("invoices and their payments book themselves, in parts, with fees, and a cancel takes it back", async () => {
   await withApp(async (app) => {
     const id = Number((await issue(app, await create(app, {
-      currency: "CHF", date: "2026-10-01", lines: [{ title: "Design", price: 100000, taxRate: 8.1 }],
+      currency: "CHF", date: "2026-10-01", lines: [{ name: "Design", price: 100000, taxRate: 8.1 }],
     })))?.id);
     assertEquals(await saldo(app), { "1100": 108100, "2200": -8100, "3400": -100000 });
     const payment = await record(app, { direction: "in", provider: "saferpay", amount: 108100, currency: "CHF", paid: 50000, ref: refOf(id) });
@@ -60,7 +60,7 @@ Deno.test("invoices and their payments book themselves, in parts, with fees, and
     assertEquals(await saldo(app), { "1091": 106600, "2200": -8100, "3400": -100000, "6940": 1500 });
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM entry WHERE ref = ${`fin.payment:${payment}`}`), 2);
 
-    const other = Number((await issue(app, await create(app, { currency: "CHF", lines: [{ title: "Hosting", price: 20000 }] })))?.id);
+    const other = Number((await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Hosting", price: 20000 }] })))?.id);
     await cancel(app, other);
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM entry WHERE ref = ${refOf(other)}`), 2); // booked and reversed
   });
@@ -68,9 +68,12 @@ Deno.test("invoices and their payments book themselves, in parts, with fees, and
 
 Deno.test("a received invoice is a debt, paid from the bank", async () => {
   await withApp(async (app) => {
-    const id = Number((await issue(app, await create(app, {
-      direction: "in", number: "R-1", currency: "CHF", lines: [{ title: "Rent", price: 180000 }],
-    })))?.id);
+    const original = await app.dbFiles.add(new File(["%PDF"], "rent.pdf", { type: "application/pdf" }));
+    const draft = await create(app, { direction: "in", number: "R-1", currency: "CHF", lines: [{ name: "Rent", price: 180000 }] });
+    await attach(app, draft, original);
+    const id = Number((await issue(app, draft))?.id);
+    // the original is the entry's receipt
+    assertEquals(Number(await app.db.one`SELECT f.file_id FROM entry_file f JOIN entry e ON e.id = f.entry_id WHERE e.ref = ${refOf(id)}`), original.id);
     await record(app, { direction: "out", provider: "bank", amount: 180000, currency: "CHF", ref: refOf(id) });
     assertEquals(await saldo(app), { "1020": -180000, "4400": 180000 });
   });
@@ -78,7 +81,7 @@ Deno.test("a received invoice is a debt, paid from the bank", async () => {
 
 Deno.test("another currency is left to be booked by hand", async () => {
   await withApp(async (app) => {
-    await issue(app, await create(app, { currency: "EUR", lines: [{ title: "Design", price: 100000 }] }));
+    await issue(app, await create(app, { currency: "EUR", lines: [{ name: "Design", price: 100000 }] }));
     assertEquals(await saldo(app), {});
   });
 });

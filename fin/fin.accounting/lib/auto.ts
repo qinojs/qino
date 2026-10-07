@@ -61,7 +61,10 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   // a role without an account: nothing is booked rather than half of it
   if (lines.some((line) => line.amount && !line.account)) return;
   const date = closed && String(invoice.date) <= closed ? today() : String(invoice.date || today());
-  await book(app, { date, text: `${out ? "Invoice" : "Bill"} ${invoice.number ?? invoice.id}`, ref, lines, currency });
+  // the invoice's file is the entry's receipt: the original of a received one, the print of an issued one
+  const files = invoice.file_id ? [await app.dbFiles.file(Number(invoice.file_id))] : [];
+  const text = `${out ? "Invoice" : "Bill"} ${invoice.number ?? invoice.id}`;
+  await book(app, { date, text, ref, lines, currency, files });
 }
 
 /**

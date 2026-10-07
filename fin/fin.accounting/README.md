@@ -32,6 +32,9 @@ Settings `fin.accounting.accounts.*` name an account per role; a country module 
 | money out for a received invoice | payable, fees | money |
 | invoice canceled | its entry is reversed | |
 
+The invoice's file goes with its entry as receipt — the original of a received invoice. A file
+attached after the invoice was booked is not added to the entry (yet).
+
 A payment is booked as the difference to what is booked for it already (`ref` `fin.payment:<id>`),
 so partial payments, refunds and fees add up whenever `payment:change` fires. A failed automatic
 entry (closed period, missing account) is logged and never stops the invoice or the payment.

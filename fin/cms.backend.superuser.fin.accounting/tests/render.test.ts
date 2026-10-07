@@ -14,7 +14,7 @@ Deno.test("statements, journal and an entry by hand, its detail and its reversal
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/accounting");
     const year = new Date().getFullYear();
-    await issue(app, await create(app, { currency: "CHF", date: `${year}-03-01`, lines: [{ title: "Design", price: 100000, taxRate: 8.1 }] }));
+    await issue(app, await create(app, { currency: "CHF", date: `${year}-03-01`, lines: [{ name: "Design", price: 100000, taxRate: 8.1 }] }));
     const booked = await inRequest(app, BASE, () => api(node, {
       book: { date: `${year}-03-02`, text: "Rent <March>", account0: "6000", debit0: "1'800.00", account1: "1020", credit1: "1800" },
     })) as Answer;

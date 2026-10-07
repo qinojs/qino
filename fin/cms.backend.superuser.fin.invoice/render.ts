@@ -132,7 +132,8 @@ const typed = (minor: unknown, currency: unknown) =>
 
 /** One editable line; `i` keeps the fields of a line together. */
 const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown = "CHF") => html.async`<tr>
-  <td><input name="title${i}" value="${line.title ?? ""}">
+  <td><input name="name${i}" value="${line.name ?? ""}">
+    <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}" style="display:block; width:100%">${line.description ?? ""}</textarea>
   <td><input name="qty${i}" inputmode=decimal placeholder=1 style="width:4rem"
     value="${line.qty == null ? "" : Number(line.qty)}">
   <td><input name="unit${i}" style="width:3.5rem" value="${line.unit ?? ""}">
@@ -185,7 +186,7 @@ async function editor(node: Node, row: Row): Promise<HtmlString> {
       </u2-fields>
       <div style="overflow:auto"><table class=u2-table>
         <thead><tr>
-          <th>${t`Description`}
+          <th>${t`Item`}
           <th>${t`Quantity`}
           <th>${t`Unit`}
           <th>${t`Unit price`}
@@ -203,11 +204,30 @@ async function editor(node: Node, row: Row): Promise<HtmlString> {
       <button data-action=remove data-id="${id}" u2-confirm="${t`Throw this draft away?`}">${t`Delete draft`}</button>
     </div>
   </div>
-  <div class=u2-card style="flex:1 1 40%; min-width:26rem">
+  ${row.direction === "in" ? original(node, row) : html.async`<div class=u2-card style="flex:1 1 40%; min-width:26rem">
     <div class=-head>${t`As it will be printed`}</div>
-    <iframe data-preview srcdoc="${preview}" style="width:100%; height:70rem; border:0"></iframe>
-  </div>
+    <iframe data-preview data-sheets srcdoc="${preview}" style="width:100%; height:70rem; border:0; padding:0"></iframe>
+  </div>`}
 </div>`;
+}
+
+/** A received invoice beside its editor: the original it came as, the receipt — or where to put it. */
+async function original(node: Node, row: Row): Promise<HtmlString> {
+  const t = node.app.t;
+  const file = row.file_id ? await node.app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
+  const url = file ? await file.url({ grant: "session" }) : "";
+  const mime = file ? String((await file.ensureVs()).mime ?? "") : "";
+  const shown = !file ? ""
+    : mime.startsWith("image/") ? html`<img src="${url}" alt="" style="max-width:100%">`
+    : html`<iframe src="${url}" style="width:100%; height:70rem; border:0; padding:0"></iframe>`;
+  return html.async`<div class=u2-card style="flex:1 1 40%; min-width:26rem">
+    <div class=-head>${t`Original`} ${file ? html`<a href="${url}" target=_blank>${file.name}</a>` : ""}</div>
+    ${shown}
+    ${row.status === "draft" || !file ? html.async`<form data-attach="${row.id}">
+      <input type=file name=file accept="application/pdf,image/*" required>
+      <button>${file ? t`Replace` : t`Upload the receipt`}</button>
+    </form>` : ""}
+  </div>`;
 }
 
 /** One invoice: what it says, its payments, its document, and what can be done with it. */
@@ -233,7 +253,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   const preview = await document(app, id).catch((e) => `<p>${e.message}</p>`);
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value ?? ""}`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 26rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Invoices`}</a> › ${row.number || `#${id}`}</div>
     <table class=u2-table>
       ${field(t`Status`, html`<span class=u2-badge>${row.status}</span>`)}
@@ -259,14 +279,14 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
       ${row.status !== "draft" && linked(app, "pdf")
         ? html.async`<button data-action=print data-id="${id}">${t`Print PDF`}</button>`
         : ""}
-      ${pdfUrl ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}
+      ${pdfUrl && row.direction === "out" ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}
       ${row.status === "open" && !Number(row.paid) ? html.async`<button data-action=revise data-id="${id}"
         u2-confirm="${t`Revise it? It is canceled, and a draft with its content opens.`}">${t`Revise`}</button>` : ""}
       ${row.status !== "canceled" ? html.async`<button data-action=cancel data-id="${id}"
         u2-confirm="${t`Cancel this invoice? Its number stays used.`}">${t`Cancel`}</button>` : ""}
     </div>
   </div>
-  <div class=u2-card style="flex:1 1 20rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Party`}</div>
     <address style="white-space:pre-line">${[
       party.legalName || party.name,
@@ -277,9 +297,9 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
       party.iban && `IBAN ${party.iban}`,
     ].filter(Boolean).join("\n")}</address>
   </div>
-  <div class=u2-card style="flex:1 1 100%">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Lines`}</div>
-    <div style="overflow:auto; padding:0"><table class=u2-table>
+    <div style="overflow:auto; max-height:42rem; padding:0"><table class=u2-table>
       <thead><tr>
         <th>${t`Description`}
         <th>${t`Quantity`}
@@ -287,14 +307,14 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
         <th>${t`Tax`}
         <th>${t`Amount`}
       <tbody>${items.map((line) => html`<tr>
-        <td>${line.title}
+        <td>${line.name}${line.description ? html`<br><small>${line.description}</small>` : ""}
         <td style="text-align:end">${Number(line.qty)} ${line.unit ?? ""}
         <td style="text-align:end">${money(line.price, row.currency)}
         <td style="text-align:end">${Number(line.tax_rate)} %
         <td style="text-align:end">${money(line.amount, row.currency)}`)}
     </table></div>
   </div>
-  <div class=u2-card style="flex:1 1 30rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`} <small>ref ${refOf(id)}</small></div>
     ${payments.length ? html.async`<table class=u2-table>${payments.map((p) => html.async`<tr>
       <td>${rowLink(node, "cms.backend.superuser.fin.payment", "payment", p.id)}
@@ -313,9 +333,10 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
       <button>${t`Record`}</button>
     </form>` : ""}
   </div>
-  <div class=u2-card style="flex:1 1 100%">
+  ${row.direction === "in" ? original(node, row) : ""}
+  ${row.direction === "in" ? "" : html.async`<div class=u2-card style="flex:1 1 auto; min-width:40rem">
     <div class=-head>${t`Document`}</div>
-    <iframe srcdoc="${preview}" style="width:100%; height:60rem; border:0"></iframe>
-  </div>
+    <iframe data-sheets srcdoc="${preview}" style="width:100%; height:70rem; border:0; padding:0"></iframe>
+  </div>`}
 </div>`;
 }

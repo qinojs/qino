@@ -2,7 +2,7 @@ import type { Row } from "@qino/qino";
 
 /** A line as it is passed in. `price` is in minor units, finer if need be (23.45 = 0.2345 CHF);
  *  line amounts and totals are whole minor units. `taxRate` is in percent. */
-export type Line = { title: string; qty?: number; unit?: string; price: number; taxRate?: number };
+export type Line = { name: string; description?: string; qty?: number; unit?: string; price: number; taxRate?: number };
 
 /**
  * Line amounts and totals. Tax is rounded once per rate, not per line, so lines of one rate never
@@ -23,7 +23,8 @@ export function totals(lines: Line[], gross: boolean) {
 
 /** A stored line as passed in. */
 export const lineOf = (row: Row): Line => ({
-  title: String(row.title ?? ""),
+  name: String(row.name ?? ""),
+  description: row.description ? String(row.description) : undefined,
   qty: Number(row.qty),
   unit: row.unit == null ? undefined : String(row.unit),
   price: Number(row.price),
