@@ -182,7 +182,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
-      SELECT d.usr_id, d.address, d.ref, d.sent, d.due, d.attempts, d.error, u.username,
+      SELECT d.usr_id, d.address, d.external_id, d.sent, d.due, d.attempts, d.error, u.username,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
@@ -230,7 +230,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
           <thead><tr>
             <th>${view.user}
             <th>${app.t`Address`}
-            <th>${app.t`Reference`}
+            <th>${app.t`External ID`}
             <th>${view.time}
             <th>${app.t`Opened`}
             <th>${app.t`Clicks`}
@@ -238,7 +238,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${recipient(d, url, view)}
             <td>${d.address}
-            <td>${d.ref}
+            <td>${d.external_id}
             <td>${d.sent ? u2.el.time(d.sent) : d.due ? html`${view.due} ${u2.el.time(d.due)}` : ""}
             <td>${d.opened ? u2.el.time(d.opened) : ""}
             <td>${Number(d.clicks) || ""}

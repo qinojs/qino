@@ -7,9 +7,10 @@ const cmsLegacyDir = fromFileUrl(new URL("../../../cms-legacy/", import.meta.url
 const metaDir = fromFileUrl(new URL("../../../meta/", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
 const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
+const finDir = fromFileUrl(new URL("../../../fin/", import.meta.url));
 const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shp3Dir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, testModuleDir];
+const stores = [moduleDir, shp3Dir, finDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -172,6 +173,7 @@ async function assertStore(dir: string): Promise<void> {
 
 Deno.test("module stores list every plugin directory", async () => {
   await assertStore(moduleDir);
+  await assertStore(finDir);
   await assertStore(testModuleDir);
 });
 

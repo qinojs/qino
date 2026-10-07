@@ -1,0 +1,6 @@
+{
+  "modules": {
+    "fin.payment": {},
+    "fin.payment.saferpay": {}
+  }
+}

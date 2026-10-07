@@ -1,0 +1,17 @@
+{
+  "name": "fin.payment",
+  "description": "Payments in and out through any provider: one table, one status, one event — what is paid for is the consumer's.",
+  "dependencies": [
+    "core",
+    "cron"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/url.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

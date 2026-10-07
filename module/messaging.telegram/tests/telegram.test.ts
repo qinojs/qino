@@ -152,7 +152,7 @@ Deno.test("send delivers, clears a stale error and drops a chat that blocked the
     assertEquals(bot.calls[0].method, "sendMessage");
     assertEquals(bot.calls[0].params, { text: "<b>hi</b>", parse_mode: "HTML", chat_id: 555 });
     // the counter is the chat's, so the chat is part of the name
-    assertEquals((await db.row`SELECT ref FROM message_delivery`)?.ref, "555:42");
+    assertEquals((await db.row`SELECT external_id FROM message_delivery`)?.external_id, "555:42");
     assertEquals((await db.row`SELECT error FROM telegram_chat`)?.error, null);
   } finally {
     bot.restore();

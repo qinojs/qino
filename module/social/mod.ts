@@ -113,7 +113,7 @@ export function posts(app: App, filter: { provider?: string; target?: string; se
     filter.provider ? sql`provider = ${filter.provider}` : null,
     filter.target ? sql`target = ${filter.target}` : null,
     filter.sent == null ? null : filter.sent ? sql`sent IS NOT NULL` : sql`sent IS NULL`,
-    sql`remote_id IS NOT NULL`,
+    sql`external_id IS NOT NULL`,
   ].flatMap((term) => term ?? []);
   return app.db.query`SELECT * FROM social_post WHERE ${sql.join(where, " AND ")} ORDER BY time DESC LIMIT ${filter.limit ?? 100}`;
 }
@@ -170,7 +170,7 @@ function valuesOf(post: Post, hash: string) {
   return {
     target: post.target,
     hash,
-    remote_id: post.id,
+    external_id: post.id,
     parent_id: post.parentId ?? null,
     own: post.own ?? false,
     text: post.text,

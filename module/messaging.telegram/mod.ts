@@ -47,8 +47,9 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
   const one = async (row: Row) => {
     const chat = known.get(String(row.address));
     try {
-      const ref = await sendMessage(app, { ...telegramText(msg, await render(row)), chat_id: Number(row.address) });
-      await delivered(app, Number(row.id), undefined, ref);
+      const text = telegramText(msg, await render(row));
+      const externalId = await sendMessage(app, { ...text, chat_id: Number(row.address) });
+      await delivered(app, Number(row.id), undefined, externalId);
       sent++;
       if (chat?.error) await table.update(chat.id, { error: null }); // it delivers again
     } catch (e) {

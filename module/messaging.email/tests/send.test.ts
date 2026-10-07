@@ -55,7 +55,7 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   assertEquals(journaled.channel, "email");
   assertEquals(journaled.title, "Invoice");
   assertEquals(journaled.text, "Attached.");
-  assertEquals((await app.db.row`SELECT ref FROM message_delivery`)?.ref, "<a@qino.test>", "the transport's id is the far side's name for it");
+  assertEquals((await app.db.row`SELECT external_id FROM message_delivery`)?.external_id, "<a@qino.test>", "the transport's id is the far side's name for it");
   assertEquals(journaled.deliveries, [{ id: 1, usr_id: 1, address: "one@qino.test", username: "one@qino.test", sent: journaled.deliveries[0].sent, due: null, attempts: 0, error: null }]);
 
   await close(app);

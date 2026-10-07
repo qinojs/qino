@@ -1,0 +1,103 @@
+{
+  "properties": {
+    "payment": {
+      "description": "Money that moved, or is about to, through any provider; what it is for is the consumer's (ref)",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["in", "out"],
+            "maxLength": 3,
+            "x-index": true
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": true,
+            "description": "Provider, or the source of a recorded payment (cash, bank)"
+          },
+          "method": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "The provider's method (card, twint, btc); the one used, once known"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount due, in minor units"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code"
+          },
+          "paid": {
+            "type": "integer",
+            "default": 0,
+            "description": "Amount that actually moved, in minor units; may differ from amount"
+          },
+          "refunded": {
+            "type": "integer",
+            "default": 0,
+            "description": "Amount paid back, in minor units"
+          },
+          "fee": {
+            "type": "integer",
+            "default": 0,
+            "description": "Amount the provider kept, in minor units"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "paid", "failed", "canceled", "expired", "refunded"],
+            "maxLength": 16,
+            "x-index": true
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What the payment is for, as <module>:<id>"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Shown to the payer by the provider"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "external_id": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "The provider's id for it: token, transaction, reference"
+          },
+          "return_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Where the payer lands after the provider"
+          },
+          "data": {
+            "type": "string",
+            "description": "The provider's own state, JSON"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "direction", "provider", "amount", "currency", "status", "created", "changed"]
+      }
+    }
+  }
+}
