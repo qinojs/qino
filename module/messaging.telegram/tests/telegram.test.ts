@@ -25,6 +25,7 @@ const makeApp = (db?: Db) => ({
   settings: { "messaging.telegram": { botToken: "123456:test-token", webhookSecret: SECRET } },
   url: () => Promise.resolve("https://qino.test/"),
   modules: { linked: () => [] },
+  fire: () => Promise.resolve({}),
   // deno-lint-ignore no-explicit-any
 }) as any;
 
