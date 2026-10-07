@@ -74,7 +74,7 @@ const refererCells = (url: string) => {
   return html`<td style="color:${uniqueColor(u.host)}">${u.host}<td style="word-break:break-all">${u.pathname + u.search}`;
 };
 
-function topTable(rows: (readonly [string, number])[], total: number, cells = urlCell): HtmlString {
+function topTable(rows: (readonly [string, number])[], total: number, cells = urlCell) {
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map(([label, n]) => html`<tr>
     ${cells(label)}
     <td style="text-align:right">${int(n)}

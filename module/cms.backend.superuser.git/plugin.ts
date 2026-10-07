@@ -128,7 +128,7 @@ const run = ({ ok, out }: { ok: boolean; out: string }) => {
 
 // --- view -----------------------------------------------------------------
 
-async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
+async function repoCard(repo: Repo<Holds>, t: App["t"]) {
   const dirty = repo.files.length;
   const available = await refs(repo.root);
   const branches = available.filter((ref) => ref.startsWith("refs/heads/"));
@@ -178,7 +178,7 @@ async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
 }
 
 /** The process, shown once next to the repositories (a restart loads what a pull changed). */
-function serverCard(t: App["t"]): Promise<HtmlString> {
+function serverCard(t: App["t"]) {
   const can = supervised();
   return html.async`<div class=u2-card>
   <div class=-head>${t`Server`}</div>

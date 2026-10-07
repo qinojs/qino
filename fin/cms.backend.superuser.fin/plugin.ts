@@ -43,7 +43,7 @@ function render(node: Node): Promise<HtmlString> {
 }
 
 /** What is open and what moved, per currency. Each figure only where its module is linked. */
-async function figures(app: App): Promise<HtmlString> {
+async function figures(app: App) {
   const t = app.t;
   const month = unixTime() - 30 * 86400;
   const today = new Date().toLocaleDateString("sv-SE");
@@ -81,7 +81,7 @@ async function figures(app: App): Promise<HtmlString> {
 }
 
 /** Every linked fin module with its role, what it builds on, and what it says it does. */
-async function modules(app: App): Promise<HtmlString> {
+async function modules(app: App) {
   const t = app.t;
   const fin = app.modules.linked().filter((mod) => mod.name.startsWith("fin."));
   const role = (mod: (typeof fin)[number]) =>

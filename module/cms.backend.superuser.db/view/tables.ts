@@ -23,7 +23,7 @@ export function renderTables(app: App, db: any, modules: Map<string, any>, table
   return table ? tableDetail(app, db, modules, table) : tableOverview(app, db);
 }
 
-async function tableOverview(app: App, db: any): Promise<HtmlString> {
+async function tableOverview(app: App, db: any) {
   const t = app.t;
   const tables = Object.values<any>(db.tables ?? {});
   const schemaProps = db.schema?.properties ?? {};
@@ -78,7 +78,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
   </div>`;
 }
 
-async function tableDetail(app: App, db: any, modules: Map<string, any>, tableName: string): Promise<HtmlString> {
+async function tableDetail(app: App, db: any, modules: Map<string, any>, tableName: string) {
   const t = app.t;
   const table = db.tables?.[tableName];
   if (!table) return html.async`<div class=u2-card><div>${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;

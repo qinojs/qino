@@ -40,7 +40,7 @@ export async function list(node: Node): Promise<HtmlString> {
 }
 
 /** One scope: its numbers, then the strongest rows. */
-async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now: number): Promise<HtmlString> {
+async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now: number) {
   const db = app.db;
   const limit = fadeLimit(db, tbl, now);
   const stats = await db.row<Stats>`
@@ -60,7 +60,7 @@ async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now:
   ${top.length ? renderTop(app, tbl, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;
 }
 
-function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise<HtmlString> {
+function renderTop(app: App, tbl: string, top: ScoreRow[], now: number) {
   const rows = top.map((row, i) =>
     html`<tr>
       <td>${i + 1}
@@ -81,7 +81,7 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
 }
 
 /** Scopes no longer registered by any module — their rows are never cleaned up. */
-async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<HtmlString> {
+async function renderStale(app: App, known: Map<string, ScoreScope>) {
   const all = await app.db.query<{ id: number; tbl: string }>`SELECT id, tbl FROM score_scope ORDER BY tbl`;
   const stale = all.filter((s) => !known.has(s.tbl));
   if (!stale.length) return html``;

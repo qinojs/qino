@@ -18,7 +18,7 @@ export function render(node: Node): Promise<HtmlString> {
 }
 
 /** The journal of payments with its filters, the providers, and a form for what happened by hand. */
-async function overview(node: Node, url: URL): Promise<HtmlString> {
+async function overview(node: Node, url: URL) {
   const t = node.app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const providers = await node.app.db.col<string>`SELECT DISTINCT provider FROM payment ORDER BY provider`;
@@ -64,7 +64,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
 }
 
 /** One page of payments, newest first, filtered by the URL. */
-async function list(node: Node, url: URL): Promise<HtmlString> {
+async function list(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
@@ -104,7 +104,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <td style="text-align:end; white-space:nowrap">${paidOf(row)}
       <td><span class=u2-badge>${row.status}</span>
       <td>${refLink(node, row.ref)}
-      <td>${row.title ?? ""}`)}
+      <td>${row.title}`)}
     ${total > PER_PAGE ? html`<tfoot><tr><td colspan=9>
       ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
       ${page * PER_PAGE + 1}–${page * PER_PAGE + rows.length} / ${total}
@@ -119,7 +119,7 @@ const paidOf = (row: Row) => {
 };
 
 /** Every linked provider: what it offers, what it can, and its settings. */
-async function providerTable(app: App): Promise<HtmlString> {
+async function providerTable(app: App) {
   const t = app.t;
   const mods = app.modules.linked().filter((mod) => mod.plugin.paymentProvider);
   if (!mods.length) return html.async`<p>${t`No provider linked: payments can only be recorded.`}`;
@@ -149,7 +149,7 @@ const settingsEditor = (module: string) =>
   html`<settings-editor source="/api/core/settings/${module}"></settings-editor>`;
 
 /** One payment with everything known about it, and what can be done with it. */
-async function detail(node: Node, id: number): Promise<HtmlString> {
+async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
   const row = await app.db.row`SELECT * FROM payment WHERE id = ${id}`;
@@ -163,7 +163,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   const lines = linked(app, "fin.bank")
     ? await app.db.query`SELECT * FROM bank_tx WHERE payment_id = ${id} ORDER BY date, id`
     : [];
-  const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value ?? ""}`;
+  const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 30rem">
     <div class=-head><a href="${pageUrl}">${t`Payments`}</a> › #${id}</div>
@@ -204,7 +204,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
       <td>${rowLink(node, "cms.backend.superuser.fin.bank", "line", line.id)}
       <td>${line.date}
       <td style="text-align:end">${money(line.amount, line.currency)}
-      <td>${line.party_name ?? ""}`))}</table>
+      <td>${line.party_name}`))}</table>
     <div><small>${t`Together`}: ${money(sumOf(lines), row.currency)}</small></div>
   </div>` : ""}
   ${shown ? html.async`<div class=u2-card style="flex:1 1 100%">

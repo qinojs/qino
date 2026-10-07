@@ -36,8 +36,8 @@ export async function render(node: Node): Promise<HtmlString> {
         <th>${t`Received`}
       <tbody>${drafts.map((row) => html.async`<tr u2-href>
         <td><a href="${invoices({ invoice: row.id })}">${supplier(row)}</a>
-        <td>${row.number ?? ""}
-        <td>${row.date ?? ""}
+        <td>${row.number}
+        <td>${row.date}
         <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
         <td style="text-align:end; white-space:nowrap">${check(row)}
         <td style="white-space:nowrap">${u2.el.time(row.created, { narrow: true })}`)}
@@ -49,7 +49,7 @@ export async function render(node: Node): Promise<HtmlString> {
 const supplier = (row: Row) => String(JSON.parse(String(row.party ?? "{}"))?.name || `#${row.id}`);
 
 /** The total as read beside the one the lines add up to: a difference is marked. */
-function check(row: Row): HtmlString | string {
+function check(row: Row) {
   const read = JSON.parse(String(row.data ?? "{}"))?.read;
   if (read?.total == null) return "";
   const same = Number(read.total) === Number(row.total);

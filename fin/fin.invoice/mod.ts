@@ -87,7 +87,7 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
 
 /** The payment an issued invoice asks for, by the method set (`fin.invoice.method`): its slip — a
  *  QR bill — then goes with the invoice. */
-async function ask(app: App, invoice: Row): Promise<void> {
+async function ask(app: App, invoice: Row) {
   const method = String(await app.settings["fin.invoice"].method ?? "");
   if (!method || invoice.direction !== "out" || !Number(invoice.total)) return;
   await pay(app, {
@@ -234,7 +234,7 @@ async function status(app: App, invoice: Row, to: string): Promise<Row | undefin
 }
 
 /** Store the fields given and, with lines, the lines and the totals. */
-async function write(app: App, id: number, values: Partial<Values>, invoice?: Row): Promise<void> {
+async function write(app: App, id: number, values: Partial<Values>, invoice?: Row) {
   if (values.currency != null && !/^[A-Z]{3}$/.test(values.currency)) {
     throw new Error("currency must be an ISO 4217 code");
   }

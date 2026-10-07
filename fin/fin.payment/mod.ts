@@ -199,7 +199,7 @@ export function qr(text: string): string {
 
 const get = (app: App, id: number): Promise<Row | undefined> => app.db.row`SELECT * FROM payment WHERE id = ${id}`;
 
-async function insert(app: App, opt: Base, values: Record<string, unknown>): Promise<number> {
+async function insert(app: App, opt: Base, values: Record<string, unknown>) {
   if (!Number.isSafeInteger(opt.amount) || opt.amount <= 0) {
     throw new Error("amount must be a positive integer in minor units");
   }

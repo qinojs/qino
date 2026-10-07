@@ -22,7 +22,7 @@ export function render(node: Node): Promise<HtmlString> {
 }
 
 /** Balance sheet and result of a period, the journal, an entry by hand, the chart. */
-async function overview(node: Node, url: URL): Promise<HtmlString> {
+async function overview(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const year = new Date().getFullYear();
@@ -85,7 +85,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
 }
 
 /** Two sides with their accounts and totals; the difference is the profit or what equity makes up. */
-function statement(app: App, rows: Row[], left: string[], right: string[], currency: string): Promise<HtmlString> {
+function statement(app: App, rows: Row[], left: string[], right: string[], currency: string) {
   const t = app.t;
   const shown = (row: Row) => (DEBIT.has(String(row.type)) ? 1 : -1) * Number(row.balance);
   const side = (types: string[]) => rows.filter((row) => types.includes(String(row.type)) && Number(row.balance));
@@ -105,7 +105,7 @@ function statement(app: App, rows: Row[], left: string[], right: string[], curre
 }
 
 /** One page of entries, newest first, with their lines in short. */
-async function journal(node: Node, url: URL, from: string, to: string): Promise<HtmlString> {
+async function journal(node: Node, url: URL, from: string, to: string) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
@@ -155,7 +155,7 @@ async function journal(node: Node, url: URL, from: string, to: string): Promise<
 }
 
 /** An entry by hand: a few lines, each debit or credit, as people write amounts. */
-function entryForm(app: App, accounts: Row[]): Promise<HtmlString> {
+function entryForm(app: App, accounts: Row[]) {
   const t = app.t;
   const options = html.join(accounts.map((a) => html`<option value="${a.number}">${a.number} ${a.name}`));
   return html.async`<form data-book>
@@ -175,7 +175,7 @@ function entryForm(app: App, accounts: Row[]): Promise<HtmlString> {
 }
 
 /** One entry: its lines debit and credit, its receipts, what reverses it. */
-async function detail(node: Node, id: number): Promise<HtmlString> {
+async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
   const entry = await app.db.row`SELECT * FROM entry WHERE id = ${id}`;
@@ -211,7 +211,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
         <td>${l.number} ${l.name}
         <td style="text-align:end">${Number(l.amount) > 0 ? money(l.amount, entry.currency) : ""}
         <td style="text-align:end">${Number(l.amount) < 0 ? money(-Number(l.amount), entry.currency) : ""}
-        <td>${l.tax_code ?? ""}`)}
+        <td>${l.tax_code}`)}
     </table>
     ${reversal || entry.reverses ? "" : html.async`<div>
       <button data-reverse="${id}" u2-confirm="${t`Take this entry back with a reversal?`}">${t`Reverse`}</button>

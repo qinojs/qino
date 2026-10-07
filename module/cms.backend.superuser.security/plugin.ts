@@ -100,7 +100,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return { ok: true, message: `${vars.release} ${await node.app.t`released`}` };
 }
 
-function time(value: number): HtmlString {
+function time(value: number) {
   return html`<span style="color:${ageColor(value)}">${u2.el.time(value)}</span>`;
 }
 

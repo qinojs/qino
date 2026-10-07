@@ -66,7 +66,7 @@ export async function render(node: Node): Promise<HtmlString> {
 }
 
 /** One page of lines, newest first; an unassigned one with a form to say what it is. */
-async function lines(node: Node, url: URL): Promise<HtmlString> {
+async function lines(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
@@ -99,9 +99,9 @@ async function lines(node: Node, url: URL): Promise<HtmlString> {
       <td>${row.id}
       <td style="white-space:nowrap">${row.date}
       <td style="text-align:end; white-space:nowrap">${money(row.amount, row.currency)}
-      <td>${row.party_name ?? ""}${row.party_account ? html`<br><small>${row.party_account}</small>` : ""}
+      <td>${row.party_name}${row.party_account ? html`<br><small>${row.party_account}</small>` : ""}
       <td>${row.reference ? html`<code style="white-space:nowrap">${readable(String(row.reference))}</code>` : ""}
-      <td style="white-space:pre-line">${row.text ?? ""}
+      <td style="white-space:pre-line">${row.text}
       <td>${row.payment_id
         ? rowLink(node, "cms.backend.superuser.fin.payment", "payment", row.payment_id)
         : assignForm(app, row, guesses.get(Number(row.id)) ?? [])}`)}
@@ -120,7 +120,7 @@ const readable = (ref: string) =>
     : ref;
 
 /** What a line could be for: a ref typed in, or an open invoice of the same amount and direction. */
-function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[]): Promise<HtmlString> {
+function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[]) {
   return html.async`<form data-assign="${row.id}">
     <input name=ref required size=16 placeholder="fin.invoice:7" list="guesses-${row.id}"
       value="${guesses.length === 1 ? guesses[0].ref : ""}">
@@ -130,7 +130,7 @@ function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[
 }
 
 /** Open invoices whose rest is exactly a line's amount — money in for issued ones, out for received. */
-async function suggestions(app: App, open: Row[]): Promise<Map<number, { ref: string; label: string }[]>> {
+async function suggestions(app: App, open: Row[]) {
   const found = new Map<number, { ref: string; label: string }[]>();
   if (!open.length || !linked(app, "fin.invoice")) return found;
   const invoices = await app.db.query`

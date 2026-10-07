@@ -81,7 +81,7 @@ export const paymentProvider: Provider = {
     const uri = `lightning:${bolt11}`;
     return String(html`<div style="max-width:24rem; margin:auto; text-align:center">
       <a href="${uri}">${html.raw(qr(uri.toUpperCase()))}</a>
-      <p><b>${payment.title ?? ""}</b>
+      <p><b>${payment.title}</b>
       <p style="word-break:break-all"><small><code>${bolt11}</code></small>
     </div>`);
   },

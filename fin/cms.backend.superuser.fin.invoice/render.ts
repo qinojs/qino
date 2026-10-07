@@ -27,7 +27,7 @@ const partyName = (row: Row) => {
 };
 
 /** Invoices with their filters, a form for a new draft, and the settings. */
-async function overview(node: Node, url: URL): Promise<HtmlString> {
+async function overview(node: Node, url: URL) {
   const t = node.app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const option = (value: string, label: string | Promise<string>, key = "") =>
@@ -60,7 +60,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
 }
 
 /** One page of invoices, newest first, filtered by the URL. */
-async function list(node: Node, url: URL): Promise<HtmlString> {
+async function list(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
@@ -95,7 +95,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
       <td>${row.direction === "out" ? t`issued` : t`received`}
       <td>${partyName(row)}
-      <td style="white-space:nowrap">${row.date ?? ""}
+      <td style="white-space:nowrap">${row.date}
       <td style="white-space:nowrap">${due(app, row)}
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
       <td style="text-align:end; white-space:nowrap">${money(row.paid, row.currency)}
@@ -114,7 +114,7 @@ const due = (app: App, row: Row) => row.status === "open" && row.due && String(r
   : String(row.due ?? "");
 
 /** A new invoice: what it is, then the editor takes over. */
-function newForm(app: App): Promise<HtmlString> {
+function newForm(app: App) {
   const t = app.t;
   return html.async`<form data-create>
     <select name=direction>
@@ -132,11 +132,11 @@ const typed = (minor: unknown, currency: unknown) =>
 
 /** One editable line; `i` keeps the fields of a line together. */
 const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown = "CHF") => html.async`<tr>
-  <td><input name="name${i}" value="${line.name ?? ""}">
-    <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}" style="display:block; width:100%">${line.description ?? ""}</textarea>
+  <td><input name="name${i}" value="${line.name}">
+    <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}" style="display:block; width:100%">${line.description}</textarea>
   <td><input name="qty${i}" inputmode=decimal placeholder=1 style="width:4rem"
     value="${line.qty == null ? "" : Number(line.qty)}">
-  <td><input name="unit${i}" style="width:3.5rem" value="${line.unit ?? ""}">
+  <td><input name="unit${i}" style="width:3.5rem" value="${line.unit}">
   <td><input name="price${i}" inputmode=decimal style="width:6rem"
     value="${line.price == null ? "" : typed(line.price, currency)}">
   <td><input name="taxRate${i}" inputmode=decimal style="width:3.5rem"
@@ -148,7 +148,7 @@ const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown
  * A draft: the editor beside the invoice as it will be printed. Every change is saved after a
  * moment and the preview drawn again, so what is typed is what is sent.
  */
-async function editor(node: Node, row: Row): Promise<HtmlString> {
+async function editor(node: Node, row: Row) {
   const app = node.app;
   const t = app.t;
   const id = Number(row.id);
@@ -169,19 +169,19 @@ async function editor(node: Node, row: Row): Promise<HtmlString> {
     <form data-edit="${id}">
       <u2-fields>
         ${t`Currency`} <input name=currency value="${row.currency}" required maxlength=3 size=4>
-        ${t`Title`} <input name=title value="${row.title ?? ""}" placeholder="${t`Invoice`}">
-        ${row.direction === "in" ? html.async`${t`Number`} <input name=number value="${row.number ?? ""}">` : ""}
-        ${t`Date`} <input type=date name=date value="${row.date ?? ""}">
-        ${t`Due`} <input type=date name=due value="${row.due ?? ""}">
-        ${t`Language`} <input name=lang value="${row.lang ?? ""}" size=4>
-        ${t`Name`} <input name=name value="${party.name ?? ""}">
-        ${t`Street`} <input name=streetAddress value="${address.streetAddress ?? ""}">
-        ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode ?? ""}">
-        ${t`Place`} <input name=addressLocality value="${address.addressLocality ?? ""}">
+        ${t`Title`} <input name=title value="${row.title}" placeholder="${t`Invoice`}">
+        ${row.direction === "in" ? html.async`${t`Number`} <input name=number value="${row.number}">` : ""}
+        ${t`Date`} <input type=date name=date value="${row.date}">
+        ${t`Due`} <input type=date name=due value="${row.due}">
+        ${t`Language`} <input name=lang value="${row.lang}" size=4>
+        ${t`Name`} <input name=name value="${party.name}">
+        ${t`Street`} <input name=streetAddress value="${address.streetAddress}">
+        ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode}">
+        ${t`Place`} <input name=addressLocality value="${address.addressLocality}">
         ${t`Country`}
-        <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry ?? ""}">
-        ${t`VAT ID`} <input name=vatID value="${party.vatID ?? ""}">
-        ${t`User id`} <input name=usrId inputmode=numeric size=6 value="${row.usr_id ?? ""}">
+        <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
+        ${t`VAT ID`} <input name=vatID value="${party.vatID}">
+        ${t`User id`} <input name=usrId inputmode=numeric size=6 value="${row.usr_id}">
         ${t`Prices include tax`} <input type=checkbox name=gross value=1${row.gross ? html.raw(" checked") : ""}>
       </u2-fields>
       <div style="overflow:auto"><table class=u2-table>
@@ -196,7 +196,7 @@ async function editor(node: Node, row: Row): Promise<HtmlString> {
       </table></div>
       <template data-line>${lineRow(app, "__i__")}</template>
       <button type=button data-add-line>${t`Add line`}</button>
-      <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text ?? ""}</textarea></u2-fields>
+      <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text}</textarea></u2-fields>
     </form>
     <div>
       <button data-action=issue data-id="${id}"
@@ -212,7 +212,7 @@ async function editor(node: Node, row: Row): Promise<HtmlString> {
 }
 
 /** A received invoice beside its editor: the original it came as, the receipt — or where to put it. */
-async function original(node: Node, row: Row): Promise<HtmlString> {
+async function original(node: Node, row: Row) {
   const t = node.app.t;
   const file = row.file_id ? await node.app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
   const url = file ? await file.url({ grant: "session" }) : "";
@@ -231,7 +231,7 @@ async function original(node: Node, row: Row): Promise<HtmlString> {
 }
 
 /** One invoice: what it says, its payments, its document, and what can be done with it. */
-async function detail(node: Node, id: number): Promise<HtmlString> {
+async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
   const row = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
@@ -251,7 +251,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   const file = row.file_id ? await app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
   const pdfUrl = file ? await file.url({ grant: "session" }).catch(() => "") : "";
   const preview = await document(app, id).catch((e) => `<p>${e.message}</p>`);
-  const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value ?? ""}`;
+  const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Invoices`}</a> › ${row.number || `#${id}`}</div>
@@ -308,7 +308,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
         <th>${t`Amount`}
       <tbody>${items.map((line) => html`<tr>
         <td>${line.name}${line.description ? html`<br><small>${line.description}</small>` : ""}
-        <td style="text-align:end">${Number(line.qty)} ${line.unit ?? ""}
+        <td style="text-align:end">${Number(line.qty)} ${line.unit}
         <td style="text-align:end">${money(line.price, row.currency)}
         <td style="text-align:end">${Number(line.tax_rate)} %
         <td style="text-align:end">${money(line.amount, row.currency)}`)}

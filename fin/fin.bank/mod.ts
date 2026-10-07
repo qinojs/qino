@@ -88,7 +88,7 @@ export async function paid(app: App, paymentId: number): Promise<number> {
 }
 
 /** The payment a reference belongs to: the newest not canceled one, in the line's direction. */
-async function match(app: App, reference: string, amount: number): Promise<number | undefined> {
+async function match(app: App, reference: string, amount: number) {
   const id = await app.db.one`
     SELECT id FROM payment
     WHERE external_id = ${reference} AND direction = ${amount > 0 ? "in" : "out"} AND status <> 'canceled'
@@ -97,7 +97,7 @@ async function match(app: App, reference: string, amount: number): Promise<numbe
 }
 
 /** The account of the statement, created when first seen. */
-async function accountId(app: App, statement: Statement): Promise<number> {
+async function accountId(app: App, statement: Statement) {
   const iban = normalize(statement.iban);
   if (!iban) throw new Error("fin.bank: a statement needs its account");
   const known = await app.db.one`SELECT id FROM bank_account WHERE iban = ${iban}`;

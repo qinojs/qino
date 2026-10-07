@@ -201,7 +201,7 @@ export class Node {
             attr += ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
-        const rendered = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
+        const rendered = str.replace(/^<([^\s>]+)(\s?)/, `<$1${attr}$2`);
         return html.raw(rendered !== str ? rendered : `<div${attr}>${str}</div>`);
     }
 

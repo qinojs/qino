@@ -5,7 +5,7 @@ import { file } from "@qino/qino/identity";
 
 import { lineOf, totals } from "./totals.ts";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, Row } from "@qino/qino";
 
 /** The invoice as an HTML document, in its own language — the default a site may replace. Sender
  *  is `identity.organization`, the recipient the invoice's `party`; both have the same shape. */
@@ -33,7 +33,7 @@ export async function document(
     return String(await html.async`<!doctype html>
 <html lang="${lang}">
 <meta charset="utf-8">
-<title>${invoice.number ?? ""}</title>
+<title>${invoice.number}</title>
 <style>
   @page { size: A4; margin: 2cm 2cm 2.5cm }
   /* a payment slip (QR bill: 210 × 105 mm) sits on a page of its own, at the bottom, without margins */
@@ -66,7 +66,7 @@ export async function document(
   ${logo ? html`<img src="${logo}" alt="" style="max-height: 4em">` : ""}
 </header>
 <address class=to>${addressBlock(party, abroad)}${vat(party)}</address>
-<h1>${invoice.title || t`Invoice`} ${invoice.number ?? ""}</h1>
+<h1>${invoice.title || t`Invoice`} ${invoice.number}</h1>
 <p>
   ${t`Date`}: ${day(invoice.date)}<br>
   ${invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}` : ""}
@@ -80,7 +80,7 @@ export async function document(
     <th class=n>${t`Amount`}
   <tbody>${lines.map((line) => html`<tr>
     <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
-    <td class=n>${new Intl.NumberFormat(locale).format(Number(line.qty))} ${line.unit ?? ""}
+    <td class=n>${new Intl.NumberFormat(locale).format(Number(line.qty))} ${line.unit}
     <td class=n>${money(Number(line.price))}
     <td class=n>${Number(line.tax_rate)} %
     <td class=n>${money(Number(line.amount))}`)}
@@ -112,7 +112,7 @@ function moneyFormat(locale: string, currency: string) {
 }
 
 /** Name and postal address, one line each; the country only `abroad`. */
-function addressBlock(o: Record<string, any>, abroad: boolean): HtmlString {
+function addressBlock(o: Record<string, any>, abroad: boolean) {
   const a = o.address ?? {};
   const town = [a.postalCode, a.addressLocality].filter(Boolean).join(" ");
   const lines = [o.legalName || o.name, a.streetAddress, a.extendedAddress, town, a.addressRegion];
@@ -130,7 +130,7 @@ async function organization(app: App): Promise<Record<string, any>> {
   return { name, legalName, vatID, address: Object.fromEntries(keys.map((k, i) => [k, address[i]])) };
 }
 
-async function logoUrl(app: App): Promise<string | undefined> {
+async function logoUrl(app: App) {
   const logo = await file(app, "logo").catch(() => undefined);
   const path = await logo?.url({ h: 160 }).catch(() => undefined);
   return path ? new URL(path, await app.url()).href : undefined;

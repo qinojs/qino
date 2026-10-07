@@ -71,7 +71,7 @@ function lines(entry: El, currency: string, fallbackId: string): Tx[] {
 }
 
 /** `472.26` in CHF → 47226: as many minor units as the currency has. */
-function amountOf(el: El | undefined, fallback: string): { value: number; currency: string } {
+function amountOf(el: El | undefined, fallback: string) {
   const currency = el?.attribs?.Ccy ?? fallback;
   const digits = currencies.decimals(currency);
   const [whole, fraction = ""] = content(el).trim().split(".");
