@@ -6,7 +6,7 @@
     "exclude": ["jsr:@nuxodin/item"]
   },
   "unstable": ["worker-options"],
-  "version": "0.7.3",
+  "version": "0.7.4",
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai1": "./module/ai1/mod.ts",
