@@ -118,7 +118,7 @@ const logRow = (db: App["db"], id: unknown) => db.row`
    WHERE log.id = ${id}`;
 
 /** PTR lookup for an IP (v4/v6); anonymized digits ("X") count as 1, like the PHP version. */
-async function hostname(ip: unknown): Promise<string> {
+async function hostname(ip: unknown) {
   const addr = String(ip ?? "").replaceAll("X", "1");
   let name;
   if (addr.includes(":")) {

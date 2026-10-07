@@ -48,7 +48,7 @@ const moduleStats = (app: App) => app.db.query`
     (SELECT MAX(l.time) FROM page p JOIN log l ON l.id = p.log_id_ch WHERE p.module = m.name) AS changed
   FROM module m`;
 
-async function renderOverview(node: Node): Promise<HtmlString> {
+async function renderOverview(node: Node) {
   const app = node.app, t = app.t, ctx = getCtx();
   const u = ctx.req.url.toURL();
 
@@ -107,7 +107,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 }
 
 /** Move nodes to another module — module axis on the target, edit access on every node. */
-async function replace(node: Node, vars: Record<string, unknown>): Promise<string> {
+async function replace(node: Node, vars: Record<string, unknown>) {
   const app = node.app, t = app.t;
   const target = String(vars.replace ?? "");
   const ids = String(vars.ids ?? "").split(",").map(Number).filter(Boolean);
@@ -128,7 +128,7 @@ async function replace(node: Node, vars: Record<string, unknown>): Promise<strin
 
 // Change history of the given nodes — same source as cms.backend.cms.history,
 // narrowed to this module's nodes. One row per request and node.
-async function historyRows(node: Node, ids: number[], titles: Map<number, string>): Promise<HtmlString[]> {
+async function historyRows(node: Node, ids: number[], titles: Map<number, string>) {
   if (!ids.length) return [];
   const t = node.app.t;
   const rows = await node.app.db.query`
@@ -162,7 +162,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   return out;
 }
 
-async function renderDetail(node: Node, modName: string, message: string): Promise<HtmlString> {
+async function renderDetail(node: Node, modName: string, message: string) {
   const app = node.app, t = app.t;
   const ctx = getCtx();
   const back = ctx.req.url.toURL();

@@ -107,7 +107,7 @@ const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") |
  * Uploads of these entries, keyed `<entry>:<field>`, in one query. Links are signed for this
  * session only — uploads are not public.
  */
-async function uploads(app: App, ids: number[]): Promise<Map<string, HtmlString>> {
+async function uploads(app: App, ids: number[]) {
   const out = new Map<string, HtmlString>();
   if (!ids.length) return out;
   const rows = await app.db.query`

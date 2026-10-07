@@ -167,7 +167,7 @@ export async function adoptUsername(app: App, usrId: number, username: string): 
 }
 
 /** `contactKey` throws for non-addresses; here that just means "no". */
-function mailAddressOf(username: string): string | undefined {
+function mailAddressOf(username: string) {
   try { return contactKey("email", username); } catch { return; }
 }
 

@@ -70,7 +70,7 @@ function renderRow(row: Row, fields: string[], terms: string[]) {
   return html`<tr>${cells}`;
 }
 
-function cell(value: unknown, terms: string[]): HtmlString | unknown {
+function cell(value: unknown, terms: string[]) {
   if (value == null) return html`<small>NULL</small>`;
   if (value instanceof Date) return value.toISOString();
   const text = typeof value === "object" ? JSON.stringify(value) : String(value);

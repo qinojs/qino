@@ -125,7 +125,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 }
 
 // ── stats + maintenance ─────────────────────────────────────────────────────
-async function tableStats(node: Node): Promise<{ rows: number; mb: number | null }> {
+async function tableStats(node: Node) {
   const db = node.app.db;
   if (db.dialect === "mysql") {
     const r = await db.row`
@@ -137,7 +137,7 @@ async function tableStats(node: Node): Promise<{ rows: number; mb: number | null
   return { rows, mb: null };
 }
 
-async function runTool(node: Node, doName: string, data: Record<string, unknown>): Promise<HtmlString> {
+async function runTool(node: Node, doName: string, data: Record<string, unknown>) {
   const { t, db } = node.app;
   const before = Number(data.before) || 0;
   const limit = Number(data.limit) || 0;

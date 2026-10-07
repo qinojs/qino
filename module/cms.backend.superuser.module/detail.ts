@@ -21,7 +21,7 @@ async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: str
   }
 }
 
-async function renderModule(node: Node, modName: string): Promise<HtmlString> {
+async function renderModule(node: Node, modName: string) {
   const app = node.app;
   const t = app.t;
   const ctx = getCtx();
@@ -55,7 +55,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   // --- Exports ---
   const SKIP = new Set(["cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
-  const knownKeys: { key: string; label: string }[] = [
+  const knownKeys = [
     { key: "settingsSchema",    label: "settingsSchema" },
     { key: "ctxSettingsSchema", label: "ctxSettingsSchema" },
     { key: "dbSchema",          label: "dbSchema" },
@@ -69,7 +69,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   const presentExports = knownKeys.filter(({ key }) => mod[key] !== undefined);
 
   // the members an export contributes, shown next to its badge
-  const members = (key: string): string[] => {
+  const members = (key: string) => {
     if (key === "api" || key === "cms") return Object.keys(mod[key] ?? {});
     if (key !== "settingsSchema" && key !== "ctxSettingsSchema") return [];
     const props = (mod[key] as { properties?: unknown })?.properties;

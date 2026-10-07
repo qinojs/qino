@@ -60,7 +60,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** One editable form per provider (blank `p` = the "add" form). */
-function providerForm(csrf: string, selfBase: string, action: string, p: any = {}): HtmlString {
+function providerForm(csrf: string, selfBase: string, action: string, p: any = {}) {
   const v = (k: string) => p[k];
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
@@ -186,7 +186,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
 /** Which users are linked to which provider accounts. Logins follow these links; unlinking here
  *  removes them. */
-async function links(app: App, csrf: string): Promise<HtmlString> {
+async function links(app: App, csrf: string) {
   const rows = await app.db.query`
     SELECT l.provider, l.sub, l.usr_id, l.created, l.last_used, u.username
     FROM oauth_provider_usr l LEFT JOIN usr u ON u.id = l.usr_id

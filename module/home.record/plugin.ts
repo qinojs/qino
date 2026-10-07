@@ -68,7 +68,7 @@ export const cron = { stale: { every: 60, run: async (app: App) => {
 } } } satisfies Jobs;
 
 /** Query one local datapoint without requiring its provider to be running. */
-async function read(app: App, request: Read): Promise<void> {
+async function read(app: App, request: Read) {
   if (request.data !== undefined || request.source === "provider") return;
   const point = await datapoint(app, request.datapoint);
   const { start, end, limit, width, consumption } = request;

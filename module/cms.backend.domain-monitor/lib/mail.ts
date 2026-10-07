@@ -65,7 +65,7 @@ export function dmarc(txt: string[]) {
 }
 
 /** The published policy of an MTA-STS domain: enforce, testing, none — or "" when there is none. */
-async function mtaStsMode(apex: string, signal?: AbortSignal): Promise<string> {
+async function mtaStsMode(apex: string, signal?: AbortSignal) {
   const res = await fetch(`https://mta-sts.${apex}/.well-known/mta-sts.txt`, { signal: timedSignal(signal, 8000), headers: ua }).catch(() => null);
   if (!res?.ok) {
     await res?.body?.cancel();
@@ -75,7 +75,7 @@ async function mtaStsMode(apex: string, signal?: AbortSignal): Promise<string> {
 }
 
 // Reads SMTP replies until the final line of one — "250 x" ends a reply, "250-x" continues it.
-async function reply(conn: Deno.Conn, buf: Uint8Array): Promise<string> {
+async function reply(conn: Deno.Conn, buf: Uint8Array) {
   let text = "";
   for (let i = 0; i < 16; i++) {
     const n = await conn.read(buf);

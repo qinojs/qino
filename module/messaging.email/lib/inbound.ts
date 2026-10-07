@@ -64,7 +64,7 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
 }
 
 /** One incoming mail as a journal entry, tied to the user the address belongs to. */
-async function journal(app: App, mail: Parsed, to: string): Promise<void> {
+async function journal(app: App, mail: Parsed, to: string) {
   // the Message-ID is the far side's name for it: a mail already journaled is not taken twice
   if (mail.messageId && await app.db.one`SELECT d.id FROM message_delivery d JOIN message m ON m.id = d.message_id
     WHERE d.external_id = ${mail.messageId} AND m.channel = ${"email"}`) return;

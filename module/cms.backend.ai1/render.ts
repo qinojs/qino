@@ -76,7 +76,7 @@ export function view(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<H
   return vars.show === "providers" ? providers(node) : modelList(node, vars);
 }
 
-async function filters(app: App, vars: Vars): Promise<HtmlString> {
+async function filters(app: App, vars: Vars) {
   const t = app.t;
   const [providerList, caps, metrics] = await Promise.all([
     app.db.query`SELECT id, name FROM ai1_provider ORDER BY name`,
@@ -113,7 +113,7 @@ export function matching(vars: Vars): Sql[] {
 
 /** Models × capabilities (what each can do), their scores, the best price and speed; each model's
  *  providers and all its scores open in a dialog (pub/main.js), from its template. */
-async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
+async function modelList(node: Node, vars: Vars) {
   const app = node.app, t = app.t, db = app.db;
   // by default only usable models: switched on, with a switched-on offer from a switched-on provider
   const usable = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o
@@ -232,7 +232,7 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
 </table>`;
 }
 
-async function providers(node: Node): Promise<HtmlString> {
+async function providers(node: Node) {
   const app = node.app, t = app.t;
   const rows = await app.db.query`
     SELECT p.*, COUNT(mp.id) AS models, SUM(CASE WHEN m.enabled = ${true} AND mp.enabled = ${true} THEN 1 ELSE 0 END) AS active,
@@ -289,7 +289,7 @@ async function providers(node: Node): Promise<HtmlString> {
 }
 
 /** One call of a capability through ai1's own choice: who would answer (for the weights), then who did. */
-async function tryCard(app: App): Promise<HtmlString> {
+async function tryCard(app: App) {
   const t = app.t;
   const [names, metrics, caps] = await Promise.all([
     app.db.col`SELECT name FROM ai1_model WHERE enabled = ${true} ORDER BY name`,

@@ -54,7 +54,7 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
   </table>`;
 }
 
-async function renderRow(app: App, job: JobStatus): Promise<HtmlString> {
+async function renderRow(app: App, job: JobStatus) {
   const due = job.active && !job.running && job.nextRun <= Date.now() / 1000;
   const [state, stateColor] = await stateInfo(app, job, due);
   const error = job.lastError ? html`<details><summary>${await app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";

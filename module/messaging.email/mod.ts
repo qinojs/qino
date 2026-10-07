@@ -42,7 +42,7 @@ export const send = (
 ): Promise<number> => dispatch(app, messagingChannel, to, titled(message), { onError });
 
 /** One batch of mails, over one connection. */
-async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, { render, uses, group }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, { render, uses, group }: Rendering) {
   const [config, mailer, attachments] = await Promise.all([defaults(app), transport(app), attachmentsOf(msg.attachments)]);
   if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;

@@ -91,7 +91,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   return [...found.values()].sort((a, b) => b.score - a.score);
 }
 
-async function item(node: Node, page: Node, text: string, words: string[]): Promise<HtmlString> {
+async function item(node: Node, page: Node, text: string, words: string[]) {
   const href = await page.url();
   const cms = node.cms;
 

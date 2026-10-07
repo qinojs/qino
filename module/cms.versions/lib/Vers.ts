@@ -126,7 +126,7 @@ export async function historicalViews(ctx: Ctx, space: number, log: number): Pro
     return { async [Symbol.asyncDispose]() { delete scope.tables; await drop(); } };
 }
 
-async function createView(db: Db, view: string, tableName: string, space: number, log: number): Promise<void> {
+async function createView(db: Db, view: string, tableName: string, space: number, log: number) {
     const versTable = `_vers_${tableName}`;
     // Build field list: versioned fields from shadow table, rest from live table.
     const liveFields = await db.columns(tableName);
@@ -162,7 +162,7 @@ async function createView(db: Db, view: string, tableName: string, space: number
  * Give rows older than versioning one capture entry, so historical views are complete (every live
  * row has ≥1 _vers_ entry). Idempotent, once per process.
  */
-async function baselineAll(db: Db, log: Promise<string | null>): Promise<void> {
+async function baselineAll(db: Db, log: Promise<string | null>) {
     const state = dbState(db);
     const logId = Number(await log) || 0;
     // No log entry for the captures — retry on the next request.
@@ -170,7 +170,7 @@ async function baselineAll(db: Db, log: Promise<string | null>): Promise<void> {
     for (const t in state.tables) await baselineTable(db, t, logId);
 }
 
-async function baselineTable(db: Db, tableName: string, logId: number): Promise<void> {
+async function baselineTable(db: Db, tableName: string, logId: number) {
     const versTable = `_vers_${tableName}`;
     const pks = (await db.columns(tableName)).filter((c) => c.Key === "PRI").map((c) => c.Field);
     const join = sql.join(pks.map((f) => sql`v.${sql.id(f)} = t.${sql.id(f)}`), " AND ");

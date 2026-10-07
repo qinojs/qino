@@ -219,6 +219,6 @@ function collect(app: App, timeZone: string): RegisteredJob[] {
   return ret;
 }
 
-async function timezone(app: App): Promise<string> {
+async function timezone(app: App) {
   return String(await app.settings.cron.timezone);
 }

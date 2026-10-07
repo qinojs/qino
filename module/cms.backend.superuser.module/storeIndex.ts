@@ -16,7 +16,7 @@ async function moduleFiles(dir: string, base = dir): Promise<string[]> {
 }
 
 /** Module folders present in a local store (not from its catalog, which may be outdated). */
-async function moduleNames(dir: string): Promise<string[]> {
+async function moduleNames(dir: string) {
   const names: string[] = [];
   for (const e of await fs.list(dir)) {
     if (!e.isDirectory || !isModuleName(e.name)) continue;

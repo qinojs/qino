@@ -68,18 +68,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
 }
 
 /** Store the posted target for the current language; the select only offers known relatives. */
-async function store(node: Node, ctx: Ctx, vars: Record<string, unknown>): Promise<void> {
+async function store(node: Node, ctx: Ctx, vars: Record<string, unknown>) {
   const mode = String(vars.mode ?? "url");
   const value = mode === "url" ? String(vars.target ?? "").trim() : (mode in relatives ? mode : "");
   await node.text("_redirect", ctx.lang, value);
 }
 
-async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: string; target?: Node; loop: boolean }): Promise<HtmlString> {
+async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: string; target?: Node; loop: boolean }) {
   const t = node.app.t;
   const { value, url, target, loop } = state;
   const mode = value in relatives ? value : "url";
 
-  const labels: Record<string, string> = {
+  const labels = {
     "url": await t`Page or URL`,
     "__parent__": await t`Parent page`,
     "__first-child__": await t`First subpage`,

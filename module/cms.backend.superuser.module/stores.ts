@@ -136,7 +136,7 @@ function ranks(app: App) {
   try { return new Map(app.modules.order().map((name, i) => [name, i + 1])); } catch { return new Map<string, number>(); }
 }
 
-async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string, rank: Map<string, number>): Promise<HtmlString> {
+async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string, rank: Map<string, number>) {
   const st = state(app, mod, store);
   // Every broken row says why: the import error, or that nothing offers the name any more.
   const why = st !== "broken" ? undefined : app.modules.failures().get(mod) ?? l.noStore;
@@ -203,7 +203,7 @@ function storeRow(store: Store, error: string, l: Labels, label: (url: string) =
 
 /** Missing dependencies (recursive) that installing `mod` from `from` would add. Read from the
  *  manifests, no import. Same lookup as install(). */
-async function alsoNeeded(app: App, from: Store, mod: string): Promise<string[]> {
+async function alsoNeeded(app: App, from: Store, mod: string) {
   const offers = await app.stores.offers();
   const found: string[] = [];
   for (const queue = [[mod, from] as const]; queue.length;) {

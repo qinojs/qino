@@ -34,8 +34,8 @@ async function mediaView(f: DbFile) {
   else if (AUD.has(ext))
     inner = html`<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
-    inner = html`<iframe src="${url}" style="width:100%;height:37.5rem;border:0"></iframe>`;
-  return inner ? html`<div class=u2-card style="flex:0 1 auto"><div>${inner}</div></div>` : "";
+    inner = html`<iframe src="${url}" style="width:100%;min-width:40rem;height:40rem;border:0; padding:0"></iframe>`;
+  return inner ? html`<div class=u2-card style="flex:0 1 auto">${inner}</div>` : "";
 }
 
 async function textView(f: DbFile) {
