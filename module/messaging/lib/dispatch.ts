@@ -84,7 +84,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
  * Store the outcomes. All failures are reported, but only real delivery failures mark the contact;
  * our own failures leave it due and don't touch the contact's mark.
  */
-async function bookkeeping(app: App, channel: Channel, batch: number[], onError?: (message: string) => void): Promise<void> {
+async function bookkeeping(app: App, channel: Channel, batch: number[], onError?: (message: string) => void) {
   if (!onError && !channel.contact) return;
   const rows = await app.db.query`SELECT usr_id, address, error, sent FROM message_delivery WHERE ${sql.in("id", batch)}`;
   for (const row of rows) {

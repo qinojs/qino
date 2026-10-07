@@ -110,7 +110,7 @@ async function token(form: Record<string, string>) {
 }
 
 /** An endpoint from OpenAI's discovery document, only at its own origin. */
-async function endpoint(name: string): Promise<string> {
+async function endpoint(name: string) {
   const url = String((await fetch(AUTH + "/.well-known/openid-configuration").then((r) => r.json()))[name] ?? "");
   if (URL.parse(url)?.origin !== AUTH) throw new AiError(`Invalid ChatGPT ${name}`, 400);
   return url;

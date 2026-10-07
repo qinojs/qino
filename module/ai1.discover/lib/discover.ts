@@ -44,7 +44,7 @@ const tools = (app: App): Entry[] => toTools(app.apiTree).map(({ name, descripti
   entry(name, description, (parameters as Schema).properties, { name, description, parameters }));
 
 /** The tools `ctx` may call, by name. */
-async function callable(ctx: Ctx): Promise<Set<string>> {
+async function callable(ctx: Ctx) {
   const names = new Set<string>();
   for (const r of walk(ctx.app.apiTree)) if (r.verb.access && await r.verb.access(ctx)) names.add(r.name);
   return names;
@@ -64,7 +64,7 @@ const indexed = new WeakMap<App, Map<Kind, { text: string; done: Promise<void> }
 
 /** Embed every entry of a kind, unless it is as last time: modules linked later change it. Unchanged
  *  entries are not embedded again (ai1.embed); those gone are removed. */
-function indexAll(app: App, kind: Kind, every: Entry[]): Promise<void> {
+function indexAll(app: App, kind: Kind, every: Entry[]) {
   const kinds = indexed.get(app) ?? indexed.set(app, new Map()).get(app)!;
   const now = every.map((e) => e.text).join("\n\n");
   if (kinds.get(kind)?.text === now) return kinds.get(kind)!.done;

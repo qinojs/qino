@@ -148,7 +148,7 @@ function trade(text: string, trades: Map<string, string>) {
 }
 
 /** Replace each URL in place; everything else stays as written. */
-async function spliced(text: string, spans: Span[], swap: (link: Link) => Promise<string>, markup: boolean): Promise<string> {
+async function spliced(text: string, spans: Span[], swap: (link: Link) => Promise<string>, markup: boolean) {
   let out = "";
   let at = 0;
   for (const span of spans.sort((a, b) => a.at - b.at)) {

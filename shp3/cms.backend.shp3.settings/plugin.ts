@@ -28,7 +28,7 @@ async function render(node: Node): Promise<HtmlString> {
 }
 
 /** Payment and shipping methods: a module announces one, the shop names, sorts and switches it. */
-async function methods(node: Node): Promise<HtmlString> {
+async function methods(node: Node) {
   const { app } = node;
   const t = app.t;
   const set = app.settings.shp3;
@@ -87,7 +87,7 @@ async function methods(node: Node): Promise<HtmlString> {
 }
 
 /** Where the shop stands — the country a price is calculated for before the customer names one. */
-async function address(node: Node): Promise<HtmlString> {
+async function address(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;
@@ -120,7 +120,7 @@ async function address(node: Node): Promise<HtmlString> {
 }
 
 /** The currencies the shop prices in. The main one is the yardstick, so its factor stays 1. */
-async function currencies(node: Node): Promise<HtmlString> {
+async function currencies(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;
@@ -151,10 +151,10 @@ async function currencies(node: Node): Promise<HtmlString> {
     <td>${vs.id} <small>${title}</small>
       ${needed ? html`<small class=-needed>${needed.join(", ")}</small>` : ""}
     <td><input class=-cur data-field=factor type=number step=any value="${has ? vs.factor : ""}" ${vs.main || fromRates || !has ? html.raw("disabled") : ""}>
-    <td><input class=-cur data-field=smallest type=number step=any value="${has ? vs.smallest : ""}" ${has ? html.raw("") : html.raw("disabled")}>
-    <td><input class=-cur data-field=smallest_closing type=number step=any value="${has ? vs.smallest_closing : ""}" ${has ? html.raw("") : html.raw("disabled")}>
+    <td><input class=-cur data-field=smallest type=number step=any value="${has ? vs.smallest : ""}" ${has ? "" : html.raw("disabled")}>
+    <td><input class=-cur data-field=smallest_closing type=number step=any value="${has ? vs.smallest_closing : ""}" ${has ? "" : html.raw("disabled")}>
     <td><input class=-cur data-field=active type=checkbox ${vs.active ? html.raw("checked") : ""} ${vs.main ? html.raw("disabled") : ""}>
-    <td><input class=-cur data-field=main type=radio name=main ${vs.main ? html.raw("checked") : ""} ${has ? html.raw("") : html.raw("disabled")}>`;
+    <td><input class=-cur data-field=main type=radio name=main ${vs.main ? html.raw("checked") : ""} ${has ? "" : html.raw("disabled")}>`;
   });
 
   return html.async`<div class=u2-card style="flex:0 1 auto">
@@ -180,7 +180,7 @@ async function currencies(node: Node): Promise<HtmlString> {
 }
 
 /** Where the shop delivers to, and what VAT each of those countries carries. */
-async function countries(node: Node): Promise<HtmlString> {
+async function countries(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;

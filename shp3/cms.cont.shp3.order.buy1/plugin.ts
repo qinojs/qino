@@ -29,7 +29,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ${errors.length ? html`<ul class=-errors>${errors.map((e) => html`<li>${e}</li>`)}</ul>` : ""}
   ${back?.exists() ? html.async`<a class=-back href="${back.url()}">${t`Back`}</a>` : ""}
   <form class=-buy data-success=${success ? success.url() : ""}>
-    <button ${errors.length ? html.raw("disabled") : html.raw("")}>${t`Buy`}</button>
+    <button ${errors.length ? html.raw("disabled") : ""}>${t`Buy`}</button>
   </form>
 </div>`;
 }

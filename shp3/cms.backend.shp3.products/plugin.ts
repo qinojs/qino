@@ -22,7 +22,7 @@ function render(node: Node): Promise<HtmlString> {
 }
 
 /** All pages with the product module, also those without product row yet (newly created). */
-async function renderList(node: Node): Promise<HtmlString> {
+async function renderList(node: Node) {
   const { app } = node;
   const t = app.t;
   const hasStock = !!app.db.table("shp3_product").field("stock"); // shp3.stock adds it
@@ -86,7 +86,7 @@ async function renderList(node: Node): Promise<HtmlString> {
 }
 
 /** One product: what the shop sells it for, and the VAT it carries per country. */
-async function renderProduct(node: Node, id: number): Promise<HtmlString> {
+async function renderProduct(node: Node, id: number) {
   const { app } = node;
   const t = app.t;
   const page = await node.cms.node(id);

@@ -209,7 +209,7 @@ async function detail(node: Node, id: number) {
   </div>` : ""}
   ${shown ? html.async`<div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`Slip`}</div>
-    <div style="overflow:auto">${html.raw(String(shown))}</div>
+    <div style="overflow:auto">${html.raw(shown)}</div>
   </div>` : ""}
 </div>`;
 }

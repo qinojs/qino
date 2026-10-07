@@ -5,7 +5,7 @@ import { cssLength } from "../lib/css.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-function videoId(value: string): string {
+function videoId(value: string) {
   const url = URL.parse(value);
   const id = url?.hostname === "youtu.be" ? url.pathname.slice(1) : url?.searchParams.get("v") ?? url?.pathname.match(/\/embed\/([^/]+)/)?.[1];
   return /^[\w-]{6,32}$/.test(id ?? value) ? (id ?? value) : "";

@@ -25,7 +25,7 @@ function render(node: Node): Promise<HtmlString> {
   return id ? renderOrder(node, id) : renderList(node);
 }
 
-async function renderList(node: Node): Promise<HtmlString> {
+async function renderList(node: Node) {
   const { app } = node;
   const t = app.t;
   const open = getCtx().req.query.shp3_open !== undefined;
@@ -69,7 +69,7 @@ async function renderList(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-async function renderOrder(node: Node, id: number): Promise<HtmlString> {
+async function renderOrder(node: Node, id: number) {
   const { app } = node;
   const t = app.t;
   const order = await app.db.table("shp3_order").get<Order>(id);

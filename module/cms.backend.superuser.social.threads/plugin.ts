@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Threads", de: "Threads" });
 }
 
-async function act(app: App, vars: Record<string, unknown> | undefined): Promise<string> {
+async function act(app: App, vars: Record<string, unknown> | undefined) {
   if (!vars) return "";
   try {
     if (vars.save != null) {

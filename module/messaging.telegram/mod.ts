@@ -38,7 +38,7 @@ function telegramText(msg: Msg, rendered: { text: string; html?: string }): { te
 }
 
 /** One batch of messages, paced: Telegram takes about 30 a second across chats. */
-async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering) {
   const table = app.db.table("telegram_chat");
   const known = new Map((await app.db.query`SELECT id, chat_id, error FROM telegram_chat
     WHERE ${sql.in("chat_id", rows.map((row) => Number(row.address)))}`).map((chat) => [String(chat.chat_id), chat]));
@@ -74,7 +74,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
 }
 
 /** One retry on 429 — the answer carries how long to wait, and waiting is the documented fix. */
-async function sendMessage(app: App, params: Record<string, unknown>): Promise<string> {
+async function sendMessage(app: App, params: Record<string, unknown>) {
   const post = async () => `${params.chat_id}:${(await call(app, "sendMessage", params))?.message_id ?? ""}`;
   try {
     return await post();

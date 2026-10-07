@@ -50,7 +50,7 @@ export async function trackHit(app: App, { link, tag }: any): Promise<void> {
 }
 
 /** `<delivery in base36><kind><signature>`. */
-async function marker(app: App, deliveryId: number, kind: Kind): Promise<string> {
+async function marker(app: App, deliveryId: number, kind: Kind) {
   const stem = deliveryId.toString(36) + kind[0];
   return stem + await sign(app, stem);
 }
