@@ -64,7 +64,7 @@ export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStr
         ${name === current ? html.raw("aria-current=page") : ""}>${labels[name]}</a>`)}
     </nav>
     <form class="u2-flex -filter" data-filter>
-      ${current === "actions" ? "" : html.async`<input type=search name=q value="${vars.q ?? ""}"
+      ${current === "actions" ? "" : html.async`<input type=search name=q value="${vars.q}"
         placeholder="${t`Search, also attributes`}" aria-label="${t`Search`}">`}
       ${refresh}
     </form>
@@ -149,8 +149,8 @@ function runner(app: App, command: Command, actions: Action[]): Promise<HtmlStri
   const number = schema?.type === "number" || schema?.type === "integer";
   return html.async`<form data-run-command data-id="${command.id}" class=u2-flex>
     <input name=value required aria-label="${command.parameter}" placeholder="${command.parameter}"
-      data-type="${number ? "number" : "auto"}" ${number ? html`type=number step=any min="${schema.minimum ?? ""}"
-      max="${schema.maximum ?? ""}"` : ""}>
+      data-type="${number ? "number" : "auto"}" ${number ? html`type=number step=any min="${schema.minimum}"
+      max="${schema.maximum}"` : ""}>
     <button type=submit>${t`Run`}</button>
   </form>`;
 }
@@ -219,7 +219,7 @@ export function renderActions(app: App, provider: number, list: Action[], endpoi
         ${field(id("action"), t`Action`, html.async`<input id="${id("action")}" name=action list="${id("list")}" required
             autocomplete=off placeholder="${t`Search an action`}">
           <datalist id="${id("list")}">
-            ${list.map((action) => html`<option value="${action.id}" data-description="${action.description ?? ""}"
+            ${list.map((action) => html`<option value="${action.id}" data-description="${action.description}"
               data-input="${JSON.stringify(action.input ?? {})}" data-targets="${JSON.stringify(action.targets ?? null)}"
               >${action.name === action.id ? "" : action.name}</option>`)}
           </datalist>

@@ -53,7 +53,7 @@ export async function list(node: Node): Promise<HtmlString> {
           <tr><th><label for="${id("template")}">${t`Template`}</label></th>
             <td><select id="${id("template")}" name=template required>
               ${Object.entries(templates).map(([name, template]) => html`<option value="${name}"
-                title="${template.description ?? ""}">${template.title}</option>`)}
+                title="${template.description}">${template.title}</option>`)}
             </select></td></tr>
           <tr><th><label for="${id("source")}">${t`Device provider`}</label></th>
             <td><select id="${id("source")}" name=source required>${options(others)}</select></td></tr>

@@ -92,7 +92,7 @@ async function filters(app: App, vars: Vars): Promise<HtmlString> {
     ...metrics.map(String).filter((m) => m !== INTELLIGENCE && m !== SPEED).map((m) => ({ value: m, label: label(m) })),
   ];
   return html.async`<form class="u2-flex -filter" data-filter>
-    <input type=search name=q value="${vars.q ?? ""}" placeholder="${t`Search models`}">
+    <input type=search name=q value="${vars.q}" placeholder="${t`Search models`}">
     <select name=provider><option value="">${t`all providers`}${options(providerList.map((p) => ({ value: p.id, label: p.name })), vars.provider)}</select>
     <select name=capability><option value="">${t`all capabilities`}${options(caps.map((c) => ({ value: c, label: c })), vars.capability)}</select>
     <select name=sort title="${t`Order`}">${options(sorts, vars.sort ?? "")}</select>
@@ -159,10 +159,10 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
     return html.async`<tr data-row=ai1_model_provider data-id="${o.id}">
       <td>${checkbox(o.enabled)}
       <td><select name=provider_id>${options(providerList, o.provider_id)}</select>
-      <td><input name=provider_model value="${o.provider_model ?? ""}" placeholder="${t`same name`}">
-      <td class=-num><input name=cost_input type=number step=any min=0 value="${o.cost_input ?? ""}">
-      <td class=-num><input name=cost_output type=number step=any min=0 value="${o.cost_output ?? ""}">
-      <td class=-num><input name=speed type=number step=any min=0 value="${o.speed ?? ""}">
+      <td><input name=provider_model value="${o.provider_model}" placeholder="${t`same name`}">
+      <td class=-num><input name=cost_input type=number step=any min=0 value="${o.cost_input}">
+      <td class=-num><input name=cost_output type=number step=any min=0 value="${o.cost_output}">
+      <td class=-num><input name=speed type=number step=any min=0 value="${o.speed}">
       <td class=-num>${value(s?.calls, 0)}
       <td class=-num>${s?.calls ? `${value(100 * s.errors / s.calls, 0)} %` : "–"}
       <td class=-num>${s?.ms ? value(s.output / (s.ms / 1000)) : "–"}
@@ -178,7 +178,7 @@ async function modelList(node: Node, vars: Vars): Promise<HtmlString> {
     return html.async`<tr data-row=ai1_model data-id="${model.id}" data-name="${model.name}" ${model.enabled ? "" : "data-off"}>
       <td>${checkbox(model.enabled)}
       <th><input name=name value="${model.name}" required style="color:${backend.uniqueColor(model.name)}">
-      <td class=-num><input name=context_length type=number min=0 step=1024 value="${model.context_length ?? ""}" placeholder=–>
+      <td class=-num><input name=context_length type=number min=0 step=1024 value="${model.context_length}" placeholder=–>
       ${cells}
       ${indexes.map((metric) => html`<td class=-num>${value(score.get(`${model.id} ${metric}`))}`)}
       <td class=-num>

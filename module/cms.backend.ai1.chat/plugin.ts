@@ -46,7 +46,7 @@ async function render(node: Node): Promise<HtmlString> {
       <div class="u2-flex -Col" style="flex-wrap:nowrap">
         <form data-start>
           <select name=agent aria-label="${t`Agent`}" required>${agents.map((agent) =>
-            html`<option value="${agent.id}" data-prefer="${agent.prefer ?? ""}">#${agent.id} ${agent.name || String(agent.system ?? "").split("\n")[0].slice(0, 80)}</option>`)}</select>
+            html`<option value="${agent.id}" data-prefer="${agent.prefer}">#${agent.id} ${agent.name || String(agent.system ?? "").split("\n")[0].slice(0, 80)}</option>`)}</select>
           <fieldset><legend>${t`Model choice for this session`}</legend>
             <div class=u2-table>
               <div>${WEIGHTS.map((key) =>

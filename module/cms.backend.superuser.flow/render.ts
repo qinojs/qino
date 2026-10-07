@@ -67,18 +67,18 @@ export async function renderDetail(
     <legend><input name=description value="${description}" placeholder="${tDescription}"> ${remove}</legend>
     ${debounce
       ? html`${tWait} <input type=number name=ms min=0 value="${debounce.ms}"> ms
-        ${tBy} <input name=by value="${debounce.by ?? ""}">`
-      : html`<u2-code trim language=js><textarea name=fn rows=3>${fn ?? ""}</textarea></u2-code>`}
+        ${tBy} <input name=by value="${debounce.by}">`
+      : html`<u2-code trim language=js><textarea name=fn rows=3>${fn}</textarea></u2-code>`}
   </fieldset>`;
   const fields = schema?.properties
     ? html`<dl>${Object.entries(schema.properties).map(([name, field]) =>
-      html`<dt><code>${name}</code> <small>${field.type ?? ""}</small><dd>${field.description ?? ""}`)}</dl>`
+      html`<dt><code>${name}</code> <small>${field.type}</small><dd>${field.description}`)}</dl>`
     : "";
 
   return html`<div class=-head>${row.description || `#${row.id}`}</div>
 <form data-edit>
   <u2-fields>
-    ${tDescription} <input name=description value="${row.description ?? ""}">
+    ${tDescription} <input name=description value="${row.description}">
     ${tWhen} <select name=on>${[...new Set([on, ...events])].map((e) =>
       html`<option${e === on ? html.raw(" selected") : ""}>${e}</option>`)}</select>
     ${tTools} <textarea name=tools rows=3 placeholder="${tOnePerLine}">${tools.join("\n")}</textarea>

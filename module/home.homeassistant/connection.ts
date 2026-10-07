@@ -333,7 +333,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
       if (!endpoint || !["http:", "https:", "ws:", "wss:"].includes(endpoint.protocol)) continue;
       if (endpoint.username || endpoint.password || typeof token !== "string" || !token) continue;
       endpoint.protocol = endpoint.protocol === "https:" || endpoint.protocol === "wss:" ? "wss:" : "ws:";
-      endpoint.pathname = endpoint.pathname.replace(/\/$/, "").replace(/\/api\/websocket$/, "") + "/api/websocket";
+      endpoint.pathname = endpoint.pathname.replace(/\/api\/websocket\/?$|\/$/, "") + "/api/websocket";
       endpoint.search = "";
       endpoint.hash = "";
       const controller = new AbortController();

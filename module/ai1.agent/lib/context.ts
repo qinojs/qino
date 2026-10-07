@@ -140,5 +140,5 @@ export async function context(app: App, session: number) {
   const now = new Map(tools.map((tool) => [tool.name, tool]));
   const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));
   const messages: Message[] = [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...answered(history.map((row: { message: Message }) => row.message))];
-  return { agent: id, usrId, prefer, tools: offered as Tool[], messages };
+  return { agent: id, usrId, prefer, tools: offered, messages };
 }

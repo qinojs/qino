@@ -16,7 +16,7 @@ export function datapointForm(app: App, point: Partial<Datapoint>, providers?: P
   const t = app.t, fixed = point.id !== undefined, lock = fixed ? html.raw("readonly") : "";
   const entry = (state = "", code?: number) => html.async`<tr>
     <td><input data-state value="${state}" aria-label="${t`State`}" ${lock}></td>
-    <td><input data-code type=number min=-128 max=127 step=1 value="${code ?? ""}" aria-label="${t`Code`}" ${lock}></td>
+    <td><input data-code type=number min=-128 max=127 step=1 value="${code}" aria-label="${t`Code`}" ${lock}></td>
   </tr>`;
   const id = (name: string) => `home-point-${point.id ?? "new"}-${name}`;
   const source = providers ? html.async`
@@ -26,13 +26,13 @@ export function datapointForm(app: App, point: Partial<Datapoint>, providers?: P
     ${field(id("entity"), t`Entity ID (optional)`, html`<input id="${id("entity")}" name=entity maxlength=191>`)}
     ${field(id("path"), t`Path (optional)`, html.async`<input id="${id("path")}" name=path maxlength=191
       placeholder="${t`Attribute, e.g. brightness; empty for the state`}">`)}` : "";
-  return html.async`<form data-datapoint data-id="${point.id ?? ""}">
+  return html.async`<form data-datapoint data-id="${point.id}">
     <table class="u2-table -Fields -Flex">
       ${source}
       ${field(id("name"), t`Name`,
-        html`<input id="${id("name")}" name=name value="${point.name ?? ""}" required maxlength=191>`)}
+        html`<input id="${id("name")}" name=name value="${point.name}" required maxlength=191>`)}
       ${field(id("unit"), t`Unit`,
-        html`<input id="${id("unit")}" name=unit value="${point.unit ?? ""}" maxlength=64 ${lock}>`)}
+        html`<input id="${id("unit")}" name=unit value="${point.unit}" maxlength=64 ${lock}>`)}
       ${field(id("type"), t`Datatype`, html.async`<select id="${id("type")}" name=type ${fixed ? html.raw("disabled") : ""}>
         <option value=number ${point.type !== "state" ? html.raw("selected") : ""}>${t`Number`}</option>
         <option value=state ${point.type === "state" ? html.raw("selected") : ""}>${t`Discrete state`}</option>

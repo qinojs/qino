@@ -39,11 +39,11 @@ function form(node: Node, adapter: Linked, row?: Provider): Promise<HtmlString> 
     if (schema["x-html"]?.type === "hidden") return input;
     return field(id, schema.title ?? path.join("."), input);
   });
-  return html.async`<form data-provider-config data-adapter="${adapter.name}" data-provider="${row?.id ?? ""}">
+  return html.async`<form data-provider-config data-adapter="${adapter.name}" data-provider="${row?.id}">
     ${rows.filter((_, index) => hidden[index])}
     <table class="u2-table -Fields -Flex">
       ${field(`${prefix}-name`, t`Name`,
-        html`<input id="${prefix}-name" name=name value="${row?.name ?? ""}" required maxlength=191>`)}
+        html`<input id="${prefix}-name" name=name value="${row?.name}" required maxlength=191>`)}
       ${rows.filter((_, index) => !hidden[index])}
       ${field(`${prefix}-enabled`, t`Enabled`, html`<input id="${prefix}-enabled" name=enabled type=checkbox
         ${!row || row.enabled ? html.raw("checked") : ""}>`)}
@@ -57,7 +57,7 @@ function form(node: Node, adapter: Linked, row?: Provider): Promise<HtmlString> 
 /** A creation dialog per linked adapter, for the head of the providers' card. */
 export function additions(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`${(linked(node.app) as Linked[]).map((adapter) => {
+  return html.async`${linked(node.app).map((adapter) => {
     const title = html.async`${t`Add provider`} · ${adapter.schema?.title ?? adapter.name}`;
     return dialog(title, title, form(node, adapter));
   })}`;
@@ -66,7 +66,7 @@ export function additions(node: Node): Promise<HtmlString> {
 /** The providers, each leading to its page and editable in a dialog. */
 export async function settings(node: Node): Promise<HtmlString> {
   const app = node.app, t = app.t;
-  const adapters = linked(app) as Linked[];
+  const adapters = linked(app);
   const [providers, points, orders] = await Promise.all([
     stored(app).then((rows) => rows.map((row) => redact(app, row))), datapoints(app), commands(app),
   ]);

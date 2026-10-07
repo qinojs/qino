@@ -48,10 +48,10 @@ const branches = (branch: Branch, chosen: string[], above = ""): HtmlString[] =>
 /** Create or edit an agent; sessions are started in Chat. One a module declares (`name`) its file sets, shown locked. */
 function form(node: Node, agent: { id?: number; name?: string; system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id ?? ""}">
+  return html.async`<form class="u2-flex -Col" style="flex-wrap:nowrap" data-agent="${agent.id}">
     ${agent.name ? html.async`<small>${t`Declared by a module: its file sets role, tools and model choice on every start.`}</small>` : ""}
     <fieldset ${agent.name ? "disabled" : ""} style="display:contents">
-    <textarea name=system rows=6 style="width:100%" placeholder="${t`Role`}">${agent.system ?? ""}</textarea>
+    <textarea name=system rows=6 style="width:100%" placeholder="${t`Role`}">${agent.system}</textarea>
     <fieldset><legend>${t`Tools`}</legend><div style="overflow:auto;max-height:15rem">${branches(toolTree(node.app.apiTree), agent.tools ?? [])}</div></fieldset>
     <fieldset><legend>${t`Model choice`}</legend>
       <div class=u2-table><div>${WEIGHTS.map((key) => html`<label>
@@ -200,7 +200,7 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}):
         <td>${count(s.calls)}
         <td>${count(s.errors, true)}
         <td><small>${(models.get(String(s.id)) ?? []).map((r) => html`${by(r)} `)}</small>
-        <td><small>${last.get(String(s.last))?.role ?? ""}: ${short(last.get(String(s.last))?.text ?? "")}</small>
+        <td><small>${last.get(String(s.last))?.role}: ${short(last.get(String(s.last))?.text ?? "")}</small>
         <td>${time(s.last_time)}
         <td>${time(s.time)}`) : html.async`<tr><td colspan=12>${t`No sessions yet`}`}</tbody>`;
 }
@@ -434,7 +434,7 @@ async function render(node: Node): Promise<HtmlString> {
   } : undefined;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto; max-width:50rem">
-      <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)} ${row?.name ?? ""}</div>
+      <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)} ${row?.name}</div>
       ${edit ? form(node, edit) : ""}
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>

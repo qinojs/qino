@@ -19,7 +19,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   for (const name of ["home:input", "home:change"]) {
     app.on(name, async ({ provider, id, entity, previous, changed }) => {
       for (const row of await sourced(app, provider, id)) {
-        const [now, before] = [view(row, entity), view(row, previous)];
+        const now = view(row, entity), before = view(row, previous);
         await app.fire(name, { provider: row.provider, id: String(row.id), entity: now, previous: before, changed });
       }
     }, { signal });

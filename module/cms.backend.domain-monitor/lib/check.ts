@@ -72,7 +72,7 @@ async function dnsList(host: string, type: Deno.RecordType, server?: string): Pr
     }
     if (type === "CAA") return (recs as unknown as Deno.CaaRecord[]).map((r) => `${r.tag} ${r.value}`).sort();
     if (type === "TXT") return (recs as unknown as string[][]).map((r) => r.join("")).sort();
-    return (recs as string[]).sort();
+    return recs.sort();
   } catch {
     return [];
   }

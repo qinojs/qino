@@ -60,7 +60,7 @@ export async function configure(app: App, input: ({ id: number } | Source & { id
 async function source(app: App, input: Source): Promise<Omit<Datapoint, "id"> & { id?: number }> {
   const { entity, path = "", type = "number", unit = "", mapping: codes = {} } = input;
   if (!Number.isSafeInteger(input.provider) || typeof entity !== "string" || !entity || entity.length > 191
-    || typeof path !== "string" || path.length > 191 || path.split("/").some((key) => path && !key)
+    || typeof path !== "string" || path.length > 191 || path && path.split("/").some((key) => !key)
     || typeof unit !== "string" || unit.length > 64 || !["number", "state"].includes(type) || typeof codes !== "object")
     throw new ApiError(400, "Invalid datapoint identity or type");
   await provider(app, input.provider);
