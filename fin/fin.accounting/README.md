@@ -41,7 +41,9 @@ The invoice's file goes with its entry as receipt — the original of a received
 attached after the invoice was booked is not added to the entry (yet).
 
 A payment is booked as the difference to what is booked for it already (`ref` `fin.payment:<id>`),
-so partial payments, refunds and fees add up whenever `payment:change` fires. A failed automatic
+so partial payments, refunds and fees add up whenever `payment:change` fires. A fee with no
+`fees` account books nothing rather than too much money; once the account is set, the next change
+books it all. A failed automatic
 entry (closed period, missing account) is logged and never stops the invoice or the payment.
 
 ## Closing a year
