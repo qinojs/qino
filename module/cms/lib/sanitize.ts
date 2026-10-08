@@ -38,7 +38,7 @@ export const policy: Policy = {
 
 // Site allowlist in the editor's syntax: `class title, a(href target)`, with protocols one level
 // deeper. A bare group applies to all elements.
-function parse(declared: string, deep = false): Record<string, unknown> | null {
+function parse(declared: string, deep = false) {
   if (!declared.trim()) return null;
   const result: Record<string, unknown> = {};
   for (const group of declared.split(",")) {
@@ -101,7 +101,7 @@ export function sanitizeHtml(html: string, use: Policy = policy): string {
 const LIMIT = 500;
 const results = new WeakMap<Policy, Map<string, string>>();
 
-function cached(use: Policy): Map<string, string> {
+function cached(use: Policy) {
   let seen = results.get(use);
   if (!seen) results.set(use, seen = new Map());
   return seen;
@@ -110,7 +110,7 @@ function cached(use: Policy): Map<string, string> {
 // Converted once per policy, not per text.
 const translated = new WeakMap<Policy, sanitize.IOptions>();
 
-function options(use: Policy): sanitize.IOptions {
+function options(use: Policy) {
   let ready = translated.get(use);
   if (!ready) translated.set(use, ready = build(use));
   return ready;

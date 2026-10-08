@@ -246,7 +246,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 }
 
 // ── detail ──────────────────────────────────────────────────────────────────
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
   const ctx = getCtx();
   if (!id) return html`<div>${await t`Not found`}</div>`;
