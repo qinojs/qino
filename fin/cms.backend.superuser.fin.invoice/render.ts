@@ -35,7 +35,7 @@ const userLink = (node: Node, id: unknown, label = "") =>
   id ? rowLink(node, "cms.backend.superuser.fin.party", "usr", id, label || `#${id}`) : "";
 
 /** A user's email address, the main one first; empty without one. */
-const emailOf = async (app: App, id: unknown) => id
+export const emailOf = async (app: App, id: unknown) => id
   ? String(await app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${Number(id)} AND type = 'email'
     ORDER BY main DESC` ?? "")
   : "";
@@ -197,9 +197,7 @@ async function editor(node: Node, row: Row) {
   // the languages the site has texts for; the document falls back to the default one likewise
   const languages = app.languages.all;
   const term = await app.settings["fin.invoice"].term;
-  // issued, ours may go to the customer at once: the address to ask about. Its buttons are type=button:
-  // in the form, a submit button acts on click before u2-confirm has asked
-  const email = row.direction === "out" && app.modules.linked("messaging.email") ? await emailOf(app, row.usr_id) : "";
+  // its buttons are type=button: in the form, a submit button acts on click before u2-confirm has asked
   const users = await app.db.query`SELECT id, given_name, family_name, organization FROM usr
     ORDER BY family_name, given_name`;
   const lang = languages.includes(String(row.lang)) ? String(row.lang) : app.languages.def;
@@ -269,7 +267,7 @@ async function editor(node: Node, row: Row) {
       <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text}</textarea></u2-fields>
     </div>
     <div>
-      <button type=button data-action=issue data-id="${id}" data-email="${email}"
+      <button type=button data-action=issue data-id="${id}"
         u2-confirm="${t`Issue it? Its number is drawn now; then it cannot change.`}">${t`Issue`}</button>
       <button type=button data-action=remove data-id="${id}"
         u2-confirm="${t`Throw this draft away?`}">${t`Delete draft`}</button>

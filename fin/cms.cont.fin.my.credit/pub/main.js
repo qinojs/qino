@@ -1,3 +1,4 @@
+import { cms } from "@qino/m/cms/pub/js/cms.mjs";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
@@ -5,7 +6,7 @@ import { html } from "@qino/pub/html.js";
 import { money } from "../../fin/pub/money.js";
 
 const credit = api["fin.payment.credit"];
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
+const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString(document.documentElement.lang || undefined) : "";
 
 cms.initNode("cont.fin.my.credit", async (el) => {
   const box = el.querySelector("[data-credit]");

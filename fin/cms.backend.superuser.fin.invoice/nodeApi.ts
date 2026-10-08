@@ -8,6 +8,8 @@ import {
 import { create as pay, record } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
 
+import { emailOf } from "./render.ts";
+
 import type { Node } from "@qino/qino/cms";
 
 /** Node access is the permission — whoever may open this backend page may act on invoices. */
@@ -60,14 +62,16 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       await attach(app, Number(id), await fileOf(app, file));
       return { ok: true };
     }
-    const { action, id, email } = (vars.action ?? {}) as { action?: string; id?: string; email?: string };
+    const { action, id } = (vars.action ?? {}) as { action?: string; id?: string };
     if (action === "issue") {
       const issued = await issue(app, Number(id));
-      // and to the customer at once, where the one issuing said so
-      const sent = !email ? "" : await send(app, Number(id), { email })
-        ? ` ${await t`Sent.`}`
-        : ` ${await t`Not sent: no email address`}`;
-      return { ok: true, message: `${await t`Issued as`} ${issued?.number ?? ""}.${sent}` };
+      const message = `${await t`Issued as`} ${issued?.number ?? ""}.`;
+      // ours may go to the customer at once: asked with the address it has now
+      const mail = issued?.direction === "out" && app.modules.linked("messaging.email");
+      const email = mail ? await emailOf(app, issued.usr_id) : "";
+      return email
+        ? { ok: true, ask: `${message} ${await t`Send it to`} ${email}?`, then: { send: { id, email } } }
+        : { ok: true, message };
     }
     if (action === "cancel") return { ok: !!await cancel(app, Number(id)), message: await t`Canceled.` };
     if (action === "credit") {

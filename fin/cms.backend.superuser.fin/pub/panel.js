@@ -3,7 +3,7 @@ import { api } from "@qino/pub/api.js";
 /**
  * The fin backend pages' actions: post to the node api, say what came back in a u2 dialog, then
  * reload — the pages are small, and filters live in the URL, so nothing is lost. An answer with a
- * `url` goes there instead.
+ * `url` goes there instead; one that asks (`ask`) posts `then` on yes.
  */
 export function finPanel(el) {
   const node = api.cms.node(Number(cms.el.nid(el)));
@@ -15,7 +15,10 @@ export function finPanel(el) {
     if (button) button.disabled = true;
     try {
       const response = await node.api.post(data);
-      if (response?.message) await (await dialog()).alert(response.message);
+      // what was done stands, whatever the follow-up does: the page shows it again either way
+      if (response?.ask) {
+        if (await (await dialog()).confirm(response.ask)) await execute(button, response.then);
+      } else if (response?.message) await (await dialog()).alert(response.message);
       // an action that made something new goes there, any other shows the page again
       if (response?.url) location.href = response.url;
       else if (response?.ok !== false) location.reload();

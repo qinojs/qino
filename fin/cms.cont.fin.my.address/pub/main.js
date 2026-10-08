@@ -1,3 +1,4 @@
+import { cms } from "@qino/m/cms/pub/js/cms.mjs";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 

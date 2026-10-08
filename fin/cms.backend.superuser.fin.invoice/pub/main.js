@@ -22,14 +22,9 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     e.preventDefault();
   });
 
-  el.addEventListener("click", async (e) => {
+  el.addEventListener("click", (e) => {
     const button = e.target.closest("[data-action]");
-    if (!button) return;
-    const { action, id, email } = button.dataset;
-    // issued, it may go to the customer at once
-    const { confirm } = await import("@qino/u2/js/dialog/dialog.js");
-    const send = action === "issue" && email && await confirm(`${await t`Send it to`} ${email}?`);
-    execute(button, { action: { action, id, ...send ? { email } : {} } });
+    if (button) execute(button, { action: { action: button.dataset.action, id: button.dataset.id } });
   });
 
   if (form) editor(form);

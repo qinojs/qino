@@ -195,9 +195,14 @@ Deno.test("issued, it goes to the customer at once where asked to, and says when
     setTransport(app, { send: (m) => (mails.push(m), Promise.resolve({ successful: true })) });
     const node = backendNode(app, "/backend/invoices");
     const id = await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] });
-    const issue = { action: "issue", id: String(id), email: "anna@example.com" };
-    const issued = await inRequest(app, "http://qino.test/", () => api(node, { action: issue })) as Answer;
-    assertStringIncludes(issued.message!, "Sent.");
+    const usr = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, family_name: "Muster" }));
+    await app.db.table("usr_contact").insert({ type: "email", address: "anna@example.com", usr_id: usr, main: 1 });
+    await app.db.exec`UPDATE invoice SET usr_id = ${usr} WHERE id = ${id}`; // picked in the editor
+    const as = (vars: Record<string, unknown>) => inRequest(app, "http://qino.test/", () => api(node, vars));
+    // issued, it asks whether to send it, to the address the invoice has now
+    const issued = await as({ action: { action: "issue", id: String(id) } }) as Answer & { ask: string; then: Record<string, unknown> };
+    assertStringIncludes(issued.ask, "anna@example.com");
+    assertStringIncludes(String(await as(issued.then).then((a) => (a as Answer).message)), "Sent.");
     assertEquals(mails.length, 1);
     const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, `data-sent="${id}"`);
