@@ -69,6 +69,7 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
         await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5.19"); // the site moves on
         await f.render();
         assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.5.19/class/flex/flex.css")));
+        assert(f.ctx.res.html.importMap.get("@u2/")!.endsWith("@1.5.19/")); // contents follow the site
         for (const directive of ["style-src", "script-src", "connect-src"] as const) // its release is allowed
           assert(Object.keys(f.ctx.res.csp[directive]).some((src) => src.endsWith("@1.5.19/")));
         await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5."); // half typed in the panel: the pin

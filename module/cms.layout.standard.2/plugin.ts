@@ -31,7 +31,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
   if (await node.edit()) await codeFiles(node).create();
 
-  u2.assets(ctx, U2_ASSETS, u2Version(await node.cms.layoutPage(node.module!.name)));
+  const version = u2Version(await node.cms.layoutPage(node.module!.name));
+  u2.assets(ctx, U2_ASSETS, version);
+  ctx.res.html.importMap.set("@u2/", u2.root(version)); // contents import the page's u2 from here
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
   // The template decides whether and how main exists; the starter only fills a flexible it just created.
