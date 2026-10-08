@@ -182,7 +182,10 @@ export async function mail(app: App, invoice: Row, pdf: DbFile, reminder = 0) {
     const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
     const due = invoice.due ? dates.format(new Date(`${invoice.due}T00:00:00Z`)) : "";
     const date = invoice.date ? dates.format(new Date(`${invoice.date}T00:00:00Z`)) : "";
-    const text = reminder
+    const credit = invoice.type === "credit_note";
+    const text = credit
+      ? [await t`Please find our credit note ${invoice.number} attached.`]
+      : reminder
       ? [
         await t`Our invoice ${invoice.number} of ${date} was due on ${due}.`,
         await t`Amount due: ${amount}.`,
@@ -193,7 +196,13 @@ export async function mail(app: App, invoice: Row, pdf: DbFile, reminder = 0) {
         due ? await t`Amount due: ${amount}, payable by ${due}.` : await t`Amount due: ${amount}.`,
       ];
     // the first reminder is a friendly one; the ones after it are counted
-    const title = await (reminder === 1 ? t`Payment reminder` : reminder ? t`Reminder ${reminder - 1}` : t`Invoice`);
+    const title = await (credit
+      ? t`Credit note`
+      : reminder === 1
+      ? t`Payment reminder`
+      : reminder
+      ? t`Reminder ${reminder - 1}`
+      : t`Invoice`);
     const attachment = { name: pdf.name, type: pdf.mime, content: fs.bytes(pdf.path) };
     return {
       title: `${title} ${invoice.number}`,

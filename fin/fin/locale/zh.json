@@ -15,6 +15,7 @@
   "Our invoice {0} of {1} was due on {2}.": "我们于 {1} 开具的发票 {0} 已于 {2} 到期。",
   "Payable within {0} days": "请于 {0} 天内付款",
   "Payment reminder": "付款提醒",
+  "Please find our credit note {0} attached.": "附件为我们的贷项通知单 {0}。",
   "Please find our invoice {0} attached.": "附件为我们的发票 {0}。",
   "Pos.": "序号",
   "Quantity": "数量",

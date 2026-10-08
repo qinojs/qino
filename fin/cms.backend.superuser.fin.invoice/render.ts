@@ -116,6 +116,7 @@ async function list(node: Node, url: URL) {
       <th>${t`For`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
+        ${row.type === "credit_note" ? badge(t`credit note`) : ""}
       <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
       <td>${row.usr_id ? userLink(node, row.usr_id, partyName(row)) : partyName(row)}
       <td style="white-space:nowrap">${row.date}
@@ -313,10 +314,12 @@ async function detail(node: Node, id: number) {
   const party = JSON.parse(String(row.party ?? "{}")) ?? {};
   const address = party.address ?? {};
   const open = Number(row.total) - Number(row.paid);
+  // a credit note asks for nothing: what is open on it, we owe
+  const credit = row.type === "credit_note";
   const [items, payments, ways] = await Promise.all([
     lines(app, id),
     app.db.query`SELECT * FROM payment WHERE ref = ${refOf(id)} ORDER BY id`,
-    row.status === "open" && open > 0
+    row.status === "open" && open > 0 && !credit
       ? methods(app, { amount: open, currency: String(row.currency), usrId: Number(row.usr_id) || undefined })
       : [],
   ]);
@@ -333,6 +336,9 @@ async function detail(node: Node, id: number) {
       ${field(t`Status`, status(row.status))}
       ${field(t`User`, userLink(node, row.usr_id, (await usersOf(app, [row])).get(Number(row.usr_id))))}
       ${field(t`Language`, row.lang)}
+      ${credit ? field(t`Corrects`, row.corrects
+        ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", row.corrects)
+        : "") : ""}
       ${field(t`Direction`, html.async`${direction(row.direction, "")}
         ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`}`)}
       ${field(t`Number`, row.number)}
@@ -359,7 +365,10 @@ async function detail(node: Node, id: number) {
         ? html.async`<button data-action=remind data-id="${id}"
           u2-confirm="${t`Send the next reminder to its user now?`}">${t`Remind`}</button>`
         : ""}
-      ${row.status === "open" && !Number(row.paid) ? html.async`<button data-action=revise data-id="${id}"
+      ${!credit && row.direction === "out" && row.status !== "canceled"
+        ? html.async`<button data-action=credit data-id="${id}">${t`Credit note`}</button>`
+        : ""}
+      ${row.status === "open" && !Number(row.paid) && !credit ? html.async`<button data-action=revise data-id="${id}"
         u2-confirm="${t`Revise it? It is canceled, and a draft with its content opens.`}">${t`Revise`}</button>` : ""}
       ${row.status !== "canceled" ? html.async`<button data-action=cancel data-id="${id}"
         u2-confirm="${t`Cancel this invoice? Its number stays used.`}">${t`Cancel`}</button>` : ""}
@@ -412,10 +421,16 @@ async function detail(node: Node, id: number) {
       <button>${t`Create payment`}</button>
     </form>` : ""}
     ${row.status === "open" && open > 0 ? html.async`<form data-record="${id}">
-      ${t`Received by hand`}: <input name=amount inputmode=decimal size=8 placeholder="${money(open, row.currency)}">
+      ${credit ? t`Paid back` : t`Received by hand`}:
+      <input name=amount inputmode=decimal size=8 placeholder="${money(open, row.currency)}">
       <input name=provider value=bank size=8>
       <button>${t`Record`}</button>
     </form>` : ""}
+    ${credit && row.status === "open" && open > 0 && row.usr_id && linked(app, "fin.payment.credit")
+      ? html.async`<button data-action=tocredit data-id="${id}"
+        u2-confirm="${t`Put what is owed onto the customer's credit?`}">
+        ${t`To credit`} ${money(open, row.currency)}</button>`
+      : ""}
   </div>
   ${row.direction === "in" ? original(node, row) : ""}
   ${row.direction === "in" ? "" : html.async`<div class=u2-card style="flex:1 1 auto; min-width:40rem">

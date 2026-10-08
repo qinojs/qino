@@ -15,6 +15,7 @@
   "Our invoice {0} of {1} was due on {2}.": "Nasza faktura {0} z dnia {1} była płatna do {2}.",
   "Payable within {0} days": "Płatne w ciągu {0} dni",
   "Payment reminder": "Przypomnienie o płatności",
+  "Please find our credit note {0} attached.": "W załączeniu przesyłamy fakturę korygującą {0}.",
   "Please find our invoice {0} attached.": "W załączeniu przesyłamy fakturę {0}.",
   "Pos.": "Poz.",
   "Quantity": "Ilość",

@@ -162,3 +162,25 @@ Deno.test("an issued invoice is mailed with its PDF, in its language, to the add
     assert((await app.db.row`SELECT file_id FROM invoice WHERE id = ${id}`)?.file_id);
   });
 });
+
+Deno.test("a credit note is made from an invoice, and what it owes goes onto the customer's credit", async () => {
+  await withFinApp([...FIN, "fin.payment.credit"], async (app) => {
+    const node = backendNode(app, "/backend/invoices");
+    const base = "http://qino.test/backend/invoices";
+    const as = (run: () => Promise<unknown>) => inRequest(app, base, run);
+    const usr = Number(await app.db.table("usr").insert({
+      active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",
+    }));
+    const lines = [{ name: "Design", price: 10000 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", usrId: usr, lines })))?.id);
+    await as(() => api(node, { record: { id: String(id), amount: "", provider: "bank" } })); // paid in full
+    const made = await as(() => api(node, { action: { action: "credit", id: String(id) } })) as Answer;
+    const note = Number(new URL(made.url!, "http://-").searchParams.get("invoice"));
+    await issue(app, note);
+    const page = String(await as(() => inRequest(app, `${base}?invoice=${note}`, () => render(node))));
+    for (const part of ["data-action=tocredit", "Paid back"]) assertStringIncludes(page, part);
+    await as(() => api(node, { action: { action: "tocredit", id: String(note) } }));
+    assertEquals((await app.db.row`SELECT status FROM invoice WHERE id = ${note}`)?.status, "paid");
+    assertEquals(Number(await app.db.one`SELECT SUM(amount) FROM payment_credit WHERE usr_id = ${usr}`), 10000);
+  });
+});

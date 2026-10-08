@@ -2,7 +2,7 @@ import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { fileOf, toMinor } from "@qino/qino/cms.backend.superuser.fin";
 import {
-  attach, cancel, create, document, issue, mail, payerOf, print, refOf, remove, revise, update,
+  attach, cancel, create, creditNote, document, issue, mail, payerOf, print, refOf, remove, revise, update,
 } from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
@@ -65,6 +65,30 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true, message: `${await t`Issued as`} ${issued?.number ?? ""}` };
     }
     if (action === "cancel") return { ok: !!await cancel(app, Number(id)), message: await t`Canceled.` };
+    if (action === "credit") {
+      return { ok: true, url: await pageUrl({ invoice: await creditNote(app, Number(id)) }) };
+    }
+    // what a credit note owes, onto the customer's credit: paid out, through the credit provider
+    if (action === "tocredit") {
+      const note = await app.db.row`SELECT * FROM invoice WHERE id = ${Number(id)}`;
+      const owed = Number(note?.total) - Number(note?.paid);
+      if (note?.type !== "credit_note" || !note.usr_id || owed <= 0) {
+        return { ok: false, message: await t`Nothing owed` };
+      }
+      const { add } = await import("@qino/qino/fin.payment.credit");
+      const currency = String(note.currency);
+      const usrId = Number(note.usr_id);
+      const payment = await record(app, {
+        direction: "out",
+        provider: "credit",
+        amount: owed,
+        currency,
+        ref: refOf(Number(id)),
+        usrId,
+      });
+      await add(app, usrId, { amount: owed, currency, text: String(note.number ?? ""), ref: `fin.payment:${payment}` });
+      return { ok: true, message: await t`Put onto the credit.` };
+    }
     if (action === "print") return { ok: !!await print(app, Number(id)), message: await t`Printed.` };
     if (action === "remind") {
       const { remind } = await import("@qino/qino/fin.invoice.reminder");
@@ -99,8 +123,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const invoice = await app.db.row`SELECT * FROM invoice WHERE id = ${Number(id)}`;
       if (!invoice) return { ok: false, message: await t`No invoice` };
       const currency = String(invoice.currency);
+      // money comes in for our invoices; it goes out for the others, and for a credit note of ours
+      const credit = invoice.type === "credit_note";
       await record(app, {
-        direction: invoice.direction === "out" ? "in" : "out",
+        direction: (invoice.direction === "out") !== credit ? "in" : "out",
         provider: provider || "bank",
         amount: amount ? toMinor(amount, currency) : Number(invoice.total) - Number(invoice.paid),
         currency,

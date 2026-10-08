@@ -12,6 +12,7 @@
   "files": [
     "README.md",
     "dbschema.json",
+    "lib/credit.ts",
     "lib/document.ts",
     "lib/number.ts",
     "lib/totals.ts",
