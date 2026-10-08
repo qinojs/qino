@@ -11,6 +11,7 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     if (form.matches("[data-create]")) execute(e.submitter, { create: fields(form) });
     else if (form.dataset.request) execute(e.submitter, { request: { ...fields(form), id: form.dataset.request } });
     else if (form.dataset.record) execute(e.submitter, { record: { ...fields(form), id: form.dataset.record } });
+    else if (form.dataset.send) execute(e.submitter, { send: { ...fields(form), id: form.dataset.send } });
     else if (form.dataset.attach) {
       e.preventDefault();
       files(form.elements.file).then(([file]) => execute(e.submitter, { attach: { id: form.dataset.attach, file } }));

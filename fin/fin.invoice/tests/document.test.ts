@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 
 import { withFinApp } from "../../tests/app.ts";
 import { attach, create, document, issue, print } from "../mod.ts";
@@ -104,5 +104,17 @@ Deno.test("a language the site has no texts for falls back to its default one", 
   await withApp(async (app) => {
     const doc = await document(app, Number((await issue(app, await create(app, { ...invoice, lang: "ru" })))?.id));
     assertStringIncludes(doc, `<html lang="${app.languages.def}">`);
+  });
+});
+
+Deno.test("one rate shows below the lines, no tax shows no tax rows", async () => {
+  await withApp(async (app) => {
+    const of = (lines: { name: string; price: number; taxRate?: number }[]) =>
+      create(app, { ...invoice, lines }).then((id) => document(app, id));
+    const one = await of([{ name: "Design", price: 10000, taxRate: 8.1 }]);
+    assert(!one.includes('class="n rate"')); // no column: the rate is in the tax row
+    assertStringIncludes(one, "Tax 8.1 %");
+    const none = await of([{ name: "Design", price: 10000 }]);
+    for (const part of ["Net", "Tax "]) assert(!none.includes(`<th colspan=4>${part}`), part);
   });
 });

@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, linked, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
 import { balances } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";
 
@@ -19,6 +19,33 @@ export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
   const id = Number(url.searchParams.get("entry"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
+}
+
+/** The Swiss VAT return of the period, figure by figure, and how it is computed. */
+async function vat(app: App, from: string, to: string, currency: string): Promise<HtmlString> {
+  const t = app.t;
+  const { vatReturn } = await import("@qino/qino/fin.accounting.ch");
+  const r = await vatReturn(app, { from, to });
+  const row = (figure: string, label: unknown, ...amounts: number[]) => html.async`<tr>
+    <td>${figure}
+    <th>${label}
+    ${amounts.map((a) => html`<td style="text-align:end">${money(a, currency)}`)}`;
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`VAT return`} <small>${from} – ${to}</small></div>
+    <table class=u2-table style="white-space:nowrap">
+      ${row("200", t`Total turnover`, r.turnover)}
+      ${r.exempt ? row("220", t`Exempt or abroad`, r.exempt) : ""}
+      ${r.rates.filter((x) => x.rate)
+        .map((x) => row(x.figure, html.async`${t`Turnover at`} ${x.rate} %`, x.turnover, x.tax))}
+      ${r.saldo
+        ? row("322", html.async`${t`Turnover with tax at the net tax rate`} ${r.saldo.rate} %`,
+          r.saldo.gross, r.saldo.tax)
+        : row("400", t`Input tax`, r.input)}
+      ${row(r.payable < 0 ? "510" : "500", html.async`<b>${r.payable < 0 ? t`Credit` : t`Payable`}</b>`,
+        Math.abs(r.payable))}
+    </table>
+    <settings-editor source="/api/core/settings/fin.accounting.ch"></settings-editor>
+  </div>`;
 }
 
 /** Balance sheet and result of a period, the journal, an entry by hand, the chart. */
@@ -48,6 +75,7 @@ async function overview(node: Node, url: URL) {
     <div class=-head>${t`Result`} <small>${from} – ${to}</small></div>
     ${statement(app, accounts, ["expense"], ["income"], currency)}
   </div>
+  ${linked(app, "fin.accounting.ch") ? vat(app, from, to, currency) : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Journal`}</div>
     <form method=get>

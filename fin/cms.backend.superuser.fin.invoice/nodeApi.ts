@@ -1,7 +1,9 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { fileOf, toMinor } from "@qino/qino/cms.backend.superuser.fin";
-import { attach, cancel, create, document, issue, print, refOf, remove, revise, update } from "@qino/qino/fin.invoice";
+import {
+  attach, cancel, create, document, issue, mail, print, refOf, remove, revise, update,
+} from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
 
@@ -41,6 +43,17 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         lang: String(u.lang ?? ""),
       };
     }
+    // by mail, with its PDF: to the address typed, else to its user's
+    if (vars.send) {
+      const { id, email } = vars.send as Record<string, string>;
+      const invoice = await app.db.row`SELECT usr_id FROM invoice WHERE id = ${Number(id)}`;
+      const to = email ? { email } : invoice?.usr_id ? { usr: Number(invoice.usr_id) } : undefined;
+      if (!to) return { ok: false, message: await t`No address to send it to` };
+      const { send } = await import("@qino/qino/messaging.email");
+      const reached = await send(app, to, await mail(app, Number(id)));
+      if (!reached) return { ok: false, message: await t`Not sent: no email address` };
+      return { ok: true, message: await t`Sent.` };
+    }
     if (vars.attach) {
       const { id, file } = vars.attach as { id: string; file: { name: string; type: string; data: string } };
       await attach(app, Number(id), await fileOf(app, file));
@@ -53,6 +66,13 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     if (action === "cancel") return { ok: !!await cancel(app, Number(id)), message: await t`Canceled.` };
     if (action === "print") return { ok: !!await print(app, Number(id)), message: await t`Printed.` };
+    if (action === "remind") {
+      const { remind } = await import("@qino/qino/fin.invoice.reminder");
+      const level = await remind(app, Number(id));
+      return level
+        ? { ok: true, message: `${await t`Reminder sent`}: ${level}` }
+        : { ok: false, message: await t`No reminder sent: no user with an email address, or all are sent` };
+    }
     if (action === "remove") {
       await remove(app, Number(id));
       return { ok: true, url: await pageUrl({}) };
@@ -107,10 +127,11 @@ function valuesOf(v: Record<string, string>) {
     return {
       name: v[key],
       description: v[`description${i}`] || undefined,
+      account: v[`account${i}`] || undefined,
       quantity: v[`quantity${i}`] ? decimal(v[`quantity${i}`]) : 1,
       unit: v[`unit${i}`] || undefined,
       price: toMinor(v[`price${i}`] || 0, currency),
-      taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : 0,
+      taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : undefined, // empty: the default
     };
   });
   const keys = ["streetAddress", "postalCode", "addressLocality", "addressRegion", "addressCountry"];

@@ -1,7 +1,7 @@
 {
   "properties": {
     "usr": {
-      "description": "The postal address of a user, where invoices go (schema.org PostalAddress)",
+      "description": "The postal address of a user, where invoices go (schema.org PostalAddress), and their bank account",
       "additionalProperties": {
         "properties": {
           "street_address": {
@@ -27,6 +27,12 @@
             "type": "string",
             "maxLength": 2,
             "description": "ISO 3166-1 alpha-2"
+          },
+          "iban": {
+            "type": "string",
+            "maxLength": 34,
+            "x-index": true,
+            "description": "IBAN to pay them into, without spaces; finds the supplier of a received invoice"
           }
         }
       }

@@ -32,6 +32,11 @@ Settings `fin.accounting.accounts.*` name an account per role; a country module 
 | money out for a received invoice | payable, fees | money |
 | invoice canceled | its entry is reversed | |
 
+An invoice line may name its own account (`invoice_line.account`, a column this module adds):
+revenue or expense is then split by the accounts of the lines, the rest on the role's account; tax
+stays per rate on its account. With prices including tax, a line's net is taken out by its rate,
+and the last account takes the rounding.
+
 The invoice's file goes with its entry as receipt — the original of a received invoice. A file
 attached after the invoice was booked is not added to the entry (yet).
 

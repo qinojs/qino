@@ -34,6 +34,12 @@ const userLabel = (u: Row) =>
 const userLink = (node: Node, id: unknown, label = "") =>
   id ? rowLink(node, "cms.backend.superuser.fin.party", "usr", id, label || `#${id}`) : "";
 
+/** A user's email address, the main one first; empty without one. */
+const emailOf = async (app: App, id: unknown) => id
+  ? String(await app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${Number(id)} AND type = 'email'
+    ORDER BY main DESC` ?? "")
+  : "";
+
 /** The users of these rows, by id. */
 async function usersOf(app: App, rows: Row[]) {
   const ids = [...new Set(rows.map((row) => Number(row.usr_id)).filter(Boolean))];
@@ -148,19 +154,39 @@ const typed = (minor: unknown, currency: unknown) =>
   String(Number(minor) / 10 ** currencies.decimals(String(currency || "CHF")));
 
 /** One editable line; `i` keeps the fields of a line together. */
-const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown = "CHF") =>
+/** Where lines may be booked, where bookkeeping is installed: the default account, and the others. */
+type Accounts = { fallback: string; list: Row[] };
+
+async function accountsOf(app: App, direction: unknown): Promise<Accounts | undefined> {
+  if (!linked(app, "fin.accounting")) return;
+  const out = direction === "out";
+  const fallback = String(await app.settings["fin.accounting"].accounts[out ? "revenue" : "expense"] ?? "");
+  const list = await app.db.query`SELECT number, name FROM accounting_account
+    WHERE type = ${out ? "income" : "expense"} ORDER BY number`;
+  return { fallback, list };
+}
+
+/** What every line of a draft shares: its currency, the default tax rate, where it may be booked. */
+type Shared = { currency: unknown; rate: unknown; taxed: boolean; accounts?: Accounts };
+
+const lineRow = (app: App, i: string | number, line: Row, { currency, rate, taxed, accounts }: Shared) =>
   html.async`<tr draggable=false>
   <td><button type=button class=u2-unstyle u2-draghandle title="${app.t`Reorder`}">
     <u2-ico icon=drag_indicator>⠿</u2-ico></button>
   <td class=-item><input name="name${i}" value="${line.name}">
     <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}">${line.description}</textarea>
+    ${accounts ? html.async`<select name="account${i}" class=-account title="${app.t`Account`}">
+      <option value="">${app.t`Default account`} ${accounts.fallback}
+      ${accounts.list.map((a) => html`<option value="${a.number}"${
+      String(a.number) === String(line.account ?? "") ? html.raw(" selected") : ""}>${a.number} ${a.name}`)}
+    </select>` : ""}
   <td><input name="quantity${i}" inputmode=decimal placeholder=1 style="width:4rem"
     value="${line.quantity == null ? "" : Number(line.quantity)}">
   <td><input name="unit${i}" style="width:3.5rem" value="${line.unit}">
   <td><input name="price${i}" inputmode=decimal style="width:6rem"
     value="${line.price == null ? "" : typed(line.price, currency)}">
-  <td><input name="taxRate${i}" inputmode=decimal style="width:3.5rem"
-    value="${line.tax_rate == null ? "" : Number(line.tax_rate)}">
+  ${taxed ? html`<td><input name="taxRate${i}" inputmode=decimal style="width:3.5rem" placeholder="${rate ?? 0}"
+    value="${line.tax_rate == null ? "" : Number(line.tax_rate)}">` : ""}
   <td><button type=button data-remove-line class=u2-unstyle title="${app.t`Remove`}">
     <u2-ico icon=delete>✕</u2-ico></button>`;
 
@@ -185,6 +211,16 @@ async function editor(node: Node, row: Row) {
     document(app, id).catch((e) => `<p>${e.message}</p>`),
     node.page().then((page) => page.url()),
   ]);
+  const rate = await app.settings["fin.invoice"].taxRate;
+  const shared = {
+    currency: row.currency,
+    rate,
+    // without a VAT ID we are not liable and show no tax: no column, unless a line has a rate; a
+    // received invoice shows the tax its sender charged
+    taxed: row.direction === "in" || !!(await app.settings.identity.organization.vatID || rate ||
+      items.some((l) => Number(l.tax_rate))),
+    accounts: await accountsOf(app, row.direction),
+  };
   // side by side while there is room: the form left, the invoice it makes right
   return html.async`<div class=u2-flex style="width:100%">
   <div class=u2-card style="flex:1 1 40%; min-width:26rem">
@@ -201,10 +237,10 @@ async function editor(node: Node, row: Row) {
           ? html.async`${t`Due`} <input type=date name=due value="${row.due}">`
           : html.async`${t`Payment term (days)`}
             <input type=number name=term min=0 value="${row.term}" placeholder="${term}">`}
-        ${t`Language`} <select name=lang>${languages.map((l) =>
-          html`<option${l === lang ? html.raw(" selected") : ""}>${l}`)}</select>
         ${t`User`} <select name=usrId data-user><option value="">—${users.map((u) => html`<option value="${u.id}"${
           Number(u.id) === Number(row.usr_id) ? html.raw(" selected") : ""}>${userLabel(u)}`)}</select>
+        ${t`Language`} <select name=lang>${languages.map((l) =>
+          html`<option${l === lang ? html.raw(" selected") : ""}>${l}`)}</select>
         ${t`Name`} <input name=name value="${party.name}">
         ${t`Street`} <input name=streetAddress value="${address.streetAddress}">
         ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode}">
@@ -223,12 +259,12 @@ async function editor(node: Node, row: Row) {
           <th>${t`Quantity`}
           <th>${t`Unit`}
           <th>${t`Unit price`}
-          <th>${t`Tax %`}
+          ${shared.taxed ? html.async`<th>${t`Tax %`}` : ""}
           <th>
         <tbody data-lines u2-dropzone>
-          ${items.map((line, i) => lineRow(app, i, line, row.currency))}${lineRow(app, items.length)}
+          ${items.map((line, i) => lineRow(app, i, line, shared))}${lineRow(app, items.length, {}, shared)}
       </table></div>
-      <template data-line>${lineRow(app, "__i__")}</template>
+      <template data-line>${lineRow(app, "__i__", {}, shared)}</template>
       <button type=button data-add-line>${t`Add line`}</button>
       <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text}</textarea></u2-fields>
     </form>
@@ -278,7 +314,9 @@ async function detail(node: Node, id: number) {
   const [items, payments, ways] = await Promise.all([
     lines(app, id),
     app.db.query`SELECT * FROM payment WHERE ref = ${refOf(id)} ORDER BY id`,
-    row.status === "open" && open > 0 ? methods(app, { amount: open, currency: String(row.currency) }) : [],
+    row.status === "open" && open > 0
+      ? methods(app, { amount: open, currency: String(row.currency), usrId: Number(row.usr_id) || undefined })
+      : [],
   ]);
   // while a payment is under way it asks for the rest itself; a second would ask twice
   const waiting = payments.some((p) => p.status === "pending" || p.status === "processing");
@@ -292,12 +330,13 @@ async function detail(node: Node, id: number) {
     <table class=u2-table>
       ${field(t`Status`, status(row.status))}
       ${field(t`User`, userLink(node, row.usr_id, (await usersOf(app, [row])).get(Number(row.usr_id))))}
+      ${field(t`Language`, row.lang)}
       ${field(t`Direction`, html.async`${direction(row.direction, "")}
         ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`}`)}
       ${field(t`Number`, row.number)}
       ${field(t`Date`, row.date)}
       ${field(t`Due`, due(app, row))}
-      ${field(t`Language`, row.lang)}
+      ${Number(row.reminder) ? field(t`Reminded`, html.async`${row.reminder}× · ${row.reminded}`) : ""}
       ${field(t`Net`, money(row.net, row.currency))}
       ${field(t`Tax`, money(row.tax, row.currency))}
       ${field(t`Total`, html`<b>${money(row.total, row.currency)}</b>`)}
@@ -314,11 +353,20 @@ async function detail(node: Node, id: number) {
         ? html.async`<button data-action=print data-id="${id}">${t`Print PDF`}</button>`
         : ""}
       ${pdfUrl && row.direction === "out" ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}
+      ${row.status === "open" && row.direction === "out" && linked(app, "fin.invoice.reminder")
+        ? html.async`<button data-action=remind data-id="${id}"
+          u2-confirm="${t`Send the next reminder to its user now?`}">${t`Remind`}</button>`
+        : ""}
       ${row.status === "open" && !Number(row.paid) ? html.async`<button data-action=revise data-id="${id}"
         u2-confirm="${t`Revise it? It is canceled, and a draft with its content opens.`}">${t`Revise`}</button>` : ""}
       ${row.status !== "canceled" ? html.async`<button data-action=cancel data-id="${id}"
         u2-confirm="${t`Cancel this invoice? Its number stays used.`}">${t`Cancel`}</button>` : ""}
     </div>
+    ${row.direction === "out" && row.status !== "canceled" && linked(app, "messaging.email") ? html.async`
+    <form data-send="${id}">
+      <input type=email name=email value="${await emailOf(app, row.usr_id)}" placeholder="${t`Email address`}">
+      <button>${t`Send by email`}</button>
+    </form>` : ""}
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Party`}</div>

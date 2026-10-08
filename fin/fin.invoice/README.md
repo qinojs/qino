@@ -49,7 +49,8 @@ ISO 4217 gives it), and finer where a unit costs less: `23.45` is 0.2345 CHF per
 and totals are whole minor units. Prices are net — or include tax with `taxIncluded: true`, and
 the tax is taken out.
 Tax is rounded once per rate, not per line. The rate comes from the caller: VAT, GST and sales tax
-look alike here, and which rate applies is the consumer's business.
+look alike here, and which rate applies is the consumer's business. A line without one takes
+`fin.invoice.taxRate` (empty: no tax).
 
 ## Numbers
 

@@ -24,6 +24,7 @@ export const settingsSchema = {
       description: "Format of outgoing numbers: {year} and {n}, e.g. R{year}-{n}",
     },
     term: { type: "integer", default: 30, description: "Days until due, unless the invoice says otherwise" },
+    taxRate: { type: "number", description: "Tax rate in percent of a line that names none; empty: no tax" },
     method: {
       type: "string",
       description: "Payment an issued invoice asks for, e.g. qrbill — its slip then goes with the invoice",

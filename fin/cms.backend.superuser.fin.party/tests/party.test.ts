@@ -8,7 +8,7 @@ import { render } from "../render.ts";
 type Answer = { ok: boolean; message?: string; url?: string };
 
 Deno.test("customers and suppliers follow from the invoices; a new one keeps its address here", async () => {
-  await withFinApp(["fin.payment", "fin.invoice"], async (app) => {
+  await withFinApp(["fin.payment", "fin.invoice", "fin.payment.credit"], async (app) => {
     const node = backendNode(app, "/backend/parties");
     const as = (url: string, run: () => Promise<unknown>) => inRequest(app, url, run);
     const base = "http://qino.test/backend/parties";
@@ -33,6 +33,10 @@ Deno.test("customers and suppliers follow from the invoices; a new one keeps its
     await issue(app, await create(app, { currency: "CHF", lines, usrId: id })); // it buys too
     assertStringIncludes(String(await as(`${base}?role=customer`, () => render(node))), "Druck AG");
     page = String(await as(`${base}?usr=${id}`, () => render(node)));
-    for (const part of ['value="Seeweg 2"', "R-1", `data-save="${id}"`]) assertStringIncludes(page, part);
+    const parts = ['value="Seeweg 2"', "R-1", `data-save="${id}"`, `data-credit="${id}"`];
+    for (const part of parts) assertStringIncludes(page, part);
+    const goodwill = { id: String(id), amount: "12.50", currency: "chf", text: "Goodwill" };
+    await as(base, () => api(node, { credit: goodwill }));
+    assertStringIncludes(String(await as(`${base}?usr=${id}`, () => render(node))), "Goodwill");
   });
 });

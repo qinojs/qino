@@ -3,6 +3,11 @@ import { finPanel } from "@qino/m/cms.backend.superuser.fin/pub/panel.js";
 cms.initNode("backend.superuser.fin.invoice.inbox", (el) => {
   const { execute, files } = finPanel(el);
 
+  el.addEventListener("click", (e) => {
+    const button = e.target.closest("[data-supplier]");
+    if (button) execute(button, { supplier: button.dataset.supplier });
+  });
+
   el.addEventListener("submit", async (e) => {
     const form = e.target;
     if (!form.matches("[data-read]")) return;

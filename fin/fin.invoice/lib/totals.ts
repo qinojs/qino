@@ -9,6 +9,8 @@ export type Line = {
   unit?: string;
   price: number;
   taxRate?: number;
+  /** Where bookkeeping books it (fin.accounting keeps the column); none: its default account. */
+  account?: string;
 };
 
 /**
@@ -36,4 +38,5 @@ export const lineOf = (row: Row): Line => ({
   unit: row.unit == null ? undefined : String(row.unit),
   price: Number(row.price),
   taxRate: Number(row.tax_rate),
+  account: row.account ? String(row.account) : undefined,
 });

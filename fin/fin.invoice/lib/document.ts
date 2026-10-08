@@ -1,11 +1,11 @@
 // deno-lint-ignore-file no-explicit-any -- party and organization are plain data of any shape
-import { Ctx, html, requestStorage } from "@qino/qino";
+import { Ctx, fs, html, requestStorage } from "@qino/qino";
 import { currency as currencies } from "@qino/qino/locale.currency";
 import { file } from "@qino/qino/identity";
 
 import { lineOf, totals } from "./totals.ts";
 
-import type { App, Row } from "@qino/qino";
+import type { App, DbFile, Row } from "@qino/qino";
 
 /** The invoice as an HTML document, in its own language — the default a site may replace. Sender
  *  is `identity.organization`, the recipient the invoice's `party`; both have the same shape. */
@@ -15,17 +15,20 @@ export async function document(
   lines: Row[],
   slips: () => Promise<string[]> = () => Promise.resolve([]),
 ): Promise<string> {
-  // a language the site has no texts for is written in its default one, until t`` knows any language
-  const lang = app.languages.all.includes(String(invoice.lang)) ? String(invoice.lang) : app.languages.def;
+  const lang = languageOf(app, invoice);
   return await inLang(app, lang, async () => {
     const t = app.t;
     const sender = await organization(app);
     const party = JSON.parse(String(invoice.party ?? "{}")) ?? {};
-    const locale = `${lang}-${String(sender.address?.addressCountry ?? "").toUpperCase()}`.replace(/-$/, "");
+    const locale = localeOf(lang, sender);
     const money = moneyFormat(locale, String(invoice.currency));
     const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
     const day = (date: unknown) => date ? dates.format(new Date(`${date}T00:00:00Z`)) : "";
     const sum = totals(lines.map(lineOf), Boolean(invoice.tax_included));
+    // no tax: no tax rows; one rate: it shows below the lines, a column only where rates differ
+    const taxed = sum.rates.some((r) => r.rate);
+    const perLine = sum.rates.length > 1;
+    const span = perLine ? 5 : 4;
     const logo = await logoUrl(app);
     // the country only counts across a border, as on any letter
     const country = (o: Record<string, any>) => String(o.address?.addressCountry ?? "").toUpperCase();
@@ -94,24 +97,24 @@ export async function document(
     <th>${t`Description`}
     <th class="n quantity">${t`Quantity`}
     <th class="n price">${t`Unit price`} <span class=currency>${invoice.currency}</span>
-    <th class="n rate">${t`Tax`}
+    ${perLine ? html.async`<th class="n rate">${t`Tax`}` : ""}
     <th class="n amount">${t`Amount`} <span class=currency>${invoice.currency}</span>
   <tbody>${lines.map((line, i) => html`<tr>
     <td class=pos>${i + 1}
     <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
     <td class="n quantity">${new Intl.NumberFormat(locale).format(Number(line.quantity))} ${line.unit}
     <td class="n price">${money(Number(line.price))}
-    <td class="n rate">${Number(line.tax_rate)} %
+    ${perLine ? html`<td class="n rate">${Number(line.tax_rate)} %` : ""}
     <td class="n amount">${money(Number(line.amount))}`)}
   <tfoot>
-    <tr>
-      <th colspan=5>${invoice.tax_included ? t`Total excluding tax` : t`Net`}
-      <td class=n>${money(sum.net)}
+    ${taxed ? html.async`<tr>
+      <th colspan=${span}>${invoice.tax_included ? t`Total excluding tax` : t`Net`}
+      <td class=n>${money(sum.net)}` : ""}
     ${sum.rates.filter((r) => r.rate).map((r) => html.async`<tr>
-      <th colspan=5>${t`Tax`} ${r.rate} % ${t`on`} ${money(r.net)}
+      <th colspan=${span}>${t`Tax`} ${r.rate} % ${t`on`} ${money(r.net)}
       <td class=n>${money(r.tax)}`)}
     <tr class=total>
-      <th colspan=5>${t`Total`} ${invoice.currency}
+      <th colspan=${span}>${t`Total`} ${invoice.currency}
       <td class=n>${money(sum.total)}
 </table>
 ${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}
@@ -163,6 +166,49 @@ async function logoUrl(app: App) {
   const path = await logo?.url({ h: 160 }).catch(() => undefined);
   return path ? new URL(path, await app.url()).href : undefined;
 }
+
+/** The mail an invoice goes out with, in its language: the subject, a few lines, the PDF. A
+ *  `reminder` (1, 2 …) asks for what is still open: a payment reminder, then the reminders. */
+export async function mail(app: App, invoice: Row, pdf: DbFile, reminder = 0) {
+  const lang = languageOf(app, invoice);
+  return await inLang(app, lang, async () => {
+    const t = app.t;
+    const sender = await organization(app);
+    const locale = localeOf(lang, sender);
+    const currency = String(invoice.currency);
+    const amount = new Intl.NumberFormat(locale, { style: "currency", currency })
+      .format((Number(invoice.total) - Number(invoice.paid)) / 10 ** currencies.decimals(currency));
+    const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
+    const due = invoice.due ? dates.format(new Date(`${invoice.due}T00:00:00Z`)) : "";
+    const date = invoice.date ? dates.format(new Date(`${invoice.date}T00:00:00Z`)) : "";
+    const text = reminder
+      ? [
+        await t`Our invoice ${invoice.number} of ${date} was due on ${due}.`,
+        await t`Amount due: ${amount}.`,
+        await t`If you have paid it in the meantime, please disregard this message.`,
+      ]
+      : [
+        await t`Please find our invoice ${invoice.number} attached.`,
+        due ? await t`Amount due: ${amount}, payable by ${due}.` : await t`Amount due: ${amount}.`,
+      ];
+    // the first reminder is a friendly one; the ones after it are counted
+    const title = await (reminder === 1 ? t`Payment reminder` : reminder ? t`Reminder ${reminder - 1}` : t`Invoice`);
+    const attachment = { name: pdf.name, type: pdf.mime, content: fs.bytes(pdf.path) };
+    return {
+      title: `${title} ${invoice.number}`,
+      text: [...text, "", sender.legalName || sender.name].join("\n"),
+      attachments: [attachment],
+    };
+  });
+}
+
+/** A language the site has no texts for is written in its default one, until t`` knows any language. */
+const languageOf = (app: App, invoice: Row) =>
+  app.languages.all.includes(String(invoice.lang)) ? String(invoice.lang) : app.languages.def;
+
+/** The invoice's language, in the sender's country: `de-CH`. */
+const localeOf = (lang: string, sender: Record<string, any>) =>
+  `${lang}-${String(sender.address?.addressCountry ?? "").toUpperCase()}`.replace(/-$/, "");
 
 /** Run `fn` with translations in `lang`: a context of its own, without a request. */
 async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {

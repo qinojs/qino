@@ -85,3 +85,23 @@ Deno.test("another currency is left to be booked by hand", async () => {
     assertEquals(await saldo(app), {});
   });
 });
+
+Deno.test("an invoice line may name its account; the others book on the default one", async () => {
+  await withApp(async (app) => {
+    const lines = [
+      { name: "Design", price: 100000, taxRate: 8.1 },
+      { name: "Book", price: 3990, taxRate: 2.6, account: "3200" },
+    ];
+    await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines }));
+    assertEquals(await saldo(app), { "1100": 112194, "2200": -8204, "3200": -3990, "3400": -100000 });
+    // prices with tax: the net is split by the rate, and still adds up
+    const gross = [
+      { name: "Rent", price: 108100, taxRate: 8.1 },
+      { name: "Power", price: 10260, taxRate: 2.6, account: "6000" },
+    ];
+    const bill = { direction: "in" as const, number: "R-9", currency: "CHF", date: "2026-10-02", taxIncluded: true };
+    await issue(app, await create(app, { ...bill, lines: gross }));
+    const s = await saldo(app);
+    assertEquals([s["4400"], s["6000"], s["1170"], s["2000"]], [100000, 10000, 8360, -118360]);
+  });
+});

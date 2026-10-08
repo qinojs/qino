@@ -15,7 +15,24 @@ const ROLES = {
   vatInput: "1170",
   fees: "6940",
   money: "1020",
-  moneyBy: "cash:1000, saferpay:1091",
+  moneyBy: "cash:1000, saferpay:1091, credit:2030",
+};
+
+export const settingsSchema = {
+  properties: {
+    vat: {
+      description: "The VAT return",
+      properties: {
+        method: {
+          type: "string",
+          enum: ["effective", "saldo"],
+          default: "effective",
+          description: "VAT method: effective (tax less input tax) or saldo (net tax rate on turnover)",
+        },
+        rate: { type: "number", description: "Net tax rate in percent, for the saldo method" },
+      },
+    },
+  },
 };
 
 /**

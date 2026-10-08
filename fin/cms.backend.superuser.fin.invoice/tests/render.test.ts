@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
-import { create } from "@qino/qino/fin.invoice";
+import { create, issue } from "@qino/qino/fin.invoice";
+import { setTransport } from "@qino/qino/messaging.email";
 
 import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
@@ -136,5 +137,28 @@ Deno.test("a user is picked and gives the invoice their name, address and langua
       name: "Muster AG", streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern",
       addressRegion: "", addressCountry: "CH", lang: "de",
     });
+  });
+});
+
+Deno.test("an issued invoice is mailed with its PDF, in its language, to the address typed", async () => {
+  await withFinApp([...FIN, "messaging", "messaging.email"], async (app) => {
+    app.languages.setLangs(["en", "de"]);
+    await app.settings["messaging.email"].address("office@atelier.test");
+    const sent: Record<string, unknown>[] = [];
+    setTransport(app, {
+      send: (m) => (sent.push(m as Record<string, unknown>), Promise.resolve({ successful: true })),
+    });
+    const node = backendNode(app, "/backend/invoices");
+    const lines = [{ name: "Design", price: 10000 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", lang: "de", lines })))?.id);
+    const base = "http://qino.test/backend/invoices";
+    const page = String(await inRequest(app, `${base}?invoice=${id}`, () => render(node)));
+    assertStringIncludes(page, `data-send="${id}"`);
+    const to = { id: String(id), email: "kunde@example.com" };
+    const answer = await inRequest(app, base, () => api(node, { send: to }));
+    assertEquals((answer as Answer).ok, true, (answer as Answer).message);
+    assertEquals(String(sent[0].subject), `Rechnung ${new Date().getFullYear()}-1`);
+    assertEquals((sent[0].attachments as unknown[]).length, 1); // the PDF, printed for it
+    assert((await app.db.row`SELECT file_id FROM invoice WHERE id = ${id}`)?.file_id);
   });
 });

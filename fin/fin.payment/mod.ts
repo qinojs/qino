@@ -12,7 +12,8 @@ import type { App, Ctx, Row } from "@qino/qino";
 type Status = "pending" | "processing" | "paid" | "failed" | "canceled" | "expired" | "refunded";
 
 /** What a payment is about, so a provider can tell which methods fit. Amounts in minor units. */
-type Offer = { amount: number; currency: string; country?: string };
+/** What a payment would be: providers offer what fits. `usrId`: whose — credit is theirs. */
+type Offer = { amount: number; currency: string; country?: string; usrId?: number };
 
 /** A way to pay as a provider offers it; `name` is unique within the provider. */
 type Method = { name: string; label: string };

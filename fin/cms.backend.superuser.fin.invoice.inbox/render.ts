@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Row } from "@qino/qino";
@@ -29,6 +29,7 @@ export async function render(node: Node): Promise<HtmlString> {
     ${drafts.length ? html.async`<div style="overflow:auto; padding:0"><table class=u2-table>
       <thead><tr>
         <th>${t`Supplier`}
+        <th>${t`User`}
         <th>${t`Number`}
         <th>${t`Date`}
         <th>${t`Total`}
@@ -36,6 +37,9 @@ export async function render(node: Node): Promise<HtmlString> {
         <th>${t`Received`}
       <tbody>${drafts.map((row) => html.async`<tr u2-href>
         <td><a href="${invoices({ invoice: row.id })}">${supplier(row)}</a>
+        <td>${row.usr_id
+          ? rowLink(node, "cms.backend.superuser.fin.party", "usr", row.usr_id)
+          : html.async`<button data-supplier="${row.id}">${t`Find or create`}</button>`}
         <td>${row.number}
         <td>${row.date}
         <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}

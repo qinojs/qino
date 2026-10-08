@@ -192,3 +192,13 @@ Deno.test("a draft can be thrown away; an issued invoice is revised into a new d
   await record(app, { direction: "in", provider: "bank", amount: 100, currency: "CHF", ref: refOf(paid) });
   await assertRejects(() => revise(app, paid), Error, "nothing was paid");
 });
+
+Deno.test("a line without a tax rate takes the default one", async () => {
+  const { app } = await setup({ taxRate: 8.1 });
+  const id = await create(app, {
+    currency: "CHF",
+    lines: [{ name: "Design", price: 10000 }, { name: "Book", price: 1000, taxRate: 0 }],
+  });
+  assertEquals((await lines(app, id)).map((l) => Number(l.tax_rate)), [8.1, 0]);
+  assertEquals(Number((await row(app, id))?.tax), 810);
+});

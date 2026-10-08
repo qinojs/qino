@@ -7,12 +7,14 @@ import type { Node } from "@qino/qino/cms";
 /** What every fin app links from the module store. */
 const BASE = ["cron", "identity", "locale.currency", "pdf"];
 
-/** Boot an app with the base module fin and these, run `fn`, tear it down again. */
+/** Boot an app with the base module fin and these (fin's, or others by name), run `fn`, tear it down again. */
 export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>): Promise<void> {
   const dir = await Deno.makeTempDir({ prefix: "qino-fin-test-" });
   const app = new App({ dir, db: "sqlite::memory:" });
   for (const name of BASE) app.modules.add(new URL(`../../module/${name}/plugin.ts`, import.meta.url));
-  for (const name of ["fin", ...fin]) app.modules.add(new URL(`../${name}/plugin.ts`, import.meta.url));
+  // fin's own modules from this store, any other (messaging.email …) from the module store
+  const store = (name: string) => /^(fin|cms\.backend\.superuser\.fin)(\.|$)/.test(name) ? "../" : "../../module/";
+  for (const name of ["fin", ...fin]) app.modules.add(new URL(`${store(name)}${name}/plugin.ts`, import.meta.url));
   try {
     await app.init();
     await app.settings.core.url("https://shop.test/");

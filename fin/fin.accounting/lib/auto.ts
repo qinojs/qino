@@ -1,3 +1,5 @@
+import { lineOf, totals } from "@qino/qino/fin.invoice";
+
 import { book, reverse } from "../mod.ts";
 
 import type { App, Row } from "@qino/qino";
@@ -45,19 +47,22 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   if (previous !== "draft" || await booked(app, ref)) return;
   const { roles, currency, closed } = await setup(app);
   if (invoice.currency !== currency) return; // another currency: booked by hand (see README)
-  const [total, net, tax] = [Number(invoice.total), Number(invoice.net), Number(invoice.tax)];
+  const total = Number(invoice.total);
   const out = invoice.direction === "out";
-  const lines: Line[] = out
-    ? [
-      { account: roles.receivable, amount: total },
-      { account: roles.revenue, amount: -net },
-      { account: roles.vatDue, amount: -tax },
-    ]
-    : [
-      { account: roles.expense, amount: net },
-      { account: roles.vatInput, amount: tax },
-      { account: roles.payable, amount: -total },
-    ];
+  const items = await app.db.query`SELECT * FROM invoice_line WHERE invoice_id = ${invoice.id} ORDER BY sort`;
+  const { nets, rates } = split(items, Boolean(invoice.tax_included), out ? roles.revenue : roles.expense);
+  // every line carries its rate as tax code: what a tax report adds up
+  const code = (rate: number) => String(rate);
+  const sign = out ? -1 : 1;
+  const lines: Line[] = [
+    ...nets.map((n) => ({ account: n.account, amount: sign * n.amount, taxCode: code(n.rate) })),
+    ...rates.map((r) => ({
+      account: out ? roles.vatDue : roles.vatInput,
+      amount: sign * r.tax,
+      taxCode: code(r.rate),
+    })),
+    { account: out ? roles.receivable : roles.payable, amount: -sign * total },
+  ];
   // a role without an account: nothing is booked rather than half of it
   if (lines.some((line) => line.amount && !line.account)) return;
   const date = closed && String(invoice.date) <= closed ? today() : String(invoice.date || today());
@@ -65,6 +70,30 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   const files = invoice.file_id ? [await app.dbFiles.file(Number(invoice.file_id))] : [];
   const text = `${out ? "Invoice" : "Bill"} ${invoice.number ?? invoice.id}`;
   await book(app, { date, text, ref, lines, currency, files });
+}
+
+/**
+ * What an invoice books, by account and tax rate: the net of its lines — on their own account,
+ * else on `fallback` — and the tax per rate, as the invoice computed it. Within a rate the net is
+ * shared by the lines' amounts; the last account takes the rounding, so the entry adds up.
+ */
+function split(items: Row[], taxIncluded: boolean, fallback: string) {
+  const { amounts, rates } = totals(items.map(lineOf), taxIncluded);
+  const nets: { account: string; rate: number; amount: number }[] = [];
+  for (const { rate, net } of rates) {
+    const shares = new Map<string, number>();
+    items.forEach((item, i) => {
+      if (Number(item.tax_rate) !== rate) return;
+      const account = String(item.account || fallback);
+      shares.set(account, (shares.get(account) ?? 0) + amounts[i]);
+    });
+    const sum = [...shares.values()].reduce((a, b) => a + b, 0);
+    const parts = [...shares]
+      .map(([account, share]) => ({ account, rate, amount: Math.round(sum ? share / sum * net : 0) }));
+    parts[parts.length - 1].amount += net - parts.reduce((a, p) => a + p.amount, 0);
+    nets.push(...parts);
+  }
+  return { nets, rates };
 }
 
 /**

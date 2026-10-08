@@ -1,0 +1,16 @@
+{
+  "name": "fin.payment.credit",
+  "description": "Credit: a balance a user holds with us, and paying with it — a payment provider like any other.",
+  "dependencies": [
+    "fin.payment"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/provider.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

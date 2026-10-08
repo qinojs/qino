@@ -3,7 +3,7 @@ import { requestStorage, unixTime } from "@qino/qino";
 import { cancel as cancelPayment, create as pay, sample, slip } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
 
-import { document as htmlOf } from "./lib/document.ts";
+import { document as htmlOf, mail as mailOf } from "./lib/document.ts";
 import { draw } from "./lib/number.ts";
 import { lineOf, totals } from "./lib/totals.ts";
 
@@ -11,6 +11,7 @@ import type { App, DbFile, Row } from "@qino/qino";
 import type { Line } from "./lib/totals.ts";
 
 export type { Line } from "./lib/totals.ts";
+export { lineOf, totals } from "./lib/totals.ts";
 
 /** What an invoice holds. `party` is the other side as printed, shaped like `identity.organization`
  *  (`name`, `legalName`, `address` { `streetAddress`, `postalCode`, `addressLocality`,
@@ -184,6 +185,20 @@ export async function print(app: App, id: number, { html }: { html?: string } = 
 }
 
 /**
+ * The mail an issued invoice is sent with — subject, text and its PDF, in its language — for any
+ * channel to deliver (`messaging.email`). Printed first if it has no PDF yet. With `reminder`
+ * (1, 2 …) it asks for what is still open.
+ */
+export async function mail(app: App, id: number, { reminder = 0 } = {}) {
+  const invoice = await get(app, id);
+  if (!invoice || invoice.status === "draft" || invoice.direction !== "out") {
+    throw new Error("fin.invoice: only issued invoices are sent");
+  }
+  const pdf = invoice.file_id ? await app.dbFiles.file(Number(invoice.file_id)) : await print(app, id);
+  return await mailOf(app, invoice, pdf, reminder);
+}
+
+/**
  * Keep the original a received invoice came as — the receipt, kept unchanged. A draft may get
  * another one; an issued invoice only one where it has none yet, so what was booked stays.
  */
@@ -254,7 +269,10 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   }
   if (values.term !== undefined) fields.term = values.term;
   const taxIncluded = values.taxIncluded ?? Boolean(invoice?.tax_included);
-  const given = values.lines ?? (values.taxIncluded == null ? undefined : (await lines(app, id)).map(lineOf));
+  const stored = values.lines ?? (values.taxIncluded == null ? undefined : (await lines(app, id)).map(lineOf));
+  // a line without a rate takes the default one (fin.invoice.taxRate)
+  const rate = Number(await app.settings["fin.invoice"].taxRate ?? 0) || 0;
+  const given = stored?.map((line) => ({ ...line, taxRate: line.taxRate ?? rate }));
   if (given) {
     for (const line of given) {
       if (![line.price, line.quantity ?? 1, line.taxRate ?? 0].every(Number.isFinite)) {
@@ -275,6 +293,7 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
         unit: line.unit ?? null,
         price: line.price,
         tax_rate: line.taxRate ?? 0,
+        account: line.account || null, // kept where fin.accounting adds the column
         amount: sum.amounts[sort],
       });
     }

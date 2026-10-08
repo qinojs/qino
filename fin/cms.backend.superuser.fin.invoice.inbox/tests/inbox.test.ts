@@ -3,7 +3,7 @@ import { create } from "@qino/qino/fin.invoice";
 import { render as pdf } from "@qino/qino/pdf";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
-import { partsOf, valuesOf } from "../lib/read.ts";
+import { partsOf, supplierOf, valuesOf } from "../lib/read.ts";
 import api from "../nodeApi.ts";
 import { render } from "../render.ts";
 
@@ -63,5 +63,26 @@ Deno.test("drafts to check are listed; a total that does not match what was read
     assertStringIncludes(page, "Hosting AG");
     assertStringIncludes(page, '<small class=u2-badge style="background:var(--red)">CHF 100.00</small>'); // read 100, the lines make 99
     assert(page.includes("data-read"));
+  });
+});
+
+Deno.test("a read invoice finds its supplier by IBAN or name, else one is created by hand", async () => {
+  await withApp(async (app) => {
+    const known = Number(await app.db.table("usr").insert({
+      organization: "Hosting AG", given_name: "", family_name: "", active: 0, pw: "", superuser: 0,
+    }));
+    const read = { currency: "CHF", lines: [{ name: "Server", quantity: 1, unitPrice: 99, taxRate: 0 }], total: 99 };
+    assertEquals(await supplierOf(app, { name: "hosting ag" }), known);
+    assertEquals(await supplierOf(app, { name: "Elsewhere", iban: "CH9300762011623852957" }), null);
+
+    const node = backendNode(app, "/backend/inbox");
+    const supplier = { name: "Druck AG", iban: "CH93 0076 2011 6238 5295 7" };
+    const draft = await create(app, valuesOf({ ...read, supplier }));
+    const made = await inRequest(app, "http://qino.test/", () => api(node, { supplier: String(draft) }));
+    assertEquals((made as { ok: boolean }).ok, true);
+    const usr = await app.db.row`SELECT u.* FROM usr u JOIN invoice i ON i.usr_id = u.id WHERE i.id = ${draft}`;
+    assertEquals([usr?.organization, usr?.iban, usr?.active], ["Druck AG", "CH9300762011623852957", 0]);
+    // the next one from there finds it by its IBAN
+    assertEquals(await supplierOf(app, { name: "Druck", iban: "CH9300762011623852957" }), Number(usr?.id));
   });
 });

@@ -1,6 +1,9 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { amounts, badge, direction, money, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
+import {
+  amounts, badge, direction, linked, money, refLink, rowLink, status,
+} from "@qino/qino/cms.backend.superuser.fin";
+import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -115,11 +118,13 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
         ${input(t`Place`, "address_locality")}
         ${input(t`Region`, "address_region")}
         ${input(t`Country`, "address_country", " maxlength=2 size=3 placeholder=CH")}
+        ${input(t`IBAN`, "iban", " size=30")}
       </u2-fields>
       <button>${t`Save`}</button>
     </form>
     <p><small>${t`New invoices take this address; issued ones keep the one they were issued with.`}</small>
   </div>
+  ${linked(app, "fin.payment.credit") ? credit(node, id) : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
     ${invoices.length ? html.async`<table class=u2-table style="white-space:nowrap">
@@ -132,4 +137,30 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     </table>` : html.async`<p>${t`No invoices yet`}`}
   </div>
 </div>`;
+}
+
+/** A party's credit: the balance per currency, what moved, and adding to it by hand. */
+async function credit(node: Node, id: number): Promise<HtmlString> {
+  const app = node.app;
+  const t = app.t;
+  const { moves } = await import("@qino/qino/fin.payment.credit");
+  const rows = await moves(app, id);
+  const balances = await app.db.query`SELECT currency, SUM(amount) AS amount FROM payment_credit
+    WHERE usr_id = ${id} GROUP BY currency ORDER BY currency`;
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Credit`} ${amounts(balances)}</div>
+    ${rows.length ? html.async`<div style="overflow:auto; max-height:20rem; padding:0">
+      <table class=u2-table style="white-space:nowrap">${rows.map((m) => html.async`<tr>
+        <td>${u2.el.time(m.created, { narrow: true })}
+        <td style="text-align:end">${money(m.amount, m.currency)}
+        <td>${m.text}
+        <td>${refLink(node, m.ref)}`)}
+      </table></div>` : ""}
+    <form data-credit="${id}">
+      <input name=amount inputmode=decimal size=8 placeholder="${t`Amount`}" required>
+      <input name=currency value=CHF maxlength=3 size=4 required>
+      <input name=text placeholder="${t`Why`}">
+      <button>${t`Add credit`}</button>
+    </form>
+  </div>`;
 }

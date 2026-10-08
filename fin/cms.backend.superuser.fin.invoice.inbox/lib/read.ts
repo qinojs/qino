@@ -146,14 +146,24 @@ export function valuesOf(read: Read) {
   };
 }
 
-/** Read a received invoice into a draft, its file attached as receipt. */
+/** The user the supplier is: the one paid into this IBAN, else the organization of this name. */
+export async function supplierOf(app: App, party: { name?: string; iban?: string }): Promise<number | null> {
+  const byIban = party.iban ? await app.db.one`SELECT id FROM usr WHERE iban = ${party.iban}` : null;
+  const byName = byIban ?? (party.name
+    ? await app.db.one`SELECT id FROM usr WHERE LOWER(organization) = ${party.name.toLowerCase()} ORDER BY id`
+    : null);
+  return byName == null ? null : Number(byName);
+}
+
+/** Read a received invoice into a draft, its file attached as receipt; its supplier found where known. */
 export async function read(app: App, file: DbFile): Promise<number> {
   const parts = await partsOf(file);
   const answer = await structured<Read>(app, {
     messages: [{ role: "system", content: INSTRUCTION }, { role: "user", content: parts }],
     schema: SCHEMA,
   });
-  const id = await create(app, valuesOf(answer));
+  const values = valuesOf(answer);
+  const id = await create(app, { ...values, usrId: await supplierOf(app, values.party) });
   await attach(app, id, file);
   return id;
 }

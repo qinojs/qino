@@ -7,6 +7,7 @@ cms.initNode("backend.superuser.fin.party", (el) => {
     const form = e.target;
     if (form.matches("[data-create]")) execute(e.submitter, { create: fields(form) });
     else if (form.dataset.save) execute(e.submitter, { save: { ...fields(form), id: form.dataset.save } });
+    else if (form.dataset.credit) execute(e.submitter, { credit: { ...fields(form), id: form.dataset.credit } });
     else return; // the filter is a plain GET form
     e.preventDefault();
   });

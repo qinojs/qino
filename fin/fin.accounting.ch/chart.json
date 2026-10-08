@@ -8,6 +8,7 @@
   ["1500", "Maschinen und Apparate", "asset"],
   ["1520", "Büromaschinen, Informatik", "asset"],
   ["2000", "Verbindlichkeiten aus Lieferungen und Leistungen", "liability"],
+  ["2030", "Erhaltene Anzahlungen", "liability"],
   ["2200", "Geschuldete MWST", "liability"],
   ["2300", "Passive Rechnungsabgrenzung", "liability"],
   ["2400", "Bankverbindlichkeiten", "liability"],

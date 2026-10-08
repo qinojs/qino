@@ -4,6 +4,7 @@
   "dependencies": [
     "ai1",
     "cms.backend.superuser.fin.invoice",
+    "fin",
     "fin.invoice"
   ],
   "files": [
