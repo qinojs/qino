@@ -64,9 +64,6 @@ async function overview(node: Node, url: URL) {
     <form method=get>
       <input type=date name=from value="${from}"> – <input type=date name=to value="${to}">
       <button>${t`Show`}</button>
-      ${linked(app, "fin.accounting.export")
-        ? html.async`<button type=button data-export>${t`Export for the fiduciary`}</button>`
-        : ""}
       ${currency ? "" : html.async` ${badge(t`No book currency: nothing is booked.`, "--orange")}`}
     </form>
   </div>

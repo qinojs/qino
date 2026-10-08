@@ -22,12 +22,6 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const id = await book(app, { date: v.date, text: v.text, lines });
       return { ok: true, url: backend.toUrl(await (await node.page()).url(), { entry: id }) };
     }
-    // the books of the period for the fiduciary: a ZIP, handed over as base64 to be saved
-    if (vars.export) {
-      const { from, to } = vars.export as Record<string, string>;
-      const { exportBooks } = await import("@qino/qino/fin.accounting.export");
-      return { ok: true, name: `books-${from}-${to}.zip`, data: (await exportBooks(app, { from, to })).toBase64() };
-    }
     if (vars.reverse) {
       const id = await reverse(app, Number(vars.reverse));
       return { ok: true, url: backend.toUrl(await (await node.page()).url(), { entry: id }) };
