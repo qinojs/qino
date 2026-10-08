@@ -6,15 +6,13 @@ import type { App, Ctx } from "@qino/qino";
 
 export * as el from "./lib/el.ts";
 
-// Two u2 releases live on a page and never meet:
+// Two u2 releases live on a page, each under its own import-map name:
 //
-//   `@qino/u2/` in the import map is the one qino's own modules are written against — the panel, the
-//   editor, the backend. It is the pin in deno.json, and a site does not get to move it.
+//   `@qino/u2/` is the one qino's own modules are written against — the panel, the editor, the
+//   backend. It is the pin in deno.json, and a site does not get to move it.
 //
-//   A layout asks for its own with `assets(ctx, files, "1.4.6")`. That one is written into the page as
-//   a finished url and never touches the import map, so the two versions cannot collide.
-//
-//   A layout may hand its release to the contents as `@u2/`; `assets()` without a version follows it.
+//   `@u2/` is the page's: a layout sets it with `pin(ctx, "1.6.0")`, else it is qino's. Contents ask
+//   for files by that name only, so they follow whatever the layout pinned.
 //
 const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 
@@ -36,12 +34,19 @@ export function elements(ctx: Ctx, ...names: string[]): void {
   }
 }
 
-/** Link u2 files (paths below the root) and allow the origin. `u2/auto.js` loads whatever the markup
- *  needs; a finished layout can drop it. Without a version: the page's (`@u2/`), else qino's. */
-export function assets(ctx: Ctx, files: string[], version?: string): void {
-  const base = version ? root(version) : ctx.res.html.importMap.get("@u2/") ?? u2Root;
+const use = (ctx: Ctx, base: string) => {
+  ctx.res.html.importMap.set("@u2/", base);
   for (const directive of ["style-src", "script-src", "connect-src"] as const) ctx.res.csp[directive][base] = true;
-  for (const f of files) (f.endsWith(".js") ? ctx.res.html.scripts : ctx.res.html.styles).add(base + f);
+};
+
+/** The page's u2 release: what `@u2/` points to, for the layout's files and its contents'. */
+export const pin = (ctx: Ctx, version: string): void => use(ctx, root(version));
+
+/** Link u2 files (paths below the root) from the page's release. `u2/auto.js` loads whatever the
+ *  markup needs; a finished layout can drop it. */
+export function assets(ctx: Ctx, files: string[]): void {
+  if (!ctx.res.html.importMap.has("@u2/")) use(ctx, u2Root);
+  for (const f of files) (f.endsWith(".js") ? ctx.res.html.scripts : ctx.res.html.styles).add("@u2/" + f);
 }
 
 /** Settings are free text — keep a value inside the declaration it belongs to. */

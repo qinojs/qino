@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { cms_image2 } from "@qino/qino/cms.image2";
-//import { assets } from "@qino/qino/u2";
+import * as u2 from "@qino/qino/u2";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -8,7 +8,7 @@ import type { Node } from "@qino/qino/cms";
 const MAX_LENGTH = 100;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  //assets(ctx, ["el/masonry/masonry.css", "el/masonry/masonry.js", "attr/lightbox/lightbox.js"]);
+  u2.assets(ctx, ["el/masonry/masonry.css", "el/masonry/masonry.js", "attr/lightbox/lightbox.js", "class/width/width.css"]);
   const images: HtmlString[] = [];
   for (const file of (await node.files()).values()) {
     if (!file.mime.startsWith("image/")) continue;

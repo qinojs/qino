@@ -189,6 +189,7 @@ export class App extends Emitter<AppEvents> {
         // Send the document unless a body or Location was set — so a route can end with
         // `throw new Output()` and its page is sent.
         if (res.hasHtml && !res.body && !res.headers.has("Location")) {
+            res.html.resolve(); // before html-ready: its handlers (uncdn, csp) see real urls
             await this.fire("html-ready", { ctx });
             res.html.lang = ctx.lang;
             const qino = res.html.jsData.qino ??= {};

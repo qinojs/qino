@@ -6,7 +6,7 @@ header or hover menu.
 
 It pins its own u2 release (`U2_VERSION`), so a CMS update cannot change its look. The panel sets
 another one for the site (`u2Version` on the global layout page), once its CSS is checked against it.
-Contents load that release through the import map entry `@u2/`; the panel keeps CMS's own (`@qino/u2/`).
+Contents load that release through `u2.assets()` (import map entry `@u2/`); the panel keeps qino's own (`@qino/u2/`).
 
 | Content | Owner | Initial module |
 |---|---|---|

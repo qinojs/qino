@@ -26,7 +26,8 @@ const U2_CSS = [
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  u2.assets(ctx, U2_CSS, U2_VERSION);
+  u2.pin(ctx, U2_VERSION);
+  u2.assets(ctx, U2_CSS);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
