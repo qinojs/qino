@@ -223,35 +223,35 @@ async function editor(node: Node, row: Row) {
   };
   // side by side while there is room: the form left, the invoice it makes right
   return html.async`<div class=u2-flex style="width:100%">
-  <div class=u2-card style="flex:1 1 40%; min-width:26rem">
+  <form data-edit="${id}" class=u2-card style="flex:1 1 25rem; min-width:26rem">
     <div class=-head>
       <a href="${pageUrl}">${t`Invoices`}</a> › ${t`draft`} #${id},
       ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`} <small data-state></small>
     </div>
-    <form data-edit="${id}">
-      <u2-fields>
-        ${t`Currency`} <input name=currency value="${row.currency}" required maxlength=3 size=4>
-        ${row.direction === "in" ? html.async`${t`Number`} <input name=number value="${row.number}">` : ""}
-        ${t`Date`} <input type=date name=date value="${row.date}">
-        ${row.direction === "in" // a received invoice says when it is due; ours say within how many days
-          ? html.async`${t`Due`} <input type=date name=due value="${row.due}">`
-          : html.async`${t`Payment term (days)`}
-            <input type=number name=term min=0 value="${row.term}" placeholder="${term}">`}
-        ${t`User`} <select name=usrId data-user><option value="">—${users.map((u) => html`<option value="${u.id}"${
-          Number(u.id) === Number(row.usr_id) ? html.raw(" selected") : ""}>${userLabel(u)}`)}</select>
-        ${t`Language`} <select name=lang>${languages.map((l) =>
-          html`<option${l === lang ? html.raw(" selected") : ""}>${l}`)}</select>
-        ${t`Name`} <input name=name value="${party.name}">
-        ${t`Street`} <input name=streetAddress value="${address.streetAddress}">
-        ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode}">
-        ${t`Place`} <input name=addressLocality value="${address.addressLocality}">
-        ${t`Country`}
-        <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
-        ${t`VAT ID`} <input name=vatID value="${party.vatID}">
-        ${t`Prices include tax`}
-        <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
-      </u2-fields>
-      <div style="overflow:auto; max-height:70vh"><table class=u2-table>
+    <u2-fields>
+      ${t`Currency`} <input name=currency value="${row.currency}" required maxlength=3 size=4>
+      ${row.direction === "in" ? html.async`${t`Number`} <input name=number value="${row.number}">` : ""}
+      ${t`Date`} <input type=date name=date value="${row.date}">
+      ${row.direction === "in" // a received invoice says when it is due; ours say within how many days
+        ? html.async`${t`Due`} <input type=date name=due value="${row.due}">`
+        : html.async`${t`Payment term (days)`}
+          <input type=number name=term min=0 value="${row.term}" placeholder="${term}">`}
+      ${t`User`} <select name=usrId data-user><option value="">—${users.map((u) => html`<option value="${u.id}"${
+        Number(u.id) === Number(row.usr_id) ? html.raw(" selected") : ""}>${userLabel(u)}`)}</select>
+      ${t`Language`} <select name=lang>${languages.map((l) =>
+        html`<option${l === lang ? html.raw(" selected") : ""}>${l}`)}</select>
+      ${t`Name`} <input name=name value="${party.name}">
+      ${t`Street`} <input name=streetAddress value="${address.streetAddress}">
+      ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode}">
+      ${t`Place`} <input name=addressLocality value="${address.addressLocality}">
+      ${t`Country`}
+      <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
+      ${t`VAT ID`} <input name=vatID value="${party.vatID}">
+      ${t`Prices include tax`}
+      <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
+    </u2-fields>
+    <div style="overflow:auto; max-height:70vh; padding:0">
+      <table class=u2-table>
         <thead><tr>
           <th>
           <th>${t`Item`}
@@ -262,22 +262,25 @@ async function editor(node: Node, row: Row) {
           <th>
         <tbody data-lines u2-dropzone>
           ${items.map((line, i) => lineRow(app, i, line, shared))}${lineRow(app, items.length, {}, shared)}
-      </table></div>
+      </table>
+    </div>
+    <div>
       <template data-line>${lineRow(app, "__i__", {}, shared)}</template>
       <button type=button data-add-line>${t`Add line`}</button>
       <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text}</textarea></u2-fields>
-    </form>
+    </div>
     <div>
       <button data-action=issue data-id="${id}"
         u2-confirm="${t`Issue it? Its number is drawn now; then it cannot change.`}">${t`Issue`}</button>
       <button data-action=remove data-id="${id}" u2-confirm="${t`Throw this draft away?`}">${t`Delete draft`}</button>
     </div>
-  </div>
-  ${row.direction === "in" ? original(node, row) : html.async`<div class=u2-card style="flex:1 1 40%; min-width:26rem">
-    <div class=-head>${t`Preview`} <button type=button data-pdf>${t`View as PDF`}</button></div>
-    <iframe data-preview data-sheets srcdoc="${preview}" style="width:100%; height:70rem; border:0; padding:0"></iframe>
-  </div>`}
-</div>`;
+  </form>
+
+    ${row.direction === "in" ? original(node, row) : html.async`<div class=u2-card style="flex:1 1 40%; min-width:26rem">
+      <div class=-head>${t`Preview`} <button type=button data-pdf>${t`View as PDF`}</button></div>
+      <iframe data-preview data-sheets srcdoc="${preview}" style="width:100%; height:85vh; border:0; padding:0"></iframe>
+    </div>`}
+  </div>`;
 }
 
 /** A received invoice beside its editor: the original it came as, the receipt — or where to put it. */

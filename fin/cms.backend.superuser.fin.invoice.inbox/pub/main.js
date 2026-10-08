@@ -1,4 +1,4 @@
-import { finPanel } from "@qino/m/cms.backend.superuser.fin/pub/panel.js";
+import { finPanel } from "../../cms.backend.superuser.fin/pub/panel.js";
 
 cms.initNode("backend.superuser.fin.invoice.inbox", (el) => {
   const { execute, files } = finPanel(el);

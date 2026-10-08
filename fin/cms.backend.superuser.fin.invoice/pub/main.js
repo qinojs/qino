@@ -1,5 +1,5 @@
 import "@qino/m/core/pub/js/SettingsEditor.mjs";
-import { finPanel } from "@qino/m/cms.backend.superuser.fin/pub/panel.js";
+import { finPanel } from "../../cms.backend.superuser.fin/pub/panel.js";
 import { t } from "@qino/pub/t.js";
 
 cms.initNode("backend.superuser.fin.invoice", (el) => {
@@ -36,7 +36,7 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
       if (!doc?.scrollWidth) return;
       doc.style.zoom = "";
       const zoom = Math.min(1, frame.clientWidth / doc.scrollWidth);
-      frame.style.height = `${Math.ceil(doc.scrollHeight * zoom)}px`;
+      //frame.style.height = `${Math.ceil(doc.scrollHeight * zoom)}px`;
       doc.style.zoom = String(zoom);
     };
     frame.addEventListener("load", fit);
