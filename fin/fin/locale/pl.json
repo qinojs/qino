@@ -2,6 +2,8 @@
   "Amount": "Kwota",
   "Amount due: {0}, payable by {1}.": "Kwota do zapłaty: {0}, płatna do {1}.",
   "Amount due: {0}.": "Kwota do zapłaty: {0}.",
+  "Corrects invoice {0}": "Dotyczy faktury {0}",
+  "Credit note": "Faktura korygująca",
   "Date": "Data",
   "Description": "Opis",
   "draft": "szkic",

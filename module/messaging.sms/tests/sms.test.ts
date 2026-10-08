@@ -28,7 +28,7 @@ const makeApp = (db: Db) => ({
   // deno-lint-ignore no-explicit-any
 }) as any;
 
-function codeFrom(text: string): string {
+function codeFrom(text: string) {
   const code = text.match(/\d{6}/)?.[0];
   if (!code) throw new Error("verification code missing");
   return code;

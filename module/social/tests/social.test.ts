@@ -7,7 +7,7 @@ import { ingest, outbox, posts, ProviderError, publish, targets } from "../mod.t
 import type { App } from "@qino/qino";
 import type { Provider } from "../mod.ts";
 
-async function testApp(socialProvider: Provider | Provider[]): Promise<App> {
+async function testApp(socialProvider: Provider | Provider[]) {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;

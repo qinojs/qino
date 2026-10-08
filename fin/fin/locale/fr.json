@@ -2,6 +2,8 @@
   "Amount": "Montant",
   "Amount due: {0}, payable by {1}.": "Montant dû : {0}, payable jusqu’au {1}.",
   "Amount due: {0}.": "Montant dû : {0}.",
+  "Corrects invoice {0}": "Se rapporte à la facture {0}",
+  "Credit note": "Note de crédit",
   "Date": "Date",
   "Description": "Description",
   "draft": "brouillon",

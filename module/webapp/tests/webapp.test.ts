@@ -1,7 +1,7 @@
 import { $item, App } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-async function testApp(): Promise<{ app: App; dir: string }> {
+async function testApp() {
   const dir = await Deno.makeTempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir: dir, appUrl: "/site/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");

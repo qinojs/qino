@@ -19,7 +19,7 @@ async function days(app: App): Promise<number[]> {
 export async function remind(app: App, id: number): Promise<number> {
   const invoice = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
   const next = Number(invoice?.reminder ?? 0) + 1;
-  if (invoice?.status !== "open" || invoice.direction !== "out" || !invoice.usr_id) return 0;
+  if (invoice?.status !== "open" || invoice.direction !== "out" || invoice.type !== "invoice" || !invoice.usr_id) return 0;
   if (next > (await days(app)).length) return 0;
   const reached = await send(app, { usr: Number(invoice.usr_id) }, await mail(app, id, { reminder: next }));
   if (!reached) return 0;
@@ -39,7 +39,8 @@ export async function remindDue(app: App): Promise<number> {
   const due = sql.join(after.map((d, level) => sql`(reminder = ${level} AND due <= ${before(d)}
     AND (reminded IS NULL OR reminded <= ${before(d - (after[level - 1] ?? 0))}))`), " OR ");
   const ids = await app.db.col`SELECT id FROM invoice
-    WHERE status = 'open' AND direction = 'out' AND usr_id IS NOT NULL AND (${due}) ORDER BY id`;
+    WHERE status = 'open' AND direction = 'out' AND type = 'invoice' AND usr_id IS NOT NULL AND (${due})
+    ORDER BY id`;
   let sent = 0;
   for (const id of ids) {
     const level = await remind(app, Number(id)).catch((e) => (console.error("fin.invoice.reminder", id, e), 0));

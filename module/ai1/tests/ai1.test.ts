@@ -21,7 +21,7 @@ const fake: Adapter = {
 };
 
 /** `models`: name → its capabilities; without weights the first one comes first. */
-async function app(models: Record<string, string[]>, adapters: Record<string, Adapter> = {}): Promise<App> {
+async function app(models: Record<string, string[]>, adapters: Record<string, Adapter> = {}) {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.loadTables();
@@ -172,7 +172,7 @@ async function withFetch(handler: (url: string, init?: RequestInit) => Response 
 }
 
 /** An app whose models all run at one openai-type provider. */
-async function openaiApp(models: Record<string, string[]>, timeout = 60000): Promise<App> {
+async function openaiApp(models: Record<string, string[]>, timeout = 60000) {
   const testApp = await app(models);
   await testApp.db.exec`UPDATE ai1_provider SET type = 'openai', endpoint = 'https://oa.test/v1', timeout_ms = ${timeout}`;
   return testApp;

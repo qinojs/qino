@@ -84,9 +84,10 @@ export async function document(
   ${logo ? html`<img src="${logo}" alt="" style="max-height: 4em">` : ""}
 </header>
 <address class=to>${addressBlock(party, abroad)}${vat(party)}</address>
-<h1>${t`Invoice`}${invoice.number ? ` ${invoice.number}` : ""}${
+<h1>${invoice.type === "credit_note" ? t`Credit note` : t`Invoice`}${invoice.number ? ` ${invoice.number}` : ""}${
   invoice.status === "draft" ? html.async` (${t`draft`})` : ""}</h1>
 <p>
+  ${invoice.corrected ? html.async`${t`Corrects invoice ${invoice.corrected}`}<br>` : ""}
   ${t`Date`}: ${day(invoice.date)}<br>
   ${invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
   ${invoice.term == null ? "" : t`Payable within ${invoice.term} days`}

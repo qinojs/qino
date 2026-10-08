@@ -25,6 +25,10 @@ export const settingsSchema = {
     },
     term: { type: "integer", default: 30, description: "Days until due, unless the invoice says otherwise" },
     taxRate: { type: "number", description: "Tax rate in percent of a line that names none; empty: no tax" },
+    creditNumber: {
+      type: "string",
+      description: "Format of credit note numbers, e.g. G{year}-{n}; empty: they count on with the invoices",
+    },
     method: {
       type: "string",
       description: "Payment an issued invoice asks for, e.g. qrbill — its slip then goes with the invoice",

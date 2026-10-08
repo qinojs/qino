@@ -9,7 +9,7 @@ import type { App } from "@qino/qino";
 
 const to = { given_name: "Ada", family_name: "Lovelace <&>" };
 
-async function app(...rows: Record<string, unknown>[]): Promise<App> {
+async function app(...rows: Record<string, unknown>[]) {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.loadTables();

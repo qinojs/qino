@@ -15,6 +15,21 @@
             "maxLength": 3,
             "x-index": true
           },
+          "type": {
+            "type": "string",
+            "enum": ["invoice", "credit_note"],
+            "default": "invoice",
+            "maxLength": 16,
+            "x-index": true,
+            "description": "An invoice (EN 16931 380), or a credit note (381) that corrects one"
+          },
+          "corrects": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "invoice",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The invoice a credit note corrects (EN 16931 BT-25)"
+          },
           "number": {
             "type": "string",
             "maxLength": 64,

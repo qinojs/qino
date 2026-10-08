@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { attach, cancel, create, issue, refOf } from "@qino/qino/fin.invoice";
+import { attach, cancel, create, creditNote, issue, refOf, update } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
@@ -129,5 +129,20 @@ Deno.test("closing a year puts its result onto equity, closes the books, and ope
     assertEquals(await app.settings["fin.accounting"].closedUntil, "");
     assertEquals((await saldo(app, year))["2979"], undefined);
     await sale("2026-12-30", 1); // open again
+  });
+});
+
+Deno.test("a credit note books revenue and tax back; paying it back books the money out", async () => {
+  await withApp(async (app) => {
+    const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
+    await record(app, { direction: "in", provider: "bank", amount: 108100, currency: "CHF", ref: refOf(id) });
+    const note = await creditNote(app, id);
+    await update(app, note, { lines: [{ name: "Design", price: 20000, taxRate: 8.1 }] });
+    await issue(app, note);
+    // revenue and tax less the credit; the customer is owed it
+    assertEquals(await saldo(app), { "1020": 108100, "1100": -21620, "2200": -6480, "3400": -80000 });
+    await record(app, { direction: "out", provider: "bank", amount: 21620, currency: "CHF", ref: refOf(note) });
+    assertEquals(await saldo(app), { "1020": 86480, "2200": -6480, "3400": -80000 });
   });
 });

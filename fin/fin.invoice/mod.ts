@@ -5,6 +5,7 @@ import { render } from "@qino/qino/pdf";
 
 import { document as htmlOf, mail as mailOf } from "./lib/document.ts";
 import { draw } from "./lib/number.ts";
+import { credited, creditOf, settledOf } from "./lib/credit.ts";
 import { lineOf, totals } from "./lib/totals.ts";
 
 import type { App, DbFile, Row } from "@qino/qino";
@@ -46,11 +47,16 @@ export function payerOf(invoice: Row): Payer | undefined {
 }
 
 /** A new draft. `in` is an invoice received: it keeps the sender's `number`. */
-export async function create(app: App, values: Values & { direction?: "in" | "out" }): Promise<number> {
+export async function create(
+  app: App,
+  values: Values & { direction?: "in" | "out"; type?: "invoice" | "credit_note"; corrects?: number },
+): Promise<number> {
   const time = unixTime();
   return await app.db.transaction(async () => {
     const id = Number(await app.db.table("invoice").insert({
       direction: values.direction ?? "out",
+      type: values.type ?? "invoice",
+      corrects: values.corrects ?? null,
       status: "draft",
       currency: values.currency,
       lang: values.lang ?? requestStorage.getStore()?.lang ?? app.languages.def,
@@ -83,7 +89,9 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
     const s = app.settings["fin.invoice"];
     const date = String(invoice.date ?? today());
     const term = invoice.term ?? Number(await s.term ?? 30);
-    const format = String(await s.number || "{year}-{n}");
+    const credit = invoice.type === "credit_note";
+    // credit notes count on with the invoices, unless they have a format of their own
+    const format = String((credit && await s.creditNumber) || await s.number || "{year}-{n}");
     const number = invoice.direction === "out" ? await draw(app, format, date) : invoice.number;
     // a due date given stands; else it follows from the term, which is kept to be printed
     const fixed = invoice.due ? { due: invoice.due } : { due: addDays(date, Number(term)), term };
@@ -91,7 +99,8 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
     return status(app, invoice, "open");
   }).then(async (issued) => {
     // outside the transaction: a provider may be asked over the network
-    if (issued) await ask(app, issued).catch((e) => console.error(`fin.invoice: no payment asked for ${id}`, e));
+    if (issued?.type === "credit_note") await settle(app, Number(issued.corrects ?? id));
+    else if (issued) await ask(app, issued).catch((e) => console.error(`fin.invoice: no payment asked for ${id}`, e));
     return get(app, id);
   });
 }
@@ -151,7 +160,10 @@ export async function revise(app: App, id: number): Promise<number> {
 export async function cancel(app: App, id: number): Promise<Row | undefined> {
   const invoice = await get(app, id);
   if (!invoice || invoice.status === "canceled") return invoice;
-  return status(app, invoice, "canceled");
+  const canceled = await status(app, invoice, "canceled");
+  // a credit note taken back no longer counts on its invoice
+  if (invoice.type === "credit_note" && invoice.corrects) await settle(app, Number(invoice.corrects));
+  return canceled;
 }
 
 /** The invoice as an HTML document in its language — the default layout; a site with its own
@@ -162,8 +174,10 @@ export async function document(app: App, id: number): Promise<string> {
   const open = await app.db.col`
     SELECT id FROM payment WHERE ref = ${refOf(id)} AND status IN ('pending', 'processing') ORDER BY id`;
   const method = String(await app.settings["fin.invoice"].method ?? "");
-  // a draft has no payment yet: it shows the slip it will get, or says where it will be
-  const promised = invoice.status === "draft" && method && invoice.direction === "out";
+  const credit = invoice.type === "credit_note";
+  // a draft has no payment yet: it shows the slip it will get, or says where it will be; a credit
+  // note asks for nothing
+  const promised = invoice.status === "draft" && method && invoice.direction === "out" && !credit;
   // made in the document's language, so the slips speak it too
   const slips = async () => promised
     ? [await sample(app, method, {
@@ -173,7 +187,11 @@ export async function document(app: App, id: number): Promise<string> {
     })
       ?? `<p>${await app.t`The payment slip is added when the invoice is issued.`}</p>`]
     : (await Promise.all(open.map((payment) => slip(app, Number(payment))))).filter((s) => s != null);
-  return htmlOf(app, invoice, await lines(app, id), slips);
+  // a credit note names the invoice it corrects
+  const corrected = credit && invoice.corrects
+    ? await app.db.one`SELECT number FROM invoice WHERE id = ${invoice.corrects}`
+    : undefined;
+  return htmlOf(app, { ...invoice, corrected }, await lines(app, id), slips);
 }
 
 /**
@@ -192,6 +210,17 @@ export async function print(app: App, id: number, { html }: { html?: string } = 
   await app.db.table("invoice").update(id, { file_id: pdf.id, changed: unixTime() });
   if (old) await (await app.dbFiles.file(Number(old)))?.remove().catch(() => {});
   return pdf;
+}
+
+/** A draft credit note for an issued invoice of ours: its lines, to be cut down to what is given
+ *  back. Issued, it counts on the invoice as paid. */
+export async function creditNote(app: App, id: number): Promise<number> {
+  const invoice = await get(app, id);
+  const issued = invoice?.status === "open" || invoice?.status === "paid";
+  if (invoice?.type !== "invoice" || invoice.direction !== "out" || !issued) {
+    throw new Error("fin.invoice: credit notes are for issued invoices of ours");
+  }
+  return await create(app, creditOf(invoice, await lines(app, id)));
 }
 
 /**
@@ -234,9 +263,12 @@ export const lines = (app: App, id: number): Promise<Row[]> =>
 export async function settle(app: App, id: number): Promise<Row | undefined> {
   const invoice = await get(app, id);
   if (!invoice) return;
-  const paid = Number(await app.db.one`
+  // money comes in for our invoices, goes out for the others — and for our credit notes
+  const credit = invoice.type === "credit_note";
+  const payments = Number(await app.db.one`
     SELECT COALESCE(SUM(paid - refunded), 0) FROM payment
-    WHERE ref = ${refOf(id)} AND direction = ${invoice.direction === "out" ? "in" : "out"}`);
+    WHERE ref = ${refOf(id)} AND direction = ${(invoice.direction === "out") !== credit ? "in" : "out"}`);
+  const paid = credit ? await settledOf(app, invoice, payments) : payments + await credited(app, id);
   await app.db.exec`UPDATE invoice SET paid = ${paid}, changed = ${unixTime()} WHERE id = ${id}`;
   if (invoice.status !== "open" && invoice.status !== "paid") return get(app, id);
   const fresh = await status(app, invoice, paid >= Number(invoice.total) ? "paid" : "open");
@@ -244,6 +276,11 @@ export async function settle(app: App, id: number): Promise<Row | undefined> {
   if (fresh?.status === "paid") {
     const waiting = await app.db.col`SELECT id FROM payment WHERE ref = ${refOf(id)} AND status = 'pending'`;
     for (const payment of waiting) await cancelPayment(app, Number(payment));
+  }
+  // what its credit notes still owe follows from what was paid here
+  if (!credit) {
+    const credits = await app.db.col`SELECT id FROM invoice WHERE corrects = ${id} AND status IN ('open', 'paid')`;
+    for (const note of credits) await settle(app, Number(note));
   }
   return fresh;
 }

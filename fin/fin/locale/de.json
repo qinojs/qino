@@ -2,6 +2,8 @@
   "Amount": "Betrag",
   "Amount due: {0}, payable by {1}.": "Offener Betrag: {0}, zahlbar bis {1}.",
   "Amount due: {0}.": "Offener Betrag: {0}.",
+  "Corrects invoice {0}": "Bezug: Rechnung {0}",
+  "Credit note": "Gutschrift",
   "Date": "Datum",
   "Description": "Beschreibung",
   "draft": "Entwurf",

@@ -2,6 +2,8 @@
   "Amount": "金额",
   "Amount due: {0}, payable by {1}.": "应付金额：{0}，请于 {1} 前付款。",
   "Amount due: {0}.": "应付金额：{0}。",
+  "Corrects invoice {0}": "更正发票 {0}",
+  "Credit note": "贷项通知单",
   "Date": "日期",
   "Description": "描述",
   "draft": "草稿",

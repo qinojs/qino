@@ -5,7 +5,7 @@ import { fakeSettings, paymentDbSchema } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { totals } from "../lib/totals.ts";
-import { cancel, create, issue, lines, refOf, remove, revise, update } from "../mod.ts";
+import { cancel, create, creditNote, issue, lines, refOf, remove, revise, update } from "../mod.ts";
 import { init } from "../plugin.ts";
 
 import type { App, Row } from "@qino/qino";
@@ -203,4 +203,31 @@ Deno.test("a line without a tax rate takes the default one", async () => {
   });
   assertEquals((await lines(app, id)).map((l) => Number(l.tax_rate)), [8.1, 0]);
   assertEquals(Number((await row(app, id))?.tax), 810);
+});
+
+Deno.test("a credit note counts on its invoice as paid; what goes beyond is owed until paid back", async () => {
+  const { app } = await setup();
+  const status = async (id: number) => {
+    const r = await row(app, id);
+    return [r?.status, Number(r?.paid)];
+  };
+  const one = [{ name: "Design", price: 10000 }];
+  const id = Number((await issue(app, await create(app, { currency: "CHF", lines: one })))?.id);
+  const note = await creditNote(app, id);
+  assertEquals((await row(app, note))?.type, "credit_note");
+  await update(app, note, { lines: [{ name: "Design", price: 3000 }] }); // part of it given back
+  await issue(app, note);
+  assertEquals(await status(id), ["open", 3000]); // 70.00 left to pay
+  assertEquals(await status(note), ["paid", 3000]); // all of it taken off the invoice
+  await assertRejects(() => creditNote(app, note), Error, "issued invoices");
+
+  // paid in full already: a credit note on top is owed to the customer, until paid back
+  await record(app, { direction: "in", provider: "bank", amount: 7000, currency: "CHF", ref: refOf(id) });
+  assertEquals(await status(id), ["paid", 10000]);
+  const more = await creditNote(app, id);
+  await update(app, more, { lines: [{ name: "Goodwill", price: 2000 }] });
+  await issue(app, more);
+  assertEquals(await status(more), ["open", 0]);
+  await record(app, { direction: "out", provider: "bank", amount: 2000, currency: "CHF", ref: refOf(more) });
+  assertEquals(await status(more), ["paid", 2000]);
 });

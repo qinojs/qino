@@ -8,7 +8,7 @@ import { templatePlaceholders } from "../plugin.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
-async function app(): Promise<App> {
+async function app() {
   const db = new Db("sqlite::memory:");
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER)`;

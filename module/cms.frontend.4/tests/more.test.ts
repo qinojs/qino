@@ -7,7 +7,7 @@ import { api } from "../plugin.ts";
 import type { App, Ctx } from "@qino/qino";
 
 /** Just enough app for the email channel to journal and deliver. */
-async function makeApp(): Promise<App> {
+async function makeApp() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...fileDbSchema.properties, ...messagingDbSchema.properties, ...contactDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;

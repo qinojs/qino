@@ -53,7 +53,8 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   const { nets, rates } = split(items, Boolean(invoice.tax_included), out ? roles.revenue : roles.expense);
   // every line carries its rate as tax code: what a tax report adds up
   const code = (rate: number) => String(rate);
-  const sign = out ? -1 : 1;
+  // a credit note books the other way round: revenue and tax back, the claim reduced
+  const sign = (out ? -1 : 1) * (invoice.type === "credit_note" ? -1 : 1);
   const lines: Line[] = [
     ...nets.map((n) => ({ account: n.account, amount: sign * n.amount, taxCode: code(n.rate) })),
     ...rates.map((r) => ({
@@ -108,18 +109,19 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
   if (payment.currency !== currency) return;
   const invoice = await app.db.row`SELECT direction FROM invoice WHERE id = ${Number(id)}`;
   if (!invoice) return;
-  const out = invoice.direction === "out";
-  const counter = out ? roles.receivable : roles.payable;
+  // the claim is ours or theirs; the money comes in or goes out — a credit note's refund goes out
+  const counter = invoice.direction === "out" ? roles.receivable : roles.payable;
+  const incoming = payment.direction === "in";
   const money = moneyBy.get(String(payment.provider)) ?? roles.money;
   if (!counter || !money) return;
   const ref = `fin.payment:${payment.id}`;
   const moved = Number(payment.paid) - Number(payment.refunded);
   const fee = Number(payment.fee);
-  const dMoved = moved - (out ? -await sumOn(app, ref, counter) : await sumOn(app, ref, counter));
+  const dMoved = moved - (incoming ? -await sumOn(app, ref, counter) : await sumOn(app, ref, counter));
   const dFee = roles.fees ? fee - await sumOn(app, ref, roles.fees) : 0;
   if (!dMoved && !dFee) return;
   // in: the provider passes on what it did not keep; out: the bank takes its fee on top
-  const lines: Line[] = out
+  const lines: Line[] = incoming
     ? [
       { account: counter, amount: -dMoved },
       { account: money, amount: dMoved - dFee },

@@ -7,7 +7,7 @@ import { msgOf, record, titleOf } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
-async function app(): Promise<App> {
+async function app() {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL)`;
