@@ -59,7 +59,7 @@ function sign(owner: Session | App, resource: string, options: { ttl?: number } 
 
 function verify(sess: Session, resource: string, params: Params): SessionState;
 function verify(app: App, resource: string, params: Params): Promise<PermanentState>;
-function verify(owner: Session | App, resource: string, params: Params): SessionState | Promise<PermanentState> {
+function verify(owner: Session | App, resource: string, params: Params) {
   return isSession(owner) ? verifySession(owner, resource, params) : verifyPermanent(owner, resource, params);
 }
 

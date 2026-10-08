@@ -80,7 +80,7 @@ async function resolveNodeSpec(spec: string, node: Node) {
 // cms-link — stable internal href resolved from a node
 // ---------------------------------------------------------------------------
 
-async function renderCmsLink(el: El, spec: string, t: Tpl): Promise<string> {
+async function renderCmsLink(el: El, spec: string, t: Tpl) {
   const target = await resolveNodeSpec(spec, t.node);
   if (!target) {
     await warn(t.node, `unresolvable cms-link="${spec}" on <${el.tag}>`);
