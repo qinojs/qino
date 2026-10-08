@@ -11,10 +11,7 @@
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "in",
-              "out"
-            ],
+            "enum": ["in", "out"],
             "maxLength": 3,
             "x-index": true
           },
@@ -55,15 +52,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "pending",
-              "processing",
-              "paid",
-              "failed",
-              "canceled",
-              "expired",
-              "refunded"
-            ],
+            "enum": ["pending", "processing", "paid", "failed", "canceled", "expired", "refunded"],
             "maxLength": 16,
             "x-index": true
           },
@@ -111,16 +100,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "direction",
-          "provider",
-          "amount",
-          "currency",
-          "status",
-          "created",
-          "changed"
-        ]
+        "required": ["id", "direction", "provider", "amount", "currency", "status", "created", "changed"]
       }
     }
   }

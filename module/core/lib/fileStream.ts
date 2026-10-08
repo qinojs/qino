@@ -127,10 +127,10 @@ async function resolvePublicIps(url: URL) {
   return ips;
 }
 
-function pinnedFetch(url: URL, ip: string, init: RequestInit): Promise<Response> {
+function pinnedFetch(url: URL, ip: string, init: RequestInit) {
   const source = new Request(url, init);
   const family = isIP(ip) as 4 | 6;
-  return new Promise((resolve, reject) => {
+  return new Promise<Response>((resolve, reject) => {
     const req = (url.protocol === "https:" ? https : http).request(url, {
       method: source.method,
       headers: Object.fromEntries(source.headers),

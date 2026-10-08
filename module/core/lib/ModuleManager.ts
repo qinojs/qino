@@ -52,7 +52,7 @@ export type Plugin = Record<string, any> & {
   api?: Record<string, unknown>;
 };
 
-function mergeSchema(a: any, b: any): any {
+function mergeSchema(a: any, b: any) {
   for (const [k, v] of Object.entries(b ?? {})) {
     if (Array.isArray(v)) a[k] = [...new Set([...(Array.isArray(a[k]) ? a[k] : []), ...v])];
     else if (v && typeof v === "object") a[k] = mergeSchema(a[k] && typeof a[k] === "object" && !Array.isArray(a[k]) ? a[k] : {}, v);

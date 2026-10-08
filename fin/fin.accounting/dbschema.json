@@ -21,24 +21,13 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "asset",
-              "liability",
-              "equity",
-              "income",
-              "expense"
-            ],
+            "enum": ["asset", "liability", "equity", "income", "expense"],
             "maxLength": 16,
             "x-index": true,
             "description": "Assets, liabilities and equity are the balance sheet; income and expense the result"
           }
         },
-        "required": [
-          "id",
-          "number",
-          "name",
-          "type"
-        ]
+        "required": ["id", "number", "name", "type"]
       }
     },
     "accounting_entry": {
@@ -87,13 +76,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "date",
-          "text",
-          "currency",
-          "created"
-        ]
+        "required": ["id", "date", "text", "currency", "created"]
       }
     },
     "accounting_entry_line": {
@@ -126,12 +109,7 @@
             "description": "What a tax report adds it up under; the country module's vocabulary"
           }
         },
-        "required": [
-          "id",
-          "entry_id",
-          "account_id",
-          "amount"
-        ]
+        "required": ["id", "entry_id", "account_id", "amount"]
       }
     },
     "accounting_entry_file": {
@@ -151,10 +129,7 @@
             "x-qg-on-parent-delete": "cascade"
           }
         },
-        "required": [
-          "entry_id",
-          "file_id"
-        ]
+        "required": ["entry_id", "file_id"]
       }
     },
     "invoice_line": {

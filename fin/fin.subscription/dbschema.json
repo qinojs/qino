@@ -33,10 +33,7 @@
           },
           "interval_unit": {
             "type": "string",
-            "enum": [
-              "month",
-              "year"
-            ],
+            "enum": ["month", "year"],
             "default": "year",
             "maxLength": 5
           },
@@ -48,13 +45,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "price",
-          "currency",
-          "created"
-        ]
+        "required": ["id", "name", "price", "currency", "created"]
       }
     },
     "subscription": {
@@ -102,10 +93,7 @@
           },
           "interval_unit": {
             "type": "string",
-            "enum": [
-              "month",
-              "year"
-            ],
+            "enum": ["month", "year"],
             "maxLength": 5,
             "description": "Periods count in months or years; empty: the plan's, else years"
           },
@@ -134,12 +122,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "usr_id",
-          "start_date",
-          "created"
-        ]
+        "required": ["id", "usr_id", "start_date", "created"]
       }
     },
     "subscription_invoice": {
@@ -170,12 +153,7 @@
             "description": "Its invoice; a draft thrown away takes the period with it, to be billed again"
           }
         },
-        "required": [
-          "subscription_id",
-          "period_start",
-          "period_end",
-          "invoice_id"
-        ]
+        "required": ["subscription_id", "period_start", "period_end", "invoice_id"]
       }
     }
   }

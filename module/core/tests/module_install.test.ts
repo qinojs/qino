@@ -6,7 +6,7 @@ const corePlugin = new URL("../plugin.ts", import.meta.url).href;
 
 // Two throwaway modules: one the app declares, one installed at runtime. install() appends a line
 // to a file, so "ran once" survives the second boot.
-async function fixture(): Promise<string> {
+async function fixture() {
   const dir = await Deno.makeTempDir() + "/";
   for (const name of ["t.one", "t.two"]) {
     await Deno.mkdir(dir + name, { recursive: true });
@@ -93,7 +93,7 @@ Deno.test({
 });
 
 /** Two modules of one store, one needing the other. */
-async function chain(): Promise<string> {
+async function chain() {
   const dir = await Deno.makeTempDir() + "/";
   for (const [name, deps] of [["d.leaf", []], ["d.top", ["d.leaf"]]] as [string, string[]][]) {
     await Deno.mkdir(dir + name, { recursive: true });

@@ -13,7 +13,7 @@ const fakeNode = (dir: string, edit: boolean) => ({ id: 7, edit: () => edit, app
 
 const render = (node: any, ctx: any) => requestStorage.run(ctx, () => cms.node.render(node, { ctx, vars: {} }));
 
-async function withSource(source: string): Promise<string> {
+async function withSource(source: string) {
   const dir = await Deno.makeTempDir() + "/";
   await Deno.mkdir(`${dir}data/${name}/pub/`, { recursive: true });
   await Deno.writeTextFile(`${dir}data/${name}/7.ts`, source);

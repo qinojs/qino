@@ -75,8 +75,8 @@ Deno.test("the invoice's party is the debtor — with a whole address; else it i
     const address = { streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern" };
     const slipOf = async (party: Record<string, unknown>) => {
       const id = Number((await issue(app, await invoice(app, { currency: "CHF", lines, party })))?.id);
-      const order = { method: "qrbill", amount: 50000, currency: "CHF", ref: refOf(id), payer: payerOf((await app.db.row`
-        SELECT * FROM invoice WHERE id = ${id}`)!) };
+      const payer = payerOf((await app.db.row`SELECT * FROM invoice WHERE id = ${id}`)!);
+      const order = { method: "qrbill", amount: 50000, currency: "CHF", ref: refOf(id), payer };
       return (await slip(app, (await create(app, { ...order, return: "/" })).id))!;
     };
     const whole = await slipOf({ name: "Kunde AG", address });

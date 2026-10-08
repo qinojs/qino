@@ -101,7 +101,7 @@ async function cappedResponse(request: Request, maxSize: number) {
 }
 
 // deno-lint-ignore no-explicit-any
-function deepFreeze(v: any): any {
+function deepFreeze(v: any) {
   if (v && typeof v === "object") {
     for (const child of Object.values(v)) deepFreeze(child);
     Object.freeze(v);
