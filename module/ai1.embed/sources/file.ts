@@ -10,7 +10,7 @@ import type { Jobs } from "@qino/qino/cron";
 type File = Awaited<ReturnType<App["dbFiles"]["file"]>>;
 
 /** PNG and JPEG as they are, other images through the transform pipeline; undefined if none fits. */
-async function dataUrl(file: File): Promise<string | undefined> {
+async function dataUrl(file: File) {
   if (!await file.exists()) return;
   let { path, mime } = file;
   if (!["image/png", "image/jpeg"].includes(mime)) {

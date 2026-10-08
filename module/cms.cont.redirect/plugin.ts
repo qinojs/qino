@@ -17,7 +17,7 @@ const relatives: Record<string, (page: Node) => Promise<Node | undefined>> = {
   "__last-child__": async (page) => (await readablePages(page)).at(-1),
 };
 
-async function readablePages(page: Node): Promise<Node[]> {
+async function readablePages(page: Node) {
   const pages = [];
   for (const child of (await page.children({ type: "p" })).values()) if (await child.isReadable()) pages.push(child);
   return pages;

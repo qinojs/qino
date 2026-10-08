@@ -5,12 +5,12 @@ import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
+import type { Channel, Msg, Rendering, To } from "@qino/qino/messaging";
 
 export { call } from "./lib/bot.ts";
 
 /** Who a `to` means as chats — a chat exists only where someone linked their account. */
-async function recipients(app: App, to: To & { chat?: number | number[] }): Promise<Recipient[]> {
+async function recipients(app: App, to: To & { chat?: number | number[] }) {
   const chats = [to.chat ?? []].flat();
   const who = [
     ...selectors(to, "c.usr_id"),
@@ -31,7 +31,7 @@ export const send = (app: App, to: To & { chat?: number | number[] }, message: s
   dispatch(app, messagingChannel, to, message);
 
 /** The title becomes the first line, bold with markup. `parse_mode` follows from the rendered output. */
-function telegramText(msg: Msg, rendered: { text: string; html?: string }): { text: string; parse_mode?: string } {
+function telegramText(msg: Msg, rendered: { text: string; html?: string }) {
   const body = rendered.html ?? rendered.text;
   const head = msg.title ? (rendered.html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
   return { ...(rendered.html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };

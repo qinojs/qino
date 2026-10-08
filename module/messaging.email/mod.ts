@@ -6,13 +6,13 @@ import { defaults } from "./lib/settings.ts";
 import { createMessage, transport } from "./lib/transport.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Attachment, Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
+import type { Attachment, Channel, Msg, Rendering, To } from "@qino/qino/messaging";
 
 export { receive } from "./lib/inbound.ts";
 export { setTransport } from "./lib/transport.ts";
 
 /** Resolve `to` to mail addresses: one per user (main, else oldest). Users without one are skipped. */
-async function recipients(app: App, to: To & { email?: string | string[] }): Promise<Recipient[]> {
+async function recipients(app: App, to: To & { email?: string | string[] }) {
   const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
     address: value.trim().slice(0, 191), addressError: BAD_ADDRESS,
   });

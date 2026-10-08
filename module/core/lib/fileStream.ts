@@ -115,7 +115,7 @@ function isPublicIp(ip: string) {
 }
 
 /** Resolves the URL once and returns only globally reachable addresses. */
-async function resolvePublicIps(url: URL): Promise<string[]> {
+async function resolvePublicIps(url: URL) {
   // URL parsing normalizes decimal/hex/octal IPv4 forms to dotted notation.
   const host = url.hostname.replace(/^\[|\]$/g, "");
   const ips = isIP(host) ? [host] : (await Promise.all([
