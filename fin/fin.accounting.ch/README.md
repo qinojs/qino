@@ -3,7 +3,7 @@
 Swiss bookkeeping for [fin.accounting](../fin.accounting/). Installing it adds the main accounts of
 the Swiss SME chart (Kontenrahmen KMU) — not all of them, the ones a small business books on —
 and, where nothing is set yet, the accounts automatic entries use. The book keeps the main currency
-— CHF for an organization in Switzerland, without setting anything:
+([fin](../fin/)): CHF for an organization in Switzerland; where none follows, installing sets CHF.
 
 | Role | Account |
 |---|---|

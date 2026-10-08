@@ -1,7 +1,7 @@
 // The export lives in this page for now; once something else needs it — an API, a schedule — it
 // moves into a module of its own (fin.accounting.export).
 import { fs } from "@qino/qino";
-import { fromMinor } from "@qino/qino/fin";
+import { fromMinor, mainCurrency } from "@qino/qino/fin";
 import { balances } from "@qino/qino/fin.accounting";
 import { currency as currencies } from "@qino/qino/locale.currency";
 import { zipSync } from "fflate";
@@ -25,10 +25,10 @@ const safe = (name: string) => name.replace(/[^\w.-]+/g, "_");
  * under `receipts/`, named by their entry. Any bookkeeping software or spreadsheet reads it.
  */
 export async function exportBooks(app: App, { from, to }: { from: string; to: string }): Promise<Uint8Array> {
-  const book = String(await app.settings["fin.accounting"].currency ?? "") || "CHF";
-  // each in its own currency's decimals: an entry may be in another than the book's
+  const book = await mainCurrency(app) ?? "";
+  // each in its own currency's decimals: an entry may be in another than the book's; without one, as stored
   const amount = (minor: number, code: string) =>
-    minor ? fromMinor(minor, code).toFixed(currencies.decimals(code)) : "";
+    !minor ? "" : code ? fromMinor(minor, code).toFixed(currencies.decimals(code)) : String(minor);
   const lines = await app.db.query`
     SELECT e.id, e.date, e.text, e.currency, e.ref, e.reverses, a.number, a.name, l.amount, l.tax_code
     FROM accounting_entry e JOIN accounting_entry_line l ON l.entry_id = e.id

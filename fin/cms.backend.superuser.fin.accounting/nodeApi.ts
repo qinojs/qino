@@ -1,6 +1,7 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { mainCurrency } from "@qino/qino/fin";
 import { account, book, close, reopen, reverse } from "@qino/qino/fin.accounting";
 
 import type { Node } from "@qino/qino/cms";
@@ -13,7 +14,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   try {
     if (vars.book) {
       const v = vars.book as Record<string, string>;
-      const currency = String(await app.settings["fin.accounting"].currency ?? "");
+      const currency = await mainCurrency(app) ?? "";
       const lines = Object.keys(v).filter((key) => /^account\d+$/.test(key) && v[key]).map((key) => {
         const i = key.slice(7);
         const amount = parseAmount(v[`debit${i}`] || 0, currency) - parseAmount(v[`credit${i}`] || 0, currency);

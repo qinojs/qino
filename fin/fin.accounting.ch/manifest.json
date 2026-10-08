@@ -2,6 +2,7 @@
   "name": "fin.accounting.ch",
   "description": "Swiss bookkeeping: the main accounts of the SME chart (KMU) and where automatic entries go.",
   "dependencies": [
+    "fin",
     "fin.accounting"
   ],
   "files": [

@@ -1,3 +1,4 @@
+import { mainCurrency } from "@qino/qino/fin";
 import { account } from "@qino/qino/fin.accounting";
 
 import chart from "./chart.json" with { type: "json" };
@@ -38,11 +39,12 @@ export const settingsSchema = {
 
 /**
  * The main accounts of the Swiss SME chart (Kontenrahmen KMU) and, where nothing is set yet,
- * the roles of automatic entries. Accounts are only added or renamed,
+ * the roles of automatic entries — and CHF as main currency, where none follows from the organization. Accounts are only added or renamed,
  * never removed: what was booked stays.
  */
 export async function install({ app }: { app: App }): Promise<void> {
   for (const [number, name, type] of chart) await account(app, number, { name, type: type as AccountType });
+  if (!await mainCurrency(app)) await app.settings.fin.mainCurrency("CHF");
   const s = app.settings["fin.accounting"];
   for (const [role, number] of Object.entries(ROLES)) if (!await s.accounts[role]) await s.accounts[role](number);
 }

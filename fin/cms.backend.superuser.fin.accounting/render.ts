@@ -1,7 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
-import { addDays, addMonths, today } from "@qino/qino/fin";
+import { addDays, addMonths, mainCurrency, today } from "@qino/qino/fin";
 import { balances } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";
 
@@ -98,7 +98,7 @@ async function overview(node: Node, url: URL) {
   const year = new Date().getFullYear();
   const from = url.searchParams.get("from") || `${year}-01-01`;
   const to = url.searchParams.get("to") || `${year}-12-31`;
-  const currency = String(await app.settings["fin.accounting"].currency ?? "");
+  const currency = await mainCurrency(app) ?? "";
   const accounts = await balances(app, { from, to });
   const selected = (number: unknown) => url.searchParams.get("account") === number ? html.raw(" selected") : "";
   return html.async`<div class=u2-flex>
