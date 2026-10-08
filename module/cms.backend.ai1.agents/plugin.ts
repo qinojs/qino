@@ -24,7 +24,7 @@ const WEIGHTS = ["quality", "cost", "speed"];
 type Branch = { count: number; below: Map<string, Branch> };
 
 /** The tools an agent may use, as a tree of their names: the path, then the method. */
-function toolTree(tree: ApiTree): Branch {
+function toolTree(tree: ApiTree) {
   const root: Branch = { count: 0, below: new Map() };
   for (const { name } of walk(tree)) {
     let at = root;
