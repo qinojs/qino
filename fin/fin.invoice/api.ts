@@ -127,7 +127,8 @@ export const api: ApiTree = {
       },
       pdf: {
         get: {
-          description: "Where to download it as PDF: the print of an issued invoice, the original of a received one",
+          description: "Where to download it as PDF — the print of an issued invoice, the original of a received "
+          + "one — signed for this session, for some hours",
           access: Access.USER,
           execute: async ({ invoice }: Params, ctx: Ctx) => {
             const row = invoice as Row;
@@ -137,7 +138,8 @@ export const api: ApiTree = {
               ? await app.dbFiles.file(Number(row.file_id))
               : row.direction === "out" ? await print(app, Number(row.id)) : undefined;
             if (!await file?.exists()) throw new NotFoundError("no file");
-            return { name: file!.name, url: new URL(await file!.url(), await app.url()).href };
+            // signed for the session that asked: the download needs no other right
+          return { name: file!.name, url: new URL(await file!.url({ grant: "session" }), await app.url()).href };
           },
         },
       },

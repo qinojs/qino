@@ -104,6 +104,18 @@ Deno.test("create stores an incoming payment and hands the provider signed addre
   assertEquals(provider.urls!.back.replace("/return/", "/notify/"), provider.urls!.notify);
 });
 
+Deno.test("a slip still waiting for the same thing is that payment: one QR bill, not one per ask", async () => {
+  const { app } = await setup();
+  const first = await create(app, { ...order, ref: "fin.invoice:7" });
+  const again = await create(app, { ...order, ref: "fin.invoice:7" });
+  assertEquals(again.id, first.id);
+  assertEquals(again.redirect.includes("/payment/pay/"), true); // its slip
+  assertEquals((await create(app, { ...order, ref: "fin.invoice:8" })).id === first.id, false); // another thing
+  assertEquals((await create(app, { ...order, method: "fake.card", ref: "fin.invoice:7" })).id === first.id, false);
+  await app.db.exec`UPDATE payment SET status = 'expired' WHERE id = ${first.id}`;
+  assertEquals((await create(app, { ...order, ref: "fin.invoice:7" })).id === first.id, false); // over: a new one
+});
+
 Deno.test("create rejects amounts that are not minor units and unknown providers", async () => {
   const { app } = await setup();
   for (const amount of [0, -1, 49.9]) await assertRejects(() => create(app, { ...order, amount }));

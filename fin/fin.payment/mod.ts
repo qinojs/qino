@@ -86,7 +86,8 @@ export type Payer = { name: string; address?: Record<string, string> };
 /**
  * Start an incoming payment and get the address to send the payer to. `method` is
  * `provider.method` as `methods()` lists it, or just `provider` to let the payer choose there.
- * `return` is where the payer lands afterwards, paid or not.
+ * `return` is where the payer lands afterwards, paid or not. A payment with a slip still waiting
+ * for the same `ref` and method is that one: an invoice has one QR bill, not one per ask.
  */
 export async function create(
   app: App,
@@ -95,6 +96,10 @@ export async function create(
   const [name, method] = opt.method.split(/\.(.*)/);
   const selected = provider(app, name);
   if (!selected) throw new Error(`payment provider not available: ${name}`);
+  const waiting = selected.slip && opt.ref ? await app.db.one`SELECT id FROM payment
+    WHERE ref = ${opt.ref} AND provider = ${name} AND COALESCE(method, '') = ${method ?? ""}
+      AND status IN ('pending', 'processing') ORDER BY id DESC` : undefined;
+  if (waiting != null) return { id: Number(waiting), redirect: (await urls(app, Number(waiting))).pay };
   const id = await insert(app, opt, {
     direction: "in",
     provider: name,

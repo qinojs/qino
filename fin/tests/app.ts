@@ -59,7 +59,13 @@ export const backendNode = (app: App, url: string): Node => ({
 
 /** Run `fn` as user `userId` would call the api: in a request of theirs, signed in. */
 export async function asUser<T>(app: App, userId: number, fn: () => Promise<T>): Promise<T> {
-  const sess = { data: { core: { userId: () => userId, pending: () => undefined } } };
+  let grantKey = "";
+  const core = {
+    userId: () => userId,
+    pending: () => undefined,
+    grantKey: (v?: string) => v === undefined ? grantKey : (grantKey = v),
+  };
+  const sess = { data: { core } };
   const ctx = await testContext({ url: "https://shop.test/", app, userId, sess, set: { app } });
   return await requestStorage.run(ctx, fn);
 }

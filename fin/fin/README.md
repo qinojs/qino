@@ -30,6 +30,10 @@ whoever reaches them acts there, through `mod.ts`.
 | `fin.subscription` | `subscriptions`, `subscription/:id`, `cancel`, `plans` | subscribe, change, plans, `bill` |
 | `fin.accounting`, `fin.bank` … | — | entries, `reverse`, `close`, VAT, lines, `assign`, camt |
 
+For the pages of a site, the users' side is built from that api: `cms.cont.fin.my.invoices` (each as
+PDF, pay what is open), `.subscriptions` (when they renew, cancel), `.credit`, `.address`. Amounts
+and days in the browser come from `pub/money.js`.
+
 ## Decisions that may change
 
 - **Rights: superuser or owner.** Groups per area (read, manage) — a fiduciary who books, an
