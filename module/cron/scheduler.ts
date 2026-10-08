@@ -185,7 +185,7 @@ export class Scheduler {
   }
 }
 
-function of(app: App): Scheduler {
+function of(app: App) {
   const scheduler = schedulers.get(app);
   if (!scheduler) throw new Error('Module "cron" is not linked');
   return scheduler;
@@ -201,7 +201,7 @@ export function trigger(app: App, id: string): Promise<Result> { return of(app).
 export function status(app: App): ReturnType<Scheduler["status"]> { return of(app).status(); }
 
 /** Jobs declared by linked modules, sorted by id. */
-function collect(app: App, timeZone: string): RegisteredJob[] {
+function collect(app: App, timeZone: string) {
   const ret = [];
   for (const mod of app.modules.linked().sort((a, b) => a.name.localeCompare(b.name))) {
     const declared = mod.plugin.cron as Jobs | undefined;

@@ -120,7 +120,7 @@ function parse(msg: Uint8Array) {
   return { id, rcode: flags & 0x0f, values: values.sort(), ttl, authority: authority.sort() };
 }
 
-async function readExact(conn: Deno.Conn, size: number): Promise<Uint8Array | null> {
+async function readExact(conn: Deno.Conn, size: number) {
   const buf = new Uint8Array(size);
   for (let read = 0; read < size;) {
     const n = await conn.read(buf.subarray(read));

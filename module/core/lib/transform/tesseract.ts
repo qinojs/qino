@@ -9,7 +9,7 @@ const _resetAvailable = available.reset;
 available.reset = () => { _resetAvailable(); _langs = null; };
 
 /** All installed languages joined for -l (e.g. "deu+eng"), 'osd' excluded */
-function tesseractLangs(): Promise<string> {
+function tesseractLangs() {
   return _langs ??= (async () => {
     const { stdout } = await new Deno.Command('tesseract', { args: ['--list-langs'], stdout: 'piped', stderr: 'piped' }).output();
     return new TextDecoder().decode(stdout).split('\n').slice(1) // first line is a header

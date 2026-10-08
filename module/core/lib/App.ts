@@ -147,7 +147,7 @@ export class App extends Emitter<AppEvents> {
         return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.req.cleanup()));
     }
 
-    async #run(ctx: Ctx): Promise<Response> {
+    async #run(ctx: Ctx) {
         let res: Response;
         try {
             await initRequest(ctx);
@@ -162,7 +162,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Routing: explicit, ordered dispatch by request path. */
-    #route(ctx: Ctx): Promise<Response> {
+    #route(ctx: Ctx) {
         const uri = ctx.req.appPath;
 
         if (uri === "dbFile" || uri.startsWith("dbFile/"))
@@ -177,14 +177,14 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Everything that isn't dbFile or api: the modules render it. */
-    async #render(ctx: Ctx): Promise<Response> {
+    async #render(ctx: Ctx) {
         await this.fire("render", { ctx });
         // Nothing rendered: 404, not an empty 200 (also for /favicon.ico).
         if (!ctx.res.answered) ctx.res.status = 404;
         return this.#buildResponse(ctx);
     }
 
-    async #buildResponse(ctx: Ctx): Promise<Response> {
+    async #buildResponse(ctx: Ctx) {
         const res = ctx.res;
         // Send the document unless a body or Location was set — so a route can end with
         // `throw new Output()` and its page is sent.
@@ -206,7 +206,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Every response passes here. Adds default headers; headers already set are kept. */
-    async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">): Promise<Response> {
+    async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">) {
         for (const [name, value] of Object.entries(RESPONSE_HEADERS))
             if (!res.headers.has(name)) res.headers.set(name, value);
         await this.fire("response-ready", { ...meta, res });

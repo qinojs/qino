@@ -107,7 +107,7 @@ export class FileTransformer {
    *  pngquant, OCR engine) but are no options, so they go into the cache key separately — otherwise
    *  a newly installed tool would reuse old entries. Covers every entry of `capabilities`, plus the
    *  engines with their priority. */
-  async #toolchain(): Promise<string> {
+  async #toolchain() {
     const caps = FileTransformer.capabilities as Readonly<Record<string, Promise<boolean>>>;
     const tools = await Promise.all(Object.keys(caps).sort().map(async (k) => `${k}=${await caps[k] ? 1 : 0}`));
     const engines = [...this.#ocrEngines, ...this.#transcriptEngines].map((e) => `${e.name}@${e.priority}`).sort();
@@ -196,7 +196,7 @@ export class FileTransformer {
 }
 
 /** Cache key part for the Accept header, so a browser without AVIF never gets the AVIF entry.
- *  Only explicit types count (`image/*` and `*​/*` say nothing about codecs). A missing header is no
+ *  Only explicit types count; wildcards say nothing about codecs. A missing header is no
  *  constraint and gives the empty string. */
 function accepts(accept: string | undefined, opts: TransformOptions) {
   if (opts.fmt || !accept) return ''; // explicit format, or nothing known

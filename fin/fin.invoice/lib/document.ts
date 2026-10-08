@@ -44,11 +44,20 @@ export async function document(
   header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 3em }
   address { font-style: normal; white-space: pre-line }
   .to { margin-bottom: 3em }
-  table { width: 100%; border-collapse: collapse }
+  /* fixed columns: a table continued on the next page keeps its widths */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed }
+  .pos { width: 2.5em }
+  .quantity { width: 5.5em }
+  .price { width: 8em }
+  .rate { width: 4em }
+  .amount { width: 8.5em }
   th, td { text-align: start; padding: .3em .4em; vertical-align: top }
   thead th { border-bottom: 1px solid }
   .n { text-align: end; white-space: nowrap }
   tfoot th, tfoot td { border-top: 1px solid }
+  /* the head repeats on every page, the totals only once at the end; a line is not split */
+  tfoot { display: table-row-group }
+  tr { break-inside: avoid }
   .total { font-weight: bold }
   .text { margin-top: 2em; white-space: pre-line }
   .description { font-size: .9em; white-space: pre-line }
@@ -73,26 +82,28 @@ export async function document(
 </p>
 <table>
   <thead><tr>
+    <th class=pos>${t`Pos.`}
     <th>${t`Description`}
-    <th class=n>${t`Quantity`}
-    <th class=n>${t`Unit price`}
-    <th class=n>${t`Tax`}
-    <th class=n>${t`Amount`}
-  <tbody>${lines.map((line) => html`<tr>
+    <th class="n quantity">${t`Quantity`}
+    <th class="n price">${t`Unit price`}
+    <th class="n rate">${t`Tax`}
+    <th class="n amount">${t`Amount`}
+  <tbody>${lines.map((line, i) => html`<tr>
+    <td class=pos>${i + 1}
     <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
-    <td class=n>${new Intl.NumberFormat(locale).format(Number(line.quantity))} ${line.unit}
-    <td class=n>${money(Number(line.price))}
-    <td class=n>${Number(line.tax_rate)} %
-    <td class=n>${money(Number(line.amount))}`)}
+    <td class="n quantity">${new Intl.NumberFormat(locale).format(Number(line.quantity))} ${line.unit}
+    <td class="n price">${money(Number(line.price))}
+    <td class="n rate">${Number(line.tax_rate)} %
+    <td class="n amount">${money(Number(line.amount))}`)}
   <tfoot>
     <tr>
-      <th colspan=4>${invoice.tax_included ? t`Total excluding tax` : t`Net`}
+      <th colspan=5>${invoice.tax_included ? t`Total excluding tax` : t`Net`}
       <td class=n>${money(sum.net)}
     ${sum.rates.filter((r) => r.rate).map((r) => html.async`<tr>
-      <th colspan=4>${t`Tax`} ${r.rate} % ${t`on`} ${money(r.net)}
+      <th colspan=5>${t`Tax`} ${r.rate} % ${t`on`} ${money(r.net)}
       <td class=n>${money(r.tax)}`)}
     <tr class=total>
-      <th colspan=4>${t`Total`} ${invoice.currency}
+      <th colspan=5>${t`Total`} ${invoice.currency}
       <td class=n>${money(sum.total)}
 </table>
 ${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}

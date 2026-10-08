@@ -95,13 +95,13 @@ export class LangManager {
   // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
   clear() { this.#txtsCache.clear(); }
 
-  #getTxts(ns: string, l: string): Promise<Map<string, string>> {
+  #getTxts(ns: string, l: string) {
     // Cache the promise, so parallel lookups (html.async) share one query.
     return this.#txtsCache.getOrInsertComputed(`${l}::${ns}`, () => this.#app.db.indexCol<string>`
       SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`);
   }
 
-  async #getTxt(string: string, ctx: Ctx): Promise<string> {
+  async #getTxt(string: string, ctx: Ctx) {
     const hash = createHash("md5").update(string).digest("hex");
     const ns = ctx.langNs;
     const l = ctx.lang;

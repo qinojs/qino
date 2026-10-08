@@ -58,7 +58,7 @@ async function marker(app: App, deliveryId: number, kind: Kind) {
 const sign = (app: App, stem: string) => keyed(app, ["messaging.track", stem], SIG);
 
 /** Decode a marker, or nothing if it isn't ours. */
-async function read(app: App, tag: string): Promise<{ deliveryId: number; kind: Kind } | undefined> {
+async function read(app: App, tag: string) {
   const stem = tag.slice(0, -SIG);
   const kind = KIND[stem.slice(-1)];
   const deliveryId = parseInt(stem.slice(0, -1), 36);

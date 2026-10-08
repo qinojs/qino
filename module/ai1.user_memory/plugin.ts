@@ -25,7 +25,7 @@ async function own(app: App, usr: number, id: number) {
   if (!await app.db.one`SELECT id FROM ai1_user_memory WHERE id = ${id} AND usr_id = ${usr}`) throw new NotFoundError("No such memory");
 }
 
-async function keep(app: App, usr: number, content: string, replaces?: number): Promise<{ id: string }> {
+async function keep(app: App, usr: number, content: string, replaces?: number) {
   const table = app.db.table("ai1_user_memory"), values = { usr_id: usr, content, time: unixTime() };
   const id = replaces ? (await own(app, usr, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
   hit(app.db, "ai1_user_memory", id);

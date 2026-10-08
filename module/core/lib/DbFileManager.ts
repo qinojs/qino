@@ -45,7 +45,7 @@ export class DbFileManager {
   get db(): Db { return this.#app.db; }
   get directory(): string { return this.#directory; }
 
-  #files(): Map<string, DbFile> {
+  #files() {
     return scopeCache<Map<string, DbFile>>(this.#cache, "dbFiles", () => new Map());
   }
 
@@ -354,7 +354,7 @@ const MARKUP = /^text\/html$|xml$|xsl$/;
 const numOptions = ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const;
 const transformOptions = ['fmt', 'max', ...numOptions];
 
-function parseTransformOptions(param: Record<string, unknown>): TransformOptions {
+function parseTransformOptions(param: Record<string, unknown>) {
   const opt: TransformOptions = { fmt: param.fmt as TransformOptions['fmt'] };
   const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : undefined; };
   for (const k of numOptions) opt[k] = num(param[k]); // absent → NaN → undefined

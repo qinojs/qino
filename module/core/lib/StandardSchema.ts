@@ -64,7 +64,7 @@ export class StandardSchema<T = unknown> {
 
 // ───── Helpers ────────────────────────────────────────────────────────────
 
-function err(path: PropertyKey[], message: string): StandardIssue[] {
+function err(path: PropertyKey[], message: string) {
   return [{ message, path }];
 }
 

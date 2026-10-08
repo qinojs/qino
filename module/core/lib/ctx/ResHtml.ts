@@ -23,7 +23,7 @@ export class ResHtml {
   // deno-lint-ignore no-explicit-any
   get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
-  #renderHead(): string {
+  #renderHead() {
     const hasScripts = this.scripts.size || this.legacyScripts.size || this.inlineScripts.size;
     let ret = '<meta charset=utf-8>\n';
 

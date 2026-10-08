@@ -32,7 +32,7 @@ export class ReqBody {
     });
   }
 
-  #spool(key: string): Promise<UploadedFile> {
+  #spool(key: string) {
     let p = this.#spooled[key];
     if (!p) {
       p = this.#spooled[key] = readUploadFile(this.#rawFiles[key], { maxSize: this.#maxSize })

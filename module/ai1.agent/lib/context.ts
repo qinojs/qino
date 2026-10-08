@@ -18,7 +18,7 @@ export const situation = (agent: number, session: number, url: string): string =
 const names = (entry: string, name: string) => entry.endsWith("_*") ? name.startsWith(entry.slice(0, -1)) : name === entry;
 
 /** The api's tools the entries name. */
-const toolsOf = (app: App, entries: string[]): Tool[] => toTools(app.apiTree).filter((tool) => entries.some((entry) => names(entry, tool.name)));
+const toolsOf = (app: App, entries: string[]) => toTools(app.apiTree).filter((tool) => entries.some((entry) => names(entry, tool.name)));
 
 /** Refuses entries that name no tool, as a misspelt one would leave the agent without it. */
 export function checkTools(app: App, entries: string[]): void {
@@ -99,7 +99,7 @@ const weights = (json: unknown): Record<string, number> | undefined => {
 
 /** Every tool call answered: a turn that failed amid its calls left some without a result, which no
  *  provider takes. Added the same way each time, so what is sent stays the same (prompt cache). */
-function answered(messages: Message[]): Message[] {
+function answered(messages: Message[]) {
   return messages.flatMap((m, i) => {
     if (m.role !== "assistant" || !m.toolCalls?.length) return [m];
     const after = messages.slice(i + 1), end = after.findIndex((next) => next.role !== "tool");

@@ -107,7 +107,7 @@ export function saveTemplate(app: App, row: Row): Promise<unknown> {
 }
 
 /** The channel's variant of that name, else its main one; unknown name = none. */
-function load(app: App, channel: string, name?: string): Promise<Msg | undefined> {
+function load(app: App, channel: string, name?: string) {
   return name
     ? app.db.row<Msg>`SELECT text, format FROM message_template WHERE name = ${name} AND channel = ${channel}`
     : app.db.row<Msg>`SELECT text, format FROM message_template WHERE channel = ${channel} AND main = ${true}`;
@@ -134,7 +134,7 @@ const BARE = "messaging";
 
 /** Compute the used placeholders for this recipient; empty ones use their fallback
  *  (`{{givenName|Kunde}}`). */
-async function computeAll(app: App, asked: [string, Placeholder][], to: Row): Promise<Computed> {
+async function computeAll(app: App, asked: [string, Placeholder][], to: Row) {
   const values: Computed = {};
   for (const [name, make] of asked) values[name] = await make(app, to) ?? EMPTY;
   return values;

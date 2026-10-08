@@ -6,9 +6,8 @@ import { buildModuleTableIndex } from "../lib/analyze.ts";
 import type { HtmlString, App } from "@qino/qino";
 
 type FieldOrigins = Record<string, Record<string, string[]>>;
-type TableOrigins = Record<string, string[]>;
 
-function tableOrigins(index: ReturnType<typeof buildModuleTableIndex>): TableOrigins {
+function tableOrigins(index: ReturnType<typeof buildModuleTableIndex>) {
   const origins: Record<string, Set<string>> = {};
   for (const [modName, tables] of Object.entries(index)) {
     for (const table of Object.keys(tables)) (origins[table] ??= new Set()).add(modName);

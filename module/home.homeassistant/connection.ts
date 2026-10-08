@@ -290,7 +290,7 @@ function inputOf(fields: Record<string, Field>): Record<string, unknown> {
   return { type: "object", properties, ...required.length ? { required } : {} };
 }
 
-function entityOf(state: State): Entity {
+function entityOf(state: State) {
   return {
     id: state.entity_id,
     name: String(state.attributes.friendly_name ?? state.entity_id),

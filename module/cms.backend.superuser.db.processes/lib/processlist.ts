@@ -28,7 +28,7 @@ interface Adapter {
   kill(db: Db, id: number, hard: boolean): Promise<void>;
 }
 
-function norm(rows: Record<string, unknown>[]): Process[] {
+function norm(rows: Record<string, unknown>[]) {
   return rows.map((r) => {
     const id = String(r.id), command = String(r.command ?? ""), info = String(r.info ?? "");
     return {

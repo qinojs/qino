@@ -321,7 +321,7 @@ export class ModuleManager {
   }
 
   // Run one module's hooks.
-  async #linkOne(mod: Module): Promise<void> {
+  async #linkOne(mod: Module) {
     const { plugin } = mod;
     try {
       await plugin.init?.(this.#app, { signal: mod.newSignal() });
@@ -341,7 +341,7 @@ export class ModuleManager {
   }
 
   // Rebuild app/ctx settings schema from the given (dependency-ordered) modules and re-apply defaults.
-  #applySchemas(order: string[]): void {
+  #applySchemas(order: string[]) {
     const appSettingsSchema = { properties: {} as Record<string, unknown> };
     const ctxSettingsSchema = { properties: {} as Record<string, unknown> };
     for (const name of order) {
@@ -356,7 +356,7 @@ export class ModuleManager {
   }
 
   // Merge the given modules' dbSchema (static, then function-form) and migrate additively.
-  async #applyDbSchema(order: string[]): Promise<void> {
+  async #applyDbSchema(order: string[]) {
     const dbSchema = { properties: {} };
     const schemas = order.map((name) => this.#modules.get(name)!.plugin.dbSchema);
     for (const schema of schemas) if (typeof schema !== "function") mergeSchema(dbSchema, schema);
@@ -370,7 +370,7 @@ export class ModuleManager {
   }
 
   // Seed translations from a module's locale/<lang>.json (namespace = module name; core = "")
-  async #loadLocales(mod: Module): Promise<void> {
+  async #loadLocales(mod: Module) {
     const dir = mod.dir;
     if (!dir) return;
     const ns = mod.name === "core" ? "" : mod.name;
@@ -386,7 +386,7 @@ export class ModuleManager {
 
   /** Import the dependencies of the declared modules via locate(). What can't be located stays
    *  missing and is reported by #skipMissing() and #order(). */
-  async #importDependencies(): Promise<void> {
+  async #importDependencies() {
     const tried = new Set<string>();
     // One at a time: the next round picks up the new module's own dependencies.
     const next = () => this.#modules.values().flatMap((mod) => mod.dependencies)
@@ -403,7 +403,7 @@ export class ModuleManager {
   }
 
   // An installed module whose dependency is gone is marked broken; the boot continues.
-  #skipMissing(): void {
+  #skipMissing() {
     const gone = (need: string) => !this.#modules.has(need) || this.#failed.has(need);
     // A broken module breaks its dependents, so repeat until nothing changes.
     for (let again = true; again;) {

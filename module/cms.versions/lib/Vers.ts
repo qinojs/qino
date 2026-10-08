@@ -16,7 +16,7 @@ type DbVersState = {
     views: Map<string, Promise<void>>;  // (space,log)-views created this process
 };
 const dbStates = new WeakMap<Db, DbVersState>();
-function dbState(db: Db): DbVersState {
+function dbState(db: Db) {
     return dbStates.getOrInsertComputed(db, () => ({ tables: {}, views: new Map() }));
 }
 

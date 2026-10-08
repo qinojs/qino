@@ -17,7 +17,7 @@ export class DbTextManager {
   get db(): Db { return this.#app.db; }
   get app(): App { return this.#app; }
 
-  #texts(): Map<string, DbText> {
+  #texts() {
     return scopeCache<Map<string, DbText>>(this.#cache, "dbTexts", () => new Map());
   }
 
