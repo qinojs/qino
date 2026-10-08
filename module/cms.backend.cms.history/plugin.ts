@@ -27,7 +27,7 @@ const TYPE_TABLES: Record<string, string[]> = {
 
 // node_changed rows, newest first. Search/date/own client filter in SQL; type and edit rights in
 // JS (access depends on inheritance, groups and events).
-function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
+function candidates(app: App, f: Record<string, string>, ctx: Ctx) {
   const db = app.db;
   const where: Sql[] = [sql`${true}`];
   if (f.from)          where.push(sql`l.time >= ${backend.toUnix(f.from)}`);
