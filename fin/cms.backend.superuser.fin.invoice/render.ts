@@ -245,7 +245,6 @@ async function editor(node: Node, row: Row) {
         ${t`Street`} <input name=streetAddress value="${address.streetAddress}">
         ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode}">
         ${t`Place`} <input name=addressLocality value="${address.addressLocality}">
-        ${t`Region`} <input name=addressRegion value="${address.addressRegion}">
         ${t`Country`}
         <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
         ${t`VAT ID`} <input name=vatID value="${party.vatID}">
