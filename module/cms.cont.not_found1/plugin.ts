@@ -4,7 +4,7 @@ import { cmsCtx } from "@qino/qino/cms";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   // Extract words from request URI for fulltext search
   const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ");

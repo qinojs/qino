@@ -17,7 +17,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const ctx = getCtx();
   const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 

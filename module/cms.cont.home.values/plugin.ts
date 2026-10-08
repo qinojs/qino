@@ -1,12 +1,11 @@
 import { errMsg, html } from "@qino/qino";
 import { entities, providers } from "@qino/qino/home";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Entity, Provider } from "@qino/qino/home";
 
 /** Placing the block publishes its values: page access decides who sees them. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app, t = app.t;
   const provider = Number(node.settings.provider() ?? 0), entity = String(node.settings.entity() ?? "");
   const table = (values: Entity[]) => html.async`<table class=u2-table>

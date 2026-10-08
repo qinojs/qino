@@ -5,7 +5,7 @@ import { socialProvider } from "@qino/qino/social.threads";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -29,7 +29,7 @@ async function act(app: App, vars: Record<string, unknown> | undefined) {
   }
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const note = await act(node.app, postedVars(node.id));
   const configured = Boolean(await node.app.settings["social.threads"].accessToken);
   return html.async`<div class=u2-card>

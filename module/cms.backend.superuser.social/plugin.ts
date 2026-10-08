@@ -87,7 +87,7 @@ export async function history(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const vars = postedVars(node.id);
   const available = await socialTargets(node.app);
   const note = await act(node.app, vars, available);

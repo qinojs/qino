@@ -1,7 +1,6 @@
 import { errMsg, html } from "@qino/qino";
 import { command, run } from "@qino/qino/home";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Range = { min?: number; max?: number; step?: number };
@@ -10,7 +9,7 @@ const range = (node: Node): Range => Object.fromEntries((["min", "max", "step"] 
   .map((key) => [key, node.settings[key]()]).filter(([, value]) => typeof value === "number"));
 
 /** Placing the block publishes its command: page access decides who can run it. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t, id = Number(node.settings.command() ?? 0);
   if (!id) return html.async`<div><p>${t`Select a command in the block settings.`}</p></div>`;
   try {

@@ -1,13 +1,13 @@
 import { html } from "@qino/qino";
 import { providers } from "@qino/qino/auth.oauth";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const cms = { node: { js: ["pub/main.js"], render } };
 
 // Connecting redirects to the provider, so plain links; only the list is fetched.
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   if (!ctx.user) return html.async`<p>${app.t`Please sign in.`}</p>`;
 

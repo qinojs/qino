@@ -16,7 +16,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const admin = ctx.settings.cms.admin;
   if (ctx.req.query.rp) {
     const root = await node.cms.node(Number(ctx.req.query.rp));
@@ -48,7 +48,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const admin = ctx.settings.cms.admin;
   if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
   const type = admin.showContents() ? "*" : "p";
