@@ -2,6 +2,7 @@
 // mail inbox, an API — it moves into a module of its own (fin.invoice.read).
 import { fs } from "@qino/qino";
 import { structured } from "@qino/qino/ai1";
+import { mainCurrency } from "@qino/qino/fin";
 import { attach, create } from "@qino/qino/fin.invoice";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
@@ -109,9 +110,10 @@ export async function partsOf(file: DbFile): Promise<Part[]> {
   return pages;
 }
 
-/** The answer as values of a received invoice, in minor units. */
-export function valuesOf(read: Read) {
-  const currency = String(read.currency || "CHF").toUpperCase();
+/** The answer as values of a received invoice, in minor units; a currency it lacks is `main`. */
+export function valuesOf(read: Read, main = "") {
+  const currency = String(read.currency || main).toUpperCase();
+  if (!currency) throw new Error("No currency read, and no main currency (fin.mainCurrency)");
   const unit = 10 ** currencies.decimals(currency);
   // a unit price may be finer than a minor unit (0.2345 CHF/kWh): four more decimals are kept
   const minor = (value: number) => Math.round(Number(value) * unit * 1e4) / 1e4;
@@ -162,7 +164,7 @@ export async function read(app: App, file: DbFile): Promise<number> {
     messages: [{ role: "system", content: INSTRUCTION }, { role: "user", content: parts }],
     schema: SCHEMA,
   });
-  const values = valuesOf(answer);
+  const values = valuesOf(answer, await mainCurrency(app));
   const id = await create(app, { ...values, usrId: await supplierOf(app, values.party) });
   await attach(app, id, file);
   return id;

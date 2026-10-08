@@ -5,7 +5,7 @@ import { testContext } from "@qino/qino/tests";
 import type { Node } from "@qino/qino/cms";
 
 /** What every fin app links from the module store. */
-const BASE = ["cron", "identity", "locale.currency", "pdf"];
+const BASE = ["cron", "identity", "locale.country", "locale.currency", "pdf"];
 
 /** Boot an app with the base module fin and these (fin's, or others by name), run `fn`, tear it down again. */
 export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>): Promise<void> {

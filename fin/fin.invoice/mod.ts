@@ -145,22 +145,27 @@ export async function revise(app: App, id: number): Promise<number> {
   if (invoice?.status !== "open" || Number(invoice.paid)) {
     throw new Error("fin.invoice: only open invoices nothing was paid on can be revised");
   }
-  const draft = await create(app, {
-    ...copyOf(invoice, (await lines(app, id)).map(lineOf)),
-    direction: invoice.direction === "in" ? "in" : "out",
-    // a credit note is revised into a credit note, for the same invoice
-    type: invoice.type === "credit_note" ? "credit_note" : "invoice",
-    corrects: invoice.corrects == null ? undefined : Number(invoice.corrects),
-    text: invoice.text == null ? undefined : String(invoice.text),
-    term: invoice.term == null ? undefined : Number(invoice.term),
-    number: invoice.direction === "in" ? String(invoice.number ?? "") || undefined : undefined,
-    data: invoice.data ? JSON.parse(String(invoice.data)) : undefined,
+  // one transaction: the draft, its copy of the original and the cancel, or nothing
+  return await app.db.transaction(async () => {
+    const draft = await create(app, {
+      ...copyOf(invoice, (await lines(app, id)).map(lineOf)),
+      direction: invoice.direction === "in" ? "in" : "out",
+      // a credit note is revised into a credit note, for the same invoice
+      type: invoice.type === "credit_note" ? "credit_note" : "invoice",
+      corrects: invoice.corrects == null ? undefined : Number(invoice.corrects),
+      text: invoice.text == null ? undefined : String(invoice.text),
+      term: invoice.term == null ? undefined : Number(invoice.term),
+      number: invoice.direction === "in" ? String(invoice.number ?? "") || undefined : undefined,
+      data: invoice.data ? JSON.parse(String(invoice.data)) : undefined,
+    });
+    // a row of its own on the same content: replacing it in the draft leaves the canceled one's
+    const original = invoice.direction === "in" && invoice.file_id
+      ? await (await app.dbFiles.file(Number(invoice.file_id))).exists()
+      : undefined;
+    if (original) await attach(app, draft, await original.clone());
+    await cancel(app, id);
+    return draft;
   });
-  if (invoice.direction === "in" && invoice.file_id) {
-    await attach(app, draft, await (await app.dbFiles.file(Number(invoice.file_id))).clone());
-  }
-  await cancel(app, id);
-  return draft;
 }
 
 /** Withdraw an invoice; its number stays used. */
@@ -309,7 +314,7 @@ const get = (app: App, id: number): Promise<Row | undefined> => app.db.row`SELEC
 
 /** Remove a file the invoice no longer holds — unless something still uses it: an entry's receipt. */
 async function release(app: App, id: unknown) {
-  const file = id ? await app.dbFiles.file(Number(id)).catch(() => undefined) : undefined;
+  const file = id ? await app.dbFiles.file(Number(id)) : undefined;
   if (file && !await file.used()) await file.remove().catch(() => {});
 }
 

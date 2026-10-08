@@ -1,5 +1,5 @@
 import { getCtx, sql, unixTime } from "@qino/qino";
-import { addDays, today } from "@qino/qino/fin";
+import { addDays, mainCurrency, today } from "@qino/qino/fin";
 
 import type { App, DbFile, Row } from "@qino/qino";
 
@@ -39,8 +39,9 @@ export async function book(app: App, entry: {
   files?: DbFile[];
 }): Promise<number> {
   const s = app.settings["fin.accounting"];
-  const currency = entry.currency ?? String(await s.currency ?? "");
-  if (!/^[A-Z]{3}$/.test(currency)) fail("the book needs its currency (fin.accounting.currency)");
+  // the book keeps the main currency
+  const currency = entry.currency ?? await mainCurrency(app) ?? "";
+  if (!/^[A-Z]{3}$/.test(currency)) fail("the book needs its currency (fin.mainCurrency)");
   if (!DATE.test(entry.date)) fail("dates are YYYY-MM-DD");
   const closed = String(await s.closedUntil ?? "");
   if (closed && entry.date <= closed) fail(`the books are closed until ${closed}`);

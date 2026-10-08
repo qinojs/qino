@@ -7,7 +7,9 @@ import type { Node } from "@qino/qino/cms";
 
 /** Minor units as the request's language writes the currency: `CHF 472.26`, `JPY 1,000`. */
 export function money(amount: unknown, currency: unknown): string {
-  const code = String(currency || "CHF");
+  // without a currency its decimals are unknown: the amount as stored
+  if (!currency) return String(amount ?? "");
+  const code = String(currency);
   const format = new Intl.NumberFormat(requestStorage.getStore()?.lang ?? "en", { style: "currency", currency: code });
   return format.format(fromMinor(Number(amount), code));
 }
@@ -23,7 +25,7 @@ export function parseAmount(value: unknown, currency: string): number {
 
 /** Minor units as typed into a field: `120`, `0.2345` — no grouping, a point; nothing for none. */
 export const inputAmount = (minor: unknown, currency: unknown): string =>
-  minor == null || minor === "" ? "" : String(fromMinor(Number(minor), String(currency || "CHF")));
+  minor == null || minor === "" ? "" : currency ? String(fromMinor(Number(minor), String(currency))) : String(minor);
 
 /** A file as the fin pages send it (see `files` in pub/panel.js), stored as dbFile. */
 export async function fileOf(app: App, sent: { name: string; type: string; data: string }): Promise<DbFile> {

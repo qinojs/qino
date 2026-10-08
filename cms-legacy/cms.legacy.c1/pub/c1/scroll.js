@@ -64,8 +64,8 @@ function step () {
 	var t = Math.min(tDiff / this.duration, 1); // time that has passed (0-1)
 	//if (t === 1) return this.onFinish(); // Continue as long as the duration is not exceeded // zzz
   	//if (this.targetX === scrollX && this.targetY === scrollY) return this.onFinish(); // todo? Continue as long as the x/y is not exceeded
-    var x = this.targetX - ((1 - this.easing(t)) * (this.deltaX));
-	var y = this.targetY - ((1 - this.easing(t)) * (this.deltaY));
+    var x = this.targetX - ((1 - this.easing(t)) * this.deltaX);
+	var y = this.targetY - ((1 - this.easing(t)) * this.deltaY);
 
 
 	scrollTo(x+.5, y+.5);

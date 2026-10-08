@@ -1,10 +1,12 @@
 import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { mainCurrency } from "@qino/qino/fin";
 import { bill, cancel, plan, plans, subscribe, update } from "@qino/qino/fin.subscription";
 
 import type { Node } from "@qino/qino/cms";
 
-/** The terms typed: price, currency, tax, period — empty ones `null`, to take the plan's. */
-function termsOf(v: Record<string, string>, fallbackCurrency = "CHF") {
+/** The terms typed: price, currency, tax, period — empty ones `null`, to take the plan's. A price
+ *  typed without a currency is read in `fallbackCurrency`'s decimals. */
+function termsOf(v: Record<string, string>, fallbackCurrency = "") {
   const currency = String(v.currency ?? "").toUpperCase();
   const decimal = (value: string) => Number(value.replace(",", "."));
   return {
@@ -20,9 +22,9 @@ function termsOf(v: Record<string, string>, fallbackCurrency = "CHF") {
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
   const t = app.t;
-  // the plan's currency, for a price typed without one
+  // the plan's currency, for a price typed without one; else the main one
   const currencyOf = async (planId: unknown) =>
-    String((await plans(app)).find((p) => Number(p.id) === Number(planId))?.currency ?? "CHF");
+    String((await plans(app)).find((p) => Number(p.id) === Number(planId))?.currency ?? await mainCurrency(app) ?? "");
   if (vars.subscribe) {
     const v = vars.subscribe as Record<string, string>;
     await subscribe(app, {

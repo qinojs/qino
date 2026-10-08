@@ -69,9 +69,8 @@ cms.initNode("backend.system.api", (el) => {
         else if (val === "false") val = false;
         else if (!isNaN(val)) val = Number(val);
 
-        if (r.pathParams.includes(field.name)) {
-          path = path.replace(":" + field.name, encodeURIComponent(val));
-        } else if (r.hasQuery && !r.hasInput) {
+        if (r.pathParams.includes(field.name)) path = path.replace(":" + field.name, encodeURIComponent(val));
+        else if (r.hasQuery && !r.hasInput) {
           query[field.name] = val;
         } else {
           body[field.name] = val;

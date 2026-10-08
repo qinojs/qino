@@ -71,9 +71,7 @@ async function addFile(txtEl, f) {
       img.onload = () => {
         const max = txtEl.offsetWidth;
         ph.replaceWith(img);
-        if (img.width > max) {
-          new dbFile(img).set('w', max).set('h', max / img.width * img.height).write();
-        }
+        if (img.width > max) new dbFile(img).set('w', max).set('h', max / img.width * img.height).write();
         selectNode(img);
         img.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); // why
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));

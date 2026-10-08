@@ -3,6 +3,8 @@
   "description": "What the fin modules share: users' postal address, and the texts payers read.",
   "dependencies": [
     "core",
+    "identity",
+    "locale.country",
     "locale.currency"
   ],
   "files": [

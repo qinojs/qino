@@ -7,6 +7,9 @@ The base of the `fin.*` modules. It carries
   keeps its own copy (`party`), as it was when issued. And `usr.iban`, the account to pay them;
 - the **texts payers and recipients read** — the invoice document, payment pages — in the
   translation namespace `fin` (`locale/`), translated once for all of them;
+- the **main currency** (`fin.mainCurrency`): the books keep it, new forms suggest it. Empty, it is
+  the currency of the country the organization is in (`identity`), so a Swiss site has CHF
+  without setting anything. `mainCurrency(app)` reads it;
 - the **helpers they share** (`mod.ts`): days on the server's calendar (`today`, `addDays`,
   `addMonths`), amounts to and from minor units (`toMinor`, `fromMinor`), a user as an invoice's
   party (`partyOf`, `nameOf`).

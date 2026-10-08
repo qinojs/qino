@@ -184,6 +184,4 @@ for (const [route, head] of [
 ]) api.on(route, () => loadWidget(head));
 api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time"); });
 
-if (!globalThis.qino?.cms?.tourSeen) {
-  import("./intro.js").then(({ start }) => start());
-}
+if (!globalThis.qino?.cms?.tourSeen) import("./intro.js").then(({ start }) => start());

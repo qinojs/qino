@@ -1,4 +1,4 @@
-import { today } from "@qino/qino/fin";
+import { mainCurrency, today } from "@qino/qino/fin";
 import { lineOf, lines as linesOf, refOf as invoiceRef, round, totals } from "@qino/qino/fin.invoice";
 import { refOf } from "@qino/qino/fin.payment";
 
@@ -11,7 +11,7 @@ import type { Line } from "../mod.ts";
 const ROLES = ["receivable", "payable", "revenue", "expense", "vatDue", "vatInput", "fees", "money"] as const;
 type Roles = Record<(typeof ROLES)[number], string>;
 
-/** The account numbers per role, and the book's currency. Settings are read leaf by leaf. */
+/** The account numbers per role, and the book's currency: the main one. Settings are read leaf by leaf. */
 async function setup(app: App) {
   const s = app.settings["fin.accounting"];
   const values = await Promise.all(ROLES.map((role) => s.accounts[role]));
@@ -19,7 +19,7 @@ async function setup(app: App) {
   // "bank:1020, cash:1000": where each provider's money lands, else `money`
   const pairs = String(await s.accounts.moneyBy ?? "").split(",").map((pair) => pair.split(":").map((v) => v.trim()));
   const moneyBy = new Map(pairs.filter(([provider, number]) => provider && number) as [string, string][]);
-  return { roles, currency: String(await s.currency ?? ""), closed: String(await s.closedUntil ?? ""), moneyBy };
+  return { roles, currency: await mainCurrency(app) ?? "", closed: String(await s.closedUntil ?? ""), moneyBy };
 }
 
 /** An entry for `ref` that is booked and not taken back. */

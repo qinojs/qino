@@ -1,6 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, direction, money, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
+import { mainCurrency } from "@qino/qino/fin";
 import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
 
@@ -53,7 +54,7 @@ async function overview(node: Node, url: URL) {
         ${t`Direction`} <select name=direction>${option("in", t`In`)}${option("out", t`Out`)}</select>
         ${t`Source`} <input name=provider required placeholder="cash, bank …">
         ${t`Amount`} <input name=amount required inputmode=decimal placeholder="120.00">
-        ${t`Currency`} <input name=currency required value=CHF maxlength=3 size=4>
+        ${t`Currency`} <input name=currency required value="${mainCurrency(node.app)}" maxlength=3 size=4>
         ${t`For (ref)`} <input name=ref placeholder="fin.invoice:7">
         ${t`Description`} <input name=description>
       </u2-fields>
@@ -119,7 +120,10 @@ async function providerTable(app: App) {
   const t = app.t;
   const mods = app.modules.linked().filter((mod) => mod.plugin.paymentProvider);
   if (!mods.length) return html.async`<p>${t`No provider linked: payments can only be recorded.`}`;
-  const offered = await Promise.all(["CHF", "EUR"].map(async (currency) =>
+  // what each offers in the main currency, and in every one payments were made in
+  const used = await app.db.col<string>`SELECT DISTINCT currency FROM payment ORDER BY currency`;
+  const currencies = [...new Set([await mainCurrency(app), ...used].filter((c): c is string => !!c))];
+  const offered = await Promise.all(currencies.map(async (currency) =>
     [currency, (await methods(app, { amount: 10000, currency })).map((m) => m.method)] as const));
   return html.async`${mods.map(async (mod) => {
     const p = mod.plugin.paymentProvider as Provider;

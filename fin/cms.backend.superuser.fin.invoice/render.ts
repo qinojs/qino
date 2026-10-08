@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 import {
   badge, direction, inputAmount, money, pager, refLink, rowLink, status,
 } from "@qino/qino/cms.backend.superuser.fin";
-import { today } from "@qino/qino/fin";
+import { mainCurrency, today } from "@qino/qino/fin";
 import { document, lines, refOf } from "@qino/qino/fin.invoice";
 import { methods } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
@@ -135,14 +135,14 @@ const due = (app: App, row: Row) =>
   : String(row.due ?? "");
 
 /** A new invoice: what it is, then the editor takes over. */
-function newForm(app: App) {
+async function newForm(app: App) {
   const t = app.t;
   return html.async`<form data-create>
     <select name=direction>
       <option value=out>${t`Issued (receivable)`}
       <option value=in>${t`Received (payable)`}
     </select>
-    <input name=currency value=CHF required maxlength=3 size=4>
+    <input name=currency value="${await mainCurrency(app)}" required maxlength=3 size=4>
     <button>${t`New invoice`}</button>
   </form>`;
 }

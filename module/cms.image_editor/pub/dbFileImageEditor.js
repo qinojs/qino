@@ -107,9 +107,7 @@ export class DbFileImageEditor extends ImageEditor {
           const aspectRatio = width / height;
           this.cropper.aspectRatio = aspectRatio;
           const naturalAspectRatio = img.naturalWidth / img.naturalHeight;
-          if (aspectRatio.toFixed(1) !== naturalAspectRatio.toFixed(1)) {
-            setTimeout(() => this.cropper.show());
-          }
+          if (aspectRatio.toFixed(1) !== naturalAspectRatio.toFixed(1)) setTimeout(() => this.cropper.show());
         }
       }),
       onerror: () => this.loading()(),
@@ -181,9 +179,8 @@ export class DbFileImageEditor extends ImageEditor {
   async upload(cb) {
     // transparency → PNG; otherwise the smaller of jpeg/png
     let blob;
-    if (this.img.hasAlpha()) {
-      blob = await this.img.toBlob('image/png', 1);
-    } else {
+    if (this.img.hasAlpha()) blob = await this.img.toBlob('image/png', 1);
+    else {
       const [jpeg, png] = await Promise.all([this.img.toBlob('image/jpeg', 1), this.img.toBlob('image/png', 1)]);
       blob = jpeg.size > png.size ? png : jpeg;
     }

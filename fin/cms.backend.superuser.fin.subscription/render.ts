@@ -1,7 +1,7 @@
 import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, inputAmount, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
-import { nameOf, today } from "@qino/qino/fin";
+import { mainCurrency, nameOf, today } from "@qino/qino/fin";
 import { horizon, periods, plans, renews, subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -28,7 +28,8 @@ const every = (app: App, unit: unknown, count: unknown) =>
 function terms(app: App, row: Row, catalog: Row[], placeholder: Row = {}) {
   const t = app.t;
   return html.async`
-    ${t`Price`} <input name=price inputmode=decimal size=8 value="${inputAmount(row.price, row.currency)}"
+    ${t`Price`} <input name=price inputmode=decimal size=8
+      value="${inputAmount(row.price, row.currencyCode || row.currency)}"
       placeholder="${inputAmount(placeholder.price, placeholder.currency)}">
     ${t`Currency`}
     <input name=currency maxlength=3 size=4 value="${row.currency}" placeholder="${placeholder.currency}">
@@ -121,7 +122,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
       <u2-fields>
         ${t`Name`} <input name=name required placeholder="Hosting Light">
         ${t`Description`} <textarea name=description rows=3></textarea>
-        ${terms(app, { currency: "CHF", interval_unit: "year", interval_count: 1 }, [])}
+        ${terms(app, { currency: await mainCurrency(app), interval_unit: "year", interval_count: 1 }, [])}
       </u2-fields>
       <button>${t`Add plan`}</button>
     </form>

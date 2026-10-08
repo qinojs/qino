@@ -1,4 +1,5 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { fs } from "@qino/qino";
 
 import { withFinApp } from "../../tests/app.ts";
 import { attach, create, creditNote, document, issue, print, revise } from "../mod.ts";
@@ -105,6 +106,19 @@ Deno.test("a received invoice revised: its draft keeps what was read and a copy 
     await attach(app, draft, await app.dbFiles.add(new File(["x"], "better.pdf", { type: "application/pdf" })));
     assertEquals(Number(await app.db.one`SELECT file_id FROM invoice WHERE id = ${id}`), original.id);
     assert(await original.exists());
+  });
+});
+
+Deno.test("a received invoice whose original is gone is revised without one", async () => {
+  await withApp(async (app) => {
+    const original = await app.dbFiles.add(new File(["%PDF"], "bill.pdf", { type: "application/pdf" }));
+    const id = await create(app, { ...invoice, direction: "in", number: "R-78" });
+    await attach(app, id, original);
+    await issue(app, id);
+    await fs.remove(original.path); // lost on disk
+    const draft = await revise(app, id);
+    assertEquals((await app.db.row`SELECT file_id FROM invoice WHERE id = ${draft}`)?.file_id, null);
+    assertEquals((await app.db.row`SELECT status FROM invoice WHERE id = ${id}`)?.status, "canceled");
   });
 });
 

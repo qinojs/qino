@@ -8,7 +8,6 @@ const role = (description: string) => ({ type: "string", description });
 
 export const settingsSchema = {
   properties: {
-    currency: { type: "string", description: "The book's currency, ISO 4217; nothing is booked without it" },
     closedUntil: { type: "string", format: "date", description: "Entries up to this date are refused: closed" },
     accounts: {
       description: "Account numbers automatic entries use; a role left empty books nothing that needs it",

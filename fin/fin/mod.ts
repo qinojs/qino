@@ -1,6 +1,7 @@
+import { country } from "@qino/qino/locale.country";
 import { currency } from "@qino/qino/locale.currency";
 
-import type { Row } from "@qino/qino";
+import type { App, Row } from "@qino/qino";
 
 /** Today on the server's calendar, `YYYY-MM-DD`. */
 export const today = (): string => new Date().toLocaleDateString("sv-SE");
@@ -16,6 +17,14 @@ export function addMonths(date: string, n: number): string {
   const [year, month] = [Math.floor(months / 12), months % 12];
   const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+}
+
+/** The main currency: `fin.mainCurrency`, else that of the country the organization is in (`identity`). */
+export async function mainCurrency(app: App): Promise<string | undefined> {
+  const own = String(await app.settings.fin.mainCurrency ?? "").trim().toUpperCase();
+  if (own) return own;
+  const land = String(await app.settings.identity.organization.address.addressCountry ?? "").toUpperCase();
+  return land ? String((await country.get(app.db, land))?.currency ?? "") || undefined : undefined;
 }
 
 /** Minor units as the amount people read: 47226 CHF is 472.26, 1000 JPY is 1000. */

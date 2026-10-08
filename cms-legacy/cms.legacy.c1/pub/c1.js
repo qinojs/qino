@@ -82,9 +82,7 @@ c1.ext = function (src, target, force, deep) {
     target = target || {};
     for (k in src) {
 	if (!Object.hasOwn(src, k)) continue;
-        if (force || target[k] === undf) {
-            target[k] = src[k];
-        }
+        if (force || target[k] === undf) target[k] = src[k];
 		if (!deep) continue;
 		if (typeof k === 'string') continue;
 		//if (typeof target[k] === 'string') continue; // todo
@@ -146,7 +144,7 @@ w.c1Use = function (prop_or_opts, cb) {
 c1Use = function (use) {
 	var fn = function (props, cb) {
 		var scope = this || self, i, prop;
-		if (!scope.c1UseSrc) { throw new Error("c1Use: the Object needs a c1UseSrc property!"); }
+		if (!scope.c1UseSrc) throw new Error("c1Use: the Object needs a c1UseSrc property!");
         if (props instanceof Array) {
         	var returns = [], index=0, counter=0;
         		while (prop = props[index++]) {

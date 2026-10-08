@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 import {
   amounts, badge, direction, money, refLink, rowLink, status,
 } from "@qino/qino/cms.backend.superuser.fin";
-import { nameOf } from "@qino/qino/fin";
+import { mainCurrency, nameOf } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString } from "@qino/qino";
@@ -167,7 +167,7 @@ async function credit(node: Node, id: number): Promise<HtmlString> {
       </table></div>` : ""}
     <form data-credit="${id}">
       <input name=amount inputmode=decimal size=8 placeholder="${t`Amount`}" required>
-      <input name=currency value=CHF maxlength=3 size=4 required>
+      <input name=currency value="${await mainCurrency(app)}" maxlength=3 size=4 required>
       <input name=text placeholder="${t`Why`}">
       <button>${t`Add credit`}</button>
     </form>
