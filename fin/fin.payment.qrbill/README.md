@@ -27,4 +27,7 @@ rest; all of it: `paid`. Without bank statements a QR bill is settled by hand th
 `slip` is the payment part with receipt as SVG (by [swissqrbill](https://github.com/schoero/swissqrbill)),
 in the language of the request or the site — German, French, Italian, else English. It shows at the
 payment's `pay` address, and an [invoice](../fin.invoice/) prints it on a page of its own with the
-open amount. The debtor is left blank, to be filled in by hand.
+open amount. The debtor is the payment's `payer` — an invoice's party — where its address is
+whole (street, postal code, place; the country is the creditor's if it names none), as the standard
+asks for a structured address; else the field is left blank, to be filled in by hand. The font is
+Arial: the server needs Arial or Liberation Sans (`fc-match Arial`), the fonts the standard allows.

@@ -8,6 +8,7 @@
     "README.md",
     "dbschema.json",
     "locale/de.json",
+    "locale/en.json",
     "locale/fr.json",
     "locale/it.json",
     "locale/pl.json",

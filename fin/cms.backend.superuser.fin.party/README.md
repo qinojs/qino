@@ -2,9 +2,11 @@
 
 Customers and suppliers: the users invoices are for or from. Who is which follows from the
 invoices — issued to someone makes a customer, received from someone a supplier, both is fine —
-so there is nothing to keep in step. A party's page keeps its name and postal address (the `usr`
-columns of the module `fin`) and lists its invoices; new invoices take that address over in the
-invoice editor.
+so there is nothing to keep in step. The list shows what is open both ways — a credit note still
+open counts against the claim — and, with [fin.payment.credit](../fin.payment.credit/), the credit
+each holds. A party's page keeps its name, postal address and IBAN (the `usr` columns of the module
+`fin`), lists its invoices, and shows its credit with a form to add to it. New invoices take the
+address over in the invoice editor.
 
 ## Decisions that may change
 

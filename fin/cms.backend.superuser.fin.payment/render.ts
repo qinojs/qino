@@ -94,7 +94,7 @@ async function list(node: Node, url: URL) {
       <th>${t`Paid`}
       <th>${t`Status`}
       <th>${t`For`}
-      <th>${t`Title`}
+      <th>${t`Description`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { payment: row.id })}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.created, { narrow: true })}

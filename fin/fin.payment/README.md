@@ -6,7 +6,7 @@ order, an invoice, a donation — stays with the consumer, which only leaves a `
 ```ts
 import { create, methods } from "@qino/qino/fin.payment";
 
-await methods(app, { amount: 4990, currency: "CHF", country: "CH" });
+await methods(app, { amount: 4990, currency: "CHF", country: "CH", usrId: 42 }); // usrId: credit is theirs
 // [{ method: "saferpay.twint", label: "TWINT" }, …]
 
 const { redirect } = await create(app, {
@@ -14,6 +14,11 @@ const { redirect } = await create(app, {
   currency: "CHF",
   method: "saferpay.twint", // or just "saferpay": the payer chooses there
   ref: "shop.order:123",
+  description: "Order 123", // shown to the payer by the provider
+  payer: {
+    name: "Anna Muster",
+    address: { streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern" },
+  },
   return: "/checkout/done",
 });
 throw new Redirect(redirect);
@@ -33,6 +38,9 @@ direction; it fires the same event:
 ```ts
 await record(app, { direction: "in", provider: "cash", amount: 2000, currency: "EUR", ref: "fin.invoice:7" });
 ```
+
+`payer` is who pays, shaped like an invoice's party; a slip that has room for it prints it (the
+QR bill's debtor). An invoice passes its party.
 
 ## Status
 
@@ -58,7 +66,8 @@ names the payments, which are then synced.
 
 Providers: [saferpay](../fin.payment.saferpay/), [qrbill](../fin.payment.qrbill/),
 [btcpay](../fin.payment.btcpay/), [lightning](../fin.payment.lightning/),
-[bitcoin](../fin.payment.bitcoin/), [stripe](../fin.payment.stripe/), [paypal](../fin.payment.paypal/).
+[bitcoin](../fin.payment.bitcoin/), [stripe](../fin.payment.stripe/), [paypal](../fin.payment.paypal/),
+[credit](../fin.payment.credit/) (a user's credit with us).
 
 `cancel(app, id)` withdraws a payment nobody has started paying (`pending`) — an invoice paid
 another way does so with the ones still waiting for it.
