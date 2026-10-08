@@ -62,7 +62,8 @@ async function overview(node: Node, url: URL) {
     option("supplier", t`Suppliers`)}</select>
       <button>${t`Filter`}</button>
     </form>
-    ${rows.length ? html.async`<table class=u2-table style="white-space:nowrap">
+    ${rows.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
+      <table class=u2-table style="white-space:nowrap">
       <thead><tr>
         <th>${t`Name`}
         <th>${t`Place`}
@@ -78,7 +79,7 @@ async function overview(node: Node, url: URL) {
         <td style="text-align:end">${Number(row.issued) + Number(row.received)}
         <td style="text-align:end">${owed(row.id, "out")}
         <td style="text-align:end">${owed(row.id, "in")}`)}
-    </table>` : html.async`<p>${t`No one with invoices yet`}`}
+    </table></div>` : html.async`<p>${t`No one with invoices yet`}`}
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`New supplier or customer`}</div>
@@ -127,14 +128,15 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   ${linked(app, "fin.payment.credit") ? credit(node, id) : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
-    ${invoices.length ? html.async`<table class=u2-table style="white-space:nowrap">
+    ${invoices.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
+      <table class=u2-table style="white-space:nowrap">
       ${invoices.map((row) => html.async`<tr>
         <td>${rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", row.id, String(row.number || `#${row.id}`))}
         <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
         <td>${row.date}
         <td style="text-align:end">${money(row.total, row.currency)}
         <td>${status(row.status)}`)}
-    </table>` : html.async`<p>${t`No invoices yet`}`}
+    </table></div>` : html.async`<p>${t`No invoices yet`}`}
   </div>
 </div>`;
 }
@@ -149,7 +151,7 @@ async function credit(node: Node, id: number): Promise<HtmlString> {
     WHERE usr_id = ${id} GROUP BY currency ORDER BY currency`;
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Credit`} ${amounts(balances)}</div>
-    ${rows.length ? html.async`<div style="overflow:auto; max-height:20rem; padding:0">
+    ${rows.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">${rows.map((m) => html.async`<tr>
         <td>${u2.el.time(m.created, { narrow: true })}
         <td style="text-align:end">${money(m.amount, m.currency)}

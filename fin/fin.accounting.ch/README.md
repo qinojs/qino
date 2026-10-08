@@ -11,6 +11,7 @@ and, where nothing is set yet, the book's currency (CHF) and the accounts automa
 | tax due / input tax | 2200 / 1170 |
 | fees | 6940 |
 | money | 1020 bank; cash 1000, Saferpay 1091, credit 2030 |
+| result (closing) | 2979; a sole proprietorship sets 2800 |
 
 Accounts are only added or renamed, never removed. More accounts: `account(app, number, …)` or
 the backend.

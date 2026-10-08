@@ -1,7 +1,7 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { toMinor } from "@qino/qino/cms.backend.superuser.fin";
-import { account, book, reverse } from "@qino/qino/fin.accounting";
+import { account, book, close, reopen, reverse } from "@qino/qino/fin.accounting";
 
 import type { Node } from "@qino/qino/cms";
 import type { AccountType } from "@qino/qino/fin.accounting";
@@ -21,6 +21,14 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       });
       const id = await book(app, { date: v.date, text: v.text, lines });
       return { ok: true, url: backend.toUrl(await (await node.page()).url(), { entry: id }) };
+    }
+    if (vars.close) {
+      await close(app, String((vars.close as Record<string, string>).until));
+      return { ok: true };
+    }
+    if (vars.reopen) {
+      await reopen(app);
+      return { ok: true };
     }
     if (vars.reverse) {
       const id = await reverse(app, Number(vars.reverse));

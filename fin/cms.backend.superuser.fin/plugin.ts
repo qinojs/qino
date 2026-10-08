@@ -36,7 +36,7 @@ function render(node: Node): Promise<HtmlString> {
   </div>
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`Modules`}</div>
-    <div style="overflow:auto; padding:0">${modules(node.app)}</div>
+    <div style="overflow:auto; max-height:70vh; padding:0">${modules(node.app)}</div>
   </div>
   ${renderDashboard(node)}
 </div>`;

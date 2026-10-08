@@ -3,7 +3,7 @@ import { attach, cancel, create, issue, refOf } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
-import { balances, book, reverse } from "../mod.ts";
+import { balances, book, close, reopen, reverse } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -103,5 +103,31 @@ Deno.test("an invoice line may name its account; the others book on the default 
     await issue(app, await create(app, { ...bill, lines: gross }));
     const s = await saldo(app);
     assertEquals([s["4400"], s["6000"], s["1170"], s["2000"]], [100000, 10000, 8360, -118360]);
+  });
+});
+
+Deno.test("closing a year puts its result onto equity, closes the books, and opens again", async () => {
+  await withApp(async (app) => {
+    const sale = (date: string, amount: number) =>
+      book(app, { date, text: "Sale", lines: [{ account: "1020", amount }, { account: "3400", amount: -amount }] });
+    await sale("2026-03-01", 50000);
+    const rent = [{ account: "6000", amount: 20000 }, { account: "1020", amount: -20000 }];
+    await book(app, { date: "2026-04-01", text: "Rent", lines: rent });
+    await sale("2027-02-01", 10000);
+    await close(app, "2026-12-31");
+    assertEquals(await app.settings["fin.accounting"].closedUntil, "2026-12-31");
+    // the year still shows its result; the balance sheet has it on equity, and only what follows is open
+    const year = { from: "2026-01-01", to: "2026-12-31" };
+    assertEquals(await saldo(app, year), { "1020": 30000, "2979": -30000 });
+    const shown = Object.fromEntries((await balances(app, { ...year, closings: false }))
+      .filter((r) => Number(r.balance)).map((r) => [String(r.number), Number(r.balance)]));
+    assertEquals(shown, { "1020": 30000, "3400": -50000, "6000": 20000 });
+    await assertRejects(() => close(app, "2026-12-31"), Error, "already");
+    await assertRejects(() => sale("2026-12-30", 1), Error, "closed");
+
+    await reopen(app);
+    assertEquals(await app.settings["fin.accounting"].closedUntil, "");
+    assertEquals((await saldo(app, year))["2979"], undefined);
+    await sale("2026-12-30", 1); // open again
   });
 });

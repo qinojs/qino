@@ -8,6 +8,7 @@ cms.initNode("backend.superuser.fin.accounting", (el) => {
     const form = e.target;
     if (form.matches("[data-book]")) execute(e.submitter, { book: fields(form) });
     else if (form.matches("[data-account]")) execute(e.submitter, { account: fields(form) });
+    else if (form.matches("[data-close]")) execute(e.submitter, { close: fields(form) });
     else return; // the filters are plain GET forms
     e.preventDefault();
   });
@@ -15,5 +16,7 @@ cms.initNode("backend.superuser.fin.accounting", (el) => {
   el.addEventListener("click", (e) => {
     const button = e.target.closest("[data-reverse]");
     if (button) execute(button, { reverse: button.dataset.reverse });
+    const reopen = e.target.closest("[data-reopen]");
+    if (reopen) execute(reopen, { reopen: true });
   });
 });

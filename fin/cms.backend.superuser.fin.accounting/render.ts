@@ -21,6 +21,58 @@ export function render(node: Node): Promise<HtmlString> {
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
 
+const addDays = (date: string, n: number) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
+
+/** The same day a year later; the 29th of February becomes the 28th. */
+const yearAfter = (date: string) => {
+  const [y, m, d] = date.split("-").map(Number);
+  const last = new Date(Date.UTC(y + 1, m, 0)).getUTCDate();
+  return `${y + 1}-${String(m).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+};
+
+/**
+ * Closing the next business year: the day it ends — a year after the last closing, else the end
+ * of last year —, what is still open in it, and opening the last one again. The checks warn, they
+ * do not stop it.
+ */
+async function closing(app: App): Promise<HtmlString> {
+  const t = app.t;
+  const closed = String(await app.settings["fin.accounting"].closedUntil ?? "");
+  const from = closed ? addDays(closed, 1) : "0000-01-01";
+  const until = closed ? yearAfter(closed) : `${new Date().getFullYear() - 1}-12-31`;
+  const count = (query: Promise<unknown>) => query.then(Number);
+  const [drafts, unassigned, bare] = await Promise.all([
+    count(app.db.one`SELECT COUNT(*) FROM invoice WHERE status = 'draft' AND (date IS NULL OR date <= ${until})`),
+    linked(app, "fin.bank")
+      ? count(app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL AND date >= ${from}
+        AND date <= ${until}`)
+      : 0,
+    // entries by hand without a receipt; automatic ones carry their invoice's file or need none
+    count(app.db.one`SELECT COUNT(*) FROM accounting_entry e WHERE e.ref IS NULL AND e.reverses IS NULL
+      AND e.date >= ${from} AND e.date <= ${until}
+      AND NOT EXISTS (SELECT 1 FROM accounting_entry_file f WHERE f.entry_id = e.id)`),
+  ]);
+  const check = (n: number, label: unknown) =>
+    html.async`<li>${n ? badge(n, "--orange") : badge("✓", "--green")} ${label}`;
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Close the year`} ${closed ? html.async`<small>${t`closed until`} ${closed}</small>` : ""}</div>
+    <ul>
+      ${check(drafts, t`draft invoices of the year`)}
+      ${linked(app, "fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
+      ${check(bare, t`entries by hand without a receipt`)}
+    </ul>
+    <p><small>${t`By hand before: accruals, depreciation, the VAT reconciliation.`}</small>
+    <form data-close>
+      <input type=date name=until value="${until}" required>
+      <button u2-confirm="${t`Close the year? Its result goes to equity, and nothing can be booked in it any more.`}">
+        ${t`Close`}</button>
+    </form>
+    ${closed ? html.async`<button data-reopen u2-confirm="${t`Open the last closed year again?`}">
+      ${t`Reopen`} ${closed}</button>` : ""}
+  </div>`;
+}
+
 /** The Swiss VAT return of the period, figure by figure, and how it is computed. */
 async function vat(app: App, from: string, to: string, currency: string): Promise<HtmlString> {
   const t = app.t;
@@ -73,7 +125,7 @@ async function overview(node: Node, url: URL) {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Result`} <small>${from} – ${to}</small></div>
-    ${statement(app, accounts, ["expense"], ["income"], currency)}
+    ${statement(app, await balances(app, { from, to, closings: false }), ["expense"], ["income"], currency)}
   </div>
   ${linked(app, "fin.accounting.ch") ? vat(app, from, to, currency) : ""}
   <div class=u2-card style="flex:0 1 auto">
@@ -87,7 +139,7 @@ async function overview(node: Node, url: URL) {
       </select>
       <button>${t`Filter`}</button>
     </form>
-    <div style="overflow:auto; padding:0">${journal(node, url, from, to)}</div>
+    <div style="overflow:auto; max-height:70vh; padding:0">${journal(node, url, from, to)}</div>
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Book by hand`}</div>
@@ -95,7 +147,7 @@ async function overview(node: Node, url: URL) {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Chart of accounts`}</div>
-    <div style="overflow:auto; max-height:30rem; padding:0"><table class=u2-table>
+    <div style="overflow:auto; max-height:70vh; padding:0"><table class=u2-table>
       ${accounts.map((a) => html`<tr><td>${a.number}<td>${a.name}<td><small>${a.type}</small>`)}
     </table></div>
     <form data-account>
@@ -105,6 +157,7 @@ async function overview(node: Node, url: URL) {
       <button>${t`Add`}</button>
     </form>
   </div>
+  ${closing(app)}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Settings`}</div>
     <settings-editor source="/api/core/settings/fin.accounting"></settings-editor>

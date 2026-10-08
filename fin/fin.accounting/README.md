@@ -44,6 +44,20 @@ A payment is booked as the difference to what is booked for it already (`ref` `f
 so partial payments, refunds and fees add up whenever `payment:change` fires. A failed automatic
 entry (closed period, missing account) is logged and never stops the invoice or the payment.
 
+## Closing a year
+
+`close(app, until)` closes the business year that ends on `until` — any day, not only the 31st
+of December: income and expense since the last closing go to the result account
+(`accounts.result`, equity; 2979 in Switzerland, 2800 for a sole proprietorship) in one entry
+(`ref` `fin.accounting:close:<until>`), and the books are closed up to that day. The result of a
+closed year still shows: `balances(app, { from, to, closings: false })` leaves the closing out.
+`reopen(app)` opens the last closed year again and takes its closing entry back on its own day.
+
+There is no carry-over into the new year: the book runs on, the balance sheet adds up all that
+came before. The accounting backend lists what is still open in the year (drafts, unassigned
+bank lines, entries by hand without a receipt) and closes it. Accruals, depreciation, the
+appropriation of the result and the VAT reconciliation are booked by hand.
+
 ## Decisions that may change
 
 - **One signed amount per line** (debit +, credit −) instead of two columns: a balance is a sum.

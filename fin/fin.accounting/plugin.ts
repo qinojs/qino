@@ -22,6 +22,7 @@ export const settingsSchema = {
         fees: role("What payment providers and banks keep"),
         money: role("Where money lands, unless moneyBy names the provider"),
         moneyBy: role("Per provider: bank:1020, cash:1000, saferpay:1091"),
+        result: role("Where closing a year puts its profit or loss (equity)"),
       },
     },
   },

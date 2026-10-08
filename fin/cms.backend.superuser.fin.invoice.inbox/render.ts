@@ -26,7 +26,7 @@ export async function render(node: Node): Promise<HtmlString> {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`To check`}</div>
-    ${drafts.length ? html.async`<div style="overflow:auto; padding:0"><table class=u2-table>
+    ${drafts.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0"><table class=u2-table>
       <thead><tr>
         <th>${t`Supplier`}
         <th>${t`User`}

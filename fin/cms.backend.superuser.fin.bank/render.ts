@@ -61,7 +61,7 @@ export async function render(node: Node): Promise<HtmlString> {
       </select>
       <button>${t`Filter`}</button>
     </form>
-    <div style="overflow:auto; padding:0">${lines(node, url)}</div>
+    <div style="overflow:auto; max-height:70vh; padding:0">${lines(node, url)}</div>
   </div>
 </div>`;
 }

@@ -40,3 +40,20 @@ Deno.test("statements, journal and an entry by hand, its detail and its reversal
     assertEquals([wrong.ok, wrong.message?.includes("zero")], [false, true]);
   });
 });
+
+Deno.test("a year is closed from its card, which lists what is still open, and opened again", async () => {
+  await withFinApp(FIN, async (app) => {
+    const node = backendNode(app, "/backend/accounting");
+    const base = "http://qino.test/backend/accounting";
+    await create(app, { currency: "CHF", date: "2025-06-01", lines: [{ name: "Draft", price: 100 }] });
+    let page = String(await inRequest(app, base, () => render(node)));
+    assertStringIncludes(page, `value="${new Date().getFullYear() - 1}-12-31"`); // last year, proposed
+    assertStringIncludes(page, "draft invoices of the year");
+    const closed = await inRequest(app, base, () => api(node, { close: { until: "2025-12-31" } }));
+    assertEquals((closed as Answer).ok, true);
+    page = String(await inRequest(app, base, () => render(node)));
+    assertStringIncludes(page, 'value="2026-12-31"'); // the next one, a year on
+    await inRequest(app, base, () => api(node, { reopen: true }));
+    assertEquals(await app.settings["fin.accounting"].closedUntil, "");
+  });
+});

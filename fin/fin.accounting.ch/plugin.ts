@@ -16,6 +16,7 @@ const ROLES = {
   fees: "6940",
   money: "1020",
   moneyBy: "cash:1000, saferpay:1091, credit:2030",
+  result: "2979",
 };
 
 export const settingsSchema = {

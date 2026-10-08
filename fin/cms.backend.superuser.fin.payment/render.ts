@@ -40,7 +40,7 @@ async function overview(node: Node, url: URL) {
       </select>
       <button>${t`Filter`}</button>
     </form>
-    <div style="overflow:auto; padding:0">${list(node, url)}</div>
+    <div style="overflow:auto; max-height:70vh; padding:0">${list(node, url)}</div>
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Providers`}</div>

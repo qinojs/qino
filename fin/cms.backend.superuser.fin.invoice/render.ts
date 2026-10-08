@@ -69,7 +69,7 @@ async function overview(node: Node, url: URL) {
       <label><input type=checkbox name=overdue value=1${q("overdue") ? html.raw(" checked") : ""}> ${t`overdue`}</label>
       <button>${t`Filter`}</button>
     </form>
-    <div style="overflow:auto; padding:0">${list(node, url)}</div>
+    <div style="overflow:auto; max-height:70vh; padding:0">${list(node, url)}</div>
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`New invoice`}</div>
@@ -252,7 +252,7 @@ async function editor(node: Node, row: Row) {
         ${t`Prices include tax`}
         <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
       </u2-fields>
-      <div style="overflow:auto"><table class=u2-table>
+      <div style="overflow:auto; max-height:70vh"><table class=u2-table>
         <thead><tr>
           <th>
           <th>${t`Item`}
@@ -381,7 +381,7 @@ async function detail(node: Node, id: number) {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Lines`}</div>
-    <div style="overflow:auto; max-height:42rem; padding:0"><table class=u2-table>
+    <div style="overflow:auto; max-height:70vh; padding:0"><table class=u2-table>
       <thead><tr>
         <th>${t`Description`}
         <th>${t`Quantity`}

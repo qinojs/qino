@@ -112,20 +112,72 @@ export async function attach(app: App, id: number, files: DbFile[]): Promise<voi
  * Every account with what is booked on it: up to `to` for the balance sheet, from `from` to `to`
  * for income and expense — the result of a period. Debit positive, credit negative.
  */
-export async function balances(app: App, { from, to }: { from?: string; to?: string } = {}): Promise<Row[]> {
+export async function balances(
+  app: App,
+  { from, to, closings = true }: { from?: string; to?: string; closings?: boolean } = {},
+): Promise<Row[]> {
   const until = to ? sql`AND e.date <= ${to}` : sql``;
+  // without the closing entries, a closed year still shows its result
+  const open = closings ? sql`` : sql`AND (e.ref IS NULL OR e.ref NOT LIKE ${`${CLOSING}%`})`;
   const since = from ? sql`AND (a.type IN ('asset', 'liability', 'equity') OR e.date >= ${from})` : sql``;
   return await app.db.query`
     SELECT a.id, a.number, a.name, a.type,
       COALESCE(SUM(CASE WHEN e.id IS NULL THEN 0 ELSE l.amount END), 0) AS balance
     FROM accounting_account a
     LEFT JOIN accounting_entry_line l ON l.account_id = a.id
-    LEFT JOIN accounting_entry e ON e.id = l.entry_id ${until} ${since}
+    LEFT JOIN accounting_entry e ON e.id = l.entry_id ${until} ${since} ${open}
     GROUP BY a.id, a.number, a.name, a.type
     ORDER BY a.number`;
 }
 
 const today = () => new Date().toLocaleDateString("sv-SE");
+
+const addDays = (date: string, n: number) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
+
+/** The ref of the entries that close a year: `fin.accounting:close:2026-12-31`. */
+const CLOSING = "fin.accounting:close:";
+
+/**
+ * Close the business year that ends on `until` — any day, not only the 31st of December: its
+ * income and expense since the last closing go to the result account (`accounts.result`, equity)
+ * in one entry on that day, and the books are closed up to it. A year with nothing booked closes
+ * without an entry.
+ */
+export async function close(app: App, until: string): Promise<number | undefined> {
+  if (!DATE.test(until)) fail("dates are YYYY-MM-DD");
+  const s = app.settings["fin.accounting"];
+  const closed = String(await s.closedUntil ?? "");
+  if (closed && until <= closed) fail(`closed until ${closed} already`);
+  const result = String(await s.accounts.result ?? "");
+  if (!result) fail("where does the result go? Set fin.accounting.accounts.result");
+  const from = closed ? addDays(closed, 1) : undefined;
+  const flows = (await balances(app, { from, to: until }))
+    .filter((a) => (a.type === "income" || a.type === "expense") && Number(a.balance));
+  // each account back to zero, the difference — profit as credit, loss as debit — onto equity
+  const lines = flows.map((a) => ({ account: String(a.number), amount: -Number(a.balance) }));
+  lines.push({ account: result, amount: flows.reduce((sum, a) => sum + Number(a.balance), 0) });
+  const id = lines.length > 1
+    ? await book(app, { date: until, text: `Closing ${until}`, ref: `${CLOSING}${until}`, lines })
+    : undefined;
+  await s.closedUntil(until);
+  return id;
+}
+
+/** Open the last closed year again: its closing entry is taken back on its own day. */
+export async function reopen(app: App): Promise<void> {
+  const s = app.settings["fin.accounting"];
+  const closed = String(await s.closedUntil ?? "");
+  if (!closed) fail("nothing is closed");
+  const entry = await app.db.one`SELECT id FROM accounting_entry e WHERE ref = ${`${CLOSING}${closed}`}
+    AND reverses IS NULL AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
+  // the closing before is where the books stay closed; none, and they are open
+  const before = await app.db.one`SELECT MAX(date) FROM accounting_entry e
+    WHERE ref LIKE ${`${CLOSING}%`} AND date < ${closed} AND reverses IS NULL
+      AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
+  await s.closedUntil(before ? String(before).slice(0, 10) : "");
+  if (entry != null) await reverse(app, Number(entry), { date: closed, text: `Reopened ${closed}` });
+}
 
 /** Who books, inside a request; nobody for an automatic entry. */
 function userId() {
