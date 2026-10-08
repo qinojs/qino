@@ -4,7 +4,7 @@ import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString, Module, Store } from "@qino/qino";
+import type { App, HtmlString, Module } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -13,7 +13,7 @@ const { name } = manifest;
 const storeDir = (app: App) => app.dir + "module/";
 const storeUrl = (app: App) => toFileUrl(storeDir(app)).href;
 /** Registered by install() below — the store is how a created module gets installed. */
-const ownStore = (app: App): Store => {
+const ownStore = (app: App) => {
   const store = app.stores.get(storeUrl(app));
   if (!store) throw new Error("The own-modules store is not registered");
   return store;

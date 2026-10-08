@@ -25,7 +25,7 @@ const CONSOLES: Record<string, string> = {
 const colored = (value: unknown) => html`<span style="color:${uniqueColor(value)}">${value}</span>`;
 const time = (value: unknown) => value ? html`<span style="color:${ageColor(value)}; white-space:nowrap">${u2.el.time(value, { narrow: true })}</span>` : "–";
 /** The services with a key: the search engines, then the readers. */
-const services = (): { key: string; use: string }[] => [
+const services = () => [
   ...Object.keys(ENGINES).map((key) => ({ key, use: "search" })),
   ...Object.entries(READERS).flatMap(([reader, { key }]) => key ? [{ key, use: `reader ${reader}` }] : []),
 ];

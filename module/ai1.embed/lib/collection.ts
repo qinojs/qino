@@ -21,7 +21,7 @@ export const embeddings = (db: Db): Embedding[] => Object.keys(db.tables).flatMa
 
 const select = sql`SELECT id, model, dimensions, EXISTS (SELECT 1 FROM ai1_model_capability k JOIN ai1_model m ON m.id = k.model_id
   WHERE m.name = ai1_embed_collection.model AND k.capability = ${"vision"}) AS vision FROM ai1_embed_collection`;
-const read = (row?: Row): Collection | undefined => row && { id: Number(row.id), model: String(row.model), dimensions: Number(row.dimensions), vision: !!Number(row.vision) };
+const read = (row?: Row) => row && { id: Number(row.id), model: String(row.model), dimensions: Number(row.dimensions), vision: !!Number(row.vision) };
 
 /** The collection for `model` and `dimensions`, created if missing. */
 export async function create(app: App, model: string, dimensions: number): Promise<Collection> {
