@@ -180,7 +180,7 @@ const addTranslateWidget = async el=>{
     const sourceLang = e.submitter.name;
     const done = loading.mark(e.target);
     try {
-      const result = await api['cms.text'].page(nodeId).translate.post({ targetLang: lang, sourceLang: sourceLang, ifNeeded: true, subpages: false });
+      const result = await api['cms.text'].page(nodeId).translate.post({ targetLang: lang, sourceLang, ifNeeded: true, subpages: false });
       await cms.dialogs.alert(t`translated texts: ${result.count}`);
       if (result.fail) await cms.dialogs.alert(t`not allowed on ${result.fail} pages`);
       result.count && location.reload();

@@ -18,8 +18,8 @@ c1.scroll = {
 			targetY = Math.max(Math.min(maxScrollY, targetY), 0);
 		}
     	var obj = {
-            targetX: targetX,
-            targetY: targetY,
+            targetX,
+            targetY,
             deltaX: targetX - scrollX,
             deltaY: targetY - scrollY,
             lastX: scrollX,

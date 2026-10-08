@@ -98,7 +98,8 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
     const format = String((credit && await settings.creditNumber) || await settings.number || "{year}-{n}");
     const number = invoice.direction === "out" ? await draw(app, format, date) : invoice.number;
     // a due date given stands; else it follows from the term, which is kept to be printed
-    const fixed = invoice.due ? { due: invoice.due } : { due: addDays(date, Number(term)), term };
+    // a credit note asks for no payment: no due date, no term
+    const fixed = credit ? {} : invoice.due ? { due: invoice.due } : { due: addDays(date, Number(term)), term };
     await app.db.table("invoice").update(id, { number, date, ...fixed, changed: unixTime() });
     return status(app, invoice, "open");
   }).then(async (issued) => {
@@ -136,7 +137,8 @@ export async function remove(app: App, id: number): Promise<void> {
 
 /**
  * Correct an issued invoice nobody has paid yet: it is canceled (its number stays used) and a
- * draft with the same content takes its place, to be changed and issued anew.
+ * draft with the same content takes its place, to be changed and issued anew. A received one's
+ * draft keeps what was read and a copy of its original: the canceled one keeps its own.
  */
 export async function revise(app: App, id: number): Promise<number> {
   const invoice = await get(app, id);
@@ -152,7 +154,11 @@ export async function revise(app: App, id: number): Promise<number> {
     text: invoice.text == null ? undefined : String(invoice.text),
     term: invoice.term == null ? undefined : Number(invoice.term),
     number: invoice.direction === "in" ? String(invoice.number ?? "") || undefined : undefined,
+    data: invoice.data ? JSON.parse(String(invoice.data)) : undefined,
   });
+  if (invoice.direction === "in" && invoice.file_id) {
+    await attach(app, draft, await (await app.dbFiles.file(Number(invoice.file_id))).clone());
+  }
   await cancel(app, id);
   return draft;
 }
@@ -207,9 +213,8 @@ export async function print(app: App, id: number, { html }: { html?: string } = 
   const bytes = await render(app, html ?? await document(app, id));
   const name = `${String(invoice.number || id).replace(/[^\w.-]+/g, "_")}.pdf`;
   const pdf = await app.dbFiles.add(new File([bytes], name, { type: "application/pdf" }));
-  const old = invoice.file_id;
   await app.db.table("invoice").update(id, { file_id: pdf.id, changed: unixTime() });
-  if (old) await (await app.dbFiles.file(Number(old)))?.remove().catch(() => {});
+  await release(app, invoice.file_id);
   return pdf;
 }
 
@@ -259,9 +264,8 @@ export async function attach(app: App, id: number, file: DbFile): Promise<Row | 
   const invoice = await get(app, id);
   if (!invoice) throw new Error(`fin.invoice: no invoice ${id}`);
   if (invoice.status !== "draft" && invoice.file_id) throw new Error("fin.invoice: an issued invoice keeps its file");
-  const old = invoice.file_id;
   await app.db.table("invoice").update(id, { file_id: file.id, changed: unixTime() });
-  if (old && Number(old) !== file.id) await (await app.dbFiles.file(Number(old)))?.remove().catch(() => {});
+  await release(app, invoice.file_id);
   return get(app, id);
 }
 
@@ -302,6 +306,12 @@ export async function settle(app: App, id: number): Promise<Row | undefined> {
 }
 
 const get = (app: App, id: number): Promise<Row | undefined> => app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
+
+/** Remove a file the invoice no longer holds — unless something still uses it: an entry's receipt. */
+async function release(app: App, id: unknown) {
+  const file = id ? await app.dbFiles.file(Number(id)).catch(() => undefined) : undefined;
+  if (file && !await file.used()) await file.remove().catch(() => {});
+}
 
 /** Change the status; conditional on the one read, so a change fires `invoice:status` once. */
 async function status(app: App, invoice: Row, to: string): Promise<Row | undefined> {

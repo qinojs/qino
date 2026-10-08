@@ -11,7 +11,7 @@ c1.onElement = function(selector, options/*, disconnectedCallback*/) {
 		options = { parsed:options }
 	}
     var listener = {
-        selector: selector,
+        selector,
 		immediate: options.immediate,
         //disconnectedCallback: disconnectedCallback,
         elements: new WeakSet(),

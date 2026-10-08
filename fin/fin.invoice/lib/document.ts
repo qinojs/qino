@@ -25,6 +25,8 @@ export async function document(
     const t = app.t;
     const sender = await organization(app);
     const party = JSON.parse(String(invoice.party ?? "{}")) ?? {};
+    // a credit note asks for no payment: no due date, no term
+    const asks = invoice.type !== "credit_note";
     const locale = localeOf(lang, sender);
     const money = moneyFormat(locale, String(invoice.currency));
     const day = dayFormat(locale);
@@ -93,8 +95,8 @@ export async function document(
 <p>
   ${invoice.corrected ? html.async`${t`Corrects invoice ${invoice.corrected}`}<br>` : ""}
   ${t`Date`}: ${day(invoice.date)}<br>
-  ${invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
-  ${invoice.term == null ? "" : t`Payable within ${invoice.term} days`}
+  ${asks && invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
+  ${asks && invoice.term != null ? t`Payable within ${invoice.term} days` : ""}
 </p>
 <table>
   <thead><tr>

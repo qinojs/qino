@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 
 import { withFinApp } from "../../tests/app.ts";
-import { attach, create, creditNote, document, issue, print } from "../mod.ts";
+import { attach, create, creditNote, document, issue, print, revise } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -90,6 +90,37 @@ Deno.test("a received invoice keeps its original as its file: attached, never re
   });
 });
 
+Deno.test("a received invoice revised: its draft keeps what was read and a copy of the original", async () => {
+  await withApp(async (app) => {
+    const original = await app.dbFiles.add(new File(["%PDF"], "bill.pdf", { type: "application/pdf" }));
+    const id = await create(app, { ...invoice, direction: "in", number: "R-77", data: { read: { total: 4726 } } });
+    await attach(app, id, original);
+    await issue(app, id);
+    const draft = await revise(app, id);
+    const row = await app.db.row`SELECT * FROM invoice WHERE id = ${draft}`;
+    assertEquals(JSON.parse(String(row?.data)), { read: { total: 4726 } });
+    const copy = await app.dbFiles.file(Number(row?.file_id));
+    assert(copy.id !== original.id); // a file of its own: replacing it leaves the canceled one's
+    assertEquals(new TextDecoder().decode(await Deno.readFile(copy.path)), "%PDF");
+    await attach(app, draft, await app.dbFiles.add(new File(["x"], "better.pdf", { type: "application/pdf" })));
+    assertEquals(Number(await app.db.one`SELECT file_id FROM invoice WHERE id = ${id}`), original.id);
+    assert(await original.exists());
+  });
+});
+
+Deno.test("a replaced file is removed only where nothing else uses it", async () => {
+  await withApp(async (app) => {
+    const shared = await app.dbFiles.add(new File(["%PDF"], "bill.pdf", { type: "application/pdf" }));
+    const [a, b] = [await create(app, { ...invoice, direction: "in" }), await create(app, { ...invoice, direction: "in" })];
+    await attach(app, a, shared);
+    await attach(app, b, shared);
+    await attach(app, b, await app.dbFiles.add(new File(["x"], "other.pdf", { type: "application/pdf" })));
+    assertEquals(await app.db.one`SELECT id FROM file WHERE id = ${shared.id}`, shared.id); // a still holds it
+    await attach(app, a, await app.dbFiles.add(new File(["y"], "third.pdf", { type: "application/pdf" })));
+    assertEquals(await app.db.one`SELECT id FROM file WHERE id = ${shared.id}`, undefined); // now nobody does
+  });
+});
+
 Deno.test("an invoice speaks its own language, with the texts the module brings", async () => {
   await withApp(async (app) => {
     app.languages.setLangs(["en", "de"]); // a site that speaks German
@@ -126,5 +157,9 @@ Deno.test("a credit note prints what it gives back, positive, and names its invo
     const doc = (await document(app, note)).replaceAll(" ", " ");
     for (const part of ["<h1>Credit note 2026-2</h1>", "Corrects invoice 2026-1"]) assertStringIncludes(doc, part);
     assertEquals(/>-[\d'.,]/.test(doc), false); // no amount with a minus
+    // it asks for no payment: no due date, no term, neither stored nor printed
+    const row = await app.db.row`SELECT due, term FROM invoice WHERE id = ${note}`;
+    assertEquals([row?.due, row?.term], [null, null]);
+    for (const part of ["Due", "Payable within"]) assertEquals(doc.includes(part), false, part);
   });
 });

@@ -261,10 +261,6 @@ Found, not yet done — to be checked before acting on them.
 
 Behaviour:
 
-- A credit note prints "Due" and "Payable within n days": `issue()` sets `due` and `term` for it too
-  (`fin.invoice/mod.ts`, `lib/document.ts`). It asks for no payment, so probably neither.
-- `revise()` of a received invoice: the new draft has no original (the receipt) and loses `data`
-  (what was read). Sharing the file needs care — `attach()` removes a replaced file.
 - A missing receipt file breaks things: `onInvoice` books nothing (`dbFiles.file` throws), the
   entry page of the accounting backend fails.
 - With `accounts.fees` empty, `onPayment` books what the provider kept onto the money account:
