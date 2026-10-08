@@ -5,7 +5,7 @@ import { renderer } from "./template.ts";
 import { unsubscribeGroup } from "./unsubscribe.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Attachment, Channel, Msg } from "../mod.ts";
+import type { Channel, Msg } from "../mod.ts";
 
 /** What a channel needs to send a recorded delivery. `uses`: placeholders the message uses,
  *  `group`: the group the recipient may leave — both only used by mail. */
@@ -26,7 +26,7 @@ const load = (app: App, batch: number[]) =>
     WHERE ${sql.in("d.id", batch)}`;
 
 /** The message's attachments as files. */
-async function attachments(app: App, messageId: number): Promise<Attachment[] | undefined> {
+async function attachments(app: App, messageId: number) {
   const files = await app.db.col`SELECT file_id FROM message_attachment WHERE message_id = ${messageId} ORDER BY sort, file_id`;
   if (!files.length) return;
   return Promise.all(files.map(async (id) => {

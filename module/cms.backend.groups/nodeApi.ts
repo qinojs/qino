@@ -10,7 +10,7 @@ export async function canManageMembers(grpId: number): Promise<boolean> {
   return !!(await ctx.user?.grps())?.includes(grpId);
 }
 
-async function requireMemberToManageMembers(grpId: number): Promise<{ error: string } | null> {
+async function requireMemberToManageMembers(grpId: number) {
   if (await canManageMembers(grpId)) return null;
   return { error: String(getCtx().app.t`You are not a member of this group and cannot manage its members.`) };
 }
