@@ -244,7 +244,7 @@ async function sqliteBox(node: Node) {
 }
 
 // One health box, run on demand: nothing when the check passes.
-async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
+async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }) {
   const check = findCheck(await getHealthChecks(node.app), vars);
   if (!check) return html.raw("");
 
@@ -258,7 +258,7 @@ async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> 
   <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(data)}</div>`;
 }
 
-async function dbDetails(node: Node): Promise<HtmlString> {
+async function dbDetails(node: Node) {
   const db = node.app.db;
   if (db.dialect === "postgres") {
     const rows = await db.query`SELECT name, setting FROM pg_settings ORDER BY name`;

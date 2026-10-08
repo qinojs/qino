@@ -386,7 +386,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 </div>`;
 }
 
-function renderCachePart(node: Node): Promise<HtmlString> {
+function renderCachePart(node: Node) {
   return renderCache(node.app);
 }
 
