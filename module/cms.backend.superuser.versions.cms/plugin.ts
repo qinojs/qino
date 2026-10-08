@@ -4,7 +4,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -27,7 +27,7 @@ async function nodeAnchor(node: Node, id: number) {
   return html`<a href="${await page.url()}" target=_blank>${label}</a>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app;
   const db = app.db;
 

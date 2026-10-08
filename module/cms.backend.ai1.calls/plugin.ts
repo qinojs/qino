@@ -4,7 +4,7 @@ import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -22,7 +22,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "AI calls", de: "KI-Aufrufe" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { db, t } = node.app;
   const usage = await db.query`
     SELECT m.name AS model, p.name AS provider, s.calls, s.errors, s.used_input, s.used_output,
