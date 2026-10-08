@@ -1,5 +1,6 @@
 import { fs, hee, html, sql, tableRef, unixTime } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
+import * as u2 from "@qino/qino/u2";
 
 import { keepEntry, openForm } from "./mod.ts";
 
@@ -86,6 +87,7 @@ async function send(node: Node, form: Form) {
 
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   await init(node);
+  u2.assets(ctx, ["el/alert/alert.js", "el/alert/alert.css", "class/width/width.css", "class/flex/flex.css"]);
   const edit = await node.edit();
   const t = node.app.t;
   const cms = node.cms;

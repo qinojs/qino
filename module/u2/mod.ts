@@ -14,6 +14,8 @@ export * as el from "./lib/el.ts";
 //   A layout asks for its own with `assets(ctx, files, "1.4.6")`. That one is written into the page as
 //   a finished url and never touches the import map, so the two versions cannot collide.
 //
+//   A layout may hand its release to the contents as `@u2/`; `assets()` without a version follows it.
+//
 const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 
 /** Where a u2 release lives: the version the caller pinned, else the one qino ships with. */
@@ -35,9 +37,9 @@ export function elements(ctx: Ctx, ...names: string[]): void {
 }
 
 /** Link u2 files (paths below the root) and allow the origin. `u2/auto.js` loads whatever the markup
- *  needs; a finished layout can drop it. */
+ *  needs; a finished layout can drop it. Without a version: the page's (`@u2/`), else qino's. */
 export function assets(ctx: Ctx, files: string[], version?: string): void {
-  const base = root(version);
+  const base = version ? root(version) : ctx.res.html.importMap.get("@u2/") ?? u2Root;
   for (const directive of ["style-src", "script-src", "connect-src"] as const) ctx.res.csp[directive][base] = true;
   for (const f of files) (f.endsWith(".js") ? ctx.res.html.scripts : ctx.res.html.styles).add(base + f);
 }

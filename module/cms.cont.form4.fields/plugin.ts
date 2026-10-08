@@ -1,4 +1,5 @@
 import { contactKey, getCtx, hee, html } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import api from "./nodeApi.ts";
 
@@ -95,9 +96,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
 
   const placeholder = await plain(node, name + "_placeholder");
 
-  /* The condition refers to other fields by name. Its script is not loaded here (`u2.assets()`
-     without version would load qino's u2 into a page with its own); the layout's `u2/auto.js`
-     loads it, with a short flicker until disabled fields are disabled. */
+  // The condition refers to other fields by name; render() loads its script.
   const disableif = String(set.disableif() ?? "").trim();
 
   const common = {
@@ -146,6 +145,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   /* One walk up the tree: the open form comes from form4's render state (read, not imported —
      form4 depends on this module); whether we are in a form at all comes from the tree, which also
      works when the node renders alone (panel reload). */
+  u2.assets(ctx, [
+    "attr/disableif/disableif.js", "class/table/table.css", "class/flex/flex.css",
+    "el/alert/alert.js", "el/alert/alert.css",
+  ]);
   const path = [...(await node.path()).values()].reverse();
   const open: Map<number, Form> | undefined = getCtx().state.form4;
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;

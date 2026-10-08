@@ -1,5 +1,6 @@
 import { html, sql, tableRef } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
+import * as u2 from "@qino/qino/u2";
 
 import api from "./nodeApi.ts";
 
@@ -106,6 +107,7 @@ async function uploads(app: App, ids: number[]) {
    to forms whose entries are private. */
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
+  u2.assets(ctx, ["el/time/time.js", "el/alert/alert.js", "el/alert/alert.css", "class/width/width.css"]);
   const form = await formOf(node);
   if (!form) {
     return await node.edit()

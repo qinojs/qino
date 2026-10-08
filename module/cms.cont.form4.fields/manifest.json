@@ -2,7 +2,8 @@
   "name": "cms.cont.form4.fields",
   "description": "The fields of a cms.cont.form4 — each one named after the label it was given.",
   "dependencies": [
-    "cms"
+    "cms",
+    "u2"
   ],
   "files": [
     "manifest.json",
