@@ -12,6 +12,7 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     else if (form.dataset.request) execute(e.submitter, { request: { ...fields(form), id: form.dataset.request } });
     else if (form.dataset.record) execute(e.submitter, { record: { ...fields(form), id: form.dataset.record } });
     else if (form.dataset.send) execute(e.submitter, { send: { ...fields(form), id: form.dataset.send } });
+    else if (form.dataset.sent) execute(e.submitter, { sent: { ...fields(form), id: form.dataset.sent } });
     else if (form.dataset.attach) {
       e.preventDefault();
       files(form.elements.file).then(([file]) => execute(e.submitter, { attach: { id: form.dataset.attach, file } }));
@@ -21,9 +22,14 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     e.preventDefault();
   });
 
-  el.addEventListener("click", (e) => {
+  el.addEventListener("click", async (e) => {
     const button = e.target.closest("[data-action]");
-    if (button) execute(button, { action: { action: button.dataset.action, id: button.dataset.id } });
+    if (!button) return;
+    const { action, id, email } = button.dataset;
+    // issued, it may go to the customer at once
+    const { confirm } = await import("@qino/u2/js/dialog/dialog.js");
+    const send = action === "issue" && email && await confirm(`${await t`Send it to`} ${email}?`);
+    execute(button, { action: { action, id, ...send ? { email } : {} } });
   });
 
   if (form) editor(form);

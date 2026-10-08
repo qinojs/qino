@@ -96,6 +96,9 @@ by that method at once, so its slip — the QR bill — is part of the invoice f
 draft's preview shows the slip it will get. Its payments carry the party as payer
 (`payerOf()`), so a slip prints who pays. Without a method, payments are asked for one by one.
 
+`send(app, id)` mails it with its PDF to its user, or `{ email }`; the first time it reaches someone
+is `sent` — set by hand with `setSent()` where it went by post.
+
 `mail(app, id)` is the mail an issued invoice goes out with — subject, a few lines, its PDF, in its
 language — for a channel to deliver; with `{ reminder }` it asks for what is still open
 ([fin.invoice.reminder](../fin.invoice.reminder/)).

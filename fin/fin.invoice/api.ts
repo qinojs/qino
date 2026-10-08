@@ -2,7 +2,9 @@ import { Access, ConflictError, NotFoundError, s, sql } from "@qino/qino";
 import { visible, whose, WHOSE } from "@qino/qino/fin";
 import { create as pay, methods } from "@qino/qino/fin.payment";
 
-import { cancel, create, creditNote, issue, lines, payerOf, print, refOf, remove, revise, update } from "./mod.ts";
+import {
+  cancel, create, creditNote, issue, lines, payerOf, print, refOf, remove, revise, setSent, update,
+} from "./mod.ts";
 
 import type { ApiTree, Ctx, Params, Row } from "@qino/qino";
 
@@ -183,6 +185,17 @@ export const api: ApiTree = {
       cancel: { post: action("Withdraw it; its number stays used", cancel) },
       revise: { post: action("Cancel an open invoice nothing was paid on, for a draft with its content", revise) },
       creditNote: { post: action("A draft credit note for an issued invoice of ours", creditNote) },
+      sent: {
+        post: {
+          description: "Say when it was sent — by post, from elsewhere; none: not yet",
+          access: Access.SUPERUSER,
+          input: s.object({ date: s.optional(s.string().describe("YYYY-MM-DD")) }),
+          execute: async ({ invoice, date }: Params, ctx: Ctx) => {
+            await setSent(ctx.app, Number((invoice as Row).id), (date as string | undefined) || null);
+            return { ok: true };
+          },
+        },
+      },
     },
   },
 };

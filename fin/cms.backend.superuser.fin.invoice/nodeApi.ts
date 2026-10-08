@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 import { fileOf, parseAmount } from "@qino/qino/cms.backend.superuser.fin";
 import { partyOf } from "@qino/qino/fin";
 import {
-  attach, cancel, create, creditNote, document, issue, mail, payerOf, print, refOf, remove, revise, update,
+  attach, cancel, create, creditNote, document, issue, payerOf, print, refOf, remove, revise, send, setSent, update,
 } from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
@@ -46,23 +46,28 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     // by mail, with its PDF: to the address typed, else to its user's
     if (vars.send) {
       const { id, email } = vars.send as Record<string, string>;
-      const invoice = await app.db.row`SELECT usr_id FROM invoice WHERE id = ${Number(id)}`;
-      const to = email ? { email } : invoice?.usr_id ? { usr: Number(invoice.usr_id) } : undefined;
-      if (!to) return { ok: false, message: await t`No address to send it to` };
-      const { send } = await import("@qino/qino/messaging.email");
-      const reached = await send(app, to, await mail(app, Number(id)));
-      if (!reached) return { ok: false, message: await t`Not sent: no email address` };
+      if (!await send(app, Number(id), { email })) return { ok: false, message: await t`Not sent: no email address` };
       return { ok: true, message: await t`Sent.` };
+    }
+    // when it was sent, by hand: by post, from elsewhere; empty, not yet
+    if (vars.sent) {
+      const { id, date } = vars.sent as Record<string, string>;
+      await setSent(app, Number(id), date || null);
+      return { ok: true };
     }
     if (vars.attach) {
       const { id, file } = vars.attach as { id: string; file: { name: string; type: string; data: string } };
       await attach(app, Number(id), await fileOf(app, file));
       return { ok: true };
     }
-    const { action, id } = (vars.action ?? {}) as { action?: string; id?: string };
+    const { action, id, email } = (vars.action ?? {}) as { action?: string; id?: string; email?: string };
     if (action === "issue") {
       const issued = await issue(app, Number(id));
-      return { ok: true, message: `${await t`Issued as`} ${issued?.number ?? ""}` };
+      // and to the customer at once, where the one issuing said so
+      const sent = !email ? "" : await send(app, Number(id), { email })
+        ? ` ${await t`Sent.`}`
+        : ` ${await t`Not sent: no email address`}`;
+      return { ok: true, message: `${await t`Issued as`} ${issued?.number ?? ""}.${sent}` };
     }
     if (action === "cancel") return { ok: !!await cancel(app, Number(id)), message: await t`Canceled.` };
     if (action === "credit") {

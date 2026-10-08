@@ -187,3 +187,19 @@ Deno.test("a credit note is made from an invoice, and what it owes goes onto the
     assertEquals(Number(await app.db.one`SELECT SUM(amount) FROM payment_credit WHERE usr_id = ${usr}`), 10000);
   });
 });
+
+Deno.test("issued, it goes to the customer at once where asked to, and says when", async () => {
+  await withFinApp([...FIN, "messaging", "messaging.email"], async (app) => {
+    await app.settings["messaging.email"].address("office@atelier.test");
+    const mails: unknown[] = [];
+    setTransport(app, { send: (m) => (mails.push(m), Promise.resolve({ successful: true })) });
+    const node = backendNode(app, "/backend/invoices");
+    const id = await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] });
+    const issue = { action: "issue", id: String(id), email: "anna@example.com" };
+    const issued = await inRequest(app, "http://qino.test/", () => api(node, { action: issue })) as Answer;
+    assertStringIncludes(issued.message!, "Sent.");
+    assertEquals(mails.length, 1);
+    const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
+    assertStringIncludes(page, `data-sent="${id}"`);
+  });
+});

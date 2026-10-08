@@ -1,6 +1,6 @@
 import { sql, unixTime } from "@qino/qino";
 import { addDays, addMonths, partyOf, today } from "@qino/qino/fin";
-import { create as invoice, issue, mail } from "@qino/qino/fin.invoice";
+import { create as invoice, issue, send as sendInvoice } from "@qino/qino/fin.invoice";
 
 import type { App, Row } from "@qino/qino";
 
@@ -214,15 +214,8 @@ export async function bill(app: App, { until }: { until?: string } = {}): Promis
     });
     const send = !!await settings.send;
     if (send || await settings.issue) await issue(app, id);
-    if (send) await mailed(app, id, usrId).catch((e) => console.error("fin.subscription: not mailed", id, e));
+    if (send) await sendInvoice(app, id).catch((e) => console.error("fin.subscription: not mailed", id, e));
     ids.push(id);
   }
   return ids;
-}
-
-/** Mail an issued invoice to its user with its PDF, where mail is installed. */
-async function mailed(app: App, id: number, usrId: number) {
-  if (!app.modules.linked("messaging.email")) return;
-  const { send } = await import("@qino/qino/messaging.email");
-  await send(app, { usr: usrId }, await mail(app, id));
 }

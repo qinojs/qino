@@ -197,6 +197,9 @@ async function editor(node: Node, row: Row) {
   // the languages the site has texts for; the document falls back to the default one likewise
   const languages = app.languages.all;
   const term = await app.settings["fin.invoice"].term;
+  // issued, ours may go to the customer at once: the address to ask about. Its buttons are type=button:
+  // in the form, a submit button acts on click before u2-confirm has asked
+  const email = row.direction === "out" && app.modules.linked("messaging.email") ? await emailOf(app, row.usr_id) : "";
   const users = await app.db.query`SELECT id, given_name, family_name, organization FROM usr
     ORDER BY family_name, given_name`;
   const lang = languages.includes(String(row.lang)) ? String(row.lang) : app.languages.def;
@@ -266,9 +269,10 @@ async function editor(node: Node, row: Row) {
       <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text}</textarea></u2-fields>
     </div>
     <div>
-      <button data-action=issue data-id="${id}"
+      <button type=button data-action=issue data-id="${id}" data-email="${email}"
         u2-confirm="${t`Issue it? Its number is drawn now; then it cannot change.`}">${t`Issue`}</button>
-      <button data-action=remove data-id="${id}" u2-confirm="${t`Throw this draft away?`}">${t`Delete draft`}</button>
+      <button type=button data-action=remove data-id="${id}"
+        u2-confirm="${t`Throw this draft away?`}">${t`Delete draft`}</button>
     </div>
   </form>
 
@@ -340,6 +344,9 @@ async function detail(node: Node, id: number) {
       ${field(t`Number`, row.number)}
       ${field(t`Date`, row.date)}
       ${field(t`Due`, due(app, row))}
+      ${row.direction === "out" ? field(t`Sent`, html.async`<form data-sent="${id}">
+        <input type=date name=date value="${row.sent}"> <button>${t`Save`}</button>
+      </form>`) : ""}
       ${Number(row.reminder) ? field(t`Reminded`, html.async`${row.reminder}× · ${row.reminded}`) : ""}
       ${field(t`Net`, money(row.net, row.currency))}
       ${field(t`Tax`, money(row.tax, row.currency))}

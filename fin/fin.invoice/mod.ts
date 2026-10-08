@@ -262,6 +262,26 @@ export async function mail(app: App, id: number, { reminder = 0 } = {}) {
 }
 
 /**
+ * Send it with its PDF (`messaging.email`): to `email`, else to its user. The first time it reaches
+ * someone is when it was `sent`. Resolves whether it did.
+ */
+export async function send(app: App, id: number, { email }: { email?: string } = {}): Promise<boolean> {
+  const invoice = await get(app, id);
+  const to = email ? { email } : invoice?.usr_id ? { usr: Number(invoice.usr_id) } : undefined;
+  if (!to || !app.modules.linked("messaging.email")) return false;
+  const messaging = await import("@qino/qino/messaging.email");
+  if (!await messaging.send(app, to, await mail(app, id))) return false;
+  await app.db.exec`UPDATE invoice SET sent = ${today()} WHERE id = ${id} AND sent IS NULL`;
+  return true;
+}
+
+/** Say when it was sent — by post, from elsewhere — or `null`: not yet. */
+export async function setSent(app: App, id: number, date: string | null): Promise<void> {
+  if (date != null && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("dates are YYYY-MM-DD");
+  await app.db.exec`UPDATE invoice SET sent = ${date}, changed = ${unixTime()} WHERE id = ${id}`;
+}
+
+/**
  * Keep the original a received invoice came as — the receipt, kept unchanged. A draft may get
  * another one; an issued invoice only one where it has none yet, so what was booked stays.
  */

@@ -54,6 +54,11 @@
             "x-index": true,
             "description": "Due date, YYYY-MM-DD; overdue is derived from it"
           },
+          "sent": {
+            "type": "string",
+            "format": "date",
+            "description": "When it first went to the customer; set by hand where it went by post"
+          },
           "term": {
             "type": "integer",
             "description": "Days to pay, as agreed and printed; the due date follows from it on issue"
