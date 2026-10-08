@@ -22,11 +22,11 @@ const withApp = (fn: (app: App, as: As, node: Node) => Promise<void>) =>
 /** What the editor sends: every field of the form, the second line left empty. */
 const edited = {
   currency: "chf", title: "", name: "Kunde & Co", streetAddress: "Seeweg 2", postalCode: "3000",
-  addressLocality: "Bern", addressCountry: "ch", vatID: "", usrId: "", gross: "", text: "Danke",
+  addressLocality: "Bern", addressCountry: "ch", vatID: "", usrId: "", taxIncluded: "", text: "Danke",
   date: "", due: "", lang: "",
-  name0: "Design", description0: "Logo & colours", qty0: "2,5", unit0: "h", price0: "120.00", taxRate0: "8.1",
-  name1: "", qty1: "", unit1: "", price1: "", taxRate1: "",
-  name5: "Hosting", qty5: "", unit5: "", price5: "99", taxRate5: "8.1",
+  name0: "Design", description0: "Logo & colours", quantity0: "2,5", unit0: "h", price0: "120.00", taxRate0: "8.1",
+  name1: "", quantity1: "", unit1: "", price1: "", taxRate1: "",
+  name5: "Hosting", quantity5: "", unit5: "", price5: "99", taxRate5: "8.1",
 };
 
 Deno.test("a new invoice opens in the editor, saves as one types, is issued, asked for and paid", async () => {

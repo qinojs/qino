@@ -32,7 +32,7 @@ export const authFactors = (app: App): Declared[] =>
   });
 
 /** Those of `factors` this user has set up. No `has()` counts as set up. */
-async function setUpBy<T extends AuthFactor>(app: App, usrId: number, factors: T[]): Promise<T[]> {
+async function setUpBy<T extends AuthFactor>(app: App, usrId: number, factors: T[]) {
   const has = await Promise.all(factors.map((f) => f.has?.(app, usrId).catch(() => false) ?? true));
   return factors.filter((_, i) => has[i]);
 }

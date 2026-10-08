@@ -51,7 +51,7 @@ const statement = `<?xml version="1.0" encoding="UTF-8"?>
 
 Deno.test("a statement becomes its account and lines; batches are split, signs follow debit and credit", () => {
   const [result] = parse(statement);
-  assertEquals([result.iban, result.currency], ["CH5604835012345678009", "CHF"]);
+  assertEquals([result.account, result.currency], ["CH5604835012345678009", "CHF"]);
   assertEquals(result.transactions, [
     {
       id: "TX-1", date: "2026-10-07", amount: 47226, currency: "CHF",
@@ -77,7 +77,7 @@ Deno.test("a notification reads alike, prefixed elements and currencies with oth
       <c:AcctSvcrRef>K-1</c:AcctSvcrRef></c:Ntry>
   </c:Ntfctn></c:BkToCstmrDbtCdtNtfctn></c:Document>`;
   const [result] = parse(xml);
-  assertEquals(result.iban, "KW81CBKU0000000000001234560101");
+  assertEquals(result.account, "KW81CBKU0000000000001234560101");
   assertEquals(result.transactions.map((t) => [t.id, t.amount]), [["K-1", 1500]]); // KWD has three decimals
 });
 

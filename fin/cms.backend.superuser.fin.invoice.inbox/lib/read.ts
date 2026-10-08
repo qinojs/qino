@@ -1,9 +1,9 @@
 // Reading received invoices. Lives in this backend page for now; once something else needs it — the
 // mail inbox, an API — it moves into a module of its own (fin.invoice.read).
+import { fs } from "@qino/qino";
 import { structured } from "@qino/qino/ai1";
 import { attach, create } from "@qino/qino/fin.invoice";
 import { currency as currencies } from "@qino/qino/locale.currency";
-import { extractText, getDocumentProxy } from "unpdf";
 
 import type { App, DbFile } from "@qino/qino";
 import type { Part } from "@qino/qino/ai1";
@@ -37,12 +37,12 @@ const SCHEMA = {
         properties: {
           name: { type: "string" },
           description: { type: "string", description: "Details below the name, empty if none" },
-          qty: { type: "number" },
+          quantity: { type: "number" },
           unit: { type: "string" },
           unitPrice: { type: "number", description: "Per unit, as printed" },
           taxRate: { type: "number", description: "VAT percent, 0 if none" },
         },
-        required: ["name", "qty", "unitPrice", "taxRate"],
+        required: ["name", "quantity", "unitPrice", "taxRate"],
       },
     },
     total: { type: "number", description: "The total to pay, as printed" },
@@ -72,27 +72,41 @@ export type Read = {
   due?: string;
   currency: string;
   pricesIncludeTax?: boolean;
-  lines: { name: string; description?: string; qty: number; unit?: string; unitPrice: number; taxRate: number }[];
+  lines: {
+    name: string;
+    description?: string;
+    quantity: number;
+    unit?: string;
+    unitPrice: number;
+    taxRate: number;
+  }[];
   total: number;
   reference?: string;
 };
 
-/** The text a PDF carries; empty for a scan. pdf.js as unpdf builds it: text only, nothing native. */
-export async function pdfText(bytes: Uint8Array): Promise<string> {
-  const { text } = await extractText(await getDocumentProxy(bytes.slice()), { mergePages: true });
-  return String(text).trim();
-}
+/** Pages of a PDF shown as pictures when it has no text: an invoice rarely has more. */
+const PAGES = 5;
 
-/** What the model is shown: a PDF's text, or the picture itself. */
-async function partsOf(bytes: Uint8Array, type: string): Promise<Part[]> {
-  if (type === "application/pdf") {
-    const text = await pdfText(bytes);
-    // a scan has no text: its pages would have to be pictures (not built yet)
-    if (text.length < 30) throw new Error("This PDF is a scan without text: upload its pages as images.");
-    return [{ type: "text", text }];
+const picture = async (path: string, type: string): Promise<Part> =>
+  ({ type: "image", url: `data:${type};base64,${(await fs.bytes(path)).toBase64()}` });
+
+/**
+ * What the model is shown: a PDF's text — its own, or what OCR made of a scan — else its pages
+ * as pictures; a photo as it is. The file's transforms do the work.
+ */
+export async function partsOf(file: DbFile): Promise<Part[]> {
+  if (file.mime.startsWith("image/")) return [await picture(file.path, file.mime)];
+  if (file.mime !== "application/pdf") throw new Error(`Cannot read ${file.mime || "this file"}: PDF or image only.`);
+  const text = (await file.extractText().catch(() => "")).trim();
+  if (text.length >= 30) return [{ type: "text", text }];
+  const pages: Part[] = [];
+  for (let page = 1; page <= PAGES; page++) {
+    const shown = await file.transform({ page, w: 1600, fmt: "jpg" });
+    if (!shown.transformed) break; // past the last page
+    pages.push(await picture(shown.path, shown.mime));
   }
-  if (type.startsWith("image/")) return [{ type: "image", url: `data:${type};base64,${bytes.toBase64()}` }];
-  throw new Error(`Cannot read ${type || "this file"}: PDF or image only.`);
+  if (!pages.length) throw new Error("This PDF shows neither text nor pages.");
+  return pages;
 }
 
 /** The answer as values of a received invoice, in minor units. */
@@ -116,12 +130,12 @@ export function valuesOf(read: Read) {
     number: read.number || undefined,
     date: date(read.date),
     due: date(read.due),
-    gross: Boolean(read.pricesIncludeTax),
+    taxIncluded: Boolean(read.pricesIncludeTax),
     party: { name: s.name, address, ...s.vatID ? { vatID: s.vatID } : {}, ...iban },
     lines: (read.lines ?? []).map((line) => ({
       name: String(line.name),
       description: line.description || undefined,
-      qty: Number(line.qty) || 1,
+      quantity: Number(line.quantity) || 1,
       unit: line.unit || undefined,
       price: minor(line.unitPrice),
       taxRate: Number(line.taxRate) || 0,
@@ -133,8 +147,8 @@ export function valuesOf(read: Read) {
 }
 
 /** Read a received invoice into a draft, its file attached as receipt. */
-export async function read(app: App, file: DbFile, bytes: Uint8Array, type: string): Promise<number> {
-  const parts = await partsOf(bytes, type);
+export async function read(app: App, file: DbFile): Promise<number> {
+  const parts = await partsOf(file);
   const answer = await structured<Read>(app, {
     messages: [{ role: "system", content: INSTRUCTION }, { role: "user", content: parts }],
     schema: SCHEMA,

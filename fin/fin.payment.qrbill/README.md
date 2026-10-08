@@ -5,7 +5,7 @@ e-banking or pays at the counter; the bank statement settles it.
 
 ```ts
 const { redirect } = await create(app, {
-  method: "qrbill", amount: 47226, currency: "CHF", ref: refOf(invoiceId), title: "Rechnung 2026-1", return: "/",
+  method: "qrbill", amount: 47226, currency: "CHF", ref: refOf(invoiceId), description: "Rechnung 2026-1", return: "/",
 }); // redirect: payment/pay/<token>, the slip
 ```
 

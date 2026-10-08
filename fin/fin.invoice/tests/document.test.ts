@@ -12,9 +12,9 @@ const invoice = {
   currency: "CHF",
   party: { name: "Kunde & Co", address: { streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern" } },
   lines: [
-    { name: "Design <draft>", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
+    { name: "Design <draft>", quantity: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
     { name: "Book", description: "Second edition\nhardcover", price: 3990, taxRate: 2.6 },
-    { name: "Power", qty: 100, unit: "kWh", price: 23.45, taxRate: 8.1 },
+    { name: "Power", quantity: 100, unit: "kWh", price: 23.45, taxRate: 8.1 },
   ],
   text: "Thank you.\nPayable within 30 days.",
   date: "2026-10-07",

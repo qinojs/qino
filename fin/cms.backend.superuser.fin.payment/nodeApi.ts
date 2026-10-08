@@ -28,7 +28,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         amount: toMinor(v.amount, currency),
         currency,
         ref: v.ref || undefined,
-        title: v.title || undefined,
+        description: v.description || undefined,
       });
       return { ok: true, message: `${await app.t`Recorded as payment`} #${id}` };
     }

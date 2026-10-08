@@ -73,7 +73,7 @@ async function billOf(app: App, payment: Row) {
     },
     // a preview has no reference yet: the one its id would get
     reference: String(payment.external_id ?? await referenceOf(app, Number(payment.id))),
-    message: payment.title ? String(payment.title) : undefined,
+    message: payment.description ? String(payment.description) : undefined,
   };
 }
 

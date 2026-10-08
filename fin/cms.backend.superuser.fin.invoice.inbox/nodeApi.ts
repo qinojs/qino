@@ -19,7 +19,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     try {
       const bytes = Uint8Array.fromBase64(String(sent.data));
       const file = await app.dbFiles.add(new File([bytes], sent.name || "invoice", { type: sent.type }));
-      done.push(await read(app, file, bytes, sent.type));
+      // a file that could not be read is no receipt of anything
+      done.push(await read(app, file).catch(async (e) => {
+        await file.remove();
+        throw e;
+      }));
     } catch (e) {
       failed.push(`${sent.name}: ${errMsg(e)}`);
     }

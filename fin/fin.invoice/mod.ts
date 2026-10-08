@@ -19,7 +19,7 @@ export type { Line } from "./lib/totals.ts";
 type Values = {
   currency: string;
   lines: Line[];
-  gross?: boolean;
+  taxIncluded?: boolean;
   party?: Record<string, unknown>;
   usrId?: number | null;
   ref?: string;
@@ -95,7 +95,7 @@ async function ask(app: App, invoice: Row) {
     amount: Number(invoice.total),
     currency: String(invoice.currency),
     ref: refOf(Number(invoice.id)),
-    title: [invoice.title, invoice.number].filter(Boolean).join(" "),
+    description: [invoice.title, invoice.number].filter(Boolean).join(" "),
     usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
     return: "/",
   });
@@ -124,7 +124,7 @@ export async function revise(app: App, id: number): Promise<number> {
     direction: invoice.direction === "in" ? "in" : "out",
     currency: String(invoice.currency),
     lines: (await lines(app, id)).map(lineOf),
-    gross: Boolean(invoice.gross),
+    taxIncluded: Boolean(invoice.tax_included),
     party: JSON.parse(String(invoice.party ?? "{}")) ?? undefined,
     usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
     ref: invoice.ref == null ? undefined : String(invoice.ref),
@@ -155,9 +155,9 @@ export async function document(app: App, id: number): Promise<string> {
   // a draft has no payment yet: it shows the slip it will get, or says where it will be
   const promised = invoice.status === "draft" && method && invoice.direction === "out";
   // made in the document's language, so the slips speak it too
-  const title = [invoice.title, invoice.number].filter(Boolean).join(" ");
+  const description = [invoice.title, invoice.number].filter(Boolean).join(" ");
   const slips = async () => promised
-    ? [await sample(app, method, { amount: Number(invoice.total), currency: String(invoice.currency), title })
+    ? [await sample(app, method, { amount: Number(invoice.total), currency: String(invoice.currency), description })
       ?? `<p>${await app.t`The payment slip is added when the invoice is issued.`}</p>`]
     : (await Promise.all(open.map((payment) => slip(app, Number(payment))))).filter((s) => s != null);
   return htmlOf(app, invoice, await lines(app, id), slips);
@@ -243,22 +243,22 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   }
   const fields: Record<string, unknown> = { changed: unixTime() };
   if (values.currency != null) fields.currency = values.currency;
-  if (values.gross != null) fields.gross = values.gross;
+  if (values.taxIncluded != null) fields.tax_included = values.taxIncluded;
   if (values.party != null) fields.party = JSON.stringify(values.party);
   if (values.data != null) fields.data = JSON.stringify(values.data);
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
   for (const key of ["ref", "title", "text", "date", "due", "number", "lang"] as const) {
     if (values[key] != null) fields[key] = values[key];
   }
-  const gross = values.gross ?? Boolean(invoice?.gross);
-  const given = values.lines ?? (values.gross == null ? undefined : (await lines(app, id)).map(lineOf));
+  const taxIncluded = values.taxIncluded ?? Boolean(invoice?.tax_included);
+  const given = values.lines ?? (values.taxIncluded == null ? undefined : (await lines(app, id)).map(lineOf));
   if (given) {
     for (const line of given) {
-      if (![line.price, line.qty ?? 1, line.taxRate ?? 0].every(Number.isFinite)) {
-        throw new Error("price, qty and taxRate must be numbers");
+      if (![line.price, line.quantity ?? 1, line.taxRate ?? 0].every(Number.isFinite)) {
+        throw new Error("price, quantity and taxRate must be numbers");
       }
     }
-    const sum = totals(given, gross);
+    const sum = totals(given, taxIncluded);
     Object.assign(fields, { net: sum.net, tax: sum.tax, total: sum.total });
     await app.db.exec`DELETE FROM invoice_line WHERE invoice_id = ${id}`;
     const table = app.db.table("invoice_line");
@@ -268,7 +268,7 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
         sort,
         name: line.name,
         description: line.description || null,
-        qty: line.qty ?? 1,
+        quantity: line.quantity ?? 1,
         unit: line.unit ?? null,
         price: line.price,
         tax_rate: line.taxRate ?? 0,

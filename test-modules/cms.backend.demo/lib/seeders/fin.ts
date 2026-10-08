@@ -83,7 +83,7 @@ async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: 
     lines: s.rnd.some(WORK, s.rnd.int(1, 4)).map(([name, unit, price, taxRate]) => ({
       name,
       unit: unit || undefined,
-      qty: unit === "h" ? s.rnd.int(2, 24) / 2 : unit ? s.rnd.int(10, 500) : 1,
+      quantity: unit === "h" ? s.rnd.int(2, 24) / 2 : unit ? s.rnd.int(10, 500) : 1,
       price,
       taxRate,
     })),
@@ -102,8 +102,8 @@ async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: 
   const amount = fate < 0.55 ? Math.round(total * s.rnd.int(3, 7) / 10) : total; // some pay in part
   if (qr && s.rnd.chance(0.6)) {
     // asked for by QR bill, paid by e-banking: the statement settles it
-    const title = `Invoice ${invoice.number}`;
-    const order = { method: "qrbill", amount: total, currency: "CHF", ref: refOf(id), title, return: "/" };
+    const description = `Invoice ${invoice.number}`;
+    const order = { method: "qrbill", amount: total, currency: "CHF", ref: refOf(id), description, return: "/" };
     const { id: payment } = await pay(s.app, order);
     const reference = String(await s.db.one`SELECT external_id FROM payment WHERE id = ${payment}`);
     lines.push({ id: `demo-qr-${payment}`, date: day(when), amount, reference, partyName: name });
@@ -168,7 +168,7 @@ async function statement(s: Seed, lines: Line[]): Promise<void> {
     { id: "demo-fee-2", date: day(s.now - 50 * DAY), amount: -450, text: "Account fee" },
     { id: "demo-gift", date: day(s.now - 9 * DAY), amount: 12000, partyName: "Anonymous", text: "Gift" },
   );
-  const account = { iban: "CH56 0483 5012 3456 7800 9", currency: "CHF", name: "Demo account" };
-  const { added } = await ingest(s.app, { ...account, transactions: lines });
+  const statement = { account: "CH56 0483 5012 3456 7800 9", currency: "CHF", name: "Demo account" };
+  const { added } = await ingest(s.app, { ...statement, transactions: lines });
   s.count("bank lines", added);
 }

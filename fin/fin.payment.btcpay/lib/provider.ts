@@ -59,7 +59,7 @@ export const paymentProvider: Provider = {
       body: JSON.stringify({
         amount: (Number(payment.amount) / 10 ** currencies.decimals(currency)).toFixed(currencies.decimals(currency)),
         currency,
-        metadata: { orderId: String(payment.id), itemDesc: payment.title ?? undefined },
+        metadata: { orderId: String(payment.id), itemDesc: payment.description ?? undefined },
         checkout: { redirectURL: urls.back, redirectAutomatically: true },
       }),
     });

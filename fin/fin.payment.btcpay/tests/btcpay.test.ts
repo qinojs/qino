@@ -28,7 +28,7 @@ Deno.test("an invoice is made at BTCPay and its status taken over, paid in part 
   await withApp(async (app) => {
     const state: Record<string, unknown> = { status: "New", additionalStatus: "None", paidAmount: "0" };
     await withFetch(btcpay(state), async (calls) => {
-      const { id, redirect } = await create(app, { method: "btcpay", amount: 4726, currency: "CHF", title: "Order 1", return: "/" });
+      const { id, redirect } = await create(app, { method: "btcpay", amount: 4726, currency: "CHF", description: "Order 1", return: "/" });
       assertEquals(redirect, "https://btcpay.test/i/inv1");
       const { checkout, ...invoice } = calls[0].body as { checkout: { redirectURL: string } };
       assertEquals(invoice, { amount: "47.26", currency: "CHF", metadata: { orderId: String(id), itemDesc: "Order 1" } });

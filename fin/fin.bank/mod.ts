@@ -17,7 +17,7 @@ export type Tx = {
 };
 
 /** What an importer hands over: the account and its lines. */
-export type Statement = { iban: string; currency: string; name?: string; transactions: Tx[] };
+export type Statement = { account: string; currency: string; name?: string; transactions: Tx[] };
 
 /** References compare without spaces and case: `RF18 5390 0754 7034` is `RF18539007547034`. */
 const normalize = (value: string) => value.replace(/\s+/g, "").toUpperCase();
@@ -74,7 +74,7 @@ export async function assign(app: App, txId: number, ref: string): Promise<numbe
       amount: Math.abs(amount),
       currency: String(tx.currency),
       ref,
-      title: String(tx.party_name ?? "") || undefined,
+      description: String(tx.party_name ?? "") || undefined,
     });
     await app.db.exec`UPDATE bank_tx SET payment_id = ${payment} WHERE id = ${txId}`;
     return payment;
@@ -98,14 +98,14 @@ async function match(app: App, reference: string, amount: number) {
 
 /** The account of the statement, created when first seen. */
 async function accountId(app: App, statement: Statement) {
-  const iban = normalize(statement.iban);
-  if (!iban) throw new Error("fin.bank: a statement needs its account");
-  const known = await app.db.one`SELECT id FROM bank_account WHERE iban = ${iban}`;
+  const number = normalize(statement.account);
+  if (!number) throw new Error("fin.bank: a statement needs its account");
+  const known = await app.db.one`SELECT id FROM bank_account WHERE number = ${number}`;
   if (known != null) return Number(known);
   return Number(await app.db.table("bank_account").insert({
-    iban,
+    number,
     currency: statement.currency,
-    name: statement.name ?? iban,
+    name: statement.name ?? number,
     created: unixTime(),
   }));
 }

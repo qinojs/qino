@@ -40,7 +40,7 @@ async function setup() {
 }
 
 const statement = (transactions: { id: string; amount: number; reference?: string }[]) => ({
-  iban: "CH56 0483 5012 3456 7800 9",
+  account: "CH56 0483 5012 3456 7800 9",
   currency: "CHF",
   transactions: transactions.map((tx) => ({ date: "2026-10-07", ...tx })),
 });
@@ -49,7 +49,7 @@ Deno.test("lines are stored once per account; the account comes from the stateme
   const { app } = await setup();
   assertEquals(await ingest(app, statement([{ id: "a", amount: 100 }, { id: "b", amount: -50 }])), { added: 2, matched: 0 });
   assertEquals(await ingest(app, statement([{ id: "b", amount: -50 }, { id: "c", amount: 70 }])), { added: 1, matched: 0 });
-  assertEquals(await app.db.col`SELECT iban FROM bank_account`, ["CH5604835012345678009"]);
+  assertEquals(await app.db.col`SELECT number FROM bank_account`, ["CH5604835012345678009"]);
   assertEquals(await app.db.col`SELECT amount FROM bank_tx ORDER BY id`, [100, -50, 70]);
 });
 

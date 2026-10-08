@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 /** All directories of the app (modules, stores, the app itself). Git decides which share a repo. */
 type Holds = { kind: "app" | "module" | "store"; label: string };
 
-function candidates(app: App): Map<string, Holds> {
+function candidates(app: App) {
   const dirs = new Map<string, Holds>([[app.dir, { kind: "app", label: app.dir }]]);
   for (const mod of app.modules.all().values()) if (mod.dir) dirs.set(mod.dir, { kind: "module", label: mod.name });
   for (const store of app.stores.all()) {
@@ -29,7 +29,7 @@ function candidates(app: App): Map<string, Holds> {
   return dirs;
 }
 
-async function repos(app: App): Promise<Repo<Holds>[]> {
+async function repos(app: App) {
   const found = await reposOf(candidates(app));
   return Promise.all(found.entries().map(async ([root, holds]) => ({ root, holds, ...await status(root) })));
 }
@@ -47,7 +47,7 @@ async function summary(holds: Holds[], t: App["t"]) {
 // --- actions --------------------------------------------------------------
 
 /** The backend user is the author: a commit that says "the server" answers nobody's question. */
-async function author(): Promise<string[]> {
+async function author() {
   const user = getCtx().user;
   const parts = [user?.given_name, user?.family_name].filter(Boolean).join(" ");
   const email = await user?.contact("email") ?? ""; // an address, not the login handle
@@ -74,7 +74,7 @@ function restart() {
   return "Restarting — the page reloads once the server answers again.";
 }
 
-async function act(app: App, action: string, root: string, message: string): Promise<{ message: string; restarting?: boolean }> {
+async function act(app: App, action: string, root: string, message: string) {
   if (action === "restart") return { message: restart(), restarting: true }; // the process, not a repository — no root to check
   // Never a path from the client: only a repository this app actually sits in may be touched.
   const known = await repos(app);

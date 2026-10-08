@@ -57,7 +57,7 @@ Deno.test("start initializes the payment page with our addresses and keeps the t
   await withSaferpay(answers, async (app, calls) => {
     const base = "https://site.test/payment/";
     const urls = { back: `${base}return/7-x`, notify: `${base}notify/7-x`, pay: `${base}pay/7-x` };
-    const state = await saferpay.start(app, row({ method: "twint", title: "Order 12" }), urls);
+    const state = await saferpay.start(app, row({ method: "twint", description: "Order 12" }), urls);
     assertEquals(state, { redirect: "https://pay.test/x", externalId: "tok", data: { token: "tok" } });
     const { body } = calls[0];
     assertEquals((body.RequestHeader as Record<string, unknown>).CustomerId, "123");

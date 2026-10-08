@@ -13,7 +13,7 @@
             "type": "string",
             "maxLength": 191
           },
-          "iban": {
+          "number": {
             "type": "string",
             "maxLength": 64,
             "x-index": "unique",
@@ -28,7 +28,7 @@
             "type": "integer"
           }
         },
-        "required": ["id", "iban", "currency", "created"]
+        "required": ["id", "number", "currency", "created"]
       }
     },
     "bank_tx": {

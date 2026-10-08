@@ -25,7 +25,7 @@ Deno.test("a Lightning invoice in the payment's currency, its slip, and paid onc
   await withApp(async (app) => {
     const state = { paid: false };
     await withFetch(lnbits(state), async (calls) => {
-      const { id, redirect } = await create(app, { method: "lightning", amount: 4726, currency: "CHF", title: "Order 1", return: "/done" });
+      const { id, redirect } = await create(app, { method: "lightning", amount: 4726, currency: "CHF", description: "Order 1", return: "/done" });
       assertStringIncludes(redirect, "/payment/pay/");
       const asked = calls[0].body as Record<string, unknown>;
       assertEquals([asked.out, asked.amount, asked.unit, asked.expiry], [false, 47.26, "CHF", 3600]);

@@ -10,7 +10,7 @@ balance, a cash book, a wallet.
 import { assign, ingest } from "@qino/qino/fin.bank";
 
 await ingest(app, {
-  iban: "CH93 0076 2011 6238 5295 7",
+  account: "CH93 0076 2011 6238 5295 7",
   currency: "CHF",
   transactions: [
     { id: "2026100700012", date: "2026-10-07", amount: 47226, reference: "21 00000 00003 13947 14300 09017" },

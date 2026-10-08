@@ -15,7 +15,7 @@ const id = await create(app, {
     address: { streetAddress: "Hauptgasse 1", postalCode: "3280", addressLocality: "Murten" },
   },
   lines: [
-    { name: "Design", description: "Logo and colours", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 }, // minor units, percent
+    { name: "Design", description: "Logo and colours", quantity: 2.5, unit: "h", price: 12000, taxRate: 8.1 }, // minor units, percent
     { name: "Hosting", price: 9900, taxRate: 8.1 },
   ],
   ref: "shop.order:12",
@@ -46,8 +46,8 @@ reopens it. `invoice:status` fires once per change.
 
 Prices are per unit, in minor units of the currency (Rappen, cents, fils — as many decimals as
 ISO 4217 gives it), and finer where a unit costs less: `23.45` is 0.2345 CHF per kWh. Line amounts
-and totals are whole minor units. Prices are net — or gross with `gross: true`, and the tax is
-taken out.
+and totals are whole minor units. Prices are net — or include tax with `taxIncluded: true`, and
+the tax is taken out.
 Tax is rounded once per rate, not per line. The rate comes from the caller: VAT, GST and sales tax
 look alike here, and which rate applies is the consumer's business.
 

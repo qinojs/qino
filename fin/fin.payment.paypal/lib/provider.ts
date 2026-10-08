@@ -84,7 +84,7 @@ export const paymentProvider: Provider = {
       purchase_units: [{
         reference_id: String(payment.id),
         custom_id: String(payment.id),
-        description: String(payment.title || payment.ref || `Payment ${payment.id}`).slice(0, 127),
+        description: String(payment.description || payment.ref || `Payment ${payment.id}`).slice(0, 127),
         amount: { currency_code: currency, value: decimal(Number(payment.amount), currency) },
       }],
       payment_source: {

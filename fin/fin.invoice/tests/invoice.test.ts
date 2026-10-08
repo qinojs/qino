@@ -39,7 +39,7 @@ const row = (app: App, id: number) => app.db.row`SELECT * FROM invoice WHERE id 
 const order = {
   currency: "CHF",
   lines: [
-    { name: "Design", qty: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
+    { name: "Design", quantity: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
     { name: "Hosting", price: 9900, taxRate: 8.1 },
     { name: "Book", price: 3990, taxRate: 2.6 },
   ],
@@ -60,7 +60,7 @@ Deno.test("tax is rounded once per rate; gross prices have it taken out", () => 
 });
 
 Deno.test("a unit price finer than a minor unit rounds only in the line amount", () => {
-  const power = [{ name: "Power", qty: 1234, unit: "kWh", price: 23.45, taxRate: 8.1 }]; // 0.2345 CHF/kWh
+  const power = [{ name: "Power", quantity: 1234, unit: "kWh", price: 23.45, taxRate: 8.1 }]; // 0.2345 CHF/kWh
   const sum = totals(power, false);
   assertEquals([sum.amounts, sum.net, sum.tax, sum.total], [[28937], 28937, 2344, 31281]);
 });
@@ -68,7 +68,7 @@ Deno.test("a unit price finer than a minor unit rounds only in the line amount",
 Deno.test("a draft stores its lines and totals and can be changed until issued", async () => {
   const { app } = await setup();
   const id = await create(app, { ...order, party: { name: "Muster AG", country: "CH" }, ref: "shop.order:3" });
-  assertEquals((await lines(app, id)).map((l) => [l.name, l.qty, l.unit, l.amount]), [
+  assertEquals((await lines(app, id)).map((l) => [l.name, l.quantity, l.unit, l.amount]), [
     ["Design", 2.5, "h", 30000],
     ["Hosting", 1, null, 9900],
     ["Book", 1, null, 3990],
@@ -77,7 +77,7 @@ Deno.test("a draft stores its lines and totals and can be changed until issued",
   assertEquals([invoice?.status, invoice?.direction, invoice?.total, invoice?.number], ["draft", "out", 47226, null]);
   assertEquals(invoice?.lang, "de"); // outside a request: the app's default language
   assertEquals(JSON.parse(String(invoice?.party)).name, "Muster AG");
-  await update(app, id, { gross: true });
+  await update(app, id, { taxIncluded: true });
   assertEquals((await row(app, id))?.total, 43890); // the same lines, now with tax included
   await update(app, id, { lines: [{ name: "Flat", price: 10000 }] });
   invoice = await row(app, id);

@@ -44,7 +44,7 @@
             "maxLength": 3,
             "description": "ISO 4217 code"
           },
-          "gross": {
+          "tax_included": {
             "type": "boolean",
             "default": false,
             "description": "Line prices include tax"
@@ -145,7 +145,7 @@
             "type": "string",
             "description": "More about the item, printed below its name"
           },
-          "qty": {
+          "quantity": {
             "type": "number",
             "default": 1
           },
@@ -156,7 +156,7 @@
           },
           "price": {
             "type": "number",
-            "description": "Per unit, in minor units, finer if need be (23.45 = 0.2345 CHF); net or gross"
+            "description": "Per unit, in minor units, finer if need be (23.45 = 0.2345 CHF); with tax if tax_included"
           },
           "tax_rate": {
             "type": "number",
@@ -165,7 +165,7 @@
           },
           "amount": {
             "type": "integer",
-            "description": "qty × price, rounded, in minor units"
+            "description": "quantity × price, rounded, in minor units"
           }
         },
         "required": ["id", "invoice_id", "price", "amount"]

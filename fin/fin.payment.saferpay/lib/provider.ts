@@ -51,7 +51,7 @@ export const paymentProvider: Provider = {
       Payment: {
         Amount: { Value: String(payment.amount), CurrencyCode: payment.currency },
         OrderId: String(payment.id),
-        Description: String(payment.title ?? payment.ref ?? payment.id),
+        Description: String(payment.description ?? payment.ref ?? payment.id),
       },
       PaymentMethods: chosen.length ? chosen : undefined,
       ReturnUrl: { Url: urls.back },

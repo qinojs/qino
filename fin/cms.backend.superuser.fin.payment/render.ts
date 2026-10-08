@@ -28,7 +28,7 @@ async function overview(node: Node, url: URL) {
   <div class=u2-card style="flex:1 1 60rem">
     <div class=-head>${t`Payments`}</div>
     <form method=get>
-      <input type=search name=search value="${q("search")}" placeholder="${t`Id, ref, title, external id`}">
+      <input type=search name=search value="${q("search")}" placeholder="${t`Id, ref, description, external id`}">
       <select name=direction>
         ${option("", t`In and out`, "direction")}
         ${option("in", t`In`, "direction")}
@@ -55,7 +55,7 @@ async function overview(node: Node, url: URL) {
         ${t`Amount`} <input name=amount required inputmode=decimal placeholder="120.00">
         ${t`Currency`} <input name=currency required value=CHF maxlength=3 size=4>
         ${t`For (ref)`} <input name=ref placeholder="fin.invoice:7">
-        ${t`Title`} <input name=title>
+        ${t`Description`} <input name=description>
       </u2-fields>
       <button>${t`Record`}</button>
     </form>
@@ -68,7 +68,7 @@ async function list(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
-  const sh = sqlSearch(q("search"), ["ref", "title", "external_id"], { exact: ["id"] });
+  const sh = sqlSearch(q("search"), ["ref", "description", "external_id"], { exact: ["id"] });
   const where = [
     sh.where,
     q("direction") ? sql`direction = ${q("direction")}` : null,
@@ -104,7 +104,7 @@ async function list(node: Node, url: URL) {
       <td style="text-align:end; white-space:nowrap">${paidOf(row)}
       <td><span class=u2-badge>${row.status}</span>
       <td>${refLink(node, row.ref)}
-      <td>${row.title}`)}
+      <td>${row.description}`)}
     ${total > PER_PAGE ? html`<tfoot><tr><td colspan=9>
       ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
       ${page * PER_PAGE + 1}–${page * PER_PAGE + rows.length} / ${total}
@@ -179,7 +179,7 @@ async function detail(node: Node, id: number) {
       ${field(t`Refunded`, money(row.refunded, row.currency))}
       ${field(t`Fee`, money(row.fee, row.currency))}
       ${field(t`For (ref)`, refLink(node, row.ref))}
-      ${field(t`Title`, row.title)}
+      ${field(t`Description`, row.description)}
       ${field(t`User`, row.usr_id)}
       ${field(t`External id`, row.external_id ? html`<code>${row.external_id}</code>` : "")}
       ${field(t`Return to`, row.return_url)}

@@ -134,8 +134,8 @@ const typed = (minor: unknown, currency: unknown) =>
 const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown = "CHF") => html.async`<tr>
   <td><input name="name${i}" value="${line.name}">
     <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}" style="display:block; width:100%">${line.description}</textarea>
-  <td><input name="qty${i}" inputmode=decimal placeholder=1 style="width:4rem"
-    value="${line.qty == null ? "" : Number(line.qty)}">
+  <td><input name="quantity${i}" inputmode=decimal placeholder=1 style="width:4rem"
+    value="${line.quantity == null ? "" : Number(line.quantity)}">
   <td><input name="unit${i}" style="width:3.5rem" value="${line.unit}">
   <td><input name="price${i}" inputmode=decimal style="width:6rem"
     value="${line.price == null ? "" : typed(line.price, currency)}">
@@ -182,7 +182,7 @@ async function editor(node: Node, row: Row) {
         <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
         ${t`VAT ID`} <input name=vatID value="${party.vatID}">
         ${t`User id`} <input name=usrId inputmode=numeric size=6 value="${row.usr_id}">
-        ${t`Prices include tax`} <input type=checkbox name=gross value=1${row.gross ? html.raw(" checked") : ""}>
+        ${t`Prices include tax`} <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
       </u2-fields>
       <div style="overflow:auto"><table class=u2-table>
         <thead><tr>
@@ -267,7 +267,7 @@ async function detail(node: Node, id: number) {
       ${field(t`Tax`, money(row.tax, row.currency))}
       ${field(t`Total`, html`<b>${money(row.total, row.currency)}</b>`)}
       ${field(t`Paid`, money(row.paid, row.currency))}
-      ${field(t`Prices`, row.gross ? t`include tax` : t`exclude tax`)}
+      ${field(t`Prices`, row.tax_included ? t`include tax` : t`exclude tax`)}
       ${field(t`For`, refLink(node, row.ref))}
       ${field(t`User`, row.usr_id)}
       ${field(t`Created`, u2.el.time(row.created))}
@@ -308,7 +308,7 @@ async function detail(node: Node, id: number) {
         <th>${t`Amount`}
       <tbody>${items.map((line) => html`<tr>
         <td>${line.name}${line.description ? html`<br><small>${line.description}</small>` : ""}
-        <td style="text-align:end">${Number(line.qty)} ${line.unit}
+        <td style="text-align:end">${Number(line.quantity)} ${line.unit}
         <td style="text-align:end">${money(line.price, row.currency)}
         <td style="text-align:end">${Number(line.tax_rate)} %
         <td style="text-align:end">${money(line.amount, row.currency)}`)}

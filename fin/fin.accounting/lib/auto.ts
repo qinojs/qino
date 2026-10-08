@@ -103,7 +103,7 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
     ];
   await book(app, {
     date: today(),
-    text: String(payment.title || `Payment #${payment.id}`),
+    text: String(payment.description || `Payment #${payment.id}`),
     ref,
     lines: lines.filter((line) => line.account),
     currency,

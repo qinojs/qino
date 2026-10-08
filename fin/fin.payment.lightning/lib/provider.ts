@@ -55,7 +55,7 @@ export const paymentProvider: Provider = {
         out: false,
         amount: Number(payment.amount) / 10 ** currencies.decimals(currency),
         unit: currency,
-        memo: String(payment.title ?? `Payment ${payment.id}`),
+        memo: String(payment.description ?? `Payment ${payment.id}`),
         expiry: expiry * 60,
         webhook: urls.notify,
       }),
@@ -81,7 +81,7 @@ export const paymentProvider: Provider = {
     const uri = `lightning:${bolt11}`;
     return String(html`<div style="max-width:24rem; margin:auto; text-align:center">
       <a href="${uri}">${html.raw(qr(uri.toUpperCase()))}</a>
-      <p><b>${payment.title}</b>
+      <p><b>${payment.description}</b>
       <p style="word-break:break-all"><small><code>${bolt11}</code></small>
     </div>`);
   },

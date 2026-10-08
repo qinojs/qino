@@ -75,7 +75,7 @@ export async function methods(app: App, offer: Offer): Promise<{ method: string;
 }
 
 /** What every payment has. `ref` is the consumer's: `<module>:<id>`, found again in `payment:change`. */
-type Base = { amount: number; currency: string; ref?: string; title?: string; usrId?: number };
+type Base = { amount: number; currency: string; ref?: string; description?: string; usrId?: number };
 
 /**
  * Start an incoming payment and get the address to send the payer to. `method` is
@@ -174,12 +174,12 @@ export async function slip(app: App, id: number): Promise<string | undefined> {
 export async function sample(
   app: App,
   method: string,
-  offer: { amount: number; currency: string; title?: string },
+  offer: { amount: number; currency: string; description?: string },
 ): Promise<string | undefined> {
   const [name, kind] = method.split(/\.(.*)/);
   const payment = {
     id: 0, provider: name, method: kind || null, status: "pending", paid: 0, refunded: 0,
-    amount: offer.amount, currency: offer.currency, title: offer.title ?? null, external_id: null, data: null,
+    amount: offer.amount, currency: offer.currency, description: offer.description ?? null, external_id: null, data: null,
   } as Row;
   return await provider(app, name)?.slip?.(app, payment).catch(() => undefined) || undefined;
 }
@@ -210,7 +210,7 @@ async function insert(app: App, opt: Base, values: Record<string, unknown>) {
     amount: opt.amount,
     currency: opt.currency,
     ref: opt.ref ?? null,
-    title: opt.title?.slice(0, 191) ?? null,
+    description: opt.description?.slice(0, 191) ?? null,
     usr_id: opt.usrId ?? null,
     created: time,
     changed: time,

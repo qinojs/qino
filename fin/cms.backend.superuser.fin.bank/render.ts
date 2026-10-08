@@ -17,7 +17,7 @@ export async function render(node: Node): Promise<HtmlString> {
     SELECT a.*, COUNT(x.id) AS line_count, COALESCE(SUM(x.amount), 0) AS amount,
       SUM(CASE WHEN x.id IS NOT NULL AND x.payment_id IS NULL THEN 1 ELSE 0 END) AS unassigned
     FROM bank_account a LEFT JOIN bank_tx x ON x.account_id = a.id
-    GROUP BY a.id, a.name, a.iban, a.currency, a.created ORDER BY a.name`;
+    GROUP BY a.id, a.name, a.number, a.currency, a.created ORDER BY a.name`;
   const option = (value: string, label: string | Promise<string>, key: string) =>
     html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
@@ -30,7 +30,7 @@ export async function render(node: Node): Promise<HtmlString> {
         <th>${t`Unassigned`}
         <th>${t`Sum of the lines`}
       <tbody>${accounts.map((a) => html`<tr>
-        <td>${a.name === a.iban ? "" : html`${a.name}<br>`}<code>${a.iban}</code>
+        <td>${a.name === a.number ? "" : html`${a.name}<br>`}<code>${a.number}</code>
         <td style="text-align:end">${Number(a.line_count)}
         <td style="text-align:end">${Number(a.unassigned) ? html`<span class=u2-badge>${a.unassigned}</span>` : "0"}
         <td style="text-align:end; white-space:nowrap">${money(a.amount, a.currency)}`)}

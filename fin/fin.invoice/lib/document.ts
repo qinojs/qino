@@ -24,7 +24,7 @@ export async function document(
     const money = moneyFormat(locale, String(invoice.currency));
     const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
     const day = (date: unknown) => date ? dates.format(new Date(`${date}T00:00:00Z`)) : "";
-    const sum = totals(lines.map(lineOf), Boolean(invoice.gross));
+    const sum = totals(lines.map(lineOf), Boolean(invoice.tax_included));
     const logo = await logoUrl(app);
     // the country only counts across a border, as on any letter
     const country = (o: Record<string, any>) => String(o.address?.addressCountry ?? "").toUpperCase();
@@ -80,13 +80,13 @@ export async function document(
     <th class=n>${t`Amount`}
   <tbody>${lines.map((line) => html`<tr>
     <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
-    <td class=n>${new Intl.NumberFormat(locale).format(Number(line.qty))} ${line.unit}
+    <td class=n>${new Intl.NumberFormat(locale).format(Number(line.quantity))} ${line.unit}
     <td class=n>${money(Number(line.price))}
     <td class=n>${Number(line.tax_rate)} %
     <td class=n>${money(Number(line.amount))}`)}
   <tfoot>
     <tr>
-      <th colspan=4>${invoice.gross ? t`Total excluding tax` : t`Net`}
+      <th colspan=4>${invoice.tax_included ? t`Total excluding tax` : t`Net`}
       <td class=n>${money(sum.net)}
     ${sum.rates.filter((r) => r.rate).map((r) => html.async`<tr>
       <th colspan=4>${t`Tax`} ${r.rate} % ${t`on`} ${money(r.net)}

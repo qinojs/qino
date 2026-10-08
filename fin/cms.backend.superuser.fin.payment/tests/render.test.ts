@@ -22,9 +22,9 @@ const withApp = (fn: (app: App, as: As, node: Node) => Promise<void>) =>
 
 Deno.test("the overview lists and filters payments and shows the providers with their settings", async () => {
   await withApp(async (app, as, node) => {
-    await create(app, { method: "qrbill", amount: 47226, currency: "CHF", ref: "shop.order:1", title: "Order <1>", return: "/" });
+    await create(app, { method: "qrbill", amount: 47226, currency: "CHF", ref: "shop.order:1", description: "Order <1>", return: "/" });
     await as("http://qino.test/backend/payments", () => api(node, {
-      record: { direction: "out", provider: "cash", amount: "12,50", currency: "chf", ref: "", title: "Kasse" },
+      record: { direction: "out", provider: "cash", amount: "12,50", currency: "chf", ref: "", description: "Kasse" },
     }));
     const all = String(await as("http://qino.test/backend/payments", () => render(node)));
     for (const part of ["Order &lt;1&gt;", "Kasse", "qrbill", "cash", "pending", "QR-bill", "/api/core/settings/fin.payment.qrbill"]) {
@@ -42,7 +42,7 @@ Deno.test("the detail shows every field, the bank lines and the slip; sync asks 
     const { id } = await create(app, { method: "qrbill", amount: 50000, currency: "CHF", return: "/" });
     const reference = String(await app.db.one`SELECT external_id FROM payment WHERE id = ${id}`);
     await ingest(app, {
-      iban: "CH4431999123000889012",
+      account: "CH4431999123000889012",
       currency: "CHF",
       transactions: [{ id: "1", date: "2026-10-07", amount: 20000, reference, partyName: "Kunde" }],
     });

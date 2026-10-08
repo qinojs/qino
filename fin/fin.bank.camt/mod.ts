@@ -29,10 +29,10 @@ export function parse(xml: string): Statement[] {
   if (!reports.length) throw new Error("fin.bank.camt: neither a camt.053 statement nor a camt.054 notification");
   return reports.map((report) => {
     const currency = text(report, "Acct", "Ccy");
-    const iban = text(report, "Acct", "Id", "IBAN") || text(report, "Acct", "Id", "Othr", "Id");
+    const account = text(report, "Acct", "Id", "IBAN") || text(report, "Acct", "Id", "Othr", "Id");
     const id = text(report, "Id");
     const transactions = kids(report, "Ntry").flatMap((entry, i) => lines(entry, currency, `${id}:${i}`));
-    return { iban, currency, transactions };
+    return { account, currency, transactions };
   });
 }
 

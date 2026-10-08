@@ -38,7 +38,7 @@ Deno.test("an order approved on PayPal is captured on return, with PayPal's fee,
   await withApp(async (app) => {
     const order = { status: "PAYER_ACTION_REQUIRED" };
     await withFetch(paypal(order), async (calls) => {
-      const { id, redirect } = await create(app, { method: "paypal", amount: 4726, currency: "CHF", title: "Order 1", return: "/" });
+      const { id, redirect } = await create(app, { method: "paypal", amount: 4726, currency: "CHF", description: "Order 1", return: "/" });
       assertEquals(redirect, "https://paypal.test/approve/ord1");
       const created = calls.find((c) => c.url.pathname === "/v2/checkout/orders")!;
       const unit = (created.body as { purchase_units: { amount: unknown; custom_id: string }[] }).purchase_units[0];

@@ -95,7 +95,7 @@ export const paymentProvider: Provider = {
     const uri = `bitcoin:${to}?amount=${btc}`;
     return String(html`<div style="max-width:24rem; margin:auto; text-align:center">
       <a href="${uri}">${html.raw(qr(uri))}</a>
-      <p><b>${btc} BTC</b> ${payment.title ? html`· ${payment.title}` : ""}
+      <p><b>${btc} BTC</b> ${payment.description ? html`· ${payment.description}` : ""}
       <p style="word-break:break-all"><code>${to}</code>
       <p><small>${new Date(Number(until) * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</small>
     </div>`);

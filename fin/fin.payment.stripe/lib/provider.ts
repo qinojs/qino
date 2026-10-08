@@ -65,7 +65,7 @@ export const paymentProvider: Provider = {
         price_data: {
           currency: String(payment.currency).toLowerCase(),
           unit_amount: Number(payment.amount),
-          product_data: { name: String(payment.title || payment.ref || `Payment ${payment.id}`) },
+          product_data: { name: String(payment.description || payment.ref || `Payment ${payment.id}`) },
         },
       }],
       client_reference_id: String(payment.id),

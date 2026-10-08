@@ -50,7 +50,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         amount: Number(invoice.total) - Number(invoice.paid),
         currency: String(invoice.currency),
         ref: refOf(Number(id)),
-        title: `${invoice.title || await t`Invoice`} ${invoice.number ?? ""}`.trim(),
+        description: `${invoice.title || await t`Invoice`} ${invoice.number ?? ""}`.trim(),
         usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
         return: await pageUrl({ invoice: id }),
       });
@@ -87,7 +87,7 @@ function valuesOf(v: Record<string, string>) {
     return {
       name: v[key],
       description: v[`description${i}`] || undefined,
-      qty: v[`qty${i}`] ? decimal(v[`qty${i}`]) : 1,
+      quantity: v[`quantity${i}`] ? decimal(v[`quantity${i}`]) : 1,
       unit: v[`unit${i}`] || undefined,
       price: toMinor(v[`price${i}`] || 0, currency),
       taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : 0,
@@ -98,7 +98,7 @@ function valuesOf(v: Record<string, string>) {
   return {
     currency,
     lines,
-    gross: v.gross === "1",
+    taxIncluded: v.taxIncluded === "1",
     party: { name: v.name ?? "", address, ...v.vatID ? { vatID: v.vatID } : {} },
     usrId: Number(v.usrId) || null,
     title: v.title ?? "",

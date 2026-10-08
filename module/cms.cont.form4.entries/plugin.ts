@@ -22,7 +22,7 @@ const settingsSchema = {
 };
 
 /** The form to show entries of: the configured one, else the first on the page. */
-async function formOf(node: Node): Promise<Node | undefined> {
+async function formOf(node: Node) {
   const id = Number(node.settings.form());
   if (id) {
     const form = await cmsOf(node.app).node(id);

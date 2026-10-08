@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** What the posted form asked for, and what came of it — the message shown above the cards. */
-async function act(ctx: Ctx): Promise<{ note: string; started?: { secret: string; uri: string } }> {
+async function act(ctx: Ctx) {
   const body = ctx.req.body;
   if (!body || !safeEqual(body.csrfToken, ctx.csrfToken)) return { note: "" };
   try {

@@ -29,7 +29,7 @@ Deno.test("a Checkout session in minor units; paid with its fee, refunded throug
     const session: Record<string, unknown> = { status: "open", payment_status: "unpaid" };
     const bodies: string[] = [];
     await withFetch(stripe(session, bodies), async (calls) => {
-      const { id, redirect } = await create(app, { method: "stripe", amount: 4726, currency: "CHF", title: "Order 1", return: "/" });
+      const { id, redirect } = await create(app, { method: "stripe", amount: 4726, currency: "CHF", description: "Order 1", return: "/" });
       assertEquals(redirect, "https://checkout.stripe.test/cs_1");
       const sent = new URLSearchParams(bodies[0]);
       assertEquals(sent.get("line_items[0][price_data][unit_amount]"), "4726");

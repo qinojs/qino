@@ -199,7 +199,6 @@
     "@scure/btc-signer": "npm:@scure/btc-signer@^1",
     "swissqrbill/": "npm:/swissqrbill@^4/",
     "nayuki-qr-code-generator": "npm:nayuki-qr-code-generator@1.8.0",
-    "unpdf": "npm:unpdf@^1",
     "web-push-neo": "npm:web-push-neo@0.1.2"
   },
   "// exclude": "migrate_from_php/tools are dev helpers for migration test runs — bash plus a server.ts template with placeholders, which is not valid TypeScript.",
