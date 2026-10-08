@@ -8,7 +8,7 @@ import { addPhone, approvePhone, messagingChannel, send, setProvider, verifyPhon
 
 import type { SmsProvider } from "../mod.ts";
 
-async function makeDb(): Promise<Db> {
+async function makeDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties, ...authAttemptDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT)`;

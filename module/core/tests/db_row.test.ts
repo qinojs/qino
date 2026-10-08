@@ -47,7 +47,7 @@ const schema = {
   },
 };
 
-async function testDb(): Promise<Db> {
+async function testDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate(schema, { patch: true });
   db.schema = schema;
