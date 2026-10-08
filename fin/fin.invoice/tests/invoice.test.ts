@@ -232,6 +232,13 @@ Deno.test("a credit note counts on its invoice as paid; what goes beyond is owed
   assertEquals(await status(more), ["open", 0]);
   await record(app, { direction: "out", provider: "bank", amount: 2000, currency: "CHF", ref: refOf(more) });
   assertEquals(await status(more), ["paid", -2000]);
+
+  // revised, a credit note stays one, for the same invoice
+  const third = await creditNote(app, id);
+  await update(app, third, { lines: [{ name: "Goodwill", quantity: -1, price: 500 }] });
+  await issue(app, third);
+  const again = await row(app, await revise(app, third));
+  assertEquals([again?.type, again?.corrects, again?.total], ["credit_note", id, -500]);
 });
 
 Deno.test("a credit note rounds as its invoice: half away from zero", () => {

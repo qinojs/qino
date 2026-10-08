@@ -144,6 +144,9 @@ export async function revise(app: App, id: number): Promise<number> {
   }
   const draft = await create(app, {
     direction: invoice.direction === "in" ? "in" : "out",
+    // a credit note is revised into a credit note, for the same invoice
+    type: invoice.type === "credit_note" ? "credit_note" : "invoice",
+    corrects: invoice.corrects == null ? undefined : Number(invoice.corrects),
     currency: String(invoice.currency),
     lines: (await lines(app, id)).map(lineOf),
     taxIncluded: Boolean(invoice.tax_included),
