@@ -65,11 +65,9 @@ function parseTagContent(raw: string) {
   raw = raw.trim();
   const si = raw.search(/\s/);
   if (si === -1) return { tag: raw, attrs: [] };
-  const attrs: TAttr[] = [];
-  const source = raw.slice(si);
   const re = /([^\s=/"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(source)) !== null) attrs.push({ name: m[1], value: m[2] ?? m[3] ?? m[4] ?? null });
+  const attrs: TAttr[] = Array.from(raw.slice(si).matchAll(re), (m) =>
+    ({ name: m[1], value: m[2] ?? m[3] ?? m[4] ?? null }));
   return { tag: raw.slice(0, si), attrs };
 }
 

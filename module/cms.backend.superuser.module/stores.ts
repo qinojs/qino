@@ -35,7 +35,6 @@ const TONE: Record<string, string> = {
   link: "-link",
 };
 
-// Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
 /** Icon of a module not yet imported — served by its store, so allow that origin for images. */
 function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string }) {
   if (!iconMod.manifest.files?.includes("pub/module.svg")) return;
@@ -43,6 +42,7 @@ function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string })
   return html`<img src="${iconMod.modUrl}pub/module.svg" width=20 height=20 alt="" style="display:block">`;
 }
 
+// Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
 const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared(mod);
 
 type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";

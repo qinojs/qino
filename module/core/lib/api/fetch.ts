@@ -44,7 +44,7 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
     if (e instanceof ApiError) throw new Output({ error: e.message, ...(e.code && { code: e.code }), ...(e.data !== undefined && { data: e.data }) }, { status: e.status });
     console.error("[api]", e);
     // unknown errors: detail only in dev, generic message otherwise (may contain SQL/paths)
-    const detail = requestStorage.getStore()?.app.dev ? (errMsg(e)) : "";
+    const detail = requestStorage.getStore()?.app.dev ? errMsg(e) : "";
     throw new Output({ error: detail || "Internal Server Error" }, { status: 500 });
   }
 }
@@ -64,11 +64,7 @@ async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestD
 // Compare host:port, not scheme — behind a TLS proxy the app sees http, the Origin says https.
 export function isTrustedOrigin(req: Req): boolean {
   const target = req.url.host;
-  const origin = hostOf(req.header("origin"));
-  if (origin) return origin === target;
-  const referer = req.header("referer");
-  if (!referer) return false;
-  return hostOf(referer) === target;
+  return (hostOf(req.header("origin")) || hostOf(req.header("referer"))) === target;
 }
 
 function hostOf(value?: string) {

@@ -1,4 +1,4 @@
-import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
+import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -6,7 +6,7 @@ import { policyOf, sanitizeHtml } from "./sanitize.ts";
 import { parseXml } from "./parseXml.ts";
 import { postedVars } from "./postedVars.ts";
 
-import type { HtmlString, DbText, DbTextLang, Usr, DbRow, Module } from "@qino/qino";
+import type { HtmlString, DbText, DbTextLang, ItemProxy, Usr, DbRow, Module } from "@qino/qino";
 import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 

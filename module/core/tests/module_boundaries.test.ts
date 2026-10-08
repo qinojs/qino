@@ -146,7 +146,7 @@ Deno.test("a manifest that lists its files lists all of them", async () => {
     for await (const dir of moduleDirs(store)) {
       const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
       if (!manifest.files) continue;
-      assertEquals(manifest.files.slice().sort(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
+      assertEquals(manifest.files.toSorted(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
     }
   }
 });

@@ -127,7 +127,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     if (link) {
       const linked = Number(link.usr_id);
       if (here && here !== linked) return 0;
-      db.exec`UPDATE oauth_provider_usr SET last_used = ${unixTime()} WHERE provider = ${p.name} AND sub = ${id.sub}`; // background write
+      db.exec`UPDATE oauth_provider_usr SET last_used = ${unixTime()} WHERE provider = ${p.name} AND sub = ${id.sub}`.catch(() => {}); // background write
       return linked;
     }
   }

@@ -1,13 +1,13 @@
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
+import { save } from "@qino/qino/home";
 
 import api from "../nodeApi.ts";
 import { control, live, renderActions, renderValues, views } from "../render.ts";
 import { cms } from "../plugin.ts";
+import { fixture } from "./fixture.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { save } from "@qino/qino/home";
-import { fixture } from "./fixture.ts";
 
 const entity = { id: "sensor.temp", name: "Temperature", state: 21.5, attributes: { unit: "°C" }, available: true };
 const appOf = () => ({ t: fakeT }) as unknown as App;

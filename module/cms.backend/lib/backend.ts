@@ -156,8 +156,7 @@ export async function breadcrumb(host: Node, nodeId: number, titles = new Map<nu
   const node = await host.cms.node(nodeId);
   const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
-  let pageIdx = -1;
-  for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
+  const pageIdx = nodes.findLastIndex((n) => n.vs?.type === "p");
   const crumbs = [];
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];

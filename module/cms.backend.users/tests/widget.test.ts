@@ -3,9 +3,9 @@ import { assertEquals, contactDbSchema, testContext } from "@qino/qino/tests";
 
 import nodeApi from "../nodeApi.ts";
 import { adoptUsername, backendDashboardWidget, cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
-import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 

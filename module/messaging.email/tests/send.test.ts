@@ -1,10 +1,8 @@
 import { Db } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, templatePlaceholders } from "@qino/qino/tests";
-
-
-import { inbound } from "../lib/settings.ts";
 import { outbox } from "@qino/qino/messaging";
 
+import { inbound } from "../lib/settings.ts";
 import { messagingChannel, send, setTransport } from "../mod.ts";
 
 import type { App } from "@qino/qino";

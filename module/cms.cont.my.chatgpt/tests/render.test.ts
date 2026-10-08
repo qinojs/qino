@@ -1,7 +1,7 @@
 import { App } from "@qino/qino";
 import { assertStringIncludes } from "@qino/qino/tests";
-
 import { store } from "@qino/m/ai1.chatgpt/tests/deps.ts";
+
 import { cms } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";

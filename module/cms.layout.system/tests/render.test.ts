@@ -34,7 +34,7 @@ Deno.test("cms.layout.system: install takes over the pages of cms.layout.login",
   const values: unknown[] = [];
   const uninstalled: string[] = [];
   const app = {
-    db: { query: (parts: TemplateStringsArray, ...vs: unknown[]) => { sql = parts.join("?"); values.push(...vs); } },
+    db: { exec: (parts: TemplateStringsArray, ...vs: unknown[]) => { sql = parts.join("?"); values.push(...vs); } },
     modules: { uninstall: (name: string) => Promise.resolve(void uninstalled.push(name)) },
   };
 

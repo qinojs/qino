@@ -1,6 +1,7 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { cap, findCheck, getHealthChecks, healthApi, solutionsHtml } from "@qino/qino/cms.backend.system";
+
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";

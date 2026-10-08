@@ -3,9 +3,9 @@ import { invoke, requestStorage } from "@qino/qino";
 import { assertEquals, testContext, fakeRender } from "@qino/qino/tests";
 import { api } from "@qino/qino/cms.text";
 
-import type { TranslateInput } from "@qino/qino/ai1";
-
 import { cmsInstances } from "../lib/CMS.ts";
+
+import type { TranslateInput } from "@qino/qino/ai1";
 
 class FakeText {
   id: number;

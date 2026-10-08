@@ -39,15 +39,15 @@ async function clientAge(ctx: Ctx) {
 async function spamCheck(node: Node, form: Form, ctx: Ctx) {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
-    app.fire("suspicious", { ctx, weight: 3, reason: "form4 honeypot filled" });
+    app.fire("suspicious", { ctx, weight: 3, reason: "form4 honeypot filled" }).catch(() => {});
     return app.t`Your entry looks like spam. Please try again or contact us directly.`;
   }
   const age = await clientAge(ctx);
   if (age < 3) {
-    app.fire("suspicious", { ctx, weight: 5, reason: "form4 submit from a brand-new client" });
+    app.fire("suspicious", { ctx, weight: 5, reason: "form4 submit from a brand-new client" }).catch(() => {});
     return app.t`Your entry could not be sent. Please try again.`;
   }
-  if (age < 10) app.fire("suspicious", { ctx, reason: "form4 submit from a very young client" });
+  if (age < 10) app.fire("suspicious", { ctx, reason: "form4 submit from a very young client" }).catch(() => {});
   return "";
 }
 

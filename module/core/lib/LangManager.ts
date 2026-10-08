@@ -45,7 +45,7 @@ export class LangManager {
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
     // background write, only when the language changed
-    if (ctx.langUsr !== stored) usr ? usr.$set({ lang: ctx.langUsr }) : ctx.sess.data.core.lang(ctx.langUsr);
+    if (ctx.langUsr !== stored) usr ? usr.$set({ lang: ctx.langUsr }).catch(() => {}) : ctx.sess.data.core.lang(ctx.langUsr);
 
     ctx.lang = ctx.langUsr;
     ctx.langNs ??= "";
@@ -135,7 +135,7 @@ export class LangManager {
   // Shortcut: translate text (uses the current ctx automatically)
   async t(strings: TemplateStringsArray, ...values: unknown[]): Promise<string> {
     const ctx = getCtx();
-    const original = strings.reduce((acc, str, i) => acc + str + (i < strings.length - 1 ? `{${i}}` : ""), "");
+    const original = strings.reduce((acc, str, i) => acc + `{${i - 1}}` + str);
     let result = await this.#getTxt(original, ctx);
     const resolved = await Promise.all(values);
     for (let i = 0; i < resolved.length; i++)

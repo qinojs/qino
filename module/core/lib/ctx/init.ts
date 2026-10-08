@@ -32,8 +32,7 @@ async function initClient(ctx: Ctx) {
 async function registerClient(ctx: Ctx) {
   const hash = uid();
   ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure: ctx.app.https, maxAge: 5 * 365 * 24 * 60 * 60 }));
-  const client = await ctx.app.db.table("client").add({ hash });
-  ctx.clientId = String(client);
+  ctx.clientId = String(await ctx.app.db.table("client").add({ hash }));
 }
 
 

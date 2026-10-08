@@ -1,7 +1,7 @@
 import { ApiError, NotFoundError } from "@qino/qino";
 import { command, entities as observe, provider, run, saveCommand } from "@qino/qino/home";
-
 import { validate } from "@qino/item/tools/schema/validator.js";
+
 import android from "./templates/android.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
