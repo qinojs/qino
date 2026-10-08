@@ -29,7 +29,7 @@ async function* files(dir: string): AsyncGenerator<string> {
 const IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?<type>type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
 
 /** Qino specifiers a file imports, each with the names taken from it ("*" = namespace or star). */
-function imports(source: string): Map<string, Set<string>> {
+function imports(source: string) {
   const found = new Map<string, Set<string>>();
   for (const { groups } of source.matchAll(IMPORT)) {
     if (!groups!.spec.startsWith(".") && !groups!.spec.startsWith("@qino/qino")) continue;
@@ -49,7 +49,7 @@ function imports(source: string): Map<string, Set<string>> {
 
 /** Qino specifiers a file imports *values* from. `import type` and inline `type` names need no
  *  linked module, which is what keeps the duck-typed extension points free of dependencies. */
-function valueImports(source: string): Set<string> {
+function valueImports(source: string) {
   const found = new Set<string>();
   for (const { groups } of source.matchAll(IMPORT)) {
     const { type, spec } = groups!;
@@ -87,7 +87,7 @@ function exports(source: string): Set<string> | undefined {
 }
 
 /** Every mod.ts, as module name -> absolute path. */
-async function barrels(): Promise<Map<string, string>> {
+async function barrels() {
   const found = new Map<string, string>();
   for (const entry of Deno.readDirSync(moduleDir)) {
     const path = `${moduleDir}${entry.name}/mod.ts`;
@@ -116,7 +116,7 @@ async function* moduleDirs(dir: string): AsyncGenerator<string> {
 
 /** Every file a module consists of, relative to its folder. `tests/` stays behind: a consumer runs
  *  the module, not its suite — the same cut the module copier makes. */
-async function modulePaths(dir: string, base = dir): Promise<string[]> {
+async function modulePaths(dir: string, base = dir) {
   const found: string[] = [];
   for await (const entry of Deno.readDir(dir)) {
     if (entry.isDirectory) {
@@ -260,7 +260,7 @@ const OPTIONAL = new Set([
 
 /** What a module may import values from. `dependencies` is transitive — declaring one module brings
  *  its own declarations along — and `core` is there for everyone, since `App` declares it itself. */
-function linked(manifests: Map<string, string[]>, mod: string): Set<string> {
+function linked(manifests: Map<string, string[]>, mod: string) {
   const seen = new Set(["core", mod]);
   const walk = (name: string) => {
     for (const dep of manifests.get(name) ?? []) if (!seen.has(dep)) { seen.add(dep); walk(dep); }
