@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { money } from "@qino/qino/cms.backend.superuser.fin";
+import { finTexts, inFin, money } from "@qino/qino/cms.backend.superuser.fin";
 import { balances } from "@qino/qino/fin.accounting";
 
 import { render } from "./render.ts";
@@ -16,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** This year's result so far. */
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+async function widget(app: App): Promise<HtmlString> {
   const year = new Date().getFullYear();
   const rows = await balances(app, { from: `${year}-01-01`, to: `${year}-12-31` });
   const booked = rows.filter((r) => r.type === "income" || r.type === "expense");
@@ -30,7 +30,9 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 export const cms = {
   node: {
     js: ["pub/main.js"],
-    render,
-    api,
+    render: inFin(render),
+    api: inFin(api),
   },
 };
+
+export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));

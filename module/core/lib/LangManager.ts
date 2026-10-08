@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
 
 import { getCtx } from "./ctx/Ctx.ts";
@@ -11,6 +12,7 @@ export class LangManager {
   #app: App;
   #langs: string[] = [];   // all available languages, first = default
   #txtsCache = new Map<string, Promise<Map<string, string>>>();
+  #scope = new AsyncLocalStorage<{ ns?: string; lang?: string }>();
 
   constructor(app: App) {
     this.#app = app;
@@ -48,6 +50,15 @@ export class LangManager {
     ctx.lang = ctx.langUsr;
     ctx.langNs ??= "";
     ctx.langNsPath ??= [];
+  }
+
+  /**
+   * Run `fn` with the texts of namespace `ns` (and in `lang`, one of `all`): t`` within it — and
+   * within all it awaits — looks there. Safe where fragments render in parallel, as the scope
+   * follows `fn`'s calls only, unlike nsStart/nsStop.
+   */
+  with<T>(scope: { ns?: string; lang?: string }, fn: () => T): T {
+    return this.#scope.run({ ...this.#scope.getStore(), ...scope }, fn);
   }
 
   nsStart(ns: string, ctx?: Ctx) {
@@ -103,8 +114,9 @@ export class LangManager {
 
   async #getTxt(string: string, ctx: Ctx) {
     const hash = createHash("md5").update(string).digest("hex");
-    const ns = ctx.langNs;
-    const l = ctx.lang;
+    const scope = this.#scope.getStore();
+    const ns = scope?.ns ?? ctx.langNs;
+    const l = scope?.lang && this.#langs.includes(scope.lang) ? scope.lang : ctx.lang;
     const txts = await this.#getTxts(ns, l);
     if (!txts.has(hash)) {
       txts.set(hash, ""); // set before awaiting, so a new string used twice is inserted once

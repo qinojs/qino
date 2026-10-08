@@ -63,6 +63,13 @@ export const direction = (value: unknown, label: unknown): Promise<HtmlString> =
   ? html.async`<u2-ico icon=call_received title="${label}">↙</u2-ico>`
   : html.async`<u2-ico icon=call_made title="${label}">↗</u2-ico>`;
 
+/** The texts of the fin pages come from the namespace fin (fin/locale): run `fn` there. */
+export const finTexts = <T>(app: App, fn: () => T): T => app.languages.with({ ns: "fin" }, fn);
+
+/** A page function — render, api — with the texts of the namespace fin. */
+export const inFin = <A extends unknown[], R>(fn: (node: Node, ...args: A) => R) =>
+  (node: Node, ...args: A): R => finTexts(node.app, () => fn(node, ...args));
+
 /** Whether a module is linked — the overview shows what is there and what could be. */
 export const linked = (app: App, name: string): boolean => app.modules.linked().some((mod) => mod.name === name);
 

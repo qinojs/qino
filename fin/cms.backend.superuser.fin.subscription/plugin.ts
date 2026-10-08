@@ -1,5 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import { finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
 import { render } from "./render.ts";
@@ -15,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** What the next billing run takes: subscriptions renewing within the lead time. */
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+async function widget(app: App): Promise<HtmlString> {
   const lead = Number(await app.settings["fin.subscription"].lead ?? 30);
   const horizon = new Date(Date.now() + lead * 86400_000).toISOString().slice(0, 10);
   const due = (await subscriptions(app)).filter((s) =>
@@ -26,7 +27,9 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 export const cms = {
   node: {
     js: ["pub/main.js"],
-    render,
-    api,
+    render: inFin(render),
+    api: inFin(api),
   },
 };
+
+export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));

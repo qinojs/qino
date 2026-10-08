@@ -40,7 +40,7 @@ function fakeTelegram(replies: unknown[] = []) {
   return { calls, restore: () => void (globalThis.fetch = original) };
 }
 
-const update = (db: Db, message: unknown, secret = SECRET): Promise<Ctx> =>
+const update = (db: Db, message: unknown, secret = SECRET) =>
   testContext({
     url: "http://qino.test/telegram/webhook",
     method: "POST",

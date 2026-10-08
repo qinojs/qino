@@ -46,9 +46,16 @@ async function overview(node: Node, url: URL) {
   const ids = rows.map((row) => Number(row.id));
   // what is open, per user, direction and currency: what they owe us and what we owe them
   const open = ids.length
-    ? await app.db.query`SELECT usr_id, direction, currency, SUM(total - paid) AS amount FROM invoice
+    // a credit note still open is owed by us: it takes off what is claimed
+    ? await app.db.query`SELECT usr_id, direction, currency,
+        SUM(CASE WHEN type = 'credit_note' THEN paid - total ELSE total - paid END) AS amount FROM invoice
       WHERE status = 'open' AND ${sql.in("usr_id", ids)} GROUP BY usr_id, direction, currency ORDER BY currency`
     : [];
+  // what users hold as credit, where credit is kept
+  const credits = ids.length && linked(app, "fin.payment.credit")
+    ? await app.db.query`SELECT usr_id, currency, SUM(amount) AS amount FROM payment_credit
+      WHERE ${sql.in("usr_id", ids)} GROUP BY usr_id, currency HAVING SUM(amount) <> 0 ORDER BY currency`
+    : undefined;
   const owed = (id: unknown, dir: string) =>
     amounts(open.filter((o) => Number(o.usr_id) === Number(id) && o.direction === dir));
   const option = (value: string, label: string | Promise<string>) =>
@@ -71,6 +78,7 @@ async function overview(node: Node, url: URL) {
         <th>${t`Invoices`}
         <th>${t`Receivable`}
         <th>${t`Payable`}
+        ${credits ? html.async`<th>${t`Credit`}` : ""}
       <tbody>${rows.map((row) => html.async`<tr u2-href>
         <td><a href="${backend.toUrl(pageUrl, { usr: row.id })}">${nameOf(row)}</a> <small>#${row.id}</small>
         <td>${row.address_locality}
@@ -78,7 +86,9 @@ async function overview(node: Node, url: URL) {
       Number(row.received) ? badge(t`supplier`, "--orange") : ""}
         <td style="text-align:end">${Number(row.issued) + Number(row.received)}
         <td style="text-align:end">${owed(row.id, "out")}
-        <td style="text-align:end">${owed(row.id, "in")}`)}
+        <td style="text-align:end">${owed(row.id, "in")}
+        ${credits ? html.async`<td style="text-align:end">${
+      amounts(credits.filter((c) => Number(c.usr_id) === Number(row.id)))}` : ""}`)}
     </table></div>` : html.async`<p>${t`No one with invoices yet`}`}
   </div>
   <div class=u2-card style="flex:0 1 auto">

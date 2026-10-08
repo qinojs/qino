@@ -168,3 +168,27 @@ Deno.test("LangManager: import seeds locale, skips empty, never overwrites, roun
   });
   await db.close();
 });
+
+Deno.test("LangManager: with() looks in its namespace, also for parallel fragments, and nowhere else", async () => {
+  const inserts: Record<string, unknown>[] = [];
+  const app = {
+    db: {
+      table: () => ({ insert: (values: Record<string, unknown>) => (inserts.push(values), Promise.resolve(1)) }),
+      indexCol: () => new Map(),
+    },
+    settings: { core: { smalltext: { counter: false } } },
+  };
+  const lm = new LangManager(app as never);
+  lm.setLangs(["de"]);
+  const ctx = await testContext({ app, set: { dev: false } });
+  ctx.lang = "de";
+  await requestStorage.run(ctx, () =>
+    Promise.all([
+      lm.with({ ns: "fin" }, async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5)); // the other one runs meanwhile
+        return lm.t`Invoice`;
+      }),
+      lm.t`Outside`,
+    ]));
+  assertEquals(inserts.map((i) => [i.namespace, i.original]), [["", "Outside"], ["fin", "Invoice"]]);
+});

@@ -3,7 +3,7 @@ import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 async function testApp() {
   const dir = await Deno.makeTempDir() + "/";
-  const app = new App({ db: "sqlite::memory:", dir: dir, appUrl: "/site/" });
+  const app = new App({ db: "sqlite::memory:", dir, appUrl: "/site/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");
   await app.init();
   const identity = app.settings[$item].sub(["identity"]);

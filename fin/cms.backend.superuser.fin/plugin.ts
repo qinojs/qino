@@ -1,7 +1,7 @@
 import { html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 
-import { amounts, badge, linked } from "./mod.ts";
+import { amounts, badge, inFin, linked } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
@@ -103,4 +103,4 @@ async function modules(app: App) {
   </table>`;
 }
 
-export const cms = { node: { render } };
+export const cms = { node: { render: inFin(render) } };

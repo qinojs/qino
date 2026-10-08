@@ -136,7 +136,7 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
   const rewriter = (src: CspSources) => {
     const allow = origins(src);
     for (const o of allow) allowed.add(o);
-    return (url: string): string => {
+    return (url: string) => {
       if (!url.startsWith("https://") || /[?#]/.test(url)) return url;
       const hit = allow.find(p => covers(p, url));
       if (!hit) return url;

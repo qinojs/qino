@@ -1,6 +1,6 @@
 import { html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { amounts } from "@qino/qino/cms.backend.superuser.fin";
+import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
 
 import { render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** What came in during the last 30 days, and what is still waiting. */
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+async function widget(app: App): Promise<HtmlString> {
   const month = unixTime() - 30 * 86400;
   const [moved, waiting] = await Promise.all([
     app.db.query`SELECT currency, SUM(paid - refunded) AS amount FROM payment
@@ -31,7 +31,9 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 export const cms = {
   node: {
     js: ["pub/main.js"],
-    render,
-    api,
+    render: inFin(render),
+    api: inFin(api),
   },
 };
+
+export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));

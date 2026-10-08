@@ -1,4 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
+import { inFin } from "@qino/qino/cms.backend.superuser.fin";
 
 import { render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -15,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export const cms = {
   node: {
     js: ["pub/main.js"],
-    render,
-    api,
+    render: inFin(render),
+    api: inFin(api),
   },
 };

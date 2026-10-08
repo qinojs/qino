@@ -27,7 +27,7 @@ async function app() {
 const members = (a: App) => a.db.one<number>`SELECT COUNT(*) FROM usr_grp WHERE usr_id = ${7} AND grp_id = ${1}`;
 
 /** What the route leaves on the context, or nothing at all when the path was not ours. */
-async function call(a: App, path: string, method = "GET"): Promise<{ status: number; body: string } | undefined> {
+async function call(a: App, path: string, method = "GET") {
   const ctx = await testContext({ url: "https://qino.test/" + path, method, app: a });
   try {
     await serveUnsubscribe(ctx as Ctx);
@@ -86,7 +86,7 @@ Deno.test("the placeholder becomes a link in markup and a bare address in text",
     text: "{{content}}\n\n[{{unsubscribe}}]",
   });
 
-  const { render: render } = await renderer(a, { text: "hi", format: "md" }, "email");
+  const { render } = await renderer(a, { text: "hi", format: "md" }, "email");
   const out = await render({ usrId: 7, grpId: 1 });
   const url = await link(a, 7, 1);
   assertStringIncludes(out.text, url); // plain text gets the address itself

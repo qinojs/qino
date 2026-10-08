@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { amounts } from "@qino/qino/cms.backend.superuser.fin";
+import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
 
 import { render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** What customers still owe, and how much of it is late. */
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+async function widget(app: App): Promise<HtmlString> {
   const today = new Date().toLocaleDateString("sv-SE");
   const [open, overdue] = await Promise.all([
     app.db.query`SELECT currency, SUM(total - paid) AS amount FROM invoice
@@ -33,7 +33,9 @@ export const cms = {
   node: {
     css: ["pub/main.css"],
     js: ["pub/main.js"],
-    render,
-    api,
+    render: inFin(render),
+    api: inFin(api),
   },
 };
+
+export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));

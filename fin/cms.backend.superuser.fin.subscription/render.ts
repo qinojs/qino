@@ -90,7 +90,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
           <td>${ended(s) ? badge(t`ended`) : s.next}
           <td>${date(s.end_date)}
           <td>${s.end_date ? "" : html.async`<button data-action=cancel data-id="${s.id}"
-              u2-confirm="${t`End it with the period under way?`}">${t`Cancel`}</button>`}
+              u2-confirm="${t`End it with the period under way?`}">${t`Cancel subscription`}</button>`}
             ${s.billed ? "" : html.async`<button data-action=remove data-id="${s.id}"
               u2-confirm="${t`Delete it? It was never billed.`}">${t`Delete`}</button>`}`)}
       </table></div>` : html.async`<p>${t`No subscriptions yet`}`}

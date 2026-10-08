@@ -17,7 +17,7 @@ async function fixture() {
   await Deno.writeTextFile(`${tpl}pub/main.css`, `[qcms-mod="cont.demo"] {\n}\n`);
   await Deno.writeTextFile(`${tpl}tests/demo.test.ts`, `// belongs to the template alone\n`);
 
-  const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+  const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
   app.modules.add(new URL("../../core/plugin.ts", import.meta.url));
   app.modules.add(toFileUrl(`${tpl}plugin.ts`).href);
   app.stores.add(new URL(toFileUrl(dir + "module/").href)); // what the module's install() hook does
