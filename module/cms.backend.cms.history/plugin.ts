@@ -1,5 +1,5 @@
-import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
+import * as u2 from "@qino/qino/u2";
 import { html, sql } from "@qino/qino";
 import { cms as cmsOf, describeChange, WRITE } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
@@ -94,7 +94,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!, titles))));
 }
 
-async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Promise<HtmlString> {
+async function renderRow(node: Node, ev: Event, titles: Map<number, string>) {
   const t = node.app.t;
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
@@ -121,7 +121,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   }</small>`;
 }
 
-async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
+async function actorCell(r: Record<string, any>, t: TFn) {
   if (!r.usr_id) return html`<small>${await t`guest`}</small>`;
   const name = `${r.given_name ?? ""} ${r.family_name ?? ""}`.trim();
   return html.async`<b style="color:${backend.uniqueColor(r.usr_id)}">${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;

@@ -145,7 +145,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 <tbody>${trs}`;
 }
 
-async function runAction(node: Node, doName: string): Promise<HtmlString | string> {
+async function runAction(node: Node, doName: string) {
   if (doName === "delete_unlinked") {
     const r = await deleteUnlinkedFs(node);
     return html.async`${r.deleted} ${node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;

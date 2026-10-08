@@ -83,7 +83,7 @@ function catalogs(app: App) {
 
 /** One row per module and store; a module in two stores is listed twice. Modules without store
  *  (server.ts or installed from a URL) get one row. */
-async function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): Promise<{ mod: string; store?: Store }[]> {
+async function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>) {
   const rows: { mod: string; store?: Store }[] = [];
   for (const { store, names } of cats) for (const mod of names) rows.push({ mod, store });
   for (const mod of app.modules.all().values()) if (!offered(app, mod)) rows.push({ mod: mod.name });

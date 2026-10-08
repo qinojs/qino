@@ -134,7 +134,7 @@ const restrictable = () => restricted ??= decide();
 /** Whether workers can be given their own permissions, decided as Deno does: the flag, else the config
  *  it uses — `--config <file>`, none with `--no-config`, else a deno.json from the working directory up
  *  (a workspace root counts too). */
-function decide(): boolean {
+function decide() {
   const flags = denoFlags();
   if (flags.includes("--unstable-worker-options")) return true;
   if (flags.includes("--no-config")) return false;
@@ -148,7 +148,7 @@ function decide(): boolean {
 }
 
 /** Deno's own flags: the command line without the script and its arguments (`Deno.args`). */
-function denoFlags(): string[] {
+function denoFlags() {
   try {
     const all = Deno.readTextFileSync("/proc/self/cmdline").split("\0").filter(Boolean);
     return all.slice(0, all.length - Deno.args.length - 1);
@@ -159,7 +159,7 @@ function denoFlags(): string[] {
   }
 }
 
-function unstable(file: string): boolean {
+function unstable(file: string) {
   try {
     return !!JSON.parse(Deno.readTextFileSync(file)).unstable?.includes("worker-options");
   } catch {

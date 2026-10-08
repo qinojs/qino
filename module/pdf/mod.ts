@@ -48,7 +48,7 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
 }
 
 /** Chromium refuses its sandbox as root. Reading the uid needs `--allow-sys`; without it, assume not. */
-function asRoot(): boolean {
+function asRoot() {
   try {
     return Deno.uid() === 0;
   } catch {

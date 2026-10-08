@@ -16,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Social", de: "Social" });
 }
 
-async function act(app: App, vars: Record<string, unknown> | undefined, available: Target[]): Promise<string> {
+async function act(app: App, vars: Record<string, unknown> | undefined, available: Target[]) {
   if (!vars || vars.publish == null) return "";
   try {
     const text = String(vars.text ?? "").trim();
@@ -33,7 +33,7 @@ async function act(app: App, vars: Record<string, unknown> | undefined, availabl
   }
 }
 
-function providerNames(app: App): string[] {
+function providerNames(app: App) {
   return [...new Set(app.modules.linked().flatMap((mod) => {
     const provider = mod.plugin.socialProvider;
     return provider ? [String(provider.name)] : [];

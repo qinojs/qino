@@ -68,7 +68,7 @@ const described = (m: any) => m.pricing || m.architecture || m.input_modalities 
  * context length of the model; with `priced`, the offer's input and output prices per million
  * provider-reported units (a negative price means "varies": left out).
  */
-async function describe(app: App, offer: { id: number; model_id: number }, meta: any, priced: boolean): Promise<void> {
+async function describe(app: App, offer: { id: number; model_id: number }, meta: any, priced: boolean) {
   const db = app.db;
   const { input, output } = meta.cost ?? {};
   if (priced && input >= 0 && output >= 0) await db.table("ai1_model_provider").update(offer.id, { cost_input: input, cost_output: output });

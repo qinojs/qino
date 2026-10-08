@@ -30,7 +30,7 @@ const dialects = {
 };
 
 /** MariaDB's column length, the length every stored vector has there. */
-async function width(db: Db, table: string): Promise<number> {
+async function width(db: Db, table: string) {
   const type = (await db.columns(table)).find((c) => c.Field === "embedding")?.Type;
   return Number(/\((\d+)\)/.exec(String(type))?.[1] ?? 0);
 }

@@ -1,5 +1,5 @@
-import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any
+import * as u2 from "@qino/qino/u2";
 import { html, safeEqual } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 

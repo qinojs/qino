@@ -35,7 +35,7 @@ function isRoot() {
 
 // --- Cache ---
 
-async function cacheStats(dir: string): Promise<{ count: number; size: number }> {
+async function cacheStats(dir: string) {
   let count = 0, size = 0;
   try {
     for (const entry of await fs.list(dir)) {
@@ -47,7 +47,7 @@ async function cacheStats(dir: string): Promise<{ count: number; size: number }>
   return { count, size };
 }
 
-async function clearCache(dir: string, olderThanDays?: number): Promise<void> {
+async function clearCache(dir: string, olderThanDays?: number) {
   const cutoff = olderThanDays ? Date.now() - olderThanDays * 86_400_000 : Infinity;
   try {
     for (const entry of await fs.list(dir)) {

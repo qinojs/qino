@@ -72,7 +72,7 @@ function store(app: App, key: string, add: number) {
 }
 
 /** The log_ip row of a key (IPv6 networks get their own row). On a parallel insert, read that row. */
-async function keyId(app: App, key: string): Promise<number> {
+async function keyId(app: App, key: string) {
   const table = app.db.table("log_ip");
   const find = () => table.rowBy("ip", key);
   const row = await find() ?? await table.insert({ ip: key }).catch(find);

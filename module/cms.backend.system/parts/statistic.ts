@@ -14,7 +14,7 @@ export async function dbTableStats(db: Db): Promise<DbTableStat[]> {
   }));
 }
 
-async function pgTableStats(db: Db): Promise<DbTableStat[]> {
+async function pgTableStats(db: Db) {
   const rows = await db.query`
     SELECT c.relname AS name, pg_total_relation_size(c.oid) AS bytes
     FROM pg_class c
@@ -24,7 +24,7 @@ async function pgTableStats(db: Db): Promise<DbTableStat[]> {
   return rows.map((r) => ({ name: String(r.name), bytes: Number(r.bytes ?? 0) }));
 }
 
-async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
+async function sqliteTableStats(db: Db) {
   const tables = await db.col<string>`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`;
   if (!tables.length) return [];
   const stats = await db.indexCol`
@@ -51,7 +51,7 @@ async function dirSize(dir: string): Promise<number> {
 
 type TreeNode = { size: number; children: Record<string, TreeNode> };
 
-async function dirTree(dir: string): Promise<Record<string, TreeNode>> {
+async function dirTree(dir: string) {
   const tree: Record<string, TreeNode> = {};
   async function walk(dir: string, relPath: string): Promise<number> {
     let total = 0;

@@ -42,7 +42,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 }
 
 /** A new main starts with a section whose text holds an editable h1; an emptied main stays empty. */
-async function starter(page: Node): Promise<boolean> {
+async function starter(page: Node) {
   const main = (await page.conts()).find((c) => c.vs.name === "main");
   if (main?.vs.module !== "cms.cont.flexible" || (await main.conts()).length) return false;
   await page.app.db.transaction(async () => {

@@ -135,7 +135,7 @@ async function hostname(ip: unknown) {
 
 const ACTIVE = 900; // a session touched within 15 min counts as active
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
   const client = id ? await db.row`SELECT * FROM client WHERE id = ${id}` : undefined;
   if (!client) return html.async`<div>${t`Not found`}</div>`;

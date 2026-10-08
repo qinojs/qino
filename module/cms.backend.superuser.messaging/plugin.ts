@@ -36,7 +36,7 @@ function intParam(url: URL, key: string) {
 }
 
 /** The journal as a table: one row per logical message, filtered by text and channel. */
-async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
+async function renderOverview(node: Node, url: URL) {
   const app = node.app;
   const ctx = getCtx();
   const search = url.searchParams.get("search") ?? "";
@@ -177,7 +177,7 @@ function trackedStat(count: unknown, first: unknown) {
 }
 
 /** One message with its payload and the result per recipient. */
-async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlString> {
+async function renderMessage(node: Node, id: number, url: URL) {
   const app = node.app;
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
@@ -251,7 +251,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
 }
 
 /** Tracked links reached for this message, aggregated across every recipient. */
-async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>): Promise<HtmlString> {
+async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>) {
   const empty = await app.t`No links yet.`;
   return html.async`<div class=u2-card style="flex:1 1 31.25rem">
     <div class=-head>${app.t`Links`}</div>
@@ -274,7 +274,7 @@ async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>): Pr
   </div>`;
 }
 
-async function renderConversation(node: Node, usrId: number, url: URL): Promise<HtmlString> {
+async function renderConversation(node: Node, usrId: number, url: URL) {
   const app = node.app;
   const user = await app.db.row`SELECT id, username, given_name, family_name FROM usr WHERE id = ${usrId}`;
   if (!user) {
@@ -329,7 +329,7 @@ function selectedChannel(rows: Row[], reachable: Channel[]): string | undefined 
   return reachable.some((c) => c.name === latest) ? latest : reachable[0]?.name;
 }
 
-async function userCard(node: Node, url: URL, usrId: number): Promise<HtmlString> {
+async function userCard(node: Node, url: URL, usrId: number) {
   const app = node.app;
   const users = await app.db.query`
     SELECT u.id, u.username, u.given_name, u.family_name

@@ -62,7 +62,7 @@ export async function createMessage(message: Record<string, unknown>): Promise<u
   return create(clean(message));
 }
 
-async function config(app: App): Promise<{ type: string; options: Record<string, unknown> }> {
+async function config(app: App) {
   const root = app.settings["messaging.email"].transport;
   const type = String(await root.type || "smtp").toLowerCase();
   const get = (key: string) => root[type][key];

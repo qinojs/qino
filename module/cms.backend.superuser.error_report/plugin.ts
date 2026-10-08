@@ -105,7 +105,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
 // WHERE for one error group (source/file/line/col). Missing values arrive as "null" or ""; "" means
 // NULL on numeric columns.
-function groupWhere(db: App["db"], vals: Record<string, unknown>): Sql {
+function groupWhere(db: App["db"], vals: Record<string, unknown>) {
   const cols = ["source", "file", "line", "col"];
   return db.table("m_error_report").valuesToFragment(
     Object.fromEntries(cols.map(c => [c, vals[c] === "null" ? null : vals[c] ?? null])),
@@ -117,7 +117,7 @@ const daysAgo = (days: number) => new Date(Date.now() - days * 86400e3).toISOStr
 
 // WHERE for search/filter, used by the list and "delete matching". By input type: id/log_id, ip,
 // or fulltext on message/file (mysql; sqlite/pg use LIKE, no worse than the grouped view).
-function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
+function filterWhere(db: App["db"], vars: Record<string, unknown>) {
   const search  = String(vars.search ?? "").trim();
   const fSource = String(vars.source ?? "");
   const fPrio   = String(vars.prio ?? "");

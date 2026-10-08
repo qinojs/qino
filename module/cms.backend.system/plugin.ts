@@ -169,7 +169,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 </div>`;
 }
 
-function systemInfoRows(app: App): Promise<HtmlString> {
+function systemInfoRows(app: App) {
   const t = app.t;
   const mem = Deno.memoryUsage();
   const load = Deno.loadavg();
@@ -206,13 +206,13 @@ function dbCard(title: string, summaryRows: HtmlString) {
 </div>`;
 }
 
-function renderDbBox(node: Node): Promise<HtmlString> {
+function renderDbBox(node: Node) {
   if (node.app.db.dialect === "postgres") return postgresBox(node);
   if (node.app.db.dialect === "sqlite") return sqliteBox(node);
   return mysqlBox(node);
 }
 
-async function mysqlBox(node: Node): Promise<HtmlString> {
+async function mysqlBox(node: Node) {
   const db = node.app.db;
   const RELEVANT = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
   const vars = await db.query`SHOW VARIABLES`;
@@ -224,7 +224,7 @@ async function mysqlBox(node: Node): Promise<HtmlString> {
   return dbCard("MySQL", html.join(rows));
 }
 
-async function postgresBox(node: Node): Promise<HtmlString> {
+async function postgresBox(node: Node) {
   const db = node.app.db;
   const NAMES = ["server_version", "max_connections", "shared_buffers", "work_mem"];
   const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE ${sql.in("name", NAMES)} ORDER BY name`;
@@ -232,7 +232,7 @@ async function postgresBox(node: Node): Promise<HtmlString> {
   return dbCard("PostgreSQL", html.join(body));
 }
 
-async function sqliteBox(node: Node): Promise<HtmlString> {
+async function sqliteBox(node: Node) {
   const db = node.app.db;
   const PRAGMAS = ["journal_mode", "page_size", "foreign_keys"];
   const rows = [html`<tr><td>version<td>${await db.one`SELECT sqlite_version()`}`];

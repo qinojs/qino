@@ -1,7 +1,7 @@
 import { NUM_TYPES, sql } from "@qino/qino";
 import { tableIndexes } from "@qino/qino/cms.backend.superuser.db";
 
-import type { Db, Row, Sql } from "@qino/qino";
+import type { Db, Row } from "@qino/qino";
 
 const TEXT_TYPES = new Set(["char", "varchar", "text", "tinytext", "mediumtext", "longtext", "enum", "set", "character varying", "citext", "uuid", "json", "jsonb"]);
 const SMALL_ROWS = 300; // below this a full scan is cheap enough to search every field for substrings
@@ -24,7 +24,7 @@ export type TableSearch = {
 export const words = (term: string): string[] => term.toLowerCase().split(/\s+/).slice(0, WORDS).filter(Boolean);
 
 /** Search plan for one table: index-backed groups, or a full scan while the table is small. */
-async function plan(db: Db, table: string, numeric: boolean): Promise<Part[]> {
+async function plan(db: Db, table: string, numeric: boolean) {
   const fields = [...(await db.tables[table].init()).values()];
   const text = fields.filter((field) => TEXT_TYPES.has(field.type)).map(String);
   const num = fields.filter((field) => NUM_TYPES.has(field.type)).map(String);
@@ -69,7 +69,7 @@ async function isSmall(db: Db, table: string) {
 // '!' is a neutral escape char in every dialect's string literals.
 const esc = (s: string) => s.replace(/[!%_]/g, "!$&");
 
-function condition(db: Db, part: Part, terms: string[], term: string): Sql | undefined {
+function condition(db: Db, part: Part, terms: string[], term: string) {
   const ids = part.fields.map(sql.id);
   if (part.mode === "exact") return sql.join(ids.map((id) => sql`${id} = ${term}`), " OR ");
   if (part.mode === "fulltext") {

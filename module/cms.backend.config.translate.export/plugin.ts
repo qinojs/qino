@@ -12,7 +12,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 type Change = { ns: string; lang: string; file: string; added: { key: string; new: string }[]; changed: { key: string; old: string; new: string }[]; removed: string[] };
 
 // Compare export map against the current file; null = no difference
-async function diffFile(ns: string, lang: string, file: string, map: Record<string, string>): Promise<Change | null> {
+async function diffFile(ns: string, lang: string, file: string, map: Record<string, string>) {
   let old: Record<string, string> = {};
   try { old = JSON.parse(await fs.text(file)); }
   catch (e) {

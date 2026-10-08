@@ -24,7 +24,7 @@ const path = (value: unknown) => typeof value === "string" && value.length <= 19
   || value.split(".").every((key) => key && !["__proto__", "constructor", "prototype"].includes(key)));
 
 /** A copy of `data` with `value` at the dotted `path`, creating objects on the way. */
-function place(data: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> {
+function place(data: Record<string, unknown>, path: string, value: unknown) {
   const result = structuredClone(data), keys = path.split(".");
   let node = result;
   for (const key of keys.slice(0, -1)) node = node[key] = object(node[key]) ? node[key] : {};

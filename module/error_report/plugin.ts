@@ -32,7 +32,7 @@ export const settingsSchema = {
 const INTAKE_MAX = 20;
 const INTAKE_WINDOW = 600;
 const intake = new Map<string, { n: number; until: number }>();
-function intakeAllowed(ctx: Ctx): boolean {
+function intakeAllowed(ctx: Ctx) {
   const who = String(ctx.clientId || ctx.req.clientIp);
   const now = unixTime();
   const seen = intake.get(who);
@@ -46,7 +46,7 @@ function intakeAllowed(ctx: Ctx): boolean {
  *  `id` would exhaust the autoincrement). */
 const JS_FIELDS = ["message", "file", "line", "col", "prio", "sample", "backtrace", "request", "referer"];
 
-async function handleJsError(ctx: Ctx): Promise<void> {
+async function handleJsError(ctx: Ctx) {
   const report = ctx.req.body;
   if (report?.message) {
     const said = Object.fromEntries(JS_FIELDS.filter((k) => k in report).map((k) => [k, report[k]]));
@@ -55,7 +55,7 @@ async function handleJsError(ctx: Ctx): Promise<void> {
   throw new Output({});
 }
 
-async function handleCssError(ctx: Ctx): Promise<void> {
+async function handleCssError(ctx: Ctx) {
   const file = ctx.req.header("referer");
   const message = ctx.req.query.message || "css-error";
   const report: Report = { source: "css", message, file, backtrace: [] };
@@ -86,7 +86,7 @@ function cspReports(body: unknown): Report[] {
   return legacy ? [legacy as Report] : [];
 }
 
-async function handleCspError(ctx: Ctx): Promise<void> {
+async function handleCspError(ctx: Ctx) {
   for (const report of cspReports(ctx.req.body)) {
     // the two formats spell the same fields differently
     const v = (...keys: string[]) => keys.map((k) => report[k]).find((x) => x != null) ?? "";
@@ -111,7 +111,7 @@ async function handleCspError(ctx: Ctx): Promise<void> {
   throw new Output({});
 }
 
-async function addReport(app: App, vs: Report): Promise<void> {
+async function addReport(app: App, vs: Report) {
   const row: Report = {
     file: "",
     line: "",

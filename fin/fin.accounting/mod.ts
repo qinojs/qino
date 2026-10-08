@@ -126,7 +126,7 @@ export async function balances(app: App, { from, to }: { from?: string; to?: str
 const today = () => new Date().toLocaleDateString("sv-SE");
 
 /** Who books, inside a request; nobody for an automatic entry. */
-function userId(): number | null {
+function userId() {
   try {
     return getCtx().userId || null;
   } catch {

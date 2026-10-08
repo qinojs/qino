@@ -20,7 +20,7 @@ export async function forms(app: App): Promise<Node[]> {
 }
 
 /** The page a form sits on — its title is what makes the form recognisable in the list. */
-async function pageOf(node: Node): Promise<Node | undefined> {
+async function pageOf(node: Node) {
   return [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
 }
 

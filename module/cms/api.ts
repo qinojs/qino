@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
@@ -9,7 +10,6 @@ import * as fns from "./api-exports.ts";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "./lib/Node.ts";
 
-// deno-lint-ignore-file no-explicit-any
 
 // Reading is open to anyone; more than read needs a user (without one, page.access gives at most 1).
 // The actual level is checked per node in guard.

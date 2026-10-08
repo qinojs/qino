@@ -25,7 +25,7 @@ function render(node: Node): Promise<HtmlString> {
   return renderOverview(node);
 }
 
-async function renderOverview(node: Node): Promise<HtmlString> {
+async function renderOverview(node: Node) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;
@@ -89,7 +89,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
   const db = app.db;

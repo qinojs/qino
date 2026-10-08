@@ -35,7 +35,7 @@ export const send = (app: App, to: To & { phone?: string | string[] }, message: 
   dispatch(app, messagingChannel, to, message);
 
 /** One batch of texts. */
-async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering) {
   let sent = 0;
   for (const row of rows) {
     const address = String(row.address);

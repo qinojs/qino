@@ -137,7 +137,7 @@ async function logoUrl(app: App) {
 }
 
 /** Run `fn` with translations in `lang`: a context of its own, without a request. */
-async function inLang<T>(app: App, lang: string, fn: () => Promise<T>): Promise<T> {
+async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {
   const url = new URL(await app.url());
   const ctx = await Ctx.create(app, new Request(url), { appUrl: url.pathname, url });
   ctx.lang = ctx.langUsr = lang;

@@ -22,7 +22,7 @@ async function mysqlStatus(db: Db, table: string): Promise<TableStatus> {
   };
 }
 
-async function pgStatus(db: Db, table: string): Promise<TableStatus> {
+async function pgStatus(db: Db, table: string) {
   const s = await db.row`
     SELECT c.reltuples::bigint AS rows, pg_total_relation_size(c.oid) AS bytes, st.n_dead_tup AS dead_rows
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -34,7 +34,7 @@ async function pgStatus(db: Db, table: string): Promise<TableStatus> {
   return { rows, bytes: s?.bytes != null ? Number(s.bytes) : null, overhead: null, deadRows: s?.dead_rows != null ? Number(s.dead_rows) : null, engine: "postgres" };
 }
 
-async function sqliteStatus(db: Db, table: string): Promise<TableStatus> {
+async function sqliteStatus(db: Db, table: string) {
   const rows = Number(await db.one`SELECT COUNT(*) FROM ${sql.id(table)}`);
   // dbstat sums the page sizes of a table; null if this SQLite build lacks the dbstat vtab.
   const bytes = await db.one`SELECT SUM(pgsize) FROM dbstat WHERE name = ${table}`.catch(() => null);

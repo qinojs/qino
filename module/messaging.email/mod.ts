@@ -78,7 +78,7 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
 
 const nameOf = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || undefined;
 
-async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> {
+async function attachmentsOf(files?: Attachment[]) {
   return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
 }
 

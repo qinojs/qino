@@ -16,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Backup codes", de: "Backup-Codes" });
 }
 
-async function act(ctx: Ctx): Promise<{ note: string; codes?: string[] }> {
+async function act(ctx: Ctx) {
   const body = ctx.req.body;
   if (!body || !safeEqual(body.csrfToken, ctx.csrfToken)) return { note: "" };
   try {

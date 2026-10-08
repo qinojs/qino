@@ -27,7 +27,7 @@ function tableOf(db: Db, name: string) {
 }
 
 /** `col = value AND …` for the given key columns; `partial` allows a subset. */
-function match(keys: string[], key: Key, partial = false): Sql {
+function match(keys: string[], key: Key, partial = false) {
   const cols = Object.keys(key);
   if (!cols.length || cols.some((col) => !keys.includes(col)) || !partial && cols.length !== keys.length) {
     throw new Error(`The key has the columns ${keys.join(", ")}, not ${cols.join(", ") || "none"}`);
@@ -36,7 +36,7 @@ function match(keys: string[], key: Key, partial = false): Sql {
 }
 
 /** Pieces of at most `max` characters, cut between paragraphs, else lines, else words where possible. */
-function chunks(text: string, max: number): string[] {
+function chunks(text: string, max: number) {
   const out: string[] = [];
   for (let at = 0; at < text.length;) {
     let end = Math.min(at + max, text.length);
@@ -51,7 +51,7 @@ function chunks(text: string, max: number): string[] {
 }
 
 /** Vectors of the collection's own model: another model's vectors would not compare. */
-async function vectors(app: App, c: Collection, input: EmbedInput): Promise<number[][]> {
+async function vectors(app: App, c: Collection, input: EmbedInput) {
   const [first] = await candidates(app, "embed", input, { model: c.model });
   if (first?.model !== c.model) throw new Error(`Embedding model "${c.model}" is unavailable`);
   const out = await embed(app, input, { model: c.model });
@@ -114,7 +114,7 @@ const queries = new WeakMap<App, Map<string, number[]>>();
 /** The vector of a text to search for, embedded once per collection: the same query (an agent's role)
  *  is not embedded again. Not the stored ones of equal text: a model embeds a query apart from what it
  *  finds (`purpose`). */
-async function queryVector(app: App, c: Collection, text: string): Promise<number[]> {
+async function queryVector(app: App, c: Collection, text: string) {
   const cache = queries.get(app) ?? queries.set(app, new Map()).get(app)!, key = `${c.id} ${await sha256hex(text)}`;
   const kept = cache.get(key);
   if (kept) return cache.delete(key), cache.set(key, kept), kept; // the latest used last

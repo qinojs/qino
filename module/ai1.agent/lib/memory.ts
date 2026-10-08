@@ -27,7 +27,7 @@ export async function index(app: App, agent: number): Promise<string> {
   return `## Your memories\n${HINT}${memories.map((m) => `\n[${m.id}] ${m.content}`).join("")}`;
 }
 
-async function own(app: App, agent: number, id: number): Promise<void> {
+async function own(app: App, agent: number, id: number) {
   if (!await app.db.one`SELECT id FROM ai1_agent_memory WHERE id = ${id} AND agent_id = ${agent}`) throw new NotFoundError("No such memory");
 }
 
