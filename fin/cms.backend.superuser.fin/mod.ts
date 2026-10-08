@@ -1,6 +1,6 @@
-import { getCtx, html } from "@qino/qino";
+import { html, requestStorage } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { currency as currencies } from "@qino/qino/locale.currency";
+import { fromMinor, toMinor } from "@qino/qino/fin";
 
 import type { App, DbFile, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -8,26 +8,22 @@ import type { Node } from "@qino/qino/cms";
 /** Minor units as the request's language writes the currency: `CHF 472.26`, `JPY 1,000`. */
 export function money(amount: unknown, currency: unknown): string {
   const code = String(currency || "CHF");
-  const lang = (() => {
-    try {
-      return getCtx().lang;
-    } catch {
-      return "en";
-    }
-  })();
-  const format = new Intl.NumberFormat(lang, { style: "currency", currency: code });
-  return format.format(Number(amount) / 10 ** currencies.decimals(code));
+  const format = new Intl.NumberFormat(requestStorage.getStore()?.lang ?? "en", { style: "currency", currency: code });
+  return format.format(fromMinor(Number(amount), code));
 }
 
 const nowrap = (text: string) => html`<span style="white-space:nowrap">${text}</span>`;
 
-/** What a person types (`120.50`, `120,50`) as minor units of the currency. */
-export function toMinor(value: unknown, currency: string): number {
-  const typed = Number(String(value ?? "").replace(/['\s]/g, "").replace(",", "."));
-  const amount = Math.round(typed * 10 ** currencies.decimals(currency));
+/** What a person types (`120.50`, `120,50`, `1'200`) as minor units of the currency. */
+export function parseAmount(value: unknown, currency: string): number {
+  const amount = toMinor(Number(String(value ?? "").replace(/['\s]/g, "").replace(",", ".")), currency);
   if (!Number.isSafeInteger(amount)) throw new Error(`Not an amount: ${value}`);
   return amount;
 }
+
+/** Minor units as typed into a field: `120`, `0.2345` — no grouping, a point; nothing for none. */
+export const inputAmount = (minor: unknown, currency: unknown): string =>
+  minor == null || minor === "" ? "" : String(fromMinor(Number(minor), String(currency || "CHF")));
 
 /** A file as the fin pages send it (see `files` in pub/panel.js), stored as dbFile. */
 export async function fileOf(app: App, sent: { name: string; type: string; data: string }): Promise<DbFile> {
@@ -70,8 +66,23 @@ export const finTexts = <T>(app: App, fn: () => T): T => app.languages.with({ ns
 export const inFin = <A extends unknown[], R>(fn: (node: Node, ...args: A) => R) =>
   (node: Node, ...args: A): R => finTexts(node.app, () => fn(node, ...args));
 
-/** Whether a module is linked — the overview shows what is there and what could be. */
-export const linked = (app: App, name: string): boolean => app.modules.linked().some((mod) => mod.name === name);
+/** A user without a login — a supplier, a customer who never signs in — with these columns. */
+export const addUser = async (app: App, columns: Record<string, unknown>): Promise<number> =>
+  Number(await app.db.table("usr").insert({ ...columns, active: 0, pw: "", superuser: 0 }));
+
+/** A list's last row, where it has more than a page: `‹ 101–200 / 340 ›`, the URL's filters kept. */
+export function pager(
+  pageUrl: string,
+  url: URL,
+  { page, shown, total, per, span }: { page: number; shown: number; total: number; per: number; span: number },
+): HtmlString | string {
+  if (total <= per) return "";
+  const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
+  return html`<tfoot><tr><td colspan=${span}>
+    ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
+    ${page * per + 1}–${page * per + shown} / ${total}
+    ${(page + 1) * per < total ? html`<a href="${at(page + 1)}">›</a>` : ""}`;
+}
 
 /** A link to a row in another fin backend page, as text where that page is not installed. */
 export async function rowLink(

@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { errMsg, safeEqual } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";
@@ -106,10 +107,7 @@ export const paymentProvider: Provider = {
     if (!webhookSecret || !body) return [];
     const signature = String(ctx.req.header("stripe-signature") ?? "");
     const header = Object.fromEntries(signature.split(",").map((part) => part.split("=")));
-    const bytes = (text: string) => new TextEncoder().encode(text);
-    const hmac = { name: "HMAC", hash: "SHA-256" };
-    const key = await crypto.subtle.importKey("raw", bytes(webhookSecret), hmac, false, ["sign"]);
-    const expected = new Uint8Array(await crypto.subtle.sign("HMAC", key, bytes(`${header.t}.${body}`))).toHex();
+    const expected = createHmac("sha256", webhookSecret).update(`${header.t}.${body}`).digest("hex");
     if (!header.v1 || !safeEqual(header.v1, expected)) return [];
     const object = JSON.parse(body)?.data?.object ?? {};
     const id = String(object.metadata?.payment ?? object.client_reference_id ?? "");

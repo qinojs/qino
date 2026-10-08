@@ -5,7 +5,7 @@ import { backend } from "@qino/qino/cms.backend";
 import { git, refs, reposOf, status } from "./lib/git.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Repo } from "./lib/git.ts";
 
@@ -189,7 +189,7 @@ function serverCard(t: App["t"]) {
 </div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t;
   const found = await repos(node.app);
   const cards = found.length ? found.map((repo) => repoCard(repo, t)) : [html.async`<div class=u2-card><div>${t`No git repository found.`}</div></div>`];

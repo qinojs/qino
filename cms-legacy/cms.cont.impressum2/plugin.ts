@@ -9,7 +9,7 @@ import type { Node } from "@qino/qino/cms";
 const workers = ["Kontaktadresse", "Technische Umsetzung", "Konzept", "Design", "Fotografie"];
 const fields = ["company", "name", "address", "zip", "city", "phone", "email", "website"];
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const level = Number(await node.settings.Heading);
   const heading = [1, 2, 3, 4].includes(level) ? level : 2;
   const blocks: HtmlString[] = [];

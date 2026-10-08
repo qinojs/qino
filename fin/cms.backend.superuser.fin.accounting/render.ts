@@ -1,6 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, linked, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
+import { addDays, addMonths, today } from "@qino/qino/fin";
 import { balances } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";
 
@@ -21,16 +22,6 @@ export function render(node: Node): Promise<HtmlString> {
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
 
-const addDays = (date: string, n: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
-
-/** The same day a year later; the 29th of February becomes the 28th. */
-const yearAfter = (date: string) => {
-  const [y, m, d] = date.split("-").map(Number);
-  const last = new Date(Date.UTC(y + 1, m, 0)).getUTCDate();
-  return `${y + 1}-${String(m).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
-};
-
 /**
  * Closing the next business year: the day it ends — a year after the last closing, else the end
  * of last year —, what is still open in it, and opening the last one again. The checks warn, they
@@ -40,11 +31,11 @@ async function closing(app: App): Promise<HtmlString> {
   const t = app.t;
   const closed = String(await app.settings["fin.accounting"].closedUntil ?? "");
   const from = closed ? addDays(closed, 1) : "0000-01-01";
-  const until = closed ? yearAfter(closed) : `${new Date().getFullYear() - 1}-12-31`;
+  const until = closed ? addMonths(closed, 12) : `${new Date().getFullYear() - 1}-12-31`;
   const count = (query: Promise<unknown>) => query.then(Number);
   const [drafts, unassigned, bare] = await Promise.all([
     count(app.db.one`SELECT COUNT(*) FROM invoice WHERE status = 'draft' AND (date IS NULL OR date <= ${until})`),
-    linked(app, "fin.bank")
+    app.modules.linked("fin.bank")
       ? count(app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL AND date >= ${from}
         AND date <= ${until}`)
       : 0,
@@ -59,7 +50,7 @@ async function closing(app: App): Promise<HtmlString> {
     <div class=-head>${t`Close the year`} ${closed ? html.async`<small>${t`closed until`} ${closed}</small>` : ""}</div>
     <ul>
       ${check(drafts, t`draft invoices of the year`)}
-      ${linked(app, "fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
+      ${app.modules.linked("fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
       ${check(bare, t`entries by hand without a receipt`)}
     </ul>
     <p><small>${t`By hand before: accruals, depreciation, the VAT reconciliation.`}</small>
@@ -127,7 +118,7 @@ async function overview(node: Node, url: URL) {
     <div class=-head>${t`Result`} <small>${from} – ${to}</small></div>
     ${statement(app, await balances(app, { from, to, closings: false }), ["expense"], ["income"], currency)}
   </div>
-  ${linked(app, "fin.accounting.ch") ? vat(app, from, to, currency) : ""}
+  ${app.modules.linked("fin.accounting.ch") ? vat(app, from, to, currency) : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Journal`}</div>
     <form method=get>
@@ -241,7 +232,7 @@ function entryForm(app: App, accounts: Row[]) {
   const options = html.join(accounts.map((a) => html`<option value="${a.number}">${a.number} ${a.name}`));
   return html.async`<form data-book>
     <u2-fields>
-      ${t`Date`} <input type=date name=date required value="${new Date().toLocaleDateString("sv-SE")}">
+      ${t`Date`} <input type=date name=date required value="${today()}">
       ${t`Text`} <input name=text required>
     </u2-fields>
     <div style="overflow:auto"><table class=u2-table>

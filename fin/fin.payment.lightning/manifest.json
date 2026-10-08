@@ -2,8 +2,8 @@
   "name": "fin.payment.lightning",
   "description": "Bitcoin Lightning as payment provider, through an LNbits wallet: paid in seconds, to the satoshi.",
   "dependencies": [
-    "fin.payment",
-    "locale.currency"
+    "fin",
+    "fin.payment"
   ],
   "files": [
     "README.md",

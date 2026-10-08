@@ -3,7 +3,6 @@ import { ensureProduct, shp3 } from "@qino/qino/shp3";
 
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Product } from "@qino/qino/shp3";
 
 const settingsSchema = {
   properties: {
@@ -12,7 +11,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { app } = node;
   const t = app.t;
   const module = String(await app.settings.shp3.default_product_module ?? "");
@@ -26,7 +25,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const items: HtmlString[] = [];
   for (const child of products.values()) {
-    const product = await ensureProduct(child) as Product | undefined;
+    const product = await ensureProduct(child);
     if (!product) continue;
     const prices = await product.pricesFor({ currency, quantity: 1 });
     // The regular price is the one before any time-limited offer — same amount, no moment.

@@ -1,4 +1,4 @@
-import { toMinor } from "@qino/qino/cms.backend.superuser.fin";
+import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
 import { bill, cancel, plan, plans, subscribe, update } from "@qino/qino/fin.subscription";
 
 import type { Node } from "@qino/qino/cms";
@@ -8,7 +8,7 @@ function termsOf(v: Record<string, string>, fallbackCurrency = "CHF") {
   const currency = String(v.currency ?? "").toUpperCase();
   const decimal = (value: string) => Number(value.replace(",", "."));
   return {
-    price: v.price ? toMinor(v.price, currency || fallbackCurrency) : null,
+    price: v.price ? parseAmount(v.price, currency || fallbackCurrency) : null,
     currency: currency || null,
     taxRate: v.taxRate ? decimal(v.taxRate) : null,
     unit: v.unit === "month" || v.unit === "year" ? v.unit : null,

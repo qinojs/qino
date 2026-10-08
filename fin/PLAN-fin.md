@@ -255,4 +255,40 @@ Uncertain, to be decided when it matters:
 
 Before going live on a server: `fc-match Arial` must give Liberation Sans or Arial (QR bill font).
 
+### From the code review (2026-10)
+
+Found, not yet done — to be checked before acting on them.
+
+Behaviour:
+
+- A credit note prints "Due" and "Payable within n days": `issue()` sets `due` and `term` for it too
+  (`fin.invoice/mod.ts`, `lib/document.ts`). It asks for no payment, so probably neither.
+- `revise()` of a received invoice: the new draft has no original (the receipt) and loses `data`
+  (what was read). Sharing the file needs care — `attach()` removes a replaced file.
+- A missing receipt file breaks things: `onInvoice` books nothing (`dbFiles.file` throws), the
+  entry page of the accounting backend fails.
+- With `accounts.fees` empty, `onPayment` books what the provider kept onto the money account:
+  it shows more than arrived.
+- `fin.bank` `ingest()` runs without a transaction; two uploads at once may store a line twice
+  (no unique index on `bank_tx.external_id`).
+- Stripe signs with several `v1` during a key rotation; only the last is checked.
+
+Structure:
+
+- Subscriptions: deleting a plan or a never billed subscription lives in the backend api; belongs
+  to `fin.subscription` (its errors then translated in the backend).
+- The party and subscription backend apis lack the `try … errMsg` the others have.
+- "CHF" as a fallback or default in the backend (`money`, `inputAmount`, the forms, CHF/EUR in the
+  provider table) and in the inbox reader: a default currency for the site is missing.
+- Settings defaults repeated in code (`?? 30`, `|| "{year}-{n}"`, the mempool URL): needed today,
+  since leaf reads (and `fakeSettings` in the tests) do not apply schema defaults. A core question.
+- Still copied in the backend pages: `option()`, `field()`, the overdue count (overview and invoice
+  widget), the user picker query. The journal pages with `PER_PAGE + 1` instead of `pager()`.
+- Accounting widget and overview default to the calendar year, though the business year may end
+  on any day (`close()`).
+- `dataOf(payment)` in five providers; `Urls` in `fin.payment/mod.ts` repeats `lib/url.ts`.
+- Saferpay `sync` returns the raw answer as state when it has no transaction.
+- The inbox's `Read` type repeats its `SCHEMA`.
+- `fin.invoice:` still written by hand in the bank suggestions and `refLink`.
+
 Decisions that may change, module by module, are in each README ("Decisions that may change").

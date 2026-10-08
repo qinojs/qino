@@ -3,7 +3,7 @@ import { html } from "@qino/qino";
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const raw = await node.settings.elements();
   const elements = raw && typeof raw === "object" ? raw as Record<string, Record<string, unknown>> : {};
   const rows = [];

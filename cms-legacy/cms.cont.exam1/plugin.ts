@@ -3,7 +3,7 @@ import { html, sql, unixTime } from "@qino/qino";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const ids = String(await node.settings.ids ?? "").split(",").map(Number).filter((id) => id > 0);
   let exam: Record<string, unknown> | undefined;
   for (const id of ids) {

@@ -1,6 +1,7 @@
 // The export lives in this page for now; once something else needs it — an API, a schedule — it
 // moves into a module of its own (fin.accounting.export).
 import { fs } from "@qino/qino";
+import { fromMinor } from "@qino/qino/fin";
 import { balances } from "@qino/qino/fin.accounting";
 import { currency as currencies } from "@qino/qino/locale.currency";
 import { zipSync } from "fflate";
@@ -24,9 +25,10 @@ const safe = (name: string) => name.replace(/[^\w.-]+/g, "_");
  * under `receipts/`, named by their entry. Any bookkeeping software or spreadsheet reads it.
  */
 export async function exportBooks(app: App, { from, to }: { from: string; to: string }): Promise<Uint8Array> {
-  const book = String(await app.settings["fin.accounting"].currency ?? "");
-  const decimals = currencies.decimals(book || "CHF");
-  const amount = (minor: number) => minor ? (minor / 10 ** decimals).toFixed(decimals) : "";
+  const book = String(await app.settings["fin.accounting"].currency ?? "") || "CHF";
+  // each in its own currency's decimals: an entry may be in another than the book's
+  const amount = (minor: number, code: string) =>
+    minor ? fromMinor(minor, code).toFixed(currencies.decimals(code)) : "";
   const lines = await app.db.query`
     SELECT e.id, e.date, e.text, e.currency, e.ref, e.reverses, a.number, a.name, l.amount, l.tax_code
     FROM accounting_entry e JOIN accounting_entry_line l ON l.entry_id = e.id
@@ -47,13 +49,14 @@ export async function exportBooks(app: App, { from, to }: { from: string; to: st
       "Reverses", "Receipts"],
     ...lines.map((l) => [
       l.date, l.id, l.text, l.number, l.name,
-      amount(Math.max(Number(l.amount), 0)), amount(Math.max(-Number(l.amount), 0)),
+      amount(Math.max(Number(l.amount), 0), String(l.currency)),
+      amount(Math.max(-Number(l.amount), 0), String(l.currency)),
       l.tax_code, l.currency, l.ref, l.reverses, (receipts.get(Number(l.id)) ?? []).join(" "),
     ]),
   ]));
   files["balances.csv"] = new TextEncoder().encode(csv([
     ["Account", "Name", "Type", "Balance"],
-    ...(await balances(app, { from, to })).map((a) => [a.number, a.name, a.type, amount(Number(a.balance))]),
+    ...(await balances(app, { from, to })).map((a) => [a.number, a.name, a.type, amount(Number(a.balance), book)]),
   ]));
   return zipSync(files);
 }

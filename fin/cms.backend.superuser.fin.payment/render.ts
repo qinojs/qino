@@ -1,7 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, direction, linked, money, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
-import { methods, slip } from "@qino/qino/fin.payment";
+import { badge, direction, money, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
+import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -83,7 +83,6 @@ async function list(node: Node, url: URL) {
   ]);
   if (!rows.length) return html.async`<p>${t`No payments`}`;
   const pageUrl = await (await node.page()).url();
-  const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
   return html.async`<table class=u2-table style="white-space:nowrap">
     <thead><tr>
       <th>${t`Id`}
@@ -105,10 +104,7 @@ async function list(node: Node, url: URL) {
       <td>${status(row.status)}
       <td>${refLink(node, row.ref)}
       <td>${row.description}`)}
-    ${total > PER_PAGE ? html`<tfoot><tr><td colspan=9>
-      ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
-      ${page * PER_PAGE + 1}–${page * PER_PAGE + rows.length} / ${total}
-      ${(page + 1) * PER_PAGE < total ? html`<a href="${at(page + 1)}">›</a>` : ""}` : ""}
+    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 9 })}
   </table>`;
 }
 
@@ -155,12 +151,11 @@ async function detail(node: Node, id: number) {
   const row = await app.db.row`SELECT * FROM payment WHERE id = ${id}`;
   const pageUrl = await (await node.page()).url();
   if (!row) return html.async`<div class=u2-card><div>${t`No payment`} ${id}</div></div>`;
-  const provider = app.modules.linked().map((mod) => mod.plugin.paymentProvider as Provider | undefined)
-    .find((p) => p?.name === row.provider);
+  const provider = providerOf(app, String(row.provider));
   const open = Number(row.paid) - Number(row.refunded);
   const data = row.data ? JSON.stringify(JSON.parse(String(row.data)), null, 2) : "";
   const shown = await slip(app, id).catch((e) => badge(e.message, "--red"));
-  const lines = linked(app, "fin.bank")
+  const lines = app.modules.linked("fin.bank")
     ? await app.db.query`SELECT * FROM bank_tx WHERE payment_id = ${id} ORDER BY date, id`
     : [];
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;

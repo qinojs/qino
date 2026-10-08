@@ -14,6 +14,9 @@ await balance(app, 42, "CHF"); // 5000
 await create(app, { method: "credit", amount: 3000, currency: "CHF", usrId: 42, ref, return: "/" });
 ```
 
+What we owe someone — the rest of a credit note — is paid out onto their credit with `payOut()`: an
+outgoing payment (`credit`) for its `ref`, and the credit it adds, in one go.
+
 Every move is a row (`payment_credit`): added positive, spent negative; the balance is their sum,
 and never goes below zero.
 

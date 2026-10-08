@@ -1,5 +1,5 @@
 import { errMsg } from "@qino/qino";
-import { toMinor } from "@qino/qino/cms.backend.superuser.fin";
+import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
 import { record, refund, sync } from "@qino/qino/fin.payment";
 
 import type { Node } from "@qino/qino/cms";
@@ -16,7 +16,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const { id, amount } = vars.refund as { id: string; amount: string };
       const row = await app.db.row`SELECT currency FROM payment WHERE id = ${Number(id)}`;
       if (!row) return { ok: false, message: await app.t`No payment` };
-      await refund(app, Number(id), amount ? toMinor(amount, String(row.currency)) : undefined);
+      await refund(app, Number(id), amount ? parseAmount(amount, String(row.currency)) : undefined);
       return { ok: true, message: await app.t`Paid back.` };
     }
     if (vars.record) {
@@ -25,7 +25,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const id = await record(app, {
         direction: v.direction === "out" ? "out" : "in",
         provider: v.provider,
-        amount: toMinor(v.amount, currency),
+        amount: parseAmount(v.amount, currency),
         currency,
         ref: v.ref || undefined,
         description: v.description || undefined,

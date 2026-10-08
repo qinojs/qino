@@ -22,7 +22,7 @@ export async function backgroundAttr(node: Node, fileName: string, style = ""): 
 }
 
 /** #rgb, #rrggbb or rgb(); undefined when the value is none of them. */
-function rgb(color: string): [number, number, number] | undefined {
+function rgb(color: string) {
   const hex = color.trim().match(/^#([\da-f]{3}|[\da-f]{6})$/i)?.[1];
   if (hex) {
     const full = hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;

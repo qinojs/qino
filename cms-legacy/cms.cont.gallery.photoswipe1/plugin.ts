@@ -17,7 +17,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // PhotoSwipe is a classic script, so it stays imperative — cms.node.js would load it as a module.
   const base = ctx.req.moduleUrl + name + "/pub/photoswipe/dist/";
   ctx.res.html.legacyScripts.add(base + "photoswipe.min.js");

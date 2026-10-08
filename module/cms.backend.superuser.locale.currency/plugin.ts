@@ -23,7 +23,7 @@ const label = (t: App["t"], every: string) => every === "hourly" ? t`every hour`
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
 
 /** Rates are stored as units per 1 USD — the base the PHP original's source used. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;

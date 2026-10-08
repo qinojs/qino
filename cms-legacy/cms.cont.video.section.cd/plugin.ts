@@ -2,7 +2,6 @@ import { hee, html } from "@qino/qino";
 
 import { backgroundAttr } from "../lib/bg.ts";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -13,7 +12,7 @@ const settingsSchema = {
 
 // The PHP version copied the video into the module's pub/ folder to get a plain URL;
 // in qino the dbFile route serves it directly.
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const darken = !!await node.settings.darken;
   const video = await node.file("Background");
   const videoHtml = await video.exists()

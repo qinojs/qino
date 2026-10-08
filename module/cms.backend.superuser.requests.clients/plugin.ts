@@ -49,7 +49,7 @@ async function latest(app: App, limit: number, { window = WINDOW, returning = fa
 const userName = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
 
 // ── list (filterable part) ──────────────────────────────────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
   const rows = await latest(node.app, LIMIT, { returning: !!f.returning });

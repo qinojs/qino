@@ -1,6 +1,7 @@
 import { remindDue } from "./mod.ts";
 
 import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
@@ -16,4 +17,4 @@ export const settingsSchema = {
 
 export const cron = {
   remind: { every: 86400, timeout: 600, run: (app: App) => remindDue(app) },
-};
+} satisfies Jobs;

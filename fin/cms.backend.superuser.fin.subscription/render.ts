@@ -1,23 +1,13 @@
 import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
-import { periods, plans, subscriptions } from "@qino/qino/fin.subscription";
-import { currency as currencies } from "@qino/qino/locale.currency";
+import { badge, inputAmount, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { nameOf, today } from "@qino/qino/fin";
+import { horizon, periods, plans, renews, subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-const today = () => new Date().toLocaleDateString("sv-SE");
-const addDays = (date: string, n: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
 const date = (value: unknown) => value ? String(value).slice(0, 10) : "";
-
-/** Minor units as typed into a field: `240`, `0.2345` — no grouping, a point. */
-const typed = (minor: unknown, currency: unknown) =>
-  minor == null ? "" : String(Number(minor) / 10 ** currencies.decimals(String(currency || "CHF")));
-
-/** A user as named on the page: the organization, else the person. */
-const nameOf = (u: Row) => String(u.organization || [u.given_name, u.family_name].filter(Boolean).join(" "));
 
 const selected = (yes: boolean) => yes ? html.raw(" selected") : "";
 
@@ -38,8 +28,8 @@ const every = (app: App, unit: unknown, count: unknown) =>
 function terms(app: App, row: Row, catalog: Row[], placeholder: Row = {}) {
   const t = app.t;
   return html.async`
-    ${t`Price`} <input name=price inputmode=decimal size=8 value="${typed(row.price, row.currency)}"
-      placeholder="${typed(placeholder.price, placeholder.currency)}">
+    ${t`Price`} <input name=price inputmode=decimal size=8 value="${inputAmount(row.price, row.currency)}"
+      placeholder="${inputAmount(placeholder.price, placeholder.currency)}">
     ${t`Currency`}
     <input name=currency maxlength=3 size=4 value="${row.currency}" placeholder="${placeholder.currency}">
     ${t`Tax %`} <input name=taxRate inputmode=decimal size=4 value="${row.tax_rate}"
@@ -63,9 +53,9 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
     app.db.query`SELECT id, given_name, family_name, organization FROM usr ORDER BY family_name, given_name`,
   ]);
   const names = new Map(users.map((u) => [Number(u.id), nameOf(u)]));
-  const horizon = addDays(today(), Number(await app.settings["fin.subscription"].lead ?? 30));
+  const until = await horizon(app);
   const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
-  const due = all.filter((s) => !ended(s) && String(s.next) <= horizon);
+  const due = all.filter((s) => renews(s, until));
   const userSelect = (name: string) => html`<select name=${name} required><option value="">—${users.map((u) =>
     html`<option value="${u.id}"${selected(Number(u.id) === usrFilter)}>${nameOf(u)}`)}</select>`;
   return html.async`<div class=u2-flex>
@@ -96,7 +86,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
       </table></div>` : html.async`<p>${t`No subscriptions yet`}`}
   </div>
   <div class=u2-card style="flex:0 1 auto">
-    <div class=-head>${t`Next billing run`} <small>${t`until`} ${horizon}</small></div>
+    <div class=-head>${t`Next billing run`} <small>${t`until`} ${until}</small></div>
     ${due.length ? html.async`<table class=u2-table style="white-space:nowrap">${due.map((s) => html`<tr>
       <td>${names.get(Number(s.usr_id))}
       <td>${s.label} ${s.detail}

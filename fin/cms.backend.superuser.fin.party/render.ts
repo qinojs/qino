@@ -1,11 +1,12 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
-  amounts, badge, direction, linked, money, refLink, rowLink, status,
+  amounts, badge, direction, money, refLink, rowLink, status,
 } from "@qino/qino/cms.backend.superuser.fin";
+import { nameOf } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
 
-import type { HtmlString, Row } from "@qino/qino";
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export function render(node: Node): Promise<HtmlString> {
@@ -13,9 +14,6 @@ export function render(node: Node): Promise<HtmlString> {
   const id = Number(url.searchParams.get("usr"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
-
-/** A user as a party: the organization, else the person. */
-const nameOf = (u: Row) => String(u.organization || [u.given_name, u.family_name].filter(Boolean).join(" "));
 
 /**
  * The users invoices are for or from. Who is a customer and who a supplier follows from the
@@ -51,7 +49,7 @@ async function overview(node: Node, url: URL) {
       WHERE status = 'open' AND ${sql.in("usr_id", ids)} GROUP BY usr_id, direction, currency ORDER BY currency`
     : [];
   // what users hold as credit, where credit is kept
-  const credits = ids.length && linked(app, "fin.payment.credit")
+  const credits = ids.length && app.modules.linked("fin.payment.credit")
     ? await app.db.query`SELECT usr_id, currency, SUM(amount) AS amount FROM payment_credit
       WHERE ${sql.in("usr_id", ids)} GROUP BY usr_id, currency HAVING SUM(amount) <> 0 ORDER BY currency`
     : undefined;
@@ -134,7 +132,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     </form>
     <p><small>${t`New invoices take this address; issued ones keep the one they were issued with.`}</small>
   </div>
-  ${linked(app, "fin.payment.credit") ? credit(node, id) : ""}
+  ${app.modules.linked("fin.payment.credit") ? credit(node, id) : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
     ${invoices.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">

@@ -163,7 +163,7 @@ async function scene(node: Node, s: Scene, file: DbFile, options: Record<string,
   </section>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   let file: DbFile | undefined;
   for (const f of (await node.files()).values()) {
     if (f.mime.startsWith("image/")) { file = f; break; }

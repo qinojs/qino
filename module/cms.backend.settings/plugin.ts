@@ -7,7 +7,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });
 }
 
-function render(_node: unknown, { ctx }: { ctx: Ctx }): HtmlString {
+function render(_node: unknown, { ctx }: { ctx: Ctx }) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/SettingsEditor.mjs");
   return html`<div class=u2-card>
   <div class=-head>Settings</div>

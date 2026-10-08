@@ -3,6 +3,7 @@
   "description": "Double entry: accounts, entries that add up to zero, receipts, closed periods — invoices and payments book themselves.",
   "dependencies": [
     "core",
+    "fin",
     "fin.invoice",
     "fin.payment"
   ],

@@ -1,4 +1,5 @@
 import { unixTime } from "@qino/qino";
+import { record, refOf } from "@qino/qino/fin.payment";
 
 import type { App, Row } from "@qino/qino";
 
@@ -30,6 +31,19 @@ export async function add(
       ref: ref ?? null,
       created: unixTime(),
     }));
+  });
+}
+
+/** Pay out onto a user's credit: an outgoing payment (`credit`) for `ref`, and the credit it adds. */
+export async function payOut(
+  app: App,
+  usrId: number,
+  { amount, currency, ref, text = "" }: { amount: number; currency: string; ref?: string; text?: string },
+): Promise<number> {
+  return await app.db.transaction(async () => {
+    const payment = await record(app, { direction: "out", provider: "credit", amount, currency, ref, usrId });
+    await add(app, usrId, { amount, currency, text, ref: refOf(payment) });
+    return payment;
   });
 }
 

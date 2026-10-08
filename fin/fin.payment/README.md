@@ -39,6 +39,9 @@ direction; it fires the same event:
 await record(app, { direction: "in", provider: "cash", amount: 2000, currency: "EUR", ref: "fin.invoice:7" });
 ```
 
+What follows from a payment elsewhere — a move on a user's credit, an entry in the books — carries
+its `refOf(id)`: `fin.payment:12`.
+
 `payer` is who pays, shaped like an invoice's party; a slip that has room for it prints it (the
 QR bill's debtor). An invoice passes its party.
 

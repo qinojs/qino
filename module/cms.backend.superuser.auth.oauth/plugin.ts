@@ -5,7 +5,7 @@ import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -104,7 +104,7 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
 </form>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const db = node.app.db;
   const b = ctx.req.body as Record<string, unknown> | undefined;
 

@@ -1,8 +1,10 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, direction, linked, money, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
+import {
+  badge, direction, inputAmount, money, pager, refLink, rowLink, status,
+} from "@qino/qino/cms.backend.superuser.fin";
+import { today } from "@qino/qino/fin";
 import { document, lines, refOf } from "@qino/qino/fin.invoice";
-import { currency as currencies } from "@qino/qino/locale.currency";
 import { methods } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
 
@@ -17,8 +19,6 @@ export function render(node: Node): Promise<HtmlString> {
   const id = Number(url.searchParams.get("invoice"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
-
-const today = () => new Date().toLocaleDateString("sv-SE");
 
 /** The party's name, from the snapshot. */
 const partyName = (row: Row) => {
@@ -102,7 +102,6 @@ async function list(node: Node, url: URL) {
   ]);
   if (!rows.length) return html.async`<p>${t`No invoices`}`;
   const pageUrl = await (await node.page()).url();
-  const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
   return html.async`<table class=u2-table style="white-space:nowrap">
     <thead><tr>
       <th>${t`Number`}
@@ -125,10 +124,7 @@ async function list(node: Node, url: URL) {
       <td style="text-align:end; white-space:nowrap">${money(row.paid, row.currency)}
       <td>${status(row.status)}
       <td>${refLink(node, row.ref)}`)}
-    ${total > PER_PAGE ? html`<tfoot><tr><td colspan=9>
-      ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
-      ${page * PER_PAGE + 1}–${page * PER_PAGE + rows.length} / ${total}
-      ${(page + 1) * PER_PAGE < total ? html`<a href="${at(page + 1)}">›</a>` : ""}` : ""}
+    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 9 })}
   </table>`;
 }
 
@@ -151,15 +147,11 @@ function newForm(app: App) {
   </form>`;
 }
 
-/** Minor units as typed into a field: `120`, `0.2345` — no grouping, a point. */
-const typed = (minor: unknown, currency: unknown) =>
-  String(Number(minor) / 10 ** currencies.decimals(String(currency || "CHF")));
-
 /** Where lines may be booked, where bookkeeping is installed: the default account, and the others. */
 type Accounts = { fallback: string; list: Row[] };
 
 async function accountsOf(app: App, direction: unknown): Promise<Accounts | undefined> {
-  if (!linked(app, "fin.accounting")) return;
+  if (!app.modules.linked("fin.accounting")) return;
   const out = direction === "out";
   const fallback = String(await app.settings["fin.accounting"].accounts[out ? "revenue" : "expense"] ?? "");
   const list = await app.db.query`SELECT number, name FROM accounting_account
@@ -186,7 +178,7 @@ const lineRow = (app: App, i: string | number, line: Row, { currency, rate, taxe
     value="${line.quantity == null ? "" : Number(line.quantity)}">
   <td><input name="unit${i}" style="width:3.5rem" value="${line.unit}">
   <td><input name="price${i}" inputmode=decimal style="width:6rem"
-    value="${line.price == null ? "" : typed(line.price, currency)}">
+    value="${inputAmount(line.price, currency)}">
   ${taxed ? html`<td><input name="taxRate${i}" inputmode=decimal style="width:3.5rem" placeholder="${rate ?? 0}"
     value="${line.tax_rate == null ? "" : Number(line.tax_rate)}">` : ""}
   <td><button type=button data-remove-line class=u2-unstyle title="${app.t`Remove`}">
@@ -359,11 +351,11 @@ async function detail(node: Node, id: number) {
       ${field(t`Changed`, u2.el.time(row.changed))}
     </table>
     <div>
-      ${linked(app, "pdf")
+      ${app.modules.linked("pdf")
         ? html.async`<button data-action=print data-id="${id}">${t`Print PDF`}</button>`
         : ""}
       ${pdfUrl && row.direction === "out" ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}
-      ${row.status === "open" && row.direction === "out" && linked(app, "fin.invoice.reminder")
+      ${row.status === "open" && row.direction === "out" && app.modules.linked("fin.invoice.reminder")
         ? html.async`<button data-action=remind data-id="${id}"
           u2-confirm="${t`Send the next reminder to its user now?`}">${t`Remind`}</button>`
         : ""}
@@ -375,7 +367,7 @@ async function detail(node: Node, id: number) {
       ${row.status !== "canceled" ? html.async`<button data-action=cancel data-id="${id}"
         u2-confirm="${t`Cancel this invoice? Its number stays used.`}">${t`Cancel`}</button>` : ""}
     </div>
-    ${row.direction === "out" && row.status !== "canceled" && linked(app, "messaging.email") ? html.async`
+    ${row.direction === "out" && row.status !== "canceled" && app.modules.linked("messaging.email") ? html.async`
     <form data-send="${id}">
       <input type=email name=email value="${await emailOf(app, row.usr_id)}" placeholder="${t`Email address`}">
       <button>${t`Send by email`}</button>
@@ -428,7 +420,7 @@ async function detail(node: Node, id: number) {
       <input name=provider value=bank size=8>
       <button>${t`Record`}</button>
     </form>` : ""}
-    ${credit && row.status === "open" && open > 0 && row.usr_id && linked(app, "fin.payment.credit")
+    ${credit && row.status === "open" && open > 0 && row.usr_id && app.modules.linked("fin.payment.credit")
       ? html.async`<button data-action=tocredit data-id="${id}"
         u2-confirm="${t`Put what is owed onto the customer's credit?`}">
         ${t`To credit`} ${money(open, row.currency)}</button>`

@@ -1,6 +1,5 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
-import { backend } from "@qino/qino/cms.backend";
-import { badge, linked, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, pager, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -39,7 +38,7 @@ export async function render(node: Node): Promise<HtmlString> {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Read a statement`}</div>
-    ${linked(app, "fin.bank.camt")
+    ${app.modules.linked("fin.bank.camt")
       ? html.async`<form data-camt>
         <input type=file name=file accept=".xml,application/xml,text/xml" required multiple>
         <button>${t`Read`}</button>
@@ -86,7 +85,6 @@ async function lines(node: Node, url: URL) {
   if (!rows.length) return html.async`<p>${t`No lines`}`;
   const guesses = await suggestions(app, rows.filter((row) => !row.payment_id));
   const pageUrl = await (await node.page()).url();
-  const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
   return html.async`<table class=u2-table>
     <thead><tr>
       <th>${t`Id`}
@@ -106,10 +104,7 @@ async function lines(node: Node, url: URL) {
       <td>${row.payment_id
         ? rowLink(node, "cms.backend.superuser.fin.payment", "payment", row.payment_id)
         : assignForm(app, row, guesses.get(Number(row.id)) ?? [])}`)}
-    ${total > PER_PAGE ? html`<tfoot><tr><td colspan=7>
-      ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
-      ${page * PER_PAGE + 1}–${page * PER_PAGE + rows.length} / ${total}
-      ${(page + 1) * PER_PAGE < total ? html`<a href="${at(page + 1)}">›</a>` : ""}` : ""}
+    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 7 })}
   </table>`;
 }
 
@@ -134,7 +129,7 @@ function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[
  *  ones; a credit note's rest is negative, so it goes out by itself. */
 async function suggestions(app: App, open: Row[]) {
   const found = new Map<number, { ref: string; label: string }[]>();
-  if (!open.length || !linked(app, "fin.invoice")) return found;
+  if (!open.length || !app.modules.linked("fin.invoice")) return found;
   const invoices = await app.db.query`
     SELECT id, direction, number, currency, total - paid AS rest, party FROM invoice WHERE status = 'open'`;
   for (const row of open) {

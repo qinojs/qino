@@ -1,26 +1,12 @@
 import { sql, unixTime } from "@qino/qino";
+import { addDays, addMonths, partyOf, today } from "@qino/qino/fin";
 import { create as invoice, issue, mail } from "@qino/qino/fin.invoice";
 
 import type { App, Row } from "@qino/qino";
 
-const today = () => new Date().toLocaleDateString("sv-SE");
-
-const addDays = (date: string, n: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
-
 const day = (value: unknown) => String(value).slice(0, 10);
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** The day after a period that begins on `date`: so many months or years on, the 31st kept as the
- *  month's last day. */
-export function periodAfter(date: string, unit: string, count: number): string {
-  const [y, m, d] = date.split("-").map(Number);
-  const months = (m - 1) + count * (unit === "month" ? 1 : 12);
-  const [year, month] = [y + Math.floor(months / 12), months % 12];
-  const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
-}
 
 /** The catalog: what is offered, at which price, per which period. */
 export const plans = (app: App): Promise<Row[]> => app.db.query`SELECT * FROM subscription_plan ORDER BY name`;
@@ -162,6 +148,14 @@ export async function cancel(app: App, id: number): Promise<void> {
   await app.db.exec`UPDATE subscription SET end_date = ${s.next} WHERE id = ${id}`;
 }
 
+/** The last day the next billing run reaches: today plus the lead time (`fin.subscription.lead`). */
+export const horizon = async (app: App): Promise<string> =>
+  addDays(today(), Number(await app.settings["fin.subscription"].lead ?? 30));
+
+/** Whether a subscription renews by `until`: its next period begins then at the latest, before its end. */
+export const renews = (sub: Row, until: string): boolean =>
+  String(sub.next) <= until && (!sub.end_date || String(sub.next) < day(sub.end_date));
+
 /**
  * Bill what renews within the lead time (`fin.subscription.lead` days, 30): per user and currency
  * one invoice, a line per period — the plan's name, the detail and the period as its description —
@@ -169,12 +163,13 @@ export async function cancel(app: App, id: number): Promise<void> {
  * mailed to the customer too with `fin.subscription.send`. Resolves with the invoices.
  */
 export async function bill(app: App, { until }: { until?: string } = {}): Promise<number[]> {
-  const s = app.settings["fin.subscription"];
-  const horizon = until ?? addDays(today(), Number(await s.lead ?? 30));
+  const settings = app.settings["fin.subscription"];
+  const last = until ?? await horizon(app);
   const groups = new Map<string, { usrId: number; currency: string; periods: Row[] }>();
   for (const sub of await withNext(app)) {
-    for (let start = String(sub.next); start <= horizon && (!sub.end_date || start < day(sub.end_date));) {
-      const following = periodAfter(start, String(sub.unit), Number(sub.count));
+    for (let start = String(sub.next); start <= last && (!sub.end_date || start < day(sub.end_date));) {
+      // the day after the period: so many months or years on
+      const following = addMonths(start, Number(sub.count) * (sub.unit === "month" ? 1 : 12));
       const currency = String(sub.currencyCode);
       const key = `${sub.usr_id}:${currency}`;
       const group = groups.get(key) ?? { usrId: Number(sub.usr_id), currency, periods: [] as Row[] };
@@ -217,8 +212,8 @@ export async function bill(app: App, { until }: { until?: string } = {}): Promis
       }
       return id;
     });
-    const send = !!await s.send;
-    if (send || await s.issue) await issue(app, id);
+    const send = !!await settings.send;
+    if (send || await settings.issue) await issue(app, id);
     if (send) await mailed(app, id, usrId).catch((e) => console.error("fin.subscription: not mailed", id, e));
     ids.push(id);
   }
@@ -231,15 +226,3 @@ async function mailed(app: App, id: number, usrId: number) {
   const { send } = await import("@qino/qino/messaging.email");
   await send(app, { usr: usrId }, await mail(app, id));
 }
-
-/** A user as an invoice's party: the organization, else the person, at their postal address. */
-const partyOf = (u: Row) => ({
-  name: String(u.organization || [u.given_name, u.family_name].filter(Boolean).join(" ")),
-  address: Object.fromEntries(Object.entries({
-    streetAddress: u.street_address,
-    postalCode: u.postal_code,
-    addressLocality: u.address_locality,
-    addressRegion: u.address_region,
-    addressCountry: u.address_country,
-  }).filter(([, v]) => v).map(([k, v]) => [k, String(v)])),
-});

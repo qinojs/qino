@@ -33,7 +33,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const settings = node.settings;
   const activePage = await (cmsCtx(ctx).mainNode ?? await node.page()).page();
   const path = await activePage.path();

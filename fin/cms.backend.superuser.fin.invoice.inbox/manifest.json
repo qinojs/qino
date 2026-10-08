@@ -3,9 +3,11 @@
   "description": "Received invoices read from PDF or photo by a language model into drafts, the file kept as receipt.",
   "dependencies": [
     "ai1",
+    "cms.backend.superuser.fin",
     "cms.backend.superuser.fin.invoice",
     "fin",
-    "fin.invoice"
+    "fin.invoice",
+    "locale.currency"
   ],
   "files": [
     "README.md",

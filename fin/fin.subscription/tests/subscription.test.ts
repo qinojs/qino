@@ -3,14 +3,7 @@ import { lines, remove } from "@qino/qino/fin.invoice";
 import { setTransport } from "@qino/qino/messaging.email";
 
 import { withFinApp } from "../../tests/app.ts";
-import { bill, cancel, periodAfter, plan, subscribe, subscriptions } from "../mod.ts";
-
-Deno.test("periods follow from the start: months or years, the month's last day kept", () => {
-  assertEquals(periodAfter("2027-03-01", "year", 1), "2028-03-01");
-  assertEquals(periodAfter("2027-01-31", "month", 1), "2027-02-28");
-  assertEquals(periodAfter("2027-11-15", "month", 3), "2028-02-15");
-  assertEquals(periodAfter("2028-02-29", "year", 1), "2029-02-28");
-});
+import { bill, cancel, plan, subscribe, subscriptions } from "../mod.ts";
 
 Deno.test("what renews is billed in advance, one invoice per customer, and stops when canceled", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {

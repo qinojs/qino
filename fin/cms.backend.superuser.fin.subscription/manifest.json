@@ -3,8 +3,8 @@
   "description": "Subscriptions: who is billed for what, when it renews, and the next billing run.",
   "dependencies": [
     "cms.backend.superuser.fin",
-    "fin.subscription",
-    "locale.currency"
+    "fin",
+    "fin.subscription"
   ],
   "files": [
     "manifest.json",

@@ -6,7 +6,7 @@ import type { Seed } from "../seed.ts";
 const md5 = (s: string) => createHash("md5").update(s).digest("hex");
 
 /** Id of a dictionary row (url, ip, user agent), inserting it the first time that value is seen. */
-async function dictId(s: Seed, table: string, field: string, value: string, rest: Record<string, unknown> = {}): Promise<string> {
+async function dictId(s: Seed, table: string, field: string, value: string, rest: Record<string, unknown> = {}) {
   const row = await s.db.table(table).rowBy(field, value);
   return row ? String(row) : String(await s.db.table(table).insert({ [field]: value, ...rest }));
 }

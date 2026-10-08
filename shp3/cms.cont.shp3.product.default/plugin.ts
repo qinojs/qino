@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { ensureProduct, shp3 } from "@qino/qino/shp3";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -11,7 +10,7 @@ const settingsSchema = {
 };
 
 /** A product is a page — the page id is the product id, and the row is created with it. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t;
   const product = await ensureProduct(node);
   if (!product) return html.async`<div></div>`;

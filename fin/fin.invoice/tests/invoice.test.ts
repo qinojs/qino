@@ -1,5 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { Db } from "@qino/qino";
+import { addDays, today } from "@qino/qino/fin";
 import { record } from "@qino/qino/fin.payment";
 import { fakeSettings, paymentDbSchema } from "@qino/qino/tests";
 
@@ -107,11 +108,19 @@ Deno.test("issuing draws gapless numbers per year and sets date, due and term", 
   await assertRejects(() => issue(app, ids[0]), Error, "only drafts");
 });
 
+Deno.test("a draft's date and due date can be cleared again: issuing then sets them", async () => {
+  const { app } = await setup({ term: 10 });
+  const id = await create(app, { ...order, date: "2027-01-02", due: "2027-03-01" });
+  await update(app, id, { date: null, due: null });
+  assertEquals([(await row(app, id))?.date, (await row(app, id))?.due], [null, null]);
+  const issued = await issue(app, id);
+  assertEquals([issued?.date, issued?.due, issued?.term], [today(), addDays(today(), 10), 10]);
+});
+
 Deno.test("an issued invoice without a date is dated today, and numbers default to {year}-{n}", async () => {
   const { app } = await setup();
   const invoice = await issue(app, await create(app, order));
-  const today = new Date().toLocaleDateString("sv-SE");
-  assertEquals([invoice?.date, invoice?.number], [today, `${today.slice(0, 4)}-1`]);
+  assertEquals([invoice?.date, invoice?.number], [today(), `${today().slice(0, 4)}-1`]);
 });
 
 Deno.test("payments with its ref settle it, partly and fully; a refund reopens it", async () => {

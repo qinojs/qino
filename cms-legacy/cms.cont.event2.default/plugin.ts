@@ -10,7 +10,7 @@ const words = (lang: string) => lang === "de"
   ? { dates: "Datum", location: "Ort", price: "Preis", performers: "Leitung" }
   : { dates: "Date", location: "Location", price: "Price", performers: "Teachers" };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const parent = await node.parent();
   const info = await eventInfo(node);
   const dates = await eventDates(node);

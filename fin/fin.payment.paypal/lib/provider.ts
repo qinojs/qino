@@ -1,4 +1,5 @@
 import { errMsg, isOn } from "@qino/qino";
+import { fromMinor, toMinor } from "@qino/qino/fin";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
 import type { App, Row } from "@qino/qino";
@@ -41,12 +42,8 @@ async function call(app: App, path: string, body?: unknown) {
   return json;
 }
 
-const decimal = (minor: number, currency: string) => {
-  const digits = currencies.decimals(currency);
-  return (minor / 10 ** digits).toFixed(digits);
-};
-const minor = (value: unknown, currency: string) =>
-  Math.round(Number(value ?? 0) * 10 ** currencies.decimals(currency));
+/** Minor units as PayPal writes amounts: `47.26`, with all the currency's decimals. */
+const decimal = (minor: number, currency: string) => fromMinor(minor, currency).toFixed(currencies.decimals(currency));
 const dataOf = (payment: Row) => JSON.parse(String(payment.data ?? "{}")) ?? {};
 
 /** What a captured order says: paid, what PayPal kept, and the capture to refund. */
@@ -58,8 +55,8 @@ function captured(payment: Row, order: Record<string, any>): State {
   const breakdown = capture.seller_receivable_breakdown;
   return {
     status: capture.status === "COMPLETED" ? "paid" : capture.status === "PENDING" ? "processing" : "failed",
-    paid: minor(capture.amount?.value, currency),
-    fee: breakdown?.paypal_fee?.currency_code === currency ? minor(breakdown.paypal_fee.value, currency) : undefined,
+    paid: toMinor(Number(capture.amount?.value ?? 0), currency),
+    fee: breakdown?.paypal_fee?.currency_code === currency ? toMinor(Number(breakdown.paypal_fee.value), currency) : undefined,
     data: { ...dataOf(payment), capture: capture.id },
   };
 }

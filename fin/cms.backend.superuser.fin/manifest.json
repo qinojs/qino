@@ -3,8 +3,8 @@
   "description": "Finance overview: what is open, how payments, invoices and bank work together, and which parts are there.",
   "dependencies": [
     "cms.backend",
-    "fin.payment",
-    "locale.currency"
+    "fin",
+    "fin.payment"
   ],
   "files": [
     "manifest.json",

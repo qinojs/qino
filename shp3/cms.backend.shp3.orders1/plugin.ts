@@ -20,7 +20,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const id = Number(getCtx().req.query.shp3_orderId ?? 0);
   return id ? renderOrder(node, id) : renderList(node);
 }

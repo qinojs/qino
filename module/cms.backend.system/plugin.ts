@@ -22,7 +22,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { t, db } = node.app;
   const app  = node.app;
 

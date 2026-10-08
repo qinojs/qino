@@ -18,7 +18,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   return html.async`<div class=u2-flex>
   ${await address(node)}
   ${await methods(node)}

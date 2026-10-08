@@ -6,13 +6,13 @@ import { render, status } from "../render.ts";
 import { seeders } from "../lib/seeders.ts";
 
 /** Row count per table — the whole database in one object. */
-async function census(app: App): Promise<Record<string, number>> {
+async function census(app: App) {
   const out: Record<string, number> = {};
   for (const name of Object.keys(app.db.tables)) out[name] = Number(await app.db.one`SELECT COUNT(*) FROM ${sql.id(name)}` ?? 0);
   return out;
 }
 
-async function demoApp(): Promise<App> {
+async function demoApp() {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.installation.default");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");

@@ -1,7 +1,7 @@
 import { getCtx, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const cms = { node: { js: ["pub/main.js"], render, api } };
@@ -74,7 +74,7 @@ async function ipHosts(ips: string[]): Promise<Record<string, string>> {
 
 const ACTIVE = 15 * 60; // seconds since the last request that still count as "here"
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
 

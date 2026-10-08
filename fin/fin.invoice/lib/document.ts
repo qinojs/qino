@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any -- party and organization are plain data of any shape
 import { Ctx, fs, html, requestStorage } from "@qino/qino";
-import { currency as currencies } from "@qino/qino/locale.currency";
+import { fromMinor } from "@qino/qino/fin";
 import { file } from "@qino/qino/identity";
+import { currency as currencies } from "@qino/qino/locale.currency";
 
 import { lineOf, totals } from "./totals.ts";
 
@@ -26,8 +27,7 @@ export async function document(
     const party = JSON.parse(String(invoice.party ?? "{}")) ?? {};
     const locale = localeOf(lang, sender);
     const money = moneyFormat(locale, String(invoice.currency));
-    const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
-    const day = (date: unknown) => date ? dates.format(new Date(`${date}T00:00:00Z`)) : "";
+    const day = dayFormat(locale);
     const sum = totals(lines.map(lineOf), Boolean(invoice.tax_included));
     // no tax: no tax rows; one rate: it shows below the lines, a column only where rates differ
     const taxed = sum.rates.some((r) => r.rate);
@@ -147,6 +147,12 @@ function moneyFormat(locale: string, currency: string) {
   };
 }
 
+/** Formats a `YYYY-MM-DD` day as the locale writes it; nothing for none. */
+function dayFormat(locale: string) {
+  const format = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
+  return (date: unknown) => date ? format.format(new Date(`${date}T00:00:00Z`)) : "";
+}
+
 /** Name and postal address, one line each; the country only `abroad`. */
 function addressBlock(o: Record<string, any>, abroad: boolean) {
   const a = o.address ?? {};
@@ -182,10 +188,9 @@ export async function mail(app: App, invoice: Row, pdf: DbFile, reminder = 0) {
     const locale = localeOf(lang, sender);
     const currency = String(invoice.currency);
     const amount = new Intl.NumberFormat(locale, { style: "currency", currency })
-      .format((Number(invoice.total) - Number(invoice.paid)) / 10 ** currencies.decimals(currency));
-    const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
-    const due = invoice.due ? dates.format(new Date(`${invoice.due}T00:00:00Z`)) : "";
-    const date = invoice.date ? dates.format(new Date(`${invoice.date}T00:00:00Z`)) : "";
+      .format(fromMinor(Number(invoice.total) - Number(invoice.paid), currency));
+    const day = dayFormat(locale);
+    const [date, due] = [day(invoice.date), day(invoice.due)];
     const credit = invoice.type === "credit_note";
     const text = credit
       ? [await t`Please find our credit note ${invoice.number} attached.`]

@@ -1,6 +1,7 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
+import { today } from "@qino/qino/fin";
 
 import { render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -16,13 +17,12 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 /** What customers still owe, and how much of it is late. */
 async function widget(app: App): Promise<HtmlString> {
-  const today = new Date().toLocaleDateString("sv-SE");
   const [open, overdue] = await Promise.all([
     // a credit note is negative: it takes off what is claimed by itself; it is never overdue
     app.db.query`SELECT currency, SUM(total - paid) AS amount
       FROM invoice WHERE direction = 'out' AND status = 'open' GROUP BY currency ORDER BY currency`,
     app.db.one`SELECT COUNT(*) FROM invoice
-      WHERE direction = 'out' AND type = 'invoice' AND status = 'open' AND due < ${today}`.then(Number),
+      WHERE direction = 'out' AND type = 'invoice' AND status = 'open' AND due < ${today()}`.then(Number),
   ]);
   return html.async`<div>
     ${amounts(open)} <small>${app.t`receivable`}</small><br>

@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { cart } from "@qino/qino/shp3";
 
-import type { HtmlString, Ctx } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -11,7 +11,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const order = await cart(ctx, false);
   if (!order) return html.async`<div></div>`;

@@ -11,7 +11,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });
 }
 
-function render(node: Node): HtmlString {
+function render(node: Node) {
   return html`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>State</div>
@@ -23,7 +23,7 @@ function render(node: Node): HtmlString {
 </div>`;
 }
 
-function renderState(node: Node): HtmlString {
+function renderState(node: Node) {
   const ctx = getCtx();
   ctx.res.html.importMap.set(DUMP_JS, DUMP_JS); // ugly
   ctx.res.csp["script-src"][DUMP_JS] = true;

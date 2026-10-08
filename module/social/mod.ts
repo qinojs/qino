@@ -131,7 +131,7 @@ async function send(app: App, id: number) {
   const row = await app.db.row`SELECT * FROM social_post WHERE id = ${id}`;
   if (!row || row.sent != null) return false;
   const p = provider(app, String(row.provider));
-  if (!p) return void await failed(app, id, new Error(`social: provider not linked: ${row.provider}`)), false;
+  if (!p) return await failed(app, id, new Error(`social: provider not linked: ${row.provider}`)), false;
   try {
     const post = await p.publish(app, String(row.target), String(row.text), `qino-social-${id}`);
     await attach(app, row, post);

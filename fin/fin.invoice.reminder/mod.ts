@@ -1,10 +1,9 @@
 import { sql } from "@qino/qino";
+import { addDays, today } from "@qino/qino/fin";
 import { mail } from "@qino/qino/fin.invoice";
 import { send } from "@qino/qino/messaging.email";
 
 import type { App } from "@qino/qino";
-
-const today = () => new Date().toLocaleDateString("sv-SE");
 
 /** Days after the due date each reminder goes out (`fin.invoice.reminder.days`): "10, 20, 30". */
 async function days(app: App): Promise<number[]> {
@@ -49,6 +48,3 @@ export async function remindDue(app: App): Promise<number> {
   }
   return sent;
 }
-
-const addDays = (date: string, n: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);

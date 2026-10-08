@@ -18,7 +18,7 @@ export async function cms_image2(dbFile: DbFile, options: Record<string, any>): 
   return html.raw(await imageHtml(dbFile, options, ctx.app.modules.get(name)!.cache));
 }
 
-async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir: string): Promise<string> {
+async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir: string) {
   const data = await imageData(dbFile, options, cacheDir);
   const w = data.w || 1;
   const h = data.h || 1;

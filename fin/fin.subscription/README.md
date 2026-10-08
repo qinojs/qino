@@ -29,6 +29,9 @@ issued and mailed to the customer with `fin.subscription.send` (where `messaging
 installed; nothing is mailed otherwise). From there on they are invoices like any other: sent,
 paid, reminded, booked.
 
+`horizon(app)` is the last day the next run reaches, `renews(sub, until)` whether a subscription
+is billed by then — what the backend shows as the next billing run.
+
 `subscription_invoice` keeps which period went on which invoice; the next period follows from the
 last one billed. Throwing a draft away takes its periods with it, and they are billed again.
 `update()` changes plan, name, price, tax, period and end from the next period; the start only

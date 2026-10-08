@@ -46,7 +46,7 @@ function makeFileHelper(ctx: Ctx) {
   return { editorLink, fileDisplay };
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
@@ -139,7 +139,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>) {
 }
 
 // List part — re-rendered live on filter input via cms.reloadPart(nid, "list", form values).
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t, db } = node.app;
   const orderSql = vars.order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
   const where = filterWhere(db, vars);

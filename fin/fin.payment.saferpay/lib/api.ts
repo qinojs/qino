@@ -8,7 +8,7 @@ const SPEC = "1.54";
 export class SaferpayError extends Error {
   code: string;
   constructor(code: string, message: string) {
-    super(`saferpay: ${code}${message ? ` — ${message}` : ""}`);
+    super(`fin.payment.saferpay: ${code}${message ? ` — ${message}` : ""}`);
     this.code = code;
   }
 }
@@ -35,7 +35,9 @@ export async function settings(app: App) {
 // deno-lint-ignore no-explicit-any
 export async function call(app: App, path: string, body: Record<string, unknown>): Promise<any> {
   const { customerId, user, password, base } = await settings(app);
-  if (!customerId || !user || !password) throw new Error("saferpay: customerId, user and password are required");
+  if (!customerId || !user || !password) {
+    throw new Error("fin.payment.saferpay: customerId, user and password are required");
+  }
   const res = await fetch(`${base}/Payment/v1/${path}`, {
     method: "POST",
     headers: {
@@ -48,7 +50,7 @@ export async function call(app: App, path: string, body: Record<string, unknown>
       ...body,
     }),
   }).catch((e) => {
-    throw new Error(`saferpay: unreachable — ${errMsg(e)}`);
+    throw new Error(`fin.payment.saferpay: unreachable — ${errMsg(e)}`);
   });
   const json = await res.json().catch(() => ({}));
   if (res.ok) return json;

@@ -268,7 +268,7 @@ async function renderDetail(node: Node, modName: string, message: string) {
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   const ctx = getCtx();
   const message = vars.replace ? await replace(node, vars) : "";
   const modName = String(vars.mod ?? ctx.req.query.mod ?? "");

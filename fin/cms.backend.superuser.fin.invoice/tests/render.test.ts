@@ -61,6 +61,9 @@ Deno.test("a new invoice opens in the editor, saves as one types, is issued, ask
     assertStringIncludes(page, 'value="120"'); // prices come back as typed
     await as(base, () => api(node, { save: { ...edited, text: "", id: String(id) } }));
     assertEquals((await app.db.row`SELECT text FROM invoice WHERE id = ${id}`)?.text, ""); // emptied is cleared
+    await as(base, () => api(node, { save: { ...edited, date: "2027-01-02", id: String(id) } }));
+    await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
+    assertEquals((await app.db.row`SELECT date FROM invoice WHERE id = ${id}`)?.date, null); // a date too
     await app.db.exec`UPDATE invoice SET ref = ${"shop.order:12"} WHERE id = ${id}`; // as a shop would
     await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
     assertEquals((await app.db.row`SELECT ref FROM invoice WHERE id = ${id}`)?.ref, "shop.order:12"); // saving keeps it

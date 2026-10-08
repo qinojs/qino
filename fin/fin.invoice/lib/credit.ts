@@ -25,27 +25,3 @@ export async function settledOf(app: App, credit: Row, refunds: number): Promise
   const excess = Math.max(0, Number(invoice.paid) - Number(invoice.total));
   return -(given - Math.max(0, Math.min(given, excess) - refunds));
 }
-
-/** A draft credit note for an issued invoice: its lines, negative, its party and terms — to be cut
- *  down to what is given back. */
-export function creditOf(invoice: Row, lines: Row[]) {
-  return {
-    type: "credit_note" as const,
-    corrects: Number(invoice.id),
-    currency: String(invoice.currency),
-    lines: lines.map((l) => ({
-      name: String(l.name),
-      description: l.description ? String(l.description) : undefined,
-      quantity: -Number(l.quantity),
-      unit: l.unit ? String(l.unit) : undefined,
-      price: Number(l.price),
-      taxRate: Number(l.tax_rate),
-      account: l.account ? String(l.account) : undefined,
-    })),
-    taxIncluded: Boolean(invoice.tax_included),
-    party: JSON.parse(String(invoice.party ?? "{}")) ?? undefined,
-    usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
-    ref: invoice.ref == null ? undefined : String(invoice.ref),
-    lang: String(invoice.lang ?? "") || undefined,
-  };
-}

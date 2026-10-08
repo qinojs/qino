@@ -1,11 +1,11 @@
 import { requestStorage, unixTime } from "@qino/qino";
-
+import { addDays, today } from "@qino/qino/fin";
 import { cancel as cancelPayment, create as pay, sample, slip } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
 
 import { document as htmlOf, mail as mailOf } from "./lib/document.ts";
 import { draw } from "./lib/number.ts";
-import { credited, creditOf, settledOf } from "./lib/credit.ts";
+import { credited, settledOf } from "./lib/credit.ts";
 import { lineOf, totals } from "./lib/totals.ts";
 
 import type { App, DbFile, Row } from "@qino/qino";
@@ -27,8 +27,9 @@ type Values = {
   usrId?: number | null;
   ref?: string;
   text?: string;
-  date?: string;
-  due?: string;
+  /** `null` clears it again. */
+  date?: string | null;
+  due?: string | null;
   /** Days to pay; `null` takes the default (`fin.invoice.term`) again. */
   term?: number | null;
   number?: string;
@@ -89,12 +90,12 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
     if (invoice.type === "credit_note" && Number(invoice.total) >= 0) {
       throw new Error("fin.invoice: a credit note gives back — its total is below zero");
     }
-    const s = app.settings["fin.invoice"];
+    const settings = app.settings["fin.invoice"];
     const date = String(invoice.date ?? today());
-    const term = invoice.term ?? Number(await s.term ?? 30);
+    const term = invoice.term ?? Number(await settings.term ?? 30);
     const credit = invoice.type === "credit_note";
     // credit notes count on with the invoices, unless they have a format of their own
-    const format = String((credit && await s.creditNumber) || await s.number || "{year}-{n}");
+    const format = String((credit && await settings.creditNumber) || await settings.number || "{year}-{n}");
     const number = invoice.direction === "out" ? await draw(app, format, date) : invoice.number;
     // a due date given stands; else it follows from the term, which is kept to be printed
     const fixed = invoice.due ? { due: invoice.due } : { due: addDays(date, Number(term)), term };
@@ -143,20 +144,14 @@ export async function revise(app: App, id: number): Promise<number> {
     throw new Error("fin.invoice: only open invoices nothing was paid on can be revised");
   }
   const draft = await create(app, {
+    ...copyOf(invoice, (await lines(app, id)).map(lineOf)),
     direction: invoice.direction === "in" ? "in" : "out",
     // a credit note is revised into a credit note, for the same invoice
     type: invoice.type === "credit_note" ? "credit_note" : "invoice",
     corrects: invoice.corrects == null ? undefined : Number(invoice.corrects),
-    currency: String(invoice.currency),
-    lines: (await lines(app, id)).map(lineOf),
-    taxIncluded: Boolean(invoice.tax_included),
-    party: JSON.parse(String(invoice.party ?? "{}")) ?? undefined,
-    usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
-    ref: invoice.ref == null ? undefined : String(invoice.ref),
     text: invoice.text == null ? undefined : String(invoice.text),
     term: invoice.term == null ? undefined : Number(invoice.term),
     number: invoice.direction === "in" ? String(invoice.number ?? "") || undefined : undefined,
-    lang: String(invoice.lang ?? "") || undefined,
   });
   await cancel(app, id);
   return draft;
@@ -226,8 +221,21 @@ export async function creditNote(app: App, id: number): Promise<number> {
   if (invoice?.type !== "invoice" || invoice.direction !== "out" || !issued) {
     throw new Error("fin.invoice: credit notes are for issued invoices of ours");
   }
-  return await create(app, creditOf(invoice, await lines(app, id)));
+  // what it gives back: the lines negative, to be cut down
+  const given = (await lines(app, id)).map((row) => ({ ...lineOf(row), quantity: -Number(row.quantity) }));
+  return await create(app, { ...copyOf(invoice, given), type: "credit_note", corrects: id });
 }
+
+/** What a draft made from an invoice takes over — currency, party, user, ref, language — with `lines`. */
+const copyOf = (invoice: Row, lines: Line[]) => ({
+  currency: String(invoice.currency),
+  lines,
+  taxIncluded: Boolean(invoice.tax_included),
+  party: JSON.parse(String(invoice.party ?? "{}")) ?? undefined,
+  usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
+  ref: invoice.ref == null ? undefined : String(invoice.ref),
+  lang: String(invoice.lang ?? "") || undefined,
+});
 
 /**
  * The mail an issued invoice is sent with — subject, text and its PDF, in its language — for any
@@ -320,7 +328,7 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   if (values.data != null) fields.data = JSON.stringify(values.data);
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
   for (const key of ["ref", "text", "date", "due", "number", "lang"] as const) {
-    if (values[key] != null) fields[key] = values[key];
+    if (values[key] !== undefined) fields[key] = values[key];
   }
   if (values.term !== undefined) fields.term = values.term;
   const taxIncluded = values.taxIncluded ?? Boolean(invoice?.tax_included);
@@ -330,7 +338,7 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   const given = stored?.map((line) => ({ ...line, taxRate: line.taxRate ?? rate }));
   if (given) {
     for (const line of given) {
-      if (![line.price, line.quantity ?? 1, line.taxRate ?? 0].every(Number.isFinite)) {
+      if (![line.price, line.quantity ?? 1, line.taxRate].every(Number.isFinite)) {
         throw new Error("price, quantity and taxRate must be numbers");
       }
     }
@@ -347,7 +355,7 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
         quantity: line.quantity ?? 1,
         unit: line.unit ?? null,
         price: line.price,
-        tax_rate: line.taxRate ?? 0,
+        tax_rate: line.taxRate,
         account: line.account || null, // kept where fin.accounting adds the column
         amount: sum.amounts[sort],
       });
@@ -355,9 +363,3 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   }
   await app.db.table("invoice").update(id, fields);
 }
-
-/** Today on the server's calendar. */
-const today = () => new Date().toLocaleDateString("sv-SE");
-
-const addDays = (date: string, days: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + days * 86400_000).toISOString().slice(0, 10);

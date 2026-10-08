@@ -17,7 +17,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first
-const dumpData = (raw: unknown): HtmlString => {
+const dumpData = (raw: unknown) => {
   if (raw == null || raw === "") return html`-`;
   let val = raw;
   if (typeof raw === "string") { try { val = JSON.parse(raw); } catch { return html`<pre>${raw}</pre>`; } }
@@ -36,7 +36,7 @@ function logRefColumns(db: App["db"]): { table: string; col: string }[] {
 }
 
 // ── list (filterable part) ────────────────────────────────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t, db } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
 

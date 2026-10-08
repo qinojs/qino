@@ -1,4 +1,5 @@
 import { getCtx, sql, unixTime } from "@qino/qino";
+import { addDays, today } from "@qino/qino/fin";
 
 import type { App, DbFile, Row } from "@qino/qino";
 
@@ -88,19 +89,22 @@ export async function reverse(
   const lines = await app.db.query`
     SELECT a.number, l.amount, l.tax_code FROM accounting_entry_line l
     JOIN accounting_account a ON a.id = l.account_id WHERE l.entry_id = ${id}`;
-  const back = await book(app, {
-    date: date ?? today(),
-    text: text ?? `Reversal: ${entry.text}`,
-    currency: String(entry.currency),
-    ref: entry.ref == null ? undefined : String(entry.ref),
-    lines: lines.map((l) => ({
-      account: String(l.number),
-      amount: -Number(l.amount),
-      taxCode: l.tax_code || undefined,
-    })),
+  // one transaction: an entry that takes another back is always marked so
+  return await app.db.transaction(async () => {
+    const back = await book(app, {
+      date: date ?? today(),
+      text: text ?? `Reversal: ${entry.text}`,
+      currency: String(entry.currency),
+      ref: entry.ref == null ? undefined : String(entry.ref),
+      lines: lines.map((l) => ({
+        account: String(l.number),
+        amount: -Number(l.amount),
+        taxCode: l.tax_code || undefined,
+      })),
+    });
+    await app.db.exec`UPDATE accounting_entry SET reverses = ${id} WHERE id = ${back}`;
+    return back;
   });
-  await app.db.exec`UPDATE accounting_entry SET reverses = ${id} WHERE id = ${back}`;
-  return back;
 }
 
 /** Add receipts to an entry — a receipt may come after the booking. */
@@ -129,11 +133,6 @@ export async function balances(
     GROUP BY a.id, a.number, a.name, a.type
     ORDER BY a.number`;
 }
-
-const today = () => new Date().toLocaleDateString("sv-SE");
-
-const addDays = (date: string, n: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
 
 /** The ref of the entries that close a year: `fin.accounting:close:2026-12-31`. */
 const CLOSING = "fin.accounting:close:";

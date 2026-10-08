@@ -11,7 +11,6 @@ const { QrCode } = qrcode as any;
 /** `paid` and `refunded` are where money moved; `failed`, `canceled` and `expired` end it unmoved. */
 type Status = "pending" | "processing" | "paid" | "failed" | "canceled" | "expired" | "refunded";
 
-/** What a payment is about, so a provider can tell which methods fit. Amounts in minor units. */
 /** What a payment would be: providers offer what fits. `usrId`: whose — credit is theirs. */
 type Offer = { amount: number; currency: string; country?: string; usrId?: number };
 
@@ -74,6 +73,9 @@ export async function methods(app: App, offer: Offer): Promise<{ method: string;
     (await p.methods(app, offer)).map(({ name, label }) => ({ method: name ? `${p.name}.${name}` : p.name, label }))));
   return offered.flat();
 }
+
+/** The `ref` of what follows from a payment elsewhere: a move on a user's credit, an entry. */
+export const refOf = (id: number): string => `fin.payment:${id}`;
 
 /** What every payment has. `ref` is the consumer's: `<module>:<id>`, found again in `payment:change`. */
 type Base = { amount: number; currency: string; ref?: string; description?: string; usrId?: number; payer?: Payer };

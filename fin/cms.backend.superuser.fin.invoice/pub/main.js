@@ -71,7 +71,7 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     form.addEventListener("input", soon);
     // the PDF of what was saved, in a tab of its own: opened at the click, or the browser blocks it
     el.querySelector("[data-pdf]")?.addEventListener("click", async () => {
-      const tab = window.open("about:blank");
+      const tab = globalThis.open("about:blank");
       clearTimeout(timer);
       save();
       await saving;

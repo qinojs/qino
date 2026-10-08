@@ -2,10 +2,10 @@
   "name": "fin.payment.qrbill",
   "description": "The Swiss QR bill as payment provider: the slip to pay by e-banking, settled by the bank statement.",
   "dependencies": [
+    "fin",
     "fin.bank",
     "fin.payment",
-    "identity",
-    "locale.currency"
+    "identity"
   ],
   "files": [
     "README.md",

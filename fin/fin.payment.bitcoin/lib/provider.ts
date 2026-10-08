@@ -1,6 +1,6 @@
 import { errMsg, html, unixTime } from "@qino/qino";
+import { fromMinor } from "@qino/qino/fin";
 import { qr } from "@qino/qino/fin.payment";
-import { currency as currencies } from "@qino/qino/locale.currency";
 
 import { address } from "./address.ts";
 
@@ -69,7 +69,7 @@ export const paymentProvider: Provider = {
     const currency = String(payment.currency);
     const price = Number((await get(`${esplora}/v1/prices`))[currency]);
     if (!(price > 0)) throw new Error(`fin.payment.bitcoin: no bitcoin price in ${currency}`);
-    const sats = Math.ceil(Number(payment.amount) / 10 ** currencies.decimals(currency) / price * SATS);
+    const sats = Math.ceil(fromMinor(Number(payment.amount), currency) / price * SATS);
     const to = address(key, Number(payment.id));
     return { redirect: urls.pay, externalId: to, data: { address: to, sats, price, until: unixTime() + window * 60 } };
   },

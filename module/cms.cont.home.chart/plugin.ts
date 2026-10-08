@@ -3,7 +3,6 @@ import { history } from "@qino/qino/home.history";
 
 import { chart, format } from "./chart.ts";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Source } from "@qino/qino/home.history";
 
@@ -13,7 +12,7 @@ const time = (at: number, precision = "minute") => {
 };
 
 /** Placing the chart publishes its datapoint: page access decides who sees it. */
-async function plot(node: Node, { vars: period = {} }: { vars?: { start?: string; end?: string } } = {}): Promise<HtmlString> {
+async function plot(node: Node, { vars: period = {} }: { vars?: { start?: string; end?: string } } = {}) {
   const app = node.app, t = app.t;
   const datapoint = Number(node.settings.datapoint() ?? 0);
   const end = period.end ?? new Date().toISOString();

@@ -64,7 +64,7 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
 const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 
 // list (filterable part): total + table rows, reloaded on search/order change
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }) {
   const app = node.app;
   const { db, dbFiles: fm } = app;
 
@@ -174,7 +174,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return false;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
   const ctx = getCtx();
   const app = node.app;
   const get = ctx.req.query;

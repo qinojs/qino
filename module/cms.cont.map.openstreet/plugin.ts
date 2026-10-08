@@ -43,7 +43,7 @@ async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: numbe
   if (lat !== undefined && lon !== undefined) return { lat, lon };
 
   const address = String(node.settings.address() ?? "").trim();
-  if (!address) return undefined;
+  if (!address) return;
 
   const geo = node.settings.geo;
   if (String(geo.q() ?? "") === address) {

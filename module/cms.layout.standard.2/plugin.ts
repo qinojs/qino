@@ -27,7 +27,7 @@ const U2_ASSETS = [
   "class/width/width.css", "class/flex/flex.css", "u2/auto.js",
 ];
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
   if (await node.edit()) await codeFiles(node).create();
 

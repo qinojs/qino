@@ -47,7 +47,7 @@ function attrs(list: Record<string, string | number | boolean | undefined>) {
 }
 
 /** A node text without its markup — field labels and choices are plain text. */
-async function plain(node: Node, name: string): Promise<string> {
+async function plain(node: Node, name: string) {
   return (await node.showText(name)).plain();
 }
 

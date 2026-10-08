@@ -1,12 +1,11 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import { addUser, fileOf } from "@qino/qino/cms.backend.superuser.fin";
 import { update } from "@qino/qino/fin.invoice";
 
 import { read, supplierOf } from "./lib/read.ts";
 
 import type { Node } from "@qino/qino/cms";
-
-type Sent = { name: string; type: string; data: string };
 
 /** Node access is the permission — whoever may open this page may read invoices in. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -17,10 +16,9 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   const done: number[] = [];
   const failed: string[] = [];
   // one after the other: each is a call to the model, and one failure leaves the others
-  for (const sent of vars.read as Sent[]) {
+  for (const sent of vars.read as { name: string; type: string; data: string }[]) {
     try {
-      const bytes = Uint8Array.fromBase64(String(sent.data));
-      const file = await app.dbFiles.add(new File([bytes], sent.name || "invoice", { type: sent.type }));
+      const file = await fileOf(app, sent);
       // a file that could not be read is no receipt of anything
       done.push(await read(app, file).catch(async (e) => {
         await file.remove();
@@ -47,7 +45,7 @@ async function supplier(node: Node, id: number) {
   const party = JSON.parse(String(invoice.party ?? "{}")) ?? {};
   const a = party.address ?? {};
   const found = await supplierOf(app, party);
-  const usrId = found ?? Number(await app.db.table("usr").insert({
+  const usrId = found ?? await addUser(app, {
     organization: party.name ?? "",
     given_name: "",
     family_name: "",
@@ -57,10 +55,7 @@ async function supplier(node: Node, id: number) {
     address_region: a.addressRegion ?? "",
     address_country: a.addressCountry ?? "",
     iban: party.iban || null,
-    active: 0,
-    pw: "",
-    superuser: 0,
-  }));
+  });
   // a supplier found by name learns the account it is paid into
   if (found && party.iban) await app.db.exec`UPDATE usr SET iban = ${party.iban} WHERE id = ${found} AND iban IS NULL`;
   await update(app, id, { usrId });

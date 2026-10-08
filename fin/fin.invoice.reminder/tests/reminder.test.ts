@@ -1,11 +1,13 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { addDays, today } from "@qino/qino/fin";
 import { create, issue } from "@qino/qino/fin.invoice";
 import { setTransport } from "@qino/qino/messaging.email";
 
 import { withFinApp } from "../../tests/app.ts";
 import { remind, remindDue } from "../mod.ts";
 
-const day = (n: number) => new Date(Date.now() + n * 86400_000).toISOString().slice(0, 10);
+// on the server's calendar, as the reminders count
+const day = (n: number) => addDays(today(), n);
 
 const MODULES = ["fin.payment", "fin.invoice", "messaging", "messaging.email", "fin.invoice.reminder"];
 

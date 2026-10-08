@@ -12,7 +12,7 @@ const { name } = manifest;
 
 export const api = nodeApi(name);
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node) {
   const code = codeFiles(node);
   if (await node.edit()) await code.create();
   await code.addAssets();

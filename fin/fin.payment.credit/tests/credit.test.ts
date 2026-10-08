@@ -3,7 +3,7 @@ import { create as invoice, issue, refOf } from "@qino/qino/fin.invoice";
 import { create, methods, refund } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
-import { add, balance } from "../mod.ts";
+import { add, balance, moves, payOut } from "../mod.ts";
 
 Deno.test("credit is added, pays an invoice where it covers it, and comes back with a refund", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.payment.credit"], async (app) => {
@@ -26,5 +26,19 @@ Deno.test("credit is added, pays an invoice where it covers it, and comes back w
 
     await refund(app, payment, 1000);
     assertEquals(await balance(app, usr, "CHF"), 3000);
+  });
+});
+
+Deno.test("paid out onto credit: an outgoing payment, and the credit it adds, refer to each other", async () => {
+  await withFinApp(["fin.payment", "fin.payment.credit"], async (app) => {
+    const usr = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, family_name: "Muster" }));
+    const payment = await payOut(app, usr, { amount: 1500, currency: "CHF", ref: "fin.invoice:9", text: "G2027-1" });
+    const row = await app.db.row`SELECT * FROM payment WHERE id = ${payment}`;
+    assertEquals(
+      [row?.direction, row?.provider, row?.status, row?.paid, row?.ref],
+      ["out", "credit", "paid", 1500, "fin.invoice:9"],
+    );
+    assertEquals(await balance(app, usr, "CHF"), 1500);
+    assertEquals((await moves(app, usr)).map((m) => [m.amount, m.text, m.ref]), [[1500, "G2027-1", `fin.payment:${payment}`]]);
   });
 });

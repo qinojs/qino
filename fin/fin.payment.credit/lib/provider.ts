@@ -1,8 +1,8 @@
+import { refOf } from "@qino/qino/fin.payment";
+
 import { add, balance } from "../mod.ts";
 
 import type { Provider } from "@qino/qino/fin.payment";
-
-const refOf = (id: unknown) => `fin.payment:${id}`;
 
 /** Paying with credit: offered to a user who has enough, paid at once from the balance. */
 export const paymentProvider: Provider = {
@@ -21,7 +21,7 @@ export const paymentProvider: Provider = {
       amount: -amount,
       currency: String(payment.currency),
       text: String(payment.description ?? ""),
-      ref: refOf(payment.id),
+      ref: refOf(Number(payment.id)),
     });
     return { status: "paid", paid: amount, redirect: urls.back };
   },
@@ -34,7 +34,7 @@ export const paymentProvider: Provider = {
       amount,
       currency: String(payment.currency),
       text: String(payment.description ?? ""),
-      ref: refOf(payment.id),
+      ref: refOf(Number(payment.id)),
     });
     return {};
   },

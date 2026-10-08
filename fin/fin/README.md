@@ -6,12 +6,15 @@ The base of the `fin.*` modules. It carries
   `address_region`, `address_country` (schema.org PostalAddress): where an invoice goes. An invoice
   keeps its own copy (`party`), as it was when issued. And `usr.iban`, the account to pay them;
 - the **texts payers and recipients read** — the invoice document, payment pages — in the
-  translation namespace `fin` (`locale/`), translated once for all of them.
+  translation namespace `fin` (`locale/`), translated once for all of them;
+- the **helpers they share** (`mod.ts`): days on the server's calendar (`today`, `addDays`,
+  `addMonths`), amounts to and from minor units (`toMinor`, `fromMinor`), a user as an invoice's
+  party (`partyOf`, `nameOf`).
 
 ## Decisions that may change
 
 - **One address per user.** A billing or delivery address that differs belongs to the invoice or
   order that needs it; a second one on the user only once someone needs it.
-- **Little code, so far.** What else the modules share (the `ref` convention, minor units) moves
-  here once a second module needs it as code.
+- **Little code, so far.** What else the modules share (the `ref` convention) moves here once a
+  second module needs it as code.
 - **Backend pages** translate in their own namespace, as every backend page does.

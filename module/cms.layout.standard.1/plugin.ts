@@ -38,7 +38,7 @@ html {
 }
 `;
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const template = moduleTemplate(node.module!);
   if (await node.edit()) await template.create(INITIAL_CSS);
 

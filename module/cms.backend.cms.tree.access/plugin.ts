@@ -18,7 +18,7 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access > 0 ORDER BY name`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // only accept existing nodes the user may read
   const admin = ctx.settings.cms.admin;
   if (ctx.req.query.rp) {
@@ -69,7 +69,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const app = node.app;
   const db = app.db;
   const admin = ctx.settings.cms.admin;

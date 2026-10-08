@@ -1,7 +1,7 @@
 import { html, Redirect } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const current = "cms.backend.superuser.module.ownStore";
@@ -16,7 +16,7 @@ export async function init(app: App): Promise<void> {
   if (parent && [...(await parent.children()).values()].every((child) => !child.vs.visible)) await parent.set("visible", 0);
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const page = await (await node.cms.nodeByModule(current))?.page();
   if (page) throw new Redirect(await page.url());
   return html``;

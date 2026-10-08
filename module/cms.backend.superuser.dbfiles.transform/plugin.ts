@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -339,7 +339,7 @@ async function renderCache(app: App) {
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString | string> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   if (vars.install_binary) {
     if (!isRoot()) return JSON.stringify({ error: "Not running as root" });
     const bin = BINARIES.find(b => b.id === vars.install_binary);

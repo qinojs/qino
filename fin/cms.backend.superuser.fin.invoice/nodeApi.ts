@@ -1,6 +1,7 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { fileOf, toMinor } from "@qino/qino/cms.backend.superuser.fin";
+import { fileOf, parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { partyOf } from "@qino/qino/fin";
 import {
   attach, cancel, create, creditNote, document, issue, mail, payerOf, print, refOf, remove, revise, update,
 } from "@qino/qino/fin.invoice";
@@ -37,15 +38,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (vars.usr) {
       const u = await app.db.row`SELECT * FROM usr WHERE id = ${Number(vars.usr)}`;
       if (!u) return { ok: false, message: await t`No user` };
-      return {
-        name: String(u.organization || nameOf(u)),
-        streetAddress: String(u.street_address ?? ""),
-        postalCode: String(u.postal_code ?? ""),
-        addressLocality: String(u.address_locality ?? ""),
-        addressRegion: String(u.address_region ?? ""),
-        addressCountry: String(u.address_country ?? ""),
-        lang: String(u.lang ?? ""),
-      };
+      const { name, address } = partyOf(u);
+      // every field, an empty one too: what was typed before is replaced
+      const empty = { streetAddress: "", postalCode: "", addressLocality: "", addressRegion: "", addressCountry: "" };
+      return { name, ...empty, ...address, lang: String(u.lang ?? "") };
     }
     // by mail, with its PDF: to the address typed, else to its user's
     if (vars.send) {
@@ -79,18 +75,13 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       if (note?.type !== "credit_note" || !note.usr_id || owed <= 0) {
         return { ok: false, message: await t`Nothing owed` };
       }
-      const { add } = await import("@qino/qino/fin.payment.credit");
-      const currency = String(note.currency);
-      const usrId = Number(note.usr_id);
-      const payment = await record(app, {
-        direction: "out",
-        provider: "credit",
+      const { payOut } = await import("@qino/qino/fin.payment.credit");
+      await payOut(app, Number(note.usr_id), {
         amount: owed,
-        currency,
+        currency: String(note.currency),
         ref: refOf(Number(id)),
-        usrId,
+        text: String(note.number ?? ""),
       });
-      await add(app, usrId, { amount: owed, currency, text: String(note.number ?? ""), ref: `fin.payment:${payment}` });
       return { ok: true, message: await t`Put onto the credit.` };
     }
     if (action === "print") return { ok: !!await print(app, Number(id)), message: await t`Printed.` };
@@ -132,7 +123,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       await record(app, {
         direction: (invoice.direction === "out") !== credit ? "in" : "out",
         provider: provider || "bank",
-        amount: amount ? toMinor(amount, currency) : Math.abs(Number(invoice.total) - Number(invoice.paid)),
+        amount: amount ? parseAmount(amount, currency) : Math.abs(Number(invoice.total) - Number(invoice.paid)),
         currency,
         ref: refOf(Number(id)),
       });
@@ -143,9 +134,6 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     return { ok: false, message: errMsg(e) };
   }
 }
-
-/** A user's name as written: given name first. */
-const nameOf = (u: Record<string, unknown>) => [u.given_name, u.family_name].filter(Boolean).join(" ");
 
 /** The editor's fields as invoice values: lines without a name are empty rows, an emptied
  *  field is cleared. `ref` is not among them: what an invoice is for is set by the code that makes
@@ -161,7 +149,7 @@ function valuesOf(v: Record<string, string>) {
       account: v[`account${i}`] || undefined,
       quantity: v[`quantity${i}`] ? decimal(v[`quantity${i}`]) : 1,
       unit: v[`unit${i}`] || undefined,
-      price: toMinor(v[`price${i}`] || 0, currency),
+      price: parseAmount(v[`price${i}`] || 0, currency),
       taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : undefined, // empty: the default
     };
   });
@@ -175,8 +163,9 @@ function valuesOf(v: Record<string, string>) {
     party: { name: v.name ?? "", address, ...v.vatID ? { vatID: v.vatID } : {} },
     usrId: Number(v.usrId) || null,
     text: v.text ?? "",
-    date: v.date || undefined,
-    due: v.due || undefined,
+    // a field the form has, emptied, clears it; one it lacks leaves it
+    date: v.date === undefined ? undefined : v.date || null,
+    due: v.due === undefined ? undefined : v.due || null,
     term: v.term === undefined ? undefined : v.term === "" ? null : Number(v.term),
     lang: v.lang || undefined,
     number: v.number,

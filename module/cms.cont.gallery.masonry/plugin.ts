@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 
 const MAX_LENGTH = 100;
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   //assets(ctx, ["el/masonry/masonry.css", "el/masonry/masonry.js", "attr/lightbox/lightbox.js"]);
   const images: HtmlString[] = [];
   for (const file of (await node.files()).values()) {

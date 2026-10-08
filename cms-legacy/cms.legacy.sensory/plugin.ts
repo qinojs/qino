@@ -1,6 +1,6 @@
 import { html, sql, unixTime } from "@qino/qino";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const labels = {
@@ -13,7 +13,7 @@ export function sensoryCms(type: keyof typeof labels) {
   return { node: { render: (node: Node, data: { ctx: Ctx }) => render(node, data.ctx, type), js: ["pub/main.js"] } };
 }
 
-async function render(node: Node, ctx: Ctx, type: keyof typeof labels): Promise<HtmlString> {
+async function render(node: Node, ctx: Ctx, type: keyof typeof labels) {
   const body = ctx.req.body;
   let saved = false;
   if (body?.sensory_node === String(node.id) && body.csrfToken === ctx.csrfToken && ctx.userId) {

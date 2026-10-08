@@ -25,7 +25,7 @@ function cssWidth(raw: string, units: string) {
   return /^\d+(\.\d+)?(px|%|em|rem)$/.test(w) ? w : "";
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const edit = await node.edit();
   if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 

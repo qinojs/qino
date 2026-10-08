@@ -16,7 +16,6 @@ export function render(node: Node): Promise<HtmlString> {
       <button>${t`Download`}</button>
     </form>
     <p><small>${t`A ZIP: the journal and the balances as CSV, and the receipts.`}</small>
-    <p><small>${t`The export lives in this page for now and may move into a module of its own.`}</small>
   </div>
 </div>`;
 }

@@ -3,6 +3,7 @@
   "description": "The books of a period for the fiduciary: journal and balances as CSV, the receipts, in one ZIP.",
   "dependencies": [
     "cms.backend.superuser.fin",
+    "fin",
     "fin.accounting",
     "locale.currency"
   ],

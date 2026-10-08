@@ -2,6 +2,7 @@
   "name": "fin.payment.paypal",
   "description": "PayPal as payment provider: approved on PayPal, captured on return.",
   "dependencies": [
+    "fin",
     "fin.payment",
     "locale.currency"
   ],

@@ -3,6 +3,7 @@
   "description": "Reminders for overdue invoices: a payment reminder, then the reminders, by mail and on time.",
   "dependencies": [
     "cron",
+    "fin",
     "fin.invoice",
     "messaging.email"
   ],

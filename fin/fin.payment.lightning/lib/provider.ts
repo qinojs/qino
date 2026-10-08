@@ -1,6 +1,6 @@
 import { errMsg, html, unixTime } from "@qino/qino";
+import { fromMinor } from "@qino/qino/fin";
 import { qr } from "@qino/qino/fin.payment";
-import { currency as currencies } from "@qino/qino/locale.currency";
 
 import type { App } from "@qino/qino";
 import type { Provider } from "@qino/qino/fin.payment";
@@ -53,7 +53,7 @@ export const paymentProvider: Provider = {
       method: "POST",
       body: JSON.stringify({
         out: false,
-        amount: Number(payment.amount) / 10 ** currencies.decimals(currency),
+        amount: fromMinor(Number(payment.amount), currency),
         unit: currency,
         memo: String(payment.description ?? `Payment ${payment.id}`),
         expiry: expiry * 60,

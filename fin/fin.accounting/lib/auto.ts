@@ -1,4 +1,6 @@
-import { lineOf, round, totals } from "@qino/qino/fin.invoice";
+import { today } from "@qino/qino/fin";
+import { lineOf, lines as linesOf, refOf as invoiceRef, round, totals } from "@qino/qino/fin.invoice";
+import { refOf } from "@qino/qino/fin.payment";
 
 import { book, reverse } from "../mod.ts";
 
@@ -8,8 +10,6 @@ import type { Line } from "../mod.ts";
 /** The accounts automatic entries go to, by role; a role left empty books nothing that needs it. */
 const ROLES = ["receivable", "payable", "revenue", "expense", "vatDue", "vatInput", "fees", "money"] as const;
 type Roles = Record<(typeof ROLES)[number], string>;
-
-const today = () => new Date().toLocaleDateString("sv-SE");
 
 /** The account numbers per role, and the book's currency. Settings are read leaf by leaf. */
 async function setup(app: App) {
@@ -38,7 +38,7 @@ const sumOn = (app: App, ref: string, number: string) => app.db.one`
  * expense and input tax to payable. A canceled one is taken back.
  */
 export async function onInvoice(app: App, invoice: Row, previous: string): Promise<void> {
-  const ref = `fin.invoice:${invoice.id}`;
+  const ref = invoiceRef(Number(invoice.id));
   if (invoice.status === "canceled") {
     const entry = await booked(app, ref);
     if (entry) await reverse(app, Number(entry));
@@ -49,7 +49,7 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   if (invoice.currency !== currency) return; // another currency: booked by hand (see README)
   const total = Number(invoice.total);
   const out = invoice.direction === "out";
-  const items = await app.db.query`SELECT * FROM invoice_line WHERE invoice_id = ${invoice.id} ORDER BY sort`;
+  const items = await linesOf(app, Number(invoice.id));
   const { nets, rates } = split(items, Boolean(invoice.tax_included), out ? roles.revenue : roles.expense);
   // every line carries its rate as tax code: what a tax report adds up
   const code = (rate: number) => String(rate);
@@ -103,18 +103,18 @@ function split(items: Row[], taxIncluded: boolean, fallback: string) {
  * last entry is booked, so partial payments and refunds add up.
  */
 export async function onPayment(app: App, payment: Row): Promise<void> {
-  const [module, id] = String(payment.ref ?? "").split(":");
-  if (module !== "fin.invoice" || !id) return; // what else a payment is for, its consumer books
+  const id = Number(String(payment.ref ?? "").split(":")[1]);
+  if (payment.ref !== invoiceRef(id)) return; // what else a payment is for, its consumer books
   const { roles, currency, moneyBy } = await setup(app);
   if (payment.currency !== currency) return;
-  const invoice = await app.db.row`SELECT direction FROM invoice WHERE id = ${Number(id)}`;
+  const invoice = await app.db.row`SELECT direction FROM invoice WHERE id = ${id}`;
   if (!invoice) return;
   // the claim is ours or theirs; the money comes in or goes out — a credit note's refund goes out
   const counter = invoice.direction === "out" ? roles.receivable : roles.payable;
   const incoming = payment.direction === "in";
   const money = moneyBy.get(String(payment.provider)) ?? roles.money;
   if (!counter || !money) return;
-  const ref = `fin.payment:${payment.id}`;
+  const ref = refOf(Number(payment.id));
   const moved = Number(payment.paid) - Number(payment.refunded);
   const fee = Number(payment.fee);
   const dMoved = moved - (incoming ? -await sumOn(app, ref, counter) : await sumOn(app, ref, counter));

@@ -1,4 +1,6 @@
+import { createHmac } from "node:crypto";
 import { errMsg, safeEqual } from "@qino/qino";
+import { fromMinor, toMinor } from "@qino/qino/fin";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
 import type { App } from "@qino/qino";
@@ -36,9 +38,6 @@ const STATUS: Record<string, State["status"]> = {
   Invalid: "failed",
 };
 
-const toMinor = (amount: unknown, currency: string) =>
-  Math.round(Number(amount ?? 0) * 10 ** currencies.decimals(currency));
-
 /**
  * BTCPay Server — self-hosted, no middleman: bitcoin on-chain, Lightning, and whatever else the
  * store has enabled. The payer pays on BTCPay's checkout; it notifies by webhook.
@@ -57,7 +56,7 @@ export const paymentProvider: Provider = {
     const invoice = await call(app, "invoices", {
       method: "POST",
       body: JSON.stringify({
-        amount: (Number(payment.amount) / 10 ** currencies.decimals(currency)).toFixed(currencies.decimals(currency)),
+        amount: fromMinor(Number(payment.amount), currency).toFixed(currencies.decimals(currency)),
         currency,
         metadata: { orderId: String(payment.id), itemDesc: payment.description ?? undefined },
         checkout: { redirectURL: urls.back, redirectAutomatically: true },
@@ -70,7 +69,7 @@ export const paymentProvider: Provider = {
   async sync(app, payment) {
     if (!payment.external_id) return {};
     const invoice = await call(app, `invoices/${encodeURIComponent(String(payment.external_id))}`);
-    const paid = toMinor(invoice.paidAmount, String(payment.currency));
+    const paid = toMinor(Number(invoice.paidAmount ?? 0), String(payment.currency));
     const late = invoice.additionalStatus === "PaidPartial" || invoice.additionalStatus === "PaidLate";
     const status = invoice.status === "Expired" && late ? "processing" : STATUS[invoice.status];
     return { status, paid, data: { status: invoice.status, additionalStatus: invoice.additionalStatus } };
@@ -81,10 +80,7 @@ export const paymentProvider: Provider = {
     const { webhookSecret } = await settings(ctx.app);
     const body = await ctx.req.raw.text().catch(() => "");
     if (!webhookSecret || !body) return [];
-    const bytes = (text: string) => new TextEncoder().encode(text);
-    const hmac = { name: "HMAC", hash: "SHA-256" };
-    const key = await crypto.subtle.importKey("raw", bytes(webhookSecret), hmac, false, ["sign"]);
-    const signature = new Uint8Array(await crypto.subtle.sign("HMAC", key, bytes(body))).toHex();
+    const signature = createHmac("sha256", webhookSecret).update(body).digest("hex");
     if (!safeEqual(ctx.req.header("btcpay-sig"), `sha256=${signature}`)) return [];
     const invoiceId = String(JSON.parse(body)?.invoiceId ?? "");
     const ids = await ctx.app.db.col`SELECT id FROM payment WHERE provider = 'btcpay' AND external_id = ${invoiceId}`;

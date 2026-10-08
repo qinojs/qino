@@ -74,7 +74,7 @@ export async function provider(app: App, id: number): Promise<Provider> {
 }
 
 function readable(value: unknown, schema: Record<string, unknown>): unknown {
-  if (schema.writeOnly) return undefined;
+  if (schema.writeOnly) return;
   if (Array.isArray(value)) return value.map((item) => readable(item, schema.items as Record<string, unknown> ?? {}));
   if (!value || typeof value !== "object") return value;
   const fields = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
@@ -164,9 +164,9 @@ export async function active(app: App, id: number): Promise<Adapter> {
 /** Without an ID, enabled providers that fail (offline, unlinked) are left out; query one to see its error. */
 export async function entities(app: App, id?: number): Promise<(Entity & { provider: number })[]> {
   const ids = id === undefined ? (await providers(app)).filter((row) => row.enabled).map((row) => row.id) : [id];
-  const results = await Promise.allSettled(ids.map(async (id) => {
-    return (await (await active(app, id)).entities(app, id)).map((entity) => ({ ...entity, provider: id }));
-  }));
+  const results = await Promise.allSettled(ids.map(async (id) =>
+    (await (await active(app, id)).entities(app, id)).map((entity) => ({ ...entity, provider: id }))
+  ));
   if (id !== undefined && results[0].status === "rejected") throw results[0].reason;
   return results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
 }

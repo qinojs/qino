@@ -3,6 +3,7 @@
   "description": "Balance sheet and result of a period, the journal with its entries and receipts, booking by hand, the chart.",
   "dependencies": [
     "cms.backend.superuser.fin",
+    "fin",
     "fin.accounting"
   ],
   "files": [

@@ -1,6 +1,6 @@
 import { requestStorage } from "@qino/qino";
+import { fromMinor } from "@qino/qino/fin";
 import { paid } from "@qino/qino/fin.bank";
-import { currency as currencies } from "@qino/qino/locale.currency";
 import { SwissQRBill } from "swissqrbill/svg";
 
 import { isQrIban, qrr, scor } from "./reference.ts";
@@ -60,7 +60,7 @@ async function billOf(app: App, payment: Row) {
   return {
     // nothing (left) to ask for: the amount is left blank, for the payer to fill in
     amount: Number(payment.amount) > Number(payment.paid)
-      ? (Number(payment.amount) - Number(payment.paid)) / 10 ** currencies.decimals(currency)
+      ? fromMinor(Number(payment.amount) - Number(payment.paid), currency)
       : undefined,
     currency: currency as "CHF" | "EUR",
     creditor: {

@@ -1,7 +1,8 @@
 import { html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
+import { today } from "@qino/qino/fin";
 
-import { amounts, badge, inFin, linked } from "./mod.ts";
+import { amounts, badge, inFin } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
@@ -46,24 +47,23 @@ function render(node: Node): Promise<HtmlString> {
 async function figures(app: App) {
   const t = app.t;
   const month = unixTime() - 30 * 86400;
-  const today = new Date().toLocaleDateString("sv-SE");
   const rows: HtmlString[] = [];
   const row = (label: Promise<string> | string, value: HtmlString | string | number) =>
     html.async`<tr><th>${label}<td>${value}`;
-  if (linked(app, "fin.invoice")) {
+  if (app.modules.linked("fin.invoice")) {
     const open = (direction: string) => app.db.query`
       SELECT currency, SUM(total - paid) AS amount FROM invoice
       WHERE direction = ${direction} AND status = 'open' GROUP BY currency ORDER BY currency`;
     const overdue = Number(await app.db.one`
       SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND type = 'invoice' AND status = 'open'
-        AND due < ${today}`);
+        AND due < ${today()}`);
     rows.push(
       await row(t`Receivables open`, amounts(await open("out"))),
       await row(t`Overdue`, overdue ? await badge(overdue, "--red") : "0"),
       await row(t`Payables open`, amounts(await open("in"))),
     );
   }
-  if (linked(app, "fin.payment")) {
+  if (app.modules.linked("fin.payment")) {
     const moved = (direction: string) => app.db.query`
       SELECT currency, SUM(paid - refunded) AS amount FROM payment
       WHERE direction = ${direction} AND changed > ${month} AND paid > 0 GROUP BY currency ORDER BY currency`;
@@ -74,7 +74,7 @@ async function figures(app: App) {
       await row(t`Payments waiting`, waiting),
     );
   }
-  if (linked(app, "fin.bank")) {
+  if (app.modules.linked("fin.bank")) {
     const unassigned = Number(await app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL`);
     rows.push(await row(t`Bank lines unassigned`, unassigned));
   }

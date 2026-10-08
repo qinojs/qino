@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 const ICON = html.raw(await (await fetch(new URL("./pub/logo-wide.svg", import.meta.url))).text());
 
-async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, {ctx}: { ctx: Ctx }) {
 
   const app = node.app;
   const resHtml = ctx.res.html;

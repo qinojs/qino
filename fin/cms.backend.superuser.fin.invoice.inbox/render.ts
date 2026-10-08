@@ -22,7 +22,6 @@ export async function render(node: Node): Promise<HtmlString> {
     </form>
     <p><small>${t`PDF or photo. A language model reads it into a draft, the file becomes its receipt.`}
       ${t`Check every draft before issuing it: the model may be wrong.`}</small>
-    <p><small>${t`Reading lives in this page for now and may move into a module of its own.`}</small>
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`To check`}</div>

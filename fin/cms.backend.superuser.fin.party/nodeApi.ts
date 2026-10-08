@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { toMinor } from "@qino/qino/cms.backend.superuser.fin";
+import { addUser, parseAmount } from "@qino/qino/cms.backend.superuser.fin";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -30,11 +30,10 @@ const valuesOf = (v: Record<string, string>) => Object.fromEntries(FIELDS.map((k
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
   const t = app.t;
-  // a supplier is a user without a login: inactive, no password
   if (vars.create) {
     const values = valuesOf(vars.create as Record<string, string>);
     if (!values.organization && !values.family_name) return { ok: false, message: await t`A name, please` };
-    const id = await app.db.table("usr").insert({ ...values, active: 0, pw: "", superuser: 0 });
+    const id = await addUser(app, values);
     const url = backend.toUrl(await (await node.page()).url(), { usr: id });
     return { ok: true, url };
   }
@@ -43,7 +42,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     const v = vars.credit as Record<string, string>;
     const currency = String(v.currency ?? "").toUpperCase();
     const { add } = await import("@qino/qino/fin.payment.credit");
-    await add(app, Number(v.id), { amount: toMinor(v.amount, currency), currency, text: v.text });
+    await add(app, Number(v.id), { amount: parseAmount(v.amount, currency), currency, text: v.text });
     return { ok: true };
   }
   if (vars.save) {

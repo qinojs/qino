@@ -54,7 +54,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
   if (!batch.length) return 0;
   // undeliverable addresses are already finished and skipped
   const rows = (await load(app, batch)).filter((row) => row.sent == null);
-  if (!rows.length) return void await bookkeeping(app, channel, batch, onError), 0;
+  if (!rows.length) return await bookkeeping(app, channel, batch, onError), 0;
   msg ??= await messageOf(app, rows[0]);
   const usrOf = (row: Row) => Number(row.usr_id) || undefined;
   const [{ render, uses }, leavable] = await Promise.all([

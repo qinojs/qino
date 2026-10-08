@@ -2,6 +2,7 @@
   "name": "fin.payment.btcpay",
   "description": "BTCPay Server as payment provider: bitcoin on-chain, Lightning and more, self-hosted, without a middleman.",
   "dependencies": [
+    "fin",
     "fin.payment",
     "locale.currency"
   ],

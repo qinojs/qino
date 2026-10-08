@@ -2,7 +2,7 @@ import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, toolName, toTools
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx, StandardSchema, Method, ApiNode, Verb, App, HtmlString } from "@qino/qino";
+import type { Ctx, StandardSchema, Method, ApiNode, Verb, App } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system.api", { en: "API", de: "API" });
@@ -141,7 +141,7 @@ function routeHtml(r: Route, idx: number, toolJson: string) {
   </div>`;
 }
 
-function render(): HtmlString {
+function render() {
   const ctx = getCtx();
   u2.elements(ctx, "code"); // the json views highlight with a library of their own
   const appUrl = ctx.req.appUrl ?? "/";

@@ -2,7 +2,7 @@ import { html } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
 import * as u2 from "@qino/qino/u2";
 
-import type { HtmlString, Ctx } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // Pinned on purpose: this layout's css is written against it, so a newer u2 elsewhere cannot change its look.
@@ -25,7 +25,7 @@ const U2_CSS = [
 
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, U2_CSS, U2_VERSION);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
