@@ -34,7 +34,7 @@ async function makeApp(): Promise<App> {
   return app;
 }
 
-async function close(app: App): Promise<void> {
+async function close(app: App) {
   await new Promise((r) => setTimeout(r, 0)); // send leaves contact bookkeeping running on purpose
   await app.db.close();
   await Deno.remove(app.dir, { recursive: true });

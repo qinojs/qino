@@ -161,7 +161,7 @@ Deno.test("module icons expose the fragment rendered by moduleIcon", async () =>
   }
 });
 
-async function assertStore(dir: string): Promise<void> {
+async function assertStore(dir: string) {
   const store = JSON.parse(await Deno.readTextFile(dir + "store.json"));
   const plugins = [];
   for await (const entry of Deno.readDir(dir)) {

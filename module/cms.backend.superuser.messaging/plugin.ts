@@ -156,8 +156,8 @@ async function previews(app: App, rows: Row[]) {
 
 /** Recipient counts and first hits of the visible messages. A click also counts as open (mail
  *  clients block the pixel, not links). */
-async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
-  if (!rows.length) return new Map();
+async function trackingStats(app: App, rows: Row[]) {
+  if (!rows.length) return new Map<number, Row>();
   const stats = await app.db.query`
     SELECT d.message_id,
       COUNT(DISTINCT t.delivery_id) AS opened_count,

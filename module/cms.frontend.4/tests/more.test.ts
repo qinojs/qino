@@ -41,7 +41,7 @@ function makeCtx(app: App, draft: { value: string }, user: Record<string, unknow
   } as unknown as Ctx;
 }
 
-async function close(app: App): Promise<void> {
+async function close(app: App) {
   await app.db.close();
   await Deno.remove(app.dir, { recursive: true });
 }

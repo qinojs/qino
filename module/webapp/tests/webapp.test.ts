@@ -15,7 +15,7 @@ async function testApp(): Promise<{ app: App; dir: string }> {
   return { app, dir };
 }
 
-async function close(app: App, dir: string): Promise<void> {
+async function close(app: App, dir: string) {
   await new Promise((resolve) => setTimeout(resolve, 100));
   await app.db.close();
   await Deno.remove(dir, { recursive: true });
