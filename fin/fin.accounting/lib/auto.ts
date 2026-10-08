@@ -118,6 +118,9 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
   const moved = Number(payment.paid) - Number(payment.refunded);
   const fee = Number(payment.fee);
   const dMoved = moved - (incoming ? -await sumOn(app, ref, counter) : await sumOn(app, ref, counter));
+  // what the provider kept needs its account: without one, nothing rather than half of it — the
+  // money account would show more than arrived
+  if (fee && !roles.fees) return;
   const dFee = roles.fees ? fee - await sumOn(app, ref, roles.fees) : 0;
   if (!dMoved && !dFee) return;
   // in: the provider passes on what it did not keep; out: the bank takes its fee on top

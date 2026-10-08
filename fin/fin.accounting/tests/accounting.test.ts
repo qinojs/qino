@@ -66,6 +66,26 @@ Deno.test("invoices and their payments book themselves, in parts, with fees, and
   });
 });
 
+Deno.test("a fee without its account books nothing rather than too much money", async () => {
+  await withApp(async (app) => {
+    await app.settings["fin.accounting"].accounts.fees("");
+    const id = Number((await issue(app, await create(app, {
+      currency: "CHF", date: "2026-10-01", lines: [{ name: "Design", price: 100000 }],
+    })))?.id);
+    // the provider reports what arrived and what it kept together
+    const payment = await record(app, {
+      direction: "in", provider: "saferpay", amount: 100000, currency: "CHF", paid: 0, ref: refOf(id),
+    });
+    await app.db.exec`UPDATE payment SET paid = 100000, fee = 1500 WHERE id = ${payment}`;
+    await app.fire("payment:change", { payment: await app.db.row`SELECT * FROM payment WHERE id = ${payment}` });
+    assertEquals(await saldo(app), { "1100": 100000, "3400": -100000 }); // the claim stays open in the books
+    // set the account, and the next change books it all
+    await app.settings["fin.accounting"].accounts.fees("6940");
+    await app.fire("payment:change", { payment: await app.db.row`SELECT * FROM payment WHERE id = ${payment}` });
+    assertEquals(await saldo(app), { "1091": 98500, "3400": -100000, "6940": 1500 });
+  });
+});
+
 Deno.test("a received invoice is a debt, paid from the bank", async () => {
   await withApp(async (app) => {
     const original = await app.dbFiles.add(new File(["%PDF"], "rent.pdf", { type: "application/pdf" }));
