@@ -3,13 +3,13 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const OLD = "cms.layout.login"; // this module replaces it
 
 /** Centered box with the page title, in the shared CMS look (ui.css). */
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const resHtm = ctx.res.html;
   u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);

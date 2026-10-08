@@ -2,7 +2,7 @@
 import { ConflictError, fs, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import type { HtmlString, App } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -57,7 +57,7 @@ async function api(node: Node, vars: any): Promise<any> {
   return preview ? { changes } : { written, skipped };
 }
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const t = node.app.t;
   return html.async`<div class=u2-card>
   <div class=-head>${t`Export translations`}</div>
