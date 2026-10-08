@@ -16,7 +16,7 @@ const EDITABLE: Record<string, Record<string, "string" | "number" | "boolean">> 
 };
 
 /** `prefer` from the sliders: `{ name: weight }`; none set means ai1's own. */
-function weights(prefer: unknown): Record<string, number> | undefined {
+function weights(prefer: unknown) {
   if (!prefer || typeof prefer !== "object" || Object.values(prefer).some((w) => typeof w !== "number")) throw new Error("Weights: { name: number }");
   return Object.keys(prefer).length ? prefer as Record<string, number> : undefined;
 }

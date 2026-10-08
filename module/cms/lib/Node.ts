@@ -82,10 +82,10 @@ export class Node {
     exists(): this | undefined { return this.#is ? this : undefined; }
 
     /* Cache invalidation */
-    #clearTreeCache(): void { this.#children = this.#conts = null; }
+    #clearTreeCache() { this.#children = this.#conts = null; }
     /** Public: a `file` row replaced in place leaves page_file untouched (see cms/plugin.ts). */
     clearFileCache(): void { this.#files = this.#filesAll = null; }
-    #clearUrlCache(): void { this.#urls = null; }
+    #clearUrlCache() { this.#urls = null; }
 
     async set(data: string | Record<string, any>, value?: any): Promise<void> {
         if (!this.#is) {
@@ -148,14 +148,14 @@ export class Node {
         // return the higher of the two
         return Math.max(access, grpAccess);
     }
-    async #accessGroupLevel(grps?: number[] | null): Promise<number> {
+    async #accessGroupLevel(grps?: number[] | null) {
         if (!grps || !grps.length) return 0;
         return Number(await this.db.one`
             SELECT max(access) AS access FROM page_access_grp
             WHERE page_id = ${this.id}
                 AND ${sql.in("grp_id", grps)}`) || 0;
     }
-    async #accessUserLevel(user?: Usr | null): Promise<number> {
+    async #accessUserLevel(user?: Usr | null) {
         if (!user?.$exists) return 0;
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
@@ -227,7 +227,7 @@ export class Node {
     }
 
     /** Run a module render callback, returning error markup instead of throwing. */
-    async #renderGuarded(run: () => unknown): Promise<string> {
+    async #renderGuarded(run: () => unknown) {
         try {
             return String(await run());
         } catch (err: any) {
@@ -464,7 +464,7 @@ export class Node {
     deleteFile(name: string): Promise<boolean> {
         return this.db.transaction(() => this.#deleteFile(name));
     }
-    async #deleteFile(name: string): Promise<boolean> {
+    async #deleteFile(name: string) {
         await this.files();
         const dbFile = this.#filesAll!.get(name);
         if (!dbFile) return false;
@@ -569,7 +569,7 @@ export class Node {
     createChild(fields: Record<string, any> = {}): Promise<Node> {
         return this.db.transaction(() => this.#createChild(fields));
     }
-    async #createChild(fields: Record<string, any>): Promise<Node> {
+    async #createChild(fields: Record<string, any>) {
         fields = {
             basis: this.id,
             online_start: unixTime(),
@@ -697,7 +697,7 @@ export class Node {
     insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
         return this.db.transaction(() => this.#insertBefore(pageArg, before));
     }
-    async #insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
+    async #insertBefore(pageArg: Node | number, before?: Node | number | null) {
         const page = await this.cms.node(Number(pageArg));
         const oldParent = await page.parent();
         const beforePage = before ? await this.cms.node(Number(before)) : null;
@@ -725,7 +725,7 @@ export class Node {
     removeChild(child: Node | number): Promise<boolean> {
         return this.db.transaction(() => this.#removeChild(child));
     }
-    async #removeChild(child: Node | number): Promise<boolean> {
+    async #removeChild(child: Node | number) {
         const page = await this.cms.node(Number(child));
         const children = await this.children({ type: "*" });
         if (!children.has(Number(page))) return false;

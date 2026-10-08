@@ -421,7 +421,7 @@ export class ModuleManager {
   }
 
   // Dependency-ordered subset (default: all imported). Recurses dependencies only within the set.
-  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()): string[] {
+  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()) {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
     const set = new Set(names);

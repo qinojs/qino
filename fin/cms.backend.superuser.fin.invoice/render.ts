@@ -131,9 +131,12 @@ const typed = (minor: unknown, currency: unknown) =>
   String(Number(minor) / 10 ** currencies.decimals(String(currency || "CHF")));
 
 /** One editable line; `i` keeps the fields of a line together. */
-const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown = "CHF") => html.async`<tr>
-  <td><input name="name${i}" value="${line.name}">
-    <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}" style="display:block; width:100%">${line.description}</textarea>
+const lineRow = (app: App, i: string | number, line: Row = {}, currency: unknown = "CHF") =>
+  html.async`<tr draggable=false>
+  <td><button type=button class=u2-unstyle u2-draghandle title="${app.t`Reorder`}">
+    <u2-ico icon=drag_indicator>⠿</u2-ico></button>
+  <td class=-item><input name="name${i}" value="${line.name}">
+    <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}">${line.description}</textarea>
   <td><input name="quantity${i}" inputmode=decimal placeholder=1 style="width:4rem"
     value="${line.quantity == null ? "" : Number(line.quantity)}">
   <td><input name="unit${i}" style="width:3.5rem" value="${line.unit}">
@@ -182,17 +185,20 @@ async function editor(node: Node, row: Row) {
         <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
         ${t`VAT ID`} <input name=vatID value="${party.vatID}">
         ${t`User id`} <input name=usrId inputmode=numeric size=6 value="${row.usr_id}">
-        ${t`Prices include tax`} <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
+        ${t`Prices include tax`}
+        <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
       </u2-fields>
       <div style="overflow:auto"><table class=u2-table>
         <thead><tr>
+          <th>
           <th>${t`Item`}
           <th>${t`Quantity`}
           <th>${t`Unit`}
           <th>${t`Unit price`}
           <th>${t`Tax %`}
           <th>
-        <tbody data-lines>${items.map((line, i) => lineRow(app, i, line, row.currency))}${lineRow(app, items.length)}
+        <tbody data-lines u2-dropzone>
+          ${items.map((line, i) => lineRow(app, i, line, row.currency))}${lineRow(app, items.length)}
       </table></div>
       <template data-line>${lineRow(app, "__i__")}</template>
       <button type=button data-add-line>${t`Add line`}</button>

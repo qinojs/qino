@@ -54,6 +54,8 @@ export async function document(
   th, td { text-align: start; padding: .3em .4em; vertical-align: top }
   thead th { border-bottom: 1px solid }
   .n { text-align: end; white-space: nowrap }
+  /* the amounts' currency is in the column head and beside Total */
+  tbody .currency, tfoot td .currency { display: none }
   tfoot th, tfoot td { border-top: 1px solid }
   /* the head repeats on every page, the totals only once at the end; a line is not split */
   tfoot { display: table-row-group }
@@ -85,9 +87,9 @@ export async function document(
     <th class=pos>${t`Pos.`}
     <th>${t`Description`}
     <th class="n quantity">${t`Quantity`}
-    <th class="n price">${t`Unit price`}
+    <th class="n price">${t`Unit price`} <span class=currency>${invoice.currency}</span>
     <th class="n rate">${t`Tax`}
-    <th class="n amount">${t`Amount`}
+    <th class="n amount">${t`Amount`} <span class=currency>${invoice.currency}</span>
   <tbody>${lines.map((line, i) => html`<tr>
     <td class=pos>${i + 1}
     <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
@@ -119,7 +121,16 @@ function moneyFormat(locale: string, currency: string) {
   const digits = currencies.decimals(currency);
   const fine = new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: digits + 4 });
   // a unit price may be finer than the currency; only then more decimals are shown
-  return (minor: number) => (Number.isInteger(minor) ? format : fine).format(minor / 10 ** digits);
+  return (minor: number) => {
+    const parts = (Number.isInteger(minor) ? format : fine).formatToParts(minor / 10 ** digits);
+    // the currency and the space beside it in a span of their own, for a column to hide
+    let a = parts.findIndex((p) => p.type === "currency"), b = a + 1;
+    const blank = (i: number) => parts[i]?.type === "literal" && !parts[i].value.trim();
+    if (blank(b)) b++;
+    else if (blank(a - 1)) a--;
+    const text = (from: number, to: number) => parts.slice(from, to).map((p) => p.value).join("");
+    return html`${text(0, a)}<span class=currency>${text(a, b)}</span>${text(b, parts.length)}`;
+  };
 }
 
 /** Name and postal address, one line each; the country only `abroad`. */

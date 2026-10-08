@@ -16,7 +16,7 @@ export const unb64url = (str: string): Uint8Array<ArrayBuffer> => Uint8Array.fro
 /** n random bytes as base64url. */
 export const randB64 = (n: number): string => b64url(crypto.getRandomValues(new Uint8Array(n)));
 
-const digest = async (str: string): Promise<Uint8Array> =>
+const digest = async (str: string) =>
   new Uint8Array(await crypto.subtle.digest("SHA-256", ENCODER.encode(str)));
 
 /** SHA-256 of a string as base64 (44 chars), as used by CSP hashes and SRI `integrity`. */

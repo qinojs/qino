@@ -11,7 +11,7 @@ type Item = Record<string, unknown>;
 type Answer = { output?: Item[]; usage?: { input_tokens?: number; output_tokens?: number }; status?: string;
   error?: { code?: string; message?: string }; incomplete_details?: { reason?: string } };
 
-function content(value: string | Part[], output = false): Item[] {
+function content(value: string | Part[], output = false) {
   const parts = typeof value === "string" ? [{ type: "text", text: value } as Part] : value;
   return parts.map((part) => part.type === "text"
     ? { type: output ? "output_text" : "input_text", text: part.text }

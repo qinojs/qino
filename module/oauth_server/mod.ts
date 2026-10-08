@@ -171,7 +171,7 @@ export async function deleteClient(app: App, id: string): Promise<boolean> {
 }
 
 /** Loopback may use http; everything else must be https, and no fragment (RFC 8252). */
-function validRedirectUri(raw: unknown): string | undefined {
+function validRedirectUri(raw: unknown) {
   const uri = String(raw ?? "");
   const u = URL.parse(uri);
   if (!u || u.hash) return;

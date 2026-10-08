@@ -82,7 +82,7 @@ export class Sandbox {
     this.close();
   }
 
-  #start(): Worker {
+  #start() {
     // without the flag Deno exits the whole process instead of throwing, so ask first
     if (!restrictable()) {
       const how = `--unstable-worker-options, or "unstable": ["worker-options"] in deno.json`;

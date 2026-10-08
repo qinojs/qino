@@ -43,6 +43,11 @@ Deno.test("a new invoice opens in the editor, saves as one types, is issued, ask
     const row = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
     assertEquals([row?.status, row?.currency, row?.net, row?.tax, row?.total], ["draft", "CHF", 39900, 3232, 43132]);
     assertEquals(JSON.parse(String(row?.party)).address.addressCountry, "CH");
+    // a line dragged up: its fields come first, so it does
+    const { name5, quantity5, unit5, price5, taxRate5, ...rest } = edited;
+    await as(base, () => api(node, { save: { name5, quantity5, unit5, price5, taxRate5, ...rest, id: String(id) } }));
+    assertEquals(await app.db.col`SELECT name FROM invoice_line WHERE invoice_id = ${id} ORDER BY sort`, ["Hosting", "Design"]);
+    await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
     page = String(await as(`${base}?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, 'value="120"'); // prices come back as typed
     await as(base, () => api(node, { save: { ...edited, text: "", id: String(id) } }));

@@ -80,7 +80,7 @@ export class DbRow {
     return this.$save(); // the object form returns a promise
   }
 
-  #assign(name: string, value: unknown): void {
+  #assign(name: string, value: unknown) {
     const field = this.#table.field(name);
     if (!field) throw new Error(`${this.#table}.${name}: unknown column`);
     // valueTransform returns SQL strings; in memory a column must look like a SELECT returns it.

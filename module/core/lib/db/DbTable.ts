@@ -267,7 +267,7 @@ export class DbTable {
   deleteWhere(values: Record<string, any>): Promise<void> {
     return this.#db.transaction(() => this.#deleteWhere(values));
   }
-  async #deleteWhere(values: Record<string, any>): Promise<void> {
+  async #deleteWhere(values: Record<string, any>) {
     const where = this.valuesToFragment(values);
     const rows = where.parts.length ? await this.select(where) : {};
     for (const row of Object.values(rows)) await this.delete(row);

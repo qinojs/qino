@@ -87,7 +87,7 @@ export class Scheduler {
     });
   }
 
-  #schedule(): void {
+  #schedule() {
     const timer = setTimeout(async () => {
       await this.run().catch((e) => console.error("cron:", e));
       if (!this.#signal?.aborted) this.#schedule();
@@ -97,7 +97,7 @@ export class Scheduler {
   }
 
   /** Declared jobs plus their persisted rows; seeds new jobs and reschedules changed ones. */
-  async #load(now: number): Promise<{ jobs: RegisteredJob[]; rows: Map<string, Row>; timeZone: string }> {
+  async #load(now: number) {
     const db = this.#app.db;
     const timeZone = await timezone(this.#app);
     const jobs = collect(this.#app, timeZone);
@@ -120,7 +120,7 @@ export class Scheduler {
     return { jobs, rows, timeZone };
   }
 
-  async #tick(): Promise<Result> {
+  async #tick() {
     const now = unixTime();
     const { jobs, rows, timeZone } = await this.#load(now);
     const result: Result = { ran: [], failed: {} };
@@ -130,7 +130,7 @@ export class Scheduler {
   }
 
   /** Claims the lease, runs the job, writes the outcome back. False = another process holds it. */
-  async #runJob(registered: RegisteredJob, row: Row, result: Result, o: { timeZone: string; force?: boolean }): Promise<boolean> {
+  async #runJob(registered: RegisteredJob, row: Row, result: Result, o: { timeZone: string; force?: boolean }) {
     const db = this.#app.db;
     const { id, job } = registered;
     const now = unixTime();

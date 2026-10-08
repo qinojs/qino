@@ -19,7 +19,7 @@ const nodeAdmin = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx
 
 // Adding/assigning a module needs ADMIN ("insertable") on the module axis — editorial, not security.
 // cms.accessRules lowers e.access; without it everything is insertable.
-const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
+const requireModuleAdmin = async (module: string, ctx: Ctx) => {
   if (!ctx.app.modules.get(module)) throw new ValidationError([{ message: `Unknown module "${module}"`, path: ["module"] }]);
   const e = await cms(ctx.app).fire("module:access", { module, user: ctx.user ?? undefined, access: ADMIN });
   if (Number(e.access) < ADMIN) throw new AccessError();

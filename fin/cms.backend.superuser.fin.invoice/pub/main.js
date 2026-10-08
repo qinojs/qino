@@ -67,6 +67,11 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     const soon = () => { clearTimeout(timer); timer = setTimeout(save, 600); };
 
     form.addEventListener("input", soon);
+    // dynamic: the drag attributes pull a cdn dependency that `deno check --all` cannot follow
+    import("@qino/u2/attr/dropzone/dropzone.js");
+    import("@qino/u2/attr/draghandle/draghandle.js");
+    // a line moved: the order of the fields is the order of the lines
+    lines.addEventListener("u2-dropzone-drop", (e) => e.detail?.add && soon());
     form.addEventListener("click", (e) => {
       if (e.target.closest("[data-add-line]")) {
         lines.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__i__", String(next++)));

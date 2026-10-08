@@ -121,7 +121,7 @@ function claims(part: string): Record<string, unknown> {
 }
 
 /** Verify signature and the OIDC claims before associating credentials with a Qino user. */
-async function verify(idToken: string, clientId: string, nonce: string): Promise<{ subject: string; email: string }> {
+async function verify(idToken: string, clientId: string, nonce: string) {
   const parts = idToken.split(".");
   if (parts.length !== 3) throw new AiError("Invalid ChatGPT identity token", 400);
   const head = claims(parts[0]), body = claims(parts[1]);

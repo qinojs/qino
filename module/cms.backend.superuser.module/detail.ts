@@ -166,7 +166,7 @@ async function renderModule(node: Node, modName: string) {
 </div>`;
 }
 
-function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""): Record<string, string[]> {
+function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = "") {
   const result: Record<string, string[]> = {};
   const verbs = ["get", "post", "put", "delete", "patch"];
   for (const [key, val] of Object.entries(tree ?? {})) {

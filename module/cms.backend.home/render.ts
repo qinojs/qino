@@ -90,7 +90,7 @@ const enabled = async (app: App) => (await providers(app)).filter((row) => row.e
 type Value = { provider: Provider; entity: Entity; path: string; value: unknown };
 
 /** Likely values of a state: a list attribute that holds the current one (event types, select options). */
-const options = (entity: Entity, value: unknown): string[] => typeof value !== "string" ? [] : (Object
+const options = (entity: Entity, value: unknown) => typeof value !== "string" ? [] : (Object
   .values(entity.attributes).find((list) => Array.isArray(list) && list.includes(value)) as string[] | undefined)
   ?.filter((option) => typeof option === "string") ?? [value];
 

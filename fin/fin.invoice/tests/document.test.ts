@@ -30,8 +30,9 @@ Deno.test("the document shows sender, recipient, lines and tax per rate, escaped
       "Design &lt;draft&gt;",
       "<div class=description>Second edition\nhardcover</div>",
       "2026-1",
-      "CHF 120.00", // a unit price in the currency's decimals …
-      "CHF 0.2345", // … and finer where it is
+      '<span class=currency>CHF </span>120.00', // a unit price in the currency's decimals …
+      '<span class=currency>CHF </span>0.2345', // … and finer where it is
+      'Unit price <span class=currency>CHF</span>', // the lines' currency is in their head
       "8.1 %",
       "2.6 %",
       "Thank you.\nPayable within 30 days.",

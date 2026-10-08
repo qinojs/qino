@@ -15,7 +15,7 @@ class CmsTextService {
   get #app() { return this.#ctx.app; }
 
   /** Only configured language codes may reach the text table. "auto"/"clean" are internal source modes. */
-  #lang(code: string, ...modes: string[]): string {
+  #lang(code: string, ...modes: string[]) {
     if (modes.includes(code) || this.#app.languages.all.includes(code)) return code;
     throw new ApiError(400, `Unknown language "${code}"`);
   }

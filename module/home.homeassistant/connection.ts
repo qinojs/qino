@@ -102,7 +102,7 @@ export class Connection {
   }
 
   /** Entities matching a target's domain filters; other filters (integration, features) are left to the call. */
-  #targets(filters: Filter | Filter[]): string[] {
+  #targets(filters: Filter | Filter[]) {
     const domains = [filters].flat().map(({ domain }) => domain === undefined ? undefined : [domain].flat());
     return [...this.#states.keys()].filter((id) =>
       domains.some((list) => !list || list.includes(id.slice(0, id.indexOf(".")))));
@@ -125,14 +125,14 @@ export class Connection {
     });
   }
 
-  async #available(): Promise<void> {
+  async #available() {
     await this.#connecting;
     if (this.#invalid)
       throw new ApiError(503, "Home Assistant rejected its access token; update the provider's access token");
     if (this.#signal.aborted || !this.#ready) throw new ApiError(503, "Home Assistant is not connected");
   }
 
-  async #open(): Promise<void> {
+  async #open() {
     const socket = this.#socket = new WebSocket(this.#url);
     const buffered: Change[] = [];
     await new Promise<void>((resolve, reject) => {
@@ -199,7 +199,7 @@ export class Connection {
     heartbeat();
   }
 
-  #observe(change: Change): void {
+  #observe(change: Change) {
     if (this.#signal.aborted || !this.#ready) return;
     const state = change.new_state, current = this.#states.get(change.entity_id);
     // A snapshot may already contain a later observation than a buffered event.
@@ -229,7 +229,7 @@ export class Connection {
     });
   }
 
-  #drop(error: ApiError): void {
+  #drop(error: ApiError) {
     const socket = this.#socket;
     this.#socket = undefined;
     this.#ready = false;
@@ -263,7 +263,7 @@ const STRINGS = new Set(["text", "entity", "device", "area", "floor", "label", "
 const NUMBERS = new Set(["number", "color_temp"]);
 
 /** Home Assistant's field selectors as the JSON schema of an action's data. */
-function inputOf(fields: Record<string, Field>): Record<string, unknown> {
+function inputOf(fields: Record<string, Field>) {
   // Sections group fields for display only; their fields are top-level data keys.
   const flat = Object.entries(fields)
     .flatMap(([key, field]) => field.fields ? Object.entries(field.fields) : [[key, field] as const]);
