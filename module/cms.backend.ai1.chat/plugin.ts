@@ -65,7 +65,7 @@ async function render(node: Node) {
           </div>
           <button ${agents.length ? "" : "disabled"}>${t`Start session`}</button>
         </form>
-        ${agents.length ? "" : html`<p>${t`No agents yet`}`}
+        ${agents.length ? "" : html.async`<p>${t`No agents yet`}`}
       </div>
       <div class=-head>${t`Sessions`}</div>
       <div style="overflow:auto; max-height:30rem; padding:0">

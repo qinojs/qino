@@ -108,11 +108,10 @@ export async function create(
     return_url: new URL(opt.return, await app.url()).href,
   });
   const payment = (await get(app, id))!;
-  const started = await selected.start(app, payment, await urls(app, id)).catch(async (e) => {
+  const { redirect, ...state } = await selected.start(app, payment, await urls(app, id)).catch(async (e) => {
     await apply(app, payment, { status: "failed", data: { error: String(e?.message ?? e) } });
     throw e;
   });
-  const { redirect, ...state } = started;
   await apply(app, payment, state);
   return { id, redirect };
 }

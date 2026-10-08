@@ -45,7 +45,7 @@ export async function migrateLegacyPageSettings(app: App): Promise<void> {
         if (!Object.keys(old).length) continue; // nothing to carry over — leave the row alone
 
         const json = JSON.stringify(old);
-        await app.db.query`UPDATE page SET settings = ${json} WHERE id = ${pageId}`;
+        await app.db.exec`UPDATE page SET settings = ${json} WHERE id = ${pageId}`;
         await legacyPagesRoot.item(String(pageId)).remove();
         migrated++;
     }

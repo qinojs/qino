@@ -85,11 +85,11 @@ cms.cont = function(id) {
 Object.assign(cms.cont, Eventer);
 
 cms.cont.prototype = {
-  upload(File, complete, replace) {
+  upload(file, complete, replace) {
     const event = { ...Eventer };
     event.pid = this.id;
-    event.File = File;
-    qgfileUpload(File, 'cmsPageFile', {
+    event.File = file;
+    qgfileUpload(file, 'cmsPageFile', {
       url: location.pathname+'?cmspid='+this.id+'&replace='+encodeURIComponent(replace||''),
       progress: e => event.trigger('progress', e),
       complete: res => {
@@ -144,7 +144,7 @@ const trash = dom.el(
   '    <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
   '    <path d="M3.83 21.988c0 1.97 1.612 3.582 3.583 3.582H18.16c1.97 0 3.58-1.612 3.58-3.582V6.466H3.83v15.522zm12.537-11.94c0-.66.535-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.193 1.193s-1.193-.534-1.193-1.192v-11.94zm-4.775 0c0-.66.534-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193s-1.194-.534-1.194-1.192v-11.94zm-4.777 0c0-.66.534-1.194 1.193-1.194.66 0 1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193-.66 0-1.193-.534-1.193-1.192v-11.94z"/>'+
   '  </svg>'+
-  '</div>', 'text/html');
+  '</div>');
 root.append(trash);
 
 /* drag drop */
@@ -221,7 +221,7 @@ p.on('mark', obj=>{
   placer.follow(obj.el);
 
   menu.mod.textContent = mod.replace(/^cont\./,'');
-  menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
+  menu.mod.title = mod+' ('+obj.pid+')';
   menu.drag.style.display = isDraggable ? 'block' : 'none';
   for (const btn of contMenuButtons) {
     if (btn.el.parentNode !== menu) menu.prepend(btn.el); // a new dom.el is still in its template fragment

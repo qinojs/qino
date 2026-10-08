@@ -63,7 +63,7 @@ export async function saveCommand(app: App, input: Partial<Command>): Promise<nu
 
 export async function removeCommand(app: App, id: number): Promise<void> {
   await command(app, id);
-  await app.db.query`DELETE FROM home_command WHERE id = ${id}`;
+  await app.db.exec`DELETE FROM home_command WHERE id = ${id}`;
 }
 
 /**

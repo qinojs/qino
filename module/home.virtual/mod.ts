@@ -69,7 +69,7 @@ export async function saveVirtual(app: App, input: Partial<Virtual>): Promise<nu
 
 export async function removeVirtual(app: App, id: number): Promise<void> {
   await virtual(app, id);
-  await app.db.query`DELETE FROM home_virtual WHERE id = ${id}`;
+  await app.db.exec`DELETE FROM home_virtual WHERE id = ${id}`;
   forget(app);
 }
 

@@ -39,3 +39,19 @@ Deno.test("cms.backend.ai1.calls: records failures and shows usage without rende
     await db.close();
   }
 });
+
+Deno.test("cms.backend.ai1.calls: empty tables say so", async () => {
+  const db = new Db("sqlite::memory:");
+  const combined = { properties: { ...ai1DbSchema.properties, ...statsSchema.properties } };
+  await db.migrate(combined);
+  await db.loadTables();
+  db.schema = combined;
+  const app = { db, t: fakeT } as unknown as App;
+  try {
+    const output = String(await cms.node.render({ app } as Node));
+    assertStringIncludes(output, "<td colspan=6>No calls yet");
+    assertStringIncludes(output, "<td colspan=3>No errors yet");
+  } finally {
+    await db.close();
+  }
+});

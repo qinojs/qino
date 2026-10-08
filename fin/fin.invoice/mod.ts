@@ -362,10 +362,9 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   if (values.party != null) fields.party = JSON.stringify(values.party);
   if (values.data != null) fields.data = JSON.stringify(values.data);
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
-  for (const key of ["ref", "text", "date", "due", "number", "lang"] as const) {
+  for (const key of ["ref", "text", "date", "due", "number", "lang", "term"] as const) {
     if (values[key] !== undefined) fields[key] = values[key];
   }
-  if (values.term !== undefined) fields.term = values.term;
   const taxIncluded = values.taxIncluded ?? Boolean(invoice?.tax_included);
   const stored = values.lines ?? (values.taxIncluded == null ? undefined : (await lines(app, id)).map(lineOf));
   // a line without a rate takes the default one (fin.invoice.taxRate)

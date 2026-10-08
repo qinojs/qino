@@ -34,9 +34,9 @@ function terms(app: App, row: Row, catalog: Row[], placeholder: Row = {}) {
     ${t`Currency`}
     <input name=currency maxlength=3 size=4 value="${row.currency}" placeholder="${placeholder.currency}">
     ${t`Tax %`} <input name=taxRate inputmode=decimal size=4 value="${row.tax_rate}"
-      placeholder="${placeholder.tax_rate ?? ""}">
+      placeholder="${placeholder.tax_rate}">
     ${t`Every`} <span><input name=count type=number min=1 style="width:4rem" value="${row.interval_count}"
-      placeholder="${placeholder.interval_count ?? ""}">
+      placeholder="${placeholder.interval_count}">
       <select name=unit><option value="">${catalog.length ? "—" : ""}${["year", "month"].map((u) =>
         html.async`<option value=${u}${selected(row.interval_unit === u)}>${u === "year" ? t`year` : t`month`}`)}
       </select></span>`;
@@ -174,7 +174,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
         ${t`Plan`} <select name=planId><option value="">—${catalog.map((p) =>
           html`<option value="${p.id}"${selected(Number(p.id) === Number(s.plan_id))}>${p.name}`)}</select>
         ${t`What`} <input name=name value="${s.name}" placeholder="${t`with a plan: the detail, e.g. example.ch`}">
-        ${t`Description`} <textarea name=description rows=3 placeholder="${s.plan?.description ?? ""}">${
+        ${t`Description`} <textarea name=description rows=3 placeholder="${s.plan?.description}">${
           s.description}</textarea>
         ${terms(app, s, catalog, s.plan ?? {})}
         ${t`From`} <input name=start type=date value="${date(s.start_date)}"${locked}>

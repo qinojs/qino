@@ -54,7 +54,7 @@ Object.assign(App.events, {
   },
 } satisfies EventDecls);
 
-export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
+export async function init(app: App): Promise<void> {
   await scored(app.db, "ai1_agent_memory", 30 * 86400); // memories fade with a half-life of a month unless used
 
   await declare(app); // the agents modules bring (`agents/*.md`), as their files say now

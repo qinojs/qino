@@ -160,8 +160,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         ctx.res.csp["connect-src"][u2Root] = true;
     }, { signal });
 
-    const langsRaw = String(await settings.langs ?? "");
-    app.languages.setLangs(langsRaw.split(","));
+    app.languages.setLangs(String(await settings.langs ?? "").split(","));
 
     const transformTimeout = Number(await settings.transform.timeout ?? "");
     if (transformTimeout) app.fileTransformer.timeout = transformTimeout;

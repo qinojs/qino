@@ -94,8 +94,7 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     // already only when asked
     form.querySelector("[data-user]")?.addEventListener("change", (e) => e.target.value && take(e.target.value));
     const take = async (id) => {
-      const party = await node.api.post({ usr: id });
-      const { lang, ...address } = party;
+      const { lang, ...address } = await node.api.post({ usr: id });
       const fields = Object.entries(address).filter(([name]) => form.elements[name]);
       const typed = fields.some(([name, value]) =>
         form.elements[name].value.trim() && form.elements[name].value !== value);

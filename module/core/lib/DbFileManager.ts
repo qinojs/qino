@@ -317,18 +317,17 @@ export class DbFile extends File {
    *  yet. Throws if a tool fails or times out. */
   async extractText(): Promise<string> {
     if (!await this.exists()) return "";
-    let path = this.path;
     let text = "";
-    if (this.mime.startsWith("text/")) text = await fs.text(path).catch(() => "");
+    if (this.mime.startsWith("text/")) text = await fs.text(this.path).catch(() => "");
     else {
       const r = await this.transform({ fmt: "md" });
       if (r.error) throw r.error;
-      if (r.transformed) text = await fs.text((path = r.path)).catch(() => "");
+      if (r.transformed) text = await fs.text(r.path).catch(() => "");
     }
     text = text.slice(0, MAX_TEXT);
     await this.setVs({ text });
     const { md5 } = this.vs!; // same blob, same text — reuse it
-    if (md5) await this.#manager.db.query`UPDATE ${sql.id(tableRef("file"))} SET text=${text} WHERE md5=${md5} AND id!=${this.id}`;
+    if (md5) await this.#manager.db.exec`UPDATE ${sql.id(tableRef("file"))} SET text=${text} WHERE md5=${md5} AND id!=${this.id}`;
     return text;
   }
 

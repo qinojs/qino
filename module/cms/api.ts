@@ -112,8 +112,7 @@ const node = {
   paramSchema: s.number().describe("Node-ID"),
 
   resolve: async (id: number, ctx: Ctx) => {
-    const app = ctx.app;
-    const n = await cms(app).node(id);
+    const n = await cms(ctx.app).node(id);
     if (!n.exists()) throw new NotFoundError(`Node ${id} not found`);
     if (await n.access() < 1) throw new AccessError();
     return n;
@@ -364,7 +363,6 @@ const node = {
       execute: async ({ node, module, before }: any, ctx: Ctx) => {
         await requireModuleAdmin(module, ctx);
         const c = await node.createCont({ module });
-        if (!c) throw new Error("createCont failed");
         if (before) await node.insertBefore(c, before);
         await c.changeUser(ctx.user, 3);
         await asMainNode(node, ctx);
@@ -475,8 +473,8 @@ const node = {
         execute: async ({ node }: { node: Node }) => {
           const files = await node.files();
           const seen: Record<string, boolean> = {};
-          for (const [name, F] of files) {
-            const md5 = F.vs?.md5;
+          for (const [name, file] of files) {
+            const md5 = file.vs?.md5;
             if (md5 && seen[md5]) await node.deleteFile(name);
             if (md5) seen[md5] = true;
           }

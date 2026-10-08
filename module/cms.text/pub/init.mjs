@@ -57,7 +57,7 @@ const showEditor = async el => {
     const btn = e.target;
     const targetLang = btn.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
     const sourceLang = btn.dataset.sourceLang;
-    const loading = await import('@qino/pub/c1/loading.mjs').then(m => m.default);
+    const { default: loading } = await import('@qino/pub/c1/loading.mjs');
     const unmark = loading.mark(e.target.closest('.-language'));
     try {
       await api['cms.text'].text(tid).translate.post({ targetLang, sourceLang });
@@ -99,7 +99,7 @@ const showEditor = async el => {
       const textContent = textEl.tagName === 'INPUT' ? textEl.value : textEl.innerHTML;
 
       // Restore the text
-      const loading = await import('@qino/pub/c1/loading.mjs').then(m => m.default);
+      const { default: loading } = await import('@qino/pub/c1/loading.mjs');
       const unmark = loading.mark(historyItem);
       const success = await api.cms.txt(parseInt(tid)).put({ value: textContent, lang });
       unmark();
@@ -162,12 +162,11 @@ setTimeout(() => {
 
 /* translate hole page */
 const addTranslateWidget = async el=>{
-  const lang = document.documentElement.getAttribute('lang');
   el.insertAdjacentHTML('beforeend', await html.async`
         <div class="-widgetHead -open" tabindex=0><span class=-title>${t`Translate`}</span></div>
         <div>
             <form class=-content>
-        <b>${lang}</b> ${t`texts on this page:`} <br>
+        <b>${activeLang}</b> ${t`texts on this page:`} <br>
                 <button name=auto>${t`Auto-translate`}</button><br>
                 <button name=clean>${t`Delete translations`}</button><br>
                 <!--input name=subpages type=checkbox> including subpages<br-->
@@ -180,7 +179,7 @@ const addTranslateWidget = async el=>{
     const sourceLang = e.submitter.name;
     const done = loading.mark(e.target);
     try {
-      const result = await api['cms.text'].page(nodeId).translate.post({ targetLang: lang, sourceLang, ifNeeded: true, subpages: false });
+      const result = await api['cms.text'].page(nodeId).translate.post({ targetLang: activeLang, sourceLang, ifNeeded: true, subpages: false });
       await cms.dialogs.alert(t`translated texts: ${result.count}`);
       if (result.fail) await cms.dialogs.alert(t`not allowed on ${result.fail} pages`);
       result.count && location.reload();
@@ -190,9 +189,8 @@ const addTranslateWidget = async el=>{
     done();
   });
 };
-customElements.whenDefined('qino-cms').then(async () => {
+customElements.whenDefined('qino-cms').then(() => {
   const root = document.querySelector('qino-cms')?.shadowRoot;
   if (!root) return;
-  const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
   new SelectorObserver({ on: addTranslateWidget }).observe('.-moreWidget', { root });
 });

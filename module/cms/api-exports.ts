@@ -150,7 +150,6 @@ async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     return { url: await node.url() };
 }
 
-/** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order. */
 /** A preview at the requested size, if the tools for that file type are installed. */
 const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool: "magick" | "ffmpeg" }> = {
     jpg: { page: 1, tool: "magick" }, jpeg: { page: 1, tool: "magick" }, gif: { page: 1, tool: "magick" },
@@ -172,7 +171,8 @@ async function thumbUrl(file: any, size: string): Promise<string | undefined> {
     return file.url({ w, h, max: true, ...opt });
 }
 
-/** `thumb` is a "WxH" the caller wants a preview in; without it none is built. */
+/** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order.
+ *  `thumb` is a "WxH" the caller wants a preview in; without it none is built. */
 export async function nodeFilesJson(node: Node, thumbSize = ""): Promise<Record<string, any>> {
     const files = await node.files();
     const all = await node.filesAndPlaceholders();
@@ -272,10 +272,9 @@ export async function searchNodes(search: string): Promise<any[]> {
     return res;
 }
 
-export async function searchFiles(search: string): Promise<any[]> {
+export async function searchFiles(s: string): Promise<any[]> {
     const ctx = getCtx();
     const db  = ctx.app.db;
-    const s   = search;
     const id  = /^\d+$/.test(s) ? Number(s) : 0;
     const res = [];
     let i = 0;

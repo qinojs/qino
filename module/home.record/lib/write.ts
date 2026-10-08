@@ -30,9 +30,9 @@ export async function write(
     ? sql`ON DUPLICATE KEY UPDATE value = ${value}`
     : sql`ON CONFLICT (datapoint, time) DO UPDATE SET value = ${value}`;
   await app.db.unit(async () => {
-    await app.db.query`INSERT INTO ${sql.id(table(point))} (datapoint, time, value)
+    await app.db.exec`INSERT INTO ${sql.id(table(point))} (datapoint, time, value)
       SELECT id, ${time}, ${value} FROM home_datapoint WHERE ${fresh} ${conflict}`;
-    await app.db.query`UPDATE home_datapoint SET time = ${time}, value = ${value}
+    await app.db.exec`UPDATE home_datapoint SET time = ${time}, value = ${value}
       WHERE ${fresh} AND (time IS NULL OR time <= ${time})`;
   });
 }

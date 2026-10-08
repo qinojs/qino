@@ -25,7 +25,7 @@ function possibleClasses(el) {
     if (!/\.[A-Z]/.test(sel)) return;
     const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : /^\.[^ ]+$/;
     if (reg.test(sel)) {
-      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
+      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, '$2');
       ret[name] = sel;
     }
   }
@@ -313,7 +313,6 @@ class ImageZoomer {
     this.y = 0;
     this.w = 100;
     this.h = 100;
-    this.f = 1;
 
     this.img = img;
     this.canvas = document.createElement('canvas');

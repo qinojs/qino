@@ -76,7 +76,7 @@ async function keyId(app: App, key: string) {
   const table = app.db.table("log_ip");
   const find = () => table.rowBy("ip", key);
   const row = await find() ?? await table.insert({ ip: key }).catch(find);
-  return Number(String(row));
+  return Number(row);
 }
 
 /** Seconds until a strength drops below BLOCK, negative when it is not blocked. */
@@ -123,5 +123,5 @@ export async function release(app: App, key: string): Promise<void> {
   state?.keys.delete(key);
   await state?.writes.get(key); // a pending write would bring the score back
   const row = await app.db.table("log_ip").rowBy("ip", key);
-  if (row) await forget(app.db, "log_ip", Number(String(row)));
+  if (row) await forget(app.db, "log_ip", Number(row));
 }

@@ -149,7 +149,7 @@ export class Node {
         return Math.max(access, grpAccess);
     }
     async #accessGroupLevel(grps?: number[] | null) {
-        if (!grps || !grps.length) return 0;
+        if (!grps?.length) return 0;
         return Number(await this.db.one`
             SELECT max(access) AS access FROM page_access_grp
             WHERE page_id = ${this.id}
@@ -711,7 +711,7 @@ export class Node {
             if (beforePage && String(beforePage) === String(child)) sort = i++;
             await child.set("sort", i++);
         }
-        sort = sort !== null ? sort : i++;
+        sort ??= i++;
         await page.set({ basis: this.id, sort });
 
         this.#clearTreeCache();

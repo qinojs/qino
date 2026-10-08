@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
 /** Take over the pages of the layout this one replaces, and retire it. */
 export async function install({ app }: { app: App }): Promise<void> {
-  await app.db.query`UPDATE page SET module = ${manifest.name} WHERE module = ${OLD}`;
+  await app.db.exec`UPDATE page SET module = ${manifest.name} WHERE module = ${OLD}`;
   await app.modules.uninstall(OLD).catch(() => {});
 }
 

@@ -142,7 +142,7 @@ const used = async (app: App, id: number) =>
 
 export async function enable(app: App, id: number, enabled: boolean): Promise<void> {
   const previous = await provider(app, id);
-  await app.db.query`UPDATE home_provider SET enabled = ${enabled} WHERE id = ${id}`;
+  await app.db.exec`UPDATE home_provider SET enabled = ${enabled} WHERE id = ${id}`;
   await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
 
@@ -150,7 +150,7 @@ export async function enable(app: App, id: number, enabled: boolean): Promise<vo
 export async function remove(app: App, id: number): Promise<void> {
   const previous = await provider(app, id);
   if (await used(app, id)) throw new ApiError(409, "Provider has datapoints or commands; disable it instead");
-  await app.db.query`DELETE FROM home_provider WHERE id = ${id}`;
+  await app.db.exec`DELETE FROM home_provider WHERE id = ${id}`;
   await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
 

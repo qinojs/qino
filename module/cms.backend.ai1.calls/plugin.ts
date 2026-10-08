@@ -63,7 +63,7 @@ async function render(node: Node) {
           <td>${number(row.errors)}
           <td>${number(row.used_input)}
           <td>${number(row.used_output)}
-          <td>${cost(row.estimated_cost)}`) : html`<tr><td colspan=6>${t`No calls yet`}`}</tbody>
+          <td>${cost(row.estimated_cost)}`) : html.async`<tr><td colspan=6>${t`No calls yet`}`}</tbody>
       </table>
     </div>
     <div class=u2-card style="flex:0 1 auto">
@@ -84,7 +84,7 @@ async function render(node: Node) {
           <td>${number(row.errors)}
           <td>${number(row.used_input)}
           <td>${number(row.used_output)}
-          <td>${cost(row.estimated_cost)}`) : html`<tr><td colspan=7>${t`No calls yet`}`}</tbody>
+          <td>${cost(row.estimated_cost)}`) : html.async`<tr><td colspan=7>${t`No calls yet`}`}</tbody>
       </table>
       <small>${t`Calls and errors count recent ones more (they halve daily); usage is the total. Cost is estimated from current prices and provider-reported units; not an invoice.`}</small>
     </div>
@@ -99,7 +99,7 @@ async function render(node: Node) {
           <td style="color:${ageColor(row.time)}; white-space:nowrap">${u2.el.time(row.time, { narrow: true })}
           <td>${colored(row.model)}<br><small>${colored(row.provider)} · ${row.capability}</small>
           <td title="${row.message}"><small>${String(row.message).length > MESSAGE ? String(row.message).slice(0, MESSAGE) + " …" : row.message}</small>`)
-          : html`<tr><td colspan=3>${t`No errors yet`}`}</tbody>
+          : html.async`<tr><td colspan=3>${t`No errors yet`}`}</tbody>
       </table>
     </div>
   </div>`;

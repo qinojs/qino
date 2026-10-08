@@ -64,7 +64,7 @@ Deno.test("sandbox.flow api: someone else's flow does not exist for you", () => 
 
 // events are not filtered by rights yet: a flow sees every event of its host
 Deno.test("sandbox.flow api: only superusers", () => withApp(async (app, as) => {
-  const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
+  const flows = (app.api as any)["sandbox.flow"].flows;
   await assertRejects(() => as(9, () => flows.get()), AccessError);
   await assertRejects(() => as(9, () => flows.post(made)), AccessError);
 }));

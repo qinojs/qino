@@ -20,7 +20,7 @@ async function render(node: Node, ctx: Ctx, type: keyof typeof labels) {
     const value = Math.max(0, Math.min(100, Number(body.value) || 0));
     const count = type === "twopoint" ? Math.max(0, Math.min(100, Number(body.count) || 0)) : 0;
     const distance = type === "twopoint" ? Math.max(0, Math.min(1000, Number(String(body.distance).replace(/[^0-9.]/g, ""))) || 0) : 0;
-    await node.db.query`INSERT INTO ${sql.id("two_point_discrimination")}
+    await node.db.exec`INSERT INTO ${sql.id("two_point_discrimination")}
       (usr_id, time, value, punkte_anzahl, punkte_distanz, type, pid)
       VALUES (${ctx.userId}, ${unixTime()}, ${value}, ${count}, ${distance}, ${type}, ${node.id})`;
     saved = true;

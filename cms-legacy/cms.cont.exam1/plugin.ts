@@ -20,13 +20,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       const value = String(ctx.req.body[`task_${task.id}`] ?? "").trim();
       const points = value === String(task.answer).trim() ? Number(task.points) || 0 : 0;
       const exists = await node.db.one`SELECT 1 FROM ${sql.id("exam1_task_usr")} WHERE task_id = ${task.id} AND usr_id = ${ctx.userId}`;
-      if (exists) await node.db.query`UPDATE ${sql.id("exam1_task_usr")} SET time = ${unixTime()}, value = ${value}, points = ${points} WHERE task_id = ${task.id} AND usr_id = ${ctx.userId}`;
-      else await node.db.query`INSERT INTO ${sql.id("exam1_task_usr")} (task_id, usr_id, time, value, points) VALUES (${task.id}, ${ctx.userId}, ${unixTime()}, ${value}, ${points})`;
+      if (exists) await node.db.exec`UPDATE ${sql.id("exam1_task_usr")} SET time = ${unixTime()}, value = ${value}, points = ${points} WHERE task_id = ${task.id} AND usr_id = ${ctx.userId}`;
+      else await node.db.exec`INSERT INTO ${sql.id("exam1_task_usr")} (task_id, usr_id, time, value, points) VALUES (${task.id}, ${ctx.userId}, ${unixTime()}, ${value}, ${points})`;
       result += points;
     }
     const exists = await node.db.one`SELECT 1 FROM ${sql.id("exam1_usr")} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
-    if (exists) await node.db.query`UPDATE ${sql.id("exam1_usr")} SET completed = ${unixTime()}, result = ${result} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
-    else await node.db.query`INSERT INTO ${sql.id("exam1_usr")} (exam_id, usr_id, completed, result) VALUES (${exam.id}, ${ctx.userId}, ${unixTime()}, ${result})`;
+    if (exists) await node.db.exec`UPDATE ${sql.id("exam1_usr")} SET completed = ${unixTime()}, result = ${result} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
+    else await node.db.exec`INSERT INTO ${sql.id("exam1_usr")} (exam_id, usr_id, completed, result) VALUES (${exam.id}, ${ctx.userId}, ${unixTime()}, ${result})`;
     return html`<div><h2>${exam.completion_text || "Prüfung abgeschlossen"}</h2></div>`;
   }
 
