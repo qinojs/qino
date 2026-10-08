@@ -55,9 +55,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const where = db.table("m_error_report").valuesToFragment(vars.delete);
     if (where.parts.length) await db.exec`DELETE FROM m_error_report WHERE ${where}`;
   }
-  if (vars.deleteGroup) {
-    await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(db, vars.deleteGroup)}`;
-  }
+  if (vars.deleteGroup) await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(db, vars.deleteGroup)}`;
   if (vars.deleteMatching) {
     await db.exec`DELETE FROM m_error_report WHERE ${filterWhere(db, vars.deleteMatching)}`;
   }

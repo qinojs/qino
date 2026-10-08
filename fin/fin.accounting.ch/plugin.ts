@@ -39,8 +39,8 @@ export const settingsSchema = {
 
 /**
  * The main accounts of the Swiss SME chart (Kontenrahmen KMU) and, where nothing is set yet,
- * the roles of automatic entries — and CHF as main currency, where none follows from the organization. Accounts are only added or renamed,
- * never removed: what was booked stays.
+ * the roles of automatic entries — and CHF as main currency, where none follows from the
+ * organization. Accounts are only added or renamed, never removed: what was booked stays.
  */
 export async function install({ app }: { app: App }): Promise<void> {
   for (const [number, name, type] of chart) await account(app, number, { name, type: type as AccountType });

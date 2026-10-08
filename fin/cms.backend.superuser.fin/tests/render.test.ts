@@ -1,7 +1,8 @@
-import { assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
+import { inputAmount, money, parseAmount } from "../mod.ts";
 import { cms } from "../plugin.ts";
 
 const FIN = ["fin.payment", "fin.bank", "fin.payment.qrbill", "fin.invoice"];
@@ -21,4 +22,12 @@ Deno.test("the overview shows what is open and lists the linked parts with what 
       "fin.invoice:7",
     ]) assertStringIncludes(page, part);
   });
+});
+
+Deno.test("amounts in their currency's decimals; without a currency as stored", () => {
+  assertStringIncludes(money(47226, "CHF"), "472.26");
+  assertEquals(money(1000, ""), "1000"); // the decimals are unknown: no guess
+  assertEquals([inputAmount(23.45, "CHF"), inputAmount(1000, "JPY"), inputAmount(1000, null), inputAmount(null, "CHF")],
+    ["0.2345", "1000", "1000", ""]);
+  assertEquals([parseAmount("1'200,50", "CHF"), parseAmount("1000", "JPY")], [120050, 1000]);
 });

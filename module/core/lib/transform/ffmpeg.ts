@@ -13,9 +13,7 @@ export async function coverArt(input: string, output: string, signal?: AbortSign
     stdout: 'piped',
     stderr: 'piped',
   }).output());
-  if (code !== 0) {
-    throw new Error(`FFmpeg error (cover art): ${new TextDecoder().decode(stderr).trim()}`);
-  }
+  if (code !== 0) throw new Error(`FFmpeg error (cover art): ${new TextDecoder().decode(stderr).trim()}`);
 }
 
 /** Write one video frame to `output`; the format follows its extension. */

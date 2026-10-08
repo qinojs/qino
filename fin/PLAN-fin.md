@@ -246,6 +246,9 @@ Uncertain, to be decided when it matters:
   order.
 - One price per subscription, no proration; canceled invoices keep their subscription periods.
 - Multi-currency books (functional currency, revaluation) — only when needed.
+- Two main currencies: fin's (`fin.mainCurrency`, else the organization's country's) and the
+  shop's (`shp3_currency.main`, a table kept compatible with the PHP shop). The shop could follow
+  fin's once it builds on it.
 - Credit notes without an invoice, and credit notes from suppliers.
 - Translations: only languages the site has (`languages.all`) — an invoice in another language
   falls back to the default one, until smalltext stores rows instead of a column per language.
@@ -274,8 +277,6 @@ Structure:
 - Subscriptions: deleting a plan or a never billed subscription lives in the backend api; belongs
   to `fin.subscription` (its errors then translated in the backend).
 - The party and subscription backend apis lack the `try … errMsg` the others have.
-- "CHF" as a fallback or default in the backend (`money`, `inputAmount`, the forms, CHF/EUR in the
-  provider table) and in the inbox reader: a default currency for the site is missing.
 - Settings defaults repeated in code (`?? 30`, `|| "{year}-{n}"`, the mempool URL): needed today,
   since leaf reads (and `fakeSettings` in the tests) do not apply schema defaults. A core question.
 - Still copied in the backend pages: `option()`, `field()`, the overdue count (overview and invoice

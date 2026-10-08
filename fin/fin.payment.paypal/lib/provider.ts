@@ -56,7 +56,9 @@ function captured(payment: Row, order: Record<string, any>): State {
   return {
     status: capture.status === "COMPLETED" ? "paid" : capture.status === "PENDING" ? "processing" : "failed",
     paid: toMinor(Number(capture.amount?.value ?? 0), currency),
-    fee: breakdown?.paypal_fee?.currency_code === currency ? toMinor(Number(breakdown.paypal_fee.value), currency) : undefined,
+    fee: breakdown?.paypal_fee?.currency_code === currency
+      ? toMinor(Number(breakdown.paypal_fee.value), currency)
+      : undefined,
     data: { ...dataOf(payment), capture: capture.id },
   };
 }
