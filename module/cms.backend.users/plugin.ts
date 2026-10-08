@@ -20,7 +20,7 @@ function render(node: Node): Promise<HtmlString | string> {
   return renderOverview(node);
 }
 
-async function renderOverview(node: Node): Promise<HtmlString | string> {
+async function renderOverview(node: Node) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;

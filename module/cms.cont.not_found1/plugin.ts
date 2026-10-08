@@ -46,7 +46,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function renderEditBox(node: Node, ctx: Ctx): Promise<HtmlString | string> {
+async function renderEditBox(node: Node, ctx: Ctx) {
   if (!await node.edit()) return "";
   const t = node.app.t;
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)

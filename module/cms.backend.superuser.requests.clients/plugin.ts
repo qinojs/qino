@@ -20,7 +20,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** Newest clients with their last request and the request count within the window. */
-async function latest(app: App, limit: number, { window = WINDOW, returning = false, exclude = 0 } = {}) {
+async function latest(app: App, limit: number, { window = WINDOW, returning = false, exclude = 0 } = {}): Promise<Row[]> {
   const db = app.db;
   const groups = await db.query`
     SELECT client_id, MAX(id) AS last_id, COUNT(*) AS requests

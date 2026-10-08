@@ -14,7 +14,7 @@ export async function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const accounts = await app.db.query`
-    SELECT a.*, COUNT(x.id) AS line_count, COALESCE(SUM(x.amount), 0) AS amount,
+    SELECT a.id, a.name, a.number, a.currency, a.created, COUNT(x.id) AS line_count, COALESCE(SUM(x.amount), 0) AS amount,
       SUM(CASE WHEN x.id IS NOT NULL AND x.payment_id IS NULL THEN 1 ELSE 0 END) AS unassigned
     FROM bank_account a LEFT JOIN bank_tx x ON x.account_id = a.id
     GROUP BY a.id, a.name, a.number, a.currency, a.created ORDER BY a.name`;
