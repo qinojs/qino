@@ -262,12 +262,6 @@ Before going live on a server: `fc-match Arial` must give Liberation Sans or Ari
 
 Found, not yet done — to be checked before acting on them.
 
-Behaviour:
-
-- A missing receipt file breaks things: `onInvoice` books nothing (`dbFiles.file` throws), the
-  entry page of the accounting backend fails.
-- Stripe signs with several `v1` during a key rotation; only the last is checked.
-
 Structure:
 
 - Subscriptions: deleting a plan or a never billed subscription lives in the backend api; belongs

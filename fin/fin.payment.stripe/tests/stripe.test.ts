@@ -66,7 +66,9 @@ Deno.test("a webhook counts only with Stripe's signature", async () => {
       }))).text();
       await post(await sign("whsec_wrong"));
       assertEquals(await app.db.one`SELECT status FROM payment WHERE id = ${id}`, "pending");
-      await post(await sign("whsec_1"));
+      // while a secret is rolled, Stripe signs with the old one too: one of them is ours
+      const rolled = `${await sign("whsec_1")},v1=${(await sign("whsec_old")).split("v1=")[1]}`;
+      await post(rolled);
       assertEquals(await app.db.one`SELECT status FROM payment WHERE id = ${id}`, "paid");
     });
   });

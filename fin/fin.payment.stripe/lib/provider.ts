@@ -105,10 +105,11 @@ export const paymentProvider: Provider = {
     const { webhookSecret } = await settings(ctx.app);
     const body = await ctx.req.raw.text().catch(() => "");
     if (!webhookSecret || !body) return [];
-    const signature = String(ctx.req.header("stripe-signature") ?? "");
-    const header = Object.fromEntries(signature.split(",").map((part) => part.split("=")));
-    const expected = createHmac("sha256", webhookSecret).update(`${header.t}.${body}`).digest("hex");
-    if (!header.v1 || !safeEqual(header.v1, expected)) return [];
+    // `t=…,v1=…,v1=…`: while a secret is rolled, one v1 per secret — any of them will do
+    const parts = String(ctx.req.header("stripe-signature") ?? "").split(",").map((part) => part.split("="));
+    const t = parts.find(([key]) => key === "t")?.[1];
+    const expected = createHmac("sha256", webhookSecret).update(`${t}.${body}`).digest("hex");
+    if (!parts.some(([key, value]) => key === "v1" && safeEqual(value, expected))) return [];
     const object = JSON.parse(body)?.data?.object ?? {};
     const id = String(object.metadata?.payment ?? object.client_reference_id ?? "");
     return id && /^\d+$/.test(id) ? [Number(id)] : [];
