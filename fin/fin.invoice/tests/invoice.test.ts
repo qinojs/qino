@@ -13,8 +13,10 @@ import type { App, Row } from "@qino/qino";
 /** An app with payments and invoices; events reach the listeners, `events` keeps invoice changes. */
 async function setup(settings: Record<string, unknown> = {}) {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...paymentDbSchema.properties, ...dbSchema.properties } });
+  const schema = { properties: { ...paymentDbSchema.properties, ...dbSchema.properties } };
+  await db.migrate(schema);
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
+  db.schema = schema; // as the app does: what hangs on what, for deletes to cascade
   await db.loadTables();
   const listeners: Record<string, ((data: unknown) => unknown)[]> = {};
   const events: { invoice: Row; previous: string }[] = [];

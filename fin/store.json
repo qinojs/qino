@@ -9,6 +9,7 @@
     "cms.backend.superuser.fin.invoice.inbox": {},
     "cms.backend.superuser.fin.party": {},
     "cms.backend.superuser.fin.payment": {},
+    "cms.backend.superuser.fin.subscription": {},
     "fin.accounting": {},
     "fin.accounting.ch": {},
     "fin.bank": {},
@@ -23,6 +24,7 @@
     "fin.payment.paypal": {},
     "fin.payment.qrbill": {},
     "fin.payment.saferpay": {},
-    "fin.payment.stripe": {}
+    "fin.payment.stripe": {},
+    "fin.subscription": {}
   }
 }

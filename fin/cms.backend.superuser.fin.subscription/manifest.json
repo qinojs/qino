@@ -1,0 +1,17 @@
+{
+  "name": "cms.backend.superuser.fin.subscription",
+  "description": "Subscriptions: who is billed for what, when it renews, and the next billing run.",
+  "dependencies": [
+    "cms.backend.superuser.fin",
+    "fin.subscription",
+    "locale.currency"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

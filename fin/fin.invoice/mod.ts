@@ -109,10 +109,8 @@ async function ask(app: App, invoice: Row) {
 export async function remove(app: App, id: number): Promise<void> {
   const invoice = await get(app, id);
   if (invoice?.status !== "draft") throw new Error("fin.invoice: only drafts can be removed");
-  await app.db.transaction(async () => {
-    await app.db.exec`DELETE FROM invoice_line WHERE invoice_id = ${id}`;
-    await app.db.exec`DELETE FROM invoice WHERE id = ${id}`;
-  });
+  // through the table: what hangs on it by schema (its lines, a subscription's periods) goes with it
+  await app.db.table("invoice").delete(id);
 }
 
 /**

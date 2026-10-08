@@ -1,0 +1,17 @@
+{
+  "name": "fin.subscription",
+  "description": "Subscriptions: what a user is billed for again and again — hosting, a domain — billed in advance, one invoice per customer.",
+  "dependencies": [
+    "cron",
+    "fin",
+    "fin.invoice"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}
