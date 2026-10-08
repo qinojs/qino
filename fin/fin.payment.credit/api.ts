@@ -1,5 +1,5 @@
 import { Access, s } from "@qino/qino";
-import { ownerOf } from "@qino/qino/fin";
+import { whose, WHOSE } from "@qino/qino/fin";
 
 import { add, moves } from "./mod.ts";
 
@@ -10,12 +10,12 @@ export const api: ApiTree = {
   get: {
     description: "A user's credit: the balance per currency, and what moved, newest first",
     access: Access.USER,
-    query: s.object({ usrId: s.optional(s.number().describe("Whose (superuser); the user's own by default")) }),
+    query: s.object({ usrId: WHOSE.usrId }),
     execute: async ({ usrId }: Params, ctx: Ctx) => {
-      const whose = ownerOf(ctx) ?? Number(usrId ?? ctx.userId);
+      const usr = Number(whose(ctx, { usrId }));
       const balances = await ctx.app.db.query`SELECT currency, SUM(amount) AS amount FROM payment_credit
-        WHERE usr_id = ${whose} GROUP BY currency HAVING SUM(amount) <> 0 ORDER BY currency`;
-      return { balances, moves: await moves(ctx.app, whose) };
+        WHERE usr_id = ${usr} GROUP BY currency HAVING SUM(amount) <> 0 ORDER BY currency`;
+      return { balances, moves: await moves(ctx.app, usr) };
     },
   },
   post: {

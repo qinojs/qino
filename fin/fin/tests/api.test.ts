@@ -10,8 +10,10 @@ Deno.test("a user keeps their own address; the IBAN only a superuser sets", asyn
     await asUser(app, anna, () => invoke(api, "PUT", "/address", { streetAddress: "Seeweg 2", addressCountry: "ch" }));
     const own = await asUser(app, anna, () => invoke(api, "GET", "/address")) as Record<string, unknown>;
     assertEquals([own.streetAddress, own.addressCountry], ["Seeweg 2", "CH"]);
-    // another's is out of reach: asked for, a user gets and changes their own
-    await asUser(app, ben, () => invoke(api, "PUT", "/address", { usrId: anna, streetAddress: "Elsewhere" }));
+    // another's is out of reach
+    const elsewhere = { usrId: anna, streetAddress: "Elsewhere" };
+    const other = () => asUser(app, ben, () => invoke(api, "PUT", "/address", elsewhere));
+    await assertRejects(other, Error, "superuser");
     assertEquals(await app.db.one`SELECT street_address FROM usr WHERE id = ${anna}`, "Seeweg 2");
     const iban = { iban: "CH44 3199 9123 0008 8901 2" };
     await assertRejects(() => asUser(app, anna, () => invoke(api, "PUT", "/address", iban)), Error, "superuser");

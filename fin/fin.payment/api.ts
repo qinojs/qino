@@ -1,5 +1,5 @@
 import { Access, s, sql } from "@qino/qino";
-import { ownerOf, visible } from "@qino/qino/fin";
+import { visible, whose, WHOSE } from "@qino/qino/fin";
 
 import { cancel, record, refund, sync } from "./mod.ts";
 
@@ -16,18 +16,18 @@ function shown({ data, ...row }: Row, ctx: Ctx) {
 export const api: ApiTree = {
   payments: {
     get: {
-      description: "Payments, newest first: the user's own, all for a superuser",
+      description: "Payments, newest first: one's own; a superuser asks for another's or all",
       access: Access.USER,
       query: s.object({
         status: s.optional(s.string().describe("pending, processing, paid, failed, canceled, expired, refunded")),
         ref: s.optional(s.string().describe("What it is for: fin.invoice:7")),
-        usrId: s.optional(s.number().describe("Only this user's (superuser)")),
+        ...WHOSE,
         offset: s.optional(s.number()),
       }),
-      execute: async ({ status, ref, usrId, offset }: Params, ctx: Ctx) => {
-        const owner = ownerOf(ctx);
+      execute: async ({ status, ref, usrId, all, offset }: Params, ctx: Ctx) => {
+        const usr = whose(ctx, { usrId, all });
         const where = [
-          owner === undefined ? usrId ? sql`usr_id = ${usrId}` : null : sql`usr_id = ${owner}`,
+          usr === undefined ? null : sql`usr_id = ${usr}`,
           status ? sql`status = ${status}` : null,
           ref ? sql`ref = ${ref}` : null,
         ].flatMap((term) => term ?? []);

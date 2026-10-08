@@ -18,7 +18,8 @@ The base of the `fin.*` modules. It carries
 
 Each fin module has an `api` (its interfaces, tools for agents), without the CMS: a **superuser**
 does anything, a **signed-in user** reads what is theirs (`usr_id`) — someone else's answers "not
-found". Paid is what a provider or the bank says, never the payer. The backend pages are the CMS's:
+found". A list shows one's own by default, a superuser's too; another's (`usrId`) or all (`all`)
+only a superuser asks for. Paid is what a provider or the bank says, never the payer. The backend pages are the CMS's:
 whoever reaches them acts there, through `mod.ts`.
 
 | Module | A user | A superuser, too |

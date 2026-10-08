@@ -66,7 +66,10 @@ Deno.test("a superuser does anything: drafts, changes, issues, sees all", async 
     const issued = await as(() => invoke(api, "POST", `/invoice/${id}/issue`)) as { status: string; total: number };
     assertEquals([issued.status, issued.total], ["open", 12000]);
     await draft(app, anna);
-    assertEquals((await as(() => invoke(api, "GET", "/invoices")) as unknown[]).length, 2); // drafts too
+    assertEquals(await as(() => invoke(api, "GET", "/invoices")), []); // by default one's own: none
+    assertEquals((await as(() => invoke(api, "GET", "/invoices", { all: true })) as unknown[]).length, 2); // drafts too
     assertEquals((await as(() => invoke(api, "GET", "/invoices", { usrId: ben })) as unknown[]).length, 1);
+    const others = () => asUser(app, anna, () => invoke(api, "GET", "/invoices", { all: true }));
+    await assertRejects(others, Error, "superuser");
   });
 });

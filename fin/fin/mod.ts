@@ -1,4 +1,4 @@
-import { NotFoundError } from "@qino/qino";
+import { AccessError, NotFoundError, s } from "@qino/qino";
 import { country } from "@qino/qino/locale.country";
 import { currency } from "@qino/qino/locale.currency";
 
@@ -50,13 +50,27 @@ export const partyOf = (usr: Row): { name: string; address: Record<string, strin
   }).filter(([, v]) => v).map(([k, v]) => [k, String(v)])),
 });
 
-/** Whose rows a request may see: everyone's for a superuser (`undefined`), else only the user's own. */
-export const ownerOf = (ctx: Ctx): number | undefined => ctx.user?.superuser ? undefined : ctx.userId;
+/** The query of a list that asks whose rows: see `whose()`. */
+export const WHOSE = {
+  usrId: s.optional(s.number().describe("Another user's (superuser); one's own by default")),
+  all: s.optional(s.boolean().describe("Everyone's (superuser)")),
+};
+
+/**
+ * Whose rows a list shows: one's own by default — a superuser's too, so "mine" never turns into
+ * everyone's by accident. Another user's (`usrId`) or everyone's (`all`: `undefined`) only a
+ * superuser asks for.
+ */
+export function whose(ctx: Ctx, { usrId, all }: { usrId?: unknown; all?: unknown } = {}): number | undefined {
+  if (!all && (usrId == null || Number(usrId) === ctx.userId)) return ctx.userId;
+  if (!ctx.user?.superuser) throw new AccessError("another's is a superuser's");
+  return all ? undefined : Number(usrId);
+}
 
 /** `row` where the request may see it — a superuser any, a user their own — else not found: as if
  *  there were none, so nobody learns what exists by counting through ids. */
 export function visible(ctx: Ctx, row: Row | undefined, what: string): Row {
-  const owner = ownerOf(ctx);
-  if (!row || owner !== undefined && (!owner || Number(row.usr_id) !== owner)) throw new NotFoundError(`no ${what}`);
+  const own = !!ctx.userId && Number(row?.usr_id) === ctx.userId;
+  if (!row || !own && !ctx.user?.superuser) throw new NotFoundError(`no ${what}`);
   return row;
 }

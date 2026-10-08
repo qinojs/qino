@@ -11,9 +11,12 @@ Deno.test("a user reads their own credit; a superuser adds to anyone's", async (
     await asUser(app, boss, () => invoke(api, "POST", "/", goodwill));
     const own = await asUser(app, anna, () => invoke(api, "GET", "/")) as { balances: { amount: number }[] };
     assertEquals(own.balances.map((b) => b.amount), [5000]);
-    // asking for another's, a user still gets their own
-    const asked = await asUser(app, ben, () => invoke(api, "GET", "/", { usrId: anna })) as { balances: unknown[] };
-    assertEquals(asked.balances, []);
+    // another's only a superuser asks for; by default, a superuser too sees their own
+    const asked = () => asUser(app, ben, () => invoke(api, "GET", "/", { usrId: anna }));
+    await assertRejects(asked, Error, "superuser");
+    const theirs = await asUser(app, boss, () => invoke(api, "GET", "/", { usrId: anna })) as { balances: unknown[] };
+    assertEquals(theirs.balances.length, 1);
+    assertEquals((await asUser(app, boss, () => invoke(api, "GET", "/")) as { balances: unknown[] }).balances, []);
     const add = { usrId: anna, amount: 100, currency: "CHF" };
     await assertRejects(() => asUser(app, anna, () => invoke(api, "POST", "/", add)), Error, "Access denied");
   });

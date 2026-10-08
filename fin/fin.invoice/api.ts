@@ -1,5 +1,5 @@
 import { Access, ConflictError, NotFoundError, s, sql } from "@qino/qino";
-import { ownerOf, visible } from "@qino/qino/fin";
+import { visible, whose, WHOSE } from "@qino/qino/fin";
 import { create as pay, methods } from "@qino/qino/fin.payment";
 
 import { cancel, create, creditNote, issue, lines, payerOf, print, refOf, remove, revise, update } from "./mod.ts";
@@ -56,18 +56,20 @@ const offered = (ctx: Ctx, invoice: Row) => payable(invoice)
 export const api: ApiTree = {
   invoices: {
     get: {
-      description: "Invoices, newest first: the user's own issued ones, all for a superuser",
+      description: "Invoices, newest first: one's own issued ones; a superuser asks for another's or all, drafts too",
       access: Access.USER,
       query: s.object({
         status: s.optional(s.string().describe("draft, open, paid, canceled")),
         direction: s.optional(s.string().describe("out: issued, in: received")),
-        usrId: s.optional(s.number().describe("Only this user's (superuser)")),
+        ...WHOSE,
         offset: s.optional(s.number()),
       }),
-      execute: async ({ status, direction, usrId, offset }: Params, ctx: Ctx) => {
-        const owner = ownerOf(ctx);
+      execute: async ({ status, direction, usrId, all, offset }: Params, ctx: Ctx) => {
+        const usr = whose(ctx, { usrId, all });
         const where = [
-          owner === undefined ? usrId ? sql`usr_id = ${usrId}` : null : sql`usr_id = ${owner} AND status <> 'draft'`,
+          usr === undefined ? null : sql`usr_id = ${usr}`,
+          // one's own are what was sent: drafts only where a superuser looks after others
+          usr === ctx.userId ? sql`status <> 'draft'` : null,
           status ? sql`status = ${status}` : null,
           direction ? sql`direction = ${direction}` : null,
         ].flatMap((term) => term ?? []);
@@ -97,7 +99,7 @@ export const api: ApiTree = {
       resolve: async (id: number, ctx: Ctx) => {
         const invoice = await ctx.app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
         // a draft is not sent yet: only a superuser sees it
-        const draft = invoice?.status === "draft" && ownerOf(ctx) !== undefined;
+        const draft = invoice?.status === "draft" && !ctx.user?.superuser;
         return visible(ctx, draft ? undefined : invoice, `invoice ${id}`);
       },
       get: {

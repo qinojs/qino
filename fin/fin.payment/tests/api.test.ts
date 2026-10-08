@@ -24,7 +24,9 @@ Deno.test("a user reads their own payments and changes none; a superuser records
       await assertRejects(call, Error, "Access denied");
     }
     const id = await asUser(app, boss, () => invoke(api, "POST", "/payments", recorded));
-    assertEquals((await asUser(app, boss, () => invoke(api, "GET", "/payments")) as unknown[]).length, 3);
+    assertEquals(await asUser(app, boss, () => invoke(api, "GET", "/payments")), []); // one's own: none
+    const all = await asUser(app, boss, () => invoke(api, "GET", "/payments", { all: true })) as unknown[];
+    assertEquals(all.length, 3);
     assertEquals(await app.db.one`SELECT status FROM payment WHERE id = ${id}`, "paid");
   });
 });

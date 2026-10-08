@@ -1,5 +1,5 @@
 import { Access, s } from "@qino/qino";
-import { ownerOf, visible } from "@qino/qino/fin";
+import { visible, whose, WHOSE } from "@qino/qino/fin";
 
 import { bill, cancel, periods, plan, plans, subscribe, subscriptions, update } from "./mod.ts";
 
@@ -23,11 +23,11 @@ const VALUES = {
 export const api: ApiTree = {
   subscriptions: {
     get: {
-      description: "Subscriptions with what applies to them and the next period (`next`): the user's own, "
-        + "all for a superuser",
+      description: "Subscriptions with what applies to them and the next period (`next`): one's own; "
+        + "a superuser asks for another's or all",
       access: Access.USER,
-      query: s.object({ usrId: s.optional(s.number().describe("Only this user's (superuser)")) }),
-      execute: ({ usrId }: Params, ctx: Ctx) => subscriptions(ctx.app, ownerOf(ctx) ?? (usrId as number | undefined)),
+      query: s.object(WHOSE),
+      execute: ({ usrId, all }: Params, ctx: Ctx) => subscriptions(ctx.app, whose(ctx, { usrId, all })),
     },
     post: {
       description: "A new subscription: a plan, or what it is and costs; the id comes back",
