@@ -1,6 +1,6 @@
 {
   "properties": {
-    "account": {
+    "accounting_account": {
       "description": "An account of the chart: where entries are booked",
       "additionalProperties": {
         "properties": {
@@ -30,7 +30,7 @@
         "required": ["id", "number", "name", "type"]
       }
     },
-    "entry": {
+    "accounting_entry": {
       "description": "A booking: lines that add up to zero. Never changed; a correction reverses it",
       "additionalProperties": {
         "properties": {
@@ -62,7 +62,7 @@
           "reverses": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "entry",
+            "x-qg-parent": "accounting_entry",
             "x-qg-on-parent-delete": "setnull",
             "description": "The entry this one takes back"
           },
@@ -79,7 +79,7 @@
         "required": ["id", "date", "text", "currency", "created"]
       }
     },
-    "entry_line": {
+    "accounting_entry_line": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -90,13 +90,13 @@
           "entry_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "entry",
+            "x-qg-parent": "accounting_entry",
             "x-qg-on-parent-delete": "cascade"
           },
           "account_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "account",
+            "x-qg-parent": "accounting_account",
             "description": "Not removed with its account: what was booked stays"
           },
           "amount": {
@@ -112,14 +112,14 @@
         "required": ["id", "entry_id", "account_id", "amount"]
       }
     },
-    "entry_file": {
+    "accounting_entry_file": {
       "description": "Receipts of an entry",
       "additionalProperties": {
         "properties": {
           "entry_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "entry",
+            "x-qg-parent": "accounting_entry",
             "x-qg-on-parent-delete": "cascade"
           },
           "file_id": {

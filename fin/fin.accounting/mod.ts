@@ -16,12 +16,12 @@ function fail(message: string): never {
 
 /** Create or rename an account. Charts come from country modules or are kept by hand. */
 export async function account(app: App, number: string, values: { name: string; type: AccountType }): Promise<number> {
-  const known = await app.db.one`SELECT id FROM account WHERE number = ${number}`;
+  const known = await app.db.one`SELECT id FROM accounting_account WHERE number = ${number}`;
   if (known != null) {
-    await app.db.table("account").update(Number(known), values);
+    await app.db.table("accounting_account").update(Number(known), values);
     return Number(known);
   }
-  return Number(await app.db.table("account").insert({ number, ...values }));
+  return Number(await app.db.table("accounting_account").insert({ number, ...values }));
 }
 
 /**
@@ -48,12 +48,12 @@ export async function book(app: App, entry: {
   if (!lines.every((line) => Number.isSafeInteger(line.amount))) fail("amounts are integers in minor units");
   if (lines.reduce((sum, line) => sum + line.amount, 0) !== 0) fail("the lines do not add up to zero");
   const numbers = [...new Set(lines.map((line) => line.account))];
-  const ids = new Map((await app.db.query`SELECT id, number FROM account WHERE ${sql.in("number", numbers)}`)
+  const ids = new Map((await app.db.query`SELECT id, number FROM accounting_account WHERE ${sql.in("number", numbers)}`)
     .map((row) => [String(row.number), Number(row.id)]));
   const missing = numbers.filter((n) => !ids.has(n));
   if (missing.length) fail(`no account ${missing.join(", ")}`);
   return await app.db.transaction(async () => {
-    const id = Number(await app.db.table("entry").insert({
+    const id = Number(await app.db.table("accounting_entry").insert({
       date: entry.date,
       text: entry.text.slice(0, 191),
       currency,
@@ -62,14 +62,16 @@ export async function book(app: App, entry: {
       created: unixTime(),
     }));
     for (const line of lines) {
-      await app.db.table("entry_line").insert({
+      await app.db.table("accounting_entry_line").insert({
         entry_id: id,
         account_id: ids.get(line.account),
         amount: line.amount,
         tax_code: line.taxCode ?? null,
       });
     }
-    for (const file of entry.files ?? []) await app.db.table("entry_file").insert({ entry_id: id, file_id: file.id });
+    for (const file of entry.files ?? []) {
+      await app.db.table("accounting_entry_file").insert({ entry_id: id, file_id: file.id });
+    }
     return id;
   });
 }
@@ -80,12 +82,12 @@ export async function reverse(
   id: number,
   { date, text }: { date?: string; text?: string } = {},
 ): Promise<number> {
-  const entry = await app.db.row`SELECT * FROM entry WHERE id = ${id}`;
+  const entry = await app.db.row`SELECT * FROM accounting_entry WHERE id = ${id}`;
   if (!entry) fail(`no entry ${id}`);
-  if (await app.db.one`SELECT id FROM entry WHERE reverses = ${id}`) fail("already reversed");
+  if (await app.db.one`SELECT id FROM accounting_entry WHERE reverses = ${id}`) fail("already reversed");
   const lines = await app.db.query`
-    SELECT a.number, l.amount, l.tax_code FROM entry_line l
-    JOIN account a ON a.id = l.account_id WHERE l.entry_id = ${id}`;
+    SELECT a.number, l.amount, l.tax_code FROM accounting_entry_line l
+    JOIN accounting_account a ON a.id = l.account_id WHERE l.entry_id = ${id}`;
   const back = await book(app, {
     date: date ?? today(),
     text: text ?? `Reversal: ${entry.text}`,
@@ -97,13 +99,13 @@ export async function reverse(
       taxCode: l.tax_code || undefined,
     })),
   });
-  await app.db.exec`UPDATE entry SET reverses = ${id} WHERE id = ${back}`;
+  await app.db.exec`UPDATE accounting_entry SET reverses = ${id} WHERE id = ${back}`;
   return back;
 }
 
 /** Add receipts to an entry — a receipt may come after the booking. */
 export async function attach(app: App, id: number, files: DbFile[]): Promise<void> {
-  for (const file of files) await app.db.table("entry_file").ensure({ entry_id: id, file_id: file.id });
+  for (const file of files) await app.db.table("accounting_entry_file").ensure({ entry_id: id, file_id: file.id });
 }
 
 /**
@@ -116,9 +118,9 @@ export async function balances(app: App, { from, to }: { from?: string; to?: str
   return await app.db.query`
     SELECT a.id, a.number, a.name, a.type,
       COALESCE(SUM(CASE WHEN e.id IS NULL THEN 0 ELSE l.amount END), 0) AS balance
-    FROM account a
-    LEFT JOIN entry_line l ON l.account_id = a.id
-    LEFT JOIN entry e ON e.id = l.entry_id ${until} ${since}
+    FROM accounting_account a
+    LEFT JOIN accounting_entry_line l ON l.account_id = a.id
+    LEFT JOIN accounting_entry e ON e.id = l.entry_id ${until} ${since}
     GROUP BY a.id, a.number, a.name, a.type
     ORDER BY a.number`;
 }

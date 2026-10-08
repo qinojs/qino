@@ -22,13 +22,13 @@ async function setup(app: App) {
 
 /** An entry for `ref` that is booked and not taken back. */
 const booked = (app: App, ref: string) => app.db.one`
-  SELECT e.id FROM entry e WHERE e.ref = ${ref} AND e.reverses IS NULL
-    AND NOT EXISTS (SELECT 1 FROM entry r WHERE r.reverses = e.id)`;
+  SELECT e.id FROM accounting_entry e WHERE e.ref = ${ref} AND e.reverses IS NULL
+    AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
 
 /** What has been booked so far on one account for `ref`, debit positive. */
 const sumOn = (app: App, ref: string, number: string) => app.db.one`
-  SELECT COALESCE(SUM(l.amount), 0) FROM entry_line l
-  JOIN entry e ON e.id = l.entry_id JOIN account a ON a.id = l.account_id
+  SELECT COALESCE(SUM(l.amount), 0) FROM accounting_entry_line l
+  JOIN accounting_entry e ON e.id = l.entry_id JOIN accounting_account a ON a.id = l.account_id
   WHERE e.ref = ${ref} AND a.number = ${number}`.then(Number);
 
 /**

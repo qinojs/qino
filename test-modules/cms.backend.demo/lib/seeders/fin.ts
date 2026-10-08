@@ -46,7 +46,7 @@ export async function run(s: Seed): Promise<void> {
 /** What a studio books by hand each month — the invoices and payments book themselves. */
 async function bookkeeping(s: Seed): Promise<void> {
   const { book } = await import("@qino/qino/fin.accounting");
-  const known = new Set((await s.db.col`SELECT number FROM account`).map(String));
+  const known = new Set((await s.db.col`SELECT number FROM accounting_account`).map(String));
   if (!["6000", "6570", "1020"].every((n) => known.has(n))) return; // no chart to book on
   for (let month = 3; month >= 1; month--) {
     const date = day(s.now - month * 30 * DAY);

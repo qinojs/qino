@@ -58,11 +58,11 @@ Deno.test("invoices and their payments book themselves, in parts, with fees, and
     await app.fire("payment:change", { payment: await app.db.row`SELECT * FROM payment WHERE id = ${payment}` });
     // the provider kept 15.00; the rest is on its account (1091), the claim is settled
     assertEquals(await saldo(app), { "1091": 106600, "2200": -8100, "3400": -100000, "6940": 1500 });
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM entry WHERE ref = ${`fin.payment:${payment}`}`), 2);
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM accounting_entry WHERE ref = ${`fin.payment:${payment}`}`), 2);
 
     const other = Number((await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Hosting", price: 20000 }] })))?.id);
     await cancel(app, other);
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM entry WHERE ref = ${refOf(other)}`), 2); // booked and reversed
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM accounting_entry WHERE ref = ${refOf(other)}`), 2); // booked and reversed
   });
 });
 
@@ -73,7 +73,7 @@ Deno.test("a received invoice is a debt, paid from the bank", async () => {
     await attach(app, draft, original);
     const id = Number((await issue(app, draft))?.id);
     // the original is the entry's receipt
-    assertEquals(Number(await app.db.one`SELECT f.file_id FROM entry_file f JOIN entry e ON e.id = f.entry_id WHERE e.ref = ${refOf(id)}`), original.id);
+    assertEquals(Number(await app.db.one`SELECT f.file_id FROM accounting_entry_file f JOIN accounting_entry e ON e.id = f.entry_id WHERE e.ref = ${refOf(id)}`), original.id);
     await record(app, { direction: "out", provider: "bank", amount: 180000, currency: "CHF", ref: refOf(id) });
     assertEquals(await saldo(app), { "1020": -180000, "4400": 180000 });
   });

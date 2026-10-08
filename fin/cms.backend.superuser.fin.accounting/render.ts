@@ -113,17 +113,17 @@ async function journal(node: Node, url: URL, from: string, to: string) {
   const where = [
     sh.where,
     sql`e.date >= ${from} AND e.date <= ${to}`,
-    q("account") ? sql`EXISTS (SELECT 1 FROM entry_line x JOIN account y ON y.id = x.account_id
+    q("account") ? sql`EXISTS (SELECT 1 FROM accounting_entry_line x JOIN accounting_account y ON y.id = x.account_id
       WHERE x.entry_id = e.id AND y.number = ${q("account")})` : null,
   ].flatMap((term) => term ?? []);
   const page = Math.max(0, Number(q("page")) || 0);
-  const entries = await app.db.query`SELECT e.* FROM entry e WHERE ${sql.join(where, " AND ")}
+  const entries = await app.db.query`SELECT e.* FROM accounting_entry e WHERE ${sql.join(where, " AND ")}
     ORDER BY e.date DESC, e.id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
   if (!entries.length) return html.async`<p>${t`No entries`}`;
   const more = entries.length > PER_PAGE;
   const shown = entries.slice(0, PER_PAGE);
   const lines = await app.db.query`
-    SELECT l.entry_id, l.amount, a.number FROM entry_line l JOIN account a ON a.id = l.account_id
+    SELECT l.entry_id, l.amount, a.number FROM accounting_entry_line l JOIN accounting_account a ON a.id = l.account_id
     WHERE ${sql.in("l.entry_id", shown.map((e) => Number(e.id)))} ORDER BY l.amount DESC`;
   const pageUrl = await (await node.page()).url();
   const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
@@ -178,14 +178,15 @@ function entryForm(app: App, accounts: Row[]) {
 async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
-  const entry = await app.db.row`SELECT * FROM entry WHERE id = ${id}`;
+  const entry = await app.db.row`SELECT * FROM accounting_entry WHERE id = ${id}`;
   const pageUrl = await (await node.page()).url();
   if (!entry) return html.async`<div class=u2-card><div>${t`No entry`} ${id}</div></div>`;
   const [lines, files, reversal] = await Promise.all([
-    app.db.query`SELECT l.*, a.number, a.name FROM entry_line l JOIN account a ON a.id = l.account_id
+    app.db.query`SELECT l.*, a.number, a.name FROM accounting_entry_line l
+      JOIN accounting_account a ON a.id = l.account_id
       WHERE l.entry_id = ${id} ORDER BY l.amount DESC, a.number`,
-    app.db.col`SELECT file_id FROM entry_file WHERE entry_id = ${id}`,
-    app.db.one`SELECT id FROM entry WHERE reverses = ${id}`,
+    app.db.col`SELECT file_id FROM accounting_entry_file WHERE entry_id = ${id}`,
+    app.db.one`SELECT id FROM accounting_entry WHERE reverses = ${id}`,
   ]);
   const links = await Promise.all(files.map(async (fileId) => {
     const file = await app.dbFiles.file(Number(fileId));

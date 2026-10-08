@@ -96,7 +96,7 @@ Deno.test("cms.backend.demo: finance — invoices in every state, a statement, a
     assert(Number(await app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL`) > 0, "something to assign");
     assert(Number(await app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NOT NULL`) > 0, "QR bills settled");
     assert(seed.counts.entries > 0, "entries by hand");
-    assert(Number(await app.db.one`SELECT COUNT(*) FROM entry WHERE ref LIKE 'fin.invoice:%'`) > 10, "invoices booked themselves");
+    assert(Number(await app.db.one`SELECT COUNT(*) FROM accounting_entry WHERE ref LIKE 'fin.invoice:%'`) > 10, "invoices booked themselves");
 
     await wipe(app);
     const after = await census(app);
