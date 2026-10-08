@@ -266,8 +266,6 @@ Behaviour:
 
 - A missing receipt file breaks things: `onInvoice` books nothing (`dbFiles.file` throws), the
   entry page of the accounting backend fails.
-- `fin.bank` `ingest()` runs without a transaction; two uploads at once may store a line twice
-  (no unique index on `bank_tx.external_id`).
 - Stripe signs with several `v1` during a key rotation; only the last is checked.
 
 Structure:

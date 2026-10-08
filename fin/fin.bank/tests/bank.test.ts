@@ -53,6 +53,14 @@ Deno.test("lines are stored once per account; the account comes from the stateme
   assertEquals(await app.db.col`SELECT amount FROM bank_tx ORDER BY id`, [100, -50, 70]);
 });
 
+Deno.test("a statement is stored all or nothing", async () => {
+  const { app } = await setup();
+  const broken = statement([{ id: "a", amount: 100 }, { id: "b", amount: 1.5 }]);
+  await assertRejects(() => ingest(app, broken), Error, "minor units");
+  assertEquals(await app.db.col`SELECT id FROM bank_tx`, []); // the good line before went back too
+  assertEquals((await ingest(app, statement([{ id: "a", amount: 100 }]))).added, 1); // read again, it is there
+});
+
 Deno.test("a reference settles its payment; partial transfers add up", async () => {
   const { app, events } = await setup();
   const { id } = await create(app, { method: "qr", amount: 10000, currency: "CHF", ref: "fin.invoice:1", return: "/" });

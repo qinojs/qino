@@ -30,8 +30,19 @@ export function parse(xml: string): Statement[] {
   return reports.map((report) => {
     const currency = text(report, "Acct", "Ccy");
     const account = text(report, "Acct", "Id", "IBAN") || text(report, "Acct", "Id", "Othr", "Id");
-    const id = text(report, "Id");
-    const transactions = kids(report, "Ntry").flatMap((entry, i) => lines(entry, currency, `${id}:${i}`));
+    // an entry without the bank's reference is known by what it says — the same in a statement
+    // (camt.053) and the notification of it (camt.054); the same twice in one document counts on
+    const seen = new Map<string, number>();
+    const transactions = kids(report, "Ntry").flatMap((entry) => {
+      const key = [
+        text(entry, "BookgDt", "Dt") || text(entry, "BookgDt", "DtTm").slice(0, 10),
+        text(entry, "CdtDbtInd"),
+        content(child(entry, "Amt")).trim(),
+        text(entry, "NtryDtls", "TxDtls", "Refs", "EndToEndId") || text(entry, "AddtlNtryInf"),
+      ].join(":");
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+      return lines(entry, currency, `${key}:${seen.get(key)}`);
+    });
     return { account, currency, transactions };
   });
 }

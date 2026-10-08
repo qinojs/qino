@@ -23,37 +23,39 @@ export type Statement = { account: string; currency: string; name?: string; tran
 const normalize = (value: string) => value.replace(/\s+/g, "").toUpperCase();
 
 /**
- * Store a statement. Lines seen before are skipped, so overlapping statements are harmless. A line
- * whose reference is a payment's `external_id` (a QR bill, an end-to-end id) is matched to it, and
- * that payment synced — its provider reads what arrived with `paid()`.
+ * Store a statement, all of it or nothing. Lines seen before are skipped, so overlapping statements
+ * are harmless. A line whose reference is a payment's `external_id` (a QR bill, an end-to-end id) is
+ * matched to it, and that payment synced — its provider reads what arrived with `paid()`.
  */
 export async function ingest(app: App, statement: Statement): Promise<{ added: number; matched: number }> {
-  const account = await accountId(app, statement);
   const table = app.db.table("bank_tx");
   const synced = new Set<number>();
   let added = 0;
-  for (const tx of statement.transactions) {
-    if (!Number.isSafeInteger(tx.amount)) throw new Error("fin.bank: amounts are integers in minor units");
-    const externalId = `${account}:${tx.id}`;
-    if (await app.db.one`SELECT 1 FROM bank_tx WHERE external_id = ${externalId}`) continue;
-    const reference = tx.reference ? normalize(tx.reference) : null;
-    const payment = reference ? await match(app, reference, tx.amount) : undefined;
-    await table.insert({
-      account_id: account,
-      date: tx.date,
-      amount: tx.amount,
-      currency: tx.currency ?? statement.currency,
-      reference,
-      party_name: tx.partyName?.slice(0, 191) ?? null,
-      party_account: tx.partyAccount ? normalize(tx.partyAccount).slice(0, 64) : null,
-      text: tx.text ?? null,
-      external_id: externalId,
-      payment_id: payment ?? null,
-      created: unixTime(),
-    });
-    added++;
-    if (payment) synced.add(payment);
-  }
+  await app.db.transaction(async () => {
+    const account = await accountId(app, statement);
+    for (const tx of statement.transactions) {
+      if (!Number.isSafeInteger(tx.amount)) throw new Error("fin.bank: amounts are integers in minor units");
+      const externalId = `${account}:${tx.id}`;
+      if (await app.db.one`SELECT 1 FROM bank_tx WHERE external_id = ${externalId}`) continue;
+      const reference = tx.reference ? normalize(tx.reference) : null;
+      const payment = reference ? await match(app, reference, tx.amount) : undefined;
+      await table.insert({
+        account_id: account,
+        date: tx.date,
+        amount: tx.amount,
+        currency: tx.currency ?? statement.currency,
+        reference,
+        party_name: tx.partyName?.slice(0, 191) ?? null,
+        party_account: tx.partyAccount ? normalize(tx.partyAccount).slice(0, 64) : null,
+        text: tx.text ?? null,
+        external_id: externalId,
+        payment_id: payment ?? null,
+        created: unixTime(),
+      });
+      added++;
+      if (payment) synced.add(payment);
+    }
+  });
   for (const id of synced) await sync(app, id);
   return { added, matched: synced.size };
 }

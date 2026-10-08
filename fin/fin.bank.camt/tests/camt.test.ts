@@ -66,7 +66,11 @@ Deno.test("a statement becomes its account and lines; batches are split, signs f
       id: "ENTRY-2:0", date: "2026-10-08", amount: -12000, currency: "CHF",
       reference: "fin-payment-12", partyName: "Hosting AG", partyAccount: "DE89370400440532013000", text: undefined,
     },
-    { id: "STMT-2026-10-07:2", date: "2026-10-31", amount: -450, currency: "CHF", text: "Kontoführung" },
+    // no reference of the bank: known by day, side, amount and text
+    {
+      id: "2026-10-31:DBIT:4.50:Kontoführung:1", date: "2026-10-31", amount: -450, currency: "CHF",
+      text: "Kontoführung",
+    },
   ]);
 });
 
@@ -79,6 +83,18 @@ Deno.test("a notification reads alike, prefixed elements and currencies with oth
   const [result] = parse(xml);
   assertEquals(result.account, "KW81CBKU0000000000001234560101");
   assertEquals(result.transactions.map((t) => [t.id, t.amount]), [["K-1", 1500]]); // KWD has three decimals
+});
+
+Deno.test("without the bank's reference, an entry is known by what it says: in both documents alike", () => {
+  const doc = (kind: string, id: string) => `<Document><BkToCstmr><${kind}><Id>${id}</Id>
+    <Acct><Id><IBAN>CH5604835012345678009</IBAN></Id><Ccy>CHF</Ccy></Acct>
+    ${[1, 1, 2].map((n) => `<Ntry><Amt Ccy="CHF">${n}0.00</Amt><CdtDbtInd>CRDT</CdtDbtInd>
+      <BookgDt><Dt>2026-10-07</Dt></BookgDt><AddtlNtryInf>Twint</AddtlNtryInf></Ntry>`).join("")}
+  </${kind}></BkToCstmr></Document>`;
+  const ids = (xml: string) => parse(xml)[0].transactions.map((t) => t.id);
+  const statement = ids(doc("Stmt", "S-1"));
+  assertEquals(ids(doc("Ntfctn", "N-1")), statement); // the same lines, though the documents differ
+  assertEquals(new Set(statement).size, 3); // two alike in one document are two
 });
 
 Deno.test("anything else is refused", () => {
