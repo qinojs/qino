@@ -116,7 +116,7 @@ export class Node {
 
     /** Node access before node:access adjustments (module axis). Children inherit this, so a
      *  parent's module rules don't apply to them. */
-    async #rawAccess(user?: Usr | null): Promise<number> {
+    async #rawAccess(user?: Usr | null) {
         const cache = cmsCtx(getCtx()).accessCache;
         const key = `${this.id}:${Number(user)}:raw`;
         const hit = cache.get(key);

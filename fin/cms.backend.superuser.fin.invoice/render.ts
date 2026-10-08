@@ -92,7 +92,7 @@ async function list(node: Node, url: URL) {
     sh.where,
     q("direction") ? sql`direction = ${q("direction")}` : null,
     q("status") ? sql`status = ${q("status")}` : null,
-    q("overdue") ? sql`status = 'open' AND due < ${today()}` : null,
+    q("overdue") ? sql`status = 'open' AND type = 'invoice' AND due < ${today()}` : null,
   ].flatMap((term) => term ?? []);
   const page = Math.max(0, Number(q("page")) || 0);
   const [rows, total] = await Promise.all([
@@ -132,8 +132,8 @@ async function list(node: Node, url: URL) {
   </table>`;
 }
 
-/** The due date, marked once it has passed on an open invoice. */
-const due = (app: App, row: Row) => row.status === "open" && row.due && String(row.due) < today()
+/** The due date, marked once it has passed on an open invoice — a credit note is never overdue. */
+const due = (app: App, row: Row) => row.status === "open" && row.type === "invoice" && row.due && String(row.due) < today()
   ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}`
   : String(row.due ?? "");
 

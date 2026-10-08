@@ -59,13 +59,13 @@ export const api: ApiTree = {
 
 /** Decode a JWT payload without checking the signature — fine here: it comes from the token
  *  endpoint over TLS (allowed by OIDC). */
-function jwtPayload(token: string): any {
+function jwtPayload(token: string) {
   return JSON.parse(new TextDecoder().decode(unb64url(token.split(".")[1] ?? "")));
 }
 
 // public IdP metadata, keyed by issuer — identical across tenants, so a shared cache is safe
 const discoveryCache = new Map<string, Promise<any>>();
-function discover(issuer: string): Promise<any> {
+function discover(issuer: string) {
   let doc = discoveryCache.get(issuer);
   if (!doc) {
     doc = fetch(issuer.replace(/\/$/, "") + "/.well-known/openid-configuration")
