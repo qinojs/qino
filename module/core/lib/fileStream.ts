@@ -30,7 +30,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   const resp = await safeFetch(opt.url);
   if (!resp.ok) throw new Error(`Remote file import failed: HTTP ${resp.status}`);
   const len = parseInt(resp.headers.get("content-length") ?? "0");
-  if (len && len > opt.maxSize) throw new Error("Remote file too large");
+  if (len > opt.maxSize) throw new Error("Remote file too large");
   if (!resp.body) throw new Error("Remote file has no body");
   const file = await saveStream(resp.body, { prefix: "remote-", maxSize: opt.maxSize });
 

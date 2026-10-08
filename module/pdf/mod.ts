@@ -18,7 +18,7 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
   try {
     await fs.write(`${dir}/in.html`, html);
     // async, so a missing binary (thrown synchronously by `output()`) becomes a rejection
-    const print = async () => await new Deno.Command(cmd, {
+    const print = async () => new Deno.Command(cmd, {
       args: [
         "--headless",
         "--disable-gpu",

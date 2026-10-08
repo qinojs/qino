@@ -453,19 +453,19 @@ export class ModuleManager {
  * A file that fails to download stays missing; it must not stop the module.
  */
 async function mirrorPub(mod: Module) {
-  const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
+  const files = (mod.manifest.files ?? []).filter((file) => file.startsWith("pub/") && !file.includes(".."));
   if (!files.length) return;
   const dir = `${mod.cache}remote/`;
   // Source + file list identify the release; a different address is a different mirror.
   const stamp = dir + ".source";
   const marked = await fs.text(stamp).catch(() => "");
   if (marked === mod.source && (await Promise.all(
-    files.map((file: string) => fs.isFile(dir + file)),
+    files.map((file) => fs.isFile(dir + file)),
   )).every(Boolean)) return;
   // one mkdir per directory, not per file
-  const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
+  const dirs = new Set(files.map((file) => (dir + file).replace(/\/[^/]+$/, "")));
   await Promise.all([...dirs].map((d) => fs.mkdir(d).catch(() => {})));
-  const got = await Promise.all(files.map(async (file: string) => {
+  const got = await Promise.all(files.map(async (file) => {
     const target = dir + file;
     try {
       const res = await safeFetch(new URL(file, mod.source).href);

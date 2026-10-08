@@ -46,7 +46,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
 
   if ("translate_untranslated" in vars) {
     const svc = cmsTextService(ctx);
-    const rows = await db.query`SELECT hash, namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`;
+    const rows = await db.query`SELECT hash, namespace, original, ${sql.join(langs.map(sql.id))} FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`;
     let count = 0;
     for (const row of rows) {
       const sourceLang = langs.find(l => row[l]) ?? 'en';
@@ -74,7 +74,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
   if ("translate_entry" in vars) {
     const svc = cmsTextService(ctx);
     const { hash, ns } = vars.translate_entry;
-    const row = await db.row`SELECT hash, namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
+    const row = await db.row`SELECT hash, namespace, original, ${sql.join(langs.map(sql.id))} FROM smalltext WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
     if (!row) return false;
     const sourceLang = langs.find(l => row[l]?.trim()) ?? null;
     if (!sourceLang) return false;

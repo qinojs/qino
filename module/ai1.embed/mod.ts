@@ -79,7 +79,7 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
   const missing = changed.filter((i) => !known.has(hashes[i]));
   const fresh = missing.length ? await vectors(app, c, text ? { texts: missing.map((i) => contents[i]), purpose: "index" } : { images: contents, purpose: "index" }) : [];
   for (const [n, i] of missing.entries()) known.set(hashes[i], await encode(db, table, fresh[n]));
-  const cols = sql.join(keys.map((col) => sql.id(col)), ", "), values = sql.join(keys.map((col) => sql`${key[col]}`), ", ");
+  const cols = sql.join(keys.map(sql.id), ", "), values = sql.join(keys.map((col) => sql`${key[col]}`), ", ");
   await db.transaction(async () => {
     await db.exec`DELETE FROM ${t} WHERE ${where} AND (chunk >= ${contents.length} OR ${sql.in("chunk", changed)})`;
     for (const i of changed) {

@@ -160,7 +160,7 @@ export class DbTable {
     for (const name of this.#fields!.keys()) if (name in values) cols.push(name);
     // Standard `(cols) VALUES (?)`; the driver supplies its dialect-specific empty-row fragment.
     const into = cols.length
-      ? sql`(${sql.join(cols.map((f) => sql.id(f)))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields!.get(f)!.valueTransform(values[f])}`))})`
+      ? sql`(${sql.join(cols.map(sql.id))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields!.get(f)!.valueTransform(values[f])}`))})`
       : sql.raw(this.#db.emptyInsert);
     const auto = this.autoIncrement;
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));

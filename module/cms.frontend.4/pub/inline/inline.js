@@ -251,7 +251,7 @@ cms.console = {
     const el = this.el();
     el.togglePopover(true);
     el.classList.add('-active');
-    el.setAttribute('data-type',type);
+    el.dataset.type = type;
     el.firstElementChild.textContent = msg;
     clearTimeout(this.timeout);
     this.timeout = setTimeout(()=>el.classList.remove('-active'), 2200);
