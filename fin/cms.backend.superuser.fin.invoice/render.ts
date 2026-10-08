@@ -133,7 +133,8 @@ async function list(node: Node, url: URL) {
 }
 
 /** The due date, marked once it has passed on an open invoice — a credit note is never overdue. */
-const due = (app: App, row: Row) => row.status === "open" && row.type === "invoice" && row.due && String(row.due) < today()
+const due = (app: App, row: Row) =>
+  row.status === "open" && row.type === "invoice" && row.due && String(row.due) < today()
   ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}`
   : String(row.due ?? "");
 

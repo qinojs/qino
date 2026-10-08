@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.config.translate", { en: "Translate", de: "Übersetzen" });
 }
 
-async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}) {
   const ctx = getCtx();
   const db = node.app.db;
   const langs = node.app.languages.all;
