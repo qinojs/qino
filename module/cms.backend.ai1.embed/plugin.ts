@@ -3,14 +3,14 @@ import { backend } from "@qino/qino/cms.backend";
 import { collection, collections, create, drop, embeddings, indexFiles, search } from "@qino/qino/ai1.embed";
 import { sync } from "@qino/qino/cms.embed";
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.ai1.embed", { en: "Embeddings", de: "Embeddings" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app, db = app.db;
   const tables = embeddings(db), rows = await collections(app);
   const counts = new Map<string, number>(); // "table collection" → vectors

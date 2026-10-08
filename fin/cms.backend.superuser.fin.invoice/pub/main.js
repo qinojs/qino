@@ -77,8 +77,7 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
       await saving;
       try {
         const answer = await node.api.post({ pdf: form.dataset.edit });
-        const bytes = Uint8Array.from(atob(answer.pdf), (c) => c.charCodeAt(0));
-        tab.location = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        tab.location = URL.createObjectURL(new Blob([Uint8Array.fromBase64(answer.pdf)], { type: "application/pdf" }));
       } catch (e) {
         tab?.close();
         state.textContent = e?.message || String(e);

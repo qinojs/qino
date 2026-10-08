@@ -141,7 +141,7 @@ async function field(node: Node, id: string, form: Form | undefined) {
     </label>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const edit = await node.edit();
   if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 

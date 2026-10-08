@@ -4,7 +4,7 @@ import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString, Module } from "@qino/qino";
+import type { App, Module } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -97,7 +97,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
 
 // --- view -----------------------------------------------------------------
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app;
   const t = app.t;
   const store = app.stores.get(storeUrl(app));

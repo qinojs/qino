@@ -13,7 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Pages", de: "Seiten" });
 }
 
-async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
+async function render(node: Node, {ctx}: {ctx: Ctx}) {
 
   // handle GET params that change user settings; only accept existing nodes the user may read
   if (ctx.req.query.rp) {

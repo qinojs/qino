@@ -155,7 +155,6 @@ function newForm(app: App) {
 const typed = (minor: unknown, currency: unknown) =>
   String(Number(minor) / 10 ** currencies.decimals(String(currency || "CHF")));
 
-/** One editable line; `i` keeps the fields of a line together. */
 /** Where lines may be booked, where bookkeeping is installed: the default account, and the others. */
 type Accounts = { fallback: string; list: Row[] };
 
@@ -171,6 +170,7 @@ async function accountsOf(app: App, direction: unknown): Promise<Accounts | unde
 /** What every line of a draft shares: its currency, the default tax rate, where it may be booked. */
 type Shared = { currency: unknown; rate: unknown; taxed: boolean; accounts?: Accounts };
 
+/** One editable line; `i` keeps the fields of a line together. */
 const lineRow = (app: App, i: string | number, line: Row, { currency, rate, taxed, accounts }: Shared) =>
   html.async`<tr draggable=false>
   <td><button type=button class=u2-unstyle u2-draghandle title="${app.t`Reorder`}">
@@ -359,9 +359,7 @@ async function detail(node: Node, id: number) {
       ${field(t`Changed`, u2.el.time(row.changed))}
     </table>
     <div>
-      ${row.status === "draft" ? html.async`<button data-action=issue data-id="${id}"
-        u2-confirm="${t`Issue it? Its number is drawn now; then it cannot change.`}">${t`Issue`}</button>` : ""}
-      ${row.status !== "draft" && linked(app, "pdf")
+      ${linked(app, "pdf")
         ? html.async`<button data-action=print data-id="${id}">${t`Print PDF`}</button>`
         : ""}
       ${pdfUrl && row.direction === "out" ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}

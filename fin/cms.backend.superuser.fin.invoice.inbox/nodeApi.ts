@@ -1,6 +1,5 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-
 import { update } from "@qino/qino/fin.invoice";
 
 import { read, supplierOf } from "./lib/read.ts";

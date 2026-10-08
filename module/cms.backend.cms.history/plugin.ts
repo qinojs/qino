@@ -128,7 +128,7 @@ async function actorCell(r: Record<string, any>, t: TFn) {
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const t = node.app.t;
   const initial = await list(node, { ctx, vars: { filter: vars.filter ?? {} } });
   return html.async`

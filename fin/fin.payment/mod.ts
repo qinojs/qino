@@ -3,10 +3,10 @@ import qrcode from "nayuki-qr-code-generator";
 
 import { urls } from "./lib/url.ts";
 
+import type { App, Ctx, Row } from "@qino/qino";
+
 // deno-lint-ignore no-explicit-any -- the package has no types
 const { QrCode } = qrcode as any;
-
-import type { App, Ctx, Row } from "@qino/qino";
 
 /** `paid` and `refunded` are where money moved; `failed`, `canceled` and `expired` end it unmoved. */
 type Status = "pending" | "processing" | "paid" | "failed" | "canceled" | "expired" | "refunded";

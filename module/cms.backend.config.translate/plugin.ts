@@ -64,7 +64,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   <div class=-count>${rows.length} / ${total} entries</div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;

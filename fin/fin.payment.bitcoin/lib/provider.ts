@@ -89,9 +89,9 @@ export const paymentProvider: Provider = {
   },
 
   async slip(_app, payment) {
-    const { address: to, sats, until } = dataOf(payment);
+    const { address: to, sats, until, confirmed } = dataOf(payment);
     if (!to) return "";
-    const btc = (Math.max(0, sats - Number(dataOf(payment).confirmed ?? 0)) / SATS).toFixed(8);
+    const btc = (Math.max(0, sats - Number(confirmed ?? 0)) / SATS).toFixed(8);
     const uri = `bitcoin:${to}?amount=${btc}`;
     return String(html`<div style="max-width:24rem; margin:auto; text-align:center">
       <a href="${uri}">${html.raw(qr(uri))}</a>

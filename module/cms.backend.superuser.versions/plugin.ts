@@ -6,7 +6,7 @@ import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Versions", de: "Versionen" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app;
   const t = app.t;
   const db = app.db;

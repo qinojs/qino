@@ -81,7 +81,7 @@ function topTable(rows: (readonly [string, number])[], total: number, cells = ur
     <td style="text-align:right"><small>${total ? Math.round(n / total * 100) : 0}%</small>`)}</table></div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { t } = node.app;
   const r = await recent(node.app);
   return html.async`<div class=u2-flex>

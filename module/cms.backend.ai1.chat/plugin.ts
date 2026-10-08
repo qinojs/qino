@@ -5,7 +5,7 @@ import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // A chat with an agent, all through the api of ai1.agent: what a page in the browser can do, it does.
@@ -28,7 +28,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Chat", de: "Chat" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { db, t } = node.app;
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown

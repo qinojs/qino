@@ -402,7 +402,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
 }
 
 /** The list of agents and all sessions; with `?agent=` an agent's page, with `?session=` a session's. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t, query = getCtx().req.query, url = await pageUrl(node);
   const id = Number(query.agent) || 0, sessionId = Number(query.session) || 0;
   allowMarkdown(); // the answers in a conversation

@@ -119,7 +119,7 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
   </div>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = ctx.app.t;
   const search = String(ctx.req.query[QUERY] ?? "").trim();
 

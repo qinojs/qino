@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 import { cap, findCheck, getHealthChecks, healthApi, solutionsHtml } from "@qino/qino/cms.backend.system";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Check, CheckResult } from "@qino/qino/cms.backend.system";
 import type { Node } from "@qino/qino/cms";
 
@@ -68,7 +68,7 @@ async function check(node: Node, { vars }: { vars: Record<string, unknown> }) {
   <td class=-time data-value="${took.toFixed(1)}">${ms(took)}`;
 }
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const t = node.app.t;
   return html.async`
 <div class=u2-card style="flex:0 1 auto">

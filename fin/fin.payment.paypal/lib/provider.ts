@@ -98,8 +98,8 @@ export const paymentProvider: Provider = {
   // approved by the payer: captured now. A sync after that reads the capture.
   async sync(app, payment) {
     if (payment.status !== "pending" && payment.status !== "processing") return {};
-    const order = await call(app, `/v2/checkout/orders/${payment.external_id}`);
     const path = `/v2/checkout/orders/${payment.external_id}`;
+    const order = await call(app, path);
     if (order.status === "APPROVED") return captured(payment, await call(app, `${path}/capture`, {}));
     if (order.status === "COMPLETED") return captured(payment, order);
     if (order.status === "VOIDED") return { status: "canceled" };

@@ -129,7 +129,7 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}):
 }
 
 /** The users and the latest memories; with `?usr=` a user's page. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { db, t } = node.app, usr = Number(getCtx().req.query.usr) || 0;
   if (usr) {
     const vars = { usr }, username = await db.one`SELECT username FROM usr WHERE id = ${usr}`;

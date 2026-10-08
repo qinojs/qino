@@ -3,7 +3,7 @@ import { send as sendMail } from "@qino/qino/messaging.email";
 
 import { keepEntry, openForm } from "./mod.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Form } from "./mod.ts";
 
@@ -84,7 +84,7 @@ async function send(node: Node, form: Form) {
   }) > 0;
 }
 
-async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   await init(node);
   const edit = await node.edit();
   const t = node.app.t;

@@ -1,12 +1,11 @@
 import { requestStorage } from "@qino/qino";
 import { paid } from "@qino/qino/fin.bank";
+import { currency as currencies } from "@qino/qino/locale.currency";
 import { SwissQRBill } from "swissqrbill/svg";
 
 import { isQrIban, qrr, scor } from "./reference.ts";
 
 import type { App, Row } from "@qino/qino";
-import { currency as currencies } from "@qino/qino/locale.currency";
-
 import type { Provider } from "@qino/qino/fin.payment";
 
 /** The currencies a QR bill knows. */

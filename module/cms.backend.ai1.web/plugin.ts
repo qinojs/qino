@@ -64,7 +64,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
       : html.async`<tr><td colspan=7>${t`No pages yet`}`}</tbody>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app, t = app.t;
   const reader = String(await app.settings["ai1.web"].reader);
   const keys = await Promise.all(services().map(async (s) => ({ ...s, value: String(await app.settings.core.keys[s.key] ?? "") })));

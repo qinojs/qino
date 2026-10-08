@@ -3,7 +3,7 @@ import { cms as cmsOf } from "@qino/qino/cms";
 
 import api from "./nodeApi.ts";
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -104,7 +104,7 @@ async function uploads(app: App, ids: number[]) {
 /* A form's entries, with the form's fields and labels in order. Styling is up to the site; all
    values look the same. Without `moderated` every saved entry is shown, so don't add this block
    to forms whose entries are private. */
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   const form = await formOf(node);
   if (!form) {

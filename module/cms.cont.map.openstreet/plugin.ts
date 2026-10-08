@@ -2,7 +2,7 @@ import { hee, html } from "@qino/qino";
 
 import { geocode } from "./lib/geocode.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const OSM = "https://www.openstreetmap.org";
@@ -61,7 +61,7 @@ async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: numbe
   return { lat: place.lat, lon: place.lon };
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const found = await position(node, ctx);
 

@@ -1,10 +1,9 @@
 // The export lives in this page for now; once something else needs it — an API, a schedule — it
 // moves into a module of its own (fin.accounting.export).
 import { fs } from "@qino/qino";
+import { balances } from "@qino/qino/fin.accounting";
 import { currency as currencies } from "@qino/qino/locale.currency";
 import { zipSync } from "fflate";
-
-import { balances } from "@qino/qino/fin.accounting";
 
 import type { App } from "@qino/qino";
 

@@ -142,7 +142,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
       <td>${control}${error}`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   /* One walk up the tree: the open form comes from form4's render state (read, not imported —
      form4 depends on this module); whether we are in a form at all comes from the tree, which also
      works when the node renders alone (panel reload). */

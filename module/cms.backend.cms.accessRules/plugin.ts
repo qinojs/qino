@@ -56,7 +56,7 @@ async function saveTx(node: Node, vars: Record<string, unknown>) {
   }
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }) {
   const app = node.app, t = app.t;
   await save(node, vars);
 
