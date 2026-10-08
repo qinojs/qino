@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const LANG_NAMES: Record<string, string> = {
@@ -37,7 +37,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const cms = node.cms;
   const settings = node.settings;
 

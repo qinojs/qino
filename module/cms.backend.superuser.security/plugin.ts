@@ -23,7 +23,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-function render(node: Node, opts: { ctx: Ctx }): Promise<HtmlString> {
+function render(node: Node, opts: { ctx: Ctx }) {
   const t = node.app.t;
   const link = ipLink(node, opts.ctx); // shared by both parts
   return html.async`<div class=u2-flex>

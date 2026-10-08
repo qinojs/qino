@@ -5,7 +5,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -30,7 +30,7 @@ async function act(ctx: Ctx) {
   return { note: "" };
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { note, codes } = await act(ctx);
   const remaining = ctx.userId ? await left(ctx.app, ctx.userId) : 0;
   const all = await node.app.db.query`
