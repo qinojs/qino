@@ -9,6 +9,7 @@
   ],
   "files": [
     "README.md",
+    "api.ts",
     "dbschema.json",
     "locale/de.json",
     "locale/en.json",

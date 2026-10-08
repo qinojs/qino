@@ -5,6 +5,7 @@ import { refOf, settle } from "./mod.ts";
 import type { EventDecls } from "@qino/qino";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { api } from "./api.ts";
 
 Object.assign(App.events, {
   "invoice:status": {

@@ -3,10 +3,12 @@
   "description": "Payments in and out through any provider: one table, one status, one event — what is paid for is the consumer's.",
   "dependencies": [
     "core",
-    "cron"
+    "cron",
+    "fin"
   ],
   "files": [
     "README.md",
+    "api.ts",
     "dbschema.json",
     "lib/url.ts",
     "manifest.json",

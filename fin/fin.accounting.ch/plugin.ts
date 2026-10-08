@@ -6,6 +6,8 @@ import chart from "./chart.json" with { type: "json" };
 import type { App } from "@qino/qino";
 import type { AccountType } from "@qino/qino/fin.accounting";
 
+export { api } from "./api.ts";
+
 /** Where automatic entries go, in the chart below. */
 const ROLES = {
   receivable: "1100",

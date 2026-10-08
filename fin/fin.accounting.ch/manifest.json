@@ -7,6 +7,7 @@
   ],
   "files": [
     "README.md",
+    "api.ts",
     "chart.json",
     "manifest.json",
     "mod.ts",

@@ -1,7 +1,8 @@
+import { NotFoundError } from "@qino/qino";
 import { country } from "@qino/qino/locale.country";
 import { currency } from "@qino/qino/locale.currency";
 
-import type { App, Row } from "@qino/qino";
+import type { App, Ctx, Row } from "@qino/qino";
 
 /** Today on the server's calendar, `YYYY-MM-DD`. */
 export const today = (): string => new Date().toLocaleDateString("sv-SE");
@@ -48,3 +49,14 @@ export const partyOf = (usr: Row): { name: string; address: Record<string, strin
     addressCountry: usr.address_country,
   }).filter(([, v]) => v).map(([k, v]) => [k, String(v)])),
 });
+
+/** Whose rows a request may see: everyone's for a superuser (`undefined`), else only the user's own. */
+export const ownerOf = (ctx: Ctx): number | undefined => ctx.user?.superuser ? undefined : ctx.userId;
+
+/** `row` where the request may see it — a superuser any, a user their own — else not found: as if
+ *  there were none, so nobody learns what exists by counting through ids. */
+export function visible(ctx: Ctx, row: Row | undefined, what: string): Row {
+  const owner = ownerOf(ctx);
+  if (!row || owner !== undefined && (!owner || Number(row.usr_id) !== owner)) throw new NotFoundError(`no ${what}`);
+  return row;
+}

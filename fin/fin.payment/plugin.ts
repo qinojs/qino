@@ -7,6 +7,7 @@ import type { Ctx, EventDecls } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { api } from "./api.ts";
 
 Object.assign(App.events, {
   "payment:change": {

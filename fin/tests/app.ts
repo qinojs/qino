@@ -56,3 +56,17 @@ export const backendNode = (app: App, url: string): Node => ({
   page: () => Promise.resolve({ url: () => Promise.resolve(url), children: () => Promise.resolve(new Map()) }),
   cms: { nodeByModule: () => Promise.resolve(undefined) },
 }) as unknown as Node;
+
+/** Run `fn` as user `userId` would call the api: in a request of theirs, signed in. */
+export async function asUser<T>(app: App, userId: number, fn: () => Promise<T>): Promise<T> {
+  const sess = { data: { core: { userId: () => userId, pending: () => undefined } } };
+  const ctx = await testContext({ url: "https://shop.test/", app, userId, sess, set: { app } });
+  return await requestStorage.run(ctx, fn);
+}
+
+/** Two users and a superuser, to see what each may see and do. */
+export async function users(app: App): Promise<{ anna: number; ben: number; boss: number }> {
+  const user = (name: string, superuser = 0) =>
+    app.db.table("usr").insert({ active: 1, pw: "", superuser, family_name: name }).then(Number);
+  return { anna: await user("Anna"), ben: await user("Ben"), boss: await user("Boss", 1) };
+}

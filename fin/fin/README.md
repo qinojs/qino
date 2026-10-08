@@ -14,7 +14,26 @@ The base of the `fin.*` modules. It carries
   `addMonths`), amounts to and from minor units (`toMinor`, `fromMinor`), a user as an invoice's
   party (`partyOf`, `nameOf`).
 
+## API
+
+Each fin module has an `api` (its interfaces, tools for agents), without the CMS: a **superuser**
+does anything, a **signed-in user** reads what is theirs (`usr_id`) — someone else's answers "not
+found". Paid is what a provider or the bank says, never the payer. The backend pages are the CMS's:
+whoever reaches them acts there, through `mod.ts`.
+
+| Module | A user | A superuser, too |
+|---|---|---|
+| `fin` | `address`: read, change (not the IBAN) | anyone's, the IBAN |
+| `fin.invoice` | issued ones: `invoices`, `invoice/:id`, `pdf`, `methods`, `pay` | drafts, `issue`, `cancel` … |
+| `fin.payment` | `payments`, `payment/:id` | record, `sync`, `cancel`, `refund` |
+| `fin.payment.credit` | balance and moves | add, take |
+| `fin.subscription` | `subscriptions`, `subscription/:id`, `cancel`, `plans` | subscribe, change, plans, `bill` |
+| `fin.accounting`, `fin.bank` … | — | entries, `reverse`, `close`, VAT, lines, `assign`, camt |
+
 ## Decisions that may change
+
+- **Rights: superuser or owner.** Groups per area (read, manage) — a fiduciary who books, an
+  auditor who reads — once someone needs them.
 
 - **One address per user.** A billing or delivery address that differs belongs to the invoice or
   order that needs it; a second one on the user only once someone needs it.

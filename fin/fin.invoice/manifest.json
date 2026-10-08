@@ -11,6 +11,7 @@
   ],
   "files": [
     "README.md",
+    "api.ts",
     "dbschema.json",
     "lib/credit.ts",
     "lib/document.ts",

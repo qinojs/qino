@@ -3,6 +3,7 @@ import { onInvoice, onPayment } from "./lib/auto.ts";
 import type { App } from "@qino/qino";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { api } from "./api.ts";
 
 const role = (description: string) => ({ type: "string", description });
 
