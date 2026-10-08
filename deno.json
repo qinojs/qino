@@ -53,6 +53,7 @@
     "./cms.backend.superuser.fin": "./fin/cms.backend.superuser.fin/mod.ts",
     "./fin.accounting": "./fin/fin.accounting/mod.ts",
     "./fin.accounting.ch": "./fin/fin.accounting.ch/mod.ts",
+    "./fin.accounting.export": "./fin/fin.accounting.export/mod.ts",
     "./fin.bank": "./fin/fin.bank/mod.ts",
     "./fin.bank.camt": "./fin/fin.bank.camt/mod.ts",
     "./fin.invoice": "./fin/fin.invoice/mod.ts",
@@ -146,6 +147,7 @@
     "@qino/qino/cms.backend.superuser.fin": "./fin/cms.backend.superuser.fin/mod.ts",
     "@qino/qino/fin.accounting": "./fin/fin.accounting/mod.ts",
     "@qino/qino/fin.accounting.ch": "./fin/fin.accounting.ch/mod.ts",
+    "@qino/qino/fin.accounting.export": "./fin/fin.accounting.export/mod.ts",
     "@qino/qino/fin.bank": "./fin/fin.bank/mod.ts",
     "@qino/qino/fin.bank.camt": "./fin/fin.bank.camt/mod.ts",
     "@qino/qino/fin.invoice": "./fin/fin.invoice/mod.ts",
@@ -203,6 +205,7 @@
     "sqlite-vec": "npm:sqlite-vec@^0.1.9",
     "@scure/bip32": "npm:@scure/bip32@^1",
     "@scure/btc-signer": "npm:@scure/btc-signer@^1",
+    "fflate": "npm:fflate@^0.8",
     "swissqrbill/": "npm:/swissqrbill@^4/",
     "nayuki-qr-code-generator": "npm:nayuki-qr-code-generator@1.8.0",
     "web-push-neo": "npm:web-push-neo@0.1.2"
