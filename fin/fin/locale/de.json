@@ -1,0 +1,19 @@
+{
+  "Amount": "Betrag",
+  "Date": "Datum",
+  "Description": "Beschreibung",
+  "draft": "Entwurf",
+  "Due": "Zahlbar bis",
+  "Invoice": "Rechnung",
+  "Net": "Netto",
+  "on": "auf",
+  "Payable within {0} days": "Zahlbar innerhalb von {0} Tagen",
+  "Pos.": "Pos.",
+  "Quantity": "Menge",
+  "Tax": "MwSt.",
+  "The payment slip is added when the invoice is issued.": "Der Einzahlungsschein wird beim Ausstellen der Rechnung angefügt.",
+  "Total": "Total",
+  "Total excluding tax": "Total exkl. MwSt.",
+  "Unit price": "Einzelpreis",
+  "VAT ID": "MwSt.-Nr."
+}

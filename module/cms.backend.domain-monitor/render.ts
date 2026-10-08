@@ -134,7 +134,7 @@ function txtLabel(record: string) {
 }
 
 // Records with the same label share one badge.
-const txtGroups = (value?: string | null): [string, string[]][] => [...Map.groupBy(lines(value), txtLabel)];
+const txtGroups = (value?: string | null) => [...Map.groupBy(lines(value), txtLabel)];
 
 const txtCell = (groups: [string, string[]][]) =>
   groups.length
@@ -151,7 +151,7 @@ const bare = (name: string) => name.replace(/\.$/, "");
 // Nameserver answers as recorded: "<name> <ip> <serial> <primary> <ns,ns>", or just the name if silent.
 type NsServer = { name: string; ip: string; serial: string; primary: string; zone: string[] };
 
-const nsServers = (row: DomainRow): NsServer[] => lines(row.ns_servers).map((line) => {
+const nsServers = (row: DomainRow) => lines(row.ns_servers).map((line) => {
   const [name, ip = "", serial = "", primary = "", zone = ""] = line.split(" ");
   return { name, ip, serial, primary, zone: zone.split(",").filter(Boolean) };
 });

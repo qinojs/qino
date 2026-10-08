@@ -26,7 +26,7 @@ const registry = new WeakMap<Db, Map<string, ScoreScope>>();
 /** The registered scopes, table name → scope id and half-life. Treat it as read-only. */
 export const scopes = (db: Db): Map<string, ScoreScope> => registry.getOrInsertComputed(db, () => new Map<string, ScoreScope>());
 
-function scope(db: Db, tbl: string): ScoreScope {
+function scope(db: Db, tbl: string) {
   const found = scopes(db).get(tbl);
   if (!found) throw new Error(`score: table "${tbl}" is not scored — register it via scored(db, "${tbl}", halfLife)`);
   return found;

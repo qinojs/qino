@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { money } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money } from "@qino/qino/cms.backend.superuser.fin";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Row } from "@qino/qino";
@@ -14,7 +14,7 @@ export async function render(node: Node): Promise<HtmlString> {
   const drafts = await app.db.query`
     SELECT * FROM invoice WHERE direction = 'in' AND status = 'draft' ORDER BY id DESC LIMIT 100`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 24rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Read invoices`}</div>
     <form data-read>
       <input type=file name=files accept="application/pdf,image/*" multiple required>
@@ -24,7 +24,7 @@ export async function render(node: Node): Promise<HtmlString> {
       ${t`Check every draft before issuing it: the model may be wrong.`}</small>
     <p><small>${t`Reading lives in this page for now and may move into a module of its own.`}</small>
   </div>
-  <div class=u2-card style="flex:1 1 40rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`To check`}</div>
     ${drafts.length ? html.async`<div style="overflow:auto; padding:0"><table class=u2-table>
       <thead><tr>
@@ -53,5 +53,5 @@ function check(row: Row) {
   const read = JSON.parse(String(row.data ?? "{}"))?.read;
   if (read?.total == null) return "";
   const same = Number(read.total) === Number(row.total);
-  return same ? money(read.total, row.currency) : html`<span class=u2-badge>${money(read.total, row.currency)}</span>`;
+  return same ? money(read.total, row.currency) : badge(money(read.total, row.currency), "--red");
 }

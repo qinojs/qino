@@ -47,7 +47,7 @@ export async function compacted(app: App, session: number, history: Row[]): Prom
   return from(history, await running.get(app)?.get(session));
 }
 
-const from = (history: Row[], summary = history.findLast((row) => row.message.summary)): Row[] =>
+const from = (history: Row[], summary = history.findLast((row) => row.message.summary)) =>
   summary ? [{ id: summary.id, message: { role: "system" as const, content: summary.message.content } }, // sent without its mark
     ...history.filter((row) => row.id >= summary.message.summary!.from && !row.message.summary)] : history;
 

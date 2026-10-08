@@ -1,0 +1,19 @@
+{
+  "Amount": "Kwota",
+  "Date": "Data",
+  "Description": "Opis",
+  "draft": "szkic",
+  "Due": "Termin płatności",
+  "Invoice": "Faktura",
+  "Net": "Netto",
+  "on": "od",
+  "Payable within {0} days": "Płatne w ciągu {0} dni",
+  "Pos.": "Poz.",
+  "Quantity": "Ilość",
+  "Tax": "VAT",
+  "The payment slip is added when the invoice is issued.": "Dowód wpłaty zostanie dodany przy wystawieniu faktury.",
+  "Total": "Razem",
+  "Total excluding tax": "Razem netto",
+  "Unit price": "Cena jedn.",
+  "VAT ID": "NIP"
+}

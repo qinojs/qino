@@ -46,7 +46,7 @@ export type Offer = { name: string; label: string; module: string };
 const MIDDLE = 50; // default order
 
 /** Best first, so the dialog opens it. */
-const offer = (factors: Declared[]): Offer[] =>
+const offer = (factors: Declared[]) =>
   factors.sort((a, b) => (a.order ?? MIDDLE) - (b.order ?? MIDDLE))
     .map(({ name, label, module }) => ({ name, label, module }));
 

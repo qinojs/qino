@@ -30,7 +30,7 @@ export async function renderNodes(nodes: TNode[], node: Node): Promise<string> {
   return render(nodes, new Tpl(node, named.size ? await templateValues(named, node) : undefined));
 }
 
-async function render(nodes: TNode[], t: Tpl): Promise<string> {
+async function render(nodes: TNode[], t: Tpl) {
   let out = "";
   for (const n of nodes) out += n.type === "text" ? t.html(n.value) : await renderElement(n, t);
   return out;
@@ -121,7 +121,7 @@ function tagHtml(el: El, inner: string, t: Tpl) {
 }
 
 /** Static subtree back to HTML (cms-text initial content) */
-function serialize(nodes: TNode[], t: Tpl): string {
+function serialize(nodes: TNode[], t: Tpl) {
   let out = "";
   for (const n of nodes) out += n.type === "text" ? t.html(n.value) : tagHtml(n, serialize(n.children, t), t);
   return out;

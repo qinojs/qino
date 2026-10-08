@@ -3,6 +3,7 @@
   "description": "Invoices issued and received: lines, tax, numbers, and paid as its payments say.",
   "dependencies": [
     "core",
+    "fin",
     "fin.payment",
     "identity",
     "locale.currency",

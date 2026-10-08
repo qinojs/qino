@@ -8,7 +8,7 @@ import type { Sql } from "../../deps.ts";
 import type { Db } from "./Db.ts";
 
 // A primary key value as id part; undefined if it can't identify a row.
-const idValue = (field: DbField, value: any): string | undefined => {
+const idValue = (field: DbField, value: any) => {
   if (value == null || typeof value === "object") return; // String([]) / Number([]) would look valid
   if (!NUM_TYPES.has(field.type)) return String(value);
   const num = value === "" ? NaN : Number(value); // strict like DbField; empty is no id

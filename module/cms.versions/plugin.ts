@@ -146,7 +146,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
             // Read from the historical views with request-own caches (core dbScope).
             await using _views = await historicalViews(ctx, vs.space, vs.log);
 
-            const load = async (node: Node): Promise<void> => {
+            const load = async (node: Node) => {
                 for (const cont of await node.conts()) await load(cont);
             };
             await load(await cms(app).node(pid));

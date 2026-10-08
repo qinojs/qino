@@ -1,5 +1,6 @@
 import "@qino/m/core/pub/js/SettingsEditor.mjs";
 import { finPanel } from "@qino/m/cms.backend.superuser.fin/pub/panel.js";
+import { t } from "@qino/pub/t.js";
 
 cms.initNode("backend.superuser.fin.invoice", (el) => {
   const { node, execute, fields, files } = finPanel(el);
@@ -67,11 +68,44 @@ cms.initNode("backend.superuser.fin.invoice", (el) => {
     const soon = () => { clearTimeout(timer); timer = setTimeout(save, 600); };
 
     form.addEventListener("input", soon);
+    // the PDF of what was saved, in a tab of its own: opened at the click, or the browser blocks it
+    el.querySelector("[data-pdf]")?.addEventListener("click", async () => {
+      const tab = window.open("about:blank");
+      clearTimeout(timer);
+      save();
+      await saving;
+      try {
+        const answer = await node.api.post({ pdf: form.dataset.edit });
+        const bytes = Uint8Array.from(atob(answer.pdf), (c) => c.charCodeAt(0));
+        tab.location = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      } catch (e) {
+        tab?.close();
+        state.textContent = e?.message || String(e);
+      }
+    });
     // dynamic: the drag attributes pull a cdn dependency that `deno check --all` cannot follow
     import("@qino/u2/attr/dropzone/dropzone.js");
     import("@qino/u2/attr/draghandle/draghandle.js");
     // a line moved: the order of the fields is the order of the lines
     lines.addEventListener("u2-dropzone-drop", (e) => e.detail?.add && soon());
+
+    // a user picked: the invoice is theirs and takes their name and address — over what is typed
+    // already only when asked
+    form.querySelector("[data-user]")?.addEventListener("change", (e) => e.target.value && take(e.target.value));
+    const take = async (id) => {
+      const party = await node.api.post({ usr: id });
+      const { lang, ...address } = party;
+      const fields = Object.entries(address).filter(([name]) => form.elements[name]);
+      const typed = fields.some(([name, value]) =>
+        form.elements[name].value.trim() && form.elements[name].value !== value);
+      const { confirm } = await import("@qino/u2/js/dialog/dialog.js");
+      if (!typed || await confirm(await t`Take over the user's name and address?`)) {
+        for (const [name, value] of fields) form.elements[name].value = value;
+        // the user's language, where the invoice can be written in it
+        if ([...form.elements.lang.options].some((o) => o.value === lang)) form.elements.lang.value = lang;
+      }
+      soon();
+    };
     form.addEventListener("click", (e) => {
       if (e.target.closest("[data-add-line]")) {
         lines.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__i__", String(next++)));

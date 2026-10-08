@@ -1,7 +1,7 @@
 import { html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 
-import { amounts, linked } from "./mod.ts";
+import { amounts, badge, linked } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
@@ -20,11 +20,11 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 22rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Now`}</div>
     ${figures(node.app)}
   </div>
-  <div class=u2-card style="flex:1 1 30rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`How it works`}</div>
     <div><ol>
       <li>${t`An invoice is a claim. Paying it is a payment whose ref is the invoice: fin.invoice:7.`}
@@ -58,7 +58,7 @@ async function figures(app: App) {
       SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND status = 'open' AND due < ${today}`);
     rows.push(
       await row(t`Receivables open`, amounts(await open("out"))),
-      await row(t`Overdue`, overdue ? html`<span class=u2-badge>${overdue}</span>` : "0"),
+      await row(t`Overdue`, overdue ? await badge(overdue, "--red") : "0"),
       await row(t`Payables open`, amounts(await open("in"))),
     );
   }

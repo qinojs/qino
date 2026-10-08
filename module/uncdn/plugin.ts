@@ -33,7 +33,7 @@ const MEDIA_TYPES: Record<string, string> = {
   svg: SVG,
 };
 
-async function directorySize(path: string): Promise<number> {
+async function directorySize(path: string) {
   let size = 0;
   try {
     for (const e of await fs.list(path)) {

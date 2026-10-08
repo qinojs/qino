@@ -41,6 +41,28 @@ export const amounts = (rows: Record<string, unknown>[], key = "amount"): HtmlSt
     ? html.join(rows.map((row) => nowrap(money(row[key], row.currency))), " · ")
     : "—";
 
+/** A status's color, the same on every fin page; the quiet ones (draft, canceled …) have none. */
+const STATUS: Record<string, string> = {
+  open: "--blue",
+  pending: "--yellow",
+  processing: "--orange",
+  paid: "--green",
+  failed: "--red",
+  refunded: "--blue",
+};
+
+/** A small badge, in a color of the palette (`--red`) where it should stand out. */
+export const badge = (content: unknown, color = ""): Promise<HtmlString> =>
+  html.async`<small class=u2-badge${color ? html.raw(` style="background:var(${color})"`) : ""}>${content}</small>`;
+
+/** A status as a badge in its color. */
+export const status = (value: unknown): Promise<HtmlString> => badge(value, STATUS[String(value)]);
+
+/** Money in or out as an arrow; `label` says it in words, as title (a t`` may be passed). */
+export const direction = (value: unknown, label: unknown): Promise<HtmlString> => value === "in"
+  ? html.async`<u2-ico icon=call_received title="${label}">↙</u2-ico>`
+  : html.async`<u2-ico icon=call_made title="${label}">↗</u2-ico>`;
+
 /** Whether a module is linked — the overview shows what is there and what could be. */
 export const linked = (app: App, name: string): boolean => app.modules.linked().some((mod) => mod.name === name);
 

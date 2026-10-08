@@ -52,7 +52,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     start = (await node.cms.node(startPage)).exists() ?? root;
   }
 
-  async function list(page: Node, depth = 0): Promise<string> {
+  async function list(page: Node, depth = 0) {
     if (limit && depth >= limit || pathOnly && depth && !path.has(page.id)) return "";
     if (!await page.isReadable()) return "";
     const children = [...(await page.children(["readable", {

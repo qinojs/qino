@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { linked, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, linked, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -14,14 +14,15 @@ export async function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const accounts = await app.db.query`
-    SELECT a.id, a.name, a.number, a.currency, a.created, COUNT(x.id) AS line_count, COALESCE(SUM(x.amount), 0) AS amount,
+    SELECT a.id, a.name, a.number, a.currency, a.created,
+      COUNT(x.id) AS line_count, COALESCE(SUM(x.amount), 0) AS amount,
       SUM(CASE WHEN x.id IS NOT NULL AND x.payment_id IS NULL THEN 1 ELSE 0 END) AS unassigned
     FROM bank_account a LEFT JOIN bank_tx x ON x.account_id = a.id
     GROUP BY a.id, a.name, a.number, a.currency, a.created ORDER BY a.name`;
   const option = (value: string, label: string | Promise<string>, key: string) =>
     html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 30rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Accounts`}</div>
     ${accounts.length ? html.async`<table class=u2-table>
       <thead><tr>
@@ -29,14 +30,14 @@ export async function render(node: Node): Promise<HtmlString> {
         <th>${t`Lines`}
         <th>${t`Unassigned`}
         <th>${t`Sum of the lines`}
-      <tbody>${accounts.map((a) => html`<tr>
+      <tbody>${accounts.map((a) => html.async`<tr>
         <td>${a.name === a.number ? "" : html`${a.name}<br>`}<code>${a.number}</code>
         <td style="text-align:end">${Number(a.line_count)}
-        <td style="text-align:end">${Number(a.unassigned) ? html`<span class=u2-badge>${a.unassigned}</span>` : "0"}
+        <td style="text-align:end">${Number(a.unassigned) ? badge(a.unassigned, "--orange") : "0"}
         <td style="text-align:end; white-space:nowrap">${money(a.amount, a.currency)}`)}
     </table>` : html.async`<p>${t`No account yet — it is created by its first statement.`}`}
   </div>
-  <div class=u2-card style="flex:1 1 20rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Read a statement`}</div>
     ${linked(app, "fin.bank.camt")
       ? html.async`<form data-camt>

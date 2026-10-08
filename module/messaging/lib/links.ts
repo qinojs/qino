@@ -42,7 +42,7 @@ export async function rewriteLinks(app: App, msg: Msg): Promise<{ msg: Msg; link
   const short = shortener(app);
   const trades = new Map<string, string>(); // original → replacement
   const links = new Map<string, Link>(); // by replacement: two spellings may give the same link
-  const swap = async ({ url, kind }: Link): Promise<string> => {
+  const swap = async ({ url, kind }: Link) => {
     const known = trades.get(url);
     if (known !== undefined) return known;
     const target = absolute(url, root); // mailto, tel, cid, anchors: unchanged

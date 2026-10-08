@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { money, refLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
 import { balances } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";
 
@@ -37,18 +37,18 @@ async function overview(node: Node, url: URL) {
     <form method=get>
       <input type=date name=from value="${from}"> – <input type=date name=to value="${to}">
       <button>${t`Show`}</button>
-      ${currency ? "" : html.async` <span class=u2-badge>${t`No book currency: nothing is booked.`}</span>`}
+      ${currency ? "" : html.async` ${badge(t`No book currency: nothing is booked.`, "--orange")}`}
     </form>
   </div>
-  <div class=u2-card style="flex:1 1 30rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Balance sheet`} <small>${t`at`} ${to}</small></div>
     ${statement(app, accounts, ["asset"], ["liability", "equity"], currency)}
   </div>
-  <div class=u2-card style="flex:1 1 30rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Result`} <small>${from} – ${to}</small></div>
     ${statement(app, accounts, ["expense"], ["income"], currency)}
   </div>
-  <div class=u2-card style="flex:1 1 60rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Journal`}</div>
     <form method=get>
       <input type=hidden name=from value="${from}"><input type=hidden name=to value="${to}">
@@ -61,11 +61,11 @@ async function overview(node: Node, url: URL) {
     </form>
     <div style="overflow:auto; padding:0">${journal(node, url, from, to)}</div>
   </div>
-  <div class=u2-card style="flex:1 1 28rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Book by hand`}</div>
     ${entryForm(app, accounts)}
   </div>
-  <div class=u2-card style="flex:1 1 28rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Chart of accounts`}</div>
     <div style="overflow:auto; max-height:30rem; padding:0"><table class=u2-table>
       ${accounts.map((a) => html`<tr><td>${a.number}<td>${a.name}<td><small>${a.type}</small>`)}
@@ -77,7 +77,7 @@ async function overview(node: Node, url: URL) {
       <button>${t`Add`}</button>
     </form>
   </div>
-  <div class=u2-card style="flex:1 1 28rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Settings`}</div>
     <settings-editor source="/api/core/settings/fin.accounting"></settings-editor>
   </div>
@@ -194,7 +194,7 @@ async function detail(node: Node, id: number) {
   }));
   const link = (other: unknown) => html`<a href="${backend.toUrl(pageUrl, { entry: other })}">#${other}</a>`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 40rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Journal`}</a> › #${id}</div>
     <table class=u2-table>
       <tr><th>${t`Date`}<td>${entry.date}

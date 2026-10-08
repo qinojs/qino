@@ -33,7 +33,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   await renderChildren(rootNode, 0);
   return html.join(trs);
 
-  async function loopConts(page: Node): Promise<{ onlineStart: number; onlineEnd: number; access: number }> {
+  async function loopConts(page: Node) {
     const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
     for (const cont of await page.conts()) {
       const child = await loopConts(cont);
@@ -47,7 +47,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return data;
   }
 
-  async function renderChildren(parent: Node, level: number): Promise<void> {
+  async function renderChildren(parent: Node, level: number) {
     const children = await parent.children({ type: treeType });
     for (const [, subPage] of children) {
       const subAccess = await subPage.access();

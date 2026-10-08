@@ -1,5 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
+import { create } from "@qino/qino/fin.invoice";
+
 import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import { render } from "../render.ts";
@@ -21,9 +23,9 @@ const withApp = (fn: (app: App, as: As, node: Node) => Promise<void>) =>
 
 /** What the editor sends: every field of the form, the second line left empty. */
 const edited = {
-  currency: "chf", title: "", name: "Kunde & Co", streetAddress: "Seeweg 2", postalCode: "3000",
+  currency: "chf", name: "Kunde & Co", streetAddress: "Seeweg 2", postalCode: "3000",
   addressLocality: "Bern", addressCountry: "ch", vatID: "", usrId: "", taxIncluded: "", text: "Danke",
-  date: "", due: "", lang: "",
+  date: "", term: "", lang: "",
   name0: "Design", description0: "Logo & colours", quantity0: "2,5", unit0: "h", price0: "120.00", taxRate0: "8.1",
   name1: "", quantity1: "", unit1: "", price1: "", taxRate1: "",
   name5: "Hosting", quantity5: "", unit5: "", price5: "99", taxRate5: "8.1",
@@ -43,10 +45,16 @@ Deno.test("a new invoice opens in the editor, saves as one types, is issued, ask
     const row = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
     assertEquals([row?.status, row?.currency, row?.net, row?.tax, row?.total], ["draft", "CHF", 39900, 3232, 43132]);
     assertEquals(JSON.parse(String(row?.party)).address.addressCountry, "CH");
+    // the term is typed in days; the due date follows from it on issue
+    await as(base, () => api(node, { save: { ...edited, term: "10", id: String(id) } }));
+    assertStringIncludes(String(await as(`${base}?invoice=${id}`, () => render(node))), 'name=term min=0 value="10"');
     // a line dragged up: its fields come first, so it does
     const { name5, quantity5, unit5, price5, taxRate5, ...rest } = edited;
     await as(base, () => api(node, { save: { name5, quantity5, unit5, price5, taxRate5, ...rest, id: String(id) } }));
     assertEquals(await app.db.col`SELECT name FROM invoice_line WHERE invoice_id = ${id} ORDER BY sort`, ["Hosting", "Design"]);
+    const viewed = await as(base, () => api(node, { pdf: String(id) })) as { pdf: string };
+    assertEquals(atob(viewed.pdf).slice(0, 5), "%PDF-"); // the draft as PDF, not kept
+    assertEquals((await app.db.row`SELECT file_id FROM invoice WHERE id = ${id}`)?.file_id, null);
     await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
     page = String(await as(`${base}?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, 'value="120"'); // prices come back as typed
@@ -112,5 +120,21 @@ Deno.test("a received invoice shows its original beside the editor; the receipt 
     page = String(await as(`${base}?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, "bill.png");
     assertStringIncludes(page, "<img");
+  });
+});
+
+Deno.test("a user is picked and gives the invoice their name, address and language", async () => {
+  await withApp(async (app, as, node) => {
+    const id = Number(await app.db.table("usr").insert({
+      active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster", organization: "Muster AG",
+      street_address: "Seeweg 2", postal_code: "3000", address_locality: "Bern", address_country: "CH", lang: "de",
+    }));
+    const draft = Number(await create(app, { currency: "CHF", lines: [], usrId: id }));
+    const page = String(await as(`http://qino.test/?invoice=${draft}`, () => render(node)));
+    assertStringIncludes(page, `<option value="${id}" selected>Anna Muster, Muster AG`);
+    assertEquals(await as("http://qino.test/", () => api(node, { usr: String(id) })), {
+      name: "Muster AG", streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern",
+      addressRegion: "", addressCountry: "CH", lang: "de",
+    });
   });
 });

@@ -97,7 +97,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
   await renderChildren(rootNode, 0);
   return html.join(trs);
 
-  async function renderChildren(parent: Node, level: number): Promise<void> {
+  async function renderChildren(parent: Node, level: number) {
     for (const [id, subPage] of await parent.children({ type: treeType })) {
       const access = await subPage.access();
       const open = openPageNodes.has(String(id));
@@ -147,7 +147,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
 }
 
 /** Map grp_id -> access for a page, for the given groups. */
-async function pageGroupAccess(db: App["db"], page: Node, groups: Record<string, string | number>[]): Promise<Record<string, number>> {
+async function pageGroupAccess(db: App["db"], page: Node, groups: Record<string, string | number>[]) {
   const ret: Record<string, number> = {};
   if (!groups.length) return ret;
   const rows = await db.query`SELECT grp_id, access FROM page_access_grp WHERE page_id = ${page.id}`;

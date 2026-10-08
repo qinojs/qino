@@ -8,7 +8,7 @@ let _avifSupported: boolean | null = null;
 
 let _convertCmd = 'magick';
 let _identifyCmd = 'magick';
-let _identifyArgs: string[] = ['identify'];
+let _identifyArgs = ['identify'];
 
 
 export async function available(): Promise<boolean> {

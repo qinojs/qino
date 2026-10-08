@@ -61,7 +61,7 @@ Deno.test("drafts to check are listed; a total that does not match what was read
     const page = String(await inRequest(app, "http://qino.test/backend/inbox", () => render(backendNode(app, "/backend/inbox"))))
       .replaceAll(" ", " ");
     assertStringIncludes(page, "Hosting AG");
-    assertStringIncludes(page, "<span class=u2-badge>CHF 100.00</span>"); // read 100, the lines make 99
+    assertStringIncludes(page, '<small class=u2-badge style="background:var(--red)">CHF 100.00</small>'); // read 100, the lines make 99
     assert(page.includes("data-read"));
   });
 });

@@ -620,7 +620,7 @@ export class Node {
         const root = parseXml(xml);
         if (root) await this.#fromXmlNode(root);
     }
-    async #fromXmlNode(node: XmlNode): Promise<void> {
+    async #fromXmlNode(node: XmlNode) {
         const langs = this.app.languages.all;
         for (const [name, value] of Object.entries(node.attrs)) {
             if (langs.includes(name)) { await this.title(name, value); continue; }
@@ -636,7 +636,7 @@ export class Node {
     copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
         return this.db.transaction(() => this.#copy(deep, ifFn));
     }
-    async #copy(deep: boolean, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
+    async #copy(deep: boolean, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void) {
         if (await ifFn?.(this) === false) return;
 
         const row: Record<string, any> = { ...this.vs };

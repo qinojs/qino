@@ -57,6 +57,24 @@ async function bookkeeping(s: Seed): Promise<void> {
   }
 }
 
+/** A user's name and postal address as an invoice's party; the address given where they have none. */
+async function addressed(s: Seed, id: number, address: Record<string, string>) {
+  await s.db.exec`UPDATE usr SET street_address = ${address.streetAddress}, postal_code = ${address.postalCode},
+    address_locality = ${address.addressLocality}, address_country = ${address.addressCountry}
+    WHERE id = ${id} AND street_address IS NULL`;
+  const u = await s.db.row`SELECT * FROM usr WHERE id = ${id}`;
+  if (!u) return;
+  return {
+    name: String(u.organization || `${u.given_name} ${u.family_name}`),
+    address: {
+      streetAddress: String(u.street_address),
+      postalCode: String(u.postal_code),
+      addressLocality: String(u.address_locality),
+      addressCountry: String(u.address_country),
+    },
+  };
+}
+
 /** An invoice we issue, in one of its lives: draft, canceled, open (overdue when old), paid in
  *  part or in full — by QR bill through the bank, by transfer or in cash. */
 async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: boolean): Promise<void> {
@@ -64,22 +82,19 @@ async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: 
   const { create: pay, record } = await import("@qino/qino/fin.payment");
   const who = s.usrs.length && s.rnd.chance(0.5) ? s.rnd.pick(s.usrs) : undefined;
   const person = s.rnd.person();
-  const name = who
-    ? `${who.given_name} ${who.family_name}`
-    : person.organization || `${person.given_name} ${person.family_name}`;
+  const address = {
+    streetAddress: `${s.rnd.title(1)}strasse ${s.rnd.int(1, 80)}`,
+    postalCode: String(s.rnd.int(1000, 9658)),
+    addressLocality: person.city,
+    addressCountry: "CH",
+  };
+  // a user gets an address once (fin's columns); the invoice copies the user's, as the editor does
+  const user = who && await addressed(s, who.id, address);
   const id = await create(s.app, {
     currency: "CHF",
     date: day(date),
     usrId: who?.id,
-    party: {
-      name,
-      address: {
-        streetAddress: `${s.rnd.title(1)}strasse ${s.rnd.int(1, 80)}`,
-        postalCode: String(s.rnd.int(1000, 9658)),
-        addressLocality: person.city,
-      },
-    },
-    title: s.rnd.chance(0.3) ? s.rnd.title(2) : undefined,
+    party: user ?? { name: person.organization || `${person.given_name} ${person.family_name}`, address },
     lines: s.rnd.some(WORK, s.rnd.int(1, 4)).map(([name, unit, price, taxRate]) => ({
       name,
       unit: unit || undefined,

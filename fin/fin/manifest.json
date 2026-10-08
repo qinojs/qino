@@ -1,0 +1,19 @@
+{
+  "name": "fin",
+  "description": "What the fin modules share: users' postal address, and the texts payers read.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "locale/de.json",
+    "locale/fr.json",
+    "locale/it.json",
+    "locale/pl.json",
+    "locale/zh.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

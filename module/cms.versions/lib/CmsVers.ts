@@ -69,7 +69,7 @@ export async function copyNode(
 ): Promise<void> {
     const ctx = getCtx();
 
-    const generate = async (id: number): Promise<void> => {
+    const generate = async (id: number) => {
         const page = await cms(ctx.app).node(id);
         if (await page.access() <= 1) return;
 

@@ -34,6 +34,7 @@ const credit = (id: string, amount: string, reference: string) => `<Document><Bk
 
 Deno.test("an invoice paid by QR bill: slip, a partial transfer, the rest", async () => {
   await withApp("CH44 3199 9123 0008 8901 2", async (app) => {
+    app.languages.setLangs(["en", "de"]); // a site that speaks German
     assertEquals(await methods(app, { amount: 100, currency: "CHF" }), [{ method: "qrbill", label: "QR-bill" }]);
     assertEquals(await methods(app, { amount: 100, currency: "USD" }), []);
     const draft = await invoice(app, { currency: "CHF", lang: "de", lines: [{ name: "Design", price: 50000 }] });

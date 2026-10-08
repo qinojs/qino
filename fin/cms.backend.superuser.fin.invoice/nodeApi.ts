@@ -3,6 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 import { fileOf, toMinor } from "@qino/qino/cms.backend.superuser.fin";
 import { attach, cancel, create, document, issue, print, refOf, remove, revise, update } from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
+import { render } from "@qino/qino/pdf";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -23,6 +24,22 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const v = vars.save as Record<string, string>;
       await update(app, Number(v.id), valuesOf(v));
       return { ok: true, html: await document(app, Number(v.id)) };
+    }
+    // a draft as PDF, to look at: made on request, not kept
+    if (vars.pdf) return { ok: true, pdf: (await render(app, await document(app, Number(vars.pdf)))).toBase64() };
+    // a user picked as a draft's party: their name, address and language, as editor fields
+    if (vars.usr) {
+      const u = await app.db.row`SELECT * FROM usr WHERE id = ${Number(vars.usr)}`;
+      if (!u) return { ok: false, message: await t`No user` };
+      return {
+        name: String(u.organization || nameOf(u)),
+        streetAddress: String(u.street_address ?? ""),
+        postalCode: String(u.postal_code ?? ""),
+        addressLocality: String(u.address_locality ?? ""),
+        addressRegion: String(u.address_region ?? ""),
+        addressCountry: String(u.address_country ?? ""),
+        lang: String(u.lang ?? ""),
+      };
     }
     if (vars.attach) {
       const { id, file } = vars.attach as { id: string; file: { name: string; type: string; data: string } };
@@ -50,7 +67,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         amount: Number(invoice.total) - Number(invoice.paid),
         currency: String(invoice.currency),
         ref: refOf(Number(id)),
-        description: `${invoice.title || await t`Invoice`} ${invoice.number ?? ""}`.trim(),
+        description: `${await t`Invoice`} ${invoice.number ?? ""}`.trim(),
         usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
         return: await pageUrl({ invoice: id }),
       });
@@ -76,6 +93,9 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   }
 }
 
+/** A user's name as written: given name first. */
+const nameOf = (u: Record<string, unknown>) => [u.given_name, u.family_name].filter(Boolean).join(" ");
+
 /** The editor's fields as invoice values: lines without a name are empty rows, an emptied
  *  field is cleared. `ref` is not among them: what an invoice is for is set by the code that makes
  *  it, and kept. */
@@ -93,7 +113,8 @@ function valuesOf(v: Record<string, string>) {
       taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : 0,
     };
   });
-  const address = Object.fromEntries(["streetAddress", "postalCode", "addressLocality", "addressCountry"]
+  const keys = ["streetAddress", "postalCode", "addressLocality", "addressRegion", "addressCountry"];
+  const address = Object.fromEntries(keys
     .filter((key) => v[key]).map((key) => [key, key === "addressCountry" ? v[key].toUpperCase() : v[key]]));
   return {
     currency,
@@ -101,10 +122,10 @@ function valuesOf(v: Record<string, string>) {
     taxIncluded: v.taxIncluded === "1",
     party: { name: v.name ?? "", address, ...v.vatID ? { vatID: v.vatID } : {} },
     usrId: Number(v.usrId) || null,
-    title: v.title ?? "",
     text: v.text ?? "",
     date: v.date || undefined,
     due: v.due || undefined,
+    term: v.term === undefined ? undefined : v.term === "" ? null : Number(v.term),
     lang: v.lang || undefined,
     number: v.number,
   };

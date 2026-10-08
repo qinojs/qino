@@ -83,22 +83,23 @@ Deno.test("a draft stores its lines and totals and can be changed until issued",
   invoice = await row(app, id);
   assertEquals([invoice?.net, invoice?.tax, invoice?.total, (await lines(app, id)).length], [10000, 0, 10000, 1]);
   await issue(app, id);
-  await assertRejects(() => update(app, id, { title: "Too late" }), Error, "only drafts");
+  await assertRejects(() => update(app, id, { text: "Too late" }), Error, "only drafts");
 });
 
-Deno.test("issuing draws gapless numbers per year and sets date and due", async () => {
+Deno.test("issuing draws gapless numbers per year and sets date, due and term", async () => {
   const { app, events } = await setup({ number: "R{year}-{n}", term: 10 });
   const ids = [
     await create(app, { ...order, date: "2026-12-30" }),
-    await create(app, { ...order, date: "2026-12-31" }),
+    await create(app, { ...order, date: "2026-12-31", term: 20 }),
     await create(app, { ...order, date: "2027-01-02", due: "2027-03-01" }),
   ];
   for (const id of ids) await issue(app, id);
   const issued = await Promise.all(ids.map((id) => row(app, id)));
-  assertEquals(issued.map((i) => [i?.number, i?.date, i?.due, i?.status]), [
-    ["R2026-1", "2026-12-30", "2027-01-09", "open"],
-    ["R2026-2", "2026-12-31", "2027-01-10", "open"],
-    ["R2027-1", "2027-01-02", "2027-03-01", "open"],
+  // the term of the invoice, else the default, is kept to be printed; a given due date stands
+  assertEquals(issued.map((i) => [i?.number, i?.date, i?.due, i?.term, i?.status]), [
+    ["R2026-1", "2026-12-30", "2027-01-09", 10, "open"],
+    ["R2026-2", "2026-12-31", "2027-01-20", 20, "open"],
+    ["R2027-1", "2027-01-02", "2027-03-01", null, "open"],
   ]);
   assertEquals(events.map((e) => [e.invoice.id, e.previous]), ids.map((id) => [id, "draft"]));
   await assertRejects(() => issue(app, ids[0]), Error, "only drafts");

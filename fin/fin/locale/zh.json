@@ -1,0 +1,19 @@
+{
+  "Amount": "金额",
+  "Date": "日期",
+  "Description": "描述",
+  "draft": "草稿",
+  "Due": "到期日",
+  "Invoice": "发票",
+  "Net": "净额",
+  "on": "基于",
+  "Payable within {0} days": "请于 {0} 天内付款",
+  "Pos.": "序号",
+  "Quantity": "数量",
+  "Tax": "税",
+  "The payment slip is added when the invoice is issued.": "开具发票时将附上付款单。",
+  "Total": "合计",
+  "Total excluding tax": "不含税合计",
+  "Unit price": "单价",
+  "VAT ID": "税号"
+}

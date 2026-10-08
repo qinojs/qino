@@ -1,0 +1,19 @@
+{
+  "Amount": "Montant",
+  "Date": "Date",
+  "Description": "Description",
+  "draft": "brouillon",
+  "Due": "Échéance",
+  "Invoice": "Facture",
+  "Net": "Montant net",
+  "on": "sur",
+  "Payable within {0} days": "Payable dans les {0} jours",
+  "Pos.": "Pos.",
+  "Quantity": "Quantité",
+  "Tax": "TVA",
+  "The payment slip is added when the invoice is issued.": "Le bulletin de versement est ajouté à l’émission de la facture.",
+  "Total": "Total",
+  "Total excluding tax": "Total hors TVA",
+  "Unit price": "Prix unitaire",
+  "VAT ID": "N° TVA"
+}

@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { linked, money, refLink, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, direction, linked, money, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
 import { methods, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
 
@@ -25,7 +25,7 @@ async function overview(node: Node, url: URL) {
   const option = (value: string, label: string | Promise<string>, key = "") =>
     html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 60rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`}</div>
     <form method=get>
       <input type=search name=search value="${q("search")}" placeholder="${t`Id, ref, description, external id`}">
@@ -42,11 +42,11 @@ async function overview(node: Node, url: URL) {
     </form>
     <div style="overflow:auto; padding:0">${list(node, url)}</div>
   </div>
-  <div class=u2-card style="flex:1 1 24rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Providers`}</div>
     ${providerTable(node.app)}
   </div>
-  <div class=u2-card style="flex:1 1 24rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Record a payment`}</div>
     <form data-record>
       <u2-fields>
@@ -84,11 +84,11 @@ async function list(node: Node, url: URL) {
   if (!rows.length) return html.async`<p>${t`No payments`}`;
   const pageUrl = await (await node.page()).url();
   const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
-  return html.async`<table class=u2-table>
+  return html.async`<table class=u2-table style="white-space:nowrap">
     <thead><tr>
       <th>${t`Id`}
       <th>${t`Created`}
-      <th>${t`Direction`}
+      <th>
       <th>${t`Provider`}
       <th>${t`Amount`}
       <th>${t`Paid`}
@@ -98,11 +98,11 @@ async function list(node: Node, url: URL) {
     <tbody>${rows.map((row) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { payment: row.id })}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.created, { narrow: true })}
-      <td>${row.direction === "in" ? t`in` : t`out`}
+      <td>${direction(row.direction, row.direction === "in" ? t`in` : t`out`)}
       <td>${row.provider}${row.method ? html`<small>.${row.method}</small>` : ""}
       <td style="text-align:end; white-space:nowrap">${money(row.amount, row.currency)}
       <td style="text-align:end; white-space:nowrap">${paidOf(row)}
-      <td><span class=u2-badge>${row.status}</span>
+      <td>${status(row.status)}
       <td>${refLink(node, row.ref)}
       <td>${row.description}`)}
     ${total > PER_PAGE ? html`<tfoot><tr><td colspan=9>
@@ -135,7 +135,7 @@ async function providerTable(app: App) {
       <table class=u2-table>
         <tr><th>${t`Offers`}<td>${offers.length
           ? html.join(offers.map(([currency, list]) => html`${currency}: ${list.join(", ")}`), "<br>")
-          : html.async`<span class=u2-badge>${t`nothing — settings incomplete?`}</span>`}
+          : badge(t`nothing — settings incomplete?`, "--orange")}
         <tr><th>${t`Can`}<td>${can.length ? html.join(await Promise.all(can), ", ") : "—"}
       </table>
       ${mod.plugin.settingsSchema ? settingsEditor(mod.name) : ""}
@@ -159,17 +159,17 @@ async function detail(node: Node, id: number) {
     .find((p) => p?.name === row.provider);
   const open = Number(row.paid) - Number(row.refunded);
   const data = row.data ? JSON.stringify(JSON.parse(String(row.data)), null, 2) : "";
-  const shown = await slip(app, id).catch((e) => html`<span class=u2-badge>${e.message}</span>`);
+  const shown = await slip(app, id).catch((e) => badge(e.message, "--red"));
   const lines = linked(app, "fin.bank")
     ? await app.db.query`SELECT * FROM bank_tx WHERE payment_id = ${id} ORDER BY date, id`
     : [];
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 30rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Payments`}</a> › #${id}</div>
     <table class=u2-table>
-      ${field(t`Status`, html`<span class=u2-badge>${row.status}</span>`)}
-      ${field(t`Direction`, row.direction)}
+      ${field(t`Status`, status(row.status))}
+      ${field(t`Direction`, html.async`${direction(row.direction, "")} ${row.direction}`)}
       ${field(t`Provider`, provider
         ? `${provider.label} (${row.provider})`
         : html.async`${row.provider} <small>${t`not linked, or recorded`}</small>`)}
@@ -194,11 +194,11 @@ async function detail(node: Node, id: number) {
       </form>` : ""}
     </div>
   </div>
-  <div class=u2-card style="flex:1 1 24rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`The provider's own state`}</div>
     <pre style="overflow:auto">${data || "—"}</pre>
   </div>
-  ${lines.length ? html.async`<div class=u2-card style="flex:1 1 24rem">
+  ${lines.length ? html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Bank lines`}</div>
     <table class=u2-table>${await Promise.all(lines.map(async (line) => html.async`<tr>
       <td>${rowLink(node, "cms.backend.superuser.fin.bank", "line", line.id)}

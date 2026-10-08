@@ -89,3 +89,20 @@ Deno.test("a received invoice keeps its original as its file: attached, never re
     await assertRejects(() => attach(app, id, other), Error, "keeps its file");
   });
 });
+
+Deno.test("an invoice speaks its own language, with the texts the module brings", async () => {
+  await withApp(async (app) => {
+    app.languages.setLangs(["en", "de"]); // a site that speaks German
+    const doc = await document(app, Number((await issue(app, await create(app, { ...invoice, lang: "de" })))?.id));
+    const draft = await document(app, await create(app, { ...invoice, lang: "de" }));
+    assertStringIncludes(draft, "<h1>Rechnung (Entwurf)</h1>"); // no number yet
+    for (const part of ["<h1>Rechnung 2026-1</h1>", "Zahlbar innerhalb von 30 Tagen", "Einzelpreis", '<th class="n rate">MwSt.', "Netto"]) assertStringIncludes(doc, part);
+  });
+});
+
+Deno.test("a language the site has no texts for falls back to its default one", async () => {
+  await withApp(async (app) => {
+    const doc = await document(app, Number((await issue(app, await create(app, { ...invoice, lang: "ru" })))?.id));
+    assertStringIncludes(doc, `<html lang="${app.languages.def}">`);
+  });
+});

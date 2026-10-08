@@ -18,7 +18,7 @@ const txtOf = (name: string) =>
  * DNS lookups an SPF record needs, following include: and redirect= like a receiver. Stops above
  * the limit.
  */
-async function spfCount(record: string, seen: Set<string>): Promise<number> {
+async function spfCount(record: string, seen: Set<string>) {
   let count = 0;
   const nested = [];
   for (const term of record.split(/\s+/)) {

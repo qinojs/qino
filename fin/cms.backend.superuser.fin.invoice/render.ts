@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { linked, money, refLink, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, direction, linked, money, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
 import { document, lines, refOf } from "@qino/qino/fin.invoice";
 import { currency as currencies } from "@qino/qino/locale.currency";
 import { methods } from "@qino/qino/fin.payment";
@@ -26,6 +26,23 @@ const partyName = (row: Row) => {
   return String(party.legalName || party.name || "");
 };
 
+/** A user as picked: name, then the organization. */
+const userLabel = (u: Row) =>
+  [[u.given_name, u.family_name].filter(Boolean).join(" "), u.organization].filter(Boolean).join(", ");
+
+/** A user, linked to their page among customers and suppliers. */
+const userLink = (node: Node, id: unknown, label = "") =>
+  id ? rowLink(node, "cms.backend.superuser.fin.party", "usr", id, label || `#${id}`) : "";
+
+/** The users of these rows, by id. */
+async function usersOf(app: App, rows: Row[]) {
+  const ids = [...new Set(rows.map((row) => Number(row.usr_id)).filter(Boolean))];
+  const users = ids.length
+    ? await app.db.query`SELECT id, given_name, family_name, organization FROM usr WHERE ${sql.in("id", ids)}`
+    : [];
+  return new Map(users.map((u) => [Number(u.id), userLabel(u)]));
+}
+
 /** Invoices with their filters, a form for a new draft, and the settings. */
 async function overview(node: Node, url: URL) {
   const t = node.app.t;
@@ -33,10 +50,10 @@ async function overview(node: Node, url: URL) {
   const option = (value: string, label: string | Promise<string>, key = "") =>
     html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 60rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
     <form method=get>
-      <input type=search name=search value="${q("search")}" placeholder="${t`Number, title, party, ref`}">
+      <input type=search name=search value="${q("search")}" placeholder="${t`Number, party, ref`}">
       <select name=direction>
         ${option("", t`Issued and received`, "direction")}
         ${option("out", t`Issued (receivables)`, "direction")}
@@ -48,11 +65,11 @@ async function overview(node: Node, url: URL) {
     </form>
     <div style="overflow:auto; padding:0">${list(node, url)}</div>
   </div>
-  <div class=u2-card style="flex:1 1 40rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`New invoice`}</div>
     ${newForm(node.app)}
   </div>
-  <div class=u2-card style="flex:1 1 20rem">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Settings`}</div>
     <settings-editor source="/api/core/settings/fin.invoice"></settings-editor>
   </div>
@@ -64,7 +81,7 @@ async function list(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
-  const sh = sqlSearch(q("search"), ["number", "title", "ref", "party"], { exact: ["id"] });
+  const sh = sqlSearch(q("search"), ["number", "ref", "party"], { exact: ["id"] });
   const where = [
     sh.where,
     q("direction") ? sql`direction = ${q("direction")}` : null,
@@ -80,10 +97,10 @@ async function list(node: Node, url: URL) {
   if (!rows.length) return html.async`<p>${t`No invoices`}`;
   const pageUrl = await (await node.page()).url();
   const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
-  return html.async`<table class=u2-table>
+  return html.async`<table class=u2-table style="white-space:nowrap">
     <thead><tr>
       <th>${t`Number`}
-      <th>${t`Direction`}
+      <th>
       <th>${t`Party`}
       <th>${t`Date`}
       <th>${t`Due`}
@@ -93,13 +110,13 @@ async function list(node: Node, url: URL) {
       <th>${t`For`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
-      <td>${row.direction === "out" ? t`issued` : t`received`}
-      <td>${partyName(row)}
+      <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
+      <td>${row.usr_id ? userLink(node, row.usr_id, partyName(row)) : partyName(row)}
       <td style="white-space:nowrap">${row.date}
       <td style="white-space:nowrap">${due(app, row)}
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
       <td style="text-align:end; white-space:nowrap">${money(row.paid, row.currency)}
-      <td><span class=u2-badge>${row.status}</span>
+      <td>${status(row.status)}
       <td>${refLink(node, row.ref)}`)}
     ${total > PER_PAGE ? html`<tfoot><tr><td colspan=9>
       ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""}
@@ -110,7 +127,7 @@ async function list(node: Node, url: URL) {
 
 /** The due date, marked once it has passed on an open invoice. */
 const due = (app: App, row: Row) => row.status === "open" && row.due && String(row.due) < today()
-  ? html.async`${row.due} <span class=u2-badge>${app.t`overdue`}</span>`
+  ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}`
   : String(row.due ?? "");
 
 /** A new invoice: what it is, then the editor takes over. */
@@ -157,6 +174,12 @@ async function editor(node: Node, row: Row) {
   const id = Number(row.id);
   const party = JSON.parse(String(row.party ?? "{}")) ?? {};
   const address = party.address ?? {};
+  // the languages the site has texts for; the document falls back to the default one likewise
+  const languages = app.languages.all;
+  const term = await app.settings["fin.invoice"].term;
+  const users = await app.db.query`SELECT id, given_name, family_name, organization FROM usr
+    ORDER BY family_name, given_name`;
+  const lang = languages.includes(String(row.lang)) ? String(row.lang) : app.languages.def;
   const [items, preview, pageUrl] = await Promise.all([
     lines(app, id),
     document(app, id).catch((e) => `<p>${e.message}</p>`),
@@ -172,19 +195,24 @@ async function editor(node: Node, row: Row) {
     <form data-edit="${id}">
       <u2-fields>
         ${t`Currency`} <input name=currency value="${row.currency}" required maxlength=3 size=4>
-        ${t`Title`} <input name=title value="${row.title}" placeholder="${t`Invoice`}">
         ${row.direction === "in" ? html.async`${t`Number`} <input name=number value="${row.number}">` : ""}
         ${t`Date`} <input type=date name=date value="${row.date}">
-        ${t`Due`} <input type=date name=due value="${row.due}">
-        ${t`Language`} <input name=lang value="${row.lang}" size=4>
+        ${row.direction === "in" // a received invoice says when it is due; ours say within how many days
+          ? html.async`${t`Due`} <input type=date name=due value="${row.due}">`
+          : html.async`${t`Payment term (days)`}
+            <input type=number name=term min=0 value="${row.term}" placeholder="${term}">`}
+        ${t`Language`} <select name=lang>${languages.map((l) =>
+          html`<option${l === lang ? html.raw(" selected") : ""}>${l}`)}</select>
+        ${t`User`} <select name=usrId data-user><option value="">—${users.map((u) => html`<option value="${u.id}"${
+          Number(u.id) === Number(row.usr_id) ? html.raw(" selected") : ""}>${userLabel(u)}`)}</select>
         ${t`Name`} <input name=name value="${party.name}">
         ${t`Street`} <input name=streetAddress value="${address.streetAddress}">
         ${t`Postal code`} <input name=postalCode size=8 value="${address.postalCode}">
         ${t`Place`} <input name=addressLocality value="${address.addressLocality}">
+        ${t`Region`} <input name=addressRegion value="${address.addressRegion}">
         ${t`Country`}
         <input name=addressCountry maxlength=2 size=3 placeholder=CH value="${address.addressCountry}">
         ${t`VAT ID`} <input name=vatID value="${party.vatID}">
-        ${t`User id`} <input name=usrId inputmode=numeric size=6 value="${row.usr_id}">
         ${t`Prices include tax`}
         <input type=checkbox name=taxIncluded value=1${row.tax_included ? html.raw(" checked") : ""}>
       </u2-fields>
@@ -211,7 +239,7 @@ async function editor(node: Node, row: Row) {
     </div>
   </div>
   ${row.direction === "in" ? original(node, row) : html.async`<div class=u2-card style="flex:1 1 40%; min-width:26rem">
-    <div class=-head>${t`As it will be printed`}</div>
+    <div class=-head>${t`Preview`} <button type=button data-pdf>${t`View as PDF`}</button></div>
     <iframe data-preview data-sheets srcdoc="${preview}" style="width:100%; height:70rem; border:0; padding:0"></iframe>
   </div>`}
 </div>`;
@@ -262,10 +290,11 @@ async function detail(node: Node, id: number) {
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Invoices`}</a> › ${row.number || `#${id}`}</div>
     <table class=u2-table>
-      ${field(t`Status`, html`<span class=u2-badge>${row.status}</span>`)}
-      ${field(t`Direction`, row.direction === "out" ? t`issued (receivable)` : t`received (payable)`)}
+      ${field(t`Status`, status(row.status))}
+      ${field(t`User`, userLink(node, row.usr_id, (await usersOf(app, [row])).get(Number(row.usr_id))))}
+      ${field(t`Direction`, html.async`${direction(row.direction, "")}
+        ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`}`)}
       ${field(t`Number`, row.number)}
-      ${field(t`Title`, row.title)}
       ${field(t`Date`, row.date)}
       ${field(t`Due`, due(app, row))}
       ${field(t`Language`, row.lang)}
@@ -275,7 +304,6 @@ async function detail(node: Node, id: number) {
       ${field(t`Paid`, money(row.paid, row.currency))}
       ${field(t`Prices`, row.tax_included ? t`include tax` : t`exclude tax`)}
       ${field(t`For`, refLink(node, row.ref))}
-      ${field(t`User`, row.usr_id)}
       ${field(t`Created`, u2.el.time(row.created))}
       ${field(t`Changed`, u2.el.time(row.changed))}
     </table>
@@ -324,10 +352,10 @@ async function detail(node: Node, id: number) {
     <div class=-head>${t`Payments`} <small>ref ${refOf(id)}</small></div>
     ${payments.length ? html.async`<table class=u2-table>${payments.map((p) => html.async`<tr>
       <td>${rowLink(node, "cms.backend.superuser.fin.payment", "payment", p.id)}
-      <td>${p.direction} · ${p.provider}
+      <td>${direction(p.direction, p.direction)} ${p.provider}
       <td style="text-align:end">${money(p.amount, p.currency)}
       <td style="text-align:end">${money(Number(p.paid) - Number(p.refunded), p.currency)}
-      <td><span class=u2-badge>${p.status}</span>`)}</table>` : html.async`<p>${t`No payments yet`}`}
+      <td>${status(p.status)}`)}</table>` : html.async`<p>${t`No payments yet`}`}
     ${ways.length && !waiting ? html.async`<form data-request="${id}">
       ${t`Ask for`} ${money(open, row.currency)}:
       <select name=method>${ways.map((w) => html`<option value="${w.method}">${w.label}`)}</select>

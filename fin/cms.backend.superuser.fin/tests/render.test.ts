@@ -14,7 +14,7 @@ Deno.test("the overview shows what is open and lists the linked parts with what 
       .replaceAll("\u00a0", " "); // Intl keeps "CHF" and the amount together
     for (const part of [
       "CHF 100.00", // receivable
-      "<span class=u2-badge>1</span>", // overdue
+      '<small class=u2-badge style="background:var(--red)">1</small>', // overdue
       "<code>fin.payment.qrbill</code>",
       "payment provider",
       "<code>fin.bank</code> <code>fin.payment</code>", // what qrbill builds on

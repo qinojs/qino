@@ -20,7 +20,7 @@ function backtraceOf(raw: unknown) {
 
 function makeFileHelper(ctx: Ctx) {
   /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
-  function localPath(file: string): string | null {
+  function localPath(file: string) {
     if (typeof file !== "string") return null;
     if (!file.startsWith("file:")) return ctx.urlToLocalPath(file);
     try {
@@ -30,11 +30,11 @@ function makeFileHelper(ctx: Ctx) {
     } catch { return null; }
   }
   /** undefined for files that are not local app files — no link, no editor grant. */
-  function editorLink(file: string, line: unknown, col: unknown): string | undefined {
+  function editorLink(file: string, line: unknown, col: unknown) {
     const path = localPath(file);
     return path ? editorUrl(path, { line, col }) : undefined;
   }
-  function fileDisplay(file: string): string {
+  function fileDisplay(file: string) {
     const path = localPath(file);
     if (!path) return file;
     for (const mod of ctx.app.modules.all().values()) {

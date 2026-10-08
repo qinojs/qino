@@ -23,10 +23,11 @@ type Values = {
   party?: Record<string, unknown>;
   usrId?: number | null;
   ref?: string;
-  title?: string;
   text?: string;
   date?: string;
   due?: string;
+  /** Days to pay; `null` takes the default (`fin.invoice.term`) again. */
+  term?: number | null;
   number?: string;
   lang?: string;
   /** What other modules keep with it, e.g. what was read from a received invoice. */
@@ -64,7 +65,8 @@ export async function update(app: App, id: number, values: Partial<Values>): Pro
 
 /**
  * Make a draft owed: `open`. An outgoing one draws its number now — numbers follow the order of
- * issuing, without gaps. The date defaults to today, the due date to the date plus the term.
+ * issuing, without gaps. The date defaults to today, the due date to the date plus the term — the
+ * invoice's own, else `fin.invoice.term`.
  */
 export async function issue(app: App, id: number): Promise<Row | undefined> {
   return await app.db.transaction(async () => {
@@ -72,11 +74,12 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
     if (invoice?.status !== "draft") throw new Error("fin.invoice: only drafts can be issued");
     const s = app.settings["fin.invoice"];
     const date = String(invoice.date ?? today());
-    const term = Number(await s.term ?? 30);
+    const term = invoice.term ?? Number(await s.term ?? 30);
     const format = String(await s.number || "{year}-{n}");
     const number = invoice.direction === "out" ? await draw(app, format, date) : invoice.number;
-    const due = invoice.due ?? addDays(date, term);
-    await app.db.table("invoice").update(id, { number, date, due, changed: unixTime() });
+    // a due date given stands; else it follows from the term, which is kept to be printed
+    const fixed = invoice.due ? { due: invoice.due } : { due: addDays(date, Number(term)), term };
+    await app.db.table("invoice").update(id, { number, date, ...fixed, changed: unixTime() });
     return status(app, invoice, "open");
   }).then(async (issued) => {
     // outside the transaction: a provider may be asked over the network
@@ -95,7 +98,7 @@ async function ask(app: App, invoice: Row) {
     amount: Number(invoice.total),
     currency: String(invoice.currency),
     ref: refOf(Number(invoice.id)),
-    description: [invoice.title, invoice.number].filter(Boolean).join(" "),
+    description: String(invoice.number),
     usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
     return: "/",
   });
@@ -128,8 +131,8 @@ export async function revise(app: App, id: number): Promise<number> {
     party: JSON.parse(String(invoice.party ?? "{}")) ?? undefined,
     usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
     ref: invoice.ref == null ? undefined : String(invoice.ref),
-    title: invoice.title == null ? undefined : String(invoice.title),
     text: invoice.text == null ? undefined : String(invoice.text),
+    term: invoice.term == null ? undefined : Number(invoice.term),
     number: invoice.direction === "in" ? String(invoice.number ?? "") || undefined : undefined,
     lang: String(invoice.lang ?? "") || undefined,
   });
@@ -155,9 +158,8 @@ export async function document(app: App, id: number): Promise<string> {
   // a draft has no payment yet: it shows the slip it will get, or says where it will be
   const promised = invoice.status === "draft" && method && invoice.direction === "out";
   // made in the document's language, so the slips speak it too
-  const description = [invoice.title, invoice.number].filter(Boolean).join(" ");
   const slips = async () => promised
-    ? [await sample(app, method, { amount: Number(invoice.total), currency: String(invoice.currency), description })
+    ? [await sample(app, method, { amount: Number(invoice.total), currency: String(invoice.currency) })
       ?? `<p>${await app.t`The payment slip is added when the invoice is issued.`}</p>`]
     : (await Promise.all(open.map((payment) => slip(app, Number(payment))))).filter((s) => s != null);
   return htmlOf(app, invoice, await lines(app, id), slips);
@@ -247,9 +249,10 @@ async function write(app: App, id: number, values: Partial<Values>, invoice?: Ro
   if (values.party != null) fields.party = JSON.stringify(values.party);
   if (values.data != null) fields.data = JSON.stringify(values.data);
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
-  for (const key of ["ref", "title", "text", "date", "due", "number", "lang"] as const) {
+  for (const key of ["ref", "text", "date", "due", "number", "lang"] as const) {
     if (values[key] != null) fields[key] = values[key];
   }
+  if (values.term !== undefined) fields.term = values.term;
   const taxIncluded = values.taxIncluded ?? Boolean(invoice?.tax_included);
   const given = values.lines ?? (values.taxIncluded == null ? undefined : (await lines(app, id)).map(lineOf));
   if (given) {

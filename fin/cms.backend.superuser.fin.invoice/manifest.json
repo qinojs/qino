@@ -3,7 +3,8 @@
   "description": "Invoices issued and received: lines, payments, the document and its PDF, and new drafts.",
   "dependencies": [
     "cms.backend.superuser.fin",
-    "fin.invoice"
+    "fin.invoice",
+    "pdf"
   ],
   "files": [
     "manifest.json",

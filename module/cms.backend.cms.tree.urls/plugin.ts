@@ -65,7 +65,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
   await addChildren(root, 0);
   return html.join(rows);
 
-  async function addChildren(parent: Node, level: number): Promise<void> {
+  async function addChildren(parent: Node, level: number) {
     for (const page of (await parent.children({ type })).values()) {
       const access = await page.access(ctx.user);
       const hasChildren = (await page.children({ type })).size > 0;

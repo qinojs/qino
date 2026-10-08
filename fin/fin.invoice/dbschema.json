@@ -39,6 +39,10 @@
             "x-index": true,
             "description": "Due date, YYYY-MM-DD; overdue is derived from it"
           },
+          "term": {
+            "type": "integer",
+            "description": "Days to pay, as agreed and printed; the due date follows from it on issue"
+          },
           "currency": {
             "type": "string",
             "maxLength": 3,
@@ -95,10 +99,6 @@
           "party": {
             "type": "string",
             "description": "The other side as printed, JSON shaped like identity.organization"
-          },
-          "title": {
-            "type": "string",
-            "maxLength": 191
           },
           "text": {
             "type": "string",

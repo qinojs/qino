@@ -15,7 +15,8 @@ export async function document(
   lines: Row[],
   slips: () => Promise<string[]> = () => Promise.resolve([]),
 ): Promise<string> {
-  const lang = String(invoice.lang || app.languages.def);
+  // a language the site has no texts for is written in its default one, until t`` knows any language
+  const lang = app.languages.all.includes(String(invoice.lang)) ? String(invoice.lang) : app.languages.def;
   return await inLang(app, lang, async () => {
     const t = app.t;
     const sender = await organization(app);
@@ -67,7 +68,10 @@ export async function document(
   @media screen {
     html { background: #ccc }
     body { margin: 0; padding: 1rem }
-    main, .slip { box-sizing: border-box; width: 210mm; min-height: 297mm; margin: 0 auto 1rem; background: #fff }
+    main, .slip {
+      box-sizing: border-box; width: 210mm; min-height: 297mm; margin: 0 auto 1rem;
+      background: #fff; box-shadow: 0 0 1em #000a;
+    }
     main { padding: 2cm 2cm 2.5cm }
   }
 </style>
@@ -77,10 +81,12 @@ export async function document(
   ${logo ? html`<img src="${logo}" alt="" style="max-height: 4em">` : ""}
 </header>
 <address class=to>${addressBlock(party, abroad)}${vat(party)}</address>
-<h1>${invoice.title || t`Invoice`} ${invoice.number}</h1>
+<h1>${t`Invoice`}${invoice.number ? ` ${invoice.number}` : ""}${
+  invoice.status === "draft" ? html.async` (${t`draft`})` : ""}</h1>
 <p>
   ${t`Date`}: ${day(invoice.date)}<br>
-  ${invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}` : ""}
+  ${invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
+  ${invoice.term == null ? "" : t`Payable within ${invoice.term} days`}
 </p>
 <table>
   <thead><tr>
@@ -163,5 +169,6 @@ async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {
   const url = new URL(await app.url());
   const ctx = await Ctx.create(app, new Request(url), { appUrl: url.pathname, url });
   ctx.lang = ctx.langUsr = lang;
+  ctx.langNs = "fin"; // the texts recipients read come with the module fin (locale/)
   return await requestStorage.run(ctx, fn).finally(() => ctx.req.cleanup());
 }

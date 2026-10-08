@@ -1,0 +1,19 @@
+{
+  "Amount": "Importo",
+  "Date": "Data",
+  "Description": "Descrizione",
+  "draft": "bozza",
+  "Due": "Scadenza",
+  "Invoice": "Fattura",
+  "Net": "Netto",
+  "on": "su",
+  "Payable within {0} days": "Pagabile entro {0} giorni",
+  "Pos.": "Pos.",
+  "Quantity": "Quantità",
+  "Tax": "IVA",
+  "The payment slip is added when the invoice is issued.": "La polizza di versamento viene aggiunta all’emissione della fattura.",
+  "Total": "Totale",
+  "Total excluding tax": "Totale IVA esclusa",
+  "Unit price": "Prezzo unitario",
+  "VAT ID": "N. IVA"
+}

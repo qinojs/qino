@@ -36,7 +36,7 @@ async function sqliteTableStats(db: Db) {
   return tables.map((name) => ({ name, bytes: Number(stats.get(name) ?? 0) }));
 }
 
-async function dirSize(dir: string): Promise<number> {
+async function dirSize(dir: string) {
   let total = 0;
   try {
     for (const entry of await fs.list(dir)) {
@@ -53,7 +53,7 @@ type TreeNode = { size: number; children: Record<string, TreeNode> };
 
 async function dirTree(dir: string) {
   const tree: Record<string, TreeNode> = {};
-  async function walk(dir: string, relPath: string): Promise<number> {
+  async function walk(dir: string, relPath: string) {
     let total = 0;
     try {
       for (const entry of await fs.list(dir)) {
