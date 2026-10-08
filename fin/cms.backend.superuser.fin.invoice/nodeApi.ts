@@ -2,7 +2,7 @@ import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { fileOf, toMinor } from "@qino/qino/cms.backend.superuser.fin";
 import {
-  attach, cancel, create, document, issue, mail, print, refOf, remove, revise, update,
+  attach, cancel, create, document, issue, mail, payerOf, print, refOf, remove, revise, update,
 } from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
@@ -89,6 +89,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         ref: refOf(Number(id)),
         description: `${await t`Invoice`} ${invoice.number ?? ""}`.trim(),
         usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
+        payer: payerOf(invoice),
         return: await pageUrl({ invoice: id }),
       });
       return { ok: true, message: `${await t`Payment`} #${payment.id}: ${payment.redirect}` };

@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ingest } from "@qino/qino/fin.bank.camt";
-import { create as invoice, document, issue, refOf } from "@qino/qino/fin.invoice";
+import { create as invoice, document, issue, payerOf, refOf } from "@qino/qino/fin.invoice";
 import { create, methods, slip } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
@@ -66,5 +66,23 @@ Deno.test("with a normal IBAN the reference is a creditor reference", async () =
     const { id } = await create(app, { method: "qrbill", amount: 1000, currency: "EUR", return: "/" });
     assertEquals(await app.db.one`SELECT external_id FROM payment WHERE id = ${id}`, scor(id));
     assertStringIncludes((await slip(app, id))!, "<svg");
+  });
+});
+
+Deno.test("the invoice's party is the debtor — with a whole address; else it is left to fill in", async () => {
+  await withApp("CH44 3199 9123 0008 8901 2", async (app) => {
+    const lines = [{ name: "Design", price: 50000 }];
+    const address = { streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern" };
+    const slipOf = async (party: Record<string, unknown>) => {
+      const id = Number((await issue(app, await invoice(app, { currency: "CHF", lines, party })))?.id);
+      const order = { method: "qrbill", amount: 50000, currency: "CHF", ref: refOf(id), payer: payerOf((await app.db.row`
+        SELECT * FROM invoice WHERE id = ${id}`)!) };
+      return (await slip(app, (await create(app, { ...order, return: "/" })).id))!;
+    };
+    const whole = await slipOf({ name: "Kunde AG", address });
+    assertStringIncludes(whole, "Kunde AG");
+    assertStringIncludes(whole, "3000 Bern");
+    const partial = await slipOf({ name: "Ohne Adresse AG" });
+    assertEquals(partial.includes("Ohne Adresse AG"), false); // left blank, to fill in by hand
   });
 });

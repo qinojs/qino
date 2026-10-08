@@ -49,7 +49,8 @@ export const paymentProvider: Provider = {
 /** A QR reference with a QR-IBAN, a creditor reference otherwise. */
 const referenceOf = async (app: App, id: number) => isQrIban(await iban(app)) ? qrr(id) : scor(id);
 
-/** The bill's data: we are the creditor (`identity.organization`); the debtor is left blank. */
+/** The bill's data: we are the creditor (`identity.organization`), the payer — where its address
+ *  is complete, as the standard asks — the debtor; else that is left blank, to be filled in by hand. */
 async function billOf(app: App, payment: Row) {
   const o = app.settings.identity.organization;
   const a = o.address;
@@ -74,7 +75,18 @@ async function billOf(app: App, payment: Row) {
     // a preview has no reference yet: the one its id would get
     reference: String(payment.external_id ?? await referenceOf(app, Number(payment.id))),
     message: payment.description ? String(payment.description) : undefined,
+    debtor: debtorOf(payment, country || "CH"),
   };
+}
+
+/** The payer as a QR bill's debtor: a structured address, all of it, or none. */
+function debtorOf(payment: Row, country: string) {
+  const payer = JSON.parse(String(payment.payer ?? "null"));
+  const a = payer?.address ?? {};
+  if (!payer?.name || !a.streetAddress || !a.postalCode || !a.addressLocality) return;
+  // a domestic address names no country: it is the creditor's
+  return { name: String(payer.name), address: a.streetAddress, zip: a.postalCode, city: a.addressLocality,
+    country: String(a.addressCountry || country).toUpperCase() };
 }
 
 /** The slip in the language of the request, else of the site; English where a QR bill has none. */

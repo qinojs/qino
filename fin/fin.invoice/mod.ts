@@ -8,6 +8,7 @@ import { draw } from "./lib/number.ts";
 import { lineOf, totals } from "./lib/totals.ts";
 
 import type { App, DbFile, Row } from "@qino/qino";
+import type { Payer } from "@qino/qino/fin.payment";
 import type { Line } from "./lib/totals.ts";
 
 export type { Line } from "./lib/totals.ts";
@@ -37,6 +38,12 @@ type Values = {
 
 /** The `ref` its payments carry. */
 export const refOf = (id: number): string => `fin.invoice:${id}`;
+
+/** Its party as the payer of its payments: a slip prints it. */
+export function payerOf(invoice: Row): Payer | undefined {
+  const party = JSON.parse(String(invoice.party ?? "null"));
+  return party?.name ? { name: String(party.legalName || party.name), address: party.address } : undefined;
+}
 
 /** A new draft. `in` is an invoice received: it keeps the sender's `number`. */
 export async function create(app: App, values: Values & { direction?: "in" | "out" }): Promise<number> {
@@ -101,6 +108,7 @@ async function ask(app: App, invoice: Row) {
     ref: refOf(Number(invoice.id)),
     description: String(invoice.number),
     usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
+    payer: payerOf(invoice),
     return: "/",
   });
 }
@@ -158,7 +166,11 @@ export async function document(app: App, id: number): Promise<string> {
   const promised = invoice.status === "draft" && method && invoice.direction === "out";
   // made in the document's language, so the slips speak it too
   const slips = async () => promised
-    ? [await sample(app, method, { amount: Number(invoice.total), currency: String(invoice.currency) })
+    ? [await sample(app, method, {
+      amount: Number(invoice.total),
+      currency: String(invoice.currency),
+      payer: payerOf(invoice),
+    })
       ?? `<p>${await app.t`The payment slip is added when the invoice is issued.`}</p>`]
     : (await Promise.all(open.map((payment) => slip(app, Number(payment))))).filter((s) => s != null);
   return htmlOf(app, invoice, await lines(app, id), slips);
