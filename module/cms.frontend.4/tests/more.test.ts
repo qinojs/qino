@@ -32,7 +32,7 @@ async function makeApp() {
 }
 
 /** The panel's context: a logged-in user and the feedback draft in the session. */
-function makeCtx(app: App, draft: { value: string }, user: Record<string, unknown>): Ctx {
+function makeCtx(app: App, draft: { value: string }, user: Record<string, unknown>) {
   return {
     app,
     req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },

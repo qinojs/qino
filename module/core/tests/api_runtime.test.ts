@@ -73,7 +73,7 @@ const api = {
   },
 };
 
-function withCtx<T>(fn: () => T): T {
+function withCtx<T>(fn: () => T) {
   return requestStorage.run(ctx, fn);
 }
 

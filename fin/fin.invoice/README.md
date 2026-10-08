@@ -59,6 +59,16 @@ Outgoing invoices draw a number when issued, in the order of issuing and without
 count restarts each year. Incoming invoices keep the sender's `number`. `fin.invoice.term` is the
 days until due, default 30.
 
+## Credit notes
+
+`creditNote(app, id)` makes a draft credit note (EN 16931 type 381) for an issued invoice of
+ours: its lines, party and terms, to be cut down to what is given back. Issued, it draws its
+number — with the invoices, or from `fin.invoice.creditNumber` — books revenue and tax back, and
+counts on the invoice it corrects (`corrects`) as if paid. What it gives beyond what is still
+open there is owed to the customer: it stays open until paid back (an outgoing payment) or put
+onto their credit (`fin.payment.credit`). Its document says "Credit note" and names the invoice;
+it asks for no payment, and no reminder goes out for it. The logic lives in `lib/credit.ts`.
+
 ## The other side, the document
 
 `party` is the other side as printed, shaped like `identity.organization` — `name`, `legalName`,

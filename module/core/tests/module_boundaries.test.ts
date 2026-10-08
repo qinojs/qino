@@ -65,13 +65,13 @@ function valueImports(source: string) {
 }
 
 /** Local target of a relative or @qino/qino package import. */
-function targetPath(spec: string, file: string): string | undefined {
+function targetPath(spec: string, file: string) {
   const url = spec.startsWith(".") ? new URL(spec, toFileUrl(file)).href : import.meta.resolve(spec);
   return url.startsWith("file:") ? fromFileUrl(url) : undefined;
 }
 
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
-function exports(source: string): Set<string> | undefined {
+function exports(source: string) {
   if (/^export\s+\*\s+from/m.test(source)) return;
   const names = new Set<string>();
   for (const m of source.matchAll(/^export\s+(?:declare\s+)?(?:abstract\s+)?(?:const|let|var|function|async\s+function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
