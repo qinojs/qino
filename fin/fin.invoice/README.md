@@ -65,7 +65,11 @@ a due date was given — and keeps the term to print it ("Payable within 30 days
 ## Credit notes
 
 `creditNote(app, id)` makes a draft credit note (EN 16931 type 381) for an issued invoice of
-ours: its lines, party and terms, to be cut down to what is given back. Issued, it draws its
+ours: its lines, party and terms, to be cut down to what is given back. It is stored as what it
+is — negative quantities at the invoice's prices, so its amounts and totals are negative and any
+sum over invoices comes out right without asking for the type (as ERPNext and Dolibarr keep it);
+its document, and the invoice editor, show them positive. Rounding is half away from zero, so a
+full credit note's tax is its invoice's to the cent. Issued, it draws its
 number — with the invoices, or from `fin.invoice.creditNumber` — books revenue and tax back, and
 counts on the invoice it corrects (`corrects`) as if paid. What it gives beyond what is still
 open there is owed to the customer: it stays open until paid back (an outgoing payment) or put

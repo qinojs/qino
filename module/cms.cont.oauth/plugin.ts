@@ -1,11 +1,11 @@
 import { html } from "@qino/qino";
 import { providers } from "@qino/qino/auth.oauth";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Renders one "Log in with …" link per configured login provider. */
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   const edit = await node.edit();
   if (ctx.user && !edit) return html.raw(""); // nothing to offer once logged in

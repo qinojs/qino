@@ -1,4 +1,4 @@
-import { lineOf, totals } from "@qino/qino/fin.invoice";
+import { lineOf, round, totals } from "@qino/qino/fin.invoice";
 
 import { book, reverse } from "../mod.ts";
 
@@ -53,8 +53,8 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   const { nets, rates } = split(items, Boolean(invoice.tax_included), out ? roles.revenue : roles.expense);
   // every line carries its rate as tax code: what a tax report adds up
   const code = (rate: number) => String(rate);
-  // a credit note books the other way round: revenue and tax back, the claim reduced
-  const sign = (out ? -1 : 1) * (invoice.type === "credit_note" ? -1 : 1);
+  // a credit note's amounts are negative: it books revenue and tax back by itself
+  const sign = out ? -1 : 1;
   const lines: Line[] = [
     ...nets.map((n) => ({ account: n.account, amount: sign * n.amount, taxCode: code(n.rate) })),
     ...rates.map((r) => ({
@@ -90,7 +90,7 @@ function split(items: Row[], taxIncluded: boolean, fallback: string) {
     });
     const sum = [...shares.values()].reduce((a, b) => a + b, 0);
     const parts = [...shares]
-      .map(([account, share]) => ({ account, rate, amount: Math.round(sum ? share / sum * net : 0) }));
+      .map(([account, share]) => ({ account, rate, amount: round(sum ? share / sum * net : 0) }));
     parts[parts.length - 1].amount += net - parts.reduce((a, p) => a + p.amount, 0);
     nets.push(...parts);
   }

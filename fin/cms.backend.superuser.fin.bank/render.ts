@@ -131,18 +131,17 @@ function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[
 }
 
 /** Open invoices whose rest is exactly a line's amount — money in for issued ones, out for received
- *  ones and for a credit note of ours, which is paid back. */
+ *  ones; a credit note's rest is negative, so it goes out by itself. */
 async function suggestions(app: App, open: Row[]) {
   const found = new Map<number, { ref: string; label: string }[]>();
   if (!open.length || !linked(app, "fin.invoice")) return found;
   const invoices = await app.db.query`
-    SELECT id, direction, type, number, currency, total - paid AS rest, party FROM invoice WHERE status = 'open'`;
+    SELECT id, direction, number, currency, total - paid AS rest, party FROM invoice WHERE status = 'open'`;
   for (const row of open) {
     const amount = Number(row.amount);
-    const direction = amount > 0 ? "out" : "in";
     found.set(Number(row.id), invoices
-      .filter((i) => ((i.direction === "out") !== (i.type === "credit_note") ? "out" : "in") === direction)
-      .filter((i) => i.currency === row.currency && Number(i.rest) === Math.abs(amount))
+      // what the line would be: our claim comes in, theirs goes out
+      .filter((i) => i.currency === row.currency && (i.direction === "out" ? 1 : -1) * Number(i.rest) === amount)
       .map((i) => ({
         ref: `fin.invoice:${i.id}`,
         label: `${i.number ?? "#" + i.id} ${JSON.parse(String(i.party ?? "{}"))?.name ?? ""}`.trim(),

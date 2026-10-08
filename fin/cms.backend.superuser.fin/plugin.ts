@@ -51,10 +51,8 @@ async function figures(app: App) {
   const row = (label: Promise<string> | string, value: HtmlString | string | number) =>
     html.async`<tr><th>${label}<td>${value}`;
   if (linked(app, "fin.invoice")) {
-    // a credit note still open is owed by us: it takes off what is claimed
     const open = (direction: string) => app.db.query`
-      SELECT currency, SUM(CASE WHEN type = 'credit_note' THEN paid - total ELSE total - paid END) AS amount
-      FROM invoice
+      SELECT currency, SUM(total - paid) AS amount FROM invoice
       WHERE direction = ${direction} AND status = 'open' GROUP BY currency ORDER BY currency`;
     const overdue = Number(await app.db.one`
       SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND type = 'invoice' AND status = 'open'

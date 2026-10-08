@@ -82,7 +82,7 @@ async function renderOverview(node: Node, url: URL) {
 }
 
 // List part - re-rendered live on search/filter input via cms.reloadPart(nid, "list", form values).
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const app = ctx.app;
   const search = String(vars.search ?? "").trim();
   const filter = String(vars.channel ?? "");

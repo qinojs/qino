@@ -16,6 +16,10 @@ export async function document(
   slips: () => Promise<string[]> = () => Promise.resolve([]),
 ): Promise<string> {
   const lang = languageOf(app, invoice);
+  // a credit note reads as what it gives back: its negative amounts shown positive
+  if (invoice.type === "credit_note") {
+    lines = lines.map((l) => ({ ...l, quantity: -Number(l.quantity), amount: -Number(l.amount) }));
+  }
   return await inLang(app, lang, async () => {
     const t = app.t;
     const sender = await organization(app);

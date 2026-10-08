@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 
 import { withFinApp } from "../../tests/app.ts";
-import { attach, create, document, issue, print } from "../mod.ts";
+import { attach, create, creditNote, document, issue, print } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -116,5 +116,15 @@ Deno.test("one rate shows below the lines, no tax shows no tax rows", async () =
     assertStringIncludes(one, "Tax 8.1 %");
     const none = await of([{ name: "Design", price: 10000 }]);
     for (const part of ["Net", "Tax "]) assert(!none.includes(`<th colspan=4>${part}`), part);
+  });
+});
+
+Deno.test("a credit note prints what it gives back, positive, and names its invoice", async () => {
+  await withApp(async (app) => {
+    const id = Number((await issue(app, await create(app, invoice)))?.id);
+    const note = Number((await issue(app, await creditNote(app, id)))?.id);
+    const doc = (await document(app, note)).replaceAll(" ", " ");
+    for (const part of ["<h1>Credit note 2026-2</h1>", "Corrects invoice 2026-1"]) assertStringIncludes(doc, part);
+    assertEquals(/>-[\d'.,]/.test(doc), false); // no amount with a minus
   });
 });

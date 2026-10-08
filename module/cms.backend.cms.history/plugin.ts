@@ -59,7 +59,7 @@ function candidates(app: App, f: Record<string, string>, ctx: Ctx) {
 type Event = { key: string; ncMax: number; row: Record<string, any>; datas: unknown[] };
 
 // ── list (filterable / incrementally reloadable part) ───────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const app = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
   const rows = await candidates(app, f, ctx);

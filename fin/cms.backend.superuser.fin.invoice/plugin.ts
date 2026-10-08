@@ -18,8 +18,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function widget(app: App): Promise<HtmlString> {
   const today = new Date().toLocaleDateString("sv-SE");
   const [open, overdue] = await Promise.all([
-    // a credit note still open is owed by us: it takes off what is claimed, and is never overdue
-    app.db.query`SELECT currency, SUM(CASE WHEN type = 'credit_note' THEN paid - total ELSE total - paid END) AS amount
+    // a credit note is negative: it takes off what is claimed by itself; it is never overdue
+    app.db.query`SELECT currency, SUM(total - paid) AS amount
       FROM invoice WHERE direction = 'out' AND status = 'open' GROUP BY currency ORDER BY currency`,
     app.db.one`SELECT COUNT(*) FROM invoice
       WHERE direction = 'out' AND type = 'invoice' AND status = 'open' AND due < ${today}`.then(Number),

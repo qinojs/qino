@@ -13,7 +13,7 @@ import type { Payer } from "@qino/qino/fin.payment";
 import type { Line } from "./lib/totals.ts";
 
 export type { Line } from "./lib/totals.ts";
-export { lineOf, totals } from "./lib/totals.ts";
+export { lineOf, round, totals } from "./lib/totals.ts";
 
 /** What an invoice holds. `party` is the other side as printed, shaped like `identity.organization`
  *  (`name`, `legalName`, `address` { `streetAddress`, `postalCode`, `addressLocality`,
@@ -86,6 +86,9 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
   return await app.db.transaction(async () => {
     const invoice = await get(app, id);
     if (invoice?.status !== "draft") throw new Error("fin.invoice: only drafts can be issued");
+    if (invoice.type === "credit_note" && Number(invoice.total) >= 0) {
+      throw new Error("fin.invoice: a credit note gives back — its total is below zero");
+    }
     const s = app.settings["fin.invoice"];
     const date = String(invoice.date ?? today());
     const term = invoice.term ?? Number(await s.term ?? 30);
@@ -271,7 +274,9 @@ export async function settle(app: App, id: number): Promise<Row | undefined> {
   const paid = credit ? await settledOf(app, invoice, payments) : payments + await credited(app, id);
   await app.db.exec`UPDATE invoice SET paid = ${paid}, changed = ${unixTime()} WHERE id = ${id}`;
   if (invoice.status !== "open" && invoice.status !== "paid") return get(app, id);
-  const fresh = await status(app, invoice, paid >= Number(invoice.total) ? "paid" : "open");
+  // settled once what moved reaches the total — below zero for a credit note
+  const total = Number(invoice.total);
+  const fresh = await status(app, invoice, (credit ? paid <= total : paid >= total) ? "paid" : "open");
   // paid another way: a QR bill or a payment page still waiting asks for what is no longer owed
   if (fresh?.status === "paid") {
     const waiting = await app.db.col`SELECT id FROM payment WHERE ref = ${refOf(id)} AND status = 'pending'`;

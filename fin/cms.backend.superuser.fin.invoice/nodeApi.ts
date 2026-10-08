@@ -24,7 +24,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     // the editor saves as one types, and gets the invoice back as it will be printed
     if (vars.save) {
       const v = vars.save as Record<string, string>;
-      await update(app, Number(v.id), valuesOf(v));
+      const values = valuesOf(v);
+      // a credit note is typed as what it gives back, stored negative
+      const draft = await app.db.row`SELECT type FROM invoice WHERE id = ${Number(v.id)}`;
+      if (draft?.type === "credit_note") for (const line of values.lines) line.quantity = -line.quantity;
+      await update(app, Number(v.id), values);
       return { ok: true, html: await document(app, Number(v.id)) };
     }
     // a draft as PDF, to look at: made on request, not kept
@@ -71,7 +75,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     // what a credit note owes, onto the customer's credit: paid out, through the credit provider
     if (action === "tocredit") {
       const note = await app.db.row`SELECT * FROM invoice WHERE id = ${Number(id)}`;
-      const owed = Number(note?.total) - Number(note?.paid);
+      const owed = Number(note?.paid) - Number(note?.total); // its rest is negative: what we owe
       if (note?.type !== "credit_note" || !note.usr_id || owed <= 0) {
         return { ok: false, message: await t`Nothing owed` };
       }
@@ -128,7 +132,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       await record(app, {
         direction: (invoice.direction === "out") !== credit ? "in" : "out",
         provider: provider || "bank",
-        amount: amount ? toMinor(amount, currency) : Number(invoice.total) - Number(invoice.paid),
+        amount: amount ? toMinor(amount, currency) : Math.abs(Number(invoice.total) - Number(invoice.paid)),
         currency,
         ref: refOf(Number(id)),
       });

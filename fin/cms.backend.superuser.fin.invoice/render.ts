@@ -214,6 +214,8 @@ async function editor(node: Node, row: Row) {
     node.page().then((page) => page.url()),
   ]);
   const rate = await app.settings["fin.invoice"].taxRate;
+  // a credit note is typed as what it gives back: its negative quantities shown positive
+  const asGiven = (line: Row) => row.type === "credit_note" ? { ...line, quantity: -Number(line.quantity) } : line;
   const shared = {
     currency: row.currency,
     rate,
@@ -263,7 +265,7 @@ async function editor(node: Node, row: Row) {
           ${shared.taxed ? html.async`<th>${t`Tax %`}` : ""}
           <th>
         <tbody data-lines u2-dropzone>
-          ${items.map((line, i) => lineRow(app, i, line, shared))}${lineRow(app, items.length, {}, shared)}
+          ${items.map((line, i) => lineRow(app, i, asGiven(line), shared))}${lineRow(app, items.length, {}, shared)}
       </table>
     </div>
     <div>
@@ -314,7 +316,8 @@ async function detail(node: Node, id: number) {
   if (row.status === "draft") return editor(node, row);
   const party = JSON.parse(String(row.party ?? "{}")) ?? {};
   const address = party.address ?? {};
-  const open = Number(row.total) - Number(row.paid);
+  // what is still to move: for a credit note what we owe, its rest being negative
+  const open = Math.abs(Number(row.total) - Number(row.paid));
   // a credit note asks for nothing: what is open on it, we owe
   const credit = row.type === "credit_note";
   const [items, payments, ways] = await Promise.all([

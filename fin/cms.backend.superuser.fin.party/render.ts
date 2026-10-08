@@ -46,9 +46,8 @@ async function overview(node: Node, url: URL) {
   const ids = rows.map((row) => Number(row.id));
   // what is open, per user, direction and currency: what they owe us and what we owe them
   const open = ids.length
-    // a credit note still open is owed by us: it takes off what is claimed
     ? await app.db.query`SELECT usr_id, direction, currency,
-        SUM(CASE WHEN type = 'credit_note' THEN paid - total ELSE total - paid END) AS amount FROM invoice
+        SUM(total - paid) AS amount FROM invoice
       WHERE status = 'open' AND ${sql.in("usr_id", ids)} GROUP BY usr_id, direction, currency ORDER BY currency`
     : [];
   // what users hold as credit, where credit is kept

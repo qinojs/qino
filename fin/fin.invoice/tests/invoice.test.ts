@@ -214,20 +214,28 @@ Deno.test("a credit note counts on its invoice as paid; what goes beyond is owed
   const one = [{ name: "Design", price: 10000 }];
   const id = Number((await issue(app, await create(app, { currency: "CHF", lines: one })))?.id);
   const note = await creditNote(app, id);
-  assertEquals((await row(app, note))?.type, "credit_note");
-  await update(app, note, { lines: [{ name: "Design", price: 3000 }] }); // part of it given back
+  assertEquals([(await row(app, note))?.type, (await row(app, note))?.total], ["credit_note", -10000]); // as it is
+  await update(app, note, { lines: [{ name: "Design", quantity: 1, price: 3000 }] });
+  await assertRejects(() => issue(app, note), Error, "below zero"); // a credit note gives back
+  await update(app, note, { lines: [{ name: "Design", quantity: -1, price: 3000 }] }); // part of it
   await issue(app, note);
   assertEquals(await status(id), ["open", 3000]); // 70.00 left to pay
-  assertEquals(await status(note), ["paid", 3000]); // all of it taken off the invoice
+  assertEquals(await status(note), ["paid", -3000]); // all of it taken off the invoice
   await assertRejects(() => creditNote(app, note), Error, "issued invoices");
 
   // paid in full already: a credit note on top is owed to the customer, until paid back
   await record(app, { direction: "in", provider: "bank", amount: 7000, currency: "CHF", ref: refOf(id) });
   assertEquals(await status(id), ["paid", 10000]);
   const more = await creditNote(app, id);
-  await update(app, more, { lines: [{ name: "Goodwill", price: 2000 }] });
+  await update(app, more, { lines: [{ name: "Goodwill", quantity: -1, price: 2000 }] });
   await issue(app, more);
   assertEquals(await status(more), ["open", 0]);
   await record(app, { direction: "out", provider: "bank", amount: 2000, currency: "CHF", ref: refOf(more) });
-  assertEquals(await status(more), ["paid", 2000]);
+  assertEquals(await status(more), ["paid", -2000]);
+});
+
+Deno.test("a credit note rounds as its invoice: half away from zero", () => {
+  const line = { name: "Half", price: 125, taxRate: 10 }; // tax 12.5
+  assertEquals(totals([line], false).tax, 13);
+  assertEquals(totals([{ ...line, quantity: -1 }], false).tax, -13);
 });

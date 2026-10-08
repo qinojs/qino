@@ -138,7 +138,7 @@ Deno.test("a credit note books revenue and tax back; paying it back books the mo
     const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
     await record(app, { direction: "in", provider: "bank", amount: 108100, currency: "CHF", ref: refOf(id) });
     const note = await creditNote(app, id);
-    await update(app, note, { lines: [{ name: "Design", price: 20000, taxRate: 8.1 }] });
+    await update(app, note, { lines: [{ name: "Design", quantity: -1, price: 20000, taxRate: 8.1 }] });
     await issue(app, note);
     // revenue and tax less the credit; the customer is owed it
     assertEquals(await saldo(app), { "1020": 108100, "1100": -21620, "2200": -6480, "3400": -80000 });

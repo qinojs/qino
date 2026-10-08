@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 const SORTABLE = ["code", "url", "hits", "last", "expires"];
 const PER_PAGE = 50;
 
-async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> }) {
   const { t, db } = node.app;
   if (vars.delete) await db.table("shorturl").delete(String(vars.delete));
 
