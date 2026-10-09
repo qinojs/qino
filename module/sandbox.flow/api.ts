@@ -11,26 +11,28 @@ import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 
 const host = s.string().describe("The object whose event starts it: app, db");
 const event = s.string().describe("The event's name, e.g. table:update-after");
-const steps = s.array(s.record(s.any()))
-  .describe("{ description, fn } with fn as JS source, or { description, debounce: { ms, by } }; each gets the " +
-    "previous result (the first the event), a falsy one stops, true passes the input on");
+const code = s.string()
+  .describe("A JavaScript function body; it sees event, tools (await tools.<name>(params)), context and owner");
 
-/** What makes a flow; to make one, host, event and steps are needed. */
+/** What makes a flow; to make one, host, event and code are needed. */
 const optional = {
   description: s.optional(s.string()),
+  debounce: s.optional(s.object({ ms: s.number(), by: s.optional(s.array(s.string())) }))
+    .describe("Waits ms; of events with the same key (by: paths into the event) only the latest runs"),
   tools: s.optional(s.array(s.string())).describe("The tools it may call, by name"),
   active: s.optional(s.boolean()).describe("Listen to the event; default false"),
   test: s.optional(s.boolean()).describe("Only *_get tools take effect; default true"),
 };
-const fields = { ...optional, host, event, steps };
-const changes = { ...optional, host: s.optional(host), event: s.optional(event), steps: s.optional(steps) };
+const fields = { ...optional, host, event, code };
+const changes = { ...optional, host: s.optional(host), event: s.optional(event), code: s.optional(code) };
 
 type Fields = {
   description?: string;
   host?: string;
   event?: string;
+  debounce?: { ms: number; by?: string[] };
   tools?: string[];
-  steps?: unknown[];
+  code?: string;
   active?: boolean;
   test?: boolean;
 };
@@ -47,10 +49,10 @@ const verb = <T extends Params>(
 });
 
 /** The row's columns from what was written; JSON where the table keeps it. */
-const columns = ({ tools, steps, ...rest }: Fields) => ({
+const columns = ({ tools, debounce, ...rest }: Fields) => ({
   ...rest,
   ...tools && { tools: JSON.stringify(tools) },
-  ...steps && { steps: JSON.stringify(steps) },
+  ...debounce && { debounce: JSON.stringify(debounce) },
 });
 
 const row = async (ctx: Ctx, id: number) => (await ctx.app.db.row`SELECT * FROM flow WHERE id = ${id}`)!;
@@ -65,7 +67,7 @@ export const api: ApiTree = {
     get: verb("Your flows", async (_, ctx) =>
       (await ctx.app.db.query`SELECT * FROM flow WHERE usr_id = ${ctx.userId} ORDER BY id`).map(show)),
     post: verb<Fields>(
-      "Make a flow, owned by you: when the event fires, its steps run in a sandbox with the tools it may use",
+      "Make a flow, owned by you: when the event fires, its code runs in a sandbox with the tools it may use",
       async (params, ctx) => {
         const id = await ctx.app.db.table("flow").insert({ ...columns(params), usr_id: ctx.userId });
         return { id: Number(id) };

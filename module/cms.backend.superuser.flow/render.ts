@@ -4,9 +4,6 @@ import * as u2 from "@qino/qino/u2";
 import type { App, HtmlString } from "@qino/qino";
 
 type Row = Record<string, unknown>;
-type Step = { description?: string; fn?: string; debounce?: { ms: number; by?: string } };
-
-const steps = (row: Row): Step[] => JSON.parse(String(row.steps || "[]"));
 
 /** The flows: what starts them, whose they are, whether they listen and whether only as a test. */
 export async function renderList(app: App, rows: Row[]): Promise<HtmlString> {
@@ -36,8 +33,8 @@ const example = (schema: Schema): unknown =>
       schema.type ?? ""
     ] ?? null;
 
-/** One flow as the sections of a card, to edit: its event, tools and steps; and a test run on an example
- *  event. `events`: what it may listen to (`host event`); `schema`: its event's data, for the example. */
+/** One flow as the sections of a card, to edit: its event, debounce, tools and code; and a test run on an
+ *  example event. `events`: what it may listen to (`host event`); `schema`: its event's data, for the example. */
 export async function renderDetail(
   app: App,
   row: Row | undefined,
@@ -48,28 +45,19 @@ export async function renderDetail(
   } = {},
 ): Promise<HtmlString> {
   const { t } = app;
-  const [tSteps, tPick, tDescription, tWhen, tTools, tOnePerLine, tCode, tWait, tBy, tRemove, tSave, tEvent, tTry] =
+  const [tFlow, tPick, tDescription, tWhen, tWait, tBy, tTools, tOnePerLine, tCode, tSave, tEvent, tTry] =
     await Promise.all([
-      t`Steps`, t`Pick a flow.`, t`Description`, t`When`, t`May use`, t`one tool per line`, t`Code`, t`Wait`,
-      t`per`, t`Remove`, t`Save`, t`Example event (JSON)`, t`Test run`,
+      t`Flow`, t`Pick a flow.`, t`Description`, t`When`, t`Wait (ms)`, t`per (paths into the event)`, t`May use`,
+      t`one tool per line`, t`Code`, t`Save`, t`Example event (JSON)`, t`Test run`,
     ]);
   const [tRuns, tFiltered, tNoRuns, tReload] = await Promise.all([
-    t`Runs since the start`, t`not for it (stopped at the first step)`, t`No runs yet.`, t`Reload`,
+    t`Runs since the start`, t`not for it (no tool call, no result)`, t`No runs yet.`, t`Reload`,
   ]);
-  if (!row) return html`<div class=-head>${tSteps}</div><p><small>${tPick}</small></p>`;
+  if (!row) return html`<div class=-head>${tFlow}</div><p><small>${tPick}</small></p>`;
 
   const tools: string[] = JSON.parse(String(row.tools || "[]"));
+  const debounce: { ms?: number; by?: string[] } = JSON.parse(String(row.debounce || "{}"));
   const on = `${row.host} ${row.event}`;
-  const remove = html`<button type=button data-remove-step class=u2-unstyle title="${tRemove}">
-    <u2-ico icon=delete>✕</u2-ico></button>`;
-  // one step to edit; empty ones are the templates "add" clones
-  const step = ({ description = "", fn, debounce }: Step) => html`<fieldset data-step=${debounce ? "debounce" : "fn"}>
-    <legend><input name=description value="${description}" placeholder="${tDescription}"> ${remove}</legend>
-    ${debounce
-      ? html`${tWait} <input type=number name=ms min=0 value="${debounce.ms}"> ms
-        ${tBy} <input name=by value="${debounce.by}">`
-      : html`<u2-code trim language=js><textarea name=fn rows=3>${fn}</textarea></u2-code>`}
-  </fieldset>`;
   const fields = schema?.properties
     ? html`<dl>${Object.entries(schema.properties).map(([name, field]) =>
       html`<dt><code>${name}</code> <small>${field.type}</small><dd>${field.description}`)}</dl>`
@@ -81,16 +69,12 @@ export async function renderDetail(
     ${tDescription} <input name=description value="${row.description}">
     ${tWhen} <select name=on>${[...new Set([on, ...events])].map((e) =>
       html`<option${e === on ? html.raw(" selected") : ""}>${e}</option>`)}</select>
+    ${tWait} <input type=number name=ms min=0 value="${debounce.ms ?? ""}">
+    ${tBy} <input name=by value="${debounce.by?.join(" ") ?? ""}">
     ${tTools} <textarea name=tools rows=3 placeholder="${tOnePerLine}">${tools.join("\n")}</textarea>
+    ${tCode} <u2-code trim language=js><textarea name=code rows=10>${row.code}</textarea></u2-code>
   </u2-fields>
-  <div data-steps>${steps(row).map(step)}</div>
-  <p>
-    <button type=button data-add-step=fn>+ ${tCode}</button>
-    <button type=button data-add-step=debounce>+ ${tWait}</button>
-    <button>${tSave}</button>
-  </p>
-  <template data-step-template=fn>${step({})}</template>
-  <template data-step-template=debounce>${step({ debounce: { ms: 120_000 } })}</template>
+  <p><button>${tSave}</button></p>
 </form>
 <hr>
 <div>

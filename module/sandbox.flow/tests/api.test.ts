@@ -27,26 +27,24 @@ const made = {
   host: "db",
   event: "table:update-after",
   tools: ["test_greet_post"],
-  steps: [{
-    description: "greet",
-    fn: "async (e, { tools }) => (await tools.test_greet_post({ name: e.table }), true)",
-  }],
+  code: "await tools.test_greet_post({ name: event.table }); return true;",
 };
 
 Deno.test("sandbox.flow api: make, read, change, try and delete your own flows", () => withApp(async (app, as) => {
   const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   const { id } = await as(7, () => flows.post(made));
   const got = await as(7, () => flow(id).get());
-  assertEquals([got.description, got.on, got.tools, got.steps, got.test, got.active],
-    [made.description, { host: "db", event: "table:update-after" }, made.tools, made.steps, true, false]);
+  assertEquals([got.description, got.on, got.tools, got.code, got.test, got.active],
+    [made.description, { host: "db", event: "table:update-after" }, made.tools, made.code, true, false]);
   assertEquals((await as(7, () => flows.get())).map((f: any) => f.id), [id]);
 
-  await as(7, () => flow(id).patch({ active: true, test: false }));
-  assertEquals([(await as(7, () => flow(id).get())).active, (await as(7, () => flow(id).get())).test], [true, false]);
+  await as(7, () => flow(id).patch({ active: true, test: false, debounce: { ms: 500, by: ["id"] } }));
+  const patched = await as(7, () => flow(id).get());
+  assertEquals([patched.active, patched.test, patched.debounce], [true, false, { ms: 500, by: ["id"] }]);
 
   // a try is a test run, whatever the flow says: only *_get tools take effect
   const trace = await as(7, () => flow(id).test.post({ event: { table: "usr" }, user: 7 }));
-  assertEquals([trace.end, trace.context, trace.steps[0].calls[0].skipped], ["done", { user: 7 }, true]);
+  assertEquals([trace.end, trace.context, trace.calls[0].skipped], ["done", { user: 7 }, true]);
 
   await as(7, () => flow(id).delete());
   assertEquals(await as(7, () => flows.get()), []);

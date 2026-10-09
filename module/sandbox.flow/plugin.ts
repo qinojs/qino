@@ -23,7 +23,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
       const flow = toFlow(row);
       listen(app, flow, { signal: AbortSignal.any([signal, stop.signal]), report: (trace) => {
         record(app, id, trace);
-        if (trace.end === "error") console.error(`[sandbox.flow] ${trace.flow}:`, trace.steps.at(-1)?.error);
+        if (trace.end === "error") console.error(`[sandbox.flow] ${trace.flow}:`, trace.error);
       } });
       flows.set(id, stop);
     } catch (e) {

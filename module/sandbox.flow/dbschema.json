@@ -1,7 +1,7 @@
 {
   "properties": {
     "flow": {
-      "description": "A flow: steps of code that run when an event fires, with the tools they may use",
+      "description": "A flow: code that runs when an event fires, with the tools it may use",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -11,7 +11,7 @@
           },
           "description": {
             "type": "string",
-            "description": "What the flow does, in a sentence — the heading of its steps"
+            "description": "What the flow does, in a sentence"
           },
           "host": {
             "type": "string",
@@ -22,6 +22,10 @@
             "type": "string",
             "maxLength": 128,
             "description": "The event's name, e.g. table:update-after"
+          },
+          "debounce": {
+            "type": "string",
+            "description": "As JSON { ms, by }: of events with the same key (by: paths into it) only the latest runs, ms later"
           },
           "usr_id": {
             "type": "integer",
@@ -34,9 +38,9 @@
             "type": "string",
             "description": "The tools it may call, by name, as a JSON array"
           },
-          "steps": {
+          "code": {
             "type": "string",
-            "description": "The steps as a JSON array: { description, fn } with fn as source, or { description, debounce: { ms, by } }"
+            "description": "A JavaScript function body; it sees event, tools, context and owner"
           },
           "active": {
             "type": "boolean",
@@ -55,7 +59,7 @@
             "description": "The request that last changed it"
           }
         },
-        "required": ["id", "host", "event", "usr_id", "steps"]
+        "required": ["id", "host", "event", "usr_id", "code"]
       }
     }
   }

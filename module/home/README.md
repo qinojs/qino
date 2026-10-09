@@ -93,14 +93,13 @@ listen(app, {
   on: { host: "app", event: "home:change" },
   tools: ["home_provider_action_post"],
   test: false, // Omit while testing to record writes without execution.
-  steps: [
-    { fn: (e) => e.provider === provider && e.id === "binary_sensor.kitchen_motion"
-      && e.changed.includes("") && e.entity?.available && e.entity.state === "on" },
-    { fn: async (_e, { tools }) => {
-      await tools.home_provider_action_post({ provider, action: "light.turn_on", entities: ["light.kitchen"] });
-      return true;
-    } },
-  ],
+  code: `
+    if (event.provider !== ${provider} || event.id !== "binary_sensor.kitchen_motion") return;
+    if (!event.changed.includes("") || !event.entity?.available || event.entity.state !== "on") return;
+    const action = { provider: ${provider}, action: "light.turn_on", entities: ["light.kitchen"] };
+    await tools.home_provider_action_post(action);
+    return "switched on";
+  `,
 }, { signal });
 ```
 
@@ -144,6 +143,6 @@ Qino's store; Home Assistant is optional.
 
 The read-only reference `/var/www/workplace/v9/m/ims1` informed the numeric datapoint IDs, separate
 number/state tables, current-value cache, expected intervals and null gaps. `ims1.push1` informed
-the separation of commands and observations. Existing flow steps can calculate derived values or
+the separation of commands and observations. Existing flows can calculate derived values or
 handle transitions; formula languages, physical counter offsets and alarm acknowledgement archives
 are separate extensions. See [REVIEW.md](REVIEW.md) for storage assumptions and limitations.
