@@ -132,7 +132,7 @@ export async function candidates(app: App, capability: string, input: unknown, {
     JOIN ai1_model m ON m.id = c.model_id
     JOIN ai1_model_provider mp ON mp.model_id = m.id
     JOIN ai1_provider p ON p.id = mp.provider_id
-    WHERE c.capability = ${capability} AND m.enabled = ${true} AND mp.enabled = ${true} AND p.enabled = ${true}
+    WHERE c.capability = ${capability} AND m.enabled = ${true} AND mp.enabled = ${true}
       AND (m.context_length IS NULL OR m.context_length >= ${size})
     ${needs.length ? sql`AND (SELECT COUNT(*) FROM ai1_model_capability n WHERE n.model_id = m.id AND ${sql.in("n.capability", needs)}) = ${needs.length}` : sql.raw("")}`;
   const metrics = [...new Set([capability, "intelligence", ...Object.keys(prefer ?? {})])].filter((k) => k !== "cost" && k !== "speed" && k !== "quality");

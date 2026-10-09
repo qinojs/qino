@@ -18,9 +18,8 @@ const INTELLIGENCE = "intelligence";
 /** What Try offers; the fields each asks for carry `data-for`. */
 const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "transcribe", "ocr"];
 const SCHEMA = '{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"]}';
-/** A usable model: switched on, with a switched-on offer from a switched-on provider. */
-const USABLE = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o
-  JOIN ai1_provider p ON p.id = o.provider_id WHERE o.model_id = m.id AND o.enabled = ${true} AND p.enabled = ${true})`;
+/** A usable model: switched on, with a switched-on offer. */
+const USABLE = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o WHERE o.model_id = m.id AND o.enabled = ${true})`;
 
 type Vars = Record<string, any>;
 
@@ -143,7 +142,7 @@ async function modelList(node: Node, vars: Vars) {
   const score = new Map(scores.map((s) => [`${s.model_id} ${s.metric}`, Number(s.value)]));
   const has = new Set(abilities.map((a) => `${a.model_id} ${a.capability}`));
   const own = (model: number) => offers.filter((o) => o.model_id === model);
-  const on = (o: any) => o.enabled && providerRows.find((p) => p.id === o.provider_id)?.enabled;
+  const on = (o: any) => o.enabled;
   const bestOf = (model: number, column: "cost" | "speed") => best(own(model).filter(on), column);
 
   // by a score (default intelligence), or name, price, speed, context length; unknown last
@@ -272,7 +271,7 @@ async function model(node: Node, id: number) {
   const score = new Map(scores.map((s) => [String(s.metric), s.value]));
   // every score known, as in the list: intelligence first, the arenas' named "… quality"
   const known = metrics.map(String).sort((a, b) => Number(b === INTELLIGENCE) - Number(a === INTELLIGENCE) || a.localeCompare(b));
-  const usable = offers.filter((o) => o.enabled && providerRows.find((p) => p.id === o.provider_id)?.enabled);
+  const usable = offers.filter((o) => o.enabled);
   const card = (title: unknown, body: unknown) => html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${title}</div>${body}</div>`;
   return html.async`<div class=u2-flex data-row=ai1_model data-id="${m.id}" data-name="${m.name}" ${m.enabled ? "" : "data-off"}>
   ${card(html`<input name=name value="${m.name}" required style="color:${backend.uniqueColor(m.name)}">`, html.async`<table class=u2-table>

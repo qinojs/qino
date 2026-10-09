@@ -31,7 +31,8 @@
           },
           "enabled": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "What its offers are by default; calls go by the offers' own"
           }
         },
         "required": ["id"]

@@ -44,6 +44,8 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
         if (CATALOG.some((provider) => provider.name === name)) return { ok: false, message: "A known provider's type is fixed" };
       }
       await db.table(table).update(Number(id), { [column]: coerce(type, value) });
+      // a provider's switch is its offers' default: it switches them all
+      if (table === "ai1_provider" && column === "enabled") await db.exec`UPDATE ai1_model_provider SET enabled = ${!!value} WHERE provider_id = ${Number(id)}`;
       return { ok: true };
     }
     if (vars.capability) {

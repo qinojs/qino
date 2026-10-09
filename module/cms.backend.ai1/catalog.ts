@@ -8,15 +8,16 @@
 // (Artificial Analysis intelligence index 34.6 and up, max 57.6, in 2026-09), Google a little below.
 const TRANSLATOR = { deepl: { intelligence: 35 }, google: { intelligence: 30 } };
 
+/** `list`: where it lists all its models, if not at /models and /embeddings/models. */
 export const CATALOG: {
-  name: string; type: string; endpoint: string; console?: string; plainIds?: boolean;
+  name: string; type: string; endpoint: string; console?: string; plainIds?: boolean; list?: string;
   models?: { id: string; capabilities: string[]; cost?: { input: number; output: number }; scores?: Record<string, number> }[];
 }[] = [
   { name: "api.openai.com", type: "openai", endpoint: "https://api.openai.com/v1", console: "https://platform.openai.com/api-keys" },
   { name: "api.anthropic.com", type: "openai", endpoint: "https://api.anthropic.com/v1", console: "https://console.anthropic.com/settings/keys" },
   { name: "generativelanguage.googleapis.com", type: "openai", endpoint: "https://generativelanguage.googleapis.com/v1beta/openai", console: "https://aistudio.google.com/apikey" },
   { name: "api.groq.com", type: "openai", endpoint: "https://api.groq.com/openai/v1", console: "https://console.groq.com/keys" },
-  { name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1", console: "https://openrouter.ai/settings/keys", models: [{ id: "typesafe/jev-1.13", capabilities: ["decide"], cost: { input: 0.036, output: 0.036 } }] }, // Jev: $0.0000156 for 434 tokens on a call
+  { name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1", console: "https://openrouter.ai/settings/keys", list: "/models?output_modalities=all" }, // else only text output
   { name: "api.mistral.ai", type: "openai", endpoint: "https://api.mistral.ai/v1", console: "https://console.mistral.ai/api-keys" },
   { name: "api.x.ai", type: "openai", endpoint: "https://api.x.ai/v1" },
   { name: "integrate.api.nvidia.com", type: "nvidia", endpoint: "https://integrate.api.nvidia.com/v1" },

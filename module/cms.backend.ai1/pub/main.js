@@ -134,7 +134,7 @@ cms.initNode("backend.ai1", (el) => {
       text: () => ({ messages: [{ role: "user", content: prompt }] }),
       structured: () => ({ messages: [{ role: "user", content: prompt }], schema: JSON.parse(f.schema.value) }),
       translate: () => ({ text: prompt, to: f.to.value, ...(f.from.value && { from: f.from.value }) }),
-      decide: () => ({ content: prompt, ...(f.question.value && { question: f.question.value }), options: f.options.value.split(",").map((o) => o.trim()).filter(Boolean) }),
+      decide: () => ({ content: prompt, ...(f.question.value && { question: f.question.value }), options: Object.fromEntries(f.options.value.split(",").map((o) => o.trim()).filter(Boolean).map((o) => [o, o])) }),
       embed: () => ({ texts: prompt.split("\n").filter(Boolean) }),
       image: () => ({ prompt }),
       speak: () => ({ text: prompt, ...(f.voice.value && { voice: f.voice.value }) }),

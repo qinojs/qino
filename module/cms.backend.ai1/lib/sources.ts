@@ -15,6 +15,9 @@ export const BENCHMARKS_KEY = "artificialanalysis.ai";
 /** An index no new model got for this long is no longer measured (math, since 2026-01): left out. */
 const RETIRED_DAYS = 183;
 
+/** What a capability serves; a listed model with none of these outputs (video, rerank) is left out. */
+const OUTPUTS = new Set(["text", "image", "audio", "speech", "transcription", "embeddings", "decisions"]);
+
 const NOISE = new Set(["instruct", "chat", "latest", "preview"]);
 /** A model name reduced for comparison, so llama-3.3-70b, Llama-3-3-Instruct-70B and llama-3.3-70b:free match. */
 export const key = (name: string): string =>
@@ -53,12 +56,12 @@ export const adapters = (app: App): Record<string, object> => Object.assign({}, 
 /** Chat providers (OpenAI-compatible) list their models at /models. */
 export const listing = (app: App, type: string): boolean => "text" in (adapters(app)[type] ?? {});
 
-/** A provider's /models, and /embeddings/models where it keeps those apart (OpenRouter). Some
- *  (OpenRouter) describe each: price, context, modalities, parameters. */
-export async function offered(app: App, provider: { name: string; endpoint: string }): Promise<any[]> {
+/** A provider's models: at its own `list` path, else /models and /embeddings/models where some keep
+ *  those apart. Some (OpenRouter) describe each: price, context, modalities, parameters. */
+export async function offered(app: App, provider: { name: string; endpoint: string }, path?: string): Promise<any[]> {
   const key = String(await app.settings.core.keys[provider.name] ?? "");
   const list = async (path: string) => (await get(String(provider.endpoint).replace(/\/+$/, "") + path, key ? { authorization: "Bearer " + key } : {})).data ?? [];
-  return [...await list("/models"), ...await list("/embeddings/models").catch(() => [])];
+  return path ? list(path) : [...await list("/models"), ...await list("/embeddings/models").catch(() => [])];
 }
 
 /** Such a description in models.dev's words, or undefined. Prices come per token. */
@@ -87,17 +90,19 @@ async function describe(app: App, offer: { id: number; model_id: number }, meta:
   const db = app.db;
   const { input, output } = meta.cost ?? {};
   if (priced && input >= 0 && output >= 0) await db.table("ai1_model_provider").update(offer.id, { cost_input: input, cost_output: output });
+  const inputs: string[] = meta.modalities?.input ?? [], outputs: string[] = meta.modalities?.output ?? [];
   // embedding models: models.dev says their output is text, so it's the family or the name
-  const embedding = meta.modalities?.output?.includes("embeddings") || meta.family === "text-embedding" || /embed/i.test(meta.id ?? "");
+  const embedding = outputs.includes("embeddings") || meta.family === "text-embedding" || /embed/i.test(meta.id ?? "");
   const capabilities = [
     embedding && "embed",
-    !embedding && meta.modalities?.input?.includes("text") && meta.modalities?.output?.includes("text") && "text", // not speech to text
-    meta.modalities?.input?.includes("image") && "vision",
+    !embedding && inputs.includes("text") && outputs.includes("text") && "text", // not speech to text
+    inputs.includes("image") && "vision",
     !embedding && meta.tool_call && "tools",
     !embedding && meta.structured_output && "structured",
-    !embedding && meta.modalities?.output?.includes("image") && "image",
-    !embedding && String(meta.modalities?.input) === "audio" && meta.modalities?.output?.includes("text") && "transcribe", // speech to text
-    !embedding && String(meta.modalities?.output) === "audio" && meta.modalities?.input?.includes("text") && "speak", // text to speech
+    !embedding && outputs.includes("image") && "image",
+    !embedding && (String(inputs) === "audio" && outputs.includes("text") || outputs.includes("transcription")) && "transcribe", // speech to text
+    !embedding && (String(outputs) === "audio" && inputs.includes("text") || outputs.includes("speech")) && "speak", // text to speech
+    outputs.includes("decisions") && "decide",
     ...guess(meta),
   ].filter(Boolean);
   for (const capability of capabilities) await db.table("ai1_model_capability").ensure({ model_id: offer.model_id, capability });
@@ -124,10 +129,9 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
       await db.table("ai1_provider").update(provider.id, { type: known.type });
       provider.type = known.type;
     }
-    if (!provider.enabled) continue;
     const extra = known?.models ?? [];
     if (!listing(app, provider.type) && !extra.length) continue;
-    const listed = listing(app, provider.type) ? await offered(app, provider as any).catch((e) => (done.push(`${provider.name}: ${errMsg(e)}`), [])) : [];
+    const listed = listing(app, provider.type) ? await offered(app, provider as any, known?.list).catch((e) => (done.push(`${provider.name}: ${errMsg(e)}`), [])) : [];
     // :batch variants answer only through the asynchronous Batch API (OpenRouter), not a call
     const idOf = (m: any) => known?.plainIds ? String(m.id).split("/").pop()! : String(m.id);
     // Jina lists rerankers, ReaderLM and beta VLMs as text-output models, although this endpoint
@@ -135,7 +139,8 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
     const unsupported = (m: any) => provider.type === "jina" && m.output_modalities?.includes("text") &&
       Array.isArray(m.supported_sampling_parameters) && !m.supported_sampling_parameters.length &&
       Array.isArray(m.supported_features) && !m.supported_features.includes("streaming");
-    const served = listed.filter((m) => !String(m.id).endsWith(":batch") && !unsupported(m));
+    const outputs = (m: any): string[] | undefined => m.architecture?.output_modalities ?? m.output_modalities;
+    const served = listed.filter((m) => !String(m.id).endsWith(":batch") && !unsupported(m) && (outputs(m)?.some((o) => OUTPUTS.has(o)) ?? true));
     const raw = new Map(served.map((m) => [idOf(m), m]));
     const entries = new Map<string, any>([...served.map((m): [string, any] => [idOf(m), described(m)]), ...extra.map((m): [string, any] => [m.id, m])]);
     let added = 0;
@@ -151,7 +156,7 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
         const model = found.id;
         let offer = offers.get(`${provider.id} ${id}`);
         if (!offer) { // its name there, unless it is the model's
-          offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id })));
+          offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id, enabled: !!provider.enabled })));
           added++;
         }
         const fromCatalog = extra.find((m) => m.id === id);
