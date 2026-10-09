@@ -23,10 +23,6 @@
             "maxLength": 128,
             "description": "The event's name, e.g. table:update-after"
           },
-          "debounce": {
-            "type": "string",
-            "description": "As JSON { ms, by }: of events with the same key (by: paths into it) only the latest runs, ms later"
-          },
           "usr_id": {
             "type": "integer",
             "x-index": true,

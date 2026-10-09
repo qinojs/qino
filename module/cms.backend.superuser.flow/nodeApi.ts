@@ -3,7 +3,7 @@ import { run, toFlow } from "@qino/qino/sandbox.flow";
 
 import type { Node } from "@qino/qino/cms";
 
-type Saved = { description?: string; on?: string; ms?: string; by?: string; tools?: string; code?: string };
+type Saved = { description?: string; on?: string; tools?: string; code?: string };
 
 /** Switch a flow on or off, or to test; save what was edited; delete it; try it on an example event. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -15,15 +15,13 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true, message: await t`Saved` };
     }
     if (vars.save) {
-      const { description = "", on = "", ms = "", by = "", tools = "", code = "" } = vars.save as Saved;
+      const { description = "", on = "", tools = "", code = "" } = vars.save as Saved;
       const [host, event] = on.split(" ");
-      const words = (text: string, sep: string) => text.split(sep).map((word) => word.trim()).filter(Boolean);
       await db.table("flow").update(id, {
         description,
         host,
         event,
-        debounce: ms ? JSON.stringify({ ms: Number(ms), ...by.trim() && { by: words(by, " ") } }) : null,
-        tools: JSON.stringify(words(tools, "\n")),
+        tools: JSON.stringify(tools.split("\n").map((tool) => tool.trim()).filter(Boolean)),
         code,
       });
       return { ok: true, message: await t`Saved` }; // an active flow listens anew

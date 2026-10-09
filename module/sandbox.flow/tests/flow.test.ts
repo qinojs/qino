@@ -82,16 +82,3 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
     assertEquals(await app.db.one`SELECT given_name FROM usr WHERE id = 7`, "Bob");
   }));
 
-Deno.test("sandbox.flow: debounce runs only the latest event per key", () =>
-  withApp(async (app) => {
-    const results: unknown[] = [];
-    const stop = new AbortController();
-    listen(app, flow(`return event.data.family_name`, { debounce: { ms: 100, by: ["table", "id"] } }), {
-      signal: stop.signal,
-      report: (t) => results.push(t.result),
-    });
-    for (const name of ["A", "B", "C"]) await app.db.table("usr").update(7, { family_name: name });
-    await new Promise((r) => setTimeout(r, 400));
-    stop.abort();
-    assertEquals(results, ["C"]);
-  }));

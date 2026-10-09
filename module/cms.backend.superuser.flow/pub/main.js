@@ -36,9 +36,8 @@ cms.initNode("backend.superuser.flow", (el) => {
     const button = form.querySelector("button:not([type=button])");
     if (form.matches("[data-test]")) return execute(button, { flow, event: form.event.value });
     if (!form.matches("[data-edit]")) return;
-    const { description, on, ms, by, tools, code } = form.elements;
-    const save = { description: description.value, on: on.value, ms: ms.value, by: by.value, tools: tools.value,
-      code: code.value };
+    const { description, on, tools, code } = form.elements;
+    const save = { description: description.value, on: on.value, tools: tools.value, code: code.value };
     execute(button, { flow, save }).then(showDetail);
   });
 });

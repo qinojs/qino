@@ -13,7 +13,7 @@ const plain = { t } as unknown as App;
 const row = {
   id: 3, description: 'greet <b>"you"</b>', host: "db", event: "table:update-after", owner: "ann@example.test",
   tools: JSON.stringify(["test_greet_post"]), active: 1, test: 0,
-  debounce: JSON.stringify({ ms: 500, by: ["table", "id"] }), code: "return '<script>'",
+  code: "return '<script>'",
 };
 
 Deno.test("cms.backend.superuser.flow: metadata is wired", () => {
@@ -32,8 +32,6 @@ Deno.test("cms.backend.superuser.flow: list and detail show the flow, escaped", 
   assertEquals(String(await renderList(plain, [])).includes("No flows yet"), true);
 
   const detail = String(await renderDetail(plain, row, { events: ["db table:update-after", "app route"] }));
-  assertEquals(detail.includes('<input type=number name=ms min=0 value="500">'), true);
-  assertEquals(detail.includes('<input name=by value="table id">'), true);
   assertEquals(detail.includes("<textarea name=code rows=10>return &#039;&lt;script&gt;&#039;</textarea>"), true);
   const tools = '<textarea name=tools rows=3 placeholder="one tool per line">test_greet_post</textarea>';
   assertEquals(detail.includes(tools), true);
@@ -89,16 +87,11 @@ Deno.test("cms.backend.superuser.flow: switches, tries, saves and deletes a flow
     assertEquals([tried.ok, JSON.parse(tried.message).result], [true, 42]);
 
     const code = "return event * 3";
-    const save = {
-      description: "tripled", on: "app route", ms: "5", by: " table  id ", tools: " core_languages_get \n\n", code,
-    };
+    const save = { description: "tripled", on: "app route", tools: " core_languages_get \n\n", code };
     assertEquals((await call({ flow: id, save })).ok, true);
     const saved = await app.db.row`SELECT * FROM flow WHERE id = ${id}`;
     assertEquals([saved!.description, saved!.host, saved!.event, saved!.code], ["tripled", "app", "route", code]);
-    assertEquals([JSON.parse(String(saved!.tools)), JSON.parse(String(saved!.debounce))],
-      [["core_languages_get"], { ms: 5, by: ["table", "id"] }]);
-    await call({ flow: id, save: { ...save, ms: "" } });
-    assertEquals(await app.db.one`SELECT debounce FROM flow WHERE id = ${id}`, null); // no wait, no debounce
+    assertEquals(JSON.parse(String(saved!.tools)), ["core_languages_get"]);
 
     assertEquals((await call({ flow: id, delete: true })).ok, true);
     assertEquals((await call({ flow: id, delete: true })).ok, false); // gone

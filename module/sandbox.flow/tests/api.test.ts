@@ -38,9 +38,9 @@ Deno.test("sandbox.flow api: make, read, change, try and delete your own flows",
     [made.description, { host: "db", event: "table:update-after" }, made.tools, made.code, true, false]);
   assertEquals((await as(7, () => flows.get())).map((f: any) => f.id), [id]);
 
-  await as(7, () => flow(id).patch({ active: true, test: false, debounce: { ms: 500, by: ["id"] } }));
+  await as(7, () => flow(id).patch({ active: true, test: false }));
   const patched = await as(7, () => flow(id).get());
-  assertEquals([patched.active, patched.test, patched.debounce], [true, false, { ms: 500, by: ["id"] }]);
+  assertEquals([patched.active, patched.test], [true, false]);
 
   // a try is a test run, whatever the flow says: only *_get tools take effect
   const trace = await as(7, () => flow(id).test.post({ event: { table: "usr" }, user: 7 }));

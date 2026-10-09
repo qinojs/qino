@@ -10,7 +10,6 @@ import { listen } from "@qino/qino/sandbox.flow";
 listen(app, {
   description: "Deutsche Texte von mir übersetzen, wenn sie fertig aussehen",
   on: { host: "db", event: "table:update-after" },
-  debounce: { ms: 120_000, by: ["table", "id"] }, // 2 minutes after the last change of the field
   owner: 9,
   tools: ["ai1Api_decide_post", "core_languages_get", "cmsText_text_translate_post"],
   test: false, // tried out, now for real
@@ -37,8 +36,6 @@ listen(app, {
   They run in one request context per run, as `owner` (actor `sandbox.flow`), made by the first call.
 - **One sandbox per listening flow**, shared by its runs: no worker start per event. Tool calls carry
   their run, so traces stay apart. A timeout in one run ends the worker and the flow's other runs.
-- **`debounce`** waits `ms` after an event; if a later one with the same key (`by`: paths into the
-  event, e.g. `["table", "id"]` for one row) comes meanwhile, only that one runs.
 - **`test`** is on unless `false`: only `*_get` tools take effect, the others are recorded as `skipped`
   and return `undefined`.
 - **The trace** (`run()` returns it, `listen()` hands it to `report`): the tool calls, the result or the
@@ -46,11 +43,11 @@ listen(app, {
 - **Own events are ignored:** the run's request context is marked from the start (`runAs` with
   `state`), so the flow skips every event of the run — those of setting the context up included.
 
-`run(app, flow, event, context)` runs a flow once, without debounce, e.g. to test it on an example event.
+`run(app, flow, event, context)` runs a flow once, e.g. to test it on an example event.
 
 ## The table
 
-Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `code`, `tools` and `debounce` as JSON)
+Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `code`, `tools` as JSON)
 are listened to on start when `active`; a changed row is listened to anew, a deleted one stops. `test` is
 on unless set off. A row that can't listen (unknown host, broken JSON) is logged and skipped; failing runs
 are logged too.
@@ -98,8 +95,6 @@ The code:
 - tools.<name>(params) calls a tool: only those listed in the flow's tools, one params object with
   path params by name, always await. context.user is who caused the event, owner is you (the
   flow's owner): "when I …" is context.user === owner.
-- debounce: { ms, by } on the flow waits ms after an event; of events with the same key (by: paths
-  into the event) only the latest runs. For one row of a table: by: ["table", "id"].
 - The code sees nothing but these names. Keep it small and safe to run twice.
 - In test mode only *_get tools run; the others are recorded and return undefined.
 - Judging text: ai1Api_decide_post({ content, question }) answers a yes/no question
@@ -145,7 +140,7 @@ sandboxFlow_flows_post({
   read — a flow on `table:insert-after` sees every row of every table. Its api is for superusers until then.
   Plan: a flow sees what its owner caused; events of others only where the event declares who may
   listen (like `access`/`guard` of an api route, e.g. `node:*` for who may read the node).
-- **Runs live in memory:** a crash or restart loses a running run and a debounce wait (at-most-once).
+- **Runs live in memory:** a crash or restart loses a running run (at-most-once).
   Later, per flow: store the event before the run, delete it after, rerun what is left on start
   (at-least-once, code idempotent).
 - **Runs are kept in memory only:** `history(app, id)` has the latest 20 of a flow of the table, newest

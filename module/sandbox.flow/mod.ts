@@ -12,14 +12,12 @@ import type { App, Ctx, Tool } from "@qino/qino";
 
 type Context = { user?: number };
 type Call = { tool: string; args: unknown; result?: unknown; skipped?: true };
-type Debounce = { ms: number; by?: string[] };
 type Trace = { flow: string; context: Context; calls: Call[]; result?: unknown; error?: string; end: "done" | "error" };
 
 /** A flow: when the event fires on the host, its code runs. */
 export type Flow = {
   description: string;
   on: { host: string; event: string }; // the app or one of its emitters ("app", "db"), and its event
-  debounce?: Debounce; // waits `ms`; of events with the same key (`by`: paths into the event) only the latest runs
   owner: number; // tools run with this user's rights
   tools?: string[]; // the tools it may call, by name
   test?: boolean; // unless false: only `*_get` tools take effect, the other calls are recorded
@@ -47,20 +45,18 @@ export function listen(
 ): void {
   const host = hosts(app)[flow.on.host];
   if (!host) throw new Error(`sandbox.flow: no host ${flow.on.host}`);
-  const box = open(), wait = flow.debounce ? debouncer(flow.debounce) : () => Promise.resolve(true);
+  const box = open();
   signal?.addEventListener("abort", () => end(box), { once: true });
   host.on(flow.on.event, (e: unknown) => {
     const ctx = requestStorage.getStore();
     if (ctx?.state.flow === flow) return;
     const event = view(e), context = { user: ctx?.userId || undefined };
     // in the background: the emitter never waits for a flow
-    wait(event).then(async (go) => {
-      if (go && !signal?.aborted) report?.(await exec(app, flow, event, context, box));
-    }).catch(console.error);
+    exec(app, flow, event, context, box).then(report, console.error);
   }, { signal });
 }
 
-/** Runs the flow once, e.g. to try it on an example event; no debounce. */
+/** Runs the flow once, e.g. to try it on an example event. */
 export async function run(app: App, flow: Flow, event: unknown, context: Context = {}): Promise<Trace> {
   const box = open();
   try {
@@ -113,20 +109,6 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
     if (box.ended && !box.runs.size) box.sandbox.close();
     release();
   }
-}
-
-/** Waits `ms`, then true unless a later value with the same key came meanwhile. */
-function debouncer({ ms, by = [] }: Debounce) {
-  const latest = new Map<string, object>();
-  const at = (value: unknown, path: string) => path.split(".").reduce((o: any, k) => o?.[k], value);
-  return async (value: unknown) => {
-    const key = JSON.stringify(by.map((path) => at(value, path))), mine = {};
-    latest.set(key, mine);
-    await new Promise((r) => setTimeout(r, ms));
-    if (latest.get(key) !== mine) return false;
-    latest.delete(key);
-    return true;
-  };
 }
 
 /** The event as data: objects of a class become their string form (a DbTable its name), or go if

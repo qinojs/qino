@@ -17,8 +17,6 @@ const code = s.string()
 /** What makes a flow; to make one, host, event and code are needed. */
 const optional = {
   description: s.optional(s.string()),
-  debounce: s.optional(s.object({ ms: s.number(), by: s.optional(s.array(s.string())) }))
-    .describe("Waits ms; of events with the same key (by: paths into the event) only the latest runs"),
   tools: s.optional(s.array(s.string())).describe("The tools it may call, by name"),
   active: s.optional(s.boolean()).describe("Listen to the event; default false"),
   test: s.optional(s.boolean()).describe("Only *_get tools take effect; default true"),
@@ -30,7 +28,6 @@ type Fields = {
   description?: string;
   host?: string;
   event?: string;
-  debounce?: { ms: number; by?: string[] };
   tools?: string[];
   code?: string;
   active?: boolean;
@@ -49,11 +46,7 @@ const verb = <T extends Params>(
 });
 
 /** The row's columns from what was written; JSON where the table keeps it. */
-const columns = ({ tools, debounce, ...rest }: Fields) => ({
-  ...rest,
-  ...tools && { tools: JSON.stringify(tools) },
-  ...debounce && { debounce: JSON.stringify(debounce) },
-});
+const columns = ({ tools, ...rest }: Fields) => ({ ...rest, ...tools && { tools: JSON.stringify(tools) } });
 
 const row = async (ctx: Ctx, id: number) => (await ctx.app.db.row`SELECT * FROM flow WHERE id = ${id}`)!;
 

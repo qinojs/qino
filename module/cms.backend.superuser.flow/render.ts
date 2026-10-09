@@ -33,7 +33,7 @@ const example = (schema: Schema): unknown =>
       schema.type ?? ""
     ] ?? null;
 
-/** One flow as the sections of a card, to edit: its event, debounce, tools and code; and a test run on an
+/** One flow as the sections of a card, to edit: its event, tools and code; and a test run on an
  *  example event. `events`: what it may listen to (`host event`); `schema`: its event's data, for the example. */
 export async function renderDetail(
   app: App,
@@ -45,18 +45,16 @@ export async function renderDetail(
   } = {},
 ): Promise<HtmlString> {
   const { t } = app;
-  const [tFlow, tPick, tDescription, tWhen, tWait, tBy, tTools, tOnePerLine, tCode, tSave, tEvent, tTry] =
-    await Promise.all([
-      t`Flow`, t`Pick a flow.`, t`Description`, t`When`, t`Wait (ms)`, t`per (paths into the event)`, t`May use`,
-      t`one tool per line`, t`Code`, t`Save`, t`Example event (JSON)`, t`Test run`,
-    ]);
+  const [tFlow, tPick, tDescription, tWhen, tTools, tOnePerLine, tCode, tSave, tEvent, tTry] = await Promise.all([
+    t`Flow`, t`Pick a flow.`, t`Description`, t`When`, t`May use`, t`one tool per line`, t`Code`, t`Save`,
+    t`Example event (JSON)`, t`Test run`,
+  ]);
   const [tRuns, tFiltered, tNoRuns, tReload] = await Promise.all([
     t`Runs since the start`, t`not for it (no tool call, no result)`, t`No runs yet.`, t`Reload`,
   ]);
   if (!row) return html`<div class=-head>${tFlow}</div><p><small>${tPick}</small></p>`;
 
   const tools: string[] = JSON.parse(String(row.tools || "[]"));
-  const debounce: { ms?: number; by?: string[] } = JSON.parse(String(row.debounce || "{}"));
   const on = `${row.host} ${row.event}`;
   const fields = schema?.properties
     ? html`<dl>${Object.entries(schema.properties).map(([name, field]) =>
@@ -69,8 +67,6 @@ export async function renderDetail(
     ${tDescription} <input name=description value="${row.description}">
     ${tWhen} <select name=on>${[...new Set([on, ...events])].map((e) =>
       html`<option${e === on ? html.raw(" selected") : ""}>${e}</option>`)}</select>
-    ${tWait} <input type=number name=ms min=0 value="${debounce.ms ?? ""}">
-    ${tBy} <input name=by value="${debounce.by?.join(" ") ?? ""}">
     ${tTools} <textarea name=tools rows=3 placeholder="${tOnePerLine}">${tools.join("\n")}</textarea>
     ${tCode} <u2-code trim language=js><textarea name=code rows=10>${row.code}</textarea></u2-code>
   </u2-fields>
