@@ -334,17 +334,12 @@ Deno.test("home modules link through Qino and a flow dispatches with its owner's
     const flow: Flow = {
       description: "Turn on the light", on: { host: "app", event: "home:change" }, owner: 7,
       tools: ["home_provider_action_post"],
-      steps: [{
-        description: "Call the common home API",
-        fn: async (_e, { tools }) => {
-          await tools.home_provider_action_post({ provider: 1, action: "light.turn_on", entities: ["light.kitchen"] });
-          return true;
-        },
-      }],
+      code: `await tools.home_provider_action_post({ provider: 1, action: "light.turn_on", entities: ["light.kitchen"] });
+        return true;`,
     };
     const dry = await run(app, flow, {});
     assertEquals(dry.end, "done");
-    assertEquals(dry.steps[0].calls[0].skipped, true);
+    assertEquals(dry.calls[0].skipped, true);
     assertEquals(server.commands.filter((c) => c.type === "call_service").length, 0);
     const live = await run(app, { ...flow, test: false }, {});
     assertEquals(live.end, "done");

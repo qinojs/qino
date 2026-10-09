@@ -298,8 +298,8 @@ Deno.test("modules only take values from modules they depend on", async () => {
 
 // Prospective package boundary: cms* ships as @qino/cms, the rest as @qino/qino. An edge from the
 // lower to the upper layer would make the cms unextractable — type-only imports included, they are
-// just as unresolvable across a package split.
-const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.");
+// just as unresolvable across a package split. Starters build site content, so they ship with the cms.
+const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.") || mod.startsWith("starter.");
 
 Deno.test("the qino layer never imports from the cms layer", async () => {
   const errors = [];
