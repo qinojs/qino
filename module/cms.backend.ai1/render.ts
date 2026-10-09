@@ -18,8 +18,8 @@ const INTELLIGENCE = "intelligence";
 /** What Try offers; the fields each asks for carry `data-for`. */
 const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "transcribe", "ocr"];
 const SCHEMA = '{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"]}';
-/** A usable model: switched on, with a switched-on offer. */
-const USABLE = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o WHERE o.model_id = m.id AND o.enabled = ${true})`;
+/** A usable model: one with a switched-on offer. */
+const USABLE = sql`EXISTS (SELECT 1 FROM ai1_model_provider o WHERE o.model_id = m.id AND o.enabled = ${true})`;
 
 type Vars = Record<string, any>;
 
@@ -311,9 +311,9 @@ async function model(node: Node, id: number) {
 async function providers(node: Node) {
   const app = node.app, t = app.t;
   const rows = await app.db.query`
-    SELECT p.*, COUNT(mp.id) AS models, SUM(CASE WHEN m.enabled = ${true} AND mp.enabled = ${true} THEN 1 ELSE 0 END) AS active,
+    SELECT p.*, COUNT(mp.id) AS models, SUM(CASE WHEN mp.enabled = ${true} THEN 1 ELSE 0 END) AS active,
       COALESCE(SUM(s.used_input), 0) AS used_input, COALESCE(SUM(s.used_output), 0) AS used_output
-    FROM ai1_provider p LEFT JOIN ai1_model_provider mp ON mp.provider_id = p.id LEFT JOIN ai1_model m ON m.id = mp.model_id
+    FROM ai1_provider p LEFT JOIN ai1_model_provider mp ON mp.provider_id = p.id
       LEFT JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
     GROUP BY p.id, p.name, p.type, p.endpoint, p.timeout_ms, p.enabled ORDER BY p.name`;
   const types = Object.keys(adapters(app)).map((type) => ({ value: type, label: type }));

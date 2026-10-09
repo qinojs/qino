@@ -44,8 +44,10 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
         if (CATALOG.some((provider) => provider.name === name)) return { ok: false, message: "A known provider's type is fixed" };
       }
       await db.table(table).update(Number(id), { [column]: coerce(type, value) });
-      // a provider's switch is its offers' default: it switches them all
-      if (table === "ai1_provider" && column === "enabled") await db.exec`UPDATE ai1_model_provider SET enabled = ${!!value} WHERE provider_id = ${Number(id)}`;
+      // a provider's and a model's switch is their offers' default: it switches them all
+      if (column === "enabled" && table !== "ai1_model_provider") {
+        await db.exec`UPDATE ai1_model_provider SET enabled = ${!!value} WHERE ${sql.id(table === "ai1_model" ? "model_id" : "provider_id")} = ${Number(id)}`;
+      }
       return { ok: true };
     }
     if (vars.capability) {
@@ -66,7 +68,10 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       // every model the filter matches, whether on or off now
       const where = matching(vars.switch);
       const ids = await db.col`SELECT m.id FROM ai1_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`;
-      if (ids.length) await db.exec`UPDATE ai1_model SET enabled = ${!!vars.switch.on} WHERE ${sql.in("id", ids)}`;
+      const on = !!vars.switch.on, provider = Number(vars.switch.provider) || undefined;
+      // filtered by a provider, only its offers; else the models and all their offers
+      if (ids.length && !provider) await db.exec`UPDATE ai1_model SET enabled = ${on} WHERE ${sql.in("id", ids)}`;
+      if (ids.length) await db.exec`UPDATE ai1_model_provider SET enabled = ${on} WHERE ${sql.in("model_id", ids)} ${provider ? sql`AND provider_id = ${provider}` : sql``}`;
       return { ok: true, message: `${ids.length} ${vars.switch.on ? await app.t`models on` : await app.t`models off`}` };
     }
     if (vars.remove) {

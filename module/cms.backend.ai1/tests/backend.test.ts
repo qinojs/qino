@@ -171,11 +171,13 @@ Deno.test("cms.backend.ai1: all models of every provider are imported, switched 
   assert(atOpenrouter.includes("jev-1.13") && !atOpenrouter.includes("whisper"));
   assertStringIncludes(await show(node, { show: "providers" }), ">1 / 2<"); // active / all
 
-  // all the filter matches, on or off
+  // all the filter matches, on or off: filtered by a provider only its offers, else the models and all theirs
+  const usable = () => app.db.col`SELECT DISTINCT m.name FROM ai1_model m JOIN ai1_model_provider o ON o.model_id = m.id WHERE o.enabled = ${true} ORDER BY m.name`;
   assertEquals(await api(node, { switch: { provider: 1, on: false } }), { ok: true, message: "2 models off" });
-  assertEquals(await app.db.col`SELECT name FROM ai1_model WHERE enabled = ${true} ORDER BY name`, ["eleven-v4", "jev-1.13", "scribe-v2"]);
+  assertEquals(await usable(), ["eleven-v4", "jev-1.13", "scribe-v2"]);
+  assertEquals(await app.db.one`SELECT COUNT(*) FROM ai1_model WHERE enabled = ${true}`, 4); // the models themselves stay
   assertEquals(await api(node, { switch: { q: "llama", on: true } }), { ok: true, message: "1 models on" });
-  assertEquals(await app.db.col`SELECT name FROM ai1_model WHERE enabled = ${true} ORDER BY name`, ["eleven-v4", "jev-1.13", "llama-3.3-70b", "scribe-v2"]);
+  assertEquals(await usable(), ["eleven-v4", "jev-1.13", "llama-3.3-70b", "scribe-v2"]);
   await api(node, { add: "provider", name: "api-free.deepl.com", type: "deepl", endpoint: "https://api-free.deepl.com/v2" });
   await withFetch(() => ({}), () => evaluate(app).then(() => {}));
   const deepl = Number(await app.db.one`SELECT id FROM ai1_model WHERE name = 'deepl'`);
@@ -211,7 +213,7 @@ async function llama(keys: Record<string, string> = {}) {
   return { app, node };
 }
 
-Deno.test("cms.backend.ai1: a provider's switch is its offers' default", async () => {
+Deno.test("cms.backend.ai1: a provider's and a model's switch is their offers' default", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
   const list = (ids: string[]) => ({ data: ids.map((id) => ({ id })) });
@@ -223,6 +225,8 @@ Deno.test("cms.backend.ai1: a provider's switch is its offers' default", async (
     { provider_model: "a/chat", enabled: 1 }, // stays as set
     { provider_model: "a/new", enabled: 0 }, // new: as its provider
   ]);
+  await api(node, { set: { table: "ai1_model", id: 2, column: "enabled", value: true } }); // switches its offers on
+  assertEquals(await app.db.one`SELECT enabled FROM ai1_model_provider WHERE provider_model = 'a/new'`, 1);
 });
 
 Deno.test("cms.backend.ai1: names match across spellings", () => {

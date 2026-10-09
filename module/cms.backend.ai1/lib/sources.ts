@@ -118,7 +118,7 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
   const db = app.db;
   // an earlier import took the :batch variants too (see below); what hangs on them goes with them
   for (const id of await db.col`SELECT id FROM ai1_model_provider WHERE provider_model LIKE ${"%:batch"}`) await db.table("ai1_model_provider").delete(Number(id));
-  const models = new Map((await db.query`SELECT id, name FROM ai1_model`).map((m) => [same(String(m.name)), { id: Number(m.id), name: String(m.name) }]));
+  const models = new Map((await db.query`SELECT id, name, enabled FROM ai1_model`).map((m) => [same(String(m.name)), { id: Number(m.id), name: String(m.name), enabled: !!m.enabled }]));
   // an offer is a model at a provider under one id there: a variant is another
   const offers = new Map((await db.query`SELECT mp.id, mp.provider_id, mp.provider_model, m.name FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id`)
     .map((o) => [`${o.provider_id} ${o.provider_model || o.name}`, Number(o.id)]));
@@ -152,11 +152,11 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
       for (const [id, meta] of entries) {
         const name = unit(id); // the first one seen names the model
         let found = models.get(same(name));
-        if (!found) models.set(same(name), found = { id: Number(await db.table("ai1_model").insert({ name })), name });
+        if (!found) models.set(same(name), found = { id: Number(await db.table("ai1_model").insert({ name })), name, enabled: true });
         const model = found.id;
         let offer = offers.get(`${provider.id} ${id}`);
         if (!offer) { // its name there, unless it is the model's
-          offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id, enabled: !!provider.enabled })));
+          offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id, enabled: !!provider.enabled && found.enabled })));
           added++;
         }
         const fromCatalog = extra.find((m) => m.id === id);

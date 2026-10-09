@@ -60,6 +60,14 @@ Deno.test("ai1: one model at several providers, the cheaper or the faster first"
   assertEquals((await text(testApp, ask("hi"), { prefer: { speed: 1 } })).text, "fast-llama: hi");
 });
 
+Deno.test("ai1: out of credit rests the whole provider", async () => {
+  const tried: string[] = [];
+  const broke: Adapter = { text: (call) => (tried.push(call.model), Promise.reject(new AiError("Insufficient credits", 402))) };
+  const testApp = await app({ a: ["text"], b: ["text"] }, { fake: broke });
+  await assertRejects(() => text(testApp, "hi"), AiError);
+  assertEquals(tried, ["a"]); // b is at the same account
+});
+
 Deno.test("ai1: weights choose among models; candidates show the order", async () => {
   const testApp = await app({ smart: ["text"], cheap: ["text"] });
   await testApp.db.exec`UPDATE ai1_model_provider SET cost_input = CASE model_id WHEN 1 THEN 10 ELSE 1 END, cost_output = CASE model_id WHEN 1 THEN 10 ELSE 1 END`;

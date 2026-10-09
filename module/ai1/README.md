@@ -68,15 +68,15 @@ Tests mock HTTP responses; no provider has been called with live credentials for
 
 ## Models, providers, capabilities
 
-- `ai1_model`: the model as a unit (`llama-3.3-70b`), its `context_length` (a longer request skips it), `enabled`.
+- `ai1_model`: the model as a unit (`llama-3.3-70b`), its `context_length` (a longer request skips it), `enabled` (what its offers are by default).
 - `ai1_model_capability`: what the model can do.
 - `ai1_model_score`: how good it is: `intelligence`, `coding`, `math` … (higher is better).
 - `ai1_provider`: endpoint, `type` (the adapter), `enabled` (what its offers are by default). Its key is `core.keys[name]`.
 - `ai1_model_provider`: where the model runs: its name there (`provider_model`), `cost`, `speed`,
-  `enabled`.
+  `enabled`: calls go by this alone.
 
 [cms.backend.ai1](../cms.backend.ai1/) fills them: providers from a catalog of known ones, their
-models via `/models` (new ones as their provider is), context, prices and capabilities from models.dev, every
+models via `/models` (new ones on where their provider and model are), context, prices and capabilities from models.dev, every
 Artificial Analysis benchmark as a score (key `core.keys["artificialanalysis.ai"]`), daily by cron.
 
 The candidates (model at a provider) go by the weights in `prefer`: `cost`

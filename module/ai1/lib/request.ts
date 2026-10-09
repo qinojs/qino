@@ -59,7 +59,8 @@ type Candidate = {
 };
 
 const COOLDOWN = 60_000;
-const cooldowns = new WeakMap<object, Map<number, number>>();
+// resting until: an offer by its id, a whole provider by its name
+const cooldowns = new WeakMap<object, Map<number | string, number>>();
 
 /**
  * Serve `capability`: the candidates (see `candidates`) one after the other, a provider whose adapter
@@ -77,7 +78,7 @@ export async function request(app: App, capability: string, input: unknown, opts
   const stop = (e: unknown) => (e instanceof AiError && e.final) || opts.signal?.aborted;
 
   for (const candidate of await candidates(app, capability, input, opts)) {
-    if ((cooling.get(candidate.id) ?? 0) > Date.now()) continue;
+    if (Math.max(cooling.get(candidate.id) ?? 0, cooling.get(candidate.provider) ?? 0) > Date.now()) continue;
     const adapter = adapters[candidate.type] ?? {};
     const [through, convert] = via.find(([c]) => adapter[c]) ?? [];
     if (!adapter[capability] && !convert) continue;
@@ -99,6 +100,7 @@ export async function request(app: App, capability: string, input: unknown, opts
       report(e);
       if (stop(e)) throw e;
       if (e instanceof AiError && (e.status === 429 || (e.status ?? 0) >= 500)) cooling.set(candidate.id, Date.now() + COOLDOWN);
+      if (e instanceof AiError && e.status === 402) cooling.set(candidate.provider, Date.now() + COOLDOWN); // out of credit: the whole account
       errors.push(`${candidate.provider}/${candidate.model}: ${errMsg(e)}`);
     }
   }
@@ -132,7 +134,7 @@ export async function candidates(app: App, capability: string, input: unknown, {
     JOIN ai1_model m ON m.id = c.model_id
     JOIN ai1_model_provider mp ON mp.model_id = m.id
     JOIN ai1_provider p ON p.id = mp.provider_id
-    WHERE c.capability = ${capability} AND m.enabled = ${true} AND mp.enabled = ${true}
+    WHERE c.capability = ${capability} AND mp.enabled = ${true}
       AND (m.context_length IS NULL OR m.context_length >= ${size})
     ${needs.length ? sql`AND (SELECT COUNT(*) FROM ai1_model_capability n WHERE n.model_id = m.id AND ${sql.in("n.capability", needs)}) = ${needs.length}` : sql.raw("")}`;
   const metrics = [...new Set([capability, "intelligence", ...Object.keys(prefer ?? {})])].filter((k) => k !== "cost" && k !== "speed" && k !== "quality");
