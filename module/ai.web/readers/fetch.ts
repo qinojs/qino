@@ -31,7 +31,7 @@ export const own: Reader = async (app, url) => {
   const text = new TextDecoder().decode(bytes);
   if (mime.startsWith("text/") && mime !== "text/html") return { title: "", content: text };
   const title = mime === "text/html" ? titleOf(text) : "";
-  const dir = app.modules.get("ai1.web")!.tmp, path = `${dir}${crypto.randomUUID()}`;
+  const dir = app.modules.get("ai.web")!.tmp, path = `${dir}${crypto.randomUUID()}`;
   await fs.mkdir(dir);
   await fs.write(path, bytes);
   try {

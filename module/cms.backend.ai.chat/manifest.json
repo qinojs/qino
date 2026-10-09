@@ -1,6 +1,6 @@
 {
-  "name": "cms.backend.ai1.chat",
-  "description": "A chat with an agent, all through the api of ai1.agent.",
-  "dependencies": ["cms.backend.ai1", "ai1.agent"],
+  "name": "cms.backend.ai.chat",
+  "description": "A chat with an agent, all through the api of ai.agent.",
+  "dependencies": ["cms.backend.ai", "ai.agent"],
   "files": ["manifest.json", "plugin.ts", "pub/main.css", "pub/main.js", "pub/module.svg"]
 }

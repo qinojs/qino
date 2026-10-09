@@ -1,7 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { t } from "@qino/pub/t.js";
 
-cms.initNode("backend.ai1", (el) => {
+cms.initNode("backend.ai", (el) => {
   const { node, alert } = nodePanel(el, []);
   const nid = Number(cms.el.nid(el));
   const row = (target) => target.closest("[data-row]");
@@ -10,7 +10,7 @@ cms.initNode("backend.ai1", (el) => {
   // The view with the current filter; an open providers dialog shows the new state too.
   const vars = () => ({ ...Object.fromEntries(new URL(location).searchParams), ...(filter ? Object.fromEntries(new FormData(filter)) : {}) });
   let dialog; // the open providers dialog: { id, box }
-  const fill = () => dialog.box.replaceChildren(el.querySelector(`[data-row=ai1_model][data-id="${dialog.id}"] template`).content.cloneNode(true));
+  const fill = () => dialog.box.replaceChildren(el.querySelector(`[data-row=ai_model][data-id="${dialog.id}"] template`).content.cloneNode(true));
   const refresh = async () => {
     await cms.reloadPart(nid, "view", vars());
     if (dialog) fill();

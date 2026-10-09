@@ -1,20 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
 import { App, runAs } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
-import { collections, drop } from "@qino/qino/ai1.embed";
+import { collections, drop } from "@qino/qino/ai.embed";
 
 const BRAVE = { web: { results: [{ title: "Qino", url: "https://qino.test/", description: "A CMS", extra: 1 }] } };
 
-Deno.test("ai1.web: search asks the first engine with a key", async () => {
+Deno.test("ai.web: search asks the first engine with a key", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "cron", "ai1.embed", "ai1.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   const fetchOrg = globalThis.fetch, asked: Request[] = [];
   globalThis.fetch = (input, init) => (asked.push(new Request(input, init)), Promise.resolve(Response.json(BRAVE)));
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
-    const search = (query: Record<string, unknown>) => runAs(app, 7, "test", () => (app.api as any)["ai1.web"].search.get(undefined, query));
+    const search = (query: Record<string, unknown>) => runAs(app, 7, "test", () => (app.api as any)["ai.web"].search.get(undefined, query));
 
     await assertRejects(() => search({ query: "qino" }), Error, "No search engine"); // no key yet
     await app.settings.core.keys["api.search.brave.com"]("sk-brave");
@@ -37,9 +37,9 @@ Deno.test("ai1.web: search asks the first engine with a key", async () => {
   }
 });
 
-Deno.test("ai1.web: read a page by the chosen reader, keep it, find it", async () => {
+Deno.test("ai.web: read a page by the chosen reader, keep it, find it", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "cron", "ai1.embed", "ai1.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   const fetchOrg = globalThis.fetch, asked: string[] = [];
   globalThis.fetch = (input) => {
@@ -49,14 +49,14 @@ Deno.test("ai1.web: read a page by the chosen reader, keep it, find it", async (
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
-    const web = (app.api as any)["ai1.web"];
+    const web = (app.api as any)["ai.web"];
     const as = (call: () => Promise<any>) => runAs(app, 7, "test", call);
 
     // our own fetch by default, which never reaches our own network
     await assertRejects(() => as(() => web.read.get(undefined, { url: "http://127.0.0.1/" })), Error, "SSRF blocked");
     await assertRejects(() => as(() => web.read.get(undefined, { url: "file:///etc/passwd" })), Error, "http or https");
 
-    await app.settings["ai1.web"].reader("jina");
+    await app.settings["ai.web"].reader("jina");
     await assertRejects(() => as(() => web.read.get(undefined, { url: "https://qino.test/A" })), Error, "set a key in core.keys for api.jina.ai");
     await app.settings.core.keys["api.jina.ai"]("sk-jina");
     const page = await as(() => web.read.get(undefined, { url: "https://qino.test/A" }));
@@ -68,7 +68,7 @@ Deno.test("ai1.web: read a page by the chosen reader, keep it, find it", async (
     await as(() => web.read.get(undefined, { url: "https://qino.test/a" })); // another page: paths are case-sensitive
     await as(() => web.read.get(undefined, { url: "https://qino.test/A", maxAge: 0 })); // read again, the same row
     assertEquals(asked.length, 3);
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai1_web_page`), 2);
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai_web_page`), 2);
 
     // without an embedding collection: by its words
     for (const { id } of await collections(app)) await drop(app, id);
@@ -89,9 +89,9 @@ const SITE: Record<string, string> = {
   "https://site.test/docs/c": "# C",
 };
 
-Deno.test("ai1.web: crawl reads the pages below a url, at most max; pages finds them by root", async () => {
+Deno.test("ai.web: crawl reads the pages below a url, at most max; pages finds them by root", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "cron", "ai1.embed", "ai1.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   const fetchOrg = globalThis.fetch, asked: string[] = [];
   globalThis.fetch = (input) => {
@@ -102,10 +102,10 @@ Deno.test("ai1.web: crawl reads the pages below a url, at most max; pages finds 
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
-    await app.settings["ai1.web"].reader("jina");
+    await app.settings["ai.web"].reader("jina");
     await app.settings.core.keys["api.jina.ai"]("sk-jina");
     for (const { id } of await collections(app)) await drop(app, id); // by words
-    const web = (app.api as any)["ai1.web"];
+    const web = (app.api as any)["ai.web"];
     const as = (call: () => Promise<any>) => runAs(app, 7, "test", call);
 
     assertEquals(await as(() => web.crawl.post({ url: "https://site.test/docs/", max: 2, wait: true })), { read: 2, failed: [], left: 2 }); // b and c still to read
@@ -115,7 +115,7 @@ Deno.test("ai1.web: crawl reads the pages below a url, at most max; pages finds 
     await as(() => web.crawl.post({ url: "https://site.test/docs/", maxAge: 0, wait: true }));
     assertEquals(asked.length, 8); // all again
 
-    await app.db.table("ai1_web_page").insert({ url: "https://elsewhere.test/crawling", url_hash: "y", title: "", content: "crawling", reader: "fetch", time: 1 });
+    await app.db.table("ai_web_page").insert({ url: "https://elsewhere.test/crawling", url_hash: "y", title: "", content: "crawling", reader: "fetch", time: 1 });
     const found = (query: Record<string, string>) => as(() => web.pages.get(undefined, query)).then((rows) => rows.map((p: any) => p.url).sort());
     assertEquals(await found({ search: "crawling" }), ["https://elsewhere.test/crawling", "https://site.test/docs/b"]);
     assertEquals(await found({ search: "crawling", root: "https://site.test/docs/" }), ["https://site.test/docs/b"]);

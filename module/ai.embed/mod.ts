@@ -1,11 +1,11 @@
 import { sha256hex, sql } from "@qino/qino";
-import { candidates, embed } from "@qino/qino/ai1";
+import { candidates, embed } from "@qino/qino/ai";
 
 import { collection, embeddings } from "./lib/collection.ts";
 import { encode, fit, json, nearest, stored, vector } from "./lib/vector.ts";
 
 import type { App, Db, Sql } from "@qino/qino";
-import type { EmbedInput } from "@qino/qino/ai1";
+import type { EmbedInput } from "@qino/qino/ai";
 import type { Collection } from "./lib/collection.ts";
 
 export { collection, collections, create, drop, embeddings } from "./lib/collection.ts";
@@ -67,7 +67,7 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
   if (!c) throw new Error("No embedding collection");
   const text = typeof input === "string";
   if (!text && !c.vision) throw new Error(`"${c.model}" has no vision: it embeds no images`);
-  const contents = text ? chunks(input, Number(await app.settings["ai1.embed"].chunkChars)) : [input.image];
+  const contents = text ? chunks(input, Number(await app.settings["ai.embed"].chunkChars)) : [input.image];
   const hashes = text || !input.hash ? await Promise.all(contents.map(sha256hex)) : [input.hash];
   const where = sql`${match(keys, key)} AND collection_id = ${c.id}`;
   const old = new Map((await db.query`SELECT chunk, hash FROM ${t} WHERE ${where}`).map((row) => [Number(row.chunk), row.hash]));

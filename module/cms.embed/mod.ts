@@ -1,5 +1,5 @@
 import { sql, unhee } from "@qino/qino";
-import { collection, index } from "@qino/qino/ai1.embed";
+import { collection, index } from "@qino/qino/ai.embed";
 
 import type { App } from "@qino/qino";
 

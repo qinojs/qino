@@ -35,10 +35,10 @@ export async function live(call: Call, input: LiveInput): Promise<LiveOutput> {
   // one event after the other, as they come: the record keeps their order
   let queue: Promise<unknown> = Promise.resolve();
   ws.onmessage = (e) => queue = queue.then(() => handle(JSON.parse(String(e.data))))
-    .catch((e) => console.error("[ai1] live:", errMsg(e)));
+    .catch((e) => console.error("[ai] live:", errMsg(e)));
 
   async function handle(event: Record<string, any>) {
-    if (event.type === "error") return console.error("[ai1] live:", event.error?.message);
+    if (event.type === "error") return console.error("[ai] live:", event.error?.message);
     if (event.type === "conversation.item.input_audio_transcription.completed") {
       return await onMessage?.({ role: "user", content: String(event.transcript ?? "").trim() });
     }

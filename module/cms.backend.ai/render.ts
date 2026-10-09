@@ -2,7 +2,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
-import { SPEED } from "@qino/qino/ai1.stats";
+import { SPEED } from "@qino/qino/ai.stats";
 
 import { CATALOG } from "./catalog.ts";
 import { adapters, BENCHMARKS_KEY, listing } from "./lib/sources.ts";
@@ -10,7 +10,7 @@ import { adapters, BENCHMARKS_KEY, listing } from "./lib/sources.ts";
 import type { App, Ctx, HtmlString, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-// What a request may need besides its capability; ai1 derives these from the input.
+// What a request may need besides its capability; ai derives these from the input.
 const NEEDS = ["vision", "tools"];
 /** More models than this: narrow the filter. */
 const LIMIT = 200;
@@ -19,18 +19,18 @@ const INTELLIGENCE = "intelligence";
 const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "transcribe", "ocr"];
 const SCHEMA = '{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"]}';
 /** A usable model: one with a switched-on offer. */
-const USABLE = sql`EXISTS (SELECT 1 FROM ai1_model_provider o WHERE o.model_id = m.id AND o.enabled = ${true})`;
+const USABLE = sql`EXISTS (SELECT 1 FROM ai_model_provider o WHERE o.model_id = m.id AND o.enabled = ${true})`;
 
 type Vars = Record<string, any>;
 
 /** The capability columns: what adapters serve and capabilities define, the needs, and whatever is in use. */
 export async function capabilities(app: App): Promise<string[]> {
-  const defs = app.modules.linked().flatMap((mod) => Object.entries<any>(mod.plugin.ai1Capabilities ?? {}));
+  const defs = app.modules.linked().flatMap((mod) => Object.entries<any>(mod.plugin.aiCapabilities ?? {}));
   return [...new Set([
     ...Object.values(adapters(app)).flatMap(Object.keys),
     ...defs.flatMap(([capability, def]) => [capability, ...Object.keys(def.via ?? {})]),
     ...NEEDS,
-    ...(await app.db.col`SELECT DISTINCT capability FROM ai1_model_capability`).map(String),
+    ...(await app.db.col`SELECT DISTINCT capability FROM ai_model_capability`).map(String),
   ])];
 }
 
@@ -93,9 +93,9 @@ export function view(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<H
 async function filters(app: App, vars: Vars) {
   const t = app.t;
   const [providerList, caps, metrics] = await Promise.all([
-    app.db.query`SELECT id, name FROM ai1_provider ORDER BY name`,
+    app.db.query`SELECT id, name FROM ai_provider ORDER BY name`,
     capabilities(app),
-    app.db.col`SELECT DISTINCT metric FROM ai1_model_score`,
+    app.db.col`SELECT DISTINCT metric FROM ai_model_score`,
   ]);
   const sorts = [
     { value: "", label: await t`intelligence` },
@@ -116,12 +116,12 @@ async function filters(app: App, vars: Vars) {
   </form>`;
 }
 
-/** The filter's conditions on `ai1_model m`, apart from on/off. */
+/** The filter's conditions on `ai_model m`, apart from on/off. */
 export function matching(vars: Vars): Sql[] {
   return [
     vars.q ? sqlSearch(String(vars.q), ["m.name"]).where : null,
-    vars.provider ? sql`EXISTS (SELECT 1 FROM ai1_model_provider f WHERE f.model_id = m.id AND f.provider_id = ${Number(vars.provider)})` : null,
-    vars.capability ? sql`EXISTS (SELECT 1 FROM ai1_model_capability f WHERE f.model_id = m.id AND f.capability = ${String(vars.capability)})` : null,
+    vars.provider ? sql`EXISTS (SELECT 1 FROM ai_model_provider f WHERE f.model_id = m.id AND f.provider_id = ${Number(vars.provider)})` : null,
+    vars.capability ? sql`EXISTS (SELECT 1 FROM ai_model_capability f WHERE f.model_id = m.id AND f.capability = ${String(vars.capability)})` : null,
   ].filter((w) => w !== null);
 }
 
@@ -132,12 +132,12 @@ async function modelList(node: Node, vars: Vars) {
   const where = [...matching(vars), ...vars.all ? [] : [USABLE]];
   const [caps, rows, scores, abilities, offers, stats, providerRows] = await Promise.all([
     capabilities(app),
-    db.query`SELECT * FROM ai1_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`,
-    db.query`SELECT model_id, metric, value FROM ai1_model_score`,
-    db.query`SELECT * FROM ai1_model_capability`,
-    db.query`SELECT * FROM ai1_model_provider ORDER BY id`,
-    db.query`SELECT * FROM ai1_model_provider_stat`,
-    db.query`SELECT id, name, enabled FROM ai1_provider ORDER BY name`,
+    db.query`SELECT * FROM ai_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`,
+    db.query`SELECT model_id, metric, value FROM ai_model_score`,
+    db.query`SELECT * FROM ai_model_capability`,
+    db.query`SELECT * FROM ai_model_provider ORDER BY id`,
+    db.query`SELECT * FROM ai_model_provider_stat`,
+    db.query`SELECT id, name, enabled FROM ai_provider ORDER BY name`,
   ]);
   const score = new Map(scores.map((s) => [`${s.model_id} ${s.metric}`, Number(s.value)]));
   const has = new Set(abilities.map((a) => `${a.model_id} ${a.capability}`));
@@ -165,7 +165,7 @@ async function modelList(node: Node, vars: Vars) {
     const cells = caps.map((capability) =>
       html`<td><input type=checkbox data-capability="${capability}" ${has.has(`${model.id} ${capability}`) ? "checked" : ""}>`);
     const all = scores.filter((s) => s.model_id === model.id);
-    return html.async`<tr data-row=ai1_model data-id="${model.id}" data-name="${model.name}" ${model.enabled ? "" : "data-off"}>
+    return html.async`<tr data-row=ai_model data-id="${model.id}" data-name="${model.name}" ${model.enabled ? "" : "data-off"}>
       <td>${checkbox(model.enabled)}
       <th><input name=name value="${model.name}" required style="color:${backend.uniqueColor(model.name)}">
         <a href="${href({ show: "model", id: model.id })}" title="${t`Details`}"><u2-ico icon=info>ⓘ</u2-ico></a>
@@ -210,7 +210,7 @@ function offerTable(app: App, model: number, offers: any[], stats: any[], provid
   const t = app.t;
   const offerRow = (o: any) => {
     const s = stats.find((x) => x.model_provider_id === o.id);
-    return html.async`<tr data-row=ai1_model_provider data-id="${o.id}">
+    return html.async`<tr data-row=ai_model_provider data-id="${o.id}">
       <td>${checkbox(o.enabled)}
       <td><select name=provider_id>${options(providerList, o.provider_id)}</select>
       <td><input name=provider_model value="${o.provider_model}" placeholder="${t`same name`}">
@@ -251,19 +251,19 @@ function offerTable(app: App, model: number, offers: any[], stats: any[], provid
 async function model(node: Node, id: number) {
   const app = node.app, t = app.t, db = app.db;
   const [m, caps, metrics, abilities, scores, offers, stats, providerRows, errors, sources] = await Promise.all([
-    db.row`SELECT * FROM ai1_model WHERE id = ${id}`,
+    db.row`SELECT * FROM ai_model WHERE id = ${id}`,
     capabilities(app),
-    db.col`SELECT DISTINCT metric FROM ai1_model_score`,
-    db.col`SELECT capability FROM ai1_model_capability WHERE model_id = ${id}`,
-    db.query`SELECT metric, value FROM ai1_model_score WHERE model_id = ${id}`,
-    db.query`SELECT * FROM ai1_model_provider WHERE model_id = ${id} ORDER BY id`,
-    db.query`SELECT s.* FROM ai1_model_provider_stat s JOIN ai1_model_provider mp ON mp.id = s.model_provider_id WHERE mp.model_id = ${id}`,
-    db.query`SELECT id, name, enabled FROM ai1_provider ORDER BY name`,
-    db.query`SELECT e.time, e.capability, e.message, p.name AS provider FROM ai1_call_error e
-      JOIN ai1_model_provider mp ON mp.id = e.model_provider_id JOIN ai1_provider p ON p.id = mp.provider_id
+    db.col`SELECT DISTINCT metric FROM ai_model_score`,
+    db.col`SELECT capability FROM ai_model_capability WHERE model_id = ${id}`,
+    db.query`SELECT metric, value FROM ai_model_score WHERE model_id = ${id}`,
+    db.query`SELECT * FROM ai_model_provider WHERE model_id = ${id} ORDER BY id`,
+    db.query`SELECT s.* FROM ai_model_provider_stat s JOIN ai_model_provider mp ON mp.id = s.model_provider_id WHERE mp.model_id = ${id}`,
+    db.query`SELECT id, name, enabled FROM ai_provider ORDER BY name`,
+    db.query`SELECT e.time, e.capability, e.message, p.name AS provider FROM ai_call_error e
+      JOIN ai_model_provider mp ON mp.id = e.model_provider_id JOIN ai_provider p ON p.id = mp.provider_id
       WHERE mp.model_id = ${id} ORDER BY e.id DESC LIMIT ${LIMIT}`,
-    db.query`SELECT s.source, s.data, s.time, p.name AS provider FROM ai1_model_meta s
-      LEFT JOIN ai1_model_provider mp ON mp.id = s.model_provider_id LEFT JOIN ai1_provider p ON p.id = mp.provider_id
+    db.query`SELECT s.source, s.data, s.time, p.name AS provider FROM ai_model_meta s
+      LEFT JOIN ai_model_provider mp ON mp.id = s.model_provider_id LEFT JOIN ai_provider p ON p.id = mp.provider_id
       WHERE s.model_id = ${id} ORDER BY s.source, p.name`,
   ]);
   if (!m) return html.async`<div class=u2-card>${t`No such model.`} <a href="${href({ show: "models" })}">${t`Models`}</a></div>`;
@@ -273,7 +273,7 @@ async function model(node: Node, id: number) {
   const known = metrics.map(String).sort((a, b) => Number(b === INTELLIGENCE) - Number(a === INTELLIGENCE) || a.localeCompare(b));
   const usable = offers.filter((o) => o.enabled);
   const card = (title: unknown, body: unknown) => html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${title}</div>${body}</div>`;
-  return html.async`<div class=u2-flex data-row=ai1_model data-id="${m.id}" data-name="${m.name}" ${m.enabled ? "" : "data-off"}>
+  return html.async`<div class=u2-flex data-row=ai_model data-id="${m.id}" data-name="${m.name}" ${m.enabled ? "" : "data-off"}>
   ${card(html`<input name=name value="${m.name}" required style="color:${backend.uniqueColor(m.name)}">`, html.async`<table class=u2-table>
     <tr><th>${t`On`}<td>${checkbox(m.enabled)}
     <tr><th title="${t`Context length in tokens; a longer request skips the model`}">${t`Context`}
@@ -313,8 +313,8 @@ async function providers(node: Node) {
   const rows = await app.db.query`
     SELECT p.*, COUNT(mp.id) AS models, SUM(CASE WHEN mp.enabled = ${true} THEN 1 ELSE 0 END) AS active,
       COALESCE(SUM(s.used_input), 0) AS used_input, COALESCE(SUM(s.used_output), 0) AS used_output
-    FROM ai1_provider p LEFT JOIN ai1_model_provider mp ON mp.provider_id = p.id
-      LEFT JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
+    FROM ai_provider p LEFT JOIN ai_model_provider mp ON mp.provider_id = p.id
+      LEFT JOIN ai_model_provider_stat s ON s.model_provider_id = mp.id
     GROUP BY p.id, p.name, p.type, p.endpoint, p.timeout_ms, p.enabled ORDER BY p.name`;
   const types = Object.keys(adapters(app)).map((type) => ({ value: type, label: type }));
 
@@ -324,7 +324,7 @@ async function providers(node: Node) {
     const url = getCtx().req.url.toURL(); // its models, switched off too
     for (const [k, v] of Object.entries({ show: "models", all: "1", provider: String(p.id) })) url.searchParams.set(k, v);
     const models = url.pathname + url.search;
-    return html.async`<tr data-row=ai1_provider data-id="${p.id}" data-name="${p.name}">
+    return html.async`<tr data-row=ai_provider data-id="${p.id}" data-name="${p.name}">
       <td>${checkbox(p.enabled)}
       <th><a href="${models}" style="color:${backend.uniqueColor(p.name)}">${p.name}</a>
       <td class=-num><a href="${models}" title="${t`active / all`}">${p.active ?? 0} / ${p.models}</a>
@@ -355,21 +355,21 @@ async function providers(node: Node) {
   <tbody>${providerRows}
   <tr><td colspan=10>
     <form class=u2-flex data-add=provider data-catalog="${JSON.stringify(CATALOG)}">
-      <input name=name required list=ai1-catalog placeholder="${t`name, e.g. api.openai.com`}">
+      <input name=name required list=ai-catalog placeholder="${t`name, e.g. api.openai.com`}">
       <select name=type>${options(types, "openai")}</select>
       <input name=endpoint required placeholder="https://…/v1">
       <button>${t`Add provider`}</button>
     </form>
 </table>
-<datalist id=ai1-catalog>${CATALOG.map((c) => html`<option value="${c.name}">`)}</datalist>`;
+<datalist id=ai-catalog>${CATALOG.map((c) => html`<option value="${c.name}">`)}</datalist>`;
 }
 
-/** One call of a capability through ai1's own choice: who would answer (for the weights), then who did. */
+/** One call of a capability through ai's own choice: who would answer (for the weights), then who did. */
 async function tryCard(app: App) {
   const t = app.t;
   const [names, metrics, caps] = await Promise.all([
-    app.db.col`SELECT m.name FROM ai1_model m WHERE ${USABLE} ORDER BY m.name`,
-    app.db.col`SELECT DISTINCT metric FROM ai1_model_score WHERE metric <> ${SPEED} ORDER BY metric`,
+    app.db.col`SELECT m.name FROM ai_model m WHERE ${USABLE} ORDER BY m.name`,
+    app.db.col`SELECT DISTINCT metric FROM ai_model_score WHERE metric <> ${SPEED} ORDER BY metric`,
     capabilities(app),
   ]);
   // quality stands for intelligence and for the scores named like a capability (image, speak)
@@ -404,7 +404,7 @@ async function tryCard(app: App) {
           </div>
         </div>
       </fieldset>
-      <small>${t`All at 0: ai1's own choice — quality (the capability's own score, else intelligence), then cheap and fast.`}</small>
+      <small>${t`All at 0: ai's own choice — quality (the capability's own score, else intelligence), then cheap and fast.`}</small>
       <ol class=-candidates></ol>
       <output></output>
     </form>
@@ -415,8 +415,8 @@ async function tryCard(app: App) {
 export async function widget(app: App): Promise<HtmlString> {
   const t = app.t;
   // in use: what has a switched-on offer
-  const models = Number(await app.db.one`SELECT COUNT(*) FROM ai1_model m WHERE ${USABLE}`);
-  const names = (await app.db.col`SELECT name FROM ai1_provider p WHERE EXISTS (SELECT 1 FROM ai1_model_provider o WHERE o.provider_id = p.id AND o.enabled = ${true})`).map(String);
+  const models = Number(await app.db.one`SELECT COUNT(*) FROM ai_model m WHERE ${USABLE}`);
+  const names = (await app.db.col`SELECT name FROM ai_provider p WHERE EXISTS (SELECT 1 FROM ai_model_provider o WHERE o.provider_id = p.id AND o.enabled = ${true})`).map(String);
   const keyless = [];
   for (const name of names) if (!await app.settings.core.keys[name]) keyless.push(name);
   const benchmarks = !!await app.settings.core.keys[BENCHMARKS_KEY];

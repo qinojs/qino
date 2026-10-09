@@ -1,5 +1,5 @@
 import { Emitter, errMsg, sql, toJsonSchema, toTools, walk } from "@qino/qino";
-import { collection, index, remove, search } from "@qino/qino/ai1.embed";
+import { collection, index, remove, search } from "@qino/qino/ai.embed";
 
 import type { App, Ctx } from "@qino/qino";
 
@@ -16,7 +16,7 @@ type Table = Schema & { additionalProperties?: Schema };
 /** How many hits a search gives. */
 const LIMIT = 10; // todo? adjustable
 
-const log = (e: unknown) => console.error("[ai1.discover] embedding:", errMsg(e));
+const log = (e: unknown) => console.error("[ai.discover] embedding:", errMsg(e));
 
 /** An entry; its text is a line for itself, one per field. */
 const entry = (name: string, description = "", fields: Record<string, Schema> = {}, detail: unknown): Entry => ({
@@ -63,16 +63,16 @@ export async function entries(ctx: Ctx, kind: Kind): Promise<Entry[]> {
 const indexed = new WeakMap<App, Map<Kind, { text: string; done: Promise<void> }>>();
 
 /** Embed every entry of a kind, unless it is as last time: modules linked later change it. Unchanged
- *  entries are not embedded again (ai1.embed); those gone are removed. */
+ *  entries are not embedded again (ai.embed); those gone are removed. */
 function indexAll(app: App, kind: Kind, every: Entry[]) {
   const kinds = indexed.get(app) ?? indexed.set(app, new Map()).get(app)!;
   const now = every.map((e) => e.text).join("\n\n");
   if (kinds.get(kind)?.text === now) return kinds.get(kind)!.done;
   const done = (async () => {
-    for (const { name, text } of every) await index(app, "ai1_discover", { kind, name }, text);
+    for (const { name, text } of every) await index(app, "ai_discover", { kind, name }, text);
     const names = new Set(every.map((e) => e.name));
-    for (const name of await app.db.col`SELECT DISTINCT name FROM embedding_ai1_discover WHERE kind = ${kind}`) {
-      if (!names.has(String(name))) await remove(app, "ai1_discover", { kind, name: String(name) });
+    for (const name of await app.db.col`SELECT DISTINCT name FROM embedding_ai_discover WHERE kind = ${kind}`) {
+      if (!names.has(String(name))) await remove(app, "ai_discover", { kind, name: String(name) });
     }
   })().catch((e) => { kinds.delete(kind); throw e; }); // tried again by the next search
   kinds.set(kind, { text: now, done });
@@ -80,7 +80,7 @@ function indexAll(app: App, kind: Kind, every: Entry[]) {
 }
 
 /** Of `among`, the entries nearest to `query` by meaning, with their `score` (1 the same); `query` may be
- *  a vector already (ai1.embed). Without an embedding collection those that contain the most of its words. */
+ *  a vector already (ai.embed). Without an embedding collection those that contain the most of its words. */
 export async function find(app: App, kind: Kind, query: string | number[], among: Entry[], limit = LIMIT): Promise<(Entry & { score?: number })[]> {
   if (!await collection(app)) {
     if (typeof query !== "string") return [];
@@ -91,7 +91,7 @@ export async function find(app: App, kind: Kind, query: string | number[], among
   const every = all(app, kind);
   await indexAll(app, kind, every).catch(log);
   // all of the kind by nearness: what is not among them is skipped, a further chunk of an entry too
-  const hits = await search(app, { ai1_discover: sql`e.kind = ${kind}` }, query, { limit: every.length });
+  const hits = await search(app, { ai_discover: sql`e.kind = ${kind}` }, query, { limit: every.length });
   const byName = new Map(among.map((e) => [e.name, e])), best = new Map<string, number>();
   for (const { key, score } of hits) if (!best.has(String(key.name))) best.set(String(key.name), score); // the nearest chunk
   return [...best].flatMap(([name, score]) => byName.has(name) ? [{ ...byName.get(name)!, score }] : []).slice(0, limit);

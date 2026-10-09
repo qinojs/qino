@@ -34,7 +34,7 @@ const needs = (input: { messages?: Message[]; content?: string | Part[]; tools?:
   ...input.tools?.length ? ["tools"] : [],
 ];
 
-export const ai1Capabilities: Record<string, Capability> = {
+export const aiCapabilities: Record<string, Capability> = {
   text: { needs },
   embed: { oneModel: true, needs: (input: { images?: string[] }) => input.images?.length ? ["vision"] : [] },
   structured: {

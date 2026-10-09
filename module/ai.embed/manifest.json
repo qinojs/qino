@@ -1,6 +1,6 @@
 {
-  "name": "ai1.embed",
+  "name": "ai.embed",
   "description": "Stores and searches embeddings of database rows with the database's native vector type.",
-  "dependencies": ["ai1", "cron"],
+  "dependencies": ["ai", "cron"],
   "files": ["README.md", "dbschema.json", "healthChecks.ts", "lib/collection.ts", "lib/vector.ts", "manifest.json", "mod.ts", "plugin.ts", "sources/file.json", "sources/file.ts"]
 }

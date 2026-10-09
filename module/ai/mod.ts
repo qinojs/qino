@@ -29,7 +29,7 @@ export type TextInput = {
   onText?: (delta: string) => void;
 };
 /** `truncated`: cut off at `maxTokens`; `model`: the one that answered, `modelProvider`: it at its
- *  provider (ai1_model_provider). Usage and timing of every call: the `ai1:call` event. */
+ *  provider (ai_model_provider). Usage and timing of every call: the `ai:call` event. */
 export type TextOutput = {
   text: string;
   toolCalls: ToolCall[];

@@ -1,4 +1,4 @@
-import { decide } from "@qino/qino/ai1";
+import { decide } from "@qino/qino/ai";
 
 import type { App } from "@qino/qino";
 

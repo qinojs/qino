@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, requestStorage, sql } from "@qino/qino";
-import { candidates, request } from "@qino/qino/ai1";
+import { candidates, request } from "@qino/qino/ai";
 
 import { CATALOG } from "./catalog.ts";
 import { BENCHMARKS_KEY, evaluate } from "./lib/sources.ts";
@@ -10,12 +10,12 @@ import type { Node } from "@qino/qino/cms";
 
 // Editable columns per table, with the type the posted value becomes.
 const EDITABLE: Record<string, Record<string, "string" | "number" | "boolean">> = {
-  ai1_provider: { type: "string", endpoint: "string", timeout_ms: "number", enabled: "boolean" },
-  ai1_model: { name: "string", context_length: "number", enabled: "boolean" },
-  ai1_model_provider: { provider_id: "number", provider_model: "string", cost_input: "number", cost_output: "number", speed: "number", enabled: "boolean" },
+  ai_provider: { type: "string", endpoint: "string", timeout_ms: "number", enabled: "boolean" },
+  ai_model: { name: "string", context_length: "number", enabled: "boolean" },
+  ai_model_provider: { provider_id: "number", provider_model: "string", cost_input: "number", cost_output: "number", speed: "number", enabled: "boolean" },
 };
 
-/** `prefer` from the sliders: `{ name: weight }`; none set means ai1's own. */
+/** `prefer` from the sliders: `{ name: weight }`; none set means ai's own. */
 function weights(prefer: unknown) {
   if (!prefer || typeof prefer !== "object" || Object.values(prefer).some((w) => typeof w !== "number")) throw new Error("Weights: { name: number }");
   return Object.keys(prefer).length ? prefer as Record<string, number> : undefined;
@@ -39,39 +39,39 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       const { table, id, column, value } = vars.set;
       const type = EDITABLE[table]?.[column];
       if (!type) return { ok: false, message: `Not editable: ${table}.${column}` };
-      if (table === "ai1_provider" && column === "type") {
-        const name = await db.one`SELECT name FROM ai1_provider WHERE id = ${Number(id)}`;
+      if (table === "ai_provider" && column === "type") {
+        const name = await db.one`SELECT name FROM ai_provider WHERE id = ${Number(id)}`;
         if (CATALOG.some((provider) => provider.name === name)) return { ok: false, message: "A known provider's type is fixed" };
       }
       await db.table(table).update(Number(id), { [column]: coerce(type, value) });
       // a provider's and a model's switch is their offers' default: it switches them all
-      if (column === "enabled" && table !== "ai1_model_provider") {
-        await db.exec`UPDATE ai1_model_provider SET enabled = ${!!value} WHERE ${sql.id(table === "ai1_model" ? "model_id" : "provider_id")} = ${Number(id)}`;
+      if (column === "enabled" && table !== "ai_model_provider") {
+        await db.exec`UPDATE ai_model_provider SET enabled = ${!!value} WHERE ${sql.id(table === "ai_model" ? "model_id" : "provider_id")} = ${Number(id)}`;
       }
       return { ok: true };
     }
     if (vars.capability) {
       const { model, name, on } = vars.capability;
       const row = { model_id: Number(model), capability: String(name) };
-      await (on ? db.table("ai1_model_capability").ensure(row) : db.table("ai1_model_capability").deleteWhere(row));
+      await (on ? db.table("ai_model_capability").ensure(row) : db.table("ai_model_capability").deleteWhere(row));
       return { ok: true };
     }
     if (vars.add) {
       const name = String(vars.name ?? "").trim();
-      if (vars.add === "offer") await db.table("ai1_model_provider").insert({ model_id: Number(vars.model), provider_id: Number(vars.provider_id) });
+      if (vars.add === "offer") await db.table("ai_model_provider").insert({ model_id: Number(vars.model), provider_id: Number(vars.provider_id) });
       else if (!name) return { ok: false, message: await app.t`A name is required.` };
-      else if (vars.add === "provider") await db.table("ai1_provider").insert({ name, type: CATALOG.find((provider) => provider.name === name)?.type ?? String(vars.type || "openai"), endpoint: String(vars.endpoint ?? "").trim() });
-      else if (vars.add === "model") await db.table("ai1_model").insert({ name });
+      else if (vars.add === "provider") await db.table("ai_provider").insert({ name, type: CATALOG.find((provider) => provider.name === name)?.type ?? String(vars.type || "openai"), endpoint: String(vars.endpoint ?? "").trim() });
+      else if (vars.add === "model") await db.table("ai_model").insert({ name });
       return { ok: true };
     }
     if (vars.switch) {
       // every model the filter matches, whether on or off now
       const where = matching(vars.switch);
-      const ids = await db.col`SELECT m.id FROM ai1_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`;
+      const ids = await db.col`SELECT m.id FROM ai_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`;
       const on = !!vars.switch.on, provider = Number(vars.switch.provider) || undefined;
       // filtered by a provider, only its offers; else the models and all their offers
-      if (ids.length && !provider) await db.exec`UPDATE ai1_model SET enabled = ${on} WHERE ${sql.in("id", ids)}`;
-      if (ids.length) await db.exec`UPDATE ai1_model_provider SET enabled = ${on} WHERE ${sql.in("model_id", ids)} ${provider ? sql`AND provider_id = ${provider}` : sql``}`;
+      if (ids.length && !provider) await db.exec`UPDATE ai_model SET enabled = ${on} WHERE ${sql.in("id", ids)}`;
+      if (ids.length) await db.exec`UPDATE ai_model_provider SET enabled = ${on} WHERE ${sql.in("model_id", ids)} ${provider ? sql`AND provider_id = ${provider}` : sql``}`;
       return { ok: true, message: `${ids.length} ${vars.switch.on ? await app.t`models on` : await app.t`models off`}` };
     }
     if (vars.remove) {
@@ -82,7 +82,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
     }
     if (vars.key) {
       const { provider, value } = vars.key;
-      if (!await db.one`SELECT id FROM ai1_provider WHERE name = ${provider}`) return { ok: false, message: "Unknown provider" };
+      if (!await db.one`SELECT id FROM ai_provider WHERE name = ${provider}`) return { ok: false, message: "Unknown provider" };
       await key(provider, value);
       return { ok: true };
     }
@@ -95,7 +95,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       // the order request tries: who serves it, then who serves it through another capability
       const { capability = "text", input = {}, model, prefer } = vars.preview;
       const opts = { model: model || undefined, prefer: weights(prefer) };
-      const via = app.modules.linked().flatMap((mod) => Object.keys(mod.plugin.ai1Capabilities?.[capability]?.via ?? {}));
+      const via = app.modules.linked().flatMap((mod) => Object.keys(mod.plugin.aiCapabilities?.[capability]?.via ?? {}));
       const lists = await Promise.all([capability, ...via].map((c) => candidates(app, String(c), input, opts)));
       const list = lists.flatMap((l, i) => l.map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100, via: i ? via[i - 1] : undefined })));
       return { ok: true, list: list.slice(0, 8) };
@@ -107,13 +107,13 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
         input.file = new File([await (await fetch(input.file)).blob()], String(input.name ?? "audio"));
         delete input.name;
       }
-      // who was tried: the ai1:call events of this request
+      // who was tried: the ai:call events of this request
       const ctx = requestStorage.getStore(), done = new AbortController(), tried: any[] = [];
       const raw: Promise<{ status: number; contentType: string | null; body: string }>[] = [];
       const onResponse = (response: Response) => {
         raw.push(response.text().then((body) => ({ status: response.status, contentType: response.headers.get("content-type"), body })));
       };
-      app.on("ai1:call", (e) => { if (requestStorage.getStore() === ctx) tried.push({ model: e.model, provider: e.provider, ms: e.ms, error: e.error }); }, { signal: done.signal });
+      app.on("ai:call", (e) => { if (requestStorage.getStore() === ctx) tried.push({ model: e.model, provider: e.provider, ms: e.ms, error: e.error }); }, { signal: done.signal });
       const start = performance.now();
       try {
         const result = await request(app, String(capability), input, { model: model || undefined, prefer: weights(prefer), onResponse });

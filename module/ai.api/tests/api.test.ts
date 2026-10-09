@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import { Db, invoke, Output, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, fakeT, testContext } from "@qino/qino/tests";
-import { AiError } from "@qino/qino/ai1";
-import { ai1Capabilities, dbSchema as ai1Schema } from "@qino/m/ai1/tests/deps.ts";
+import { AiError } from "@qino/qino/ai";
+import { aiCapabilities, dbSchema as aiSchema } from "@qino/m/ai/tests/deps.ts";
 
 import { api } from "../api.ts";
 
-import type { Adapter } from "@qino/qino/ai1";
+import type { Adapter } from "@qino/qino/ai";
 
 // One model that translates as "<to>:<text>", streams "a", "b", and answers JSON when asked for it;
 // asked "hang", it waits on its provider after "a".
@@ -25,18 +25,18 @@ const fake: Adapter = {
 
 async function ctx(userId = 1) {
   const db = new Db("sqlite::memory:");
-  await db.migrate(ai1Schema);
+  await db.migrate(aiSchema);
   await db.loadTables();
-  await db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
-  await db.table("ai1_model").insert({ name: "m" });
-  await db.table("ai1_model_provider").insert({ model_id: 1, provider_id: 1 });
-  for (const capability of ["text", "translate", "image", "embed"]) await db.table("ai1_model_capability").insert({ model_id: 1, capability });
-  const mods = [{ name: "ai1", plugin: { ai1Adapters: { fake }, ai1Capabilities } }];
+  await db.table("ai_provider").insert({ name: "fake", type: "fake", endpoint: "" });
+  await db.table("ai_model").insert({ name: "m" });
+  await db.table("ai_model_provider").insert({ model_id: 1, provider_id: 1 });
+  for (const capability of ["text", "translate", "image", "embed"]) await db.table("ai_model_capability").insert({ model_id: 1, capability });
+  const mods = [{ name: "ai", plugin: { aiAdapters: { fake }, aiCapabilities } }];
   const modules = { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods };
   return testContext({ app: { db, modules, t: fakeT, settings: { core: { _secret: "test", keys: {} } } } as any, set: { user: userId ? { id: userId } : null, userId } });
 }
 
-Deno.test("ai1 api: capabilities for signed-in users, shaped like their functions", async () => {
+Deno.test("ai api: capabilities for signed-in users, shaped like their functions", async () => {
   const signedIn = await ctx();
   await requestStorage.run(signedIn, async () => {
     assertEquals(await invoke(api, "POST", "/translate", { text: "Hallo", to: "en" }), "en:Hallo");
@@ -54,7 +54,7 @@ Deno.test("ai1 api: capabilities for signed-in users, shaped like their function
   });
 });
 
-Deno.test("ai1 api: text streams deltas, then the answer", async () => {
+Deno.test("ai api: text streams deltas, then the answer", async () => {
   const signedIn = await ctx();
   let output: Output | undefined;
   await requestStorage.run(signedIn, async () => {
@@ -69,7 +69,7 @@ Deno.test("ai1 api: text streams deltas, then the answer", async () => {
   ]);
 });
 
-Deno.test("ai1 api: a closed stream cancels the call", async () => {
+Deno.test("ai api: a closed stream cancels the call", async () => {
   const signedIn = await ctx();
   let aborted = false;
   const fetch = globalThis.fetch;

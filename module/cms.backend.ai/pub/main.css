@@ -1,4 +1,4 @@
-[qcms-mod="backend.ai1"] {
+[qcms-mod="backend.ai"] {
   & .-main { min-width: 40rem; flex: 0 1 auto; }
   & .-main > .-head { display: flex; align-items: center; gap: .5rem; }
   & .-main > .-head > button:first-of-type { margin-left: auto; }

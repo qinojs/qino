@@ -48,7 +48,7 @@ export async function indexFiles(app: App): Promise<{ files: number; errors: str
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   for (const event of ["table:insert-after", "table:update-after"] as const) {
     app.db.on(event, async ({ table, id, data }) => {
-      if (table.name !== "file" || !data.md5 || !await app.settings["ai1.embed"].files) return;
+      if (table.name !== "file" || !data.md5 || !await app.settings["ai.embed"].files) return;
       const key = { file_id: Number(id) };
       Promise.all([remove(app, "file_text", key), remove(app, "file_image", key)]).then(() => indexFile(app, key.file_id)).catch(console.error);
     }, { signal });
@@ -59,6 +59,6 @@ export const cron = {
   files: {
     every: "hour",
     run: async (app: App) => {
-      if (await app.settings["ai1.embed"].files) await indexFiles(app); }
+      if (await app.settings["ai.embed"].files) await indexFiles(app); }
     },
 } satisfies Jobs;

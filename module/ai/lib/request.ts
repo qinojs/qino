@@ -18,7 +18,7 @@ export type Call = {
   usage(input?: number, output?: number): void;
 };
 
-/** A provider type (`ai1_provider.type`): one function per capability it serves natively. */
+/** A provider type (`ai_provider.type`): one function per capability it serves natively. */
 export type Adapter = Record<string, (call: Call, input: any) => Promise<unknown>>;
 
 /** How a capability is served: needs derived from the input, ways through another capability. */
@@ -69,9 +69,9 @@ const cooldowns = new WeakMap<object, Map<number | string, number>>();
  * failure falls back to the next; overloaded providers rest for a while.
  */
 export async function request(app: App, capability: string, input: unknown, opts: Opts = {}, chain: string[] = []): Promise<any> {
-  if (!app.modules.linked("ai1")) throw new AiError('module "ai1" is not loaded');
+  if (!app.modules.linked("ai")) throw new AiError('module "ai" is not loaded');
   opts.signal?.throwIfAborted();
-  const adapters: Record<string, Adapter> = Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.ai1Adapters));
+  const adapters: Record<string, Adapter> = Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.aiAdapters));
   chain = [...chain, capability];
   const via = definitions(app, capability).flatMap((def) => Object.entries(def.via ?? {})).filter(([c]) => !chain.includes(c));
   const cooling = cooldowns.get(app) ?? cooldowns.set(app, new Map()).get(app)!;
@@ -83,9 +83,9 @@ export async function request(app: App, capability: string, input: unknown, opts
     const adapter = adapters[candidate.type] ?? {};
     const [through, convert] = via.find(([c]) => adapter[c]) ?? [];
     if (!adapter[capability] && !convert) continue;
-    // every attempt is reported (`ai1:call`), so others can measure speed and reliability
+    // every attempt is reported (`ai:call`), so others can measure speed and reliability
     const start = performance.now(), used = { input: 0, output: 0 };
-    const report = (error?: unknown) => app.fire("ai1:call", {
+    const report = (error?: unknown) => app.fire("ai:call", {
       capability, id: candidate.id, model: candidate.model, provider: candidate.provider,
       ms: Math.round(performance.now() - start), ...used, error: error === undefined ? undefined : errMsg(error),
     }).catch(console.error);
@@ -94,7 +94,7 @@ export async function request(app: App, capability: string, input: unknown, opts
       const result = await (adapter[capability] ? adapter[capability](call, input) : convert!(input, (i) => adapter[through!](call, i)));
       report();
       // a text answer names its model, so a caller can stay with it (the provider's prompt cache), and the
-      // model at its provider (ai1_model_provider) that answered
+      // model at its provider (ai_model_provider) that answered
       if (capability !== "text") return result;
       return { ...result as object, model: candidate.model, modelProvider: candidate.id };
     } catch (e) {
@@ -115,7 +115,7 @@ export async function request(app: App, capability: string, input: unknown, opts
   throw new AiError(errors.join("; ") || `No model for "${capability}"`);
 }
 
-const definitions = (app: App, capability: string): Capability[] => app.modules.linked().flatMap((mod) => mod.plugin.ai1Capabilities?.[capability] ?? []);
+const definitions = (app: App, capability: string): Capability[] => app.modules.linked().flatMap((mod) => mod.plugin.aiCapabilities?.[capability] ?? []);
 
 /**
  * Who would serve `capability` for `input`, in the order `request` tries them: enabled models that have
@@ -131,16 +131,16 @@ export async function candidates(app: App, capability: string, input: unknown, {
   const rows = await app.db.query<Candidate>`
     SELECT mp.id, m.id AS model_id, m.name AS model, mp.provider_model, p.name AS provider, p.type, p.endpoint, p.timeout_ms,
       (mp.cost_input * 3 + mp.cost_output) / 4 AS cost, mp.speed
-    FROM ai1_model_capability c
-    JOIN ai1_model m ON m.id = c.model_id
-    JOIN ai1_model_provider mp ON mp.model_id = m.id
-    JOIN ai1_provider p ON p.id = mp.provider_id
+    FROM ai_model_capability c
+    JOIN ai_model m ON m.id = c.model_id
+    JOIN ai_model_provider mp ON mp.model_id = m.id
+    JOIN ai_provider p ON p.id = mp.provider_id
     WHERE c.capability = ${capability} AND (mp.enabled = ${true}${one && model ? sql` OR m.name = ${model}` : sql``})
       AND (m.context_length IS NULL OR m.context_length >= ${size})
-    ${needs.length ? sql`AND (SELECT COUNT(*) FROM ai1_model_capability n WHERE n.model_id = m.id AND ${sql.in("n.capability", needs)}) = ${needs.length}` : sql.raw("")}`;
+    ${needs.length ? sql`AND (SELECT COUNT(*) FROM ai_model_capability n WHERE n.model_id = m.id AND ${sql.in("n.capability", needs)}) = ${needs.length}` : sql.raw("")}`;
   const metrics = [...new Set([capability, "intelligence", ...Object.keys(prefer ?? {})])].filter((k) => k !== "cost" && k !== "speed" && k !== "quality");
   const scores = new Map((rows.length
-    ? await app.db.query`SELECT model_id, metric, value FROM ai1_model_score WHERE ${sql.in("model_id", new Set(rows.map((r) => r.model_id)))} AND ${sql.in("metric", metrics)}`
+    ? await app.db.query`SELECT model_id, metric, value FROM ai_model_score WHERE ${sql.in("model_id", new Set(rows.map((r) => r.model_id)))} AND ${sql.in("metric", metrics)}`
     : []).map((s) => [`${s.model_id} ${s.metric}`, Number(s.value)]));
   // quality: the capability's own benchmark (image, speak) where there is one, else intelligence
   const quality = rows.some((r) => scores.has(`${r.model_id} ${capability}`)) ? capability : "intelligence";

@@ -63,7 +63,7 @@ export const api: ApiTree = {
         if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
         const done = crawl(ctx.app, url, { max, maxAge });
         if (wait) return done;
-        done.catch((e) => console.error("[ai1.web] crawl:", errMsg(e)));
+        done.catch((e) => console.error("[ai.web] crawl:", errMsg(e)));
         return { started: url };
       },
     },

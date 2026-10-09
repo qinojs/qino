@@ -1,7 +1,7 @@
 import { sql } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
-import { create, search } from "@qino/qino/ai1.embed";
-import { fakeApp } from "@qino/m/ai1.embed/tests/fake.ts";
+import { create, search } from "@qino/qino/ai.embed";
+import { fakeApp } from "@qino/m/ai.embed/tests/fake.ts";
 
 import schema from "../dbschema.json" with { type: "json" };
 import { sync } from "../mod.ts";

@@ -1,8 +1,8 @@
 import { ApiError, getCtx, runAs } from "@qino/qino";
-import { text } from "@qino/qino/ai1";
+import { text } from "@qino/qino/ai";
 
 import type { App, Ctx, Tool } from "@qino/qino";
-import type { Message, Opts, TextInput, TextOutput } from "@qino/qino/ai1";
+import type { Message, Opts, TextInput, TextOutput } from "@qino/qino/ai";
 
 type ToolCall = TextOutput["toolCalls"][number];
 
@@ -14,14 +14,14 @@ const MAX_RESULT = 100_000;
 export async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<string> {
   const tool = tools.find((t) => t.name === call.name);
   const result = JSON.stringify(await (tool ? tool.execute(call.args, ctx) : Promise.reject(new ApiError(404, `Unknown tool: ${call.name}`)))
-    .catch((e) => e instanceof ApiError ? { error: e.message, code: e.code, data: e.data } : (console.error("[ai1.tools]", call.name, e), { error: "Tool failed" })) ?? null);
+    .catch((e) => e instanceof ApiError ? { error: e.message, code: e.code, data: e.data } : (console.error("[ai.tools]", call.name, e), { error: "Tool failed" })) ?? null);
   return result.length > MAX_RESULT ? JSON.stringify({ error: `Too long: ${result.length} characters, at most ${MAX_RESULT}. Ask for less.` }) : result;
 }
 
 /** Answer the messages, running the tools the model calls until it answers without; `messages` are
  *  the new ones (assistant and tool), for a history to keep; `onMessage` gets each as it comes, an
  *  answer with the model at its provider that gave it. The run acts as user `usrId` (its rights bound
- *  the tools), through the actor "ai1". `maxSteps` (default 10) bounds the calls. Each step sends the
+ *  the tools), through the actor "ai". `maxSteps` (default 10) bounds the calls. Each step sends the
  *  history again: `cache` (default true) keeps it in the provider's cache. */
 export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, cache = true, ...input }: Omit<TextInput, "tools"> & {
   tools: Tool[];
@@ -29,7 +29,7 @@ export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, cache = 
   maxSteps?: number;
   onMessage?: (message: Message, modelProvider?: number) => unknown;
 }, opts?: Opts): Promise<TextOutput & { messages: Message[] }> {
-  return runAs(app, usrId, "ai1", async () => {
+  return runAs(app, usrId, "ai", async () => {
     const messages: Message[] = [], ctx = getCtx();
     const add = async (message: Message, modelProvider?: number) => { messages.push(message); await onMessage?.(message, modelProvider); };
     for (let step = 0, pin = opts; step < maxSteps; step++) {

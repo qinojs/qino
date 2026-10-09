@@ -1,4 +1,4 @@
-# ai1.embed
+# ai.embed
 
 Vector search over rows of any table, in the application database with its native vector type:
 sqlite-vec (Deno needs `--allow-ffi`), MariaDB ≥ 11.7 or PostgreSQL with pgvector. MariaDB and
@@ -14,7 +14,7 @@ to the module (primary key columns besides `chunk` and `collection_id`); a key c
   "properties": {
     "product_id":    { "type": "integer", "x-index": "primary", "x-qg-parent": "product", "x-qg-on-parent-delete": "cascade" },
     "chunk":         { "type": "integer", "x-index": "primary", "default": 0 },
-    "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai1_embed_collection", "x-qg-on-parent-delete": "cascade" },
+    "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_embed_collection", "x-qg-on-parent-delete": "cascade" },
     "hash":          { "type": "string", "maxLength": 64, "x-index": true },
     "content":       { "type": "string" },
     "embedding":     { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
@@ -29,12 +29,12 @@ allows 256 bytes of primary key for a vector index: hash long string keys such a
 
 A collection is one embedding model with its vector length. Collections share the tables, so a new
 model can be indexed while the old one still answers. New installations start with
-`jina-embeddings-v5-omni-small/1024`; the model and its provider are configured in `ai1`. Calls
+`jina-embeddings-v5-omni-small/1024`; the model and its provider are configured in `ai`. Calls
 without `collection` use the primary one.
 
 ```ts
 import { sql } from "@qino/qino";
-import { index, remove, search } from "@qino/qino/ai1.embed";
+import { index, remove, search } from "@qino/qino/ai.embed";
 
 await index(app, "product_text", { product_id: 7 }, text);
 await index(app, "product_image", { product_id: 7 }, { image: dataUrl, hash: md5 });

@@ -1,6 +1,6 @@
 import { errMsg, getCtx, runAs } from "@qino/qino";
-import { live as connect } from "@qino/qino/ai1";
-import { execute } from "@qino/qino/ai1.tools";
+import { live as connect } from "@qino/qino/ai";
+import { execute } from "@qino/qino/ai.tools";
 
 import { context } from "./context.ts";
 import { save } from "./record.ts";
@@ -43,8 +43,8 @@ export async function live(app: App, session: number, sdp: string): Promise<stri
   const all = [...tools, delegate];
   const call = await connect(app, {
     sdp, instructions, tools: all,
-    onToolCall: (toolCall) => runAs(app, usrId, "ai1", () => execute(all, toolCall, getCtx())),
-    onMessage: (message) => save(app, session, agent, message).catch((e) => console.error("[ai1.agent] live:", errMsg(e))),
+    onToolCall: (toolCall) => runAs(app, usrId, "ai", () => execute(all, toolCall, getCtx())),
+    onMessage: (message) => save(app, session, agent, message).catch((e) => console.error("[ai.agent] live:", errMsg(e))),
   }, { prefer });
   const timer = setTimeout(() => call.close().catch(() => {}), LIVE_MS);
   call.done.then(() => clearTimeout(timer));

@@ -1,5 +1,5 @@
 import { html, sql } from "@qino/qino";
-import { search } from "@qino/qino/ai1.embed";
+import { search } from "@qino/qino/ai.embed";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";

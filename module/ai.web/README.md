@@ -1,6 +1,6 @@
-# ai1.web
+# ai.web
 
-The web for agents and the browser, as an api. Apart from the models of [ai1](../ai1/): search engines
+The web for agents and the browser, as an api. Apart from the models of [ai](../ai/): search engines
 and readers are no models, each is used with its key in `core.keys`.
 
 ```
@@ -13,7 +13,7 @@ pages    get  { search?, root? }                     search the pages read, only
 ```
 
 ```ts
-import { pages, read, search } from "@qino/qino/ai1.web";
+import { pages, read, search } from "@qino/qino/ai.web";
 
 const [first] = await search(app, "qino cms", { count: 5 });
 const { content } = await read(app, first.url);
@@ -33,8 +33,8 @@ const { content } = await read(app, first.url);
   how many links found were not read yet. No `robots.txt`.
 - **Searching the pages read:** `read` with `length: 0` only keeps a page, so an agent can read many
   and then search them with `pages`.
-- **Cache:** every page read is kept (`ai1_web_page`) and read again after two months (`maxAge`). Where
-  there is an embedding collection ([ai1.embed](../ai1.embed/)), it is findable by meaning
+- **Cache:** every page read is kept (`ai_web_page`) and read again after two months (`maxAge`). Where
+  there is an embedding collection ([ai.embed](../ai.embed/)), it is findable by meaning
   (`pages`), else by its words.
-- **Agents** get it as tools with the path `ai1.web` in their `tools`.
+- **Agents** get it as tools with the path `ai.web` in their `tools`.
 - **Signed-in users** only: searching and reading cost.

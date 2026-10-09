@@ -2,7 +2,7 @@
 import { errMsg, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
-import { crawl, ENGINES, pages, read, READERS, search } from "@qino/qino/ai1.web";
+import { crawl, ENGINES, pages, read, READERS, search } from "@qino/qino/ai.web";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -39,7 +39,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export async function list(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app;
   const rows = await pages(node.app, vars.search ? String(vars.search) : undefined, { root: vars.root ? String(vars.root) : undefined, limit: LIMIT });
-  const content = new Map((await db.query`SELECT id, content FROM ai1_web_page WHERE ${sql.in("id", rows.map((r: any) => r.id))}`)
+  const content = new Map((await db.query`SELECT id, content FROM ai_web_page WHERE ${sql.in("id", rows.map((r: any) => r.id))}`)
     .map((r) => [Number(r.id), String(r.content ?? "")]));
   return html.async`
     <thead><tr>
@@ -66,7 +66,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
 
 async function render(node: Node) {
   const app = node.app, t = app.t;
-  const reader = String(await app.settings["ai1.web"].reader);
+  const reader = String(await app.settings["ai.web"].reader);
   const keys = await Promise.all(services().map(async (s) => ({ ...s, value: String(await app.settings.core.keys[s.key] ?? "") })));
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
@@ -126,9 +126,9 @@ async function api(node: Node, vars: Vars): Promise<unknown> {
   try {
     if (vars.reader) {
       if (!(vars.reader in READERS)) throw new Error(`No reader "${vars.reader}"`);
-      await app.settings["ai1.web"].reader(String(vars.reader));
+      await app.settings["ai.web"].reader(String(vars.reader));
     } else if (vars.key) {
-      if (!services().some((s) => s.key === vars.key.name)) throw new Error(`Not a key of ai1.web: ${vars.key.name}`);
+      if (!services().some((s) => s.key === vars.key.name)) throw new Error(`Not a key of ai.web: ${vars.key.name}`);
       await app.settings.core.keys[vars.key.name](String(vars.key.value ?? "").trim());
     } else if (vars.search) return { ok: true, result: await search(app, String(vars.search)) };
     else if (vars.read) return { ok: true, result: await read(app, String(vars.read), { maxAge: 0 }) };
@@ -136,7 +136,7 @@ async function api(node: Node, vars: Vars): Promise<unknown> {
       if (!/^https?:\/\//i.test(vars.crawl.url)) throw new Error("url: http or https");
       return { ok: true, result: await crawl(app, String(vars.crawl.url), { max: Number(vars.crawl.max) || undefined, maxAge: vars.crawl.fresh ? 0 : undefined }) };
     }
-    else if (vars.remove) await app.db.table("ai1_web_page").delete(Number(vars.remove));
+    else if (vars.remove) await app.db.table("ai_web_page").delete(Number(vars.remove));
     else return null;
     return { ok: true };
   } catch (e) { return { ok: false, message: errMsg(e) }; }

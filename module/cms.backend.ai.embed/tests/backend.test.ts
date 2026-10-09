@@ -1,19 +1,19 @@
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
-import { collection, index } from "@qino/qino/ai1.embed";
-import { embeddingTable, fakeApp } from "@qino/m/ai1.embed/tests/fake.ts";
+import { collection, index } from "@qino/qino/ai.embed";
+import { embeddingTable, fakeApp } from "@qino/m/ai.embed/tests/fake.ts";
 
 import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai1.embed: collections can be managed and searched", async () => {
+Deno.test("cms.backend.ai.embed: collections can be managed and searched", async () => {
   const article = { additionalProperties: { properties: { id: { type: "integer", "x-index": "primary" } } } };
   const articleId = { type: "integer", "x-qg-parent": "article", "x-qg-on-parent-delete": "cascade" };
   const { app, db } = await fakeApp("sqlite::memory:", { article, embedding_article_text: embeddingTable({ article_id: articleId }) });
   try {
     let primary = 0;
     const setting = Object.assign((value?: number) => { if (value !== undefined) primary = value; return primary; }, { then: (resolve: (value: number) => void) => resolve(primary) });
-    Object.assign(app.settings, { "ai1.embed": { primary: setting, chunkChars: 4000 }, "cms.embed": { auto: false } });
+    Object.assign(app.settings, { "ai.embed": { primary: setting, chunkChars: 4000 }, "cms.embed": { auto: false } });
     const node = { app } as Node, api = cms.node.api;
 
     assertEquals(await api(node, { create: { model: "multi", dimensions: "2" } }), { ok: true });

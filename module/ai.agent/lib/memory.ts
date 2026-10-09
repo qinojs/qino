@@ -13,8 +13,8 @@ export const IN_MIND = 10;
 
 /** Its memories, the strongest first. */
 export async function list(app: App, agent: number, limit?: number): Promise<{ id: number; content: string }[]> {
-  return (await app.db.query`SELECT id, content FROM ai1_agent_memory m WHERE agent_id = ${agent}
-    ORDER BY ${sqlScore(app.db, "ai1_agent_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`).map((r) => ({ id: Number(r.id), content: String(r.content) }));
+  return (await app.db.query`SELECT id, content FROM ai_agent_memory m WHERE agent_id = ${agent}
+    ORDER BY ${sqlScore(app.db, "ai_agent_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`).map((r) => ({ id: Number(r.id), content: String(r.content) }));
 }
 
 /** Told to the agent above its memories. */
@@ -27,23 +27,23 @@ export async function index(app: App, agent: number): Promise<string> {
 }
 
 async function own(app: App, agent: number, id: number) {
-  if (!await app.db.one`SELECT id FROM ai1_agent_memory WHERE id = ${id} AND agent_id = ${agent}`) throw new NotFoundError("No such memory");
+  if (!await app.db.one`SELECT id FROM ai_agent_memory WHERE id = ${id} AND agent_id = ${agent}`) throw new NotFoundError("No such memory");
 }
 
 /** Keep a short fact, or replace the memory `replaces`; either grows stronger. Another module may
- *  keep a new one instead (`ai1.agent:remember`, `prevent`). */
+ *  keep a new one instead (`ai.agent:remember`, `prevent`). */
 export async function remember(app: App, agent: number, content: string, replaces?: number): Promise<unknown> {
-  const taken = replaces ? undefined : await app.fire("ai1.agent:remember", { agent, content, prevent: false, result: undefined as unknown });
+  const taken = replaces ? undefined : await app.fire("ai.agent:remember", { agent, content, prevent: false, result: undefined as unknown });
   if (taken?.prevent) return taken.result;
-  const table = app.db.table("ai1_agent_memory"), values = { agent_id: agent, content, time: unixTime() };
+  const table = app.db.table("ai_agent_memory"), values = { agent_id: agent, content, time: unixTime() };
   const id = replaces ? (await own(app, agent, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
-  hit(app.db, "ai1_agent_memory", id);
-  keep(app, "ai1_agent_memory", { agent_id: agent, memory_id: id }, content);
+  hit(app.db, "ai_agent_memory", id);
+  keep(app, "ai_agent_memory", { agent_id: agent, memory_id: id }, content);
   return { id };
 }
 
 export async function forget(app: App, agent: number, id: number): Promise<{ forgotten: number }> {
   await own(app, agent, id);
-  await app.db.table("ai1_agent_memory").delete(id);
+  await app.db.table("ai_agent_memory").delete(id);
   return { forgotten: id };
 }

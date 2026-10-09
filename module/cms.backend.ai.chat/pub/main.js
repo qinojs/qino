@@ -1,10 +1,10 @@
 import { api } from "@qino/pub/api.js";
-import { markdown } from "@qino/m/cms.backend.ai1/pub/markdown.js";
+import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
 
-const KEY = "ai1.chat:session"; // the session to go on with after a reload
+const KEY = "ai.chat:session"; // the session to go on with after a reload
 const SHORT = 80; // characters of a folded message
 
-// The conversation as in cms.backend.ai1.agents: the user on the right, the agent on the left, its
+// The conversation as in cms.backend.ai.agents: the user on the right, the agent on the left, its
 // tool calls and their results folded.
 const h = (tag, props, ...children) => {
   const el = Object.assign(document.createElement(tag), props);
@@ -49,8 +49,8 @@ async function entry({ role, content, toolCalls, time: at, model, provider, tool
   return div;
 }
 
-cms.initNode("backend.ai1.chat", (el) => {
-  const agents = api["ai1.agent"];
+cms.initNode("backend.ai.chat", (el) => {
+  const agents = api["ai.agent"];
   const ask = el.querySelector("[data-ask]"), log = el.querySelector("[data-log]"), title = el.querySelector("[data-title]");
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
   let session = Number(new URL(location.href).searchParams.get("session")) || Number(sessionStorage.getItem(KEY)) || undefined;
@@ -156,7 +156,7 @@ cms.initNode("backend.ai1.chat", (el) => {
     if (call) return hangUp();
     const id = session;
     try {
-      const { live } = await import("@qino/m/ai1/pub/live.js");
+      const { live } = await import("@qino/m/ai/pub/live.js");
       call = await live(async (sdp) => (await agents.sessions(id).live.post({ sdp })).sdp);
       talk.textContent = talk.dataset.end;
       listening = setInterval(() => show().catch(() => {}), 2000);

@@ -1,13 +1,13 @@
 import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { collection, collections, create, drop, embeddings, indexFiles, search } from "@qino/qino/ai1.embed";
+import { collection, collections, create, drop, embeddings, indexFiles, search } from "@qino/qino/ai.embed";
 import { sync } from "@qino/qino/cms.embed";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, "cms.backend.ai1.embed", { en: "Embeddings", de: "Embeddings" });
+  await backend.install(app, "cms.backend.ai.embed", { en: "Embeddings", de: "Embeddings" });
 }
 
 async function render(node: Node) {
@@ -20,9 +20,9 @@ async function render(node: Node) {
     }
   }
   const primary = (await collection(app))?.id;
-  const models = await db.col`SELECT DISTINCT m.name FROM ai1_model m JOIN ai1_model_capability c ON c.model_id = m.id WHERE c.capability = ${"embed"} ORDER BY m.name`;
-  const auto = !!await app.settings["cms.embed"].auto, files = !!await app.settings["ai1.embed"].files;
-  const chunkChars = Number(await app.settings["ai1.embed"].chunkChars);
+  const models = await db.col`SELECT DISTINCT m.name FROM ai_model m JOIN ai_model_capability c ON c.model_id = m.id WHERE c.capability = ${"embed"} ORDER BY m.name`;
+  const auto = !!await app.settings["cms.embed"].auto, files = !!await app.settings["ai.embed"].files;
+  const chunkChars = Number(await app.settings["ai.embed"].chunkChars);
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head>Embeddings</div>
@@ -69,7 +69,7 @@ async function render(node: Node) {
 }
 
 async function api(node: Node, vars: any) {
-  const app = node.app, settings = app.settings["ai1.embed"];
+  const app = node.app, settings = app.settings["ai.embed"];
   try {
     if (vars.sync) {
       const nodes = await sync(app), files = await indexFiles(app);

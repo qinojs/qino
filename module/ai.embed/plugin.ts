@@ -22,7 +22,7 @@ export const settingsSchema = {
 
 /** Seed the initial collection without replacing a chosen one. */
 export async function install({ app }: { app: App }): Promise<void> {
-  if (await app.db.one`SELECT id FROM ai1_embed_collection LIMIT 1`) return;
+  if (await app.db.one`SELECT id FROM ai_embed_collection LIMIT 1`) return;
   await create(app, "jina-embeddings-v5-omni-small", 1024);
 }
 

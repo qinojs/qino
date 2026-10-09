@@ -1,4 +1,4 @@
-[qcms-mod="backend.ai1.chat"] {
+[qcms-mod="backend.ai.chat"] {
   & .-agents { flex: 1 1 22rem; }
   & .-chat { flex: 3 1 30rem; }
   /* the conversation scrolls, the field to ask stays in view */

@@ -2,7 +2,7 @@
 import { errMsg, getCtx, html, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
-import { IN_MIND, personal } from "@qino/qino/ai1.user_memory";
+import { IN_MIND, personal } from "@qino/qino/ai.user_memory";
 import { sqlScore, strength } from "@qino/qino/score";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -34,12 +34,12 @@ export async function users(node: Node): Promise<HtmlString> {
   const { db, t } = node.app, url = await pageUrl(node);
   const rows = await db.query`
     SELECT u.id, u.username,
-      (SELECT COUNT(*) FROM ai1_user_memory WHERE usr_id = u.id) AS memories,
-      (SELECT MAX(time) FROM ai1_user_memory WHERE usr_id = u.id) AS memory_time,
-      (SELECT COUNT(*) FROM ai1_session WHERE usr_id = u.id) AS sessions,
-      (SELECT COUNT(DISTINCT agent_id) FROM ai1_session WHERE usr_id = u.id) AS agents,
-      (SELECT MAX(m.time) FROM ai1_session_message m JOIN ai1_session s ON s.id = m.session_id WHERE s.usr_id = u.id) AS last_time
-    FROM usr u WHERE u.id IN (SELECT usr_id FROM ai1_user_memory UNION SELECT usr_id FROM ai1_session)
+      (SELECT COUNT(*) FROM ai_user_memory WHERE usr_id = u.id) AS memories,
+      (SELECT MAX(time) FROM ai_user_memory WHERE usr_id = u.id) AS memory_time,
+      (SELECT COUNT(*) FROM ai_session WHERE usr_id = u.id) AS sessions,
+      (SELECT COUNT(DISTINCT agent_id) FROM ai_session WHERE usr_id = u.id) AS agents,
+      (SELECT MAX(m.time) FROM ai_session_message m JOIN ai_session s ON s.id = m.session_id WHERE s.usr_id = u.id) AS last_time
+    FROM usr u WHERE u.id IN (SELECT usr_id FROM ai_user_memory UNION SELECT usr_id FROM ai_session)
     ORDER BY last_time DESC, memory_time DESC, u.id DESC LIMIT ${LIMIT}`;
   return html.async`
     <thead><tr>
@@ -62,7 +62,7 @@ export async function users(node: Node): Promise<HtmlString> {
 export async function list(node: Node): Promise<HtmlString> {
   const { db, t } = node.app, url = await pageUrl(node);
   const rows = await db.query`SELECT m.id, m.usr_id, m.content, m.time, u.username
-    FROM ai1_user_memory m LEFT JOIN usr u ON u.id = m.usr_id ORDER BY m.id DESC LIMIT ${LIMIT}`;
+    FROM ai_user_memory m LEFT JOIN usr u ON u.id = m.usr_id ORDER BY m.id DESC LIMIT ${LIMIT}`;
   return html.async`
     <thead><tr>
       <th>#
@@ -81,9 +81,9 @@ export async function list(node: Node): Promise<HtmlString> {
 /** The memories of user `vars.usr`, the strongest first: which are in an agent's context, which search finds. */
 export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, usr = Number(vars.usr) || 0, now = unixTime();
-  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai1_user_memory", "m.id")} AS score,
-      EXISTS (SELECT 1 FROM embedding_ai1_user_memory e WHERE e.memory_id = m.id) AS findable
-    FROM ai1_user_memory m WHERE m.usr_id = ${usr} ORDER BY score DESC, m.id`;
+  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_user_memory", "m.id")} AS score,
+      EXISTS (SELECT 1 FROM embedding_ai_user_memory e WHERE e.memory_id = m.id) AS findable
+    FROM ai_user_memory m WHERE m.usr_id = ${usr} ORDER BY score DESC, m.id`;
   return html.async`
     <thead><tr>
       <th>#
@@ -98,7 +98,7 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
       <td>${m.id}
       <td>${m.content}
       <td>${m.score}
-      <td>${strength(db, "ai1_user_memory", Number(m.score), now).toFixed(2)}
+      <td>${strength(db, "ai_user_memory", Number(m.score), now).toFixed(2)}
       <td>${i < IN_MIND ? "✓" : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
       <td>${time(m.time)}
@@ -108,9 +108,9 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
 /** The sessions of user `vars.usr`, the latest first; linked to their page in the agents backend. */
 export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, usr = Number(vars.usr) || 0;
-  const agents = await backend.toModuleUrl(node, "cms.backend.ai1.agents");
+  const agents = await backend.toModuleUrl(node, "cms.backend.ai.agents");
   const rows = await db.query`SELECT s.id, s.agent_id, s.time, COUNT(m.id) AS messages, MAX(m.time) AS last_time
-    FROM ai1_session s LEFT JOIN ai1_session_message m ON m.session_id = s.id
+    FROM ai_session s LEFT JOIN ai_session_message m ON m.session_id = s.id
     WHERE s.usr_id = ${usr} GROUP BY s.id, s.agent_id, s.time ORDER BY last_time DESC, s.id DESC LIMIT ${LIMIT}`;
   const link = (params: Record<string, unknown>, text: unknown) => agents(params) ? html`<a href="${agents(params)}">${text}</a>` : text;
   return html.async`
@@ -158,7 +158,7 @@ async function render(node: Node) {
 /** Remove a memory; or how decide() sorts `decide`. */
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   try {
-    if (vars.remove) return (await node.app.db.table("ai1_user_memory").delete(Number(vars.remove)), { ok: true });
+    if (vars.remove) return (await node.app.db.table("ai_user_memory").delete(Number(vars.remove)), { ok: true });
     if (vars.decide) return { ok: true, result: await personal(node.app, String(vars.decide)) };
     return null;
   } catch (e) { return { ok: false, message: errMsg(e) }; }

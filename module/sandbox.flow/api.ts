@@ -86,9 +86,9 @@ export const api: ApiTree = {
       "Make a flow, owned by you: whenever the event fires, its code runs in a sandbox and may call the tools " +
         "listed, with your rights. It starts inactive and in test mode. Then: try it with " +
         "sandboxFlow_flow_test_post on an example event, fix it with sandboxFlow_flow_patch, and switch it on " +
-        "with { active: true, test: false } only when the user says so. Find events with ai1Discover_events_get " +
-        "and their data with ai1Discover_event_get, tools and their parameters with ai1Discover_tools_get and " +
-        "ai1Discover_tool_get, where available. Returns { id }.",
+        "with { active: true, test: false } only when the user says so. Find events with aiDiscover_events_get " +
+        "and their data with aiDiscover_event_get, tools and their parameters with aiDiscover_tools_get and " +
+        "aiDiscover_tool_get, where available. Returns { id }.",
       async (params, ctx) => {
         const id = await ctx.app.db.table("flow").insert({ ...columns(params), usr_id: ctx.userId });
         return { id: Number(id) };

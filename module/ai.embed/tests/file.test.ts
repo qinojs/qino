@@ -10,7 +10,7 @@ import type { App } from "@qino/qino";
 const all = { file_text: true, file_image: true } as const;
 const hits = async (app: App) => (await search(app, all, "cat", { limit: 20 })).map((h) => `${h.name}/${h.key.file_id}`).sort();
 
-Deno.test("ai1.embed: indexes files, catches up on missing ones only", async () => {
+Deno.test("ai.embed: indexes files, catches up on missing ones only", async () => {
   const dir = await Deno.makeTempDir();
   const file = { additionalProperties: { properties: { id: { type: "integer", "x-index": "primary" }, text: { type: "string" }, mime: { type: "string" }, md5: { type: "string" } } } };
   const { app, db, calls, settings } = await fakeApp("sqlite::memory:", { file, ...fileSchema.properties });

@@ -11,11 +11,11 @@ import type { EventDecls } from "@qino/qino";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 Object.assign(App.events, {
-  "ai1:call": {
+  "ai:call": {
     description: "A model was called, successfully or not.",
     data: s.object({
       capability: s.string().describe("text, structured, embed, translate, …"),
-      id: s.number().describe("The model at its provider (ai1_model_provider) that was called."),
+      id: s.number().describe("The model at its provider (ai_model_provider) that was called."),
       model: s.string(),
       provider: s.string(),
       ms: s.number().describe("How long it took."),
@@ -27,7 +27,7 @@ Object.assign(App.events, {
 } satisfies EventDecls);
 
 /** How capabilities are served and fall back to others. Other modules add theirs the same way. */
-export { ai1Capabilities } from "./lib/capabilities.ts";
+export { aiCapabilities } from "./lib/capabilities.ts";
 
-/** Provider types by `ai1_provider.type`. Other modules add theirs the same way. */
-export const ai1Adapters = { openai, openrouter, systemone, decisions, jina, nvidia, deepl, google };
+/** Provider types by `ai_provider.type`. Other modules add theirs the same way. */
+export const aiAdapters = { openai, openrouter, systemone, decisions, jina, nvidia, deepl, google };

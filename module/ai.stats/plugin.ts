@@ -6,7 +6,7 @@ import type { Jobs } from "@qino/qino/cron";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("ai1:call", (e) => record(app, e), { signal });
+  app.on("ai:call", (e) => record(app, e), { signal });
 }
 
 // The measured speed goes into the choice of model hourly; the counts halve daily.

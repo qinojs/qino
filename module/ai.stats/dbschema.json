@@ -1,12 +1,12 @@
 {
   "properties": {
-    "ai1_model_provider_stat": {
+    "ai_model_provider_stat": {
       "additionalProperties": {
         "properties": {
           "model_provider_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_model_provider",
+            "x-qg-parent": "ai_model_provider",
             "x-qg-on-parent-delete": "cascade"
           },
           "calls": {
@@ -48,7 +48,7 @@
         ]
       }
     },
-    "ai1_call_error": {
+    "ai_call_error": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -59,7 +59,7 @@
           "model_provider_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_model_provider",
+            "x-qg-parent": "ai_model_provider",
             "x-qg-on-parent-delete": "cascade"
           },
           "capability": {

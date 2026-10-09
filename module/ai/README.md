@@ -1,17 +1,17 @@
-# ai1
+# ai
 
-**Goal.** ai1 replaces `ai`, rebuilt in logical layers:
+**Goal.** ai replaces `ai`, rebuilt in logical layers:
 
 - a complete AI harness
 - simple, but brilliant
 - automation
 - self-improving
 
-**One call per capability, whatever serves it.** The caller asks for a capability; ai1 picks the
+**One call per capability, whatever serves it.** The caller asks for a capability; ai picks the
 model, falls back when it fails and reports each attempt.
 
 ```ts
-import { decide, text, translate } from "@qino/qino/ai1";
+import { decide, text, translate } from "@qino/qino/ai";
 
 await translate(app, { text: "<p>Hallo</p>", from: "de", to: "en", format: "html" });
 await decide(app, { content: mail, question: "Is this spam?" });
@@ -26,7 +26,7 @@ const { text: answer, truncated, model } = await text(app, "Hi"); // model: who 
 the provider with instructions and tools; the media then flow straight between browser and provider.
 What is said and the tool calls come to the server (`onMessage`, `onToolCall`), so the browser runs
 no tools and sees no instructions. The browser side is [`pub/live.js`](pub/live.js). The neutral
-interface is ai1's; each provider type speaks its own protocol in its adapter (OpenAI Realtime:
+interface is ai's; each provider type speaks its own protocol in its adapter (OpenAI Realtime:
 [`lib/openai.realtime.ts`](lib/openai.realtime.ts)). Give a realtime model (e.g. `gpt-realtime-2.1`
 at an `openai` provider) the capability `live`. Its usage is not counted yet.
 
@@ -36,7 +36,7 @@ the likeliest one, and how clear that is (1 − entropy / log n: 1 all on one, 0
 (a noul without options); a provider without probabilities puts all on its choice.
 
 Native decisions use the same `state`, `questions`, `answers` protocol across compatible services.
-The `systemone` adapter appends `/systemone` to `ai1_provider.endpoint`; `decisions` appends
+The `systemone` adapter appends `/systemone` to `ai_provider.endpoint`; `decisions` appends
 `/decisions`. Both serve `decide` on text and preserve the returned probabilities. Invalid or
 incomplete probabilities fail the attempt and allow the usual fallback.
 
@@ -51,7 +51,7 @@ incomplete probabilities fail the attempt and allow the usual fallback.
 
 Endpoints and model names are configured data, not inferred from hostnames. Register the model's
 `decide` capability, link it to the provider, and store its key under `core.keys[provider.name]`.
-`provider_model` is the provider's exact model ID; ai1 does not rewrite it. The `openrouter` adapter
+`provider_model` is the provider's exact model ID; ai does not rewrite it. The `openrouter` adapter
 keeps its existing chat, image and System One operations; `systemone` and `decisions` serve only
 native decisions.
 
@@ -68,14 +68,14 @@ Tests mock HTTP responses; no provider has been called with live credentials for
 
 ## Models, providers, capabilities
 
-- `ai1_model`: the model as a unit (`llama-3.3-70b`), its `context_length` (a longer request skips it), `enabled` (what its offers are by default).
-- `ai1_model_capability`: what the model can do.
-- `ai1_model_score`: how good it is: `intelligence`, `coding`, `math` … (higher is better).
-- `ai1_provider`: endpoint, `type` (the adapter), `enabled` (what its offers are by default). Its key is `core.keys[name]`.
-- `ai1_model_provider`: where the model runs: its name there (`provider_model`), `cost`, `speed`,
+- `ai_model`: the model as a unit (`llama-3.3-70b`), its `context_length` (a longer request skips it), `enabled` (what its offers are by default).
+- `ai_model_capability`: what the model can do.
+- `ai_model_score`: how good it is: `intelligence`, `coding`, `math` … (higher is better).
+- `ai_provider`: endpoint, `type` (the adapter), `enabled` (what its offers are by default). Its key is `core.keys[name]`.
+- `ai_model_provider`: where the model runs: its name there (`provider_model`), `cost`, `speed`,
   `enabled`: calls go by this alone.
 
-[cms.backend.ai1](../cms.backend.ai1/) fills them: providers from a catalog of known ones, their
+[cms.backend.ai](../cms.backend.ai/) fills them: providers from a catalog of known ones, their
 models via `/models` (new ones on where their provider and model are), context, prices and capabilities from models.dev, every
 Artificial Analysis benchmark as a score (key `core.keys["artificialanalysis.ai"]`), daily by cron.
 
@@ -118,21 +118,21 @@ back any more.
 
 `cache: true` in the input keeps the prompt in the provider's cache where it caches only when asked
 (OpenRouter for Anthropic): a cache hit costs a tenth, a write a quarter more. Off by default, as a
-single call gains nothing; `run()` of ai1.tools sets it, its steps send the same start again. OpenAI,
+single call gains nothing; `run()` of ai.tools sets it, its steps send the same start again. OpenAI,
 Gemini and others cache on their own.
 
 ## Browser
 
-[ai1.api](../ai1.api/) offers the capabilities to signed-in users; [`pub/live.js`](pub/live.js) is the
+[ai.api](../ai.api/) offers the capabilities to signed-in users; [`pub/live.js`](pub/live.js) is the
 browser side of `live`.
 
 ## Watching
 
-Every attempt fires `ai1:call` with `{ capability, id, model, provider, ms, input, output, error? }`
-(`id` is the `ai1_model_provider`). [ai1.stats](../ai1.stats/) measures usage, errors and the
-speed ai1 chooses by.
+Every attempt fires `ai:call` with `{ capability, id, model, provider, ms, input, output, error? }`
+(`id` is the `ai_model_provider`). [ai.stats](../ai.stats/) measures usage, errors and the
+speed ai chooses by.
 
 ## Extending
 
-Modules declare `ai1Adapters` (provider types) and `ai1Capabilities` (needs and fallbacks per
-capability) in their plugin, as ai1 does for its own.
+Modules declare `aiAdapters` (provider types) and `aiCapabilities` (needs and fallbacks per
+capability) in their plugin, as ai does for its own.

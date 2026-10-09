@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, sql, unixTime } from "@qino/qino";
-import { applySpeed, SPEED } from "@qino/qino/ai1.stats";
+import { applySpeed, SPEED } from "@qino/qino/ai.stats";
 
 import { CATALOG } from "../catalog.ts";
 
@@ -31,9 +31,9 @@ const same = (name: string) => unit(name).replace(/[._]/g, "-");
 
 /** Keep a source's own entry on a model, or on one of its offers, to show it as it came. */
 async function keep(app: App, source: string, data: unknown, model: number, offer?: number) {
-  const db = app.db, table = db.table("ai1_model_meta");
+  const db = app.db, table = db.table("ai_model_meta");
   const values = { model_id: model, model_provider_id: offer ?? null, source, data: JSON.stringify(data), time: unixTime() };
-  const id = await db.one`SELECT id FROM ai1_model_meta WHERE model_id = ${model} AND source = ${source}
+  const id = await db.one`SELECT id FROM ai_model_meta WHERE model_id = ${model} AND source = ${source}
     AND ${offer ? sql`model_provider_id = ${offer}` : sql`model_provider_id IS NULL`}`;
   await (id ? table.update(id, values) : table.insert(values));
 }
@@ -52,7 +52,7 @@ const hostOf = (url: string) => URL.parse(url)?.host ?? "";
 /** The domain without subdomains: api.groq.com and console.groq.com are both groq.com. */
 const site = (url: string) => hostOf(url).split(".").slice(-2).join(".");
 
-export const adapters = (app: App): Record<string, object> => Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.ai1Adapters));
+export const adapters = (app: App): Record<string, object> => Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.aiAdapters));
 /** Chat providers (OpenAI-compatible) list their models at /models. */
 export const listing = (app: App, type: string): boolean => "text" in (adapters(app)[type] ?? {});
 
@@ -89,7 +89,7 @@ const guess = (meta: any) => [
 async function describe(app: App, offer: { id: number; model_id: number }, meta: any, priced: boolean) {
   const db = app.db;
   const { input, output } = meta.cost ?? {};
-  if (priced && input >= 0 && output >= 0) await db.table("ai1_model_provider").update(offer.id, { cost_input: input, cost_output: output });
+  if (priced && input >= 0 && output >= 0) await db.table("ai_model_provider").update(offer.id, { cost_input: input, cost_output: output });
   const inputs: string[] = meta.modalities?.input ?? [], outputs: string[] = meta.modalities?.output ?? [];
   // embedding models: models.dev says their output is text, so it's the family or the name
   const embedding = outputs.includes("embeddings") || meta.family === "text-embedding" || /embed/i.test(meta.id ?? "");
@@ -105,28 +105,28 @@ async function describe(app: App, offer: { id: number; model_id: number }, meta:
     outputs.includes("decisions") && "decide",
     ...guess(meta),
   ].filter(Boolean);
-  for (const capability of capabilities) await db.table("ai1_model_capability").ensure({ model_id: offer.model_id, capability });
-  if (meta.limit?.context) await db.table("ai1_model").update(offer.model_id, { context_length: meta.limit.context });
+  for (const capability of capabilities) await db.table("ai_model_capability").ensure({ model_id: offer.model_id, capability });
+  if (meta.limit?.context) await db.table("ai_model").update(offer.model_id, { context_length: meta.limit.context });
 }
 
 /**
- * Every model of every listing provider, switched on (ai1 chooses by `prefer`); nothing existing is
+ * Every model of every listing provider, switched on (ai chooses by `prefer`); nothing existing is
  * switched. What a provider tells about its models is written; `priced` gets the offers it priced,
  * `told` the models' descriptions.
  */
 export async function importModels(app: App, priced = new Set<number>(), told = new Map<number, string>()): Promise<string> {
   const db = app.db;
   // an earlier import took the :batch variants too (see below); what hangs on them goes with them
-  for (const id of await db.col`SELECT id FROM ai1_model_provider WHERE provider_model LIKE ${"%:batch"}`) await db.table("ai1_model_provider").delete(Number(id));
-  const models = new Map((await db.query`SELECT id, name, enabled FROM ai1_model`).map((m) => [same(String(m.name)), { id: Number(m.id), name: String(m.name), enabled: !!m.enabled }]));
+  for (const id of await db.col`SELECT id FROM ai_model_provider WHERE provider_model LIKE ${"%:batch"}`) await db.table("ai_model_provider").delete(Number(id));
+  const models = new Map((await db.query`SELECT id, name, enabled FROM ai_model`).map((m) => [same(String(m.name)), { id: Number(m.id), name: String(m.name), enabled: !!m.enabled }]));
   // an offer is a model at a provider under one id there: a variant is another
-  const offers = new Map((await db.query`SELECT mp.id, mp.provider_id, mp.provider_model, m.name FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id`)
+  const offers = new Map((await db.query`SELECT mp.id, mp.provider_id, mp.provider_model, m.name FROM ai_model_provider mp JOIN ai_model m ON m.id = mp.model_id`)
     .map((o) => [`${o.provider_id} ${o.provider_model || o.name}`, Number(o.id)]));
   const done: string[] = [];
-  for (const provider of await db.query`SELECT id, name, type, endpoint, enabled FROM ai1_provider`) {
+  for (const provider of await db.query`SELECT id, name, type, endpoint, enabled FROM ai_provider`) {
     const known = CATALOG.find((c) => c.name === provider.name);
     if (known && provider.type !== known.type) {
-      await db.table("ai1_provider").update(provider.id, { type: known.type });
+      await db.table("ai_provider").update(provider.id, { type: known.type });
       provider.type = known.type;
     }
     const extra = known?.models ?? [];
@@ -147,24 +147,24 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
     await db.transaction(async () => {
       for (const model of listed.filter(unsupported)) {
         const offer = offers.get(`${provider.id} ${idOf(model)}`);
-        if (offer) await db.table("ai1_model_provider").update(offer, { enabled: false });
+        if (offer) await db.table("ai_model_provider").update(offer, { enabled: false });
       }
       for (const [id, meta] of entries) {
         const name = unit(id); // the first one seen names the model
         let found = models.get(same(name));
-        if (!found) models.set(same(name), found = { id: Number(await db.table("ai1_model").insert({ name })), name, enabled: true });
+        if (!found) models.set(same(name), found = { id: Number(await db.table("ai_model").insert({ name })), name, enabled: true });
         const model = found.id;
         let offer = offers.get(`${provider.id} ${id}`);
         if (!offer) { // its name there, unless it is the model's
-          offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai1_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id, enabled: !!provider.enabled && found.enabled })));
+          offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id, enabled: !!provider.enabled && found.enabled })));
           added++;
         }
         const fromCatalog = extra.find((m) => m.id === id);
         if (raw.has(id)) await keep(app, String(provider.name), raw.get(id), model, offer);
         if (meta) await describe(app, { id: offer, model_id: model }, meta, true);
         if (fromCatalog) { // from the catalog
-          for (const capability of fromCatalog.capabilities) await db.table("ai1_model_capability").ensure({ model_id: model, capability });
-          for (const [metric, value] of Object.entries(fromCatalog.scores ?? {})) await db.table("ai1_model_score").ensure({ model_id: model, metric, value });
+          for (const capability of fromCatalog.capabilities) await db.table("ai_model_capability").ensure({ model_id: model, capability });
+          for (const [metric, value] of Object.entries(fromCatalog.scores ?? {})) await db.table("ai_model_score").ensure({ model_id: model, metric, value });
         }
         if (meta?.cost) priced.add(offer);
         if (meta?.description) told.set(model, String(meta.description));
@@ -192,7 +192,7 @@ export async function importMeta(app: App, priced = new Set<number>()): Promise<
   const all = index(providers.flatMap((p) => Object.values(p.models ?? {})));
   const offers = await db.query`
     SELECT mp.id, mp.model_id, m.name AS model, mp.provider_model, p.name, p.endpoint
-    FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id JOIN ai1_provider p ON p.id = mp.provider_id`;
+    FROM ai_model_provider mp JOIN ai_model m ON m.id = mp.model_id JOIN ai_provider p ON p.id = mp.provider_id`;
   let found = 0;
   await db.transaction(async () => {
     for (const offer of offers) {
@@ -216,7 +216,7 @@ export async function importMeta(app: App, priced = new Set<number>()): Promise<
  * Artificial Analysis: the LLMs' indexes (intelligence, coding, math, agentic …) and speed, as
  * scores named for `prefer` (the benchmarks behind the indexes are left out, and indexes no longer
  * measured, with the values they had: newer models would count as worst); and the arenas' Elo
- * for images and speech, as the scores `image` and `speak`: named like the capability, ai1 takes
+ * for images and speech, as the scores `image` and `speak`: named like the capability, ai takes
  * them as its quality. A model the arena doesn't name may be named in its description (`told`):
  * "GPT-5 Image … with GPT Image 1". Needs a key.
  */
@@ -241,7 +241,7 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   const measured = new Set(data.filter((m) => String(m.release_date ?? "") >= since)
     .flatMap((m) => Object.entries(m.evaluations ?? {}).filter(([name, value]) => name.endsWith("_index") && typeof value === "number").map(([name]) => indexName(name))));
   const retired = [...new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index")).map(indexName)))].filter((name) => !measured.has(name));
-  if (retired.length) await db.exec`DELETE FROM ai1_model_score WHERE ${sql.in("metric", retired)}`;
+  if (retired.length) await db.exec`DELETE FROM ai_model_score WHERE ${sql.in("metric", retired)}`;
   const arenas = await Promise.all(Object.entries(ARENAS).map(async ([metric, path]) => {
     const list = await load(path).catch(() => []);
     // the arena's names without the setting in brackets, longest first: GPT Image 1 Mini before GPT Image 1
@@ -259,10 +259,10 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   };
   const indexes = [...new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index"))))].filter((name) => !retired.includes(indexName(name)));
   const names = new Map<number, string[]>();
-  for (const r of await db.query`SELECT m.id, m.name, mp.provider_model FROM ai1_model m LEFT JOIN ai1_model_provider mp ON mp.model_id = m.id`) {
+  for (const r of await db.query`SELECT m.id, m.name, mp.provider_model FROM ai_model m LEFT JOIN ai_model_provider mp ON mp.model_id = m.id`) {
     names.set(r.id, [...names.get(r.id) ?? [String(r.name)], ...r.provider_model ? [String(r.provider_model)] : []]);
   }
-  const contexts = new Map((await db.query`SELECT id, context_length FROM ai1_model`).map((m) => [m.id, m.context_length]));
+  const contexts = new Map((await db.query`SELECT id, context_length FROM ai_model`).map((m) => [m.id, m.context_length]));
   let found = 0;
   await db.transaction(async () => {
     for (const [model, list] of names) {
@@ -278,8 +278,8 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
       found++;
       if (m) await keep(app, "Artificial Analysis", m, model);
       for (const [metric, entry] of ranked) if (typeof entry?.elo === "number") await keep(app, `Artificial Analysis ${metric}`, entry, model);
-      for (const [metric, value] of scores) await db.table("ai1_model_score").ensure({ model_id: model, metric, value });
-      if (!contexts.get(model) && m?.context_window_tokens) await db.table("ai1_model").update(model, { context_length: m.context_window_tokens }); // models.dev first
+      for (const [metric, value] of scores) await db.table("ai_model_score").ensure({ model_id: model, metric, value });
+      if (!contexts.get(model) && m?.context_window_tokens) await db.table("ai_model").update(model, { context_length: m.context_window_tokens }); // models.dev first
     }
   });
   return found;

@@ -1,6 +1,6 @@
 {
   "properties": {
-    "ai1_agent": {
+    "ai_agent": {
       "description": "An AI agent: its role (system prompt) and tools",
       "additionalProperties": {
         "properties": {
@@ -25,7 +25,7 @@
           },
           "prefer": {
             "type": "string",
-            "description": "How it chooses its model (ai1 `prefer`, e.g. {\"quality\":2,\"cost\":1}) as JSON; empty: ai1's own"
+            "description": "How it chooses its model (ai `prefer`, e.g. {\"quality\":2,\"cost\":1}) as JSON; empty: ai's own"
           },
           "time": {
             "type": "integer"
@@ -36,7 +36,7 @@
         ]
       }
     },
-    "ai1_session": {
+    "ai_session": {
       "description": "A conversation of a user with an agent",
       "additionalProperties": {
         "properties": {
@@ -48,7 +48,7 @@
           "agent_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_agent",
+            "x-qg-parent": "ai_agent",
             "x-qg-on-parent-delete": "cascade"
           },
           "usr_id": {
@@ -73,7 +73,7 @@
         ]
       }
     },
-    "ai1_session_message": {
+    "ai_session_message": {
       "description": "A message of a session: the user's, the agent's or a tool result",
       "additionalProperties": {
         "properties": {
@@ -85,7 +85,7 @@
           "session_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_session",
+            "x-qg-parent": "ai_session",
             "x-qg-on-parent-delete": "cascade"
           },
           "time": {
@@ -94,12 +94,12 @@
           "message": {
             "type": "string",
             "maxLength": 1073741823,
-            "description": "The ai1 message as JSON; role error for a failed turn"
+            "description": "The ai message as JSON; role error for a failed turn"
           },
           "model_provider_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_model_provider",
+            "x-qg-parent": "ai_model_provider",
             "x-qg-on-parent-delete": "setnull",
             "description": "The model at its provider that gave the answer"
           },
@@ -116,7 +116,7 @@
         ]
       }
     },
-    "ai1_agent_memory": {
+    "ai_agent_memory": {
       "description": "What an agent keeps for later",
       "additionalProperties": {
         "properties": {
@@ -128,7 +128,7 @@
           "agent_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_agent",
+            "x-qg-parent": "ai_agent",
             "x-qg-on-parent-delete": "cascade"
           },
           "content": {
@@ -146,7 +146,7 @@
         ]
       }
     },
-    "embedding_ai1_agent_memory": {
+    "embedding_ai_agent_memory": {
       "additionalProperties": {
         "properties": {
           "agent_id": {
@@ -156,7 +156,7 @@
           "memory_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_agent_memory",
+            "x-qg-parent": "ai_agent_memory",
             "x-qg-on-parent-delete": "cascade"
           },
           "chunk": {
@@ -167,7 +167,7 @@
           "collection_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_embed_collection",
+            "x-qg-parent": "ai_embed_collection",
             "x-qg-on-parent-delete": "cascade"
           },
           "hash": {
@@ -197,7 +197,7 @@
         ]
       }
     },
-    "embedding_ai1_session_message": {
+    "embedding_ai_session_message": {
       "additionalProperties": {
         "properties": {
           "agent_id": {
@@ -207,7 +207,7 @@
           "message_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_session_message",
+            "x-qg-parent": "ai_session_message",
             "x-qg-on-parent-delete": "cascade"
           },
           "chunk": {
@@ -218,7 +218,7 @@
           "collection_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_embed_collection",
+            "x-qg-parent": "ai_embed_collection",
             "x-qg-on-parent-delete": "cascade"
           },
           "hash": {
@@ -248,13 +248,13 @@
         ]
       }
     },
-    "embedding_ai1_agent": {
+    "embedding_ai_agent": {
       "additionalProperties": {
         "properties": {
           "agent_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_agent",
+            "x-qg-parent": "ai_agent",
             "x-qg-on-parent-delete": "cascade"
           },
           "chunk": {
@@ -265,7 +265,7 @@
           "collection_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_embed_collection",
+            "x-qg-parent": "ai_embed_collection",
             "x-qg-on-parent-delete": "cascade"
           },
           "hash": {

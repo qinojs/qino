@@ -1,10 +1,10 @@
 {
-  "name": "ai1.agent",
+  "name": "ai.agent",
   "description": "Agents: a role, tools and sessions that keep everything that was said.",
   "dependencies": [
-    "ai1.tools",
-    "ai1.embed",
-    "ai1.discover",
+    "ai.tools",
+    "ai.embed",
+    "ai.discover",
     "score"
   ],
   "files": [

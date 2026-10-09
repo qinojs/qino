@@ -1,7 +1,7 @@
 import { api } from "@qino/pub/api.js";
 
 // Remove a memory that was sorted wrong; try how decide() sorts one (on the overview).
-cms.initNode("backend.ai1.user_memory", (el) => {
+cms.initNode("backend.ai.user_memory", (el) => {
   const nid = Number(cms.el.nid(el));
   const post = (data) => api.cms.node(nid).api.post(data).catch((err) => ({ message: err.message }));
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);

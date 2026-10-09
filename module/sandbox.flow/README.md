@@ -11,12 +11,12 @@ listen(app, {
   description: "Deutsche Texte von mir übersetzen, wenn sie fertig aussehen",
   on: { host: "db", event: "table:update-after" },
   owner: 9,
-  tools: ["ai1Api_decide_post", "core_languages_get", "cmsText_text_translate_post"],
+  tools: ["aiApi_decide_post", "core_languages_get", "cmsText_text_translate_post"],
   test: false, // tried out, now for real
   code: `
     if (event.table !== "text_lang" || event.data.lang !== "de" || context.user !== owner) return;
     const options = ["done", "draft"];
-    const { choice } = await tools.ai1Api_decide_post({ content: event.data.text, question: "Fertig?", options });
+    const { choice } = await tools.aiApi_decide_post({ content: event.data.text, question: "Fertig?", options });
     if (choice !== "done") return;
     const { all } = await tools.core_languages_get();
     for (const lang of all.filter((l) => l !== "de")) {
@@ -69,8 +69,8 @@ owner's rights, so a flow never does more than its owner could.
 
 ## Planner
 
-An agent that turns a sentence into a flow — no code of its own: in **cms.backend.ai1.chat** make an
-agent with the tools `sandbox.flow` and [ai1.discover](../ai1.discover/) and this role, then tell it
+An agent that turns a sentence into a flow — no code of its own: in **cms.backend.ai.chat** make an
+agent with the tools `sandbox.flow` and [ai.discover](../ai.discover/) and this role, then tell it
 what should happen.
 
 ```
@@ -80,13 +80,13 @@ The user says in a sentence what should happen; you build the flow, test it, sho
 switch it on only when the user says so.
 
 How to work:
-1. Find the event: ai1Discover_events_get({ search: "a text was changed" }), then its data:
-   ai1Discover_event_get({ event: "db:table:update-after" }). Events are named host:event.
+1. Find the event: aiDiscover_events_get({ search: "a text was changed" }), then its data:
+   aiDiscover_event_get({ event: "db:table:update-after" }). Events are named host:event.
    Table events carry { table, id, data }: id is the primary key as text (a composite one joined
    by ":", text_lang "12:de"), data the columns written. Time: app:cron:hour and app:cron:day carry
    { time, date, weekday, hour }.
-2. Find what the code needs: ai1Discover_tables_get / ai1Discover_table_get for columns,
-   ai1Discover_tools_get / ai1Discover_tool_get for a tool's parameters.
+2. Find what the code needs: aiDiscover_tables_get / aiDiscover_table_get for columns,
+   aiDiscover_tools_get / aiDiscover_tool_get for a tool's parameters.
 3. Make it: sandboxFlow_flows_post (inactive and in test mode until you change that).
 4. Test it on an example event built from the event's data: sandboxFlow_flow_test_post. Show the
    user the trace; fix with sandboxFlow_flow_patch.
@@ -103,7 +103,7 @@ The code:
   flow's owner): "when I …" is context.user === owner.
 - The code sees nothing but these names. Keep it small and safe to run twice.
 - In test mode only *_get tools run; the others are recorded and return undefined.
-- Judging text: ai1Api_decide_post({ content, question }) answers a yes/no question
+- Judging text: aiApi_decide_post({ content, question }) answers a yes/no question
   (.probabilities.yes); with options ["a", "b"] it picks one (.choice). In test mode it is skipped
   too: test such a flow with the user, then switch test mode off.
 - Description short, in the user's language.
@@ -139,7 +139,7 @@ sandboxFlow_flows_post({
 ## Not yet
 
 - **Test mode goes by name, not by effect:** only `*_get` tools run, so a `POST` that changes nothing
-  (`ai1Api_decide_post`) is skipped too and returns `undefined`. Plan: a route says it only reads
+  (`aiApi_decide_post`) is skipped too and returns `undefined`. Plan: a route says it only reads
   (`Verb.readOnly`, `GET` by default), `toTools` passes it on as MCP's `annotations.readOnlyHint`, and a
   test run skips what is not read-only. Core vocabulary, needs an OK.
 - **Events are not filtered by rights:** a flow sees every event of its host, whatever its owner may

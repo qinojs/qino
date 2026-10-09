@@ -1,10 +1,10 @@
 {
-  "name": "ai1.user_memory",
+  "name": "ai.user_memory",
   "description": "What agents keep about a user: theirs with every agent, seen only in their own sessions.",
   "dependencies": [
-    "ai1.agent",
+    "ai.agent",
     "score",
-    "ai1.embed"
+    "ai.embed"
   ],
   "files": [
     "README.md",

@@ -1,9 +1,9 @@
 {
-  "name": "ai1.agent.sleep",
+  "name": "ai.agent.sleep",
   "description": "What agents do while nobody talks with them: long sessions compacted.",
   "dependencies": [
-    "ai1.agent",
-    "ai1.tools"
+    "ai.agent",
+    "ai.tools"
   ],
   "files": [
     "README.md",

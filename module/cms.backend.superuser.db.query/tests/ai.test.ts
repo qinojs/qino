@@ -4,7 +4,7 @@ import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { askDbAi } from "../lib/ai.ts";
 
-import type { Adapter } from "@qino/qino/ai1";
+import type { Adapter } from "@qino/qino/ai";
 
 // Tries each statement of the question (split by "|"), then answers with the first and the results.
 const fake: Adapter = {
@@ -19,16 +19,16 @@ const fake: Adapter = {
 
 Deno.test("db.query ai: tries statements without keeping anything; the user gets the query", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "ai1.tools"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai", "ai.tools"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
-  app.modules.get("ai1")!.plugin.ai1Adapters.fake = fake;
+  app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
-    await app.db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" });
-    await app.db.table("ai1_model").insert({ name: "m" });
-    await app.db.table("ai1_model_provider").insert({ model_id: 1, provider_id: 1 });
-    for (const capability of ["text", "tools"]) await app.db.table("ai1_model_capability").insert({ model_id: 1, capability });
+    await app.db.table("ai_provider").insert({ name: "fake", type: "fake", endpoint: "" });
+    await app.db.table("ai_model").insert({ name: "m" });
+    await app.db.table("ai_model_provider").insert({ model_id: 1, provider_id: 1 });
+    for (const capability of ["text", "tools"]) await app.db.table("ai_model_capability").insert({ model_id: 1, capability });
     for (const name of ["a", "b"]) await app.db.table("grp").insert({ name });
 
     const question = "DELETE FROM grp|SELECT name FROM grp ORDER BY name|DROP TABLE grp|SELECT 1; DELETE FROM grp|EXPLAIN QUERY PLAN SELECT * FROM grp|EXPLAIN ANALYZE DELETE FROM grp";
@@ -45,7 +45,7 @@ Deno.test("db.query ai: tries statements without keeping anything; the user gets
     ]);
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM grp`), 2); // nothing was deleted
   } finally {
-    delete app.modules.get("ai1")!.plugin.ai1Adapters.fake;
+    delete app.modules.get("ai")!.plugin.aiAdapters.fake;
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
     await app.db.close();
   }

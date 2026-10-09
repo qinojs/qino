@@ -28,24 +28,24 @@ async function render(node: Node) {
     db.query`
     SELECT m.name AS model, p.name AS provider, s.calls, s.errors, s.used_input, s.used_output,
       (s.used_input * mp.cost_input + s.used_output * mp.cost_output) / 1000000.0 AS estimated_cost
-    FROM ai1_model_provider mp
-    JOIN ai1_model m ON m.id = mp.model_id
-    JOIN ai1_provider p ON p.id = mp.provider_id
-    JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
+    FROM ai_model_provider mp
+    JOIN ai_model m ON m.id = mp.model_id
+    JOIN ai_provider p ON p.id = mp.provider_id
+    JOIN ai_model_provider_stat s ON s.model_provider_id = mp.id
     ORDER BY s.errors DESC, m.name, p.name`,
     db.query`
     SELECT p.name AS provider, SUM(s.calls) AS calls, SUM(s.errors) AS errors, SUM(s.used_input) AS used_input, SUM(s.used_output) AS used_output,
       SUM((s.used_input * mp.cost_input + s.used_output * mp.cost_output) / 1000000.0) AS estimated_cost
-    FROM ai1_model_provider mp
-    JOIN ai1_provider p ON p.id = mp.provider_id
-    JOIN ai1_model_provider_stat s ON s.model_provider_id = mp.id
+    FROM ai_model_provider mp
+    JOIN ai_provider p ON p.id = mp.provider_id
+    JOIN ai_model_provider_stat s ON s.model_provider_id = mp.id
     GROUP BY p.name ORDER BY calls DESC, p.name`,
     db.query`
     SELECT e.time, m.name AS model, p.name AS provider, e.capability, e.message
-    FROM ai1_call_error e
-    JOIN ai1_model_provider mp ON mp.id = e.model_provider_id
-    JOIN ai1_model m ON m.id = mp.model_id
-    JOIN ai1_provider p ON p.id = mp.provider_id
+    FROM ai_call_error e
+    JOIN ai_model_provider mp ON mp.id = e.model_provider_id
+    JOIN ai_model m ON m.id = mp.model_id
+    JOIN ai_provider p ON p.id = mp.provider_id
     ORDER BY e.id DESC LIMIT ${LIMIT}`,
   ]);
   return html.async`<div class=u2-flex>

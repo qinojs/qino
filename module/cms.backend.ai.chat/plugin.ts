@@ -1,14 +1,14 @@
 import { getCtx, html } from "@qino/qino";
-import { candidates } from "@qino/qino/ai1";
+import { candidates } from "@qino/qino/ai";
 import { backend } from "@qino/qino/cms.backend";
-import { allowMarkdown } from "@qino/qino/cms.backend.ai1";
+import { allowMarkdown } from "@qino/qino/cms.backend.ai";
 
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-// A chat with an agent, all through the api of ai1.agent: what a page in the browser can do, it does.
+// A chat with an agent, all through the api of ai.agent: what a page in the browser can do, it does.
 
 const { name } = manifest;
 const { uniqueColor } = backend;
@@ -32,12 +32,12 @@ async function render(node: Node) {
   const { db, t } = node.app;
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown
-  const agents = await db.query`SELECT id, name, system, prefer FROM ai1_agent ORDER BY id DESC`;
+  const agents = await db.query`SELECT id, name, system, prefer FROM ai_agent ORDER BY id DESC`;
   const live = (await candidates(node.app, "live", {})).length > 0; // talking needs a live model
   const sessions = await db.query`SELECT s.id, s.agent_id, MAX(m.time) AS last_time,
-      (SELECT first.message FROM ai1_session_message first
+      (SELECT first.message FROM ai_session_message first
         WHERE first.session_id = s.id AND first.message LIKE ${'{"role":"user"%'} ORDER BY first.id LIMIT 1) AS first_message
-    FROM ai1_session s LEFT JOIN ai1_session_message m ON m.session_id = s.id
+    FROM ai_session s LEFT JOIN ai_session_message m ON m.session_id = s.id
     WHERE s.usr_id = ${getCtx().userId} GROUP BY s.id, s.agent_id, s.time
     ORDER BY COALESCE(MAX(m.time), s.time) DESC, s.id DESC`;
   return html.async`<div class=u2-flex>
@@ -97,7 +97,7 @@ async function render(node: Node) {
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars.preview || typeof vars.preview !== "object") return null;
   const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
-  const stored = Object.keys(prefer).length ? prefer : JSON.parse(String(await node.app.db.one`SELECT prefer FROM ai1_agent WHERE id = ${Number(vars.agent) || 0}` || "{}"));
+  const stored = Object.keys(prefer).length ? prefer : JSON.parse(String(await node.app.db.one`SELECT prefer FROM ai_agent WHERE id = ${Number(vars.agent) || 0}` || "{}"));
   const list = await candidates(node.app, "text", { messages: [], tools: [{}] }, { prefer: Object.keys(stored).length ? stored : undefined });
   return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
 }

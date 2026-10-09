@@ -1,8 +1,8 @@
 import { ApiError, errMsg, unixTime } from "@qino/qino";
-import { run } from "@qino/qino/ai1.tools";
+import { run } from "@qino/qino/ai.tools";
 
 import type { App, Tool } from "@qino/qino";
-import type { Message } from "@qino/qino/ai1";
+import type { Message } from "@qino/qino/ai";
 
 // A session grown past most of its model's context is compacted after an answer, in the background:
 // the agent first keeps what lasts (`remember`), then writes a handoff for itself. From then on that
@@ -28,7 +28,7 @@ export const PROMPT = (turns: number): string =>
 
 type Row = { id: number; message: Message & { summary?: { from: number } } };
 
-/** A rough size in tokens, as ai1 estimates it. */
+/** A rough size in tokens, as ai estimates it. */
 const size = (value: unknown) => Math.ceil(JSON.stringify(value).length / 4);
 
 // The compaction running per session; it resolves to the summary it kept.
@@ -60,10 +60,10 @@ export async function compact(app: App, { session, usrId, messages, tools, model
   if (sessions.has(session)) return;
   const wanted = scheduled.get(app)?.delete(session);
   const job = (async () => {
-    const limit = Number(await app.db.one`SELECT m.context_length FROM ai1_model_provider mp JOIN ai1_model m ON m.id = mp.model_id WHERE mp.id = ${modelProvider}`);
+    const limit = Number(await app.db.one`SELECT m.context_length FROM ai_model_provider mp JOIN ai_model m ON m.id = mp.model_id WHERE mp.id = ${modelProvider}`);
     if (!wanted && (!limit || size({ messages, tools }) < AT * limit)) return;
     // what is sent now, and of it the last turns to keep: at least one turn before them to summarize
-    const kept = (await app.db.query`SELECT id, message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
+    const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
       .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
     const sent = from(kept), asked = sent.filter((row) => row.message.role === "user");
     let turns = Math.min(TURNS, asked.length - 1);
@@ -74,9 +74,9 @@ export async function compact(app: App, { session, usrId, messages, tools, model
     const { text } = await run(app, { messages: [...messages, { role: "system", content: PROMPT(turns) }], tools: only, usrId }, { prefer, model, modelProvider });
     if (!text.trim()) return;
     const message = { role: "system" as const, content: `Summary of this session before the last turns:\n${text}`, summary: { from: asked[asked.length - turns].id } };
-    const id = Number(await app.db.table("ai1_session_message").insert({ session_id: session, time: unixTime(), message: JSON.stringify(message) }));
+    const id = Number(await app.db.table("ai_session_message").insert({ session_id: session, time: unixTime(), message: JSON.stringify(message) }));
     return { id, message };
-  })().catch((e) => (console.error("[ai1.agent.sleep] compaction:", errMsg(e)), undefined));
+  })().catch((e) => (console.error("[ai.agent.sleep] compaction:", errMsg(e)), undefined));
   sessions.set(session, job);
   await job.finally(() => sessions.delete(session));
 }

@@ -8,10 +8,10 @@ import { ask, cancel, note, running } from "./lib/turn.ts";
 export { IN_MIND } from "./lib/memory.ts";
 
 import type { App } from "@qino/qino";
-import type { Message, Part, TextOutput } from "@qino/qino/ai1";
+import type { Message, Part, TextOutput } from "@qino/qino/ai";
 
 /** Someone anyone can talk to: a role, the tools of the api it may use, and how it chooses
- *  its model (ai1's `prefer`, e.g. `{ quality: 2, cost: 1 }`). */
+ *  its model (ai's `prefer`, e.g. `{ quality: 2, cost: 1 }`). */
 export class Agent {
   #app: App;
   #id: number;
@@ -24,15 +24,15 @@ export class Agent {
   /** A new agent; its role is made findable in the background. */
   static async create(app: App, { system = "", tools = [], prefer }: { system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<Agent> {
     checkTools(app, tools);
-    const id = Number(await app.db.table("ai1_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() }));
-    keep(app, "ai1_agent", { agent_id: id }, system);
+    const id = Number(await app.db.table("ai_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() }));
+    keep(app, "ai_agent", { agent_id: id }, system);
     return new Agent(app, id);
   }
 
   /** A fresh start with user `usrId`, in which the agent acts with that user's rights; `prefer`
    *  replaces the agent's for this session. */
   async start(usrId: number, { prefer }: { prefer?: Record<string, number> } = {}): Promise<Session> {
-    return new Session(this.#app, Number(await this.#app.db.table("ai1_session").insert({ agent_id: this.#id, usr_id: usrId, prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() })));
+    return new Session(this.#app, Number(await this.#app.db.table("ai_session").insert({ agent_id: this.#id, usr_id: usrId, prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() })));
   }
 
   /** What it may use, as a session starts with it: its own tools (`always`), those of its api paths by

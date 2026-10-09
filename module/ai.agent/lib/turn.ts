@@ -1,11 +1,11 @@
 import { errMsg } from "@qino/qino";
-import { run } from "@qino/qino/ai1.tools";
+import { run } from "@qino/qino/ai.tools";
 
 import { context } from "./context.ts";
 import { save } from "./record.ts";
 
 import type { App } from "@qino/qino";
-import type { Message, Part, TextOutput } from "@qino/qino/ai1";
+import type { Message, Part, TextOutput } from "@qino/qino/ai";
 
 /** A turn runs this long at most, then it is cancelled: a stream that never ends must not keep the session. */
 const TURN_MS = 60 * 60_000;
@@ -50,7 +50,7 @@ export function cancel(app: App, session: number): boolean {
  *  gets it as a `system` message in the history). */
 export function note(app: App, session: number, content: string | Part[]): Promise<void> {
   return inTurn(app, session, async () => {
-    const agent = await app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${session}`;
+    const agent = await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`;
     if (!agent) throw new Error(`No session ${session}`);
     await save(app, session, Number(agent), { role: "system", content });
   });
@@ -80,8 +80,8 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
       });
     // in the background: all the model was given and answered, as it was sent (e.g. to compact it)
     const { model, modelProvider } = out;
-    app.fire("ai1.agent:answered", { agent: id, session, usrId, messages: [...messages, ...out.messages], tools, model, modelProvider, prefer })
-      .catch((e) => console.error("[ai1.agent] answered:", errMsg(e)));
+    app.fire("ai.agent:answered", { agent: id, session, usrId, messages: [...messages, ...out.messages], tools, model, modelProvider, prefer })
+      .catch((e) => console.error("[ai.agent] answered:", errMsg(e)));
     return out;
   });
 }

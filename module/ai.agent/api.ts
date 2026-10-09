@@ -10,7 +10,7 @@ import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 // Anyone signed in may talk with any agent, and change it. A session belongs to the one who started
 // it: nobody else sees it, as if it did not exist. In a session the agent acts with its user's rights.
 
-/** How a model is chosen, as ai1 weighs it: `{ quality: 2, cost: 1, speed: 1 }`; empty: the default. */
+/** How a model is chosen, as ai weighs it: `{ quality: 2, cost: 1, speed: 1 }`; empty: the default. */
 const prefer = s.optional(s.record(s.number()));
 
 /** What makes an agent: its role, the tools it may use, prefer. */
@@ -32,7 +32,7 @@ export const api: ApiTree = {
       execute: ({ search: query }: { search?: string }, ctx: Ctx) => search.agents(ctx.app, query),
     },
     post: verb<{ system?: string; tools?: string[]; prefer?: Record<string, number> }>(
-      "Create an agent: its role, the tools it may use, and how it chooses its model (ai1 prefer)",
+      "Create an agent: its role, the tools it may use, and how it chooses its model (ai prefer)",
       async (params, ctx) => ({ id: (await Agent.create(ctx.app, params)).id }),
       fields,
     ),
@@ -41,24 +41,24 @@ export const api: ApiTree = {
     ":agent": {
       paramSchema: s.number().describe("Agent ID"),
       resolve: async (id: unknown, ctx: Ctx) => {
-        if (!await ctx.app.db.one`SELECT id FROM ai1_agent WHERE id = ${id}`) throw new NotFoundError("No such agent");
+        if (!await ctx.app.db.one`SELECT id FROM ai_agent WHERE id = ${id}`) throw new NotFoundError("No such agent");
         return id;
       },
       get: verb<{ agent: number }>("The agent: its role and tools", async ({ agent }, ctx) => {
-        const row = (await ctx.app.db.row`SELECT id, system, tools, prefer FROM ai1_agent WHERE id = ${agent}`)!;
+        const row = (await ctx.app.db.row`SELECT id, system, tools, prefer FROM ai_agent WHERE id = ${agent}`)!;
         return { id: agent, system: row.system, tools: JSON.parse(String(row.tools || "[]")), prefer: JSON.parse(String(row.prefer || "{}")) };
       }),
       patch: verb<{ agent: number; system?: string; tools?: string[]; prefer?: Record<string, number> }>(
         "Change the agent's role, tools or prefer; not of one a module declares",
         async ({ agent, system, tools, prefer }, ctx) => {
-          if (await ctx.app.db.one`SELECT name FROM ai1_agent WHERE id = ${agent}`) throw new ConflictError("Declared by a module: its file sets it");
+          if (await ctx.app.db.one`SELECT name FROM ai_agent WHERE id = ${agent}`) throw new ConflictError("Declared by a module: its file sets it");
           if (tools) checkTools(ctx.app, tools);
-          await ctx.app.db.table("ai1_agent").update(agent, {
+          await ctx.app.db.table("ai_agent").update(agent, {
             ...system !== undefined && { system },
             ...tools && { tools: JSON.stringify(tools) },
             ...prefer && { prefer: JSON.stringify(prefer) },
           });
-          if (system !== undefined) search.keep(ctx.app, "ai1_agent", { agent_id: agent }, system); // findable as it is now
+          if (system !== undefined) search.keep(ctx.app, "ai_agent", { agent_id: agent }, system); // findable as it is now
           return { id: agent };
         },
         fields,
@@ -98,18 +98,18 @@ export const api: ApiTree = {
     ":session": {
       paramSchema: s.number().describe("Session ID"),
       resolve: async (id: unknown, ctx: Ctx) => {
-        const usr = Number(await ctx.app.db.one`SELECT usr_id FROM ai1_session WHERE id = ${id}`);
+        const usr = Number(await ctx.app.db.one`SELECT usr_id FROM ai_session WHERE id = ${id}`);
         if (!ctx.userId || usr !== ctx.userId) throw new NotFoundError("No such session");
         return id;
       },
       get: verb<{ session: number }>("The session: its agent, everything said, and whether an answer is on its way", async ({ session }, ctx) => ({
-        agent: Number(await ctx.app.db.one`SELECT agent_id FROM ai1_session WHERE id = ${session}`),
+        agent: Number(await ctx.app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`),
         running: new Session(ctx.app, session).running,
         messages: (await ctx.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
-          FROM ai1_session_message m
-          LEFT JOIN ai1_model_provider mp ON mp.id = m.model_provider_id
-          LEFT JOIN ai1_model am ON am.id = mp.model_id
-          LEFT JOIN ai1_provider p ON p.id = mp.provider_id
+          FROM ai_session_message m
+          LEFT JOIN ai_model_provider mp ON mp.id = m.model_provider_id
+          LEFT JOIN ai_model am ON am.id = mp.model_id
+          LEFT JOIN ai_provider p ON p.id = mp.provider_id
           WHERE m.session_id = ${session} ORDER BY m.id`)
           .map((m) => ({
             id: m.id, time: m.time, model: m.model || undefined, provider: m.provider || undefined,
@@ -122,7 +122,7 @@ export const api: ApiTree = {
           ({ session, content, wait }, ctx) => {
             const answer = new Session(ctx.app, session).ask(content);
             if (wait) return answer;
-            answer.catch((e) => console.error("[ai1.agent] ask:", errMsg(e))); // kept in the session too
+            answer.catch((e) => console.error("[ai.agent] ask:", errMsg(e))); // kept in the session too
             return { running: true };
           },
           { content: s.string(), wait: s.optional(s.boolean()) },

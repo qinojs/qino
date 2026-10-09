@@ -74,8 +74,8 @@ const panelApi = async (node: Node, vars: Record<string, unknown>) => {
 /** The designer agent (agents/designer.md) learns which u2 release the site loads. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const name = "cms.layout.standard.2";
-  app.on("ai1.agent:turn", async (turn: { agent: number; parts: string[] }) => {
-    if (await app.db.one`SELECT name FROM ai1_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
+  app.on("ai.agent:turn", async (turn: { agent: number; parts: string[] }) => {
+    if (await app.db.one`SELECT name FROM ai_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
     const version = u2Version(await cmsOf(app).layoutPage(name));
     turn.parts.push(`## u2\nThis site loads u2 ${version}. Its index: ${u2.root(version)}SKILL.md`);
   }, { signal });

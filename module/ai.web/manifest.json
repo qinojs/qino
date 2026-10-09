@@ -1,6 +1,6 @@
 {
-  "name": "ai1.web",
+  "name": "ai.web",
   "description": "The web as an api, for agents and the browser: search, read pages as Markdown, find the pages read by meaning.",
-  "dependencies": ["ai1.embed"],
+  "dependencies": ["ai.embed"],
   "files": ["README.md", "dbschema.json", "engines/brave.ts", "engines/serper.ts", "manifest.json", "mod.ts", "plugin.ts", "readers/fetch.ts", "readers/firecrawl.ts", "readers/jina.ts"]
 }

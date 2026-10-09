@@ -1,5 +1,5 @@
 import { App, Redirect } from "@qino/qino";
-import { AiError, candidates, text } from "@qino/qino/ai1";
+import { AiError, candidates, text } from "@qino/qino/ai";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { authorize, models, pending, store } from "../lib/account.ts";
@@ -9,7 +9,7 @@ import { init } from "../plugin.ts";
 import type { Ctx } from "@qino/qino";
 
 Deno.test("ChatGPT authorization uses dynamic registration, PKCE, and a stable host ID", async () => {
-  const attempt = pending(3, "dynamic_agent_client", "http://127.0.0.1:8000/ai1-chatgpt/callback", "/my/chatgpt");
+  const attempt = pending(3, "dynamic_agent_client", "http://127.0.0.1:8000/ai-chatgpt/callback", "/my/chatgpt");
   const url = new URL(await authorize(attempt, "urn:uuid:sample", "Qino"));
   assertEquals(url.origin, "https://auth.openai.com");
   assertEquals(url.searchParams.get("client_id"), "dynamic_agent_client");
@@ -49,18 +49,18 @@ Deno.test("ChatGPT plan without a user falls back to another provider, as any pr
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
     await app.init();
-    await source.install("ai1");
-    await source.install("ai1.chatgpt");
-    app.modules.get("ai1")!.plugin.ai1Adapters.fake = { text: () => Promise.resolve({ text: "from fake", toolCalls: [], truncated: false }) };
-    const model = Number(await app.db.table("ai1_model").insert({ name: "m" }));
-    await app.db.table("ai1_model_capability").insert({ model_id: model, capability: "text" });
-    const plan = await app.db.one`SELECT id FROM ai1_provider WHERE name = ${"chatgpt-plan"}`;
-    const fake = Number(await app.db.table("ai1_provider").insert({ name: "fake", type: "fake", endpoint: "" }));
-    await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: plan }); // tried first
-    await app.db.table("ai1_model_provider").insert({ model_id: model, provider_id: fake });
+    await source.install("ai");
+    await source.install("ai.chatgpt");
+    app.modules.get("ai")!.plugin.aiAdapters.fake = { text: () => Promise.resolve({ text: "from fake", toolCalls: [], truncated: false }) };
+    const model = Number(await app.db.table("ai_model").insert({ name: "m" }));
+    await app.db.table("ai_model_capability").insert({ model_id: model, capability: "text" });
+    const plan = await app.db.one`SELECT id FROM ai_provider WHERE name = ${"chatgpt-plan"}`;
+    const fake = Number(await app.db.table("ai_provider").insert({ name: "fake", type: "fake", endpoint: "" }));
+    await app.db.table("ai_model_provider").insert({ model_id: model, provider_id: plan }); // tried first
+    await app.db.table("ai_model_provider").insert({ model_id: model, provider_id: fake });
     assertEquals((await text(app, "Hi")).text, "from fake");
   } finally {
-    delete app.modules.get("ai1")?.plugin.ai1Adapters.fake;
+    delete app.modules.get("ai")?.plugin.aiAdapters.fake;
     await app.db.close(); await Deno.remove(dir, { recursive: true });
   }
 });
@@ -79,10 +79,10 @@ Deno.test("ChatGPT model catalog uses the plan-specific models array and slugs",
   const original = globalThis.fetch;
   try {
     await app.init();
-    await source.install("ai1.chatgpt");
-    const api = await app.db.table("ai1_provider").insert({ name: "api.openai.com", type: "openai", endpoint: "https://api.openai.com/v1" });
-    const known = await app.db.table("ai1_model").insert({ name: "available" });
-    await app.db.table("ai1_model_provider").insert({ model_id: known, provider_id: api, cost_input: 2 });
+    await source.install("ai.chatgpt");
+    const api = await app.db.table("ai_provider").insert({ name: "api.openai.com", type: "openai", endpoint: "https://api.openai.com/v1" });
+    const known = await app.db.table("ai_model").insert({ name: "available" });
+    await app.db.table("ai_model_provider").insert({ model_id: known, provider_id: api, cost_input: 2 });
     await store(app, 3, { client_id: "oaiapp_test", subject: "sub", email: "", id_token: "",
       access_token: "token", refresh_token: "refresh", scopes: ["chatgpt.tokens.use.direct"], expires_at: Date.now() + 3600_000 });
     globalThis.fetch = (_url, init) => {
@@ -92,15 +92,15 @@ Deno.test("ChatGPT model catalog uses the plan-specific models array and slugs",
       ] }));
     };
     assertEquals(await models(app, 3), ["available"]);
-    assertEquals(await app.db.query`SELECT m.name, p.name AS provider FROM ai1_model_provider mp
-      JOIN ai1_model m ON m.id = mp.model_id JOIN ai1_provider p ON p.id = mp.provider_id ORDER BY p.name`, [
+    assertEquals(await app.db.query`SELECT m.name, p.name AS provider FROM ai_model_provider mp
+      JOIN ai_model m ON m.id = mp.model_id JOIN ai_provider p ON p.id = mp.provider_id ORDER BY p.name`, [
       { name: "available", provider: "api.openai.com" }, { name: "available", provider: "chatgpt-plan" },
     ]);
-    assertEquals(await app.db.one`SELECT cost_input FROM ai1_model_provider WHERE provider_id = ${api}`, 2);
-    assertEquals(await app.db.col`SELECT capability FROM ai1_model_capability ORDER BY capability`, ["text", "tools"]);
+    assertEquals(await app.db.one`SELECT cost_input FROM ai_model_provider WHERE provider_id = ${api}`, 2);
+    assertEquals(await app.db.col`SELECT capability FROM ai_model_capability ORDER BY capability`, ["text", "tools"]);
     assertEquals((await candidates(app, "text", { messages: [], tools: [{}] })).some((model) => model.provider === "chatgpt-plan"), true);
     await models(app, 3);
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai1_model_provider`), 2);
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai_model_provider`), 2);
   } finally { globalThis.fetch = original; await app.db.close(); await Deno.remove(dir, { recursive: true }); }
 });
 
@@ -110,22 +110,22 @@ Deno.test("ChatGPT module ensures its own provider alongside the API-key provide
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
     await app.init();
-    await source.install("ai1");
-    await app.db.table("ai1_provider").insert({ name: "api.openai.com", type: "openai", endpoint: "https://api.openai.com/v1" });
-    await source.install("ai1.chatgpt");
-    assertEquals(await app.db.query`SELECT name, type, endpoint FROM ai1_provider ORDER BY name`, [
+    await source.install("ai");
+    await app.db.table("ai_provider").insert({ name: "api.openai.com", type: "openai", endpoint: "https://api.openai.com/v1" });
+    await source.install("ai.chatgpt");
+    assertEquals(await app.db.query`SELECT name, type, endpoint FROM ai_provider ORDER BY name`, [
       { name: "api.openai.com", type: "openai", endpoint: "https://api.openai.com/v1" },
       { name: "chatgpt-plan", type: "chatgpt-plan", endpoint: "https://api.openai.com/v1" },
     ]);
-    await app.modules.repair("ai1.chatgpt");
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai1_provider WHERE name = ${"chatgpt-plan"}`), 1);
-    app.modules.unlink("ai1.chatgpt");
-    await app.db.exec`DELETE FROM ai1_provider WHERE name = ${"chatgpt-plan"}`;
-    await app.modules.link("ai1.chatgpt");
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai1_provider WHERE name = ${"chatgpt-plan"}`), 1);
-    app.modules.unlink("ai1.chatgpt");
-    await app.db.exec`UPDATE ai1_provider SET type = ${"openai"} WHERE name = ${"chatgpt-plan"}`;
-    await assertRejects(() => app.modules.link("ai1.chatgpt"), Error, 'Provider "chatgpt-plan" already exists');
+    await app.modules.repair("ai.chatgpt");
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai_provider WHERE name = ${"chatgpt-plan"}`), 1);
+    app.modules.unlink("ai.chatgpt");
+    await app.db.exec`DELETE FROM ai_provider WHERE name = ${"chatgpt-plan"}`;
+    await app.modules.link("ai.chatgpt");
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai_provider WHERE name = ${"chatgpt-plan"}`), 1);
+    app.modules.unlink("ai.chatgpt");
+    await app.db.exec`UPDATE ai_provider SET type = ${"openai"} WHERE name = ${"chatgpt-plan"}`;
+    await assertRejects(() => app.modules.link("ai.chatgpt"), Error, 'Provider "chatgpt-plan" already exists');
   } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
 });
 
@@ -139,8 +139,8 @@ Deno.test("ChatGPT account actions return to the same Qino app, never another si
     on: (_name: string, listener: typeof route) => { route = listener; } } as unknown as App;
   const body = { csrf: "csrf", client_id: "oaiapp_test", return_to: "/cms1/account" };
   const ctx = { app, userId: 3, csrfToken: "csrf", req: {
-    method: "POST", appPath: "ai1-chatgpt/select", appUrl: "/cms1/",
-    url: new URL("http://127.0.0.1:8080/cms1/ai1-chatgpt/select"), body,
+    method: "POST", appPath: "ai-chatgpt/select", appUrl: "/cms1/",
+    url: new URL("http://127.0.0.1:8080/cms1/ai-chatgpt/select"), body,
   } } as unknown as Ctx;
   try {
     globalThis.fetch = () => Promise.resolve(Response.json({ models: [] }));
@@ -153,6 +153,6 @@ Deno.test("ChatGPT account actions return to the same Qino app, never another si
     };
     assertEquals(await redirect(), "/cms1/account");
     body.return_to = "//elsewhere.example/steal";
-    assertEquals(await redirect(), "/cms1/ai1-chatgpt");
+    assertEquals(await redirect(), "/cms1/ai-chatgpt");
   } finally { globalThis.fetch = original; await Deno.remove(dir, { recursive: true }); }
 });

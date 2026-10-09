@@ -97,4 +97,4 @@ export async function check(conn: string) {
   } finally { await db.close(); }
 }
 
-Deno.test("ai1.embed: index, reuse, chunk, filter and remove vectors (sqlite)", () => check("sqlite::memory:"));
+Deno.test("ai.embed: index, reuse, chunk, filter and remove vectors (sqlite)", () => check("sqlite::memory:"));

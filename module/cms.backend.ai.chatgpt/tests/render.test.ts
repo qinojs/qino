@@ -1,7 +1,7 @@
 import { App } from "@qino/qino";
 import { cms as cmsFor } from "@qino/qino/cms";
 import { assert, assertStringIncludes } from "@qino/qino/tests";
-import { store } from "@qino/m/ai1.chatgpt/tests/deps.ts";
+import { store } from "@qino/m/ai.chatgpt/tests/deps.ts";
 
 import { cms } from "../plugin.ts";
 
@@ -19,7 +19,7 @@ Deno.test("AI backend ChatGPT page exposes the sign-in button without a typed UR
   try {
     const output = String(await cms.node.render(node, { ctx }));
     assertStringIncludes(output, "Continue with ChatGPT");
-    assertStringIncludes(output, "/cms1/ai1-chatgpt/start?return_to=");
+    assertStringIncludes(output, "/cms1/ai-chatgpt/start?return_to=");
     const localhost = { ...ctx, req: { ...ctx.req, url: new URL("http://localhost:8080/cms1/backend/ai/chatgpt") } } as unknown as Ctx;
     assertStringIncludes(String(await cms.node.render(node, { ctx: localhost })),
       "http://127.0.0.1:8080/cms1/backend/ai/chatgpt");
@@ -39,8 +39,8 @@ Deno.test("Installing the ChatGPT backend module creates its navigable AI page",
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
     await app.init();
-    await source.install("cms.backend.ai1.chatgpt");
-    assert(app.modules.linked("cms.backend.ai1.chatgpt"));
-    assert(await cmsFor(app).nodeByModule("cms.backend.ai1.chatgpt"));
+    await source.install("cms.backend.ai.chatgpt");
+    assert(app.modules.linked("cms.backend.ai.chatgpt"));
+    assert(await cmsFor(app).nodeByModule("cms.backend.ai.chatgpt"));
   } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
 });

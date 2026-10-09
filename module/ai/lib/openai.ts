@@ -62,7 +62,7 @@ async function text(call: Call, { messages, tools, temperature, maxTokens, onTex
   const res = await request(call, "/chat/completions", body).catch((e) => {
     // not merged yet: a late system note right after a user message makes two in a row
     const twice = body.messages.some((m, i) => i && m.role === "user" && body.messages[i - 1].role === "user");
-    throw e.status === 400 && twice ? new AiError(`${e.message} (maybe two user messages in a row: merge them in ai1's toOpenAi)`, 400) : e;
+    throw e.status === 400 && twice ? new AiError(`${e.message} (maybe two user messages in a row: merge them in ai's toOpenAi)`, 400) : e;
   });
   const { message, usage, finish } = onText
     ? await stream(res, onText)

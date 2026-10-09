@@ -10,7 +10,7 @@ export const api: ApiTree = {
     ":session": {
       paramSchema: s.number().describe("Session ID"),
       resolve: async (id: unknown, ctx: Ctx) => {
-        const usr = Number(await ctx.app.db.one`SELECT usr_id FROM ai1_session WHERE id = ${id}`);
+        const usr = Number(await ctx.app.db.one`SELECT usr_id FROM ai_session WHERE id = ${id}`);
         if (!usr || (usr !== ctx.userId && !ctx.user?.superuser)) throw new NotFoundError("No such session");
         return id;
       },

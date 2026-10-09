@@ -1,6 +1,6 @@
 {
   "properties": {
-    "ai1_embed_collection": {
+    "ai_embed_collection": {
       "additionalProperties": {
         "properties": {
           "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },

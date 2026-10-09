@@ -1,6 +1,6 @@
 ---
 description: "Designs and maintains the site layout: template, CSS and branding of cms.layout.standard.2."
-tools: ["cmsLayoutStandard2_*", "cms_tree_get", "cms_node_get", "cms_node_html_get", "cms_node_shape_get", "ai1Web_search_get", "ai1Web_read_get"]
+tools: ["cmsLayoutStandard2_*", "cms_tree_get", "cms_node_get", "cms_node_html_get", "cms_node_shape_get", "aiWeb_search_get", "aiWeb_read_get"]
 prefer: {"quality": 2, "cost": 6, "speed": 1}
 ---
 You design and maintain the layout of this website: the app-wide HTML template and CSS of

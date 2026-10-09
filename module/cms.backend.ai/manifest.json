@@ -1,10 +1,10 @@
 {
-  "name": "cms.backend.ai1",
-  "description": "Configures and evaluates ai1: all models of all providers with capabilities and priorities, context length, prices, speed, benchmarks and measured errors.",
+  "name": "cms.backend.ai",
+  "description": "Configures and evaluates ai: all models of all providers with capabilities and priorities, context length, prices, speed, benchmarks and measured errors.",
   "dependencies": [
     "cms.backend",
-    "ai1",
-    "ai1.stats",
+    "ai",
+    "ai.stats",
     "cron"
   ],
   "files": [

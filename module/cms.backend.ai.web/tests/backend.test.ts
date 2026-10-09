@@ -5,18 +5,18 @@ import { cms, list } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai1.web: the reader, the keys and the pages read", async () => {
+Deno.test("cms.backend.ai.web: the reader, the keys and the pages read", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai1", "cron", "ai1.embed", "ai1.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   try {
     await app.settings.core.url("https://example.test/");
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
-    const id = await app.db.table("ai1_web_page").insert({ url: "https://qino.test/", url_hash: "x", title: "<b>Qino</b>", content: "A CMS", reader: "fetch", time: unixTime() });
+    const id = await app.db.table("ai_web_page").insert({ url: "https://qino.test/", url_hash: "x", title: "<b>Qino</b>", content: "A CMS", reader: "fetch", time: unixTime() });
     const node = { app } as unknown as Node, api = cms.node.api;
 
     assertEquals(await api(node, { reader: "jina" }), { ok: true });
-    assertEquals(await app.settings["ai1.web"].reader, "jina");
+    assertEquals(await app.settings["ai.web"].reader, "jina");
     assertEquals((await api(node, { reader: "nobody" }) as { ok: boolean }).ok, false);
     assertEquals(await api(node, { key: { name: "api.search.brave.com", value: " sk-1234 " } }), { ok: true });
     assertEquals(await app.settings.core.keys["api.search.brave.com"], "sk-1234");
@@ -37,7 +37,7 @@ Deno.test("cms.backend.ai1.web: the reader, the keys and the pages read", async 
     assertEquals(String(await runAs(app, 7, "test", () => list(node, { vars: { root: "https://nowhere.test/" } }))).includes("site.test"), false);
 
     assertEquals(await api(node, { remove: id }), { ok: true });
-    assertEquals((await app.db.col`SELECT id FROM ai1_web_page`).map(Number).includes(Number(id)), false);
+    assertEquals((await app.db.col`SELECT id FROM ai_web_page`).map(Number).includes(Number(id)), false);
   } finally {
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
     await app.db.close();

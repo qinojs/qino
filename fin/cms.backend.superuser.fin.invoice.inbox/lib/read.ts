@@ -1,13 +1,13 @@
 // Reading received invoices. Lives in this backend page for now; once something else needs it — the
 // mail inbox, an API — it moves into a module of its own (fin.invoice.read).
 import { fs } from "@qino/qino";
-import { structured } from "@qino/qino/ai1";
+import { structured } from "@qino/qino/ai";
 import { mainCurrency } from "@qino/qino/fin";
 import { attach, create } from "@qino/qino/fin.invoice";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
 import type { App, DbFile } from "@qino/qino";
-import type { Part } from "@qino/qino/ai1";
+import type { Part } from "@qino/qino/ai";
 
 /** What is asked of the model: the invoice as it is printed, amounts as decimals. */
 const SCHEMA = {

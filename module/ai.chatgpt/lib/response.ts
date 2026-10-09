@@ -1,9 +1,9 @@
 import { errMsg, requestStorage } from "@qino/qino";
-import { AiError, readSse } from "@qino/qino/ai1";
+import { AiError, readSse } from "@qino/qino/ai";
 
 import { active } from "./account.ts";
 
-import type { Adapter, Message, Part, TextInput, TextOutput } from "@qino/qino/ai1";
+import type { Adapter, Message, Part, TextInput, TextOutput } from "@qino/qino/ai";
 
 type Call = Parameters<Adapter["text"]>[0];
 
@@ -75,7 +75,7 @@ async function text(call: Call, value: TextInput): Promise<Omit<TextOutput, "mod
   const ctx = requestStorage.getStore();
   if (!ctx?.userId) throw new AiError("A signed-in Qino user is required for ChatGPT plan use", 401);
   const account = await active(ctx.app, ctx.userId);
-  if (!account) throw new AiError("Connect a ChatGPT account at /ai1-chatgpt", 401);
+  if (!account) throw new AiError("Connect a ChatGPT account at /ai-chatgpt", 401);
   const body = { model: call.model, ...input(value.messages, value.tools), store: false, stream: true };
   const response = await call.fetch("/responses", { method: "POST", headers: {
     authorization: `Bearer ${account.access_token}`, "content-type": "application/json" }, body: JSON.stringify(body) });

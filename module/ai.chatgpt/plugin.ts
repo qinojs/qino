@@ -7,9 +7,9 @@ import { chatgpt } from "./lib/response.ts";
 import type { App, Ctx } from "@qino/qino";
 import type { Pending } from "./lib/account.ts";
 
-export const ai1Adapters = { "chatgpt-plan": chatgpt };
+export const aiAdapters = { "chatgpt-plan": chatgpt };
 
-const base = (ctx: Ctx) => ctx.req.appUrl + "ai1-chatgpt";
+const base = (ctx: Ctx) => ctx.req.appUrl + "ai-chatgpt";
 const local = (ctx: Ctx) => ctx.req.url.protocol === "http:" && ctx.req.url.hostname === "127.0.0.1";
 const returnTo = (ctx: Ctx, raw: unknown) => {
   if (typeof raw !== "string" || !raw.startsWith(ctx.req.appUrl) || /[\\\x00-\x1f]/.test(raw)) return base(ctx);
@@ -54,14 +54,14 @@ async function start(ctx: Ctx): Promise<never> {
   if (ctx.req.query.client_id && !hint) throw new Output("Unknown ChatGPT account", { status: 404 });
   const redirectUri = ctx.req.url.origin + base(ctx) + "/callback";
   const attempt = pending(id, hint?.client_id ?? "dynamic_agent_client", redirectUri, returnTo(ctx, ctx.req.query.return_to));
-  ctx.sess.data.ai1Chatgpt.pending(attempt);
+  ctx.sess.data.aiChatgpt.pending(attempt);
   throw new Redirect(await authorize(attempt, await hostId(ctx.app), "Qino", hint));
 }
 
 async function callback(ctx: Ctx): Promise<never> {
   const id = user(ctx); requireLocal(ctx);
-  const attempt = ctx.sess.data.ai1Chatgpt.pending() as Pending | undefined;
-  ctx.sess.data.ai1Chatgpt.pending(null);
+  const attempt = ctx.sess.data.aiChatgpt.pending() as Pending | undefined;
+  ctx.sess.data.aiChatgpt.pending(null);
   if (!attempt || attempt.user !== id || Date.now() - attempt.time > 10 * 60_000 || !safeEqual(ctx.req.query.state, attempt.state) ||
     ctx.req.url.origin + base(ctx) + "/callback" !== attempt.redirect_uri)
     throw new Output("ChatGPT sign-in state mismatch", { status: 400 });
@@ -89,9 +89,9 @@ async function update(ctx: Ctx, action: "select" | "disconnect"): Promise<never>
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   await ensureProvider(app);
   const routes: Record<string, (ctx: Ctx) => Promise<never>> = {
-    "GET ai1-chatgpt": page, "GET ai1-chatgpt/start": start, "GET ai1-chatgpt/callback": callback,
-    "POST ai1-chatgpt/select": (ctx) => update(ctx, "select"),
-    "POST ai1-chatgpt/disconnect": (ctx) => update(ctx, "disconnect"),
+    "GET ai-chatgpt": page, "GET ai-chatgpt/start": start, "GET ai-chatgpt/callback": callback,
+    "POST ai-chatgpt/select": (ctx) => update(ctx, "select"),
+    "POST ai-chatgpt/disconnect": (ctx) => update(ctx, "disconnect"),
   };
   app.on("route", ({ ctx }) => routes[`${ctx.req.method} ${ctx.req.appPath}`]?.(ctx), { signal });
 }

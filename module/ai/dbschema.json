@@ -1,6 +1,6 @@
 {
   "properties": {
-    "ai1_provider": {
+    "ai_provider": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -18,7 +18,7 @@
             "type": "string",
             "maxLength": 64,
             "default": "openai",
-            "description": "Adapter (ai1Adapters)"
+            "description": "Adapter (aiAdapters)"
           },
           "endpoint": {
             "type": "string",
@@ -38,7 +38,7 @@
         "required": ["id"]
       }
     },
-    "ai1_model": {
+    "ai_model": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -64,13 +64,13 @@
         "required": ["id"]
       }
     },
-    "ai1_model_capability": {
+    "ai_model_capability": {
       "additionalProperties": {
         "properties": {
           "model_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_model",
+            "x-qg-parent": "ai_model",
             "x-qg-on-parent-delete": "cascade"
           },
           "capability": {
@@ -82,7 +82,7 @@
         "required": ["model_id", "capability"]
       }
     },
-    "ai1_model_provider": {
+    "ai_model_provider": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -93,13 +93,13 @@
           "model_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_model",
+            "x-qg-parent": "ai_model",
             "x-qg-on-parent-delete": "cascade"
           },
           "provider_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_provider",
+            "x-qg-parent": "ai_provider",
             "x-qg-on-parent-delete": "cascade"
           },
           "provider_model": {
@@ -127,13 +127,13 @@
         "required": ["id"]
       }
     },
-    "ai1_model_score": {
+    "ai_model_score": {
       "additionalProperties": {
         "properties": {
           "model_id": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "ai1_model",
+            "x-qg-parent": "ai_model",
             "x-qg-on-parent-delete": "cascade"
           },
           "metric": {

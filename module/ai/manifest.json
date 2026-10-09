@@ -1,5 +1,5 @@
 {
-  "name": "ai1",
+  "name": "ai",
   "description": "AI providers and models behind one interface: text, structured answers, embeddings, images, transcription, translation and decisions, with fallbacks.",
   "dependencies": [
     "core"

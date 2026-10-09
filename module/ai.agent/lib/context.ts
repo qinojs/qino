@@ -1,12 +1,12 @@
 import { ApiError, errMsg, NotFoundError, toTools } from "@qino/qino";
-import { all, find } from "@qino/qino/ai1.discover";
+import { all, find } from "@qino/qino/ai.discover";
 
 import * as memory from "./memory.ts";
 import { isGiven, save } from "./record.ts";
 import * as search from "./search.ts";
 
 import type { ApiTree, App, Ctx, Method, Tool } from "@qino/qino";
-import type { Message } from "@qino/qino/ai1";
+import type { Message } from "@qino/qino/ai";
 
 // What the model is given: where it is, the agent's role and memories, its tools, the session so far.
 
@@ -34,7 +34,7 @@ const AT_ONCE = 20;
 /** How many of them it is given, the closest to its role. */
 const CLOSE = 15;
 
-const log = (e: unknown) => console.error("[ai1.agent] tools:", errMsg(e));
+const log = (e: unknown) => console.error("[ai.agent] tools:", errMsg(e));
 
 /** To find the agent's tools and call them by name (core's tool-calls), only those. */
 function finders(app: App, tools: Tool[]): Tool[] {
@@ -56,7 +56,7 @@ function finders(app: App, tools: Tool[]): Tool[] {
 
 /** What the agent may use, as a session starts with it: its own tools, those of its api paths `allowed`
  *  and, with many, those to find the others. `ranked`: the ones of its api paths by nearness to its role
- *  (ai1.discover), the nearest first, with how near (`score`, 1 the same); `given`: a session starts
+ *  (ai.discover), the nearest first, with how near (`score`, 1 the same); `given`: a session starts
  *  with it — all, or with many the nearest; `always`: no api path's, every session has it. */
 async function choice(app: App, agent: number, role: string, allowed: Tool[], ranked: boolean) {
   const many = allowed.length > AT_ONCE, names = new Set(allowed.map((tool) => tool.name));
@@ -75,7 +75,7 @@ async function choice(app: App, agent: number, role: string, allowed: Tool[], ra
 
 /** What agent `agent` may use, as a session starts with it (`choice`), its api paths' tools ranked. */
 export async function ranked(app: App, agent: number): Promise<{ tool: Tool; score?: number; given: boolean; always: boolean }[]> {
-  const row = await app.db.row`SELECT system, tools FROM ai1_agent WHERE id = ${agent}`;
+  const row = await app.db.row`SELECT system, tools FROM ai_agent WHERE id = ${agent}`;
   if (!row) throw new NotFoundError("No such agent");
   return choice(app, agent, String(row.system ?? ""), toolsOf(app, JSON.parse(String(row.tools || "[]"))), true);
 }
@@ -85,7 +85,7 @@ const OWN: Record<string, Method[]> = { "/:agent/memories": ["post"], "/:agent/m
 
 /** The agent's own routes as tools, the agent param taken out and always its id. */
 const ownTools = (app: App, agent: number): Tool[] =>
-  toTools({ ":agent": (app.apiTree["ai1.agent"] as ApiTree).agent[":agent"] } as ApiTree, { apis: OWN }).map((tool) => {
+  toTools({ ":agent": (app.apiTree["ai.agent"] as ApiTree).agent[":agent"] } as ApiTree, { apis: OWN }).map((tool) => {
     const { agent: _, ...properties } = (tool.parameters.properties ?? {}) as Record<string, unknown>;
     const required = (tool.parameters.required as string[]).filter((name) => name !== "agent");
     return { ...tool, parameters: { ...tool.parameters, properties, required }, execute: (args, ctx) => tool.execute({ ...args as object, agent }, ctx) };
@@ -115,13 +115,13 @@ function answered(messages: Message[]) {
  *  history after it, as other modules let it be sent (compaction); how the model is chosen. What was
  *  sent is never changed, only added to (prompt cache). */
 export async function context(app: App, session: number) {
-  const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai1_session s JOIN ai1_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
+  const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai_session s JOIN ai_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
   if (!agent) throw new Error(`No session ${session}`);
-  const kept = (await app.db.query`SELECT id, message FROM ai1_session_message WHERE session_id = ${session} ORDER BY id`)
+  const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
     .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
   const id = Number(agent.agent_id), usrId = Number(agent.usr_id);
   // other modules add to what the model is given: texts to its context, tools
-  const { parts, tools: more } = await app.fire("ai1.agent:turn", { agent: id, session, usrId, parts: [] as string[], tools: [] as Tool[] });
+  const { parts, tools: more } = await app.fire("ai.agent:turn", { agent: id, session, usrId, parts: [] as string[], tools: [] as Tool[] });
   const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
   // given once, as the session starts: later changes come with the next session; ranked only then, and with many
   let given = kept.map((row) => row.message).find(isGiven);
@@ -135,7 +135,7 @@ export async function context(app: App, session: number) {
     await save(app, session, id, given = { role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
   }
   // other modules may send less of the history than was said (compaction); what is kept stays
-  const { history } = await app.fire("ai1.agent:history", { agent: id, session, history: kept.filter((row) => row.message.role !== "error" && !isGiven(row.message)) });
+  const { history } = await app.fire("ai.agent:history", { agent: id, session, history: kept.filter((row) => row.message.role !== "error" && !isGiven(row.message)) });
   // the tools as given, run as they are now
   const now = new Map(tools.map((tool) => [tool.name, tool]));
   const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));

@@ -1,4 +1,4 @@
-import { AiError } from "@qino/qino/ai1";
+import { AiError } from "@qino/qino/ai";
 import { fs, randB64, sha256b64url, unb64url } from "@qino/qino";
 
 import { syncModels } from "./provider.ts";
@@ -22,7 +22,7 @@ const AUTH = "https://auth.openai.com";
 const RESOURCE = "https://api.openai.com/v1";
 const PLAN_SCOPE = "chatgpt.tokens.use.direct";
 
-const dir = (app: App) => app.modules.get("ai1.chatgpt")!.data;
+const dir = (app: App) => app.modules.get("ai.chatgpt")!.data;
 const path = (app: App, user: number) => `${dir(app)}user-${user}.json`;
 
 /** Credentials in owner-only files, written atomically, as OpenAI's sign-in contract requires
@@ -187,7 +187,7 @@ export async function revoke(account: Account): Promise<void> {
   if (!res.ok) throw new AiError(`ChatGPT sign-out was not confirmed (HTTP ${res.status})`, res.status);
 }
 
-/** The account's plan-compatible model slugs, added to ai1 when listed. */
+/** The account's plan-compatible model slugs, added to ai when listed. */
 export async function models(app: App, user: number): Promise<string[]> {
   const account = await active(app, user);
   if (!account) return [];

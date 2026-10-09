@@ -1,5 +1,5 @@
 import { ApiError, errMsg, sha256hex, sql, sqlSearch, unixTime } from "@qino/qino";
-import { collection, index, search as nearest } from "@qino/qino/ai1.embed";
+import { collection, index, search as nearest } from "@qino/qino/ai.embed";
 
 import { brave } from "./engines/brave.ts";
 import { serper } from "./engines/serper.ts";
@@ -45,20 +45,20 @@ export async function search(app: App, query: string, { count = 10 }: { count?: 
 }
 
 /** A page as Markdown, from the cache while younger than `maxAge` seconds; else read by the reader of
- *  the settings, kept, and made findable by meaning in the background (ai1.embed). */
+ *  the settings, kept, and made findable by meaning in the background (ai.embed). */
 export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge?: number } = {}) {
   if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
   const db = app.db, hash = await sha256hex(url);
-  const kept = await db.row`SELECT id, url, title, content, reader, time FROM ai1_web_page WHERE url_hash = ${hash}`;
+  const kept = await db.row`SELECT id, url, title, content, reader, time FROM ai_web_page WHERE url_hash = ${hash}`;
   if (kept && Number(kept.time) > unixTime() - maxAge) return kept;
-  const name = String(await app.settings["ai1.web"].reader), reader = READERS[name];
+  const name = String(await app.settings["ai.web"].reader), reader = READERS[name];
   if (!reader) throw new ApiError(503, `No reader "${name}"`);
   const key = reader.key ? await keyOf(app, reader.key) : "";
   if (reader.key && !key) throw new ApiError(503, `Reader ${name}: set a key in core.keys for ${reader.key}`);
   const page = await reader.read(app, url, key).catch((e) => { throw new ApiError(502, errMsg(e)); });
   const values = { url, url_hash: hash, title: page.title, content: page.content, reader: name, time: unixTime() };
-  const id = kept ? (await db.table("ai1_web_page").update(Number(kept.id), values), Number(kept.id)) : Number(await db.table("ai1_web_page").insert(values));
-  if (await collection(app)) index(app, "ai1_web_page", { page_id: id }, page.content).catch((e) => console.error("[ai1.web] embedding:", errMsg(e)));
+  const id = kept ? (await db.table("ai_web_page").update(Number(kept.id), values), Number(kept.id)) : Number(await db.table("ai_web_page").insert(values));
+  if (await collection(app)) index(app, "ai_web_page", { page_id: id }, page.content).catch((e) => console.error("[ai.web] embedding:", errMsg(e)));
   return { id, ...values };
 }
 
@@ -99,13 +99,13 @@ export async function pages(app: App, query?: string, { root, limit = 20 }: { ro
   const db = app.db;
   // '!' escapes LIKE's wildcards in every dialect (as sqlSearch)
   const within = root ? sql`url LIKE ${root.replace(/[!%_]/g, "!$&") + "%"} ESCAPE '!'` : sql`${true}`;
-  if (!query) return db.query`SELECT id, url, title, reader, time FROM ai1_web_page WHERE ${within} ORDER BY time DESC LIMIT ${limit}`;
+  if (!query) return db.query`SELECT id, url, title, reader, time FROM ai_web_page WHERE ${within} ORDER BY time DESC LIMIT ${limit}`;
   if (!await collection(app)) {
     const { where, order } = sqlSearch(query, ["title", "content"]);
-    return db.query`SELECT id, url, title, reader, time FROM ai1_web_page WHERE ${where} AND ${within} ORDER BY ${order} LIMIT ${limit}`;
+    return db.query`SELECT id, url, title, reader, time FROM ai_web_page WHERE ${where} AND ${within} ORDER BY ${order} LIMIT ${limit}`;
   }
-  const hits = await nearest(app, { ai1_web_page: root ? sql`e.page_id IN (SELECT id FROM ai1_web_page WHERE ${within})` : true }, query, { limit });
-  const rows = new Map((await db.query`SELECT id, url, title, reader, time FROM ai1_web_page
+  const hits = await nearest(app, { ai_web_page: root ? sql`e.page_id IN (SELECT id FROM ai_web_page WHERE ${within})` : true }, query, { limit });
+  const rows = new Map((await db.query`SELECT id, url, title, reader, time FROM ai_web_page
     WHERE ${sql.in("id", hits.map((h) => h.key.page_id))}`).map((r) => [Number(r.id), r]));
   // a page once, at its closest part
   const seen = new Set<number>();

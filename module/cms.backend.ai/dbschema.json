@@ -1,6 +1,6 @@
 {
   "properties": {
-    "ai1_model_meta": {
+    "ai_model_meta": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -11,13 +11,13 @@
           "model_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_model",
+            "x-qg-parent": "ai_model",
             "x-qg-on-parent-delete": "cascade"
           },
           "model_provider_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "ai1_model_provider",
+            "x-qg-parent": "ai_model_provider",
             "x-qg-on-parent-delete": "cascade",
             "description": "The offer it describes; none for what is about the model itself (benchmarks)"
           },

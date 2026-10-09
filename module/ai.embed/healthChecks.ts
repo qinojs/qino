@@ -4,9 +4,9 @@ import type { App } from "@qino/qino";
  *  call (that costs); calls that fail show among the AI calls. */
 export function healthChecks(app: App) {
   const offers = async () => (await app.db.query`
-    SELECT c.model, p.name AS provider FROM ai1_embed_collection c
-    LEFT JOIN ai1_model m ON m.name = c.model LEFT JOIN ai1_model_provider mp ON mp.model_id = m.id
-    LEFT JOIN ai1_provider p ON p.id = mp.provider_id ORDER BY c.id`).map((r) => ({ model: String(r.model), provider: r.provider && String(r.provider) }));
+    SELECT c.model, p.name AS provider FROM ai_embed_collection c
+    LEFT JOIN ai_model m ON m.name = c.model LEFT JOIN ai_model_provider mp ON mp.model_id = m.id
+    LEFT JOIN ai_provider p ON p.id = mp.provider_id ORDER BY c.id`).map((r) => ({ model: String(r.model), provider: r.provider && String(r.provider) }));
   const models = (rows: { model: string }[]) => [...new Set(rows.map((r) => r.model))];
   return {
     error: {

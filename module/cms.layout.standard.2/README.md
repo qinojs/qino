@@ -59,6 +59,6 @@ page.
 
 ## Agent
 
-Where `ai1.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
+Where `ai.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
 ([agents/designer.md](agents/designer.md)). It knows the template syntax and reads u2's index
 online before a change. A copy in `data/cms.layout.standard.2/agents/` wins.

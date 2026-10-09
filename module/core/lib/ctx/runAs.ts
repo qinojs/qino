@@ -4,7 +4,7 @@ import { initRequest } from "./init.ts";
 import type { App } from "../App.ts";
 
 /** Run `fn` in a context of its own, without an HTTP request (agents, jobs): with the rights of user
- *  `usrId`, through `actor` (e.g. "ai1.tools"), which has its own client and session, so the log
+ *  `usrId`, through `actor` (e.g. "ai.tools"), which has its own client and session, so the log
  *  tells it apart from the user. Its request is an internal one to the app's public address,
  *  without headers, body or client IP. `usrId` never from request input. `state` is in `ctx.state`
  *  before anything is set up, so listeners see it for every write, the setup's own included. */

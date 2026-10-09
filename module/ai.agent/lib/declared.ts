@@ -22,7 +22,7 @@ function parse(md: string) {
   return { meta, body: body.trim() };
 }
 
-/** The declared agents into `ai1_agent`, by name `<module>/<key>`: role, tools and prefer follow the file
+/** The declared agents into `ai_agent`, by name `<module>/<key>`: role, tools and prefer follow the file
  *  (a copy at the same path in the module's data dir wins); memories and sessions stay with the id.
  *  Tools are not checked: the apis are mounted only after init, and unknown names give no tool. */
 export async function declare(app: App): Promise<void> {
@@ -33,12 +33,12 @@ export async function declare(app: App): Promise<void> {
         const site = mod.data + path, shipped = new URL(path, mod.source);
         const { meta, body } = parse(await fs.isFile(site, { ttl: 0 }) ? await fs.text(site) : await read(shipped));
         const vs = { name, system: body, tools: JSON.stringify(meta.tools ?? []), prefer: meta.prefer ? JSON.stringify(meta.prefer) : "" };
-        const row = await app.db.row`SELECT id, system FROM ai1_agent WHERE name = ${name}`;
-        const id = row ? Number(row.id) : Number(await app.db.table("ai1_agent").insert({ ...vs, time: unixTime() }));
-        if (row) await app.db.table("ai1_agent").update(id, vs);
-        if (row?.system !== body) keep(app, "ai1_agent", { agent_id: id }, body); // findable by its role, as it is now
+        const row = await app.db.row`SELECT id, system FROM ai_agent WHERE name = ${name}`;
+        const id = row ? Number(row.id) : Number(await app.db.table("ai_agent").insert({ ...vs, time: unixTime() }));
+        if (row) await app.db.table("ai_agent").update(id, vs);
+        if (row?.system !== body) keep(app, "ai_agent", { agent_id: id }, body); // findable by its role, as it is now
       } catch (e) {
-        console.error(`[ai1.agent] ${name}:`, errMsg(e));
+        console.error(`[ai.agent] ${name}:`, errMsg(e));
       }
     }
   }
