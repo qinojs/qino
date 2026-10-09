@@ -161,15 +161,18 @@ export class LangManager {
 
   // Import translations for one namespace from { original: txt }; only fills empty entries, never overwrites
   async import(lang: string, ns: string, json: string | Record<string, string>): Promise<void> {
-    const txts = typeof json === "string" ? JSON.parse(json) : json;
+    const txts: Record<string, string> = typeof json === "string" ? JSON.parse(json) : json;
+    const entries = Object.entries(txts).filter(([, txt]) => txt);
     const db = this.#app.db;
     await db.transaction(async () => {
-      for (const [original, txt] of Object.entries(txts)) {
-        if (!txt) continue;
+      if (!entries.length) return;
+      const stored = await db.indexCol<string>`SELECT hash, ${sql.id(lang)} FROM smalltext WHERE namespace = ${ns}`;
+      for (const [original, txt] of entries) {
         const hash = createHash("md5").update(original).digest("hex");
-        const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
-        if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
+        if (stored.get(hash)) continue;
+        if (!stored.has(hash)) await db.table("smalltext").insert({ namespace: ns, hash, original });
         await db.exec`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
+        stored.set(hash, txt);
       }
     });
     this.clear(); // imported rows must be visible on the next lookup

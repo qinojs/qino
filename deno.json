@@ -222,6 +222,6 @@
     }
   },
   "tasks": {
-    "test": "deno test --allow-read --allow-write=/tmp --allow-ffi --allow-run=git --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM"
+    "test": "deno test --allow-read --allow-write=/tmp --allow-ffi --allow-run=git,chromium,chromium-browser,google-chrome-stable,google-chrome,microsoft-edge --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM"
   }
 }
