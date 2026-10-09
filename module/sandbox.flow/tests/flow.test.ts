@@ -82,3 +82,14 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
     assertEquals(await app.db.one`SELECT given_name FROM usr WHERE id = 7`, "Bob");
   }));
 
+Deno.test("sandbox.flow: a run leaves its state to the next; a test keeps none", () =>
+  withApp(async (app) => {
+    const count = flow(`state.n = (state.n ?? 0) + event; return state.n;`, { test: false });
+    const first = await run(app, count, 2);
+    const second = await run(app, count, 3);
+    assertEquals([first.result, first.state, second.result, second.state], [2, { n: 2 }, 5, { n: 5 }]);
+    const same = await run(app, flow(`return state.n`, { test: false, state: { n: 1 } }), 0);
+    assertEquals([same.result, same.state], [1, undefined]); // unchanged: nothing to keep
+    const tried = flow(`state.n = 1;`, { state: { n: 0 } }); // a test
+    assertEquals([(await run(app, tried, 0)).state, tried.state], [undefined, { n: 0 }]);
+  }));

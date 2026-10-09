@@ -68,7 +68,7 @@ export async function renderDetail(
     ${tWhen} <select name=on>${[...new Set([on, ...events])].map((e) =>
       html`<option${e === on ? html.raw(" selected") : ""}>${e}</option>`)}</select>
     ${tTools} <textarea name=tools rows=3 placeholder="${tOnePerLine}">${tools.join("\n")}</textarea>
-    ${tCode} <u2-code trim language=js><textarea name=code rows=10>${row.code}</textarea></u2-code>
+    ${tCode} <u2-code name=x trim language=js><textarea name=code rows=10>${row.code}</textarea></u2-code>
   </u2-fields>
   <p><button>${tSave}</button></p>
 </form>

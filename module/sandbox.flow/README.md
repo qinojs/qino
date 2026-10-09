@@ -27,8 +27,11 @@ listen(app, {
 }, { signal, report: (trace) => console.log(trace) });
 ```
 
-- **`code`** is a function body, run as `async (event, tools, context, owner) => { code }`. It sees
-  nothing else; `return` ends the run, its value goes into the trace.
+- **`code`** is a function body, run as `async (event, tools, state, context, owner) => { code }`. It
+  sees nothing else; `return` ends the run, its value goes into the trace.
+- **`state`:** the flow's memory, an object: what a run leaves in it, the next run finds — e.g. the
+  invoice it made. Kept in the row as JSON, not in a test. Runs at the same time each start from the
+  state before them; the last one to end wins.
 - **`event`** arrives as data: objects of a class become their string form (a `DbTable` its name).
 - **`context.user`:** who caused the event, taken as it fires; **`owner`**: the flow's owner, so "when I …"
   is `context.user === owner`.
@@ -39,7 +42,7 @@ listen(app, {
 - **`test`** is on unless `false`: only `*_get` tools take effect, the others are recorded as `skipped`
   and return `undefined`.
 - **The trace** (`run()` returns it, `listen()` hands it to `report`): the tool calls, the result or the
-  error; `end` is `done` or `error`.
+  error, and the state if it changed; `end` is `done` or `error`.
 - **Own events are ignored:** the run's request context is marked from the start (`runAs` with
   `state`), so the flow skips every event of the run — those of setting the context up included.
 
@@ -47,10 +50,10 @@ listen(app, {
 
 ## The table
 
-Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `code`, `tools` as JSON)
-are listened to on start when `active`; a changed row is listened to anew, a deleted one stops. `test` is
-on unless set off. A row that can't listen (unknown host, broken JSON) is logged and skipped; failing runs
-are logged too.
+Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `code`, `tools` and `state` as JSON)
+are listened to on start when `active`; a changed row is listened to anew, a deleted one stops — writing
+only its state does not. `test` is on unless set off. A row that can't listen (unknown host, broken JSON)
+is logged and skipped; failing runs are logged too.
 
 ## Api
 
@@ -90,8 +93,10 @@ How to work:
 6. If an event or a tool is missing, say so. Never work around it.
 
 The code:
-- code is the body of async (event, tools, context, owner) => { … }. return ends the run; what it
-  returns shows in the trace. Return early when the event is not for the flow.
+- code is the body of async (event, tools, state, context, owner) => { … }. return ends the run; what
+  it returns shows in the trace. Return early when the event is not for the flow.
+- state is the flow's memory: set state.x, and the next run finds it (not in test mode). Use it to
+  remember what the flow made, e.g. state.invoice = id, instead of searching for it again.
 - tools.<name>(params) calls a tool: only those listed in the flow's tools, one params object with
   path params by name, always await. context.user is who caused the event, owner is you (the
   flow's owner): "when I …" is context.user === owner.
@@ -144,5 +149,5 @@ sandboxFlow_flows_post({
   Later, per flow: store the event before the run, delete it after, rerun what is left on start
   (at-least-once, code idempotent).
 - **Runs are kept in memory only:** `history(app, id)` has the latest 20 of a flow of the table, newest
-  first; runs without a tool call and a result (the event was not for it) are only counted. A restart
-  forgets them; what a run changed is in the core log (actor `sandbox.flow`).
+  first; runs without a tool call, a result or a changed state (the event was not for it) are only
+  counted. A restart forgets them; what a run changed is in the core log (actor `sandbox.flow`).

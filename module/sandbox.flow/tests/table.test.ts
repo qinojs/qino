@@ -80,3 +80,23 @@ Deno.test("sandbox.flow: a run ends with the version it began with, though its f
   }
 });
 
+Deno.test("sandbox.flow: a flow's state is kept in its row, without listening anew", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
+  app.modules.add(new URL("../plugin.ts", import.meta.url));
+  await app.init();
+  try {
+    await app.settings.core.url("https://example.test/");
+    await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });
+    const code = `if (event.table !== "usr") return; state.n = (state.n ?? 0) + 1; return state.n;`;
+    const id = Number(await app.db.table("flow").insert({
+      description: "count", host: "db", event: "table:update-after", usr_id: 7, code, active: true, test: false,
+    }));
+    for (const name of ["A", "B"]) await app.db.table("usr").update(7, { family_name: name }), await settle();
+    assertEquals(JSON.parse(String(await app.db.one`SELECT state FROM flow WHERE id = ${id}`)), { n: 2 });
+    assertEquals(history(app, id).runs.map((run) => run.result), [2, 1]); // the same flow counted on
+  } finally {
+    await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
+    await app.db.close();
+  }
+});

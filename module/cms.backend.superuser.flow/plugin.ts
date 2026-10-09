@@ -34,7 +34,7 @@ const detail = async (node: Node, { vars = {} }: { vars?: Record<string, unknown
 async function render(node: Node) {
   const { t } = node.app;
   return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex:1 1 40rem">
+    <div class=u2-card style="flex:0 1 50rem">
         <div class=-head>${t`Flows`}</div>
         <table class=u2-table cms-part=list>${list(node)}</table>
     </div>

@@ -36,7 +36,11 @@
           },
           "code": {
             "type": "string",
-            "description": "A JavaScript function body; it sees event, tools, context and owner"
+            "description": "A JavaScript function body; it sees event, tools, state, context and owner"
+          },
+          "state": {
+            "type": "string",
+            "description": "The flow's memory as JSON: what a run leaves in state, the next one finds"
           },
           "active": {
             "type": "boolean",

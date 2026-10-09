@@ -7,6 +7,10 @@ import type { App } from "@qino/qino";
 export { api } from "./api.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
+/** Whether a write only kept a flow's state: the listening flow has it already. */
+const stateOnly = (data?: Record<string, unknown>) =>
+  !!data && "state" in data && Object.keys(data).every((key) => key === "state" || key === "log_id");
+
 /** Listens with every active flow of the table; a changed row is listened to anew. */
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   const flows = new Map<number, AbortController>();
@@ -23,6 +27,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
       const flow = toFlow(row);
       listen(app, flow, { signal: AbortSignal.any([signal, stop.signal]), report: (trace) => {
         record(app, id, trace);
+        if (trace.state) app.db.table("flow").update(id, { state: JSON.stringify(trace.state) }).catch(console.error);
         if (trace.end === "error") console.error(`[sandbox.flow] ${trace.flow}:`, trace.error);
       } });
       flows.set(id, stop);
@@ -31,7 +36,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     }
   };
   for (const id of await app.db.col`SELECT id FROM flow WHERE active = ${true}`) await load(Number(id));
+  const changed = ({ table, id, data }: { table: unknown; id: unknown; data?: Record<string, unknown> }) =>
+    String(table) === "flow" && !stateOnly(data) ? load(Number(id)) : undefined;
   for (const event of ["table:insert-after", "table:update-after", "table:delete-after"] as const) {
-    app.db.on(event, ({ table, id }) => String(table) === "flow" ? load(Number(id)) : undefined, { signal });
+    app.db.on(event, changed, { signal });
   }
 }

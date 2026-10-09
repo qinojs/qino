@@ -12,7 +12,16 @@ import type { App, Ctx, Tool } from "@qino/qino";
 
 type Context = { user?: number };
 type Call = { tool: string; args: unknown; result?: unknown; skipped?: true };
-type Trace = { flow: string; context: Context; calls: Call[]; result?: unknown; error?: string; end: "done" | "error" };
+type State = Record<string, unknown>;
+type Trace = {
+  flow: string;
+  context: Context;
+  calls: Call[];
+  result?: unknown;
+  state?: State; // the changed state, kept for the next run
+  error?: string;
+  end: "done" | "error";
+};
 
 /** A flow: when the event fires on the host, its code runs. */
 export type Flow = {
@@ -21,7 +30,8 @@ export type Flow = {
   owner: number; // tools run with this user's rights
   tools?: string[]; // the tools it may call, by name
   test?: boolean; // unless false: only `*_get` tools take effect, the other calls are recorded
-  code: string; // a function body; it sees `event`, `tools`, `context` and `owner`
+  code: string; // a function body; it sees `event`, `tools`, `state`, `context` and `owner`
+  state?: State; // the flow's memory: what a run leaves in it, the next one finds (not in a test)
 };
 
 /** One sandbox, shared by the runs of a flow; tool calls name their run. Ended, it closes with its last run. */
@@ -66,7 +76,7 @@ export async function run(app: App, flow: Flow, event: unknown, context: Context
   }
 }
 
-/** Runs the code in the flow's sandbox; the trace has its tool calls and its result. */
+/** Runs the code in the flow's sandbox; the trace has its tool calls, its result and a changed state. */
 async function exec(app: App, flow: Flow, event: unknown, context: Context, box: Box): Promise<Trace> {
   const trace: Trace = { flow: flow.description, context, calls: [], end: "done" };
   const id = ++box.seq;
@@ -94,13 +104,25 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
 
   try {
     // the code goes in as an argument, so it sees nothing of the wrapper (`tool`, the run)
-    const input = { event, context, owner: flow.owner, run: id, tools: flow.tools ?? [] };
-    trace.result = await box.sandbox.run(`((fn) => (input, { tool }) => fn(
-      input.event,
-      Object.fromEntries(input.tools.map((n) => [n, (args) => tool(input.run, n, args)])),
-      input.context,
-      input.owner,
-    ))(async (event, tools, context, owner) => {\n${flow.code}\n})`, input);
+    const input = { event, context, owner: flow.owner, run: id, tools: flow.tools ?? [], state: flow.state ?? {} };
+    const { result, state } = await box.sandbox.run<{ result: unknown; state: State }>(
+      `((fn) => async (input, { tool }) => ({
+        result: await fn(
+          input.event,
+          Object.fromEntries(input.tools.map((n) => [n, (args) => tool(input.run, n, args)])),
+          input.state,
+          input.context,
+          input.owner,
+        ),
+        state: input.state,
+      }))(async (event, tools, state, context, owner) => {\n${flow.code}\n})`,
+      input,
+    );
+    trace.result = result;
+    // a test keeps nothing; runs at once each start from the state before them, the last one wins
+    if (flow.test === false && JSON.stringify(state) !== JSON.stringify(flow.state ?? {})) {
+      trace.state = flow.state = state;
+    }
     return trace;
   } catch (e) {
     return { ...trace, error: (e as Error).message, end: "error" };
