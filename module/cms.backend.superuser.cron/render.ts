@@ -31,7 +31,7 @@ export async function list(node: Node): Promise<HtmlString> {
 
 export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
   const { active, running, failed } = counts(jobs);
-  const rows = await Promise.all(jobs.map((job) => renderRow(app, job)));
+  const rows = jobs.map((job) => renderRow(app, job));
 
   return html.async`<div>
     <b>${active}</b> ${app.t`active jobs`}

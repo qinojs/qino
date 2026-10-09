@@ -130,7 +130,7 @@ async function actorCell(r: Record<string, any>, t: TFn) {
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const t = node.app.t;
-  const initial = await list(node, { ctx, vars: { filter: vars.filter ?? {} } });
+  const initial = list(node, { ctx, vars: { filter: vars.filter ?? {} } });
   return html.async`
 <div class=u2-flex>
   <div class=u2-card>

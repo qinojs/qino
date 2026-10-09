@@ -177,7 +177,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
         ${cells(row)}
         <td><button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
   )}
-      ${!rows.length ? html`<tr><td colspan="${names.length + 2}">${await t`No entries.`}` : ""}
+      ${!rows.length ? html.async`<tr><td colspan="${names.length + 2}">${t`No entries.`}` : ""}
     </tbody>
     <tfoot><tr>
       <td colspan="${names.length + 2}">

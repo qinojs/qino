@@ -134,7 +134,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
 async function planDetail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const pageUrl = await (await node.page()).url();
+  const pageUrl = node.page().then((page) => page.url());
   const p = (await plans(app)).find((row) => Number(row.id) === id);
   if (!p) return html.async`<div class=u2-card><div>${t`No plan`} ${id}</div></div>`;
   const used = (await subscriptions(app)).filter((s) => Number(s.plan_id) === id).length;
@@ -161,7 +161,7 @@ async function planDetail(node: Node, id: number): Promise<HtmlString> {
 async function detail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const pageUrl = await (await node.page()).url();
+  const pageUrl = node.page().then((page) => page.url());
   const [s] = (await subscriptions(app)).filter((row) => Number(row.id) === id);
   if (!s) return html.async`<div class=u2-card><div>${t`No subscription`} ${id}</div></div>`;
   const [billed, catalog] = await Promise.all([periods(app, id), plans(app)]);

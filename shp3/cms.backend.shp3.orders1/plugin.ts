@@ -97,7 +97,7 @@ async function renderOrder(node: Node, id: number) {
       <td align=right>${money(g.price)}`);
   }
 
-  const email = await app.db.one`SELECT username FROM usr WHERE id = ${order.usr_id}`;
+  const email = app.db.one`SELECT username FROM usr WHERE id = ${order.usr_id}`;
 
   return html.async`<div class=u2-card style="flex-grow:0;">
   <div class=-head><a href="?">${t`Orders`}</a> — ${t`Order`} ${order.id}</div>

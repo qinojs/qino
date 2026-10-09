@@ -43,7 +43,7 @@ export async function bot(node: Node): Promise<HtmlString> {
   const [me, hook] = state;
   const url = webhookUrl();
   const registered = hook.url === url;
-  const status = await (registered ? t`registered` : hook.url ? t`registered elsewhere` : t`not registered`);
+  const status = registered ? t`registered` : hook.url ? t`registered elsewhere` : t`not registered`;
   const [pending, remove] = await Promise.all([t`pending`, t`Remove`]);
   return html.async`<div class=-head>${t`Bot`}</div>
   <div>

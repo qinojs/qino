@@ -107,7 +107,7 @@ async function overview(node: Node, url: URL) {
 async function detail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const pageUrl = await (await node.page()).url();
+  const pageUrl = node.page().then((page) => page.url());
   const u = await app.db.row`SELECT * FROM usr WHERE id = ${id}`;
   if (!u) return html.async`<div class=u2-card><div>${t`No user`} ${id}</div></div>`;
   const invoices = await app.db.query`SELECT * FROM invoice WHERE usr_id = ${id} ORDER BY id DESC LIMIT 100`;

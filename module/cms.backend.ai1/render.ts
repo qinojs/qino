@@ -242,7 +242,7 @@ async function providers(node: Node) {
     GROUP BY p.id, p.name, p.type, p.endpoint, p.timeout_ms, p.enabled ORDER BY p.name`;
   const types = Object.keys(adapters(app)).map((type) => ({ value: type, label: type }));
 
-  const providerRows = await Promise.all(rows.map(async (p) => {
+  const providerRows = rows.map(async (p) => {
     const key = String(await app.settings.core.keys[p.name] ?? "");
     const keyUrl = CATALOG.find((c) => c.name === p.name)?.console;
     const url = getCtx().req.url.toURL(); // its models, switched off too
@@ -262,7 +262,7 @@ async function providers(node: Node) {
       <td class=-num>${value(p.used_input, 0)} / ${value(p.used_output, 0)}
       <td>${listing(app, p.type) ? "" : html.async`<small title="${t`Lists no models; add them by hand`}">${t`by hand`}</small>`}
       <td>${remove(t`Remove this provider and its models there?`)}`;
-  }));
+  });
 
   return html.async`<table class="u2-table -Sticky">
   <thead><tr>

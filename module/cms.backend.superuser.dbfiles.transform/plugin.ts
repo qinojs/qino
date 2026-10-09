@@ -357,7 +357,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const [platform, root] = await Promise.all([detectPlatform(), isRoot()]);
 
   const t = node.app.t;
-  const rows = await Promise.all(BINARIES.map(bin => renderBinary(bin, platform, root)));
+  const rows = BINARIES.map(bin => renderBinary(bin, platform, root));
 
   const rootHint = !root
     ? html`<p style="opacity:.7;font-style:italic">Running as non-root — use the copy button and run commands manually.</p>`

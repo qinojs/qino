@@ -173,7 +173,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   };
 
   return html.async`<div class=u2-width>${
-    rows.length ? rows.map(entry) : await node.edit() ? html`<p>${await app.t`No entries yet.`}</p>` : ""
+    rows.length ? rows.map(entry) : await node.edit() ? html.async`<p>${app.t`No entries yet.`}</p>` : ""
   }</div>`;
 }
 

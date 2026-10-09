@@ -75,7 +75,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
       if (!page.vs.searchable || !await hit.isReadable()) continue;
       if (start && !await hit.in(start)) continue;
 
-      const group = found.get(page.id) ?? { page, text: "", score: 0 };
+      const group = found.getOrInsertComputed(page.id, () => ({ page, text: "", score: 0 }));
       const text = String(row.text ?? "");
       if (isTitle) group.score += 3;
       else {
@@ -85,7 +85,6 @@ async function hits(node: Node, ctx: Ctx, search: string) {
         // Names starting with "_" are internal texts — searchable, but not worth showing.
         if (!String(row.name ?? "").startsWith("_")) group.text += " " + text;
       }
-      found.set(page.id, group);
     }
   }
   return [...found.values()].sort((a, b) => b.score - a.score);
@@ -140,7 +139,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const words = terms(search);
   return html.async`<div>${form}
     ${results.length
-      ? html.join(await Promise.all(results.map((r) => item(node, r.page, r.text, words))))
+      ? results.map((r) => item(node, r.page, r.text, words))
       : html.async`<div class=-empty>${t`No results found`}</div>`}
   </div>`;
 }

@@ -75,7 +75,7 @@ async function render(node: Node) {
 </div>`;
 
   // ── db config (per dialect) ──────────────────────────────────────────────
-  const dbBox = await renderDbBox(node);
+  const dbBox = renderDbBox(node);
 
   // ── locales / time ─────────────────────────────────────────────────────
   const osIso   = new Date().toISOString();

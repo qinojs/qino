@@ -193,7 +193,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
   const initSearch = ctx.req.query.search ?? "";
-  const initialList = await list(node, { ctx, vars: { filter: { search: initSearch } } });
+  const initialList = list(node, { ctx, vars: { filter: { search: initSearch } } });
 
   // Single root element — the CMS injects qcms-id/qcms-mod into the first tag.
   // Keep the form inside it so the client can find it with querySelector.

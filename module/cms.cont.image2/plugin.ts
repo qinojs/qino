@@ -57,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     editable: edit ? await img.url() : null,
   };
 
-  const imgHtml = await cms_image2(img, options);
+  const imgHtml = cms_image2(img, options);
 
   let editHtml: HtmlString | string = "";
   if (edit) {

@@ -39,7 +39,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const groups = await accessGroups(app);
   const head = html.join(groups.map(g => html`<th style="width:1.875rem"><div>${g.name}</div>`));
 
-  const listHtml = await list(node, { ctx });
+  const listHtml = list(node, { ctx });
 
   const showContents = admin.showContents();
 

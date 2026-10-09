@@ -325,7 +325,7 @@ async function detail(node: Node, id: number) {
   const waiting = payments.some((p) => p.status === "pending" || p.status === "processing");
   const file = row.file_id ? await app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
   const pdfUrl = file ? await file.url({ grant: "session" }).catch(() => "") : "";
-  const preview = await document(app, id).catch((e) => `<p>${e.message}</p>`);
+  const preview = document(app, id).catch((e) => `<p>${e.message}</p>`);
   const users = await usersOf(app, [row]);
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>

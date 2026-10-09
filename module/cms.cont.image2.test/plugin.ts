@@ -179,7 +179,7 @@ async function render(node: Node) {
   const img = file;
   const alt = String(await img.get("name") ?? "");
 
-  const sections = await Promise.all(scenes.map((s) => scene(node, s, img, options, alt)));
+  const sections = scenes.map((s) => scene(node, s, img, options, alt));
   return html.async`<div>
   <style>${html.raw(scenes.map(sceneCss).join(""))}</style>
   <p class=-note>${node.app.t`Same image twice per row: left as <cms-image2>, right as a native <img>. The CSS below each title is applied to both.`}</p>
