@@ -5,6 +5,7 @@ import { dbSchema, record } from "@qino/m/ai1.stats/tests/deps.ts";
 
 import { evaluate, importModels, key, unit } from "../lib/sources.ts";
 import api from "../nodeApi.ts";
+import { dbSchema as metaSchema } from "../plugin.ts";
 import { capabilities, view, widget } from "../render.ts";
 
 import type { App } from "@qino/qino";
@@ -21,7 +22,7 @@ function keys(stored: Record<string, string>) {
 
 async function setup(stored: Record<string, string> = {}) {
   const db = new Db("sqlite::memory:");
-  const schema = { properties: { ...ai1DbSchema.properties, ...dbSchema.properties } };
+  const schema = { properties: { ...ai1DbSchema.properties, ...dbSchema.properties, ...metaSchema.properties } };
   await db.migrate(schema);
   await db.loadTables();
   db.schema = schema;
@@ -100,6 +101,17 @@ Deno.test("cms.backend.ai1: the views render the matrix and the providers, escap
   const changed = await show(node, { all: 1 });
   assertStringIncludes(changed, 'type=checkbox data-capability="vision" checked');
   assertStringIncludes(changed, "unusable"); // its only provider is off
+
+  await app.db.table("ai1_model_score").insert({ model_id: 1, metric: "intelligence", value: 42 });
+  const detail = await show(node, { show: "model", id: 1 });
+  assert(!detail.includes("[object Promise]"));
+  assertStringIncludes(detail, 'data-row=ai1_model data-id="1"');
+  assertStringIncludes(detail, 'data-capability="vision" checked');
+  assertStringIncludes(detail, "0/1"); // usable of all offers
+  assertStringIncludes(detail, "unusable");
+  assertStringIncludes(detail, "<td class=-num>42");
+  assertStringIncludes(detail, "name=provider_model"); // its offers
+  assertStringIncludes(await show(node, { show: "model", id: 9 }), "No such model.");
 
   const list = await show(node, { show: "providers" });
   assert(!list.includes("[object Promise]") && !matrix.includes("[object Promise]"));
@@ -195,6 +207,13 @@ Deno.test("cms.backend.ai1: models.dev and Artificial Analysis fill prices, capa
   await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : BENCHMARKS, async () => {
     assertStringIncludes(await evaluate(app), "models.dev: 2\nArtificial Analysis: 1");
   });
+  // each source's own entry is kept: models.dev per offer, the benchmarks per model
+  assertEquals(await app.db.query`SELECT source, model_provider_id FROM ai1_model_meta WHERE model_id = 1 ORDER BY source, model_provider_id`, [
+    { source: "Artificial Analysis", model_provider_id: null }, { source: "models.dev", model_provider_id: 1 }, { source: "models.dev", model_provider_id: 2 },
+  ]);
+  const detail = await show(node, { show: "model", id: 1 });
+  assertStringIncludes(detail, "<th>Artificial Analysis");
+  assertStringIncludes(detail, "&quot;median_output_tokens_per_second&quot;"); // the entry as it came
   assertEquals(await app.db.query`SELECT cost_input, cost_output FROM ai1_model_provider ORDER BY id`, [
     { cost_input: 0.59, cost_output: 0.79 }, { cost_input: 0.1, cost_output: 0.3 },
   ]);
@@ -285,6 +304,9 @@ Deno.test("cms.backend.ai1: Jina catalog excludes models unavailable at chat com
     { name: "jina-embeddings-v4", enabled: 1 }, { name: "jina-ocr-v1", enabled: 1 }, { name: "jina-reranker-v3", enabled: 0 },
   ]);
   assertEquals((await api(node, { preview: { capability: "text", input: { messages: [] }, prefer: {} } }) as any).list.map((c: any) => c.model), ["jina-ocr-v1"]);
+  // named for OCR, reads images to text: guessed an OCR model, and still chats
+  assertEquals(await app.db.col`SELECT c.capability FROM ai1_model_capability c JOIN ai1_model m ON m.id = c.model_id
+    WHERE m.name = 'jina-ocr-v1' ORDER BY c.capability`, ["ocr", "text", "vision"]);
 });
 
 Deno.test("cms.backend.ai1: try includes the provider's raw body on success and failure", async () => {

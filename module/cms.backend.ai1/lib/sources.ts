@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, sql } from "@qino/qino";
+import { errMsg, sql, unixTime } from "@qino/qino";
 import { applySpeed, SPEED } from "@qino/qino/ai1.stats";
 
 import { CATALOG } from "../catalog.ts";
@@ -25,6 +25,15 @@ export const key = (name: string): string =>
 export const unit = (id: string): string => id.split("/").pop()!.split(":")[0].toLowerCase();
 /** How a model is recognised: claude-opus-4.8 (OpenRouter) is claude-opus-4-8 (aihubmix). */
 const same = (name: string) => unit(name).replace(/[._]/g, "-");
+
+/** Keep a source's own entry on a model, or on one of its offers, to show it as it came. */
+async function keep(app: App, source: string, data: unknown, model: number, offer?: number) {
+  const db = app.db, table = db.table("ai1_model_meta");
+  const values = { model_id: model, model_provider_id: offer ?? null, source, data: JSON.stringify(data), time: unixTime() };
+  const id = await db.one`SELECT id FROM ai1_model_meta WHERE model_id = ${model} AND source = ${source}
+    AND ${offer ? sql`model_provider_id = ${offer}` : sql`model_provider_id IS NULL`}`;
+  await (id ? table.update(id, values) : table.insert(values));
+}
 
 const get = async (url: string, headers: Record<string, string> = {}) => {
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
@@ -55,6 +64,7 @@ export async function offered(app: App, provider: { name: string; endpoint: stri
 /** Such a description in models.dev's words, or undefined. Prices come per token. */
 const described = (m: any) => m.pricing || m.architecture || m.input_modalities || m.output_modalities ? {
   id: m.id,
+  name: m.name,
   description: m.description,
   modalities: { input: m.architecture?.input_modalities ?? m.input_modalities, output: m.architecture?.output_modalities ?? m.output_modalities },
   tool_call: m.supported_parameters?.includes("tools"),
@@ -63,8 +73,13 @@ const described = (m: any) => m.pricing || m.architecture || m.input_modalities 
   cost: m.pricing && { input: Number(m.pricing.prompt) * 1e6, output: Number(m.pricing.completion) * 1e6 },
 } : undefined;
 
+/** Rough guesses where the sources say nothing: a model that reads images to text and is named for OCR does OCR. */
+const guess = (meta: any) => [
+  meta.modalities?.input?.includes("image") && meta.modalities?.output?.includes("text") && /ocr/i.test(`${meta.id} ${meta.name ?? ""}`) && "ocr",
+];
+
 /**
- * Write what a description (models.dev's words) tells: capabilities (only added, never removed) and
+ * Write what a description (models.dev's words) tells, and what it lets `guess`: capabilities (only added, never removed) and
  * context length of the model; with `priced`, the offer's input and output prices per million
  * provider-reported units (a negative price means "varies": left out).
  */
@@ -83,6 +98,7 @@ async function describe(app: App, offer: { id: number; model_id: number }, meta:
     !embedding && meta.modalities?.output?.includes("image") && "image",
     !embedding && String(meta.modalities?.input) === "audio" && meta.modalities?.output?.includes("text") && "transcribe", // speech to text
     !embedding && String(meta.modalities?.output) === "audio" && meta.modalities?.input?.includes("text") && "speak", // text to speech
+    ...guess(meta),
   ].filter(Boolean);
   for (const capability of capabilities) await db.table("ai1_model_capability").ensure({ model_id: offer.model_id, capability });
   if (meta.limit?.context) await db.table("ai1_model").update(offer.model_id, { context_length: meta.limit.context });
@@ -119,8 +135,9 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
     const unsupported = (m: any) => provider.type === "jina" && m.output_modalities?.includes("text") &&
       Array.isArray(m.supported_sampling_parameters) && !m.supported_sampling_parameters.length &&
       Array.isArray(m.supported_features) && !m.supported_features.includes("streaming");
-    const entries = new Map<string, any>([...listed.filter((m) => !String(m.id).endsWith(":batch") && !unsupported(m))
-      .map((m): [string, any] => [idOf(m), described(m)]), ...extra.map((m): [string, any] => [m.id, m])]);
+    const served = listed.filter((m) => !String(m.id).endsWith(":batch") && !unsupported(m));
+    const raw = new Map(served.map((m) => [idOf(m), m]));
+    const entries = new Map<string, any>([...served.map((m): [string, any] => [idOf(m), described(m)]), ...extra.map((m): [string, any] => [m.id, m])]);
     let added = 0;
     await db.transaction(async () => {
       for (const model of listed.filter(unsupported)) {
@@ -138,6 +155,7 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
           added++;
         }
         const fromCatalog = extra.find((m) => m.id === id);
+        if (raw.has(id)) await keep(app, String(provider.name), raw.get(id), model, offer);
         if (meta) await describe(app, { id: offer, model_id: model }, meta, true);
         if (fromCatalog) { // from the catalog
           for (const capability of fromCatalog.capabilities) await db.table("ai1_model_capability").ensure({ model_id: model, capability });
@@ -182,6 +200,7 @@ export async function importMeta(app: App, priced = new Set<number>()): Promise<
       const meta = own ?? find(all);
       if (!meta) continue;
       found++;
+      await keep(app, "models.dev", meta, offer.model_id, offer.id);
       await describe(app, offer as any, meta, !!own && !priced.has(offer.id));
     }
   });
@@ -244,13 +263,16 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
     for (const [model, list] of names) {
       const find = (map: Map<string, any>) => list.map((name) => map.get(key(name))).find(Boolean);
       const m = find(llms);
+      const ranked = arenas.map(([metric, map, bare]) => [metric, find(map) ?? within(told.get(model), bare)] as const);
       const scores = [
         ...m ? indexes.map((name) => [indexName(name), measure(m, (x) => x.evaluations?.[name])]) : [],
         ...m ? [[SPEED, measure(m, (x) => x.median_output_tokens_per_second)]] : [],
-        ...arenas.map(([metric, map, bare]) => [metric, (find(map) ?? within(told.get(model), bare))?.elo]),
+        ...ranked.map(([metric, entry]) => [metric, entry?.elo]),
       ].filter(([, value]) => typeof value === "number");
       if (!scores.length) continue;
       found++;
+      if (m) await keep(app, "Artificial Analysis", m, model);
+      for (const [metric, entry] of ranked) if (typeof entry?.elo === "number") await keep(app, `Artificial Analysis ${metric}`, entry, model);
       for (const [metric, value] of scores) await db.table("ai1_model_score").ensure({ model_id: model, metric, value });
       if (!contexts.get(model) && m?.context_window_tokens) await db.table("ai1_model").update(model, { context_length: m.context_window_tokens }); // models.dev first
     }

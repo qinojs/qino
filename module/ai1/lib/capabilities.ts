@@ -3,7 +3,7 @@ import { s, toJsonSchema } from "@qino/qino";
 import { AiError } from "./request.ts";
 
 import type { StandardSchema } from "@qino/qino";
-import type { DecideInput, Message, Part, StructuredInput, TranslateInput } from "../mod.ts";
+import type { DecideInput, Message, OcrInput, Part, StructuredInput, TranslateInput } from "../mod.ts";
 import type { Capability } from "./request.ts";
 
 type Schema = StructuredInput<unknown>["schema"];
@@ -23,6 +23,9 @@ export function parseStructured<T>(text: string, schema: StructuredInput<T>["sch
   return result.value;
 }
 
+const OCR = "Transcribe this document image to Markdown. Reproduce the content faithfully and completely, " +
+  "including headings, lists and tables. Output only the Markdown content — no code fences, no commentary.";
+
 const prompt = (system: string, content: string | Part[]): Message[] => [{ role: "system", content: system }, { role: "user", content }];
 
 // Images need a vision model, tools one that calls them.
@@ -41,6 +44,15 @@ export const ai1Capabilities: Record<string, Capability> = {
         ...input,
         messages: [{ role: "system", content: `Reply with JSON only, matching this JSON Schema: ${JSON.stringify(jsonSchema(schema))}` }, ...input.messages],
       })).text, schema),
+    },
+  },
+  ocr: {
+    via: {
+      text: async ({ image }: OcrInput, next) => (await next({
+        messages: [{ role: "user", content: [{ type: "image", url: image }, { type: "text", text: OCR }] }],
+        temperature: 0,
+        maxTokens: 16000,
+      })).text.trim().replace(/^```(?:markdown)?\s*\n([\s\S]*)\n```$/, "$1"),
     },
   },
   translate: {

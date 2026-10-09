@@ -16,8 +16,11 @@ const NEEDS = ["vision", "tools"];
 const LIMIT = 200;
 const INTELLIGENCE = "intelligence";
 /** What Try offers; the fields each asks for carry `data-for`. */
-const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "transcribe"];
+const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "transcribe", "ocr"];
 const SCHEMA = '{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"]}';
+/** A usable model: switched on, with a switched-on offer from a switched-on provider. */
+const USABLE = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o
+  JOIN ai1_provider p ON p.id = o.provider_id WHERE o.model_id = m.id AND o.enabled = ${true} AND p.enabled = ${true})`;
 
 type Vars = Record<string, any>;
 
@@ -39,41 +42,53 @@ const options = (list: { value: unknown; label: unknown }[], selected: unknown) 
   list.map((o) => html`<option value="${o.value}" ${String(o.value) === String(selected) ? "selected" : ""}>${o.label}`);
 const remove = (confirm?: unknown) =>
   html.async`<button type=button class=u2-unstyle data-remove ${confirm ? html.async`u2-confirm="${confirm}"` : ""} title=remove><u2-ico icon=delete>✕</u2-ico></button>`;
+/** This page showing `vars` only. */
+const href = (vars: Vars) => {
+  const url = getCtx().req.url.toURL();
+  for (const k of [...url.searchParams.keys()]) if (k !== "cmspid") url.searchParams.delete(k);
+  for (const [k, v] of Object.entries(vars)) url.searchParams.set(k, String(v));
+  return url.pathname + url.search;
+};
+/** The lowest price (input weighed 3:1) or the highest speed among `offers`. */
+const best = (offers: any[], column: "cost" | "speed") => {
+  const values = offers.map((o) => column === "cost"
+    ? o.cost_input == null || o.cost_output == null ? null : (3 * o.cost_input + o.cost_output) / 4
+    : o.speed).filter((v) => v != null).map(Number);
+  return values.length ? (column === "cost" ? Math.min : Math.max)(...values) : undefined;
+};
 
-/** Two views on one page: `?show=models` (default) and `?show=providers`. */
+/** Three views on one page: `?show=models` (default), `?show=providers` and `?show=model&id=…`. */
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app, t = app.t;
   const vars = ctx.req.query as Vars;
-  const models = vars.show !== "providers";
-  const link = (show: string) => {
-    const url = ctx.req.url.toURL();
-    for (const k of [...url.searchParams.keys()]) if (k !== "cmspid") url.searchParams.delete(k);
-    url.searchParams.set("show", show);
-    return url.pathname + url.search;
-  };
+  const show = vars.show === "providers" || vars.show === "model" ? vars.show : "models";
+  const models = show === "models";
+  // one model's cards stand beside the main card, the lists inside it
+  const part = html.async`<div cms-part=view ${show === "model" ? "class=-cards" : ""}>${view(node, { vars })}</div>`;
   return html.async`<div class=u2-flex>
   <div class="u2-card -main">
     <div class=-head>
-      <a href="${link("models")}" ${models ? "aria-current=page" : ""}>${t`Models`}</a>
-      <a href="${link("providers")}" ${models ? "" : "aria-current=page"}>${t`Providers`}</a>
+      <a href="${href({ show: "models" })}" ${models ? "aria-current=page" : ""}>${t`Models`}</a>
+      <a href="${href({ show: "providers" })}" ${show === "providers" ? "aria-current=page" : ""}>${t`Providers`}</a>
       <button type=button data-evaluate title="${t`Import all models, their data and benchmarks`}">${t`Import now`}</button>
       <button type=button data-benchmark-key>${t`Benchmark key`}</button>
     </div>
     ${models ? filters(app, vars) : ""}
-    <div cms-part=view>${view(node, { vars })}</div>
+    ${show === "model" ? "" : part}
     <div class=-body><small>
       ${t`Models, context, prices, capabilities`}: ${t`the providers and`} <a href="https://models.dev" target=_blank rel=noopener>models.dev</a>
       · ${t`Benchmarks`}: <a href="https://artificialanalysis.ai/" target=_blank rel=noopener>Artificial Analysis</a>
       · ${t`Speed and errors: measured on the calls. Imports daily.`}
     </small></div>
   </div>
+  ${show === "model" ? part : ""}
   ${models ? tryCard(app) : ""}
 </div>`;
 }
 
-/** The part: the models or the providers. */
+/** The part: the models, the providers or one model. */
 export function view(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
-  return vars.show === "providers" ? providers(node) : modelList(node, vars);
+  return vars.show === "providers" ? providers(node) : vars.show === "model" ? model(node, Number(vars.id)) : modelList(node, vars);
 }
 
 async function filters(app: App, vars: Vars) {
@@ -112,13 +127,10 @@ export function matching(vars: Vars): Sql[] {
 }
 
 /** Models × capabilities (what each can do), their scores, the best price and speed; each model's
- *  providers and all its scores open in a dialog (pub/main.js), from its template. */
+ *  providers and all its scores open in a dialog (pub/main.js), from its template; its name links to it. */
 async function modelList(node: Node, vars: Vars) {
   const app = node.app, t = app.t, db = app.db;
-  // by default only usable models: switched on, with a switched-on offer from a switched-on provider
-  const usable = sql`m.enabled = ${true} AND EXISTS (SELECT 1 FROM ai1_model_provider o
-    JOIN ai1_provider p ON p.id = o.provider_id WHERE o.model_id = m.id AND o.enabled = ${true} AND p.enabled = ${true})`;
-  const where = [...matching(vars), ...vars.all ? [] : [usable]];
+  const where = [...matching(vars), ...vars.all ? [] : [USABLE]];
   const [caps, rows, scores, abilities, offers, stats, providerRows] = await Promise.all([
     capabilities(app),
     db.query`SELECT * FROM ai1_model m ${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``}`,
@@ -132,17 +144,12 @@ async function modelList(node: Node, vars: Vars) {
   const has = new Set(abilities.map((a) => `${a.model_id} ${a.capability}`));
   const own = (model: number) => offers.filter((o) => o.model_id === model);
   const on = (o: any) => o.enabled && providerRows.find((p) => p.id === o.provider_id)?.enabled;
-  const best = (model: number, column: "cost" | "speed") => {
-    const values = own(model).filter(on).map((o) => column === "cost"
-      ? o.cost_input == null || o.cost_output == null ? null : (3 * o.cost_input + o.cost_output) / 4
-      : o.speed).filter((v) => v != null).map(Number);
-    return values.length ? (column === "cost" ? Math.min : Math.max)(...values) : undefined;
-  };
+  const bestOf = (model: number, column: "cost" | "speed") => best(own(model).filter(on), column);
 
   // by a score (default intelligence), or name, price, speed, context length; unknown last
   const sort = String(vars.sort || INTELLIGENCE);
   const sortValue = (m: any) => sort === "context_length" ? m.context_length
-    : sort === "cost" || sort === "speed" ? best(m.id, sort) : score.get(`${m.id} ${sort}`);
+    : sort === "cost" || sort === "speed" ? bestOf(m.id, sort) : score.get(`${m.id} ${sort}`);
   const byName = (a: any, b: any) => String(a.name).localeCompare(String(b.name));
   rows.sort(sort === "name" ? byName : (a, b) => {
     const x = sortValue(a), y = sortValue(b);
@@ -154,60 +161,27 @@ async function modelList(node: Node, vars: Vars) {
   const providerList = providerRows.map((p) => ({ value: p.id, label: p.name }));
   const span = 7 + caps.length + indexes.length;
 
-  const offerRow = (o: any) => {
-    const s = stats.find((x) => x.model_provider_id === o.id);
-    return html.async`<tr data-row=ai1_model_provider data-id="${o.id}">
-      <td>${checkbox(o.enabled)}
-      <td><select name=provider_id>${options(providerList, o.provider_id)}</select>
-      <td><input name=provider_model value="${o.provider_model}" placeholder="${t`same name`}">
-      <td class=-num><input name=cost_input type=number step=any min=0 value="${o.cost_input}">
-      <td class=-num><input name=cost_output type=number step=any min=0 value="${o.cost_output}">
-      <td class=-num><input name=speed type=number step=any min=0 value="${o.speed}">
-      <td class=-num>${value(s?.calls, 0)}
-      <td class=-num>${s?.calls ? `${value(100 * s.errors / s.calls, 0)} %` : "–"}
-      <td class=-num>${s?.ms ? value(s.output / (s.ms / 1000)) : "–"}
-      <td>${s?.last_error ? html`<details><summary style="color:${backend.ageColor(s.last_at)}">${u2.el.time(s.last_at)}</summary><div class=-error>${s.last_error}</div></details>` : ""}
-      <td>${remove()}`;
-  };
-
   const modelRows = shown.map((model) => {
-    const offersOf = own(model.id);
+    const offersOf = own(model.id), usable = offersOf.filter(on).length;
     const cells = caps.map((capability) =>
       html`<td><input type=checkbox data-capability="${capability}" ${has.has(`${model.id} ${capability}`) ? "checked" : ""}>`);
     const all = scores.filter((s) => s.model_id === model.id);
     return html.async`<tr data-row=ai1_model data-id="${model.id}" data-name="${model.name}" ${model.enabled ? "" : "data-off"}>
       <td>${checkbox(model.enabled)}
       <th><input name=name value="${model.name}" required style="color:${backend.uniqueColor(model.name)}">
+        <a href="${href({ show: "model", id: model.id })}" title="${t`Details`}"><u2-ico icon=info>ⓘ</u2-ico></a>
       <td class=-num><input name=context_length type=number min=0 step=1024 value="${model.context_length}" placeholder=–>
       ${cells}
       ${indexes.map((metric) => html`<td class=-num>${value(score.get(`${model.id} ${metric}`))}`)}
       <td class=-num>
-        ${offersOf.some(on) ? "" : html.async`<small class=u2-badge style="--color-dark:var(--red)">${t`unusable`}</small>`}
-        <button type=button class=u2-unstyle data-offers title="${t`Its providers`}">${offersOf.length}</button>
+        ${usable ? "" : html.async`<small class=u2-badge style="--color-dark:var(--red)">${t`unusable`}</small>`}
+        <button type=button class=u2-unstyle data-offers title="${t`Its providers`}">${usable === offersOf.length ? usable : `${usable}/${offersOf.length}`}</button>
         <template>
-          <table class=u2-table>
-            <thead><tr>
-              <th>${t`On`}
-              <th>${t`Provider`}
-              <th>${t`Name there`}
-              <th class=-num>${t`Input`} <small>/M</small>
-              <th class=-num>${t`Output`} <small>/M</small>
-              <th class=-num>${t`Speed`} <small>/s</small>
-              <th class=-num>${t`Calls`}
-              <th class=-num>${t`Errors`}
-              <th class=-num>${t`Measured t/s`}
-              <th>${t`Last error`}
-              <th>
-            <tbody>${offersOf.map(offerRow)}
-          </table>
-          <div class=u2-flex>
-            <select data-provider>${options(providerList, "")}</select>
-            <button type=button data-add=offer data-model="${model.id}">${t`Add provider`}</button>
-          </div>
+          ${offerTable(app, model.id, offersOf, stats, providerList)}
           ${all.length ? html`<p>${all.map((s) => html`<span title="${s.metric}">${label(String(s.metric))} <b>${value(s.value, 3)}</b></span> `)}</p>` : ""}
         </template>
-      <td class=-num>${value(best(model.id, "cost"), 3)}
-      <td class=-num>${value(best(model.id, "speed"))}
+      <td class=-num>${value(bestOf(model.id, "cost"), 3)}
+      <td class=-num>${value(bestOf(model.id, "speed"))}
       <td>${remove(t`Remove this model?`)}`;
   });
 
@@ -230,6 +204,109 @@ async function modelList(node: Node, vars: Vars) {
       <button>${t`Add model`}</button>
     </form>
 </table>`;
+}
+
+/** A model's offers at the providers, with what their calls measured, and a field to add one. */
+function offerTable(app: App, model: number, offers: any[], stats: any[], providerList: { value: unknown; label: unknown }[]) {
+  const t = app.t;
+  const offerRow = (o: any) => {
+    const s = stats.find((x) => x.model_provider_id === o.id);
+    return html.async`<tr data-row=ai1_model_provider data-id="${o.id}">
+      <td>${checkbox(o.enabled)}
+      <td><select name=provider_id>${options(providerList, o.provider_id)}</select>
+      <td><input name=provider_model value="${o.provider_model}" placeholder="${t`same name`}">
+      <td class=-num><input name=cost_input type=number step=any min=0 value="${o.cost_input}">
+      <td class=-num><input name=cost_output type=number step=any min=0 value="${o.cost_output}">
+      <td class=-num><input name=speed type=number step=any min=0 value="${o.speed}">
+      <td class=-num>${value(s?.calls, 0)}
+      <td class=-num>${s?.calls ? `${value(100 * s.errors / s.calls, 0)} %` : "–"}
+      <td class=-num>${s?.ms ? value(s.output / (s.ms / 1000)) : "–"}
+      <td class=-num>${value(s?.used_input, 0)} / ${value(s?.used_output, 0)}
+      <td>${s?.last_error ? html`<details><summary style="color:${backend.ageColor(s.last_at)}">${u2.el.time(s.last_at)}</summary><div class=-error>${s.last_error}</div></details>` : ""}
+      <td>${remove()}`;
+  };
+  return html.async`<table class=u2-table>
+    <thead><tr>
+      <th>${t`On`}
+      <th>${t`Provider`}
+      <th>${t`Name there`}
+      <th class=-num>${t`Input`} <small>/M</small>
+      <th class=-num>${t`Output`} <small>/M</small>
+      <th class=-num>${t`Speed`} <small>/s</small>
+      <th class=-num>${t`Calls`}
+      <th class=-num>${t`Errors`}
+      <th class=-num>${t`Measured t/s`}
+      <th class=-num>${t`Used in / out`}
+      <th>${t`Last error`}
+      <th>
+    <tbody>${offers.map(offerRow)}
+  </table>
+  <div class=u2-flex>
+    <select data-provider>${options(providerList, "")}</select>
+    <button type=button data-add=offer data-model="${model}">${t`Add provider`}</button>
+  </div>`;
+}
+
+/** One model, all that is known of it: its fields, every capability whether it has it, its scores,
+ *  its offers, its errors, and each source's own entry. */
+async function model(node: Node, id: number) {
+  const app = node.app, t = app.t, db = app.db;
+  const [m, caps, metrics, abilities, scores, offers, stats, providerRows, errors, sources] = await Promise.all([
+    db.row`SELECT * FROM ai1_model WHERE id = ${id}`,
+    capabilities(app),
+    db.col`SELECT DISTINCT metric FROM ai1_model_score`,
+    db.col`SELECT capability FROM ai1_model_capability WHERE model_id = ${id}`,
+    db.query`SELECT metric, value FROM ai1_model_score WHERE model_id = ${id}`,
+    db.query`SELECT * FROM ai1_model_provider WHERE model_id = ${id} ORDER BY id`,
+    db.query`SELECT s.* FROM ai1_model_provider_stat s JOIN ai1_model_provider mp ON mp.id = s.model_provider_id WHERE mp.model_id = ${id}`,
+    db.query`SELECT id, name, enabled FROM ai1_provider ORDER BY name`,
+    db.query`SELECT e.time, e.capability, e.message, p.name AS provider FROM ai1_call_error e
+      JOIN ai1_model_provider mp ON mp.id = e.model_provider_id JOIN ai1_provider p ON p.id = mp.provider_id
+      WHERE mp.model_id = ${id} ORDER BY e.id DESC LIMIT ${LIMIT}`,
+    db.query`SELECT s.source, s.data, s.time, p.name AS provider FROM ai1_model_meta s
+      LEFT JOIN ai1_model_provider mp ON mp.id = s.model_provider_id LEFT JOIN ai1_provider p ON p.id = mp.provider_id
+      WHERE s.model_id = ${id} ORDER BY s.source, p.name`,
+  ]);
+  if (!m) return html.async`<div class=u2-card>${t`No such model.`} <a href="${href({ show: "models" })}">${t`Models`}</a></div>`;
+  const has = new Set(abilities.map(String));
+  const score = new Map(scores.map((s) => [String(s.metric), s.value]));
+  // every score known, as in the list: intelligence first, the arenas' named "… quality"
+  const known = metrics.map(String).sort((a, b) => Number(b === INTELLIGENCE) - Number(a === INTELLIGENCE) || a.localeCompare(b));
+  const usable = offers.filter((o) => o.enabled && providerRows.find((p) => p.id === o.provider_id)?.enabled);
+  const card = (title: unknown, body: unknown) => html.async`<div class=u2-card style="flex:0 1 auto"><div class=-head>${title}</div>${body}</div>`;
+  return html.async`<div class=u2-flex data-row=ai1_model data-id="${m.id}" data-name="${m.name}" ${m.enabled ? "" : "data-off"}>
+  ${card(html`<input name=name value="${m.name}" required style="color:${backend.uniqueColor(m.name)}">`, html.async`<table class=u2-table>
+    <tr><th>${t`On`}<td>${checkbox(m.enabled)}
+    <tr><th title="${t`Context length in tokens; a longer request skips the model`}">${t`Context`}
+      <td><input name=context_length type=number min=0 step=1024 value="${m.context_length}" placeholder=–>
+    <tr><th>${t`Providers`}<td>${usable.length}/${offers.length}
+      ${usable.length ? "" : html.async`<small class=u2-badge style="--color-dark:var(--red)">${t`unusable`}</small>`}
+    <tr><th>${t`Cost`} <small>/M</small><td class=-num>${value(best(usable, "cost"), 3)}
+    <tr><th>${t`Speed`} <small>/s</small><td class=-num>${value(best(usable, "speed"))}
+    <tr><th><td>${remove(t`Remove this model?`)}
+  </table>`)}
+  ${card(t`Capabilities`, html`<table class=u2-table>
+    ${caps.map((capability) => html`<tr><th>${capability}<td><input type=checkbox data-capability="${capability}" ${has.has(capability) ? "checked" : ""}>`)}
+  </table>`)}
+  ${card(t`Scores`, html`<table class=u2-table>
+    ${known.map((metric) => html`<tr><th title="${metric}">${label(metric)}${caps.includes(metric) ? " quality" : ""}<td class=-num>${value(score.get(metric), 3)}`)}
+  </table>`)}
+  ${card(t`Providers`, offerTable(app, m.id, offers, stats, providerRows.map((p) => ({ value: p.id, label: p.name }))))}
+  ${card(t`Errors`, errors.length ? html`<table class=u2-table>
+    ${errors.map((e) => html`<tr>
+      <td>${u2.el.time(e.time)}
+      <td>${e.provider}
+      <td>${e.capability}
+      <td class=-error>${e.message}`)}
+  </table>` : "–")}
+  ${card(t`Sources`, sources.length ? html`<table class=u2-table>
+    ${sources.map((s) => html`<tr>
+      <th>${s.source}
+      <td>${s.provider ?? ""}
+      <td>${u2.el.time(s.time)}
+      <td><details><summary>JSON</summary><pre>${JSON.stringify(typeof s.data === "string" ? JSON.parse(s.data) : s.data, null, 2)}</pre></details>`)}
+  </table>` : "–")}
+</div>`;
 }
 
 async function providers(node: Node) {
@@ -292,7 +369,7 @@ async function providers(node: Node) {
 async function tryCard(app: App) {
   const t = app.t;
   const [names, metrics, caps] = await Promise.all([
-    app.db.col`SELECT name FROM ai1_model WHERE enabled = ${true} ORDER BY name`,
+    app.db.col`SELECT m.name FROM ai1_model m WHERE ${USABLE} ORDER BY m.name`,
     app.db.col`SELECT DISTINCT metric FROM ai1_model_score WHERE metric <> ${SPEED} ORDER BY metric`,
     capabilities(app),
   ]);
@@ -313,7 +390,7 @@ async function tryCard(app: App) {
         <input name=options value="yes, no" placeholder="${t`options, comma separated`}">
       </div>
       <input name=voice data-for=speak hidden placeholder="${t`voice, e.g. alloy`}">
-      <input type=file name=file accept="audio/*,video/*" data-for=transcribe hidden>
+      <input type=file name=file accept="audio/*,video/*,image/*" data-for="transcribe ocr" hidden>
       <div class=u2-flex>
         <select name=model><option value="">${t`any model`}${options(names.map((n) => ({ value: n, label: n })), "")}</select>
         <button>${t`Send`}</button>

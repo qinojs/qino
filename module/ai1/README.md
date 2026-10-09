@@ -20,7 +20,7 @@ await translate(app, { text: ["Titel", "Hallo"], to: "en" }); // many at once: [
 const { text: answer, truncated, model } = await text(app, "Hi"); // model: who answered
 ```
 
-`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `translate`, `decide`, `live`: each is `request(app, capability, input)`.
+`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `ocr` (image to Markdown), `translate`, `decide`, `live`: each is `request(app, capability, input)`.
 
 **`live`** talks by voice. The browser's WebRTC offer (`sdp`) goes to the server, which hands it to
 the provider with instructions and tools; the media then flow straight between browser and provider.

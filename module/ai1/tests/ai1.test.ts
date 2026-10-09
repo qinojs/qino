@@ -3,7 +3,7 @@ import { Db } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { AiError, candidates, decide, embed, image, live, speak, structured, text, transcribe, translate } from "../mod.ts";
+import { AiError, candidates, decide, embed, image, live, ocr, speak, structured, text, transcribe, translate } from "../mod.ts";
 import { ai1Adapters, ai1Capabilities } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
@@ -100,6 +100,9 @@ Deno.test("ai1: capabilities fall back through others", async () => {
   assertEquals(await translate(await app({ chat: ["text"] }), { text: "Hallo", to: "en" }), "chat: Hallo");
   // a chat model given translate by hand translates by prompt itself, not the best text model
   assertEquals(await translate(await app({ chat: ["translate"], best: ["text"] }), { text: "Hallo", to: "en" }), "chat: Hallo");
+  // an OCR model first, by prompt through its chat endpoint; else any that sees
+  assertEquals((await ocr(await app({ chat: ["text", "vision"], reader: ["ocr"] }), { image: "data:," })).split(":")[0], "reader");
+  assertEquals((await ocr(await app({ blind: ["text"], chat: ["text", "vision"] }), { image: "data:," })).split(":")[0], "chat");
 });
 
 Deno.test("ai1: decide via structured via text", async () => {

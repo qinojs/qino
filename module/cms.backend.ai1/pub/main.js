@@ -139,6 +139,7 @@ cms.initNode("backend.ai1", (el) => {
       image: () => ({ prompt }),
       speak: () => ({ text: prompt, ...(f.voice.value && { voice: f.voice.value }) }),
       transcribe: async () => file ? { file: await dataUrl(file), name: file.name } : {},
+      ocr: async () => file ? { image: await dataUrl(file) } : {},
     }[f.capability.value]();
   };
   // the answer as fits it: images as images, vectors by their size, the rest as text
@@ -151,6 +152,7 @@ cms.initNode("backend.ai1", (el) => {
       embed: () => `${result.length} × ${result[0]?.length ?? 0}`,
       translate: () => [result].flat().join("\n"),
       transcribe: () => result.text,
+      ocr: () => result,
     }[capability]?.() ?? JSON.stringify(result, null, 2);
     return [Object.assign(document.createElement("pre"), { textContent: text })];
   };

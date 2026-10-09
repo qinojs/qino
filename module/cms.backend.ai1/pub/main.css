@@ -5,6 +5,8 @@
   & .-main > .-head > [aria-current] { font-weight: bold; }
   /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
   & .-main > [cms-part] { padding: 0; overflow: auto; }
+  /* one model: its cards on a row of their own */
+  & .-cards { flex-basis: 100%; }
   /* narrow columns hold a small number, so their label stands upright */
   & thead th { vertical-align: bottom; z-index: 1; }
   & th.-v { writing-mode: sideways-lr; }

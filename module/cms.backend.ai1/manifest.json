@@ -9,6 +9,7 @@
   ],
   "files": [
     "catalog.ts",
+    "dbschema.json",
     "lib/sources.ts",
     "manifest.json",
     "mod.ts",

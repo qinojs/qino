@@ -8,6 +8,8 @@ import manifest from "./manifest.json" with { type: "json" };
 import type { App, HtmlString } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

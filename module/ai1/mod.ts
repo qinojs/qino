@@ -41,6 +41,8 @@ export type TextOutput = {
 export type StructuredInput<T> = Omit<TextInput, "tools"> & { schema: StandardSchema<T> | Record<string, unknown> };
 export type EmbedInput = ({ texts: string[]; images?: never } | { images: string[]; texts?: never }) & { purpose?: "index" | "query" };
 export type TranslateInput = { text: string | string[]; to: string; from?: string; format?: "md" | "html" };
+/** `image`: its URL, or a data URL. */
+export type OcrInput = { image: string };
 /** A live talk: the media go straight between the browser and the provider, what is said and the tool
  *  calls come here. `sdp`: the browser's WebRTC offer; the answer's `sdp` goes back to it. */
 export type LiveInput = {
@@ -72,6 +74,8 @@ export const transcribe = (app: App, input: { file: File; language?: string }, o
 export const speak = (app: App, input: { text: string; voice?: string; format?: string }, opts?: Opts): Promise<string> => request(app, "speak", input, opts);
 /** Talk live, by voice: see `LiveInput`. */
 export const live = (app: App, input: LiveInput, opts?: Opts): Promise<LiveOutput> => request(app, "live", input, opts);
+/** An image's text, as Markdown. */
+export const ocr = (app: App, input: OcrInput, opts?: Opts): Promise<string> => request(app, "ocr", input, opts);
 /** One text or many at once; the answer has the same shape. */
 export const translate = <T extends string | string[]>(app: App, input: TranslateInput & { text: T }, opts?: Opts): Promise<T> => request(app, "translate", input, opts);
 /** Pick one of `options` (classify, route, judge), for text or images; `options` as names, or names
