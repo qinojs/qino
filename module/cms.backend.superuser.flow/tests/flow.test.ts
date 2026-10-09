@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { App, runAs } from "@qino/qino";
+import { history } from "@qino/qino/sandbox.flow";
 import { assertEquals } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
@@ -29,6 +30,13 @@ Deno.test("cms.backend.superuser.flow: list and detail show the flow, escaped", 
   assertEquals(list.includes("greet &lt;b&gt;&quot;you&quot;&lt;/b&gt;"), true);
   assertEquals(list.includes("<input type=checkbox data-set=active checked>"), true);
   assertEquals(list.includes("<input type=checkbox data-set=test>"), true);
+  assertEquals(list.includes("<td>–"), true); // no run yet
+  assertEquals(list.includes("<td>3\n"), true); // the id
+  const ran = String(await renderList(plain, [{ ...row, last: { time: new Date(), end: "done" } }]));
+  assertEquals(ran.includes(" · done"), true);
+  const last = { time: new Date(), end: "error", error: "<boom>" };
+  const failed = String(await renderList(plain, [{ ...row, last }]));
+  assertEquals(failed.includes('<span title="&lt;boom&gt;"><u2-ico inline icon=error>!</u2-ico> error</span>'), true);
   assertEquals(String(await renderList(plain, [])).includes("No flows yet"), true);
 
   const detail = String(await renderDetail(plain, row, { events: ["db table:update-after", "app route"] }));
@@ -92,6 +100,14 @@ Deno.test("cms.backend.superuser.flow: switches, tries, saves and deletes a flow
     const saved = await app.db.row`SELECT * FROM flow WHERE id = ${id}`;
     assertEquals([saved!.description, saved!.host, saved!.event, saved!.code], ["tripled", "app", "route", code]);
     assertEquals(JSON.parse(String(saved!.tools)), ["core_languages_get"]);
+
+    // for real: kept like a run of the listening flow, in the history and its state in the row
+    await app.db.table("flow").update(id, { code: "state.n = event; return event * 3", test: true });
+    const real = await call({ flow: id, event: "4", real: true });
+    assertEquals([real.ok, JSON.parse(real.message).result], [true, 12]);
+    assertEquals(history(app, id).runs[0].result, 12);
+    await new Promise((r) => setTimeout(r, 50)); // the state is written in the background
+    assertEquals(JSON.parse(String(await app.db.one`SELECT state FROM flow WHERE id = ${id}`)), { n: 4 });
 
     assertEquals((await call({ flow: id, delete: true })).ok, true);
     assertEquals((await call({ flow: id, delete: true })).ok, false); // gone

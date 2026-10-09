@@ -6,6 +6,7 @@ import { hosts } from "./lib/hosts.ts";
 
 export { history } from "./lib/history.ts";
 export { hosts } from "./lib/hosts.ts";
+export { keep } from "./lib/table.ts";
 export { toFlow } from "./lib/row.ts";
 
 import type { App, Ctx, Tool } from "@qino/qino";

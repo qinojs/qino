@@ -53,7 +53,8 @@ listen(app, {
 Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `code`, `tools` and `state` as JSON)
 are listened to on start when `active`; a changed row is listened to anew, a deleted one stops — writing
 only its state does not. `test` is on unless set off. A row that can't listen (unknown host, broken JSON)
-is logged and skipped; failing runs are logged too.
+is logged and skipped; failing runs are logged too. `keep(app, id, trace)` keeps a run of such a flow made elsewhere (e.g. a run
+for real from the backend) as if the listening flow had made it: in the history, its state in the row.
 
 ## Api
 

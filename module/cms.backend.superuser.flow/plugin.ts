@@ -15,8 +15,11 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Flows", de: "Abläufe" });
 }
 
-const list = async (node: Node) => renderList(node.app, await node.app.db.query`
-  SELECT flow.*, usr.username AS owner FROM flow LEFT JOIN usr ON usr.id = flow.usr_id ORDER BY flow.id`);
+const list = async (node: Node) => {
+  const rows = await node.app.db.query`
+    SELECT flow.*, usr.username AS owner FROM flow LEFT JOIN usr ON usr.id = flow.usr_id ORDER BY flow.id DESC`;
+  return renderList(node.app, rows.map((row) => ({ ...row, last: history(node.app, Number(row.id)).runs[0] })));
+};
 
 const detail = async (node: Node, { vars = {} }: { vars?: Record<string, unknown> }) => {
   const id = Number(vars.flow) || 0; // none picked yet

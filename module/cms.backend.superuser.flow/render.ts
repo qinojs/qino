@@ -4,23 +4,30 @@ import * as u2 from "@qino/qino/u2";
 import type { App, HtmlString } from "@qino/qino";
 
 type Row = Record<string, unknown>;
+type Listed = Row & { last?: { time: Date; end: string; error?: string } };
 
-/** The flows: what starts them, whose they are, whether they listen and whether only as a test. */
-export async function renderList(app: App, rows: Row[]): Promise<HtmlString> {
+/** The flows, newest first: what starts them, whose they are, whether they listen and whether only as a
+ *  test, and their last run (`last`, from the history), marked when it failed. */
+export async function renderList(app: App, rows: Listed[]): Promise<HtmlString> {
   const { t } = app;
   const [tNone, tConfirm, ...labels] = await Promise.all([
     t`No flows yet — an AI or the api makes them.`, t`Really delete this flow?`,
-    t`Flow`, t`Event`, t`Owner`, t`Active`, t`Test`,
+    t`ID`, t`Flow`, t`Event`, t`Owner`, t`Last run`, t`Active`, t`Test`,
   ]);
+  const last = ({ time, end, error }: NonNullable<Listed["last"]>) => html`${u2.el.time(time, { second: true })} · ${
+    end === "error" ? html`<span title="${error}"><u2-ico inline icon=error>!</u2-ico> ${end}</span>` : end
+  }`;
   const trs = rows.map((row) => html`<tr data-flow="${row.id}">
-      <td>${row.description || html`<small>#${row.id}</small>`}
+      <td>${row.id}
+      <td>${row.description}
       <td><code>${row.host}</code> <code>${row.event}</code>
       <td>${row.owner}
+      <td>${row.last ? last(row.last) : "–"}
       <td><input type=checkbox data-set=active${row.active ? html.raw(" checked") : ""}>
       <td><input type=checkbox data-set=test${row.test ? html.raw(" checked") : ""}>
       <td><button data-delete class=u2-unstyle u2-confirm="${tConfirm}"><u2-ico icon=delete>✕</u2-ico></button>`);
   return html`<thead><tr>${labels.map((label) => html`<th>${label}`)}<th width=40>
-<tbody>${trs.length ? trs : html`<tr><td colspan=6>${tNone}`}`;
+<tbody>${trs.length ? trs : html`<tr><td colspan=8>${tNone}`}`;
 }
 
 type Schema = { type?: string; description?: string; properties?: Record<string, Schema> };
@@ -45,6 +52,9 @@ export async function renderDetail(
   } = {},
 ): Promise<HtmlString> {
   const { t } = app;
+  const [tRun, tConfirmRun] = await Promise.all([
+    t`Run for real`, t`Run the flow for real? Its tools take effect.`,
+  ]);
   const [tFlow, tPick, tDescription, tWhen, tTools, tOnePerLine, tCode, tSave, tEvent, tTry] = await Promise.all([
     t`Flow`, t`Pick a flow.`, t`Description`, t`When`, t`May use`, t`one tool per line`, t`Code`, t`Save`,
     t`Example event (JSON)`, t`Test run`,
@@ -91,5 +101,6 @@ export async function renderDetail(
     JSON.stringify(schema ? example(schema) : {}, null, 2)
   }</textarea></u2-code></label>
   <button>${tTry}</button>
+  <button name=real value=1 u2-confirm="${tConfirmRun}">${tRun}</button>
 </form>`;
 }

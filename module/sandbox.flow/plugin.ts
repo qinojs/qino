@@ -1,5 +1,5 @@
 import { listen } from "./mod.ts";
-import { record } from "./lib/history.ts";
+import { keep, listeners } from "./lib/table.ts";
 import { toFlow } from "./lib/row.ts";
 
 import type { App } from "@qino/qino";
@@ -20,17 +20,15 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   const listenTo = async (id: number) => {
     flows.get(id)?.abort();
     flows.delete(id);
+    listeners(app).delete(id);
     const row = await app.db.row`SELECT * FROM flow WHERE id = ${id}`;
     if (!row?.active) return;
     const stop = new AbortController();
     try {
       const flow = toFlow(row);
-      listen(app, flow, { signal: AbortSignal.any([signal, stop.signal]), report: (trace) => {
-        record(app, id, trace);
-        if (trace.state) app.db.table("flow").update(id, { state: JSON.stringify(trace.state) }).catch(console.error);
-        if (trace.end === "error") console.error(`[sandbox.flow] ${trace.flow}:`, trace.error);
-      } });
+      listen(app, flow, { signal: AbortSignal.any([signal, stop.signal]), report: (trace) => keep(app, id, trace) });
       flows.set(id, stop);
+      listeners(app).set(id, flow);
     } catch (e) {
       console.error(`[sandbox.flow] flow ${id}:`, e); // a broken row must not keep the others from listening
     }
