@@ -34,7 +34,7 @@ Deno.test("own modules link to module administration details", async () => {
   };
   const node = {
     app,
-    cms: { nodeByModule: () => ({ page: () => ({ access: () => 1, url: () => "/backend/superuser/module" }) }) },
+    cms: { nodeByModule: () => ({ page: () => ({ access: () => 1, url: () => Promise.resolve("/backend/superuser/module") }) }) },
   };
   const out = String(await cms.node.render(node as unknown as Node));
   assertStringIncludes(out, `href="/backend/superuser/module?mod=cms.cont.own"`);

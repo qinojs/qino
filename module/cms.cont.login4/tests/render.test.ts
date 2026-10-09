@@ -48,7 +48,7 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
     edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
     cms: {
-      text: (_node: unknown, name: string) => `[${name}]`,
+      text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`),
     },
     settings: settings({ saveLogin: true }),
     text: () => textObj("Login failed"),
@@ -101,7 +101,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   const guestNode = {
     edit: () => false,
     app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
-    cms: { text: (_node: unknown, name: string) => `[${name}]` },
+    cms: { text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`) },
     settings: settings({ "fix user": `a"><script>alert(1)</script>` }),
     text: () => textObj(""),
   };

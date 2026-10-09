@@ -35,7 +35,7 @@ Deno.test("cms.backend.ai1.agents: agents, their sessions and memories, and a se
         session_id: session.id, time: unixTime(), message: JSON.stringify(message), ...by && { model_provider_id: by },
       })));
     }
-    const node = { app, page: () => ({ url: () => "/agents" }) } as unknown as Node;
+    const node = { app, page: () => ({ url: () => Promise.resolve("/agents") }) } as unknown as Node;
     const as = <T>(fn: () => Promise<T>) => runAs(app, 7, "test", fn).then(String);
 
     const home = await as(() => cms.node.render(node));

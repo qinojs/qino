@@ -58,7 +58,7 @@ Deno.test("render: CMS output is not parsed as a template", async () => {
     app: { dev: false, modules: { linked: () => [{ name: "identity", plugin: { templatePlaceholders: {
       name: async () => ({ text: "Portal" }),
     } } }] } },
-    cms: { text: () => "{{identity.name}}" },
+    cms: { text: () => Promise.resolve("{{identity.name}}") },
   });
   assertEquals(await render(`<p cms-text=main></p>`, node), "{{identity.name}}");
 });
@@ -165,7 +165,7 @@ Deno.test("node=: unresolvable renders nothing", async () => {
 });
 
 Deno.test("cms-link: resolves a node href and keeps the wrapper", async () => {
-  const target = fakeNode({ url: () => `/target?x=1&y=2` });
+  const target = fakeNode({ url: () => Promise.resolve(`/target?x=1&y=2`) });
   const node = fakeNode({ cms: { node: (id: number) => (assertEquals(id, 7), target) } });
   assertEquals(
     await render(`<a class=card href=/old cms-link=7><b>Target</b></a>`, node),
@@ -174,7 +174,7 @@ Deno.test("cms-link: resolves a node href and keeps the wrapper", async () => {
 });
 
 Deno.test("cms-link: composes with cms-text", async () => {
-  const page = fakeNode({ url: () => "/page" });
+  const page = fakeNode({ url: () => Promise.resolve("/page") });
   page.cms.text = (target: any, name: string, options: any) => {
     page.calls.push({ target, name, options });
     return `<a href="${options.href}" class="${options.class}">[text:${name}]</a>`;
@@ -191,7 +191,7 @@ Deno.test("cms-link: invalid targets keep the content without a broken href", as
 });
 
 Deno.test("cms-link: an empty wrapper uses the target title", async () => {
-  const target = fakeNode({ url: () => "/target", showTitle: () => "Target <b>title</b>" });
+  const target = fakeNode({ url: () => Promise.resolve("/target"), showTitle: () => Promise.resolve("Target <b>title</b>") });
   const node = fakeNode({ cms: { ...target.cms, node: () => target } });
   assertEquals(
     await render(`<a cms-link=7></a>`, node),
@@ -200,7 +200,7 @@ Deno.test("cms-link: an empty wrapper uses the target title", async () => {
 });
 
 Deno.test("cms-link: an explicit target overrides the page target", async () => {
-  const target = fakeNode({ url: () => "/target" });
+  const target = fakeNode({ url: () => Promise.resolve("/target") });
   target.cms.linkAttributes = async () => ({ href: "/target", class: "cmsLink7", target: "_blank" });
   const node = fakeNode({ cms: { ...target.cms, node: () => target } });
   assertEquals(

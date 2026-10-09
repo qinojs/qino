@@ -8,7 +8,7 @@ Deno.test("cms.layout.backend: loads the backend id asynchronously", async () =>
   const backend = Promise.resolve("83");
   const root = {
     children: () => new Map(),
-    url: () => "/de/backend",
+    url: () => Promise.resolve("/de/backend"),
   };
   const page = {
     in: () => false,
@@ -21,7 +21,7 @@ Deno.test("cms.layout.backend: loads the backend id asynchronously", async () =>
     },
     cms: {
       node: (value: number) => { id = value; return root; },
-      link: () => "",
+      link: () => Promise.resolve(""),
     },
     page: () => page,
     conts: () => [],
@@ -40,11 +40,11 @@ Deno.test("cms.layout.backend: renders submenu indicators with u2-ico", async ()
     children: () => new Map([[2, {}]]),
     conts: () => [],
     title: () => ({ string: () => "Parent" }),
-    url: () => "/de/backend/parent",
+    url: () => Promise.resolve("/de/backend/parent"),
   };
   const root = {
     children: () => new Map([[1, child]]),
-    url: () => "/de/backend",
+    url: () => Promise.resolve("/de/backend"),
   };
   const page = {
     in: () => false,
@@ -58,7 +58,7 @@ Deno.test("cms.layout.backend: renders submenu indicators with u2-ico", async ()
     },
     cms: {
       node: () => root,
-      link: () => "",
+      link: () => Promise.resolve(""),
     },
     page: () => page,
     conts: () => [],
@@ -80,16 +80,16 @@ Deno.test("cms.layout.backend: the active branch opens as deep as it goes", asyn
     children: () => new Map(depth > 1 ? [[depth, chain(depth - 1, `Level ${5 - depth + 1}`)]] : []),
     conts: () => [],
     title: () => ({ string: () => name }),
-    url: () => `/de/backend/${depth}`,
+    url: () => Promise.resolve(`/de/backend/${depth}`),
   });
-  const root = { children: () => new Map([[1, chain(4)]]), url: () => "/de/backend" };
+  const root = { children: () => new Map([[1, chain(4)]]), url: () => Promise.resolve("/de/backend") };
   const node = {
     app: {
       settings: { cms: { backend: 83 } },
       languages: { all: ["de"] },
       modules: { get: () => undefined },
     },
-    cms: { node: () => root, link: () => "" },
+    cms: { node: () => root, link: () => Promise.resolve("") },
     page: () => ({ in: () => true, path: () => new Map() }),
     conts: () => [],
     cont: () => undefined,
