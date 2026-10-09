@@ -57,6 +57,7 @@ async function methods(node: Node) {
   const chosen = String(await set.default_product_module ?? "");
   const productModules = app.modules.linked().map((mod) => mod.name).filter((n) => n.startsWith("cms.cont.shp3.product"));
   if (chosen && !productModules.includes(chosen)) productModules.push(chosen);
+  const autoPayment = await set.auto_select_payment, autoShipping = await set.auto_select_shipping;
 
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payment`}</div>
@@ -68,13 +69,13 @@ async function methods(node: Node) {
       <tr>
         <th>${t`Payment`}
         <td><label>
-          <input class=-set type=checkbox data-setting=auto_select_payment ${await set.auto_select_payment ? html.raw("checked") : ""}>
+          <input class=-set type=checkbox data-setting=auto_select_payment ${autoPayment ? html.raw("checked") : ""}>
           ${t`Preselect the first method`}
         </label>
       <tr>
         <th>${t`Delivery`}
         <td><label>
-          <input class=-set type=checkbox data-setting=auto_select_shipping ${await set.auto_select_shipping ? html.raw("checked") : ""}>
+          <input class=-set type=checkbox data-setting=auto_select_shipping ${autoShipping ? html.raw("checked") : ""}>
           ${t`Preselect the first method`}
         </label>
       <tr>
@@ -97,6 +98,8 @@ async function address(node: Node) {
     html`<option value=${id} ${id === chosen ? html.raw("selected") : ""}>${country.name(id, lang)}`
   );
 
+  const vatIncluded = await set.vat.mode !== "excluded";
+
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Shop address`}</div>
     <table class=u2-table>
@@ -112,7 +115,7 @@ async function address(node: Node) {
       <tr>
         <th>${t`VAT`}
         <td><label>
-          <input class=-set type=checkbox data-setting=vat.mode ${await set.vat.mode !== "excluded" ? html.raw("checked") : ""}>
+          <input class=-set type=checkbox data-setting=vat.mode ${vatIncluded ? html.raw("checked") : ""}>
           ${t`Included in the product prices`}
         </label>
     </table>
@@ -160,7 +163,7 @@ async function currencies(node: Node) {
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>
       ${t`Currencies`}
-      ${fromRates ? html`<small>${await t`factors follow the exchange rates`}</small>` : ""}
+      ${fromRates ? html.async`<small>${t`factors follow the exchange rates`}</small>` : ""}
     </div>
     <div><input type=search class=-search placeholder="${t`Search`}…"></div>
     <div style="max-height:31rem; overflow:auto; padding:0">
@@ -220,7 +223,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const home = String(await app.settings.shp3.location.country ?? "");
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>${t`Shop address`}:<td>${home ? country.name(home, lang) : await t`nowhere`}
+  <tr><td>${t`Shop address`}:<td>${home ? country.name(home, lang) : t`nowhere`}
   <tr><td>${t`Delivers to`}:<td>${db.one`SELECT count(*) FROM country WHERE shp3_enabled = ${true}`.catch(() => 0)} ${t`countries`}
   <tr><td>${t`Currencies`}:<td>${db.one`SELECT count(*) FROM shp3_currency WHERE active = ${true}`.catch(() => 0)}
 </table>

@@ -76,7 +76,7 @@ async function renderList(node: Node) {
             <th> ${t`Name`}
             <th> ${t`Price`}
             <th> ${t`Weight`}
-            ${hasStock ? html`<th> ${await t`Stock`}` : ""}
+            ${hasStock ? html.async`<th> ${t`Stock`}` : ""}
             <th width=20>
         <tbody>${trs}
       </table>
@@ -107,10 +107,11 @@ async function renderProduct(node: Node, id: number) {
     <td>${r.country}
     <td><input class=-vat data-country=${r.country} type=number step=any value=${Number(r.rate)}>
     <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
+  const title = await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id;
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1">
-    <div class=-head><a href="?">${t`Products`}</a> — ${await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id}</div>
+    <div class=-head><a href="?">${t`Products`}</a> — ${title}</div>
     <div style="padding:0">
       <table class=u2-table itemid=${id}>${rows}</table>
     </div>

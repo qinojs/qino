@@ -296,7 +296,7 @@ async function renderConversation(node: Node, usrId: number, url: URL) {
       <div class=-scroll>
         ${rows.length
           ? html`<table class=-chat><tbody>${messages}</table>`
-          : html`<div>${await app.t`No messages yet.`}</div>`}
+          : html.async`<div>${app.t`No messages yet.`}</div>`}
       </div>
       <div>
         ${reachable.length ? html.async`<form class=-composer>
@@ -491,7 +491,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   return html.async`<div class=-body>
     <b>${Number(totals?.n ?? 0)}</b> ${app.t`messages in 7 days`}
     · ${Number(totals?.incoming ?? 0)} ${app.t`incoming`}
-    ${Number(totals?.errors ?? 0) ? html` · <span class=u2-badge>${totals!.errors} ${await app.t`errors`}</span>` : ""}
+    ${Number(totals?.errors ?? 0) ? html.async` · <span class=u2-badge>${totals!.errors} ${app.t`errors`}</span>` : ""}
   </div>
   ${recent.length ? html`<div style="overflow:auto;padding:0"><table class=u2-table>${recent.map((row) => {
     const errors = Number(row.error_count) || 0;

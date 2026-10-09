@@ -84,7 +84,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`Requests`}
     <th>${t`Last request`}
     <th>${t`Url`}
-<tbody>${trs.length ? trs : html`<tr><td colspan=8>${await t`No entries`}`}`;
+<tbody>${trs.length ? trs : html.async`<tr><td colspan=8>${t`No entries`}`}`;
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {

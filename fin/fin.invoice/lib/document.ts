@@ -126,7 +126,7 @@ export async function document(
 </table>
 ${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}
 </main>
-${(await slips()).map((slip) => html`<div class=slip>${html.raw(slip)}</div>`)}
+${slips().then((list) => list.map((slip) => html`<div class=slip>${html.raw(slip)}</div>`))}
 `);
   });
 }

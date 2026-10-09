@@ -121,7 +121,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`IP`}
     <th>${t`POST`}
     <th>ID
-<tbody style="vertical-align:top">${trs.length ? trs : html`<tr><td colspan=7>${await t`No entries`}`}`;
+<tbody style="vertical-align:top">${trs.length ? trs : html.async`<tr><td colspan=7>${t`No entries`}`}`;
 }
 
 // ── stats + maintenance ─────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
             ${message ? html`<p>${message}</p><hr>` : ""}
             <table class=u2-table>
                 <tr><td>${t`Entries`}<td style="text-align:right">${int(stats.rows)}
-                ${stats.mb == null ? "" : html`<tr><td>${await t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
+                ${stats.mb == null ? "" : html.async`<tr><td>${t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
             </table>
             <hr>
             <form data-tool=clean_data>
@@ -311,6 +311,7 @@ async function renderDetail(node: Node, id: number) {
 
   // the client column points at the client detail page; without that module the filtered list has to do
   const clientUrl = await backend.toModuleUrl(node, "cms.backend.superuser.requests.clients");
+  const session = await t`Session`, client = await t`Client`;
 
   return html.async`
 <div class=u2-flex>
@@ -343,13 +344,13 @@ async function renderDetail(node: Node, id: number) {
 
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>${t`Relations`}</div>
-        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html`<tr><td>${await t`No entries`}`}</table>
+        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html.async`<tr><td>${t`No entries`}`}</table>
     </div>
 
     <div class=u2-card style="flex:1 1 40rem; max-height:88vh; overflow:auto">
         <div class=-head>${t`History`}</div>
         <div class=-body style="flex-grow:0">${t`History of:`}
-            ${histLink("sess", await t`Session`)} | ${histLink("client", await t`Client`)} | ${histLink("ip", "IP")}</div>
+            ${histLink("sess", session)} | ${histLink("client", client)} | ${histLink("ip", "IP")}</div>
         <table class=u2-table><tbody style="vertical-align:top">${historyTrs}</table>
     </div>
 </div>`;

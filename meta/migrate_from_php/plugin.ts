@@ -155,7 +155,7 @@ async function ensurePath(app: App, path: string[]): Promise<number> {
   let basis = 0;
   for (const offset of path) {
     let id = await app.db.one`SELECT id FROM qg_setting WHERE basis = ${basis} AND ${sql.id("offset")} = ${offset} ORDER BY id LIMIT 1`;
-    if (!id) id = (await app.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${basis}, ${offset}, '')`).insertId;
+    id ||= (await app.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${basis}, ${offset}, '')`).insertId;
     basis = Number(id);
   }
   return basis;
@@ -166,17 +166,13 @@ async function copySetting(app: App, fromId: number, toBasis: number, toOffset: 
   if (!src) return 0;
   let changed = 0;
   const dst = await app.db.row`SELECT id, value FROM qg_setting WHERE basis = ${toBasis} AND ${sql.id("offset")} = ${toOffset} ORDER BY id LIMIT 1`;
-  let dstId: number;
-  if (!dst) {
-    const res = await app.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${toBasis}, ${toOffset}, ${src.value ?? ""})`;
-    dstId = res.insertId;
-    changed++;
-  } else if (!String(dst.value ?? "") && String(src.value ?? "")) {
-    dstId = Number(dst.id);
+  const dstId = dst
+    ? Number(dst.id)
+    : (await app.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${toBasis}, ${toOffset}, ${src.value ?? ""})`).insertId;
+  if (!dst) changed++;
+  else if (!String(dst.value ?? "") && String(src.value ?? "")) {
     await app.db.exec`UPDATE qg_setting SET value = ${src.value} WHERE id = ${dst.id}`;
     changed++;
-  } else {
-    dstId = Number(dst.id);
   }
 
   const children = await app.db.query`SELECT id, ${sql.id("offset")} FROM qg_setting WHERE basis = ${fromId} ORDER BY id`;
@@ -245,8 +241,7 @@ function unsetJsonPath(obj: any, path: string[]): void {
   }
   const last = stack.pop();
   if (last) delete last[0][last[1]];
-  for (let i = stack.length - 1; i >= 0; i--) {
-    const [parent, key] = stack[i];
+  for (const [parent, key] of stack.toReversed()) {
     if (isObj(parent[key]) && !Object.keys(parent[key]).length) delete parent[key];
   }
 }

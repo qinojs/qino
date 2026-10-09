@@ -40,7 +40,7 @@ async function render(node: Node) {
       <p><small><a href="https://developers.facebook.com/apps/" target=_blank rel=noopener>${node.app.t`Open Meta apps`}</a></small>
       <u2-fields>
         ${node.app.t`User access token`} <input type=password name=accessToken autocomplete=new-password
-          placeholder="${configured ? await node.app.t`Configured — enter a token to replace` : ""}">
+          placeholder="${configured ? node.app.t`Configured — enter a token to replace` : ""}">
       </u2-fields>
       <button name=save value=1>${node.app.t`Save and check`}</button>
       <button name=check value=1>${node.app.t`Check`}</button>

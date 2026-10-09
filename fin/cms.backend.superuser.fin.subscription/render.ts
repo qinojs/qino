@@ -54,7 +54,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
     app.db.query`SELECT id, given_name, family_name, organization FROM usr ORDER BY family_name, given_name`,
   ]);
   const names = new Map(users.map((u) => [Number(u.id), nameOf(u)]));
-  const until = await horizon(app);
+  const until = await horizon(app), currency = await mainCurrency(app);
   const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
   const due = all.filter((s) => renews(s, until));
   const userSelect = (name: string) => html`<select name=${name} required><option value="">—${users.map((u) =>
@@ -122,7 +122,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
       <u2-fields>
         ${t`Name`} <input name=name required placeholder="Hosting Light">
         ${t`Description`} <textarea name=description rows=3></textarea>
-        ${terms(app, { currency: await mainCurrency(app), interval_unit: "year", interval_count: 1 }, [])}
+        ${terms(app, { currency, interval_unit: "year", interval_count: 1 }, [])}
       </u2-fields>
       <button>${t`Add plan`}</button>
     </form>

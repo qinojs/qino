@@ -99,7 +99,7 @@ async function overview(node: Node, url: URL) {
   const from = url.searchParams.get("from") || `${year}-01-01`;
   const to = url.searchParams.get("to") || `${year}-12-31`;
   const currency = await mainCurrency(app) ?? "";
-  const accounts = await balances(app, { from, to });
+  const accounts = await balances(app, { from, to }), flows = await balances(app, { from, to, closings: false });
   const selected = (number: unknown) => url.searchParams.get("account") === number ? html.raw(" selected") : "";
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 100%">
@@ -116,7 +116,7 @@ async function overview(node: Node, url: URL) {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Result`} <small>${from} – ${to}</small></div>
-    ${statement(app, await balances(app, { from, to, closings: false }), ["expense"], ["income"], currency)}
+    ${statement(app, flows, ["expense"], ["income"], currency)}
   </div>
   ${app.modules.linked("fin.accounting.ch") ? vat(app, from, to, currency) : ""}
   <div class=u2-card style="flex:0 1 auto">

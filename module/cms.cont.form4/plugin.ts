@@ -139,8 +139,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
     ${fields}
     <div class="-btns u2-flex">
-      ${node.settings.button_reset() ? await cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
-      ${(node.settings.button_submit() ?? true) && (keep || mailed || edit) ? await cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
+      ${node.settings.button_reset() ? cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
+      ${(node.settings.button_submit() ?? true) && (keep || mailed || edit) ? cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
     </div>
   </form>
 </div>`;

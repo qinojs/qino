@@ -326,13 +326,14 @@ async function detail(node: Node, id: number) {
   const file = row.file_id ? await app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
   const pdfUrl = file ? await file.url({ grant: "session" }).catch(() => "") : "";
   const preview = await document(app, id).catch((e) => `<p>${e.message}</p>`);
+  const users = await usersOf(app, [row]);
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Invoices`}</a> › ${row.number || `#${id}`}</div>
     <table class=u2-table>
       ${field(t`Status`, status(row.status))}
-      ${field(t`User`, userLink(node, row.usr_id, (await usersOf(app, [row])).get(Number(row.usr_id))))}
+      ${field(t`User`, userLink(node, row.usr_id, users.get(Number(row.usr_id))))}
       ${field(t`Language`, row.lang)}
       ${credit ? field(t`Corrects`, row.corrects
         ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", row.corrects)

@@ -36,7 +36,7 @@ export async function bot(node: Node): Promise<HtmlString> {
     <div>
       ${token}
       <p>${state}</p>
-      ${configured ? "" : html`<small>${await t`Create a bot with @BotFather and enter its token above.`}</small>`}
+      ${configured ? "" : html.async`<small>${t`Create a bot with @BotFather and enter its token above.`}</small>`}
     </div>`;
   }
 

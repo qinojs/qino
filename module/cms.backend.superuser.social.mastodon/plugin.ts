@@ -52,7 +52,7 @@ async function render(node: Node) {
       <u2-fields>
         ${node.app.t`Server URL`} <input type=url name=url value="${url}" placeholder="https://mastodon.social" required>
         ${node.app.t`Access token`} <input type=password name=accessToken autocomplete=new-password
-          placeholder="${configured ? await node.app.t`Configured — leave empty to keep` : ""}">
+          placeholder="${configured ? node.app.t`Configured — leave empty to keep` : ""}">
       </u2-fields>
       <button name=save value=1>${node.app.t`Save and check`}</button>
       <button name=check value=1>${node.app.t`Check`}</button>

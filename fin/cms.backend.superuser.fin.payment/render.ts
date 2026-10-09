@@ -127,7 +127,7 @@ async function providerTable(app: App) {
     [currency, (await methods(app, { amount: 10000, currency })).map((m) => m.method)] as const));
   return html.async`${mods.map(async (mod) => {
     const p = mod.plugin.paymentProvider as Provider;
-    const can = [p.refund && t`refund`, p.slip && t`slip`].filter(Boolean);
+    const can = await Promise.all([p.refund && t`refund`, p.slip && t`slip`].filter(Boolean));
     const own = (list: readonly string[]) => list.filter((m) => m.split(".")[0] === p.name);
     const offers = offered.map(([currency, list]) => [currency, own(list)] as const).filter(([, list]) => list.length);
     return html.async`<details>
@@ -136,7 +136,7 @@ async function providerTable(app: App) {
         <tr><th>${t`Offers`}<td>${offers.length
           ? html.join(offers.map(([currency, list]) => html`${currency}: ${list.join(", ")}`), "<br>")
           : badge(t`nothing — settings incomplete?`, "--orange")}
-        <tr><th>${t`Can`}<td>${can.length ? html.join(await Promise.all(can), ", ") : "—"}
+        <tr><th>${t`Can`}<td>${can.join(", ") || "—"}
       </table>
       ${mod.plugin.settingsSchema ? settingsEditor(mod.name) : ""}
     </details>`;
@@ -199,11 +199,11 @@ async function detail(node: Node, id: number) {
   </div>
   ${lines.length ? html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Bank lines`}</div>
-    <table class=u2-table>${await Promise.all(lines.map(async (line) => html.async`<tr>
+    <table class=u2-table>${lines.map((line) => html.async`<tr>
       <td>${rowLink(node, "cms.backend.superuser.fin.bank", "line", line.id)}
       <td>${line.date}
       <td style="text-align:end">${money(line.amount, line.currency)}
-      <td>${line.party_name}`))}</table>
+      <td>${line.party_name}`)}</table>
     <div><small>${t`Together`}: ${money(sumOf(lines), row.currency)}</small></div>
   </div>` : ""}
   ${shown ? html.async`<div class=u2-card style="flex:1 1 100%">

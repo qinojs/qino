@@ -51,7 +51,7 @@ export async function render(node: Node): Promise<HtmlString> {
           <td>${state(row) ? ""
             : html`<button type=button class=u2-unstyle data-revoke="${row.hash}"
               u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`}`)
-        : html`<tr><td colspan=6>${await t`No tickets yet.`}`}
+        : html.async`<tr><td colspan=6>${t`No tickets yet.`}`}
     </table>
     <div>
       <small>${t`A ticket cannot be opened from here — only its holder knows the handle, the database keeps a hash of it. Spent and expired ones stay for a year as a record.`}</small>
@@ -63,7 +63,7 @@ export async function render(node: Node): Promise<HtmlString> {
     <div>
       ${byPurpose.size
         ? Array.from(byPurpose, ([purpose, n]) => html`<div>${purpose}: <b>${n}</b></div>`)
-        : html`<div>${await t`None`}</div>`}
+        : html.async`<div>${t`None`}</div>`}
     </div>
   </div>
 </div>`;

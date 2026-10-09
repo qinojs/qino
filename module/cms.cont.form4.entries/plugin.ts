@@ -167,7 +167,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       <u2-time datetime="${when.toISOString()}" type=relative>${when.toLocaleDateString(ctx.lang || undefined)}</u2-time>
       <dl>${lines}</dl>
       ${mayRelease && moderated
-      ? html`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${await app.t`Released`}</label>`
+      ? html.async`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${app.t`Released`}</label>`
       : ""}
     </article>`;
   };

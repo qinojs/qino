@@ -55,6 +55,9 @@ async function render(node: Node) {
       : vs.rate_to_usd == null ? "" : Number(vs.rate_to_usd).toPrecision(6)}`;
   });
 
+  const updated = await set.updated;
+  const state = updated ? `${await t`last`} ${showTime(Number(updated))} · ${await set.source}` : await t`never fetched`;
+
   return html.async`<div class=u2-card style="flex:0 1 auto">
   <div class=-head>
     ${t`Exchange rates`}
@@ -66,9 +69,7 @@ async function render(node: Node) {
     </label>
     <p>
       <button class=-now>${t`Update now`}</button>
-      <small class=-state>${await set.updated
-        ? `${await t`last`} ${showTime(Number(await set.updated))} · ${await set.source}`
-        : await t`never fetched`}</small>
+      <small class=-state>${state}</small>
     </p>
   </div>
   <div><input type=search class=-search placeholder="${t`Search`}…"></div>
@@ -89,10 +90,10 @@ async function render(node: Node) {
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const { t, db } = app;
   const set = app.settings["locale.currency"];
-  const every = String(await set.update ?? "never");
+  const every = String(await set.update ?? "never"), updated = await set.updated;
   return html.async`<div class=-body>
   ${t`Fetch the rates`}: ${label(t, every)}<br>
-  <small>${db.one`SELECT count(*) FROM currency WHERE rate_to_usd IS NOT NULL`.catch(() => 0)} ${t`rates`}, ${await set.updated ? showTime(Number(await set.updated)) : await t`never fetched`}</small>
+  <small>${db.one`SELECT count(*) FROM currency WHERE rate_to_usd IS NOT NULL`.catch(() => 0)} ${t`rates`}, ${updated ? showTime(Number(updated)) : t`never fetched`}</small>
 </div>`;
 }
 

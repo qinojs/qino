@@ -445,7 +445,7 @@ async function render(node: Node) {
       <div style="max-height:60vh; overflow:auto; padding:0">
         <table class=u2-table cms-part=tools>${tools(node, { vars })}</table>
       </div>
-      <div style="width:0; min-width:100%; overflow-wrap:anywhere">${t`API paths`}: <small>${await node.app.db.one`SELECT tools FROM ai1_agent WHERE id = ${id}` || "–"}</small></div>
+      <div style="width:0; min-width:100%; overflow-wrap:anywhere">${t`API paths`}: <small>${node.app.db.one`SELECT tools FROM ai1_agent WHERE id = ${id}`.then((tools) => tools || "–")}</small></div>
     </div>
   </div>`;
 }

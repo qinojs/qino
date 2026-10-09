@@ -232,7 +232,7 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
   const url = page ? await page.url() : "";
   return html.async`<tr${active ? html.raw(" class=-active") : ""}>
       <td><button class=u2-unstyle data-form="${node.id}">${title || html.raw(`#${node.id}`)}</button>
-      <td>${url ? html`<a href="${url}" target=_blank title="${await app.t`Open the page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}
+      <td>${url ? html.async`<a href="${url}" target=_blank title="${app.t`Open the page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}
       <td>${Number(count)}`;
 }
 

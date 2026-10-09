@@ -60,6 +60,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <td>${row.format || "text"}
       <td><small>${firstLine(row.text)}</small>`;
   }) : html`<tr><td colspan=5>${none}`;
+  const samples = await sampleValues(app);
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 40rem">
@@ -86,7 +87,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <button name=create>${t`Create`}</button>
     </form>
   </div>
-  ${placeholders(node, await sampleValues(app))}
+  ${placeholders(node, samples)}
 </div>`;
 }
 

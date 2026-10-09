@@ -65,7 +65,7 @@ async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> 
   return html.async`
 <thead><tr>${SORTABLE.map((col, i) => th(col, labels[i]))}
     <th width=40>
-<tbody>${trs.length ? trs : html`<tr><td colspan=6>${await t`No short links`}`}
+<tbody>${trs.length ? trs : html.async`<tr><td colspan=6>${t`No short links`}`}
 ${total > PER_PAGE ? pager : ""}`;
 }
 

@@ -49,7 +49,7 @@ async function render(node: Node) {
         ${node.app.t`Server URL`} <input type=url name=url value="${url}" required>
         ${node.app.t`Handle`} <input name=handle value="${handle}" placeholder="name.bsky.social" required>
         ${node.app.t`App password`} <input type=password name=appPassword autocomplete=new-password
-          placeholder="${configured ? await node.app.t`Configured — leave empty to keep` : ""}">
+          placeholder="${configured ? node.app.t`Configured — leave empty to keep` : ""}">
       </u2-fields>
       <button name=save value=1>${node.app.t`Save and check`}</button>
       <button name=check value=1>${node.app.t`Check`}</button>

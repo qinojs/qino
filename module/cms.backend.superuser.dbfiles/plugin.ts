@@ -112,7 +112,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
-    const exists = await f.exists();
+    const exists = await f.exists(), used = await f.used();
     u.searchParams.set("id", String(row.id));
     const cells = children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻"));
     trs.push(html.async`<tr u2-href>
@@ -123,7 +123,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   ${cells}
   <td>${u2.el.time(row.init_time)}<br><small>${row.usr_init_username}</small>
   <td>${u2.el.time(row.edit_time)}<br><small>${row.usr_edit_username}</small>
-  <td>${await f.used()?"◼":""}
+  <td>${used ? "◼" : ""}
   <td>${row.access?"◼":""}
   <td>
     <button data-delete="${row.id}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);

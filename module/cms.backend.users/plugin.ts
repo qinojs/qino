@@ -195,15 +195,15 @@ async function contactsCard(node: Node, usrId: number) {
             ? "★"
             : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${makeMain}">☆</button>`}
           <td><button class=u2-unstyle data-contact-delete="${row.type}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
-        : html`<tr><td colspan=4>${await t`No contact yet — this user cannot be reached.`}`}
+        : html.async`<tr><td colspan=4>${t`No contact yet — this user cannot be reached.`}`}
     </table>
-    ${html.async`<form class=-body data-contact-add>
+    <form class=-body data-contact-add>
       <select name=type>
         ${types.map((type) => html`<option value="${type}">${type}</option>`)}
       </select>
       <input name=address placeholder="${t`Address`}">
       <button>${t`add`}</button>
-    </form>`}`;
+    </form>`;
 }
 
 async function renderDetail(node: Node, id: number) {
