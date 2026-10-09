@@ -117,7 +117,9 @@ Deno.test("cms.backend.ai1: the views render the matrix and the providers, escap
   assert(!list.includes("[object Promise]") && !matrix.includes("[object Promise]"));
   assertStringIncludes(list, 'title="Get a key"'); // a catalog provider
   assertStringIncludes(list, "…1234");
-  assertStringIncludes(String(await widget(app)), "<b>1</b> active models");
+  assertStringIncludes(String(await widget(app)), "<b>0</b> active models"); // its only provider is off
+  await api(node, { set: { table: "ai1_provider", id: 1, column: "enabled", value: true } });
+  assertStringIncludes(String(await widget(app)), "<b>1</b> active models · <b>1</b> providers");
 });
 
 Deno.test("cms.backend.ai1: all models of every provider are imported, switched on, one per name", async () => {

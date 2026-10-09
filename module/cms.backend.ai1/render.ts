@@ -414,8 +414,9 @@ async function tryCard(app: App) {
 /** Dashboard: active models, providers, those without key, whether benchmarks come in. */
 export async function widget(app: App): Promise<HtmlString> {
   const t = app.t;
-  const models = Number(await app.db.one`SELECT COUNT(*) FROM ai1_model WHERE enabled = ${true}`);
-  const names = (await app.db.col`SELECT name FROM ai1_provider WHERE enabled = ${true}`).map(String);
+  // in use: what has a switched-on offer
+  const models = Number(await app.db.one`SELECT COUNT(*) FROM ai1_model m WHERE ${USABLE}`);
+  const names = (await app.db.col`SELECT name FROM ai1_provider p WHERE EXISTS (SELECT 1 FROM ai1_model_provider o WHERE o.provider_id = p.id AND o.enabled = ${true})`).map(String);
   const keyless = [];
   for (const name of names) if (!await app.settings.core.keys[name]) keyless.push(name);
   const benchmarks = !!await app.settings.core.keys[BENCHMARKS_KEY];
