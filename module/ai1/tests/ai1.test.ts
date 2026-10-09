@@ -93,6 +93,10 @@ Deno.test("ai1: embeddings never fall back to another model", async () => {
   const testApp = await app({ a: ["embed"], b: ["embed"] }, { fake: vectors });
   await assertRejects(() => embed(testApp, { texts: ["x"] }), AiError, "down"); // b would give other vectors
   assertEquals(await embed(testApp, { texts: ["x"] }, { model: "b" }), [[1]]); // pinned, it is b's
+  // a pin binds: switched off, b is still the one; a pinned a that is down (resting) never becomes b
+  await testApp.db.exec`UPDATE ai1_model_provider SET enabled = ${false}`;
+  assertEquals(await embed(testApp, { texts: ["x"] }, { model: "b" }), [[1]]);
+  await assertRejects(() => embed(testApp, { texts: ["x"] }, { model: "a" }), AiError, 'No model for "embed"');
 });
 
 Deno.test("ai1: a pinned model goes first, needs filter the candidates", async () => {

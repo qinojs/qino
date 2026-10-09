@@ -8,6 +8,7 @@ import fileSchema from "./sources/file.json" with { type: "json" };
 import type { App } from "@qino/qino";
 
 export { cron } from "./sources/file.ts";
+export { healthChecks } from "./healthChecks.ts";
 
 export const dbSchema = { properties: { ...schema.properties, ...fileSchema.properties } };
 

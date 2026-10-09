@@ -103,7 +103,7 @@ in the messages) and `tools`. A model is a candidate if it has the capability an
 3. At the end, the `via` capabilities themselves: no translation service means `translate` via `text`.
 
 Embeddings never fall back to another model: its vectors wouldn't fit the index. Pin the model you
-index with (`opts.model`).
+index with (`opts.model`): the pin binds, its offers count even when switched off.
 Use `purpose: "index"` for stored content and `purpose: "query"` for search text. NVIDIA's
 asymmetric embedding endpoint receives these as `input_type: "passage"` and `"query"`; Jina Omni
 receives `task: "retrieval.passage"` and `"retrieval.query"`. A missing purpose defaults to indexing.

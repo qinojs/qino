@@ -24,7 +24,8 @@ export type Adapter = Record<string, (call: Call, input: any) => Promise<unknown
 /** How a capability is served: needs derived from the input, ways through another capability. */
 export type Capability = {
   needs?: (input: any) => string[];
-  /** Answers of different models don't mix (embeddings): fall back only between one model's providers. */
+  /** Answers of different models don't mix (embeddings): fall back only between one model's providers;
+   *  a pinned model binds, its offers count even when switched off. */
   oneModel?: boolean;
   via?: Record<string, (input: any, next: (input: any) => Promise<any>) => Promise<unknown>>;
 };
@@ -123,7 +124,7 @@ const definitions = (app: App, capability: string): Capability[] => app.modules.
  * ratio (log) and without the outer tenth on each side, scores as they are; unknown counts as worst.
  */
 export async function candidates(app: App, capability: string, input: unknown, { model, modelProvider, needs: wanted = [], prefer }: Opts = {}): Promise<Candidate[]> {
-  const defs = definitions(app, capability);
+  const defs = definitions(app, capability), one = defs.some((def) => def.oneModel);
   const needs = [...new Set([...wanted, ...defs.flatMap((def) => def.needs?.(input) ?? [])])];
   // a rough size in tokens, so models with a too small context are left out (data URLs don't count)
   const size = Math.ceil((JSON.stringify(input, (_, v) => typeof v === "string" && v.startsWith("data:") ? "" : v)?.length ?? 0) / 4);
@@ -134,7 +135,7 @@ export async function candidates(app: App, capability: string, input: unknown, {
     JOIN ai1_model m ON m.id = c.model_id
     JOIN ai1_model_provider mp ON mp.model_id = m.id
     JOIN ai1_provider p ON p.id = mp.provider_id
-    WHERE c.capability = ${capability} AND mp.enabled = ${true}
+    WHERE c.capability = ${capability} AND (mp.enabled = ${true}${one && model ? sql` OR m.name = ${model}` : sql``})
       AND (m.context_length IS NULL OR m.context_length >= ${size})
     ${needs.length ? sql`AND (SELECT COUNT(*) FROM ai1_model_capability n WHERE n.model_id = m.id AND ${sql.in("n.capability", needs)}) = ${needs.length}` : sql.raw("")}`;
   const metrics = [...new Set([capability, "intelligence", ...Object.keys(prefer ?? {})])].filter((k) => k !== "cost" && k !== "speed" && k !== "quality");
@@ -167,7 +168,7 @@ export async function candidates(app: App, capability: string, input: unknown, {
   const list = model ? [...rows.filter((c) => c.model === model), ...rows.filter((c) => c.model !== model)] : rows;
   const pinned = modelProvider ? list.findIndex((c) => c.id === modelProvider) : -1;
   if (pinned > 0) list.unshift(...list.splice(pinned, 1));
-  return defs.some((def) => def.oneModel) ? list.filter((c) => c.model === list[0].model) : list;
+  return one ? list.filter((c) => c.model === (model ?? list[0]?.model)) : list;
 }
 
 async function bind(app: App, candidate: Candidate, used: { input: number; output: number }, signal?: AbortSignal,
