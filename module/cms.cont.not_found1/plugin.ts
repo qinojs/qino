@@ -32,10 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // Always include the home page (id=2)
   possiblePages.add("2");
 
-  const listItems = [];
-  for (const pid of possiblePages) {
-    listItems.push(html`<li>${await node.cms.link(await node.cms.node(Number(pid)))}`);
-  }
+  const listItems = [...possiblePages].map((pid) => html.async`<li>${node.cms.link(Number(pid))}`);
 
   return html.async`<div>
   <div class=u2-width>
