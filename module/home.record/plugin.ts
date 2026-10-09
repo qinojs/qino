@@ -1,5 +1,5 @@
 import { ApiError, sql } from "@qino/qino";
-import { datapoint, datapoints, entities, value } from "@qino/qino/home";
+import { datapoint, datapoints, entities, providers, value } from "@qino/qino/home";
 
 import { record } from "./mod.ts";
 import { table, write } from "./lib/write.ts";
@@ -29,9 +29,11 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     return write(app, point, value(point, entity), time, { reported })
       .catch((error) => console.error("home.record:", error));
   };
-  // Adapters that connected before this listener existed: take one current observation.
-  const snapshot = (points: Datapoint[]) => {
-    for (const provider of new Set(points.map((point) => point.provider))) {
+  // Adapters that connected before this listener existed: take one current observation; a disabled
+  // provider has none to give.
+  const snapshot = async (points: Datapoint[]) => {
+    const enabled = new Set((await providers(app)).filter((row) => row.enabled).map((row) => row.id));
+    for (const provider of new Set(points.map((point) => point.provider).filter((id) => enabled.has(id)))) {
       entities(app, provider).then((current) => {
         for (const point of points.filter((point) => point.provider === provider)) {
           const entity = current.find((entity) => entity.id === point.entity) ?? null;
@@ -53,10 +55,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     const known = [...recorded.values()].flat().some((point) => point.id === id);
     await load();
     const point = [...recorded.values()].flat().find((point) => point.id === id);
-    if (point && !known) snapshot([point]);
+    if (point && !known) snapshot([point]).catch((error) => console.error("home.record:", error));
   }, { signal });
   app.on("home.history:read", (request) => read(app, request), { signal });
-  snapshot([...recorded.values()].flat());
+  snapshot([...recorded.values()].flat()).catch((error) => console.error("home.record:", error));
 }
 
 /** Expected intervals detect stale streams with one null gap; cached states are never copied. */
