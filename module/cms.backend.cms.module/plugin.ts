@@ -174,8 +174,10 @@ async function renderDetail(node: Node, modName: string, message: string) {
     </div>`;
   }
 
-  const access = await modAccess(app, modName);
-  const standard = await app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`;
+  const [access, standard] = await Promise.all([
+    modAccess(app, modName),
+    app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`,
+  ]);
 
   const LIMIT = 500;
   const rows = await app.db.query`

@@ -88,12 +88,14 @@ export default async function summary(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
   const dir = node.app.dir;
 
-  const tables = await dbTableStats(db);
+  const [tables, diskTotal, dfOut] = await Promise.all([
+    dbTableStats(db),
+    dirSize(dir),
+    new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output(),
+  ]);
   let dbTotal = 0;
   for (const t of tables) dbTotal += t.bytes;
 
-  const diskTotal = await dirSize(dir);
-  const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output();
   const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop());
 
   return html`

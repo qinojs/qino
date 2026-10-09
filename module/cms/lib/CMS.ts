@@ -169,17 +169,16 @@ export class CMS extends Emitter<CmsEvents> {
   async linkAttributes(node: Node | number): Promise<Record<string, string>> {
     const ctx = getCtx();
     const page = await this.node(Number(node));
-    const href = await page.url();
-    const target = (await page.urls()).get(ctx.lang)?.target;
+    const access = await page.access(); // first: url() and edit() reuse the cached level
     const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
-    const access = await page.access();
-    const inside = await mainNode.in?.(page);
-    const online = await page.isOnline();
-    const titleObj = await page.title();
+    const [href, urls, inside, online, titleObj, edit] = await Promise.all([
+      page.url(), page.urls(), mainNode.in?.(page), page.isOnline(), page.title(), page.edit(),
+    ]);
+    const target = urls.get(ctx.lang)?.target;
     return {
       href,
       class: `cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}`,
-      ...(await page.edit() ? { cmstxt: String(titleObj?.id ?? "") } : {}),
+      ...(edit ? { cmstxt: String(titleObj?.id ?? "") } : {}),
       ...(mainNode === page ? { "aria-current": "page" } : {}),
       ...(target ? { target } : {}),
     };

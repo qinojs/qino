@@ -152,8 +152,10 @@ const settingsEditor = (module: string) =>
 async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
-  const row = await app.db.row`SELECT * FROM payment WHERE id = ${id}`;
-  const pageUrl = await (await node.page()).url();
+  const [row, pageUrl] = await Promise.all([
+    app.db.row`SELECT * FROM payment WHERE id = ${id}`,
+    node.page().then((page) => page.url()),
+  ]);
   if (!row) return html.async`<div class=u2-card><div>${t`No payment`} ${id}</div></div>`;
   const provider = providerOf(app, String(row.provider));
   const open = Number(row.paid) - Number(row.refunded);

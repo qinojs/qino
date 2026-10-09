@@ -99,7 +99,7 @@ async function overview(node: Node, url: URL) {
   const from = url.searchParams.get("from") || `${year}-01-01`;
   const to = url.searchParams.get("to") || `${year}-12-31`;
   const currency = await mainCurrency(app) ?? "";
-  const accounts = await balances(app, { from, to }), flows = await balances(app, { from, to, closings: false });
+  const [accounts, flows] = await Promise.all([balances(app, { from, to }), balances(app, { from, to, closings: false })]);
   const selected = (number: unknown) => url.searchParams.get("account") === number ? html.raw(" selected") : "";
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 100%">
@@ -250,8 +250,10 @@ function entryForm(app: App, accounts: Row[]) {
 async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
-  const entry = await app.db.row`SELECT * FROM accounting_entry WHERE id = ${id}`;
-  const pageUrl = await (await node.page()).url();
+  const [entry, pageUrl] = await Promise.all([
+    app.db.row`SELECT * FROM accounting_entry WHERE id = ${id}`,
+    node.page().then((page) => page.url()),
+  ]);
   if (!entry) return html.async`<div class=u2-card><div>${t`No entry`} ${id}</div></div>`;
   const [lines, files, reversal] = await Promise.all([
     app.db.query`SELECT l.*, a.number, a.name FROM accounting_entry_line l

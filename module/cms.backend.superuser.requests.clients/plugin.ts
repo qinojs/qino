@@ -52,8 +52,10 @@ const userName = (row: Row) => [row.given_name, row.family_name].filter(Boolean)
 async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
-  const rows = await latest(node.app, LIMIT, { returning: !!f.returning });
-  const badges = await ipBadges(node.app);
+  const [rows, badges] = await Promise.all([
+    latest(node.app, LIMIT, { returning: !!f.returning }),
+    ipBadges(node.app),
+  ]);
   const u = ctx.req.url.toURL();
   const href = (client: unknown) => (u.searchParams.set("id", String(client)), u.search);
 
@@ -265,8 +267,10 @@ async function renderDetail(node: Node, id: number) {
 
 // newest other clients with more than one request
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
-  const rows = await latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) });
-  const badges = await ipBadges(app);
+  const [rows, badges] = await Promise.all([
+    latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) }),
+    ipBadges(app),
+  ]);
   if (!rows.length || !page) return html``;
   const pageUrl = await page.url();
   const href = (client: unknown) => backend.toUrl(pageUrl, { id: client });

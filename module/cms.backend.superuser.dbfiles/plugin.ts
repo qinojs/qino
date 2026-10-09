@@ -112,7 +112,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
-    const exists = await f.exists(), used = await f.used();
+    const [exists, used] = await Promise.all([f.exists(), f.used()]);
     u.searchParams.set("id", String(row.id));
     const cells = children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻"));
     trs.push(html.async`<tr u2-href>
@@ -237,8 +237,8 @@ async function renderDetail(node: Node, id: number) {
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.req.url.toURL();
 
-  const preview = exists ? await mediaView(f) : "";
-  const text = exists ? await textView(f) : "";
+  const preview = exists ? mediaView(f) : "";
+  const text = exists ? textView(f) : "";
 
   return html.async`
 <div class=u2-flex>

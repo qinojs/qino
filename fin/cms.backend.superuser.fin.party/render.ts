@@ -153,9 +153,11 @@ async function credit(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const { moves } = await import("@qino/qino/fin.payment.credit");
-  const rows = await moves(app, id);
-  const balances = await app.db.query`SELECT currency, SUM(amount) AS amount FROM payment_credit
-    WHERE usr_id = ${id} GROUP BY currency ORDER BY currency`;
+  const [rows, balances] = await Promise.all([
+    moves(app, id),
+    app.db.query`SELECT currency, SUM(amount) AS amount FROM payment_credit
+      WHERE usr_id = ${id} GROUP BY currency ORDER BY currency`,
+  ]);
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Credit`} ${amounts(balances)}</div>
     ${rows.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">

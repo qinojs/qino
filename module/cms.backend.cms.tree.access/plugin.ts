@@ -32,8 +32,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const pathParts: HtmlString[] = [];
   for (const child of (await rootNode.path()).values()) {
-    const title = (await child.title(ctx.lang)) || "(no text)";
-    pathParts.push(html`<a href="${"?rp=" + child.id}">${String(title).trim() || "(no text)"}</a> > `);
+    const title = String(await child.title(ctx.lang) ?? "").trim();
+    pathParts.push(html`<a href="?rp=${child.id}">${title || "(no text)"}</a> > `);
   }
 
   const groups = await accessGroups(app);
@@ -90,12 +90,11 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
 
   const treeType = admin.showContents() ? "*" : "p";
 
-  const rootNode = await node.cms.node(Number(admin.rootPageNode()) || 1);
-  const groups = await accessGroups(app);
+  const [rootNode, groups] = await Promise.all([node.cms.node(Number(admin.rootPageNode()) || 1), accessGroups(app)]);
 
-  const trs: HtmlString[] = [];
+  const trs: Promise<HtmlString>[] = [];
   await renderChildren(rootNode, 0);
-  return html.join(trs);
+  return html.async`${trs}`;
 
   async function renderChildren(parent: Node, level: number) {
     for (const [id, subPage] of await parent.children({ type: treeType })) {
@@ -112,8 +111,8 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
       const titleObj = await subPage.title();
       const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
       const titleCell = access >= 1
-        ? html`<span style="flex:1">${titleStr || "(no text)"} <span style="color:#888">${subPage.vs.name}</span></span><a style="vertical-align:middle" href="${await subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
-        : html`<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
+        ? html.async`<span style="flex:1">${titleStr || "(no text)"} <span style="color:#888">${subPage.vs.name}</span></span><a style="vertical-align:middle" href="${subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
+        : html.async`<span style="flex:1; color:#bbb">(${app.t`no access`})</span>`;
 
       // "Public" cell — toggles this page's own access (null = inherited)
       const editable = access > 2;
@@ -132,10 +131,10 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
           : html`<td>`);
       }
 
-      trs.push(html`
+      trs.push(html.async`
 <tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage}">
   <td style="text-align:right; font-weight:bold">
-    <a title="${await app.t`Set as start point`}" href="${"?rp=" + id}">${id}</a>
+    <a title="${app.t`Set as start point`}" href="?rp=${id}">${id}</a>
   <td style="padding-left:${level * 15}px; white-space:nowrap">
     <div style="display:flex; align-items:center">${toggleBtn}${titleCell}</div>
   ${publicCell}

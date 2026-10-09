@@ -304,8 +304,10 @@ async function original(node: Node, row: Row) {
 async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
-  const row = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
-  const pageUrl = await (await node.page()).url();
+  const [row, pageUrl] = await Promise.all([
+    app.db.row`SELECT * FROM invoice WHERE id = ${id}`,
+    node.page().then((page) => page.url()),
+  ]);
   if (!row) return html.async`<div class=u2-card><div>${t`No invoice`} ${id}</div></div>`;
   if (row.status === "draft") return editor(node, row);
   const party = JSON.parse(String(row.party ?? "{}")) ?? {};

@@ -57,10 +57,10 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
 async function renderRow(app: App, job: JobStatus) {
   const due = job.active && !job.running && job.nextRun <= Date.now() / 1000;
   const [state, stateColor] = await stateInfo(app, job, due);
-  const error = job.lastError ? html`<details><summary>${await app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";
+  const error = job.lastError ? html.async`<details><summary>${app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";
   const action = job.active
-    ? html`<button type=button data-run-job="${job.id}" ${job.running ? "disabled" : ""}
-        u2-confirm="${await app.t`Run this job now?`}">${await app.t`Run now`}</button>`
+    ? html.async`<button type=button data-run-job="${job.id}" ${job.running ? "disabled" : ""}
+        u2-confirm="${app.t`Run this job now?`}">${app.t`Run now`}</button>`
     : "";
 
   return html.async`<tr ${job.active ? "" : "data-inactive"}>

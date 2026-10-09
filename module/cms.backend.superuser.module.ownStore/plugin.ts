@@ -101,7 +101,7 @@ async function render(node: Node) {
   const app = node.app;
   const t = app.t;
   const store = app.stores.get(storeUrl(app));
-  const mine = await (store?.names() ?? Promise.resolve([])).catch(() => []);
+  const mine = await store?.names().catch(() => []) ?? [];
   const templates = app.modules.all().values().filter((mod) => mod.manifest.files?.length).map((mod) => mod.name).toArray().sort();
   const modulesUrl = await backend.toModuleUrl(node, "cms.backend.superuser.module");
 

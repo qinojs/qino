@@ -9,18 +9,20 @@ import type { Node } from "./lib/Node.ts";
 // ─── business logic used by REST ──────────────
 
 export async function nodeToJson(node: Node, type = "*"): Promise<any> {
-    const title = await node.showTitle();
-    const access = await node.access();
+    const access = await node.access(); // first: showTitle() and url() reuse the cached level
+    const [title, children, url, online, isPublic] = await Promise.all([
+        node.showTitle(), node.children({ type }), node.url(), node.isOnline(), node.isPublic(),
+    ]);
     return {
         id:          node.id,
         title:       access ? (String(title).trim() || "-") : "(no access)",
         title_id:    title.id,
-        numChildren: (await node.children({ type })).size,
-        url:         await node.url(),
+        numChildren: children.size,
+        url,
         myaccess:    access,
         visible:     Number(node.vs?.visible ?? 0),
-        online:      (await node.isOnline()) ? 1 : 0,
-        public:      (await node.isPublic()) ? 1 : 0,
+        online:      online ? 1 : 0,
+        public:      isPublic ? 1 : 0,
         type:        node.vs.type,
         module:      node.vs.module,
         name:        String(node.vs.name ?? ""),
@@ -238,8 +240,10 @@ export const cleanRequest = (v: string): string => String(v ?? "").trim().replac
 export async function requestUsed(v: string): Promise<boolean> {
     v = cleanRequest(v);
     const db = getCtx().app.db;
-    const r  = await db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`;
-    const u  = await db.one`SELECT count(*) FROM page_url WHERE url = ${v}`;
+    const [r, u] = await Promise.all([
+        db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`,
+        db.one`SELECT count(*) FROM page_url WHERE url = ${v}`,
+    ]);
     return !!(r || u);
 }
 

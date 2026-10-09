@@ -63,8 +63,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   if (get.id) return renderDetail(node, Number(get.id));
   if (get.show === "entries") return renderEntryList(node, ctx, get);
 
-  const sources = await db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`;
-  const prios   = await db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`;
+  const [sources, prios] = await Promise.all([
+    db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`,
+    db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`,
+  ]);
   const opts    = (vals: string[], cur: string) => vals.map(v => html`<option ${v === cur ? "selected" : ""}>${v}</option>`);
   const ranges: [string, string][] = [["", await t`all time`], ["1", await t`last 24h`], ["7", await t`last 7 days`], ["30", await t`last 30 days`]];
   const range  = get.range ?? "30"; // default window keeps the group scan off the full table
@@ -327,7 +329,7 @@ async function renderDetail(node: Node, id: number) {
   else if (historyOf === "sess"   && log?.sess_id)   historyWhere = sql`log.sess_id = ${log.sess_id}`;
   else if (historyOf === "client" && log?.client_id) historyWhere = sql`log.client_id = ${log.client_id}`;
 
-  const historyTrs = [];
+  let historyTrs: HtmlString[] = [];
   if (historyWhere) {
     const logs = await db.query`
       SELECT log.*, url.url, referer.url AS referer
@@ -338,7 +340,7 @@ async function renderDetail(node: Node, id: number) {
       ORDER BY log.id DESC LIMIT 30`.catch(() => []);
 
     const eu = ctx.req.url.toURL(); eu.searchParams.delete("history_of");
-    for (const item of logs) {
+    historyTrs = await Promise.all(logs.map(async (item) => {
       const errorItems = await db.query`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
       const errorLinks = [];
       for (const eItem of errorItems) {
@@ -346,15 +348,15 @@ async function renderDetail(node: Node, id: number) {
         eu.searchParams.set("id", String(eItem.id));
         errorLinks.push(html`<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:.1875rem 0; margin-bottom:-1px; display:block" href="${eu.search}">${active} ${eItem.message}</a>`);
       }
-      historyTrs.push(html`
+      return html`
 <tr>
   <td>${u2.el.time(item.time)} <br> Session: <span style="color:${backend.uniqueColor(item.sess_id)}">${item.sess_id}</span> <br> Log-ID: ${item.id}
   <td>
     ${backend.link(item.url)}<br>
     <div style="font-size:.9em; color:#aaa">${item.referer}</div>
     ${errorLinks}
-  <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`);
-    }
+  <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`;
+    }));
   }
 
   const hu = ctx.req.url.toURL(); hu.searchParams.set("id", String(id));

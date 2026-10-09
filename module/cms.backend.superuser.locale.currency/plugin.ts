@@ -30,10 +30,9 @@ async function render(node: Node) {
   const set = app.settings["locale.currency"];
   const every = String(await set.update ?? "never");
   const rows = await app.db.query`SELECT id, rate_to_usd FROM currency`;
-  // The option labels are translations, so they are resolved before they land in a fragment.
-  const options = await Promise.all(EVERY.map(async (v) =>
-    html`<option value=${v} ${v === every ? html.raw("selected") : ""}>${await label(t, v)}`
-  ));
+  const options = EVERY.map((v) =>
+    html.async`<option value=${v} ${v === every ? html.raw("selected") : ""}>${label(t, v)}`
+  );
 
   // A rate the job would overwrite on its next run is shown, not offered for editing.
   const byHand = every === "never";

@@ -360,8 +360,8 @@ async function renderDetail(node: Node, id: number) {
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const own = ctx.clientId;
-  const badges = await ipBadges(app);
-  const [rows, pageUrl] = await Promise.all([
+  const [badges, rows, pageUrl] = await Promise.all([
+    ipBadges(app),
     app.db.query`
       SELECT log.id, log.time, url.url AS url, ip.ip, ua.user_agent, usr.id AS usr_id, usr.username, usr.given_name, usr.family_name
        FROM log
