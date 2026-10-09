@@ -29,6 +29,7 @@
     "fin.payment.qrbill": {},
     "fin.payment.saferpay": {},
     "fin.payment.stripe": {},
-    "fin.subscription": {}
+    "fin.subscription": {},
+    "starter.fin": {}
   }
 }

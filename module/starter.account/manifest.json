@@ -1,0 +1,25 @@
+{
+  "name": "starter.account",
+  "description": "A personal account area: passkeys, authenticator app, backup codes and signed-in devices.",
+  "dependencies": [
+    "starter.cms",
+    "auth.webauthn",
+    "auth.totp",
+    "auth.backup_codes",
+    "cms.cont.webauthn",
+    "cms.cont.my.webauthn",
+    "cms.cont.my.totp",
+    "cms.cont.my.backup_codes",
+    "cms.cont.my.clients",
+    "cms.backend.superuser.auth",
+    "cms.backend.superuser.auth.webauthn",
+    "cms.backend.superuser.auth.totp",
+    "cms.backend.superuser.auth.backup_codes"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}
