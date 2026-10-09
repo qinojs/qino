@@ -1,4 +1,4 @@
-import { html, sql, unixTime } from "@qino/qino";
+import { html, safeEqual, sql, unixTime } from "@qino/qino";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -16,7 +16,7 @@ export function sensoryCms(type: keyof typeof labels) {
 async function render(node: Node, ctx: Ctx, type: keyof typeof labels) {
   const body = ctx.req.body;
   let saved = false;
-  if (body?.sensory_node === String(node.id) && body.csrfToken === ctx.csrfToken && ctx.userId) {
+  if (body?.sensory_node === String(node.id) && safeEqual(body.csrfToken, ctx.csrfToken) && ctx.userId) {
     const value = Math.max(0, Math.min(100, Number(body.value) || 0));
     const count = type === "twopoint" ? Math.max(0, Math.min(100, Number(body.count) || 0)) : 0;
     const distance = type === "twopoint" ? Math.max(0, Math.min(1000, Number(String(body.distance).replace(/[^0-9.]/g, ""))) || 0) : 0;

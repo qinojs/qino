@@ -137,7 +137,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
   }
 
   return html.async`<tr class="-item -item-${name}">
-      <th scope=row><label for="${common.id}">${await node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>
+      <th scope=row><label for="${common.id}">${node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>
       <td>${control}${error}`;
 }
 

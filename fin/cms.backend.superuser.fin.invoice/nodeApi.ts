@@ -12,6 +12,9 @@ import { emailOf } from "./render.ts";
 
 import type { Node } from "@qino/qino/cms";
 
+/** The address fields of the editor (schema.org PostalAddress). */
+const ADDRESS = ["streetAddress", "postalCode", "addressLocality", "addressRegion", "addressCountry"];
+
 /** Node access is the permission — whoever may open this backend page may act on invoices. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
@@ -42,7 +45,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       if (!u) return { ok: false, message: await t`No user` };
       const { name, address } = partyOf(u);
       // every field, an empty one too: what was typed before is replaced
-      const empty = { streetAddress: "", postalCode: "", addressLocality: "", addressRegion: "", addressCountry: "" };
+      const empty = Object.fromEntries(ADDRESS.map((key) => [key, ""]));
       return { name, ...empty, ...address, lang: String(u.lang ?? "") };
     }
     // by mail, with its PDF: to the address typed, else to its user's
@@ -162,8 +165,7 @@ function valuesOf(v: Record<string, string>) {
       taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : undefined, // empty: the default
     };
   });
-  const keys = ["streetAddress", "postalCode", "addressLocality", "addressRegion", "addressCountry"];
-  const address = Object.fromEntries(keys
+  const address = Object.fromEntries(ADDRESS
     .filter((key) => v[key]).map((key) => [key, key === "addressCountry" ? v[key].toUpperCase() : v[key]]));
   return {
     currency,

@@ -1,4 +1,4 @@
-import { html, sql, unixTime } from "@qino/qino";
+import { html, safeEqual, sql, unixTime } from "@qino/qino";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -14,7 +14,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (!exam) return html`<div><h2>Sie sind mit allen Prüfungen durch</h2></div>`;
   const tasks = await node.db.query`SELECT * FROM ${sql.id("exam1_task")} WHERE exam_id = ${exam.id} ORDER BY sort, id`;
 
-  if (ctx.userId && ctx.req.body?.exam_node === String(node.id) && ctx.req.body.csrfToken === ctx.csrfToken) {
+  if (ctx.userId && ctx.req.body?.exam_node === String(node.id) && safeEqual(ctx.req.body.csrfToken, ctx.csrfToken)) {
     let result = 0;
     for (const task of tasks) {
       const value = String(ctx.req.body[`task_${task.id}`] ?? "").trim();

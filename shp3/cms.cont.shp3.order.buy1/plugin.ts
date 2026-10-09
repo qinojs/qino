@@ -28,7 +28,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   return html.async`<div>
   ${errors.length ? html`<ul class=-errors>${errors.map((e) => html`<li>${e}</li>`)}</ul>` : ""}
   ${back?.exists() ? html.async`<a class=-back href="${back.url()}">${t`Back`}</a>` : ""}
-  <form class=-buy data-success=${success ? success.url() : ""}>
+  <form class=-buy data-success="${success ? success.url() : ""}">
     <button ${errors.length ? html.raw("disabled") : ""}>${t`Buy`}</button>
   </form>
 </div>`;

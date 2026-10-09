@@ -1,10 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { App, ConflictError, runAs, sql } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
-
 import { AiError } from "@qino/qino/ai1";
 import { collections, create, drop } from "@qino/qino/ai1.embed";
-
 import { hit } from "@qino/qino/score";
 
 import { HINT, index } from "../lib/memory.ts";

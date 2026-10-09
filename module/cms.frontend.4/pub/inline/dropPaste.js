@@ -152,8 +152,8 @@ const drop = async e => {
   e.preventDefault(); // before await!!
   const pid = await cms.txtIdToPid(tid);
   // todo: intern file
-  // Add file to awoid access problems, but its a copy!!!!
-  // we only get here if its on other winodw!! (if internalDrag return)
+  // Add file to avoid access problems, but its a copy!!!!
+  // we only get here if its on other window!! (if internalDrag return)
   const intern = dbFileId(fileUrl);
   if (intern) {
     api.cms.node(pid).files.post({ file: intern });

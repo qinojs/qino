@@ -114,19 +114,19 @@ on(document, "mousedown touchstart", e => {
 
 // shortcuts
 onShortcut((key, e) => {
-  if (key == "t") {
+  if (key === "t") {
     cms.cont.active = cms.contPos.active?.pid;
     sidebar.set("tree");
     e.preventDefault();
   }
-  if (key == " ") {
+  if (key === " ") {
     cms.cont.active = cms.contPos.active?.pid;
     sidebar.set("settings");
     e.preventDefault();
   }
-  if (key == "v") sidebar.set(sidebar.value === "add" ? "" : "add");
-  if (key == "Escape") sidebar.set("");
-  if (key == "n") { // n
+  if (key === "v") sidebar.set(sidebar.value === "add" ? "" : "add");
+  if (key === "Escape") sidebar.set("");
+  if (key === "n") { // n
     sidebar.set("tree");
     setTimeout(() => {
       const inp = findEl(el, "#page-add");

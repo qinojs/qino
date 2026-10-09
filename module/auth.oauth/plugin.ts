@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, addContact, ApiError, contactOwner, getCtx, identified, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, addContact, ApiError, contactOwner, getCtx, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
 import { links, unlink } from "./mod.ts";
@@ -194,7 +194,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   const q = ctx.req.query;
   const { prov, state, nonce, verifier, returnTo } = (ctx.sess.data.oauth() ?? {}) as Record<string, string>;
   ctx.sess.data.oauth({}); // spent whatever the outcome
-  if (prov !== name || !state || !q.code || q.state !== state) throw new Output("oauth state mismatch", { status: 400 });
+  if (prov !== name || !state || !q.code || !safeEqual(q.state, state)) throw new Output("oauth state mismatch", { status: 400 });
 
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);

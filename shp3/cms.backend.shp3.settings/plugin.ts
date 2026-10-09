@@ -20,10 +20,10 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 
 async function render(node: Node) {
   return html.async`<div class=u2-flex>
-  ${await address(node)}
-  ${await methods(node)}
-  ${await currencies(node)}
-  ${await countries(node)}
+  ${address(node)}
+  ${methods(node)}
+  ${currencies(node)}
+  ${countries(node)}
 </div>`;
 }
 
@@ -69,13 +69,13 @@ async function methods(node: Node) {
         <th>${t`Payment`}
         <td><label>
           <input class=-set type=checkbox data-setting=auto_select_payment ${await set.auto_select_payment ? html.raw("checked") : ""}>
-          ${await t`Preselect the first method`}
+          ${t`Preselect the first method`}
         </label>
       <tr>
         <th>${t`Delivery`}
         <td><label>
           <input class=-set type=checkbox data-setting=auto_select_shipping ${await set.auto_select_shipping ? html.raw("checked") : ""}>
-          ${await t`Preselect the first method`}
+          ${t`Preselect the first method`}
         </label>
       <tr>
         <th>${t`Product page`}
@@ -113,7 +113,7 @@ async function address(node: Node) {
         <th>${t`VAT`}
         <td><label>
           <input class=-set type=checkbox data-setting=vat.mode ${await set.vat.mode !== "excluded" ? html.raw("checked") : ""}>
-          ${await t`Included in the product prices`}
+          ${t`Included in the product prices`}
         </label>
     </table>
   </div>`;

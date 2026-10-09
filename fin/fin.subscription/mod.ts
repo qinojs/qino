@@ -172,9 +172,8 @@ export async function bill(app: App, { until }: { until?: string } = {}): Promis
       const following = addMonths(start, Number(sub.count) * (sub.unit === "month" ? 1 : 12));
       const currency = String(sub.currencyCode);
       const key = `${sub.usr_id}:${currency}`;
-      const group = groups.get(key) ?? { usrId: Number(sub.usr_id), currency, periods: [] as Row[] };
-      group.periods.push({ ...sub, period_start: start, period_end: addDays(following, -1) });
-      groups.set(key, group);
+      groups.getOrInsertComputed(key, () => ({ usrId: Number(sub.usr_id), currency, periods: [] as Row[] }))
+        .periods.push({ ...sub, period_start: start, period_end: addDays(following, -1) });
       start = following;
     }
   }

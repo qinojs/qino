@@ -144,8 +144,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   for (const r of rows) {
     const key = `${r.log_id}:${r.node_id}`;
     if (!events.has(key) && events.size >= 60) break;
-    const ev = events.get(key) ?? { row: r, labels: new Set<string>() };
-    events.set(key, ev);
+    const ev = events.getOrInsertComputed(key, () => ({ row: r, labels: new Set<string>() }));
     ev.labels.add(await describeChange(r.data, t)); // already HTML-escaped
   }
 

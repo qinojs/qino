@@ -51,8 +51,7 @@ export async function history(app: App): Promise<HtmlString> {
   const posts = new Map<number, { text: string; byProvider: Map<string, Row[]> }>();
   for (const row of rows) {
     const logId = Number(row.log_id);
-    if (!posts.has(logId)) posts.set(logId, { text: String(row.text), byProvider: new Map() });
-    const deliveries = posts.get(logId)!.byProvider;
+    const { byProvider: deliveries } = posts.getOrInsertComputed(logId, () => ({ text: String(row.text), byProvider: new Map() }));
     const name = String(row.provider);
     deliveries.getOrInsert(name, []).push(row);
   }

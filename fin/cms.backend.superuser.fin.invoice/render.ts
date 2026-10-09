@@ -142,7 +142,7 @@ async function newForm(app: App) {
       <option value=out>${t`Issued (receivable)`}
       <option value=in>${t`Received (payable)`}
     </select>
-    <input name=currency value="${await mainCurrency(app)}" required maxlength=3 size=4>
+    <input name=currency value="${mainCurrency(app)}" required maxlength=3 size=4>
     <button>${t`New invoice`}</button>
   </form>`;
 }
@@ -374,7 +374,7 @@ async function detail(node: Node, id: number) {
     </div>
     ${row.direction === "out" && row.status !== "canceled" && app.modules.linked("messaging.email") ? html.async`
     <form data-send="${id}">
-      <input type=email name=email value="${await emailOf(app, row.usr_id)}" placeholder="${t`Email address`}">
+      <input type=email name=email value="${emailOf(app, row.usr_id)}" placeholder="${t`Email address`}">
       <button>${t`Send by email`}</button>
     </form>` : ""}
   </div>

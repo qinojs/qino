@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { Db, invoke, Output, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, fakeT, testContext } from "@qino/qino/tests";
-
 import { AiError } from "@qino/qino/ai1";
 import { ai1Capabilities, dbSchema as ai1Schema } from "@qino/m/ai1/tests/deps.ts";
 

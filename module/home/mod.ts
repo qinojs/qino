@@ -1,5 +1,4 @@
 import { ApiError, NotFoundError } from "@qino/qino";
-
 import { validate } from "@qino/item/tools/schema/validator.js";
 
 import { leaves } from "./datapoint.ts";

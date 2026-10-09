@@ -3,7 +3,6 @@ import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { DbRow } from "../lib/db/DbRow.ts";
 import { Usr } from "../lib/rows.ts";
-
 import coreSchema from "../dbschema.json" with { type: "json" };
 
 class Order extends DbRow {

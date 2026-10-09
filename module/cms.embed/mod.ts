@@ -27,8 +27,8 @@ export async function sync(app: App): Promise<{ nodes: number; errors: string[] 
   for (const row of await db.query`SELECT u.node_id, t.lang, u.n, t.text FROM (${texts}) u
       JOIN text_lang t ON t.text_id = u.text_id ORDER BY u.node_id, t.lang, u.n, u.name`) {
     const id = `${row.node_id} ${row.lang}`, text = markdown(row.text);
-    if (!nodes.has(id)) nodes.set(id, { node_id: Number(row.node_id), lang: String(row.lang), parts: [] });
-    if (text) nodes.get(id)!.parts.push(Number(row.n) ? text : `# ${text}`);
+    const entry = nodes.getOrInsertComputed(id, () => ({ node_id: Number(row.node_id), lang: String(row.lang), parts: [] }));
+    if (text) entry.parts.push(Number(row.n) ? text : `# ${text}`);
   }
   for (const { node_id, lang, parts } of nodes.values()) {
     await index(app, "node_text", { node_id, lang }, parts.join("\n\n")).catch((e) => errors.push(`node ${node_id} ${lang}: ${e instanceof Error ? e.message : e}`));

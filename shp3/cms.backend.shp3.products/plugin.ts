@@ -94,11 +94,12 @@ async function renderProduct(node: Node, id: number) {
 
   const vs = await app.db.row`SELECT * FROM shp3_product WHERE id = ${id}` ?? {};
   const rates = await app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`;
-  const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => app.db.table("shp3_product").field(f));
+  const table = app.db.table("shp3_product");
+  const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => table.field(f));
 
   const rows = fields.map((field) => html`<tr>
     <th>${field}
-    <td>${app.db.table("shp3_product").field(field)!.schema.type === "boolean"
+    <td>${table.field(field)!.schema.type === "boolean"
       ? html`<input class=-f data-field=${field} type=checkbox ${vs[field] ? html.raw("checked") : ""}>`
       : html`<input class=-f data-field=${field} type=number step=any value="${Number(vs[field] ?? 0)}">`}`);
 

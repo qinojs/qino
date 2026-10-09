@@ -19,7 +19,7 @@ type Preset = {
   token_url?: string;
   userinfo_url?: string;
   email_url?: string;
-  console_url: string; // Wo man Client-ID/Secret erstellt
+  console_url: string; // where to create the client ID/secret
 };
 
 // Well-known providers, seeded on install; the admin adds client_id/secret and replaces placeholders.

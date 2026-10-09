@@ -1,7 +1,7 @@
 // Plugin of core. The public API is in ./mod.ts.
 import { randB64, sha256b64 } from "./lib/crypto.ts";
 import { isOn, Redirect, u2Root, itemRoot } from "./lib/util.ts";
-import { getCtx } from "./lib/ctx/Ctx.ts";
+import { getCtx, requestStorage } from "./lib/ctx/Ctx.ts";
 import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
 import { pendingLogin } from "./lib/auth/factors.ts";
@@ -193,7 +193,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     // (the log insert would wait for its own logId → deadlock)
     const stampLogId = (field: string) => async (e: DbEvents["table:insert-before"]) => {
       if (/^log(_|$)/.test(String(e.table))) return;
-      try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
+      const id = await requestStorage.getStore()?.logId; // none outside a request context
+      if (id) e.data[field] = id;
     };
     app.db.on("table:insert-before", stampLogId("log_id"), { signal });
     app.db.on("table:update-before", stampLogId("log_id_ch"), { signal });

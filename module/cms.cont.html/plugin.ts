@@ -1,5 +1,4 @@
 import { renderTemplateFile } from "@qino/qino/cms.templateParser";
-
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import { codeFiles } from "./codeFiles.ts";

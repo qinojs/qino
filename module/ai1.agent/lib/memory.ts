@@ -18,8 +18,7 @@ export async function list(app: App, agent: number, limit?: number): Promise<{ i
 }
 
 /** Told to the agent above its memories. */
-export const HINT = "Proactively remember workflows, preferences, and project rules, including casual mentions. Target: one memory per five user messages when useful. " +
-  "Keep entries concise; update rather than duplicate. Skip temporary details; never force the quota.";
+export const HINT = "Save durable knowledge with post_memories: rules, preferences, workflows, corrections, solutions worth reusing. Before each final answer, check: learned something lasting? Then save first. Update instead of duplicating; skip temporary details.";
 
 /** The strongest memories for the context, under the hint on how to keep them. */
 export async function index(app: App, agent: number): Promise<string> {

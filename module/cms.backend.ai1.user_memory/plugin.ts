@@ -135,7 +135,7 @@ async function render(node: Node) {
     const vars = { usr }, username = await db.one`SELECT username FROM usr WHERE id = ${usr}`;
     return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head><a href="${await pageUrl(node)}">${t`User memories`}</a> › ${t`User`} ${usr} ${colored(username)}</div>
+      <div class=-head><a href="${pageUrl(node)}">${t`User memories`}</a> › ${t`User`} ${usr} ${colored(username)}</div>
       <table class=u2-table cms-part=memories>${memories(node, { vars })}</table>
     </div>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Sessions`}</div><table class=u2-table cms-part=sessions>${sessions(node, { vars })}</table></div>

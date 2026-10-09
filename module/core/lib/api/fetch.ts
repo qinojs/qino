@@ -1,4 +1,5 @@
 import { getCtx, requestStorage } from "../ctx/Ctx.ts";
+import { safeEqual } from "../crypto.ts";
 import { errMsg, Output } from "../util.ts";
 import { ApiError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
@@ -72,6 +73,5 @@ function hostOf(value?: string) {
 }
 
 function hasValidCsrfToken(req: Req) {
-  const token = req.header("x-csrf-token");
-  return typeof token === "string" && token !== "" && token === getCtx().csrfToken;
+  return safeEqual(req.header("x-csrf-token"), getCtx().csrfToken);
 }

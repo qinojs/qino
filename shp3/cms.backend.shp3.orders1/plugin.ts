@@ -5,9 +5,9 @@ import { shp3 } from "@qino/qino/shp3";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { HtmlString, App, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Order } from "@qino/qino/shp3";
+import type { Currency, Order } from "@qino/qino/shp3";
 
 const { name } = manifest;
 
@@ -19,6 +19,8 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 }
 
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
+const total = (vs: Row, currency?: Currency) => `${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}`;
+const paidMark = (vs: Row) => Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : "";
 
 function render(node: Node) {
   const id = Number(getCtx().req.query.shp3_orderId ?? 0);
@@ -42,8 +44,8 @@ async function renderList(node: Node) {
     <td>${vs.username}
     <td>${vs.payment}
     <td>${vs.shipping}
-    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}
-    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}
+    <td>${total(vs, currency)}
+    <td>${paidMark(vs)}
     <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
 
   return html.async`<div class=u2-card>
@@ -137,8 +139,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     <td><a href="${url}?shp3_orderId=${vs.id}">${vs.id}</a>
     <td>${showTime(Number(vs.time_ordered))}
     <td>${vs.username}
-    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}
-    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}`);
+    <td>${total(vs, currency)}
+    <td>${paidMark(vs)}`);
 
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">

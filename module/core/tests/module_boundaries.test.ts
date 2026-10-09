@@ -33,8 +33,7 @@ function imports(source: string) {
   const found = new Map<string, Set<string>>();
   for (const { groups } of source.matchAll(IMPORT)) {
     if (!groups!.spec.startsWith(".") && !groups!.spec.startsWith("@qino/qino")) continue;
-    const names = found.get(groups!.spec) ?? new Set<string>();
-    found.set(groups!.spec, names);
+    const names = found.getOrInsertComputed(groups!.spec, () => new Set<string>());
     const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").replace(/^type\s+/, "").trim();
     if (clause.startsWith("*")) { names.add("*"); continue; }
     const braces = clause.match(/\{([\s\S]*?)\}/);
@@ -333,8 +332,7 @@ Deno.test("no mod.ts exports anything nobody imports", async () => {
       for (const [spec, names] of imports(await Deno.readTextFile(file))) {
         const target = targetPath(spec, file);
         if (!target?.startsWith(moduleDir)) continue;
-        const set = used.get(target) ?? new Set<string>();
-        used.set(target, set);
+        const set = used.getOrInsertComputed(target, () => new Set<string>());
         for (const name of names) set.add(name);
       }
     }

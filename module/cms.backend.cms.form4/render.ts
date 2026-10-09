@@ -181,7 +181,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
     </tbody>
     <tfoot><tr>
       <td colspan="${names.length + 2}">
-        ${total} ${await t`entries`}
+        ${total} ${t`entries`}
         ${total > PER_PAGE
     ? html`
           <button data-page="${Math.max(0, page - 1)}" ${page ? "" : html.raw("disabled")}>←</button>

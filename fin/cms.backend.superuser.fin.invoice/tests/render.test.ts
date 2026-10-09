@@ -1,5 +1,4 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-
 import { create, issue } from "@qino/qino/fin.invoice";
 import { setTransport } from "@qino/qino/messaging.email";
 

@@ -1,6 +1,5 @@
 import { addContact, ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
-
 import { ChannelError, outbox, pendingContacts } from "@qino/qino/messaging";
 
 import { deliver as transmit } from "../lib/provider.ts";

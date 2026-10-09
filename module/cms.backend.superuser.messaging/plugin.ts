@@ -4,7 +4,6 @@ import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels } from "@qino/qino/messaging";
 
 import { userMessages } from "./lib/journal.ts";
-
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 

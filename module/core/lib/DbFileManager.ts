@@ -239,7 +239,7 @@ export class DbFile extends File {
     return e.access;
   }
 
-  // async updateDb() { // not ussed?
+  // async updateDb() { // not used?
   //   const { md5 } = await this.ensureVs();
   //   this.path = this.#manager.directory + md5;
   //   await this.setVs({ text: await this.getText(), size: await this.size() });

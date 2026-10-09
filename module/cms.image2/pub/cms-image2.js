@@ -60,7 +60,7 @@
     observer.unobserve(img);
 
 
-    // add Resize eventListener, to reovserve intersection
+    // add Resize eventListener, to re-observe intersection
     c1UglyResize.add(img);
     if (!img.c1UgliResizeBoundEventListener) {
       img.c1UgliResizeBoundEventListener = debounce(() => {
@@ -110,8 +110,8 @@
 
   // helper
   function roundImgSize(v){
-    const intervall = v > 400 ? 50 : 30;
-    return Math.ceil(v/intervall) * intervall;
+    const interval = v > 400 ? 50 : 30;
+    return Math.ceil(v/interval) * interval;
   }
   // run after `min`ms idle, but at latest `max`ms after the first call
   function debounce(fn, min, max){
@@ -145,7 +145,7 @@
   !function(){
     //window.c1UglyResize = {};
 
-    let latestEl = null; // prevent (chrome?) from dispatch imediatly on observe
+    let latestEl = null; // prevent (chrome?) from dispatching immediately on observe
     c1UglyResize.add = (el) => {
       latestEl = el;
       setTimeout(() => { latestEl = null; }, 10); // not needed if if (src === img._latestSrc) return; check
