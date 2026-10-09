@@ -61,7 +61,8 @@ export function listen(
   host.on(flow.on.event, (e: unknown) => {
     const ctx = requestStorage.getStore();
     if (ctx?.state.flow === flow) return;
-    const event = view(e), context = { user: ctx?.userId || undefined };
+    // a request still making its session (its own insert into sess) knows no user yet
+    const event = view(e), context = { user: ctx?.sess ? ctx.userId || undefined : undefined };
     // in the background: the emitter never waits for a flow
     exec(app, flow, event, context, box).then(report, console.error);
   }, { signal });

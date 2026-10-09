@@ -93,3 +93,13 @@ Deno.test("sandbox.flow: a run leaves its state to the next; a test keeps none",
     const tried = flow(`state.n = 1;`, { state: { n: 0 } }); // a test
     assertEquals([(await run(app, tried, 0)).state, tried.state], [undefined, { n: 0 }]);
   }));
+
+Deno.test("sandbox.flow: an event while a request makes its session does not break the request", () =>
+  withApp(async (app) => {
+    const stop = new AbortController();
+    listen(app, flow(`return;`, { on: { host: "db", event: "table:insert-after" } }), { signal: stop.signal });
+    const res = await app.handle(new Request("https://example.test/nope"), "", "127.0.0.1"); // inserts its session
+    await res.body?.cancel();
+    stop.abort();
+    assertEquals(res.status !== 500, true);
+  }));
