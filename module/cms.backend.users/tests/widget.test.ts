@@ -24,7 +24,7 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
       one: () => oneValues.shift(),
       query: () => Promise.resolve([{ username: "user@example.test", access: 1700000000 }]),
     },
-    t: (s: TemplateStringsArray) => s.join(""),
+    t: (s: TemplateStringsArray) => Promise.resolve(s.join("")),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];
   const out = String(await backendDashboardWidget(app));
   assertEquals(out.includes("Total:<td>7"), true);

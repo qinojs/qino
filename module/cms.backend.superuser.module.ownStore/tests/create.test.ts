@@ -28,7 +28,7 @@ async function fixture() {
 Deno.test("own modules link to module administration details", async () => {
   const app = {
     dir: "/app/",
-    t: (strings: TemplateStringsArray) => strings.join(""),
+    t: (strings: TemplateStringsArray) => Promise.resolve(strings.join("")),
     stores: { get: () => ({ names: () => Promise.resolve(["cms.cont.own"]) }) },
     modules: { all: () => new Map(), linked: () => true },
   };

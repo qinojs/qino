@@ -30,9 +30,11 @@ async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> 
   const order = sort ? sql`${sql.id(sort)} ${sql.raw(dir)}` : sql`${sh.order}, hits DESC`;
   // one page at a time: the table grows with every campaign, and sorting it belongs in the database
   const page = Math.max(0, Number(vars.page) || 0);
-  const total = Number(await db.one`SELECT count(*) FROM shorturl WHERE ${sh.where}`);
-  const rows = await db.query`
-    SELECT * FROM shorturl WHERE ${sh.where} ORDER BY ${order}, code LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`;
+  const [count, rows] = await Promise.all([
+    db.one`SELECT count(*) FROM shorturl WHERE ${sh.where}`,
+    db.query`SELECT * FROM shorturl WHERE ${sh.where} ORDER BY ${order}, code LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
+  ]);
+  const total = Number(count);
 
   const root = await node.app.url();
   const now = unixTime();

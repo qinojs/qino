@@ -27,8 +27,8 @@ async function render(node: Node, {ctx}: {ctx: Ctx}) {
   // Breadcrumb path to root node
   const pathParts = [];
   for (const child of (await rootNode.path()).values()) {
-    const title = (await child.title(ctx.lang)) || "(no text)";
-    pathParts.push(html`<a href="${"?rp=" + child.id}">${String(title).trim() || "(no text)"}</a> > `);
+    const title = String(await child.title(ctx.lang) ?? "").trim();
+    pathParts.push(html`<a href="?rp=${child.id}">${title || "(no text)"}</a> > `);
   }
 
   const showContents = ctx.settings.cms.admin.showContents();
@@ -57,18 +57,15 @@ async function render(node: Node, {ctx}: {ctx: Ctx}) {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const db = app.db;
   const t = app.t;
   const now = unixTime();
-  const total   = Number(await db.one`SELECT count(*) FROM page WHERE type='p'`);
-  const offline = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`);
-  const hidden  = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND visible=${false}`);
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>${t`Pages total`}:<td>${total}
-  <tr><td>${t`Offline`}:<td>${offline}
-  <tr><td>${t`Hidden`}:<td>${hidden}
+  <tr><td>${t`Pages total`}:<td>${db.one`SELECT count(*) FROM page WHERE type='p'`}
+  <tr><td>${t`Offline`}:<td>${db.one`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`}
+  <tr><td>${t`Hidden`}:<td>${db.one`SELECT count(*) FROM page WHERE type='p' AND visible=${false}`}
 </table>
 </div>`;
 }

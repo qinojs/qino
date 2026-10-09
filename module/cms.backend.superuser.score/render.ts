@@ -28,12 +28,11 @@ export async function list(node: Node): Promise<HtmlString> {
   const { db } = app;
   const now = unixTime();
   const known = scopes(db);
-  const total = Number(await db.one`SELECT COUNT(*) FROM score`);
   const cards = [];
   for (const [tbl, scope] of known) cards.push(await renderScope(app, tbl, scope, now));
 
   return html.async`<div class=-body>
-    <b>${known.size}</b> ${app.t`scopes`} · ${total} ${app.t`scored rows`}
+    <b>${known.size}</b> ${app.t`scopes`} · ${db.one`SELECT COUNT(*) FROM score`} ${app.t`scored rows`}
   </div>
   ${cards}
   ${renderStale(app, known)}`;

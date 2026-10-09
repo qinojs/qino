@@ -15,9 +15,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** How many read invoices wait to be checked. */
-async function widget(app: App): Promise<HtmlString> {
-  const waiting = Number(await app.db.one`SELECT COUNT(*) FROM invoice WHERE direction = 'in' AND status = 'draft'`);
-  return html.async`<div><b>${waiting}</b> ${app.t`received invoices to check`}</div>`;
+function widget(app: App): Promise<HtmlString> {
+  return html.async`<div><b>${app.db.one`SELECT COUNT(*) FROM invoice WHERE direction = 'in' AND status = 'draft'`}</b> ${app.t`received invoices to check`}</div>`;
 }
 
 export const cms = {

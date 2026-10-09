@@ -30,7 +30,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   let redirectUrl = "";
   if (redirectId) {
     const p = await node.cms.node(redirectId);
-    if (p?.exists()) redirectUrl = await p.url();
+    if (p.exists()) redirectUrl = await p.url();
   }
 
   return html.async`<div data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">

@@ -92,8 +92,11 @@ async function renderProduct(node: Node, id: number) {
   const page = await node.cms.node(id);
   if (!page.exists()) return html.async`<div class=u2-card><div>${t`Product not found.`}</div></div>`;
 
-  const vs = await app.db.row`SELECT * FROM shp3_product WHERE id = ${id}` ?? {};
-  const rates = await app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`;
+  const [row, rates] = await Promise.all([
+    app.db.row`SELECT * FROM shp3_product WHERE id = ${id}`,
+    app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`,
+  ]);
+  const vs = row ?? {};
   const table = app.db.table("shp3_product");
   const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => table.field(f));
 

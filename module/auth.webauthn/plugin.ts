@@ -32,9 +32,8 @@ export const cron = {
 const CHALLENGE_TTL = 5 * 60;
 
 async function getRp(app: App) {
-  const rpId   = String(await app.settings["auth.webauthn"].rpId   ?? "") || "localhost";
-  const rpName = String(await app.settings["auth.webauthn"].rpName ?? "") || "Qino";
-  return { rpId, rpName };
+  const set = app.settings["auth.webauthn"];
+  return { rpId: String(await set.rpId ?? "") || "localhost", rpName: String(await set.rpName ?? "") || "Qino" };
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
@@ -352,7 +351,7 @@ export const api: ApiTree = {
           const ctx  = getCtx();
           const cred = await ctx.app.db.row`SELECT usr_id FROM webauthn_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
-          if (Number(cred.usr_id) !== ctx.userId && !(ctx.user?.superuser)) throw new AccessError();
+          if (Number(cred.usr_id) !== ctx.userId && !ctx.user?.superuser) throw new AccessError();
           await ctx.app.db.table("webauthn_credential").delete(credId);
           return { ok: true };
         },

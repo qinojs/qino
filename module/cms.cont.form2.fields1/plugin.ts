@@ -132,7 +132,7 @@ async function field(node: Node, id: string, form: Form | undefined) {
     }
   }
 
-  const labelHtml = html`<span class=-label>${await node.cms.text(node, id + "_title", { tag: "span" })}${required && label ? " *" : ""}</span>`;
+  const labelHtml = html.async`<span class=-label>${node.cms.text(node, id + "_title", { tag: "span" })}${required && label ? " *" : ""}</span>`;
   return html.async`
     <label class="-item -item-${id}">
       ${labelPosition === "right" ? "" : labelHtml}
@@ -153,7 +153,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const id of sortedIds(node)) fields.push(await field(node, id, form));
 
   const warning = edit && !form
-    ? html`<u2-alert open variant=warning>${await node.app.t`This module belongs inside a "cms.cont.form2" module.`}</u2-alert>`
+    ? html.async`<u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form2" module.`}</u2-alert>`
     : "";
 
   const cls = LABEL_CLASS[String(node.settings.labelPosition() ?? "")] ?? "";

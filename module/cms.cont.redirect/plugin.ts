@@ -80,13 +80,13 @@ async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: strin
   const mode = value in relatives ? value : "url";
 
   const labels = {
-    "url": await t`Page or URL`,
-    "__parent__": await t`Parent page`,
-    "__first-child__": await t`First subpage`,
-    "__last-child__": await t`Last subpage`,
+    "url": t`Page or URL`,
+    "__parent__": t`Parent page`,
+    "__first-child__": t`First subpage`,
+    "__last-child__": t`Last subpage`,
   };
   const options = Object.entries(labels).map(([key, label]) =>
-    html`<option value="${key}"${key === mode ? html.raw(" selected") : ""}>${label}`
+    html.async`<option value="${key}"${key === mode ? html.raw(" selected") : ""}>${label}`
   );
 
   const title = target ? (await target.showTitle()).plain() : "";

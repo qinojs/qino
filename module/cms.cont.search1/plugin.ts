@@ -57,15 +57,17 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   const startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
 
-  const titles = await db.query`
-    SELECT p.id, t.text FROM page p
-    JOIN text_lang t ON t.text_id = p.title_id AND t.lang = ${ctx.lang}
-    WHERE ${where} ${scope} LIMIT 100`;
-  const texts = await db.query`
-    SELECT p.id, t.text, pt.name FROM page p
-    JOIN page_text pt ON pt.page_id = p.id
-    JOIN text_lang t ON t.text_id = pt.text_id AND t.lang = ${ctx.lang}
-    WHERE ${where} ${scope} LIMIT 200`;
+  const [titles, texts] = await Promise.all([
+    db.query`
+      SELECT p.id, t.text FROM page p
+      JOIN text_lang t ON t.text_id = p.title_id AND t.lang = ${ctx.lang}
+      WHERE ${where} ${scope} LIMIT 100`,
+    db.query`
+      SELECT p.id, t.text, pt.name FROM page p
+      JOIN page_text pt ON pt.page_id = p.id
+      JOIN text_lang t ON t.text_id = pt.text_id AND t.lang = ${ctx.lang}
+      WHERE ${where} ${scope} LIMIT 200`,
+  ]);
 
   const found = new Map<number, { page: Node; text: string; score: number }>();
   for (const [rows, isTitle] of [[titles, true], [texts, false]] as const) {

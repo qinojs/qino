@@ -157,7 +157,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const name of sortedNames(node)) fields.push(await field(node, name, form, ctx));
 
   const warning = await node.edit() && !path.some((n) => n.vs.module === "cms.cont.form4")
-    ? html`<tr><td colspan=2><u2-alert open variant=warning>${await node.app.t`This module belongs inside a "cms.cont.form4" module.`}</u2-alert>`
+    ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form4" module.`}</u2-alert>`
     : "";
 
   return html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;

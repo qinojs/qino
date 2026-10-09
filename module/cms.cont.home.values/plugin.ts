@@ -35,7 +35,7 @@ async function render(node: Node) {
   try {
     const rows = (await providers(app)).filter((row) => row.enabled && (!provider || row.id === provider));
     if (!rows.length) return html.async`<div><p>${t`No home providers are linked.`}</p></div>`;
-    return html`<div>${await Promise.all(rows.map(section))}</div>`;
+    return html.async`<div>${rows.map(section)}</div>`;
   } catch (error) {
     return html`<div><p role=alert>${errMsg(error)}</p></div>`;
   }

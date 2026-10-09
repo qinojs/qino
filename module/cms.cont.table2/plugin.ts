@@ -34,9 +34,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const units = node.settings.units() === "%" ? "%" : "px";
   const bottomUp = !!node.settings.direction();
 
-  if (
-    ctx.req.query.export_table && ctx.req.query.export_table === String(node)
-  ) {
+  if (ctx.req.query.export_table === String(node)) {
     const titleStr = (await node.showTitle()).plain();
     const d = new Date();
     const dateStr = `${String(d.getDate()).padStart(2, "0")}.${

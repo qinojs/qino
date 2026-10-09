@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { formOf } from "@qino/qino/cms.cont.form2";
 
-
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 

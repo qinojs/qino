@@ -59,9 +59,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const imgHtml = cms_image2(img, options);
 
-  let editHtml: HtmlString | string = "";
+  let editHtml: Promise<HtmlString> | string = "";
   if (edit) {
-    editHtml = await html.async`
+    editHtml = html.async`
         <div class="-alt-edit qgCMS">
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text.plain()}">
         </div>

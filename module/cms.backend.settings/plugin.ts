@@ -17,11 +17,10 @@ function render(_node: unknown, { ctx }: { ctx: Ctx }) {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
-  const count = Number(await app.db.one`SELECT count(*) FROM qg_setting`);
-  return html`<div style="overflow:auto; padding:0">
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>Entries:<td>${count}
+  <tr><td>Entries:<td>${app.db.one`SELECT count(*) FROM qg_setting`}
 </table>
 </div>`;
 }

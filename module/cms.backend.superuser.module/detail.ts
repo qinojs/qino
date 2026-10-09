@@ -188,7 +188,7 @@ const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); //
 // Superuser only.
 async function toggleModule(node: Node, vars: Record<string, unknown>) {
   const ctx = getCtx();
-  if (!(ctx.user?.superuser)) return;
+  if (!ctx.user?.superuser) return;
   try {
     if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.modules.unlink(n); }
     else if (vars.enable) await node.app.modules.link(String(vars.enable));
@@ -200,7 +200,7 @@ async function toggleModule(node: Node, vars: Record<string, unknown>) {
 /** Create an empty file inside the module, so the editor has something to open. Superuser only. */
 async function createFile(node: Node, modName: string, rel: string) {
   const ctx = getCtx();
-  if (!(ctx.user?.superuser)) return;
+  if (!ctx.user?.superuser) return;
   try {
     const dir = node.app.modules.get(modName)?.dir;
     if (!dir) throw new Error(`Module "${modName}" has no files here`);

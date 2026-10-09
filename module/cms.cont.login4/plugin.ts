@@ -51,11 +51,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     errorHtml = html`<div class=loginError>${html.raw(await node.showText("login failed"))}</div>`; // sanitized, like every text output
   }
 
-  const out: HtmlString[] = [html`<div>\n${errorHtml}\n`];
+  const out: (HtmlString | Promise<HtmlString>)[] = [html`<div>\n${errorHtml}\n`];
 
-  const usrIsLoggedIn = ctx.user;
-
-  if (!usrIsLoggedIn || edit) {
+  if (!ctx.user || edit) {
+    const showSaveLogin = settings.saveLogin();
     // Show history of recently logged-in users
     const historyLimit = Number(settings.history()) || 0;
     if (historyLimit > 0) {
@@ -67,10 +66,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
         const email = (await clientUsr.user())?.username;
         const saveLogin = clientUsr.save_login;
         const saveLoginChecked = saveLogin ? " checked" : "";
-        const showSaveLogin = settings.saveLogin();
         const showPwField = !saveLogin;
 
-        out.push(html`<form method=post>
+        out.push(html.async`<form method=post>
   ${
           showSaveLogin
             ? html`<input name=save_login type=checkbox value=1${saveLoginChecked}>`
@@ -80,7 +78,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   <input name=email type=hidden value="${email}">
   <input type=hidden name=csrfToken value="${csrfToken}">
   ${showPwField ? html`<input name=pw type=password>` : ""}
-  <button name=core_login>${await app.t`Log in`}</button>
+  <button name=core_login>${app.t`Log in`}</button>
 </form>\n`);
       }
     }
@@ -88,16 +86,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     // Main login form
     const fixUser = settings["fix user"]();
     const noAutofocus = settings["no autofocus"]();
-    const showSaveLogin = settings.saveLogin();
 
-    out.push(html`<form method=post>
+    out.push(html.async`<form method=post>
   <input type=hidden name=csrfToken value="${csrfToken}">
   ${fixUser ? html`<input type=hidden name=email value="${fixUser}">` : ""}
   <table>
     ${
       !fixUser
-        ? html`<tr class=-email>
-      <th>${await cms.text(node, "user", {
+        ? html.async`<tr class=-email>
+      <th>${cms.text(node, "user", {
           tag: "div",
           initial: { en: "E-Mail:" },
         })}
@@ -107,16 +104,16 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
         : ""
     }
     <tr class=-pw>
-      <th>${await cms.text(node, "pw", {
+      <th>${cms.text(node, "pw", {
       tag: "div",
       initial: { en: "Password:" },
     })}
       <td><input name=pw type=password required>
     ${
       showSaveLogin
-        ? html`<tr class=-save_login>
+        ? html.async`<tr class=-save_login>
       <th>
-        ${await cms.text(node, "saveLogin", {
+        ${cms.text(node, "saveLogin", {
           tag: "div",
           initial: { en: "Stay logged in:" },
         })}
@@ -125,7 +122,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     }
     <tr class=-login>
       <th>
-      <td><button name=core_login>${await app.t`Log in`}</button>
+      <td><button name=core_login>${app.t`Log in`}</button>
   </table>
 </form>\n`);
   } else {
@@ -136,14 +133,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       const page = await cms.node(logoutRedirectId);
       if (page.exists()) action = html` action="${await page.url()}"`;
     }
-    out.push(html`<form method=post${action}>
+    out.push(html.async`<form method=post${action}>
   <input type=hidden name=csrfToken value="${csrfToken}">
-  <button name=core_logout>${await app.t`Log out`}</button>
+  <button name=core_logout>${app.t`Log out`}</button>
 </form>\n`);
   }
 
   out.push(html`</div>`);
-  return html.join(out);
+  return html.async`${out}`;
 }
 
 export const cms = {

@@ -133,7 +133,7 @@ const format = (schema: StructuredInput<unknown>["schema"]) =>
   ({ response_format: { type: "json_schema", json_schema: { name: "output", schema: jsonSchema(schema) } } });
 
 export const openai: Adapter = {
-  text: (call, input: TextInput) => text(call, input),
+  text,
   live,
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, format(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
