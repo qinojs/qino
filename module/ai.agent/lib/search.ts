@@ -39,7 +39,7 @@ export async function find(app: App, agent: number, query: string): Promise<Reco
   return hits.map(({ key, content, score }) => {
     if (key.memory_id) return score > 0 && hit(app.db, "ai_agent_memory", Number(key.memory_id), score), { memory: key.memory_id, text: content };
     const message = said.get(Number(key.message_id));
-    return { session: message?.session_id, time: message?.time, text: content };
+    return { session: message?.session_id, message: key.message_id, time: message?.time, text: content };
   });
 }
 

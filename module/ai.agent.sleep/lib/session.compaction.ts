@@ -17,14 +17,18 @@ const TAIL = 0.4;
 const REMEMBER = "memories_post";
 
 /** Told to the agent at the end of what it was given, so the prompt cache holds. */
-export const PROMPT = (turns: number): string =>
-  `Your context is about to be compacted: what came before the last ${turns} user turns will be replaced by what you write now; those turns stay word for word.\n` +
-  `1. First keep with \`${REMEMBER}\` what lasts beyond this session: rules and preferences the user gave, also casual ones, unless your memories hold them.\n` +
-  "2. Then answer with a handoff for yourself to go on with this session:\n" +
-  "- the user's goal and every instruction or constraint they gave for this session, in their words\n" +
-  "- decisions made and why; errors and how they were fixed\n" +
-  "- what was done, with ids, urls and names; what is open; the next step\n" +
-  "Leave out what your memories hold and what the kept turns show. Call no other tool.";
+export const PROMPT = (turns: number): string => `\
+Your context is about to be compacted: what came before the last ${turns} user turns will be replaced by what you
+write now; those turns stay word for word.
+1. First keep with \`${REMEMBER}\` what lasts beyond this session: rules and preferences the user gave, also casual
+ones, unless your memories hold them.
+2. Then answer with a handoff for yourself to go on with this session. It covers all of it from the start, topic by
+topic in order, not only its end; asking to compact is no topic. An earlier summary is part of what it replaces:
+carry over all it holds. Per topic:
+- the user's goal and every instruction or constraint they gave, in their words
+- decisions made and why; errors and how they were fixed
+- what was done, with ids, urls and names; what is open; the next step
+Leave out only what the kept turns show. Call no other tool.`;
 
 type Row = { id: number; message: Message & { summary?: { from: number } } };
 

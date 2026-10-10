@@ -87,7 +87,7 @@ export const api: ApiTree = {
       },
       search: {
         post: verb<{ agent: number; query: string }>(
-          "Search this agent's own memory, by meaning: its memories and all its past sessions, with anyone",
+          "Search this agent's own memory, by meaning: its memories and all its past sessions, with anyone; a message found comes with its session and id, to read on from there",
           ({ agent, query }, ctx) => search.find(ctx.app, agent, query),
           { query: s.string() },
         ),
@@ -115,7 +115,7 @@ export const api: ApiTree = {
             id: m.id, time: m.time, model: m.model || undefined, provider: m.provider || undefined,
             ...JSON.parse(String(m.message)),
           })),
-      }), { after: s.optional(s.number()) }),
+      }), { after: s.optional(s.number()).describe("A message id: only the messages after it") }),
       ask: {
         post: verb<{ session: number; content: string; wait?: boolean }>(
           "Say something in the session; the agent answers in the background, its steps and errors kept in the session; with wait the answer",
