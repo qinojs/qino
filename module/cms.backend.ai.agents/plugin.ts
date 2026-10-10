@@ -399,7 +399,7 @@ async function render(node: Node) {
   const id = Number(query.agent) || 0, sessionId = Number(query.session) || 0;
   allowMarkdown(); // the answers in a conversation
   if (sessionId) {
-    const agentId = await node.app.db.one`SELECT agent_id FROM ai_session WHERE id = ${sessionId}`;
+    const s = await node.app.db.row`SELECT agent_id, usr_id FROM ai_session WHERE id = ${sessionId}`, agentId = s?.agent_id;
     const vars = { session: sessionId };
     return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
@@ -411,6 +411,10 @@ async function render(node: Node) {
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Conversation`}</div>
       <div cms-part=conversation style="max-height:80vh; overflow:auto">${conversation(node, { vars })}</div>
+      ${s && Number(s.usr_id) === getCtx().userId ? html.async`<form class=u2-flex data-ask>
+        <textarea name=content rows=3 required style="flex:1" placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
+        <button>${t`Send`}</button>
+      </form>` : ""}
     </div>
   </div>`;
   }

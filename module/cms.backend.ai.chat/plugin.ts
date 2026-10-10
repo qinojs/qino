@@ -12,7 +12,6 @@ import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 const { uniqueColor } = backend;
-const WEIGHTS = ["quality", "cost", "speed"];
 const SHORT = 80;
 
 /** The first user message as a short table label. */
@@ -32,7 +31,7 @@ async function render(node: Node) {
   const { db, t } = node.app;
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown
-  const agents = await db.query`SELECT id, name, system, prefer FROM ai_agent ORDER BY id DESC`;
+  const agents = await db.query`SELECT id, name, system FROM ai_agent ORDER BY id DESC`;
   const live = (await candidates(node.app, "live", {})).length > 0; // talking needs a live model
   const sessions = await db.query`SELECT s.id, s.agent_id, MAX(m.time) AS last_time,
       (SELECT first.message FROM ai_session_message first
@@ -46,23 +45,7 @@ async function render(node: Node) {
       <div class="u2-flex -Col" style="flex-wrap:nowrap">
         <form data-start>
           <select name=agent aria-label="${t`Agent`}" required>${agents.map((agent) =>
-            html`<option value="${agent.id}" data-prefer="${agent.prefer}">#${agent.id} ${agent.name || String(agent.system ?? "").split("\n", 1)[0].slice(0, 80)}</option>`)}</select>
-          <fieldset><legend>${t`Model choice for this session`}</legend>
-            <div class=u2-table>
-              <div>${WEIGHTS.map((key) =>
-                html`<label>
-                  <span>${key}</span>
-                  <input type=range min=0 max=10 value=0 data-prefer data-key="${key}">
-                  <output>0</output>
-                </label>`)}
-              </div>
-            </div>
-          </fieldset>
-          <small>${t`Set to the agent's choice; moved, the session keeps its own.`}</small>
-          <div style="margin-block:1rem">
-            <small>${t`Who would answer`}</small>
-            <ol data-preview></ol>
-          </div>
+            html`<option value="${agent.id}">#${agent.id} ${agent.name || String(agent.system ?? "").split("\n", 1)[0].slice(0, 80)}</option>`)}</select>
           <button ${agents.length ? "" : "disabled"}>${t`Start session`}</button>
         </form>
         ${agents.length ? "" : html.async`<p>${t`No agents yet`}`}
@@ -93,13 +76,4 @@ async function render(node: Node) {
   </div>`;
 }
 
-/** Who would answer with `preview` as prefer, best first; an agent always has tools. */
-async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
-  if (!vars.preview || typeof vars.preview !== "object") return null;
-  const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
-  const stored = Object.keys(prefer).length ? prefer : JSON.parse(String(await node.app.db.one`SELECT prefer FROM ai_agent WHERE id = ${Number(vars.agent) || 0}` || "{}"));
-  const list = await candidates(node.app, "text", { messages: [], tools: [{}] }, { prefer: Object.keys(stored).length ? stored : undefined });
-  return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
-}
-
-export const cms = { node: { js: ["pub/main.js"], css: ["pub/main.css"], render, api } };
+export const cms = { node: { js: ["pub/main.js"], css: ["pub/main.css"], render } };

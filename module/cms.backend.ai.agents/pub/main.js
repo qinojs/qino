@@ -54,6 +54,21 @@ cms.initNode("backend.ai.agents", (el) => {
       if (field) save(field);
     });
   }
+  // one's own session goes on here: the answer comes with the conversation as it follows along
+  el.addEventListener("submit", async (e) => {
+    const form = e.target;
+    if (!("ask" in form.dataset)) return;
+    e.preventDefault();
+    const field = form.elements.content, content = field.value;
+    field.value = "";
+    try { await agents.sessions(Number(session)).ask.post({ content }); }
+    catch (err) { field.value = content; await alert(err.message); }
+  });
+  el.addEventListener("keydown", (e) => {
+    if (!e.target.closest("[data-ask]") || e.key !== "Enter" || e.shiftKey || e.isComposing || matchMedia("(pointer: coarse)").matches) return;
+    e.preventDefault();
+    e.target.form.requestSubmit();
+  });
   el.addEventListener("submit", async (e) => {
     const form = e.target;
     if (!("agent" in form.dataset)) return;

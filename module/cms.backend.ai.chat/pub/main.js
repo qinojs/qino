@@ -2,10 +2,10 @@ import { api } from "@qino/pub/api.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
 
 const KEY = "ai.chat:session"; // the session to go on with after a reload
-const SHORT = 80; // characters of a folded message
+const SHORT = 80; // characters of a first message in the list of sessions
 
-// The conversation as in cms.backend.ai.agents: the user on the right, the agent on the left, its
-// tool calls and their results folded.
+// The conversation: the user on the right, the agent on the left; what goes on behind (its role, tool
+// calls and their results) is for cms.backend.ai.agents.
 const h = (tag, props, ...children) => {
   const el = Object.assign(document.createElement(tag), props);
   el.append(...children.filter((child) => child != null && child !== ""));
@@ -23,29 +23,14 @@ const time = (unix) => {
   return el;
 };
 const textOf = (content) => typeof content === "string" ? content : (content ?? []).map((p) => p.text ?? `[${p.type}]`).join(" ");
-/** JSON text indented, other text as it is. */
-const pretty = (value) => {
-  if (typeof value === "string") try { value = JSON.parse(value); } catch { return value; }
-  return JSON.stringify(value, null, 2);
-};
-/** Small and cut, all of it when opened. */
-const folded = (summary, all) => h("details", {},
-  h("summary", {}, h("small", {}, summary.length > SHORT ? summary.slice(0, SHORT) + " …" : summary)),
-  h("pre", { style: "white-space:pre-wrap;overflow:auto;max-height:20rem" }, h("small", {}, all)));
 
-/** One message: an answer as markdown, what was said as text, calls and results folded. */
-async function entry({ role, content, toolCalls, time: at, model, provider, tools, prefer }) {
+/** One message: an answer as markdown, what was said as text; nothing for what the user does not see. */
+async function entry({ role, content, time: at }) {
   const text = textOf(content);
-  const head = h("small", {}, at ? time(at) : "", at ? " · " : "", role,
-    ...model ? [" · ", colored(model), ...provider ? [" ", h("small", {}, "@ ", colored(provider))] : []] : []);
-  // what the model was given as the session started (its role with memories, its tools, prefer), or a note
-  if (role === "system") return h("div", {}, head, prefer ? h("small", {}, ` prefer ${JSON.stringify(prefer)}`) : "", folded(text, text),
-    tools ? folded(`${tools.length} tools: ${tools.map((t) => t.name).join(", ")}`, pretty(tools)) : "");
-  if (role === "tool") return h("div", { style: "align-self:flex-start; max-width:80%" }, folded(`← ${text}`, pretty(text)));
-  const div = h("div", { style: `align-self:${role === "user" ? "flex-end" : "flex-start"}; max-width:80%` }, head);
-  if (text && role === "assistant") div.append(h("div", { innerHTML: await markdown(text) }));
-  else if (text) div.append(h("div", { style: `white-space:pre-wrap;${role === "error" ? "color:var(--red)" : ""}` }, text));
-  for (const call of toolCalls ?? []) div.append(folded(`→ ${call.name}(${JSON.stringify(call.args)})`, pretty(call.args)));
+  if (!text || role === "system" || role === "tool") return "";
+  const div = h("div", { style: `align-self:${role === "user" ? "flex-end" : "flex-start"}; max-width:80%` }, h("small", {}, at ? time(at) : ""));
+  if (role === "assistant") div.append(h("div", { innerHTML: await markdown(text) }));
+  else div.append(h("div", { style: `white-space:pre-wrap;${role === "error" ? "color:var(--red)" : ""}` }, text));
   return div;
 }
 
@@ -101,42 +86,12 @@ cms.initNode("backend.ai.chat", (el) => {
   };
   if (session) open(session).catch(() => { sessionStorage.removeItem(KEY); ask.hidden = true; }); // gone or not ours
 
-  const node = api.cms.node(Number(cms.el.nid(el)));
   const start = el.querySelector("[data-start]");
-  const sliders = start.querySelectorAll("input[data-prefer]"); // the options carry their agent's data-prefer too
-  // The sliders show the chosen agent's choice. Untouched, the session keeps none of its own: the
-  // agent's counts, also when it changes later.
-  let own = false;
-  const weights = () => own ? Object.fromEntries([...sliders].filter((s) => +s.value).map((s) => [s.dataset.key, +s.value])) : {};
-  const agentChoice = () => {
-    const prefer = JSON.parse(start.elements.agent.selectedOptions[0]?.dataset.prefer || "{}");
-    for (const slider of sliders) slider.nextElementSibling.value = slider.value = prefer[slider.dataset.key] ?? 0;
-    own = false;
-  };
-
-  let waiting;
-  const preview = () => {
-    clearTimeout(waiting);
-    waiting = setTimeout(async () => {
-      const { list = [] } = await node.api.post({ preview: weights(), agent: Number(start.elements.agent.value) }).catch(() => ({}));
-      start.querySelector("[data-preview]").replaceChildren(...list.map((c) => Object.assign(document.createElement("li"), { textContent: `${c.model} @ ${c.provider} (${c.rank})` })));
-    }, 150);
-  };
-  start.addEventListener("input", (e) => {
-    if ("prefer" in e.target.dataset) {
-      e.target.nextElementSibling.value = e.target.value;
-      own = true;
-    }
-    preview();
-  });
-  start.elements.agent.addEventListener("change", agentChoice);
-  agentChoice();
-  preview();
   start.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
       const agent = Number(start.elements.agent.value);
-      const id = (await agents.agent(agent).sessions.post({ prefer: weights() })).id;
+      const id = (await agents.agent(agent).sessions.post({})).id;
       const url = new URL(location.href);
       url.searchParams.set("session", id);
       const link = h("a", { href: url.href }, `#${id}`);
