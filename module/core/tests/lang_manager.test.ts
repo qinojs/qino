@@ -162,11 +162,39 @@ Deno.test("LangManager: import seeds locale, skips empty, never overwrites, roun
   await lm.import("de", "cms", { Structure: "Struktur", Skip: "" }); // empty value ignored
   await lm.import("fr", "cms", { Structure: "Structure" });
   await lm.import("de", "cms", { Structure: "ÜBERSCHRIEBEN" }); // existing must stay
+  await db.exec`UPDATE smalltext SET en = ${null} WHERE namespace = ${"cms"}`;
+  await lm.import("en", "cms", { Structure: "0" });
+  await lm.import("en", "cms", { Structure: "Overwritten" });
+  await lm.import("de", "other", { Structure: "Other" });
 
   assertEquals(await lm.export(), {
-    cms: { de: { Structure: "Struktur" }, fr: { Structure: "Structure" } },
+    cms: { de: { Structure: "Struktur" }, fr: { Structure: "Structure" }, en: { Structure: "0" } },
+    other: { de: { Structure: "Other" } },
   });
   await db.close();
+});
+
+Deno.test("LangManager: repeated locale import uses one read and no writes", async () => {
+  await using db = new Db("sqlite::memory:");
+  await db.exec`CREATE TABLE smalltext (hash TEXT, namespace TEXT, original TEXT, de TEXT DEFAULT '', PRIMARY KEY (hash, namespace))`;
+  await db.loadTables();
+  const lm = new LangManager({ db } as never);
+  const txts = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`Original ${i}`, `Translation ${i}`]));
+  await lm.import("de", "cms", txts);
+  const query = db.query.bind(db), exec = db.exec.bind(db);
+  let reads = 0, writes = 0;
+  db.query = <T>(strings: TemplateStringsArray, ...values: unknown[]) => {
+    reads++;
+    return query<T>(strings, ...values);
+  };
+  db.exec = (...args) => {
+    writes++;
+    return Reflect.apply(exec, db, args);
+  };
+  await lm.import("de", "cms", JSON.stringify(txts));
+  assertEquals([reads, writes], [1, 0]);
+  await lm.import("missing_language", "cms", { Empty: "" });
+  assertEquals([reads, writes], [1, 0]);
 });
 
 Deno.test("LangManager: with() looks in its namespace, also for parallel fragments, and nowhere else", async () => {

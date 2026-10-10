@@ -59,11 +59,11 @@ export const unixTime = (): number => Math.floor(Date.now() / 1000);
 export async function newestMtime(dir: string): Promise<number> {
   let newest = 0;
   try {
-    for (const e of await fs.list(dir)) {
+    await Promise.all((await fs.list(dir)).map(async e => {
       const path = `${dir}/${e.name}`;
       const time = e.isDirectory ? await newestMtime(path) : Math.floor((await fs.mtime(path) ?? 0) / 1000);
       if (time > newest) newest = time;
-    }
+    }));
   } catch { /* no such directory */ }
   return newest;
 }
