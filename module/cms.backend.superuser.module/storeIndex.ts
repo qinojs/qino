@@ -1,4 +1,4 @@
-import { fromFileUrl } from "@std/path";
+import { fileURLToPath } from "node:url";
 import { fs, isModuleName } from "@qino/qino";
 
 import type { Store } from "@qino/qino";
@@ -29,7 +29,7 @@ async function moduleNames(dir: string) {
 /** Update `files` in every manifest and the catalog. Reports what changed. */
 export async function writeIndex(store: Store): Promise<string> {
   if (!store.base.startsWith("file:")) throw new Error("Only a local store can be written");
-  const dir = fromFileUrl(store.base);
+  const dir = fileURLToPath(store.base);
   const names = await moduleNames(dir);
   const changed: string[] = [];
   for (const mod of names) {

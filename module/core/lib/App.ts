@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import * as nodePath from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { fromFileUrl } from "../deps.ts";
 import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
@@ -25,7 +25,7 @@ import type { ItemProxy } from "../deps.ts";
 import type { ApiTree, ApiProxy } from "./api/mod.ts";
 import type { AppEvents } from "./AppEvents.ts";
 
-const mainDir = fromFileUrl(new URL(".", sys.mainModule));
+const mainDir = fileURLToPath(new URL(".", sys.mainModule));
 
 const DEFAULT_CONFIG = {
     dir: mainDir,
@@ -81,7 +81,7 @@ export class App extends Emitter<AppEvents> {
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
         const cfg = { ...DEFAULT_CONFIG, ...config };
-        const dir = cfg.dir.startsWith("file:") ? fromFileUrl(cfg.dir) : cfg.dir;
+        const dir = cfg.dir.startsWith("file:") ? fileURLToPath(cfg.dir) : cfg.dir;
 
         this.dir   = ensureSlash(dir);
         // before opening the database: sqlite only says "unable to open database file" when the

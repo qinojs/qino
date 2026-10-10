@@ -1,4 +1,4 @@
-import { fromFileUrl } from "@std/path";
+import { fileURLToPath } from "node:url";
 import { errMsg, getCtx, html, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -23,7 +23,7 @@ function candidates(app: App) {
   for (const mod of app.modules.all().values()) if (mod.dir) dirs.set(mod.dir, { kind: "module", label: mod.name });
   for (const store of app.stores.all()) {
     if (!store.base.startsWith("file:")) continue;
-    const dir = fromFileUrl(store.base);
+    const dir = fileURLToPath(store.base);
     dirs.set(dir, { kind: "store", label: dir.split("/").findLast(Boolean) ?? dir });
   }
   return dirs;

@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
+import { isAbsolute } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { $item } from "../deps.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults, errMsg, isEmptyObject, newestMtime, unixTime } from "./util.ts";
 import { fs } from "./fs.ts";
@@ -15,8 +18,8 @@ export const isModuleName = (name: string): boolean =>
 
 export function resolveSpecifier(app: App, spec: string | URL): string {
   if (spec instanceof URL) return spec.href;
-  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, toFileUrl(app.dir)).href;
-  if (isAbsolute(spec)) return toFileUrl(spec).href;
+  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, pathToFileURL(app.dir)).href;
+  if (isAbsolute(spec)) return pathToFileURL(spec).href;
   return import.meta.resolve(spec);
 }
 
@@ -85,7 +88,7 @@ export class Module {
   /** Resolved file:/https: URL of the plugin file. */
   get source(): string { return this.#source; }
   /** Directory the module lives in; undefined for remote modules. */
-  get dir(): string | undefined { return this.#source.startsWith("file:") ? fromFileUrl(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
+  get dir(): string | undefined { return this.#source.startsWith("file:") ? fileURLToPath(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
   /** Directory of the served files. A remote module serves the files mirrored on import, in a
    *  subfolder of its cache so they don't mix with its own cache files. */
   get pubDir(): string { return this.dir ? this.dir + "pub" : this.cache + "remote/pub"; }
@@ -158,8 +161,8 @@ export class ModuleManager {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported by import(). Use app.modules.add("${spec}") before app.init()`);
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
     if (!/\/plugin\.(?:ts|js)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
-    const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
-    const source = path ? toFileUrl(path).href : spec;
+    const path = spec.startsWith("file:") ? fileURLToPath(spec) : isAbsolute(spec) ? spec : undefined;
+    const source = path ? pathToFileURL(path).href : spec;
     // The manifest is read, not imported: a store must not need to run code.
     const manifest = await readManifest(source);
     if (manifest.name !== undefined && (typeof manifest.name !== "string" || !manifest.name)) throw new Error(`Manifest of ${source} has an invalid name`);

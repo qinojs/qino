@@ -1,4 +1,5 @@
-import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
+import { dirname, resolve as resolvePath, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { errMsg, fs, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
@@ -50,7 +51,7 @@ async function renderModule(node: Node, modName: string) {
     : "";
   const modSource = modObj.source;
   const modDir = modObj.dir ?? null;
-  const modPath = modDir ? fromFileUrl(modSource) : null;
+  const modPath = modDir ? fileURLToPath(modSource) : null;
 
   // --- Exports ---
   const SKIP = new Set(["cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
@@ -205,7 +206,7 @@ async function createFile(node: Node, modName: string, rel: string) {
     const dir = node.app.modules.get(modName)?.dir;
     if (!dir) throw new Error(`Module "${modName}" has no files here`);
     const file = resolvePath(dir, rel);
-    if (!file.startsWith(resolvePath(dir) + SEPARATOR)) throw new Error(`"${rel}" is outside the module`);
+    if (!file.startsWith(resolvePath(dir) + sep)) throw new Error(`"${rel}" is outside the module`);
     if (await fs.stat(file, { ttl: 0 })) throw new Error(`"${rel}" exists already`);
     await fs.mkdir(dirname(file));
     await fs.write(file, "");

@@ -1,5 +1,5 @@
+import { pathToFileURL } from "node:url";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
-import { toFileUrl } from "@std/path";
 import { App, Module } from "@qino/qino";
 
 import { cms } from "../plugin.ts";
@@ -19,8 +19,8 @@ async function fixture() {
 
   const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
   app.modules.add(new URL("../../core/plugin.ts", import.meta.url));
-  app.modules.add(toFileUrl(`${tpl}plugin.ts`).href);
-  app.stores.add(new URL(toFileUrl(dir + "module/").href)); // what the module's install() hook does
+  app.modules.add(pathToFileURL(`${tpl}plugin.ts`).href);
+  app.stores.add(new URL(pathToFileURL(dir + "module/").href)); // what the module's install() hook does
   await app.init();
   return { dir, app, node: { app } as unknown as Node };
 }

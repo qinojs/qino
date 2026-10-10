@@ -7,7 +7,6 @@ export { default as mysql } from "mysql2/promise";
 export { default as postgres } from "pg";
 export type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 export { default as bcrypt } from "bcryptjs";
-export { fromFileUrl, isAbsolute, toFileUrl } from "@std/path";
 export { contentType, extension as extensionByType, typeByExtension } from "@std/media-types";
 
 export { Item, $item, type ItemProxy } from "@qino/item/item.js";

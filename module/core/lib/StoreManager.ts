@@ -1,4 +1,5 @@
-import { fromFileUrl } from "../deps.ts";
+import { fileURLToPath } from "node:url";
+
 import { fs } from "./fs.ts";
 import { isModuleName, readManifest, resolveSpecifier } from "./ModuleManager.ts";
 
@@ -9,7 +10,7 @@ import type { Manifest, Module } from "./ModuleManager.ts";
 async function readFolder(url: string) {
   // HTTP directory listings are unreliable, so remote stores need a catalog.
   if (!url.startsWith("file:")) throw new Error(`Store ${url}: a folder store is local only, a remote store needs a store.json`);
-  const dir = fromFileUrl(url);
+  const dir = fileURLToPath(url);
   const names = [];
   for (const e of await fs.list(dir))
     if (e.isDirectory && isModuleName(e.name) && await fs.isFile(`${dir}${e.name}/plugin.ts`)) names.push(e.name);
