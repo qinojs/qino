@@ -18,7 +18,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const items = [];
   const edit = await node.edit();
   for (const nr of boxes) {
-    const url = await node.cms.url(node.settings[`link_${nr}`]()) ?? "";
+    const url = node.cms.url(node.settings[`link_${nr}`]());
     const image = cms_image2(await node.file(`bild_${nr}`), { width: 550, if: 1, editable: edit });
     items.push(html.async`<a class=-item href="${url}">
       <div class=-image>${image}</div>

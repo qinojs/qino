@@ -117,7 +117,7 @@ export async function renderRow(
       <td><code>${issue.field}</code>
       <td>${issue.current}
       <td>${issue.required}
-      <td>${longest == null ? "not checked" : longest}`;
+      <td>${longest ?? "not checked"}`;
   }));
   const oversizedBody = issueTable(`Wider than the schema in ${table}`, html`
     <th>Field

@@ -123,7 +123,7 @@ async function overview(node: Node, url: URL) {
     <div class=-head>${t`Journal`}</div>
     <form method=get>
       <input type=hidden name=from value="${from}"><input type=hidden name=to value="${to}">
-      <input type=search name=search value="${url.searchParams.get("search") ?? ""}" placeholder="${t`Text, ref, id`}">
+      <input type=search name=search value="${url.searchParams.get("search")}" placeholder="${t`Text, ref, id`}">
       <select name=account>
         <option value="">${t`All accounts`}
         ${accounts.map((a) => html`<option value="${a.number}"${selected(a.number)}>${a.number} ${a.name}`)}

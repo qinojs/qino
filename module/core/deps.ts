@@ -3,14 +3,12 @@
 // Hono is only used by the optional adapter lib/hono.ts.
 export { Hono } from "hono";
 export { basePath } from "hono/route";
-export { getConnInfo } from "hono/deno";
 export { default as mysql } from "mysql2/promise";
 export { default as postgres } from "pg";
 export type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 export { default as bcrypt } from "bcryptjs";
-export { serveFile } from "@std/http/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "@std/path";
-export { extension as extensionByType, typeByExtension } from "@std/media-types";
+export { contentType, extension as extensionByType, typeByExtension } from "@std/media-types";
 
 export { Item, $item, type ItemProxy } from "@qino/item/item.js";
 export { bildJsonItem } from "@qino/item/tools/jsonDataItem.js";

@@ -104,7 +104,7 @@ export class Scheduler {
     const rows = new Map((await db.query`SELECT * FROM cron_job`).map((row) => [String(row.id), row]));
     for (const { id, job, key } of jobs) {
       const row = rows.get(id);
-      if (row && row.schedule_key === key) continue;
+      if (row?.schedule_key === key) continue;
       const next_run = nextRun(job, now, { timeZone });
       if (!row) {
         const fresh = { ...IDLE, id, schedule_key: key, next_run };

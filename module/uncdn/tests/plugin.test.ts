@@ -1,6 +1,6 @@
 import https from "node:https";
 import { Readable, Writable } from "node:stream";
-import { Output, ResCsp, ResHtml } from "@qino/qino";
+import { fs, Output, ResCsp, ResHtml } from "@qino/qino";
 import { assert, assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { uncdn } from "../mod.ts";
@@ -171,7 +171,7 @@ async function cacheTest(run: (fixture: {
 Deno.test("uncdn: concurrent misses share a download and only publish complete files", async () => {
   await cacheTest(async ({ file, request, downloads }) => {
     const writeFile = Deno.writeFile;
-    const stat = Deno.stat;
+    const stat = fs.stat;
     const writing = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const secondRead = Promise.withResolvers<void>();
@@ -185,8 +185,8 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
         await writeFile(path, data, options);
       };
       // serveFile stats the cached file first — that stat is how the second request looks for it
-      Deno.stat = async (path) => {
-        try { return await stat(path); }
+      fs.stat = async (path, opt) => {
+        try { return await stat(path, opt); }
         finally { if (observeRead && path === file) secondRead.resolve(); }
       };
       requests.push(request());
@@ -207,7 +207,7 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
       release.resolve();
       await Promise.allSettled(requests);
       Deno.writeFile = writeFile;
-      Deno.stat = stat;
+      fs.stat = stat;
     }
   });
 });

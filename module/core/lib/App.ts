@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import * as nodePath from "node:path";
 
-import { fromFileUrl, serveFile } from "../deps.ts";
+import { fromFileUrl } from "../deps.ts";
 import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
@@ -19,6 +19,7 @@ import { LangManager } from "./LangManager.ts";
 import { apiFetch, apiClient } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
 import { sys } from "./sys.ts";
+import { serveFile } from "./serveFile.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { ApiTree, ApiProxy } from "./api/mod.ts";
@@ -117,7 +118,7 @@ export class App extends Emitter<AppEvents> {
     /** `await using app = new App(...)` — closes the database. Files under `dir` are the caller's. */
     [Symbol.asyncDispose](): Promise<void> { return this.db.close(); }
 
-    /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
+    /** Web-standard entry point — `sys.serve({}, app.fetch)`. */
     get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
         return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
     }

@@ -301,7 +301,7 @@ async function model(node: Node, id: number) {
   ${card(t`Sources`, sources.length ? html`<table class=u2-table>
     ${sources.map((s) => html`<tr>
       <th>${s.source}
-      <td>${s.provider ?? ""}
+      <td>${s.provider}
       <td>${u2.el.time(s.time)}
       <td><details><summary>JSON</summary><pre>${JSON.stringify(typeof s.data === "string" ? JSON.parse(s.data) : s.data, null, 2)}</pre></details>`)}
   </table>` : "–")}
