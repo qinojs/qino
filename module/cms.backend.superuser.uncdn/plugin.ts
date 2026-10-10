@@ -38,7 +38,7 @@ async function buildTree(path: string, baseLen: number): Promise<[HtmlString, nu
   return [html.join(parts), total];
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   const { app } = node;
   const t = app.t;
   const cacheDir = app.modules.get("uncdn")!.cache;

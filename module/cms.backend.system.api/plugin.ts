@@ -1,8 +1,8 @@
-import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, camelName, toTools, Access } from "@qino/qino";
+import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, toolName, toTools, Access } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx, StandardSchema, Method, ApiNode, Verb, App, HtmlString } from "@qino/qino";
+import type { Ctx, StandardSchema, Method, ApiNode, Verb, App } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system.api", { en: "API", de: "API" });
@@ -47,7 +47,7 @@ function* walk(node: ApiNode, ctx: Ctx, segments: string[] = [], nodes: ApiNode[
         yield {
           method: verb,
           path: "/" + segs.join("/"),
-          name: camelName(verb, segs),
+          name: toolName(verb, segs),
           description: action.description ?? "",
           input: action.input,
           query: action.query,
@@ -61,7 +61,7 @@ function* walk(node: ApiNode, ctx: Ctx, segments: string[] = [], nodes: ApiNode[
   }
 }
 
-function schemaToFormFields(s: StandardSchema | undefined): HtmlString | "" {
+function schemaToFormFields(s: StandardSchema | undefined) {
   if (!s || s.kind !== "object" || !s.shape) return "";
   return html.join(Object.entries(s.shape).map(([k, v]) => {
     const field = v as StandardSchema;
@@ -93,7 +93,7 @@ const ACCESS_COLORS: Record<Route["accessLevel"], string> = {
   none:      "var(--red)",
 };
 
-function pathParamFields(params: PathParam[]): HtmlString {
+function pathParamFields(params: PathParam[]) {
   return html.join(params.map(({ name, schema }) => {
     const jsonSchema = schema ? toJsonSchema(schema) : { type: "string" };
     const description = schema?.description;
@@ -102,7 +102,7 @@ function pathParamFields(params: PathParam[]): HtmlString {
   }));
 }
 
-function routeHtml(r: Route, idx: number, toolJson: string): HtmlString {
+function routeHtml(r: Route, idx: number, toolJson: string) {
   const accessColor = ACCESS_COLORS[r.accessLevel];
   const paramForm = pathParamFields(r.pathParams);
   const inputForm = schemaToFormFields(r.input);
@@ -141,7 +141,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): HtmlString {
   </div>`;
 }
 
-function render(): HtmlString {
+function render() {
   const ctx = getCtx();
   u2.elements(ctx, "code"); // the json views highlight with a library of their own
   const appUrl = ctx.req.appUrl ?? "/";

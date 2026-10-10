@@ -1,4 +1,4 @@
-import { $item, type ItemProxy, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
+import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
@@ -6,7 +6,7 @@ import { policyOf, sanitizeHtml } from "./sanitize.ts";
 import { parseXml } from "./parseXml.ts";
 import { postedVars } from "./postedVars.ts";
 
-import type { HtmlString, DbText, DbTextLang, Usr, DbRow, Module } from "@qino/qino";
+import type { HtmlString, DbText, DbTextLang, ItemProxy, Usr, DbRow, Module } from "@qino/qino";
 import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 
@@ -37,7 +37,7 @@ export class Node {
 
     #children: Promise<Map<number, Node>> | null = null;
     #conts: Node[] | null = null;
-    #parent: Node | undefined;
+    #parent?: Node;
 
     constructor(cms: CMS, id = 0, vs?: Record<string, string | number>) {
         this.cms = cms;
@@ -82,10 +82,10 @@ export class Node {
     exists(): this | undefined { return this.#is ? this : undefined; }
 
     /* Cache invalidation */
-    #clearTreeCache(): void { this.#children = this.#conts = null; }
+    #clearTreeCache() { this.#children = this.#conts = null; }
     /** Public: a `file` row replaced in place leaves page_file untouched (see cms/plugin.ts). */
     clearFileCache(): void { this.#files = this.#filesAll = null; }
-    #clearUrlCache(): void { this.#urls = null; }
+    #clearUrlCache() { this.#urls = null; }
 
     async set(data: string | Record<string, any>, value?: any): Promise<void> {
         if (!this.#is) {
@@ -116,7 +116,7 @@ export class Node {
 
     /** Node access before node:access adjustments (module axis). Children inherit this, so a
      *  parent's module rules don't apply to them. */
-    async #rawAccess(user?: Usr | null): Promise<number> {
+    async #rawAccess(user?: Usr | null) {
         const cache = cmsCtx(getCtx()).accessCache;
         const key = `${this.id}:${Number(user)}:raw`;
         const hit = cache.get(key);
@@ -148,14 +148,14 @@ export class Node {
         // return the higher of the two
         return Math.max(access, grpAccess);
     }
-    async #accessGroupLevel(grps?: number[] | null): Promise<number> {
-        if (!grps || !grps.length) return 0;
+    async #accessGroupLevel(grps?: number[] | null) {
+        if (!grps?.length) return 0;
         return Number(await this.db.one`
             SELECT max(access) AS access FROM page_access_grp
             WHERE page_id = ${this.id}
                 AND ${sql.in("grp_id", grps)}`) || 0;
     }
-    async #accessUserLevel(user?: Usr | null): Promise<number> {
+    async #accessUserLevel(user?: Usr | null) {
         if (!user?.$exists) return 0;
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
@@ -201,7 +201,7 @@ export class Node {
             attr += ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
-        const rendered = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
+        const rendered = str.replace(/^<([^\s>]+)(\s?)/, `<$1${attr}$2`);
         return html.raw(rendered !== str ? rendered : `<div${attr}>${str}</div>`);
     }
 
@@ -227,7 +227,7 @@ export class Node {
     }
 
     /** Run a module render callback, returning error markup instead of throwing. */
-    async #renderGuarded(run: () => unknown): Promise<string> {
+    async #renderGuarded(run: () => unknown) {
         try {
             return String(await run());
         } catch (err: any) {
@@ -249,8 +249,7 @@ export class Node {
         return p ? p.onlineEnd() : Number(this.vs.online_end ?? "0");
     }
     async isOnline(): Promise<boolean> {
-        const start = await this.onlineStart();
-        const end = await this.onlineEnd();
+        const [start, end] = await Promise.all([this.onlineStart(), this.onlineEnd()]);
         // small grace window so a freshly set online_start/end takes effect despite clock skew
         const now = unixTime() + 99;
         return (start === 0 || now > start) && (end === 0 || now < end);
@@ -324,7 +323,7 @@ export class Node {
     async bough(filter?: any): Promise<Map<number, Node>> {
         const bough = new Map<number, Node>([[this.id, this]]);
         for (const child of (await this.children({ type: "*" })).values())
-            for (const [k, v] of (await child.bough()).entries()) bough.set(k, v);
+            for (const [k, v] of await child.bough()) bough.set(k, v);
         return filter ? this.cms.filter(bough, filter) : bough;
     }
 
@@ -464,7 +463,7 @@ export class Node {
     deleteFile(name: string): Promise<boolean> {
         return this.db.transaction(() => this.#deleteFile(name));
     }
-    async #deleteFile(name: string): Promise<boolean> {
+    async #deleteFile(name: string) {
         await this.files();
         const dbFile = this.#filesAll!.get(name);
         if (!dbFile) return false;
@@ -566,11 +565,11 @@ export class Node {
     }
 
     /* Tree manipulation */
-    createChild(vs: Record<string, any> = {}): Promise<Node> {
-        return this.db.transaction(() => this.#createChild(vs));
+    createChild(fields: Record<string, any> = {}): Promise<Node> {
+        return this.db.transaction(() => this.#createChild(fields));
     }
-    async #createChild(vs: Record<string, any>): Promise<Node> {
-        vs = {
+    async #createChild(fields: Record<string, any>) {
+        fields = {
             basis: this.id,
             online_start: unixTime(),
             access: this.vs.access,
@@ -578,10 +577,11 @@ export class Node {
             type: "p",
             searchable: this.vs.searchable,
             visible: true,
-            ...vs,
+            ...fields,
         };
-        vs.sort ??= Number(await this.db.one`SELECT max(sort) FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} AND type = ${vs.type}`) + 1;
-        const id = await this.db.table("page").insert(vs);
+        if (fields.settings && typeof fields.settings === "object") fields.settings = JSON.stringify(fields.settings);
+        fields.sort ??= Number(await this.db.one`SELECT max(sort) FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} AND type = ${fields.type}`) + 1;
+        const id = await this.db.table("page").insert(fields);
         const page = await this.cms.node(Number(id ?? "0"));
         if (!id) return page;
 
@@ -594,7 +594,7 @@ export class Node {
         await page.files();
 
         // Apply this node's "subpage definition" (childXML) to the new page child; tolerate malformed user input
-        if (vs.type === "p" && "childXML" in this.settings) {
+        if (fields.type === "p" && "childXML" in this.settings) {
             await page.fromXml(String(this.settings.childXML() ?? ""))
                 .catch(e => console.warn(`childXML of node ${this.id} could not be applied:`, e));
         }
@@ -602,14 +602,14 @@ export class Node {
         // Re-sort children so the new child gets a proper sort position
         this.#clearTreeCache();
         let i = 0;
-        for (const child of (await this.children({ type: vs.type })).values()) await child.set("sort", ++i);
+        for (const child of (await this.children({ type: fields.type })).values()) await child.set("sort", ++i);
 
         return page;
     }
 
-    createCont(vs: Record<string, string | number | boolean | null> = {}): Promise<Node> {
-        vs = { type: "c", module: "cms.cont.flexible", visible: "", online_start: null, access: null, ...vs };
-        return this.createChild(vs);
+    createCont(fields: Record<string, any> = {}): Promise<Node> {
+        fields = { type: "c", module: "cms.cont.flexible", visible: "", online_start: null, access: null, ...fields };
+        return this.createChild(fields);
     }
 
     /** childXML attributes accepted as node fields */
@@ -619,7 +619,7 @@ export class Node {
         const root = parseXml(xml);
         if (root) await this.#fromXmlNode(root);
     }
-    async #fromXmlNode(node: XmlNode): Promise<void> {
+    async #fromXmlNode(node: XmlNode) {
         const langs = this.app.languages.all;
         for (const [name, value] of Object.entries(node.attrs)) {
             if (langs.includes(name)) { await this.title(name, value); continue; }
@@ -635,7 +635,7 @@ export class Node {
     copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
         return this.db.transaction(() => this.#copy(deep, ifFn));
     }
-    async #copy(deep: boolean, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
+    async #copy(deep: boolean, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void) {
         if (await ifFn?.(this) === false) return;
 
         const row: Record<string, any> = { ...this.vs };
@@ -696,7 +696,7 @@ export class Node {
     insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
         return this.db.transaction(() => this.#insertBefore(pageArg, before));
     }
-    async #insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
+    async #insertBefore(pageArg: Node | number, before?: Node | number | null) {
         const page = await this.cms.node(Number(pageArg));
         const oldParent = await page.parent();
         const beforePage = before ? await this.cms.node(Number(before)) : null;
@@ -710,7 +710,7 @@ export class Node {
             if (beforePage && String(beforePage) === String(child)) sort = i++;
             await child.set("sort", i++);
         }
-        sort = sort !== null ? sort : i++;
+        sort ??= i++;
         await page.set({ basis: this.id, sort });
 
         this.#clearTreeCache();
@@ -724,7 +724,7 @@ export class Node {
     removeChild(child: Node | number): Promise<boolean> {
         return this.db.transaction(() => this.#removeChild(child));
     }
-    async #removeChild(child: Node | number): Promise<boolean> {
+    async #removeChild(child: Node | number) {
         const page = await this.cms.node(Number(child));
         const children = await this.children({ type: "*" });
         if (!children.has(Number(page))) return false;
@@ -737,12 +737,12 @@ export class Node {
     }
 
     /** The cont of that name, created when it is not there yet. */
-    async cont(name: string, attris: any = {}): Promise<Node> {
+    async cont(name: string, defaults: any = {}): Promise<Node> {
         const conts = await this.conts();
         const cont = conts.find((c) => c.vs.name === name);
         if (cont) return cont;
-        if (typeof attris !== "object") attris = { module: attris };
-        return this.createCont({ ...attris, name, sort: conts.length + 1 });
+        if (typeof defaults !== "object") defaults = { module: defaults };
+        return this.createCont({ ...defaults, name, sort: conts.length + 1 });
     }
 
     /* Access */

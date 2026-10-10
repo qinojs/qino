@@ -75,7 +75,7 @@ export default async function (widget, { node, dialogs, signal, module: fixedMod
 
   const row = (r) => html.async`<div class=-row itemid="${r.id}" draggable>
     <button type=button class="u2-unstyle -handle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
-    <input value="${r.title ?? ''}" placeholder="${short(r.module)}" title="${t`Title`}">
+    <input value="${r.title}" placeholder="${short(r.module)}" title="${t`Title`}">
     <span class=-mod title="${r.module}">${short(r.module)}</span>
     <button type=button class="u2-unstyle -settings" title="${t`Settings`}"><u2-ico icon=settings>⚙</u2-ico></button>
     <button type=button class="u2-unstyle -copy" title="${t`Copy`}"><u2-ico icon=content_copy>⧉</u2-ico></button>
@@ -104,7 +104,7 @@ export default async function (widget, { node, dialogs, signal, module: fixedMod
           <option value=top ${onTop ? 'selected' : ''}>${t`at the beginning`}</option>
         </select>`}
     </table>`}
-    ${extra?.(rows) ?? ''}
+    ${extra?.(rows)}
   </div>`;
 
   const rid = (row) => row.getAttribute('itemid');

@@ -1,7 +1,6 @@
 import { generateVAPIDKeys } from "web-push-neo";
 import { b64url, Db, randB64 } from "@qino/qino";
 import { assert, assertEquals, messagingDbSchema } from "@qino/qino/tests";
-
 import { outbox } from "@qino/qino/messaging";
 
 import dbSchema from "../dbschema.json" with { type: "json" };

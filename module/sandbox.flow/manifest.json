@@ -1,6 +1,6 @@
 {
   "name": "sandbox.flow",
-  "description": "Runs described code when an event fires: steps in a sandbox, with the tools they may use.",
+  "description": "Runs code when an event fires: a function body in a sandbox, with the tools it may use.",
   "dependencies": ["sandbox"],
-  "files": ["README.md", "api.ts", "dbschema.json", "lib/history.ts", "lib/hosts.ts", "lib/row.ts", "manifest.json", "mod.ts", "plugin.ts"]
+  "files": ["README.md", "api.ts", "dbschema.json", "lib/history.ts", "lib/hosts.ts", "lib/row.ts", "lib/table.ts", "manifest.json", "mod.ts", "plugin.ts"]
 }

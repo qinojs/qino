@@ -3,7 +3,7 @@ import { getCtx, html, NotFoundError, randB64, requireStepUp, safeEqual, sql, un
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const cms         = { node: { js: ["pub/main.js"], render, api, parts: { list } } };
@@ -33,7 +33,7 @@ async function api(node: Node, vars: Record<string, unknown>) {
   return { token };
 }
 
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const db  = node.app.db;
   const usrId = Number(vars.usr_id ?? ctx.req.body?.usr_id) || null;
 
@@ -62,7 +62,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 </div>`;
 }
 
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const db = node.app.db;
   const usrId = Number(vars.usr_id) || null;
   const rows = await db.query`

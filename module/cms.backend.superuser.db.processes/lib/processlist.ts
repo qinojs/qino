@@ -16,7 +16,7 @@ export interface Process {
 }
 
 // djb2 → base36, keeps the row key short even for long statements
-function hash(s: string): string {
+function hash(s: string) {
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
   return (h >>> 0).toString(36);
@@ -28,7 +28,7 @@ interface Adapter {
   kill(db: Db, id: number, hard: boolean): Promise<void>;
 }
 
-function norm(rows: Record<string, unknown>[]): Process[] {
+function norm(rows: Record<string, unknown>[]) {
   return rows.map((r) => {
     const id = String(r.id), command = String(r.command ?? ""), info = String(r.info ?? "");
     return {

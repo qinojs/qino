@@ -3,7 +3,7 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-import { clientIp, fs, getCtx, Output, unixTime } from "@qino/qino";
+import { clientIp, fs, Output, requestStorage, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -32,7 +32,7 @@ export const settingsSchema = {
 const INTAKE_MAX = 20;
 const INTAKE_WINDOW = 600;
 const intake = new Map<string, { n: number; until: number }>();
-function intakeAllowed(ctx: Ctx): boolean {
+function intakeAllowed(ctx: Ctx) {
   const who = String(ctx.clientId || ctx.req.clientIp);
   const now = unixTime();
   const seen = intake.get(who);
@@ -46,7 +46,7 @@ function intakeAllowed(ctx: Ctx): boolean {
  *  `id` would exhaust the autoincrement). */
 const JS_FIELDS = ["message", "file", "line", "col", "prio", "sample", "backtrace", "request", "referer"];
 
-async function handleJsError(ctx: Ctx): Promise<void> {
+async function handleJsError(ctx: Ctx) {
   const report = ctx.req.body;
   if (report?.message) {
     const said = Object.fromEntries(JS_FIELDS.filter((k) => k in report).map((k) => [k, report[k]]));
@@ -55,7 +55,7 @@ async function handleJsError(ctx: Ctx): Promise<void> {
   throw new Output({});
 }
 
-async function handleCssError(ctx: Ctx): Promise<void> {
+async function handleCssError(ctx: Ctx) {
   const file = ctx.req.header("referer");
   const message = ctx.req.query.message || "css-error";
   const report: Report = { source: "css", message, file, backtrace: [] };
@@ -86,7 +86,7 @@ function cspReports(body: unknown): Report[] {
   return legacy ? [legacy as Report] : [];
 }
 
-async function handleCspError(ctx: Ctx): Promise<void> {
+async function handleCspError(ctx: Ctx) {
   for (const report of cspReports(ctx.req.body)) {
     // the two formats spell the same fields differently
     const v = (...keys: string[]) => keys.map((k) => report[k]).find((x) => x != null) ?? "";
@@ -111,7 +111,7 @@ async function handleCspError(ctx: Ctx): Promise<void> {
   throw new Output({});
 }
 
-async function addReport(app: App, vs: Report): Promise<void> {
+async function addReport(app: App, vs: Report) {
   const row: Report = {
     file: "",
     line: "",
@@ -121,14 +121,14 @@ async function addReport(app: App, vs: Report): Promise<void> {
     ...vs,
     time: new Date().toISOString().slice(0, 19).replace("T", " "),
   };
-  try {
-    const ctx = getCtx();
+  const ctx = requestStorage.getStore(); // none outside a request
+  if (ctx) {
     row.request ??= ctx.req.appUrl + ctx.req.appPath;
     row.referer ??= ctx.req.header("referer");
     row.browser = ctx.req.header("user-agent");
     row.ip = ctx.req.clientIp;
     row.log_id = await ctx.logId;
-  } catch { /* no request context available */ }
+  }
   // the column always holds a JSON array — a report from the browser may send anything at all
   row.backtrace = JSON.stringify(Array.isArray(row.backtrace) ? row.backtrace : []);
   await app.db.table("m_error_report").insert(row).catch(() => {});
@@ -139,7 +139,7 @@ async function addReport(app: App, vs: Report): Promise<void> {
 const apps = new Set<App>();
 
 function reportingApp(): App | undefined {
-  try { return getCtx().app; } catch { return [...apps][0]; } // no request: first app still running
+  return requestStorage.getStore()?.app ?? [...apps][0]; // no request: first app still running
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

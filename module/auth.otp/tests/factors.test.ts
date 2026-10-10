@@ -16,7 +16,7 @@ const appWith = (...list: unknown[]) =>
 Deno.test("auth.otp: module metadata is wired", () => {
   assertEquals(name, "auth.otp");
   assertEquals(dependencies, ["auth", "messaging"]);
-  assertEquals(toTools(api).map((tool: { name: string }) => tool.name), ["post", "post_verify"]);
+  assertEquals(toTools(api).map((tool: { name: string }) => tool.name), ["post", "verify_post"]);
 });
 
 Deno.test("auth.otp: one factor per channel, none without channels", () => {

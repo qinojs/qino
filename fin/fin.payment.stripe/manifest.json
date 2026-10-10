@@ -1,0 +1,14 @@
+{
+  "name": "fin.payment.stripe",
+  "description": "Stripe Checkout as payment provider: cards, TWINT, Apple and Google Pay and more, on Stripe's page.",
+  "dependencies": [
+    "fin.payment"
+  ],
+  "files": [
+    "README.md",
+    "lib/provider.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

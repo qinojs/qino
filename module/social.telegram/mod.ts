@@ -5,7 +5,7 @@ import { ingest, ProviderError } from "@qino/qino/social";
 import type { App } from "@qino/qino";
 import type { Post, Provider, Target } from "@qino/qino/social";
 
-async function configured(app: App): Promise<Omit<Target, "provider">[]> {
+async function configured(app: App) {
   const source = String(await app.settings["social.telegram"].targets ?? "").trim();
   const ids = [...new Set(source.split(/[\s,]+/).filter(Boolean))];
   return (await Promise.all(ids.map((id) => target(app, id).catch((e) => {
@@ -13,7 +13,7 @@ async function configured(app: App): Promise<Omit<Target, "provider">[]> {
   })))).flatMap((target) => target ? [target] : []);
 }
 
-async function target(app: App, id: string): Promise<Omit<Target, "provider">> {
+async function target(app: App, id: string) {
   const chat = await call(app, "getChat", { chat_id: /^-?\d+$/.test(id) ? Number(id) : id });
   const label = String(chat.title ?? chat.username ?? chat.id);
   return {

@@ -6,7 +6,7 @@ import { fs } from "./fs.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, mimeType, readDataUrl, readUploadFile } from "./fileStream.ts";
-import { header, unixTime } from "./util.ts";
+import { ensureSlash, header, unixTime } from "./util.ts";
 
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
@@ -37,7 +37,7 @@ export class DbFileManager {
 
   constructor(app: App, directory: string) {
     this.#app = app;
-    this.#directory = directory.endsWith("/") ? directory : directory + "/";
+    this.#directory = ensureSlash(directory);
     fs.mkdir(this.#directory).catch(() => {});
   }
 
@@ -45,7 +45,7 @@ export class DbFileManager {
   get db(): Db { return this.#app.db; }
   get directory(): string { return this.#directory; }
 
-  #files(): Map<string, DbFile> {
+  #files() {
     return scopeCache<Map<string, DbFile>>(this.#cache, "dbFiles", () => new Map());
   }
 
@@ -72,7 +72,7 @@ export class DbFileManager {
 
   async output(request: string, req: Request): Promise<Response> {
     const parts = request.split("/");
-    const id = Number(parts.shift() ?? "0");
+    const id = Number(parts.shift());
     const name = parts.pop() ?? "";
 
     const params: Record<string, string | true> = {};
@@ -239,7 +239,7 @@ export class DbFile extends File {
     return e.access;
   }
 
-  // async updateDb() { // not ussed?
+  // async updateDb() { // not used?
   //   const { md5 } = await this.ensureVs();
   //   this.path = this.#manager.directory + md5;
   //   await this.setVs({ text: await this.getText(), size: await this.size() });
@@ -317,18 +317,17 @@ export class DbFile extends File {
    *  yet. Throws if a tool fails or times out. */
   async extractText(): Promise<string> {
     if (!await this.exists()) return "";
-    let path = this.path;
     let text = "";
-    if (this.mime.startsWith("text/")) text = await fs.text(path).catch(() => "");
+    if (this.mime.startsWith("text/")) text = await fs.text(this.path).catch(() => "");
     else {
       const r = await this.transform({ fmt: "md" });
       if (r.error) throw r.error;
-      if (r.transformed) text = await fs.text((path = r.path)).catch(() => "");
+      if (r.transformed) text = await fs.text(r.path).catch(() => "");
     }
     text = text.slice(0, MAX_TEXT);
     await this.setVs({ text });
     const { md5 } = this.vs!; // same blob, same text — reuse it
-    if (md5) await this.#manager.db.query`UPDATE ${sql.id(tableRef("file"))} SET text=${text} WHERE md5=${md5} AND id!=${this.id}`;
+    if (md5) await this.#manager.db.exec`UPDATE ${sql.id(tableRef("file"))} SET text=${text} WHERE md5=${md5} AND id!=${this.id}`;
     return text;
   }
 
@@ -336,11 +335,11 @@ export class DbFile extends File {
 
 }
 
-function grantResource(id: number, parts: string[]): string {
+function grantResource(id: number, parts: string[]) {
   return `dbFile\0${id}/${parts.join("/")}`;
 }
 
-function permanentResource(resource: string, md5: unknown): string {
+function permanentResource(resource: string, md5: unknown) {
   return `${resource}\0${String(md5 ?? "")}`;
 }
 
@@ -354,7 +353,7 @@ const MARKUP = /^text\/html$|xml$|xsl$/;
 const numOptions = ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const;
 const transformOptions = ['fmt', 'max', ...numOptions];
 
-function parseTransformOptions(param: Record<string, unknown>): TransformOptions {
+function parseTransformOptions(param: Record<string, unknown>) {
   const opt: TransformOptions = { fmt: param.fmt as TransformOptions['fmt'] };
   const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : undefined; };
   for (const k of numOptions) opt[k] = num(param[k]); // absent → NaN → undefined
@@ -367,7 +366,7 @@ function etagMatch(header: string, etag: string) {
   return header === "*" || header.split(",").some((t) => t.trim().replace(/^W\//, "") === etag);
 }
 
-function isTransformRequest(param: Record<string, unknown>): boolean {
+function isTransformRequest(param: Record<string, unknown>) {
   return transformOptions.some((k) => k in param);
 }
 

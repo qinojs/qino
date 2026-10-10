@@ -17,7 +17,7 @@ async function fixture() {
   await Deno.writeTextFile(`${tpl}pub/main.css`, `[qcms-mod="cont.demo"] {\n}\n`);
   await Deno.writeTextFile(`${tpl}tests/demo.test.ts`, `// belongs to the template alone\n`);
 
-  const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+  const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
   app.modules.add(new URL("../../core/plugin.ts", import.meta.url));
   app.modules.add(toFileUrl(`${tpl}plugin.ts`).href);
   app.stores.add(new URL(toFileUrl(dir + "module/").href)); // what the module's install() hook does
@@ -28,13 +28,13 @@ async function fixture() {
 Deno.test("own modules link to module administration details", async () => {
   const app = {
     dir: "/app/",
-    t: (strings: TemplateStringsArray) => strings.join(""),
+    t: (strings: TemplateStringsArray) => Promise.resolve(strings.join("")),
     stores: { get: () => ({ names: () => Promise.resolve(["cms.cont.own"]) }) },
     modules: { all: () => new Map(), linked: () => true },
   };
   const node = {
     app,
-    cms: { nodeByModule: () => ({ page: () => ({ access: () => 1, url: () => "/backend/superuser/module" }) }) },
+    cms: { nodeByModule: () => ({ page: () => ({ access: () => 1, url: () => Promise.resolve("/backend/superuser/module") }) }) },
   };
   const out = String(await cms.node.render(node as unknown as Node));
   assertStringIncludes(out, `href="/backend/superuser/module?mod=cms.cont.own"`);

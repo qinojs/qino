@@ -12,7 +12,7 @@ const REDIRECT = "https://client.test/callback";
 const VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
 const CHALLENGE = b64url(new Uint8Array(createHash("sha256").update(VERIFIER).digest()));
 
-async function makeDb(): Promise<Db> {
+async function makeDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
@@ -31,7 +31,7 @@ type CtxInit = {
   userId?: number;
 };
 
-function makeCtx(db: Db, init: CtxInit): Promise<Ctx> {
+function makeCtx(db: Db, init: CtxInit) {
   const url = new URL("http://qino.test/" + init.path);
   for (const [k, v] of Object.entries(init.query ?? {})) url.searchParams.set(k, v);
   let csrf = "csrf-test";
@@ -76,7 +76,7 @@ const codeForm = (code: string, over: Record<string, string> = {}) =>
   ({ grant_type: "authorization_code", code, client_id: "1", redirect_uri: REDIRECT, code_verifier: VERIFIER, ...over });
 
 /** Consent → code: the happy path every client walks. */
-async function grantCode(db: Db): Promise<string> {
+async function grantCode(db: Db) {
   const res = await run(authorize, makeCtx(db, {
     path: "authorize",
     query: authQuery(),

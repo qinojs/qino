@@ -21,7 +21,7 @@ export async function webhook(ctx: Ctx): Promise<never> {
 
 /** Journal private messages; `/start` and `/stop` additionally manage the chat link. */
 // deno-lint-ignore no-explicit-any
-async function update(app: App, up: any): Promise<void> {
+async function update(app: App, up: any) {
   const msg = up?.message;
   if (msg?.chat?.type !== "private") return;
   const chatId = Number(msg.chat.id);
@@ -54,7 +54,7 @@ async function update(app: App, up: any): Promise<void> {
   await reply(app, chatId, await app.t`Connected. You will receive messages here.`, linkedUsrId);
 }
 
-async function reply(app: App, chatId: number, text: string, usrId?: number): Promise<void> {
+async function reply(app: App, chatId: number, text: string, usrId?: number) {
   const time = unixTime();
   let failed = false;
   let failure: unknown;

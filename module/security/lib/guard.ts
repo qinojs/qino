@@ -62,7 +62,7 @@ export function reportIp(app: App, ip: string, weight: number, reason: string): 
 }
 
 /** Writes of one key run one after another, so they neither insert its row twice nor lose a hit. */
-function store(app: App, key: string, add: number): void {
+function store(app: App, key: string, add: number) {
   const { writes } = states.get(app)!;
   const write = (writes.get(key) ?? Promise.resolve())
     .then(async () => hit(app.db, "log_ip", await keyId(app, key), add))
@@ -72,11 +72,11 @@ function store(app: App, key: string, add: number): void {
 }
 
 /** The log_ip row of a key (IPv6 networks get their own row). On a parallel insert, read that row. */
-async function keyId(app: App, key: string): Promise<number> {
+async function keyId(app: App, key: string) {
   const table = app.db.table("log_ip");
   const find = () => table.rowBy("ip", key);
   const row = await find() ?? await table.insert({ ip: key }).catch(find);
-  return Number(String(row));
+  return Number(row);
 }
 
 /** Seconds until a strength drops below BLOCK, negative when it is not blocked. */
@@ -123,5 +123,5 @@ export async function release(app: App, key: string): Promise<void> {
   state?.keys.delete(key);
   await state?.writes.get(key); // a pending write would bring the score back
   const row = await app.db.table("log_ip").rowBy("ip", key);
-  if (row) await forget(app.db, "log_ip", Number(String(row)));
+  if (row) await forget(app.db, "log_ip", Number(row));
 }

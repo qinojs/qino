@@ -8,10 +8,13 @@ cms.initNode("backend.system.api", (el) => {
   el.querySelector("#api-search")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     el.querySelectorAll(".-route").forEach((r) => {
-      const text = r.querySelector(".-path").textContent.toLowerCase()
-        + " " + r.querySelector(".-desc").textContent.toLowerCase()
-        + " " + r.querySelector(".-method").textContent.toLowerCase();
-      r.hidden = q && !text.includes(q);
+      const heading = r.previousElementSibling;
+      const text = heading.querySelector(".-path").textContent.toLowerCase()
+        + " " + heading.querySelector(".-desc").textContent.toLowerCase()
+        + " " + heading.querySelector(".-method").textContent.toLowerCase();
+      heading.hidden = r.hidden = !!q && !text.includes(q);
+      const item = heading.assignedSlot?.closest('[part="item"]');
+      if (item) item.hidden = r.hidden;
     });
   });
 
@@ -66,9 +69,8 @@ cms.initNode("backend.system.api", (el) => {
         else if (val === "false") val = false;
         else if (!isNaN(val)) val = Number(val);
 
-        if (r.pathParams.includes(field.name)) {
-          path = path.replace(":" + field.name, encodeURIComponent(val));
-        } else if (r.hasQuery && !r.hasInput) {
+        if (r.pathParams.includes(field.name)) path = path.replace(":" + field.name, encodeURIComponent(val));
+        else if (r.hasQuery && !r.hasInput) {
           query[field.name] = val;
         } else {
           body[field.name] = val;
@@ -78,9 +80,9 @@ cms.initNode("backend.system.api", (el) => {
       const method = r.method.toUpperCase();
       const isBodyMethod = ["POST", "PUT", "PATCH"].includes(method);
       const qs = !isBodyMethod && Object.keys(body).length
-        ? "?" + new URLSearchParams(Object.entries(body).map(([k, v]) => [k, String(v)])).toString()
+        ? "?" + new URLSearchParams(Object.entries(body).map(([k, v]) => [k, String(v)]))
         : Object.keys(query).length
-          ? "?" + new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
+          ? "?" + new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]))
           : "";
       const url = appUrl + "api" + path + qs;
       const opts = { method, headers: apiHeaders(method) };

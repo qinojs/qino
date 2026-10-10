@@ -12,7 +12,7 @@ const form = {
       const matches = name.match(/(^[^\[]+|\[[^\]]*\])/g);
       let active = object;
       for (let i=0, match; (match=matches[i++]);) {
-        if (i>1) match = match.replace(/(^\[|\]$)/g,'');
+        if (i>1) match = match.replace(/^\[|\]$/g,'');
         if (matches.length === i) {
           if (Array.isArray(active)) active.push(value);
           else active[match] = value;

@@ -39,7 +39,7 @@ export async function render(node: Node): Promise<HtmlString> {
     return html.async`<a class="-nav-item${view === key ? " -active" : ""}" href="${u.search}">${app.t`${label}`}</a>`;
   }));
 
-  const content = await (dispatch[view] ?? dispatch.tables)();
+  const content = (dispatch[view] ?? dispatch.tables)();
 
   return html.async`<div>
   <div class=u2-card>

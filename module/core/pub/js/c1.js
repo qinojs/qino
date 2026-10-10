@@ -1,8 +1,8 @@
 const w = globalThis;
 const d = w.document;
 
-/* Waits for the execution of the function (min) and then executes the last call, but waits maximal (max) millisecunds.
-*  If the function-scope changes, the function executes immediatly (good for event-delegation)
+/* Waits for the execution of the function (min) and then executes the last call, but waits maximal (max) milliseconds.
+*  If the function-scope changes, the function executes immediately (good for event-delegation)
 */
 export function debounce(fn, options) {
   if (typeof options === 'number') options = {min:options, max:options*2};

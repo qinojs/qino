@@ -40,7 +40,7 @@ export async function verify(ctx: Ctx, code: string): Promise<boolean> {
     ctx.app.fire("suspicious", { ctx, weight: 2, reason: "totp verification failed" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }
-  ctx.app.db.table("usr_auth_factor").update(Number(hit.row.id), { last_used: hit.used }); // background write
+  ctx.app.db.table("usr_auth_factor").update(Number(hit.row.id), { last_used: hit.used }).catch(() => {}); // background write
   return !await proof(ctx, TYPE, usrId); // nothing missing = it counted
 }
 

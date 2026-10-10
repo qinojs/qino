@@ -7,11 +7,9 @@ var listeners = [],
     Observer;
 
 c1.onElement = function(selector, options/*, disconnectedCallback*/) {
-	if (typeof options === 'function') {
-		options = { parsed:options }
-	}
+	if (typeof options === 'function') options = { parsed:options }
     var listener = {
-        selector: selector,
+        selector,
 		immediate: options.immediate,
         //disconnectedCallback: disconnectedCallback,
         elements: new WeakSet(),

@@ -131,7 +131,7 @@ export function maintenanceActions(db: Db, status: TableStatus): string[] {
   return ["check", "analyze", "reindex"];
 }
 
-const resultText = (rows: Record<string, unknown>[]): string => rows.map((row) => {
+const resultText = (rows: Record<string, unknown>[]) => rows.map((row) => {
   const type = row.Msg_type ?? row.msg_type ?? "";
   const text = row.Msg_text ?? row.msg_text ?? Object.values(row).at(-1) ?? "done";
   return type ? `${type}: ${text}` : String(text);

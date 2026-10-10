@@ -7,7 +7,7 @@ import { fs } from '../../fs.ts';
 import type { TransformerDef } from '../types.ts';
 
 // written by a subprocess, so not cached
-const fileSize = async (path: string): Promise<number> => await fs.size(path, { ttl: 0 }) ?? Infinity;
+const fileSize = async (path: string) => await fs.size(path, { ttl: 0 }) ?? Infinity;
 
 /**
  * Encode phase: minifies an SVG. Only with `q`; otherwise the stored file is served.

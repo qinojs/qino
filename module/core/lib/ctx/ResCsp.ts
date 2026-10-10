@@ -32,7 +32,7 @@ export class ResCsp {
       if (type === "reportTo") continue;
       let keys = collapse(Object.keys(allowed));
       // 'report-sample' adds a code sample to reports
-      if (type === "script-src" || type === "style-src") keys = [...keys, "'report-sample'"];
+      if (type === "script-src" || type === "style-src") keys.push("'report-sample'");
       // 'none' is meaningless once other sources are present
       else if (type === "default-src" && keys.length > 1) keys = keys.filter((k) => k !== "'none'");
       if (!keys.length) continue;

@@ -165,7 +165,7 @@
             "default": 0,
             "description": "With due and time both null: 0 is held back, more is given up"
           },
-          "ref": {
+          "external_id": {
             "type": "string",
             "maxLength": 191,
             "x-index": true,

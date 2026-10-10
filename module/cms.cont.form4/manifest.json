@@ -5,7 +5,8 @@
     "cms",
     "messaging.email",
     "cms.cont.form4.fields",
-    "cms.cont.text"
+    "cms.cont.text",
+    "u2"
   ],
   "files": [
     "dbschema.json",

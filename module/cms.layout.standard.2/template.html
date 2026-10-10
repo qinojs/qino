@@ -1,0 +1,17 @@
+<div id=container>
+  <a class=-skip href=#content>Skip to content</a>
+  <header id=head>
+    <div class="u2-width u2-flex -Between">
+      <a cms-link=parent(1)>{{identity.brand.logo}}<span>{{identity.name|Home}}</span></a>
+      <button type=button class=-open popovertarget=head-nav>Menu</button>
+      <div id=head-nav popover>
+        <button type=button class=-close popovertarget=head-nav popovertargetaction=hide>Close</button>
+        <cms-cont name=nav module=cms.cont.nav4 node=layout />
+      </div>
+    </div>
+  </header>
+  <main id=content tabindex=-1><cms-cont name=main /></main>
+  <footer id=foot>
+    <div class=u2-width><cms-cont name=foot node=layout /></div>
+  </footer>
+</div>

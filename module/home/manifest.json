@@ -1,0 +1,6 @@
+{
+  "name": "home",
+  "description": "Provider-independent home entities, actions and change events for Qino flows.",
+  "dependencies": ["core"],
+  "files": ["README.md", "REVIEW.md", "manifest.json", "mod.ts", "dbschema.json", "datapoint.ts", "command.ts", "plugin.ts", "api.ts"]
+}

@@ -61,6 +61,7 @@
     "lib/hono.ts",
     "lib/migrateTextLang.ts",
     "lib/rows.ts",
+    "lib/sys.ts",
     "lib/templatePlaceholder.ts",
     "lib/transform/FileTransformer.ts",
     "lib/transform/ffmpeg.ts",

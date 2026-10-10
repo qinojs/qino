@@ -23,9 +23,9 @@ function possibleClasses(el) {
     sel = sel.trim();
     if (!sel.includes('.')) return;
     if (!/\.[A-Z]/.test(sel)) return;
-    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
+    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : /^\.[^ ]+$/;
     if (reg.test(sel)) {
-      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
+      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, '$2');
       ret[name] = sel;
     }
   }
@@ -255,7 +255,7 @@ document.addEventListener('qgResize',e=>{
   }
 });
 
-// dbclick zoomer
+// dblclick zoomer
 addEventListener('dblclick', e => {
   const img = e.target;
   if (img.isContentEditable && img.tagName === 'IMG' && img.src.includes('/dbFile')) {
@@ -313,7 +313,6 @@ class ImageZoomer {
     this.y = 0;
     this.w = 100;
     this.h = 100;
-    this.f = 1;
 
     this.img = img;
     this.canvas = document.createElement('canvas');
@@ -386,7 +385,7 @@ class ImageZoomer {
     const x = e.offsetX;
     const y = e.offsetY;
     return {
-      x: ( x + 2*this.ctx.width  ) / 5, //(x+4*xhalbe durch 5)
+      x: ( x + 2*this.ctx.width  ) / 5, // (x + 4 * width/2) / 5
       y: ( y + 2*this.ctx.height ) / 5
     };
   }
@@ -401,14 +400,14 @@ function limit(number, min, max) {
 }
 let lastTime = 0;
 function wheelIntervalToFaktor(e) {
-  // intervall diff
+  // interval diff
   const time = e.timeStamp;
   let diff = time-lastTime;
   if (!e._eventChecked) {
     lastTime = time;
     e._eventChecked = true;
   }
-  // faktor
+  // factor
   const MAX = 400;
   const MIN = 10;
   diff = limit(diff, MIN, MAX+MIN);

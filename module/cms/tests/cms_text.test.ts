@@ -3,9 +3,9 @@ import { invoke, requestStorage } from "@qino/qino";
 import { assertEquals, testContext, fakeRender } from "@qino/qino/tests";
 import { api } from "@qino/qino/cms.text";
 
-import type { TranslateInput } from "@qino/qino/ai1";
-
 import { cmsInstances } from "../lib/CMS.ts";
+
+import type { TranslateInput } from "@qino/qino/ai";
 
 class FakeText {
   id: number;
@@ -54,11 +54,11 @@ async function ctxWith(app: any) {
   return ctx;
 }
 
-/** ai1 with a single translator, answering through `answer`. */
+/** ai with a single translator, answering through `answer`. */
 function translator(answer: (input: TranslateInput) => string) {
-  const mods = [{ name: "ai1", plugin: { ai1Adapters: { fake: { translate: (_call: unknown, input: TranslateInput) => Promise.resolve(answer(input)) } } } }];
+  const mods = [{ name: "ai", plugin: { aiAdapters: { fake: { translate: (_call: unknown, input: TranslateInput) => Promise.resolve(answer(input)) } } } }];
   const query = (strings: TemplateStringsArray) =>
-    strings.join("").includes("ai1_model_capability") ? [{ id: 1, model_id: 1, model: "fake", provider: "fake", type: "fake", endpoint: "" }] : [];
+    strings.join("").includes("ai_model_capability") ? [{ id: 1, model_id: 1, model: "fake", provider: "fake", type: "fake", endpoint: "" }] : [];
   return { modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods }, db: { query }, settings: { core: { keys: {} } } };
 }
 
@@ -110,16 +110,16 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
   assertEquals(main.values, { de: "Hallo", en: "", fr: "en-fr:de-en:Hallo" });
 });
 
-Deno.test("cms.text: a text is translated through ai1 as html", async () => {
+Deno.test("cms.text: a text is translated through ai as html", async () => {
   const writes: unknown[] = [], asked: unknown[] = [];
-  const ai1 = translator((input) => (asked.push(input), "hello"));
+  const ai = translator((input) => (asked.push(input), "hello"));
   const ctx = await ctxWith({
-    modules: ai1.modules,
-    settings: ai1.settings,
+    modules: ai.modules,
+    settings: ai.settings,
     languages: { all: ["de", "en"] },
     api: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
     cms: { node: () => ({ access: () => 3 }) },
-    db: { ...ai1.db, one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }), ensure: (value: unknown) => writes.push(value) }) },
+    db: { ...ai.db, one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }), ensure: (value: unknown) => writes.push(value) }) },
   });
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/text/7/translate", { targetLang: "en", sourceLang: "de" }), true);

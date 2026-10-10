@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { ensureProduct, shp3 } from "@qino/qino/shp3";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -11,7 +10,7 @@ const settingsSchema = {
 };
 
 /** A product is a page — the page id is the product id, and the row is created with it. */
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t;
   const product = await ensureProduct(node);
   if (!product) return html.async`<div></div>`;
@@ -26,10 +25,10 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=-price>${currency?.id} <span shp3-price=gross>${currency ? currency.format(prices.gross) : prices.gross}</span></div>
   ${errors.length
     ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}</div>`
-    : html`<form shp3-add class=-add>
+    : html.async`<form shp3-add class=-add>
     <input type=hidden name=product_id value=${product.id}>
     ${await node.settings.quantity() === false ? "" : html`<input type=number name=quantity min=1 step=1 value=1>`}
-    <button>${await t`Add to cart`}</button>
+    <button>${t`Add to cart`}</button>
   </form>`}
 </div>`;
 }

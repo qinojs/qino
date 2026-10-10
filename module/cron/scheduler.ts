@@ -1,4 +1,4 @@
-import { sql, uid, unixTime } from "@qino/qino";
+import { sql, sys, uid, unixTime } from "@qino/qino";
 
 import { nextRun, scheduleKey, validateJob } from "./calendar.ts";
 
@@ -87,17 +87,17 @@ export class Scheduler {
     });
   }
 
-  #schedule(): void {
+  #schedule() {
     const timer = setTimeout(async () => {
       await this.run().catch((e) => console.error("cron:", e));
       if (!this.#signal?.aborted) this.#schedule();
     }, this.#poll);
     this.#timer = timer;
-    Deno.unrefTimer(timer);
+    sys.unrefTimer(timer);
   }
 
   /** Declared jobs plus their persisted rows; seeds new jobs and reschedules changed ones. */
-  async #load(now: number): Promise<{ jobs: RegisteredJob[]; rows: Map<string, Row>; timeZone: string }> {
+  async #load(now: number) {
     const db = this.#app.db;
     const timeZone = await timezone(this.#app);
     const jobs = collect(this.#app, timeZone);
@@ -120,7 +120,7 @@ export class Scheduler {
     return { jobs, rows, timeZone };
   }
 
-  async #tick(): Promise<Result> {
+  async #tick() {
     const now = unixTime();
     const { jobs, rows, timeZone } = await this.#load(now);
     const result: Result = { ran: [], failed: {} };
@@ -130,7 +130,7 @@ export class Scheduler {
   }
 
   /** Claims the lease, runs the job, writes the outcome back. False = another process holds it. */
-  async #runJob(registered: RegisteredJob, row: Row, result: Result, o: { timeZone: string; force?: boolean }): Promise<boolean> {
+  async #runJob(registered: RegisteredJob, row: Row, result: Result, o: { timeZone: string; force?: boolean }) {
     const db = this.#app.db;
     const { id, job } = registered;
     const now = unixTime();
@@ -148,7 +148,7 @@ export class Scheduler {
     const ctrl = new AbortController();
     const signal = this.#signal ? AbortSignal.any([this.#signal, ctrl.signal]) : ctrl.signal;
     const timer = setTimeout(() => ctrl.abort(new DOMException(`Cron job timed out after ${timeout} seconds`, "TimeoutError")), timeout * 1000);
-    Deno.unrefTimer(timer);
+    sys.unrefTimer(timer);
 
     let failure: string | undefined;
     try {
@@ -185,7 +185,7 @@ export class Scheduler {
   }
 }
 
-function of(app: App): Scheduler {
+function of(app: App) {
   const scheduler = schedulers.get(app);
   if (!scheduler) throw new Error('Module "cron" is not linked');
   return scheduler;
@@ -201,7 +201,7 @@ export function trigger(app: App, id: string): Promise<Result> { return of(app).
 export function status(app: App): ReturnType<Scheduler["status"]> { return of(app).status(); }
 
 /** Jobs declared by linked modules, sorted by id. */
-function collect(app: App, timeZone: string): RegisteredJob[] {
+function collect(app: App, timeZone: string) {
   const ret = [];
   for (const mod of app.modules.linked().sort((a, b) => a.name.localeCompare(b.name))) {
     const declared = mod.plugin.cron as Jobs | undefined;
@@ -209,7 +209,7 @@ function collect(app: App, timeZone: string): RegisteredJob[] {
     if (typeof declared !== "object" || Array.isArray(declared)) throw new Error(`Module "${mod.name}": cron must be an object`);
     if (mod.name !== "cron" && !mod.dependencies.includes("cron")) throw new Error(`Module "${mod.name}": dependencies must include "cron" when declaring cron jobs`);
     for (const name of Object.keys(declared).sort()) {
-      if (!/^[a-zA-Z0-9._-]+$/.test(name)) throw new Error(`Module "${mod.name}": invalid cron job name "${name}"`);
+      if (!/^[\w.-]+$/.test(name)) throw new Error(`Module "${mod.name}": invalid cron job name "${name}"`);
       const job = declared[name];
       const id = `${mod.name}:${name}`;
       validateJob(id, job);
@@ -219,6 +219,6 @@ function collect(app: App, timeZone: string): RegisteredJob[] {
   return ret;
 }
 
-async function timezone(app: App): Promise<string> {
+async function timezone(app: App) {
   return String(await app.settings.cron.timezone);
 }

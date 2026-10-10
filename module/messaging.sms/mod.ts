@@ -4,7 +4,7 @@ import { contactRecipients, delivered, dropClaim, record, redeemCode, requestCod
 import { deliver as transmit, setProvider } from "./lib/provider.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
+import type { Channel, Msg, Rendering, To } from "@qino/qino/messaging";
 import type { SmsProvider } from "./lib/provider.ts";
 
 export { setProvider, type SmsProvider };
@@ -13,7 +13,7 @@ export { setProvider, type SmsProvider };
  * Resolve `to` to phone numbers (`usr_contact` has only verified ones). `{ phone }` is used as is,
  * verified or not; if it belongs to a user, it is recorded as theirs.
  */
-async function recipients(app: App, to: To & { phone?: string | string[] }): Promise<Recipient[]> {
+async function recipients(app: App, to: To & { phone?: string | string[] }) {
   const direct = [to.phone ?? []].flat().map(normalize);
   if (to.grp == null && to.usr == null && !to.all && !direct.length) {
     throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
@@ -22,7 +22,7 @@ async function recipients(app: App, to: To & { phone?: string | string[] }): Pro
 }
 
 /** A number as E.164, or the reason it is not one. */
-function normalize(input: string): { address: string; addressError?: string } {
+function normalize(input: string) {
   try { return { address: contactKey("phone", input) }; }
   catch (e) { return { address: input.trim().slice(0, 191), addressError: errMsg(e) }; }
 }
@@ -35,14 +35,14 @@ export const send = (app: App, to: To & { phone?: string | string[] }, message: 
   dispatch(app, messagingChannel, to, message);
 
 /** One batch of texts. */
-async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering) {
   let sent = 0;
   for (const row of rows) {
     const address = String(row.address);
     const body = (await render(row)).text;
     try {
-      const ref = await transmit(app, address, msg.title ? `${msg.title}\n${body}` : body);
-      await delivered(app, Number(row.id), undefined, ref);
+      const externalId = await transmit(app, address, msg.title ? `${msg.title}\n${body}` : body);
+      await delivered(app, Number(row.id), undefined, externalId);
       sent++;
     } catch (e) {
       await delivered(app, Number(row.id), e);

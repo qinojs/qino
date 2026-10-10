@@ -191,7 +191,7 @@ export const api: ApiTree = {
       input: s.object({ calls: s.array(s.object({ name: s.string(), arguments: s.optional(s.record()) })) }),
       execute: async ({ calls }: any, ctx) => {
         const tools = new Map(toTools(ctx.app.apiTree).map((t) => [t.name, t]));
-        tools.delete("post_core_toolCalls");
+        tools.delete("core_toolCalls_post");
         const results: unknown[] = [];
         for (const [index, call] of calls.entries()) {
           try {

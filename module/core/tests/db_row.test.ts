@@ -3,7 +3,7 @@ import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { DbRow } from "../lib/db/DbRow.ts";
 import { Usr } from "../lib/rows.ts";
-
+import { sql } from "../deps.ts";
 import coreSchema from "../dbschema.json" with { type: "json" };
 
 class Order extends DbRow {
@@ -47,7 +47,7 @@ const schema = {
   },
 };
 
-async function testDb(): Promise<Db> {
+async function testDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate(schema, { patch: true });
   db.schema = schema;
@@ -267,6 +267,43 @@ Deno.test("Db: tables stay reachable while loadTables runs", async () => {
   await db.loadTables();
   assert(calls > 0);
   assertEquals(missed, "");
+});
+
+Deno.test("Db: loadTables reads in parallel and preserves table order and identity", async () => {
+  await using db = await testDb();
+  for (let i = 0; i < 20; i++) await db.exec`CREATE TABLE ${sql.id(`extra_${i}`)} (id INTEGER PRIMARY KEY)`;
+  await db.loadTables();
+  const tables = Object.values(db.tables);
+  const columns = db.columns.bind(db);
+  let active = 0, peak = 0;
+  db.columns = async name => {
+    peak = Math.max(peak, ++active);
+    try { return await columns(name); }
+    finally { active--; }
+  };
+  await db.loadTables();
+  assertEquals(peak, tables.length);
+  assertEquals(active, 0);
+  Object.values(db.tables).forEach((table, i) => assert(table === tables[i]));
+  assertEquals(db.table("shop_order").rowClass, Order);
+});
+
+Deno.test("Db: failed loadTables waits for pending reads and keeps the table map", async () => {
+  await using db = await testDb();
+  const tables = db.tables;
+  const columns = db.columns.bind(db);
+  let active = 0;
+  db.columns = async name => {
+    active++;
+    try {
+      await Promise.resolve();
+      if (name === "shop_item") throw new Error("metadata unavailable");
+      return await columns(name);
+    } finally { active--; }
+  };
+  await assertRejects(() => db.loadTables(), Error, "metadata unavailable");
+  assertEquals(active, 0);
+  assert(db.tables === tables);
 });
 
 Deno.test("DbRow: a numeric column reads back as a number, whatever the driver hands over", async () => {

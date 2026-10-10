@@ -1,9 +1,10 @@
 import { html, sql, tableRef } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
+import * as u2 from "@qino/qino/u2";
 
 import api from "./nodeApi.ts";
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -22,13 +23,13 @@ const settingsSchema = {
 };
 
 /** The form to show entries of: the configured one, else the first on the page. */
-async function formOf(node: Node): Promise<Node | undefined> {
+async function formOf(node: Node) {
   const id = Number(node.settings.form());
   if (id) {
     const form = await cmsOf(node.app).node(id);
     return form.exists() && form.vs.module === "cms.cont.form4" ? form : undefined;
   }
-  const page = [...(await node.path()).values()].reverse().find((n) => n.vs.type === "p");
+  const page = [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
   if (!page) return;
   for (const cont of (await page.bough()).values()) if (cont.vs.module === "cms.cont.form4") return cont;
 }
@@ -104,8 +105,9 @@ async function uploads(app: App, ids: number[]) {
 /* A form's entries, with the form's fields and labels in order. Styling is up to the site; all
    values look the same. Without `moderated` every saved entry is shown, so don't add this block
    to forms whose entries are private. */
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
+  u2.assets(ctx, ["el/time/time.js", "el/alert/alert.js", "el/alert/alert.css", "class/width/width.css"]);
   const form = await formOf(node);
   if (!form) {
     return await node.edit()
@@ -165,13 +167,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <u2-time datetime="${when.toISOString()}" type=relative>${when.toLocaleDateString(ctx.lang || undefined)}</u2-time>
       <dl>${lines}</dl>
       ${mayRelease && moderated
-      ? html`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${await app.t`Released`}</label>`
+      ? html.async`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${app.t`Released`}</label>`
       : ""}
     </article>`;
   };
 
   return html.async`<div class=u2-width>${
-    rows.length ? rows.map(entry) : await node.edit() ? html`<p>${await app.t`No entries yet.`}</p>` : ""
+    rows.length ? rows.map(entry) : await node.edit() ? html.async`<p>${app.t`No entries yet.`}</p>` : ""
   }</div>`;
 }
 

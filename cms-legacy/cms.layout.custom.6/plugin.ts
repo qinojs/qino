@@ -3,7 +3,7 @@ import { hee, html } from "@qino/qino";
 import { siteTemplate } from "../lib/siteTemplate.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -15,7 +15,7 @@ export const settingsSchema = {
   },
 };
 
-async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
+async function render(node: Node, data: { ctx: Ctx }) {
   const resHtml = data.ctx.res.html;
   const dataUrl = node.module!.dataUrl;
 

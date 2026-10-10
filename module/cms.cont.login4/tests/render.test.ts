@@ -46,9 +46,9 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
   const ctx = await makeCtx(false);
   const node = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => "Anmelden" },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
     cms: {
-      text: (_node: unknown, name: string) => `[${name}]`,
+      text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`),
     },
     settings: settings({ saveLogin: true }),
     text: () => textObj("Login failed"),
@@ -67,7 +67,7 @@ Deno.test("cms.cont.login4: render redirects logged-in users when configured", a
   const ctx = await makeCtx(true);
   const node = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => "x" },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("x") },
     cms: {
       node: () => ({ exists() { return this; }, url: () => "/target" }),
     },
@@ -85,7 +85,7 @@ Deno.test("cms.cont.login4: render shows logout form for logged-in users", async
   const ctx = await makeCtx(true);
   const node = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => "Abmelden" },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Abmelden") },
     cms: {},
     settings: settings({}),
     text: () => textObj(""),
@@ -100,8 +100,8 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   const guestCtx = await makeCtx(false);
   const guestNode = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => "Anmelden" },
-    cms: { text: (_node: unknown, name: string) => `[${name}]` },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
+    cms: { text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`) },
     settings: settings({ "fix user": `a"><script>alert(1)</script>` }),
     text: () => textObj(""),
   };
@@ -114,7 +114,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   userCtx.sess = { data: { core: { userId: () => 7, csrfToken: () => `t"><script>x</script>` } } } as any;
   const userNode = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => "Abmelden" },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Abmelden") },
     cms: {},
     settings: settings({}),
     text: () => textObj(""),

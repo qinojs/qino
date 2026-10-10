@@ -12,7 +12,7 @@ const FALLBACK = 512;
 const MAX = 9000;
 
 /** Intrinsic aspect ratio from viewBox, else width/height; 1 when unknown. */
-async function ratio(path: string): Promise<number> {
+async function ratio(path: string) {
   const head = (await fs.text(path)).slice(0, 4000);
   const box = head.match(/viewBox\s*=\s*["']\s*[-\d.eE]+[,\s]+[-\d.eE]+[,\s]+([\d.eE]+)[,\s]+([\d.eE]+)/);
   const size = !box && head.match(/width\s*=\s*["']([\d.]+)[a-z%]*["'][^>]*?height\s*=\s*["']([\d.]+)/);

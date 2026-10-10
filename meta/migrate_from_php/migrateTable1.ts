@@ -10,7 +10,7 @@ export async function migrateTable1(app: App): Promise<void> {
     try { settings = JSON.parse(String(node.settings || "{}")); } catch { /* keep the empty defaults */ }
     if (settings.units) continue;
     settings.units = "%";
-    await app.db.query`UPDATE page SET settings = ${JSON.stringify(settings)} WHERE id = ${node.id}`;
+    await app.db.exec`UPDATE page SET settings = ${JSON.stringify(settings)} WHERE id = ${node.id}`;
     changed++;
   }
   if (changed) console.log(`[migrate_from_php] table1: ${changed} nodes keep percent column widths`);

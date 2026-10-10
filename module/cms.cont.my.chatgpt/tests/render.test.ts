@@ -1,7 +1,7 @@
 import { App } from "@qino/qino";
 import { assertStringIncludes } from "@qino/qino/tests";
+import { store } from "@qino/m/ai.chatgpt/tests/deps.ts";
 
-import { store } from "@qino/m/ai1.chatgpt/tests/deps.ts";
 import { cms } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -20,13 +20,13 @@ Deno.test("ChatGPT account content node renders a return link and escapes accoun
   } as unknown as Ctx;
   try {
     await app.init();
-    await source.install("ai1.chatgpt");
+    await source.install("ai.chatgpt");
     await store(viewApp, 7, { client_id: "oaiapp_test", subject: "sub", email: "<script>alert(1)</script>",
       id_token: "", access_token: "token", refresh_token: "refresh", scopes: ["chatgpt.tokens.use.direct"],
       expires_at: Date.now() + 3600_000 });
     globalThis.fetch = () => Promise.resolve(Response.json({ models: [{ slug: "gpt-test", visibility: "list" }] }));
     const output = String(await cms.node.render(node, { ctx }));
-    assertStringIncludes(output, "/cms1/ai1-chatgpt/start?return_to=%2Fcms1%2Faccount");
+    assertStringIncludes(output, "/cms1/ai-chatgpt/start?return_to=%2Fcms1%2Faccount");
     assertStringIncludes(output, "&lt;script&gt;alert(1)&lt;/script&gt;");
     assertStringIncludes(output, "gpt-test");
     assertStringIncludes(output, 'name=return_to value="/cms1/account"');

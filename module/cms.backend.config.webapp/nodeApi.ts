@@ -8,11 +8,11 @@ const APPLE_STATUS = new Set(APPLE_STATUS_BAR_STYLES);
 const BOOL_FIELDS = new Set(["telephoneDetection"]);
 const FIELDS = new Set([...BOOL_FIELDS, "display", "orientation", "categories", "appleStatusBarStyle"]);
 
-function bool(value: unknown): boolean {
+function bool(value: unknown) {
   return value === true || value === 1 || value === "1" || value === "true" || value === "on";
 }
 
-function normalized(path: string, value: unknown): string | boolean {
+function normalized(path: string, value: unknown) {
   if (BOOL_FIELDS.has(path)) return bool(value);
   let out = String(value ?? "").trim();
   if (path === "display" && !DISPLAY.has(out)) throw new Error("Invalid display mode");

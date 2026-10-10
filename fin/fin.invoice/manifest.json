@@ -1,0 +1,25 @@
+{
+  "name": "fin.invoice",
+  "description": "Invoices issued and received: lines, tax, numbers, and paid as its payments say.",
+  "dependencies": [
+    "core",
+    "fin",
+    "fin.payment",
+    "identity",
+    "locale.currency",
+    "pdf"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "lib/credit.ts",
+    "lib/document.ts",
+    "lib/number.ts",
+    "lib/totals.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -6,7 +6,7 @@ export const DISPLAY_MODES = ["browser", "minimal-ui", "standalone", "fullscreen
 export const ORIENTATIONS = ["any", "natural", "landscape", "portrait", "portrait-primary", "portrait-secondary", "landscape-primary", "landscape-secondary"];
 export const APPLE_STATUS_BAR_STYLES = ["", "default", "black", "black-translucent"];
 
-const trim = async (value: unknown): Promise<string> => String(await value ?? "").trim();
+const trim = async (value: unknown) => String(await value ?? "").trim();
 
 /** Build the manifest for this request, then let linked modules extend it. */
 export async function manifest(ctx: Ctx): Promise<Record<string, unknown>> {

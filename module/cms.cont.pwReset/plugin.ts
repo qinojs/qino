@@ -4,7 +4,7 @@ import * as u2 from "@qino/qino/u2";
 
 import api, { PURPOSE, TICKET_PARAM, TTL } from "./nodeApi.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { TicketKind } from "@qino/qino/ticket";
 
@@ -23,7 +23,7 @@ export const tickets: Record<string, TicketKind> = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const handle = String(ctx.req.query[TICKET_PARAM] ?? "");
   if (handle) {

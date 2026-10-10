@@ -141,7 +141,7 @@ export function ageColor(time: unknown, now = unixTime()): string {
 
 /** Lightweight user-agent classification (browser + version, OS, mobile and bot flags). */
 export function uaInfo(ua: string): { browser: string; version: string; os: string; mobile: boolean; bot: boolean } {
-  const bot = /bot|crawl|spider|slurp|bing|google|yandex|baidu|duckduck|facebookexternal|headless|preview|monitor/i.test(ua);
+  const bot = !ua || /bot|crawl|spider|slurp|bing|google|yandex|baidu|duckduck|facebookexternal|headless|preview|monitor/i.test(ua);
   const os = OS_TESTS.find(([, re]) => re.test(ua))?.[0] ?? "";
   const mobile = /Mobi|Android|iPhone|iPad|iPod/.test(ua);
   const [browser, m] = UA_TESTS.map(([name, re]) => [name, re.exec(ua)] as const).find(([, m]) => m) ?? [ua ? "?" : "-", null];
@@ -152,12 +152,11 @@ export function uaInfo(ua: string): { browser: string; version: string; os: stri
 // within it). Pass a `titles` map to cache ancestors across many breadcrumbs.
 // Contents usually have no title, so fall back to their (shortened) module name,
 // then the id.
-export async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string> = new Map()): Promise<HtmlString> {
+export async function breadcrumb(host: Node, nodeId: number, titles = new Map<number, string>()): Promise<HtmlString> {
   const node = await host.cms.node(nodeId);
   const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
-  let pageIdx = -1;
-  for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
+  const pageIdx = nodes.findLastIndex((n) => n.vs?.type === "p");
   const crumbs = [];
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
@@ -170,7 +169,7 @@ export async function breadcrumb(host: Node, nodeId: number, titles: Map<number,
   return html.join(crumbs, ' <span class=-sep>›</span> ');
 }
 
-async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
+async function nodeTitle(n: Node, cache: Map<number, string>) {
   const hit = cache.get(n.id);
   if (hit !== undefined) return hit;
   const s = (await (await n.title()).string()).trim();

@@ -26,7 +26,7 @@ const registry = new WeakMap<Db, Map<string, ScoreScope>>();
 /** The registered scopes, table name → scope id and half-life. Treat it as read-only. */
 export const scopes = (db: Db): Map<string, ScoreScope> => registry.getOrInsertComputed(db, () => new Map<string, ScoreScope>());
 
-function scope(db: Db, tbl: string): ScoreScope {
+function scope(db: Db, tbl: string) {
   const found = scopes(db).get(tbl);
   if (!found) throw new Error(`score: table "${tbl}" is not scored — register it via scored(db, "${tbl}", halfLife)`);
   return found;
@@ -52,7 +52,7 @@ export function hit(db: Db, tbl: string, id: number, weight = 1): Promise<void> 
     .catch((e) => console.error("score hit: " + e.message));
 }
 
-async function bump(db: Db, sid: number, id: number, term: number, now: number): Promise<void> {
+async function bump(db: Db, sid: number, id: number, term: number, now: number) {
   const row = await db.row<{ score: number }>`SELECT score FROM score WHERE scope_id = ${sid} AND id = ${id}`;
   const value = row ? logAdd(Number(row.score), term) : term;
   const update = () => db.exec`UPDATE score SET score = ${value}, time = ${now} WHERE scope_id = ${sid} AND id = ${id}`;

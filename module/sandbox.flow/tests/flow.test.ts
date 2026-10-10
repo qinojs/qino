@@ -6,7 +6,7 @@ import { listen, run } from "../mod.ts";
 
 import type { Flow } from "../mod.ts";
 
-/** A real app with user 7 and three routes as tools: get_test_who, post_test_echo, post_test_rename. */
+/** A real app with user 7 and three routes as tools: test_who_get, test_echo_post, test_rename_post. */
 async function withApp(fn: (app: App) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   await app.init();
@@ -28,64 +28,37 @@ async function withApp(fn: (app: App) => Promise<void>) {
 }
 
 const on = { host: "db", event: "table:update-after" };
-const flow = (steps: Flow["steps"], more: Partial<Flow> = {}): Flow =>
-  ({ description: "test", on, owner: 7, steps, ...more });
+const flow = (code: string, more: Partial<Flow> = {}): Flow => ({ description: "test", on, owner: 7, code, ...more });
 
-Deno.test("sandbox.flow: steps pass their result on, tools run as the owner, the trace tells", () =>
+Deno.test("sandbox.flow: the code gets the event, tools run as the owner, the trace tells", () =>
   withApp(async (app) => {
-    const trace = await run(app, flow([
-      { description: "double", fn: (n: number) => n * 2 },
-      { description: "ask", fn: async (n: number, { tools, owner }: any) => [n, await tools.get_test_who(), owner] },
-    ], { tools: ["get_test_who"] }), 21, { user: 3 });
-    assertEquals(trace.end, "done");
-    assertEquals(trace.context, { user: 3 });
-    assertEquals(trace.steps.map((s) => s.value), [42, [42, 7, 7]]);
-    assertEquals(trace.steps[1].calls, [{ tool: "get_test_who", args: undefined, result: 7 }]);
+    const trace = await run(app, flow(`
+      const n = event * 2;
+      return [n, await tools.test_who_get(), owner, context.user];
+    `, { tools: ["test_who_get"] }), 21, { user: 3 });
+    assertEquals([trace.end, trace.context, trace.result], ["done", { user: 3 }, [42, 7, 7, 3]]);
+    assertEquals(trace.calls, [{ tool: "test_who_get", args: undefined, result: 7 }]);
   }));
 
-Deno.test("sandbox.flow: a falsy result stops, an error ends the run", () =>
+Deno.test("sandbox.flow: an error ends the run", () =>
   withApp(async (app) => {
-    const stopped = await run(app, flow([
-      { description: "no", fn: () => false },
-      { description: "never", fn: () => 1 },
-    ]), 1);
-    assertEquals([stopped.end, stopped.steps.length], ["stopped", 1]);
-    const passed = await run(app, flow([
-    { description: "odd?", fn: (n: number) => n % 2 === 1 },
-    { description: "+1", fn: (n: number) => n + 1 },
-  ]), 3);
-  assertEquals([passed.end, passed.steps.map((s) => s.value)], ["done", [3, 4]]); // true passed 3 on
-  const failed = await run(app, flow([{ description: "boom", fn: () => { throw new Error("boom"); } }]), 1);
-    assertEquals([failed.end, failed.steps[0].error], ["error", "boom"]);
+    const failed = await run(app, flow(`throw new Error("boom")`), 1);
+    assertEquals([failed.end, failed.error], ["error", "boom"]);
   }));
 
 Deno.test("sandbox.flow: only allowed tools exist; a test run records what would change", () =>
   withApp(async (app) => {
-    const trace = await run(app, flow([{
-      description: "try",
-      fn: async (_: unknown, { tools }: any) => [
-        Object.keys(tools),
-        await tools.post_test_echo({ a: 1 }),
-        await tools.get_test_who(),
-        // @ts-ignore: names of the wrapper around the step must not reach its code
-        typeof tool + typeof input,
-      ],
-    }], { tools: ["post_test_echo", "get_test_who"] }), 1); // a flow tests unless told otherwise
-    assertEquals(trace.steps[0].value, [["post_test_echo", "get_test_who"], undefined, 7, "undefinedundefined"]);
-    assertEquals(trace.steps[0].calls, [
-      { tool: "post_test_echo", args: { a: 1 }, skipped: true },
-      { tool: "get_test_who", args: undefined, result: 7 },
+    const trace = await run(app, flow(`return [
+      Object.keys(tools),
+      await tools.test_echo_post({ a: 1 }),
+      await tools.test_who_get(),
+      typeof tool + typeof input, // names of the wrapper around the code must not reach it
+    ]`, { tools: ["test_echo_post", "test_who_get"] }), 1); // a flow tests unless told otherwise
+    assertEquals(trace.result, [["test_echo_post", "test_who_get"], undefined, 7, "undefinedundefined"]);
+    assertEquals(trace.calls, [
+      { tool: "test_echo_post", args: { a: 1 }, skipped: true },
+      { tool: "test_who_get", args: undefined, result: 7 },
     ]);
-  }));
-
-Deno.test("sandbox.flow: debounce lets only the latest run per key go on", () =>
-  withApp(async (app) => {
-    const f = flow([
-      { description: "wait", debounce: { ms: 50, by: "id" } },
-      { description: "go", fn: (e: any) => e.id },
-    ]);
-    const traces = await Promise.all([run(app, f, { id: 1 }), run(app, f, { id: 1 }), run(app, f, { id: 2 })]);
-    assertEquals(traces.map((t) => t.end), ["superseded", "done", "done"]);
   }));
 
 Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores what its own run causes", () =>
@@ -93,20 +66,40 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
     const traces: any[] = [];
     const stop = new AbortController();
     const done = new Promise((resolve) => {
-      const report = (t: any) => (traces.push(t), t.end === "done" && resolve(t));
-      listen(app, flow([
-        { description: "family names only", fn: (e: any) => e.table === "usr" && "family_name" in e.data },
-        {
-          description: "rename",
-          fn: async (e: any, { tools }: any) => (await tools.post_test_rename({ name: "Bob" }), e.table),
-        },
-      ], { tools: ["post_test_rename"], test: false }), { signal: stop.signal, report });
+      const report = (t: any) => (traces.push(t), t.result && resolve(t));
+      listen(app, flow(`
+        if (event.table !== "usr" || !("family_name" in event.data)) return;
+        await tools.test_rename_post({ name: "Bob" });
+        return event.table;
+      `, { tools: ["test_rename_post"], test: false }), { signal: stop.signal, report });
     });
     await app.db.table("usr").update(7, { family_name: "Smith" }); // its run renames user 7: an update again
     await done;
     await new Promise((r) => setTimeout(r, 200)); // time for a run its own writes would start
     stop.abort();
     // its run wrote usr twice (the rename, and usr.lang while its context was set up): no run for either
-    assertEquals(traces.map((t) => [t.end, t.steps.at(-1).value]), [["done", "usr"]]);
+    assertEquals(traces.map((t) => [t.end, t.result]), [["done", "usr"]]);
     assertEquals(await app.db.one`SELECT given_name FROM usr WHERE id = 7`, "Bob");
+  }));
+
+Deno.test("sandbox.flow: a run leaves its state to the next; a test keeps none", () =>
+  withApp(async (app) => {
+    const count = flow(`state.n = (state.n ?? 0) + event; return state.n;`, { test: false });
+    const first = await run(app, count, 2);
+    const second = await run(app, count, 3);
+    assertEquals([first.result, first.state, second.result, second.state], [2, { n: 2 }, 5, { n: 5 }]);
+    const same = await run(app, flow(`return state.n`, { test: false, state: { n: 1 } }), 0);
+    assertEquals([same.result, same.state], [1, undefined]); // unchanged: nothing to keep
+    const tried = flow(`state.n = 1;`, { state: { n: 0 } }); // a test
+    assertEquals([(await run(app, tried, 0)).state, tried.state], [undefined, { n: 0 }]);
+  }));
+
+Deno.test("sandbox.flow: an event while a request makes its session does not break the request", () =>
+  withApp(async (app) => {
+    const stop = new AbortController();
+    listen(app, flow(`return;`, { on: { host: "db", event: "table:insert-after" } }), { signal: stop.signal });
+    const res = await app.handle(new Request("https://example.test/nope"), "", "127.0.0.1"); // inserts its session
+    await res.body?.cancel();
+    stop.abort();
+    assertEquals(res.status !== 500, true);
   }));

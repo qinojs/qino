@@ -6,8 +6,8 @@ import type { App } from "@qino/qino";
 
 Deno.test("sandbox.flow history: the latest runs, newest first, per app and flow; filtered ones counted", () => {
   const app = {} as App, other = {} as App;
-  const run = (end: string, steps = 2) => ({ end, steps: Array(steps).fill({}) });
-  record(app, 1, run("stopped", 1)); // not for it
+  const run = (end: string, calls = 1) => ({ end, calls: Array(calls).fill({}) });
+  record(app, 1, run("done", 0)); // not for it
   record(app, 1, run("done"));
   record(app, 1, run("error"));
   const kept = history(app, 1);

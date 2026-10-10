@@ -64,7 +64,7 @@ export class StandardSchema<T = unknown> {
 
 // ───── Helpers ────────────────────────────────────────────────────────────
 
-function err(path: PropertyKey[], message: string): StandardIssue[] {
+function err(path: PropertyKey[], message: string) {
   return [{ message, path }];
 }
 
@@ -112,7 +112,7 @@ export const s = {
   // todo: check which apis rely on that, then move to strict (v === undefined) plus an s.nullable()
   optional: <T>(inner: StandardSchema<T>) =>
     new StandardSchema<T | undefined>("optional", (v) =>
-      v == null ? { value: undefined } : inner["~standard"].validate(v) as StandardResult<T | undefined>,
+      v == null ? { value: undefined } : inner["~standard"].validate(v),
     { inner }) as Optional<T>,
 
   any: (): StandardSchema<unknown> =>

@@ -41,7 +41,7 @@ cms.initNode('cont.table2', function(el) {
   el.addEventListener('paste', e => {
     if (!e.clipboardData.types.includes('text/html')) return;
     let html = e.clipboardData.getData('text/html');
-    html = html.replace(/([\s\S]*)<body>/, '').replace(/<\/body>([\s\S]*)/, '');
+    html = html.replace(/[\s\S]*<body>/, '').replace(/<\/body>[\s\S]*/, '');
     html = html.replace('<!--StartFragment-->', '').replace('<!--EndFragment-->', '');
     const table = dom.el(html);
     if (table && table.tagName !== 'TABLE') return;

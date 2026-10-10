@@ -60,7 +60,7 @@ const PORT = 443;
 const bare = (name: string) => name.replace(/\.$/, ""); // Deno.resolveDns keeps the root dot, our own client does not
 
 // `server` asks one specific nameserver instead of the system resolver.
-async function dnsList(host: string, type: Deno.RecordType, server?: string): Promise<string[]> {
+async function dnsList(host: string, type: Deno.RecordType, server?: string) {
   try {
     const opt = server ? { nameServer: { ipAddr: server, port: 53 } } : undefined;
     const recs = await Deno.resolveDns(host, type as "A", opt);
@@ -72,13 +72,13 @@ async function dnsList(host: string, type: Deno.RecordType, server?: string): Pr
     }
     if (type === "CAA") return (recs as unknown as Deno.CaaRecord[]).map((r) => `${r.tag} ${r.value}`).sort();
     if (type === "TXT") return (recs as unknown as string[][]).map((r) => r.join("")).sort();
-    return (recs as string[]).sort();
+    return recs.sort();
   } catch {
     return [];
   }
 }
 
-async function resolveDns(host: string): Promise<Dns> {
+async function resolveDns(host: string) {
   const root = apex(host);
   const [ns, a, aaaa, mx, txt, caa, dmarc] = await Promise.all([
     dnsList(root, "NS"),
@@ -138,7 +138,7 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
   const [cname, https, dnskey] = zone.slice(wanted.length);
 
   // DS proves the delegation is signed and only ever lives at the parent, never in the zone.
-  const tld = root.split(".").slice(-1)[0];
+  const tld = root.split(".").at(-1)!;
   const parent = (await Promise.all((await dnsList(tld, "NS")).slice(0, 2).map((name) => serverIps(bare(name))))).flat();
   const [ds, delegation] = parent.length
     ? await resolve(parent, [{ name: root, type: "DS" }, { name: root, type: "NS" }], signal)
@@ -203,7 +203,7 @@ export const covers = (name: string, host: string): boolean =>
 
 // An AAAA record proves nothing, so send real HTTP to that address. No IPv6 route here = unknown,
 // not broken.
-async function ipv6Answers(host: string, ip: string, signal?: AbortSignal): Promise<boolean | null> {
+async function ipv6Answers(host: string, ip: string, signal?: AbortSignal) {
   let conn: Deno.Conn | undefined;
   const requestSignal = timedSignal(signal, 8000);
   const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
@@ -226,7 +226,7 @@ async function ipv6Answers(host: string, ip: string, signal?: AbortSignal): Prom
 }
 
 // The www ↔ apex counterpart should be served too, not merely resolve.
-async function wwwCounterpart(host: string, signal?: AbortSignal): Promise<boolean | null> {
+async function wwwCounterpart(host: string, signal?: AbortSignal) {
   const alt = wwwAlt(host);
   if (alt.split(".").length < 2) return null;
   const [a, aaaa] = await Promise.all([dnsList(alt, "A"), dnsList(alt, "AAAA")]);
@@ -237,7 +237,7 @@ async function wwwCounterpart(host: string, signal?: AbortSignal): Promise<boole
 }
 
 // http→https enforcement (best-effort; stays null on any hiccup).
-async function redirectsToHttps(host: string, signal?: AbortSignal): Promise<boolean | null> {
+async function redirectsToHttps(host: string, signal?: AbortSignal) {
   try {
     const res = await fetch(`http://${host}/`, { method: "HEAD", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua });
     await res.body?.cancel();
@@ -248,7 +248,7 @@ async function redirectsToHttps(host: string, signal?: AbortSignal): Promise<boo
 }
 
 // A made-up path must not return 200, otherwise typos and dead links look like success.
-function missingPage(host: string, signal?: AbortSignal): Promise<boolean | null> {
+function missingPage(host: string, signal?: AbortSignal) {
   const url = `https://${host}/qino-monitor-probe-${Math.random().toString(36).slice(2, 10)}`;
   return fetch(url, { method: "GET", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
     .then((r) => { r.body?.cancel(); return r.status >= 400 && r.status < 500; })
@@ -276,7 +276,7 @@ function headers(res: Response) {
 // One request: reachability, timing, final URL, cert validity, headers and the optional content check.
 type Probe = Pick<CheckResult, "online" | "statusCode" | "responseTime" | "finalUrl" | "certValid" | "error" | "hsts" | "hstsFlags" | "headersMissing" | "altSvc">;
 
-async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Promise<Probe> {
+async function probeHttp(url: string, expect?: string, signal?: AbortSignal) {
   const probe: Probe = { online: false, statusCode: null, responseTime: null, finalUrl: null, certValid: null, error: null, hsts: null, hstsFlags: "", headersMissing: "", altSvc: "" };
   try {
     const start = performance.now();

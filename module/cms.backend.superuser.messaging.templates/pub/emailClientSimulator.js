@@ -307,8 +307,8 @@ const vmlShape = (el, doc, log) => {
 };
 
 const applyVml = (doc, mso, log) => {
-  for (const el of [...doc.body.querySelectorAll('*')].filter(e => e.localName.startsWith('v:'))) {
-    if (!el.isConnected) continue;
+  for (const el of doc.body.querySelectorAll('*')) {
+    if (!el.localName.startsWith('v:') || !el.isConnected) continue;
     if (!mso) {
       log('error', `<${el.localName}>`, '', 'VML renders in the Word engine only');
       el.remove();

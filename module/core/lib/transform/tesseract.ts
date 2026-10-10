@@ -1,4 +1,5 @@
 /** Thin wrapper around Tesseract OCR */
+import { sys } from "../sys.ts";
 import { probe } from "./tryCommand.ts";
 import { limited } from './limit.ts';
 
@@ -9,9 +10,9 @@ const _resetAvailable = available.reset;
 available.reset = () => { _resetAvailable(); _langs = null; };
 
 /** All installed languages joined for -l (e.g. "deu+eng"), 'osd' excluded */
-function tesseractLangs(): Promise<string> {
+function tesseractLangs() {
   return _langs ??= (async () => {
-    const { stdout } = await new Deno.Command('tesseract', { args: ['--list-langs'], stdout: 'piped', stderr: 'piped' }).output();
+    const { stdout } = await sys.command('tesseract', { args: ['--list-langs'], stdout: 'piped', stderr: 'piped' });
     return new TextDecoder().decode(stdout).split('\n').slice(1) // first line is a header
       .map((l) => l.trim()).filter((l) => l && l !== 'osd').join('+');
   })();
@@ -20,12 +21,12 @@ function tesseractLangs(): Promise<string> {
 /** Runs OCR on an image, returns the extracted plain text */
 export async function run(input: string, signal?: AbortSignal): Promise<string> {
   const langs = await tesseractLangs();
-  const { code, stdout, stderr } = await limited(() => new Deno.Command('tesseract', {
+  const { code, stdout, stderr } = await limited(() => sys.command('tesseract', {
     args: [input, 'stdout', ...(langs ? ['-l', langs] : [])],
     signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output());
+  }));
   if (code !== 0) throw new Error(`tesseract error: ${new TextDecoder().decode(stderr).trim() || `exit code ${code}`}`);
   return new TextDecoder().decode(stdout);
 }

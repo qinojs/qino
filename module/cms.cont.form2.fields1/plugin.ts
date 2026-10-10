@@ -28,7 +28,7 @@ const settingsSchema = {
 
 const LABEL_CLASS: Record<string, string> = { top: "-labelTop", placeholder: "-labelPlaceholder", right: "-labelRight" };
 
-async function formOf(node: Node): Promise<Form | undefined> {
+async function formOf(node: Node) {
   const open: Map<number, Form> | undefined = getCtx().state.form2;
   if (!open?.size) return;
   for (const id of [...(await node.path()).keys()].reverse()) {
@@ -37,7 +37,7 @@ async function formOf(node: Node): Promise<Form | undefined> {
   }
 }
 
-function attrs(list: Record<string, string | number | boolean | undefined>): HtmlString {
+function attrs(list: Record<string, string | number | boolean | undefined>) {
   let str = "";
   for (const [n, v] of Object.entries(list)) {
     if (v === false || v === undefined || v === "") continue;
@@ -47,7 +47,7 @@ function attrs(list: Record<string, string | number | boolean | undefined>): Htm
 }
 
 /** A node text without its markup — field labels and choices are plain text. */
-async function plain(node: Node, name: string): Promise<string> {
+async function plain(node: Node, name: string) {
   return (await node.showText(name)).plain();
 }
 
@@ -56,7 +56,7 @@ async function plain(node: Node, name: string): Promise<string> {
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */
-async function field(node: Node, id: string, form: Form | undefined): Promise<HtmlString> {
+async function field(node: Node, id: string, form: Form | undefined) {
   const input = node.settings.inputs[id];
   const label = await plain(node, id + "_title");
   const fieldName = String(input.name() ?? "") || label || id;
@@ -132,7 +132,7 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
     }
   }
 
-  const labelHtml = html`<span class=-label>${await node.cms.text(node, id + "_title", { tag: "span" })}${required && label ? " *" : ""}</span>`;
+  const labelHtml = html.async`<span class=-label>${node.cms.text(node, id + "_title", { tag: "span" })}${required && label ? " *" : ""}</span>`;
   return html.async`
     <label class="-item -item-${id}">
       ${labelPosition === "right" ? "" : labelHtml}
@@ -141,7 +141,7 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
     </label>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const edit = await node.edit();
   if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
@@ -153,7 +153,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   for (const id of sortedIds(node)) fields.push(await field(node, id, form));
 
   const warning = edit && !form
-    ? html`<u2-alert open variant=warning>${await node.app.t`This module belongs inside a "cms.cont.form2" module.`}</u2-alert>`
+    ? html.async`<u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form2" module.`}</u2-alert>`
     : "";
 
   const cls = LABEL_CLASS[String(node.settings.labelPosition() ?? "")] ?? "";

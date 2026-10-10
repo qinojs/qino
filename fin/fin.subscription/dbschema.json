@@ -1,0 +1,160 @@
+{
+  "properties": {
+    "subscription_plan": {
+      "description": "The catalog of subscriptions: what is offered, at which price, per which period",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "As the invoice line says it: Hosting Light"
+          },
+          "description": {
+            "type": "string",
+            "description": "What it includes, on the invoice line below the period"
+          },
+          "price": {
+            "type": "number",
+            "description": "Per period, in minor units"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code"
+          },
+          "tax_rate": {
+            "type": "number",
+            "description": "Percent; none: the default (fin.invoice.taxRate)"
+          },
+          "interval_unit": {
+            "type": "string",
+            "enum": ["month", "year"],
+            "default": "year",
+            "maxLength": 5
+          },
+          "interval_count": {
+            "type": "integer",
+            "default": 1
+          },
+          "created": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "name", "price", "currency", "created"]
+      }
+    },
+    "subscription": {
+      "description": "What a user is billed for again and again, period by period, in advance",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "plan_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "subscription_plan",
+            "description": "What it is, from the catalog; its fields fill in what this one leaves empty"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Without a plan: what it is (Hosting example.ch). With one: the detail (example.ch)"
+          },
+          "description": {
+            "type": "string",
+            "description": "What it includes; empty: the plan's"
+          },
+          "price": {
+            "type": "number",
+            "description": "Per period, in minor units; empty: the plan's"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code; empty: the plan's"
+          },
+          "tax_rate": {
+            "type": "number",
+            "description": "Percent; empty: the plan's, else the default (fin.invoice.taxRate)"
+          },
+          "interval_unit": {
+            "type": "string",
+            "enum": ["month", "year"],
+            "maxLength": 5,
+            "description": "Periods count in months or years; empty: the plan's, else years"
+          },
+          "interval_count": {
+            "type": "integer",
+            "description": "So many units make a period; empty: the plan's, else 1"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "The first period begins"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "x-index": true,
+            "description": "No period begins on or after it; none: until canceled. Canceling sets it to the next period"
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What it is for, as <module>:<id>"
+          },
+          "created": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "usr_id", "start_date", "created"]
+      }
+    },
+    "subscription_invoice": {
+      "description": "Which period of a subscription went on which invoice",
+      "additionalProperties": {
+        "properties": {
+          "subscription_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "subscription",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "x-index": "primary"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "description": "The period's last day"
+          },
+          "invoice_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "invoice",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "Its invoice; a draft thrown away takes the period with it, to be billed again"
+          }
+        },
+        "required": ["subscription_id", "period_start", "period_end", "invoice_id"]
+      }
+    }
+  }
+}

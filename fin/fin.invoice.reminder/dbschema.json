@@ -1,0 +1,20 @@
+{
+  "properties": {
+    "invoice": {
+      "additionalProperties": {
+        "properties": {
+          "reminder": {
+            "type": "integer",
+            "default": 0,
+            "description": "How many reminders went out: 1 the payment reminder, 2 the first reminder …"
+          },
+          "reminded": {
+            "type": "string",
+            "format": "date",
+            "description": "When the last one went out"
+          }
+        }
+      }
+    }
+  }
+}

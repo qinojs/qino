@@ -11,7 +11,7 @@ Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
   assertEquals(name, "cms.filebrowser");
   assertEquals(dependencies, ["cms"]);
   const tools = toTools(api);
-  assertEquals(tools.map((tool) => tool.name), ["get_search"]);
+  assertEquals(tools.map((tool) => tool.name), ["search_get"]);
   assertEquals(tools[0].parameters, {
     type: "object",
     properties: { s: { type: "string" } },

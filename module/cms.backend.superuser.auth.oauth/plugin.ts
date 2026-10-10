@@ -1,11 +1,11 @@
-import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any
+import * as u2 from "@qino/qino/u2";
 import { html, safeEqual } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -19,7 +19,7 @@ type Preset = {
   token_url?: string;
   userinfo_url?: string;
   email_url?: string;
-  console_url: string; // Wo man Client-ID/Secret erstellt
+  console_url: string; // where to create the client ID/secret
 };
 
 // Well-known providers, seeded on install; the admin adds client_id/secret and replaces placeholders.
@@ -60,7 +60,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** One editable form per provider (blank `p` = the "add" form). */
-function providerForm(csrf: string, selfBase: string, action: string, p: any = {}): HtmlString {
+function providerForm(csrf: string, selfBase: string, action: string, p: any = {}) {
   const v = (k: string) => p[k];
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
@@ -98,13 +98,13 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
     </fieldset>
     <div>
       <button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>
-      ${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" u2-confirm style="background:var(--red)">Delete</button>`}
+      ${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" style="background:var(--red)">Delete</button>`}
     </div>
   </div>
 </form>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const db = node.app.db;
   const b = ctx.req.body as Record<string, unknown> | undefined;
 
@@ -186,7 +186,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
 /** Which users are linked to which provider accounts. Logins follow these links; unlinking here
  *  removes them. */
-async function links(app: App, csrf: string): Promise<HtmlString> {
+async function links(app: App, csrf: string) {
   const rows = await app.db.query`
     SELECT l.provider, l.sub, l.usr_id, l.created, l.last_used, u.username
     FROM oauth_provider_usr l LEFT JOIN usr u ON u.id = l.usr_id

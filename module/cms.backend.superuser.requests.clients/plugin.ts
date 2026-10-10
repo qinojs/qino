@@ -1,4 +1,4 @@
-import { getCtx, html, sql, unixTime } from "@qino/qino";
+import { getCtx, html, sql, sys, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -49,11 +49,13 @@ async function latest(app: App, limit: number, { window = WINDOW, returning = fa
 const userName = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
 
 // ── list (filterable part) ──────────────────────────────────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
-  const rows = await latest(node.app, LIMIT, { returning: !!f.returning });
-  const badges = await ipBadges(node.app);
+  const [rows, badges] = await Promise.all([
+    latest(node.app, LIMIT, { returning: !!f.returning }),
+    ipBadges(node.app),
+  ]);
   const u = ctx.req.url.toURL();
   const href = (client: unknown) => (u.searchParams.set("id", String(client)), u.search);
 
@@ -84,10 +86,10 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`Requests`}
     <th>${t`Last request`}
     <th>${t`Url`}
-<tbody>${trs.length ? trs : html`<tr><td colspan=8>${await t`No entries`}`}`;
+<tbody>${trs.length ? trs : html.async`<tr><td colspan=8>${t`No entries`}`}`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (ctx.req.query.id) return renderDetail(node, Number(ctx.req.query.id));
   const { t } = node.app;
   return html.async`<div class=u2-flex>
@@ -118,24 +120,24 @@ const logRow = (db: App["db"], id: unknown) => db.row`
    WHERE log.id = ${id}`;
 
 /** PTR lookup for an IP (v4/v6); anonymized digits ("X") count as 1, like the PHP version. */
-async function hostname(ip: unknown): Promise<string> {
+async function hostname(ip: unknown) {
   const addr = String(ip ?? "").replaceAll("X", "1");
   let name;
   if (addr.includes(":")) {
     const [head, tail = ""] = addr.split("::");
-    const groups = (s: string) => s ? s.split(":") : [];
-    const all = [...groups(head), ...Array(8 - groups(head).length - groups(tail).length).fill("0"), ...groups(tail)];
+    const left = head ? head.split(":") : [], right = tail ? tail.split(":") : [];
+    const all = [...left, ...Array(8 - left.length - right.length).fill("0"), ...right];
     name = [...all.map((g) => g.padStart(4, "0")).join("")].reverse().join(".") + ".ip6.arpa";
   } else if (/^\d+(\.\d+){3}$/.test(addr)) {
     name = addr.split(".").reverse().join(".") + ".in-addr.arpa";
   } else return "";
-  const names = await Deno.resolveDns(name, "PTR", { signal: AbortSignal.timeout(2000) }).catch(() => []);
+  const names = await sys.resolveDns(name, "PTR", { signal: AbortSignal.timeout(2000) }).catch(() => []);
   return names.map((n) => n.replace(/\.$/, "")).join(", ");
 }
 
 const ACTIVE = 900; // a session touched within 15 min counts as active
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
   const client = id ? await db.row`SELECT * FROM client WHERE id = ${id}` : undefined;
   if (!client) return html.async`<div>${t`Not found`}</div>`;
@@ -265,8 +267,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
 // newest other clients with more than one request
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
-  const rows = await latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) });
-  const badges = await ipBadges(app);
+  const [rows, badges] = await Promise.all([
+    latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) }),
+    ipBadges(app),
+  ]);
   if (!rows.length || !page) return html``;
   const pageUrl = await page.url();
   const href = (client: unknown) => backend.toUrl(pageUrl, { id: client });

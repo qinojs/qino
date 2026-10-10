@@ -1,0 +1,15 @@
+{
+  "name": "fin.payment.saferpay",
+  "description": "Saferpay (Worldline) as payment provider: the payer pays on Saferpay's payment page.",
+  "dependencies": [
+    "fin.payment"
+  ],
+  "files": [
+    "README.md",
+    "lib/api.ts",
+    "lib/provider.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

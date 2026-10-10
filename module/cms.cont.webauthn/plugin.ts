@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -19,7 +19,7 @@ export const cms = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (ctx.user && !await node.edit()) return html.raw(""); // nothing to offer once logged in
   const app = node.app;
   const settings = node.settings;
@@ -30,7 +30,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   let redirectUrl = "";
   if (redirectId) {
     const p = await node.cms.node(redirectId);
-    if (p?.exists()) redirectUrl = await p.url();
+    if (p.exists()) redirectUrl = await p.url();
   }
 
   return html.async`<div data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">

@@ -18,12 +18,12 @@ const VID = new Set(["mp4","webm","mov","avi","mkv"]);
 const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
-async function mediaPreview(f: DbFile, exists: boolean): Promise<HtmlString> {
+async function mediaPreview(f: DbFile, exists: boolean) {
   if (!exists) return html`<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
   return html`<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
-async function mediaView(f: DbFile): Promise<HtmlString | string> {
+async function mediaView(f: DbFile) {
   const ext = f.extension;
   const url = await f.url();
   let inner: HtmlString | string = "";
@@ -34,18 +34,18 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
   else if (AUD.has(ext))
     inner = html`<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
-    inner = html`<iframe src="${url}" style="width:100%;height:37.5rem;border:0"></iframe>`;
-  return inner ? html`<div class=u2-card style="flex:0 1 auto"><div>${inner}</div></div>` : "";
+    inner = html`<iframe src="${url}" style="width:100%;min-width:40rem;height:40rem;border:0; padding:0"></iframe>`;
+  return inner ? html`<div class=u2-card style="flex:0 1 auto">${inner}</div>` : "";
 }
 
-async function textView(f: DbFile): Promise<HtmlString | string> {
+async function textView(f: DbFile) {
   if (!TXT.has(f.extension)) return "";
   return html`<div class=u2-card style="flex:0 1 auto"><div><u2-code trim><textarea readonly>${await
     fs.text(f.path)}</textarea></u2-code></div></div>`;
 }
 
 /** The file's searchable text, shown as is (to spot bad OCR). `null` = not extracted yet, `""` = no text. */
-function searchText(app: App, id: number, text: string | null): Promise<HtmlString> {
+function searchText(app: App, id: number, text: string | null) {
   if (text == null) return html.async`<button data-extract="${id}">${app.t`Extract text`}</button>`;
   const again = html.async`<button data-extract="${id}" title="${app.t`extract again`}"><u2-ico icon=refresh>↻</u2-ico></button>`;
   if (!text) return html.async`<small>${app.t`no text in this file`}</small> ${again}`;
@@ -64,7 +64,7 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
 const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 
 // list (filterable part): total + table rows, reloaded on search/order change
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }) {
   const app = node.app;
   const { db, dbFiles: fm } = app;
 
@@ -91,7 +91,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const s = search.trim();
     const emailSub = (col: string) => sql`f.${sql.id(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.username=${s})`;
     if (/^\d+$/.test(s)) cond = sql` AND f.id = ${Number(s)}`;
-    else if (/^[0-9a-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
+    else if (/^[\da-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
     else if (s.includes("@")) cond = sql` AND (${emailSub("log_id")} OR ${emailSub("log_id_ch")})`;
     else if (db.dialect === "mysql") cond = sql` AND (MATCH(f.name) AGAINST (${s + "*"} IN BOOLEAN MODE) OR MATCH(f.text) AGAINST (${s + "*"} IN BOOLEAN MODE))`;
     else cond = sql` AND (f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${"%" + s + "%"})`;
@@ -112,7 +112,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
-    const exists = await f.exists();
+    const [exists, used] = await Promise.all([f.exists(), f.used()]);
     u.searchParams.set("id", String(row.id));
     const cells = children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻"));
     trs.push(html.async`<tr u2-href>
@@ -123,7 +123,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   ${cells}
   <td>${u2.el.time(row.init_time)}<br><small>${row.usr_init_username}</small>
   <td>${u2.el.time(row.edit_time)}<br><small>${row.usr_edit_username}</small>
-  <td>${await f.used()?"◼":""}
+  <td>${used ? "◼" : ""}
   <td>${row.access?"◼":""}
   <td>
     <button data-delete="${row.id}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
@@ -145,7 +145,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 <tbody>${trs}`;
 }
 
-async function runAction(node: Node, doName: string): Promise<HtmlString | string> {
+async function runAction(node: Node, doName: string) {
   if (doName === "delete_unlinked") {
     const r = await deleteUnlinkedFs(node);
     return html.async`${r.deleted} ${node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;
@@ -174,7 +174,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return false;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
   const ctx = getCtx();
   const app = node.app;
   const get = ctx.req.query;
@@ -210,7 +210,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const ctx = getCtx();
   u2.elements(ctx, "code"); // the text view highlights with a library of its own
   const app = node.app;
@@ -237,8 +237,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.req.url.toURL();
 
-  const preview = exists ? await mediaView(f) : "";
-  const text = exists ? await textView(f) : "";
+  const preview = exists ? mediaView(f) : "";
+  const text = exists ? textView(f) : "";
 
   return html.async`
 <div class=u2-flex>

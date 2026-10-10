@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.home.command",
+  "description": "A button or value field on a CMS page that runs one stored home command.",
+  "dependencies": ["cms", "home"],
+  "files": ["README.md", "manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
+}

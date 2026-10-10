@@ -41,17 +41,18 @@ export async function collect(app: App, opts: {
      since `page.id = page_redirect.redirect` compares integer with text (only SQLite allows that). */
   const ids = [...new Set(all.map((r) => String(r.redirect)).filter(isNodeId))];
   const requests = [...new Set(all.map((r) => String(r.request)))];
-  const alive = new Set(!ids.length ? [] : (await db.query`
-    SELECT id FROM ${sql.id("page")} WHERE id IN (${inList(ids.map(Number))})`).map((r) => String(r.id)));
-  const shadowed = new Set(!requests.length ? [] : (await db.query`
-    SELECT url FROM ${sql.id("page_url")} WHERE url IN (${inList(requests)})`).map((r) => String(r.url)));
+  const [aliveRows, shadowedRows] = await Promise.all([
+    ids.length ? db.query`SELECT id FROM ${sql.id("page")} WHERE id IN (${inList(ids.map(Number))})` : [],
+    requests.length ? db.query`SELECT url FROM ${sql.id("page_url")} WHERE url IN (${inList(requests)})` : [],
+  ]);
+  const alive = new Set(aliveRows.map((r) => String(r.id)));
+  const shadowed = new Set(shadowedRows.map((r) => String(r.url)));
 
-  const rows: Row[] = [];
-  for (const r of all) {
+  const rows = await Promise.all(all.map(async (r): Promise<Row> => {
     const request = String(r.request ?? ""), redirect = String(r.redirect ?? "");
     const kind = !isNodeId(redirect) ? "external" : alive.has(redirect) ? "page" : "orphan";
     const target = kind === "page" ? await cms(app).node(Number(redirect)) : undefined;
-    rows.push({
+    return {
       request,
       redirect,
       kind,
@@ -59,10 +60,10 @@ export async function collect(app: App, opts: {
       href: target ? await target.url() : kind === "external" ? redirect : "",
       shadowed: shadowed.has(request),
       root: request === "",
-    });
-  }
-  const bad = (row: Row) => row.kind === "orphan" || row.shadowed;
-  return { rows: opts.broken ? rows.filter(bad) : rows, broken: rows.filter(bad).length };
+    };
+  }));
+  const broken = rows.filter((row) => row.kind === "orphan" || row.shadowed);
+  return { rows: opts.broken ? broken : rows, broken: broken.length };
 }
 
 /** The 404 box refuses these too — a direct link ends up in a Location header. */

@@ -1,6 +1,5 @@
 import { html } from "@qino/qino";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /**
@@ -24,7 +23,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   let conts = await node.conts();
 
   if (!conts.length && await node.edit()) { // Seed editable lists; cont() invalidates the cached children.

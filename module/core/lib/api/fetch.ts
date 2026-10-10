@@ -1,4 +1,5 @@
 import { getCtx, requestStorage } from "../ctx/Ctx.ts";
+import { safeEqual } from "../crypto.ts";
 import { errMsg, Output } from "../util.ts";
 import { ApiError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
@@ -44,17 +45,17 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
     if (e instanceof ApiError) throw new Output({ error: e.message, ...(e.code && { code: e.code }), ...(e.data !== undefined && { data: e.data }) }, { status: e.status });
     console.error("[api]", e);
     // unknown errors: detail only in dev, generic message otherwise (may contain SQL/paths)
-    const detail = requestStorage.getStore()?.app.dev ? (errMsg(e)) : "";
+    const detail = requestStorage.getStore()?.app.dev ? errMsg(e) : "";
     throw new Output({ error: detail || "Internal Server Error" }, { status: 500 });
   }
 }
 
-function isJsonRequest(req: Req): boolean {
+function isJsonRequest(req: Req) {
   const type = req.header("content-type")?.split(";")[0].trim().toLowerCase();
   return !type || type === "application/json" || type.endsWith("+json");
 }
 
-async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData): Promise<void> {
+async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData) {
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;
@@ -64,19 +65,13 @@ async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestD
 // Compare host:port, not scheme — behind a TLS proxy the app sees http, the Origin says https.
 export function isTrustedOrigin(req: Req): boolean {
   const target = req.url.host;
-  const origin = hostOf(req.header("origin"));
-  if (origin) return origin === target;
-  const referer = req.header("referer");
-  if (!referer) return false;
-  return hostOf(referer) === target;
+  return (hostOf(req.header("origin")) || hostOf(req.header("referer"))) === target;
 }
 
-function hostOf(value?: string): string | null {
-  try { return value ? new URL(value).host : null; }
-  catch { return null; }
+function hostOf(value?: string) {
+  return value ? URL.parse(value)?.host ?? null : null;
 }
 
-function hasValidCsrfToken(req: Req): boolean {
-  const token = req.header("x-csrf-token");
-  return typeof token === "string" && token !== "" && token === getCtx().csrfToken;
+function hasValidCsrfToken(req: Req) {
+  return safeEqual(req.header("x-csrf-token"), getCtx().csrfToken);
 }

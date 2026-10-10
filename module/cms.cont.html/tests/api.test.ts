@@ -21,7 +21,7 @@ const fakeNode = (dir: string, module = name, access = 2) => ({
 
 const fakeCtx = (dir: string, module = name, access = 2) => {
   const node = fakeNode(dir, module, access);
-  const app = {};
+  const app = { assetRev: 0 };
   fakeCms(app, { node: () => node });
   return { app, user: {} };
 };
@@ -29,12 +29,12 @@ const fakeCtx = (dir: string, module = name, access = 2) => {
 Deno.test("cms.cont.html api: tools describe each code file", () => {
   const tools = toTools({ [name]: api });
   assertEquals(tools.map((tool) => tool.name), [
-    "get_cmsContHtml_node_codefiles_html",
-    "put_cmsContHtml_node_codefiles_html",
-    "get_cmsContHtml_node_codefiles_css",
-    "put_cmsContHtml_node_codefiles_css",
-    "get_cmsContHtml_node_codefiles_js",
-    "put_cmsContHtml_node_codefiles_js",
+    "cmsContHtml_node_codefiles_html_get",
+    "cmsContHtml_node_codefiles_html_put",
+    "cmsContHtml_node_codefiles_css_get",
+    "cmsContHtml_node_codefiles_css_put",
+    "cmsContHtml_node_codefiles_js_get",
+    "cmsContHtml_node_codefiles_js_put",
   ]);
   assertEquals(tools[3].parameters, {
     type: "object",
@@ -57,6 +57,9 @@ Deno.test("cms.cont.html api: writes and reads code files", async () => {
       "<div>rendered</div>",
     );
     assertEquals(await fs.isFile(css), true);
+    const first = ctx.app.assetRev;
+    await requestStorage.run(ctx as any, () => invoke(api, "PUT", "/node/7/codefiles/css", { content: "body {}\n" }));
+    assertEquals(ctx.app.assetRev > first, true);
     assertEquals(
       await requestStorage.run(ctx as any, () => invoke(api, "GET", "/node/7/codefiles/css")),
       { content: "body {}\n" },

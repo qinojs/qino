@@ -5,7 +5,7 @@ import api from "./nodeApi.ts";
 import { formLine, formOfVars, forms, list } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -25,7 +25,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 
 /* Entries of the site's forms. Forms are found by their module, so new ones appear automatically.
    Visibility follows the form's access rights. */
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   const app = node.app;
   const { t } = app;
   const all = await forms(app);

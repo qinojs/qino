@@ -14,6 +14,7 @@ Deno.test("cms.cont.my.totp renders the signed-in enrolment flow", async () => {
   const output = String(await cms.node.render(node, { ctx: signedIn } as never));
   assertStringIncludes(output, "data-apps");
   assertStringIncludes(output, "data-start");
+  ctx.res.html.resolve(); // as the request does before html-ready
   const qrcode = [...ctx.res.html.scripts].find((s) => s.endsWith("el/qrcode/qrcode.js"))!;
   assertEquals(ctx.res.csp["script-src"][qrcode.replace("el/qrcode/qrcode.js", "")], true);
   assertStringIncludes(String(await cms.node.render(node, { ctx: {} } as never)), "Please sign in.");

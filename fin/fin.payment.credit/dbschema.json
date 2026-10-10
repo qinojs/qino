@@ -1,0 +1,46 @@
+{
+  "properties": {
+    "payment_credit": {
+      "description": "What moved on a user's credit: added positive, spent negative. The balance is the sum",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In minor units: added positive, spent negative"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Why, as the user reads it"
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What it came from or went to, as <module>:<id> — fin.payment:12"
+          },
+          "created": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "usr_id", "currency", "amount", "created"]
+      }
+    }
+  }
+}

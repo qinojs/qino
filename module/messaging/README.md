@@ -18,6 +18,25 @@ If the channel is chosen at runtime: `channel(app, "sms")?.send(app, to, msg)`, 
 `userChannels(app, usrId)` for all channels that reach a user. Every `send` writes the journal
 itself; never call `record()` for outgoing messages.
 
+## API
+
+The API tree is available through HTTP, `app.api.messaging` and tools. Listing channels requires a
+signed-in user; sending currently requires a superuser:
+
+- `GET /api/messaging/channels` lists the linked channels' names, labels, colours and contact kinds.
+- `POST /api/messaging/channels/:channel/messages` accepts `{ to, msg }` and returns the number of
+  destinations reached. `to` accepts only `usr` (an ID or array) and `grp` (a group ID). At least
+  one user or group is required; other recipient fields are rejected. `msg` is a string
+  or the usual message object, including channel-specific fields.
+  JSON attachments use `{ name, type?, content }` with string content.
+
+```ts
+await app.api.messaging.channels("email").messages.post({
+  to: { usr: 42 },
+  msg: { title: "Your order", text: "Your order has shipped." },
+});
+```
+
 ## Journal
 
 `record(app, message, deliveries)` stores one message plus one row per recipient, so "sent to the
@@ -310,7 +329,7 @@ Both land in the journal, and the type decides whether the outbox retries.
 Releasing is up to the caller: a backend button sets `due` to now, a schedule sets a time, an
 approval rule sets it when satisfied. `messaging` only asks what is due.
 
-`delivered(app, id, error?, ref?)` finishes one attempt. On `ChannelError` the delivery is retried
+`delivered(app, id, error?, externalId?)` finishes one attempt. On `ChannelError` the delivery is retried
 after one, then four minutes, and given up after three tries; other errors are final. The `outbox`
 cron job takes what is due and runs the same path as `send()` (the diagram above, from
 `recipients`). One path only, so retries behave exactly like the first send, and a batch shares its
@@ -360,7 +379,7 @@ claims; `dropClaim(app, type, usrId, address)` accepts one without code (admin a
 
 `message_delivery` — one row per recipient, with attempt time and error. `address` is where it
 really went; `usr_id` is set only if that address is a verified contact of the user, so the journal
-never claims a delivery to someone based on an unverified address. `ref` is the other side's id for
+never claims a delivery to someone based on an unverified address. `external_id` is the other side's id for
 it — a mail's `Message-ID`, a Twilio `sid`, a Telegram message. Ids that are only unique within a
 provider or chat get a prefix (`twilio:SM…`, `<chat>:<message>`), so they are never ambiguous.
 

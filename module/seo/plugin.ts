@@ -24,14 +24,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => route(ctx), { signal });
 }
 
-async function route(ctx: Ctx): Promise<void> {
+async function route(ctx: Ctx) {
   const path = ctx.req.appPath;
   if (path === "robots.txt") await serve(ctx, "text/plain", robots);
   if (path === "sitemap.xml") await serve(ctx, "application/xml", sitemap);
 }
 
 /** Answers from a per-app, per-base cache that expires after TTL seconds. */
-async function serve(ctx: Ctx, type: string, build: (ctx: Ctx, base: string) => Promise<string>): Promise<void> {
+async function serve(ctx: Ctx, type: string, build: (ctx: Ctx, base: string) => Promise<string>) {
   const base = ctx.req.url.origin + ctx.req.appUrl;
   const key = base + ctx.req.appPath;
   const cache = caches.get(ctx.app) ?? caches.set(ctx.app, new Map()).get(ctx.app)!;
@@ -48,7 +48,7 @@ async function serve(ctx: Ctx, type: string, build: (ctx: Ctx, base: string) => 
 }
 
 /** Modules add rules through `seo:robots`. */
-async function robots(ctx: Ctx, base: string): Promise<string> {
+async function robots(ctx: Ctx, base: string) {
   const { lines } = await ctx.app.fire("seo:robots", { ctx, base, lines: ["User-agent: *", "Allow: /"] });
   return `${lines.join("\n")}\n\nSitemap: ${base}sitemap.xml\n`;
 }
@@ -56,7 +56,7 @@ async function robots(ctx: Ctx, base: string): Promise<string> {
 type Entry = string | { url: string | Record<string, string>; lastmod?: number; image?: string };
 
 /** Modules add entries through `seo:sitemap`: a URL, or `{ url, lastmod?, image? }` where `url` may map languages to URLs (hreflang). */
-async function sitemap(ctx: Ctx, base: string): Promise<string> {
+async function sitemap(ctx: Ctx, base: string) {
   const { urls } = await ctx.app.fire("seo:sitemap", { ctx, base, urls: [] as Entry[] });
   let items = "";
   for (const entry of urls) {

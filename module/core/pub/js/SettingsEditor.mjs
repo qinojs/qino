@@ -12,9 +12,9 @@ const apiPath = (endpoint) => {
   return path.length ? api[ns][name](path) : api[ns][name];
 };
 function apiWrite(method, base, path, value) {
-  const api = path.reduce((a, k) => a[k], base);
+  const target = path.reduce((a, k) => a[k], base);
   const del = method === "DELETE";
-  return api[del ? "delete" : method.toLowerCase()](del ? {} : { value });
+  return target[del ? "delete" : method.toLowerCase()](del ? {} : { value });
 }
 
 async function renderItems(item) {

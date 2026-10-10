@@ -15,7 +15,7 @@ Deno.test("cms.backend: uaInfo classifies browser, os and device", () => {
   assertEquals(ios("GSA/438.6.976963367"), { browser: "Safari", version: "", os: "iOS", mobile: true, bot: false });
   assertEquals([ios("CriOS/140.0").browser, ios("FxiOS/142.0").browser], ["Chrome", "Firefox"]);
   assertEquals(uaInfo("Googlebot/2.1").bot, true);
-  assertEquals(uaInfo(""), { browser: "-", version: "", os: "", mobile: false, bot: false });
+  assertEquals(uaInfo(""), { browser: "-", version: "", os: "", mobile: false, bot: true });
 });
 
 Deno.test("cms.backend: ageColor fades from green over orange to none", () => {

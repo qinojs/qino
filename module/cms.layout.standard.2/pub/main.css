@@ -1,0 +1,71 @@
+/* u2 supplies tokens and content styling. */
+#container {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  > .-skip {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    translate: 0 -150%;
+    z-index: 1;
+    padding: var(--gap);
+    background: var(--color-bg);
+    color: var(--color-text);
+    &:focus { translate: 0; }
+  }
+
+  #head {
+    padding-block: var(--gap);
+    border-block-end: var(--line-width) solid var(--color-area);
+    > .u2-flex { align-items: center; }
+    > .u2-flex > a { min-inline-size: 0; overflow-wrap: anywhere; }
+    > .u2-flex > a img { vertical-align: middle; margin-inline-end: var(--gap); }
+    .-open, .-close { display: none; }
+
+    /* A plain link list: on wide screens, and wherever popover is unsupported. */
+    #head-nav {
+      all: unset;
+      display: block;
+      nav > ul { display: flex; flex-wrap: wrap; gap: var(--gap); }
+      nav a { display: inline-block; padding-block: .5em; overflow-wrap: anywhere; }
+      nav li:not(.cmsInside, .cmsActive) > ul { display: none; } /* sub-levels along the current path */
+      nav :is(.cmsInside, .cmsActive) > a { text-decoration: underline; }
+      nav .cmsActive > a { font-weight: bold; }
+    }
+  }
+
+  #content { flex: 1; min-inline-size: 0; }
+  #foot { padding-block: var(--gap); border-block-start: var(--line-width) solid var(--color-area); }
+}
+
+/* Small screens: the same list in a native popover. Escape, light dismiss and focus return are the browser's. */
+@media (width < 48rem) {
+  @supports selector(:popover-open) {
+    #container #head {
+      .-open { display: revert; }
+      #head-nav:not(:popover-open) { display: none; }
+      #head-nav:popover-open {
+        position: fixed;
+        inset: auto 0 0;
+        max-block-size: 80dvh;
+        overflow: auto;
+        overscroll-behavior: contain;
+        border-block-start: var(--line-width) solid var(--color-line);
+        padding: var(--gap);
+        padding-block-end: max(var(--gap), env(safe-area-inset-bottom));
+        background: var(--color-bg);
+        color: var(--color-text);
+        > .-close { display: block; margin-inline-start: auto; }
+        nav > ul { flex-direction: column; }
+        nav a { display: block; }
+      }
+    }
+  }
+}
+
+@media print {
+  #container > .-skip { display: none; }
+  #container { min-block-size: 0; }
+}

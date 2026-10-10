@@ -19,7 +19,7 @@ export async function initRequest(ctx: Ctx): Promise<void> {
   initLog(ctx);
 }
 
-async function initClient(ctx: Ctx): Promise<void> {
+async function initClient(ctx: Ctx) {
   if (ctx.clientId) return;
 
   const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
@@ -29,11 +29,10 @@ async function initClient(ctx: Ctx): Promise<void> {
   ctx.clientId = String(client);
 }
 
-async function registerClient(ctx: Ctx): Promise<void> {
+async function registerClient(ctx: Ctx) {
   const hash = uid();
   ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure: ctx.app.https, maxAge: 5 * 365 * 24 * 60 * 60 }));
-  const client = await ctx.app.db.table("client").add({ hash });
-  ctx.clientId = String(client);
+  ctx.clientId = String(await ctx.app.db.table("client").add({ hash }));
 }
 
 
@@ -60,7 +59,7 @@ export function redactQuery(href: string): string {
 const md5 = (s: string) => createHash("md5").update(s).digest("hex");
 const EMPTY_URL = md5(""); // most requests have no referer
 
-function initLog(ctx: Ctx): void {
+function initLog(ctx: Ctx) {
 
   const db = ctx.app.db;
 

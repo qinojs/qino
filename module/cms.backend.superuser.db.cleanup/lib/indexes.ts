@@ -3,8 +3,8 @@ import { tableIndexes } from "@qino/qino/cms.backend.superuser.db";
 
 import type { Db } from "@qino/qino";
 
-const same = (a: string[], b: string[]): boolean => a.length === b.length && a.every((field, i) => field === b[i]);
-const prefix = (a: string[], b: string[]): boolean => a.length <= b.length && a.every((field, i) => field === b[i]);
+const same = (a: string[], b: string[]) => a.length === b.length && a.every((field, i) => field === b[i]);
+const prefix = (a: string[], b: string[]) => a.length <= b.length && a.every((field, i) => field === b[i]);
 
 /** Missing schema/relation indexes and indexes that are safe candidates for removal. */
 export async function indexIssues(db: Db, tableName: string) {

@@ -1,6 +1,0 @@
-{
-  "name": "cms.backend.ai1.embed",
-  "description": "Manages embedding collections and indexes CMS texts and files.",
-  "dependencies": ["cms.backend", "ai1.embed", "cms.embed"],
-  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
-}
