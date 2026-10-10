@@ -60,6 +60,20 @@ cms.initNode("backend.ai.chat", (el) => {
     if (talk) talk.textContent = talkLabel;
   };
 
+  // at the end it stays there while what is shown still grows (markdown, late layout); scrolled up, it
+  // stays where it is
+  let pinned = true, top = 0;
+  log.addEventListener("scroll", () => {
+    pinned = log.scrollTop < top ? false : pinned || log.scrollHeight - log.scrollTop - log.clientHeight < 10;
+    top = log.scrollTop;
+  });
+  const growing = new ResizeObserver(() => pinned && (log.scrollTop = log.scrollHeight));
+  const append = (...els) => {
+    log.append(...els);
+    for (const el of els) if (el instanceof Element) growing.observe(el);
+    log.scrollTop = log.scrollHeight;
+  };
+
   // only the messages since the last one are added, so what is opened or selected stays as it is; one
   // after the other, as it is also called while an answer is on its way
   const show = () => showing = showing.catch(() => {}).then(async () => {
@@ -70,14 +84,14 @@ cms.initNode("backend.ai.chat", (el) => {
     if (!news.length) return;
     last = news.at(-1).id;
     sent?.remove(); // shown until it is kept
-    log.append(...await Promise.all(news.map(entry)));
-    log.scrollTop = log.scrollHeight;
+    append(...await Promise.all(news.map(entry)));
   });
   const open = (id) => {
     sessionStorage.setItem(KEY, session = id);
     last = 0;
     sent = undefined;
     log.replaceChildren();
+    pinned = true, top = 0;
     ask.hidden = false;
     hangUp(); // the talk was with the session before
     for (const button of el.querySelectorAll("[data-session]")) button.setAttribute("aria-current", String(+button.dataset.session === id));
@@ -125,8 +139,7 @@ cms.initNode("backend.ai.chat", (el) => {
     e.preventDefault();
     const field = ask.elements.content, content = field.value, id = session;
     field.value = "";
-    log.append(sent = await entry({ role: "user", content }));
-    log.scrollTop = log.scrollHeight;
+    append(sent = await entry({ role: "user", content }));
     try {
       await agents.sessions(id).ask.post({ content }); // at once: the answer comes with show()
       const first = [...el.querySelectorAll("[data-session]")].find((button) => +button.dataset.session === id)?.closest("tr").querySelector("[data-first]");

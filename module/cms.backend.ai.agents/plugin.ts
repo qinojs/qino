@@ -477,4 +477,4 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, api, parts: { agents, agent, sessions, session, memories, tools, conversation } } };
+export const cms = { node: { js: ["pub/main.js"], css: ["pub/main.css"], render, api, parts: { agents, agent, sessions, session, memories, tools, conversation } } };

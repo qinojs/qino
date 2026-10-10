@@ -188,11 +188,19 @@ cms.initNode("backend.ai.agents", (el) => {
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);
   const box = el.querySelector("[cms-part=conversation]");
   if (!box) return;
+  // starts at the latest message, and stays at the end while what is shown still grows (markdown, late
+  // layout) or more comes; scrolled up, it stays where it is
   const end = () => box.scrollTop = box.scrollHeight;
-  render(box).then(end); // starts at the latest message
+  let pinned = true, top = 0;
+  box.addEventListener("scroll", () => {
+    pinned = box.scrollTop < top ? false : pinned || box.scrollHeight - box.scrollTop - box.clientHeight < 10;
+    top = box.scrollTop;
+  });
+  if (box.firstElementChild) new ResizeObserver(() => pinned && end()).observe(box.firstElementChild);
+  render(box).then(end);
   working("running" in (box.firstElementChild?.dataset ?? {}));
-  // only the messages since the last one are added, so what is opened or selected stays as it is; who
-  // is at the end stays there; every second while an answer is on its way
+  // only the messages since the last one are added, so what is opened or selected stays as it is; every
+  // second while an answer is on its way
   const poll = async () => {
     if (!el.isConnected) return;
     const list = box.firstElementChild;
@@ -202,10 +210,8 @@ cms.initNode("backend.ai.agents", (el) => {
     const part = more.content.firstElementChild, news = [...part?.children ?? []];
     if (part) working("running" in part.dataset);
     if (list && news.length) {
-      const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 10;
       list.append(...news);
       await Promise.all(news.map(render));
-      if (atEnd) end();
     }
     setTimeout(poll, busy ? 1000 : 3000);
   };

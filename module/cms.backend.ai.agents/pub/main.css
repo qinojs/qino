@@ -1,0 +1,4 @@
+[qcms-mod="backend.ai.agents"] {
+  /* a long conversation: only what is in view is laid out; the last ones always, so it opens at the end */
+  & [cms-part=conversation] > * > :nth-last-child(n + 11) { content-visibility: auto; contain-intrinsic-size: auto 3rem; }
+}
