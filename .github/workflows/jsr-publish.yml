@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - deno.json
+      - .github/workflows/jsr-publish.yml
 
 jobs:
   publish:
@@ -23,6 +24,10 @@ jobs:
       # Ubuntu ≥ 23.10 denies unprivileged user namespaces, so Chromium's sandbox — and with it every
       # PDF test — crashes on the runner.
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # The runner's Chromium snapshot hangs printing PDFs (30s timeout); Google Chrome is there too.
+      - run: |
+          for b in chromium chromium-browser; do p=$(command -v $b) && sudo rm -f "$p"; done
+          google-chrome-stable --version
       - run: deno task test
 
       - name: Version lesen
