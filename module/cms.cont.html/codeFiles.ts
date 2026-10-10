@@ -17,7 +17,7 @@ export function codeFiles(node: Node) {
       await fs.mkdir(`${mod.data}pub/`);
       await write(this.src, INITIAL_SRC);
       if (key === "css") await write(this.css, initialCss(sel));
-      if (key === "js") await write(this.js, initialJs(sel));
+      if (key === "js") await write(this.js, initialJs(sel, id));
     },
 
     /** Add the css and js that exist to the current response. */
@@ -30,10 +30,18 @@ export function codeFiles(node: Node) {
 }
 
 // SelectorObserver, so it also runs for nodes inserted later (reload after edit, lazy content)
-const initialJs = (sel: string) =>
+const initialJs = (sel: string, id: number) =>
   `import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
+// import { api } from '@qino/pub/api.js';
 
-new SelectorObserver({ on: el => {
+new SelectorObserver({ on: async el => {
+
+  // api calls: the paths of the api and the ai tools (cms_node_texts_get = api.cms.node(id).texts.get),
+  // with the visitor's rights; a failure throws
+  // const node = await api.cms.node(${id}).get();
+  // const texts = await api.cms.node(${id}).texts.get({ values: true });
+  // await api.cms.node(${id}).text('title').put({ value: 'Hello' });
+
 } }).observe('${sel}');
 `;
 
