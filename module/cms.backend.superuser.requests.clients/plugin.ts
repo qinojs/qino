@@ -1,4 +1,4 @@
-import { getCtx, html, sql, unixTime } from "@qino/qino";
+import { getCtx, html, sql, sys, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -131,7 +131,7 @@ async function hostname(ip: unknown) {
   } else if (/^\d+(\.\d+){3}$/.test(addr)) {
     name = addr.split(".").reverse().join(".") + ".in-addr.arpa";
   } else return "";
-  const names = await Deno.resolveDns(name, "PTR", { signal: AbortSignal.timeout(2000) }).catch(() => []);
+  const names = await sys.resolveDns(name, "PTR", { signal: AbortSignal.timeout(2000) }).catch(() => []);
   return names.map((n) => n.replace(/\.$/, "")).join(", ");
 }
 

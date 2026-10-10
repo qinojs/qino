@@ -18,12 +18,13 @@ import { appEvents } from "./AppEvents.ts";
 import { LangManager } from "./LangManager.ts";
 import { apiFetch, apiClient } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
+import { sys } from "./sys.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { ApiTree, ApiProxy } from "./api/mod.ts";
 import type { AppEvents } from "./AppEvents.ts";
 
-const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir = fromFileUrl(new URL(".", sys.mainModule));
 
 const DEFAULT_CONFIG = {
     dir: mainDir,

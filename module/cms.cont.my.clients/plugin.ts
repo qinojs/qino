@@ -1,4 +1,4 @@
-import { getCtx, html, sql } from "@qino/qino";
+import { getCtx, html, sql, sys } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import type { Ctx } from "@qino/qino";
@@ -67,7 +67,7 @@ function arpaName(ip: string) {
 async function ipHosts(ips: string[]): Promise<Record<string, string>> {
   return Object.fromEntries(await Promise.all([...new Set(ips.filter(Boolean))].map(async (ip) => [
     ip,
-    await Deno.resolveDns(arpaName(ip), "PTR", { signal: AbortSignal.timeout(1000) })
+    await sys.resolveDns(arpaName(ip), "PTR", { signal: AbortSignal.timeout(1000) })
       .then((names) => names[0]?.replace(/\.$/, "") ?? "").catch(() => ""),
   ])));
 }

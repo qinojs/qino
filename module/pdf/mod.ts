@@ -1,4 +1,4 @@
-import { errMsg, fs } from "@qino/qino";
+import { errMsg, fs, sys } from "@qino/qino";
 
 import { browser } from "./lib/browser.ts";
 
@@ -17,8 +17,7 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
   const dir = await fs.tempDir({ dir: tmp });
   try {
     await fs.write(`${dir}/in.html`, html);
-    // async, so a missing binary (thrown synchronously by `output()`) becomes a rejection
-    const print = async () => new Deno.Command(cmd, {
+    const { success, stderr } = await sys.command(cmd, {
       args: [
         "--headless",
         "--disable-gpu",
@@ -33,8 +32,7 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
       stdout: "null",
       stderr: "piped",
       signal: AbortSignal.timeout(timeout),
-    }).output();
-    const { success, stderr } = await print().catch((e) => {
+    }).catch((e) => {
       throw new Error(`pdf: ${cmd} did not run — ${errMsg(e)}`);
     });
     const out = await fs.bytes(`${dir}/out.pdf`).catch(() => undefined);
@@ -50,7 +48,7 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
 /** Chromium refuses its sandbox as root. Reading the uid needs `--allow-sys`; without it, assume not. */
 function asRoot() {
   try {
-    return Deno.uid() === 0;
+    return sys.uid() === 0;
   } catch {
     return false;
   }

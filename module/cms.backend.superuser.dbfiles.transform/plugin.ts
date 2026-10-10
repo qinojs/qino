@@ -1,4 +1,4 @@
-import { errMsg, FileTransformer, fs, html } from "@qino/qino";
+import { errMsg, FileTransformer, fs, html, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -17,9 +17,9 @@ export async function install({ app }: { app: App }) {
 type Platform = "debian" | "alpine" | "macos" | "windows" | "unknown";
 
 async function detectPlatform(): Promise<Platform> {
-  if (Deno.build.os === "darwin") return "macos";
-  if (Deno.build.os === "windows") return "windows";
-  if (Deno.build.os === "linux") {
+  if (sys.os === "darwin") return "macos";
+  if (sys.os === "windows") return "windows";
+  if (sys.os === "linux") {
     try {
       const text = await fs.text("/etc/os-release");
       if (/ID(_LIKE)?=.*alpine/i.test(text)) return "alpine";
@@ -30,7 +30,7 @@ async function detectPlatform(): Promise<Platform> {
 }
 
 function isRoot() {
-  return Deno.uid() === 0;
+  return sys.uid() === 0;
 }
 
 // --- Cache ---
@@ -214,11 +214,11 @@ async function runInstall(platform: Platform, bin: Binary) {
   const [prog, ...args] = cmd.split(" ");
   if (prog === "apt") args.unshift("-y");
   try {
-    const { stdout, stderr, code } = await new Deno.Command(prog, {
+    const { stdout, stderr, code } = await sys.command(prog, {
       args,
       stdout: "piped",
       stderr: "piped",
-    }).output();
+    });
     const dec = new TextDecoder();
     const out = dec.decode(stdout).trim();
     const err = dec.decode(stderr).trim()
@@ -253,11 +253,11 @@ async function resolveVersion(bin: Binary) {
   if (!entries) return "";
   for (const entry of entries) {
     try {
-      const { code, stdout, stderr } = await new Deno.Command(entry.cmd, {
+      const { code, stdout, stderr } = await sys.command(entry.cmd, {
         args: entry.args,
         stdout: "piped",
         stderr: "piped",
-      }).output();
+      });
       if (code !== 0) continue;
       const dec = new TextDecoder();
       const out = dec.decode(stdout).trim() || dec.decode(stderr).trim(); // pdftotext -v prints to stderr

@@ -1,4 +1,4 @@
-import { fs, html, sql } from "@qino/qino";
+import { fs, html, sql, sys } from "@qino/qino";
 
 import type { Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -91,7 +91,7 @@ export default async function summary(node: Node): Promise<HtmlString> {
   const [tables, diskTotal, dfOut] = await Promise.all([
     dbTableStats(db),
     dirSize(dir),
-    new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output(),
+    sys.command("df", { args: ["-B1", "--output=avail", dir] }),
   ]);
   let dbTotal = 0;
   for (const t of tables) dbTotal += t.bytes;

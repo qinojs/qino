@@ -1,4 +1,4 @@
-import { ApiError } from "@qino/qino";
+import { ApiError, sys } from "@qino/qino";
 import { observed, providers, reported } from "@qino/qino/home";
 
 import type { App } from "@qino/qino";
@@ -194,7 +194,7 @@ export class Connection {
         this.#request({ type: "ping" })
           .then(heartbeat, () => this.#drop(new ApiError(503, "Home Assistant heartbeat failed")));
       }, HEARTBEAT);
-      Deno.unrefTimer(this.#heartbeat);
+      sys.unrefTimer(this.#heartbeat);
     };
     heartbeat();
   }
@@ -252,7 +252,7 @@ export class Connection {
       this.#timer = undefined;
       this.start();
     }, this.#retry);
-    Deno.unrefTimer(this.#timer);
+    sys.unrefTimer(this.#timer);
     this.#retry = Math.min(this.#retry * 2, RETRY_MAX);
   }
 }

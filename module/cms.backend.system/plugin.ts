@@ -1,4 +1,4 @@
-import { fs, html, sql } from "@qino/qino";
+import { fs, html, sql, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -28,10 +28,10 @@ async function render(node: Node) {
 
   // ── server info ────────────────────────────────────────────────────────
 
-  const mem = Deno.memoryUsage();
+  const mem = sys.memoryUsage();
   const appUptimeSec = performance.now() / 1000;
-  const osUptimeSec = Deno.osUptime(); // requires --allow-sys
-  const load = Deno.loadavg();
+  const osUptimeSec = sys.osUptime(); // requires --allow-sys
+  const load = sys.loadavg();
 
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
@@ -41,8 +41,8 @@ async function render(node: Node) {
   <div class=-head>${t`System info`}</div>
   <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <tr><td>${t`Deno Version`}:<td>${Deno.version.deno}
-      <tr><td>${t`PID`}:<td>${Deno.pid}
+      <tr><td>${t`Runtime`}:<td>${sys.runtime}
+      <tr><td>${t`PID`}:<td>${sys.pid}
       <tr><td>${t`App Uptime`}:<td>${u2.el.time(appStartIso, { second: true })}
       <tr><td>${t`Server Uptime`}:<td>${u2.el.time(osStartIso, { second: true })}
       <tr><td>${t`System Load`}:<td>${load[0].toFixed(2)} (1m) / ${load[1].toFixed(2)} (5m)
@@ -171,12 +171,12 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
 function systemInfoRows(app: App) {
   const t = app.t;
-  const mem = Deno.memoryUsage();
-  const load = Deno.loadavg();
+  const mem = sys.memoryUsage();
+  const load = sys.loadavg();
   const appUptimeSec = performance.now() / 1000;
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   return html.async`
-  <tr><td>${t`Deno`}:<td>${Deno.version.deno}
+  <tr><td>${t`Runtime`}:<td>${sys.runtime}
   <tr><td>${t`Uptime`}:<td>${u2.el.time(appStartIso, { second: true })}
   <tr><td>${t`Load (1m/5m/15m)`}:<td>${load[0].toFixed(2)} / ${load[1].toFixed(2)} / ${load[2].toFixed(2)}
   <tr><td>${t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>

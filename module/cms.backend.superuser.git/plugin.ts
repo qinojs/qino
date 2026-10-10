@@ -1,5 +1,5 @@
 import { fromFileUrl } from "@std/path";
-import { errMsg, getCtx, html } from "@qino/qino";
+import { errMsg, getCtx, html, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { git, refs, reposOf, status } from "./lib/git.ts";
@@ -59,7 +59,7 @@ async function author() {
 /** Whether a supervisor restarts the process: systemd sets INVOCATION_ID, others QINO_SUPERVISED. */
 function supervised() {
   try {
-    return !!(Deno.env.get("INVOCATION_ID") ?? Deno.env.get("QINO_SUPERVISED"));
+    return !!(sys.env("INVOCATION_ID") ?? sys.env("QINO_SUPERVISED"));
   } catch {
     return false; // no --allow-env, so nothing to go on: assume nobody is watching
   }
@@ -70,7 +70,7 @@ function supervised() {
 function restart() {
   if (!supervised()) throw new Error("No service manager found — the process would stay down. Set QINO_SUPERVISED=1 if one is watching.");
   // In-flight requests end with the process; a delay long enough for this answer is what it gets.
-  setTimeout(() => Deno.exit(75), 500);
+  setTimeout(() => sys.exit(75), 500);
   return "Restarting — the page reloads once the server answers again.";
 }
 

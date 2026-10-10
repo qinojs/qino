@@ -6,6 +6,7 @@ import { Readable } from "node:stream";
 
 import { extensionByType, typeByExtension } from "../deps.ts";
 import { fs } from "./fs.ts";
+import { sys } from "./sys.ts";
 
 export type UploadedFile = {
   name: string;
@@ -119,8 +120,8 @@ async function resolvePublicIps(url: URL) {
   // URL parsing normalizes decimal/hex/octal IPv4 forms to dotted notation.
   const host = url.hostname.replace(/^\[|\]$/g, "");
   const ips = isIP(host) ? [host] : (await Promise.all([
-    Deno.resolveDns(host, "A").catch(() => []),
-    Deno.resolveDns(host, "AAAA").catch(() => []),
+    sys.resolveDns(host, "A").catch(() => []),
+    sys.resolveDns(host, "AAAA").catch(() => []),
   ])).flat();
   if (!ips.length) throw new Error(`Could not resolve: ${host}`);
   for (const ip of ips) if (!isPublicIp(ip)) throw new Error(`SSRF blocked: ${ip}`);
