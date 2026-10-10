@@ -111,7 +111,7 @@ cms.initNode("backend.ai.chat", (el) => {
       const first = h("td", {}, "–");
       link.dataset.session = id;
       first.dataset.first = "";
-      const row = h("tr", {}, h("th", {}, link), h("td", {}, colored(`#${agent}`)), first);
+      const row = h("tr", {}, h("th", {}, link, h("br"), h("small", {}, time(Date.now() / 1000))), h("td", {}, colored(`#${agent}`)), first);
       row.setAttribute("u2-href", "");
       el.querySelector("[data-sessions]").prepend(row);
       history.replaceState(null, "", url);

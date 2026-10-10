@@ -97,6 +97,16 @@ cms.initNode("backend.ai.agents", (el) => {
   const query = new URL(location.href).searchParams, agent = query.get("agent"), session = query.get("session");
   const parts = session ? [] : agent ? ["agent", "sessions", "memories", "tools"] : ["agents", "sessions"];
   const vars = agent ? { agent } : {};
+  // a new session of one's own with the agent, opened on its page to talk in
+  el.querySelector("[data-new-session]")?.addEventListener("click", async () => {
+    try {
+      const { id } = await agents.agent(Number(agent)).sessions.post({});
+      const url = new URL(location.href);
+      url.searchParams.delete("agent");
+      url.searchParams.set("session", id);
+      location.href = url.href;
+    } catch (err) { await alert(err.message); }
+  });
   el.addEventListener("click", async (e) => {
     const button = e.target.closest("button[data-memory]");
     if (!button) return;
