@@ -19,7 +19,7 @@ async function target(app: App, id: string) {
   return {
     id: String(chat.id),
     label,
-    ...(chat.username ? { url: `https://t.me/${chat.username}` } : {}),
+    ...(chat.username && { url: `https://t.me/${chat.username}` }),
   };
 }
 
@@ -67,6 +67,6 @@ export const socialProvider: Provider = {
       throw new ProviderError(errMsg(e), retryAfter);
     }
     const username = String(msg.chat?.username ?? "");
-    return postOf({ id: target, label: String(msg.chat?.title ?? (username || target)), ...(username ? { url: `https://t.me/${username}` } : {}) }, msg);
+    return postOf({ id: target, label: String(msg.chat?.title ?? (username || target)), ...(username && { url: `https://t.me/${username}` }) }, msg);
   },
 };
