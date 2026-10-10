@@ -194,7 +194,8 @@ export class ModuleManager {
     this.#declared = new Set(this.#modules.keys());
     // `url` says which modules to import, but only those modules complete the schema. So read the
     // table before migration — a new database has no table, an older install no `url` column.
-    const rows = await this.#app.db.query`SELECT * FROM module`.catch(() => []);
+    const exists = (await this.#app.db.listTables()).includes("module");
+    const rows = exists ? await this.#app.db.query`SELECT * FROM module` : [];
     for (const { name, url, installed } of rows) {
       if (installed) this.#installed.set(name, installed);
       if (!url || this.#modules.has(name)) continue;

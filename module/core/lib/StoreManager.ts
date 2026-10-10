@@ -135,8 +135,8 @@ export class StoreManager {
 
   /** Register the saved stores, so the backend can list and install from them. */
   async init(): Promise<void> {
-    // Read before migration, like ModuleManager.init().
-    for (const { url } of await this.#app.db.query`SELECT * FROM store`.catch(() => []))
-      if (url) this.#ensure(url, false);
+    // Read before migration, like ModuleManager.init(); a new database has no table yet.
+    if (!(await this.#app.db.listTables()).includes("store")) return;
+    for (const { url } of await this.#app.db.query`SELECT * FROM store`) if (url) this.#ensure(url, false);
   }
 }

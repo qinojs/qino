@@ -3,7 +3,7 @@ import { assertEquals } from "@qino/qino/tests";
 import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 
 import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, maintenanceActions, schemaExtras } from "../lib/cleanup.ts";
-import { createMissingIndex, dropRedundantIndex, indexIssues } from "../lib/indexes.ts";
+import { createMissingIndex, dropRedundantIndex, fulltextMissing, indexIssues } from "../lib/indexes.ts";
 import { sequenceIssue, syncSequence } from "../lib/sequences.ts";
 import { isEmptyField, longestValue, validateTable } from "../lib/validate.ts";
 import { cms } from "../plugin.ts";
@@ -91,6 +91,20 @@ Deno.test("cms.backend.superuser.db.cleanup: reports columns wider than the sche
 
   assertEquals(schemaExtras(db), [{ table: "t", field: "wide", status: "field-oversized", current: 255, required: 100 }]);
   assertEquals(await longestValue(db, "t", "wide"), 3);   // narrowing would not truncate
+  await db.close();
+});
+
+Deno.test("cms.backend.superuser.db.cleanup: names the fulltext indexes SQLite does not create", async () => {
+  const db = new Db("sqlite:");
+  await db.exec`CREATE TABLE t (id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT, title TEXT)`;
+  db.schema = { properties: { t: { additionalProperties: { properties: {
+    id:    { type: "integer", "x-index": "primary" },
+    body:  { type: "string", "x-index": "fulltext" },
+    title: { type: "string", "x-index": true },
+  } } } } };
+  await db.loadTables();
+  assertEquals(fulltextMissing(db, "t"), ["body"]);
+  assertEquals((await indexIssues(db, "t")).some((issue) => issue.field === "body"), false); // a hint, not an issue
   await db.close();
 });
 

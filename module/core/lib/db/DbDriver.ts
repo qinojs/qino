@@ -26,8 +26,9 @@ export abstract class DbDriver {
   abstract listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
   abstract columns(table: string): Promise<Row[]>;
-  /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). */
-  abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<void>;
+  /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). `warnings`:
+   *  what the schema asks for that this dialect cannot do. */
+  abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<{ executed: string[]; warnings: string[] }>;
   /** Idempotent — the underlying pools throw when ended twice. */
   close(): Promise<void> { return this.#closed ? Promise.resolve() : (this.#closed = true, this.closeDriver()); }
   protected abstract closeDriver(): Promise<void>;
@@ -114,8 +115,8 @@ class MysqlDriver extends DbDriver {
   override async syncAutoIncrement(table: string, _field: string, value: number) {
     await this.exec(`ALTER TABLE ${this.quoteId(table)} AUTO_INCREMENT=${value + 1}`);
   }
-  async migrate(schema: unknown, opts: MigrateOptions = {}) {
-    await schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
+  migrate(schema: unknown, opts: MigrateOptions = {}) {
+    return schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
   }
   override async ensureDatabase() {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
@@ -240,8 +241,8 @@ class SqliteDriver extends DbDriver {
   override async syncAutoIncrement(table: string, _field: string, value: number) {
     await this.exec("UPDATE sqlite_sequence SET seq = ? WHERE name = ? AND seq < ?", [value, table, value]).catch(() => {});
   }
-  async migrate(schema: unknown, opts: MigrateOptions = {}) {
-    await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
+  migrate(schema: unknown, opts: MigrateOptions = {}) {
+    return schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
   override loadExtension(path: string) { this.#db.loadExtension(path); }
   protected override closeDriver() { this.#db.close(); return Promise.resolve(); }
@@ -338,8 +339,9 @@ class PostgresDriver extends DbDriver {
     `, [table]);
   }
   async migrate(schema: any, opts: MigrateOptions = {}) {
-    await schemaToDbPg(schema, (sql: string) => this.query(sql), opts);
+    const result = await schemaToDbPg(schema, (sql: string) => this.query(sql), opts);
     await this.#syncAutoIncrements(schema);
+    return result;
   }
   async #syncAutoIncrements(schema: any) {
     for (const [table, tableSchema] of Object.entries(schema?.properties ?? {}) as [string, any][]) {

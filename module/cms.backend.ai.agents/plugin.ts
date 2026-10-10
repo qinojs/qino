@@ -276,38 +276,38 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
         <th>${t`Memories`}
         <td>${count(a.memories)}
     </table>
-    <table class=u2-table style="width:auto">
-      <thead><tr>
-        <th>${t`Models that answered`}
-        <th>${t`Answers`}
-        <th>${t`Last`}
-      <tbody>${models.length ? models.map((r) => html`<tr>
-        <td>${by(r)}
-        <td>${count(r.answers)}
-        <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
-    </table>
-    <table class=u2-table style="width:auto">
-      <thead><tr>
-        <th>${t`Who talked with it`}
-        <th>${t`Sessions`}
-        <th>${t`Questions`}
-        <th>${t`Errors`}
-        <th>${t`Last active`}
-      <tbody>${users.length ? users.map((u) => html`<tr>
-        <td>${u.usr_id} ${colored(u.username)}
-        <td>${count(u.sessions)}
-        <td>${count(u.questions)}
-        <td>${count(u.errors, true)}
-        <td>${time(u.last_time)}`) : html.async`<tr><td colspan=5>${t`No users yet`}`}</tbody>
-    </table>
-  </div>`;
+  </div>
+  <table class=u2-table style="width:auto">
+    <thead><tr>
+      <th>${t`Models that answered`}
+      <th>${t`Answers`}
+      <th>${t`Last`}
+    <tbody>${models.length ? models.map((r) => html`<tr>
+      <td>${by(r)}
+      <td>${count(r.answers)}
+      <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
+  </table>
+  <table class=u2-table style="width:auto">
+    <thead><tr>
+      <th>${t`Who talked with it`}
+      <th>${t`Sessions`}
+      <th>${t`Questions`}
+      <th>${t`Errors`}
+      <th>${t`Last active`}
+    <tbody>${users.length ? users.map((u) => html`<tr>
+      <td>${u.usr_id} ${colored(u.username)}
+      <td>${count(u.sessions)}
+      <td>${count(u.questions)}
+      <td>${count(u.errors, true)}
+      <td>${time(u.last_time)}`) : html.async`<tr><td colspan=5>${t`No users yet`}`}</tbody>
+  </table>`;
 }
 
 /** All about session `vars.session`: who, with which agent, what it was given, which models answered,
  *  which tools it called. */
 export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, id = Number(vars.session) || 0, url = await pageUrl(node);
-  const [s, models, system, calls] = await Promise.all([
+  const [s, models, calls] = await Promise.all([
     db.row`SELECT s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username, MAX(m.time) AS last_time
       FROM ai_session s LEFT JOIN usr u ON u.id = s.usr_id
       LEFT JOIN ai_session_message m ON m.session_id = s.id
@@ -315,14 +315,11 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
     db.query`SELECT am.name AS model, p.name AS provider, COUNT(*) AS answers, MAX(m.time) AS last_time
       FROM ai_session_message m ${answeredBy}
       WHERE m.session_id = ${id} AND mp.id IS NOT NULL GROUP BY am.name, p.name ORDER BY answers DESC`,
-    db.col`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND ${role("system")} ORDER BY m.id`,
     db.col`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND m.message LIKE ${'%"toolCalls":[{%'}`,
   ]);
   if (!s) return html.async`<div>${t`No such session`}</div>`;
-  // what the model was given as the session started; the other system messages are notes
-  const given = system.map((json) => JSON.parse(String(json))).find((m) => m.tools);
   const used = Map.groupBy(calls.flatMap((json) => JSON.parse(String(json)).toolCalls ?? []), (c: any) => String(c.name));
-  return html.async`<div class=u2-flex>
+  return html.async`<div>
     <table class=u2-table>
       <tr>
         <th>${t`Agent`}
@@ -339,32 +336,27 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       <tr>
         <th>${t`Last active`}
         <td>${time(s.last_time)}${unixTime() - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
-      <tr>
-        <th title="${t`As the session started: its role with the memories and what other modules added`}">${t`Given`}
-        <td>${given ? folded(textOf(given.content), textOf(given.content)) : "–"}
-      <tr>
-        <th title="${t`Given as the session started; later changes come with the next session`}">${t`Tools given`}
-        <td>${given?.tools ? folded(`${given.tools.length}: ${given.tools.map((tool: any) => tool.name).join(", ")}`, pretty(given.tools)) : "–"}
     </table>
-    <table class=u2-table>
-      <thead><tr>
-        <th>${t`Models that answered`}
-        <th>${t`Answers`}
-        <th>${t`Last`}
-      <tbody>${models.length ? models.map((r) => html`<tr>
-        <td>${by(r)}
-        <td>${count(r.answers)}
-        <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
-    </table>
-    <table class=u2-table>
-      <thead><tr>
-        <th>${t`Tools called`}
-        <th>${t`Calls`}
-      <tbody>${used.size ? [...used].sort((a, b) => b[1].length - a[1].length).map(([tool, list]) => html`<tr>
-        <td>${colored(tool)}
-        <td>${count(list.length)}`) : html.async`<tr><td colspan=2>${t`No tools called yet`}`}</tbody>
-    </table>
-  </div>`;
+  </div>
+  <table class=u2-table>
+    <thead><tr>
+      <th>${t`Models that answered`}
+      <th>${t`Answers`}
+      <th>${t`Last`}
+    <tbody>${models.length ? models.map((r) => html`<tr>
+      <td>${by(r)}
+      <td>${count(r.answers)}
+      <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
+  </table>
+  <table class=u2-table>
+    <thead><tr>
+      <th>${t`Tools called`}
+      <th>${t`Calls`}
+    <tbody>${used.size ? [...used].sort((a, b) => b[1].length - a[1].length).map(([tool, list]) => html`<tr>
+      <td>${colored(tool)}
+      <td>${count(list.length)}`) : html.async`<tr><td colspan=2>${t`No tools called yet`}`}</tbody>
+  </table>
+  `;
 }
 
 /** Small and cut, all of it when opened. */
@@ -410,11 +402,11 @@ async function render(node: Node) {
     const agentId = await node.app.db.one`SELECT agent_id FROM ai_session WHERE id = ${sessionId}`;
     const vars = { session: sessionId };
     return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex:0 1 40rem">
+    <div class=u2-card style="flex:0 1 auto">
       <div class=-head>
-        <a href="${url}">${t`Agents`}</a> › ${agentId ? html.async`${t`Agent`} ${agentLink(url, agentId)} › ` : ""}${t`Session`} ${sessionId}
+        <a href="${url}">${t`Agents`}</a> › ${agentId ? html.async`<a href="${backend.toUrl(url, { agent: agentId })}" style="color:${uniqueColor(agentId)}">${t`Agent`} ${agentId}</a> › ` : ""}${t`Session`} ${sessionId}
       </div>
-      <div cms-part=session>${session(node, { vars })}</div>
+      ${session(node, { vars })}
     </div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Conversation`}</div>
@@ -434,7 +426,7 @@ async function render(node: Node) {
   } : undefined;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto; max-width:50rem">
-      <div class=-head><a href="${url}">${t`Agents`}</a> › ${t`Agent`} ${colored(id)} ${row?.name}</div>
+      <div class=-head><a href="${url}">${t`Agents`}</a> › <span style="color:${uniqueColor(id)}">${t`Agent`} ${id}</span> ${row?.name}</div>
       ${edit ? form(node, edit) : ""}
       <div cms-part=agent>${agent(node, { vars })}</div>
     </div>
