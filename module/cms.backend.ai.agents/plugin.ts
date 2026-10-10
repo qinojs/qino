@@ -5,7 +5,7 @@ import { candidates } from "@qino/qino/ai";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai";
 import { sqlScore, strength } from "@qino/qino/score";
-import { Agent, IN_MIND } from "@qino/qino/ai.agent";
+import { Agent, IN_MIND, Session } from "@qino/qino/ai.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -370,12 +370,14 @@ const pretty = (value: unknown) => {
 };
 
 /** One session's conversation, everything it kept: the user on the right, the agent on the left, its
- *  tool calls as buttons which open them with their results. With `after` (a message id) only the messages since. */
+ *  tool calls as buttons which open them with their results. With `after` (a message id) only the messages since;
+ *  `data-running` while an answer is on its way. */
 export async function conversation(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
   const rows = await node.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
     FROM ai_session_message m ${answeredBy}
     WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
-  return html`<div class="u2-flex -Col" style="flex-wrap:nowrap; max-width:80rem">${rows.map((row) => { // one message below the other: then align-self puts them left and right
+  const running = new Session(node.app, Number(vars.session)).running;
+  return html`<div class="u2-flex -Col" style="flex-wrap:nowrap; max-width:80rem" ${running ? "data-running" : ""}>${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
     const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}</small>`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note
@@ -413,7 +415,7 @@ async function render(node: Node) {
       <div cms-part=conversation style="max-height:80vh; overflow:auto">${conversation(node, { vars })}</div>
       ${s && Number(s.usr_id) === getCtx().userId ? html.async`<form class=u2-flex data-ask>
         <textarea name=content rows=3 required style="flex:1" placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
-        <button>${t`Send`}</button>
+        <button data-stop="${t`Stop`}">${t`Send`}</button>
       </form>` : ""}
     </div>
   </div>`;
