@@ -77,6 +77,15 @@ Deno.test("fs: stream, whole and as a range", () => inDir(async (dir) => {
   assertEquals(await new Response(await fs.stream(path, { start: 6 })).text(), "world");
 }));
 
+Deno.test("fs: a stream renews the stat from the open file", () => inDir(async (dir) => {
+  await fs.write(dir + "/a", "old");
+  assertEquals(await fs.size(dir + "/a"), 3);
+  await Deno.writeTextFile(dir + "/a", "longer"); // a foreign write
+  assertEquals(await fs.size(dir + "/a"), 3); // cached
+  await (await fs.stream(dir + "/a")).cancel();
+  assertEquals(await fs.size(dir + "/a"), 6);
+}));
+
 Deno.test("fs: stream of a missing file throws at once", () => inDir(async (dir) => {
   const err = await assertRejects(() => fs.stream(dir + "/nope.txt"));
   assertEquals((err as { code?: string }).code, "ENOENT");

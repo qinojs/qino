@@ -23,6 +23,15 @@ Deno.test("serveFile: whole file with type, length and validators", () => inDir(
   assertEquals(typeof res.headers.get("last-modified"), "string");
 }));
 
+Deno.test("serveFile: the length is of what is sent, also after a foreign write", () => inDir(async (dir) => {
+  await fs.write(dir + "/a.js", "old");
+  await get(dir + "/a.js").then((res) => res.text());
+  await Deno.writeTextFile(dir + "/a.js", "longer"); // the cached stat still says 3
+  const res = await get(dir + "/a.js");
+  assertEquals(res.headers.get("content-length"), "6");
+  assertEquals(await res.text(), "longer");
+}));
+
 Deno.test("serveFile: 404 for missing files and directories, 405 for other methods", () => inDir(async (dir) => {
   assertEquals((await get(dir + "/missing.txt")).status, 404);
   assertEquals((await get(dir)).status, 404);

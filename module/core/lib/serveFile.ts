@@ -28,7 +28,9 @@ export async function serveFile(req: Request, path: string, headers: Headers = n
   const send = async (status: number, range?: { start: number; end: number }) => {
     const stream = req.method === "HEAD" ? null : await fs.stream(path, range).catch(() => undefined);
     if (stream === undefined) return new Response(null, { status: 404 }); // gone since the stat
-    headers.set("Content-Length", String(range ? range.end - range.start + 1 : size));
+    // the size of what is streamed: the stream renewed the stat, the one above may be older
+    const length = range ? range.end - range.start + 1 : stream ? (await fs.stat(path))?.size ?? size : size;
+    headers.set("Content-Length", String(length));
     return new Response(stream, { status, headers });
   };
 
