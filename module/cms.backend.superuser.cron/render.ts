@@ -31,7 +31,7 @@ export async function list(node: Node): Promise<HtmlString> {
 
 export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
   const { active, running, failed } = counts(jobs);
-  const rows = await Promise.all(jobs.map((job) => renderRow(app, job)));
+  const rows = jobs.map((job) => renderRow(app, job));
 
   return html.async`<div>
     <b>${active}</b> ${app.t`active jobs`}
@@ -54,13 +54,13 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
   </table>`;
 }
 
-async function renderRow(app: App, job: JobStatus): Promise<HtmlString> {
+async function renderRow(app: App, job: JobStatus) {
   const due = job.active && !job.running && job.nextRun <= Date.now() / 1000;
   const [state, stateColor] = await stateInfo(app, job, due);
-  const error = job.lastError ? html`<details><summary>${await app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";
+  const error = job.lastError ? html.async`<details><summary>${app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";
   const action = job.active
-    ? html`<button type=button data-run-job="${job.id}" ${job.running ? "disabled" : ""}
-        u2-confirm="${await app.t`Run this job now?`}">${await app.t`Run now`}</button>`
+    ? html.async`<button type=button data-run-job="${job.id}" ${job.running ? "disabled" : ""}
+        u2-confirm="${app.t`Run this job now?`}">${app.t`Run now`}</button>`
     : "";
 
   return html.async`<tr ${job.active ? "" : "data-inactive"}>
@@ -84,7 +84,7 @@ async function stateInfo(app: App, job: JobStatus, due: boolean) {
   return [await app.t`waiting`, "var(--green)"] as const;
 }
 
-function cadence(job: JobStatus): HtmlString {
+function cadence(job: JobStatus) {
   if (!job.active) return html`–`;
   const every = typeof job.every === "number" ? duration(job.every) : job.every;
   const at = typeof job.every === "number" ? "" : ` · at ${atText(job)}`;
@@ -92,7 +92,7 @@ function cadence(job: JobStatus): HtmlString {
   return html`<code>every ${every}${at}${jitter}</code><br><small>timeout ${duration(job.timeout!)}</small>`;
 }
 
-function atText(job: JobStatus): string {
+function atText(job: JobStatus) {
   const at = job.at ?? {};
   const two = (value: number | undefined) => String(value ?? 0).padStart(2, "0");
   if (job.every === "hour") return `:${two(at.minute)}:${two(at.second)}`;
@@ -100,7 +100,7 @@ function atText(job: JobStatus): string {
   return job.every === "week" ? `${at.weekday ?? "monday"} ${time}` : time;
 }
 
-function duration(seconds: number): string {
+function duration(seconds: number) {
   if (!seconds) return "0s";
   const parts = [];
   for (const [unit, size] of [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]] as const) {

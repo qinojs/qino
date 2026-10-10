@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.home.values",
+  "description": "Observed home values on a CMS page, from any linked provider.",
+  "dependencies": ["cms", "home"],
+  "files": ["README.md", "manifest.json", "plugin.ts", "pub/module.svg"]
+}

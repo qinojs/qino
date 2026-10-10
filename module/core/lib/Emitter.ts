@@ -2,7 +2,7 @@ import type { StandardSchema } from "./StandardSchema.ts";
 
 type Listener<T> = (data: T) => void | Promise<void>;
 
-/** An emitter's events by name: what each means and its payload. ai1 only considers described ones. */
+/** An emitter's events by name: what each means and its payload. ai only considers described ones. */
 export type EventDecls = Record<string, { description?: string; data: StandardSchema<unknown> }>;
 
 /** Payload types of declared events; undeclared (module) events stay untyped. */

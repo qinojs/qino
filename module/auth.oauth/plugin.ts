@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, addContact, ApiError, contactOwner, getCtx, identified, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, addContact, ApiError, contactOwner, getCtx, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
 import { links, unlink } from "./mod.ts";
@@ -59,13 +59,13 @@ export const api: ApiTree = {
 
 /** Decode a JWT payload without checking the signature — fine here: it comes from the token
  *  endpoint over TLS (allowed by OIDC). */
-function jwtPayload(token: string): any {
+function jwtPayload(token: string) {
   return JSON.parse(new TextDecoder().decode(unb64url(token.split(".")[1] ?? "")));
 }
 
 // public IdP metadata, keyed by issuer — identical across tenants, so a shared cache is safe
 const discoveryCache = new Map<string, Promise<any>>();
-function discover(issuer: string): Promise<any> {
+function discover(issuer: string) {
   let doc = discoveryCache.get(issuer);
   if (!doc) {
     doc = fetch(issuer.replace(/\/$/, "") + "/.well-known/openid-configuration")
@@ -83,10 +83,10 @@ async function endpoints(p: any): Promise<{ authorize: string; token: string; us
   return { authorize: m.authorization_endpoint, token: m.token_endpoint, userinfo: m.userinfo_endpoint, oidc: true };
 }
 
-const callbackUrl = (ctx: Ctx, name: string): string => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
+const callbackUrl = (ctx: Ctx, name: string) => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
 
 /** Only allow local, same-app return targets — blocks open-redirect via ?return_to=. */
-const safeReturn = (base: string, raw: unknown): string =>
+const safeReturn = (base: string, raw: unknown) =>
   typeof raw === "string" && /^\/(?![/\\])[^\x00-\x1f]*$/.test(raw) ? raw : base;
 
 async function provider(app: App, name: string): Promise<any> {
@@ -127,7 +127,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     if (link) {
       const linked = Number(link.usr_id);
       if (here && here !== linked) return 0;
-      db.exec`UPDATE oauth_provider_usr SET last_used = ${unixTime()} WHERE provider = ${p.name} AND sub = ${id.sub}`; // background write
+      db.exec`UPDATE oauth_provider_usr SET last_used = ${unixTime()} WHERE provider = ${p.name} AND sub = ${id.sub}`.catch(() => {}); // background write
       return linked;
     }
   }
@@ -194,7 +194,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   const q = ctx.req.query;
   const { prov, state, nonce, verifier, returnTo } = (ctx.sess.data.oauth() ?? {}) as Record<string, string>;
   ctx.sess.data.oauth({}); // spent whatever the outcome
-  if (prov !== name || !state || !q.code || q.state !== state) throw new Output("oauth state mismatch", { status: 400 });
+  if (prov !== name || !state || !q.code || !safeEqual(q.state, state)) throw new Output("oauth state mismatch", { status: 400 });
 
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);

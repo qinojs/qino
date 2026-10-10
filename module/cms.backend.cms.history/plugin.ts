@@ -1,5 +1,5 @@
-import * as u2 from "@qino/qino/u2";
 // deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
+import * as u2 from "@qino/qino/u2";
 import { html, sql } from "@qino/qino";
 import { cms as cmsOf, describeChange, WRITE } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
@@ -27,7 +27,7 @@ const TYPE_TABLES: Record<string, string[]> = {
 
 // node_changed rows, newest first. Search/date/own client filter in SQL; type and edit rights in
 // JS (access depends on inheritance, groups and events).
-function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
+function candidates(app: App, f: Record<string, string>, ctx: Ctx) {
   const db = app.db;
   const where: Sql[] = [sql`${true}`];
   if (f.from)          where.push(sql`l.time >= ${backend.toUnix(f.from)}`);
@@ -59,7 +59,7 @@ function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Reco
 type Event = { key: string; ncMax: number; row: Record<string, any>; datas: unknown[] };
 
 // ── list (filterable / incrementally reloadable part) ───────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const app = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
   const rows = await candidates(app, f, ctx);
@@ -94,7 +94,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!, titles))));
 }
 
-async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Promise<HtmlString> {
+async function renderRow(node: Node, ev: Event, titles: Map<number, string>) {
   const t = node.app.t;
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
@@ -113,24 +113,24 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   return html.async`
 <tr class=-row data-key="${ev.key}" data-nc="${ev.ncMax}">
   <td class=-when><u2-time datetime="${iso}" type=relative title="${stamp}">${stamp}</u2-time>
-  <td class=-who>${await actorCell(r, t)}
-  <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
+  <td class=-who>${actorCell(r, t)}
+  <td class=-where>${backend.breadcrumb(node, Number(r.node_id), titles)}
   <td class=-what>${labels}
   <td class=-client><span style="color:${backend.uniqueColor(r.ip)}">${r.ip ?? "-"}</span><br><small style="color:${backend.uniqueColor(ua.browser)}">${ua.browser} ${ua.version.split(".")[0]}${
     ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : ""
   }</small>`;
 }
 
-async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
+async function actorCell(r: Record<string, any>, t: TFn) {
   if (!r.usr_id) return html`<small>${await t`guest`}</small>`;
   const name = `${r.given_name ?? ""} ${r.family_name ?? ""}`.trim();
   return html.async`<b style="color:${backend.uniqueColor(r.usr_id)}">${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const t = node.app.t;
-  const initial = await list(node, { ctx, vars: { filter: vars.filter ?? {} } });
+  const initial = list(node, { ctx, vars: { filter: vars.filter ?? {} } });
   return html.async`
 <div class=u2-flex>
   <div class=u2-card>

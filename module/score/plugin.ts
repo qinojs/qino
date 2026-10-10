@@ -40,7 +40,7 @@ export const cron = {
 // drops those).
 const INDEX = "score_scope_score";
 
-async function ensureIndex(db: Db): Promise<void> {
+async function ensureIndex(db: Db) {
   if (db.dialect !== "mysql") { // sqlite and postgres are idempotent on their own
     await db.exec`CREATE INDEX IF NOT EXISTS ${sql.id(INDEX)} ON score (scope_id, score)`;
     return;

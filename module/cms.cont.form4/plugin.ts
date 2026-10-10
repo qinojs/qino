@@ -1,9 +1,10 @@
 import { fs, hee, html, sql, tableRef, unixTime } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
+import * as u2 from "@qino/qino/u2";
 
 import { keepEntry, openForm } from "./mod.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Form } from "./mod.ts";
 
@@ -18,7 +19,7 @@ const settingsSchema = {
 };
 
 /** Contents the module needs to be usable; created once per node. */
-async function init(node: Node): Promise<void> {
+async function init(node: Node) {
   if (node.settings.__inited()) return;
   node.settings.__inited(true);
   await node.cont("main", "cms.cont.form4.fields");
@@ -28,30 +29,30 @@ async function init(node: Node): Promise<void> {
 }
 
 /** Seconds since this client was first seen (new clients are mostly bots). Infinity if unknown. */
-async function clientAge(ctx: Ctx): Promise<number> {
+async function clientAge(ctx: Ctx) {
   if (!ctx.clientId) return Infinity;
   const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
   return first ? unixTime() - Number(first) : Infinity;
 }
 
 /** Bot heuristics, as in form2: an entry that fails them is refused before it is kept. */
-async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
+async function spamCheck(node: Node, form: Form, ctx: Ctx) {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
-    app.fire("suspicious", { ctx, weight: 3, reason: "form4 honeypot filled" });
+    app.fire("suspicious", { ctx, weight: 3, reason: "form4 honeypot filled" }).catch(() => {});
     return app.t`Your entry looks like spam. Please try again or contact us directly.`;
   }
   const age = await clientAge(ctx);
   if (age < 3) {
-    app.fire("suspicious", { ctx, weight: 5, reason: "form4 submit from a brand-new client" });
+    app.fire("suspicious", { ctx, weight: 5, reason: "form4 submit from a brand-new client" }).catch(() => {});
     return app.t`Your entry could not be sent. Please try again.`;
   }
-  if (age < 10) app.fire("suspicious", { ctx, reason: "form4 submit from a very young client" });
+  if (age < 10) app.fire("suspicious", { ctx, reason: "form4 submit from a very young client" }).catch(() => {});
   return "";
 }
 
 /** Recipients: the form's list plus addresses from fields; if none, the site's own address. */
-async function recipients(node: Node, form?: Form): Promise<string[]> {
+async function recipients(node: Node, form?: Form) {
   const own = String(node.settings.recipients() ?? "").match(/[^\s,;<>]+@[^\s,;<>]+/g) ?? [];
   const to = [...new Set([...own, ...(form?.recipients ?? [])])];
   if (to.length) return to;
@@ -60,7 +61,7 @@ async function recipients(node: Node, form?: Form): Promise<string[]> {
 }
 
 /** Build and send the mail — the copy for whoever has to react to an entry. */
-async function send(node: Node, form: Form): Promise<boolean> {
+async function send(node: Node, form: Form) {
   const app = node.app;
   const subject = (await node.showText("mailSubject")).plain() ||
     (await (await node.page()).showTitle()).plain();
@@ -84,8 +85,9 @@ async function send(node: Node, form: Form): Promise<boolean> {
   }) > 0;
 }
 
-async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   await init(node);
+  u2.assets(ctx, ["el/alert/alert.js", "el/alert/alert.css", "class/width/width.css", "class/flex/flex.css"]);
   const edit = await node.edit();
   const t = node.app.t;
   const cms = node.cms;
@@ -137,8 +139,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
     ${fields}
     <div class="-btns u2-flex">
-      ${node.settings.button_reset() ? await cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
-      ${(node.settings.button_submit() ?? true) && (keep || mailed || edit) ? await cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
+      ${node.settings.button_reset() ? cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
+      ${(node.settings.button_submit() ?? true) && (keep || mailed || edit) ? cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
     </div>
   </form>
 </div>`;

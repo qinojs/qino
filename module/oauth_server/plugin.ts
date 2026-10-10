@@ -26,7 +26,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }, { signal });
 
   app.on("authenticate", async ({ ctx }) => {
-    const m = /^Bearer\s+(qo_[A-Za-z0-9_-]+)$/i.exec(ctx.req.header("authorization")?.trim() ?? "");
+    const m = /^Bearer\s+(qo_[\w-]+)$/i.exec(ctx.req.header("authorization")?.trim() ?? "");
     if (!m) return; // only the own naming scheme is claimed; foreign Bearer formats fall through
     const row = await verify(app, "access", m[1]);
     if (!row) throw new Output({ error: "invalid_token" }, { status: 401, headers: { "WWW-Authenticate": `Bearer error="invalid_token"` } });

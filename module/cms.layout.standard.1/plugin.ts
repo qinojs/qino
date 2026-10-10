@@ -38,11 +38,12 @@ html {
 }
 `;
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const template = moduleTemplate(node.module!);
   if (await node.edit()) await template.create(INITIAL_CSS);
 
-  u2.assets(ctx, U2_CSS, U2_VERSION);
+  u2.pin(ctx, U2_VERSION);
+  u2.assets(ctx, U2_CSS);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
   return template.render(node);

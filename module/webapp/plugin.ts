@@ -49,7 +49,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("html-ready", ({ ctx }) => head(ctx), { signal });
 }
 
-async function route(ctx: Ctx): Promise<void> {
+async function route(ctx: Ctx) {
   const appPath = ctx.req.appPath;
   if (appPath === "manifest.webmanifest") return serveManifest(ctx);
   if (appPath !== "favicon.ico" && appPath !== "apple-touch-icon.png") return;
@@ -59,7 +59,7 @@ async function route(ctx: Ctx): Promise<void> {
   throw new Redirect(await icon.url({ w: size, h: size, fmt: "png", q: 90 }), 302, { "Cache-Control": "public, max-age=86400" });
 }
 
-async function serveManifest(ctx: Ctx): Promise<void> {
+async function serveManifest(ctx: Ctx) {
   const body = JSON.stringify(await manifest(ctx), null, 2) + "\n";
   const headers = {
     "Content-Type": "application/manifest+json; charset=utf-8",
@@ -70,7 +70,7 @@ async function serveManifest(ctx: Ctx): Promise<void> {
   throw new Output(body, { headers });
 }
 
-async function head(ctx: Ctx): Promise<void> {
+async function head(ctx: Ctx) {
   const html = ctx.res.html;
   const data = await manifest(ctx);
   const settings = ctx.app.settings.webapp;

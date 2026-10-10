@@ -4,7 +4,7 @@ import { cms_image2 } from "@qino/qino/cms.image2";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const slides: HtmlString[] = [], texts: HtmlString[] = [];
   const edit = await node.edit();
   for (const [name, file] of await node.files()) {

@@ -16,27 +16,23 @@ const LAYOUT_WRITE = {
   },
 };
 
-const codeFile = (key: "src" | "css" | "js", label: string) => ({
+const codeFile = (key: "html" | "css", label: string) => ({
   get: {
-    description: `Open the app-wide layout ${label}, with the shipped starting point.`,
+    description: `Read the app-wide layout ${label}; a missing file returns its starting point.`,
     ...LAYOUT_WRITE,
     output: content,
-    execute: async ({ node }: { node: Node }) => {
-      const files = codeFiles(node);
-      await files.create(key);
-      return { content: await fs.text(files[key]) };
-    },
+    execute: async ({ node }: { node: Node }) => ({ content: await codeFiles(node).read(key) }),
   },
   put: {
-    description: `Save the app-wide layout ${label}. Open first to inspect the starting point.`,
+    description: `Save the app-wide layout ${label}. Read it first.`,
     ...LAYOUT_WRITE,
     input: content,
     output: s.string().describe("Rendered HTML of the page after saving"),
     execute: async ({ node, content }: { node: Node; content: string }, ctx: Ctx) => {
-      const files = codeFiles(node);
-      await fs.mkdir(`${node.module!.data}pub/`);
-      await fs.write(files[key], content);
-      ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1);
+      const file = codeFiles(node)[key];
+      await fs.mkdir(file.replace(/[^/]+$/, ""));
+      await fs.write(file, content);
+      ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1); // the css lives under pub/, so its url has to change
       return String(await node.html());
     },
   },
@@ -53,9 +49,8 @@ export const api: ApiTree = {
         return node;
       },
       codefiles: {
-        html: codeFile("src", "HTML template"),
+        html: codeFile("html", "HTML template"),
         css: codeFile("css", "CSS"),
-        js: codeFile("js", "JavaScript"),
       },
     },
   },

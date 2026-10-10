@@ -78,7 +78,7 @@ export function install({ app }: { app: App }): Promise<void> {
   return app.db.transaction(() => installTx(app));
 }
 
-async function installTx(app: App): Promise<void> {
+async function installTx(app: App) {
   const db = app.db;
   const settings = app.settings;
   const cm = cms(app);

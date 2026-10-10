@@ -6,7 +6,7 @@ import { cmsText } from "../lib/text.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const level = Number(await node.settings.Heading);
   const heading = [1, 2, 3, 4].includes(level) ? level : 2;
   const texts = await node.texts();

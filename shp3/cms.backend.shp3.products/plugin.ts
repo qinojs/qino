@@ -16,13 +16,13 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const id = Number(getCtx().req.query.shp3_productId ?? 0);
   return id ? renderProduct(node, id) : renderList(node);
 }
 
 /** All pages with the product module, also those without product row yet (newly created). */
-async function renderList(node: Node): Promise<HtmlString> {
+async function renderList(node: Node) {
   const { app } = node;
   const t = app.t;
   const hasStock = !!app.db.table("shp3_product").field("stock"); // shp3.stock adds it
@@ -76,7 +76,7 @@ async function renderList(node: Node): Promise<HtmlString> {
             <th> ${t`Name`}
             <th> ${t`Price`}
             <th> ${t`Weight`}
-            ${hasStock ? html`<th> ${await t`Stock`}` : ""}
+            ${hasStock ? html.async`<th> ${t`Stock`}` : ""}
             <th width=20>
         <tbody>${trs}
       </table>
@@ -86,19 +86,23 @@ async function renderList(node: Node): Promise<HtmlString> {
 }
 
 /** One product: what the shop sells it for, and the VAT it carries per country. */
-async function renderProduct(node: Node, id: number): Promise<HtmlString> {
+async function renderProduct(node: Node, id: number) {
   const { app } = node;
   const t = app.t;
   const page = await node.cms.node(id);
   if (!page.exists()) return html.async`<div class=u2-card><div>${t`Product not found.`}</div></div>`;
 
-  const vs = await app.db.row`SELECT * FROM shp3_product WHERE id = ${id}` ?? {};
-  const rates = await app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`;
-  const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => app.db.table("shp3_product").field(f));
+  const [row, rates] = await Promise.all([
+    app.db.row`SELECT * FROM shp3_product WHERE id = ${id}`,
+    app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`,
+  ]);
+  const vs = row ?? {};
+  const table = app.db.table("shp3_product");
+  const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => table.field(f));
 
   const rows = fields.map((field) => html`<tr>
     <th>${field}
-    <td>${app.db.table("shp3_product").field(field)!.schema.type === "boolean"
+    <td>${table.field(field)!.schema.type === "boolean"
       ? html`<input class=-f data-field=${field} type=checkbox ${vs[field] ? html.raw("checked") : ""}>`
       : html`<input class=-f data-field=${field} type=number step=any value="${Number(vs[field] ?? 0)}">`}`);
 
@@ -106,10 +110,11 @@ async function renderProduct(node: Node, id: number): Promise<HtmlString> {
     <td>${r.country}
     <td><input class=-vat data-country=${r.country} type=number step=any value=${Number(r.rate)}>
     <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
+  const title = await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id;
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1">
-    <div class=-head><a href="?">${t`Products`}</a> — ${await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id}</div>
+    <div class=-head><a href="?">${t`Products`}</a> — ${title}</div>
     <div style="padding:0">
       <table class=u2-table itemid=${id}>${rows}</table>
     </div>

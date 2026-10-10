@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { connections, models } from "@qino/qino/ai1.chatgpt";
+import { connections, models } from "@qino/qino/ai.chatgpt";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -11,7 +11,7 @@ export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStr
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   ctx.res.headers.set("Cache-Control", "private, no-store");
 
-  const root = ctx.req.appUrl + "ai1-chatgpt";
+  const root = ctx.req.appUrl + "ai-chatgpt";
   const back = ctx.req.url.pathname + ctx.req.url.search;
   const local = ctx.req.url.protocol === "http:" && ctx.req.url.hostname === "127.0.0.1";
   const localUrl = new URL(ctx.req.url.href);
@@ -39,7 +39,7 @@ export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStr
     } catch { catalog = await t`Model catalog is temporarily unavailable.`; }
   }
   return html.async`<div>
-    ${local ? html`<a href="${start}">${await t`Continue with ChatGPT`}</a>`
+    ${local ? html.async`<a href="${start}">${t`Continue with ChatGPT`}</a>`
       : ctx.req.url.protocol === "http:" && ctx.req.url.hostname === "localhost"
       ? html.async`<a href="${localUrl.href}">${t`Open this page on 127.0.0.1 to connect ChatGPT`}</a>`
       : html.async`<p>${t`Open Qino on http://127.0.0.1 to connect a ChatGPT plan.`}</p>`}

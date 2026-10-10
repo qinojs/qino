@@ -51,7 +51,7 @@ export const markdown: TransformerDef = {
 };
 
 /** Text layer via pdftotext; OCR when the engine beats it (AI) or there is no text layer (scan) */
-async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> {
+async function pdfToMarkdown(ctx: TransformContext, out: string) {
   let text: string | undefined;
   if (await pdftotext.available()) {
     await pdftotext.run(ctx.currentPath, out, ctx.signal);
@@ -65,7 +65,7 @@ async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> 
   if (text === undefined) throw new Error('markdown: pdftotext missing and OCR failed');
 }
 
-function transcriptToMarkdown(t: Transcript): string {
+function transcriptToMarkdown(t: Transcript) {
   const parts = (t.segments?.length ? t.segments : [{ text: t.text }]).map((s) => {
     const text = String(s.text ?? '').trim();
     const notes = Array.isArray(s.notes) ? s.notes.map((n) => `(${String(n).trim().replace(/^\(|\)$/g, '')})`).join(' ') : '';

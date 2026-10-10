@@ -1,4 +1,4 @@
-import { fs, html, sql } from "@qino/qino";
+import { fs, html, sql, sys } from "@qino/qino";
 
 import type { Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -14,7 +14,7 @@ export async function dbTableStats(db: Db): Promise<DbTableStat[]> {
   }));
 }
 
-async function pgTableStats(db: Db): Promise<DbTableStat[]> {
+async function pgTableStats(db: Db) {
   const rows = await db.query`
     SELECT c.relname AS name, pg_total_relation_size(c.oid) AS bytes
     FROM pg_class c
@@ -24,7 +24,7 @@ async function pgTableStats(db: Db): Promise<DbTableStat[]> {
   return rows.map((r) => ({ name: String(r.name), bytes: Number(r.bytes ?? 0) }));
 }
 
-async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
+async function sqliteTableStats(db: Db) {
   const tables = await db.col<string>`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`;
   if (!tables.length) return [];
   const stats = await db.indexCol`
@@ -36,7 +36,7 @@ async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
   return tables.map((name) => ({ name, bytes: Number(stats.get(name) ?? 0) }));
 }
 
-async function dirSize(dir: string): Promise<number> {
+async function dirSize(dir: string) {
   let total = 0;
   try {
     for (const entry of await fs.list(dir)) {
@@ -51,9 +51,9 @@ async function dirSize(dir: string): Promise<number> {
 
 type TreeNode = { size: number; children: Record<string, TreeNode> };
 
-async function dirTree(dir: string): Promise<Record<string, TreeNode>> {
+async function dirTree(dir: string) {
   const tree: Record<string, TreeNode> = {};
-  async function walk(dir: string, relPath: string): Promise<number> {
+  async function walk(dir: string, relPath: string) {
     let total = 0;
     try {
       for (const entry of await fs.list(dir)) {
@@ -88,13 +88,15 @@ export default async function summary(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
   const dir = node.app.dir;
 
-  const tables = await dbTableStats(db);
+  const [tables, diskTotal, dfOut] = await Promise.all([
+    dbTableStats(db),
+    dirSize(dir),
+    sys.command("df", { args: ["-B1", "--output=avail", dir] }),
+  ]);
   let dbTotal = 0;
   for (const t of tables) dbTotal += t.bytes;
 
-  const diskTotal = await dirSize(dir);
-  const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output();
-  const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop() ?? "0");
+  const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop());
 
   return html`
 <table class=u2-table style="width:auto;">

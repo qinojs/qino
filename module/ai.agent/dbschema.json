@@ -1,0 +1,299 @@
+{
+  "properties": {
+    "ai_agent": {
+      "description": "An AI agent: its role (system prompt) and tools",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "x-index": "unique",
+            "description": "`<module>/<key>` for an agent a module brings as `agents/<key>.md`; empty for one made here"
+          },
+          "system": {
+            "type": "string",
+            "description": "Its role: what every session starts from"
+          },
+          "tools": {
+            "type": "string",
+            "description": "The tools it may use, by name or `prefix_*` for all below a path (`cms_*`, `cms_node_*`), as a JSON array"
+          },
+          "prefer": {
+            "type": "string",
+            "description": "How it chooses its model (ai `prefer`, e.g. {\"quality\":2,\"cost\":1}) as JSON; empty: ai's own"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    "ai_session": {
+      "description": "A conversation of a user with an agent",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "agent_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_agent",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "Who talks with the agent: it acts with this user's rights"
+          },
+          "prefer": {
+            "type": "string",
+            "description": "The session's own `prefer`, instead of the agent's, as JSON; empty: the agent's"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "agent_id",
+          "usr_id"
+        ]
+      }
+    },
+    "ai_session_message": {
+      "description": "A message of a session: the user's, the agent's or a tool result",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "session_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_session",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "time": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1073741823,
+            "description": "The ai message as JSON; role error for a failed turn"
+          },
+          "model_provider_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_model_provider",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The model at its provider that gave the answer"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "message"
+        ]
+      }
+    },
+    "ai_agent_memory": {
+      "description": "What an agent keeps for later",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "agent_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_agent",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "content": {
+            "type": "string",
+            "description": "One short fact"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "agent_id",
+          "content"
+        ]
+      }
+    },
+    "embedding_ai_agent_memory": {
+      "additionalProperties": {
+        "properties": {
+          "agent_id": {
+            "type": "integer",
+            "x-index": "primary"
+          },
+          "memory_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai_agent_memory",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chunk": {
+            "type": "integer",
+            "x-index": "primary",
+            "default": 0
+          },
+          "collection_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai_embed_collection",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "x-vector": true,
+            "x-index": true
+          }
+        },
+        "required": [
+          "agent_id",
+          "memory_id",
+          "chunk",
+          "collection_id",
+          "hash",
+          "embedding"
+        ]
+      }
+    },
+    "embedding_ai_session_message": {
+      "additionalProperties": {
+        "properties": {
+          "agent_id": {
+            "type": "integer",
+            "x-index": "primary"
+          },
+          "message_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai_session_message",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chunk": {
+            "type": "integer",
+            "x-index": "primary",
+            "default": 0
+          },
+          "collection_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai_embed_collection",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "x-vector": true,
+            "x-index": true
+          }
+        },
+        "required": [
+          "agent_id",
+          "message_id",
+          "chunk",
+          "collection_id",
+          "hash",
+          "embedding"
+        ]
+      }
+    },
+    "embedding_ai_agent": {
+      "additionalProperties": {
+        "properties": {
+          "agent_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai_agent",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chunk": {
+            "type": "integer",
+            "x-index": "primary",
+            "default": 0
+          },
+          "collection_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "ai_embed_collection",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "x-vector": true,
+            "x-index": true
+          }
+        },
+        "required": [
+          "agent_id",
+          "chunk",
+          "collection_id",
+          "hash",
+          "embedding"
+        ]
+      },
+      "description": "The agent's role by meaning: to find agents, and its tools near it"
+    }
+  }
+}

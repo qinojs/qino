@@ -329,7 +329,7 @@ Both land in the journal, and the type decides whether the outbox retries.
 Releasing is up to the caller: a backend button sets `due` to now, a schedule sets a time, an
 approval rule sets it when satisfied. `messaging` only asks what is due.
 
-`delivered(app, id, error?, ref?)` finishes one attempt. On `ChannelError` the delivery is retried
+`delivered(app, id, error?, externalId?)` finishes one attempt. On `ChannelError` the delivery is retried
 after one, then four minutes, and given up after three tries; other errors are final. The `outbox`
 cron job takes what is due and runs the same path as `send()` (the diagram above, from
 `recipients`). One path only, so retries behave exactly like the first send, and a batch shares its
@@ -379,7 +379,7 @@ claims; `dropClaim(app, type, usrId, address)` accepts one without code (admin a
 
 `message_delivery` — one row per recipient, with attempt time and error. `address` is where it
 really went; `usr_id` is set only if that address is a verified contact of the user, so the journal
-never claims a delivery to someone based on an unverified address. `ref` is the other side's id for
+never claims a delivery to someone based on an unverified address. `external_id` is the other side's id for
 it — a mail's `Message-ID`, a Twilio `sid`, a Telegram message. Ids that are only unique within a
 provider or chat get a prefix (`twilio:SM…`, `<chat>:<message>`), so they are never ambiguous.
 

@@ -17,7 +17,7 @@ const enc = new TextEncoder();
 const dec = new TextDecoder();
 
 // RFC 5952 form, so values compare equal to what Deno.resolveDns returns.
-function ipv6(bytes: Uint8Array): string {
+function ipv6(bytes: Uint8Array) {
   const groups = Array.from({ length: 8 }, (_, i) => ((bytes[i * 2] << 8) | bytes[i * 2 + 1]).toString(16));
   let at = -1, len = 0;
   for (let i = 0, run = 0; i < 8; i++) {
@@ -27,7 +27,7 @@ function ipv6(bytes: Uint8Array): string {
   return len < 2 ? groups.join(":") : groups.slice(0, at).join(":") + "::" + groups.slice(at + len).join(":");
 }
 
-function writeName(name: string, out: number[]): void {
+function writeName(name: string, out: number[]) {
   for (const label of name.replace(/\.$/, "").split(".")) {
     if (!label) continue;
     const bytes = enc.encode(label);
@@ -66,11 +66,11 @@ class Reader {
 }
 
 // Canonical text per record type, formatted like Deno.resolveDns so both sources stay comparable.
-function rdata(r: Reader, type: number, len: number): string {
+function rdata(r: Reader, type: number, len: number) {
   const end = r.pos + len;
   const value = (() => {
     switch (type) {
-      case TYPES.A: return [...r.take(4)].join(".");
+      case TYPES.A: return r.take(4).join(".");
       case TYPES.AAAA: return ipv6(r.take(16));
       case TYPES.NS: case TYPES.CNAME: case TYPES.PTR: return r.name();
       case TYPES.SOA: return `${r.name()} ${r.name()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()}`;
@@ -120,7 +120,7 @@ function parse(msg: Uint8Array) {
   return { id, rcode: flags & 0x0f, values: values.sort(), ttl, authority: authority.sort() };
 }
 
-async function readExact(conn: Deno.Conn, size: number): Promise<Uint8Array | null> {
+async function readExact(conn: Deno.Conn, size: number) {
   const buf = new Uint8Array(size);
   for (let read = 0; read < size;) {
     const n = await conn.read(buf.subarray(read));
@@ -222,4 +222,4 @@ export const systemServer = (): Promise<string | null> =>
 
 /** Addresses of a nameserver name, so callers can ask that server directly. */
 export const serverIps = (name: string): Promise<string[]> =>
-  Deno.resolveDns(name, "A").catch(() => []) as Promise<string[]>;
+  Deno.resolveDns(name, "A").catch(() => []);

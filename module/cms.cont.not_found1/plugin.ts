@@ -4,10 +4,10 @@ import { cmsCtx } from "@qino/qino/cms";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   // Extract words from request URI for fulltext search
-  const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
+  const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ");
 
   const possiblePages = new Set<string>();
 
@@ -32,10 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // Always include the home page (id=2)
   possiblePages.add("2");
 
-  const listItems = [];
-  for (const pid of possiblePages) {
-    listItems.push(html`<li>${await node.cms.link(await node.cms.node(Number(pid)))}`);
-  }
+  const listItems = [...possiblePages].map((pid) => html.async`<li>${node.cms.link(Number(pid))}`);
 
   return html.async`<div>
   <div class=u2-width>
@@ -46,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function renderEditBox(node: Node, ctx: Ctx): Promise<HtmlString | string> {
+async function renderEditBox(node: Node, ctx: Ctx) {
   if (!await node.edit()) return "";
   const t = node.app.t;
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)

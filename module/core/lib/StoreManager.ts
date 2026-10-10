@@ -6,7 +6,7 @@ import type { App } from "./App.ts";
 import type { Manifest, Module } from "./ModuleManager.ts";
 
 /** A folder store: its subfolders that contain a plugin file. */
-async function readFolder(url: string): Promise<string[]> {
+async function readFolder(url: string) {
   // HTTP directory listings are unreliable, so remote stores need a catalog.
   if (!url.startsWith("file:")) throw new Error(`Store ${url}: a folder store is local only, a remote store needs a store.json`);
   const dir = fromFileUrl(url);
@@ -17,7 +17,7 @@ async function readFolder(url: string): Promise<string[]> {
 }
 
 /** The catalog's module names, sorted; validates the format. */
-async function readCatalog(url: string): Promise<string[]> {
+async function readCatalog(url: string) {
   const res = await fetch(url); // works for file: and http(s):
   if (!res.ok) throw new Error(`Store ${url}: ${res.status} ${res.statusText}`);
   const modules = (await res.json())?.modules;

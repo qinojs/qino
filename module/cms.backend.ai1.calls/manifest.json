@@ -1,6 +1,0 @@
-{
-  "name": "cms.backend.ai1.calls",
-  "description": "Shows AI model usage and recent provider errors.",
-  "dependencies": ["cms.backend.ai1", "ai1.stats"],
-  "files": ["manifest.json", "plugin.ts", "pub/module.svg"]
-}

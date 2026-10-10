@@ -30,7 +30,7 @@ Deno.test("api split facade mirrors invoke, fetch, tools and client", async () =
     assertEquals(await res.json(), { id: 4, detail: "yes" });
 
     const tool = toTools(api)[0];
-    assertEquals(tool.name, "get_item");
+    assertEquals(tool.name, "item_get");
     assertEquals(await tool.execute({ item: 5, detail: "yes" }, ctx), { id: 5, detail: "yes" });
 
     const client = apiClient(api);

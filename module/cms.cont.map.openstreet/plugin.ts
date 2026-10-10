@@ -2,7 +2,7 @@ import { hee, html } from "@qino/qino";
 
 import { geocode } from "./lib/geocode.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const OSM = "https://www.openstreetmap.org";
@@ -25,7 +25,7 @@ const num = (v: unknown) => {
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
 
 /** Bounding box for the embed: two tiles (360/2^zoom degrees each) wide, half that high. */
-function bbox(lat: number, lon: number, zoom: number): string {
+function bbox(lat: number, lon: number, zoom: number) {
   const lonSpan = 360 / 2 ** zoom;
   const latSpan = lonSpan / 2;
   const box = [lon - lonSpan, lat - latSpan, lon + lonSpan, lat + latSpan];
@@ -43,7 +43,7 @@ async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: numbe
   if (lat !== undefined && lon !== undefined) return { lat, lon };
 
   const address = String(node.settings.address() ?? "").trim();
-  if (!address) return undefined;
+  if (!address) return;
 
   const geo = node.settings.geo;
   if (String(geo.q() ?? "") === address) {
@@ -61,7 +61,7 @@ async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: numbe
   return { lat: place.lat, lon: place.lon };
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const found = await position(node, ctx);
 
@@ -79,7 +79,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const zoom = clamp(Math.round(num(node.settings.zoom()) ?? 16), 1, 19);
   const height = clamp(Math.round(num(node.settings.height()) ?? 22), 8, 60);
 
-  const caption = await node.cms.text(node, "caption", { tag: "figcaption", if: true });
+  const caption = node.cms.text(node, "caption", { tag: "figcaption", if: true });
   const embed = `${OSM}/export/embed.html?bbox=${bbox(lat, lon, zoom)}&layer=mapnik&marker=${lat},${lon}`;
 
   // The frame is only allowed where it can actually appear.

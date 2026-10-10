@@ -68,9 +68,8 @@ export class TableHandles {
   }
   handleEvent() {
     setTimeout(()=>{
-      if (this.root.parentNode) {
-        this.positionize(this.active);
-      } else {
+      if (this.root.parentNode) this.positionize(this.active);
+      else {
         clearInterval(this.checkIntr);
         document.removeEventListener('keydown', this);
       }

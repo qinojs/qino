@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { cart, shp3 } from "@qino/qino/shp3";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Currency } from "@qino/qino/shp3";
 
@@ -12,7 +12,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const order = await cart(ctx, false);
   const active = await order?.currencyRow() ?? await shp3(node.app).mainCurrency();
   const currencies = await node.app.db.table("shp3_currency").all<Currency>`WHERE active = ${true} ORDER BY main DESC, id`;

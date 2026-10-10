@@ -28,19 +28,18 @@ export async function list(node: Node): Promise<HtmlString> {
   const { db } = app;
   const now = unixTime();
   const known = scopes(db);
-  const total = Number(await db.one`SELECT COUNT(*) FROM score`);
   const cards = [];
   for (const [tbl, scope] of known) cards.push(await renderScope(app, tbl, scope, now));
 
   return html.async`<div class=-body>
-    <b>${known.size}</b> ${app.t`scopes`} · ${total} ${app.t`scored rows`}
+    <b>${known.size}</b> ${app.t`scopes`} · ${db.one`SELECT COUNT(*) FROM score`} ${app.t`scored rows`}
   </div>
   ${cards}
   ${renderStale(app, known)}`;
 }
 
 /** One scope: its numbers, then the strongest rows. */
-async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now: number): Promise<HtmlString> {
+async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now: number) {
   const db = app.db;
   const limit = fadeLimit(db, tbl, now);
   const stats = await db.row<Stats>`
@@ -60,7 +59,7 @@ async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now:
   ${top.length ? renderTop(app, tbl, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;
 }
 
-function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise<HtmlString> {
+function renderTop(app: App, tbl: string, top: ScoreRow[], now: number) {
   const rows = top.map((row, i) =>
     html`<tr>
       <td>${i + 1}
@@ -81,7 +80,7 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
 }
 
 /** Scopes no longer registered by any module — their rows are never cleaned up. */
-async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<HtmlString> {
+async function renderStale(app: App, known: Map<string, ScoreScope>) {
   const all = await app.db.query<{ id: number; tbl: string }>`SELECT id, tbl FROM score_scope ORDER BY tbl`;
   const stale = all.filter((s) => !known.has(s.tbl));
   if (!stale.length) return html``;
@@ -99,11 +98,11 @@ async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<Ht
 }
 
 /** Strength in accesses: fractions matter near the fade limit, whole numbers above it. */
-function accesses(value: number): string {
+function accesses(value: number) {
   return value < 10 ? value.toFixed(2) : String(Math.round(value));
 }
 
-function duration(seconds: number): string {
+function duration(seconds: number) {
   const parts = [];
   for (const [unit, size] of [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]] as const) {
     const value = Math.floor(seconds / size);

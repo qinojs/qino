@@ -4,7 +4,6 @@ import { cms_image2 } from "@qino/qino/cms.image2";
 import { backgroundStyle } from "../lib/bg.ts";
 import { cmsText } from "../lib/text.ts";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -13,7 +12,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const bg = await backgroundStyle(node, "Hintergrund-Bild", { w: 510, h: 650, q: 78 });
   const link = String(await node.settings.link ?? "");
 

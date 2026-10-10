@@ -9,13 +9,10 @@ export function parseXml(xml: string): XmlNode | null {
   const ATTR_RE = /([\w.:-]+)="([^"]*)"/g;
   const root: XmlNode = { tag: "", attrs: {}, children: [] };
   const stack = [root];
-  let m: RegExpExecArray | null;
-  while ((m = TAG_RE.exec(xml))) {
-    const [, close, tag, attrStr, selfClose] = m;
+  for (const [, close, tag, attrStr, selfClose] of xml.matchAll(TAG_RE)) {
     if (close) { if (stack.length > 1) stack.pop(); continue; }
     const node: XmlNode = { tag, attrs: {}, children: [] };
-    let a: RegExpExecArray | null;
-    while ((a = ATTR_RE.exec(attrStr))) node.attrs[a[1]] = decode(a[2]);
+    for (const [, name, value] of attrStr.matchAll(ATTR_RE)) node.attrs[name] = decode(value);
     stack.at(-1)!.children.push(node);
     if (!selfClose) stack.push(node);
   }

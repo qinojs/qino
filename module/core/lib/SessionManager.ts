@@ -15,7 +15,7 @@ const DEFAULT_MAX_IDLE = 30 * 24 * 60 * 60; // seconds a session lives without a
 /** A session: token/id, trusted reactive data, and its own touch timer. */
 export class Session {
   #db: Db;
-  #touchTimer: ReturnType<typeof setTimeout> | undefined;
+  #touchTimer?: ReturnType<typeof setTimeout>;
   token: string;
   id: string;
   data: ItemProxy;
@@ -107,7 +107,7 @@ export class SessionManager {
     ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, { path: ctx.req.appUrl, secure: ctx.app.https }));
   }
 
-  async #create(token = uid()): Promise<Session> {
+  async #create(token = uid()) {
     const time = unixTime();
     const id = await this.#db.table('sess').insert({ token, time, access: time, data: EMPTY_SESSION });
     if (!id) throw new Error("Could not create session");

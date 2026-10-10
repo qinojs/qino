@@ -19,13 +19,13 @@ const settingsSchema = {
 };
 
 /** Column width: a number uses the `units` setting (default px), a CSS length stays, else dropped. */
-function cssWidth(raw: string, units: string): string {
+function cssWidth(raw: string, units: string) {
   const w = raw.trim();
   if (/^\d+(\.\d+)?$/.test(w)) return w + units;
   return /^\d+(\.\d+)?(px|%|em|rem)$/.test(w) ? w : "";
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const edit = await node.edit();
   if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
@@ -34,9 +34,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const units = node.settings.units() === "%" ? "%" : "px";
   const bottomUp = !!node.settings.direction();
 
-  if (
-    ctx.req.query.export_table && ctx.req.query.export_table === String(node)
-  ) {
+  if (ctx.req.query.export_table === String(node)) {
     const titleStr = (await node.showTitle()).plain();
     const d = new Date();
     const dateStr = `${String(d.getDate()).padStart(2, "0")}.${

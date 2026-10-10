@@ -33,7 +33,7 @@ const MEDIA_TYPES: Record<string, string> = {
   svg: SVG,
 };
 
-async function directorySize(path: string): Promise<number> {
+async function directorySize(path: string) {
   let size = 0;
   try {
     for (const e of await fs.list(path)) {
@@ -47,7 +47,7 @@ async function directorySize(path: string): Promise<number> {
 
 // Set the media type ourselves and cache forever (a proxy url is one immutable asset). `from` passes
 // on what serveFile set (etag, range, length).
-function cacheHeaders(type: string, from?: Headers): Headers {
+function cacheHeaders(type: string, from?: Headers) {
   const headers = new Headers(from);
   headers.set("Content-Type", type);
   headers.set("Cache-Control", "public, max-age=31536000, immutable");
@@ -57,7 +57,7 @@ function cacheHeaders(type: string, from?: Headers): Headers {
   return headers;
 }
 
-async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: string): Promise<Uint8Array> {
+async function fetchAndCache(app: App, url: string, filePath: string, cacheDir: string) {
   const res = await safeFetch(url); // SSRF-safe (also after redirects), with default timeout
   const tooBig = Number(res.headers.get("content-length")) > MAX_ASSET_BYTES;
   if (!res.ok || tooBig) {
@@ -136,7 +136,7 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp, allowed 
   const rewriter = (src: CspSources) => {
     const allow = origins(src);
     for (const o of allow) allowed.add(o);
-    return (url: string): string => {
+    return (url: string) => {
       if (!url.startsWith("https://") || /[?#]/.test(url)) return url;
       const hit = allow.find(p => covers(p, url));
       if (!hit) return url;

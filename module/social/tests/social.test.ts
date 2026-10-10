@@ -7,7 +7,7 @@ import { ingest, outbox, posts, ProviderError, publish, targets } from "../mod.t
 import type { App } from "@qino/qino";
 import type { Provider } from "../mod.ts";
 
-async function testApp(socialProvider: Provider | Provider[]): Promise<App> {
+async function testApp(socialProvider: Provider | Provider[]) {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
@@ -40,7 +40,7 @@ Deno.test("social publishes one row per target and records when it was sent", as
   ]);
   const available = await targets(app);
   const rows = await publish(app, [...available, available[0]], "Hello");
-  assertEquals(rows.map((row) => [row.target, row.remote_id, Boolean(row.sent), Number(row.own), row.time, row.error]), [
+  assertEquals(rows.map((row) => [row.target, row.external_id, Boolean(row.sent), Number(row.own), row.time, row.error]), [
     ["a", "remote-a", true, 1, 20, null],
     ["b", "remote-b", true, 1, 20, null],
   ]);
@@ -57,10 +57,10 @@ Deno.test("social retries an explicitly temporary failure without adding another
   };
   const app = await testApp(provider);
   const [pending] = await publish(app, await targets(app), "Hello");
-  assertEquals([pending.remote_id, pending.time, pending.sent, pending.attempts, pending.error], [null, null, null, 1, "Later"]);
+  assertEquals([pending.external_id, pending.time, pending.sent, pending.attempts, pending.error], [null, null, null, 1, "Later"]);
   assertEquals(await outbox(app), 1);
   const rows = await app.db.query`SELECT * FROM social_post`;
-  assertEquals(rows.map((row) => [row.remote_id, row.attempts, row.error]), [["remote-a", 1, null]]);
+  assertEquals(rows.map((row) => [row.external_id, row.attempts, row.error]), [["remote-a", 1, null]]);
 });
 
 Deno.test("social applies default backoff and ignores sent outbox rows", async () => {

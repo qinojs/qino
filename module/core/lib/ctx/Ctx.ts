@@ -73,7 +73,7 @@ export class Ctx {
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get csrfToken(): string {
     const token = this.sess.data.core.csrfToken;
-    if (!token()) this.sess.data.core.csrfToken(uid(11));
+    if (!token()) token(uid(11));
     return token()!;
   }
 
@@ -127,7 +127,7 @@ function pubPath(root: string, file: string) {
   return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }
 
-export const requestStorage: AsyncLocalStorage<Ctx> = new AsyncLocalStorage();
+export const requestStorage = new AsyncLocalStorage<Ctx>();
 
 // In dev, requests read files fresh; outside a request the default applies.
 const ttl = fs.ttl;

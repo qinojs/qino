@@ -14,7 +14,7 @@ const DAY = 86400;
 const ranked = (db: Db) => db.col<number>`SELECT id FROM score ORDER BY score DESC`;
 const stored = (db: Db, id: number) => db.one<number>`SELECT score FROM score WHERE id = ${id}`;
 
-async function testDb(): Promise<Db> {
+async function testDb() {
   const db = new Db("sqlite:");
   await db.migrate(dbSchema);
   await db.exec`CREATE TABLE doc (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;

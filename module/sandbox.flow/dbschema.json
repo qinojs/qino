@@ -1,7 +1,7 @@
 {
   "properties": {
     "flow": {
-      "description": "A flow: steps of code that run when an event fires, with the tools they may use",
+      "description": "A flow: code that runs when an event fires, with the tools it may use",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -11,7 +11,7 @@
           },
           "description": {
             "type": "string",
-            "description": "What the flow does, in a sentence — the heading of its steps"
+            "description": "What the flow does, in a sentence"
           },
           "host": {
             "type": "string",
@@ -34,9 +34,13 @@
             "type": "string",
             "description": "The tools it may call, by name, as a JSON array"
           },
-          "steps": {
+          "code": {
             "type": "string",
-            "description": "The steps as a JSON array: { description, fn } with fn as source, or { description, debounce: { ms, by } }"
+            "description": "A JavaScript function body; it sees event, tools, state, context and owner"
+          },
+          "state": {
+            "type": "string",
+            "description": "The flow's memory as JSON: what a run leaves in state, the next one finds"
           },
           "active": {
             "type": "boolean",
@@ -46,7 +50,7 @@
           "test": {
             "type": "boolean",
             "default": true,
-            "description": "Only get_* tools take effect, the other calls are recorded"
+            "description": "Only *_get tools take effect, the other calls are recorded"
           },
           "log_id": {
             "type": "integer",
@@ -55,7 +59,7 @@
             "description": "The request that last changed it"
           }
         },
-        "required": ["id", "host", "event", "usr_id", "steps"]
+        "required": ["id", "host", "event", "usr_id", "code"]
       }
     }
   }

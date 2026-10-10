@@ -6,6 +6,7 @@ import { Readable } from "node:stream";
 
 import { extensionByType, typeByExtension } from "../deps.ts";
 import { fs } from "./fs.ts";
+import { sys } from "./sys.ts";
 
 export type UploadedFile = {
   name: string;
@@ -19,7 +20,7 @@ export type UploadedFile = {
 export const mimeType = (raw: string): string => raw.split(";")[0].trim().toLowerCase();
 
 /** Last path segment of a given name, never empty. */
-const baseName = (raw: string): string => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
+const baseName = (raw: string) => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
 
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);
@@ -30,7 +31,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   const resp = await safeFetch(opt.url);
   if (!resp.ok) throw new Error(`Remote file import failed: HTTP ${resp.status}`);
   const len = parseInt(resp.headers.get("content-length") ?? "0");
-  if (len && len > opt.maxSize) throw new Error("Remote file too large");
+  if (len > opt.maxSize) throw new Error("Remote file too large");
   if (!resp.body) throw new Error("Remote file has no body");
   const file = await saveStream(resp.body, { prefix: "remote-", maxSize: opt.maxSize });
 
@@ -49,7 +50,7 @@ export async function readDataUrl(uri: string, opt: { maxSize: number }): Promis
   let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = /;base64(;|$)/i.test(params)
-      ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
+      ? Uint8Array.fromBase64(payload)
       : new TextEncoder().encode(decodeURIComponent(payload));
   } catch {
     throw new Error("Invalid data URI payload");
@@ -106,7 +107,7 @@ for (const [network, prefix] of [
   ["2001:3::", 32], ["2001:4:112::", 48], ["2001:20::", 28], ["2001:30::", 28],
 ] as const) PUBLIC_IPV6_EXCEPTIONS.addSubnet(network, prefix, "ipv6");
 
-function isPublicIp(ip: string): boolean {
+function isPublicIp(ip: string) {
   const version = isIP(ip);
   if (!version) return false;
   if (version === 4) return PUBLIC_IPV4_EXCEPTIONS.check(ip, "ipv4") || !NON_PUBLIC_IPV4.check(ip, "ipv4");
@@ -115,22 +116,22 @@ function isPublicIp(ip: string): boolean {
 }
 
 /** Resolves the URL once and returns only globally reachable addresses. */
-async function resolvePublicIps(url: URL): Promise<string[]> {
+async function resolvePublicIps(url: URL) {
   // URL parsing normalizes decimal/hex/octal IPv4 forms to dotted notation.
   const host = url.hostname.replace(/^\[|\]$/g, "");
   const ips = isIP(host) ? [host] : (await Promise.all([
-    Deno.resolveDns(host, "A").catch(() => []),
-    Deno.resolveDns(host, "AAAA").catch(() => []),
+    sys.resolveDns(host, "A").catch(() => []),
+    sys.resolveDns(host, "AAAA").catch(() => []),
   ])).flat();
   if (!ips.length) throw new Error(`Could not resolve: ${host}`);
   for (const ip of ips) if (!isPublicIp(ip)) throw new Error(`SSRF blocked: ${ip}`);
   return ips;
 }
 
-function pinnedFetch(url: URL, ip: string, init: RequestInit): Promise<Response> {
+function pinnedFetch(url: URL, ip: string, init: RequestInit) {
   const source = new Request(url, init);
   const family = isIP(ip) as 4 | 6;
-  return new Promise((resolve, reject) => {
+  return new Promise<Response>((resolve, reject) => {
     const req = (url.protocol === "https:" ? https : http).request(url, {
       method: source.method,
       headers: Object.fromEntries(source.headers),
@@ -169,7 +170,7 @@ export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 
     const location = resp.headers.get("location");
     resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");
-    return safeFetch(new URL(location, url).toString(), init, maxRedirects - 1);
+    return safeFetch(new URL(location, url).href, init, maxRedirects - 1);
   }
   return resp;
 }

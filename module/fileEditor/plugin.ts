@@ -10,7 +10,7 @@ const { name } = manifest;
 
 // Expired links are normal; a signature that never matched this session is suspicious and
 // reported. Superusers need no signature.
-async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown): Promise<boolean> {
+async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown) {
   if (ctx.user?.superuser) return true;
   const state = check(ctx, file, exp, sig);
   if (state !== "ok" && state !== "expired") {
@@ -19,7 +19,7 @@ async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown): Prom
   return state === "ok";
 }
 
-async function saveFile(ctx: Ctx, file: string, content: string, exp: unknown, sig: unknown): Promise<number> {
+async function saveFile(ctx: Ctx, file: string, content: string, exp: unknown, sig: unknown) {
   ctx.app.assertAllowedPath(file);
   if (!await allowed(ctx, file, exp, sig)) return 0;
 
@@ -45,7 +45,7 @@ export const api: ApiTree = {
   },
 };
 
-function editorFile(): string | null {
+function editorFile() {
   const ctx = getCtx();
   const file = ctx.req.query.file;
   return file && ctx.req.appPath === name ? file : null;

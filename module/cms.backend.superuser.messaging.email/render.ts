@@ -57,7 +57,7 @@ async function read(app: App, paths: string[]): Promise<Map<string, unknown>> {
 }
 
 /** One label and one control per leaf, named after its dotted path. */
-function field(path: string, node: Schema, values: Map<string, unknown>, transport = "", hidden = false): HtmlString {
+function field(path: string, node: Schema, values: Map<string, unknown>, transport = "", hidden = false) {
   const name = path.split(".").at(-1);
   const note = path === "inbound.secure" || path === "transport.smtp.secure" ? "direct TLS" : "";
   const stored = values.get(path);
@@ -81,7 +81,7 @@ const isAdvanced = (path: string) => path === "name" || path === "debugTo" ||
 const fields = (nodes: ReturnType<typeof leaves>, values: Map<string, unknown>, advanced = false, transport = "", active = "") =>
   nodes.filter((leaf) => isAdvanced(leaf.path) === advanced).map((leaf) => field(leaf.path, leaf.schema, values, transport, transport !== active));
 
-const bool = (v: unknown): boolean => v === true || v === 1 || v === "1" || v === "true";
+const bool = (v: unknown) => v === true || v === 1 || v === "1" || v === "true";
 
 /** Sender defaults and the transport that carries the mail out. */
 export async function sending(node: Node): Promise<HtmlString> {
@@ -125,7 +125,7 @@ export async function sending(node: Node): Promise<HtmlString> {
     <small data-settings-state aria-live=polite></small>
   </form>
   <div class=-foot>
-    <small>${t`Replies go to`} <b>${replyTo || await t`nowhere — no system address`}</b>.
+    <small>${t`Replies go to`} <b>${replyTo || t`nowhere — no system address`}</b>.
     ${debug ? html`<br>${redirected}` : ""}</small>
   </div>`;
 }
@@ -209,7 +209,7 @@ export async function send(node: Node): Promise<HtmlString> {
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
       ${t`Subject`} <input name=title placeholder="${t`the first line of the text`}">
       ${t`Template`} <select name=template>
-        ${main ? html`<option value="">${await t`default`} (${main.name})</option>` : ""}
+        ${main ? html.async`<option value="">${t`default`} (${main.name})</option>` : ""}
         <option value="-">${t`none`}</option>
         ${own.filter((f) => !f.main).map((f) => html`<option value="${f.name}">${f.name}</option>`)}
       </select>
@@ -270,7 +270,7 @@ export async function contacts(node: Node): Promise<HtmlString> {
   </form>`;
 }
 
-function contact(c: Row, labels: Record<string, string>): HtmlString {
+function contact(c: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}
@@ -284,7 +284,7 @@ function contact(c: Row, labels: Record<string, string>): HtmlString {
 }
 
 /** An address someone claimed but has not proven yet — it belongs to no user until they do. */
-function claim(c: Row, labels: Record<string, string>): HtmlString {
+function claim(c: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}
@@ -344,17 +344,17 @@ export async function journal(node: Node): Promise<HtmlString> {
 }
 
 /** The messaging panel's address, so one journal row opens with its deliveries. */
-async function messagingUrl(app: App): Promise<string> {
+async function messagingUrl(app: App) {
   const node = await cms(app).nodeByModule("cms.backend.superuser.messaging");
   return await (await node?.page())?.url() ?? "";
 }
 
-function userName(user: Row): string {
+function userName(user: Row) {
   const name = [user.given_name, user.family_name].filter(Boolean).join(" ");
   return name ? `${name}${user.username ? " · " + user.username : ""}` : String(user.username ?? "#" + user.id);
 }
 
-function cut(text: string, max = 90): string {
+function cut(text: string, max = 90) {
   const line = text.replace(/\s+/g, " ").trim();
   return line.length > max ? line.slice(0, max) + "…" : line;
 }

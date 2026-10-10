@@ -2,7 +2,7 @@
 import { Access, AccessError, App, NotFoundError, runAs, s } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
-/** A real app with sandbox.flow, superusers 7 and 8, user 9, and a route as tool: post_test_greet. */
+/** A real app with sandbox.flow, superusers 7 and 8, user 9, and a route as tool: test_greet_post. */
 async function withApp(fn: (app: App, as: (usr: number, call: () => Promise<any>) => Promise<any>) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
@@ -26,27 +26,25 @@ const made = {
   description: "greet on every usr update",
   host: "db",
   event: "table:update-after",
-  tools: ["post_test_greet"],
-  steps: [{
-    description: "greet",
-    fn: "async (e, { tools }) => (await tools.post_test_greet({ name: e.table }), true)",
-  }],
+  tools: ["test_greet_post"],
+  code: "await tools.test_greet_post({ name: event.table }); return true;",
 };
 
 Deno.test("sandbox.flow api: make, read, change, try and delete your own flows", () => withApp(async (app, as) => {
   const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   const { id } = await as(7, () => flows.post(made));
   const got = await as(7, () => flow(id).get());
-  assertEquals([got.description, got.on, got.tools, got.steps, got.test, got.active],
-    [made.description, { host: "db", event: "table:update-after" }, made.tools, made.steps, true, false]);
+  assertEquals([got.description, got.on, got.tools, got.code, got.test, got.active],
+    [made.description, { host: "db", event: "table:update-after" }, made.tools, made.code, true, false]);
   assertEquals((await as(7, () => flows.get())).map((f: any) => f.id), [id]);
 
   await as(7, () => flow(id).patch({ active: true, test: false }));
-  assertEquals([(await as(7, () => flow(id).get())).active, (await as(7, () => flow(id).get())).test], [true, false]);
+  const patched = await as(7, () => flow(id).get());
+  assertEquals([patched.active, patched.test], [true, false]);
 
-  // a try is a test run, whatever the flow says: only get_* tools take effect
+  // a try is a test run, whatever the flow says: only *_get tools take effect
   const trace = await as(7, () => flow(id).test.post({ event: { table: "usr" }, user: 7 }));
-  assertEquals([trace.end, trace.context, trace.steps[0].calls[0].skipped], ["done", { user: 7 }, true]);
+  assertEquals([trace.end, trace.context, trace.calls[0].skipped], ["done", { user: 7 }, true]);
 
   await as(7, () => flow(id).delete());
   assertEquals(await as(7, () => flows.get()), []);
@@ -64,7 +62,7 @@ Deno.test("sandbox.flow api: someone else's flow does not exist for you", () => 
 
 // events are not filtered by rights yet: a flow sees every event of its host
 Deno.test("sandbox.flow api: only superusers", () => withApp(async (app, as) => {
-  const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
+  const flows = (app.api as any)["sandbox.flow"].flows;
   await assertRejects(() => as(9, () => flows.get()), AccessError);
   await assertRejects(() => as(9, () => flows.post(made)), AccessError);
 }));

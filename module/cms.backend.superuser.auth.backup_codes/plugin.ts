@@ -5,7 +5,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -16,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Backup codes", de: "Backup-Codes" });
 }
 
-async function act(ctx: Ctx): Promise<{ note: string; codes?: string[] }> {
+async function act(ctx: Ctx) {
   const body = ctx.req.body;
   if (!body || !safeEqual(body.csrfToken, ctx.csrfToken)) return { note: "" };
   try {
@@ -30,7 +30,7 @@ async function act(ctx: Ctx): Promise<{ note: string; codes?: string[] }> {
   return { note: "" };
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { note, codes } = await act(ctx);
   const remaining = ctx.userId ? await left(ctx.app, ctx.userId) : 0;
   const all = await node.app.db.query`

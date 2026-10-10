@@ -21,7 +21,7 @@ export async function link(app: App, usrId: number, grpId: number): Promise<stri
 const sign = (app: App, stem: string) => keyed(app, ["messaging.unsubscribe", stem], SIG);
 
 /** User and group of a token, or nothing if it isn't ours. */
-async function read(app: App, token: string): Promise<{ usrId: number; grpId: number } | undefined> {
+async function read(app: App, token: string) {
   const cut = token.lastIndexOf("-");
   const stem = token.slice(0, cut);
   const [usr, grp] = stem.split("-");

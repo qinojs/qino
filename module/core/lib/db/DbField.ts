@@ -24,7 +24,7 @@ export class DbField {
     this.#name = name;
     this.vs = vs;
     const match = vs.Type?.match(/^([a-z]+)(\(([^)]+)\)|.*)(.*)$/i);
-    this.#type = match?.[1].toLowerCase().trim() ?? "varchar";
+    this.#type = match?.[1].toLowerCase() ?? "varchar";
     this.#length = match?.[3]?.trim() ?? "";
     this.#special = match?.[4]?.trim().toLowerCase() ?? "";
   }
@@ -61,12 +61,14 @@ export class DbField {
   }
 
   parent(): DbTable | undefined {
-    return this.schema["x-qg-parent"] ? this.db.table(this.schema["x-qg-parent"]) : undefined;
+    const name = this.schema["x-qg-parent"];
+    return name ? this.db.table(name) : undefined;
   }
   parentField(): DbField | undefined {
     const parent = this.parent();
     if (!parent) return;
-    return this.schema["x-qg-parent-field"] ? parent.field(this.schema["x-qg-parent-field"]) : parent.primary;
+    const name = this.schema["x-qg-parent-field"];
+    return name ? parent.field(name) : parent.primary;
   }
 
   toString(): string { return this.#name; }

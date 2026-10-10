@@ -10,14 +10,14 @@ Deno.test("cms api tree: has no route collisions", () => {
 Deno.test("cms api tree: exposes expected stable tool names", () => {
   const names = new Set(toTools(api).map((tool) => tool.name));
   for (const name of [
-    "get_tree",
-    "get_node",
-    "delete_node",
-    "get_node_tree",
-    "put_node_title",
-    "patch_node",
-    "post_node_copy",
-    "put_node_access_users",
+    "tree_get",
+    "node_get",
+    "node_delete",
+    "node_tree_get",
+    "node_title_put",
+    "node_patch",
+    "node_copy_post",
+    "node_access_users_put",
   ]) {
     assertEquals(names.has(name), true, name);
   }

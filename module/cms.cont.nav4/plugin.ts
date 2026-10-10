@@ -33,7 +33,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const settings = node.settings;
   const activePage = await (cmsCtx(ctx).mainNode ?? await node.page()).page();
   const path = await activePage.path();
@@ -52,7 +52,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     start = (await node.cms.node(startPage)).exists() ?? root;
   }
 
-  async function list(page: Node, depth = 0): Promise<string> {
+  async function list(page: Node, depth = 0) {
     if (limit && depth >= limit || pathOnly && depth && !path.has(page.id)) return "";
     if (!await page.isReadable()) return "";
     const children = [...(await page.children(["readable", {
@@ -65,7 +65,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
     let out = "";
     for (const child of children) {
-      if (!(await child.showTitle()).plain().trim()) continue;
+      if (!(await child.showTitle()).plain()) continue;
       const sub = child.vs.type === "p" ? await list(child, depth + 1) : "";
       const classes = [
         `cmsLink${child.id}`,

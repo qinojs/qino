@@ -1,7 +1,8 @@
 export * from "../module/core/tests/deps.ts";
-export { ai1Adapters, ai1Capabilities, dbSchema as ai1DbSchema } from "../module/ai1/tests/deps.ts";
+export { aiAdapters, aiCapabilities, dbSchema as aiDbSchema } from "../module/ai/tests/deps.ts";
 export { fakeCms, render as cmsRender } from "../module/cms/tests/deps.ts";
 export { dbSchema as messagingDbSchema, templatePlaceholders } from "../module/messaging/tests/deps.ts";
+export { dbSchema as paymentDbSchema } from "../fin/fin.payment/tests/deps.ts";
 export { journal, userJournal } from "../module/cms.backend.superuser.messaging/tests/deps.ts";
 export { messagingChannel as emailMessagingChannel } from "../module/messaging.email/tests/deps.ts";
 export { dbSchema as telegramDbSchema, messagingChannel as telegramMessagingChannel } from "../module/messaging.telegram/tests/deps.ts";

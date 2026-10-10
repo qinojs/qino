@@ -9,22 +9,22 @@ import type { Type } from "./dns.ts";
 const DKIM_SELECTORS = ["default", "google", "selector1", "selector2", "k1", "k2", "s1", "s2", "mail", "dkim", "smtp", "zoho", "protonmail", "mandrill", "fm1"];
 
 // Mechanisms that cost one of the ten DNS lookups an SPF record is allowed (RFC 7208 §4.6.4).
-const SPF_COST = /^[+\-~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
+const SPF_COST = /^[-+~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
 
-const txtOf = (name: string): Promise<string[]> =>
+const txtOf = (name: string) =>
   Deno.resolveDns(name, "TXT").then((r) => r.map((parts) => parts.join(""))).catch(() => []);
 
 /**
  * DNS lookups an SPF record needs, following include: and redirect= like a receiver. Stops above
  * the limit.
  */
-async function spfCount(record: string, seen: Set<string>): Promise<number> {
+async function spfCount(record: string, seen: Set<string>) {
   let count = 0;
   const nested = [];
   for (const term of record.split(/\s+/)) {
     if (!SPF_COST.test(term)) continue;
     count++;
-    const target = term.match(/^[+\-~?]?(?:include:|redirect=)(\S+)/i)?.[1];
+    const target = term.match(/^[-+~?]?(?:include:|redirect=)(\S+)/i)?.[1];
     if (target && !seen.has(target)) { seen.add(target); nested.push(target); }
   }
   if (count > 10 || !nested.length) return count;
@@ -44,7 +44,7 @@ export function spf(txt: string[]) {
   // Two records are not "twice as safe" — receivers must treat it as permerror and ignore both.
   if (records.length > 1) return { record: records[0], policy: "", error: "multiple SPF records" };
   if (!records.length) return { record: "", policy: "", error: "" };
-  const policy = records[0].match(/([+\-~?]all)(\s|$)/i)?.[1].toLowerCase() ?? "";
+  const policy = records[0].match(/([-+~?]all)(\s|$)/i)?.[1].toLowerCase() ?? "";
   const error = policy === "+all" ? "+all accepts every sender" : !policy ? "no all mechanism" : "";
   return { record: records[0], policy, error };
 }
@@ -65,7 +65,7 @@ export function dmarc(txt: string[]) {
 }
 
 /** The published policy of an MTA-STS domain: enforce, testing, none — or "" when there is none. */
-async function mtaStsMode(apex: string, signal?: AbortSignal): Promise<string> {
+async function mtaStsMode(apex: string, signal?: AbortSignal) {
   const res = await fetch(`https://mta-sts.${apex}/.well-known/mta-sts.txt`, { signal: timedSignal(signal, 8000), headers: ua }).catch(() => null);
   if (!res?.ok) {
     await res?.body?.cancel();
@@ -75,7 +75,7 @@ async function mtaStsMode(apex: string, signal?: AbortSignal): Promise<string> {
 }
 
 // Reads SMTP replies until the final line of one — "250 x" ends a reply, "250-x" continues it.
-async function reply(conn: Deno.Conn, buf: Uint8Array): Promise<string> {
+async function reply(conn: Deno.Conn, buf: Uint8Array) {
   let text = "";
   for (let i = 0; i < 16; i++) {
     const n = await conn.read(buf);
@@ -101,15 +101,16 @@ async function smtp(host: string, signal?: AbortSignal) {
     conn = await Deno.connect({ hostname: host, port: 25, signal: limit });
     out.banner = (await reply(conn, buf)).trim().slice(0, 200);
     if (!out.banner.startsWith("2")) return out; // greeted us with a refusal, not a server we can judge
-    await conn.write(new TextEncoder().encode(`EHLO ${agent}\r\n`));
+    const enc = new TextEncoder();
+    await conn.write(enc.encode(`EHLO ${agent}\r\n`));
     const ehlo = await reply(conn, buf);
     out.starttls = /^\d{3}[ -]STARTTLS\r?$/im.test(ehlo);
     if (!out.starttls) return out;
-    await conn.write(new TextEncoder().encode("STARTTLS\r\n"));
+    await conn.write(enc.encode("STARTTLS\r\n"));
     if (!(await reply(conn, buf)).startsWith("220")) return out;
     conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
     out.tlsValid = true; // startTls verifies against the system roots, a bad chain throws
-    await conn.write(new TextEncoder().encode("QUIT\r\n"));
+    await conn.write(enc.encode("QUIT\r\n"));
   } catch (e) {
     if (out.starttls && isCertError(errText(e))) out.tlsValid = false;
     // No answer at all: outgoing port 25 blocked or a dead server (a refusal would be instant).

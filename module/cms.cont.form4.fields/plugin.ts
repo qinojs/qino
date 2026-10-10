@@ -1,4 +1,5 @@
 import { contactKey, getCtx, hee, html } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import api from "./nodeApi.ts";
 
@@ -26,7 +27,7 @@ const settingsSchema = {
 };
 
 /** Field names in display order: those listed in `sort` first, then the rest. */
-function sortedNames(node: Node): string[] {
+function sortedNames(node: Node) {
   const all = Object.keys(node.settings.fields);
   const sorted = String(node.settings.sort() ?? "").split(",").filter((name) => all.includes(name));
   return [...sorted, ...all.filter((name) => !sorted.includes(name))];
@@ -40,13 +41,13 @@ const plain = async (node: Node, name: string) => (await node.showText(name)).pl
  * Options of a select or radio, one per line. Empty lines stay (a select's empty option), so no
  * `plain()`, which would trim them away.
  */
-async function choicesOf(node: Node, name: string): Promise<string[]> {
+async function choicesOf(node: Node, name: string) {
   const lines = (await rawText(node, name + "_options")).replace(/\r/g, "").split("\n").map((c) => c.trim());
-  while (lines.length && lines.at(-1) === "") lines.pop(); // the newline behind the last line is none
+  while (lines.at(-1) === "") lines.pop(); // the newline behind the last line is none
   return lines;
 }
 
-function attrs(list: Record<string, string | number | boolean | undefined>): HtmlString {
+function attrs(list: Record<string, string | number | boolean | undefined>) {
   let str = "";
   for (const [n, v] of Object.entries(list)) {
     if (v === false || v === undefined || v === "") continue;
@@ -60,7 +61,7 @@ function attrs(list: Record<string, string | number | boolean | undefined>): Htm
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */
-async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx): Promise<HtmlString> {
+async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx) {
   const set = node.settings.fields[name];
   const type = String(set.type() ?? "") || "text";
   const label = await plain(node, name + "_title") || name;
@@ -95,9 +96,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
 
   const placeholder = await plain(node, name + "_placeholder");
 
-  /* The condition refers to other fields by name. Its script is not loaded here (`u2.assets()`
-     without version would load qino's u2 into a page with its own); the layout's `u2/auto.js`
-     loads it, with a short flicker until disabled fields are disabled. */
+  // The condition refers to other fields by name; render() loads its script.
   const disableif = String(set.disableif() ?? "").trim();
 
   const common = {
@@ -138,14 +137,18 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
   }
 
   return html.async`<tr class="-item -item-${name}">
-      <th scope=row><label for="${common.id}">${await node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>
+      <th scope=row><label for="${common.id}">${node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>
       <td>${control}${error}`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   /* One walk up the tree: the open form comes from form4's render state (read, not imported —
      form4 depends on this module); whether we are in a form at all comes from the tree, which also
      works when the node renders alone (panel reload). */
+  u2.assets(ctx, [
+    "attr/disableif/disableif.js", "class/table/table.css", "class/flex/flex.css",
+    "el/alert/alert.js", "el/alert/alert.css",
+  ]);
   const path = [...(await node.path()).values()].reverse();
   const open: Map<number, Form> | undefined = getCtx().state.form4;
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;
@@ -154,7 +157,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   for (const name of sortedNames(node)) fields.push(await field(node, name, form, ctx));
 
   const warning = await node.edit() && !path.some((n) => n.vs.module === "cms.cont.form4")
-    ? html`<tr><td colspan=2><u2-alert open variant=warning>${await node.app.t`This module belongs inside a "cms.cont.form4" module.`}</u2-alert>`
+    ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form4" module.`}</u2-alert>`
     : "";
 
   return html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;

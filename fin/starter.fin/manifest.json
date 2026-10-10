@@ -1,0 +1,23 @@
+{
+  "name": "starter.fin",
+  "description": "Invoicing on top of starter.account: invoices, payments, reminders, the finance backend and the customer's own invoices and address.",
+  "dependencies": [
+    "starter.account",
+    "fin",
+    "fin.payment",
+    "fin.invoice",
+    "fin.invoice.reminder",
+    "cms.cont.fin.my.address",
+    "cms.cont.fin.my.invoices",
+    "cms.backend.superuser.fin",
+    "cms.backend.superuser.fin.invoice",
+    "cms.backend.superuser.fin.party",
+    "cms.backend.superuser.fin.payment"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

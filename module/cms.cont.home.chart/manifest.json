@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.home.chart",
+  "description": "Measurement and counter consumption charts with real time axes and explicit gaps.",
+  "dependencies": ["cms", "home.history"],
+  "files": ["README.md", "manifest.json", "plugin.ts", "mod.ts", "chart.ts", "pub/main.js", "pub/module.svg"]
+}

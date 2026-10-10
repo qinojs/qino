@@ -1,0 +1,16 @@
+{
+  "name": "fin.payment.bitcoin",
+  "description": "Bitcoin on-chain as payment provider, without anyone in between: an address per payment from the wallet's public key.",
+  "dependencies": [
+    "fin",
+    "fin.payment"
+  ],
+  "files": [
+    "README.md",
+    "lib/address.ts",
+    "lib/provider.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

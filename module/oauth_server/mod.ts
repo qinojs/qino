@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Output, Redirect, b64url, randB64, safeEqual, unixTime } from "@qino/qino";
+import { Output, Redirect, randB64, safeEqual, unixTime } from "@qino/qino";
 
 import { consume, mint } from "./lib/tokens.ts";
 import { consentPage, errorPage, loginPage } from "./lib/view.ts";
@@ -171,11 +171,10 @@ export async function deleteClient(app: App, id: string): Promise<boolean> {
 }
 
 /** Loopback may use http; everything else must be https, and no fragment (RFC 8252). */
-function validRedirectUri(raw: unknown): string | undefined {
+function validRedirectUri(raw: unknown) {
   const uri = String(raw ?? "");
-  let u;
-  try { u = new URL(uri); } catch { return; }
-  if (u.hash) return;
+  const u = URL.parse(uri);
+  if (!u || u.hash) return;
   const loopback = u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "[::1]";
   if (u.protocol !== "https:" && !(u.protocol === "http:" && loopback)) return;
   return uri;
@@ -184,4 +183,4 @@ function validRedirectUri(raw: unknown): string | undefined {
 const fail = (error: string, description = "", status = 400) =>
   new Output({ error, ...(description && { error_description: description }) }, { status, headers: { "Cache-Control": "no-store" } });
 
-const s256 = (v: string) => b64url(new Uint8Array(createHash("sha256").update(v).digest()));
+const s256 = (v: string) => createHash("sha256").update(v).digest("base64url");

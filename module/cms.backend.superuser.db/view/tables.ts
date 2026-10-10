@@ -6,14 +6,14 @@ import { tableStatus } from "../lib/tableStatus.ts";
 
 import type { HtmlString, App } from "@qino/qino";
 
-function keyBadge(key: string): HtmlString {
+function keyBadge(key: string) {
   if (key === "PRI") return html.raw(' <small class=u2-badge style="background:var(--yellow)">PRI</small>');
   if (key === "UNI") return html.raw(' <small class=u2-badge style="background:var(--blue)">UNI</small>');
   if (key === "MUL") return html.raw(' <small class=u2-badge style="background:var(--green)">IDX</small>');
   return html.raw("");
 }
 
-function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<HtmlString> | HtmlString {
+function statusBadge(app: App, inSchema: boolean, uncovered: number) {
   if (!inSchema)   return html.async`<small class=u2-badge style="background:var(--red)">${app.t`no schema`}</small>`;
   if (uncovered)   return html.async`<small class=u2-badge style="background:var(--orange)">${uncovered} ${app.t`without schema`}</small>`;
   return html`<u2-ico inline icon=check_circle aria-label=ok style="color:var(--green)">✓</u2-ico>`;
@@ -23,7 +23,7 @@ export function renderTables(app: App, db: any, modules: Map<string, any>, table
   return table ? tableDetail(app, db, modules, table) : tableOverview(app, db);
 }
 
-async function tableOverview(app: App, db: any): Promise<HtmlString> {
+async function tableOverview(app: App, db: any) {
   const t = app.t;
   const tables = Object.values<any>(db.tables ?? {});
   const schemaProps = db.schema?.properties ?? {};
@@ -33,7 +33,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 
   const rows = await Promise.all(
     tables.sort((a, b) => {
-      const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
+      const sa = a.name.startsWith("_"), sb = b.name.startsWith("_");
       return (sa ? 1 : 0) - (sb ? 1 : 0) || a.name.localeCompare(b.name);
     }).map(async (table: any) => {
       const fields = await table.init();
@@ -78,7 +78,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
   </div>`;
 }
 
-async function tableDetail(app: App, db: any, modules: Map<string, any>, tableName: string): Promise<HtmlString> {
+async function tableDetail(app: App, db: any, modules: Map<string, any>, tableName: string) {
   const t = app.t;
   const table = db.tables?.[tableName];
   if (!table) return html.async`<div class=u2-card><div>${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;

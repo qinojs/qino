@@ -11,7 +11,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-async function testDb(): Promise<Db> {
+async function testDb() {
   const db = new Db("sqlite:");
   await db.exec`CREATE TABLE parent (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE child (id INTEGER PRIMARY KEY AUTOINCREMENT, parent_id INTEGER, stale TEXT)`;

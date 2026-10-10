@@ -36,7 +36,7 @@ cms.initNode("backend.system.health", (el) => {
     if (!btn) return;
     e.preventDefault();
     const row      = btn.closest("tr[data-name]");
-    const solution = btn.getAttribute("data-solution");
+    const solution = btn.dataset.solution;
     const form     = btn.closest("form");
     const formData = form ? Object.fromEntries(new FormData(form)) : {};
 

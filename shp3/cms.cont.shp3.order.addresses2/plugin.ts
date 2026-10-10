@@ -16,7 +16,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const order = await cart(ctx, false);
   if (!order) return html.async`<div></div>`;
@@ -26,16 +26,16 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <form class=-addresses>
     <fieldset class=-bill>
       <legend>${t`Billing address`}</legend>
-      ${await fields(node, order, "bill", ctx.lang)}
+      ${fields(node, order, "bill", ctx.lang)}
     </fieldset>
     ${separate
       ? html.async`<label class=-unlike>
       <input type=checkbox name=ship_unlike_bill value=1 ${order.ship_unlike_bill ? html.raw("checked") : ""}>
       ${t`Deliver to a different address`}
     </label>
-    <fieldset class=-ship ${order.ship_unlike_bill ? html.raw("") : html.raw("hidden")}>
+    <fieldset class=-ship ${order.ship_unlike_bill ? "" : html.raw("hidden")}>
       <legend>${t`Delivery address`}</legend>
-      ${await fields(node, order, "ship", ctx.lang)}
+      ${fields(node, order, "ship", ctx.lang)}
     </fieldset>`
       : ""}
   </form>
@@ -81,8 +81,8 @@ async function fields(node: Node, order: Order, side: "bill" | "ship", lang: str
       ${field === "country"
         ? await countryField(node, name, String(order.$get(name) ?? ""), autocomplete, required, lang)
         : html`<input name=${name} value="${order.$get(name)}" autocomplete="${autocomplete}"
-        ${field === "email" ? html.raw("type=email") : html.raw("")}
-        ${required ? html.raw("required") : html.raw("")}>`}
+        ${field === "email" ? html.raw("type=email") : ""}
+        ${required ? html.raw("required") : ""}>`}
     </label>`);
   }
   return html.join(rows);
@@ -92,7 +92,7 @@ async function fields(node: Node, order: Order, side: "bill" | "ship", lang: str
 async function countryField(node: Node, name: string, value: string, autocomplete: string, required: boolean, lang: string) {
   const options = (await shp3(node.app).countries()).map((id) => ({ id, title: country.name(id, lang) }));
   options.sort((a, b) => new Intl.Collator(lang).compare(a.title, b.title));
-  return html`<select name=${name} autocomplete="${autocomplete}" ${required ? html.raw("required") : html.raw("")}>
+  return html`<select name=${name} autocomplete="${autocomplete}" ${required ? html.raw("required") : ""}>
       <option value="">
       ${options.map((c) => html`<option value=${c.id} ${c.id === value ? html.raw("selected") : ""}>${c.title}`)}
     </select>`;

@@ -26,7 +26,7 @@ const TESTS: { id: string; title: string; note: string; options: ImgOptions }[] 
   { id: "pos-end", title: "Object position 100/100", note: "bottom right focal point", options: { fit: "cover", hpos: 100, vpos: 100 } },
 ];
 
-async function render(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars }: { vars?: Record<string, unknown> } = {}) {
   const { file, w, h, delay, quality, editable } = await data(node);
   const exists = await file.exists();
   const base = { width: w, height: h, quality, editable, wait: true, if: 1, alt: "cms-image2 test image" };
@@ -62,7 +62,7 @@ async function render(node: Node, { vars }: { vars?: Record<string, unknown> } =
 
 type LabVars = { width: number; height: number; autoW: boolean; autoH: boolean; fit: "cover" | "contain"; hpos: number; vpos: number; box: number };
 
-async function labPart(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function labPart(node: Node, { vars }: { vars?: Record<string, unknown> } = {}) {
   const { file, w, h, quality, editable } = await data(node);
   const lab = labVars(vars?.lab, w, h);
   const options = imageOptions({ quality, editable, wait: true, if: 1, alt: "cms-image2 test image" }, "lab", {
@@ -75,7 +75,7 @@ async function labPart(node: Node, { vars }: { vars?: Record<string, unknown> } 
   return renderLab(file, options, lab);
 }
 
-function renderLab(file: DbFile, options: ImgOptions, lab: LabVars): Promise<HtmlString> {
+function renderLab(file: DbFile, options: ImgOptions, lab: LabVars) {
   return html.async`
     <article class="c2t-card c2t-lab" data-c2t-case=lab data-c2t-params="${optionsText(options)}">
       <h3>Interactive image</h3>
@@ -114,7 +114,7 @@ async function data(node: Node) {
 
 function renderCard(
   id: string, title: string, note: string, content: Promise<HtmlString> | HtmlString, params: string,
-): Promise<string> {
+) {
   return html.async`
     <article class=c2t-card data-c2t-case="${id}" data-c2t-params="${params}">
       <h4>${title}</h4>
@@ -126,12 +126,12 @@ function renderCard(
   `.then(String);
 }
 
-function image(file: DbFile, base: ImgOptions, id: string, opts: ImgOptions = {}): Promise<HtmlString> {
+function image(file: DbFile, base: ImgOptions, id: string, opts: ImgOptions = {}) {
   const options = imageOptions(base, id, opts);
   return html.async`${cms_image2(file, options)}<template class=c2t-native>${nativeImage(file, options)}</template>`;
 }
 
-async function nativeImage(file: DbFile, options: ImgOptions): Promise<HtmlString> {
+async function nativeImage(file: DbFile, options: ImgOptions) {
   const hpos = options.hpos ?? await file.get("hpos") ?? 50;
   const vpos = options.vpos ?? await file.get("vpos") ?? 50;
   const styles = {
@@ -149,7 +149,7 @@ function imageOptions(base: ImgOptions, id: string, opts: ImgOptions = {}): ImgO
   return { fit: "cover", ...base, "data-test": id, ...opts };
 }
 
-function optionsText(options: ImgOptions): string {
+function optionsText(options: ImgOptions) {
   const SKIP = new Set(["alt", "editable", "if", "quality", "wait", "data-test"]);
   return Object.entries(options).filter(([k, v]) => !SKIP.has(k) && v != null && v !== false).map(([k, v]) =>
     k === "css" && v && typeof v === "object" ? "css:" + Object.entries(v).map(([ck, cv]) => `${ck}=${cv}`).join(",") : `${k}=${v}`
@@ -170,12 +170,12 @@ function labVars(v: unknown, w: number, h: number): LabVars {
   };
 }
 
-function clamp(v: unknown, min: number, max: number, fallback: number): number {
+function clamp(v: unknown, min: number, max: number, fallback: number) {
   const n = Number(v);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : fallback;
 }
 
-function renderFlexDirect(file: DbFile, base: ImgOptions): Promise<HtmlString> {
+function renderFlexDirect(file: DbFile, base: ImgOptions) {
   return html.async`
     <div class="c2t-flex c2t-tight">
       ${image(file, base, "flex-direct", { css: { "max-width": "100%" }, style: "flex:1 1 auto;" })}
@@ -184,7 +184,7 @@ function renderFlexDirect(file: DbFile, base: ImgOptions): Promise<HtmlString> {
   `;
 }
 
-function renderFlexWrap(file: DbFile, base: ImgOptions, cls: string): Promise<HtmlString> {
+function renderFlexWrap(file: DbFile, base: ImgOptions, cls: string) {
   return html.async`
     <div class="c2t-flex c2t-tight">
       <div class="c2t-flex-img ${cls}">${image(file, base, cls || "flex-auto", { css: { "max-width": "100%" } })}</div>
@@ -193,11 +193,11 @@ function renderFlexWrap(file: DbFile, base: ImgOptions, cls: string): Promise<Ht
   `;
 }
 
-function renderMinContent(file: DbFile, base: ImgOptions): Promise<HtmlString> {
+function renderMinContent(file: DbFile, base: ImgOptions) {
   return html.async`<div class=c2t-min-content>${image(file, base, "min-content", { css: { "max-width": "100%" } })}</div>`;
 }
 
-function renderGridMin(file: DbFile, base: ImgOptions): Promise<HtmlString> {
+function renderGridMin(file: DbFile, base: ImgOptions) {
   return html.async`
     <div class=c2t-grid-min>
       ${image(file, base, "grid-min", { css: { "max-width": "100%" } })}
@@ -206,7 +206,7 @@ function renderGridMin(file: DbFile, base: ImgOptions): Promise<HtmlString> {
   `;
 }
 
-function renderInline(file: DbFile, base: ImgOptions): Promise<HtmlString> {
+function renderInline(file: DbFile, base: ImgOptions) {
   return html.async`
     <p class=c2t-inline>before ${image(file, base, "inline", { css: { "max-width": "120px" } })} after</p>
   `;

@@ -32,7 +32,7 @@ export const authFactors = (app: App): Declared[] =>
   });
 
 /** Those of `factors` this user has set up. No `has()` counts as set up. */
-async function setUpBy<T extends AuthFactor>(app: App, usrId: number, factors: T[]): Promise<T[]> {
+async function setUpBy<T extends AuthFactor>(app: App, usrId: number, factors: T[]) {
   const has = await Promise.all(factors.map((f) => f.has?.(app, usrId).catch(() => false) ?? true));
   return factors.filter((_, i) => has[i]);
 }
@@ -46,7 +46,7 @@ export type Offer = { name: string; label: string; module: string };
 const MIDDLE = 50; // default order
 
 /** Best first, so the dialog opens it. */
-const offer = (factors: Declared[]): Offer[] =>
+const offer = (factors: Declared[]) =>
   factors.sort((a, b) => (a.order ?? MIDDLE) - (b.order ?? MIDDLE))
     .map(({ name, label, module }) => ({ name, label, module }));
 
@@ -92,7 +92,7 @@ export function parkLogin(ctx: Ctx, factor: AuthFactor, usrId: number): Record<s
   const same = open?.usrId === usrId; // another user starts a new login
   if (!same && factor.second) return;
   const now = unixTime();
-  const via = { ...(same ? open!.via : {}), [factor.name]: now };
+  const via = { ...(same ? open.via : {}), [factor.name]: now };
   ctx.sess.data.core.pending({ usrId, via, time: now });
   return via;
 }

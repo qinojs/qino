@@ -48,7 +48,7 @@ const moduleStats = (app: App) => app.db.query`
     (SELECT MAX(l.time) FROM page p JOIN log l ON l.id = p.log_id_ch WHERE p.module = m.name) AS changed
   FROM module m`;
 
-async function renderOverview(node: Node): Promise<HtmlString> {
+async function renderOverview(node: Node) {
   const app = node.app, t = app.t, ctx = getCtx();
   const u = ctx.req.url.toURL();
 
@@ -107,7 +107,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 }
 
 /** Move nodes to another module — module axis on the target, edit access on every node. */
-async function replace(node: Node, vars: Record<string, unknown>): Promise<string> {
+async function replace(node: Node, vars: Record<string, unknown>) {
   const app = node.app, t = app.t;
   const target = String(vars.replace ?? "");
   const ids = String(vars.ids ?? "").split(",").map(Number).filter(Boolean);
@@ -128,7 +128,7 @@ async function replace(node: Node, vars: Record<string, unknown>): Promise<strin
 
 // Change history of the given nodes — same source as cms.backend.cms.history,
 // narrowed to this module's nodes. One row per request and node.
-async function historyRows(node: Node, ids: number[], titles: Map<number, string>): Promise<HtmlString[]> {
+async function historyRows(node: Node, ids: number[], titles: Map<number, string>) {
   if (!ids.length) return [];
   const t = node.app.t;
   const rows = await node.app.db.query`
@@ -144,8 +144,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   for (const r of rows) {
     const key = `${r.log_id}:${r.node_id}`;
     if (!events.has(key) && events.size >= 60) break;
-    const ev = events.get(key) ?? { row: r, labels: new Set<string>() };
-    events.set(key, ev);
+    const ev = events.getOrInsertComputed(key, () => ({ row: r, labels: new Set<string>() }));
     ev.labels.add(await describeChange(r.data, t)); // already HTML-escaped
   }
 
@@ -162,7 +161,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   return out;
 }
 
-async function renderDetail(node: Node, modName: string, message: string): Promise<HtmlString> {
+async function renderDetail(node: Node, modName: string, message: string) {
   const app = node.app, t = app.t;
   const ctx = getCtx();
   const back = ctx.req.url.toURL();
@@ -175,8 +174,10 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
     </div>`;
   }
 
-  const access = await modAccess(app, modName);
-  const standard = await app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`;
+  const [access, standard] = await Promise.all([
+    modAccess(app, modName),
+    app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`,
+  ]);
 
   const LIMIT = 500;
   const rows = await app.db.query`
@@ -268,7 +269,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   const ctx = getCtx();
   const message = vars.replace ? await replace(node, vars) : "";
   const modName = String(vars.mod ?? ctx.req.query.mod ?? "");
@@ -283,8 +284,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const link = (r: Record<string, unknown>, extra: HtmlString | string) =>
     html`<div><a href="${modUrl(base, String(r.name))}">${r.name}</a> ${extra}</div>`;
 
-  const top = [...rows].sort((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
-  const recent = [...rows].filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
+  const top = rows.toSorted((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
+  const recent = rows.filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
 
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${t`modules`}

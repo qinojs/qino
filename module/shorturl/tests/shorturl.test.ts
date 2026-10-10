@@ -9,7 +9,7 @@ import type { App } from "@qino/qino";
 
 const row = (app: App, code: string) => app.db.row`SELECT * FROM shorturl WHERE code = ${code}`;
 
-async function app(): Promise<App> {
+async function app() {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;

@@ -7,7 +7,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });
 }
 
-function render(_node: unknown, { ctx }: { ctx: Ctx }): HtmlString {
+function render(_node: unknown, { ctx }: { ctx: Ctx }) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/SettingsEditor.mjs");
   return html`<div class=u2-card>
   <div class=-head>Settings</div>
@@ -17,11 +17,10 @@ function render(_node: unknown, { ctx }: { ctx: Ctx }): HtmlString {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
-  const count = Number(await app.db.one`SELECT count(*) FROM qg_setting`);
-  return html`<div style="overflow:auto; padding:0">
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>Entries:<td>${count}
+  <tr><td>Entries:<td>${app.db.one`SELECT count(*) FROM qg_setting`}
 </table>
 </div>`;
 }

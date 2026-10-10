@@ -1,7 +1,7 @@
-import { getCtx, html, sql } from "@qino/qino";
+import { getCtx, html, sql, sys } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const cms = { node: { js: ["pub/main.js"], render, api } };
@@ -55,7 +55,7 @@ const label = (list: Record<string, RegExp>, ua: string) => Object.keys(list).fi
 const device = (ua: string) => [label(BROWSERS, ua), label(SYSTEMS, ua)].filter(Boolean).join(" · ") || ua.slice(0, 40);
 
 /** Reverse-DNS name of an IP, in-addr.arpa for v4, ip6.arpa for v6. */
-function arpaName(ip: string): string {
+function arpaName(ip: string) {
   if (!ip.includes(":")) return ip.split(".").reverse().join(".") + ".in-addr.arpa";
   const [head, tail = ""] = ip.split("::");
   const groups = head ? head.split(":") : [], rest = tail ? tail.split(":") : [];
@@ -67,14 +67,14 @@ function arpaName(ip: string): string {
 async function ipHosts(ips: string[]): Promise<Record<string, string>> {
   return Object.fromEntries(await Promise.all([...new Set(ips.filter(Boolean))].map(async (ip) => [
     ip,
-    await Deno.resolveDns(arpaName(ip), "PTR", { signal: AbortSignal.timeout(1000) })
+    await sys.resolveDns(arpaName(ip), "PTR", { signal: AbortSignal.timeout(1000) })
       .then((names) => names[0]?.replace(/\.$/, "") ?? "").catch(() => ""),
   ])));
 }
 
 const ACTIVE = 15 * 60; // seconds since the last request that still count as "here"
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
 

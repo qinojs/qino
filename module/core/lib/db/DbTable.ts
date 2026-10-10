@@ -8,7 +8,7 @@ import type { Sql } from "../../deps.ts";
 import type { Db } from "./Db.ts";
 
 // A primary key value as id part; undefined if it can't identify a row.
-const idValue = (field: DbField, value: any): string | undefined => {
+const idValue = (field: DbField, value: any) => {
   if (value == null || typeof value === "object") return; // String([]) / Number([]) would look valid
   if (!NUM_TYPES.has(field.type)) return String(value);
   const num = value === "" ? NaN : Number(value); // strict like DbField; empty is no id
@@ -18,7 +18,7 @@ const idValue = (field: DbField, value: any): string | undefined => {
 export class DbTable {
   #fields: Map<string, DbField> | null = null;
   #primaries: DbField[] = []; // in id-part order
-  #autoIncrement: DbField | undefined;
+  #autoIncrement?: DbField;
   #db: Db;
   #name: string;
   #children: DbField[] | null = null;
@@ -160,7 +160,7 @@ export class DbTable {
     for (const name of this.#fields!.keys()) if (name in values) cols.push(name);
     // Standard `(cols) VALUES (?)`; the driver supplies its dialect-specific empty-row fragment.
     const into = cols.length
-      ? sql`(${sql.join(cols.map((f) => sql.id(f)))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields!.get(f)!.valueTransform(values[f])}`))})`
+      ? sql`(${sql.join(cols.map(sql.id))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields!.get(f)!.valueTransform(values[f])}`))})`
       : sql.raw(this.#db.emptyInsert);
     const auto = this.autoIncrement;
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));
@@ -178,7 +178,7 @@ export class DbTable {
     let id: any;
     if (values === undefined) {
       values = idOrValues;
-      id = this.entryId(values!);
+      id = this.entryId(values);
     } else {
       id = idOrValues;
     }
@@ -205,7 +205,7 @@ export class DbTable {
       : this.insert(values);
   }
 
-  copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | undefined> {
+  copy(id: any, override: Record<string, any> = {}, visiting = new Set<string>()): Promise<string | undefined> {
     return this.#db.transaction(() => this.#copy(id, override, visiting));
   }
   async #copy(id: any, override: Record<string, any>, visiting: Set<string>): Promise<string | undefined> {
@@ -267,7 +267,7 @@ export class DbTable {
   deleteWhere(values: Record<string, any>): Promise<void> {
     return this.#db.transaction(() => this.#deleteWhere(values));
   }
-  async #deleteWhere(values: Record<string, any>): Promise<void> {
+  async #deleteWhere(values: Record<string, any>) {
     const where = this.valuesToFragment(values);
     const rows = where.parts.length ? await this.select(where) : {};
     for (const row of Object.values(rows)) await this.delete(row);

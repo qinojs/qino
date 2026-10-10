@@ -18,17 +18,17 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   return html.async`<div class=u2-flex>
-  ${await address(node)}
-  ${await methods(node)}
-  ${await currencies(node)}
-  ${await countries(node)}
+  ${address(node)}
+  ${methods(node)}
+  ${currencies(node)}
+  ${countries(node)}
 </div>`;
 }
 
 /** Payment and shipping methods: a module announces one, the shop names, sorts and switches it. */
-async function methods(node: Node): Promise<HtmlString> {
+async function methods(node: Node) {
   const { app } = node;
   const t = app.t;
   const set = app.settings.shp3;
@@ -57,6 +57,7 @@ async function methods(node: Node): Promise<HtmlString> {
   const chosen = String(await set.default_product_module ?? "");
   const productModules = app.modules.linked().map((mod) => mod.name).filter((n) => n.startsWith("cms.cont.shp3.product"));
   if (chosen && !productModules.includes(chosen)) productModules.push(chosen);
+  const autoPayment = await set.auto_select_payment, autoShipping = await set.auto_select_shipping;
 
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payment`}</div>
@@ -68,14 +69,14 @@ async function methods(node: Node): Promise<HtmlString> {
       <tr>
         <th>${t`Payment`}
         <td><label>
-          <input class=-set type=checkbox data-setting=auto_select_payment ${await set.auto_select_payment ? html.raw("checked") : ""}>
-          ${await t`Preselect the first method`}
+          <input class=-set type=checkbox data-setting=auto_select_payment ${autoPayment ? html.raw("checked") : ""}>
+          ${t`Preselect the first method`}
         </label>
       <tr>
         <th>${t`Delivery`}
         <td><label>
-          <input class=-set type=checkbox data-setting=auto_select_shipping ${await set.auto_select_shipping ? html.raw("checked") : ""}>
-          ${await t`Preselect the first method`}
+          <input class=-set type=checkbox data-setting=auto_select_shipping ${autoShipping ? html.raw("checked") : ""}>
+          ${t`Preselect the first method`}
         </label>
       <tr>
         <th>${t`Product page`}
@@ -87,7 +88,7 @@ async function methods(node: Node): Promise<HtmlString> {
 }
 
 /** Where the shop stands — the country a price is calculated for before the customer names one. */
-async function address(node: Node): Promise<HtmlString> {
+async function address(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;
@@ -96,6 +97,8 @@ async function address(node: Node): Promise<HtmlString> {
   const options = (await country.sorted(app.db, lang)).map((id) =>
     html`<option value=${id} ${id === chosen ? html.raw("selected") : ""}>${country.name(id, lang)}`
   );
+
+  const vatIncluded = await set.vat.mode !== "excluded";
 
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Shop address`}</div>
@@ -112,15 +115,15 @@ async function address(node: Node): Promise<HtmlString> {
       <tr>
         <th>${t`VAT`}
         <td><label>
-          <input class=-set type=checkbox data-setting=vat.mode ${await set.vat.mode !== "excluded" ? html.raw("checked") : ""}>
-          ${await t`Included in the product prices`}
+          <input class=-set type=checkbox data-setting=vat.mode ${vatIncluded ? html.raw("checked") : ""}>
+          ${t`Included in the product prices`}
         </label>
     </table>
   </div>`;
 }
 
 /** The currencies the shop prices in. The main one is the yardstick, so its factor stays 1. */
-async function currencies(node: Node): Promise<HtmlString> {
+async function currencies(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;
@@ -133,7 +136,7 @@ async function currencies(node: Node): Promise<HtmlString> {
   // A country the shop delivers to pays in its own currency — worth offering.
   const wanted = new Map<string, string[]>();
   for (const c of await app.db.query`SELECT id, currency FROM country WHERE shp3_enabled = ${true} AND currency != ${""}`) {
-    wanted.set(String(c.currency), [...wanted.get(String(c.currency)) ?? [], String(c.id)]);
+    wanted.getOrInsert(String(c.currency), []).push(String(c.id));
   }
 
   const collator = new Intl.Collator(lang);
@@ -151,16 +154,16 @@ async function currencies(node: Node): Promise<HtmlString> {
     <td>${vs.id} <small>${title}</small>
       ${needed ? html`<small class=-needed>${needed.join(", ")}</small>` : ""}
     <td><input class=-cur data-field=factor type=number step=any value="${has ? vs.factor : ""}" ${vs.main || fromRates || !has ? html.raw("disabled") : ""}>
-    <td><input class=-cur data-field=smallest type=number step=any value="${has ? vs.smallest : ""}" ${has ? html.raw("") : html.raw("disabled")}>
-    <td><input class=-cur data-field=smallest_closing type=number step=any value="${has ? vs.smallest_closing : ""}" ${has ? html.raw("") : html.raw("disabled")}>
+    <td><input class=-cur data-field=smallest type=number step=any value="${has ? vs.smallest : ""}" ${has ? "" : html.raw("disabled")}>
+    <td><input class=-cur data-field=smallest_closing type=number step=any value="${has ? vs.smallest_closing : ""}" ${has ? "" : html.raw("disabled")}>
     <td><input class=-cur data-field=active type=checkbox ${vs.active ? html.raw("checked") : ""} ${vs.main ? html.raw("disabled") : ""}>
-    <td><input class=-cur data-field=main type=radio name=main ${vs.main ? html.raw("checked") : ""} ${has ? html.raw("") : html.raw("disabled")}>`;
+    <td><input class=-cur data-field=main type=radio name=main ${vs.main ? html.raw("checked") : ""} ${has ? "" : html.raw("disabled")}>`;
   });
 
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>
       ${t`Currencies`}
-      ${fromRates ? html`<small>${await t`factors follow the exchange rates`}</small>` : ""}
+      ${fromRates ? html.async`<small>${t`factors follow the exchange rates`}</small>` : ""}
     </div>
     <div><input type=search class=-search placeholder="${t`Search`}…"></div>
     <div style="max-height:31rem; overflow:auto; padding:0">
@@ -180,7 +183,7 @@ async function currencies(node: Node): Promise<HtmlString> {
 }
 
 /** Where the shop delivers to, and what VAT each of those countries carries. */
-async function countries(node: Node): Promise<HtmlString> {
+async function countries(node: Node) {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;
@@ -220,7 +223,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const home = String(await app.settings.shp3.location.country ?? "");
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>${t`Shop address`}:<td>${home ? country.name(home, lang) : await t`nowhere`}
+  <tr><td>${t`Shop address`}:<td>${home ? country.name(home, lang) : t`nowhere`}
   <tr><td>${t`Delivers to`}:<td>${db.one`SELECT count(*) FROM country WHERE shp3_enabled = ${true}`.catch(() => 0)} ${t`countries`}
   <tr><td>${t`Currencies`}:<td>${db.one`SELECT count(*) FROM shp3_currency WHERE active = ${true}`.catch(() => 0)}
 </table>

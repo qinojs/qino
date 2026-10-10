@@ -1,0 +1,32 @@
+{
+  "properties": {
+    "ai_web_page": {
+      "description": "A web page as read, the cache of ai.web",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "url": { "type": "string", "maxLength": 2048, "description": "The address as asked for" },
+          "url_hash": { "type": "string", "maxLength": 64, "x-index": "unique", "description": "SHA-256 of the url: unique, case-sensitive in every database" },
+          "title": { "type": "string" },
+          "content": { "type": "string", "maxLength": 1073741823, "description": "The page as Markdown" },
+          "reader": { "type": "string", "maxLength": 64, "description": "Who read it: jina, firecrawl or fetch" },
+          "time": { "type": "integer", "description": "When it was read" }
+        },
+        "required": ["id", "url", "url_hash"]
+      }
+    },
+    "embedding_ai_web_page": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_web_page", "x-qg-on-parent-delete": "cascade" },
+          "chunk": { "type": "integer", "x-index": "primary", "default": 0 },
+          "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_embed_collection", "x-qg-on-parent-delete": "cascade" },
+          "hash": { "type": "string", "maxLength": 64, "x-index": true },
+          "content": { "type": "string" },
+          "embedding": { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
+        },
+        "required": ["page_id", "chunk", "collection_id", "hash", "embedding"]
+      }
+    }
+  }
+}

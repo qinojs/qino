@@ -1,0 +1,22 @@
+{
+  "name": "cms.backend.superuser.fin.invoice.inbox",
+  "description": "Received invoices read from PDF or photo by a language model into drafts, the file kept as receipt.",
+  "dependencies": [
+    "ai",
+    "cms.backend.superuser.fin",
+    "cms.backend.superuser.fin.invoice",
+    "fin",
+    "fin.invoice",
+    "locale.currency"
+  ],
+  "files": [
+    "README.md",
+    "lib/read.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

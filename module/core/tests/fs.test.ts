@@ -190,3 +190,10 @@ Deno.test("fs: a request in dev looks fresh, others use the cache", () => inDir(
   assertEquals(await run(false), false);
   assertEquals(await run(true), true);
 }));
+
+Deno.test("fs: mode applies to new files and directories", () => inDir(async (dir) => {
+  await fs.mkdir(dir + "/private", { mode: 0o700 });
+  await fs.write(dir + "/private/key", "secret", { mode: 0o600 });
+  assertEquals((await Deno.stat(dir + "/private")).mode! & 0o777, 0o700);
+  assertEquals((await Deno.stat(dir + "/private/key")).mode! & 0o777, 0o600);
+}));

@@ -29,12 +29,12 @@ const fakeCtx = (dir: string, module = name, access = 2) => {
 Deno.test("cms.cont.html api: tools describe each code file", () => {
   const tools = toTools({ [name]: api });
   assertEquals(tools.map((tool) => tool.name), [
-    "get_cmsContHtml_node_codefiles_html",
-    "put_cmsContHtml_node_codefiles_html",
-    "get_cmsContHtml_node_codefiles_css",
-    "put_cmsContHtml_node_codefiles_css",
-    "get_cmsContHtml_node_codefiles_js",
-    "put_cmsContHtml_node_codefiles_js",
+    "cmsContHtml_node_codefiles_html_get",
+    "cmsContHtml_node_codefiles_html_put",
+    "cmsContHtml_node_codefiles_css_get",
+    "cmsContHtml_node_codefiles_css_put",
+    "cmsContHtml_node_codefiles_js_get",
+    "cmsContHtml_node_codefiles_js_put",
   ]);
   assertEquals(tools[3].parameters, {
     type: "object",

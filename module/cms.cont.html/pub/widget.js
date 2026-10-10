@@ -15,7 +15,7 @@ export default async function (widget, { node, signal }) {
   </div>`;
   widget.on('click', '.-codeFiles a', async (link, event) => {
     event.preventDefault();
-    const tab = window.open('about:blank', '_blank');
+    const tab = open('about:blank', '_blank');
     try {
       await api['cms.cont.html'].node(node.id).codefiles[link.dataset.file].get({}, { signal });
       if (tab) tab.location.href = link.href;

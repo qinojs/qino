@@ -29,18 +29,19 @@ export function* walk(tree: ApiTree, segments: string[] = [], nodes: ApiNode[] =
     for (const verbKey of VERBS) {
       const verb = value[verbKey];
       if (verb && typeof verb === "object" && typeof verb.execute === "function") {
-        yield { method: verbKey, segments: [...segments, key], nodes: [...nodes, value], verb, name: camelName(verbKey, [...segments, key]) };
+        yield { method: verbKey, segments: [...segments, key], nodes: [...nodes, value], verb, name: toolName(verbKey, [...segments, key]) };
       }
     }
     yield* walk(value as ApiTree, [...segments, key], [...nodes, value]);
   }
 }
 
-export function camelName(verb: Method, segments: string[]): string {
-  const parts = [verb, ...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s])];
-  // separators become camelCase, before a digit they are dropped ("cms.frontend.4" →
-  // "cmsFrontend4"); dots are invalid in MCP tool names.
-  return parts.map((p) => p.replace(/[-.]([a-z])?/g, (_, c) => c ? c.toUpperCase() : "")).join("_");
+export function toolName(verb: Method, segments: string[]): string {
+  const parts = [...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s]), verb];
+  // the path, its method last: `_` only between segments, so `cms_node_*` is all below cms/node.
+  // Separators within a segment become camelCase, before a digit they are dropped ("cms.frontend.4"
+  // → "cmsFrontend4"); [A-Za-z0-9_] is valid with every provider and in JavaScript.
+  return parts.map((p) => p.replace(/[-._]([a-z])?/g, (_, c) => c ? c.toUpperCase() : "")).join("_");
 }
 
 export function checkCollisions(r: Route) {

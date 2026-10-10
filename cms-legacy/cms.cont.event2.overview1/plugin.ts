@@ -6,7 +6,7 @@ import { eventDate, startsTodayOrLater } from "../lib/event2.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   let rows: Record<string, unknown>[] = [];
   try { rows = await node.db.query`SELECT * FROM ${sql.id("event2_dates")} ORDER BY start_date`; } catch {/**/}
   const past = !!await node.settings.past;

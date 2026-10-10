@@ -6,7 +6,7 @@ import { cmsText } from "../lib/text.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const selectedId = Number(ctx.req.query.cmscid);
   if (selectedId) {
     const selected = await node.cms.node(selectedId);

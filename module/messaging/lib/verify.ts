@@ -86,11 +86,11 @@ export async function dropClaim(app: App, type: string, usrId: number, input: st
   return open;
 }
 
-function claim(app: App, type: string, usrId: number, address: string): Promise<Row | undefined> {
+function claim(app: App, type: string, usrId: number, address: string) {
   return app.db.row`SELECT * FROM usr_contact_verification
     WHERE type = ${type} AND address = ${address} AND usr_id = ${usrId}`;
 }
 
-function codeHash(app: App, type: string, address: string, code: string): Promise<string> {
+function codeHash(app: App, type: string, address: string, code: string) {
   return keyed(app, [`messaging.${type}`, address, code]);
 }

@@ -9,11 +9,12 @@ export { runAs } from "./lib/ctx/runAs.ts";
 export { Emitter } from "./lib/Emitter.ts";
 export type { EventDecls, EventsOf } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
-export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, uid, unb64url } from "./lib/crypto.ts";
+export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, sha256hex, uid, unb64url } from "./lib/crypto.ts";
 
 // HTML & general utilities
 export { hee, unhee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, enableItemSchemaDefaults, u2Root, header } from "./lib/util.ts";
 export { fs } from "./lib/fs.ts";
+export { sys } from "./lib/sys.ts";
 export { fillPlaceholders, modulePlaceholders, placeholderName, placeholderNames } from "./lib/templatePlaceholder.ts";
 export type { TemplatePlaceholder, TemplateValue } from "./lib/templatePlaceholder.ts";
 // HtmlString is type-only: create it via html.raw / html.join (like sql.raw / sql.join).
@@ -27,7 +28,7 @@ export { Access } from "./lib/api/access.ts";
 export { ApiError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/api/errors.ts";
 export { invoke } from "./lib/api/invoke.ts";
 export { isTrustedOrigin } from "./lib/api/fetch.ts";
-export { walk, camelName, checkCollisions } from "./lib/api/route.ts";
+export { walk, toolName, checkCollisions } from "./lib/api/route.ts";
 export type { Route } from "./lib/api/route.ts";
 export { toTools } from "./lib/api/toTools.ts";
 export type { Tool } from "./lib/api/toTools.ts";

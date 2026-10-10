@@ -236,6 +236,14 @@ class SqliteDriver extends DbDriver {
   protected override closeDriver() { this.#db.close(); return Promise.resolve(); }
 }
 
+/** Dates and times as the text Postgres sends, like the other backends: DATE, TIME, TIMESTAMP,
+ *  TIMESTAMPTZ. Per pool, not `pg.types` — that one is process-wide, shared by every app. */
+const DATE_OIDS = new Set([1082, 1083, 1114, 1184]);
+export const pgTypes = {
+  getTypeParser: (oid: number, format?: string) =>
+    DATE_OIDS.has(oid) ? (value: string) => value : postgres.types.getTypeParser(oid, format),
+};
+
 class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
   // An explicit id does not advance the sequence, so each such insert needs a sync.
@@ -251,7 +259,7 @@ class PostgresDriver extends DbDriver {
     this.#database = decodeURIComponent(url.pathname.slice(1));
     url.pathname = "/postgres";
     this.#adminParams = { connectionString: url.href };
-    this.#pool = new postgres.Pool({ connectionString: conn });
+    this.#pool = new postgres.Pool({ connectionString: conn, types: pgTypes });
   }
 
   quoteId(id: string) { return pgDialect.quoteId(id); }

@@ -6,7 +6,7 @@ import api from "./nodeApi.ts";
 import { renderDetail, renderList } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Emitter, HtmlString } from "@qino/qino";
+import type { App, Emitter } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -15,8 +15,11 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Flows", de: "Abläufe" });
 }
 
-const list = async (node: Node): Promise<HtmlString> => renderList(node.app, await node.app.db.query`
-  SELECT flow.*, usr.username AS owner FROM flow LEFT JOIN usr ON usr.id = flow.usr_id ORDER BY flow.id`);
+const list = async (node: Node) => {
+  const rows = await node.app.db.query`
+    SELECT flow.*, usr.username AS owner FROM flow LEFT JOIN usr ON usr.id = flow.usr_id ORDER BY flow.id DESC`;
+  return renderList(node.app, rows.map((row) => ({ ...row, last: history(node.app, Number(row.id)).runs[0] })));
+};
 
 const detail = async (node: Node, { vars = {} }: { vars?: Record<string, unknown> }) => {
   const id = Number(vars.flow) || 0; // none picked yet
@@ -31,10 +34,10 @@ const detail = async (node: Node, { vars = {} }: { vars?: Record<string, unknown
   });
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { t } = node.app;
   return html.async`<div class=u2-flex>
-    <div class=u2-card style="flex:1 1 40rem">
+    <div class=u2-card style="flex:0 1 50rem">
         <div class=-head>${t`Flows`}</div>
         <table class=u2-table cms-part=list>${list(node)}</table>
     </div>

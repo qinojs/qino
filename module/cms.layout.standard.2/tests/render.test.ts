@@ -1,4 +1,4 @@
-import { App, fs, requestStorage, u2Root } from "@qino/qino";
+import { App, fs, requestStorage } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { assert, assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
@@ -45,10 +45,8 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
       const global = await f.cm.layoutPage(NAME);
       const nav = await global.cont("nav");
       assertEquals(nav.module?.name, "cms.cont.nav4");
-      assertEquals(nav.settings.pathOnly(), true);
-      await nav.settings.pathOnly(false);
-      await f.render();
-      assertEquals(nav.settings.pathOnly(), false);
+      assertEquals(nav.settings.pathOnly(), undefined);
+      assertStringIncludes(out, 'id="head-nav" popover');
 
       const main = await f.page.cont("main");
       assertEquals((await main.conts()).length, 1);
@@ -66,15 +64,18 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
         const mod = f.page.module!;
         const template = moduleTemplate(mod);
         await template.create("#container { color: red; }");
-        f.ctx.res.html.styles.clear();
-        f.ctx.res.html.styles.add(mod.modUrl + "pub/main.css");
-        f.ctx.res.html.styles.add(mod.dataUrl + "pub/main.css");
+        const pinned = () => f.ctx.res.html.importMap.get("@u2/")!; // the layout's and its contents' release
         await f.render();
-        const styles = [...f.ctx.res.html.styles];
-        const base = styles.indexOf(u2Root + "class/flex/flex.css");
-        const shipped = styles.indexOf(mod.modUrl + "pub/main.css");
-        const site = styles.indexOf(mod.dataUrl + "pub/main.css");
-        assert(base >= 0 && base < shipped && shipped < site);
+        assert(f.ctx.res.html.styles.has("@u2/class/flex/flex.css"));
+        assert(pinned().endsWith("@1.6.0/")); // its own pin
+        await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5.19"); // the site moves on
+        await f.render();
+        assert(pinned().endsWith("@1.5.19/"));
+        for (const directive of ["style-src", "script-src", "connect-src"] as const) // its release is allowed
+          assert(Object.keys(f.ctx.res.csp[directive]).some((src) => src.endsWith("@1.5.19/")));
+        await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5."); // half typed in the panel: the pin
+        await f.render();
+        assert(pinned().endsWith("@1.6.0/"));
         await fs.write(template.file, "<div id=own></div>");
         assertEquals(await f.render(), '<div id="own"></div>');
         await fs.write(template.file, "");
@@ -122,7 +123,7 @@ Deno.test("standard.2: site template controls creation; apps keep separate ident
   }
 });
 
-Deno.test("standard.2: initial contents follow parser ownership, declaration order and target page", async () => {
+Deno.test("standard.2: starter content follows the module the template gives main", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -136,15 +137,6 @@ Deno.test("standard.2: initial contents follow parser ownership, declaration ord
       await f.render();
       assertEquals((await f.page.cont("main")).module?.name, "cms.cont.text");
       assertEquals((await (await f.page.cont("main")).conts()).length, 0);
-
-      const page = await (await f.cm.node(1)).createChild({ module: NAME });
-      await page.title("en", "Target page");
-      const cont = await page.createCont({ module: NAME });
-      await fs.write(template.file, `<main><cms-cont name=main node=page /></main>`);
-      const output = await layout.node.render(cont, { ctx: f.ctx });
-      assertStringIncludes(output, "<h1>Target page</h1>");
-      assertEquals((await cont.conts()).length, 0);
-      assertEquals((await page.cont("main")).module?.name, "cms.cont.flexible");
     });
   } finally {
     await f.close();

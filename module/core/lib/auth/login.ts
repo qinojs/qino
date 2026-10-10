@@ -123,7 +123,7 @@ export async function logout(ctx: Ctx): Promise<void> {
 }
 
 /** Whether this client may sign in as this user without password. */
-async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
+async function rememberLogin(ctx: Ctx, doSave: boolean) {
   const usr = ctx.userId ? await ctx.app.db.table("usr").get(ctx.userId) : undefined;
   if (!usr) return;
   const link = ctx.app.db.table("client_usr").row({ usr_id: String(usr), client_id: String(ctx.client) });

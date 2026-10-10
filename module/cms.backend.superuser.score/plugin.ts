@@ -14,10 +14,9 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Scores", de: "Scores" });
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
-  const total = Number(await app.db.one`SELECT COUNT(*) FROM score`);
-  return html`<div class=-body>
-    <b>${scopes(app.db).size}</b> ${await app.t`scopes`} · ${total} ${await app.t`scored rows`}
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div class=-body>
+    <b>${scopes(app.db).size}</b> ${app.t`scopes`} · ${app.db.one`SELECT COUNT(*) FROM score`} ${app.t`scored rows`}
   </div>`;
 }
 

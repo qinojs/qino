@@ -1,18 +1,17 @@
 import { getCtx, html } from "@qino/qino";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-function vsTable(vs: Record<string, unknown>, exclude: string[] = []): HtmlString {
+function vsTable(vs: Record<string, unknown>, exclude: string[] = []) {
   const rows = Object.entries(vs)
     .filter(([k]) => !exclude.includes(k))
     .map(([k, v]) => html`<tr><td>${k}<td>${v}`);
   return html`<table>${html.join(rows, "\n")}</table>`;
 }
 
-const inspect = (value: unknown): HtmlString => html`<pre>${Deno.inspect(value, { depth: 6 })}</pre>`;
+const inspect = (value: unknown) => html`<pre>${Deno.inspect(value, { depth: 6 })}</pre>`;
 
-async function render(_node: Node): Promise<HtmlString> {
+async function render(_node: Node) {
   const ctx = getCtx();
   const usr = ctx.user;
   const client = ctx.client;

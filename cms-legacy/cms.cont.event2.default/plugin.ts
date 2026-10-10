@@ -10,8 +10,10 @@ const words = (lang: string) => lang === "de"
   ? { dates: "Datum", location: "Ort", price: "Preis", performers: "Leitung" }
   : { dates: "Date", location: "Location", price: "Price", performers: "Teachers" };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const [parent, info, dates, performers] = await Promise.all([node.parent(), eventInfo(node), eventDates(node), eventPerformers(node)]);
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const [parent, info, dates, performers] = await Promise.all([
+    node.parent(), eventInfo(node), eventDates(node), eventPerformers(node),
+  ]);
   const labels = words(ctx.lang);
   const date = new Intl.DateTimeFormat(ctx.lang, { dateStyle: "long", timeStyle: "short" });
   const facts: HtmlString[] = [];

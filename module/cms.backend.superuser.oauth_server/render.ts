@@ -33,7 +33,7 @@ export async function clients(node: Node): Promise<HtmlString> {
 }
 
 /** One editable card per client; a blank `client` renders the add form. */
-async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
+async function card(app: App, client: Partial<Row> = {}) {
   const t = app.t;
   const isNew = !client.id;
   return html.async`<form class=u2-card>
@@ -65,8 +65,8 @@ export async function grants(node: Node): Promise<HtmlString> {
     WHERE t.kind <> ${"code"}
     GROUP BY t.client_id, c.name, t.usr_id, u.username ORDER BY since DESC`;
   const body = rows.length
-    ? html.join(await Promise.all(rows.map((r) => grantRow(node.app, r))))
-    : html`<tr><td colspan=5>${await t`Nobody has authorized a client yet.`}`;
+    ? rows.map((r) => grantRow(node.app, r))
+    : html.async`<tr><td colspan=5>${t`Nobody has authorized a client yet.`}`;
 
   return html.async`<div class=-head>${t`Granted access`} (${rows.length})</div>
   <table class=u2-table>
@@ -80,7 +80,7 @@ export async function grants(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-async function grantRow(app: App, g: Row): Promise<HtmlString> {
+async function grantRow(app: App, g: Row) {
   return html.async`<tr>
     <td>${g.name ?? g.client_id}
     <td>${g.username ?? "#" + g.usr_id}

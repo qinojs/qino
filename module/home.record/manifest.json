@@ -1,0 +1,6 @@
+{
+  "name": "home.record",
+  "description": "Selected home observations in Qino's own measurement archive.",
+  "dependencies": ["home.history", "cron"],
+  "files": ["README.md", "api.ts", "dbschema.json", "manifest.json", "mod.ts", "plugin.ts", "lib/write.ts"]
+}

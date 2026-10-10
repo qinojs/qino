@@ -4,11 +4,11 @@ import type { Node } from "@qino/qino/cms";
 import type { Seed } from "../seed.ts";
 
 /** Every language gets its own text — a one-language install simply gets one. */
-async function title(s: Seed, node: Node, text: string): Promise<void> {
+async function title(s: Seed, node: Node, text: string) {
   const def = s.app.languages.def;
   for (const lang of s.app.languages.all) await node.title(lang, lang === def ? text : `${text} [${lang}]`);
 }
-async function text(s: Seed, node: Node, name: string, value: string): Promise<void> {
+async function text(s: Seed, node: Node, name: string, value: string) {
   const def = s.app.languages.def;
   for (const lang of s.app.languages.all) await node.text(name, lang, lang === def ? value : `<p><i>[${lang}]</i></p>\n${value}`);
 }
@@ -20,7 +20,7 @@ function layout(s: Seed): string | undefined {
 }
 
 /** Files hung on the page itself — the file browser and the cleanup views want something to show. */
-async function attach(s: Seed, page: Node, n: number, label: string): Promise<void> {
+async function attach(s: Seed, page: Node, n: number, label: string) {
   for (let i = 1; i <= n; i++) {
     await page.addFile(s.rnd.image(`${label}-${i}`, `${label} ${i}`, 1200, 800), `download_${i}`);
     s.count("files");
@@ -30,7 +30,7 @@ async function attach(s: Seed, page: Node, n: number, label: string): Promise<vo
 type ContSpec = { module: string; text?: string; table?: [number, number]; image?: string; settings?: Record<string, unknown> };
 
 /** Fill a page's main container. Contents whose module is not installed are left out. */
-async function contents(s: Seed, page: Node, specs: ContSpec[]): Promise<void> {
+async function contents(s: Seed, page: Node, specs: ContSpec[]) {
   const main = await page.cont("main");
   let i = 0;
   for (const spec of specs) {

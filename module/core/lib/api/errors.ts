@@ -2,7 +2,7 @@ import type { StandardIssue } from "../StandardSchema.ts";
 
 export class ApiError extends Error {
   #status: number;
-  #code: string | undefined;
+  #code?: string;
   #data: unknown;
   get status(): number { return this.#status; }
   /** Stable id for the client to branch on; the message is for humans. */

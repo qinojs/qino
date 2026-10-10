@@ -3,7 +3,8 @@
   "description": "Shows what visitors sent through a cms.cont.form4 — a guest book, a log.",
   "dependencies": [
     "cms",
-    "cms.cont.form4"
+    "cms.cont.form4",
+    "u2"
   ],
   "files": [
     "dbschema.json",

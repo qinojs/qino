@@ -8,14 +8,14 @@ export type FieldConflict = {
 };
 
 export function sortTableNames(names: string[]): string[] {
-  return [...names].sort((a, b) =>
+  return names.toSorted((a, b) =>
     Number(a.startsWith("_")) - Number(b.startsWith("_")) || a.localeCompare(b)
   );
 }
 
 type FieldVisitor = (modName: string, table: string, field: string, fieldSchema: Record<string, unknown>) => void;
 
-function iterateSchemaFields(modules: Map<string, any>, visit: FieldVisitor): void {
+function iterateSchemaFields(modules: Map<string, any>, visit: FieldVisitor) {
   for (const [modName, mod] of modules) {
     const tables = mod.plugin?.dbSchema?.properties;
     if (!tables) continue;

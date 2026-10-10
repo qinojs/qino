@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 const SORTABLE = ["code", "url", "hits", "last", "expires"];
 const PER_PAGE = 50;
 
-async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> }) {
   const { t, db } = node.app;
   if (vars.delete) await db.table("shorturl").delete(String(vars.delete));
 
@@ -30,9 +30,11 @@ async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> 
   const order = sort ? sql`${sql.id(sort)} ${sql.raw(dir)}` : sql`${sh.order}, hits DESC`;
   // one page at a time: the table grows with every campaign, and sorting it belongs in the database
   const page = Math.max(0, Number(vars.page) || 0);
-  const total = Number(await db.one`SELECT count(*) FROM shorturl WHERE ${sh.where}`);
-  const rows = await db.query`
-    SELECT * FROM shorturl WHERE ${sh.where} ORDER BY ${order}, code LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`;
+  const [count, rows] = await Promise.all([
+    db.one`SELECT count(*) FROM shorturl WHERE ${sh.where}`,
+    db.query`SELECT * FROM shorturl WHERE ${sh.where} ORDER BY ${order}, code LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
+  ]);
+  const total = Number(count);
 
   const root = await node.app.url();
   const now = unixTime();
@@ -65,12 +67,12 @@ async function list(node: Node, { vars = {} }: { vars?: Record<string, unknown> 
   return html.async`
 <thead><tr>${SORTABLE.map((col, i) => th(col, labels[i]))}
     <th width=40>
-<tbody>${trs.length ? trs : html`<tr><td colspan=6>${await t`No short links`}`}
+<tbody>${trs.length ? trs : html.async`<tr><td colspan=6>${t`No short links`}`}
 ${total > PER_PAGE ? pager : ""}`;
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t } = node.app;
 
   let message: HtmlString | "" = "";

@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { cms_image2 } from "@qino/qino/cms.image2";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -10,7 +9,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const cms = node.cms;
   const color = node.settings.color();
   const image = await cms.fileLang(node, 'image');
@@ -23,7 +22,7 @@ async function render(node: Node): Promise<HtmlString> {
     </div>`;
 }
 
-function teaser(node: Node): Promise<HtmlString> {
+function teaser(node: Node) {
   return html.async`<a href="${node.url()}">${node.cms.text(node, "title", { tag: "span" })} <small>${new Date().toISOString()}</small></a>`;
 }
 

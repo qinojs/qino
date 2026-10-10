@@ -69,7 +69,7 @@ export default async function codemirrorView(file: string): Promise<string> {
   </div>`); // res.html.content is a plain string
 }
 
-function extToCodeMirrorMime(ext: string): string {
+function extToCodeMirrorMime(ext: string) {
   const overrides: Record<string, string> = {
     ts: "text/typescript",
     tsx: "text/typescript-jsx",

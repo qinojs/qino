@@ -20,9 +20,9 @@ export class Req {
   #clientIp: string;
   #appUrl: string;
   #appPath: string;
-  #query: Readonly<Record<string, string>> | undefined;
-  #queryAll: Readonly<Record<string, readonly string[]>> | undefined;
-  #cookies: Readonly<Record<string, string>> | undefined;
+  #query?: Readonly<Record<string, string>>;
+  #queryAll?: Readonly<Record<string, readonly string[]>>;
+  #cookies?: Readonly<Record<string, string>>;
   #rev: string;
   #deadline: ReqDeadline | null = null;
 
@@ -130,7 +130,7 @@ export class Req {
 
 /** Behind a TLS proxy `request.url` is `http://`, which would break absolute self-links. Trusted
  *  like `clientIp`: only when hops > 0. */
-function publicScheme(request: Request, url: URL, hops: number): URL {
+function publicScheme(request: Request, url: URL, hops: number) {
   if (hops <= 0) return url;
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
   if ((proto !== "http" && proto !== "https") || url.protocol === proto + ":") return url;

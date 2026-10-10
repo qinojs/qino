@@ -4,7 +4,7 @@ import { cms_image2 } from "@qino/qino/cms.image2";
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const images: HtmlString[] = [];
   const edit = await node.edit();
   for (const file of (await node.files()).values()) {

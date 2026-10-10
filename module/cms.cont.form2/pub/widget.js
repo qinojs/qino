@@ -29,13 +29,13 @@ export default async function (widget, { node, signal }) {
   await widget.html`<table class="-form2 u2-table -Fields -Flex -NoSideGaps">
     <tr>
       <td>${t`On success go to page`}
-      <td><input type=number min=1 setting=redirect value="${settings.redirect ?? ''}">
+      <td><input type=number min=1 setting=redirect value="${settings.redirect}">
     <tr>
       <td>${t`…or show this content`}
       <td>${html.raw(successHtml)}
     <tr>
       <td>${t`Recipients`}
-      <td><textarea rows=2 setting=recipients>${settings.recipients ?? ''}</textarea>
+      <td><textarea rows=2 setting=recipients>${settings.recipients}</textarea>
     <tr>
       <td>${t`Subject`}<br><small>${t`(the page title is used when empty)`}</small>
       <td><input cmstxt="${subject.id}" value="${unhee(subject.value)}">

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
@@ -9,7 +10,6 @@ import * as fns from "./api-exports.ts";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "./lib/Node.ts";
 
-// deno-lint-ignore-file no-explicit-any
 
 // Reading is open to anyone; more than read needs a user (without one, page.access gives at most 1).
 // The actual level is checked per node in guard.
@@ -19,7 +19,7 @@ const nodeAdmin = { access: Access.USER,   guard: ({ node }: { node: Node }, ctx
 
 // Adding/assigning a module needs ADMIN ("insertable") on the module axis — editorial, not security.
 // cms.accessRules lowers e.access; without it everything is insertable.
-const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
+const requireModuleAdmin = async (module: string, ctx: Ctx) => {
   if (!ctx.app.modules.get(module)) throw new ValidationError([{ message: `Unknown module "${module}"`, path: ["module"] }]);
   const e = await cms(ctx.app).fire("module:access", { module, user: ctx.user ?? undefined, access: ADMIN });
   if (Number(e.access) < ADMIN) throw new AccessError();
@@ -112,8 +112,7 @@ const node = {
   paramSchema: s.number().describe("Node-ID"),
 
   resolve: async (id: number, ctx: Ctx) => {
-    const app = ctx.app;
-    const n = await cms(app).node(id);
+    const n = await cms(ctx.app).node(id);
     if (!n.exists()) throw new NotFoundError(`Node ${id} not found`);
     if (await n.access() < 1) throw new AccessError();
     return n;
@@ -364,7 +363,6 @@ const node = {
       execute: async ({ node, module, before }: any, ctx: Ctx) => {
         await requireModuleAdmin(module, ctx);
         const c = await node.createCont({ module });
-        if (!c) throw new Error("createCont failed");
         if (before) await node.insertBefore(c, before);
         await c.changeUser(ctx.user, 3);
         await asMainNode(node, ctx);
@@ -475,8 +473,8 @@ const node = {
         execute: async ({ node }: { node: Node }) => {
           const files = await node.files();
           const seen: Record<string, boolean> = {};
-          for (const [name, F] of files) {
-            const md5 = F.vs?.md5;
+          for (const [name, file] of files) {
+            const md5 = file.vs?.md5;
             if (md5 && seen[md5]) await node.deleteFile(name);
             if (md5) seen[md5] = true;
           }
@@ -784,7 +782,7 @@ export const api = {
 
 
 // Normalize and validate a custom URL path (page_url.url). Only for manual urls, not generated ones.
-function cleanCustomUrl(raw: string): string {
+function cleanCustomUrl(raw: string) {
   const url = raw.trim().replace(/^\/+|\/+$/g, ""); // strip slashes (also neutralizes //protocol-relative)
   const invalid = /[\x00-\x1f\x7f]/.test(url) // control chars: header/log injection
     || /^[a-z][a-z0-9+.-]*:/i.test(url)             // absolute scheme (javascript:, http:, ...)

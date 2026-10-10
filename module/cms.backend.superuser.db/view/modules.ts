@@ -6,9 +6,8 @@ import { buildModuleTableIndex } from "../lib/analyze.ts";
 import type { HtmlString, App } from "@qino/qino";
 
 type FieldOrigins = Record<string, Record<string, string[]>>;
-type TableOrigins = Record<string, string[]>;
 
-function tableOrigins(index: ReturnType<typeof buildModuleTableIndex>): TableOrigins {
+function tableOrigins(index: ReturnType<typeof buildModuleTableIndex>) {
   const origins: Record<string, Set<string>> = {};
   for (const [modName, tables] of Object.entries(index)) {
     for (const table of Object.keys(tables)) (origins[table] ??= new Set()).add(modName);
@@ -16,7 +15,7 @@ function tableOrigins(index: ReturnType<typeof buildModuleTableIndex>): TableOri
   return Object.fromEntries(Object.entries(origins).map(([table, mods]) => [table, [...mods].sort()]));
 }
 
-function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>): FieldOrigins {
+function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>) {
   const origins: FieldOrigins = {};
   for (const [modName, tables] of Object.entries(index)) {
     for (const [table, fields] of Object.entries(tables)) {
@@ -26,10 +25,10 @@ function fieldOrigins(index: ReturnType<typeof buildModuleTableIndex>): FieldOri
   return origins;
 }
 
-function chip(kind: "table" | "field", name: string, mods: string[], definedByLabel: string): HtmlString {
+function chip(kind: "table" | "field", name: string, mods: string[], definedByLabel: string) {
   const cls = `-${kind}-chip`;
   if (mods.length < 2) return html`<span class="${cls}">${name}</span>`;
-  const title = `${definedByLabel}: ${[...mods].sort().join(", ")}`;
+  const title = `${definedByLabel}: ${mods.toSorted().join(", ")}`;
   return html`<span class="${cls} -shared" data-modules="${title}" title="${title}">${name}</span>`;
 }
 
@@ -53,7 +52,7 @@ export async function renderModules(app: App, modules: Map<string, any>): Promis
       <td style="font-family:monospace">${chip("table", table, tableMods[table] ?? [], definedByLabel)}
       <td style="text-align:right">${fields.length}
       <td style="font-family:monospace;font-size:.9em">${
-        [...fields].sort().map(field => chip("field", field, origins[table]?.[field] ?? [], definedByLabel))
+        fields.toSorted().map(field => chip("field", field, origins[table]?.[field] ?? [], definedByLabel))
       }`);
   });
 
