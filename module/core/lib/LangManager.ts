@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
 
 import { getCtx } from "./ctx/Ctx.ts";
@@ -11,6 +12,7 @@ export class LangManager {
   #app: App;
   #langs: string[] = [];   // all available languages, first = default
   #txtsCache = new Map<string, Promise<Map<string, string>>>();
+  #scope = new AsyncLocalStorage<{ ns?: string; lang?: string }>();
 
   constructor(app: App) {
     this.#app = app;
@@ -35,7 +37,7 @@ export class LangManager {
     const urlLang = ctx.req.query.lang;
     if (urlLang) ctx.langUsr = urlLang;
     else {
-      const match = ctx.req.appPath?.match(/^([a-z][a-z])(\/|$|\?)/);
+      const match = ctx.req.appPath?.match(/^([a-z]{2})([\/?]|$)/);
       if (match) ctx.langUsr = match[1];
     }
 
@@ -43,11 +45,20 @@ export class LangManager {
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
     // background write, only when the language changed
-    if (ctx.langUsr !== stored) usr ? usr.$set({ lang: ctx.langUsr }) : ctx.sess.data.core.lang(ctx.langUsr);
+    if (ctx.langUsr !== stored) usr ? usr.$set({ lang: ctx.langUsr }).catch(() => {}) : ctx.sess.data.core.lang(ctx.langUsr);
 
     ctx.lang = ctx.langUsr;
     ctx.langNs ??= "";
     ctx.langNsPath ??= [];
+  }
+
+  /**
+   * Run `fn` with the texts of namespace `ns` (and in `lang`, one of `all`): t`` within it — and
+   * within all it awaits — looks there. Safe where fragments render in parallel, as the scope
+   * follows `fn`'s calls only, unlike nsStart/nsStop.
+   */
+  with<T>(scope: { ns?: string; lang?: string }, fn: () => T): T {
+    return this.#scope.run({ ...this.#scope.getStore(), ...scope }, fn);
   }
 
   nsStart(ns: string, ctx?: Ctx) {
@@ -73,7 +84,7 @@ export class LangManager {
     let currentLang = this.def;
     let currentQ = 0;
     for (const aLang of accepted) {
-      const match = aLang.match(/^([a-z]{1,8}(?:-[a-z]{1,8})*)(?:;\s*q=(0(?:\.[0-9]{1,3})?|1(?:\.0{1,3})?))?$/i);
+      const match = aLang.match(/^([a-z]{1,8}(?:-[a-z]{1,8})*)(?:;\s*q=(0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/i);
       if (!match) continue;
       const langCode = match[1].split("-");
       const langQuality = parseFloat(match[2] ?? "1");
@@ -95,16 +106,17 @@ export class LangManager {
   // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
   clear() { this.#txtsCache.clear(); }
 
-  #getTxts(ns: string, l: string): Promise<Map<string, string>> {
+  #getTxts(ns: string, l: string) {
     // Cache the promise, so parallel lookups (html.async) share one query.
     return this.#txtsCache.getOrInsertComputed(`${l}::${ns}`, () => this.#app.db.indexCol<string>`
       SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`);
   }
 
-  async #getTxt(string: string, ctx: Ctx): Promise<string> {
+  async #getTxt(string: string, ctx: Ctx) {
     const hash = createHash("md5").update(string).digest("hex");
-    const ns = ctx.langNs;
-    const l = ctx.lang;
+    const scope = this.#scope.getStore();
+    const ns = scope?.ns ?? ctx.langNs;
+    const l = scope?.lang && this.#langs.includes(scope.lang) ? scope.lang : ctx.lang;
     const txts = await this.#getTxts(ns, l);
     if (!txts.has(hash)) {
       txts.set(hash, ""); // set before awaiting, so a new string used twice is inserted once
@@ -123,7 +135,7 @@ export class LangManager {
   // Shortcut: translate text (uses the current ctx automatically)
   async t(strings: TemplateStringsArray, ...values: unknown[]): Promise<string> {
     const ctx = getCtx();
-    const original = strings.reduce((acc, str, i) => acc + str + (i < strings.length - 1 ? `{${i}}` : ""), "");
+    const original = strings.reduce((acc, str, i) => acc + `{${i - 1}}` + str);
     let result = await this.#getTxt(original, ctx);
     const resolved = await Promise.all(values);
     for (let i = 0; i < resolved.length; i++)
@@ -134,7 +146,7 @@ export class LangManager {
   // Export all non-empty translations, grouped by namespace and language: { ns: { lang: { original: txt } } }
   async export(): Promise<Record<string, Record<string, Record<string, string>>>> {
     const langs = this.#langs;
-    const rows = await this.#app.db.query`SELECT namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext ORDER BY original`;
+    const rows = await this.#app.db.query`SELECT namespace, original, ${sql.join(langs.map(sql.id))} FROM smalltext ORDER BY original`;
     const out: Record<string, Record<string, Record<string, string>>> = {};
     for (const row of rows) {
       for (const l of langs) {
@@ -149,15 +161,18 @@ export class LangManager {
 
   // Import translations for one namespace from { original: txt }; only fills empty entries, never overwrites
   async import(lang: string, ns: string, json: string | Record<string, string>): Promise<void> {
-    const txts = typeof json === "string" ? JSON.parse(json) : json;
+    const txts: Record<string, string> = typeof json === "string" ? JSON.parse(json) : json;
+    const entries = Object.entries(txts).filter(([, txt]) => txt);
     const db = this.#app.db;
     await db.transaction(async () => {
-      for (const [original, txt] of Object.entries(txts)) {
-        if (!txt) continue;
+      if (!entries.length) return;
+      const stored = await db.indexCol<string>`SELECT hash, ${sql.id(lang)} FROM smalltext WHERE namespace = ${ns}`;
+      for (const [original, txt] of entries) {
         const hash = createHash("md5").update(original).digest("hex");
-        const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
-        if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
+        if (stored.get(hash)) continue;
+        if (!stored.has(hash)) await db.table("smalltext").insert({ namespace: ns, hash, original });
         await db.exec`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
+        stored.set(hash, txt);
       }
     });
     this.clear(); // imported rows must be visible on the next lookup

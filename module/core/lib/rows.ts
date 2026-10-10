@@ -41,8 +41,8 @@ class Contacts {
   #usr: Usr;
   constructor(usr: Usr) { this.#usr = usr; }
 
-  get #db(): Db { return this.#usr.$table.db; }
-  get #id(): number { return Number(this.#usr.$id); }
+  get #db() { return this.#usr.$table.db; }
+  get #id() { return Number(this.#usr.$id); }
 
   /** All, or those of one kind, main first. */
   list(type?: string): Promise<Row[]> { return contacts(this.#db, this.#id, type); }

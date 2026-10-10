@@ -31,14 +31,13 @@ export const cron = {
 
 const CHALLENGE_TTL = 5 * 60;
 
-async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
-  const rpId   = String(await app.settings["auth.webauthn"].rpId   ?? "") || "localhost";
-  const rpName = String(await app.settings["auth.webauthn"].rpName ?? "") || "Qino";
-  return { rpId, rpName };
+async function getRp(app: App) {
+  const set = app.settings["auth.webauthn"];
+  return { rpId: String(await set.rpId ?? "") || "localhost", rpName: String(await set.rpName ?? "") || "Qino" };
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
-async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
+async function expectedOrigins(ctx: Ctx, rpId: string) {
   const setting = String(await ctx.app.settings["auth.webauthn"].origin ?? "");
   if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
   const url = ctx.req.url;
@@ -46,7 +45,7 @@ async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
   return [rpId === "localhost" ? "http://localhost" : `https://${rpId}`];
 }
 
-async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
+async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm") {
   const token = randB64(24);
   await db.table("webauthn_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
   return token;
@@ -352,7 +351,7 @@ export const api: ApiTree = {
           const ctx  = getCtx();
           const cred = await ctx.app.db.row`SELECT usr_id FROM webauthn_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
-          if (Number(cred.usr_id) !== ctx.userId && !(ctx.user?.superuser)) throw new AccessError();
+          if (Number(cred.usr_id) !== ctx.userId && !ctx.user?.superuser) throw new AccessError();
           await ctx.app.db.table("webauthn_credential").delete(credId);
           return { ok: true };
         },

@@ -17,7 +17,7 @@ const relatives: Record<string, (page: Node) => Promise<Node | undefined>> = {
   "__last-child__": async (page) => (await readablePages(page)).at(-1),
 };
 
-async function readablePages(page: Node): Promise<Node[]> {
+async function readablePages(page: Node) {
   const pages = [];
   for (const child of (await page.children({ type: "p" })).values()) if (await child.isReadable()) pages.push(child);
   return pages;
@@ -38,7 +38,7 @@ async function resolve(cont: Node, value: string, ctx: Ctx): Promise<{ url?: str
 }
 
 /** The target is the page we are already answering — following it would loop. */
-function isSelf(url: string, ctx: Ctx): boolean {
+function isSelf(url: string, ctx: Ctx) {
   const here = ctx.req.url.toURL();
   const there = new URL(url, here);
   here.hash = there.hash = ""; // a content target only adds a fragment, the request never carries one
@@ -68,25 +68,25 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
 }
 
 /** Store the posted target for the current language; the select only offers known relatives. */
-async function store(node: Node, ctx: Ctx, vars: Record<string, unknown>): Promise<void> {
+async function store(node: Node, ctx: Ctx, vars: Record<string, unknown>) {
   const mode = String(vars.mode ?? "url");
   const value = mode === "url" ? String(vars.target ?? "").trim() : (mode in relatives ? mode : "");
   await node.text("_redirect", ctx.lang, value);
 }
 
-async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: string; target?: Node; loop: boolean }): Promise<HtmlString> {
+async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: string; target?: Node; loop: boolean }) {
   const t = node.app.t;
   const { value, url, target, loop } = state;
   const mode = value in relatives ? value : "url";
 
-  const labels: Record<string, string> = {
-    "url": await t`Page or URL`,
-    "__parent__": await t`Parent page`,
-    "__first-child__": await t`First subpage`,
-    "__last-child__": await t`Last subpage`,
+  const labels = {
+    "url": t`Page or URL`,
+    "__parent__": t`Parent page`,
+    "__first-child__": t`First subpage`,
+    "__last-child__": t`Last subpage`,
   };
   const options = Object.entries(labels).map(([key, label]) =>
-    html`<option value="${key}"${key === mode ? html.raw(" selected") : ""}>${label}`
+    html.async`<option value="${key}"${key === mode ? html.raw(" selected") : ""}>${label}`
   );
 
   const title = target ? (await target.showTitle()).plain() : "";

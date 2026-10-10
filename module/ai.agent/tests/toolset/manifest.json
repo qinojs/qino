@@ -1,0 +1,4 @@
+{
+  "name": "toolset",
+  "files": ["plugin.ts", "agents/clockwork.md"]
+}

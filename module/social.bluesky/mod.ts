@@ -4,12 +4,12 @@ import { ProviderError } from "@qino/qino/social";
 import { tid } from "./lib/tid.ts";
 
 import type { App } from "@qino/qino";
-import type { Provider, Target } from "@qino/qino/social";
+import type { Provider } from "@qino/qino/social";
 
 // deno-lint-ignore no-explicit-any
 type Session = any;
 
-async function config(app: App): Promise<{ base: URL; handle: string; password: string }> {
+async function config(app: App) {
   const settings = app.settings["social.bluesky"];
   const url = String(await settings.url ?? "https://bsky.social").trim();
   const handle = String(await settings.handle ?? "").trim();
@@ -38,7 +38,7 @@ async function call(base: URL, path: string, init: RequestInit = {}): Promise<an
   throw retry ? new ProviderError(error, retry) : new Error(error);
 }
 
-async function session(app: App): Promise<{ base: URL; user: Session }> {
+async function session(app: App) {
   const { base, handle, password } = await config(app);
   const user = await call(base, "/xrpc/com.atproto.server.createSession", {
     method: "POST",
@@ -52,7 +52,7 @@ const labelOf = (user: Session) => String(user.handle ?? user.did);
 const profileUrl = (did: string, post?: string) =>
   `https://bsky.app/profile/${encodeURIComponent(did).replaceAll("%3A", ":")}${post ? `/post/${encodeURIComponent(post)}` : ""}`;
 
-async function targets(app: App): Promise<Omit<Target, "provider">[]> {
+async function targets(app: App) {
   const settings = app.settings["social.bluesky"];
   if (!String(await settings.handle ?? "").trim() && !String(await settings.appPassword ?? "").trim()) return [];
   const { user } = await session(app);

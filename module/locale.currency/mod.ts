@@ -17,6 +17,13 @@ export const currency = {
     return parts.find((p) => p.type === "currency")?.value ?? id;
   },
 
+  /** How many decimals its minor unit has: CHF 2, JPY 0, KWD 3 — `amount / 10 ** decimals` turns
+   *  minor units into what people read. */
+  decimals(id: string): number {
+    const format = new Intl.NumberFormat("en", { style: "currency", currency: id });
+    return format.resolvedOptions().maximumFractionDigits ?? 2;
+  },
+
   /** The amount as the language writes it, with the currency's own number of decimals. */
   format(value: number, id: string, lang: string): string {
     return new Intl.NumberFormat(lang, { style: "currency", currency: id }).format(value);
@@ -25,7 +32,7 @@ export const currency = {
   /** How many of `to` one `from` buys, via the stored USD rates. */
   async rate(db: Db, from: string, to: string): Promise<number | undefined> {
     if (from === to) return 1;
-    const [a, b] = [await usd(db, from), await usd(db, to)];
+    const a = await usd(db, from), b = await usd(db, to);
     if (a && b) return b / a;
   },
 

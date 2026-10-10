@@ -16,7 +16,7 @@ export function userMessages(app: App, usrId: number, limit?: number): Promise<J
   return read(app, limit, usrId);
 }
 
-async function read(app: App, limit?: number, usrId?: number): Promise<JournalMessage[]> {
+async function read(app: App, limit?: number, usrId?: number) {
   const where = usrId == null ? sql`` : sql`WHERE EXISTS (
     SELECT 1 FROM message_delivery selected
     WHERE selected.message_id = m.id AND selected.usr_id = ${usrId}

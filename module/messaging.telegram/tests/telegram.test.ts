@@ -10,7 +10,7 @@ import type { Ctx } from "@qino/qino";
 
 const SECRET = "test-secret";
 
-async function makeDb(): Promise<Db> {
+async function makeDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT)`;
@@ -40,7 +40,7 @@ function fakeTelegram(replies: unknown[] = []) {
   return { calls, restore: () => void (globalThis.fetch = original) };
 }
 
-const update = (db: Db, message: unknown, secret = SECRET): Promise<Ctx> =>
+const update = (db: Db, message: unknown, secret = SECRET) =>
   testContext({
     url: "http://qino.test/telegram/webhook",
     method: "POST",
@@ -152,7 +152,7 @@ Deno.test("send delivers, clears a stale error and drops a chat that blocked the
     assertEquals(bot.calls[0].method, "sendMessage");
     assertEquals(bot.calls[0].params, { text: "<b>hi</b>", parse_mode: "HTML", chat_id: 555 });
     // the counter is the chat's, so the chat is part of the name
-    assertEquals((await db.row`SELECT ref FROM message_delivery`)?.ref, "555:42");
+    assertEquals((await db.row`SELECT external_id FROM message_delivery`)?.external_id, "555:42");
     assertEquals((await db.row`SELECT error FROM telegram_chat`)?.error, null);
   } finally {
     bot.restore();

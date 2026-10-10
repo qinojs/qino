@@ -4,7 +4,7 @@ import { fs, isModuleName } from "@qino/qino";
 import type { Store } from "@qino/qino";
 
 /** All files of a module, relative to its folder, without `tests/`. */
-async function moduleFiles(dir: string, base = dir): Promise<string[]> {
+async function moduleFiles(dir: string, base = dir) {
   const found: string[] = [];
   for (const e of await fs.list(dir)) {
     if (e.isDirectory) {
@@ -16,7 +16,7 @@ async function moduleFiles(dir: string, base = dir): Promise<string[]> {
 }
 
 /** Module folders present in a local store (not from its catalog, which may be outdated). */
-async function moduleNames(dir: string): Promise<string[]> {
+async function moduleNames(dir: string) {
   const names: string[] = [];
   for (const e of await fs.list(dir)) {
     if (!e.isDirectory || !isModuleName(e.name)) continue;

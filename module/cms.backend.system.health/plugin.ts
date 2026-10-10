@@ -1,9 +1,10 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { cap, findCheck, getHealthChecks, healthApi, solutionsHtml } from "@qino/qino/cms.backend.system";
+
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Check, CheckResult } from "@qino/qino/cms.backend.system";
 import type { Node } from "@qino/qino/cms";
 
@@ -20,7 +21,7 @@ const knownCells = ({ type, rank, mod, name }: Check, passed = false) =>
   html`<td>${mod}<td data-value="${rank}"><span class="u2-badge -${passed ? "passed" : type}">${cap(type)}</span><td>${cap(name)}`;
 
 // Every check as an empty row — the client fills them in one by one.
-async function table(node: Node): Promise<HtmlString> {
+async function table(node: Node) {
   const t = node.app.t;
   const rows = (await getHealthChecks(node.app)).map((check) =>
     html`<tr data-type="${check.type}" data-mod="${check.mod}" data-name="${check.name}">${knownCells(check)}<td>…<td><td class=-time>`
@@ -44,7 +45,7 @@ async function table(node: Node): Promise<HtmlString> {
 }
 
 // One row, run on demand: the check itself plus how long it took.
-async function check(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
+async function check(node: Node, { vars }: { vars: Record<string, unknown> }) {
   const check = findCheck(await getHealthChecks(node.app), vars);
   if (!check) return html`<td colspan=6>`;
 
@@ -68,7 +69,7 @@ async function check(node: Node, { vars }: { vars: Record<string, unknown> }): P
   <td class=-time data-value="${took.toFixed(1)}">${ms(took)}`;
 }
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const t = node.app.t;
   return html.async`
 <div class=u2-card style="flex:0 1 auto">

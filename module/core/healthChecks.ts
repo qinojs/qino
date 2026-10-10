@@ -267,7 +267,7 @@ export async function healthChecks(app: App) {
 
   // Counts stale files, or deletes them and sums their size. Counting stops early (the checks only
   // need "many"). A file being written has a fresh mtime, so the age limit protects it.
-  async function staleFiles(dir: string, maxAge: number, del = false): Promise<number> {
+  async function staleFiles(dir: string, maxAge: number, del = false) {
     let n = 0;
     try {
       for (const entry of await fs.list(dir)) {
@@ -323,7 +323,7 @@ async function corruptTables(db: App["db"]): Promise<Record<string, string>> {
 }
 
 // SQL for "now as unix epoch" per dialect.
-function dbEpochSql(dialect: string): string {
+function dbEpochSql(dialect: string) {
   if (dialect === "postgres") return "SELECT floor(extract(epoch FROM now()))";
   if (dialect === "sqlite") return "SELECT strftime('%s','now')";
   return "SELECT UNIX_TIMESTAMP()";

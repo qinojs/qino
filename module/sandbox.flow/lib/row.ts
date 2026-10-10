@@ -8,5 +8,6 @@ export const toFlow = (row: Record<string, any>): Flow => ({
   owner: Number(row.usr_id),
   tools: JSON.parse(row.tools || "[]"),
   test: Boolean(row.test),
-  steps: JSON.parse(row.steps),
+  code: String(row.code ?? ""),
+  state: JSON.parse(row.state || "{}"),
 });

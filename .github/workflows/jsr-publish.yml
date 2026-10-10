@@ -20,6 +20,9 @@ jobs:
       # `--all` follows the browser files under pub/ too, and those import u2 and item.js from a cdn.
       # Naming any host replaces deno's default allowlist, so jsr.io has to be listed as well.
       - run: deno check --all --allow-import=jsr.io:443,gcdn.li:443,cdn.jsdelivr.net:443
+      # Ubuntu ≥ 23.10 denies unprivileged user namespaces, so Chromium's sandbox — and with it every
+      # PDF test — crashes on the runner.
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: deno task test
 
       - name: Version lesen

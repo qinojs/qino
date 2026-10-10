@@ -1,11 +1,11 @@
 import { fromFileUrl } from "@std/path";
-import { errMsg, getCtx, html } from "@qino/qino";
+import { errMsg, getCtx, html, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { git, refs, reposOf, status } from "./lib/git.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Repo } from "./lib/git.ts";
 
@@ -18,24 +18,24 @@ export async function install({ app }: { app: App }): Promise<void> {
 /** All directories of the app (modules, stores, the app itself). Git decides which share a repo. */
 type Holds = { kind: "app" | "module" | "store"; label: string };
 
-function candidates(app: App): Map<string, Holds> {
+function candidates(app: App) {
   const dirs = new Map<string, Holds>([[app.dir, { kind: "app", label: app.dir }]]);
   for (const mod of app.modules.all().values()) if (mod.dir) dirs.set(mod.dir, { kind: "module", label: mod.name });
   for (const store of app.stores.all()) {
     if (!store.base.startsWith("file:")) continue;
     const dir = fromFileUrl(store.base);
-    dirs.set(dir, { kind: "store", label: dir.split("/").filter(Boolean).at(-1) ?? dir });
+    dirs.set(dir, { kind: "store", label: dir.split("/").findLast(Boolean) ?? dir });
   }
   return dirs;
 }
 
-async function repos(app: App): Promise<Repo<Holds>[]> {
+async function repos(app: App) {
   const found = await reposOf(candidates(app));
   return Promise.all(found.entries().map(async ([root, holds]) => ({ root, holds, ...await status(root) })));
 }
 
 /** Contents of a repository in one line: names if few, else counts. */
-async function summary(holds: Holds[], t: App["t"]): Promise<string> {
+async function summary(holds: Holds[], t: App["t"]) {
   const [modules, stores, app] = await Promise.all([t`modules`, t`stores`, t`the app`]);
   const some = (kind: Holds["kind"], word: string) => {
     const list = holds.filter((hold) => hold.kind === kind);
@@ -47,7 +47,7 @@ async function summary(holds: Holds[], t: App["t"]): Promise<string> {
 // --- actions --------------------------------------------------------------
 
 /** The backend user is the author: a commit that says "the server" answers nobody's question. */
-async function author(): Promise<string[]> {
+async function author() {
   const user = getCtx().user;
   const parts = [user?.given_name, user?.family_name].filter(Boolean).join(" ");
   const email = await user?.contact("email") ?? ""; // an address, not the login handle
@@ -57,9 +57,9 @@ async function author(): Promise<string[]> {
 }
 
 /** Whether a supervisor restarts the process: systemd sets INVOCATION_ID, others QINO_SUPERVISED. */
-function supervised(): boolean {
+function supervised() {
   try {
-    return !!(Deno.env.get("INVOCATION_ID") ?? Deno.env.get("QINO_SUPERVISED"));
+    return !!(sys.env("INVOCATION_ID") ?? sys.env("QINO_SUPERVISED"));
   } catch {
     return false; // no --allow-env, so nothing to go on: assume nobody is watching
   }
@@ -67,14 +67,14 @@ function supervised(): boolean {
 
 /** Deno keeps its loaded modules, so pulled code needs a restart: exit and let the supervisor start
  *  it again. Non-zero, so `Restart=on-failure` works too. */
-function restart(): string {
+function restart() {
   if (!supervised()) throw new Error("No service manager found — the process would stay down. Set QINO_SUPERVISED=1 if one is watching.");
   // In-flight requests end with the process; a delay long enough for this answer is what it gets.
-  setTimeout(() => Deno.exit(75), 500);
+  setTimeout(() => sys.exit(75), 500);
   return "Restarting — the page reloads once the server answers again.";
 }
 
-async function act(app: App, action: string, root: string, message: string): Promise<{ message: string; restarting?: boolean }> {
+async function act(app: App, action: string, root: string, message: string) {
   if (action === "restart") return { message: restart(), restarting: true }; // the process, not a repository — no root to check
   // Never a path from the client: only a repository this app actually sits in may be touched.
   const known = await repos(app);
@@ -128,7 +128,7 @@ const run = ({ ok, out }: { ok: boolean; out: string }) => {
 
 // --- view -----------------------------------------------------------------
 
-async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
+async function repoCard(repo: Repo<Holds>, t: App["t"]) {
   const dirty = repo.files.length;
   const available = await refs(repo.root);
   const branches = available.filter((ref) => ref.startsWith("refs/heads/"));
@@ -178,7 +178,7 @@ async function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
 }
 
 /** The process, shown once next to the repositories (a restart loads what a pull changed). */
-function serverCard(t: App["t"]): Promise<HtmlString> {
+function serverCard(t: App["t"]) {
   const can = supervised();
   return html.async`<div class=u2-card>
   <div class=-head>${t`Server`}</div>
@@ -189,7 +189,7 @@ function serverCard(t: App["t"]): Promise<HtmlString> {
 </div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t;
   const found = await repos(node.app);
   const cards = found.length ? found.map((repo) => repoCard(repo, t)) : [html.async`<div class=u2-card><div>${t`No git repository found.`}</div></div>`];

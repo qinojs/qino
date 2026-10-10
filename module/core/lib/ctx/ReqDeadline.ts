@@ -4,7 +4,7 @@ import { Output } from "../util.ts";
 export class ReqDeadline {
   #ctrl = new AbortController();
   #deadline = Infinity;
-  #timer: ReturnType<typeof setTimeout> | undefined;
+  #timer?: ReturnType<typeof setTimeout>;
   #signal: AbortSignal;
   /** Aborts on client disconnect or timeout — pass to fetch/db calls. */
   get signal(): AbortSignal { return this.#signal; }

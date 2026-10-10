@@ -1,6 +1,7 @@
 {
   "properties": {
     "message": {
+      "description": "A message sent or received, over any channel (email, sms, telegram, …)",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -122,6 +123,7 @@
       }
     },
     "message_delivery": {
+      "description": "A message to one recipient: where it went, when, and whether it arrived",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -163,7 +165,7 @@
             "default": 0,
             "description": "With due and time both null: 0 is held back, more is given up"
           },
-          "ref": {
+          "external_id": {
             "type": "string",
             "maxLength": 191,
             "x-index": true,

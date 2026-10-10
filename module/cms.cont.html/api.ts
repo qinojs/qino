@@ -33,7 +33,7 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
       const files = codeFiles(node);
       await files.create();
       await fs.write(files[key], content);
-      ctx.app.assetRev = unixTime(); // css/js live under pub/, so their url has to change
+      ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1); // css/js live under pub/, so their url has to change
       return String(await node.html()); // tobi: does rendering node.html() for a CSS/JS file make sense, or does it only waste tokens?
     },
   },

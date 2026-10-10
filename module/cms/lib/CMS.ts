@@ -57,7 +57,7 @@ export class CMS extends Emitter<CmsEvents> {
   clearUrlCache() { this.#idsByUrl.clear(); }
 
   /** Slow: one query per call, not cached (only the Nodes are). For setup and links, not hot paths. */
-  async #nodesBy(col: string, value: string): Promise<Map<number, Node>> {
+  async #nodesBy(col: string, value: string) {
     const ret = new Map<number, Node>();
     for (const vs of await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE ${sql.id(col)} = ${value}`)
       ret.set(Number(vs.id), await this.node(vs.id, vs));
@@ -103,7 +103,7 @@ export class CMS extends Emitter<CmsEvents> {
     return this.node(cmspid ? Number(cmspid) : await this.#idByUrl(ctx.req.appPath));
   }
 
-  async #idByUrl(url: string): Promise<number> {
+  async #idByUrl(url: string) {
     const ids = scopeCache(this.#idsByUrl, "cms.idsByUrl", () => new Map<string, number>());
     const id = ids.get(url) ?? (Number(await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url}`) || 0);
     if (id) ids.set(url, id);
@@ -119,7 +119,7 @@ export class CMS extends Emitter<CmsEvents> {
   }
 
   /** Linked modules only. */
-  #modules(prefix: string): Record<string, Module> {
+  #modules(prefix: string) {
     const ret: Record<string, Module> = {};
     for (const mod of this.app.modules.linked().sort((a, b) => a.name.localeCompare(b.name)))
       if (mod.name.startsWith(prefix)) ret[mod.name] = mod;
@@ -169,17 +169,16 @@ export class CMS extends Emitter<CmsEvents> {
   async linkAttributes(node: Node | number): Promise<Record<string, string>> {
     const ctx = getCtx();
     const page = await this.node(Number(node));
-    const href = await page.url();
-    const target = (await page.urls()).get(ctx.lang)?.target;
+    const access = await page.access(); // first: url() and edit() reuse the cached level
     const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
-    const access = await page.access();
-    const inside = await mainNode.in?.(page);
-    const online = await page.isOnline();
-    const titleObj = await page.title();
+    const [href, urls, inside, online, titleObj, edit] = await Promise.all([
+      page.url(), page.urls(), mainNode.in?.(page), page.isOnline(), page.title(), page.edit(),
+    ]);
+    const target = urls.get(ctx.lang)?.target;
     return {
       href,
       class: `cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}`,
-      ...(await page.edit() ? { cmstxt: String(titleObj?.id ?? "") } : {}),
+      ...(edit ? { cmstxt: String(titleObj?.id ?? "") } : {}),
       ...(mainNode === page ? { "aria-current": "page" } : {}),
       ...(target ? { target } : {}),
     };
@@ -281,6 +280,6 @@ export class CMS extends Emitter<CmsEvents> {
 
 }
 
-function attrsHtml(attrs: Record<string, string>): string {
+function attrsHtml(attrs: Record<string, string>) {
   return Object.entries(attrs).map(([name, value]) => ` ${name}="${hee(value)}"`).join("");
 }

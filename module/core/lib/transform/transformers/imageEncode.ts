@@ -11,7 +11,7 @@ const canSend = (ctx: TransformContext, type: string) => !ctx.accept || ctx.acce
 
 /** File size in bytes; missing = `Infinity`, so it loses the size comparison. */
 // written by a subprocess, so not cached
-const fileSize = async (path: string): Promise<number> => await fs.size(path, { ttl: 0 }) ?? Infinity;
+const fileSize = async (path: string) => await fs.size(path, { ttl: 0 }) ?? Infinity;
 
 /**
  * Encode phase: picks the output format (AVIF > JPEG > PNG) and quality.

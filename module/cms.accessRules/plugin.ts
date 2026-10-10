@@ -39,7 +39,7 @@ export const dbSchema = {
 /** Module-axis access for a user (or guest); undefined = no rule. module.cms_access is the default
  *  (0 = off, null = no rule); a group override replaces it, capped by the group's cms_access. The
  *  most permissive group wins. */
-async function moduleCap(app: App, module: string, user?: Usr | null): Promise<number | undefined> {
+async function moduleCap(app: App, module: string, user?: Usr | null) {
   const std = (await standards(app)).get(module); // undefined = no rule
   const base = std ?? 3;
   const grps = user ? (await user.grps?.() ?? []).map(Number).filter(Boolean) : [];

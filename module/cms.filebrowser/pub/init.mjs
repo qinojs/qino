@@ -138,7 +138,7 @@ cms.fileBrowser = class {
     function elementsToItems(elements){
       const items = {dbFiles:[], urls:[]};
       for (const el of elements) {
-        const type = el.getAttribute('data-type')+'s';
+        const type = el.dataset.type+'s';
         (items[type] ||= []).push(el.getAttribute('itemid'));
       }
       return items;

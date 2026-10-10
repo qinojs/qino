@@ -3,6 +3,18 @@
 `cron` runs recurring module jobs without a system cron entry. A timer triggers them; incoming
 requests serve as a throttled fallback.
 
+## Time events
+
+`cron` fires `cron:hour` and `cron:day` on the app, at the start of every hour and at midnight in
+`settings.cron.timezone` — for whoever acts on time without a job of their own, e.g. a flow.
+
+```ts
+app.on("cron:hour", ({ time, date, weekday, hour }) => { /* hour 7: every morning */ }, { signal });
+```
+
+They are its own jobs (`cron:hour`, `cron:day`): fired once, whatever the number of processes; a missed
+one is caught up once, late. A failing listener is logged, not retried, so the others hear it once.
+
 ## Declaring jobs
 
 Add `cron` to the `dependencies` in `manifest.json` and export the jobs from `plugin.ts`:

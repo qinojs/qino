@@ -1,0 +1,6 @@
+{
+  "name": "home.homeassistant",
+  "description": "Home Assistant WebSocket provider for Qino home entities and actions.",
+  "dependencies": ["home"],
+  "files": ["README.md", "manifest.json", "mod.ts", "plugin.ts", "connection.ts"]
+}

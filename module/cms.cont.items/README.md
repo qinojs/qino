@@ -26,7 +26,7 @@ entries uniform.
 ## The options panel
 
 The list panel comes from [cms.cont.flexible](../cms.cont.flexible/README.md).
-[pub/options.js](pub/options.js) re-exports it unchanged; `default module` and `add position` stay
+[pub/widget.js](pub/widget.js) re-exports it unchanged; `default module` and `add position` stay
 editable.
 
 ## What it renders

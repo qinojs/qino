@@ -1,0 +1,15 @@
+{
+  "name": "ai.agent.sleep",
+  "description": "What agents do while nobody talks with them: long sessions compacted.",
+  "dependencies": [
+    "ai.agent",
+    "ai.tools"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "lib/session.compaction.ts",
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

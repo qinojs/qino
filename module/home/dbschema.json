@@ -1,0 +1,169 @@
+{
+  "properties": {
+    "home_provider": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "adapter": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "config": {
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "adapter",
+          "config",
+          "enabled"
+        ]
+      }
+    },
+    "home_datapoint": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "provider": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "home_provider"
+          },
+          "entity": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 191,
+            "default": ""
+          },
+          "identity": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "mapping": {
+            "type": "object"
+          },
+          "interval": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647,
+            "default": 0
+          },
+          "record": {
+            "type": "boolean",
+            "default": false
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "time": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "entity",
+          "path",
+          "identity",
+          "name",
+          "unit",
+          "type",
+          "mapping",
+          "interval",
+          "record",
+          "value",
+          "time"
+        ]
+      }
+    },
+    "home_command": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "provider": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "home_provider"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "action": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data": {
+            "type": "object"
+          },
+          "parameter": {
+            "type": "string",
+            "maxLength": 191,
+            "default": ""
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "name",
+          "action",
+          "targets",
+          "data",
+          "parameter"
+        ]
+      }
+    }
+  }
+}

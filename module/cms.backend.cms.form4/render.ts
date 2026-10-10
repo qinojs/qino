@@ -20,9 +20,8 @@ export async function forms(app: App): Promise<Node[]> {
 }
 
 /** The page a form sits on — its title is what makes the form recognisable in the list. */
-async function pageOf(node: Node): Promise<Node | undefined> {
-  const path = [...(await node.path()).values()].reverse();
-  return path.find((n) => n.vs.type === "p");
+async function pageOf(node: Node) {
+  return [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
 }
 
 /**
@@ -108,7 +107,7 @@ const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") |
  * Uploads of these entries, keyed `<entry>:<field>`, in one query. Links are signed for this
  * session only — uploads are not public.
  */
-async function uploads(app: App, ids: number[]): Promise<Map<string, HtmlString>> {
+async function uploads(app: App, ids: number[]) {
   const out = new Map<string, HtmlString>();
   if (!ids.length) return out;
   const rows = await app.db.query`
@@ -178,11 +177,11 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
         ${cells(row)}
         <td><button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
   )}
-      ${!rows.length ? html`<tr><td colspan="${names.length + 2}">${await t`No entries.`}` : ""}
+      ${!rows.length ? html.async`<tr><td colspan="${names.length + 2}">${t`No entries.`}` : ""}
     </tbody>
     <tfoot><tr>
       <td colspan="${names.length + 2}">
-        ${total} ${await t`entries`}
+        ${total} ${t`entries`}
         ${total > PER_PAGE
     ? html`
           <button data-page="${Math.max(0, page - 1)}" ${page ? "" : html.raw("disabled")}>←</button>
@@ -193,7 +192,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 }
 
 /** Correct one value of an entry. Numbers stay numbers, so sorting still works. */
-async function save(app: App, form: Node, vs: Record<string, string>): Promise<void> {
+async function save(app: App, form: Node, vs: Record<string, string>) {
   const id = Number(vs.id);
   const row = await app.db.row`
     SELECT data FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
@@ -205,7 +204,7 @@ async function save(app: App, form: Node, vs: Record<string, string>): Promise<v
 }
 
 /** Throw one entry away. Its files hang on it and go along. */
-async function remove(app: App, form: Node, id: number): Promise<void> {
+async function remove(app: App, form: Node, id: number) {
   const own = await app.db.one`
     SELECT id FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
   if (own) await app.db.table("form4_entry").delete(id);
@@ -233,7 +232,7 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
   const url = page ? await page.url() : "";
   return html.async`<tr${active ? html.raw(" class=-active") : ""}>
       <td><button class=u2-unstyle data-form="${node.id}">${title || html.raw(`#${node.id}`)}</button>
-      <td>${url ? html`<a href="${url}" target=_blank title="${await app.t`Open the page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}
+      <td>${url ? html.async`<a href="${url}" target=_blank title="${app.t`Open the page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}
       <td>${Number(count)}`;
 }
 

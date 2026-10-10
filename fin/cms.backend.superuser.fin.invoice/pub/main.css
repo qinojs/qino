@@ -1,0 +1,11 @@
+[qcms-mod="backend.superuser.fin.invoice"] {
+  /* lines: the item takes the room, the numbers only what they need */
+  [data-lines] td { vertical-align: top }
+  [data-lines] .-item { width: 100% }
+  [data-lines] td:not(.-item) { width: 1px; white-space: nowrap }
+  [data-lines] .-item input { width: 100%; min-width: 12rem }
+  [data-lines] .-item :is(textarea, select) { display: block; width: 100% }
+  /* a line's description and account show while the line is edited, or once they are set */
+  [data-lines] tr:not(:focus-within) textarea:placeholder-shown { display: none }
+  [data-lines] tr:not(:focus-within) .-account:has(option[value=""]:checked) { display: none }
+}

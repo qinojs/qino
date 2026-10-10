@@ -20,16 +20,16 @@ Deno.test("cms: api tree exposes expected core tools", () => {
   const tools = toTools(api);
   const names = new Set(tools.map((tool) => tool.name));
   for (const name of [
-    "get_tree",
-    "get_nodes",
-    "get_node",
-    "delete_node",
-    "get_node_tree",
-    "put_node_title",
-    "patch_node",
-    "post_node_copy",
-    "put_node_access_users",
-    "post_node_api",
+    "tree_get",
+    "nodes_get",
+    "node_get",
+    "node_delete",
+    "node_tree_get",
+    "node_title_put",
+    "node_patch",
+    "node_copy_post",
+    "node_access_users_put",
+    "node_api_post",
   ]) {
     assertEquals(names.has(name), true, name);
   }
@@ -37,7 +37,7 @@ Deno.test("cms: api tree exposes expected core tools", () => {
 
 Deno.test("cms: node API tools include path parameters and required input", () => {
   const tools = toTools(api);
-  const title = tools.find((tool) => tool.name === "put_node_title");
+  const title = tools.find((tool) => tool.name === "node_title_put");
   assertEquals(title?.parameters, {
     type: "object",
     properties: {
@@ -48,7 +48,7 @@ Deno.test("cms: node API tools include path parameters and required input", () =
     required: ["node", "value"],
   });
 
-  const copy = tools.find((tool) => tool.name === "post_node_copy");
+  const copy = tools.find((tool) => tool.name === "node_copy_post");
   assertEquals(copy?.parameters, {
     type: "object",
     properties: {

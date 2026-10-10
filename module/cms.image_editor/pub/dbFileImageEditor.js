@@ -84,16 +84,16 @@ const EDITOR_CSS = `
 
 export class DbFileImageEditor extends ImageEditor {
   show(src) {
-    const eSrc = src.replace(/(dbFile\/[0-9]+\/).*/, '$1');
+    const eSrc = src.replace(/(dbFile\/\d+\/).*/, '$1');
     const unique = src.match(/\/(u-[^/]+\/)/)?.[1] ?? '';
-    this.file_id = eSrc.match(/dbFile\/([0-9]+)\//)[1];
+    this.file_id = eSrc.match(/dbFile\/(\d+)\//)[1];
 
     this.css(EDITOR_CSS);
 
     super.show(eSrc + unique + 'img.jpg', {
       onload: this.loading(() => {
-        const width = src.match(/\/w-([0-9]+)(\/|$)/)?.[1];
-        const height = src.match(/\/h-([0-9]+)(\/|$)/)?.[1];
+        const width = src.match(/\/w-(\d+)(\/|$)/)?.[1];
+        const height = src.match(/\/h-(\d+)(\/|$)/)?.[1];
 
         // "max" means the image is scaled to fit width/height; without it the server crops.
         const maxMatch = src.match(/\/max-?([^/]*)(\/|$)/);
@@ -107,9 +107,7 @@ export class DbFileImageEditor extends ImageEditor {
           const aspectRatio = width / height;
           this.cropper.aspectRatio = aspectRatio;
           const naturalAspectRatio = img.naturalWidth / img.naturalHeight;
-          if (aspectRatio.toFixed(1) !== naturalAspectRatio.toFixed(1)) {
-            setTimeout(() => this.cropper.show());
-          }
+          if (aspectRatio.toFixed(1) !== naturalAspectRatio.toFixed(1)) setTimeout(() => this.cropper.show());
         }
       }),
       onerror: () => this.loading()(),
@@ -181,9 +179,8 @@ export class DbFileImageEditor extends ImageEditor {
   async upload(cb) {
     // transparency → PNG; otherwise the smaller of jpeg/png
     let blob;
-    if (this.img.hasAlpha()) {
-      blob = await this.img.toBlob('image/png', 1);
-    } else {
+    if (this.img.hasAlpha()) blob = await this.img.toBlob('image/png', 1);
+    else {
       const [jpeg, png] = await Promise.all([this.img.toBlob('image/jpeg', 1), this.img.toBlob('image/png', 1)]);
       blob = jpeg.size > png.size ? png : jpeg;
     }

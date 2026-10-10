@@ -20,7 +20,7 @@ function backtraceOf(raw: unknown) {
 
 function makeFileHelper(ctx: Ctx) {
   /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
-  function localPath(file: string): string | null {
+  function localPath(file: string) {
     if (typeof file !== "string") return null;
     if (!file.startsWith("file:")) return ctx.urlToLocalPath(file);
     try {
@@ -30,11 +30,11 @@ function makeFileHelper(ctx: Ctx) {
     } catch { return null; }
   }
   /** undefined for files that are not local app files — no link, no editor grant. */
-  function editorLink(file: string, line: unknown, col: unknown): string | undefined {
+  function editorLink(file: string, line: unknown, col: unknown) {
     const path = localPath(file);
     return path ? editorUrl(path, { line, col }) : undefined;
   }
-  function fileDisplay(file: string): string {
+  function fileDisplay(file: string) {
     const path = localPath(file);
     if (!path) return file;
     for (const mod of ctx.app.modules.all().values()) {
@@ -46,7 +46,7 @@ function makeFileHelper(ctx: Ctx) {
   return { editorLink, fileDisplay };
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
@@ -55,9 +55,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const where = db.table("m_error_report").valuesToFragment(vars.delete);
     if (where.parts.length) await db.exec`DELETE FROM m_error_report WHERE ${where}`;
   }
-  if (vars.deleteGroup) {
-    await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(db, vars.deleteGroup)}`;
-  }
+  if (vars.deleteGroup) await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(db, vars.deleteGroup)}`;
   if (vars.deleteMatching) {
     await db.exec`DELETE FROM m_error_report WHERE ${filterWhere(db, vars.deleteMatching)}`;
   }
@@ -65,8 +63,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   if (get.id) return renderDetail(node, Number(get.id));
   if (get.show === "entries") return renderEntryList(node, ctx, get);
 
-  const sources = await db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`;
-  const prios   = await db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`;
+  const [sources, prios] = await Promise.all([
+    db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`,
+    db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`,
+  ]);
   const opts    = (vals: string[], cur: string) => vals.map(v => html`<option ${v === cur ? "selected" : ""}>${v}</option>`);
   const ranges: [string, string][] = [["", await t`all time`], ["1", await t`last 24h`], ["7", await t`last 7 days`], ["30", await t`last 30 days`]];
   const range  = get.range ?? "30"; // default window keeps the group scan off the full table
@@ -105,7 +105,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
 // WHERE for one error group (source/file/line/col). Missing values arrive as "null" or ""; "" means
 // NULL on numeric columns.
-function groupWhere(db: App["db"], vals: Record<string, unknown>): Sql {
+function groupWhere(db: App["db"], vals: Record<string, unknown>) {
   const cols = ["source", "file", "line", "col"];
   return db.table("m_error_report").valuesToFragment(
     Object.fromEntries(cols.map(c => [c, vals[c] === "null" ? null : vals[c] ?? null])),
@@ -117,7 +117,7 @@ const daysAgo = (days: number) => new Date(Date.now() - days * 86400e3).toISOStr
 
 // WHERE for search/filter, used by the list and "delete matching". By input type: id/log_id, ip,
 // or fulltext on message/file (mysql; sqlite/pg use LIKE, no worse than the grouped view).
-function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
+function filterWhere(db: App["db"], vars: Record<string, unknown>) {
   const search  = String(vars.search ?? "").trim();
   const fSource = String(vars.source ?? "");
   const fPrio   = String(vars.prio ?? "");
@@ -130,7 +130,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
     const ftCol = search.includes("/") ? "file" : "message";
     const words = search.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 3).slice(0, 4);
     if (/^\d+$/.test(search)) conds.push(sql`(id = ${Number(search)} OR log_id = ${Number(search)})`);
-    else if (/[.:]/.test(search) && /^[0-9a-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
+    else if (/[.:]/.test(search) && /^[\da-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
     // words shorter than ft_min_token_size never match the fulltext index — return nothing instead of a full scan
     else if (db.dialect === "mysql") conds.push(words.length ? sql`MATCH(${sql.id(ftCol)}) AGAINST (${words.map(w => `+${w}*`).join(" ")} IN BOOLEAN MODE)` : sql`${false}`);
     else conds.push(sqlSearch(search, [ftCol]).where);
@@ -139,7 +139,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
 }
 
 // List part — re-rendered live on filter input via cms.reloadPart(nid, "list", form values).
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t, db } = node.app;
   const orderSql = vars.order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
   const where = filterWhere(db, vars);
@@ -231,12 +231,12 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 </table>`;
 }
 
-async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>): Promise<HtmlString> {
+async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>) {
   const db = node.app.db;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
   if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return html`<div>${await node.app.t`Invalid parameters`}</div>`;
-  const where = groupWhere(node.app.db, get);
+  const where = groupWhere(db, get);
 
   const rows = await db.query`
     SELECT e.*, usr.username
@@ -295,7 +295,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
@@ -329,7 +329,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   else if (historyOf === "sess"   && log?.sess_id)   historyWhere = sql`log.sess_id = ${log.sess_id}`;
   else if (historyOf === "client" && log?.client_id) historyWhere = sql`log.client_id = ${log.client_id}`;
 
-  const historyTrs = [];
+  let historyTrs: HtmlString[] = [];
   if (historyWhere) {
     const logs = await db.query`
       SELECT log.*, url.url, referer.url AS referer
@@ -340,7 +340,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       ORDER BY log.id DESC LIMIT 30`.catch(() => []);
 
     const eu = ctx.req.url.toURL(); eu.searchParams.delete("history_of");
-    for (const item of logs) {
+    historyTrs = await Promise.all(logs.map(async (item) => {
       const errorItems = await db.query`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
       const errorLinks = [];
       for (const eItem of errorItems) {
@@ -348,15 +348,15 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         eu.searchParams.set("id", String(eItem.id));
         errorLinks.push(html`<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:.1875rem 0; margin-bottom:-1px; display:block" href="${eu.search}">${active} ${eItem.message}</a>`);
       }
-      historyTrs.push(html`
+      return html`
 <tr>
   <td>${u2.el.time(item.time)} <br> Session: <span style="color:${backend.uniqueColor(item.sess_id)}">${item.sess_id}</span> <br> Log-ID: ${item.id}
   <td>
     ${backend.link(item.url)}<br>
     <div style="font-size:.9em; color:#aaa">${item.referer}</div>
     ${errorLinks}
-  <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`);
-    }
+  <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`;
+    }));
   }
 
   const hu = ctx.req.url.toURL(); hu.searchParams.set("id", String(id));
@@ -415,7 +415,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
   <div class=u2-card style="overflow:auto;">
     <div class=-head>${t`User`}</div>
     <div>
-      ${usr ? html`<pre>${JSON.stringify(usr, null, 2)}</pre>` : html`(${await t`no user`})`}
+      ${usr ? html`<pre>${JSON.stringify(usr, null, 2)}</pre>` : html.async`(${t`no user`})`}
     </div>
   </div>
 

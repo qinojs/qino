@@ -1,9 +1,9 @@
-import { html, sql, unixTime } from "@qino/qino";
+import { html, safeEqual, sql, unixTime } from "@qino/qino";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const ids = String(await node.settings.ids ?? "").split(",").map(Number).filter((id) => id > 0);
   let exam: Record<string, unknown> | undefined;
   for (const id of ids) {
@@ -14,19 +14,19 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (!exam) return html`<div><h2>Sie sind mit allen Prüfungen durch</h2></div>`;
   const tasks = await node.db.query`SELECT * FROM ${sql.id("exam1_task")} WHERE exam_id = ${exam.id} ORDER BY sort, id`;
 
-  if (ctx.userId && ctx.req.body?.exam_node === String(node.id) && ctx.req.body.csrfToken === ctx.csrfToken) {
+  if (ctx.userId && ctx.req.body?.exam_node === String(node.id) && safeEqual(ctx.req.body.csrfToken, ctx.csrfToken)) {
     let result = 0;
     for (const task of tasks) {
       const value = String(ctx.req.body[`task_${task.id}`] ?? "").trim();
       const points = value === String(task.answer).trim() ? Number(task.points) || 0 : 0;
       const exists = await node.db.one`SELECT 1 FROM ${sql.id("exam1_task_usr")} WHERE task_id = ${task.id} AND usr_id = ${ctx.userId}`;
-      if (exists) await node.db.query`UPDATE ${sql.id("exam1_task_usr")} SET time = ${unixTime()}, value = ${value}, points = ${points} WHERE task_id = ${task.id} AND usr_id = ${ctx.userId}`;
-      else await node.db.query`INSERT INTO ${sql.id("exam1_task_usr")} (task_id, usr_id, time, value, points) VALUES (${task.id}, ${ctx.userId}, ${unixTime()}, ${value}, ${points})`;
+      if (exists) await node.db.exec`UPDATE ${sql.id("exam1_task_usr")} SET time = ${unixTime()}, value = ${value}, points = ${points} WHERE task_id = ${task.id} AND usr_id = ${ctx.userId}`;
+      else await node.db.exec`INSERT INTO ${sql.id("exam1_task_usr")} (task_id, usr_id, time, value, points) VALUES (${task.id}, ${ctx.userId}, ${unixTime()}, ${value}, ${points})`;
       result += points;
     }
     const exists = await node.db.one`SELECT 1 FROM ${sql.id("exam1_usr")} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
-    if (exists) await node.db.query`UPDATE ${sql.id("exam1_usr")} SET completed = ${unixTime()}, result = ${result} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
-    else await node.db.query`INSERT INTO ${sql.id("exam1_usr")} (exam_id, usr_id, completed, result) VALUES (${exam.id}, ${ctx.userId}, ${unixTime()}, ${result})`;
+    if (exists) await node.db.exec`UPDATE ${sql.id("exam1_usr")} SET completed = ${unixTime()}, result = ${result} WHERE exam_id = ${exam.id} AND usr_id = ${ctx.userId}`;
+    else await node.db.exec`INSERT INTO ${sql.id("exam1_usr")} (exam_id, usr_id, completed, result) VALUES (${exam.id}, ${ctx.userId}, ${unixTime()}, ${result})`;
     return html`<div><h2>${exam.completion_text || "Prüfung abgeschlossen"}</h2></div>`;
   }
 

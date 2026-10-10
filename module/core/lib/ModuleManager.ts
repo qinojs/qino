@@ -11,7 +11,7 @@ import type { App } from "./App.ts";
 type DbSchema = { properties: Record<string, unknown> };
 
 export const isModuleName = (name: string): boolean =>
-  /^[a-zA-Z0-9._-]+$/.test(name) && name !== "." && name !== ".." && !Object.hasOwn(Object.prototype, name);
+  /^[\w.-]+$/.test(name) && name !== "." && name !== ".." && !Object.hasOwn(Object.prototype, name);
 
 export function resolveSpecifier(app: App, spec: string | URL): string {
   if (spec instanceof URL) return spec.href;
@@ -52,7 +52,7 @@ export type Plugin = Record<string, any> & {
   api?: Record<string, unknown>;
 };
 
-function mergeSchema(a: any, b: any): any {
+function mergeSchema(a: any, b: any) {
   for (const [k, v] of Object.entries(b ?? {})) {
     if (Array.isArray(v)) a[k] = [...new Set([...(Array.isArray(a[k]) ? a[k] : []), ...v])];
     else if (v && typeof v === "object") a[k] = mergeSchema(a[k] && typeof a[k] === "object" && !Array.isArray(a[k]) ? a[k] : {}, v);
@@ -321,7 +321,7 @@ export class ModuleManager {
   }
 
   // Run one module's hooks.
-  async #linkOne(mod: Module): Promise<void> {
+  async #linkOne(mod: Module) {
     const { plugin } = mod;
     try {
       await plugin.init?.(this.#app, { signal: mod.newSignal() });
@@ -341,7 +341,7 @@ export class ModuleManager {
   }
 
   // Rebuild app/ctx settings schema from the given (dependency-ordered) modules and re-apply defaults.
-  #applySchemas(order: string[]): void {
+  #applySchemas(order: string[]) {
     const appSettingsSchema = { properties: {} as Record<string, unknown> };
     const ctxSettingsSchema = { properties: {} as Record<string, unknown> };
     for (const name of order) {
@@ -356,7 +356,7 @@ export class ModuleManager {
   }
 
   // Merge the given modules' dbSchema (static, then function-form) and migrate additively.
-  async #applyDbSchema(order: string[]): Promise<void> {
+  async #applyDbSchema(order: string[]) {
     const dbSchema = { properties: {} };
     const schemas = order.map((name) => this.#modules.get(name)!.plugin.dbSchema);
     for (const schema of schemas) if (typeof schema !== "function") mergeSchema(dbSchema, schema);
@@ -370,7 +370,7 @@ export class ModuleManager {
   }
 
   // Seed translations from a module's locale/<lang>.json (namespace = module name; core = "")
-  async #loadLocales(mod: Module): Promise<void> {
+  async #loadLocales(mod: Module) {
     const dir = mod.dir;
     if (!dir) return;
     const ns = mod.name === "core" ? "" : mod.name;
@@ -386,7 +386,7 @@ export class ModuleManager {
 
   /** Import the dependencies of the declared modules via locate(). What can't be located stays
    *  missing and is reported by #skipMissing() and #order(). */
-  async #importDependencies(): Promise<void> {
+  async #importDependencies() {
     const tried = new Set<string>();
     // One at a time: the next round picks up the new module's own dependencies.
     const next = () => this.#modules.values().flatMap((mod) => mod.dependencies)
@@ -403,7 +403,7 @@ export class ModuleManager {
   }
 
   // An installed module whose dependency is gone is marked broken; the boot continues.
-  #skipMissing(): void {
+  #skipMissing() {
     const gone = (need: string) => !this.#modules.has(need) || this.#failed.has(need);
     // A broken module breaks its dependents, so repeat until nothing changes.
     for (let again = true; again;) {
@@ -421,7 +421,7 @@ export class ModuleManager {
   }
 
   // Dependency-ordered subset (default: all imported). Recurses dependencies only within the set.
-  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()): string[] {
+  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()) {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
     const set = new Set(names);
@@ -452,20 +452,20 @@ export class ModuleManager {
  *
  * A file that fails to download stays missing; it must not stop the module.
  */
-async function mirrorPub(mod: Module): Promise<void> {
-  const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
+async function mirrorPub(mod: Module) {
+  const files = (mod.manifest.files ?? []).filter((file) => file.startsWith("pub/") && !file.includes(".."));
   if (!files.length) return;
   const dir = `${mod.cache}remote/`;
   // Source + file list identify the release; a different address is a different mirror.
   const stamp = dir + ".source";
   const marked = await fs.text(stamp).catch(() => "");
   if (marked === mod.source && (await Promise.all(
-    files.map((file: string) => fs.isFile(dir + file)),
+    files.map((file) => fs.isFile(dir + file)),
   )).every(Boolean)) return;
   // one mkdir per directory, not per file
-  const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
+  const dirs = new Set(files.map((file) => (dir + file).replace(/\/[^/]+$/, "")));
   await Promise.all([...dirs].map((d) => fs.mkdir(d).catch(() => {})));
-  const got = await Promise.all(files.map(async (file: string) => {
+  const got = await Promise.all(files.map(async (file) => {
     const target = dir + file;
     try {
       const res = await safeFetch(new URL(file, mod.source).href);

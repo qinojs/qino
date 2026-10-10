@@ -26,7 +26,7 @@ const render = async (node, { html }) => {
 export default render;
 `;
 
-async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown> }): Promise<string> {
+async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown> }) {
   const code = codeFiles(node);
   if (await node.edit()) await code.create(initialSrc(node.id));
   await code.addAssets();

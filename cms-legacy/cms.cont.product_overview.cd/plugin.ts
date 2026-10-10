@@ -4,7 +4,7 @@ import { cms_image2 } from "@qino/qino/cms.image2";
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const root = await node.cms.node(1);
   const products = await root.bough({ module: "cms.cont.shp3.product.cd", type: "c" });
   const images: HtmlString[] = [], titles: HtmlString[] = [];

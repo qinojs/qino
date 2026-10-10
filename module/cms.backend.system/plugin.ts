@@ -1,4 +1,4 @@
-import { fs, html, sql } from "@qino/qino";
+import { fs, html, sql, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -22,16 +22,16 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { t, db } = node.app;
   const app  = node.app;
 
   // ── server info ────────────────────────────────────────────────────────
 
-  const mem = Deno.memoryUsage();
+  const mem = sys.memoryUsage();
   const appUptimeSec = performance.now() / 1000;
-  const osUptimeSec = Deno.osUptime(); // requires --allow-sys
-  const load = Deno.loadavg();
+  const osUptimeSec = sys.osUptime(); // requires --allow-sys
+  const load = sys.loadavg();
 
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
@@ -41,8 +41,8 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=-head>${t`System info`}</div>
   <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <tr><td>${t`Deno Version`}:<td>${Deno.version.deno}
-      <tr><td>${t`PID`}:<td>${Deno.pid}
+      <tr><td>${t`Runtime`}:<td>${sys.runtime}
+      <tr><td>${t`PID`}:<td>${sys.pid}
       <tr><td>${t`App Uptime`}:<td>${u2.el.time(appStartIso, { second: true })}
       <tr><td>${t`Server Uptime`}:<td>${u2.el.time(osStartIso, { second: true })}
       <tr><td>${t`System Load`}:<td>${load[0].toFixed(2)} (1m) / ${load[1].toFixed(2)} (5m)
@@ -75,7 +75,7 @@ async function render(node: Node): Promise<HtmlString> {
 </div>`;
 
   // ── db config (per dialect) ──────────────────────────────────────────────
-  const dbBox = await renderDbBox(node);
+  const dbBox = renderDbBox(node);
 
   // ── locales / time ─────────────────────────────────────────────────────
   const osIso   = new Date().toISOString();
@@ -169,14 +169,14 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 </div>`;
 }
 
-function systemInfoRows(app: App): Promise<HtmlString> {
+function systemInfoRows(app: App) {
   const t = app.t;
-  const mem = Deno.memoryUsage();
-  const load = Deno.loadavg();
+  const mem = sys.memoryUsage();
+  const load = sys.loadavg();
   const appUptimeSec = performance.now() / 1000;
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   return html.async`
-  <tr><td>${t`Deno`}:<td>${Deno.version.deno}
+  <tr><td>${t`Runtime`}:<td>${sys.runtime}
   <tr><td>${t`Uptime`}:<td>${u2.el.time(appStartIso, { second: true })}
   <tr><td>${t`Load (1m/5m/15m)`}:<td>${load[0].toFixed(2)} / ${load[1].toFixed(2)} / ${load[2].toFixed(2)}
   <tr><td>${t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
@@ -185,7 +185,7 @@ function systemInfoRows(app: App): Promise<HtmlString> {
 }
 
 // SQL for "now in UTC" as an ISO string, independent of driver date parsing.
-function dbUtcNowSql(dialect: string): string {
+function dbUtcNowSql(dialect: string) {
   if (dialect === "postgres") return `SELECT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
   if (dialect === "sqlite") return "SELECT strftime('%Y-%m-%dT%H:%M:%SZ','now')";
   return "SELECT DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ')";
@@ -195,7 +195,7 @@ const kvTable = (rows: [string, string][]) =>
   html`<table class=u2-table><tbody>${rows.map(([k, v]) => html`<tr><td>${k}<td>${v}`)}</table>`;
 
 // Summary card with a "Details" button that lazy-loads the dialect-specific `db-details` part.
-function dbCard(title: string, summaryRows: HtmlString): HtmlString {
+function dbCard(title: string, summaryRows: HtmlString) {
   return html`
 <div class=u2-card>
   <div class=-head>${title}</div>
@@ -206,13 +206,13 @@ function dbCard(title: string, summaryRows: HtmlString): HtmlString {
 </div>`;
 }
 
-function renderDbBox(node: Node): Promise<HtmlString> {
+function renderDbBox(node: Node) {
   if (node.app.db.dialect === "postgres") return postgresBox(node);
   if (node.app.db.dialect === "sqlite") return sqliteBox(node);
   return mysqlBox(node);
 }
 
-async function mysqlBox(node: Node): Promise<HtmlString> {
+async function mysqlBox(node: Node) {
   const db = node.app.db;
   const RELEVANT = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
   const vars = await db.query`SHOW VARIABLES`;
@@ -224,7 +224,7 @@ async function mysqlBox(node: Node): Promise<HtmlString> {
   return dbCard("MySQL", html.join(rows));
 }
 
-async function postgresBox(node: Node): Promise<HtmlString> {
+async function postgresBox(node: Node) {
   const db = node.app.db;
   const NAMES = ["server_version", "max_connections", "shared_buffers", "work_mem"];
   const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE ${sql.in("name", NAMES)} ORDER BY name`;
@@ -232,7 +232,7 @@ async function postgresBox(node: Node): Promise<HtmlString> {
   return dbCard("PostgreSQL", html.join(body));
 }
 
-async function sqliteBox(node: Node): Promise<HtmlString> {
+async function sqliteBox(node: Node) {
   const db = node.app.db;
   const PRAGMAS = ["journal_mode", "page_size", "foreign_keys"];
   const rows = [html`<tr><td>version<td>${await db.one`SELECT sqlite_version()`}`];
@@ -244,7 +244,7 @@ async function sqliteBox(node: Node): Promise<HtmlString> {
 }
 
 // One health box, run on demand: nothing when the check passes.
-async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }): Promise<HtmlString> {
+async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> }) {
   const check = findCheck(await getHealthChecks(node.app), vars);
   if (!check) return html.raw("");
 
@@ -258,7 +258,7 @@ async function healthItem(node: Node, { vars }: { vars: Record<string, unknown> 
   <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml(data)}</div>`;
 }
 
-async function dbDetails(node: Node): Promise<HtmlString> {
+async function dbDetails(node: Node) {
   const db = node.app.db;
   if (db.dialect === "postgres") {
     const rows = await db.query`SELECT name, setting FROM pg_settings ORDER BY name`;

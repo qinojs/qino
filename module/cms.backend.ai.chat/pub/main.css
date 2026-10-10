@@ -1,0 +1,9 @@
+[qcms-mod="backend.ai.chat"] {
+  & .-agents { flex: 1 1 22rem; }
+  & .-chat { flex: 3 1 30rem; }
+  /* the conversation scrolls, the field to ask stays in view */
+  & [data-log] { overflow: auto; max-height: 70vh; }
+  & [data-ask] > textarea { flex: 1; }
+  /* hidden until a session is open, also where a class sets display (u2-flex) */
+  & [data-ask][hidden] { display: none; }
+}

@@ -5,12 +5,12 @@ import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
+import type { Channel, Msg, Rendering, To } from "@qino/qino/messaging";
 
 export { call } from "./lib/bot.ts";
 
 /** Who a `to` means as chats — a chat exists only where someone linked their account. */
-async function recipients(app: App, to: To & { chat?: number | number[] }): Promise<Recipient[]> {
+async function recipients(app: App, to: To & { chat?: number | number[] }) {
   const chats = [to.chat ?? []].flat();
   const who = [
     ...selectors(to, "c.usr_id"),
@@ -31,14 +31,14 @@ export const send = (app: App, to: To & { chat?: number | number[] }, message: s
   dispatch(app, messagingChannel, to, message);
 
 /** The title becomes the first line, bold with markup. `parse_mode` follows from the rendered output. */
-function telegramText(msg: Msg, rendered: { text: string; html?: string }): { text: string; parse_mode?: string } {
+function telegramText(msg: Msg, rendered: { text: string; html?: string }) {
   const body = rendered.html ?? rendered.text;
   const head = msg.title ? (rendered.html ? `<b>${hee(msg.title)}</b>` : msg.title) : "";
   return { ...(rendered.html ? { parse_mode: "HTML" } : {}), text: head ? `${head}\n${body}` : body };
 }
 
 /** One batch of messages, paced: Telegram takes about 30 a second across chats. */
-async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering) {
   const table = app.db.table("telegram_chat");
   const known = new Map((await app.db.query`SELECT id, chat_id, error FROM telegram_chat
     WHERE ${sql.in("chat_id", rows.map((row) => Number(row.address)))}`).map((chat) => [String(chat.chat_id), chat]));
@@ -47,8 +47,9 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
   const one = async (row: Row) => {
     const chat = known.get(String(row.address));
     try {
-      const ref = await sendMessage(app, { ...telegramText(msg, await render(row)), chat_id: Number(row.address) });
-      await delivered(app, Number(row.id), undefined, ref);
+      const text = telegramText(msg, await render(row));
+      const externalId = await sendMessage(app, { ...text, chat_id: Number(row.address) });
+      await delivered(app, Number(row.id), undefined, externalId);
       sent++;
       if (chat?.error) await table.update(chat.id, { error: null }); // it delivers again
     } catch (e) {
@@ -73,7 +74,7 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): 
 }
 
 /** One retry on 429 — the answer carries how long to wait, and waiting is the documented fix. */
-async function sendMessage(app: App, params: Record<string, unknown>): Promise<string> {
+async function sendMessage(app: App, params: Record<string, unknown>) {
   const post = async () => `${params.chat_id}:${(await call(app, "sendMessage", params))?.message_id ?? ""}`;
   try {
     return await post();

@@ -1,10 +1,10 @@
 import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app   = node.app;
   const trash = Number(await app.settings.cms?.pageTrash);
   if (!trash) return html`<div>No trash page configured</div>`;

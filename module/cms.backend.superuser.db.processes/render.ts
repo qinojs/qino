@@ -50,7 +50,7 @@ export async function list(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-function row(p: Process, killLabel: string): HtmlString {
+function row(p: Process, killLabel: string) {
   return html`<tr data-key="${p.key}" data-command="${p.command}">
     <td>${p.id}
     <td>${p.user}

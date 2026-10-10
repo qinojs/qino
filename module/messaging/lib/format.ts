@@ -53,7 +53,7 @@ export function htmlOf(msg: Msg, profile: Profile = "html"): string | undefined 
   return render(msg.text, profile);
 }
 
-function render(text: string, profile: Profile): string {
+function render(text: string, profile: Profile) {
   const parser = profile === "telegram" ? markdownTelegram : markdown;
   return sanitizeHtml(parser.parse(text, { async: false }), profile).trim();
 }
@@ -61,5 +61,5 @@ function render(text: string, profile: Profile): string {
 /** Plain text as markup: escaped, line breaks kept in the target's way. */
 export function textToHtml(text: string, profile: Profile = "html"): string {
   const escaped = hee(text);
-  return profile === "telegram" ? escaped : escaped.replace(/\r\n?/g, "\n").replace(/\n/g, "<br>");
+  return profile === "telegram" ? escaped : escaped.replace(/\r\n?|\n/g, "<br>");
 }

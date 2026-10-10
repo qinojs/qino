@@ -17,7 +17,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first
-const dumpData = (raw: unknown): HtmlString => {
+const dumpData = (raw: unknown) => {
   if (raw == null || raw === "") return html`-`;
   let val = raw;
   if (typeof raw === "string") { try { val = JSON.parse(raw); } catch { return html`<pre>${raw}</pre>`; } }
@@ -36,7 +36,7 @@ function logRefColumns(db: App["db"]): { table: string; col: string }[] {
 }
 
 // ── list (filterable part) ────────────────────────────────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t, db } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
 
@@ -58,7 +58,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       where.push(sql`log.sess_id IN (SELECT id FROM sess WHERE usr_id IN (SELECT id FROM usr WHERE ${u.where}))`);
     } else if (/^\d+$/.test(s)) {
       where.push(sql`(log.id = ${Number(s)} OR log.client_id = ${Number(s)} OR log.sess_id = ${Number(s)})`); // same table → index merge
-    } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4})+$/i.test(s)) {
+    } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[\da-f]{0,4}(:[\da-f]{0,4})+$/i.test(s)) {
       where.push(sql`log.ip_id IN (SELECT id FROM log_ip WHERE ip LIKE ${s + "%"})`); // prefix → index seek
     } else if (db.dialect === "mysql") {
       where.push(sql`log.url_id IN (SELECT id FROM log_url WHERE MATCH(url) AGAINST (${s + "*"} IN BOOLEAN MODE))`);
@@ -121,11 +121,11 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`IP`}
     <th>${t`POST`}
     <th>ID
-<tbody style="vertical-align:top">${trs.length ? trs : html`<tr><td colspan=7>${await t`No entries`}`}`;
+<tbody style="vertical-align:top">${trs.length ? trs : html.async`<tr><td colspan=7>${t`No entries`}`}`;
 }
 
 // ── stats + maintenance ─────────────────────────────────────────────────────
-async function tableStats(node: Node): Promise<{ rows: number; mb: number | null }> {
+async function tableStats(node: Node) {
   const db = node.app.db;
   if (db.dialect === "mysql") {
     const r = await db.row`
@@ -137,7 +137,7 @@ async function tableStats(node: Node): Promise<{ rows: number; mb: number | null
   return { rows, mb: null };
 }
 
-async function runTool(node: Node, doName: string, data: Record<string, unknown>): Promise<HtmlString> {
+async function runTool(node: Node, doName: string, data: Record<string, unknown>) {
   const { t, db } = node.app;
   const before = Number(data.before) || 0;
   const limit = Number(data.limit) || 0;
@@ -170,7 +170,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   if (ctx.req.query.id) return renderDetail(node, Number(ctx.req.query.id));
   const { t } = node.app;
 
@@ -193,7 +193,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
   const initSearch = ctx.req.query.search ?? "";
-  const initialList = await list(node, { ctx, vars: { filter: { search: initSearch } } });
+  const initialList = list(node, { ctx, vars: { filter: { search: initSearch } } });
 
   // Single root element — the CMS injects qcms-id/qcms-mod into the first tag.
   // Keep the form inside it so the client can find it with querySelector.
@@ -218,7 +218,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
             ${message ? html`<p>${message}</p><hr>` : ""}
             <table class=u2-table>
                 <tr><td>${t`Entries`}<td style="text-align:right">${int(stats.rows)}
-                ${stats.mb == null ? "" : html`<tr><td>${await t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
+                ${stats.mb == null ? "" : html.async`<tr><td>${t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
             </table>
             <hr>
             <form data-tool=clean_data>
@@ -246,7 +246,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 }
 
 // ── detail ──────────────────────────────────────────────────────────────────
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
   const ctx = getCtx();
   if (!id) return html`<div>${await t`Not found`}</div>`;
@@ -311,6 +311,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
   // the client column points at the client detail page; without that module the filtered list has to do
   const clientUrl = await backend.toModuleUrl(node, "cms.backend.superuser.requests.clients");
+  const session = await t`Session`, client = await t`Client`;
 
   return html.async`
 <div class=u2-flex>
@@ -343,13 +344,13 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>${t`Relations`}</div>
-        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html`<tr><td>${await t`No entries`}`}</table>
+        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html.async`<tr><td>${t`No entries`}`}</table>
     </div>
 
     <div class=u2-card style="flex:1 1 40rem; max-height:88vh; overflow:auto">
         <div class=-head>${t`History`}</div>
         <div class=-body style="flex-grow:0">${t`History of:`}
-            ${histLink("sess", await t`Session`)} | ${histLink("client", await t`Client`)} | ${histLink("ip", "IP")}</div>
+            ${histLink("sess", session)} | ${histLink("client", client)} | ${histLink("ip", "IP")}</div>
         <table class=u2-table><tbody style="vertical-align:top">${historyTrs}</table>
     </div>
 </div>`;
@@ -359,8 +360,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const own = ctx.clientId;
-  const badges = await ipBadges(app);
-  const [rows, pageUrl] = await Promise.all([
+  const [badges, rows, pageUrl] = await Promise.all([
+    ipBadges(app),
     app.db.query`
       SELECT log.id, log.time, url.url AS url, ip.ip, ua.user_agent, usr.id AS usr_id, usr.username, usr.given_name, usr.family_name
        FROM log

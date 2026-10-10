@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.ai.chatgpt",
+  "description": "Adds a ChatGPT plan connection page to the AI backend menu.",
+  "dependencies": ["cms.backend.ai", "cms.cont.my.chatgpt"],
+  "files": ["README.md", "manifest.json", "plugin.ts", "pub/module.svg"]
+}

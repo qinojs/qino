@@ -9,7 +9,7 @@ import type { Kind, Link } from "./links.ts";
 const SIG = 3;
 /** Path of the open beacon; it is shortened like any link. */
 export const PIXEL = "messaging/open.gif";
-const GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), (c) => c.charCodeAt(0));
+const GIF = Uint8Array.fromBase64("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==");
 /** Kind by its marker character (first letter). */
 const KIND: Record<string, Kind> = { c: "click", l: "load" };
 
@@ -50,7 +50,7 @@ export async function trackHit(app: App, { link, tag }: any): Promise<void> {
 }
 
 /** `<delivery in base36><kind><signature>`. */
-async function marker(app: App, deliveryId: number, kind: Kind): Promise<string> {
+async function marker(app: App, deliveryId: number, kind: Kind) {
   const stem = deliveryId.toString(36) + kind[0];
   return stem + await sign(app, stem);
 }
@@ -58,7 +58,7 @@ async function marker(app: App, deliveryId: number, kind: Kind): Promise<string>
 const sign = (app: App, stem: string) => keyed(app, ["messaging.track", stem], SIG);
 
 /** Decode a marker, or nothing if it isn't ours. */
-async function read(app: App, tag: string): Promise<{ deliveryId: number; kind: Kind } | undefined> {
+async function read(app: App, tag: string) {
   const stem = tag.slice(0, -SIG);
   const kind = KIND[stem.slice(-1)];
   const deliveryId = parseInt(stem.slice(0, -1), 36);

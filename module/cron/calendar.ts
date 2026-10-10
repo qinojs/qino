@@ -1,7 +1,7 @@
 import type { Job, Weekday } from "./mod.ts";
 
 const PERIODS = { hour: 60 * 60, day: 24 * 60 * 60, week: 7 * 24 * 60 * 60 } as const;
-const WEEKDAYS: readonly Weekday[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+export const WEEKDAYS: readonly Weekday[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 export function validateJob(id: string, job: Job): void {
   if (!job || typeof job !== "object" || typeof job.run !== "function") throw new Error(`Cron job "${id}" needs a run function`);
@@ -52,7 +52,7 @@ export function nextRun(job: Job, now: number, o: { timeZone: string; nextPeriod
   return randomBetween(range.start, range.end, now, random);
 }
 
-function validateAt(id: string, job: Job): void {
+function validateAt(id: string, job: Job) {
   const at = job.at;
   if (at == null) return;
   if (typeof job.every === "number") throw new Error(`Cron job "${id}": at is only valid with calendar periods`);
@@ -66,16 +66,16 @@ function validateAt(id: string, job: Job): void {
     if (value != null && (!Number.isInteger(value) || value < 0 || value > max)) throw new Error(`Cron job "${id}": at.${name} must be between 0 and ${max}`);
 }
 
-function randomBetween(start: number, end: number, now: number, random: () => number): number {
+function randomBetween(start: number, end: number, now: number, random: () => number) {
   start = Math.max(start, now + 1);
   return start + Math.floor(random() * Math.max(1, end - start));
 }
 
-function withTime(day: Temporal.ZonedDateTime, at: NonNullable<Job["at"]>): Temporal.ZonedDateTime {
+function withTime(day: Temporal.ZonedDateTime, at: NonNullable<Job["at"]>) {
   return day.with({ hour: at.hour ?? 0, minute: at.minute ?? 0, second: at.second ?? 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
 }
 
-function window(at: Temporal.ZonedDateTime, jitter: number, timeZone: string): { start: number; end: number } {
+function window(at: Temporal.ZonedDateTime, jitter: number, timeZone: string) {
   const plain = at.toPlainDateTime();
   const epoch = (time: Temporal.PlainDateTime) => Math.floor(time.toZonedDateTime(timeZone).epochMilliseconds / 1000);
   return { start: epoch(plain.subtract({ seconds: jitter })), end: epoch(plain.add({ seconds: jitter })) };

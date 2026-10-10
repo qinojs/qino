@@ -61,7 +61,7 @@ async function recent(app: App) {
     total: rows.length,
     urls: named(urls),
     referers: named(refs)
-      .filter(([url]) => { try { return new URL(url).host !== ownHost; } catch { return false; } })
+      .filter(([url]) => { const u = URL.parse(url); return u && u.host !== ownHost; })
       .slice(0, TOP),
   };
 }
@@ -74,14 +74,14 @@ const refererCells = (url: string) => {
   return html`<td style="color:${uniqueColor(u.host)}">${u.host}<td style="word-break:break-all">${u.pathname + u.search}`;
 };
 
-function topTable(rows: (readonly [string, number])[], total: number, cells = urlCell): HtmlString {
+function topTable(rows: (readonly [string, number])[], total: number, cells = urlCell) {
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map(([label, n]) => html`<tr>
     ${cells(label)}
     <td style="text-align:right">${int(n)}
     <td style="text-align:right"><small>${total ? Math.round(n / total * 100) : 0}%</small>`)}</table></div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const { t } = node.app;
   const r = await recent(node.app);
   return html.async`<div class=u2-flex>

@@ -41,6 +41,16 @@ Deno.test("ResHtml: no import map, nothing to allow", () => {
   assertEquals(html.inlineScripts.size, 0);
 });
 
+Deno.test("ResHtml: resolve turns import-map names into urls, the longest prefix first", () => {
+  const html = new ResHtml();
+  html.importMap.set("@a/", "https://cdn/a@1/").set("@a/el/", "https://cdn/el@2/").set("@b", "/b.js");
+  html.scripts.add("@a/x.js").add("@a/el/y.js").add("@b").add("/own.js");
+  html.styles.add("@a/x.css").add("https://other/z.css");
+  html.resolve();
+  assertEquals([...html.scripts], ["https://cdn/a@1/x.js", "https://cdn/el@2/y.js", "/b.js", "/own.js"]);
+  assertEquals([...html.styles], ["https://cdn/a@1/x.css", "https://other/z.css"]);
+});
+
 Deno.test("ResHtml: a script-free page carries no import map and no data block", () => {
   const html = new ResHtml();
   html.importMap.set("@qino/pub/", "/m/core/pub/js/");

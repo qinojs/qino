@@ -4,12 +4,12 @@ import { ProviderError } from "@qino/qino/social";
 import { postOf } from "./lib/status.ts";
 
 import type { App } from "@qino/qino";
-import type { Provider, Target } from "@qino/qino/social";
+import type { Provider } from "@qino/qino/social";
 
 // deno-lint-ignore no-explicit-any
 type Account = any;
 
-async function config(app: App): Promise<{ base: URL; token: string }> {
+async function config(app: App) {
   const settings = app.settings["social.mastodon"];
   const url = String(await settings.url ?? "").trim();
   const token = String(await settings.accessToken ?? "").trim();
@@ -38,14 +38,14 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
   throw new ProviderError(`social.mastodon: ${message}`, retry);
 }
 
-async function account(app: App): Promise<Account> {
+async function account(app: App) {
   return call(app, "/api/v1/accounts/verify_credentials");
 }
 
 const targetId = (account: Account) => String(account.uri ?? account.url ?? account.acct ?? account.id);
 
 /** The account belonging to the configured Mastodon user token. */
-async function targets(app: App): Promise<Omit<Target, "provider">[]> {
+async function targets(app: App) {
   const settings = app.settings["social.mastodon"];
   const url = String(await settings.url ?? "").trim();
   const token = String(await settings.accessToken ?? "").trim();

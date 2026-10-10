@@ -7,9 +7,10 @@ const cmsLegacyDir = fromFileUrl(new URL("../../../cms-legacy/", import.meta.url
 const metaDir = fromFileUrl(new URL("../../../meta/", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
 const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
+const finDir = fromFileUrl(new URL("../../../fin/", import.meta.url));
 const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shp3Dir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, testModuleDir];
+const stores = [moduleDir, shp3Dir, finDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -28,12 +29,11 @@ async function* files(dir: string): AsyncGenerator<string> {
 const IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?<type>type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
 
 /** Qino specifiers a file imports, each with the names taken from it ("*" = namespace or star). */
-function imports(source: string): Map<string, Set<string>> {
+function imports(source: string) {
   const found = new Map<string, Set<string>>();
   for (const { groups } of source.matchAll(IMPORT)) {
     if (!groups!.spec.startsWith(".") && !groups!.spec.startsWith("@qino/qino")) continue;
-    const names = found.get(groups!.spec) ?? new Set<string>();
-    found.set(groups!.spec, names);
+    const names = found.getOrInsertComputed(groups!.spec, () => new Set<string>());
     const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").replace(/^type\s+/, "").trim();
     if (clause.startsWith("*")) { names.add("*"); continue; }
     const braces = clause.match(/\{([\s\S]*?)\}/);
@@ -48,7 +48,7 @@ function imports(source: string): Map<string, Set<string>> {
 
 /** Qino specifiers a file imports *values* from. `import type` and inline `type` names need no
  *  linked module, which is what keeps the duck-typed extension points free of dependencies. */
-function valueImports(source: string): Set<string> {
+function valueImports(source: string) {
   const found = new Set<string>();
   for (const { groups } of source.matchAll(IMPORT)) {
     const { type, spec } = groups!;
@@ -64,13 +64,13 @@ function valueImports(source: string): Set<string> {
 }
 
 /** Local target of a relative or @qino/qino package import. */
-function targetPath(spec: string, file: string): string | undefined {
+function targetPath(spec: string, file: string) {
   const url = spec.startsWith(".") ? new URL(spec, toFileUrl(file)).href : import.meta.resolve(spec);
   return url.startsWith("file:") ? fromFileUrl(url) : undefined;
 }
 
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
-function exports(source: string): Set<string> | undefined {
+function exports(source: string) {
   if (/^export\s+\*\s+from/m.test(source)) return;
   const names = new Set<string>();
   for (const m of source.matchAll(/^export\s+(?:declare\s+)?(?:abstract\s+)?(?:const|let|var|function|async\s+function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
@@ -86,7 +86,7 @@ function exports(source: string): Set<string> | undefined {
 }
 
 /** Every mod.ts, as module name -> absolute path. */
-async function barrels(): Promise<Map<string, string>> {
+async function barrels() {
   const found = new Map<string, string>();
   for (const entry of Deno.readDirSync(moduleDir)) {
     const path = `${moduleDir}${entry.name}/mod.ts`;
@@ -115,7 +115,7 @@ async function* moduleDirs(dir: string): AsyncGenerator<string> {
 
 /** Every file a module consists of, relative to its folder. `tests/` stays behind: a consumer runs
  *  the module, not its suite — the same cut the module copier makes. */
-async function modulePaths(dir: string, base = dir): Promise<string[]> {
+async function modulePaths(dir: string, base = dir) {
   const found: string[] = [];
   for await (const entry of Deno.readDir(dir)) {
     if (entry.isDirectory) {
@@ -145,7 +145,7 @@ Deno.test("a manifest that lists its files lists all of them", async () => {
     for await (const dir of moduleDirs(store)) {
       const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
       if (!manifest.files) continue;
-      assertEquals(manifest.files.slice().sort(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
+      assertEquals(manifest.files.toSorted(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
     }
   }
 });
@@ -160,7 +160,7 @@ Deno.test("module icons expose the fragment rendered by moduleIcon", async () =>
   }
 });
 
-async function assertStore(dir: string): Promise<void> {
+async function assertStore(dir: string) {
   const store = JSON.parse(await Deno.readTextFile(dir + "store.json"));
   const plugins = [];
   for await (const entry of Deno.readDir(dir)) {
@@ -172,6 +172,7 @@ async function assertStore(dir: string): Promise<void> {
 
 Deno.test("module stores list every plugin directory", async () => {
   await assertStore(moduleDir);
+  await assertStore(finDir);
   await assertStore(testModuleDir);
 });
 
@@ -242,9 +243,10 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 // whole module in for a link, a widget or a prompt. They want an extension point, and until that
 // vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
 const OPTIONAL = new Set([
+  "cms.backend.home/nodeApi.ts -> home.record", // manual measurements, guarded by modules.linked("home.record")
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
-  "cms.backend.superuser.db.query/lib/ai.ts -> ai1.tools", // "explain this query" is a bonus, not the console
-  "cms.text/api.ts -> ai1", // translation, guarded by modules.linked("ai1")
+  "cms.backend.superuser.db.query/lib/ai.ts -> ai.tools", // "explain this query" is a bonus, not the console
+  "cms.text/api.ts -> ai", // translation, guarded by modules.linked("ai")
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
   "cms.backend.superuser.module/detail.ts -> fileEditor",
   "cms.cont.html/plugin.ts -> fileEditor",
@@ -257,7 +259,7 @@ const OPTIONAL = new Set([
 
 /** What a module may import values from. `dependencies` is transitive — declaring one module brings
  *  its own declarations along — and `core` is there for everyone, since `App` declares it itself. */
-function linked(manifests: Map<string, string[]>, mod: string): Set<string> {
+function linked(manifests: Map<string, string[]>, mod: string) {
   const seen = new Set(["core", mod]);
   const walk = (name: string) => {
     for (const dep of manifests.get(name) ?? []) if (!seen.has(dep)) { seen.add(dep); walk(dep); }
@@ -296,8 +298,8 @@ Deno.test("modules only take values from modules they depend on", async () => {
 
 // Prospective package boundary: cms* ships as @qino/cms, the rest as @qino/qino. An edge from the
 // lower to the upper layer would make the cms unextractable — type-only imports included, they are
-// just as unresolvable across a package split.
-const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.");
+// just as unresolvable across a package split. Starters build site content, so they ship with the cms.
+const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.") || mod.startsWith("starter.");
 
 Deno.test("the qino layer never imports from the cms layer", async () => {
   const errors = [];
@@ -330,8 +332,7 @@ Deno.test("no mod.ts exports anything nobody imports", async () => {
       for (const [spec, names] of imports(await Deno.readTextFile(file))) {
         const target = targetPath(spec, file);
         if (!target?.startsWith(moduleDir)) continue;
-        const set = used.get(target) ?? new Set<string>();
-        used.set(target, set);
+        const set = used.getOrInsertComputed(target, () => new Set<string>());
         for (const name of names) set.add(name);
       }
     }

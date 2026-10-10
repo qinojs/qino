@@ -1,8 +1,7 @@
 import { html } from "@qino/qino";
 import { formOf } from "@qino/qino/cms.cont.form2";
 
-
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -13,7 +12,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const settings = node.settings;
   const fieldName = "file" + node.id;
   const form = await formOf(node);

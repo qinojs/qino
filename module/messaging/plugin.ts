@@ -9,6 +9,7 @@ import type { Jobs } from "@qino/qino/cron";
 import type { Placeholder } from "./mod.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { api } from "./api.ts";
 
 // Sends due deliveries: released ones, and retries after our own failures.
 export const cron = {

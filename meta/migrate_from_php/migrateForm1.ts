@@ -26,7 +26,7 @@ export async function prepareForm1Settings(app: App): Promise<void> {
     const rows = await app.db.query`SELECT id, ${sql.id("offset")} FROM qg_setting WHERE basis = ${Number(inputs)}`;
     for (const row of rows) {
       if (String(row.offset) === String(row.id)) continue;
-      await app.db.query`UPDATE qg_setting SET ${sql.id("offset")} = ${String(row.id)} WHERE id = ${row.id}`;
+      await app.db.exec`UPDATE qg_setting SET ${sql.id("offset")} = ${String(row.id)} WHERE id = ${row.id}`;
       changed++;
     }
   }
@@ -52,10 +52,10 @@ export async function migrateForm1(app: App): Promise<void> {
     settings.__inited = true; // the legacy children and confirmation text already exist
 
     if (fields) {
-      await app.db.query`UPDATE page SET basis = ${form.id}, name = 'main', module = 'cms.cont.form2.fields1' WHERE id = ${fields.id}`;
+      await app.db.exec`UPDATE page SET basis = ${form.id}, name = 'main', module = 'cms.cont.form2.fields1' WHERE id = ${fields.id}`;
     }
-    if (success) await app.db.query`UPDATE page SET name = 'success' WHERE id = ${success.id}`;
-    await app.db.query`UPDATE page SET module = 'cms.cont.form2', settings = ${JSON.stringify(settings)} WHERE id = ${form.id}`;
+    if (success) await app.db.exec`UPDATE page SET name = 'success' WHERE id = ${success.id}`;
+    await app.db.exec`UPDATE page SET module = 'cms.cont.form2', settings = ${JSON.stringify(settings)} WHERE id = ${form.id}`;
 
     if (wrapper && !await app.db.one`SELECT id FROM page WHERE basis = ${wrapper.id} LIMIT 1`) {
       await (await cms(app).node(Number(form.id))).removeChild(Number(wrapper.id));

@@ -1,9 +1,9 @@
-import { errMsg, FileTransformer, fs, html } from "@qino/qino";
+import { errMsg, FileTransformer, fs, html, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -17,9 +17,9 @@ export async function install({ app }: { app: App }) {
 type Platform = "debian" | "alpine" | "macos" | "windows" | "unknown";
 
 async function detectPlatform(): Promise<Platform> {
-  if (Deno.build.os === "darwin") return "macos";
-  if (Deno.build.os === "windows") return "windows";
-  if (Deno.build.os === "linux") {
+  if (sys.os === "darwin") return "macos";
+  if (sys.os === "windows") return "windows";
+  if (sys.os === "linux") {
     try {
       const text = await fs.text("/etc/os-release");
       if (/ID(_LIKE)?=.*alpine/i.test(text)) return "alpine";
@@ -29,17 +29,13 @@ async function detectPlatform(): Promise<Platform> {
   return "unknown";
 }
 
-function isRoot(): boolean {
-  return Deno.uid() === 0;
+function isRoot() {
+  return sys.uid() === 0;
 }
 
 // --- Cache ---
 
-function cacheDir(app: App): string {
-  return app.fileTransformer.cacheDir;
-}
-
-async function cacheStats(dir: string): Promise<{ count: number; size: number }> {
+async function cacheStats(dir: string) {
   let count = 0, size = 0;
   try {
     for (const entry of await fs.list(dir)) {
@@ -51,7 +47,7 @@ async function cacheStats(dir: string): Promise<{ count: number; size: number }>
   return { count, size };
 }
 
-async function clearCache(dir: string, olderThanDays?: number): Promise<void> {
+async function clearCache(dir: string, olderThanDays?: number) {
   const cutoff = olderThanDays ? Date.now() - olderThanDays * 86_400_000 : Infinity;
   try {
     for (const entry of await fs.list(dir)) {
@@ -65,7 +61,7 @@ async function clearCache(dir: string, olderThanDays?: number): Promise<void> {
   } catch { /* ignore */ }
 }
 
-function fmtBytes(n: number): string {
+function fmtBytes(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
   if (n < 1024 ** 3) return `${(n / 1024 ** 2).toFixed(1)} MB`;
@@ -212,17 +208,17 @@ const BINARIES: Binary[] = [
   },
 ];
 
-async function runInstall(platform: Platform, bin: Binary): Promise<string> {
+async function runInstall(platform: Platform, bin: Binary) {
   const cmd = bin.install[platform];
   if (!cmd) return `No install command for platform "${platform}"`;
   const [prog, ...args] = cmd.split(" ");
   if (prog === "apt") args.unshift("-y");
   try {
-    const { stdout, stderr, code } = await new Deno.Command(prog, {
+    const { stdout, stderr, code } = await sys.command(prog, {
       args,
       stdout: "piped",
       stderr: "piped",
-    }).output();
+    });
     const dec = new TextDecoder();
     const out = dec.decode(stdout).trim();
     const err = dec.decode(stderr).trim()
@@ -236,7 +232,7 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
   }
 }
 
-async function resolveVersion(bin: Binary): Promise<string> {
+async function resolveVersion(bin: Binary) {
   const cmds: Record<string, { cmd: string; args: string[]; extract?: (out: string) => string }[]> = {
     imagemagick: [{ cmd: "magick", args: ["-version"] }, { cmd: "convert", args: ["-version"] }],
     ffmpeg:      [{ cmd: "ffmpeg", args: ["-version"] }],
@@ -257,15 +253,15 @@ async function resolveVersion(bin: Binary): Promise<string> {
   if (!entries) return "";
   for (const entry of entries) {
     try {
-      const { code, stdout, stderr } = await new Deno.Command(entry.cmd, {
+      const { code, stdout, stderr } = await sys.command(entry.cmd, {
         args: entry.args,
         stdout: "piped",
         stderr: "piped",
-      }).output();
+      });
       if (code !== 0) continue;
       const dec = new TextDecoder();
       const out = dec.decode(stdout).trim() || dec.decode(stderr).trim(); // pdftotext -v prints to stderr
-      return entry.extract ? entry.extract(out) : out.split("\n")[0].trim();
+      return entry.extract ? entry.extract(out) : out.split("\n", 1)[0].trim();
     } catch { /* try next */ }
   }
   return "";
@@ -279,7 +275,7 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   unknown: "",
 };
 
-async function renderBinary(bin: Binary, platform: Platform, root: boolean): Promise<HtmlString> {
+async function renderBinary(bin: Binary, platform: Platform, root: boolean) {
   const ok = await bin.available;
   const cls  = ok ? "-ok" : bin.optional ? "-optional" : "-missing";
   const icon = ok
@@ -318,9 +314,9 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
 
 // --- Render ---
 
-async function renderCache(app: App): Promise<HtmlString> {
+async function renderCache(app: App) {
   const t = app.t;
-  const dir = cacheDir(app);
+  const dir = app.fileTransformer.cacheDir;
   const stats = await cacheStats(dir);
   return html.async`
 <div class=u2-card>
@@ -343,7 +339,7 @@ async function renderCache(app: App): Promise<HtmlString> {
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString | string> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   if (vars.install_binary) {
     if (!isRoot()) return JSON.stringify({ error: "Not running as root" });
     const bin = BINARIES.find(b => b.id === vars.install_binary);
@@ -354,14 +350,14 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   if (vars.clear_cache) {
     const days = vars.clear_cache === true ? undefined : Number(vars.clear_cache) || undefined;
-    await clearCache(cacheDir(node.app), days);
+    await clearCache(node.app.fileTransformer.cacheDir, days);
     return JSON.stringify({ ok: true });
   }
 
   const [platform, root] = await Promise.all([detectPlatform(), isRoot()]);
 
   const t = node.app.t;
-  const rows = await Promise.all(BINARIES.map(bin => renderBinary(bin, platform, root)));
+  const rows = BINARIES.map(bin => renderBinary(bin, platform, root));
 
   const rootHint = !root
     ? html`<p style="opacity:.7;font-style:italic">Running as non-root — use the copy button and run commands manually.</p>`
@@ -390,7 +386,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 </div>`;
 }
 
-function renderCachePart(node: Node): Promise<HtmlString> {
+function renderCachePart(node: Node) {
   return renderCache(node.app);
 }
 

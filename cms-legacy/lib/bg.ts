@@ -22,8 +22,8 @@ export async function backgroundAttr(node: Node, fileName: string, style = ""): 
 }
 
 /** #rgb, #rrggbb or rgb(); undefined when the value is none of them. */
-function rgb(color: string): [number, number, number] | undefined {
-  const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)?.[1];
+function rgb(color: string) {
+  const hex = color.trim().match(/^#([\da-f]{3}|[\da-f]{6})$/i)?.[1];
   if (hex) {
     const full = hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;
     return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16)) as [number, number, number];

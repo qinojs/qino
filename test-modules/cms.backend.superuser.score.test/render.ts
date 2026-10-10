@@ -45,7 +45,7 @@ export async function list(node: Node): Promise<HtmlString> {
 }
 
 /** The scored pages themselves — the point of the test is seeing real pages ranked. */
-async function renderPages(app: App): Promise<HtmlString> {
+async function renderPages(app: App) {
   const scope = scopes(app.db).get("page");
   const top = scope
     ? await app.db.query<{ id: number; score: number; time: number }>`
@@ -66,7 +66,7 @@ async function renderPages(app: App): Promise<HtmlString> {
   </table>`;
 }
 
-async function renderPage(app: App, row: { id: number; score: number; time: number }, now: number): Promise<HtmlString> {
+async function renderPage(app: App, row: { id: number; score: number; time: number }, now: number) {
   const node = await cms(app).node(Number(row.id)).catch(() => undefined);
   const page = node?.exists();
   const title = page ? (await page.showTitle()).plain() : "";
@@ -81,11 +81,11 @@ async function renderPage(app: App, row: { id: number; score: number; time: numb
 }
 
 /** Stored score → decayed accesses. Not a view count: a hit adds 1 now and keeps fading from there. */
-function accesses(value: number): string {
+function accesses(value: number) {
   return value < 10 ? value.toFixed(2) : String(Math.round(value));
 }
 
-async function renderRow(app: App, tbl: string): Promise<HtmlString> {
+async function renderRow(app: App, tbl: string) {
   const scope = scopes(app.db).get(tbl);
   if (!scope) return html`<tr><td><code>${tbl}</code><td colspan=3>${await app.t`not registered`}`;
   const stats = await app.db.row<{ total: number; last: number }>`
@@ -98,7 +98,7 @@ async function renderRow(app: App, tbl: string): Promise<HtmlString> {
     <td>${time(Number(stats?.last ?? 0))}`;
 }
 
-function time(value: number): HtmlString {
+function time(value: number) {
   if (!value) return html`–`;
   return html`<u2-time datetime="${new Date(value * 1000).toISOString()}" second type=relative></u2-time>`;
 }

@@ -5,7 +5,7 @@ import { backgroundAttr } from "../lib/bg.ts";
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const page = await node.page();
   const startId = Number(await node.settings["start page"]);
   let start = startId ? await node.cms.node(startId) : page;

@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 const ICON = html.raw(await (await fetch(new URL("./pub/logo-wide.svg", import.meta.url))).text());
 
-async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, {ctx}: { ctx: Ctx }) {
 
   const app = node.app;
   const resHtml = ctx.res.html;
@@ -62,12 +62,13 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   const backendRoot = backendId ? await node.cms.node(backendId) : null;
   const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
 
-  /** Nav levels 1-3; only the active branch expands, only level 1 shows the module icon. */
+  /** Nav levels, as deep as the tree goes; only the active branch expands, only level 1 shows the
+   *  module icon. */
   async function nav(nodes: Node[], level: number): Promise<HtmlString> {
     const out = [];
     for (const child of nodes) {
       const active = await page.in(child);
-      const subs = level < 3 ? [...(await child.children({ access: 1 })).values()] : [];
+      const subs = [...(await child.children({ access: 1 })).values()];
       const sub = active && subs.length ? await nav(subs, level + 1) : "";
       const mod = level === 1 ? app.modules.get(String((await child.conts())[0]?.vs?.module ?? "")) : undefined;
       const use = moduleIcon(mod);
@@ -75,7 +76,9 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       const subIcon = subs.length
         ? html`<u2-ico class=-subIcon icon="${active ? "expand_less" : "expand_more"}" aria-hidden=true>${active ? "⌃" : "⌄"}</u2-ico>`
         : "";
-      const item = html`<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${await child.url()}">${icon}${await (await child.title()).string()}${subIcon}</a>${sub}`;
+      const classes = `-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}`;
+      const item = html`<li><a class="${classes}" style="--level:${level}" href="${await child.url()}">${icon}${
+        await (await child.title()).string()}${subIcon}</a>${sub}`;
       out.push(level === 1 ? item : html`<ul>${item}</ul>`);
     }
     return html.join(out);

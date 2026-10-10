@@ -30,7 +30,7 @@ export default async function (widget, { node, signal }) {
     <label><input type=number setting=cols class=-cols min=1 max=15 value="${cols}" style="width:5em">
       ${t`Columns (max: 15)`}</label>
     <div class=-widths>${widths.map((i) => html`<div>${i}<br>
-      <input setting="${'row_' + i}" value="${settings['row_' + i] ?? ''}" placeholder="50%"></div>`)}</div>
+      <input setting="${'row_' + i}" value="${settings['row_' + i]}" placeholder="50%"></div>`)}</div>
     <a class=-export href="${exportUrl(node.id)}">${t`Export table as Excel`}</a>
   </div>`;
 

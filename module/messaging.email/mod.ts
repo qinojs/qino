@@ -6,13 +6,13 @@ import { defaults } from "./lib/settings.ts";
 import { createMessage, transport } from "./lib/transport.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Attachment, Channel, Msg, Recipient, Rendering, To } from "@qino/qino/messaging";
+import type { Attachment, Channel, Msg, Rendering, To } from "@qino/qino/messaging";
 
 export { receive } from "./lib/inbound.ts";
 export { setTransport } from "./lib/transport.ts";
 
 /** Resolve `to` to mail addresses: one per user (main, else oldest). Users without one are skipped. */
-async function recipients(app: App, to: To & { email?: string | string[] }): Promise<Recipient[]> {
+async function recipients(app: App, to: To & { email?: string | string[] }) {
   const literals = [to.email ?? []].flat().map((value) => addressOf(value) ?? {
     address: value.trim().slice(0, 191), addressError: BAD_ADDRESS,
   });
@@ -42,7 +42,7 @@ export const send = (
 ): Promise<number> => dispatch(app, messagingChannel, to, titled(message), { onError });
 
 /** One batch of mails, over one connection. */
-async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, { render, uses, group }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, { render, uses, group }: Rendering) {
   const [config, mailer, attachments] = await Promise.all([defaults(app), transport(app), attachmentsOf(msg.attachments)]);
   if (!config.address) throw new ChannelError("Email has no system address. Set messaging.email.address.");
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
@@ -78,7 +78,7 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
 
 const nameOf = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || undefined;
 
-async function attachmentsOf(files?: Attachment[]): Promise<File[] | undefined> {
+async function attachmentsOf(files?: Attachment[]) {
   return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
 }
 

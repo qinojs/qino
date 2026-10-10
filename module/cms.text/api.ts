@@ -1,5 +1,5 @@
 import { s, Access, ApiError, sql } from "@qino/qino";
-import { AiError, translate } from "@qino/qino/ai1";
+import { AiError, translate } from "@qino/qino/ai";
 import { cms, sanitizeHtml } from "@qino/qino/cms";
 
 import type { ApiTree, Params, Ctx } from "@qino/qino";
@@ -15,7 +15,7 @@ class CmsTextService {
   get #app() { return this.#ctx.app; }
 
   /** Only configured language codes may reach the text table. "auto"/"clean" are internal source modes. */
-  #lang(code: string, ...modes: string[]): string {
+  #lang(code: string, ...modes: string[]) {
     if (modes.includes(code) || this.#app.languages.all.includes(code)) return code;
     throw new ApiError(400, `Unknown language "${code}"`);
   }
@@ -130,10 +130,10 @@ class CmsTextService {
     return 1;
   }
 
-  /** Through ai1: whichever translation service or chat model serves `translate` there. */
+  /** Through ai: whichever translation service or chat model serves `translate` there. */
   async transl(text: string, targetLang: string, sourceLang: string): Promise<string> {
     if (sourceLang && sourceLang === targetLang) return text; // nothing to translate
-    if (!this.#app.modules.linked("ai1")) throw new ApiError(501, "Translation needs the module ai1");
+    if (!this.#app.modules.linked("ai")) throw new ApiError(501, "Translation needs the module ai");
     return await translate(this.#app, { text, to: targetLang, from: sourceLang || undefined, format: "html" })
       .catch((e) => { throw e instanceof AiError ? new ApiError(e.status === 504 ? 504 : 502, e.message) : e; });
   }

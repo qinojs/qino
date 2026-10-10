@@ -1,6 +1,7 @@
 {
   "properties": {
     "client": {
+      "description": "A device (browser), recognized by its cookie",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -24,6 +25,7 @@
       }
     },
     "client_usr": {
+      "description": "The users who signed in on a device",
       "additionalProperties": {
         "properties": {
           "client_id": {
@@ -50,6 +52,7 @@
       }
     },
     "file": {
+      "description": "An uploaded file: name, type, size; the content lives on disk",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -102,6 +105,7 @@
       }
     },
     "grp": {
+      "description": "A group of users: what they have in common, not only rights",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -137,6 +141,7 @@
       }
     },
     "log": {
+      "description": "One entry per request: when, from where, which session; log_id columns of other tables point to the request that wrote a row (log_id: created, log_id_ch: last changed)",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -187,6 +192,7 @@
       }
     },
     "log_user_agent": {
+      "description": "User agents, for log",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -203,6 +209,7 @@
       }
     },
     "log_url": {
+      "description": "URLs of requests and referers, for log",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -224,6 +231,7 @@
       }
     },
     "log_ip": {
+      "description": "IP addresses, for log",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -241,6 +249,7 @@
       }
     },
     "module": {
+      "description": "The installed modules",
       "additionalProperties": {
         "properties": {
           "name": {
@@ -260,6 +269,7 @@
       }
     },
     "store": {
+      "description": "The stores modules come from",
       "additionalProperties": {
         "properties": {
           "url": {
@@ -272,6 +282,7 @@
       }
     },
     "qg_setting": {
+      "description": "The app settings as a tree: a row per key (offset) under its parent (basis)",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -312,6 +323,7 @@
       }
     },
     "sess": {
+      "description": "A session of a client, with its signed-in user",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -348,6 +360,7 @@
       }
     },
     "smalltext": {
+      "description": "Translations of the interface strings (t``), per namespace and language",
       "additionalProperties": {
         "properties": {
           "hash": {
@@ -398,6 +411,7 @@
       }
     },
     "text": {
+      "description": "A translatable text; its content per language is in text_lang",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -415,6 +429,7 @@
       }
     },
     "text_lang": {
+      "description": "The content of a text in one language",
       "additionalProperties": {
         "properties": {
           "text_id": {
@@ -442,6 +457,7 @@
       }
     },
     "usr": {
+      "description": "A user: a person with a login",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -505,6 +521,7 @@
       }
     },
     "usr_contact": {
+      "description": "Where to reach a user: verified email addresses, phone numbers, handles",
       "additionalProperties": {
         "properties": {
           "type": {
@@ -569,6 +586,7 @@
       }
     },
     "usr_grp": {
+      "description": "Which user is in which group",
       "additionalProperties": {
         "properties": {
           "usr_id": {

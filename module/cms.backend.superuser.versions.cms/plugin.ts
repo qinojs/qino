@@ -4,7 +4,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 // Linked label for a node. Contents often have no title, so prefix the page title:
 // "Page title › content label". node.url() points to page + anchor for contents.
-async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
+async function nodeAnchor(node: Node, id: number) {
   const page = await node.cms.node(id);
   const own = (await (await page.title()).string() ?? "").trim();
   let label = own || `#${id}`;
@@ -27,7 +27,7 @@ async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
   return html`<a href="${await page.url()}" target=_blank>${label}</a>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app;
   const db = app.db;
 
@@ -42,14 +42,10 @@ async function render(node: Node): Promise<HtmlString> {
       LEFT JOIN sess s ON l.sess_id = s.id
       LEFT JOIN usr u ON s.usr_id = u.id
     ) x WHERE x.rn = 1 ORDER BY x.time DESC LIMIT 20`.catch(() => []);
-  const recentParts = [];
-  for (const r of recent) {
-    const anchor = await nodeAnchor(node, Number(r.page_id));
-    recentParts.push(html`<tr>
-      <td>${anchor}
+  const recentParts = recent.map((r) => html.async`<tr>
+      <td>${nodeAnchor(node, Number(r.page_id))}
       <td>${u2.el.time(r.last)}
       <td>${r.username ?? "guest"}`);
-  }
   const recentBox = html.async`
 <div class=u2-card>
   <div class=-head>${app.t`Recently edited`}</div>
@@ -66,10 +62,7 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── nodes with most change churn ───────────────────────────────────────────
   const top = await db.query`SELECT page_id, COUNT(*) AS n FROM node_changed GROUP BY page_id ORDER BY n DESC LIMIT 20`.catch(() => []);
-  const topParts = [];
-  for (const r of top) {
-    topParts.push(html`<tr><td>${await nodeAnchor(node, Number(r.page_id))}<td style="text-align:right">${r.n}`);
-  }
+  const topParts = top.map((r) => html.async`<tr><td>${nodeAnchor(node, Number(r.page_id))}<td style="text-align:right">${r.n}`);
   const topBox = html.async`
 <div class=u2-card>
   <div class=-head>${app.t`Nodes with most history`}</div>

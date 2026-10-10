@@ -3,7 +3,7 @@ import { send as sendMail } from "@qino/qino/messaging.email";
 
 import { openForm } from "./mod.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Form } from "./mod.ts";
 
@@ -17,7 +17,7 @@ const settingsSchema = {
 };
 
 /** Contents the module needs to be usable; created once per node. */
-async function init(node: Node): Promise<void> {
+async function init(node: Node) {
   if (node.settings.__inited()) return;
   node.settings.__inited(true);
   await node.cont("main", "cms.cont.form2.fields1");
@@ -27,26 +27,26 @@ async function init(node: Node): Promise<void> {
 }
 
 /** Seconds since this client was first seen (new clients are mostly bots). Infinity if unknown. */
-async function clientAge(ctx: Ctx): Promise<number> {
+async function clientAge(ctx: Ctx) {
   if (!ctx.clientId) return Infinity;
   const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
   return first ? unixTime() - Number(first) : Infinity;
 }
 
 /** Bot heuristics. Returns a message if refused; flags borderline cases on the form. */
-async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
+async function spamCheck(node: Node, form: Form, ctx: Ctx) {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
-    app.fire("suspicious", { ctx, weight: 3, reason: "form2 honeypot filled" });
+    app.fire("suspicious", { ctx, weight: 3, reason: "form2 honeypot filled" }).catch(() => {});
     return app.t`Your entry looks like spam. Please try again or contact us directly.`;
   }
   const age = await clientAge(ctx);
   if (age < 3) {
-    app.fire("suspicious", { ctx, weight: 5, reason: "form2 submit from a brand-new client" });
+    app.fire("suspicious", { ctx, weight: 5, reason: "form2 submit from a brand-new client" }).catch(() => {});
     return app.t`Your entry could not be sent. Please try again.`;
   }
   if (age < 10) {
-    app.fire("suspicious", { ctx, reason: "form2 submit from a very young client" });
+    app.fire("suspicious", { ctx, reason: "form2 submit from a very young client" }).catch(() => {});
     const note = await app.t`This was probably sent by a web robot. Please do NOT move it to the spam folder — that would harm our sender reputation. When in doubt, do not click any link.`;
     form.values = { Attention: note, ...form.values };
   }
@@ -54,7 +54,7 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx): Promise<string> {
 }
 
 /** Build and send the mail. */
-async function send(node: Node, form: Form): Promise<boolean> {
+async function send(node: Node, form: Form) {
   const app = node.app;
   const subject = (await node.showText("mailSubject")).plain() ||
     (await (await node.page()).showTitle()).plain();
@@ -78,7 +78,7 @@ async function send(node: Node, form: Form): Promise<boolean> {
   }) > 0;
 }
 
-async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   await init(node);
   const edit = await node.edit();
   const t = node.app.t;
@@ -129,8 +129,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
     ${fields}
     <div class=-btns>
-      ${node.settings.reset() ? await cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
-      ${button && (recipients || edit) ? await cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
+      ${node.settings.reset() ? cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
+      ${button && (recipients || edit) ? cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
     </div>
   </form>
 </div>`;

@@ -1,13 +1,14 @@
+import { sys } from "@qino/qino";
+
 /** Run git, never interactive (a credential prompt would hang the request); with timeout. */
 export async function git(dir: string, args: string[], timeout = 30_000): Promise<{ ok: boolean; out: string }> {
-  const cmd = new Deno.Command("git", {
+  const { success, stdout, stderr } = await sys.command("git", {
     args: ["-C", dir, ...args],
     env: { GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "true", GIT_OPTIONAL_LOCKS: "0" },
     stdout: "piped",
     stderr: "piped",
     signal: AbortSignal.timeout(timeout),
-  });
-  const { success, stdout, stderr } = await cmd.output().catch((e) => ({ success: false, stdout: new Uint8Array(), stderr: new TextEncoder().encode(String(e?.message ?? e)) }));
+  }).catch((e) => ({ success: false, stdout: new Uint8Array(), stderr: new TextEncoder().encode(String(e?.message ?? e)) }));
   const text = new TextDecoder();
   return { ok: success, out: (text.decode(stdout) + text.decode(stderr)).trim() };
 }
@@ -64,12 +65,12 @@ export async function refs(root: string): Promise<string[]> {
 export async function reposOf<T>(dirs: Map<string, T>): Promise<Map<string, T[]>> {
   const roots = new Map<string, T[]>();
   for (const [dir, holds] of [...dirs].sort(([a], [b]) => a.localeCompare(b))) {
-    const known = [...roots.keys()].find((root) => dir.startsWith(root));
+    const known = roots.keys().find((root) => dir.startsWith(root));
     if (known) { roots.get(known)!.push(holds); continue; }
     const { ok, out } = await git(dir, ["rev-parse", "--show-toplevel"], 5_000);
     if (!ok) continue; // not a repository, or git cannot read it
     const root = out.endsWith("/") ? out : out + "/";
-    roots.set(root, [...(roots.get(root) ?? []), holds]);
+    roots.getOrInsert(root, []).push(holds);
   }
   return roots;
 }

@@ -105,23 +105,23 @@ export const fs = {
 
   // --- write (updates the cache) ---
 
-  /** A stream is piped chunk by chunk. `createNew` fails if the file exists. */
-  async write(path: string, data: string | Uint8Array | ReadableStream<Uint8Array>, { createNew = false } = {}): Promise<void> {
+  /** A stream is piped chunk by chunk. `createNew` fails if the file exists; `mode` applies to a new file. */
+  async write(path: string, data: string | Uint8Array | ReadableStream<Uint8Array>, { createNew = false, mode }: { createNew?: boolean; mode?: number } = {}): Promise<void> {
     const stream = data instanceof ReadableStream;
     const flags = createNew ? "wx" : "w";
     try {
-      if (Deno) await (typeof data === "string" ? Deno.writeTextFile : Deno.writeFile)(path, data, { createNew });
+      if (Deno) await (typeof data === "string" ? Deno.writeTextFile : Deno.writeFile)(path, data, { createNew, mode });
       // Bun.write has no flags; createPath: false keeps missing parents an error, like elsewhere
-      else if (Bun && !createNew) await Bun.write(path, stream ? new Response(data) : data, { createPath: false });
-      else if (stream) await data.pipeTo(Writable.toWeb(createWriteStream(path, { flags })));
-      else await writeFile(path, data, { flag: flags });
+      else if (Bun && !createNew && mode === undefined) await Bun.write(path, stream ? new Response(data) : data, { createPath: false });
+      else if (stream) await data.pipeTo(Writable.toWeb(createWriteStream(path, { flags, mode })));
+      else await writeFile(path, data, { flag: flags, mode });
     } finally {
       cache.delete(path);
     }
   },
-  /** Always recursive; an existing directory is fine. */
-  async mkdir(path: string): Promise<void> {
-    await mkdir(path, { recursive: true });
+  /** Always recursive; an existing directory is fine. `mode` applies to the directories created. */
+  async mkdir(path: string, { mode }: { mode?: number } = {}): Promise<void> {
+    await mkdir(path, { recursive: true, mode });
     cache.delete(path);
   },
   /** Missing is fine. A file or empty directory, like `Deno.remove`; `recursive` removes content too. */

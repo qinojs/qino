@@ -181,8 +181,9 @@ export class Db extends Emitter<DbEvents> {
       // Keep existing table objects: module installs re-run this, and a new DbTable would lose its
       // row class and identity map.
       tables[name] = this.#tables[name] ?? new DbTable(this, name);
-      await tables[name].reloadFields();
     }
+    const results = await Promise.allSettled(Object.values(tables).map(table => table.reloadFields()));
+    for (const result of results) if (result.status === "rejected") throw result.reason;
     this.#tables = tables; // swapped at once, so parallel code never sees a half-filled list
   }
 

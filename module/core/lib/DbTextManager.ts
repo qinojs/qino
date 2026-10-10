@@ -17,7 +17,7 @@ export class DbTextManager {
   get db(): Db { return this.#app.db; }
   get app(): App { return this.#app; }
 
-  #texts(): Map<string, DbText> {
+  #texts() {
     return scopeCache<Map<string, DbText>>(this.#cache, "dbTexts", () => new Map());
   }
 
@@ -101,7 +101,7 @@ export class DbTextLang {
       const value = await db.one`SELECT text FROM ${sql.id(tableRef("text_lang"))} WHERE text_id = ${this.text.id} AND lang = ${this.lang}`;
       this.value = String(value ?? "");
     }
-    return this.value!;
+    return this.value;
   }
 
   async set(value: any): Promise<void> {

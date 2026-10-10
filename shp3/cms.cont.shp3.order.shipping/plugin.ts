@@ -10,7 +10,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const order = await cart(ctx, false);
   const all = order ? await order.allowedShippings() : {};

@@ -1,8 +1,8 @@
 # sandbox.flow
 
-When an event fires, runs a flow: a list of steps, each a description and a small function, in a
-[sandbox](../sandbox/). The code sees only the tools the flow may use, and they run with the rights of
-its owner. Mostly an AI writes the flow, with the same tools it used and tested while planning.
+When an event fires, runs a flow: a function body in a [sandbox](../sandbox/), like the code of an
+`onclick` attribute. The code sees only the tools the flow may use, and they run with the rights of its
+owner. Mostly an AI writes the flow, with the same tools it used and tested while planning.
 
 ```ts
 import { listen } from "@qino/qino/sandbox.flow";
@@ -11,56 +11,38 @@ listen(app, {
   description: "Deutsche Texte von mir übersetzen, wenn sie fertig aussehen",
   on: { host: "db", event: "table:update-after" },
   owner: 9,
-  tools: ["post_ai1Api_decide", "get_core_languages", "post_cmsText_text_translate"],
+  tools: ["aiApi_decide_post", "core_languages_get", "cmsText_text_translate_post"],
   test: false, // tried out, now for real
-  steps: [
-    {
-      description: "Nur deutsche Texte, die ich geändert habe",
-      fn: (e, { context }) => e.table === "text_lang" && e.data.lang === "de" && context.user === 9,
-    },
-    {
-      description: "2 Minuten nach der letzten Änderung",
-      debounce: { ms: 120_000, by: "id.text_id" },
-    },
-    {
-      description: "Nur wenn der Text fertig aussieht",
-      fn: async (e, { tools }) => {
-        const options = ["done", "draft"];
-        const { choice } = await tools.post_ai1Api_decide({ content: e.data.text, question: "Fertig?", options });
-        return choice === "done";
-      },
-    },
-    {
-      description: "In alle anderen Sprachen übersetzen",
-      fn: async (e, { tools }) => {
-        const { all } = await tools.get_core_languages();
-        for (const lang of all.filter((l) => l !== "de")) {
-          await tools.post_cmsText_text_translate({ text: e.id.text_id, targetLang: lang, sourceLang: "de" });
-        }
-        return true;
-      },
-    },
-  ],
+  code: `
+    if (event.table !== "text_lang" || event.data.lang !== "de" || context.user !== owner) return;
+    const options = ["done", "draft"];
+    const { choice } = await tools.aiApi_decide_post({ content: event.data.text, question: "Fertig?", options });
+    if (choice !== "done") return;
+    const { all } = await tools.core_languages_get();
+    for (const lang of all.filter((l) => l !== "de")) {
+      await tools.cmsText_text_translate_post({ text: event.data.text_id, targetLang: lang, sourceLang: "de" });
+    }
+    return "translated";
+  `,
 }, { signal, report: (trace) => console.log(trace) });
 ```
 
-- **Steps:** each gets the previous result (the first one the event) and `{ tools, context }`; a falsy
-  result stops the run, `true` passes the input on (a filter is just its condition). `fn` is a function
-  or its source — self-contained, it sees nothing else.
-- **The event** arrives as data: objects of a class become their string form (a `DbTable` its name).
+- **`code`** is a function body, run as `async (event, tools, state, context, owner) => { code }`. It
+  sees nothing else; `return` ends the run, its value goes into the trace.
+- **`state`:** the flow's memory, an object: what a run leaves in it, the next run finds — e.g. the
+  invoice it made. Kept in the row as JSON, not in a test. Runs at the same time each start from the
+  state before them; the last one to end wins.
+- **`event`** arrives as data: objects of a class become their string form (a `DbTable` its name).
 - **`context.user`:** who caused the event, taken as it fires; **`owner`**: the flow's owner, so "when I …"
   is `context.user === owner`.
 - **`tools`:** the api's tools (`toTools`), only those named in `tools`, one params object each.
   They run in one request context per run, as `owner` (actor `sandbox.flow`), made by the first call.
 - **One sandbox per listening flow**, shared by its runs: no worker start per event. Tool calls carry
   their run, so traces stay apart. A timeout in one run ends the worker and the flow's other runs.
-- **`debounce`:** a step that waits `ms`; if a later run of the flow reaches it with the same key
-  (`by`, a path into the value) meanwhile, this run ends as `superseded`.
-- **`test`** is on unless `false`: only `get_*` tools take effect, the others are recorded as `skipped`
-  and return `undefined`. So a step returns a value of its own, not a writing tool's result — else it
-  stops in a test that would go on for real.
-- **The trace** (`run()` returns it, `listen()` hands it to `report`): per step its result, error and
-  tool calls; `end` is `done`, `stopped`, `superseded` or `error`.
+- **`test`** is on unless `false`: only `*_get` tools take effect, the others are recorded as `skipped`
+  and return `undefined`.
+- **The trace** (`run()` returns it, `listen()` hands it to `report`): the tool calls, the result or the
+  error, and the state if it changed; `end` is `done` or `error`.
 - **Own events are ignored:** the run's request context is marked from the start (`runAs` with
   `state`), so the flow skips every event of the run — those of setting the context up included.
 
@@ -68,18 +50,18 @@ listen(app, {
 
 ## The table
 
-Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `tools` and `steps` as JSON with each
-`fn` as source) are listened to on start when `active`; a changed row is listened to anew, a deleted
-one stops. `test` is on unless set off. A row that can't listen (unknown host, broken JSON) is logged
-and skipped; failing runs are logged too.
+Flows kept as data (table `flow`: `host`, `event`, owner `usr_id`, `code`, `tools` and `state` as JSON)
+are listened to on start when `active`; a changed row is listened to anew, a deleted one stops — writing
+only its state does not. `test` is on unless set off. A row that can't listen (unknown host, broken JSON)
+is logged and skipped; failing runs are logged too. `keep(app, id, trace)` keeps a run of such a flow made elsewhere (e.g. a run
+for real from the backend) as if the listening flow had made it: in the history, its state in the row.
 
 ## Api
 
 ```
-catalog            get            per host its events (description, data as JSON Schema), and the tables
 flows              get · post     your flows · make one, owned by you
-flows/:flow        get · patch · delete
-flows/:flow/test   post { event, user? }   try it on an example event, always as a test run → the trace
+flow/:flow         get · patch · delete
+flow/:flow/test    post { event, user? }   try it on an example event, always as a test run → the trace
 ```
 
 A flow belongs to who made it: to anyone else it answers like a missing one. Its tools run with the
@@ -87,50 +69,86 @@ owner's rights, so a flow never does more than its owner could.
 
 ## Planner
 
-An agent that turns a sentence into a flow — no code of its own: in **cms.backend.ai1.chat** make an
-agent with the tools `sandbox.flow` and this role, then tell it what should happen.
+An agent that turns a sentence into a flow — no code of its own: in **cms.backend.ai.chat** make an
+agent with the tools `sandbox.flow` and [ai.discover](../ai.discover/) and this role, then tell it
+what should happen.
 
 ```
-You make flows for qino (module sandbox.flow). The user says in a sentence what should happen;
-you turn it into a flow, try it, show the result, and switch it on only when the user agrees.
+You make flows for qino: when an event fires, a JavaScript function body runs with the tools the flow
+may use.
+The user says in a sentence what should happen; you build the flow, test it, show the result, and
+switch it on only when the user says so.
 
-1. Read the catalog first: hosts with their events (description, data as JSON Schema), tables with
-   their columns, and the tools a flow may call with their parameters.
-2. Pick host and event. Table events (db, table:insert-after/update-after/delete-after) carry
-   { table: its name, id, data: only the columns written }.
-3. Write the steps, each { description, fn } — fn is JS source, (value, { tools, context, owner }) => …
-   - value: the previous step's result; for the first, the event as data.
-   - return false or null to stop, true to pass the input on unchanged, anything else is the next
-     input. A filter is just its condition.
-   - tools.<name>(params): only the tools listed in the flow, one params object, path params by
-     name; always await. context.user: who caused the event; owner: the flow's owner, so
-     "when I …" is context.user === owner.
-   - { description, debounce: { ms, by } } waits; only the latest run per key (by: a path into the
-     value, e.g. "id.text_id") goes on.
-   - Self-contained code: nothing but the arguments. Small steps, safe to run twice.
-   - A step returns a value of its own, never a writing tool's result: in a test those return
-     undefined.
-   - Judging text: post_ai1Api_decide({ content, question }) is a yes/no question →
-     .probabilities.yes; with options ["a", "b"] or { a: "what a means" } it picks one.
-4. List in tools only what the steps call. Descriptions short, in the user's language.
-5. Make the flow (inactive, test mode), try it on an example event built from the event's schema,
-   show the user the trace, fix what is wrong. Switch it on (active, test false) only when asked.
+How to work:
+1. Find the event: aiDiscover_events_get({ search: "a text was changed" }), then its data:
+   aiDiscover_event_get({ event: "db:table:update-after" }). Events are named host:event.
+   Table events carry { table, id, data }: id is the primary key as text (a composite one joined
+   by ":", text_lang "12:de"), data the columns written. Time: app:cron:hour and app:cron:day carry
+   { time, date, weekday, hour }.
+2. Find what the code needs: aiDiscover_tables_get / aiDiscover_table_get for columns,
+   aiDiscover_tools_get / aiDiscover_tool_get for a tool's parameters.
+3. Make it: sandboxFlow_flows_post (inactive and in test mode until you change that).
+4. Test it on an example event built from the event's data: sandboxFlow_flow_test_post. Show the
+   user the trace; fix with sandboxFlow_flow_patch.
+5. Only when the user says so: sandboxFlow_flow_patch({ flow, active: true, test: false }).
 6. If an event or a tool is missing, say so. Never work around it.
+
+The code:
+- code is the body of async (event, tools, state, context, owner) => { … }. return ends the run; what
+  it returns shows in the trace. Return early when the event is not for the flow.
+- state is the flow's memory: set state.x, and the next run finds it (not in test mode). Use it to
+  remember what the flow made, e.g. state.invoice = id, instead of searching for it again.
+- tools.<name>(params) calls a tool: only those listed in the flow's tools, one params object with
+  path params by name, always await. context.user is who caused the event, owner is you (the
+  flow's owner): "when I …" is context.user === owner.
+- The code sees nothing but these names. Keep it small and safe to run twice.
+- In test mode only *_get tools run; the others are recorded and return undefined.
+- Judging text: aiApi_decide_post({ content, question }) answers a yes/no question
+  (.probabilities.yes); with options ["a", "b"] it picks one (.choice). In test mode it is skipped
+  too: test such a flow with the user, then switch test mode off.
+- Description short, in the user's language.
+
+Example 1. The user: "Wenn ein deutscher Text geändert wird, übersetze ihn in alle Sprachen."
+
+sandboxFlow_flows_post({
+  "description": "Deutsche Texte übersetzen",
+  "host": "db",
+  "event": "table:update-after",
+  "tools": ["core_languages_get", "cmsText_text_translate_post"],
+  "code": "if (event.table !== 'text_lang' || event.data.lang !== 'de') return;\nconst { all } = await tools.core_languages_get();\nfor (const lang of all.filter((l) => l !== 'de')) await tools.cmsText_text_translate_post({ text: event.data.text_id, targetLang: lang, sourceLang: 'de' });\nreturn 'translated';"
+})
+→ { "id": 4 }
+
+sandboxFlow_flow_test_post({
+  "flow": 4,
+  "event": { "table": "text_lang", "id": "12:de", "data": { "text_id": 12, "lang": "de", "text": "Willkommen auf unserer Seite." } }
+})
+→ the trace: the tool calls and the result; *_post calls are "skipped" in the test.
+
+Example 2. The user: "Jeden Montag um 7 Uhr die Seite 5 in alle Sprachen übersetzen, was noch fehlt."
+
+sandboxFlow_flows_post({
+  "description": "Montags Seite 5 übersetzen",
+  "host": "app",
+  "event": "cron:hour",
+  "tools": ["cmsText_page_translateAllLangs_post"],
+  "code": "if (event.weekday !== 'monday' || event.hour !== 7) return;\nawait tools.cmsText_page_translateAllLangs_post({ page: 5, ifNeeded: true });\nreturn 'translated';"
+})
 ```
 
 ## Not yet
 
-- **Test mode goes by name, not by effect:** only `get_*` tools run, so a `POST` that changes nothing
-  (`post_ai1Api_decide`) is skipped too and returns `undefined`. Plan: a route says it only reads
+- **Test mode goes by name, not by effect:** only `*_get` tools run, so a `POST` that changes nothing
+  (`aiApi_decide_post`) is skipped too and returns `undefined`. Plan: a route says it only reads
   (`Verb.readOnly`, `GET` by default), `toTools` passes it on as MCP's `annotations.readOnlyHint`, and a
   test run skips what is not read-only. Core vocabulary, needs an OK.
 - **Events are not filtered by rights:** a flow sees every event of its host, whatever its owner may
   read — a flow on `table:insert-after` sees every row of every table. Its api is for superusers until then.
   Plan: a flow sees what its owner caused; events of others only where the event declares who may
   listen (like `access`/`guard` of an api route, e.g. `node:*` for who may read the node).
-- **Runs live in memory:** a crash or restart loses a running run and a debounce wait (at-most-once).
+- **Runs live in memory:** a crash or restart loses a running run (at-most-once).
   Later, per flow: store the event before the run, delete it after, rerun what is left on start
-  (at-least-once, steps idempotent).
+  (at-least-once, code idempotent).
 - **Runs are kept in memory only:** `history(app, id)` has the latest 20 of a flow of the table, newest
-  first; runs that stopped at the first step (the event was not for it) are only counted. A restart
-  forgets them; what a run changed is in the core log (actor `sandbox.flow`).
+  first; runs without a tool call, a result or a changed state (the event was not for it) are only
+  counted. A restart forgets them; what a run changed is in the core log (actor `sandbox.flow`).

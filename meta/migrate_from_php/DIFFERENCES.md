@@ -60,22 +60,21 @@
 
 ## HTML / Assets
 
-Alles war statisch in PHP (`html::`) — in Deno instanz-basiert via `ctx.html`.
+Alles war statisch in PHP (`html::`) — in Deno instanz-basiert via `ctx.res.html`.
 
-| PHP                          | Deno                                                  |
-| ---------------------------- | ----------------------------------------------------- |
-| `html::addJSFile($url)`      | `ctx.html.legacyScripts.add(url)`                     |
-| `html::addCSSFile($url)`     | `ctx.html.styles.add(url)`                            |
-| `html::addJSM($url)`         | `ctx.html.scripts.add(url)`                           |
-| `html::$title = ...`         | `ctx.html.title = ...`                                |
-| `html::$titlePrefix`         | `ctx.html.titlePrefix`                                |
-| `html::$titleSuffix`         | `ctx.html.titleSuffix`                                |
-| `html::$content .= ...`      | `ctx.html.content += ...`                             |
-| `html::$head .= ...`         | `ctx.html.head += ...`                                |
-| `html::$meta['description']` | `ctx.html.meta["description"]`                        |
-| `html::getHeader()`          | `ctx.html.getHeader()`                                |
-| `html::output()`             | `ctx.html.render()` (gibt String zurück, kein `echo`) |
-| —                            | `ctx.html.prependContent(str)` (neu)                  |
+| PHP                          | Deno                                                      |
+| ---------------------------- | --------------------------------------------------------- |
+| `html::addJSFile($url)`      | `ctx.res.html.legacyScripts.add(url)`                     |
+| `html::addCSSFile($url)`     | `ctx.res.html.styles.add(url)`                            |
+| `html::addJSM($url)`         | `ctx.res.html.scripts.add(url)`                           |
+| `html::$title = ...`         | `ctx.res.html.title = ...`                                |
+| `html::$titlePrefix`         | `ctx.res.html.titlePrefix`                                |
+| `html::$titleSuffix`         | `ctx.res.html.titleSuffix`                                |
+| `html::$content .= ...`      | `ctx.res.html.content += ...`                             |
+| `html::$head .= ...`         | `ctx.res.html.head += ...`                                |
+| `html::$meta['description']` | `ctx.res.html.meta["description"]`                        |
+| `html::getHeader()`          | — (Teil von `ctx.res.html.render()`)                      |
+| `html::output()`             | `ctx.res.html.render()` (gibt String zurück, kein `echo`) |
 
 ## Pfade
 
@@ -240,13 +239,13 @@ export const cms = {
 };
 ```
 
-| PHP                                                  | Deno                                                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `html::addCSSFile(...)`                              | `ctx.html.styles.add(...)`                                                                  |
-| `cms::$RenderPath`                                   | `app.cms.RenderPath`                                                                        |
-| Layout: `include appPATH.'qg/'.$module.'/index.php'` | `await import(module.data+'index.ts')`                                                     |
-| `exit` nach `header(...)`                            | `ctx.responseHeaders.set(...)`, `throw new OutputException(body)`                           |
-| `parts/$part.php`                                    | expliziter Export unter `cms.node.parts`: `{ list }`                                        |
+| PHP                                                  | Deno                                                              |
+| ---------------------------------------------------- | ----------------------------------------------------------------- |
+| `html::addCSSFile(...)`                              | `ctx.res.html.styles.add(...)`                                    |
+| `cms::$RenderPath`                                   | `app.cms.RenderPath`                                              |
+| Layout: `include appPATH.'qg/'.$module.'/index.php'` | `await import(module.data+'index.ts')`                            |
+| `exit` nach `header(...)`                            | `ctx.responseHeaders.set(...)`, `throw new OutputException(body)` |
+| `parts/$part.php`                                    | expliziter Export unter `cms.node.parts`: `{ list }`              |
 
 ### Options
 

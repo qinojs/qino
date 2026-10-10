@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { ctx } from '@qino/pub/qino.js';
 
-const DBFILE = /dbFile\/[0-9]+\//; // an editable dbFile url (…/dbFile/<id>/…)
+const DBFILE = /dbFile\/\d+\//; // an editable dbFile url (…/dbFile/<id>/…)
 
 const EDIT_SVG ='<svg style="display:block; background:#fff" width="32" height="28" viewBox="0 0 32 28"><path d="M29.996 2c.002 0 .003.002.004.004v23.992c0 .002-.002.003-.004.004H2.004C2.002 26 2 25.998 2 25.996V2.004C2 2.002 2.002 2 2.004 2h27.992zM30 0H2C.9 0 0 .9 0 2v24c0 1.1.9 2 2 2h28c1.1 0 2-.9 2-2V2c0-1.1-.9-2-2-2z"/><path d="M26 7c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3zm2 17H4v-4l7-12 8 10h2l7-6z"/></svg>';
 
@@ -90,7 +90,7 @@ const editColumn = (tr, icon) => {
   td.style.cssText = 'width:1.4em; padding-inline:0; text-align:center';
   tr.lastElementChild.before(td);
   const img = tr.querySelector('.-preview img');
-  if (!img || !img.src.match(/dbFile\/[0-9]+\/.*\.(jpg|jpeg|png)/i)) return;
+  if (!img || !img.src.match(/dbFile\/\d+\/.*\.(jpg|jpeg|png)/i)) return;
   td.style.cursor = 'pointer';
   td.title = 'Edit image';
   td.innerHTML = icon;

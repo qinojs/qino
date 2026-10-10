@@ -5,7 +5,7 @@ import { socialProvider } from "@qino/qino/social.mastodon";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Mastodon", de: "Mastodon" });
 }
 
-async function act(app: App, vars: Record<string, unknown> | undefined): Promise<string> {
+async function act(app: App, vars: Record<string, unknown> | undefined) {
   if (!vars) return "";
   try {
     if (vars.save != null) {
@@ -31,7 +31,7 @@ async function act(app: App, vars: Record<string, unknown> | undefined): Promise
   }
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const note = await act(node.app, postedVars(node.id));
   const settings = node.app.settings["social.mastodon"];
   const url = String(await settings.url ?? "");
@@ -52,7 +52,7 @@ async function render(node: Node): Promise<HtmlString> {
       <u2-fields>
         ${node.app.t`Server URL`} <input type=url name=url value="${url}" placeholder="https://mastodon.social" required>
         ${node.app.t`Access token`} <input type=password name=accessToken autocomplete=new-password
-          placeholder="${configured ? await node.app.t`Configured — leave empty to keep` : ""}">
+          placeholder="${configured ? node.app.t`Configured — leave empty to keep` : ""}">
       </u2-fields>
       <button name=save value=1>${node.app.t`Save and check`}</button>
       <button name=check value=1>${node.app.t`Check`}</button>

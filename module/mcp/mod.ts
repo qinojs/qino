@@ -33,7 +33,7 @@ export async function mcpFetch(ctx: Ctx): Promise<never> {
 
 /** 401 challenge. With `oauth_server` it points to the resource metadata, so clients without custom
  *  headers (browser connectors) find the authorization server. */
-function unauthorized(ctx: Ctx): Output {
+function unauthorized(ctx: Ctx) {
   const base = ctx.req.url.origin + ctx.req.appUrl.replace(/\/$/, "");
   const challenge = ctx.app.modules.get("oauth_server")
     ? `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`

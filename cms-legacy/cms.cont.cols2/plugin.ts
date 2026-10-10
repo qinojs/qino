@@ -15,7 +15,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const cols = Math.max(2, Number(await node.settings.cols) || 2);
   const space = cssLength(await node.settings.space);
   const rowSpace = cssLength(await node.settings["row-space"]) || space;

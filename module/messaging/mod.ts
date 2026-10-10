@@ -154,7 +154,7 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
  * `url`, a mail `replyTo`). Together with the columns it is the whole message.
  */
 function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
-  const { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...rest } = msg ?? {} as Msg;
+  const { text: _text, title: _title, format: _format, template: _template, attachments: _attachments, ...rest } = msg ?? {};
   return Object.keys(rest).length ? { ...data, msg: rest } : data ?? null;
 }
 
@@ -170,7 +170,7 @@ function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
 export async function record(
   app: App,
   message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: Record<string, unknown>; grpId?: number; logId?: number; time?: number },
-  deliveries: { usrId?: number; address?: string; ref?: string; error?: string; sent?: number; due?: number }[] = [],
+  deliveries: { usrId?: number; address?: string; externalId?: string; error?: string; sent?: number; due?: number }[] = [],
 ): Promise<{ id: number; ids: number[] }> {
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
@@ -201,7 +201,7 @@ export async function record(
         message_id: id,
         usr_id: delivery.usrId ?? null,
         address: delivery.address ?? null,
-        ref: delivery.ref ?? null,
+        external_id: delivery.externalId ?? null,
         due: delivery.due ?? null,
         sent: delivery.sent ?? null,
         error: delivery.error ?? null,
