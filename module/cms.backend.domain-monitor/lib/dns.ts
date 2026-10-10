@@ -1,13 +1,13 @@
 // Minimal DNS client speaking the wire format over TCP.
 //
-// Standalone (no imports from this module), so it can move to a shared place when needed.
-//
-// Not Deno.resolveDns: it returns no TTLs and can't query DS or DNSKEY. TCP, not UDP: Deno's
-// datagram API is unstable and TCP has no 512-byte truncation. With RFC 7766 pipelining all
-// questions of a batch share one connection; answers are matched by message id. No `QTYPE=ANY`:
-// RFC 8482 allows servers to answer it with a placeholder.
+// Not node:dns: it returns no TTLs and can't query DS or DNSKEY. TCP, not UDP: no 512-byte
+// truncation. With RFC 7766 pipelining all questions of a batch share one connection; answers are
+// matched by message id. No `QTYPE=ANY`: RFC 8482 allows servers to answer it with a placeholder.
 
+import { resolve4 } from "node:dns/promises";
 import { readFile } from "node:fs/promises";
+
+import { connect } from "./net.ts";
 
 export const TYPES = { A: 1, NS: 2, CNAME: 5, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, DS: 43, DNSKEY: 48, TLSA: 52, HTTPS: 65, CAA: 257 } as const;
 export type Type = keyof typeof TYPES;
@@ -16,7 +16,7 @@ const PORT = 53;
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
-// RFC 5952 form, so values compare equal to what Deno.resolveDns returns.
+// RFC 5952 form, so values compare equal to what node:dns returns.
 function ipv6(bytes: Uint8Array) {
   const groups = Array.from({ length: 8 }, (_, i) => ((bytes[i * 2] << 8) | bytes[i * 2 + 1]).toString(16));
   let at = -1, len = 0;
@@ -65,7 +65,7 @@ class Reader {
   }
 }
 
-// Canonical text per record type, formatted like Deno.resolveDns so both sources stay comparable.
+// Canonical text per record type, formatted like node:dns so both sources stay comparable.
 function rdata(r: Reader, type: number, len: number) {
   const end = r.pos + len;
   const value = (() => {
@@ -120,16 +120,6 @@ function parse(msg: Uint8Array) {
   return { id, rcode: flags & 0x0f, values: values.sort(), ttl, authority: authority.sort() };
 }
 
-async function readExact(conn: Deno.Conn, size: number) {
-  const buf = new Uint8Array(size);
-  for (let read = 0; read < size;) {
-    const n = await conn.read(buf.subarray(read));
-    if (n == null) return null;
-    read += n;
-  }
-  return buf;
-}
-
 // Stop waiting after `ms`. The read itself rejects when the socket is closed; that rejection is
 // swallowed here.
 function idle<T>(pending: Promise<T>, ms: number): Promise<T | null> {
@@ -147,15 +137,13 @@ async function exchange(
   into: Map<number, ReturnType<typeof parse>>,
   signal?: AbortSignal,
 ): Promise<boolean> {
-  // The signal only covers connect; to stop reads hanging on a silent server, abort closes the socket.
+  // Aborting closes the socket, which also ends reads hanging on a silent server.
   const deadline = AbortSignal.timeout(4000);
   const limit = signal ? AbortSignal.any([signal, deadline]) : deadline;
-  let conn: Deno.TcpConn | undefined;
+  let conn: Awaited<ReturnType<typeof connect>> | undefined;
   let connected = false;
-  const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
-  limit.addEventListener("abort", abort, { once: true });
   try {
-    conn = await Deno.connect({ hostname: server, port: PORT, signal: limit });
+    conn = await connect(server, PORT, { signal: limit });
     connected = true;
     const base = Math.floor(Math.random() * 0xf000);
     const index = new Map(open.map((question, i) => [base + i, question.at]));
@@ -168,14 +156,13 @@ async function exchange(
       body.push(type >> 8, type & 0xff, 0, 1); // QTYPE, QCLASS=IN
       frames.push(body.length >> 8, body.length & 0xff, ...body);
     });
-    const data = new Uint8Array(frames);
-    for (let sent = 0; sent < data.length;) sent += await conn.write(data.subarray(sent));
+    conn.write(new Uint8Array(frames));
     for (let received = 0; received < open.length; received++) {
       // The first answer may use the full deadline; after that, silence means the server is done
       // (even if the connection stays open).
-      const head = received ? await idle(readExact(conn, 2), 1000) : await readExact(conn, 2);
+      const head = received ? await idle(conn.exact(2), 1000) : await conn.exact(2);
       if (!head) break; // closed or gone quiet — the caller follows up on whatever is still open
-      const msg = await readExact(conn, (head[0] << 8) | head[1]);
+      const msg = await conn.exact((head[0] << 8) | head[1]);
       if (!msg) break;
       const answer = parse(msg);
       const at = index.get(answer.id);
@@ -183,15 +170,14 @@ async function exchange(
     }
   } catch { /* unreachable, refused, blocked, or out of time */ }
   finally {
-    limit.removeEventListener("abort", abort);
-    abort();
+    conn?.close();
   }
   return connected;
 }
 
 /**
  * Ask a batch of questions, trying the given servers in order until one answers.
- * Names come back without the trailing root dot — unlike Deno.resolveDns, normalize before comparing.
+ * Names come back without the trailing root dot, like node:dns.
  */
 export async function resolve(servers: string | string[], questions: { name: string; type: Type }[], signal?: AbortSignal) {
   const answers = new Map<number, ReturnType<typeof parse>>();
@@ -222,4 +208,4 @@ export const systemServer = (): Promise<string | null> =>
 
 /** Addresses of a nameserver name, so callers can ask that server directly. */
 export const serverIps = (name: string): Promise<string[]> =>
-  Deno.resolveDns(name, "A").catch(() => []);
+  resolve4(name).catch(() => []);

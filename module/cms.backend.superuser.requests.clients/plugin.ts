@@ -1,4 +1,6 @@
-import { getCtx, html, sql, sys, unixTime } from "@qino/qino";
+import { Resolver } from "node:dns/promises";
+import { isIP } from "node:net";
+import { getCtx, html, sql, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -122,17 +124,9 @@ const logRow = (db: App["db"], id: unknown) => db.row`
 /** PTR lookup for an IP (v4/v6); anonymized digits ("X") count as 1, like the PHP version. */
 async function hostname(ip: unknown) {
   const addr = String(ip ?? "").replaceAll("X", "1");
-  let name;
-  if (addr.includes(":")) {
-    const [head, tail = ""] = addr.split("::");
-    const left = head ? head.split(":") : [], right = tail ? tail.split(":") : [];
-    const all = [...left, ...Array(8 - left.length - right.length).fill("0"), ...right];
-    name = [...all.map((g) => g.padStart(4, "0")).join("")].reverse().join(".") + ".ip6.arpa";
-  } else if (/^\d+(\.\d+){3}$/.test(addr)) {
-    name = addr.split(".").reverse().join(".") + ".in-addr.arpa";
-  } else return "";
-  const names = await sys.resolveDns(name, "PTR", { signal: AbortSignal.timeout(2000) }).catch(() => []);
-  return names.map((n) => n.replace(/\.$/, "")).join(", ");
+  if (!isIP(addr)) return "";
+  const names = await new Resolver({ timeout: 2000, tries: 1 }).reverse(addr).catch(() => []);
+  return names.join(", ");
 }
 
 const ACTIVE = 900; // a session touched within 15 min counts as active

@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import { mysql, postgres, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
 
+import type { DatabaseSync } from "node:sqlite";
 import type { Pool } from "../../deps.ts";
 
 export type ExecResult = { insertId: number; affectedRows: number };
@@ -128,6 +128,18 @@ class MysqlDriver extends DbDriver {
   protected override closeDriver() { return this.#pool.end(); }
 }
 
+// deno-lint-ignore no-explicit-any
+const { Bun, Deno, process } = globalThis as any;
+
+/** `node:sqlite`, in Bun `bun:sqlite` — both answer `exec`, `prepare().all/run`, `loadExtension`
+ *  and `close` alike. Loaded on first use, so other backends never load it. */
+function openSqlite(path: string): DatabaseSync {
+  if (Bun) return new (process.getBuiltinModule("bun:sqlite").Database)(path);
+  // Deno: extensions need FFI rights, the flag alone throws without them
+  const allowExtension = !Deno || Deno.permissions.querySync({ name: "ffi" }).state === "granted";
+  return new (process.getBuiltinModule("node:sqlite").DatabaseSync)(path, { allowExtension });
+}
+
 // How long a transaction may hold the connection while work waits, before it counts as deadlock.
 const STUCK_MS = 30_000;
 
@@ -143,8 +155,7 @@ class SqliteDriver extends DbDriver {
 
   constructor(path: string) {
     super();
-    // Extensions need FFI rights in Deno; the flag alone throws without them.
-    this.#db = new DatabaseSync(path, { allowExtension: Deno.permissions.querySync({ name: "ffi" }).state === "granted" });
+    this.#db = openSqlite(path);
     this.#db.exec("PRAGMA foreign_keys = ON");
     // One sync per commit instead of per write (a request writes session, log, settings…).
     // NORMAL survives a process crash; only power loss can lose the last commits.

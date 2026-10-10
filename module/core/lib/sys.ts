@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { Resolver } from "node:dns/promises";
 import { createServer } from "node:http";
 import { loadavg, uptime } from "node:os";
 import { Readable, pipeline } from "node:stream";
@@ -19,7 +18,6 @@ type CommandOptions = {
   stderr?: "piped" | "null";
 };
 type CommandOutput = { code: number; success: boolean; signal: string | null; stdout: Uint8Array; stderr: Uint8Array };
-type RecordType = "A" | "AAAA" | "CNAME" | "NS" | "PTR";
 type ServeOptions = { port?: number; hostname?: string; signal?: AbortSignal };
 type ServeHandler = (req: Request, info: { remoteAddr: { hostname: string } }) => Response | Promise<Response>;
 
@@ -81,7 +79,7 @@ const concat = (parts: Uint8Array[]) => {
   return all;
 };
 
-/** What depends on the JS runtime (processes, system info, DNS), for Deno, Bun and Node; files are in
+/** What depends on the JS runtime (processes, system info, serving), for Deno, Bun and Node; files are in
  *  `fs`. Another runtime is added here, not at the callers. Names follow Deno. */
 export const sys = {
   /** Name and version, e.g. "Deno 2.9.5". */
@@ -139,14 +137,5 @@ export const sys = {
       },
     });
     signal?.addEventListener("abort", () => server.stop(), { once: true });
-  },
-  /** Records that are plain names or addresses. */
-  resolveDns(name: string, type: RecordType, { signal }: { signal?: AbortSignal } = {}): Promise<string[]> {
-    if (Deno) return Deno.resolveDns(name, type, { signal });
-    if (signal?.aborted) return Promise.reject(signal.reason);
-    const resolver = new Resolver();
-    const cancel = () => resolver.cancel();
-    signal?.addEventListener("abort", cancel, { once: true });
-    return resolver.resolve(name, type).finally(() => signal?.removeEventListener("abort", cancel)) as Promise<string[]>;
   },
 };
