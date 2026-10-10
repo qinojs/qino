@@ -182,8 +182,10 @@ Deno.test("ai.agent: the api, for anyone signed in; a session only for its user"
   const answer = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).ask.post({ content: "time?", wait: true })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
   assertEquals(await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
-  const { messages } = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get()) as { messages: { role: string }[] };
+  const { messages } = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get()) as { messages: { id: number; role: string }[] };
   assertEquals(messages.map((m) => m.role), ["system", "system", "user", "assistant", "tool", "assistant", "system"]);
+  const since = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get({ after: messages.at(-2)!.id })) as { messages: { role: string }[] };
+  assertEquals(since.messages.map((m) => m.role), ["system"]); // only what came after
   const bobs = [() => app.api["ai.agent"].sessions(session).get(), () => app.api["ai.agent"].sessions(session).ask.post({ content: "hi" }), () => app.api["ai.agent"].sessions(session).note.post({ content: "hi" })];
   for (const call of bobs) {
     await assertRejects(() => runAs(app, 8, "test", call), Error, "No such session"); // not bob's: neither to read nor to talk in

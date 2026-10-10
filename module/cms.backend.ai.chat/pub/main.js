@@ -63,11 +63,10 @@ cms.initNode("backend.ai.chat", (el) => {
   // only the messages since the last one are added, so what is opened or selected stays as it is; one
   // after the other, as it is also called while an answer is on its way
   const show = () => showing = showing.catch(() => {}).then(async () => {
-    const id = session, { agent, messages, running } = await agents.sessions(id).get();
+    const id = session, { agent, messages: news, running } = await agents.sessions(id).get({ after: last });
     if (id !== session) return;
     if (running !== busy) working(running); // an answer on its way, also after a reload
     title.replaceChildren(colored(`#${agent}`), ` · ${id}`);
-    const news = messages.filter((m) => m.id > last);
     if (!news.length) return;
     last = news.at(-1).id;
     sent?.remove(); // shown until it is kept
