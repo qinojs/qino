@@ -72,6 +72,9 @@ async function withApp(fn: (app: App) => Promise<void>) {
   }
 }
 
+/** The time note before a question, without the time. */
+const clocked = (content: unknown) => typeof content === "string" ? content.replace(/^Now: .*/, "Now") : content;
+
 /** What the session kept: per message its role, what it says, and the model at its provider that answered. */
 const kept = async (app: App, session: number) =>
   (await app.db.query`SELECT m.message, am.name AS model FROM ai_session_message m
@@ -79,7 +82,7 @@ const kept = async (app: App, session: number) =>
     WHERE m.session_id = ${session} ORDER BY m.id`)
     .map((row) => {
       const m = JSON.parse(String(row.message));
-      return [m.role, m.content || m.toolCalls?.[0]?.name, row.model ?? ""];
+      return [m.role, clocked(m.content) || m.toolCalls?.[0]?.name, row.model ?? ""];
     });
 
 Deno.test("ai.agent: a session goes on from what was said, with the agent's role and tools, and keeps it all", () => withApp(async (app) => {
@@ -89,7 +92,7 @@ Deno.test("ai.agent: a session goes on from what was said, with the agent's role
   assertEquals((await session.ask("time?")).text, "lead #2 it is noon");
   assertEquals(await kept(app, session.id), [
     ["system", `${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while it does not change
-    ["user", "hi", ""], ["assistant", "lead #1 hi", "m"],
+    ["system", "Now", ""], ["user", "hi", ""], ["assistant", "lead #1 hi", "m"], // the time, before the first question
     ["user", "time?", ""], ["assistant", "toolset_clock_get", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
   const answered = await app.db.col`SELECT model_provider_id FROM ai_session_message
@@ -156,6 +159,16 @@ Deno.test("ai.agent: what the user says strengthens the memories close to it, in
   assertEquals(await index(app, agent.id), `## Your memories\n${HINT}\n[1] the logo is blue\n[2] apples are red`);
 }));
 
+Deno.test("ai.agent: the time comes as a note before the first question and after a pause", () => withApp(async (app) => {
+  const session = await (await Agent.create(app, { system: "lead" })).start(7);
+  await session.ask("hi");
+  await session.ask("again"); // no pause: no note
+  await app.db.query`UPDATE ai_session_message SET time = time - 600 WHERE session_id = ${session.id}`;
+  await session.ask("back");
+  const notes = (await kept(app, session.id)).filter(([role], i) => role === "system" && i);
+  assertEquals(notes.length, 2);
+}));
+
 Deno.test("ai.agent: the api, for anyone signed in; a session only for its user", () => withApp(async (app) => {
   const agents = () => app.api["ai.agent"].agents, agent = () => app.api["ai.agent"].agent;
   const { id } = await runAs(app, 7, "test", () => agents().post({ system: "lead" })) as { id: number };
@@ -169,8 +182,10 @@ Deno.test("ai.agent: the api, for anyone signed in; a session only for its user"
   const answer = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).ask.post({ content: "time?", wait: true })) as { text: string };
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
   assertEquals(await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
-  const { messages } = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get()) as { messages: { role: string }[] };
-  assertEquals(messages.map((m) => m.role), ["system", "user", "assistant", "tool", "assistant", "system"]);
+  const { messages } = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get()) as { messages: { id: number; role: string }[] };
+  assertEquals(messages.map((m) => m.role), ["system", "system", "user", "assistant", "tool", "assistant", "system"]);
+  const since = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get({ after: messages.at(-2)!.id })) as { messages: { role: string }[] };
+  assertEquals(since.messages.map((m) => m.role), ["system"]); // only what came after
   const bobs = [() => app.api["ai.agent"].sessions(session).get(), () => app.api["ai.agent"].sessions(session).ask.post({ content: "hi" }), () => app.api["ai.agent"].sessions(session).note.post({ content: "hi" })];
   for (const call of bobs) {
     await assertRejects(() => runAs(app, 8, "test", call), Error, "No such session"); // not bob's: neither to read nor to talk in
@@ -207,7 +222,7 @@ Deno.test("ai.agent: what the model is given is kept as the session starts: role
   for (const [i, call] of calls.entries()) if (i) assertEquals(call.slice(0, calls[i - 1].length - 1), calls[i - 1].slice(0, -1)); // only added to
   const given = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
-  assertEquals(given.map((m) => m.content), [`${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, "the logo is round"]); // given once, and the note
+  assertEquals(given.map((m) => clocked(m.content)), [`${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, "Now", "the logo is round"]); // given once, and the notes
   assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]);
   assertEquals(given[0].prefer, { cost: 1 });
   assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
@@ -217,7 +232,7 @@ Deno.test("ai.agent: a failure is kept, but not sent again", () => withApp(async
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   await assertRejects(() => session.ask("fail"), Error, "down");
   assertEquals((await session.ask("hi")).text, "lead #2 hi");
-  assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "user", "error", "user", "assistant"]);
+  assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "system", "user", "error", "user", "assistant"]);
 }));
 
 Deno.test("ai.agent: one turn after the other in a session", () => withApp(async (app) => {

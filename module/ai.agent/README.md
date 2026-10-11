@@ -23,6 +23,8 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   from the agent meanwhile no longer runs.
 - **Notes:** `session.note(content)` tells the agent something without asking. It reads it with the
   next question (the model gets it as a `system` message in the history).
+- **The time** comes as a note before the first question of a session and after 5 minutes without a
+  message (`Now: 2026-10-10T21:40+02:00`); what the user said stays as it is.
 - **One turn after the other** per session: a message waits for the answer to the one before.
   `session.cancel()` stops the one on its way; after an hour it is cancelled anyway, so a stream
   that never ends cannot keep the session. What a cancelled step said so far stays, marked
@@ -92,7 +94,7 @@ agent/:agent/sessions           post    start a session, as yourself { prefer } 
 agent/:agent/memories           get · post { content, replaces? }
 agent/:agent/memories/:memory   delete
 agent/:agent/search             post    its own memory: memories and past sessions { query }
-sessions/:session               get     its agent, everything said, whether an answer is on its way (running)
+sessions/:session               get     its agent, everything said (after: since that id), whether an answer is on its way (running)
 sessions/:session/ask           post    { content, wait? } → { running } at once, with wait the answer
 sessions/:session/note          post    { content }
 sessions/:session/cancel        post    → { cancelled }

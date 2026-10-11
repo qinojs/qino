@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
-import { Resolver } from "node:dns/promises";
+import { createServer } from "node:http";
 import { loadavg, uptime } from "node:os";
+import { Readable, pipeline } from "node:stream";
 import { pathToFileURL } from "node:url";
 
 // deno-lint-ignore no-explicit-any
@@ -17,7 +18,8 @@ type CommandOptions = {
   stderr?: "piped" | "null";
 };
 type CommandOutput = { code: number; success: boolean; signal: string | null; stdout: Uint8Array; stderr: Uint8Array };
-type RecordType = "A" | "AAAA" | "CNAME" | "NS" | "PTR";
+type ServeOptions = { port?: number; hostname?: string; signal?: AbortSignal };
+type ServeHandler = (req: Request, info: { remoteAddr: { hostname: string } }) => Response | Promise<Response>;
 
 const SIGNALS: Record<string, number> = { SIGHUP: 1, SIGINT: 2, SIGKILL: 9, SIGTERM: 15 };
 
@@ -42,6 +44,34 @@ function nodeCommand(cmd: string, { args = [], cwd, env, signal, stdout = "piped
   });
 }
 
+/** Serves web-standard `Request`/`Response` over `node:http`, the Node way. */
+function nodeServe({ port, hostname, signal }: ServeOptions, handler: ServeHandler) {
+  const server = createServer(async (req, res) => {
+    const abort = new AbortController();
+    res.on("close", () => abort.abort());
+    const headers = new Headers();
+    for (let i = 0; i < req.rawHeaders.length; i += 2) headers.append(req.rawHeaders[i], req.rawHeaders[i + 1]);
+    const request = new Request(`http://${req.headers.host ?? "localhost"}${req.url}`, {
+      method: req.method,
+      headers,
+      body: req.method === "GET" || req.method === "HEAD" ? null : Readable.toWeb(req) as ReadableStream,
+      signal: abort.signal,
+      duplex: "half",
+    } as RequestInit);
+    const info = { remoteAddr: { hostname: req.socket.remoteAddress ?? "" } };
+    const response = await Promise.resolve(handler(request, info)).catch((e) => {
+      console.error(e);
+      return new Response("Internal Server Error", { status: 500 });
+    });
+    res.writeHead(response.status, response.statusText, [...response.headers].flat());
+    // pipeline destroys both ends, so a closed connection cancels the body (e.g. a stream that never ends)
+    if (response.body && req.method !== "HEAD") pipeline(Readable.fromWeb(response.body), res, () => {});
+    else res.end();
+  });
+  signal?.addEventListener("abort", () => server.close(), { once: true });
+  server.listen(port, hostname);
+}
+
 const concat = (parts: Uint8Array[]) => {
   const all = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let at = 0;
@@ -49,7 +79,7 @@ const concat = (parts: Uint8Array[]) => {
   return all;
 };
 
-/** What depends on the JS runtime (processes, system info, DNS), for Deno, Bun and Node; files are in
+/** What depends on the JS runtime (processes, system info, serving), for Deno, Bun and Node; files are in
  *  `fs`. Another runtime is added here, not at the callers. Names follow Deno. */
 export const sys = {
   /** Name and version, e.g. "Deno 2.9.5". */
@@ -92,13 +122,20 @@ export const sys = {
     // deno-lint-ignore no-explicit-any
     Deno ? Deno.unrefTimer(timer) : (timer as any).unref?.();
   },
-  /** Records that are plain names or addresses. */
-  resolveDns(name: string, type: RecordType, { signal }: { signal?: AbortSignal } = {}): Promise<string[]> {
-    if (Deno) return Deno.resolveDns(name, type, { signal });
-    if (signal?.aborted) return Promise.reject(signal.reason);
-    const resolver = new Resolver();
-    const cancel = () => resolver.cancel();
-    signal?.addEventListener("abort", cancel, { once: true });
-    return resolver.resolve(name, type).finally(() => signal?.removeEventListener("abort", cancel)) as Promise<string[]>;
+  /** Like `Deno.serve(opt, handler)`: `info.remoteAddr.hostname` is the client IP in every runtime.
+   *  Port 8000 by default; aborting `signal` stops the server. */
+  serve({ port = 8000, hostname, signal }: ServeOptions, handler: ServeHandler): void {
+    if (Deno) return void Deno.serve({ port, hostname, signal }, handler);
+    if (!Bun) return nodeServe({ port, hostname, signal }, handler);
+    const server = Bun.serve({
+      port,
+      hostname,
+      // deno-lint-ignore no-explicit-any
+      fetch: (req: Request, srv: any) => {
+        srv.timeout(req, 0); // like Deno and Node: no idle limit while a request runs (slow handlers, streams)
+        return handler(req, { remoteAddr: { hostname: srv.requestIP(req)?.address ?? "" } });
+      },
+    });
+    signal?.addEventListener("abort", () => server.stop(), { once: true });
   },
 };

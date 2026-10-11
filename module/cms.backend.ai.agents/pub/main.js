@@ -54,6 +54,35 @@ cms.initNode("backend.ai.agents", (el) => {
       if (field) save(field);
     });
   }
+  // one's own session goes on here: the answer comes with the conversation as it follows along; while
+  // it is on its way, the button stops it
+  const ask = el.querySelector("[data-ask]"), button = ask?.querySelector("button"), label = button?.textContent;
+  let busy = false;
+  const working = (on) => {
+    busy = on;
+    if (button) button.textContent = on ? button.dataset.stop : label;
+  };
+  button?.addEventListener("click", (e) => {
+    if (!busy) return;
+    e.preventDefault(); // no submit, also not blocked by the empty field
+    agents.sessions(Number(session)).cancel.post().catch((err) => alert(err.message));
+  });
+  el.addEventListener("submit", async (e) => {
+    const form = e.target;
+    if (!("ask" in form.dataset)) return;
+    e.preventDefault();
+    const field = form.elements.content, content = field.value;
+    field.value = "";
+    try {
+      await agents.sessions(Number(session)).ask.post({ content });
+      working(true); // till the conversation says otherwise
+    } catch (err) { field.value = content; await alert(err.message); }
+  });
+  el.addEventListener("keydown", (e) => {
+    if (!e.target.closest("[data-ask]") || e.key !== "Enter" || e.shiftKey || e.isComposing || matchMedia("(pointer: coarse)").matches) return;
+    e.preventDefault();
+    if (!busy) e.target.form.requestSubmit();
+  });
   el.addEventListener("submit", async (e) => {
     const form = e.target;
     if (!("agent" in form.dataset)) return;
@@ -68,6 +97,16 @@ cms.initNode("backend.ai.agents", (el) => {
   const query = new URL(location.href).searchParams, agent = query.get("agent"), session = query.get("session");
   const parts = session ? [] : agent ? ["agent", "sessions", "memories", "tools"] : ["agents", "sessions"];
   const vars = agent ? { agent } : {};
+  // a new session of one's own with the agent, opened on its page to talk in
+  el.querySelector("[data-new-session]")?.addEventListener("click", async () => {
+    try {
+      const { id } = await agents.agent(Number(agent)).sessions.post({});
+      const url = new URL(location.href);
+      url.searchParams.delete("agent");
+      url.searchParams.set("session", id);
+      location.href = url.href;
+    } catch (err) { await alert(err.message); }
+  });
   el.addEventListener("click", async (e) => {
     const button = e.target.closest("button[data-memory]");
     if (!button) return;
@@ -159,21 +198,32 @@ cms.initNode("backend.ai.agents", (el) => {
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);
   const box = el.querySelector("[cms-part=conversation]");
   if (!box) return;
+  // starts at the latest message, and stays at the end while what is shown still grows (markdown, late
+  // layout) or more comes; scrolled up, it stays where it is
   const end = () => box.scrollTop = box.scrollHeight;
-  render(box).then(end); // starts at the latest message
-  // only the messages since the last one are added, so what is opened or selected stays as it is; who
-  // is at the end stays there
-  const poll = setInterval(async () => {
-    if (!el.isConnected) return clearInterval(poll);
+  let pinned = true, top = 0;
+  box.addEventListener("scroll", () => {
+    pinned = box.scrollTop < top ? false : pinned || box.scrollHeight - box.scrollTop - box.clientHeight < 10;
+    top = box.scrollTop;
+  });
+  if (box.firstElementChild) new ResizeObserver(() => pinned && end()).observe(box.firstElementChild);
+  render(box).then(end);
+  working("running" in (box.firstElementChild?.dataset ?? {}));
+  // only the messages since the last one are added, so what is opened or selected stays as it is; every
+  // second while an answer is on its way
+  const poll = async () => {
+    if (!el.isConnected) return;
     const list = box.firstElementChild;
     const after = Number(list?.querySelector(":scope > [data-message]:last-child")?.dataset.message ?? 0);
     const more = document.createElement("template");
     more.innerHTML = await api.cms.node(nid).html.part("conversation").post({ vars: { session, after } }).catch(() => "");
-    const added = more.content.firstElementChild?.children;
-    if (!list || !added?.length) return;
-    const news = [...added], atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 10;
-    list.append(...news);
-    await Promise.all(news.map(render));
-    if (atEnd) end();
-  }, 3000);
+    const part = more.content.firstElementChild, news = [...part?.children ?? []];
+    if (part) working("running" in part.dataset);
+    if (list && news.length) {
+      list.append(...news);
+      await Promise.all(news.map(render));
+    }
+    setTimeout(poll, busy ? 1000 : 3000);
+  };
+  setTimeout(poll, 3000);
 });

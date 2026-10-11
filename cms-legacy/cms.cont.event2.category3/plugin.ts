@@ -3,7 +3,7 @@ import { html } from "@qino/qino";
 import { eventDate, eventDates, startsTodayOrLater } from "../lib/event2.ts";
 import { cmsText } from "../lib/text.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
@@ -26,15 +26,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const month = new Intl.DateTimeFormat(ctx.lang, { month: "long" });
   const day = new Intl.DateTimeFormat(ctx.lang, { day: "2-digit", month: "2-digit", year: "numeric" });
   const time = new Intl.DateTimeFormat(ctx.lang, { hour: "2-digit", minute: "2-digit" });
-  const rows: HtmlString[] = [];
+  const rows = [];
   let lastMonth = "";
   for (const event of events) {
     const key = `${event.start.getFullYear()}-${event.start.getMonth()}`;
     if (key !== lastMonth) rows.push(html`<tr class=-month><td colspan=2><h3>${month.format(event.start)}</h3></td></tr>`);
     lastMonth = key;
-    const url = await event.node.url();
     const label = event.row.all_day ? day.format(event.start) : `${day.format(event.start)}, ${time.format(event.start)}`;
-    rows.push(await html.async`<tr><td><time datetime="${event.start.toISOString()}">${label}</time></td><td><a href="${url}?cmscid=${event.node.id}">${event.node.showTitle()}</a></td></tr>`);
+    rows.push(html.async`<tr><td><time datetime="${event.start.toISOString()}">${label}</time></td><td><a href="${event.node.url()}?cmscid=${event.node.id}">${event.node.showTitle()}</a></td></tr>`);
   }
 
   return html.async`<div>

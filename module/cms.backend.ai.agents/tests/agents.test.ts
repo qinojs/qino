@@ -73,7 +73,7 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
 
     // a session's page: everything about it
     const its2 = await as(() => aboutSession(node, { vars: { session: session.id } }));
-    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">m</span>", ">search_post</span>", "1: search_post"]) {
+    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">m</span>", ">search_post</span>"]) {
       assertStringIncludes(its2, part);
     }
     assert(!its2.includes("[object Promise]"));

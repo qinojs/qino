@@ -99,9 +99,9 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const warnings = [];
   if (edit) {
     const success = await node.cont("success", "cms.cont.text");
-    if (!recipients) warnings.push(await html.async`<u2-alert open variant=warning>${t`No recipients defined!`}</u2-alert>`);
+    if (!recipients) warnings.push(html.async`<u2-alert open variant=warning>${t`No recipients defined!`}</u2-alert>`);
     if (!redirectId && !(await success.showText()).plain()) {
-      warnings.push(await html.async`<u2-alert open variant=warning>${t`A confirmation text or a redirect should be defined.`}</u2-alert>`);
+      warnings.push(html.async`<u2-alert open variant=warning>${t`A confirmation text or a redirect should be defined.`}</u2-alert>`);
     }
   }
 

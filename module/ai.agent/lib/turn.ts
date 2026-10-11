@@ -1,4 +1,4 @@
-import { errMsg } from "@qino/qino";
+import { errMsg, unixTime } from "@qino/qino";
 import { run } from "@qino/qino/ai.tools";
 
 import { context } from "./context.ts";
@@ -11,6 +11,16 @@ import type { Message, Part, TextOutput } from "@qino/qino/ai";
 const TURN_MS = 60 * 60_000;
 /** Model calls per turn at most: a big task takes many steps, the time bounds it. */
 const STEPS = 100;
+/** Seconds without a message after which the agent is told the time again. */
+const PAUSE = 5 * 60;
+
+/** The time as a note before a question: at the first one, and after a pause since `last`. */
+function clock(last: number, now = unixTime()): Message | undefined {
+  if (last && now - last < PAUSE) return;
+  const at = Temporal.Instant.fromEpochMilliseconds(now * 1000).toZonedDateTimeISO(Temporal.Now.timeZoneId())
+    .toString({ smallestUnit: "minute", timeZoneName: "never" });
+  return { role: "system", content: `Now: ${at}` };
+}
 
 // One turn after the other per session, as a person answers: a message waits for the one before.
 const queues = new WeakMap<App, Map<number, Promise<unknown>>>();
@@ -61,8 +71,11 @@ export function note(app: App, session: number, content: string | Part[]): Promi
  *  message of role `error`, not sent again. */
 export function ask(app: App, session: number, content: string | Part[], { onText }: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
   return inTurn(app, session, async (signal) => {
+    // the time, as a note: the user's message stays as it was said; asked before the context is kept
+    const time = clock(Number(await app.db.one`SELECT MAX(time) FROM ai_session_message WHERE session_id = ${session}`));
     const { agent: id, usrId, prefer, tools, messages: given } = await context(app, session);
-    const asked: Message = { role: "user", content }, messages = [...given, asked];
+    const asked: Message = { role: "user", content }, messages = [...given, ...time ? [time] : [], asked];
+    if (time) await save(app, session, id, time);
     await save(app, session, id, asked);
     // always streamed: a long answer is no silence, and what a cancelled step said so far stays
     let partial = "";

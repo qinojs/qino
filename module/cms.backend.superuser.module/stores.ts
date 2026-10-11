@@ -1,4 +1,4 @@
-import { toFileUrl } from "@std/path";
+import { pathToFileURL } from "node:url";
 import { errMsg, getCtx, html, moduleIcon, requireStepUp } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
@@ -10,7 +10,7 @@ import type { Node } from "@qino/qino/cms";
 const name = "cms.backend.superuser.module";
 
 // A typed URL wins, everything else is a path below the app.
-const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.dir)).href;
+const resolve = (app: App, spec: string) => new URL(spec, pathToFileURL(app.dir)).href;
 
 // Stores decide where server code may come from, so only superusers may change them — page
 // access is not enough.
@@ -67,7 +67,7 @@ function storeLabel(app: App, url: string) {
   const u = new URL(url);
   if (u.host) return u.host;
   const dir = decodeURIComponent(new URL(".", url).pathname);
-  const own = toFileUrl(app.dir).pathname;
+  const own = pathToFileURL(app.dir).pathname;
   return dir.startsWith(own) ? "./" + dir.slice(own.length) : dir.split("/").filter(Boolean).slice(-2).join("/") || url;
 }
 

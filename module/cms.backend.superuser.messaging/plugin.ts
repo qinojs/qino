@@ -113,7 +113,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
-      <td data-attachments>${thumbs.get(Number(row.id)) ?? html`${Number(row.attachment_count) || 0}`}
+      <td data-attachments>${thumbs.get(Number(row.id)) ?? (Number(row.attachment_count) || 0)}
       <td style="white-space:nowrap">${reached(row, view)}
       <td style="white-space:nowrap">${trackedStat(stats?.opened_count, stats?.opened_first)}
       <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}

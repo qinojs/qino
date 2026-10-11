@@ -1,6 +1,5 @@
 import * as nodePath from "node:path";
-import { serveFile } from "@std/http/file-server";
-import { fs, Output, safeFetch } from "@qino/qino";
+import { fs, Output, safeFetch, serveFile } from "@qino/qino";
 
 import { DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES, cacheByteLimit, uncdn } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };

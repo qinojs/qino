@@ -108,9 +108,9 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const mailed = edit || !keep ? (await recipients(node)).length > 0 : true;
   if (edit) {
     const success = await node.cont("success", "cms.cont.text");
-    if (!keep && !mailed) warnings.push(await html.async`<u2-alert open variant=warning>${t`Entries are neither kept nor sent — they would be lost.`}</u2-alert>`);
+    if (!keep && !mailed) warnings.push(html.async`<u2-alert open variant=warning>${t`Entries are neither kept nor sent — they would be lost.`}</u2-alert>`);
     if (!redirectId && !(await success.showText()).plain()) {
-      warnings.push(await html.async`<u2-alert open variant=warning>${t`A confirmation text or a redirect should be defined.`}</u2-alert>`);
+      warnings.push(html.async`<u2-alert open variant=warning>${t`A confirmation text or a redirect should be defined.`}</u2-alert>`);
     }
   }
 

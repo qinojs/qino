@@ -84,15 +84,22 @@ export const fs = {
     return Deno ? Deno.readFile(path) : readFile(path) as Promise<Uint8Array<ArrayBuffer>>; // never shared
   },
   /** As stream, optionally a byte range (`end` inclusive, like HTTP). A missing file throws
-   *  here, not later while reading. */
+   *  here, not later while reading. The stat is renewed from the open file: it is what is read. */
   async stream(path: string, { start, end }: { start?: number; end?: number } = {}): Promise<ReadableStream<Uint8Array>> {
     if (Bun) {
-      const f = Bun.file(path);
-      if (!await f.exists()) throw Object.assign(new Error(`ENOENT: no such file or directory, open '${path}'`), { code: "ENOENT" });
+      const f = Bun.file(path), info = f.stat().then(toInfo, () => undefined);
+      put(path, info);
+      if (!await info) throw Object.assign(new Error(`ENOENT: no such file or directory, open '${path}'`), { code: "ENOENT" });
       return f.slice(start, end === undefined ? undefined : end + 1).stream();
     }
-    if (Deno && start === undefined && end === undefined) return (await Deno.open(path)).readable;
-    return Readable.toWeb((await open(path)).createReadStream({ start, end })) as ReadableStream<Uint8Array>;
+    if (Deno && start === undefined && end === undefined) {
+      const f = await Deno.open(path);
+      put(path, f.stat().then(pick, () => undefined));
+      return f.readable;
+    }
+    const h = await open(path);
+    put(path, h.stat().then(toInfo, () => undefined));
+    return Readable.toWeb(h.createReadStream({ start, end })) as ReadableStream<Uint8Array>;
   },
   /** Like `Deno.readDir`, as an array — works with `for` and `for await`. */
   async list(dir: string): Promise<{ name: string; isFile: boolean; isDirectory: boolean }[]> {

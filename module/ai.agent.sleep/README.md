@@ -11,8 +11,9 @@ answer, in the background (`ai.agent:answered`):
 - **Same model, messages and tools** as the answer, plus an instruction at the end: the prompt cache
   holds. Only the agent's `remember` runs then.
 - **First what lasts:** the agent keeps the user's rules and preferences as memories, then writes a
-  handoff: the goal and the user's instructions in their words, decisions, errors and fixes, what
-  was done (ids, urls), what is open, the next step.
+  handoff of the whole session, topic by topic from the start (an earlier summary carried over): the
+  goal and the user's instructions in their words, decisions, errors and fixes, what was done (ids,
+  urls), what is open, the next step.
 - **The last 4 turns stay word for word**, fewer while they alone fill more than 40 % of the context.
 - **The summary is kept** as a `system` message with `summary: { from }` (the first message kept
   word for word). Before each turn (`ai.agent:history`) only the latest summary and what came from

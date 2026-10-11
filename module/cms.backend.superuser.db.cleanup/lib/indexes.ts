@@ -45,6 +45,12 @@ export async function indexIssues(db: Db, tableName: string) {
   return issues;
 }
 
+/** Fields the schema wants a fulltext index on, which only MySQL creates; elsewhere a search scans them. */
+export function fulltextMissing(db: Db, tableName: string): string[] {
+  if (db.dialect === "mysql") return [];
+  return [...db.tables[tableName]?.fields ?? []].filter(([, field]) => field.schema["x-index"] === "fulltext").map(([name]) => name);
+}
+
 function wantedIndex(db: Db, table: string, field: string): "index" | "unique" | "fulltext" {
   const schema = db.tables[table]?.field(field)?.schema ?? {};
   if (schema["x-index"] === "unique") return "unique";

@@ -1,4 +1,4 @@
-import { toFileUrl } from "@std/path";
+import { pathToFileURL } from "node:url";
 import { errMsg, fs, html, isModuleName } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -11,7 +11,7 @@ const { name } = manifest;
 
 /** The app's own modules: a folder store beside data/, deployed and backed up with the app. */
 const storeDir = (app: App) => app.dir + "module/";
-const storeUrl = (app: App) => toFileUrl(storeDir(app)).href;
+const storeUrl = (app: App) => pathToFileURL(storeDir(app)).href;
 /** Registered by install() below — the store is how a created module gets installed. */
 const ownStore = (app: App) => {
   const store = app.stores.get(storeUrl(app));

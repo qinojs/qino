@@ -17,7 +17,8 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
   const dir = await fs.tempDir({ dir: tmp });
   try {
     await fs.write(`${dir}/in.html`, html);
-    const { success, stderr } = await sys.command(cmd, {
+    const limit = AbortSignal.timeout(timeout);
+    const { success, code, stderr } = await sys.command(cmd, {
       args: [
         "--headless",
         "--disable-gpu",
@@ -31,13 +32,14 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
       ],
       stdout: "null",
       stderr: "piped",
-      signal: AbortSignal.timeout(timeout),
+      signal: limit,
     }).catch((e) => {
       throw new Error(`pdf: ${cmd} did not run — ${errMsg(e)}`);
     });
     const out = await fs.bytes(`${dir}/out.pdf`).catch(() => undefined);
     if (!success || !out?.length) {
-      throw new Error(`pdf: ${cmd} failed — ${new TextDecoder().decode(stderr).trim().slice(-300)}`);
+      const why = limit.aborted ? `timed out after ${timeout / 1000}s` : `exit code ${code}`;
+      throw new Error(`pdf: ${cmd} failed, ${why} — ${new TextDecoder().decode(stderr).trim().slice(-1500)}`);
     }
     return out;
   } finally {

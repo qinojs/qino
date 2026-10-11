@@ -1,11 +1,12 @@
 // Health probe for a single domain: HTTP reachability, TLS validity and expiry, http→https
 // redirect, IPv6 reachability, DNS records, mail policy and nameserver agreement.
 // Always probes https://<domain>/ — the scheme is not part of what a domain is.
-// Pure and dependency-free, except for an optional `openssl` call for the certificate details.
+import { Resolver } from "node:dns/promises";
+
 import { resolve, serverIps, systemServer } from "./dns.ts";
 import * as mail from "./mail.ts";
 import * as rdap from "./rdap.ts";
-import { agent, errText, isCertError, timedSignal, ua } from "./net.ts";
+import { agent, connect, errText, isCertError, timedSignal, ua } from "./net.ts";
 
 import type { Type } from "./dns.ts";
 
@@ -57,22 +58,31 @@ export const apex = (host: string): string => {
 export const wwwAlt = (host: string): string => host.startsWith("www.") ? host.slice(4) : "www." + host;
 
 const PORT = 443;
-const bare = (name: string) => name.replace(/\.$/, ""); // Deno.resolveDns keeps the root dot, our own client does not
 
-// `server` asks one specific nameserver instead of the system resolver.
-async function dnsList(host: string, type: Deno.RecordType, server?: string) {
+/** The system resolver, or with `server` that one nameserver. */
+const resolver = (server?: string) => {
+  const r = new Resolver();
+  if (server) r.setServers([server]);
+  return r;
+};
+
+async function dnsList(host: string, type: "A" | "AAAA" | "NS" | "MX" | "TXT" | "CAA", server?: string) {
+  const r = resolver(server);
   try {
-    const opt = server ? { nameServer: { ipAddr: server, port: 53 } } : undefined;
-    const recs = await Deno.resolveDns(host, type as "A", opt);
     // Sorted throughout: resolvers rotate record sets, which would otherwise look like a change.
     if (type === "MX") {
-      return (recs as unknown as Deno.MxRecord[])
-        .sort((a, b) => a.preference - b.preference || a.exchange.localeCompare(b.exchange))
-        .map((r) => `${r.preference} ${r.exchange}`);
+      return (await r.resolveMx(host))
+        .sort((a, b) => a.priority - b.priority || a.exchange.localeCompare(b.exchange))
+        .map((m) => `${m.priority} ${m.exchange || "."}`); // RFC 7505 null MX: "0 ."
     }
-    if (type === "CAA") return (recs as unknown as Deno.CaaRecord[]).map((r) => `${r.tag} ${r.value}`).sort();
-    if (type === "TXT") return (recs as unknown as string[][]).map((r) => r.join("")).sort();
-    return recs.sort();
+    if (type === "CAA") {
+      return (await r.resolveCaa(host)).map((c) => {
+        const tag = Object.keys(c).find((key) => key !== "critical")!;
+        return `${tag} ${c[tag as keyof typeof c]}`;
+      }).sort();
+    }
+    if (type === "TXT") return (await r.resolveTxt(host)).map((parts) => parts.join("")).sort();
+    return (await r.resolve(host, type)).sort();
   } catch {
     return [];
   }
@@ -98,18 +108,18 @@ async function resolveDns(host: string) {
 // for reuse.
 async function nsAgreement(root: string, ns: string[]) {
   const answers = await Promise.all(ns.map(async (name) => {
-    const [ip] = await dnsList(bare(name), "A");
+    const [ip] = await dnsList(name, "A");
     if (!ip) return null;
-    const soa = await Deno.resolveDns(root, "SOA", { nameServer: { ipAddr: ip, port: 53 } }).catch(() => null);
-    if (!soa?.length) return null;
+    const soa = await resolver(ip).resolveSoa(root).catch(() => null);
+    if (!soa) return null;
     const zone = await dnsList(root, "NS", ip);
-    return { ip, primary: soa[0].mname, serial: soa[0].serial, expire: soa[0].expire, minimum: soa[0].minimum, zone: zone.map(bare).join(",") };
+    return { ip, primary: soa.nsname, serial: soa.serial, expire: soa.expire, minimum: soa.minttl, zone: zone.join(",") };
   }));
   const ok = answers.filter((a) => a != null);
   return {
     servers: ns.map((name, i) => {
       const a = answers[i];
-      return a ? `${bare(name)} ${a.ip} ${a.serial} ${bare(a.primary)} ${a.zone}` : bare(name);
+      return a ? `${name} ${a.ip} ${a.serial} ${a.primary} ${a.zone}` : name;
     }).join("\n"),
     ips: ok.map((a) => a.ip),
     soa: ok[0] ?? null,
@@ -139,7 +149,7 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
 
   // DS proves the delegation is signed and only ever lives at the parent, never in the zone.
   const tld = root.split(".").at(-1)!;
-  const parent = (await Promise.all((await dnsList(tld, "NS")).slice(0, 2).map((name) => serverIps(bare(name))))).flat();
+  const parent = (await Promise.all((await dnsList(tld, "NS")).slice(0, 2).map((name) => serverIps(name)))).flat();
   const [ds, delegation] = parent.length
     ? await resolve(parent, [{ name: root, type: "DS" }, { name: root, type: "NS" }], signal)
     : [null, null];
@@ -155,46 +165,24 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
     // The parent decides whether a zone is signed. A DS without key is worse than none, so it
     // stays unknown instead of "unsigned".
     dnssec: !ds ? null : !ds.values.length ? false : dnskey ? !!dnskey.values.length : null,
-    parent: (delegated ?? []).map(bare).sort().join("\n"),
+    parent: (delegated ?? []).sort().join("\n"),
   };
 }
 
-// Deno exposes no peer certificate, so the details come from openssl; empty when it is unavailable.
+// Expiry, who signed it, what it covers — read from the handshake. Empty when that fails.
 async function certInfo(host: string, signal?: AbortSignal) {
-  const openssl = async (args: string[], input?: string) => {
-    signal?.throwIfAborted();
-    const p = new Deno.Command("openssl", { args, stdin: "piped", stdout: "piped", stderr: "null" }).spawn();
-    const abort = () => { try { p.kill(); } catch { /* already exited */ } };
-    signal?.addEventListener("abort", abort, { once: true });
-    const kill = setTimeout(abort, 8000);
-    try {
-      const w = p.stdin.getWriter();
-      if (input) await w.write(new TextEncoder().encode(input));
-      await w.close();
-      const out = await p.output();
-      return new TextDecoder().decode(out.stdout);
-    } finally {
-      clearTimeout(kill);
-      signal?.removeEventListener("abort", abort);
-    }
-  };
   const blank = { days: null as number | null, issuer: "", names: "" };
-  try {
-    const s = await openssl(["s_client", "-connect", `${host}:${PORT}`, "-servername", host]);
-    const pem = s.match(/-----BEGIN CERTIFICATE-----[^]*?-----END CERTIFICATE-----/)?.[0];
-    if (!pem) return blank;
-    // One pass over the certificate we already fetched — expiry, who signed it, what it covers.
-    const text = await openssl(["x509", "-noout", "-enddate", "-issuer", "-ext", "subjectAltName"], pem);
-    const ms = Date.parse(text.match(/notAfter=(.+)/)?.[1] ?? "") - Date.now();
-    const issuer = text.match(/issuer=.*?\bO\s*=\s*([^,\n]+)/)?.[1] ?? text.match(/issuer=.*?\bCN\s*=\s*([^,\n]+)/)?.[1] ?? "";
-    return {
-      days: isNaN(ms) ? null : Math.floor(ms / 86400000),
-      issuer: issuer.trim(),
-      names: [...text.matchAll(/DNS:([^\s,]+)/g)].map((m) => m[1]).sort().join("\n"),
-    };
-  } catch {
-    return blank; // no openssl binary, or the runtime lacks --allow-run
-  }
+  const conn = await connect(host, PORT, { tls: host, signal: timedSignal(signal, 8000) }).catch(() => null);
+  if (!conn) return blank;
+  const cert = conn.certificate();
+  conn.close();
+  if (!cert?.valid_to) return blank;
+  const ms = Date.parse(cert.valid_to) - Date.now();
+  return {
+    days: isNaN(ms) ? null : Math.floor(ms / 86400000),
+    issuer: (cert.issuer?.O ?? cert.issuer?.CN ?? "").trim(),
+    names: [...(cert.subjectaltname ?? "").matchAll(/DNS:([^\s,]+)/g)].map((m) => m[1]).sort().join("\n"),
+  };
 }
 
 /** Does a certificate name cover this host — exact, or as a one-label wildcard. */
@@ -204,24 +192,17 @@ export const covers = (name: string, host: string): boolean =>
 // An AAAA record proves nothing, so send real HTTP to that address. No IPv6 route here = unknown,
 // not broken.
 async function ipv6Answers(host: string, ip: string, signal?: AbortSignal) {
-  let conn: Deno.Conn | undefined;
-  const requestSignal = timedSignal(signal, 8000);
-  const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
-  requestSignal.addEventListener("abort", abort, { once: true });
+  let conn: Awaited<ReturnType<typeof connect>> | undefined;
   try {
-    conn = await Deno.connect({ hostname: ip, port: PORT, signal: requestSignal });
-    conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
-    await conn.write(new TextEncoder().encode(`HEAD / HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: ${agent}\r\nConnection: close\r\n\r\n`));
-    const buf = new Uint8Array(64);
-    const n = await conn.read(buf);
-    return /^HTTP\/1\.[01] \d{3}/.test(new TextDecoder().decode(buf.subarray(0, n ?? 0)));
+    conn = await connect(ip, PORT, { tls: host, signal: timedSignal(signal, 8000) });
+    conn.write(`HEAD / HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: ${agent}\r\nConnection: close\r\n\r\n`);
+    return /^HTTP\/1\.[01] \d{3}/.test(new TextDecoder().decode(await conn.read() ?? undefined));
   } catch (e) {
     const msg = errText(e);
     if (isCertError(msg)) return true; // a webserver answered, that's enough
-    return /unreachable|no route|address family/i.test(msg) ? null : false;
+    return /unreach|no route|address family|EAFNOSUPPORT/i.test(msg) ? null : false; // ENETUNREACH, EHOSTUNREACH
   } finally {
-    requestSignal.removeEventListener("abort", abort);
-    try { conn?.close(); } catch { /* already gone */ }
+    conn?.close();
   }
 }
 
@@ -351,7 +332,7 @@ export async function checkDomain(domain: string, opt: {
     soaSerial: ns.soa?.serial ?? null,
     soaExpire: ns.soa?.expire ?? null,
     soaMinimum: ns.soa?.minimum ?? null,
-    soaPrimary: bare(ns.soa?.primary ?? ""),
+    soaPrimary: ns.soa?.primary ?? "",
     dns,
     dnsCname: extras.cname,
     dnsDs: extras.ds,

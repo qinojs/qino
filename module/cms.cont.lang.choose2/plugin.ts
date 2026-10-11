@@ -52,12 +52,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
 
   if (type === "select") {
-    const options = await Promise.all(langs.map(async (l) => {
+    const options = langs.map((l) => {
       const label = longText ? (LANG_NAMES[l] ?? l) : l;
       const selected = l === ctx.lang ? " selected" : "";
-      return html`<option${selected} value="${await page.url(l)}" lang="${l}" class="-${l}">${label}`;
-    }));
-    return html`<select>${options}</select>`;
+      return html.async`<option${selected} value="${page.url(l)}" lang="${l}" class="-${l}">${label}`;
+    });
+    return html.async`<select>${options}</select>`;
   }
 
   // links (default)

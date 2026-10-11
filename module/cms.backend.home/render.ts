@@ -125,7 +125,7 @@ export async function control(node: Node, { vars = {} }: { vars?: Vars } = {}): 
   const app = node.app, stored = await commands(app);
   const rows = (await enabled(app)).filter((row) => !vars.provider || String(row.id) === String(vars.provider));
   if (!rows.length) return html.async`<p>${app.t`No provider is enabled.`}</p>`;
-  return html.join(await Promise.all(rows.map(async (row) => {
+  return html.async`${rows.map(async (row) => {
     const [endpoints, list] = await Promise.allSettled([entities(app, row.id), actions(app, row.id)]);
     const own = stored.filter((command) => command.provider === row.id);
     const known = list.status === "fulfilled" ? list.value : [];
@@ -134,7 +134,7 @@ export async function control(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       ${list.status === "fulfilled"
         ? renderActions(app, row.id, list.value, endpoints.status === "fulfilled" ? endpoints.value : [])
         : html`<p role=alert>${errMsg(list.reason)}</p>`}`;
-  })));
+  })}`;
 }
 
 /** The schema at a dotted path of an action's data, if the action describes it. */

@@ -87,7 +87,7 @@ export const api: ApiTree = {
       },
       search: {
         post: verb<{ agent: number; query: string }>(
-          "Search this agent's own memory, by meaning: its memories and all its past sessions, with anyone",
+          "Search this agent's own memory, by meaning: its memories and all its past sessions, with anyone; a message found comes with its session and id, to read on from there",
           ({ agent, query }, ctx) => search.find(ctx.app, agent, query),
           { query: s.string() },
         ),
@@ -102,7 +102,7 @@ export const api: ApiTree = {
         if (!ctx.userId || usr !== ctx.userId) throw new NotFoundError("No such session");
         return id;
       },
-      get: verb<{ session: number }>("The session: its agent, everything said, and whether an answer is on its way", async ({ session }, ctx) => ({
+      get: verb<{ session: number; after?: number }>("The session: its agent, everything said (with after: since that message id), and whether an answer is on its way", async ({ session, after }, ctx) => ({
         agent: Number(await ctx.app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`),
         running: new Session(ctx.app, session).running,
         messages: (await ctx.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
@@ -110,12 +110,12 @@ export const api: ApiTree = {
           LEFT JOIN ai_model_provider mp ON mp.id = m.model_provider_id
           LEFT JOIN ai_model am ON am.id = mp.model_id
           LEFT JOIN ai_provider p ON p.id = mp.provider_id
-          WHERE m.session_id = ${session} ORDER BY m.id`)
+          WHERE m.session_id = ${session} AND m.id > ${after ?? 0} ORDER BY m.id`)
           .map((m) => ({
             id: m.id, time: m.time, model: m.model || undefined, provider: m.provider || undefined,
             ...JSON.parse(String(m.message)),
           })),
-      })),
+      }), { after: s.optional(s.number()).describe("A message id: only the messages after it") }),
       ask: {
         post: verb<{ session: number; content: string; wait?: boolean }>(
           "Say something in the session; the agent answers in the background, its steps and errors kept in the session; with wait the answer",

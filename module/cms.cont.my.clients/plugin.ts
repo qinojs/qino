@@ -1,4 +1,5 @@
-import { getCtx, html, sql, sys } from "@qino/qino";
+import { Resolver } from "node:dns/promises";
+import { getCtx, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import type { Ctx } from "@qino/qino";
@@ -55,20 +56,11 @@ const label = (list: Record<string, RegExp>, ua: string) => Object.keys(list).fi
 const device = (ua: string) => [label(BROWSERS, ua), label(SYSTEMS, ua)].filter(Boolean).join(" · ") || ua.slice(0, 40);
 
 /** Reverse-DNS name of an IP, in-addr.arpa for v4, ip6.arpa for v6. */
-function arpaName(ip: string) {
-  if (!ip.includes(":")) return ip.split(".").reverse().join(".") + ".in-addr.arpa";
-  const [head, tail = ""] = ip.split("::");
-  const groups = head ? head.split(":") : [], rest = tail ? tail.split(":") : [];
-  const full = [...groups, ...Array(8 - groups.length - rest.length).fill("0"), ...rest];
-  return [...full.map((g) => g.padStart(4, "0")).join("")].reverse().join(".") + ".ip6.arpa";
-}
-
 /** Host names for the IPs, "" if none. Best effort, with short timeout. */
 async function ipHosts(ips: string[]): Promise<Record<string, string>> {
   return Object.fromEntries(await Promise.all([...new Set(ips.filter(Boolean))].map(async (ip) => [
     ip,
-    await sys.resolveDns(arpaName(ip), "PTR", { signal: AbortSignal.timeout(1000) })
-      .then((names) => names[0]?.replace(/\.$/, "") ?? "").catch(() => ""),
+    await new Resolver({ timeout: 1000, tries: 1 }).reverse(ip).then((names) => names[0] ?? "", () => ""),
   ])));
 }
 

@@ -1,14 +1,15 @@
+import { fileURLToPath, pathToFileURL } from "node:url";
+
 import { assertEquals, assertStringIncludes } from "./deps.ts";
-import { fromFileUrl, toFileUrl } from "../deps.ts";
 import { itemRoot, u2Root } from "../lib/util.ts";
 
-const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
-const cmsLegacyDir = fromFileUrl(new URL("../../../cms-legacy/", import.meta.url));
-const metaDir = fromFileUrl(new URL("../../../meta/", import.meta.url));
-const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
-const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
-const finDir = fromFileUrl(new URL("../../../fin/", import.meta.url));
-const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
+const moduleDir = fileURLToPath(new URL("../../", import.meta.url));
+const cmsLegacyDir = fileURLToPath(new URL("../../../cms-legacy/", import.meta.url));
+const metaDir = fileURLToPath(new URL("../../../meta/", import.meta.url));
+const testModuleDir = fileURLToPath(new URL("../../../test-modules/", import.meta.url));
+const shp3Dir = fileURLToPath(new URL("../../../shp3/", import.meta.url));
+const finDir = fileURLToPath(new URL("../../../fin/", import.meta.url));
+const qinoDir = fileURLToPath(new URL("../../../", import.meta.url));
 const stores = [moduleDir, shp3Dir, finDir, testModuleDir];
 const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, testModuleDir];
 
@@ -65,8 +66,8 @@ function valueImports(source: string) {
 
 /** Local target of a relative or @qino/qino package import. */
 function targetPath(spec: string, file: string) {
-  const url = spec.startsWith(".") ? new URL(spec, toFileUrl(file)).href : import.meta.resolve(spec);
-  return url.startsWith("file:") ? fromFileUrl(url) : undefined;
+  const url = spec.startsWith(".") ? new URL(spec, pathToFileURL(file)).href : import.meta.resolve(spec);
+  return url.startsWith("file:") ? fileURLToPath(url) : undefined;
 }
 
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
@@ -209,7 +210,7 @@ Deno.test({
 
 Deno.test("test-store plugins are importable", async () => {
   const store = JSON.parse(await Deno.readTextFile(testModuleDir + "store.json"));
-  for (const name of Object.keys(store.modules)) await import(toFileUrl(`${testModuleDir}${name}/plugin.ts`).href);
+  for (const name of Object.keys(store.modules)) await import(pathToFileURL(`${testModuleDir}${name}/plugin.ts`).href);
 });
 
 Deno.test("modules only consume public APIs of other modules", async () => {

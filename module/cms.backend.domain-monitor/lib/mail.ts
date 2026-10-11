@@ -1,8 +1,11 @@
 // Mail setup of a domain: SPF, DMARC, and TLS on its mail server. The values matter, not just the
 // presence — `v=spf1 +all` and `p=none` allow everything.
-import { resolve } from "./dns.ts";
-import { agent, isCertError, errText, timedSignal, ua } from "./net.ts";
+import { resolve4, resolveTxt } from "node:dns/promises";
 
+import { resolve } from "./dns.ts";
+import { agent, connect, isCertError, errText, timedSignal, ua } from "./net.ts";
+
+import type { Conn } from "./net.ts";
 import type { Type } from "./dns.ts";
 
 // Common DKIM selectors to try; selectors can't be listed.
@@ -12,7 +15,7 @@ const DKIM_SELECTORS = ["default", "google", "selector1", "selector2", "k1", "k2
 const SPF_COST = /^[-+~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
 
 const txtOf = (name: string) =>
-  Deno.resolveDns(name, "TXT").then((r) => r.map((parts) => parts.join(""))).catch(() => []);
+  resolveTxt(name).then((r) => r.map((parts) => parts.join(""))).catch(() => []);
 
 /**
  * DNS lookups an SPF record needs, following include: and redirect= like a receiver. Stops above
@@ -75,12 +78,12 @@ async function mtaStsMode(apex: string, signal?: AbortSignal) {
 }
 
 // Reads SMTP replies until the final line of one — "250 x" ends a reply, "250-x" continues it.
-async function reply(conn: Deno.Conn, buf: Uint8Array) {
+async function reply(conn: Conn) {
   let text = "";
   for (let i = 0; i < 16; i++) {
-    const n = await conn.read(buf);
-    if (n == null) break;
-    text += new TextDecoder().decode(buf.subarray(0, n));
+    const chunk = await conn.read();
+    if (!chunk) break;
+    text += new TextDecoder().decode(chunk);
     if (/^\d{3} [^\n]*\r?\n$|\n\d{3} [^\n]*\r?\n$/.test(text)) break;
   }
   return text;
@@ -93,31 +96,25 @@ async function reply(conn: Deno.Conn, buf: Uint8Array) {
 async function smtp(host: string, signal?: AbortSignal) {
   const out: { starttls: boolean | null; tlsValid: boolean | null; banner: string; silent: boolean } = { starttls: null, tlsValid: null, banner: "", silent: false };
   const limit = timedSignal(signal, 6000);
-  let conn: Deno.Conn | undefined;
-  const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
-  limit.addEventListener("abort", abort, { once: true });
+  let conn: Conn | undefined;
   try {
-    const buf = new Uint8Array(2048);
-    conn = await Deno.connect({ hostname: host, port: 25, signal: limit });
-    out.banner = (await reply(conn, buf)).trim().slice(0, 200);
+    conn = await connect(host, 25, { signal: limit });
+    out.banner = (await reply(conn)).trim().slice(0, 200);
     if (!out.banner.startsWith("2")) return out; // greeted us with a refusal, not a server we can judge
-    const enc = new TextEncoder();
-    await conn.write(enc.encode(`EHLO ${agent}\r\n`));
-    const ehlo = await reply(conn, buf);
-    out.starttls = /^\d{3}[ -]STARTTLS\r?$/im.test(ehlo);
+    conn.write(`EHLO ${agent}\r\n`);
+    out.starttls = /^\d{3}[ -]STARTTLS\r?$/im.test(await reply(conn));
     if (!out.starttls) return out;
-    await conn.write(enc.encode("STARTTLS\r\n"));
-    if (!(await reply(conn, buf)).startsWith("220")) return out;
-    conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
-    out.tlsValid = true; // startTls verifies against the system roots, a bad chain throws
-    await conn.write(enc.encode("QUIT\r\n"));
+    conn.write("STARTTLS\r\n");
+    if (!(await reply(conn)).startsWith("220")) return out;
+    await conn.startTls(host);
+    out.tlsValid = true; // the handshake verifies against the system roots, a bad chain throws
+    conn.write("QUIT\r\n");
   } catch (e) {
     if (out.starttls && isCertError(errText(e))) out.tlsValid = false;
     // No answer at all: outgoing port 25 blocked or a dead server (a refusal would be instant).
     out.silent = !out.banner && limit.aborted;
   } finally {
-    limit.removeEventListener("abort", abort);
-    abort();
+    conn?.close();
   }
   return out;
 }
@@ -163,7 +160,7 @@ export async function check(apex: string, mx: string[], opt: {
   const record = spf(txt);
   const policy = dmarc(dmarcTxt);
   const [mtaSts, tlsRpt, bimi, ...dkim] = zone;
-  const addresses = await Promise.all(hosts.map((host) => Deno.resolveDns(host, "A").then(() => true).catch(() => false)));
+  const addresses = await Promise.all(hosts.map((host) => resolve4(host).then(() => true).catch(() => false)));
 
   return {
     nullMx,
