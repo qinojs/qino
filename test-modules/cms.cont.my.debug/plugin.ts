@@ -1,3 +1,5 @@
+import { inspect as format } from "node:util";
+
 import { getCtx, html } from "@qino/qino";
 
 import type { Node } from "@qino/qino/cms";
@@ -9,7 +11,7 @@ function vsTable(vs: Record<string, unknown>, exclude: string[] = []) {
   return html`<table>${html.join(rows, "\n")}</table>`;
 }
 
-const inspect = (value: unknown) => html`<pre>${Deno.inspect(value, { depth: 6 })}</pre>`;
+const inspect = (value: unknown) => html`<pre>${format(value, { depth: 6 })}</pre>`;
 
 async function render(_node: Node) {
   const ctx = getCtx();
