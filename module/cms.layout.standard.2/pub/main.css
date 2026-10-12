@@ -21,7 +21,12 @@
     border-block-end: var(--line-width) solid var(--color-area);
     > .u2-flex { align-items: center; }
     > .u2-flex > a { min-inline-size: 0; overflow-wrap: anywhere; }
-    > .u2-flex > a img { vertical-align: middle; margin-inline-end: var(--gap); }
+    > .u2-flex > a img {
+      vertical-align: middle; margin-inline-end: var(--gap);
+      /* height keeps the header steady; the width cap keeps a wide wordmark from crowding the menu */
+      max-block-size: 2.5rem; max-inline-size: min(12rem, 50vw);
+      inline-size: auto; block-size: auto;
+    }
     .-open, .-close { display: none; }
 
     /* A plain link list: on wide screens, and wherever popover is unsupported. */
@@ -40,8 +45,29 @@
   #foot { padding-block: var(--gap); border-block-start: var(--line-width) solid var(--color-area); }
 }
 
-/* Small screens: the same list in a native popover. Escape, light dismiss and focus return are the browser's. */
-@media (width < 48rem) {
+/* Wide screens with a mouse: sub-levels drop down from their item, on hover and on keyboard focus. */
+@media (width >= 48rem) and (hover: hover) {
+  #container #head #head-nav {
+    nav > ul > li { position: relative; }
+    nav > ul > li > ul {
+      display: none;
+      position: absolute;
+      inset-block-start: 100%;
+      inset-inline-start: 0;
+      z-index: 1;
+      min-inline-size: max(100%, 12rem);
+      padding-inline: var(--gap);
+      list-style: none;
+      border: var(--line-width) solid var(--color-line);
+      background: var(--color-bg);
+    }
+    nav > ul > li:is(:hover, :focus-within) > ul { display: block; }
+  }
+}
+
+/* Small screens, and touch without hover: the same list in a native popover. Escape, light dismiss and
+   focus return are the browser's. */
+@media (width < 48rem), (hover: none) {
   @supports selector(:popover-open) {
     #container #head {
       .-open { display: revert; }
