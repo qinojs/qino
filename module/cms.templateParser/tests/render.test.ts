@@ -53,6 +53,21 @@ Deno.test("render: linked modules fill static text and attributes once", async (
   assertEquals(out, `<p title="&lt;+41&gt;">&lt;+41&gt;</p>`);
 });
 
+Deno.test("render: {{settings.<path>}} reads the rendered node's settings", async () => {
+  const settings = { heading: () => "h4", box: { width: () => 12 }, empty: () => "" };
+  const out = await render(`<p title="{{settings.box.width}}">{{settings.empty|none}} {{settings.missing|none}}</p>`, fakeNode({ settings }));
+  assertEquals(out, `<p title="12">none none</p>`);
+  const node = fakeNode({ settings });
+  await render(`<h2 cms-text=title tag="{{settings.heading|h2}}" if></h2>`, node);
+  assertEquals(node.calls[0].options, { tag: "h4", if: true });
+});
+
+Deno.test("render: tag= takes only a tag name", async () => {
+  const node = fakeNode({ settings: { heading: () => "h2 onclick=x" } });
+  await render(`<h3 cms-text=title tag="{{settings.heading}}"></h3>`, node);
+  assertEquals(node.calls[0].options.tag, "h3");
+});
+
 Deno.test("render: CMS output is not parsed as a template", async () => {
   const node = fakeNode({
     app: { dev: false, modules: { linked: () => [{ name: "identity", plugin: { templatePlaceholders: {

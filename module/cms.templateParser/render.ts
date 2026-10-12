@@ -139,6 +139,7 @@ async function renderCmsText(el: El, name: string, t: Tpl) {
     if (a.name === "cms-text" || a.name === "node") continue;
     options[a.name] = a.value === null ? true : t.text(a.value);
   }
+  if (!/^[a-z][a-z0-9-]*$/i.test(String(options.tag))) options.tag = el.tag; // tag= may come from a setting
   const initial = serialize(el.children, t).trim();
   if (initial) options.initial = initial;
   return String(await target.cms.text(target, name, options));
@@ -179,11 +180,22 @@ async function renderCmsCont(el: El, t: Tpl) {
   return String(await (await target.cont(name, module)).html());
 }
 
+/** `{{settings.<path>}}`: a scalar setting of the node being rendered. */
+function setting(node: Node, path: string): TemplateValue | undefined {
+  const value = path.split(".").reduce((item: any, key) => item?.[key], node.settings)?.();
+  return ["string", "number", "boolean"].includes(typeof value) && value !== "" ? { text: String(value) } : undefined;
+}
+
 /** Static template text only: generated CMS content never passes through this resolver. */
 async function templateValues(named: Set<string>, node: Node) {
   const values: Record<string, TemplateValue> = {};
   const made = modulePlaceholders<Node>(node.app);
   for (const name of named) {
+    if (name.startsWith("settings.")) {
+      const value = setting(node, name.slice("settings.".length));
+      if (value) values[name] = value;
+      continue;
+    }
     const make = made[name];
     if (!make) { await warn(node, `unknown placeholder {{${name}}}`); continue; }
     const value = await make(node.app, node);

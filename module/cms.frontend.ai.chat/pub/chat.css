@@ -1,0 +1,17 @@
+/* In the CMS root (qino-cms), added by pub/chat.js: the chat fills its sidebar item's content. */
+#panel > .-sidebar > [itemid="ai-chat"] > .-content > .-chat {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  & > .-head, & > .-ask { display: flex; gap: .5rem }
+  & > .-log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .5rem }
+  & .-user { align-self: flex-end; max-width: 80%; white-space: pre-wrap }
+  & .-note { opacity: .6; font-size: .8em }
+  & .-error { color: var(--red, red); white-space: pre-wrap }
+  & textarea { flex: 1; resize: none; font: inherit }
+  & [aria-pressed=true] { outline: 2px solid Highlight }
+}
+.-ai-chat-mark { position: fixed; z-index: 2147483000; pointer-events: none; outline: 2px solid Highlight }
+.-ai-chat-mark[hidden] { display: none }

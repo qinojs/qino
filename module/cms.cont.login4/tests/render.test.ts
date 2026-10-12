@@ -40,6 +40,7 @@ async function makeCtx(loggedIn = false) {
 Deno.test("cms.cont.login4: metadata is wired", () => {
   assertEquals(name, "cms.cont.login4");
   assertEquals(cms.node.settingsSchema.properties.saveLogin.type, "boolean");
+  assertEquals(cms.node.settingsSchema.properties.saveLogin.default, true);
 });
 
 Deno.test("cms.cont.login4: render shows login form for guests", async () => {

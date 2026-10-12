@@ -1,5 +1,7 @@
 import { getCtx } from "@qino/qino";
 
+export { CATALOG } from "./catalog.ts";
+
 /** What pub/markdown.js loads. */
 const LIBS = ["https://cdn.jsdelivr.net/npm/marked@18/+esm", "https://cdn.jsdelivr.net/npm/dompurify@3/+esm"];
 

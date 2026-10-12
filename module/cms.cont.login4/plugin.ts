@@ -7,7 +7,7 @@ const settingsSchema = {
   properties: {
     redirect: { type: "integer", minimum: 1, description: "Page ID to redirect already-logged-in users to automatically." },
     history: { type: "integer", minimum: 0, description: "Number of recently used logins to display as quick-login buttons." },
-    saveLogin: { type: "boolean", description: "Shows the 'stay logged in' option in the login form." },
+    saveLogin: { type: "boolean", default: true, description: "Shows the 'stay logged in' option in the login form." },
     "fix user": { type: "string", description: "Fixed user identifier for this form. When set, the e-mail field is not shown." },
     "no autofocus": { type: "boolean", description: "Prevents the e-mail field from being auto-focused on page load." },
     logout_redirect: { type: "integer", minimum: 1, description: "Page ID used as the target for the logout form." },

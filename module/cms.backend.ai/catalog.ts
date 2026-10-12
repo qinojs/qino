@@ -26,6 +26,13 @@ export const CATALOG: {
   { name: "api.fireworks.ai", type: "openai", endpoint: "https://api.fireworks.ai/inference/v1" },
   { name: "api.deepinfra.com", type: "openai", endpoint: "https://api.deepinfra.com/v1/openai" },
   { name: "api.cerebras.ai", type: "openai", endpoint: "https://api.cerebras.ai/v1" },
+  { name: "api.deepseek.com", type: "openai", endpoint: "https://api.deepseek.com/v1", console: "https://platform.deepseek.com/api_keys" },
+  { name: "dashscope-intl.aliyuncs.com", type: "openai", endpoint: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", console: "https://modelstudio.console.alibabacloud.com/" },
+  { name: "api.moonshot.ai", type: "openai", endpoint: "https://api.moonshot.ai/v1", console: "https://platform.moonshot.ai/console/api-keys" },
+  { name: "api.z.ai", type: "openai", endpoint: "https://api.z.ai/api/paas/v4", console: "https://z.ai/manage-apikey/apikey-list" },
+  { name: "api.cohere.ai", type: "openai", endpoint: "https://api.cohere.ai/compatibility/v1", console: "https://dashboard.cohere.com/api-keys" },
+  { name: "api.perplexity.ai", type: "openai", endpoint: "https://api.perplexity.ai", console: "https://www.perplexity.ai/account/api/keys", list: "/v1/models" }, // chat at /chat/completions
+  { name: "router.huggingface.co", type: "openai", endpoint: "https://router.huggingface.co/v1", console: "https://huggingface.co/settings/tokens" },
   { name: "api.jina.ai", type: "jina", endpoint: "https://api.jina.ai/v1", console: "https://jina.ai/api-dashboard/key-manager", plainIds: true }, // jina-ai/jina-embeddings-v3 is jina-embeddings-v3
   { name: "ollama", type: "openai", endpoint: "http://localhost:11434/v1" },
   { name: "api.deepl.com", type: "deepl", endpoint: "https://api.deepl.com/v2", console: "https://www.deepl.com/your-account/keys", models: [{ id: "deepl", capabilities: ["translate"], cost: { input: 20, output: 0 }, scores: TRANSLATOR.deepl }] }, // ~$20 per million characters
