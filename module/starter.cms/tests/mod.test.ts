@@ -53,6 +53,7 @@ Deno.test({
       const [section, ...more] = (await cms(app).nodesByName(item)).values();
       assertEquals(more, [], item);
       assertEquals((await section.conts()).map((c) => `${c.vs.name} ${c.vs.module}`), ["main cms.cont.text"], item);
+      assert(await section.title("en"), `${item} has a section title`);
     }
     // the menu first, then the checklist, the pages only linked to, and what runs the site
     const order = (await (await cms(app).node(1)).children({ type: "p" })).values().map((p) => p.vs.name ?? p.vs.module);

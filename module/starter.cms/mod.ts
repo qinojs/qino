@@ -82,11 +82,14 @@ export async function moduleLink(app: App, module: string, label: string): Promi
   return node ? link(await node.page(), label) : label;
 }
 
-/** Adds an item to the editors' checklist "First steps" of starter.cms, once per name. */
-export async function todo(app: App, name: string, texts: Texts): Promise<void> {
+/** Adds an item to the editors' checklist "First steps" of starter.cms, once per name: a section
+ *  titled `titles`, holding `texts`. */
+export async function todo(app: App, name: string, titles: Texts, texts: Texts): Promise<void> {
   const cm = cms(app);
   const list = (await cm.nodesByName("first-steps")).values().find((node) => node.vs.type === "p");
   if (!list || (await cm.nodesByName(name)).size) return;
   // the name goes on the section: the template looks up its text as "main"
-  await (await (await prose(list, texts)).parent())!.set("name", name);
+  const section = (await (await prose(list, texts)).parent())!;
+  await section.set("name", name);
+  await title(section, titles);
 }

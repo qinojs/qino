@@ -64,11 +64,11 @@ async function build(app: App) {
   });
 
   const settings = await moduleLink(app, "cms.backend.settings", "Backend → Settings");
-  await todo(app, "todo-passkeys", {
-    en: `<h2>Passkeys</h2>\n<p>Passkeys are bound to a domain. Enter yours, without https:// (for example <code>example.com</code>), under ${settings} in <i>auth.webauthn → rpId</i> — until then they only work on localhost.</p>`,
-    de: `<h2>Passkeys</h2>\n<p>Passkeys sind an eine Domain gebunden. Tragen Sie Ihre ohne https:// (zum Beispiel <code>example.com</code>) unter ${settings} bei <i>auth.webauthn → rpId</i> ein — bis dahin funktionieren sie nur auf localhost.</p>`,
-    fr: `<h2>Clés d'accès</h2>\n<p>Les clés d'accès sont liées à un domaine. Indiquez le vôtre, sans https:// (par exemple <code>example.com</code>), sous ${settings} dans <i>auth.webauthn → rpId</i> — d'ici là, elles ne fonctionnent que sur localhost.</p>`,
-    it: `<h2>Passkey</h2>\n<p>Le passkey sono legate a un dominio. Inserite il vostro, senza https:// (per esempio <code>example.com</code>), sotto ${settings} in <i>auth.webauthn → rpId</i> — fino ad allora funzionano solo su localhost.</p>`,
+  await todo(app, "todo-passkeys", { en: "Passkeys", de: "Passkeys", fr: "Clés d'accès", it: "Passkey" }, {
+    en: `<p>Passkeys are bound to a domain. Enter yours, without https:// (for example <code>example.com</code>), under ${settings} in <i>auth.webauthn → rpId</i> — until then they only work on localhost.</p>`,
+    de: `<p>Passkeys sind an eine Domain gebunden. Tragen Sie Ihre ohne https:// (zum Beispiel <code>example.com</code>) unter ${settings} bei <i>auth.webauthn → rpId</i> ein — bis dahin funktionieren sie nur auf localhost.</p>`,
+    fr: `<p>Les clés d'accès sont liées à un domaine. Indiquez le vôtre, sans https:// (par exemple <code>example.com</code>), sous ${settings} dans <i>auth.webauthn → rpId</i> — d'ici là, elles ne fonctionnent que sur localhost.</p>`,
+    it: `<p>Le passkey sono legate a un dominio. Inserite il vostro, senza https:// (per esempio <code>example.com</code>), sotto ${settings} in <i>auth.webauthn → rpId</i> — fino ad allora funzionano solo su localhost.</p>`,
   });
 }
 

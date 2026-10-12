@@ -15,11 +15,11 @@ async function build(app: App) {
   await adopt(app, name);
   const modules = await moduleLink(app, "cms.backend.superuser.module", "Backend → Superuser → Modules");
   const finance = await moduleLink(app, "cms.backend.superuser.fin", "Backend → Superuser → Finance");
-  await todo(app, "todo-fin", {
-    en: `<h2>Invoices</h2>\n<p>Your address on the invoices comes from the identity. To get paid online, install a payment provider under ${modules}, for example <i>fin.payment.qrbill</i> or <i>fin.payment.stripe</i>. Invoices are written under ${finance}.</p>`,
-    de: `<h2>Rechnungen</h2>\n<p>Ihre Adresse auf den Rechnungen kommt aus der Identität. Für Online-Zahlungen installieren Sie unter ${modules} einen Zahlungsanbieter, zum Beispiel <i>fin.payment.qrbill</i> oder <i>fin.payment.stripe</i>. Rechnungen schreiben Sie unter ${finance}.</p>`,
-    fr: `<h2>Factures</h2>\n<p>Votre adresse sur les factures vient de l'identité. Pour être payé en ligne, installez un prestataire de paiement sous ${modules}, par exemple <i>fin.payment.qrbill</i> ou <i>fin.payment.stripe</i>. Les factures se rédigent sous ${finance}.</p>`,
-    it: `<h2>Fatture</h2>\n<p>Il vostro indirizzo sulle fatture viene dall'identità. Per essere pagati online, installate un fornitore di pagamento sotto ${modules}, per esempio <i>fin.payment.qrbill</i> o <i>fin.payment.stripe</i>. Le fatture si scrivono sotto ${finance}.</p>`,
+  await todo(app, "todo-fin", { en: "Invoices", de: "Rechnungen", fr: "Factures", it: "Fatture" }, {
+    en: `<p>Your address on the invoices comes from the identity. To get paid online, install a payment provider under ${modules}, for example <i>fin.payment.qrbill</i> or <i>fin.payment.stripe</i>. Invoices are written under ${finance}.</p>`,
+    de: `<p>Ihre Adresse auf den Rechnungen kommt aus der Identität. Für Online-Zahlungen installieren Sie unter ${modules} einen Zahlungsanbieter, zum Beispiel <i>fin.payment.qrbill</i> oder <i>fin.payment.stripe</i>. Rechnungen schreiben Sie unter ${finance}.</p>`,
+    fr: `<p>Votre adresse sur les factures vient de l'identité. Pour être payé en ligne, installez un prestataire de paiement sous ${modules}, par exemple <i>fin.payment.qrbill</i> ou <i>fin.payment.stripe</i>. Les factures se rédigent sous ${finance}.</p>`,
+    it: `<p>Il vostro indirizzo sulle fatture viene dall'identità. Per essere pagati online, installate un fornitore di pagamento sotto ${modules}, per esempio <i>fin.payment.qrbill</i> o <i>fin.payment.stripe</i>. Le fatture si scrivono sotto ${finance}.</p>`,
   });
 
   const account = (await cms(app).nodesByName("account")).values().find((node) => node.vs.type === "p");

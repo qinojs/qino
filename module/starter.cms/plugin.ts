@@ -82,38 +82,50 @@ async function firstSteps(app: App, root: Node, imprint: Node, privacy: Node) {
   });
   const users = await moduleLink(app, "cms.backend.users", "Backend → Users");
   await todo(app, "todo-account", {
-    en: `<h2>Your own account</h2>\n<p>Create a user for yourself under ${users} and put them in the group <i>admin</i>. Keep the superuser <i>su</i> for emergencies, with a password of your own, and delete the file <code>data/starter.cms/superuser.txt</code> on the server.</p>`,
-    de: `<h2>Ihr eigenes Konto</h2>\n<p>Legen Sie unter ${users} einen Benutzer für sich an und nehmen Sie ihn in die Gruppe <i>admin</i> auf. Den Superuser <i>su</i> behalten Sie für Notfälle, mit einem eigenen Passwort, und löschen auf dem Server die Datei <code>data/starter.cms/superuser.txt</code>.</p>`,
-    fr: `<h2>Votre propre compte</h2>\n<p>Créez un utilisateur pour vous sous ${users} et ajoutez-le au groupe <i>admin</i>. Gardez le superutilisateur <i>su</i> pour les urgences, avec votre propre mot de passe, et supprimez sur le serveur le fichier <code>data/starter.cms/superuser.txt</code>.</p>`,
-    it: `<h2>Il vostro account</h2>\n<p>Create un utente per voi sotto ${users} e aggiungetelo al gruppo <i>admin</i>. Tenete il superutente <i>su</i> per le emergenze, con una vostra password, ed eliminate sul server il file <code>data/starter.cms/superuser.txt</code>.</p>`,
+    en: "Your own account", de: "Ihr eigenes Konto",
+    fr: "Votre propre compte", it: "Il vostro account",
+  }, {
+    en: `<p>Create a user for yourself under ${users} and put them in the group <i>admin</i>. Keep the superuser <i>su</i> for emergencies, with a password of your own, and delete the file <code>data/starter.cms/superuser.txt</code> on the server.</p>`,
+    de: `<p>Legen Sie unter ${users} einen Benutzer für sich an und nehmen Sie ihn in die Gruppe <i>admin</i> auf. Den Superuser <i>su</i> behalten Sie für Notfälle, mit einem eigenen Passwort, und löschen auf dem Server die Datei <code>data/starter.cms/superuser.txt</code>.</p>`,
+    fr: `<p>Créez un utilisateur pour vous sous ${users} et ajoutez-le au groupe <i>admin</i>. Gardez le superutilisateur <i>su</i> pour les urgences, avec votre propre mot de passe, et supprimez sur le serveur le fichier <code>data/starter.cms/superuser.txt</code>.</p>`,
+    it: `<p>Create un utente per voi sotto ${users} e aggiungetelo al gruppo <i>admin</i>. Tenete il superutente <i>su</i> per le emergenze, con una vostra password, ed eliminate sul server il file <code>data/starter.cms/superuser.txt</code>.</p>`,
   });
   const identity = await moduleLink(app, "cms.backend.config.identity", "Backend → Configuration → Identity");
   await todo(app, "todo-identity", {
-    en: `<h2>Name, logo and colours</h2>\n<p>Under ${identity}. The email address entered there receives the messages of the contact form.</p>`,
-    de: `<h2>Name, Logo und Farben</h2>\n<p>Unter ${identity}. An die dort eingetragene E-Mail-Adresse gehen die Nachrichten des Kontaktformulars.</p>`,
-    fr: `<h2>Nom, logo et couleurs</h2>\n<p>Sous ${identity}. L'adresse e-mail indiquée reçoit les messages du formulaire de contact.</p>`,
-    it: `<h2>Nome, logo e colori</h2>\n<p>Sotto ${identity}. L'indirizzo e-mail indicato riceve i messaggi del modulo di contatto.</p>`,
+    en: "Name, logo and colours", de: "Name, Logo und Farben",
+    fr: "Nom, logo et couleurs", it: "Nome, logo e colori",
+  }, {
+    en: `<p>Under ${identity}. The email address entered there receives the messages of the contact form.</p>`,
+    de: `<p>Unter ${identity}. An die dort eingetragene E-Mail-Adresse gehen die Nachrichten des Kontaktformulars.</p>`,
+    fr: `<p>Sous ${identity}. L'adresse e-mail indiquée reçoit les messages du formulaire de contact.</p>`,
+    it: `<p>Sotto ${identity}. L'indirizzo e-mail indicato riceve i messaggi del modulo di contatto.</p>`,
   });
   const mail = await moduleLink(app, "cms.backend.superuser.messaging.email", "Backend → Superuser → Messaging → Email");
   const entries = await moduleLink(app, "cms.backend.cms.form4", "Backend → CMS → Form entries");
   await todo(app, "todo-mail", {
-    en: `<h2>Sending email</h2>\n<p>Set up a mail server under ${mail}. Until then no mail leaves the site; messages from the contact form still arrive under ${entries}.</p>`,
-    de: `<h2>E-Mail-Versand</h2>\n<p>Richten Sie unter ${mail} einen Mailserver ein. Bis dahin verlässt keine Mail die Website; Nachrichten aus dem Kontaktformular finden Sie trotzdem unter ${entries}.</p>`,
-    fr: `<h2>Envoi d'e-mails</h2>\n<p>Configurez un serveur de messagerie sous ${mail}. D'ici là, aucun e-mail ne part du site ; les messages du formulaire de contact arrivent quand même sous ${entries}.</p>`,
-    it: `<h2>Invio di e-mail</h2>\n<p>Configurate un server di posta sotto ${mail}. Fino ad allora nessuna e-mail lascia il sito; i messaggi del modulo di contatto arrivano comunque sotto ${entries}.</p>`,
+    en: "Sending email", de: "E-Mail-Versand",
+    fr: "Envoi d'e-mails", it: "Invio di e-mail",
+  }, {
+    en: `<p>Set up a mail server under ${mail}. Until then no mail leaves the site; messages from the contact form still arrive under ${entries}.</p>`,
+    de: `<p>Richten Sie unter ${mail} einen Mailserver ein. Bis dahin verlässt keine Mail die Website; Nachrichten aus dem Kontaktformular finden Sie trotzdem unter ${entries}.</p>`,
+    fr: `<p>Configurez un serveur de messagerie sous ${mail}. D'ici là, aucun e-mail ne part du site ; les messages du formulaire de contact arrivent quand même sous ${entries}.</p>`,
+    it: `<p>Configurate un server di posta sotto ${mail}. Fino ad allora nessuna e-mail lascia il sito; i messaggi del modulo di contatto arrivano comunque sotto ${entries}.</p>`,
   });
   await todo(app, "todo-legal", {
-    en: `<h2>Imprint and privacy policy</h2>\n<p>Replace the [placeholders] in the ${link(imprint, "imprint")} and the ${link(privacy, "privacy policy")}.</p>`,
-    de: `<h2>Impressum und Datenschutz</h2>\n<p>Ersetzen Sie die [Platzhalter] im ${link(imprint, "Impressum")} und in der ${link(privacy, "Datenschutzerklärung")}.</p>`,
-    fr: `<h2>Mentions légales et protection des données</h2>\n<p>Remplacez les [espaces réservés] dans les ${link(imprint, "mentions légales")} et la ${link(privacy, "déclaration de protection des données")}.</p>`,
-    it: `<h2>Colophon e protezione dei dati</h2>\n<p>Sostituite i [segnaposto] nel ${link(imprint, "colophon")} e nella ${link(privacy, "dichiarazione sulla protezione dei dati")}.</p>`,
+    en: "Imprint and privacy policy", de: "Impressum und Datenschutz",
+    fr: "Mentions légales et protection des données", it: "Colophon e protezione dei dati",
+  }, {
+    en: `<p>Replace the [placeholders] in the ${link(imprint, "imprint")} and the ${link(privacy, "privacy policy")}.</p>`,
+    de: `<p>Ersetzen Sie die [Platzhalter] im ${link(imprint, "Impressum")} und in der ${link(privacy, "Datenschutzerklärung")}.</p>`,
+    fr: `<p>Remplacez les [espaces réservés] dans les ${link(imprint, "mentions légales")} et la ${link(privacy, "déclaration de protection des données")}.</p>`,
+    it: `<p>Sostituite i [segnaposto] nel ${link(imprint, "colophon")} e nella ${link(privacy, "dichiarazione sulla protezione dei dati")}.</p>`,
   });
   const settings = await moduleLink(app, "cms.backend.settings", "Backend → Settings");
-  await todo(app, "todo-languages", {
-    en: `<h2>Languages</h2>\n<p>The site speaks English. More languages are set under ${settings} in <i>core → langs</i>, for example <code>de,en</code> — the first one is the default. Titles and texts of these pages already exist in German, French and Italian.</p>`,
-    de: `<h2>Sprachen</h2>\n<p>Die Website spricht Englisch. Weitere Sprachen stellen Sie unter ${settings} bei <i>core → langs</i> ein, zum Beispiel <code>de,en</code> — die erste ist die Standardsprache. Titel und Texte dieser Seiten gibt es bereits auf Deutsch, Französisch und Italienisch.</p>`,
-    fr: `<h2>Langues</h2>\n<p>Le site parle anglais. D'autres langues se règlent sous ${settings} dans <i>core → langs</i>, par exemple <code>fr,en</code> — la première est la langue par défaut. Les titres et textes de ces pages existent déjà en allemand, français et italien.</p>`,
-    it: `<h2>Lingue</h2>\n<p>Il sito parla inglese. Altre lingue si impostano sotto ${settings} in <i>core → langs</i>, per esempio <code>it,en</code> — la prima è quella predefinita. Titoli e testi di queste pagine esistono già in tedesco, francese e italiano.</p>`,
+  await todo(app, "todo-languages", { en: "Languages", de: "Sprachen", fr: "Langues", it: "Lingue" }, {
+    en: `<p>The site speaks English. More languages are set under ${settings} in <i>core → langs</i>, for example <code>de,en</code> — the first one is the default. Titles and texts of these pages already exist in German, French and Italian.</p>`,
+    de: `<p>Die Website spricht Englisch. Weitere Sprachen stellen Sie unter ${settings} bei <i>core → langs</i> ein, zum Beispiel <code>de,en</code> — die erste ist die Standardsprache. Titel und Texte dieser Seiten gibt es bereits auf Deutsch, Französisch und Italienisch.</p>`,
+    fr: `<p>Le site parle anglais. D'autres langues se règlent sous ${settings} dans <i>core → langs</i>, par exemple <code>fr,en</code> — la première est la langue par défaut. Les titres et textes de ces pages existent déjà en allemand, français et italien.</p>`,
+    it: `<p>Il sito parla inglese. Altre lingue si impostano sotto ${settings} in <i>core → langs</i>, per esempio <code>it,en</code> — la prima è quella predefinita. Titoli e testi di queste pagine esistono già in tedesco, francese e italiano.</p>`,
   });
 }
 

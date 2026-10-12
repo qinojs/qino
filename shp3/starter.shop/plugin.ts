@@ -56,11 +56,11 @@ async function build(app: App) {
 
   const settings = await moduleLink(app, "cms.backend.shp3.settings", "Backend → Shop → Settings");
   const products = await moduleLink(app, "cms.backend.shp3.products", "Backend → Shop → Products");
-  await todo(app, "todo-shop", {
-    en: `<h2>Shop</h2>\n<p>Enter the shop's address, currencies, VAT and the countries you deliver to under ${settings}. Change the prices of the sample products or delete them under ${products}. Order confirmations need the mail server.</p>`,
-    de: `<h2>Shop</h2>\n<p>Tragen Sie Adresse, Währungen, MWST und die Lieferländer des Shops unter ${settings} ein. Preise der Beispielprodukte ändern oder sie löschen können Sie unter ${products}. Bestellbestätigungen brauchen den Mailserver.</p>`,
-    fr: `<h2>Boutique</h2>\n<p>Indiquez l'adresse, les devises, la TVA et les pays de livraison sous ${settings}. Modifiez les prix des produits exemples ou supprimez-les sous ${products}. Les confirmations de commande nécessitent le serveur de messagerie.</p>`,
-    it: `<h2>Negozio</h2>\n<p>Inserite indirizzo, valute, IVA e paesi di consegna sotto ${settings}. Modificate i prezzi dei prodotti di esempio o eliminateli sotto ${products}. Le conferme d'ordine richiedono il server di posta.</p>`,
+  await todo(app, "todo-shop", { en: "Shop", de: "Shop", fr: "Boutique", it: "Negozio" }, {
+    en: `<p>Enter the shop's address, currencies, VAT and the countries you deliver to under ${settings}. Change the prices of the sample products or delete them under ${products}. Order confirmations need the mail server.</p>`,
+    de: `<p>Tragen Sie Adresse, Währungen, MWST und die Lieferländer des Shops unter ${settings} ein. Preise der Beispielprodukte ändern oder sie löschen können Sie unter ${products}. Bestellbestätigungen brauchen den Mailserver.</p>`,
+    fr: `<p>Indiquez l'adresse, les devises, la TVA et les pays de livraison sous ${settings}. Modifiez les prix des produits exemples ou supprimez-les sous ${products}. Les confirmations de commande nécessitent le serveur de messagerie.</p>`,
+    it: `<p>Inserite indirizzo, valute, IVA e paesi di consegna sotto ${settings}. Modificate i prezzi dei prodotti di esempio o eliminateli sotto ${products}. Le conferme d'ordine richiedono il server di posta.</p>`,
   });
 }
 
