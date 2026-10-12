@@ -66,14 +66,28 @@ export async function init(app: App): Promise<void> {
   await setting(seeded.join(","));
 }
 
-/* Titles in the four backend languages. A title only exists in the written languages; without
-   the site's language the page shows up nameless in the tree. */
+/* Titles in the four backend languages, where the page has none yet. A title only exists in the written
+   languages; without the site's language the page shows up nameless in the tree. */
 async function titles(page: Node, texts: Record<string, string>) {
-  for (const [lang, text] of Object.entries(texts)) await page.title(lang, text);
+  for (const [lang, text] of Object.entries(texts)) if (!await page.title(lang)) await page.title(lang, text);
 }
 
-// Atomic: a half-installed site can't be repaired on the next boot, since every step skips
-// existing ids.
+/** The child page of that name with its titles, created when missing. */
+async function page(parent: Node, name: string, fields: Record<string, unknown>, texts: Record<string, string>) {
+  const node = await parent.child(name, fields);
+  await titles(node, texts);
+  return node;
+}
+
+/** A redirect, unless the site has one for that request already. */
+async function redirect(app: App, request: string, page: Node) {
+  if (!await app.db.one`SELECT 1 FROM page_redirect WHERE request = ${request}`) {
+    await app.db.table("page_redirect").insert({ request, redirect: String(page.id) });
+  }
+}
+
+// Atomic: a half-installed site can't be repaired on the next boot, since every step skips the
+// pages already there.
 export function install({ app }: { app: App }): Promise<void> {
   return app.db.transaction(() => installTx(app));
 }
@@ -104,72 +118,51 @@ async function installTx(app: App) {
 
   const adminGrp = Number(await db.one`SELECT id FROM grp WHERE name = 'admin'`);
 
-  // Home
-  if (!await db.one`SELECT id FROM page WHERE id = 2`) {
-    const p = await (await cm.node(1)).createChild({ id: 2, access: 1, visible: true, offline: 0, searchable: true, sort: 1 });
-    await p.changeGroup(adminGrp, 2);
-    await db.table("page_redirect").insert({ request: "", redirect: "2" });
-    await titles(p, { en: "Home", de: "Startseite", fr: "Accueil", it: "Home" });
-  }
-  // Service
-  if (!await db.one`SELECT id FROM page WHERE id = 10`) {
-    const p = await (await cm.node(1)).createChild({ id: 10, access: 1, visible: false, searchable: true, sort: 4 });
-    await p.changeGroup(adminGrp, 1);
-    await titles(p, { en: "Service", de: "Service", fr: "Service", it: "Servizio" });
-  }
-  if (!await db.one`SELECT id FROM page WHERE id = 20`) {
-    const p = await (await cm.node(10)).createChild({ id: 20, visible: true, searchable: false });
-    await p.changeGroup(adminGrp, 2);
-    await (await p.cont("main")).cont('1', "cms.cont.search1");
-    await titles(p, { en: "Search", de: "Suche", fr: "Recherche", it: "Ricerca" });
-  }
+  const root = await cm.node(1);
+  const home = await page(root, "home", { access: 1, visible: true, searchable: true, sort: 1 },
+    { en: "Home", de: "Startseite", fr: "Accueil", it: "Home" });
+  await home.changeGroup(adminGrp, 2);
+  await redirect(app, "", home);
 
-  if (!await db.one`SELECT id FROM page WHERE id = 40`) {
-    const p = await (await cm.node(1)).createChild({ id: 40, access: 0, visible: false, searchable: false, sort: 8 });
-    await p.changeGroup(adminGrp, 1);
-    await titles(p, { en: "System", de: "System", fr: "Système", it: "Sistema" });
-  }
-  if (!await db.one`SELECT id FROM page WHERE id = 5`) {
-    const p = await (await cm.node(40)).createChild({ id: 5, access: 1, offline: 0, visible: false });
-    await p.changeGroup(adminGrp, 1);
-    await titles(p, { en: "Layout", de: "Layout", fr: "Mise en page", it: "Layout" });
-  }
+  const service = await page(root, "service", { access: 1, visible: false, searchable: true, sort: 4 },
+    { en: "Service", de: "Service", fr: "Service", it: "Servizio" });
+  await service.changeGroup(adminGrp, 1);
+  const search = await page(service, "search", { visible: true, searchable: false },
+    { en: "Search", de: "Suche", fr: "Recherche", it: "Ricerca" });
+  await search.changeGroup(adminGrp, 2);
+  await (await search.cont("main")).cont("1", "cms.cont.search1");
 
-  if (!await db.one`SELECT id FROM page WHERE id = 50`) {
-    const p = await (await cm.node(40)).createChild({ id: 50, access: 0, offline: 0, visible: false });
-    await p.changeGroup(adminGrp, 1);
-    await (await p.cont("main")).cont("cms.cont.trash");
-    await titles(p, { en: "Trash", de: "Papierkorb", fr: "Corbeille", it: "Cestino" });
-    if (!await settings.cms.pageTrash) settings.cms.pageTrash(50);
-  }
-  await (await cm.node(50)).set("module", "cms.layout.system");
-  await (await (await cm.node(50)).cont("main")).set("module", "cms.cont.trash");
+  const system = await page(root, "system", { access: 0, visible: false, searchable: false, sort: 8 },
+    { en: "System", de: "System", fr: "Système", it: "Sistema" });
+  await system.changeGroup(adminGrp, 1);
+  const layout = await page(system, "layout", { access: 1, visible: false },
+    { en: "Layout", de: "Layout", fr: "Mise en page", it: "Layout" });
+  await layout.changeGroup(adminGrp, 1);
 
-  if (!await db.one`SELECT id FROM page WHERE id = 60`) {
-    const p = await (await cm.node(40)).createChild({ id: 60, access: 1, offline: 0, visible: false });
-    await p.changeGroup(adminGrp, 1);
-    await (await p.cont("main")).cont('1', "cms.cont.login4");
-    await titles(p, { en: "No access", de: "Kein Zugriff", fr: "Accès refusé", it: "Nessun accesso" });
-    if (!await settings.cms.pageNoAccess) settings.cms.pageNoAccess(60);
-  }
-  if (!await db.one`SELECT id FROM page WHERE id = 80`) {
-    const p = await (await cm.node(40)).createChild({ id: 80, access: 1, offline: 0 });
-    await p.changeGroup(adminGrp, 1);
-    await (await p.cont("main")).cont('1', "cms.cont.login4");
-    await titles(p, { en: "Login", de: "Anmelden", fr: "Connexion", it: "Accedi" });
-    await db.table("page_redirect").insert({ request: "login", redirect: "80" });
-  }
-  await (await cm.node(80)).set("module", "cms.layout.system");
-  await (await (await cm.node(80)).cont("main")).cont('1').then((c) => c.set("module", "cms.cont.login4"));
+  const trash = await page(system, "trash", { access: 0, visible: false, module: "cms.layout.system" },
+    { en: "Trash", de: "Papierkorb", fr: "Corbeille", it: "Cestino" });
+  await trash.changeGroup(adminGrp, 1);
+  await trash.cont("main", "cms.cont.trash");
+  if (!await settings.cms.pageTrash) await settings.cms.pageTrash(trash.id);
 
-  if (!await db.one`SELECT id FROM page WHERE id = 70`) {
-    const p = await (await cm.node(40)).createChild({ id: 70, access: 1, offline: 0, visible: false });
-    await p.changeGroup(adminGrp, 2);
-    await (await p.cont("main")).cont('1', "cms.cont.not_found1");
-    await titles(p, { en: "Not found", de: "Nicht gefunden", fr: "Page introuvable", it: "Non trovato" });
-    if (!await settings.cms.pageNotFound) settings.cms.pageNotFound(70);
-    if (!await settings.cms.pageOffline)  settings.cms.pageOffline(60);
-  }
+  const noAccess = await page(system, "no-access", { access: 1, visible: false },
+    { en: "No access", de: "Kein Zugriff", fr: "Accès refusé", it: "Nessun accesso" });
+  await noAccess.changeGroup(adminGrp, 1);
+  await (await noAccess.cont("main")).cont("1", "cms.cont.login4");
+  if (!await settings.cms.pageNoAccess) await settings.cms.pageNoAccess(noAccess.id);
+  if (!await settings.cms.pageOffline) await settings.cms.pageOffline(noAccess.id);
+
+  const login = await page(system, "login", { access: 1, module: "cms.layout.system" },
+    { en: "Login", de: "Anmelden", fr: "Connexion", it: "Accedi" });
+  await login.changeGroup(adminGrp, 1);
+  await (await login.cont("main")).cont("1", "cms.cont.login4");
+  await redirect(app, "login", login);
+
+  const notFound = await page(system, "not-found", { access: 1, visible: false },
+    { en: "Not found", de: "Nicht gefunden", fr: "Page introuvable", it: "Non trovato" });
+  await notFound.changeGroup(adminGrp, 2);
+  await (await notFound.cont("main")).cont("1", "cms.cont.not_found1");
+  if (!await settings.cms.pageNotFound) await settings.cms.pageNotFound(notFound.id);
 
   // define the frontend-module
   if (!await settings.cms.frontend) settings.cms.frontend("cms.frontend.4");

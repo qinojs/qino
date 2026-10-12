@@ -18,18 +18,19 @@ export async function adopt(app: App, starter: string): Promise<void> {
 }
 
 /**
- * The page of that name, created below `parent` when there is none — so applying a starter again
- * fills gaps instead of doubling pages. `fill` runs only for a new page.
+ * The page of that name below `parent`, created when there is none — so applying a starter again
+ * fills gaps instead of doubling pages. Titles and `fill` only go to a new page.
  */
 export async function page(
   parent: Node, name: string, titles: Texts, fields: Record<string, unknown> = {},
   fill?: (page: Node) => unknown,
 ): Promise<Node> {
-  const found = (await cms(parent.app).nodesByName(name)).values().find((node) => node.vs.type === "p");
-  if (found) return found;
-  const node = await parent.createChild({ name, ...fields });
-  await title(node, titles);
-  await fill?.(node);
+  const fresh = !(await parent.children()).values().some((node) => node.vs.name === name);
+  const node = await parent.child(name, fields);
+  if (fresh) {
+    await title(node, titles);
+    await fill?.(node);
+  }
   return node;
 }
 

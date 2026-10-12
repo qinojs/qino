@@ -736,6 +736,12 @@ export class Node {
         return true;
     }
 
+    /** The child page of that name, created when it is not there yet. */
+    async child(name: string, defaults: Record<string, unknown> = {}): Promise<Node> {
+        const child = (await this.children({ type: "p" })).values().find((c) => c.vs.name === name);
+        return child ?? this.createChild({ ...defaults, name });
+    }
+
     /** The cont of that name, created when it is not there yet. */
     async cont(name: string, defaults: any = {}): Promise<Node> {
         const conts = await this.conts();

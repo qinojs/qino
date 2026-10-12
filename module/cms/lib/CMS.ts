@@ -85,13 +85,13 @@ export class CMS extends Emitter<CmsEvents> {
     return (await this.nodesByName(name)).values().next().value;
   }
 
-  /** Global page of a layout module (child of the system page), created if missing */
+  /** Global page of a layout module (below system/layout), created if missing */
   async layoutPage(module: string): Promise<Node> {
-    const sysPage = await this.node(5);
-    const children = await sysPage.children({ module });
-    let lPage = children.values().next().value;
+    const system = await (await this.node(1)).child("system", { access: 0, visible: false, searchable: false });
+    const layouts = await system.child("layout", { access: 1, visible: false });
+    let lPage = (await layouts.children({ module })).values().next().value;
     if (!lPage) {
-      lPage = await sysPage.createChild({ module, name: module, access: 1 });
+      lPage = await layouts.createChild({ module, name: module, access: 1 });
       await lPage.title(this.app.languages.def, module);
     }
     return lPage;

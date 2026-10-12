@@ -28,7 +28,7 @@ async function build(app: App) {
   await root.changeGroup(await editors(app), 2); // before the pages: children copy the grants
   await superuser(app);
 
-  const login = await systemPages(app, root); // first: page 5 must not be taken
+  const login = await systemPages(app, root);
   const home = await page(root, "home", TITLES.home, { access: 1, visible: true, searchable: true },
     (p) => prose(p, welcome(login)));
   await redirect(app, "", home);
@@ -66,8 +66,7 @@ async function build(app: App) {
  */
 async function arrange(app: App, firstSteps: Node) {
   await before(firstSteps, "search");
-  const system = (await cms(app).nodesByName("system")).values().find((node) => node.vs.type === "p");
-  if (system) await before(system);
+  await before(await (await cms(app).node(1)).child("system"));
   const backend = await cms(app).nodeByModule("cms.backend");
   if (backend) await before(await backend.page());
 }
@@ -148,14 +147,12 @@ async function superuser(app: App) {
   console.log(`\n\x1b[33m[qino] Superuser created — sign in at /login with email: su  password:\x1b[0m ${pw}${hint}\n`);
 }
 
-/** Hidden pages the CMS itself relies on. Page 5 is where cms keeps the global layout pages. */
+/** Hidden pages the CMS itself relies on. */
 async function systemPages(app: App, root: Node) {
-  const { db, settings } = app;
+  const { settings } = app;
   const cm = cms(app);
   const system = await page(root, "system", TITLES.system, { access: 0, visible: false, searchable: false });
-  if (!await db.one`SELECT id FROM page WHERE id = 5`) {
-    await page(system, "layout", TITLES.layout, { id: 5, access: 1, visible: false });
-  }
+  await page(system, "layout", TITLES.layout, { access: 1, visible: false }); // cms keeps the layout pages here
   const plain = { access: 1, visible: false, searchable: false, module: "cms.layout.system" };
   // a page setting that is unset or points nowhere
   const missing = async (setting: unknown) => {

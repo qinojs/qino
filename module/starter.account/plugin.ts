@@ -19,8 +19,8 @@ async function build(app: App) {
   const root = await cm.node(1);
 
   // Passkeys on the login page of starter.cms, above the password form
-  const login = (await cm.nodesByName("login")).values().find((node) => node.vs.type === "p");
-  if (login && !await cm.nodeByModule("cms.cont.webauthn")) {
+  const login = await (await root.child("system")).child("login");
+  if (!await cm.nodeByModule("cms.cont.webauthn")) {
     const main = await login.cont("main");
     const first = (await main.conts())[0];
     const passkey = await main.cont("passkey", "cms.cont.webauthn");

@@ -3,6 +3,7 @@
    Reset: see MIGRATION.md. The module lists come from the site's own page.module values,
    new-project.sh filled them in. */
 import { App } from "@qino/qino";
+import { migrate } from "../../qino/meta/migrate_from_php/mod.ts";
 
 const base = import.meta.resolve("./");
 const url = (path: string): string => new URL(path, base).href;
@@ -36,6 +37,7 @@ __LEGACY__
 ) legacy.add(mod);
 
 __MISSING__
+await migrate(app); // before init: renamed columns, names for the system pages
 await app.init();
 
 const port = Number(Deno.env.get("PORT") ?? __PORT__);

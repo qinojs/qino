@@ -56,7 +56,7 @@ item.js is released together with qino, so it may be younger than Deno's minimum
 | Layout | `cms.layout.standard.2` on the root, unless the site already chose a layout |
 | Pages | Home, Contact (form with name, email and message), Search, Imprint, Privacy policy |
 | Editors | First steps |
-| System | Layout (page 5), Login with "forgot password", No access, Not found, Trash |
+| System | Layout (holds the layout pages), Login with "forgot password", No access, Not found, Trash |
 | Footer | links to contact, imprint, privacy policy and search |
 | People | the group `admin`, allowed to edit every page, and the superuser `su` |
 | Modules | contents, forms, images, file browser, versions, SEO, error reports and the backend |
