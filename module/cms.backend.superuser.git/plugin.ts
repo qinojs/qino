@@ -65,7 +65,7 @@ function supervised() {
   }
 }
 
-/** Deno keeps its loaded modules, so pulled code needs a restart: exit and let the supervisor start
+/** The runtime keeps its loaded modules, so pulled code needs a restart: exit and let the supervisor start
  *  it again. Non-zero, so `Restart=on-failure` works too. */
 function restart() {
   if (!supervised()) throw new Error("No service manager found — the process would stay down. Set QINO_SUPERVISED=1 if one is watching.");
