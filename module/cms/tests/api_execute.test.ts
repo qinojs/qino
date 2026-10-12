@@ -1,5 +1,5 @@
 // deno-lint-ignore-file require-await
-import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "@qino/qino";
+import { AccessError, NotFoundError, ValidationError, bildJsonItem, invoke, html, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { cmsInstances } from "../lib/CMS.ts";
@@ -33,6 +33,7 @@ class FakeNode {
   allFileNames = ["file.jpg", "placeholder.jpg"];
   deletedFiles: string[] = [];
   online = true;
+  settings = bildJsonItem(null, async () => {}).proxy;
 
   constructor(id: number, accessLevel = 3, vs: Record<string, unknown> = {}) {
     this.id = id;
@@ -81,7 +82,9 @@ class FakeNode {
   copied?: FakeNode;
   copy() { return this.copied = new FakeNode(5, this.accessLevel, { ...this.vs, id: 5 }); }
   createCont({ module }: { module: string }) {
-    return new FakeNode(4, 3, { type: "c", module });
+    const cont = new FakeNode(4, 3, { type: "c", module });
+    cont.settings = bildJsonItem(JSON.stringify({ cols: 2 }), async () => {}).proxy;
+    return cont;
   }
   files() { return new Map(this.fileNames.map((slot) => [slot, fakeFile(slot)])); }
   filesAndPlaceholders() { return new Map(this.allFileNames.map((slot) => [slot, fakeFile(slot)])); }
@@ -97,6 +100,7 @@ async function setup(access = 3) {
   nodes.set(2, new FakeNode(2, 0));
   const user = { id: 9, superuser: false, toString: () => "9" };
   const ctx = await testContext({ userId: 9, app: {
+    languages: { all: ["de", "en"] },
     db: {
       one: () => null,
       table: (name: string) => ({
@@ -229,6 +233,7 @@ Deno.test("cms api: contents post returns rendered html and the block's shape", 
       contents: [],
       texts: {},
       files: { "file.jpg": { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" }, "placeholder.jpg": { placeholder: true } },
+      settings: { cols: 2 },
     });
   });
 });

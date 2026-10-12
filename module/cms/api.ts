@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
+import { $item, s, sql, sqlSearch, Access, AccessError, ApiError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
@@ -86,6 +86,13 @@ const contentsJson = (node: Node) => fns.treeToJson({
 });
 // Reads are sanitized like output (the stored text is raw). cmspid:// links stay unresolved, so
 // they survive editing.
+/** `lang`, else the request's. A translation in a language the app doesn't know would be kept, but never
+ *  shown: refused, so the caller learns it. */
+const knownLang = (ctx: Ctx, lang = ctx.lang) => {
+  if (!ctx.app.languages.all.includes(lang)) throw new ApiError(422, `Unknown language "${lang}"`);
+  return lang;
+};
+
 const textsJson = async (node: Node, lang?: string) => {
   const texts = (await node.texts()).entries();
   if (!lang) return Object.fromEntries(texts.map(([name, text]) => [name, text.id]));
@@ -94,11 +101,13 @@ const textsJson = async (node: Node, lang?: string) => {
   ));
 };
 
-/** A node's contents. Only complete after a render: modules create conts and texts lazily. */
+/** A node's contents, and the settings its module builds them from (values only; the schema at
+ *  settings). Only complete after a render: modules create conts and texts lazily. */
 const shape = async (node: Node) => ({
   contents: await contentsJson(node),
   texts:    await textsJson(node),
   files:    await fns.nodeFilesJson(node),
+  settings: await itemReadDeep(node.settings[$item]),
 });
 
 /** online_start / online_end: ISO string or Unix timestamp; "" removes the limit (inherit). */
@@ -208,7 +217,7 @@ const node = {
       input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
       output: s.object({ changed: s.boolean() }),
       execute: async ({ node, value, lang }: any, ctx: Ctx) => {
-        const changed = await node.title(lang ?? ctx.lang, value);
+        const changed = await node.title(knownLang(ctx, lang), value);
         return { changed: !!changed };
       },
     },
@@ -251,7 +260,7 @@ const node = {
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),
         execute: async ({ node, name, value, lang }: any, ctx: Ctx) => {
-          const changed = await node.text(name, lang ?? ctx.lang, value);
+          const changed = await node.text(name, knownLang(ctx, lang), value);
           return { changed: !!changed };
         },
       },
@@ -342,7 +351,7 @@ const node = {
 
   shape: {
     get: {
-      description: "What this node holds: content blocks, text field names, files",
+      description: "What this node holds: content blocks, text field names, files, settings",
       ...nodeRead,
       execute: async ({ node }: { node: Node }, ctx: Ctx) => {
         await asMainNode(node, ctx);
@@ -755,7 +764,7 @@ export const api = {
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language") }),
         execute: async ({ id, value, lang }: any, ctx: Ctx) => {
           const db = ctx.app.db;
-          const lang_ = lang ?? ctx.lang;
+          const lang_ = knownLang(ctx, lang);
           const row = await db.row`SELECT name, page_id FROM page_text WHERE text_id = ${id}`;
           if (row) {
             const n = await cms(ctx.app).node(row.page_id);

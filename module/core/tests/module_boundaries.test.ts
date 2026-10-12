@@ -324,6 +324,7 @@ const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
   "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
+  "cms.backend.ai/mod.ts CATALOG", // site modules outside this tree set up the known providers they have keys for
 ]);
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {

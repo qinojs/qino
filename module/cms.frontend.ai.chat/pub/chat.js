@@ -106,7 +106,15 @@ const sync = () => {
   if (pinned) log.scrollTop = log.scrollHeight;
   down.hidden = pinned ||= atEnd();
 };
-log.addEventListener("scroll", () => down.hidden = pinned = atEnd());
+// only scrolling up lets go: the event comes a frame late, when a log that shrinks (gliding, resizing)
+// is no longer at its end although nobody scrolled
+let top = 0;
+log.addEventListener("scroll", () => {
+  if (atEnd()) pinned = true;
+  else if (log.scrollTop < top) pinned = false;
+  top = log.scrollTop;
+  down.hidden = pinned;
+});
 down.addEventListener("click", () => log.scrollTo({ top: log.scrollHeight, behavior: "smooth" }));
 const sizes = new ResizeObserver(sync);
 sizes.observe(log);
@@ -157,7 +165,7 @@ const show = () => showing = showing.catch(() => {}).then(async () => {
   append(await Promise.all(messages.map(entry)));
 });
 const open = async (id) => {
-  session = id, last = 0, sent = undefined, pinned = true, down.hidden = true;
+  session = id, last = 0, sent = undefined, pinned = true, top = 0, down.hidden = true;
   log.replaceChildren();
   await show();
 };
@@ -190,9 +198,11 @@ function docked(on) {
   detach.title = detach.ariaLabel = on ? detachLabel : dockLabel;
   detachIco.setAttribute("icon", on ? "open_in_new" : "keyboard_tab");
   (on ? content : float).append(box);
-  if (on) return float.hidePopover();
+  pinned = true, top = 0; // moving it lost the scroll position: at the end again, here and while it glides
+  if (on) return float.hidePopover(), sync();
   float.style.transform = keep.get(AT) ?? "";
   if (!detached()) float.showPopover();
+  sync();
   globalThis.cms?.panel?.sidebar.set("");
   start().catch((err) => alert(err.message));
 }
