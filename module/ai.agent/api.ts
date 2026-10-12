@@ -112,8 +112,8 @@ export const api: ApiTree = {
           LEFT JOIN ai_provider p ON p.id = mp.provider_id
           WHERE m.session_id = ${session} AND m.id > ${after ?? 0} ORDER BY m.id`)
           .map((m) => ({
+            ...JSON.parse(String(m.message)), // first: a tool message's own id must not replace the row's
             id: m.id, time: m.time, model: m.model || undefined, provider: m.provider || undefined,
-            ...JSON.parse(String(m.message)),
           })),
       }), { after: s.optional(s.number()).describe("A message id: only the messages after it") }),
       ask: {

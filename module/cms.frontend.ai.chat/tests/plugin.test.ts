@@ -48,3 +48,20 @@ Deno.test("cms.frontend.ai.chat: the user's session stays, a foreign or fresh on
   assertEquals(await post.execute({}, ctx), { id: 21 });
   assertEquals(stored, 21);
 });
+
+Deno.test("cms.frontend.ai.chat: what changed on a page since a change, each node with its parent", async () => {
+  let access = 2, asked: unknown[] = [];
+  const app = {
+    db: {
+      one: () => Promise.resolve(9),
+      query: (_: TemplateStringsArray, ...values: unknown[]) => (asked = values, Promise.resolve([{ id: 5, basis: 3 }, { id: 6, basis: null }])),
+    },
+  };
+  fakeCms(app, { node: () => Promise.resolve({ access: () => access }) });
+  const { get } = (api as any).changed, ctx = { app };
+  assertEquals(await get.execute({ page: 7 }, ctx), { last: 9, nodes: [] }); // where to go on from
+  assertEquals(await get.execute({ page: 7, after: 4 }, ctx), { last: 9, nodes: [{ id: 5, basis: 3 }, { id: 6, basis: undefined }] });
+  assertEquals(asked, [7, 4, 9]);
+  access = 1; // not for who may not edit the page
+  assertEquals(await get.execute({ page: 7, after: 4 }, ctx), { last: 0, nodes: [] });
+});

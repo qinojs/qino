@@ -1,17 +1,50 @@
-/* In the CMS root (qino-cms), added by pub/chat.js: the chat fills its sidebar item's content. */
-#panel > .-sidebar > [itemid="ai-chat"] > .-content > .-chat {
+/* In the CMS root (qino-cms), added by pub/chat.js: the chat fills its sidebar item's content, or its own
+   window when detached. */
+:is(#panel > .-sidebar > [itemid="ai-chat"] > .-content, .-ai-chat-float) > .-chat {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: .5rem;
-  & > .-head, & > .-ask { display: flex; gap: .5rem }
-  & > .-log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .5rem }
+  & > .-bar { display: flex; align-items: center; gap: .5rem; & > span { flex: 1; font-weight: bold } }
+  & > .-ask { display: flex; gap: .5rem }
+  & > .-scroll { flex: 1; min-height: 0; position: relative; display: flex }
+  & .-log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .5rem }
+  & > .-pick { align-self: center }
+  & .-down { /* over the log's end, out of its layout */
+    position: absolute;
+    inset: auto 0 .5rem;
+    margin-inline: auto;
+    inline-size: max-content;
+    display: flex;
+    padding: .4rem;
+    border-radius: 50%;
+    background: var(--cms-light, #eee);
+    &[hidden] { display: none }
+  }
   & .-user { align-self: flex-end; max-width: 80%; white-space: pre-wrap }
   & .-note { opacity: .6; font-size: .8em }
   & .-error { color: var(--red, red); white-space: pre-wrap }
   & textarea { flex: 1; resize: none; font: inherit }
   & [aria-pressed=true] { outline: 2px solid Highlight }
 }
-.-ai-chat-mark { position: fixed; z-index: 2147483000; pointer-events: none; outline: 2px solid Highlight }
-.-ai-chat-mark[hidden] { display: none }
+.-ai-chat-float {
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  inline-size: min(26rem, calc(100vw - 2rem));
+  block-size: min(34rem, calc(100vh - 2rem));
+  padding: .5rem;
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  resize: both;
+  overflow: hidden;
+  color-scheme: light;
+  box-shadow: 0 0 .875rem rgba(0,0,0,.5);
+  &:not(:popover-open) { display: none }
+  & .-bar { cursor: move }
+}

@@ -184,6 +184,7 @@ Deno.test("ai.agent: the api, for anyone signed in; a session only for its user"
   assertEquals(await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
   const { messages } = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get()) as { messages: { id: number; role: string }[] };
   assertEquals(messages.map((m) => m.role), ["system", "system", "user", "assistant", "tool", "assistant", "system"]);
+  assertEquals(messages.every((m) => typeof m.id === "number"), true); // a tool message's own id doesn't replace the row's
   const since = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get({ after: messages.at(-2)!.id })) as { messages: { role: string }[] };
   assertEquals(since.messages.map((m) => m.role), ["system"]); // only what came after
   const bobs = [() => app.api["ai.agent"].sessions(session).get(), () => app.api["ai.agent"].sessions(session).ask.post({ content: "hi" }), () => app.api["ai.agent"].sessions(session).note.post({ content: "hi" })];

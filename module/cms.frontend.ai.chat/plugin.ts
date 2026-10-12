@@ -1,4 +1,4 @@
-import { Access } from "@qino/qino";
+import { Access, s } from "@qino/qino";
 import { Agent } from "@qino/qino/ai.agent";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai";
@@ -19,7 +19,8 @@ export const ctxSettingsSchema = {
 /** The user's session with the assistant: the kept one, else (or with `fresh`) a new one, kept from now on. */
 async function session(ctx: Ctx, fresh = false): Promise<{ id: number }> {
   const db = ctx.app.db, kept = Number(await ctx.settings[name].session) || 0;
-  if (!fresh && kept && Number(await db.one`SELECT usr_id FROM ai_session WHERE id = ${kept}`) === ctx.userId) return { id: kept };
+  const owner = kept && Number(await db.one`SELECT usr_id FROM ai_session WHERE id = ${kept}`);
+  if (!fresh && kept && owner === ctx.userId) return { id: kept };
   const agent = Number(await db.one`SELECT id FROM ai_agent WHERE name = ${AGENT}`);
   if (!agent) throw new Error(`No agent ${AGENT}`);
   const { id } = await new Agent(ctx.app, agent).start(ctx.userId);
@@ -27,7 +28,28 @@ async function session(ctx: Ctx, fresh = false): Promise<{ id: number }> {
   return { id };
 }
 
+/** What changed on `page` since the change `after` (cms's node_changed), each with where it hangs; and
+ *  the last change, to go on from. Without `after`, only the last. */
+async function changed(ctx: Ctx, page: number, after?: number) {
+  if (await (await cms(ctx.app).node(page)).access() < 2) return { last: 0, nodes: [] };
+  const db = ctx.app.db, last = Number(await db.one`SELECT MAX(id) FROM node_changed`) || 0;
+  if (after == null) return { last, nodes: [] };
+  const nodes = await db.query`SELECT DISTINCT n.node_id AS id, p.basis
+    FROM node_changed n LEFT JOIN page p ON p.id = n.node_id
+    WHERE n.page_id = ${page} AND n.id > ${after} AND n.id <= ${last}`;
+  return { last, nodes: nodes.map((n) => ({ id: Number(n.id), basis: n.basis == null ? undefined : Number(n.basis) })) };
+}
+
 export const api: ApiTree = {
+  changed: {
+    get: {
+      description: "What changed on a page since a change: the nodes, each with its parent (none when deleted), " +
+        "and the last change.",
+      access: Access.USER,
+      input: s.object({ page: s.number(), after: s.optional(s.number()) }),
+      execute: ({ page, after }: { page: number; after?: number }, ctx: Ctx) => changed(ctx, page, after),
+    },
+  },
   session: {
     get: {
       description: "Your session with the site assistant, started if there is none.",
