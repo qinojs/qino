@@ -118,8 +118,9 @@ export const fs = {
     const flags = createNew ? "wx" : "w";
     try {
       if (Deno) await (typeof data === "string" ? Deno.writeTextFile : Deno.writeFile)(path, data, { createNew, mode });
-      // Bun.write has no flags; createPath: false keeps missing parents an error, like elsewhere
-      else if (Bun && !createNew && mode === undefined) await Bun.write(path, stream ? new Response(data) : data, { createPath: false });
+      // Bun.write has no flags; createPath: false keeps missing parents an error, like elsewhere. Not for
+      // streams: one piped through a TransformStream never finishes there (Bun 1.3).
+      else if (Bun && !stream && !createNew && mode === undefined) await Bun.write(path, data, { createPath: false });
       else if (stream) await data.pipeTo(Writable.toWeb(createWriteStream(path, { flags, mode })));
       else await writeFile(path, data, { flag: flags, mode });
     } finally {

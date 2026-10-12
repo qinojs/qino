@@ -95,6 +95,8 @@
     "./tests": "./tests/mod.ts"
   },
   "dependencies": {
+    "@nuxodin/dump": "github:nuxodin/dump.js#5ff0494",
+    "@nuxodin/reporter": "github:nuxodin/reporter.js#ecdebde",
     "@qino/item": "npm:@nuxodin/item@^0.6.19",
     "@scure/bip32": "^1",
     "@scure/btc-signer": "^1",
@@ -123,6 +125,7 @@
     "sanitize-html": "^2",
     "sqlite-vec": "^0.1.9",
     "swissqrbill": "^4",
+    "temporal-polyfill": "^1",
     "web-push-neo": "0.1.2"
   },
   "devDependencies": {

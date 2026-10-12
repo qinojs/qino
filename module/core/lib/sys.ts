@@ -5,7 +5,10 @@ import { Readable, pipeline } from "node:stream";
 import { pathToFileURL } from "node:url";
 
 // deno-lint-ignore no-explicit-any
-const { Bun, Deno, process } = globalThis as any;
+const { Bun, Deno, process, Temporal } = globalThis as any;
+
+// Bun has no Temporal yet (Deno and Node 26 have); the core loads sys first, so all modules find it.
+if (!Temporal) await import("temporal-polyfill/global");
 
 type CommandOptions = {
   args?: string[];

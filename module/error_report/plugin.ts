@@ -11,7 +11,7 @@ const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
 const REPORTER_PATH = REPORTER_ROOT + "mod.js";
 
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
-await import(REPORTER_PATH);
+await import("@nuxodin/reporter"); // the same file the browser gets from REPORTER_ROOT
 
 type Report = Record<string, unknown>;
 
