@@ -167,7 +167,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
 export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
-    await app.db.table('page').insert({ id: 1, access: 1, visible: true, searchable: true, module: "cms.layout.custom.9", basis: 0, type: "p" });
+    await app.db.table('page').insert({ id: 1, access: 1, visible: true, searchable: true, module: "cms.layout.standard.2", basis: 0, type: "p" });
     await (await cms(app).node(1)).title("en", "root");
   }
 }

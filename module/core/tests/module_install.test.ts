@@ -21,7 +21,7 @@ async function fixture() {
     `);
     await Deno.writeTextFile(`${dir + name}/manifest.json`, `{ "dependencies": ["core"] }`);
   }
-  // A bundle: brings the other two along, the way cms.installation.default does — from init(),
+  // A bundle: brings the other two along from init(),
   // guarded by its own list, so an uninstalled one stays gone and a later addition still arrives.
   await Deno.mkdir(dir + "t.bundle", { recursive: true });
   await Deno.writeTextFile(`${dir}t.bundle/plugin.ts`, `

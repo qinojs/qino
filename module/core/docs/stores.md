@@ -73,8 +73,7 @@ code, so registering a store is a superuser decision, and installing from it rel
 Core does not enforce this; `modules.install(url)` stays open, since modules must work without
 stores.
 
-A module may install other modules in its `install()` hook — that is how
-[cms.installation.default](../../cms.installation.default/plugin.ts) sets up a working CMS.
+A module may install other modules in its `install()` hook.
 During boot such an install only registers; `init()` links in passes, so the new modules get the
 same ordering and schema merge. They are normal installed rows and can be uninstalled one by one —
 a dependency could not.

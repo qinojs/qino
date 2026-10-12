@@ -14,7 +14,7 @@ async function census(app: App) {
 
 async function demoApp() {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.installation.default");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
   await app.init();
   return app;
@@ -39,7 +39,7 @@ Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly a
     await wipe(app);
     const after = await census(app);
     // dictionaries and settings are shared: a run may add a value, but never owns one
-    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting"]) delete after[shared], delete before[shared];
+    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting", "score_scope"]) delete after[shared], delete before[shared];
     assertEquals(after, before);
   } finally {
     await app.db.close();
@@ -79,7 +79,7 @@ Deno.test("cms.backend.demo: the panel lists the seeders and what the last run w
 
 Deno.test("cms.backend.demo: finance — invoices in every state, a statement, and a wipe leaves nothing", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.installation.default");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
   app.stores.add(import.meta.resolve("../../../fin/store.json"))
     .add("fin.invoice").add("fin.bank").add("fin.payment.qrbill").add("fin.accounting.ch");
@@ -103,7 +103,7 @@ Deno.test("cms.backend.demo: finance — invoices in every state, a statement, a
 
     await wipe(app);
     const after = await census(app);
-    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting"]) delete after[shared], delete before[shared];
+    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting", "score_scope"]) delete after[shared], delete before[shared];
     assertEquals(after, before);
   } finally {
     await app.db.close();
