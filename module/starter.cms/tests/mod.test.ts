@@ -46,7 +46,7 @@ Deno.test({
     const home = await html(app, "/en/home");
     assertEquals(home.status, 200);
     assert(home.body.includes("<h1>Welcome</h1>"));
-    assert(home.body.includes('href="/en/imprint"'), "footer links resolve");
+    assert(home.body.includes('href="/en/service/imprint"'), "the footer lists the service pages");
     assert(home.body.includes('href="/en/system/login"'), "the welcome text leads to the login");
     assert(!home.body.includes('href="/en/first-steps"'), "guests don't see the checklist in the menu");
     for (const item of ["todo-account", "todo-identity", "todo-mail", "todo-legal", "todo-languages"]) {
@@ -57,7 +57,7 @@ Deno.test({
     // the menu first, then the checklist, the pages only linked to, and what runs the site
     const order = (await (await cms(app).node(1)).children({ type: "p" })).values().map((p) => p.vs.name ?? p.vs.module);
     assertEquals([...order], [
-      "home", "contact", "first-steps", "search", "imprint", "privacy", "system", "backend",
+      "home", "contact", "first-steps", "service", "system", "backend",
     ]);
     const login = (await cms(app).nodesByName("login")).values().next().value!;
     const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login4")!;

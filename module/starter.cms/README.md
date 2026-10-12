@@ -54,15 +54,16 @@ item.js is released together with qino, so it may be younger than Deno's minimum
 | | |
 |---|---|
 | Layout | `cms.layout.standard.2` on the root, unless the site already chose a layout |
-| Pages | Home, Contact (form with name, email and message), Search, Imprint, Privacy policy |
+| Pages | Home, Contact (form with name, email and message); Service with Search, Imprint, Privacy policy |
 | Editors | First steps |
 | System | Layout (holds the layout pages), Login with "forgot password", No access, Not found, Trash |
-| Footer | links to contact, imprint, privacy policy and search |
+| Footer | lists the pages below Service |
 | People | the group `admin`, allowed to edit every page, and the superuser `su` |
 | Modules | contents, forms, images, file browser, versions, SEO, error reports and the backend |
 
 Titles and texts come in English, German, French and Italian. Imprint and privacy policy are
-templates with `[placeholders]`, hidden from the navigation but linked in the footer.
+templates with `[placeholders]`. Service stays out of the menu; pages added below it appear in
+the footer.
 
 ## Starters
 

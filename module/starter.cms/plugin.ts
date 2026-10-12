@@ -36,26 +36,21 @@ async function build(app: App) {
   const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login4");
   if (form && !await form.settings.redirect()) await form.settings.redirect(home.id);
 
-  const contact = await page(root, "contact", TITLES.contact, { access: 1, visible: true, searchable: true }, contactForm);
-  const hidden = { access: 1, visible: false, searchable: false };
-  const search = await page(root, "search", TITLES.search, hidden, (p) => section(p, "cms.cont.search1"));
-  const imprint = await page(root, "imprint", TITLES.imprint, hidden, (p) => prose(p, IMPRINT));
-  const privacy = await page(root, "privacy", TITLES.privacy, hidden, (p) => prose(p, PRIVACY));
+  await page(root, "contact", TITLES.contact, { access: 1, visible: true, searchable: true }, contactForm);
+  // what visitors look for at the bottom, not in the menu: the footer lists it
+  const service = await page(root, "service", TITLES.service, { access: 1, visible: false, searchable: false });
+  const listed = { access: 1, visible: true, searchable: false };
+  await page(service, "search", TITLES.search, listed, (p) => section(p, "cms.cont.search1"));
+  const imprint = await page(service, "imprint", TITLES.imprint, listed, (p) => prose(p, IMPRINT));
+  const privacy = await page(service, "privacy", TITLES.privacy, listed, (p) => prose(p, PRIVACY));
 
   // The footer belongs to the layout, so every page shows it
   const foot = await (await cms(app).layoutPage(LAYOUT)).cont("foot", "cms.cont.flexible");
   if (!(await foot.conts()).length) {
     await foot.settings.__inited(true);
-    const links = (texts: Record<string, string>) => Object.fromEntries(Object.entries(texts).map(([lang, labels]) => {
-      const [a, b, c, d] = labels.split("|");
-      return [lang, `<p>${link(contact, a)} · ${link(imprint, b)} · ${link(privacy, c)} · ${link(search, d)}</p>`];
-    }));
-    await text(await foot.createCont({ module: "cms.cont.text" }), "main", links({
-      en: "Contact|Imprint|Privacy policy|Search",
-      de: "Kontakt|Impressum|Datenschutz|Suche",
-      fr: "Contact|Mentions légales|Protection des données|Recherche",
-      it: "Contatto|Colophon|Protezione dei dati|Ricerca",
-    }));
+    const nav = await foot.createCont({ module: "cms.cont.nav4" });
+    await nav.settings.startPage(service.id);
+    await nav.settings.level(1);
   }
   await firstSteps(app, root, imprint, privacy);
 }
@@ -65,7 +60,7 @@ async function build(app: App) {
  * then what runs the site. Later starters put their menu pages before the checklist.
  */
 async function arrange(app: App, firstSteps: Node) {
-  await before(firstSteps, "search");
+  await before(firstSteps, "service");
   await before(await (await cms(app).node(1)).child("system"));
   const backend = await cms(app).nodeByModule("cms.backend");
   if (backend) await before(await backend.page());
@@ -209,6 +204,7 @@ async function contactForm(p: Node) {
 const TITLES = {
   home: { en: "Home", de: "Startseite", fr: "Accueil", it: "Home" },
   contact: { en: "Contact", de: "Kontakt", fr: "Contact", it: "Contatto" },
+  service: { en: "Service", de: "Service", fr: "Service", it: "Servizio" },
   search: { en: "Search", de: "Suche", fr: "Recherche", it: "Ricerca" },
   imprint: { en: "Imprint", de: "Impressum", fr: "Mentions légales", it: "Colophon" },
   privacy: { en: "Privacy policy", de: "Datenschutzerklärung", fr: "Protection des données", it: "Protezione dei dati" },
