@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { typeByExtension, sql } from "../deps.ts";
+import { mimeTypes, sql } from "../deps.ts";
 import { grant } from "./crypto.ts";
 import { File } from "./File.ts";
 import { fs } from "./fs.ts";
@@ -107,7 +107,7 @@ export class DbFileManager {
       status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
-    let mime = mimeType(outputMime || typeByExtension(f.extension) || "application/octet-stream");
+    let mime = mimeType(outputMime || mimeTypes.lookup(f.extension) || "application/octet-stream");
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
@@ -264,7 +264,7 @@ export class DbFile extends File {
     await fs.rename(f.tmpPath, this.path);
 
     const ext = f.name.replace(/.*\./, "").toLowerCase();
-    const type = f.type === "application/octet-stream" ? mimeType(typeByExtension(ext) ?? f.type) : f.type;
+    const type = f.type === "application/octet-stream" ? mimeType(mimeTypes.lookup(ext) || f.type) : f.type;
 
     await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: null });
   }

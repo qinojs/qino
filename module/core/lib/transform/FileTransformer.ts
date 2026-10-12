@@ -1,6 +1,6 @@
 import * as nodePath from 'node:path';
 
-import { typeByExtension } from '../../deps.ts';
+import { mimeTypes } from '../../deps.ts';
 import { fs } from '../fs.ts';
 import { resetProbes } from './tryCommand.ts';
 import * as magick from './magick.ts';
@@ -128,7 +128,7 @@ export class FileTransformer {
     delete opts.dpr;
 
     const ext = nodePath.extname(sourcePath).slice(1).toLowerCase();
-    const mime = knownMime || typeByExtension(ext) || 'application/octet-stream';
+    const mime = knownMime || mimeTypes.lookup(ext) || 'application/octet-stream';
 
     // Cache key: source path + size + options used by any transformer + toolchain
     // (no mtime: touched for LRU; no mime: follows from path/content).

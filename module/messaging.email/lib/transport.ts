@@ -89,7 +89,7 @@ async function config(app: App) {
 }
 
 function importUpyo(pkg: string): Promise<Record<string, unknown>> {
-  return import(`jsr:@upyo/${pkg}`);
+  return import(`@upyo/${pkg}`);
 }
 
 function clean(obj: Record<string, unknown>) {

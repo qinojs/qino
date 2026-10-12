@@ -7,7 +7,8 @@ export { default as mysql } from "mysql2/promise";
 export { default as postgres } from "pg";
 export type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 export { default as bcrypt } from "bcryptjs";
-export { contentType, extension as extensionByType, typeByExtension } from "@std/media-types";
+// @ts-types="@types/mime-types"
+export { default as mimeTypes } from "mime-types"; // answers `false` for unknown: use `||`, not `??`
 
 export { Item, $item, type ItemProxy } from "@qino/item/item.js";
 export { bildJsonItem } from "@qino/item/tools/jsonDataItem.js";

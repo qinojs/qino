@@ -5,7 +5,7 @@ import https from "node:https";
 import { BlockList, isIP } from "node:net";
 import { Readable } from "node:stream";
 
-import { extensionByType, typeByExtension } from "../deps.ts";
+import { mimeTypes } from "../deps.ts";
 import { fs } from "./fs.ts";
 
 export type UploadedFile = {
@@ -37,7 +37,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
 
   const m = resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/);
   const name = baseName(m?.[1] ?? new URL(opt.url).pathname);
-  const type = mimeType(resp.headers.get("content-type") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "");
+  const type = mimeType(resp.headers.get("content-type") || mimeTypes.lookup(name.replace(/.*\./, "").toLowerCase()) || "");
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 
@@ -56,7 +56,7 @@ export async function readDataUrl(uri: string, opt: { maxSize: number }): Promis
     throw new Error("Invalid data URI payload");
   }
   const file = await saveStream(new Blob([bytes]).stream(), { prefix: "inline-", maxSize: opt.maxSize });
-  const name = params.match(/;name=([^;]+)/)?.[1] ?? "file." + (extensionByType(type) ?? "bin");
+  const name = params.match(/;name=([^;]+)/)?.[1] ?? "file." + (mimeTypes.extension(type) || "bin");
   return { name: baseName(name), type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 

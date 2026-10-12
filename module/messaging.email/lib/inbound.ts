@@ -30,8 +30,8 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
   if (!config.enabled && !probe) return 0;
   if (!config.host || !config.pass) throw new Error("Inbound email needs an IMAP host and password");
 
-  const { ImapFlow } = await import("npm:imapflow@^1") as { ImapFlow: new (options: unknown) => ImapClient };
-  const { simpleParser } = await import("npm:mailparser@^3") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
+  const { ImapFlow } = await import("imapflow") as { ImapFlow: new (options: unknown) => ImapClient };
+  const { simpleParser } = await import("mailparser") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
   const client = new ImapFlow({
     host: config.host,
     port: config.port,

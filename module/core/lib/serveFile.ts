@@ -1,6 +1,6 @@
 import { extname } from "node:path";
 
-import { contentType } from "../deps.ts";
+import { mimeTypes } from "../deps.ts";
 import { fs } from "./fs.ts";
 
 /** A file as `Response`, like a static file server: 304 for a matching `If-None-Match` or
@@ -14,7 +14,7 @@ export async function serveFile(req: Request, path: string, headers: Headers = n
   if (!info?.isFile) return new Response(null, { status: 404 });
   const { size, mtime } = info;
 
-  const type = headers.get("Content-Type") ?? contentType(extname(path));
+  const type = headers.get("Content-Type") || mimeTypes.contentType(extname(path));
   if (type) headers.set("Content-Type", type);
   if (mtime && !headers.has("Last-Modified")) headers.set("Last-Modified", mtime.toUTCString());
   if (!headers.has("ETag")) headers.set("ETag", `"${size.toString(36)}-${(mtime?.getTime() ?? 0).toString(36)}"`);

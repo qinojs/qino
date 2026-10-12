@@ -1,6 +1,6 @@
 import * as nodeCrypto from "node:crypto";
 
-import { typeByExtension } from "../deps.ts";
+import { mimeTypes } from "../deps.ts";
 import { fs } from "./fs.ts";
 
 export class File {
@@ -15,7 +15,7 @@ export class File {
   }
 
   get mime(): string {
-    return typeByExtension(this.extension) || "application/octet-stream";
+    return mimeTypes.lookup(this.extension) || "application/octet-stream";
   }
 
   basename(suffix = ""): string {

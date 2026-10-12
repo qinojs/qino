@@ -1,7 +1,7 @@
 import * as nodePath from 'node:path';
 
 import * as magick from '../magick.ts';
-import { typeByExtension } from '../../../deps.ts';
+import { mimeTypes } from '../../../deps.ts';
 import { fs } from '../../fs.ts';
 
 import type { TransformContext, TransformerDef } from '../types.ts';
@@ -35,7 +35,7 @@ export const imageEncode: TransformerDef = {
       const out = nodePath.join(ctx.tmpDir, `out.${fmt}`);
       await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;
-      ctx.mime = typeByExtension(fmt) ?? 'application/octet-stream';
+      ctx.mime = mimeTypes.lookup(fmt) || 'application/octet-stream';
       return;
     }
 

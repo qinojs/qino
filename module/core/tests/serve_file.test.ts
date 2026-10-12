@@ -16,7 +16,7 @@ Deno.test("serveFile: whole file with type, length and validators", () => inDir(
   const res = await get(dir + "/a.css");
   assertEquals(res.status, 200);
   assertEquals(await res.text(), "body{}");
-  assertEquals(res.headers.get("content-type"), "text/css; charset=UTF-8");
+  assertEquals(res.headers.get("content-type"), "text/css; charset=utf-8");
   assertEquals(res.headers.get("content-length"), "6");
   assertEquals(res.headers.get("accept-ranges"), "bytes");
   assertEquals(typeof res.headers.get("etag"), "string");
