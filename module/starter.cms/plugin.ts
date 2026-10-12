@@ -149,16 +149,9 @@ async function superuser(app: App) {
 
 /** Hidden pages the CMS itself relies on. */
 async function systemPages(app: App, root: Node) {
-  const { settings } = app;
-  const cm = cms(app);
   const system = await page(root, "system", TITLES.system, { access: 0, visible: false, searchable: false });
   await page(system, "layout", TITLES.layout, { access: 1, visible: false }); // cms keeps the layout pages here
   const plain = { access: 1, visible: false, searchable: false, module: "cms.layout.system" };
-  // a page setting that is unset or points nowhere
-  const missing = async (setting: unknown) => {
-    const id = Number(await setting);
-    return !id || !(await cm.node(id)).exists();
-  };
 
   const reset = await page(system, "password", TITLES.password, plain,
     async (p) => (await p.cont("main")).cont("1", "cms.cont.pwReset"));
@@ -177,20 +170,10 @@ async function systemPages(app: App, root: Node) {
 
   // In the site's own layout: visitors land here from anywhere
   const shown = { access: 1, visible: false, searchable: false };
-  if (await missing(settings.cms.pageNoAccess)) {
-    const p = await page(system, "no-access", TITLES.noAccess, shown, (p) => section(p, "cms.cont.login4"));
-    await settings.cms.pageNoAccess(p.id);
-    if (!await settings.cms.pageOffline) await settings.cms.pageOffline(p.id);
-  }
-  if (await missing(settings.cms.pageNotFound)) {
-    const p = await page(system, "not-found", TITLES.notFound, shown, (p) => section(p, "cms.cont.not_found1"));
-    await settings.cms.pageNotFound(p.id);
-  }
-  if (await missing(settings.cms.pageTrash)) {
-    const p = await page(system, "trash", TITLES.trash, { ...plain, access: 0 },
-      async (p) => (await p.cont("main")).cont("1", "cms.cont.trash"));
-    await settings.cms.pageTrash(p.id);
-  }
+  await page(system, "no-access", TITLES.noAccess, shown, (p) => section(p, "cms.cont.login4"));
+  await page(system, "not-found", TITLES.notFound, shown, (p) => section(p, "cms.cont.not_found1"));
+  await page(system, "trash", TITLES.trash, { ...plain, access: 0 },
+    async (p) => (await p.cont("main")).cont("1", "cms.cont.trash"));
   return login;
 }
 

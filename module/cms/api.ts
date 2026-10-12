@@ -134,7 +134,7 @@ const node = {
     description: "Update node properties; only the given fields change. Returns the node as JSON.",
     ...nodeWrite,
     input: s.object({
-      name: s.optional(s.string()).describe("Internal name"),
+      name: s.optional(s.string()).describe("Internal name; superuser only — code finds pages by it"),
       visible: s.optional(s.boolean()),
       searchable: s.optional(s.boolean()),
       onlineStart: s.optional(s.string()).describe(onlineDesc("2024-01-01T00:00:00")),
@@ -142,7 +142,9 @@ const node = {
       // title: per language — PUT /cms/node/:node/title
       // module: own gate (requireModuleAdmin) and a recursive mode — PUT /cms/node/:node/module
     }),
-    execute: async ({ node, name, visible, searchable, onlineStart, onlineEnd }: any) => {
+    execute: async ({ node, name, visible, searchable, onlineStart, onlineEnd }: any, ctx: Ctx) => {
+      // node.child(name) is how code finds structure (system/layout …): a renamed page would take its place
+      if (name !== undefined && !ctx.user?.superuser) throw new AccessError();
       if (name !== undefined) await node.set("name", name);
       if (visible !== undefined) await node.set("visible", visible ? 1 : 0);
       if (searchable !== undefined) await node.set("searchable", searchable ? 1 : 0);
@@ -311,6 +313,7 @@ const node = {
           if (await cp.access() < 1) return false;
         });
         if (!copied) throw new AccessError();
+        await copied.set("name", null); // a second page of that name beside the first would confuse child(name)
         await copied.changeUser(ctx.user, 3);
         const titleStr = String(await copied.showTitle()).trim();
         await copied.title(ctx.lang, titleStr ? titleStr + " (copy)" : "");

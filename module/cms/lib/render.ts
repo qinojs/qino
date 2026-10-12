@@ -27,8 +27,7 @@ export async function render(ctx: Ctx): Promise<void> {
     }
     // Not found
     ctx.res.status = 404;
-    const notFoundId = await app.settings.cms.pageNotFound ?? 0;
-    page = await cm.node(Number(notFoundId));
+    page = await cm.nodeByPath(["system", "not-found"]) ?? await cm.node(0);
   }
 
   cmsCtx(ctx).mainNode = page;
@@ -38,13 +37,13 @@ export async function render(ctx: Ctx): Promise<void> {
 
   if (!access) {
     ctx.res.status = 401;
-    const noAccessId = await app.settings.cms.pageNoAccess ?? 0;
-    cmsCtx(ctx).mainNode = await cm.node(Number(noAccessId));
+    cmsCtx(ctx).mainNode = await cm.nodeByPath(["system", "no-access"]) ?? await cm.node(0);
   }
   if (!(await cmsCtx(ctx).mainNode.isReadable())) {
     ctx.res.status = 401;
-    const offlineId = await app.settings.cms.pageOffline;
-    cmsCtx(ctx).mainNode = await cm.node(Number(offlineId ?? "0"));
+    // a site without a page of its own for being offline shows the one for missing access
+    cmsCtx(ctx).mainNode = await cm.nodeByPath(["system", "offline"]) ??
+      await cm.nodeByPath(["system", "no-access"]) ?? await cm.node(0);
   }
 
   const mainNode = cmsCtx(ctx).mainNode;

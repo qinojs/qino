@@ -141,7 +141,7 @@ async function moveSetting(app: App, fromPath: string[], toPath: string[]): Prom
   return moved;
 }
 
-async function settingId(app: App, path: string[]): Promise<number | null> {
+export async function settingId(app: App, path: string[]): Promise<number | null> {
   let basis = 0;
   for (const offset of path) {
     const id = await app.db.one`SELECT id FROM qg_setting WHERE basis = ${basis} AND ${sql.id("offset")} = ${offset} ORDER BY id LIMIT 1`;

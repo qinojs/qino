@@ -25,10 +25,6 @@ export const settingsSchema = {
                 protocols: { type: "string", description: "Url protocols: \"href: http https, img(src: http https data)\"." },
             },
         },
-        backend: {
-            type: "integer",
-            description: "Page ID of the central backend entry point.",
-        },
         frontend: {
             type: "string",
             description: "Name of the active frontend module, e.g. cms.frontend.4.",
@@ -36,22 +32,6 @@ export const settingsSchema = {
         models: {
             type: "string",
             description: "Default module list for new content.",
-        },
-        pageNotFound: {
-            type: "integer",
-            description: "Page ID for 404 errors.",
-        },
-        pageNoAccess: {
-            type: "integer",
-            description: "Page ID for missing access rights.",
-        },
-        pageOffline: {
-            type: "integer",
-            description: "Page ID for offline/maintenance mode.",
-        },
-        pageTrash: {
-            type: "integer",
-            description: "Page ID of the trash.",
         },
         feedback: {
             properties: {

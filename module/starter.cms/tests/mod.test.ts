@@ -57,7 +57,7 @@ Deno.test({
     // the menu first, then the checklist, the pages only linked to, and what runs the site
     const order = (await (await cms(app).node(1)).children({ type: "p" })).values().map((p) => p.vs.name ?? p.vs.module);
     assertEquals([...order], [
-      "home", "contact", "first-steps", "search", "imprint", "privacy", "system", "cms.layout.backend",
+      "home", "contact", "first-steps", "search", "imprint", "privacy", "system", "backend",
     ]);
     const login = (await cms(app).nodesByName("login")).values().next().value!;
     const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login4")!;

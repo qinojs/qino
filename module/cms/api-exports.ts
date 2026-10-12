@@ -107,17 +107,17 @@ export function nodeRemove(node: any): Promise<{ parent_id: number }> {
 async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
     const ctx  = getCtx();
     const ret  = { parent_id: Number(await node.parent()) };
-    const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
+    const trash = await cms(ctx.app).nodeByPath(["system", "trash"]);
+    if (!trash) throw new Output({ error: "No trash page (system/trash)" }, { status: 500 });
     if (await node.in(trash)) {
         if (await node.access() < 3) throw new Output({ error: "Forbidden" }, { status: 403 });
         await (await node.parent()).removeChild(node);
     } else {
-        const trashNode = await cms(ctx.app).node(trash);
         const parent = await node.parent();
         const siblings = parent ? [...(await parent.children({ type: node.vs.type })).values()] : [];
         const idx = siblings.findIndex(s => s.id === node.id);
         const before = siblings[idx + 1] ?? null;
-        await trashNode.insertBefore(node, await trashNode.cont("main"));
+        await trash.insertBefore(node, await trash.cont("main"));
         await node.settings.__deleted({
             from:   String(parent ?? ""),
             before: String(before ?? ""),
@@ -139,8 +139,8 @@ export function nodeRestore(node: any): Promise<{ url: string }> {
 }
 async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     const ctx   = getCtx();
-    const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
-    if (!await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
+    const trash = await cms(ctx.app).nodeByPath(["system", "trash"]);
+    if (!trash || !await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
     if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
     const fromId   = Number(await node.settings.__deleted.from);
     const beforeId = Number(await node.settings.__deleted.before);

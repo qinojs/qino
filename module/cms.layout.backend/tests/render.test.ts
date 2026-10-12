@@ -3,9 +3,8 @@ import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
-Deno.test("cms.layout.backend: loads the backend id asynchronously", async () => {
-  let id = 0;
-  const backend = Promise.resolve("83");
+Deno.test("cms.layout.backend: finds the backend by its path", async () => {
+  let path: string[] = [];
   const root = {
     children: () => new Map(),
     url: () => Promise.resolve("/de/backend"),
@@ -16,11 +15,10 @@ Deno.test("cms.layout.backend: loads the backend id asynchronously", async () =>
   };
   const node = {
     app: {
-      settings: { cms: { backend } },
       languages: { all: ["de"] },
     },
     cms: {
-      node: (value: number) => { id = value; return root; },
+      nodeByPath: (value: string[]) => { path = value; return root; },
       link: () => Promise.resolve(""),
     },
     page: () => page,
@@ -31,7 +29,7 @@ Deno.test("cms.layout.backend: loads the backend id asynchronously", async () =>
 
   const out = String(await cms.node.render(node as any, { ctx }));
 
-  assertEquals(id, 83);
+  assertEquals(path, ["backend"]);
   assertEquals(out.includes('href="/de/backend"'), true);
 });
 
@@ -52,12 +50,11 @@ Deno.test("cms.layout.backend: renders submenu indicators with u2-ico", async ()
   };
   const node = {
     app: {
-      settings: { cms: { backend: 83 } },
       languages: { all: ["de"] },
       modules: { get: () => undefined },
     },
     cms: {
-      node: () => root,
+      nodeByPath: () => root,
       link: () => Promise.resolve(""),
     },
     page: () => page,
@@ -85,11 +82,10 @@ Deno.test("cms.layout.backend: the active branch opens as deep as it goes", asyn
   const root = { children: () => new Map([[1, chain(4)]]), url: () => Promise.resolve("/de/backend") };
   const node = {
     app: {
-      settings: { cms: { backend: 83 } },
       languages: { all: ["de"] },
       modules: { get: () => undefined },
     },
-    cms: { node: () => root, link: () => Promise.resolve("") },
+    cms: { nodeByPath: () => root, link: () => Promise.resolve("") },
     page: () => ({ in: () => true, path: () => new Map() }),
     conts: () => [],
     cont: () => undefined,

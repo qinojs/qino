@@ -222,8 +222,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     qino.cms ??= {};
 
     if (access > 1 || inBackend) {
-      const pageNotFound = await app.settings.cms.pageNotFound ?? 0;
-      if (pageNotFound != node.id) {
+      if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         const url = ctx.req.url;

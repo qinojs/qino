@@ -78,6 +78,8 @@ class FakeNode {
   }
   conts() { return []; }
   createChild() { return new FakeNode(3, this.accessLevel); }
+  copied?: FakeNode;
+  copy() { return this.copied = new FakeNode(5, this.accessLevel, { ...this.vs, id: 5 }); }
   createCont({ module }: { module: string }) {
     return new FakeNode(4, 3, { type: "c", module });
   }
@@ -119,9 +121,14 @@ Deno.test("cms api: node title/text/flags write through resolved node", async ()
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "PUT", "/node/1/title", { value: "Hallo" }), { changed: true });
     assertEquals(await invoke(api, "PUT", "/node/1/text/main", { value: "Text", lang: "en" }), { changed: true });
-    const patched: any = await invoke(api, "PATCH", "/node/1", { visible: true, searchable: false, name: "n1", onlineStart: "2024-01-01T00:00:00Z", onlineEnd: "" });
+    const patched: any = await invoke(api, "PATCH", "/node/1", { visible: true, searchable: false, onlineStart: "2024-01-01T00:00:00Z", onlineEnd: "" });
     assertEquals(patched.id, 1);
     assertEquals(patched.visible, 1);
+    // the name is what code finds a page by: only a superuser changes it
+    await assertRejects(() => invoke(api, "PATCH", "/node/1", { name: "system" }), AccessError);
+    assertEquals(node.writes.name, undefined);
+    (ctx.user as { superuser: boolean }).superuser = true;
+    await invoke(api, "PATCH", "/node/1", { name: "n1" });
   });
 
   assertEquals(node.titleValue, "de:Hallo");
@@ -352,4 +359,12 @@ Deno.test("cms api: a request is stored the way routing matches it", () => {
   assertEquals(cleanRequest(" /menu/ "), "menu");
   assertEquals(cleanRequest("//a//b//"), "a//b");
   assertEquals(cleanRequest("/"), ""); // "/" is the entry link, and that is the empty request
+});
+
+Deno.test("cms api: a copy keeps everything but the name, which stays with the original", async () => {
+  const { ctx, nodes } = await setup();
+  const node = nodes.get(1)!;
+  node.vs.name = "system";
+  await requestStorage.run(ctx, () => invoke(api, "POST", "/node/1/copy", {}));
+  assertEquals([node.copied?.vs.name, node.vs.name], [null, "system"]);
 });

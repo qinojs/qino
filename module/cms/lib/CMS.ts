@@ -85,6 +85,14 @@ export class CMS extends Emitter<CmsEvents> {
     return (await this.nodesByName(name)).values().next().value;
   }
 
+  /** The page at a path of names from the root, e.g. ["system", "not-found"]; undefined if there is
+   *  none. Only finds: pages are made with `node.child(name)`. */
+  async nodeByPath(path: string[]): Promise<Node | undefined> {
+    let node: Node | undefined = await this.node(1);
+    for (const name of path) node = node && (await node.children()).values().find((c) => c.vs.name === name);
+    return node;
+  }
+
   /** Global page of a layout module (below system/layout), created if missing */
   async layoutPage(module: string): Promise<Node> {
     const system = await (await this.node(1)).child("system", { access: 0, visible: false, searchable: false });

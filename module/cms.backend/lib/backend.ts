@@ -17,8 +17,7 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
   let node = await cm.nodeByModule("cms.backend");
   if (!node) {
     const root = await cm.node(1);
-    const page = await root.createChild({
-      id: 100,
+    const page = await root.child("backend", {
       module: "cms.layout.backend",
       access: 0,
       offline: 0,
@@ -26,15 +25,11 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       searchable: false,
       sort: 20,
     });
-    if (page) {
-      await page.changeGroup(1, 0);
-      await page.changeGroup(2, 0);
-      await page.changeGroup(3, 0);
-      const c = await page.cont('1');
-      await c.set("module", "cms.backend");
-      page.settings.childXML('<page visible=1></page>');
-      app.settings.cms.backend(String(page.id));
-    }
+    await page.changeGroup(1, 0);
+    await page.changeGroup(2, 0);
+    await page.changeGroup(3, 0);
+    await (await page.cont('1')).set("module", "cms.backend");
+    page.settings.childXML('<page visible=1></page>');
     node = await cm.nodeByModule("cms.backend");
   }
   return node?.page();

@@ -143,14 +143,11 @@ async function installTx(app: App) {
     { en: "Trash", de: "Papierkorb", fr: "Corbeille", it: "Cestino" });
   await trash.changeGroup(adminGrp, 1);
   await trash.cont("main", "cms.cont.trash");
-  if (!await settings.cms.pageTrash) await settings.cms.pageTrash(trash.id);
 
   const noAccess = await page(system, "no-access", { access: 1, visible: false },
     { en: "No access", de: "Kein Zugriff", fr: "Accès refusé", it: "Nessun accesso" });
   await noAccess.changeGroup(adminGrp, 1);
   await (await noAccess.cont("main")).cont("1", "cms.cont.login4");
-  if (!await settings.cms.pageNoAccess) await settings.cms.pageNoAccess(noAccess.id);
-  if (!await settings.cms.pageOffline) await settings.cms.pageOffline(noAccess.id);
 
   const login = await page(system, "login", { access: 1, module: "cms.layout.system" },
     { en: "Login", de: "Anmelden", fr: "Connexion", it: "Accedi" });
@@ -162,7 +159,6 @@ async function installTx(app: App) {
     { en: "Not found", de: "Nicht gefunden", fr: "Page introuvable", it: "Non trovato" });
   await notFound.changeGroup(adminGrp, 2);
   await (await notFound.cont("main")).cont("1", "cms.cont.not_found1");
-  if (!await settings.cms.pageNotFound) await settings.cms.pageNotFound(notFound.id);
 
   // define the frontend-module
   if (!await settings.cms.frontend) settings.cms.frontend("cms.frontend.4");

@@ -58,8 +58,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
   if (!conts.length) await node.cont("main");
 
   // Nav: get backend root page and its children
-  const backendId = Number(await app.settings.cms.backend ?? "0");
-  const backendRoot = backendId ? await node.cms.node(backendId) : null;
+  const backendRoot = await node.cms.nodeByPath(["backend"]);
   const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
 
   /** Nav levels, as deep as the tree goes; only the active branch expands, only level 1 shows the

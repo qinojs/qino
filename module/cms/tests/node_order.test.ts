@@ -40,6 +40,8 @@ Deno.test("cms: child finds the page of that name, creates it with defaults othe
     const layouts = await system.child("layout");
     assertEquals(Number(layoutPage.vs.basis), layouts.id);
     assertEquals((await cms(app).layoutPage("cms.layout.system")).id, layoutPage.id);
+    assertEquals((await cms(app).nodeByPath(["system", "layout"]))?.id, layouts.id);
+    assertEquals(await cms(app).nodeByPath(["system", "nowhere"]), undefined); // finds, never makes
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
