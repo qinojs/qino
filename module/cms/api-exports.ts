@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { FileTransformer, getCtx, hee, Output, sql, unixTime } from "@qino/qino";
+import { AccessError, ApiError, FileTransformer, getCtx, hee, sql, unixTime } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { ADMIN } from "./lib/access.ts";
@@ -108,9 +108,9 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
     const ctx  = getCtx();
     const ret  = { parent_id: Number(await node.parent()) };
     const trash = await cms(ctx.app).nodeByPath(["system", "trash"]);
-    if (!trash) throw new Output({ error: "No trash page (system/trash)" }, { status: 500 });
+    if (!trash) throw new ApiError(500, "No trash page (system/trash)");
     if (await node.in(trash)) {
-        if (await node.access() < 3) throw new Output({ error: "Forbidden" }, { status: 403 });
+        if (await node.access() < 3) throw new AccessError("Forbidden");
         await (await node.parent()).removeChild(node);
     } else {
         const parent = await node.parent();
@@ -140,12 +140,12 @@ export function nodeRestore(node: any): Promise<{ url: string }> {
 async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     const ctx   = getCtx();
     const trash = await cms(ctx.app).nodeByPath(["system", "trash"]);
-    if (!trash || !await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
-    if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
+    if (!trash || !await node.in(trash)) throw new ApiError(400, "Node is not in trash");
+    if (await node.access() < 2) throw new AccessError("Forbidden");
     const fromId   = Number(await node.settings.__deleted.from);
     const beforeId = Number(await node.settings.__deleted.before);
     const toNode   = fromId ? await cms(ctx.app).node(fromId) : null;
-    if (!toNode || await toNode.access() < 2) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
+    if (!toNode || await toNode.access() < 2) throw new AccessError("Original parent no longer accessible");
     const before = beforeId ? await cms(ctx.app).node(beforeId) : null;
     await toNode.insertBefore(node, before);
     await node.settings.__deleted(undefined);
@@ -198,7 +198,7 @@ async function nodeFileAddTx(node: Node, file: any, slot?: string): Promise<{ ur
     let added: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
         const dbF = await ctx.app.dbFiles.file(Number(file));
-        if (!await dbF.access()) throw new Output({ error: "Forbidden" }, { status: 403 });
+        if (!await dbF.access()) throw new AccessError("Forbidden");
         if (slot) {
             const existing = await node.file(slot);
             added = await dbF.clone(existing?.id);
@@ -207,7 +207,7 @@ async function nodeFileAddTx(node: Node, file: any, slot?: string): Promise<{ ur
         }
     } else {
         if (file != null && !/^(https?|data):/.test(String(file))) {
-            throw new Output({ error: "Forbidden" }, { status: 403 });
+            throw new AccessError("Forbidden");
         }
         added = await node.addFile(file, slot);
     }

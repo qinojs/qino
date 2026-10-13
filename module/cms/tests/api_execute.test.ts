@@ -1,10 +1,10 @@
 // deno-lint-ignore-file require-await
-import { AccessError, NotFoundError, ValidationError, bildJsonItem, invoke, html, requestStorage } from "@qino/qino";
-import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { Access, AccessError, ApiError, NotFoundError, ValidationError, bildJsonItem, invoke, html, requestStorage } from "@qino/qino";
+import { apiRequest, assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { cmsInstances } from "../lib/CMS.ts";
 import { api } from "../api.ts";
-import { cleanRequest } from "../api-exports.ts";
+import { cleanRequest, nodeFileAdd, nodeRemove, nodeRestore } from "../api-exports.ts";
 
 class TextObj {
   id: number;
@@ -313,6 +313,27 @@ Deno.test("cms api: node write access is required for mutations", async () => {
   const { ctx } = await setup(1);
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "PUT", "/node/1/title", { value: "Nope" }), AccessError);
+  });
+});
+
+Deno.test("cms api: helper errors are typed and keep their HTTP status and message", async () => {
+  const { ctx } = await setup();
+  ctx.app.db.transaction = (fn) => fn();
+  Object.assign(cmsInstances.get(ctx.app)!, { nodeByPath: () => null });
+  ctx.app.dbFiles.file = async () => ({ access: () => false }) as never;
+  await requestStorage.run(ctx, async () => {
+    for (const [run, status, message] of [
+      [() => nodeRemove({ parent: () => null }), 500, "No trash page (system/trash)"],
+      [() => nodeRestore({}), 400, "Node is not in trash"],
+      [() => nodeFileAdd({} as never, 1), 403, "Forbidden"],
+      [() => nodeFileAdd({} as never, "/local/file"), 403, "Forbidden"],
+    ] as const) {
+      const error = await assertRejects(run, status === 403 ? AccessError : ApiError, message);
+      assertEquals(error.status, status);
+      const res = await apiRequest({ test: { get: { access: Access.PUBLIC, execute: run } } }, "/test");
+      assertEquals(res.status, status);
+      assertEquals(await res.json(), { error: message, ...(status === 403 && { code: "access" }) });
+    }
   });
 });
 
