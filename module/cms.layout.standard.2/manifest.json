@@ -3,7 +3,7 @@
   "description": "An adaptable frontend layout with identity branding, a declarative mobile navigation and full-width content.",
   "dependencies": [
     "cms", "cms.templateParser", "identity", "u2", "fileEditor",
-    "cms.cont.nav4", "cms.cont.flexible", "cms.cont.section", "cms.cont.text"
+    "cms.cont.nav4", "cms.cont.lang.choose2", "cms.cont.flexible", "cms.cont.section", "cms.cont.text"
   ],
   "files": [
     "README.md", "manifest.json", "plugin.ts", "api.ts", "codeFiles.ts", "agents/designer.md",

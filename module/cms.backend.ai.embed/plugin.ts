@@ -63,7 +63,7 @@ async function render(node: Node) {
       <input name=query required placeholder="Search by meaning">
       <button>Search</button>
     </form>
-    <table class=u2-table data-hits></table>
+    <table class=u2-table><tbody data-hits></tbody></table>
   </div>
 </div>`;
 }

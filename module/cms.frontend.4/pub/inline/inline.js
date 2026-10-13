@@ -158,7 +158,7 @@ let sidebarBefore = null;
 
 dd.on('start',e=>{
   const el = e.target;
-  dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
+  dd.targets = [...document.querySelectorAll('[qcms-drop][qcms-edit]'), trash]; // trash lives in the cms shadow root
   document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
   p.moving = true;
   menu.togglePopover(false);

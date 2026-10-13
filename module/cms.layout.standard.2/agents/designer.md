@@ -35,7 +35,7 @@ Rules:
     & a { color: var(--color-text); }
   }
   ```
-- Keep one root element. Keep the content names (`nav`, `main`, `foot`): they identify existing
+- Keep one root element. Keep the content names (`nav`, `lang`, `main`, `foot`): they identify existing
   content. Main stays full width; sections inside it limit their width with `u2-width`.
 - Keep the navigation working without JavaScript: `#head-nav` with `popover` and the buttons
   targeting it.

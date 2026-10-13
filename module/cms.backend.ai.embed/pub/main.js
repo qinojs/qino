@@ -37,15 +37,15 @@ cms.initNode("backend.ai.embed", (el) => {
     } else if (form.matches("[data-search]")) {
       const res = await post({ search: data.query });
       if (!res?.ok) return;
-      const table = el.querySelector("[data-hits]");
-      table.replaceChildren(...res.hits.map((hit) => {
+      const tbody = el.querySelector("[data-hits]");
+      tbody.replaceChildren(...res.hits.map((hit) => {
         const tr = document.createElement("tr");
         for (const text of [hit.score.toFixed(3), hit.name, Object.values(hit.key).join(", "), hit.content.slice(0, 160)]) {
           tr.insertCell().textContent = text;
         }
         return tr;
       }));
-      if (!res.hits.length) table.insertRow().insertCell().textContent = "No matches";
+      if (!res.hits.length) tbody.insertRow().insertCell().textContent = "No matches";
     }
   });
 });
