@@ -1,13 +1,13 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { checkTools, ranked } from "./lib/context.ts";
+import { checkTools, context, ranked } from "./lib/context.ts";
 import { live } from "./lib/live.ts";
 import { ask, cancel, note, running } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Tool } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai";
 
 /** Someone anyone can talk to: a role, the tools of the api it may use, and how it chooses
@@ -57,6 +57,12 @@ export class Session {
   /** Answer `content`, going on from what was said; one turn after the other. */
   ask(content: string | Part[], opts: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
     return ask(this.#app, this.#id, content, opts);
+  }
+
+  /** What the model is given at the next turn: the messages and the tools' definitions. */
+  async context(): Promise<{ messages: Message[]; tools: Omit<Tool, "execute">[] }> {
+    const { messages, tools } = await context(this.#app, this.#id);
+    return { messages, tools: tools.map(({ name, description, parameters }) => ({ name, description, parameters })) };
   }
 
   /** Tell the agent something without asking. It reads it with the next question. */

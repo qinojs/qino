@@ -190,9 +190,27 @@ cms.initNode("backend.ai.agents", (el) => {
       },
     });
   };
+  // what the model is given at the next turn, loaded when asked for
+  const showRaw = async () => {
+    const [{ messages, tools }, { modal }, close] = await Promise.all([node.api.post({ raw: Number(session) }), import("@qino/u2/js/dialog/dialog.js"), t`Close`]);
+    const text = Object.assign(document.createElement("textarea"), { value: JSON.stringify({ messages, tools }, null, 2), readOnly: true });
+    const code = Object.assign(document.createElement("u2-code"), { style: "font-size:.8rem;overflow:auto;max-height:75vh;width:min(90vw,80rem)" });
+    code.setAttribute("language", "json");
+    code.append(text);
+    await modal({
+      body: "<div data-raw></div>",
+      buttons: [{ title: close }],
+      init(dialog) {
+        dialog.classList.add("backdropClose");
+        dialog.style.cssText = "top:3rem;bottom:auto";
+        dialog.querySelector("[data-raw]").replaceWith(code);
+      },
+    });
+  };
   el.addEventListener("click", (e) => {
     const button = e.target.closest("button[data-call]");
     if (button) showCalls(button.dataset.call).catch((err) => alert(err.message));
+    if (e.target.closest("button[data-raw]")) showRaw().catch((err) => alert(err.message));
   });
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);

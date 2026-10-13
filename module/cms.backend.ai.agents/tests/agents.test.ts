@@ -99,6 +99,14 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
     const { calls } = await cms.node.api(node, { calls: session.id, call: "1" }) as { calls: any[] };
     assertEquals(calls.map((c) => c.name), ["search_post"]);
     assertEquals(calls[0].result, [{ text: "round" }]);
+    // what the model is given at the next turn: the history without errors, the tools as given
+    const raw = await cms.node.api(node, { raw: session.id }) as { messages: any[]; tools: any[] };
+    assertEquals(raw.messages.map((m) => m.role), ["system", "user", "assistant", "tool", "assistant"]);
+    assertEquals(raw.tools, [{ name: "search_post", description: "Search", parameters: {} }]);
+    // before it was asked, nothing: reading it must not keep what it is given
+    const fresh = await agent.start(7);
+    assertEquals(await cms.node.api(node, { raw: fresh.id }), { ok: true, messages: [], tools: [] });
+    assertEquals(await app.db.one`SELECT COUNT(*) FROM ai_session_message WHERE session_id = ${fresh.id}`, 0);
     // following along: only what came after the last message shown
     const since = await as(() => conversation(node, { vars: { session: session.id, after: ids.at(-2) } }));
     assertEquals([...since.matchAll(/data-message=(\d+)/g)].map((m) => Number(m[1])), [ids.at(-1)]);

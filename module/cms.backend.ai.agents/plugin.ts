@@ -411,7 +411,7 @@ async function render(node: Node) {
       ${session(node, { vars })}
     </div>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head>${t`Conversation`}</div>
+      <div class=-head>${t`Conversation`} <button type=button data-raw title="${t`What the model is given at the next turn`}">${t`Raw`}</button></div>
       <div cms-part=conversation style="max-height:80vh; overflow:auto">${conversation(node, { vars })}</div>
       ${s && Number(s.usr_id) === getCtx().userId ? html.async`<form class=u2-flex data-ask>
         <textarea name=content rows=3 required style="flex:1" placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
@@ -472,7 +472,15 @@ async function calls(db: Db, id: number, call: string) {
   return requests.find((list) => list.some((c) => c.id === call)) ?? [];
 }
 
+/** What the model of session `id` is given at the next turn; none before it was asked, as reading it
+ *  would keep what it is given from now on. */
+async function raw(app: App, id: number) {
+  if (!await app.db.one`SELECT id FROM ai_session_message WHERE session_id = ${id} LIMIT 1`) return { messages: [], tools: [] };
+  return new Session(app, id).context();
+}
+
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
+  if (vars.raw) return { ok: true, ...await raw(node.app, Number(vars.raw)) };
   if (vars.calls) return { ok: true, calls: await calls(node.app.db, Number(vars.calls), String(vars.call)) };
   if (!vars.preview || typeof vars.preview !== "object") return null;
   const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
