@@ -30,7 +30,7 @@ Deno.test("a user reads their own issued invoices, nobody else's, and no drafts"
       await assertRejects(() => asUser(app, anna, () => invoke(api, "GET", `/invoice/${id}`)), Error, "no invoice");
     }
     // signed out: nothing
-    await assertRejects(() => asUser(app, 0, () => invoke(api, "GET", `/invoice/${own}`)), Error, "no invoice");
+    await assertRejects(() => asUser(app, 0, () => invoke(api, "GET", `/invoice/${own}`)), Error, "Access denied");
     await assertRejects(() => asUser(app, 0, () => invoke(api, "GET", "/invoices")), Error, "Access denied");
   });
 });

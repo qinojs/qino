@@ -130,6 +130,28 @@ Deno.test("api: access and validation errors are typed", async () => {
   });
 });
 
+Deno.test("api: denied access skips path validation and resolution, including dry runs", async () => {
+  let resolved = 0;
+  let allowed = false;
+  const tree = { thing: { ":thing": {
+    ...api.thing[":thing"],
+    resolve: (id: number) => (resolved++, api.thing[":thing"].resolve(id)),
+    get: { ...api.thing[":thing"].get, access: () => allowed },
+    delete: { execute: () => null }, // missing access also denies before resolving
+  } } };
+  await withCtx(async () => {
+    for (const opts of [{}, { checkAccess: true }]) {
+      for (const id of ["1", "9", "invalid"])
+        await assertRejects(() => invoke(tree, "GET", `/thing/${id}`, {}, opts), AccessError);
+      await assertRejects(() => invoke(tree, "DELETE", "/thing/1", {}, opts), AccessError);
+    }
+    assertEquals(resolved, 0);
+    allowed = true;
+    assertEquals(await invoke(tree, "GET", "/thing/1"), { id: 1, title: "One" });
+    assertEquals(resolved, 1);
+  });
+});
+
 Deno.test("api: a guard sees the validated input", async () => {
   const seen: unknown[] = [];
   const tree: any = {
