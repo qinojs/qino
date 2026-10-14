@@ -1,4 +1,4 @@
-import { Access, ApiError, s, unixTime } from "@qino/qino";
+import { Access, s, unixTime } from "@qino/qino";
 
 import type { ApiTree, App, Ctx } from "@qino/qino";
 
@@ -15,17 +15,17 @@ export const DESCRIPTION = "Tell the people behind this system about a problem w
   "the user's task: something not set up, an unclear tool description, a tool that failed, a missing tool or an " +
   "improvement. Briefly, once per problem; two matters, two reports.";
 
-export const input = {
-  kind: s.string().describe(`One of: ${Object.entries(KINDS).map(([kind, what]) => `${kind} (${what})`).join("; ")}`),
+/** What a report takes, through the api and from an agent. */
+export const input = s.object({
+  kind: s.enum(Object.keys(KINDS) as (keyof typeof KINDS)[]).describe(Object.entries(KINDS).map(([kind, what]) => `${kind}: ${what}`).join("; ")),
   about: s.optional(s.string()).describe("The tool's name, or the part of the system it is about; empty for the whole"),
   content: s.string().describe("What was wrong, and what would have helped"),
   model: s.optional(s.string()).describe("Your AI model's name, if you know it, e.g. claude-opus-5-5"),
-};
+});
 
 /** Keep a report; the same one again from the same session is kept once. */
 export async function keep(app: App, report: { kind: string; about?: string; content: string; model?: string; usr?: number; agent?: number; session?: number }) {
   const { kind } = report, about = report.about?.trim().slice(0, 255) ?? "", content = report.content.trim();
-  if (!(kind in KINDS)) throw new ApiError(400, `kind is one of: ${Object.keys(KINDS).join(", ")}`);
   const model = report.model?.trim().slice(0, 255) || null, session = report.session ?? null;
   const again = session && await app.db.one`SELECT id FROM ai_agent_feedback
     WHERE session_id = ${session} AND kind = ${kind} AND about = ${about} AND content = ${content}`;
@@ -42,7 +42,7 @@ export const api: ApiTree = {
   post: {
     description: DESCRIPTION,
     access: Access.USER,
-    input: s.object(input),
+    input,
     execute: ({ kind, about, content, model }: { kind: string; about?: string; content: string; model?: string }, ctx: Ctx) =>
       keep(ctx.app, { kind, about, content, model, usr: ctx.userId }),
   },

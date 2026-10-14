@@ -1,6 +1,6 @@
-import { toTools } from "@qino/qino";
+import { toTools, ValidationError } from "@qino/qino";
 
-import { DESCRIPTION, keep } from "./api.ts";
+import { DESCRIPTION, input, keep } from "./api.ts";
 
 import type { App, Tool } from "@qino/qino";
 
@@ -30,9 +30,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     turn.tools.push({
       ...tool, description: DESCRIPTION, parameters: { ...tool.parameters, properties },
       execute: async (args) => {
-        const { kind, about, content } = args as { kind: string; about?: string; content: string };
-        const model = await modelOf(app, turn.session);
-        return keep(app, { kind: String(kind), about, content: String(content ?? ""), model, usr: turn.usrId, agent: turn.agent, session: turn.session });
+        const valid = input["~standard"].validate(args); // as through the api: called directly, not through it
+        if (valid.issues) throw new ValidationError(valid.issues);
+        const { kind, about, content } = valid.value, model = await modelOf(app, turn.session);
+        return keep(app, { kind, about, content, model, usr: turn.usrId, agent: turn.agent, session: turn.session });
       },
     } satisfies Tool);
   }, { signal });

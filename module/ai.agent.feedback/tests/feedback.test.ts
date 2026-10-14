@@ -33,17 +33,18 @@ Deno.test("ai.agent.feedback: an agent reports to the developers, with its sessi
     await session.ask("report");
     await session.ask("report"); // the same again: kept once
     const given = sent[0][0].content as string;
-    assertStringIncludes(given, "## Feedback\nWhen a tool's description was unclear");
+    assertStringIncludes(given, "## Feedback\nWhen something was not set up");
     const tool = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id}`)
       .map((json) => JSON.parse(String(json))).find((m) => m.tools)!.tools.find((t: { name: string }) => t.name === "feedback_post");
     assertEquals(Object.keys(tool.parameters.properties), ["kind", "about", "content"]); // its model it need not tell
+    assertEquals(tool.parameters.properties.kind.enum, ["config", "description", "bug", "idea"]);
     assertEquals(await app.db.query`SELECT usr_id, agent_id, session_id, model, kind, about, content, done FROM ai_agent_feedback`.then((rows) => rows.map((r) => ({ ...r, done: !!r.done } as Record<string, unknown>))),
       [{ usr_id: 7, agent_id: agent.id, session_id: session.id, model: "m", kind: "description", about: "iot_provider_action_post", content: "unclear", done: false }]); // its model too
     // through the api, e.g. by an AI through MCP: no agent, no session
     await runAs(app, 7, "test", () => app.api["ai.agent.feedback"].post({ kind: "config", content: " no credit left ", model: "claude-opus-5-5" }));
     assertEquals(await app.db.row`SELECT usr_id, agent_id, session_id, model, kind, about, content FROM ai_agent_feedback ORDER BY id DESC`,
       { usr_id: 7, agent_id: null, session_id: null, model: "claude-opus-5-5", kind: "config", about: "", content: "no credit left" });
-    await assertRejects(() => runAs(app, 7, "test", () => app.api["ai.agent.feedback"].post({ kind: "other", content: "x" })), Error, "kind is one of");
+    await assertRejects(() => runAs(app, 7, "test", () => app.api["ai.agent.feedback"].post({ kind: "other", content: "x" })), Error, "Validation failed");
   } finally {
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
     delete app.modules.get("ai")!.plugin.aiAdapters.fake;

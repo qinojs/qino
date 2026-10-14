@@ -15,7 +15,7 @@ export interface StandardIssue {
 
 // ───── Schema type ────────────────────────────────────────────────────────
 
-type Kind = "string" | "number" | "boolean" | "object" | "array" | "optional" | "record" | "any" | "instance";
+type Kind = "string" | "enum" | "number" | "boolean" | "object" | "array" | "optional" | "record" | "any" | "instance";
 type Validator<T> = (value: unknown, path: PropertyKey[]) => StandardResult<T>;
 
 declare const OPTIONAL_BRAND: unique symbol;
@@ -28,9 +28,12 @@ export class StandardSchema<T = unknown> {
   readonly inner?: StandardSchema<any>;
   readonly defaultValue?: () => T;
   readonly description?: string;
+  /** The values an `enum` takes. */
+  readonly values?: readonly string[];
 
-  constructor(kind: Kind, validator: Validator<T>, extras: { shape?: Record<string, StandardSchema<any>>; inner?: StandardSchema<any>; defaultValue?: () => T; description?: string } = {}) {
+  constructor(kind: Kind, validator: Validator<T>, extras: { shape?: Record<string, StandardSchema<any>>; inner?: StandardSchema<any>; defaultValue?: () => T; description?: string; values?: readonly string[] } = {}) {
     this.kind = kind;
+    this.values = extras.values;
     this.shape = extras.shape;
     this.inner = extras.inner;
     this.defaultValue = extras.defaultValue;
@@ -49,6 +52,7 @@ export class StandardSchema<T = unknown> {
       inner: this.inner,
       defaultValue: () => value,
       description: this.description,
+      values: this.values,
     });
   }
 
@@ -58,6 +62,7 @@ export class StandardSchema<T = unknown> {
       inner: this.inner,
       defaultValue: this.defaultValue,
       description,
+      values: this.values,
     });
   }
 }
@@ -73,6 +78,11 @@ function err(path: PropertyKey[], message: string) {
 export const s = {
   string: (): StandardSchema<string> => new StandardSchema<string>("string", (v, p) =>
     typeof v === "string" ? { value: v } : { issues: err(p, "expected string") }),
+
+  /** One of `values`, e.g. `s.enum(["config", "bug"])`. */
+  enum: <const T extends readonly string[]>(values: T): StandardSchema<T[number]> =>
+    new StandardSchema<T[number]>("enum", (v, p) =>
+      values.includes(v as string) ? { value: v as T[number] } : { issues: err(p, `expected one of: ${values.join(", ")}`) }, { values }),
 
   number: (): StandardSchema<number> => new StandardSchema<number>("number", (v, p) =>
     typeof v === "number" && Number.isFinite(v) ? { value: v } : { issues: err(p, "expected number") }),
@@ -151,6 +161,7 @@ export function toJsonSchema(schema: StandardSchema): Record<string, unknown> {
   const desc = schema.description ? { description: schema.description } : {};
   switch (schema.kind) {
     case "string":   return { type: "string", ...desc };
+    case "enum":     return { type: "string", enum: [...schema.values ?? []], ...desc };
     case "number":   return { type: "number", ...desc };
     case "boolean":  return { type: "boolean", ...desc };
     case "array":    return { type: "array", items: schema.inner ? toJsonSchema(schema.inner) : {}, ...desc };
