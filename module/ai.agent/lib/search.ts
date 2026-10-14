@@ -26,7 +26,7 @@ export async function keep(app: App, name: "ai_agent" | "ai_agent_memory" | "ai_
  *  more — with the vector the message got anyway. */
 export async function associate(app: App, agent: number, vector: number[]): Promise<void> {
   const close = await search(app, { ai_agent_memory: sql`e.agent_id = ${agent}` }, vector, { limit: 5 }).catch((e) => (log(e), []));
-  for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_agent_memory", Number(key.memory_id), score);
+  for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_agent_memory_use", { memory_id: Number(key.memory_id) }, score);
 }
 
 /** The agent's memories and the messages of all its sessions, with anyone, nearest to `query`. A
@@ -37,7 +37,7 @@ export async function find(app: App, agent: number, query: string): Promise<Reco
   const said = new Map((await app.db.query`SELECT id, session_id, time FROM ai_session_message
     WHERE ${sql.in("id", hits.flatMap((h) => h.key.message_id ?? []))}`).map((m) => [Number(m.id), m]));
   return hits.map(({ key, content, score }) => {
-    if (key.memory_id) return score > 0 && hit(app.db, "ai_agent_memory", Number(key.memory_id), score), { memory: key.memory_id, text: content };
+    if (key.memory_id) return score > 0 && hit(app.db, "ai_agent_memory_use", { memory_id: Number(key.memory_id) }, score), { memory: key.memory_id, text: content };
     const message = said.get(Number(key.message_id));
     return { session: message?.session_id, message: key.message_id, time: message?.time, text: content };
   });

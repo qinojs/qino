@@ -17,7 +17,7 @@ superuser behind a blocked IP is blocked too. Reports made while a superuser is 
 count; the early path checks know no user and apply to everyone.
 
 Strengths are kept in memory, so the check needs no query. Above a small value they are also
-stored via [`score`](../score/) on `log_ip`, so a restart forgives nobody and the score backend
+stored via [`score`](../score/) in `score_log_ip_suspicious`, so a restart forgives nobody and the score backend
 shows them; single slips cost no write.
 
 Built-in reports, each in its own file under `lib/`:

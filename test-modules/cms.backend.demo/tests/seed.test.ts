@@ -39,7 +39,7 @@ Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly a
     await wipe(app);
     const after = await census(app);
     // dictionaries and settings are shared: a run may add a value, but never owns one
-    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting", "score_scope"]) delete after[shared], delete before[shared];
+    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting"]) delete after[shared], delete before[shared];
     assertEquals(after, before);
   } finally {
     await app.db.close();
@@ -103,7 +103,7 @@ Deno.test("cms.backend.demo: finance — invoices in every state, a statement, a
 
     await wipe(app);
     const after = await census(app);
-    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting", "score_scope"]) delete after[shared], delete before[shared];
+    for (const shared of ["log_url", "log_ip", "log_user_agent", "qg_setting"]) delete after[shared], delete before[shared];
     assertEquals(after, before);
   } finally {
     await app.db.close();

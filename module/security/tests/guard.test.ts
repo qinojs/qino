@@ -6,7 +6,7 @@ import { close, ctxOf, get, inDir, settle, testApp, withApp } from "./app.ts";
 import type { App } from "@qino/qino";
 
 const stored = async (app: App, ip: string) =>
-  Number(await app.db.one`SELECT COUNT(*) FROM score s JOIN log_ip l ON l.id = s.id WHERE l.ip = ${ip}`);
+  Number(await app.db.one`SELECT COUNT(*) FROM score_log_ip_suspicious s JOIN log_ip l ON l.id = s.ip_id WHERE l.ip = ${ip}`);
 
 Deno.test("security: reports add up, delay, block and are stored from strength 5", () => withApp(async (app) => {
   assertEquals(suspicion(app, "6.6.6.6") >= 1, false);

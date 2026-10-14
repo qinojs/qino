@@ -122,7 +122,7 @@ Deno.test("ai.agent: memories outlast the session and are shared by all who talk
   await bob.ask("replace:1:red");
   assertStringIncludes((await (await agent.start(8)).ask("hi")).text, "[1] red #"); // from the next session on
   await bob.ask("forget:1");
-  assertEquals([await app.db.one`SELECT COUNT(*) FROM ai_agent_memory`, await app.db.one`SELECT COUNT(*) FROM score`], [0, 0]); // its strength goes too
+  assertEquals([await app.db.one`SELECT COUNT(*) FROM ai_agent_memory`, await app.db.one`SELECT COUNT(*) FROM score_ai_agent_memory_use`], [0, 0]); // its strength goes too
   assertStringIncludes((await bob.ask("forget:1")).text, '"error":"No such memory"'); // told to the model
 }));
 
@@ -152,7 +152,7 @@ Deno.test("ai.agent: what the user says strengthens the memories close to it, in
   const agent = await Agent.create(app, { system: "lead" });
   for (const [content, strength] of [["the logo is blue", 1], ["apples are red", 1.5]] as const) {
     const id = Number(await app.db.table("ai_agent_memory").insert({ agent_id: agent.id, content }));
-    await hit(app.db, "ai_agent_memory", id, strength);
+    await hit(app.db, "ai_agent_memory_use", { memory_id: id }, strength);
     await keep(app, "ai_agent_memory", { agent_id: agent.id, memory_id: id }, content);
   }
   assertEquals(await index(app, agent.id), `## Your memories\n${HINT}\n[2] apples are red\n[1] the logo is blue`); // the stronger first

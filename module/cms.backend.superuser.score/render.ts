@@ -1,14 +1,14 @@
 import { html, sql, unixTime } from "@qino/qino";
-import { fadeLimit, scopes, strength } from "@qino/qino/score";
+import { fadeLimit, scores, strength } from "@qino/qino/score";
 import * as u2 from "@qino/qino/u2";
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { ScoreScope } from "@qino/qino/score";
+import type { Score } from "@qino/qino/score";
 
 const TOP = sql.raw("10");
 
-type ScoreRow = { id: number; score: number; time: number };
+type ScoreRow = { score: number; time: number; [key: string]: unknown };
 type Stats = { total: number; faded: number; last: number };
 
 export function render(node: Node): Promise<HtmlString> {
@@ -23,78 +23,64 @@ export function render(node: Node): Promise<HtmlString> {
   </div>`;
 }
 
+/** All rows of every score table. */
+export async function total(db: Db): Promise<number> {
+  let n = 0;
+  for (const { table } of scores(db)) n += Number(await db.one`SELECT COUNT(*) FROM ${sql.id(table)}`);
+  return n;
+}
+
 export async function list(node: Node): Promise<HtmlString> {
   const { app } = node;
   const { db } = app;
   const now = unixTime();
-  const known = scopes(db);
+  const all = scores(db);
   const cards = [];
-  for (const [tbl, scope] of known) cards.push(await renderScope(app, tbl, scope, now));
+  for (const score of all) cards.push(await renderScore(app, score, now));
 
   return html.async`<div class=-body>
-    <b>${known.size}</b> ${app.t`scopes`} · ${db.one`SELECT COUNT(*) FROM score`} ${app.t`scored rows`}
+    <b>${all.length}</b> ${app.t`score tables`} · ${total(db)} ${app.t`scored rows`}
   </div>
-  ${cards}
-  ${renderStale(app, known)}`;
+  ${cards}`;
 }
 
-/** One scope: its numbers, then the strongest rows. */
-async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now: number) {
-  const db = app.db;
-  const limit = fadeLimit(db, tbl, now);
+/** One score table: its numbers, then the strongest rows. */
+async function renderScore(app: App, { name, table, keys, half }: Score, now: number) {
+  const db = app.db, t = sql.id(table);
+  const limit = fadeLimit(db, name, now);
   const stats = await db.row<Stats>`
-    SELECT COUNT(*) AS total, SUM(CASE WHEN score < ${limit} THEN 1 ELSE 0 END) AS faded, MAX(time) AS last
-    FROM score WHERE scope_id = ${id}`;
-  const top = await db.query<ScoreRow>`
-    SELECT id, score, time FROM score WHERE scope_id = ${id} ORDER BY score DESC LIMIT ${TOP}`;
+    SELECT COUNT(*) AS total, SUM(CASE WHEN score < ${limit} THEN 1 ELSE 0 END) AS faded, MAX(time) AS last FROM ${t}`;
+  const top = await db.query<ScoreRow>`SELECT * FROM ${t} ORDER BY score DESC LIMIT ${TOP}`;
   const faded = Number(stats?.faded ?? 0);
 
   return html.async`<div class=-body>
-    <code>${tbl}</code>
+    <code>${table}</code>
     · ${app.t`half-life`} ${duration(half)}
     · <b>${Number(stats?.total ?? 0)}</b> ${app.t`rows`}
     ${faded ? html.async` · <span class=u2-badge>${faded} ${app.t`faded`}</span>` : ""}
     · ${app.t`last access`} ${u2.el.time(stats?.last, { second: true })}
   </div>
-  ${top.length ? renderTop(app, tbl, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;
+  ${top.length ? renderTop(app, name, keys, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;
 }
 
-function renderTop(app: App, tbl: string, top: ScoreRow[], now: number) {
+function renderTop(app: App, name: string, keys: string[], top: ScoreRow[], now: number) {
   const rows = top.map((row, i) =>
     html`<tr>
       <td>${i + 1}
-      <td><code>${row.id}</code>
+      <td><code>${keys.map((key) => `${key} ${row[key]}`).join(", ")}</code>
       <td><code>${Number(row.score).toFixed(3)}</code>
-      <td>${accesses(strength(app.db, tbl, Number(row.score), now))}
+      <td>${accesses(strength(app.db, name, Number(row.score), now))}
       <td>${u2.el.time(row.time, { second: true })}`
   );
   return html.async`<table class="u2-table -Sticky">
     <thead><tr>
       <th>#
-      <th>${app.t`Row`} <small>${app.t`db`}</small>
+      <th>${app.t`Key`} <small>${app.t`db`}</small>
       <th><code>score</code> <small>${app.t`db`}</small>
       <th>${app.t`Strength`} <small>${app.t`computed`}</small>
       <th><code>time</code> <small>${app.t`db`}</small>
     <tbody>${rows}
   </table>`;
-}
-
-/** Scopes no longer registered by any module — their rows are never cleaned up. */
-async function renderStale(app: App, known: Map<string, ScoreScope>) {
-  const all = await app.db.query<{ id: number; tbl: string }>`SELECT id, tbl FROM score_scope ORDER BY tbl`;
-  const stale = all.filter((s) => !known.has(s.tbl));
-  if (!stale.length) return html``;
-  const label = await app.t`rows`;
-  const rows = [];
-  for (const { id, tbl } of stale) {
-    const count = Number(await app.db.one`SELECT COUNT(*) FROM score WHERE scope_id = ${id}`);
-    rows.push(html`<li><code>${tbl}</code> · ${count} ${label}`);
-  }
-  return html.async`<div class=-body>
-    <b>${app.t`Not registered`}</b> —
-    ${app.t`no module scores these tables anymore; prune skips them, delete them by hand.`}
-    <ul>${rows}</ul>
-  </div>`;
 }
 
 /** Strength in accesses: fractions matter near the fade limit, whole numbers above it. */

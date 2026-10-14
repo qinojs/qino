@@ -63,7 +63,7 @@ Deno.test("ai.user_memory: what the user says strengthens their memories close t
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   for (const content of ["always apples", "always a round logo"]) {
     const id = Number(await app.db.table("ai_user_memory").insert({ usr_id: 7, content }));
-    await hit(app.db, "ai_user_memory", id);
+    await hit(app.db, "ai_user_memory_use", { memory_id: id });
     await index(app, "ai_user_memory", { usr_id: 7, memory_id: id }, content);
   }
   const order = async () => (await runAs(app, 7, "test", () => app.api["ai.user_memory"].memories.get()) as { id: number }[]).map((m) => Number(m.id));

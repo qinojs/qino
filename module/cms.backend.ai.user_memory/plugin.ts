@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, unixTime } from "@qino/qino";
+import { errMsg, getCtx, html, sql, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { IN_MIND, personal } from "@qino/qino/ai.user_memory";
@@ -81,7 +81,7 @@ export async function list(node: Node): Promise<HtmlString> {
 /** The memories of user `vars.usr`, the strongest first: which are in an agent's context, which search finds. */
 export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, usr = Number(vars.usr) || 0, now = unixTime();
-  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_user_memory", "m.id")} AS score,
+  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_user_memory_use", { memory_id: sql`m.id` })} AS score,
       EXISTS (SELECT 1 FROM embedding_ai_user_memory e WHERE e.memory_id = m.id) AS findable
     FROM ai_user_memory m WHERE m.usr_id = ${usr} ORDER BY score DESC, m.id`;
   return html.async`
@@ -98,7 +98,7 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
       <td>${m.id}
       <td>${m.content}
       <td>${m.score}
-      <td>${strength(db, "ai_user_memory", Number(m.score), now).toFixed(2)}
+      <td>${strength(db, "ai_user_memory_use", Number(m.score), now).toFixed(2)}
       <td>${i < IN_MIND ? "✓" : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
       <td>${time(m.time)}

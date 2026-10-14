@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { Access, errMsg, getCtx, NotFoundError, s, sql, toTools, unixTime } from "@qino/qino";
 import { collection, index, search } from "@qino/qino/ai.embed";
-import { hit, scored, sqlScore } from "@qino/qino/score";
+import { hit, sqlScore } from "@qino/qino/score";
 import { Session } from "@qino/qino/ai.agent";
 
 import { IN_MIND, personal } from "./mod.ts";
@@ -20,7 +20,7 @@ const CLOSE = 0.75; // todo? adjustable
 const log = (e: unknown) => console.error("[ai.user_memory] embedding:", errMsg(e));
 
 const list = (app: App, usr: number, limit?: number) => app.db.query`SELECT id, content FROM ai_user_memory m WHERE usr_id = ${usr}
-  ORDER BY ${sqlScore(app.db, "ai_user_memory", "m.id")} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`;
+  ORDER BY ${sqlScore(app.db, "ai_user_memory_use", { memory_id: sql`m.id` })} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`;
 
 async function own(app: App, usr: number, id: number) {
   if (!await app.db.one`SELECT id FROM ai_user_memory WHERE id = ${id} AND usr_id = ${usr}`) throw new NotFoundError("No such memory");
@@ -29,7 +29,7 @@ async function own(app: App, usr: number, id: number) {
 async function keep(app: App, usr: number, content: string, replaces?: number) {
   const table = app.db.table("ai_user_memory"), values = { usr_id: usr, content, time: unixTime() };
   const id = replaces ? (await own(app, usr, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
-  hit(app.db, "ai_user_memory", id);
+  hit(app.db, "ai_user_memory_use", { memory_id: id });
   if (await collection(app)) index(app, "ai_user_memory", { usr_id: usr, memory_id: id }, content).catch(log); // findable by meaning
   return { id: `u${id}` };
 }
@@ -60,8 +60,6 @@ export const api: ApiTree = {
 };
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
-  await scored(app.db, "ai_user_memory", 30 * 86400);
-
   // into every turn: who the user is and what is known about them, and the tool to forget it; what is new about
   // them, decide sorts out when the agent remembers it (below)
   app.on("ai.agent:turn", async (turn) => {
@@ -80,7 +78,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   app.on("ai.agent:associate", async ({ session: id, vector }) => {
     const usr = await app.db.one`SELECT usr_id FROM ai_session WHERE id = ${id}`;
     const close = await search(app, { ai_user_memory: sql`e.usr_id = ${usr}` }, vector, { limit: 5 }).catch((e) => (log(e), []));
-    for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_user_memory", Number(key.memory_id), score);
+    for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_user_memory_use", { memory_id: Number(key.memory_id) }, score);
     const session = new Session(app, id), known = await session.known(), lines = new Map<string, string>();
     for (const { key, content, score } of close) {
       const id = `u${key.memory_id}`; // the nearest chunk of each

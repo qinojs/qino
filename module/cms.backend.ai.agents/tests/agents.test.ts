@@ -17,7 +17,7 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
     const agent = await Agent.create(app, { system: "<b>lead</b>", tools: ["aiDiscover_*"] });
     const session = await agent.start(7);
     const memory = Number(await app.db.table("ai_agent_memory").insert({ agent_id: agent.id, content: "the <i>logo</i> is blue " + "x".repeat(90) }));
-    await hit(app.db, "ai_agent_memory", memory, 3);
+    await hit(app.db, "ai_agent_memory_use", { memory_id: memory }, 3);
     // the model "m" at the provider "fake" answered the last message
     const provider = await app.db.table("ai_provider").insert({ name: "fake", type: "fake", endpoint: "" });
     const model = await app.db.table("ai_model").insert({ name: "m" });

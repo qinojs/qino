@@ -11,6 +11,12 @@
         "required": ["id", "usr_id", "content"]
       }
     },
+    "score_ai_user_memory_use": {
+      "description": "How often and how recently each memory was used (score)",
+      "additionalProperties": {
+        "properties": { "memory_id": { "type": "integer", "x-qg-parent": "ai_user_memory" } }
+      }
+    },
     "embedding_ai_user_memory": {
       "additionalProperties": {
         "properties": {

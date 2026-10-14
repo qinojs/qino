@@ -146,6 +146,12 @@
         ]
       }
     },
+    "score_ai_agent_memory_use": {
+      "description": "How often and how recently each memory was used (score)",
+      "additionalProperties": {
+        "properties": { "memory_id": { "type": "integer", "x-qg-parent": "ai_agent_memory" } }
+      }
+    },
     "embedding_ai_agent_memory": {
       "additionalProperties": {
         "properties": {

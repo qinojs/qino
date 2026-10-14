@@ -11,7 +11,7 @@ import type { App, Db } from "@qino/qino";
 export type Rows = [string, string][];
 
 /** Shared dictionaries and registries: rows a demo run may create but never owns. */
-const NEVER = new Set(["qg_setting", "log_url", "log_ip", "log_user_agent", "smalltext", "score_scope", "module", "store"]);
+const NEVER = new Set(["qg_setting", "log_url", "log_ip", "log_user_agent", "smalltext", "module", "store"]);
 
 const running = new AsyncLocalStorage<Rows>();
 

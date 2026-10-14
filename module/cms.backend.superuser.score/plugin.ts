@@ -1,8 +1,8 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { scopes } from "@qino/qino/score";
+import { scores } from "@qino/qino/score";
 
-import { list, render } from "./render.ts";
+import { list, render, total } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -16,7 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div class=-body>
-    <b>${scopes(app.db).size}</b> ${app.t`scopes`} · ${app.db.one`SELECT COUNT(*) FROM score`} ${app.t`scored rows`}
+    <b>${scores(app.db).length}</b> ${app.t`score tables`} · ${total(app.db)} ${app.t`scored rows`}
   </div>`;
 }
 

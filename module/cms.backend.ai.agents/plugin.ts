@@ -212,7 +212,7 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}):
 export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, agent = Number(vars.agent) || 0, now = unixTime();
   if (!agent) return html.async`<tr><td>${t`Choose an agent`}`;
-  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_agent_memory", "m.id")} AS score,
+  const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_agent_memory_use", { memory_id: sql`m.id` })} AS score,
       EXISTS (SELECT 1 FROM embedding_ai_agent_memory e WHERE e.memory_id = m.id) AS findable
     FROM ai_agent_memory m WHERE m.agent_id = ${agent} ORDER BY score DESC, m.id`;
   return html.async`
@@ -226,7 +226,7 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
     <tbody>${rows.length ? rows.map((m, i) => html.async`<tr>
       <td>${m.id}
       <td><button type=button class=u2-unstyle data-memory=${m.id} data-content="${m.content}" title="${t`Edit memory`}">${short(String(m.content))}</button>
-      <td>${strength(db, "ai_agent_memory", Number(m.score), now).toFixed(2)}
+      <td>${strength(db, "ai_agent_memory_use", Number(m.score), now).toFixed(2)}
       <td>${i < IN_MIND ? html.async`<u2-ico icon=push_pin title="${t`Included when a session starts`}">📌</u2-ico>` : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
       <td>${time(m.time)}`) : html.async`<tr><td colspan=6>${t`No memories yet`}`}</tbody>`;
