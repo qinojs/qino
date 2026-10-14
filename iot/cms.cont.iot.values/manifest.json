@@ -1,6 +1,6 @@
 {
-  "name": "cms.cont.home.values",
-  "description": "Observed home values on a CMS page, from any linked provider.",
-  "dependencies": ["cms", "home"],
+  "name": "cms.cont.iot.values",
+  "description": "Observed IoT values on a CMS page, from any linked provider.",
+  "dependencies": ["cms", "iot"],
   "files": ["README.md", "manifest.json", "plugin.ts", "pub/module.svg"]
 }

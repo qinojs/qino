@@ -1,12 +1,12 @@
 {
   "properties": {
-    "home_number": {
+    "iot_number": {
       "additionalProperties": {
         "properties": {
           "datapoint": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "home_datapoint"
+            "x-qg-parent": "iot_datapoint"
           },
           "time": {
             "type": "integer",
@@ -28,13 +28,13 @@
         ]
       }
     },
-    "home_state": {
+    "iot_state": {
       "additionalProperties": {
         "properties": {
           "datapoint": {
             "type": "integer",
             "x-index": "primary",
-            "x-qg-parent": "home_datapoint"
+            "x-qg-parent": "iot_datapoint"
           },
           "time": {
             "type": "integer",

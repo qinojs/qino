@@ -1,4 +1,4 @@
-# home
+# iot
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
@@ -8,7 +8,7 @@ adapters implement protocols; `sandbox.flow` owns rules and `cron` owns schedule
 
 ## Model
 
-- **Adapter**: a linked implementation, such as `homeassistant`, exported as `homeProvider`.
+- **Adapter**: a linked implementation, such as `homeassistant`, exported as `iotProvider`.
 - **Provider**: a persisted connection with numeric ID, name, adapter, configuration and enabled flag.
   Multiple providers can use the same adapter. Configuration, including credentials, stays server-side.
 - **Entity**: a live logical endpoint `{ id, name, state, attributes, available, updated?, unit? }`.
@@ -21,7 +21,7 @@ adapters implement protocols; `sandbox.flow` owns rules and `cron` owns schedule
   Name, expected reporting interval (seconds) and recording selection are editable.
   Latest recorded value/time are cached separately from historical observations.
 - **Measurement**: datapoint ID, Unix milliseconds and typed value, or null for an unavailable observation.
-  Optional `home.record` owns these tables. `home.history` queries local or upstream archives.
+  Optional `iot.record` owns these tables. `iot.history` queries local or upstream archives.
 - **Action**: a discovered operation `{ id, name, description?, input?, targets? }`. `input` is the JSON
   schema of its data, `targets` the entity IDs it can address; without them, data is free-form and
   the action takes no targets. Writing a value is always an action; entities stay read-only.
@@ -34,7 +34,7 @@ Provider and datapoint metadata use the existing `dbschema.json` installer. No m
 or the discarded snapshot schema runs in normal module initialization.
 
 ```ts
-import { save, configure, entities, call } from "@qino/qino/home";
+import { save, configure, entities, call } from "@qino/qino/iot";
 
 const provider = await save(app, {
   name: "House", adapter: "homeassistant",
@@ -76,10 +76,10 @@ disable them to preserve identity and archive access. Changing an existing datap
 requires a new datapoint; posting an existing interpretation reuses its datapoint. Changing a
 referenced provider's adapter requires a new provider.
 
-`home:observe` carries `{ provider, id, entity, time }` for the recorder. Reports of a source carry
+`iot:observe` carries `{ provider, id, entity, time }` for the recorder. Reports of a source carry
 `{ provider, id, entity, previous, changed }` for rules, `changed` being the paths whose values differ
-(`""` for the state): `home:input` fires for every report, so each press of a button counts even when
-it equals the last; `home:change` only when `changed` is not empty. `reported()` publishes all three,
+(`""` for the state): `iot:input` fires for every report, so each press of a button counts even when
+it equals the last; `iot:change` only when `changed` is not empty. `reported()` publishes all three,
 `observed()` only an observation. Snapshots and lost connections enter history without reports:
 a lost connection is observed as unavailable entities, a deliberate close (disable, unlink) not at all.
 Creation/removal use null `previous`/`entity`.
@@ -90,32 +90,32 @@ import { listen } from "@qino/qino/sandbox.flow";
 
 listen(app, {
   description: "Switch on a light when motion starts", owner: 7,
-  on: { host: "app", event: "home:change" },
-  tools: ["home_provider_action_post"],
+  on: { host: "app", event: "iot:change" },
+  tools: ["iot_provider_action_post"],
   test: false, // Omit while testing to record writes without execution.
   code: `
     if (event.provider !== ${provider} || event.id !== "binary_sensor.kitchen_motion") return;
     if (!event.changed.includes("") || !event.entity?.available || event.entity.state !== "on") return;
     const action = { provider: ${provider}, action: "light.turn_on", entities: ["light.kitchen"] };
-    await tools.home_provider_action_post(action);
+    await tools.iot_provider_action_post(action);
     return "switched on";
   `,
 }, { signal });
 ```
 
-Use an existing superuser as owner and an explicit provider ID in persisted rules. Listen to `home:input`
-for events such as button presses, to `home:change` for states. Filter transitions to avoid feedback loops. Device events arrive outside their initiating flow; local suppression does not
+Use an existing superuser as owner and an explicit provider ID in persisted rules. Listen to `iot:input`
+for events such as button presses, to `iot:change` for states. Filter transitions to avoid feedback loops. Device events arrive outside their initiating flow; local suppression does not
 cover them. Rules require Qino to run; missed events are not replayed.
 
 ## Add an adapter
 
-Export `homeProvider` from `plugin.ts` with a dependency on `home`:
+Export `iotProvider` from `plugin.ts` with a dependency on `iot`:
 
 ```ts
-import { observed, reported } from "@qino/qino/home";
-import type { Adapter } from "@qino/qino/home";
+import { observed, reported } from "@qino/qino/iot";
+import type { Adapter } from "@qino/qino/iot";
 
-export const homeProvider: Adapter = {
+export const iotProvider: Adapter = {
   name: "myadapter",
   entities: (app, id) => connection(app, id).entities(),
   actions: (app, id) => connection(app, id).actions(),
@@ -129,16 +129,16 @@ An optional JSON schema describes instance configuration, including URL and writ
 Actions describe their data as JSON schema (`input`) and list the entities they address (`targets`),
 translated from the protocol's own metadata, so forms and commands work the same for every adapter.
 Adapter names must be unique within an App. Connections belong to the App, keyed by provider ID;
-stop sockets/timers/listeners through the module's init signal. Observe `home:provider` to apply
+stop sockets/timers/listeners through the module's init signal. Observe `iot:provider` to apply
 connection changes, including enable/disable. Keep device-specific actions, units and discovery
 metadata in the adapter; the common API has no fixed device taxonomy.
 
 ## Modules and ims1
 
-Install `home.manual` for values entered without external software.
-Install `cms.backend.home` for instance/datapoint configuration, measurement entry and manual actions;
-`cms.cont.home.values` for current values; `home.record` for selected local recording;
-`cms.cont.home.chart` for measurements and counter consumption. Dependencies install through
+Install `iot.manual` for values entered without external software.
+Install `cms.backend.iot` for instance/datapoint configuration, measurement entry and manual actions;
+`cms.cont.iot.values` for current values; `iot.record` for selected local recording;
+`cms.cont.iot.chart` for measurements and counter consumption. Dependencies install through
 Qino's store; Home Assistant is optional.
 
 The read-only reference `/var/www/workplace/v9/m/ims1` informed the numeric datapoint IDs, separate

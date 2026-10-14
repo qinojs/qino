@@ -23,14 +23,14 @@ const decode = (row: Datapoint): Datapoint => ({
 
 export async function datapoints(app: App, provider?: number): Promise<Datapoint[]> {
   const rows = provider === undefined
-    ? await app.db.query<Datapoint>`SELECT * FROM home_datapoint ORDER BY id`
-    : await app.db.query<Datapoint>`SELECT * FROM home_datapoint WHERE provider = ${provider} ORDER BY id`;
+    ? await app.db.query<Datapoint>`SELECT * FROM iot_datapoint ORDER BY id`
+    : await app.db.query<Datapoint>`SELECT * FROM iot_datapoint WHERE provider = ${provider} ORDER BY id`;
   return rows.map(decode);
 }
 
 export async function datapoint(app: App, id: number): Promise<Datapoint> {
-  const row = await app.db.row<Datapoint>`SELECT * FROM home_datapoint WHERE id = ${id}`;
-  if (!row) throw new NotFoundError("Home datapoint was not found");
+  const row = await app.db.row<Datapoint>`SELECT * FROM iot_datapoint WHERE id = ${id}`;
+  if (!row) throw new NotFoundError("IoT datapoint was not found");
   return decode(row);
 }
 
@@ -48,11 +48,11 @@ export async function configure(app: App, input: ({ id: number } | Source & { id
     if (typeof name !== "string" || !name || name.length > 191 || typeof record !== "boolean"
       || !Number.isInteger(interval) || interval < 0 || interval > 2147483647)
       throw new ApiError(400, "Invalid datapoint name, interval or recording flag");
-    const table = app.db.table("home_datapoint");
+    const table = app.db.table("iot_datapoint");
     if (point.id) { await table.update(point.id, { name, interval, record }); return point.id; }
     return Number(await table.insert({ ...point, mapping: JSON.stringify(point.mapping), name, interval, record }));
   });
-  await app.fire("home:datapoint", { id });
+  await app.fire("iot:datapoint", { id });
   return id;
 }
 
@@ -72,7 +72,7 @@ async function source(app: App, input: Source): Promise<Omit<Datapoint, "id"> & 
   // A path joins the identity only when set: datapoints of the state keep theirs.
   const key = [input.provider, entity, type, unit, mapping, ...path ? [path] : []];
   const identity = await sha256hex(JSON.stringify(key));
-  const row = await app.db.row<Datapoint>`SELECT * FROM home_datapoint WHERE identity = ${identity}`;
+  const row = await app.db.row<Datapoint>`SELECT * FROM iot_datapoint WHERE identity = ${identity}`;
   if (row) return decode(row);
   return {
     provider: input.provider, entity, path, identity, name: path ? `${entity}/${path}` : entity, unit, type, mapping,

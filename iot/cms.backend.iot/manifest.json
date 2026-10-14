@@ -1,6 +1,6 @@
 {
-  "name": "cms.backend.home",
-  "description": "Home providers, datapoints, measurement entry and manual actions in the CMS backend.",
-  "dependencies": ["cms.backend", "home", "cms.cont.home.chart"],
+  "name": "cms.backend.iot",
+  "description": "IoT providers, datapoints, measurement entry and manual actions in the CMS backend.",
+  "dependencies": ["cms.backend", "iot", "cms.cont.iot.chart"],
   "files": ["README.md", "manifest.json", "nodeApi.ts", "plugin.ts", "pub/main.js", "pub/action.js", "pub/module.svg", "render.ts", "datapoints.ts", "settings.ts"]
 }

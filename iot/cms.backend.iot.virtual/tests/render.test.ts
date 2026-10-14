@@ -1,19 +1,19 @@
 import { App } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
-import { save } from "@qino/qino/home";
+import { save } from "@qino/qino/iot";
 
 import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
 Deno.test("virtual backend offers a provider, applies templates and lists virtual entities escaped", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "qino-home-virtual-backend-" });
+  const dir = await Deno.makeTempDir({ prefix: "qino-iot-virtual-backend-" });
   const app = new App({ dir, db: "sqlite::memory:" });
   await Deno.writeTextFile(`${dir}/plugin.ts`, `
-export const homeProvider = { name: "homeassistant", entities: async () => [], actions: async () => [], call: async () => null };
+export const iotProvider = { name: "homeassistant", entities: async () => [], actions: async () => [], call: async () => null };
 `);
-  app.modules.add(new URL("../../home/plugin.ts", import.meta.url));
-  app.modules.add(new URL("../../home.virtual/plugin.ts", import.meta.url));
+  app.modules.add(new URL("../../iot/plugin.ts", import.meta.url));
+  app.modules.add(new URL("../../iot.virtual/plugin.ts", import.meta.url));
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init();
   app.t = fakeT;

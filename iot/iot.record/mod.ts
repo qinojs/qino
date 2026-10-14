@@ -1,5 +1,5 @@
 import { ApiError } from "@qino/qino";
-import { datapoint } from "@qino/qino/home";
+import { datapoint } from "@qino/qino/iot";
 
 import { write } from "./lib/write.ts";
 

@@ -2,7 +2,7 @@ import { App, s } from "@qino/qino";
 
 export { api } from "./api.ts";
 
-Object.assign(App.events, { "home.history:read": {
+Object.assign(App.events, { "iot.history:read": {
   description: "A local measurement archive may answer before upstream history is consulted; "
     + "an empty array is an answered query.",
   data: s.object({

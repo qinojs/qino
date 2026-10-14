@@ -13,9 +13,9 @@ const stored = (parameter: string) => ({
 function nodeOf(parameter: string, settings: Record<string, unknown>, calls: unknown[]) {
   const app = {
     t: fakeT,
-    db: { row: (strings: TemplateStringsArray) => Promise.resolve(strings.join("").includes("home_command")
-      ? stored(parameter) : { id: 1, name: "Home", adapter: "fake", config: "{}", enabled: true }) },
-    modules: { linked: () => [{ plugin: { homeProvider: {
+    db: { row: (strings: TemplateStringsArray) => Promise.resolve(strings.join("").includes("iot_command")
+      ? stored(parameter) : { id: 1, name: "IoT", adapter: "fake", config: "{}", enabled: true }) },
+    modules: { linked: () => [{ plugin: { iotProvider: {
       name: "fake", entities: () => Promise.resolve([]), actions: () => Promise.resolve([]),
       call: (_app: App, _id: number, action: string, input: unknown) => {
         calls.push({ action, input });
@@ -28,7 +28,7 @@ function nodeOf(parameter: string, settings: Record<string, unknown>, calls: unk
   return { app, settings: proxy } as unknown as Node;
 }
 
-Deno.test("home command block renders a button or a bounded value field and escapes names", async () => {
+Deno.test("IoT command block renders a button or a bounded value field and escapes names", async () => {
   const button = String(await cms.node.render(nodeOf("", {}, [])));
   assertStringIncludes(button, "<button type=button data-run>&lt;Brightness&gt;</button>");
   const slider = String(await cms.node.render(nodeOf("data.command", { min: 0, max: 255 }, [])));
@@ -36,7 +36,7 @@ Deno.test("home command block renders a button or a bounded value field and esca
   assertEquals(slider.includes("<Brightness>"), false);
 });
 
-Deno.test("home command block runs only its command and keeps values within its range", async () => {
+Deno.test("IoT command block runs only its command and keeps values within its range", async () => {
   const calls: unknown[] = [], node = nodeOf("data.command", { min: 0, max: 255 }, calls);
   assertEquals(await cms.node.api(node, {}), null);
   assertEquals(await cms.node.api(node, { run: true, value: 153 }), { ok: true });

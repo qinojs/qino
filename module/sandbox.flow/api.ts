@@ -15,7 +15,7 @@ const host = s.string().describe(
 );
 const event = s.string().describe(
   "The event's name without its host, e.g. table:insert-after, table:update-after, table:delete-after (db), " +
-    "cron:hour, cron:day, home:input (app)",
+    "cron:hour, cron:day, iot:input (app)",
 );
 const code = s.string().describe(
   "The body of async (event, tools, state, context, owner) => { … }, plain JavaScript in a sandbox: it sees " +

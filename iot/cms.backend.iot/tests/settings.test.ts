@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
-import { provider } from "@qino/qino/home";
+import { provider } from "@qino/qino/iot";
 
 import api from "../nodeApi.ts";
 import { additions, settings } from "../settings.ts";
@@ -7,14 +7,14 @@ import { fixture } from "./fixture.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("home backend edits persisted instances and retains secrets", async () => {
-  const { app, provider: id, close } = await fixture(), node = { app, id: 5, url: () => Promise.resolve("/backend/home#cmspid9") } as unknown as Node;
+Deno.test("iot backend edits persisted instances and retains secrets", async () => {
+  const { app, provider: id, close } = await fixture(), node = { app, id: 5, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node;
   try {
     const output = String(await settings(node));
     assertStringIncludes(output, 'value="http://house.test/"');
     assertStringIncludes(output, 'type="password"');
     assertStringIncludes(output, "<th>Name");
-    assertStringIncludes(output, 'href="/backend/home?provider=1#cmspid9"');
+    assertStringIncludes(output, 'href="/backend/iot?provider=1#cmspid9"');
     assertStringIncludes(output, 'data-provider-enabled data-provider="1"');
     assertStringIncludes(output, "<button type=button data-dialog>Edit</button><template><h3>House</h3>");
     assertEquals(output.includes("saved-secret"), false);

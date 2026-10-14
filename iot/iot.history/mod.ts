@@ -1,8 +1,8 @@
 import { ApiError, NotFoundError } from "@qino/qino";
-import { active, datapoint, value } from "@qino/qino/home";
+import { active, datapoint, value } from "@qino/qino/iot";
 
 import type { App } from "@qino/qino";
-import type { Datapoint } from "@qino/qino/home";
+import type { Datapoint } from "@qino/qino/iot";
 
 export type Sample = { time: number; value: number | null; min?: number; max?: number; count?: number; gap?: boolean };
 export type Source = "auto" | "local" | "provider";
@@ -25,11 +25,11 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
     throw new ApiError(400, "Maximum gap must be non-negative seconds");
   if (consumption && point.type !== "number") throw new ApiError(400, "Consumption requires a numeric counter datapoint");
   const request: Read = { datapoint: id, start, end, source, limit, width, consumption, maxGap: gapSeconds };
-  if (source !== "provider") await app.fire("home.history:read", request);
+  if (source !== "provider") await app.fire("iot.history:read", request);
   if (request.data !== undefined) return { datapoint: point, samples: request.data };
-  if (source === "local") throw new NotFoundError("Local home history is not linked");
+  if (source === "local") throw new NotFoundError("Local IoT history is not linked");
   const adapter = await active(app, point.provider);
-  if (!adapter.history) throw new ApiError(501, "Home adapter does not support upstream history");
+  if (!adapter.history) throw new ApiError(501, "IoT adapter does not support upstream history");
   const range = { start: new Date(start).toISOString(), end: new Date(end).toISOString() };
   const observations = await adapter.history(app, point.provider, point.entity, range);
   if (observations.length > limit) throw new ApiError(413, "Upstream history exceeds the sample limit; narrow the period");

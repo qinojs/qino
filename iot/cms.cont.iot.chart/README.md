@@ -1,11 +1,11 @@
-# cms.cont.home.chart
+# cms.cont.iot.chart
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-CMS content module for a persisted home datapoint's measurement or counter consumption curve.
-Add a `cont.home.chart` node and configure numeric `datapoint` in the existing node settings.
-Dependencies are `cms` and `home.history`; local `home.record` is optional. Placing the chart
+CMS content module for a persisted IoT datapoint's measurement or counter consumption curve.
+Add a `cont.iot.chart` node and configure numeric `datapoint` in the existing node settings.
+Dependencies are `cms` and `iot.history`; local `iot.record` is optional. Placing the chart
 publishes the datapoint: page access decides who sees it. No provider credentials reach the browser.
 
 | Setting | Meaning |

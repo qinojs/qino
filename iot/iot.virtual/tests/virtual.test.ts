@@ -1,22 +1,22 @@
 import { App } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
-import { reported, commands, entities, save, saveCommand } from "@qino/qino/home";
+import { reported, commands, entities, save, saveCommand } from "@qino/qino/iot";
 
-import { apply, homeProvider, saveVirtual, virtuals } from "../mod.ts";
+import { apply, iotProvider, saveVirtual, virtuals } from "../mod.ts";
 
 // The source adapter carries the template's adapter name, so the Android template applies to it.
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-home-virtual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  const dir = await Deno.makeTempDir({ prefix: "qino-iot-virtual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
   await Deno.writeTextFile(`${dir}/plugin.ts`, `
 export const calls = [];
-export const homeProvider = {
+export const iotProvider = {
   name: "homeassistant",
   entities: async () => [{ id: "sensor.phone_screen_brightness", name: "Brightness", state: "153", attributes: {}, available: true }],
   actions: async () => [],
   call: async (_app, _id, action, input) => { calls.push({ action, input }); return { ok: true }; },
 };
 `);
-  app.modules.add(new URL("../../home/plugin.ts", import.meta.url));
+  app.modules.add(new URL("../../iot/plugin.ts", import.meta.url));
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init();
@@ -43,19 +43,19 @@ Deno.test("virtual entities read their source, set through their command and val
     assertEquals((await entities(app, provider))[0], {
       id: String(id), name: "Phone brightness", state: "153", attributes: {}, available: true, provider,
     });
-    const [action] = await homeProvider.actions(app, provider);
+    const [action] = await iotProvider.actions(app, provider);
     assertEquals(action, {
       id: `set.${id}`, name: "Phone brightness", targets: [String(id)],
       input: { type: "object", properties: { value: { type: "integer", minimum: 0, maximum: 255 } }, required: ["value"] },
     });
-    await homeProvider.call(app, provider, `set.${id}`, { data: { value: 80 } });
+    await iotProvider.call(app, provider, `set.${id}`, { data: { value: 80 } });
     assertEquals(calls, [{
       action: "notify.mobile_app_phone", input: { data: { message: "command_screen_brightness_level", data: { command: 80 } } },
     }]);
     for (const value of [256, "80", undefined]) {
-      await assertRejects(() => homeProvider.call(app, provider, `set.${id}`, { data: { value } }), Error, "Invalid value");
+      await assertRejects(() => iotProvider.call(app, provider, `set.${id}`, { data: { value } }), Error, "Invalid value");
     }
-    await assertRejects(() => homeProvider.call(app, source, `set.${id}`, { data: { value: 1 } }), Error, "not found");
+    await assertRejects(() => iotProvider.call(app, source, `set.${id}`, { data: { value: 1 } }), Error, "not found");
     // Sources are real entities; a virtual source could form a cycle.
     await assertRejects(() => saveVirtual(app, { provider, name: "Loop", source_provider: provider, source_entity: String(id) }));
     await assertRejects(() => saveVirtual(app, { provider: source, name: "Not virtual" }), Error, "virtual provider");
@@ -67,15 +67,15 @@ Deno.test("virtual entities pass on their source's observations and changes", as
   try {
     const id = await saveVirtual(app, { provider, name: "Mirror", source_provider: source, source_entity: "sensor.x" });
     const seen: unknown[] = [];
-    app.on("home:change", (event) => { if (event.provider === provider) seen.push(event); });
+    app.on("iot:change", (event) => { if (event.provider === provider) seen.push(event); });
     let observations = 0;
-    app.on("home:observe", (event) => { if (event.provider === provider) observations++; });
+    app.on("iot:observe", (event) => { if (event.provider === provider) observations++; });
     const entity = { id: "sensor.x", name: "X", state: "on", attributes: {}, available: true };
     await reported(app, source, "sensor.x", entity, null);
     const mirrored = { ...entity, id: String(id), name: "Mirror" };
     assertEquals(seen, [{ provider, id: String(id), entity: mirrored, previous: null, changed: [""] }]);
     let inputs = 0;
-    app.on("home:input", (event) => { if (event.provider === provider) inputs++; });
+    app.on("iot:input", (event) => { if (event.provider === provider) inputs++; });
     await reported(app, source, "sensor.x", entity, entity); // reported again, unchanged: input only
     assertEquals([seen.length, inputs], [1, 1]);
     assertEquals(observations, 2);

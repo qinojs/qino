@@ -4,9 +4,9 @@ import { cms } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Adapter } from "@qino/qino/home";
+import type { Adapter } from "@qino/qino/iot";
 
-Deno.test("home values preserve types, escape output and isolate provider failures", async () => {
+Deno.test("IoT values preserve types, escape output and isolate provider failures", async () => {
   let reads = 0;
   const provider: Adapter = {
     name: "healthy",
@@ -26,7 +26,7 @@ Deno.test("home values preserve types, escape output and isolate provider failur
     db: { query: () => Promise.resolve([row(1), row(2)]), row: (_strings: TemplateStringsArray, id: number) => Promise.resolve(row(id)) },
     modules: { linked: () => [provider, {
       ...provider, name: "offline", entities: () => Promise.reject(new Error("<offline>")),
-    }].map((homeProvider) => ({ plugin: { homeProvider } })) },
+    }].map((iotProvider) => ({ plugin: { iotProvider } })) },
   } as unknown as App;
   let selectedProvider = 0, selectedEntity = "";
   const node = { app, settings: { provider: () => selectedProvider, entity: () => selectedEntity } } as unknown as Node;

@@ -1,8 +1,8 @@
 import { ApiError, sys } from "@qino/qino";
-import { observed, providers, reported } from "@qino/qino/home";
+import { observed, providers, reported } from "@qino/qino/iot";
 
 import type { App } from "@qino/qino";
-import type { Action, Call, Entity } from "@qino/qino/home";
+import type { Action, Call, Entity } from "@qino/qino/iot";
 
 const TIMEOUT = 15_000;
 const HEARTBEAT = 30_000;
@@ -186,7 +186,7 @@ export class Connection {
     const time = Date.now();
     for (const state of this.#states.values()) {
       observed(this.#app, this.#provider, state.entity_id, entityOf(state), time)
-        .catch((error) => console.error("home.homeassistant:", error));
+        .catch((error) => console.error("iot.homeassistant:", error));
     }
     const heartbeat = () => {
       if (this.#socket !== socket || this.#signal.aborted) return;
@@ -207,7 +207,7 @@ export class Connection {
     if (state) this.#states.set(change.entity_id, state);
     else this.#states.delete(change.entity_id);
     reported(this.#app, this.#provider, change.entity_id, state ? entityOf(state) : null,
-      change.old_state ? entityOf(change.old_state) : null).catch((e) => console.error("home:input listener:", e));
+      change.old_state ? entityOf(change.old_state) : null).catch((e) => console.error("iot:input listener:", e));
   }
 
   #request<T = unknown>(command: Record<string, unknown>): Promise<T> {
@@ -237,7 +237,7 @@ export class Connection {
     const time = Date.now();
     if (!this.#signal.aborted) for (const state of this.#states.values()) {
       observed(this.#app, this.#provider, state.entity_id, { ...entityOf(state), available: false }, time)
-        .catch((error) => console.error("home.homeassistant:", error));
+        .catch((error) => console.error("iot.homeassistant:", error));
     }
     this.#states.clear();
     clearTimeout(this.#heartbeat);
@@ -302,7 +302,7 @@ function entityOf(state: State) {
   };
 }
 
-const CONNECTIONS = Symbol("home.homeassistant");
+const CONNECTIONS = Symbol("iot.homeassistant");
 type Sessions = Map<number, { session: Connection; controller: AbortController }>;
 const owned = (app: App) => app as App & { [CONNECTIONS]?: Sessions };
 
@@ -312,7 +312,7 @@ export function connection(app: App, id: number): Connection {
   return session;
 }
 
-/** Starts in the background, so an unreachable home never prevents Qino from booting. */
+/** Starts in the background, so an unreachable Home Assistant never prevents Qino from booting. */
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   const sessions: Sessions = new Map();
   owned(app)[CONNECTIONS] = sessions;
@@ -343,7 +343,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     }
   };
   let pending = Promise.resolve();
-  app.on("home:provider", ({ id, adapter, previousAdapter }) => {
+  app.on("iot:provider", ({ id, adapter, previousAdapter }) => {
     if (adapter !== "homeassistant" && previousAdapter !== "homeassistant") return;
     return pending = pending.catch(() => {}).then(() => reload(id));
   }, { signal });

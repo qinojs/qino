@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
-import { save } from "@qino/qino/home";
+import { save } from "@qino/qino/iot";
 
 import api from "../nodeApi.ts";
 import { control, live, renderActions, renderValues, views } from "../render.ts";
@@ -12,7 +12,7 @@ import type { Node } from "@qino/qino/cms";
 const entity = { id: "sensor.temp", name: "Temperature", state: 21.5, attributes: { unit: "°C" }, available: true };
 const appOf = () => ({ t: fakeT }) as unknown as App;
 
-Deno.test("home backend renders observations and action metadata safely without device-specific assumptions", async () => {
+Deno.test("iot backend renders observations and action metadata safely without device-specific assumptions", async () => {
   const app = appOf();
   const bad = {
     ...entity, name: '<img src=x onerror="attack()">', state: false, available: false,
@@ -39,22 +39,22 @@ Deno.test("home backend renders observations and action metadata safely without 
   assertStringIncludes(form, 'data-provider="1"');
   assertStringIncludes(form, "&lt;b&gt;Action&lt;/b&gt;");
   assertEquals(form.includes("<script>"), false);
-  assertStringIncludes(form, 'list="home-action-1-list"');
+  assertStringIncludes(form, 'list="iot-action-1-list"');
   assertStringIncludes(form, "data-targets=\"[&quot;sensor.temp&quot;]\"");
 });
 
-Deno.test("home backend keeps healthy provider instances visible when another fails", async () => {
+Deno.test("iot backend keeps healthy provider instances visible when another fails", async () => {
   const { app, close } = await fixture();
   try {
     await save(app, { name: "Offline", adapter: "fake", config: { url: "http://offline.test/" } });
-    const output = String(await live({ app, url: () => Promise.resolve("/backend/home#cmspid9") } as unknown as Node));
+    const output = String(await live({ app, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node));
     assertStringIncludes(output, "&lt;offline&gt;");
     assertStringIncludes(output, "sensor.temp");
     assertStringIncludes(output, "data-add-point");
     assertStringIncludes(output, "Offline: &lt;offline&gt;");
     assertStringIncludes(output, "data-new-point");
     // Search and provider filter; attributes only on request.
-    const values = async (vars: Record<string, unknown>) => String(await live({ app, url: () => Promise.resolve("/backend/home#cmspid9") } as unknown as Node, { vars }));
+    const values = async (vars: Record<string, unknown>) => String(await live({ app, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node, { vars }));
     assertEquals((await values({ q: "nothing-like-this" })).includes("sensor.temp"), false);
     assertStringIncludes(await values({ q: "TEMP", provider: 1 }), "sensor.temp");
     assertEquals((await values({ provider: 2 })).includes("sensor.temp"), false);
@@ -62,8 +62,8 @@ Deno.test("home backend keeps healthy provider instances visible when another fa
   } finally { await close(); }
 });
 
-Deno.test("home backend stores, lists and runs commands", async () => {
-  const { app, provider, close } = await fixture(), node = { app, url: () => Promise.resolve("/backend/home#cmspid9") } as unknown as Node;
+Deno.test("iot backend stores, lists and runs commands", async () => {
+  const { app, provider, close } = await fixture(), node = { app, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node;
   try {
     const command = { provider, name: "<Lamp>", action: "set", targets: [entity.id], data: { value: true } };
     assertEquals(await api(node, { command }), { ok: true, message: "Command saved." });
@@ -82,8 +82,8 @@ Deno.test("home backend stores, lists and runs commands", async () => {
   } finally { await close(); }
 });
 
-Deno.test("home backend commands validate their input; access is the backend page's", async () => {
-  const { app, provider, close } = await fixture(), node = { app, url: () => Promise.resolve("/backend/home#cmspid9") } as unknown as Node;
+Deno.test("iot backend commands validate their input; access is the backend page's", async () => {
+  const { app, provider, close } = await fixture(), node = { app, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node;
   try {
     assertEquals(await api(node, {}), false);
     const result = await api(node, { provider, action: "set", entities: [entity.id], data: { value: true } }) as { ok: boolean; result: unknown };

@@ -12,21 +12,21 @@ const report = s.object({
 });
 
 Object.assign(App.events, {
-  "home:observe": {
+  "iot:observe": {
     description: "A source observation, including snapshots and lost connections; does not imply a device change.",
     data: s.object({ provider: s.number(), id: s.string(), entity: s.any(), time: s.number() }),
   },
-  "home:datapoint": { description: "A home datapoint was configured.", data: s.object({ id: s.number() }) },
-  "home:provider": {
+  "iot:datapoint": { description: "A IoT datapoint was configured.", data: s.object({ id: s.number() }) },
+  "iot:provider": {
     description: "A provider instance was configured or retired. Credentials are never included.",
     data: s.object({ id: s.number(), adapter: s.string(), previousAdapter: s.optional(s.string()) }),
   },
-  "home:input": {
+  "iot:input": {
     description: "A source reported an entity, whether or not a value changed: every press of a button. "
       + "Snapshots and lost connections do not fire this event.",
     data: report,
   },
-  "home:change": {
+  "iot:change": {
     description: "A source reported an entity with changed values: `changed` lists their paths "
       + "(\"\" for the state, e.g. \"brightness\" for an attribute). "
       + "Snapshots and lost connections do not fire this event.",

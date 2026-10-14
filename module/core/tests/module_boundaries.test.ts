@@ -9,9 +9,10 @@ const metaDir = fileURLToPath(new URL("../../../meta/", import.meta.url));
 const testModuleDir = fileURLToPath(new URL("../../../test-modules/", import.meta.url));
 const shp3Dir = fileURLToPath(new URL("../../../shp3/", import.meta.url));
 const finDir = fileURLToPath(new URL("../../../fin/", import.meta.url));
+const iotDir = fileURLToPath(new URL("../../../iot/", import.meta.url));
 const qinoDir = fileURLToPath(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shp3Dir, finDir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, testModuleDir];
+const stores = [moduleDir, shp3Dir, finDir, iotDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, iotDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -174,6 +175,7 @@ async function assertStore(dir: string) {
 Deno.test("module stores list every plugin directory", async () => {
   await assertStore(moduleDir);
   await assertStore(finDir);
+  await assertStore(iotDir);
   await assertStore(testModuleDir);
 });
 
@@ -244,7 +246,7 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 // whole module in for a link, a widget or a prompt. They want an extension point, and until that
 // vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
 const OPTIONAL = new Set([
-  "cms.backend.home/nodeApi.ts -> home.record", // manual measurements, guarded by modules.linked("home.record")
+  "cms.backend.iot/nodeApi.ts -> iot.record", // manual measurements, guarded by modules.linked("iot.record")
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
   "cms.backend.superuser.db.query/lib/ai.ts -> ai.tools", // "explain this query" is a bonus, not the console
   "cms.text/api.ts -> ai", // translation, guarded by modules.linked("ai")

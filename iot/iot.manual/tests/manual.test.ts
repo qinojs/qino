@@ -1,11 +1,12 @@
 import { App, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
-import { configure, entities, save } from "@qino/qino/home";
-import { history } from "@qino/qino/home.history";
+import { configure, entities, save } from "@qino/qino/iot";
+import { history } from "@qino/qino/iot.history";
 
 Deno.test("manual providers need no URL and expose independent typed measurements through the protected APIs", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "qino-home-manual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  for (const name of ["home", "home.manual", "home.history", "cron", "home.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
+  const dir = await Deno.makeTempDir({ prefix: "qino-iot-manual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  for (const name of ["iot", "iot.manual", "iot.history", "iot.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
+  app.modules.add(new URL("../../../module/cron/plugin.ts", import.meta.url)); // from the module store
   try {
     await app.init();
     const first = await save(app, { name: "First", adapter: "manual" });
@@ -17,22 +18,22 @@ Deno.test("manual providers need no URL and expose independent typed measurement
     const start = Date.now() + 1000;
     const user = await testContext({ app, set: { app, user: { id: 7, superuser: true } } });
     await requestStorage.run(user, async () => {
-      await app.api["home.record"].datapoint(id).post({ time: start, value: -2.5 });
-      await app.api["home.record"].datapoint(id).post({ time: start + 1, value: 0 });
-      await app.api["home.record"].datapoint(other).post({ time: start, value: 83 });
+      await app.api["iot.record"].datapoint(id).post({ time: start, value: -2.5 });
+      await app.api["iot.record"].datapoint(id).post({ time: start + 1, value: 0 });
+      await app.api["iot.record"].datapoint(other).post({ time: start, value: 83 });
     });
     assertEquals((await entities(app, first))[0].state, 0);
     assertEquals((await entities(app, second))[0].state, 83);
     assertEquals((await entities(app, first))[0].unit, "°C");
     const result = await history(app, id, { start: new Date(start).toISOString(), end: new Date(start + 2).toISOString(), source: "local" });
     assertEquals(result.samples, [{ time: start, value: -2.5 }, { time: start + 1, value: 0 }]);
-    app.modules.unlink("home.record");
-    app.modules.unlink("home.manual");
-    await app.modules.link("home.record");
-    await app.modules.link("home.manual");
+    app.modules.unlink("iot.record");
+    app.modules.unlink("iot.manual");
+    await app.modules.link("iot.record");
+    await app.modules.link("iot.manual");
     await new Promise((resolve) => setTimeout(resolve, 10));
     assertEquals((await entities(app, first))[0].state, 0);
     const guest = await testContext({ app, set: { app } });
-    await requestStorage.run(guest, () => assertRejects(() => app.api["home.record"].datapoint(id).post({ time: start, value: 99 }), Error, "Access denied"));
-  } finally { app.modules.unlink("home.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+    await requestStorage.run(guest, () => assertRejects(() => app.api["iot.record"].datapoint(id).post({ time: start, value: 99 }), Error, "Access denied"));
+  } finally { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); }
 });

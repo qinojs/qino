@@ -1,11 +1,11 @@
 import { ApiError, NotFoundError } from "@qino/qino";
-import { command, entities as observe, provider, run, saveCommand } from "@qino/qino/home";
+import { command, entities as observe, provider, run, saveCommand } from "@qino/qino/iot";
 import { validate } from "@qino/item/tools/schema/validator.js";
 
 import android from "./templates/android.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
-import type { Action, Adapter, Entity } from "@qino/qino/home";
+import type { Action, Adapter, Entity } from "@qino/qino/iot";
 
 /**
  * A virtual entity of a `virtual` provider: its state is read from a source entity of any provider,
@@ -22,7 +22,7 @@ const decode = (row: Virtual): Virtual => ({
 });
 
 // Sources by `provider:entity`, per App: source changes arrive for every entity of every provider.
-const SOURCES = Symbol("home.virtual");
+const SOURCES = Symbol("iot.virtual");
 type Owned = App & { [SOURCES]?: Promise<Map<string, Virtual[]>> };
 const forget = (app: App) => { delete (app as Owned)[SOURCES]; };
 
@@ -35,13 +35,13 @@ export async function sourced(app: App, provider: number, entity: string): Promi
 
 export async function virtuals(app: App, provider?: number): Promise<Virtual[]> {
   const rows = provider === undefined
-    ? await app.db.query<Virtual>`SELECT * FROM home_virtual ORDER BY name, id`
-    : await app.db.query<Virtual>`SELECT * FROM home_virtual WHERE provider = ${provider} ORDER BY name, id`;
+    ? await app.db.query<Virtual>`SELECT * FROM iot_virtual ORDER BY name, id`
+    : await app.db.query<Virtual>`SELECT * FROM iot_virtual WHERE provider = ${provider} ORDER BY name, id`;
   return rows.map(decode);
 }
 
 export async function virtual(app: App, id: number): Promise<Virtual> {
-  const row = await app.db.row<Virtual>`SELECT * FROM home_virtual WHERE id = ${id}`;
+  const row = await app.db.row<Virtual>`SELECT * FROM iot_virtual WHERE id = ${id}`;
   if (!row) throw new NotFoundError("Virtual entity was not found");
   return decode(row);
 }
@@ -61,15 +61,15 @@ export async function saveVirtual(app: App, input: Partial<Virtual>): Promise<nu
   if (linked) await command(app, linked);
   const values = { provider: id, name, source_provider, source_entity, command: linked, value: JSON.stringify(value) };
   const saved = previous
-    ? (await app.db.table("home_virtual").update(previous.id, values), previous.id)
-    : Number(await app.db.table("home_virtual").insert(values));
+    ? (await app.db.table("iot_virtual").update(previous.id, values), previous.id)
+    : Number(await app.db.table("iot_virtual").insert(values));
   forget(app);
   return saved;
 }
 
 export async function removeVirtual(app: App, id: number): Promise<void> {
   await virtual(app, id);
-  await app.db.exec`DELETE FROM home_virtual WHERE id = ${id}`;
+  await app.db.exec`DELETE FROM iot_virtual WHERE id = ${id}`;
   forget(app);
 }
 
@@ -77,7 +77,7 @@ export async function removeVirtual(app: App, id: number): Promise<void> {
 export const view = (row: Virtual, entity: Entity | null): Entity | null =>
   entity && { ...entity, id: String(row.id), name: row.name };
 
-export const homeProvider: Adapter = {
+export const iotProvider: Adapter = {
   name: "virtual",
   schema: { type: "object", title: "Virtual", additionalProperties: false, properties: {} },
   async entities(app, id) {

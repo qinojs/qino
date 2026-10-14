@@ -1,2 +1,2 @@
-export { homeProvider } from "./mod.ts";
+export { iotProvider } from "./mod.ts";
 export { init } from "./connection.ts";

@@ -1,15 +1,15 @@
-# cms.cont.home.command
+# cms.cont.iot.command
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-A CMS content block that runs one stored [home](../home/) command: a button, or a value field when the
-command has a parameter. It works with every linked `homeProvider`; reading a state is the job of
-`cms.cont.home.values` or `cms.cont.home.chart`.
+A CMS content block that runs one stored [iot](../iot/) command: a button, or a value field when the
+command has a parameter. It works with every linked `iotProvider`; reading a state is the job of
+`cms.cont.iot.values` or `cms.cont.iot.chart`.
 
 ```ts
-store.add("cms.cont.home.command");
-const block = await page.cont("brightness", { module: "cms.cont.home.command" });
+store.add("cms.cont.iot.command");
+const block = await page.cont("brightness", { module: "cms.cont.iot.command" });
 block.settings.command(3);   // stored command ID
 block.settings.min(0);       // with max: a slider, and the server rejects values outside
 block.settings.max(255);

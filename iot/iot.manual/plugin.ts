@@ -1,10 +1,10 @@
 import { ApiError } from "@qino/qino";
-import { datapoints } from "@qino/qino/home";
+import { datapoints } from "@qino/qino/iot";
 
-import type { Adapter } from "@qino/qino/home";
+import type { Adapter } from "@qino/qino/iot";
 
 /** Manual observations use the same datapoint metadata and archive as connected sources. */
-export const homeProvider: Adapter = {
+export const iotProvider: Adapter = {
   name: "manual",
   schema: { type: "object", title: "Manual", additionalProperties: false, properties: {} },
   entities: async (app, id) => (await datapoints(app, id)).map((point) => ({

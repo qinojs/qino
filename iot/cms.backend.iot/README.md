@@ -1,4 +1,4 @@
-# cms.backend.home
+# cms.backend.iot
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
@@ -6,8 +6,8 @@ Real-world use will show how it is actually used and how it should work.
 Optional CMS backend for provider instances, live observations, commands and datapoint selection.
 It starts with the providers; a provider's page (`?provider=`) has its live values, datapoints and
 actions, a datapoint's page (`?datapoint=`) its source, live and last values, a chart of the last day
-(drawn by `cms.cont.home.chart`) and its latest samples. Values that already are datapoints link to them.
-Its normal installer creates a Home automation page with a house icon. Install alongside `home`
+(drawn by `cms.cont.iot.chart`) and its latest samples. Values that already are datapoints link to them.
+Its normal installer creates a IoT page with a house icon. Install alongside `iot`
 and an adapter; Home Assistant is optional. Rules remain in `sandbox.flow`, schedules in `cron`.
 
 Provider creation and editing use the adapter's instance schema and existing schema inputs. Enter
@@ -31,17 +31,17 @@ once; acknowledgement is distinct from the resulting observed device state.
 Each live value opens the Add datapoint dialog prefilled with address, name, unit, numeric/state datatype, explicit state-code
 mapping, expected reporting interval and recording flag. Existing datapoint interpretation is
 read-only; name/interval/recording remain editable. The datapoint table can stop/resume selections
-while disconnected. Install `home.record` to persist measurements and `cms.cont.home.chart` for plots.
-Access is the backend page's CMS node access; the module calls the `home` SDK directly.
+while disconnected. Install `iot.record` to persist measurements and `cms.cont.iot.chart` for plots.
+Access is the backend page's CMS node access; the module calls the `iot` SDK directly.
 
 ## Manual test without an external service
 
-Activate `home.manual` and `home.record`. Add a Manual provider using only a name. Under Datapoints,
+Activate `iot.manual` and `iot.record`. Add a Manual provider using only a name. Under Datapoints,
 open Add datapoint, select that provider, enter name/unit and keep Record observations enabled.
 An empty Entity ID receives a generated identity. In the new row, open Enter measurement and enter
 any finite number; state datapoints require an integer code. Empty time means now. Explicit date/time
 is entered in the browser's local timezone and stored in milliseconds.
 
-The entered value is stored with `home.record`'s `record()`, like other archive ingestion.
+The entered value is stored with `iot.record`'s `record()`, like other archive ingestion.
 The table refreshes after saving. Recording must be enabled; invalid inputs are rejected. Older samples enter history without replacing the latest value. Archive writes do not
-synthesize device changes. Use `cms.cont.home.chart` with the datapoint ID and source `local` for plots.
+synthesize device changes. Use `cms.cont.iot.chart` with the datapoint ID and source `local` for plots.

@@ -1,17 +1,17 @@
-# cms.cont.home.values
+# cms.cont.iot.values
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-A read-only CMS content block for current home observations, inspired by the PHP
-`cms.cont.ims1.dashboard.live_values` module. It works with every linked `homeProvider`.
+A read-only CMS content block for current IoT observations, inspired by the PHP
+`cms.cont.ims1.dashboard.live_values` module. It works with every linked `iotProvider`.
 
 Register the module with the app's existing store before `app.init()`, then add a block:
 
 ```ts
-store.add("cms.cont.home.values");
+store.add("cms.cont.iot.values");
 await app.init();
-const block = await page.cont("values", { module: "cms.cont.home.values" });
+const block = await page.cont("values", { module: "cms.cont.iot.values" });
 // Optional: restrict the block to one provider and/or one provider-local entity ID.
 block.settings.provider(1);
 block.settings.entity("sensor.temperature");
@@ -22,4 +22,4 @@ types and unavailable entities are marked explicitly. A provider failure leaves 
 providers visible. Reload the page to read the latest observations; there is no polling.
 
 Placing the block publishes its values: page access decides who sees them. No device actions, formulas, storage, unit conversion or permission exceptions
-are introduced. Use `cms.backend.home` for manual actions and `sandbox.flow` for rules.
+are introduced. Use `cms.backend.iot` for manual actions and `sandbox.flow` for rules.

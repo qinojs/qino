@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
-import { commands, providers } from "@qino/qino/home";
-import { templates, virtuals } from "@qino/qino/home.virtual";
+import { commands, providers } from "@qino/qino/iot";
+import { templates, virtuals } from "@qino/qino/iot.virtual";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";

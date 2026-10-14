@@ -6,7 +6,7 @@ const local = (iso) => {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 };
 
-cms.initNode("cont.home.chart", (el) => {
+cms.initNode("cont.iot.chart", (el) => {
   let busy = false;
   const fill = () => {
     const form = el.querySelector("form[data-period]");

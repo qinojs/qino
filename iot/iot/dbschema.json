@@ -1,6 +1,6 @@
 {
   "properties": {
-    "home_provider": {
+    "iot_provider": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -34,7 +34,7 @@
         ]
       }
     },
-    "home_datapoint": {
+    "iot_datapoint": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -45,7 +45,7 @@
           "provider": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "home_provider"
+            "x-qg-parent": "iot_provider"
           },
           "entity": {
             "type": "string",
@@ -118,7 +118,7 @@
         ]
       }
     },
-    "home_command": {
+    "iot_command": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -129,7 +129,7 @@
           "provider": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "home_provider"
+            "x-qg-parent": "iot_provider"
           },
           "name": {
             "type": "string",

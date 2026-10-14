@@ -1,5 +1,5 @@
 import { errMsg, html } from "@qino/qino";
-import { actions, commands, datapoint, datapoints, entities, leaves, providers } from "@qino/qino/home";
+import { actions, commands, datapoint, datapoints, entities, leaves, providers } from "@qino/qino/iot";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -8,7 +8,7 @@ import { datapointForm, detail, measurements } from "./datapoints.ts";
 
 import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Action, Command, Entity, Provider } from "@qino/qino/home";
+import type { Action, Command, Entity, Provider } from "@qino/qino/iot";
 
 type Vars = Record<string, unknown>;
 // Same value, same color; fresh times stand out: as in the other backend lists.
@@ -211,9 +211,9 @@ export function renderValues(app: App, values: Value[], points = new Map<string,
 
 /** The action's data fields are built in the browser from its `input` schema (pub/main.js). */
 export function renderActions(app: App, provider: number, list: Action[], endpoints: Entity[]): Promise<HtmlString> {
-  const t = app.t, id = (name: string) => `home-action-${provider}-${name}`;
+  const t = app.t, id = (name: string) => `iot-action-${provider}-${name}`;
   if (!list.length) return html.async`<p>${t`No actions were found.`}</p>`;
-  return html.async`<form data-home-action data-provider="${provider}">
+  return html.async`<form data-iot-action data-provider="${provider}">
     <table class="u2-table -Fields -Flex">
       <tbody>
         ${field(id("action"), t`Action`, html.async`<input id="${id("action")}" name=action list="${id("list")}" required

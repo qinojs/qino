@@ -1,5 +1,5 @@
 import { errMsg, html } from "@qino/qino";
-import { command, run } from "@qino/qino/home";
+import { command, run } from "@qino/qino/iot";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -53,7 +53,7 @@ export const cms = {
     js: ["pub/main.js"],
     settingsSchema: {
       properties: {
-        command: { type: "integer", minimum: 0, default: 0, description: "Stored home command ID." },
+        command: { type: "integer", minimum: 0, default: 0, description: "Stored IoT command ID." },
         label: { type: "string", default: "", description: "Shown text; empty uses the command's name." },
         min: { type: "number", description: "With max: the value is set with a slider and limited to this range." },
         max: { type: "number", description: "With min: the value is set with a slider and limited to this range." },

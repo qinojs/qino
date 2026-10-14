@@ -1,21 +1,21 @@
-# home.history
+# iot.history
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-Provider-independent typed history queries. `home.record` supplies an optional local archive;
+Provider-independent typed history queries. `iot.record` supplies an optional local archive;
 adapters may implement `history(app, providerId, entityId, { start, end })` returning native entities.
 
 ```ts
-import { history } from "@qino/qino/home.history";
+import { history } from "@qino/qino/iot.history";
 const result = await history(app, 17, {
   start: "2026-10-03T00:00:00Z", end: "2026-10-04T00:00:00Z", width: 700, consumption: true,
 });
 // result.datapoint contains metadata once; result.samples contains { time, value, ... }.
 ```
 
-Superuser route/tool: `GET /api/home.history/datapoint/:datapoint`,
-`homeHistory_datapoint_get`. Both ISO timestamps require a time and timezone. Periods are half-open.
+Superuser route/tool: `GET /api/iot.history/datapoint/:datapoint`,
+`iotHistory_datapoint_get`. Both ISO timestamps require a time and timezone. Periods are half-open.
 
 - `source: auto` prefers an actively selected or existing local archive, even when empty or stopped.
   Without one it consults the adapter. `local` requires the local module; `provider` bypasses it.
@@ -33,7 +33,7 @@ Provider samples are converted with the datapoint's declared unit/type/mapping. 
 null. Upstream queries have a raw sample limit before in-memory aggregation; local aggregation runs
 in SQL. Upstream sources may supply a period-start state and need not provide a complete event log.
 
-An archive listens for `home.history:read`, which receives the numeric datapoint ID, start/end Unix
+An archive listens for `iot.history:read`, which receives the numeric datapoint ID, start/end Unix
 milliseconds, source, limit and optional width/consumption/maxGap. Set `data` to typed samples to
 answer, including an empty array; leave it undefined to allow upstream history. Listeners belong to
 the App and are removed through the init signal. This module creates no measurement tables itself.

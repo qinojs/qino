@@ -1,7 +1,7 @@
 import { errMsg, html } from "@qino/qino";
-import { at, datapoint, datapoints, entities, providers as stored } from "@qino/qino/home";
-import { history } from "@qino/qino/home.history";
-import { chart, format } from "@qino/qino/cms.cont.home.chart";
+import { at, datapoint, datapoints, entities, providers as stored } from "@qino/qino/iot";
+import { history } from "@qino/qino/iot.history";
+import { chart, format } from "@qino/qino/cms.cont.iot.chart";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -9,7 +9,7 @@ import { dialog, field, link } from "./render.ts";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Datapoint, Provider } from "@qino/qino/home";
+import type { Datapoint, Provider } from "@qino/qino/iot";
 
 /** Edit form, or creation form when given providers. Source, unit and datatype are fixed after creation. */
 export function datapointForm(app: App, point: Partial<Datapoint>, providers?: Provider[]): Promise<HtmlString> {
@@ -18,7 +18,7 @@ export function datapointForm(app: App, point: Partial<Datapoint>, providers?: P
     <td><input data-state value="${state}" aria-label="${t`State`}" ${lock}></td>
     <td><input data-code type=number min=-128 max=127 step=1 value="${code}" aria-label="${t`Code`}" ${lock}></td>
   </tr>`;
-  const id = (name: string) => `home-point-${point.id ?? "new"}-${name}`;
+  const id = (name: string) => `iot-point-${point.id ?? "new"}-${name}`;
   const source = providers ? html.async`
     ${field(id("provider"), t`Provider`, html.async`<select id="${id("provider")}" name=provider required>
       ${providers.map((provider) => html`<option value="${provider.id}">${provider.name} (#${provider.id})</option>`)}
@@ -60,7 +60,7 @@ const { uniqueColor, ageColor } = backend;
 
 /** A dialog to store a value by hand, e.g. a meter reading. */
 function entry(app: App, point: Datapoint) {
-  const t = app.t, id = (name: string) => `home-measurement-${point.id}-${name}`;
+  const t = app.t, id = (name: string) => `iot-measurement-${point.id}-${name}`;
   return dialog(t`Enter measurement`, point.name, html.async`<form data-measurement data-id="${point.id}">
     <table class="u2-table -Fields -Flex">
       ${field(id("value"), html.async`${t`Value`} (${point.unit || point.type})`, html`<input id="${id("value")}"
@@ -85,9 +85,9 @@ export async function measurements(
   const [all, providers] = await Promise.all([datapoints(app), stored(app)]);
   const points = all.filter((point) => (!vars.provider || String(point.provider) === String(vars.provider))
     && (!q || [point.name, point.entity, point.path].some((part) => part.toLowerCase().includes(q))));
-  const recording = app.modules.linked("home.record"), enabled = providers.filter((provider) => provider.enabled);
+  const recording = app.modules.linked("iot.record"), enabled = providers.filter((provider) => provider.enabled);
   return html.async`
-    ${recording ? "" : html.async`<p>${t`Install home.record to store selected observations locally.`}</p>`}
+    ${recording ? "" : html.async`<p>${t`Install iot.record to store selected observations locally.`}</p>`}
     ${enabled.length
       ? html.async`<p><button type=button data-add-point>${t`Add datapoint`}</button></p>
         <template data-new-point><h3>${t`Add datapoint`}</h3>${datapointForm(app, { record: true }, enabled)}</template>`
@@ -126,7 +126,7 @@ export async function detail(node: Node, { vars = {} }: { vars?: Record<string, 
     <nav><a href="${link(node)}"><u2-ico icon=arrow_back>←</u2-ico> ${t`Providers`}</a></nav>
     <p>${t`The datapoint was not found.`}</p>
   </div>`;
-  const recording = app.modules.linked("home.record");
+  const recording = app.modules.linked("iot.record");
   const provider = (await stored(app)).find((row) => row.id === point.provider);
   const entity = await entities(app, point.provider)
     .then((list) => list.find((entity) => entity.id === point.entity) ?? null, () => null);

@@ -2,7 +2,7 @@ import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { t } from "@qino/pub/t.js";
 import { dataOf, describe, fill, read } from "./action.js";
 
-cms.initNode("backend.home", (el) => {
+cms.initNode("backend.iot", (el) => {
   // The current view is the page's one cms-part, reloaded with the filter in the address.
   const nid = Number(cms.el.nid(el)), part = el.querySelector("[cms-part]").getAttribute("cms-part");
   const refresh = () => cms.reloadPart(nid, part, Object.fromEntries(new URL(location).searchParams));
@@ -70,7 +70,7 @@ cms.initNode("backend.home", (el) => {
     const edit = event.target.closest("[data-edit]");
     if (edit) {
       const command = JSON.parse(edit.dataset.edit);
-      const form = el.querySelector(`form[data-home-action][data-provider="${command.provider}"]`);
+      const form = el.querySelector(`form[data-iot-action][data-provider="${command.provider}"]`);
       fill(form, command).then(() => form.elements.action.focus());
     }
     const remove = event.target.closest("[data-remove-command]");
@@ -89,13 +89,13 @@ cms.initNode("backend.home", (el) => {
     if (enabled) return execute(enabled, { provider: Number(enabled.dataset.provider), enabled: enabled.checked });
     const type = event.target.closest("form[data-datapoint] select[name=type]");
     if (type) type.form.querySelector("[data-mapping]").hidden = type.value !== "state";
-    const action = event.target.closest("form[data-home-action] input[name=action]");
+    const action = event.target.closest("form[data-iot-action] input[name=action]");
     if (action) describe(action.form).catch((error) => alert(error?.message || String(error)));
   });
 
   // A new action form: no stored command, no fields of a previous action.
   el.addEventListener("reset", (event) => {
-    const form = event.target.closest("form[data-home-action]");
+    const form = event.target.closest("form[data-iot-action]");
     if (!form) return;
     delete form.dataset.command;
     setTimeout(() => describe(form)); // after the browser has reset the inputs
@@ -162,7 +162,7 @@ cms.initNode("backend.home", (el) => {
 
   el.addEventListener("submit", async (event) => {
     const form = event.target.closest(
-      "form[data-provider-config], form[data-datapoint], form[data-home-action], form[data-measurement], form[data-run-command]",
+      "form[data-provider-config], form[data-datapoint], form[data-iot-action], form[data-measurement], form[data-run-command]",
     );
     if (!form) return;
     event.preventDefault();
@@ -173,7 +173,7 @@ cms.initNode("backend.home", (el) => {
     let data;
     try { data = input(form, save); } catch (error) { return await alert(error?.message || String(error)); }
     // Calling an action changes nothing on the page; saving a command lists it.
-    const send = form.hasAttribute("data-home-action") && !save ? call : execute;
+    const send = form.hasAttribute("data-iot-action") && !save ? call : execute;
     await send(event.submitter ?? form.querySelector("button[type=submit]"), data);
     form.closest("dialog")?.close();
   });

@@ -1,6 +1,6 @@
 {
-  "name": "home.manual",
-  "description": "Manual home datapoints without an external service or connection.",
-  "dependencies": ["home"],
+  "name": "iot.manual",
+  "description": "Manual IoT datapoints without an external service or connection.",
+  "dependencies": ["iot"],
   "files": ["README.md", "manifest.json", "plugin.ts"]
 }

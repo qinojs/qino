@@ -33,11 +33,11 @@ const order = {
 export const api: ApiTree = {
   datapoints: {
     get: {
-      access, description: "List persisted home datapoints", query,
+      access, description: "List persisted IoT datapoints", query,
       execute: ({ provider }: Params, ctx: Ctx) => datapoints(ctx.app, provider as number | undefined),
     },
     post: {
-      access, description: "Configure a typed home datapoint; an existing one with the same interpretation is reused",
+      access, description: "Configure a typed IoT datapoint; an existing one with the same interpretation is reused",
       input: source,
       execute: async (input: Params, ctx: Ctx) => ({ id: await configure(ctx.app, input as Parameters<typeof configure>[1]) }),
     },
@@ -45,7 +45,7 @@ export const api: ApiTree = {
   datapoint: { ":datapoint": {
     paramSchema: s.number(),
     get: {
-      access, description: "Read one persisted home datapoint",
+      access, description: "Read one persisted IoT datapoint",
       execute: ({ datapoint: id }: Params, ctx: Ctx) => datapoint(ctx.app, Number(id)),
     },
     put: {
@@ -56,7 +56,7 @@ export const api: ApiTree = {
   } },
   commands: {
     get: {
-      access, description: "List stored home commands: named action calls", query,
+      access, description: "List stored IoT commands: named action calls", query,
       execute: ({ provider }: Params, ctx: Ctx) => commands(ctx.app, provider as number | undefined),
     },
     post: {
@@ -68,11 +68,11 @@ export const api: ApiTree = {
   command: { ":command": {
     paramSchema: s.number(),
     get: {
-      access, description: "Read one stored home command",
+      access, description: "Read one stored IoT command",
       execute: ({ command: id }: Params, ctx: Ctx) => command(ctx.app, Number(id)),
     },
     put: {
-      access, description: "Edit one stored home command",
+      access, description: "Edit one stored IoT command",
       input: s.object({
         name: s.optional(order.name), action: s.optional(order.action), targets: order.targets, data: order.data,
         parameter: order.parameter,
@@ -81,12 +81,12 @@ export const api: ApiTree = {
         ({ id: await saveCommand(ctx.app, { ...input, id: Number(id) } as Partial<Command>) }),
     },
     delete: {
-      access, description: "Delete one stored home command",
+      access, description: "Delete one stored IoT command",
       execute: async ({ command: id }: Params, ctx: Ctx) => { await removeCommand(ctx.app, Number(id)); return { ok: true }; },
     },
     run: { post: {
       access,
-      description: "Execute a stored command once. Acknowledgement is not a device state; observe home:change for that.",
+      description: "Execute a stored command once. Acknowledgement is not a device state; observe iot:change for that.",
       input: s.object({
         data: s.optional(s.record(s.any())).describe("Values added to or overriding the stored data"),
         value: s.optional(s.any()).describe("Fills the command's parameter, in the device's own units"),
@@ -96,25 +96,25 @@ export const api: ApiTree = {
     } },
   } },
   adapters: { get: {
-    access, description: "List linked home adapter implementations and their instance configuration schemas",
+    access, description: "List linked IoT adapter implementations and their instance configuration schemas",
     execute: (_: Params, ctx: Ctx) => adapters(ctx.app).map(({ name, schema }) => ({ name, schema })),
   } },
   providers: {
     get: {
-      access, description: "List persisted home provider instances; credentials are redacted",
+      access, description: "List persisted IoT provider instances; credentials are redacted",
       execute: async (_: Params, ctx: Ctx) => (await providers(ctx.app)).map((row) => redact(ctx.app, row)),
     },
     post: {
-      access, description: "Create one home provider instance with its own endpoint and configuration", input: config,
+      access, description: "Create one IoT provider instance with its own endpoint and configuration", input: config,
       execute: async (input: Params, ctx: Ctx) => ({ id: await save(ctx.app, input as Parameters<typeof save>[1]) }),
     },
   },
   entities: { get: {
-    access, description: "List observed home entities; entity IDs are local to a numeric provider instance", query,
+    access, description: "List observed IoT entities; entity IDs are local to a numeric provider instance", query,
     execute: ({ provider }: Params, ctx: Ctx) => entities(ctx.app, provider as number | undefined),
   } },
   actions: { get: {
-    access, description: "Discover home actions for one provider instance", query: s.object({ provider: s.number() }),
+    access, description: "Discover IoT actions for one provider instance", query: s.object({ provider: s.number() }),
     execute: ({ provider }: Params, ctx: Ctx) => actions(ctx.app, Number(provider)),
   } },
   provider: { ":provider": {
@@ -143,10 +143,10 @@ export const api: ApiTree = {
     entity: { ":entity": {
       paramSchema: s.string(),
       get: {
-        access, description: "Read one observed home entity; this does not change the device",
+        access, description: "Read one observed IoT entity; this does not change the device",
         execute: async ({ provider, entity }: Params, ctx: Ctx) => {
           const found = (await entities(ctx.app, Number(provider))).find((value) => value.id === entity);
-          if (!found) throw new NotFoundError("Home entity was not found");
+          if (!found) throw new NotFoundError("IoT entity was not found");
           return found;
         },
       },
@@ -155,7 +155,7 @@ export const api: ApiTree = {
       paramSchema: s.string(),
       post: {
         access,
-        description: "Execute one discovered home action. Acknowledgement is not a device state; observe home:change for that.",
+        description: "Execute one discovered IoT action. Acknowledgement is not a device state; observe iot:change for that.",
         input: s.object({
           entities: s.optional(s.array(s.string())).describe("Provider-local target entity IDs"),
           data: s.optional(s.record(s.any())).describe("Provider-defined action fields"),

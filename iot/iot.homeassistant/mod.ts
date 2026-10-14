@@ -1,6 +1,6 @@
 import { connection } from "./connection.ts";
 
-import type { Adapter } from "@qino/qino/home";
+import type { Adapter } from "@qino/qino/iot";
 
 const schema = {
   type: "object",
@@ -19,7 +19,7 @@ const schema = {
   },
 };
 
-export const homeProvider: Adapter = {
+export const iotProvider: Adapter = {
   name: "homeassistant", schema,
   entities: async (app, id) => connection(app, id).entities(),
   actions: async (app, id) => connection(app, id).actions(),

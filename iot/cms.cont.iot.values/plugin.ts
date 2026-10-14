@@ -1,8 +1,8 @@
 import { errMsg, html } from "@qino/qino";
-import { entities, providers } from "@qino/qino/home";
+import { entities, providers } from "@qino/qino/iot";
 
 import type { Node } from "@qino/qino/cms";
-import type { Entity, Provider } from "@qino/qino/home";
+import type { Entity, Provider } from "@qino/qino/iot";
 
 /** Placing the block publishes its values: page access decides who sees them. */
 async function render(node: Node) {
@@ -34,7 +34,7 @@ async function render(node: Node) {
   };
   try {
     const rows = (await providers(app)).filter((row) => row.enabled && (!provider || row.id === provider));
-    if (!rows.length) return html.async`<div><p>${t`No home providers are linked.`}</p></div>`;
+    if (!rows.length) return html.async`<div><p>${t`No IoT providers are linked.`}</p></div>`;
     return html.async`<div>${rows.map(section)}</div>`;
   } catch (error) {
     return html`<div><p role=alert>${errMsg(error)}</p></div>`;

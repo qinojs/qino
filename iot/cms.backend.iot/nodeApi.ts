@@ -1,6 +1,6 @@
 import { ApiError, errMsg } from "@qino/qino";
-import { call, configure, datapoints, enable, removeCommand, run, save, saveCommand } from "@qino/qino/home";
-import { record } from "@qino/qino/home.record";
+import { call, configure, datapoints, enable, removeCommand, run, save, saveCommand } from "@qino/qino/iot";
+import { record } from "@qino/qino/iot.record";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -28,7 +28,7 @@ export default async function api(node: Node, vars: Vars): Promise<unknown> {
     }
     if (vars.measurement !== undefined) {
       const { id, value, time } = vars.measurement as Vars;
-      if (!app.modules.linked("home.record")) throw new ApiError(501, "Install home.record to store measurements");
+      if (!app.modules.linked("iot.record")) throw new ApiError(501, "Install iot.record to store measurements");
       if (typeof value !== "number" || typeof time !== "number") throw new ApiError(400, "Enter a valid value and time");
       await record(app, Number(id), value, time);
       return { ok: true, message: await app.t`Measurement saved.` };

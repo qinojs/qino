@@ -1,6 +1,6 @@
 {
-  "name": "cms.backend.home.virtual",
-  "description": "Backend page for virtual home entities and their device templates.",
-  "dependencies": ["cms.backend.home", "home.virtual"],
+  "name": "cms.backend.iot.virtual",
+  "description": "Backend page for virtual IoT entities and their device templates.",
+  "dependencies": ["cms.backend.iot", "iot.virtual"],
   "files": ["README.md", "manifest.json", "plugin.ts", "render.ts", "pub/main.js", "pub/module.svg"]
 }

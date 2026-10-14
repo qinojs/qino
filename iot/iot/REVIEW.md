@@ -1,4 +1,4 @@
-# Home redesign
+# IoT redesign
 
 Status: provider/datapoint model and typed storage implemented. This document records the
 requirements, findings and remaining scaling limits; it is not a mandate to introduce new core APIs or schema vocabulary.
@@ -35,7 +35,7 @@ query layer rather than by storing fabricated entity snapshots.
 
 ## Rejected draft
 
-`home_sample(provider string, entity string, time integer, data JSON text)` repeats addresses,
+`iot_sample(provider string, entity string, time integer, data JSON text)` repeats addresses,
 display names and attributes per observation and repeats string identities in the primary key.
 It makes numeric range queries and aggregation depend on parsing JSON. Replacing TEXT with a
 native JSON column would not solve the duplication.
@@ -64,16 +64,16 @@ That is column payload only, not total table size. A TINYINT state reduces the v
 
 ## Implemented responsibilities
 
-- `home`: provider-instance and datapoint metadata, adapter discovery, live observations and commands.
-- `home.homeassistant`: multiple independent connections, keyed by numeric provider ID and owned
+- `iot`: provider-instance and datapoint metadata, adapter discovery, live observations and commands.
+- `iot.homeassistant`: multiple independent connections, keyed by numeric provider ID and owned
   by the App; per-instance configuration replaces module-wide connection settings.
-- `home.record`: typed measurement tables; explicit selection and
+- `iot.record`: typed measurement tables; explicit selection and
   sampling rules; no full entity JSON on the hot measurement path.
-- `home.history`: compact history queries, counter semantics and bounded chart data; local and
+- `iot.history`: compact history queries, counter semantics and bounded chart data; local and
   upstream archives remain explicitly selectable.
-- `cms.backend.home`: provider-instance forms and datapoint configuration using the
-  existing CMS parts, forms, schema inputs and the `home` SDK behind CMS node access.
-- `cms.cont.home.values` / `cms.cont.home.chart`: existing CMS content conventions, numeric
+- `cms.backend.iot`: provider-instance forms and datapoint configuration using the
+  existing CMS parts, forms, schema inputs and the `iot` SDK behind CMS node access.
+- `cms.cont.iot.values` / `cms.cont.iot.chart`: existing CMS content conventions, numeric
   provider/datapoint references, live values and bounded measurement/consumption views.
 
 Bounded chart queries currently aggregate raw SQL ranges. They do not provide constant-cost long-term
@@ -108,6 +108,6 @@ would survive renames.
 **Flows depend on the provider's shape.** A flow on a Home Assistant button reads
 `e.entity.attributes.event_type`: it only works because Home Assistant represents events that way. This
 is possibly unpleasant: the owner wants no exceptions, no assumptions about a provider and no
-inconsistencies. A direction: an event per datapoint value (e.g. `home:value { datapoint, value, time }`),
+inconsistencies. A direction: an event per datapoint value (e.g. `iot:value { datapoint, value, time }`),
 so flows use the datapoint's translated values and stay unchanged when a device moves to another provider.
 Cost: every value a flow reacts to needs a datapoint first. Revisit with a second device provider.

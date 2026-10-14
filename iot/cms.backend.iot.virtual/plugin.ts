@@ -1,7 +1,7 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { save } from "@qino/qino/home";
-import { apply, removeVirtual, saveVirtual } from "@qino/qino/home.virtual";
+import { save } from "@qino/qino/iot";
+import { apply, removeVirtual, saveVirtual } from "@qino/qino/iot.virtual";
 
 import { list, render } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };

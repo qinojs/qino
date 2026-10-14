@@ -1,15 +1,15 @@
-# home.virtual
+# iot.virtual
 
 This module's design, behaviour and structure are provisional and may be reworked.
 Real-world use will show how it is actually used and how it should work.
 
-A [home](../home/) adapter whose entities are made of existing parts: a virtual entity reads its
+A [iot](../iot/) adapter whose entities are made of existing parts: a virtual entity reads its
 state from a source entity of any provider and is set through a stored command. It gives devices that
 do not link reading and writing themselves the shape of well-integrated ones: an entity, and an action
 that targets it. Datapoints, recording, value blocks, forms and flows then work without special cases.
 
 ```ts
-import { saveVirtual } from "@qino/qino/home.virtual";
+import { saveVirtual } from "@qino/qino/iot.virtual";
 
 await saveVirtual(app, {
   provider: virtualProvider, name: "Phone brightness",
@@ -51,4 +51,4 @@ templates                    get
 template/:template/apply     post { provider, source, device }
 ```
 
-All routes are superuser-only. [cms.backend.home.virtual](../cms.backend.home.virtual/) is the backend page.
+All routes are superuser-only. [cms.backend.iot.virtual](../cms.backend.iot.virtual/) is the backend page.

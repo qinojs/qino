@@ -8,9 +8,9 @@ import {
 import { api } from "../plugin.ts";
 
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-home-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  const dir = await Deno.makeTempDir({ prefix: "qino-iot-test-" }), app = new App({ dir, db: "sqlite::memory:" });
   await Deno.writeTextFile(`${dir}/plugin.ts`, `
-export const homeProvider = {
+export const iotProvider = {
   name: "fake",
   schema: { type: "object", additionalProperties: false, properties: {
     url: { type: "string" }, token: { type: "string", writeOnly: true },
@@ -30,7 +30,7 @@ export const homeProvider = {
 const url = "https://first.test/";
 const input = { name: "First", adapter: "fake", config: { url, token: "private", nested: { password: "nested-private", label: "Public" } } };
 
-Deno.test("home persists distinct provider instances and dispatches overlapping entity identities by numeric ID", async () => {
+Deno.test("iot persists distinct provider instances and dispatches overlapping entity identities by numeric ID", async () => {
   const { app, close } = await fixture();
   try {
     assertEquals(adapter(app, "fake")?.name, "fake");
@@ -46,7 +46,7 @@ Deno.test("home persists distinct provider instances and dispatches overlapping 
     await assertRejects(() => entities(app, first), Error, "disabled");
     await save(app, { ...input, id: first, enabled: true });
     // An unlinked or failing provider is left out of the combined list.
-    await app.db.query`UPDATE home_provider SET adapter = ${"unlinked"} WHERE id = ${first}`;
+    await app.db.query`UPDATE iot_provider SET adapter = ${"unlinked"} WHERE id = ${first}`;
     assertEquals((await entities(app)).map((row) => row.provider), [2]);
     await assertRejects(() => entities(app, first), Error, "not linked");
     await remove(app, second);
@@ -54,11 +54,11 @@ Deno.test("home persists distinct provider instances and dispatches overlapping 
   } finally { await close(); }
 });
 
-Deno.test("home provider configuration validates before writes, retains blank nested secrets and never includes credentials in events", async () => {
+Deno.test("IoT provider configuration validates before writes, retains blank nested secrets and never includes credentials in events", async () => {
   const { app, close } = await fixture();
   try {
     const events: unknown[] = [];
-    app.on("home:provider", (event) => { events.push(event); });
+    app.on("iot:provider", (event) => { events.push(event); });
     const id = await save(app, input);
     await save(app, { ...input, id, config: { token: "", nested: { password: "", label: "Changed" } } });
     assertEquals((await provider(app, id)).config, { url, token: "private", nested: { password: "nested-private", label: "Changed" } });
@@ -69,13 +69,13 @@ Deno.test("home provider configuration validates before writes, retains blank ne
   } finally { await close(); }
 });
 
-Deno.test("home tools redact credentials, enforce superuser access and dispatch validated provider IDs", async () => {
+Deno.test("iot tools redact credentials, enforce superuser access and dispatch validated provider IDs", async () => {
   const { app, close } = await fixture();
   try {
-    const id = await save(app, { ...input, config: { ...input.config, accounts: [{ token: "array-private", label: "Public account" }] } }), tools = toTools({ home: api });
-    const list = tools.find((tool) => tool.name === "home_providers_get")!;
-    const action = tools.find((tool) => tool.name === "home_provider_action_post")!;
-    const put = tools.find((tool) => tool.name === "home_datapoint_put")!;
+    const id = await save(app, { ...input, config: { ...input.config, accounts: [{ token: "array-private", label: "Public account" }] } }), tools = toTools({ iot: api });
+    const list = tools.find((tool) => tool.name === "iot_providers_get")!;
+    const action = tools.find((tool) => tool.name === "iot_provider_action_post")!;
+    const put = tools.find((tool) => tool.name === "iot_datapoint_put")!;
     const point = await configure(app, { provider: id, entity: "same", unit: "°C" });
     const ctx = await testContext({ app, set: { user: { id: 7, superuser: true } } });
     await requestStorage.run(ctx, async () => {
@@ -94,12 +94,12 @@ Deno.test("home tools redact credentials, enforce superuser access and dispatch 
   } finally { await close(); }
 });
 
-Deno.test("home observations and cleanup remain isolated between Apps", async () => {
+Deno.test("IoT observations and cleanup remain isolated between Apps", async () => {
   const one = await fixture(), two = await fixture(), controller = new AbortController();
   try {
     const seen: unknown[] = [], other: unknown[] = [];
-    one.app.on("home:change", (event) => { seen.push(event); }, { signal: controller.signal });
-    two.app.on("home:change", (event) => { other.push(event); });
+    one.app.on("iot:change", (event) => { seen.push(event); }, { signal: controller.signal });
+    two.app.on("iot:change", (event) => { other.push(event); });
     const entity = { id: "same", name: "Endpoint", state: false, attributes: {}, available: true };
     await reported(one.app, 1, "same", entity, null);
     controller.abort();
@@ -110,7 +110,7 @@ Deno.test("home observations and cleanup remain isolated between Apps", async ()
   } finally { await one.close(); await two.close(); }
 });
 
-Deno.test("home stores commands as named action calls and runs them with run-time data", async () => {
+Deno.test("iot stores commands as named action calls and runs them with run-time data", async () => {
   const { app, close } = await fixture();
   try {
     const provider = await save(app, input);
@@ -138,7 +138,7 @@ Deno.test("home stores commands as named action calls and runs them with run-tim
   } finally { await close(); }
 });
 
-Deno.test("home addresses every value of an entity by path and reports input and change apart", async () => {
+Deno.test("iot addresses every value of an entity by path and reports input and change apart", async () => {
   const { app, close } = await fixture();
   try {
     const entity = {
@@ -157,8 +157,8 @@ Deno.test("home addresses every value of an entity by path and reports input and
     assertEquals(await configure(app, { provider, entity: entity.id, path: "ENERGY/Power", unit: "W" }), id);
     await assertRejects(() => configure(app, { provider, entity: entity.id, path: "a//b" }), Error, "Invalid");
     const inputs: unknown[] = [], changes: { changed: string[] }[] = [];
-    app.on("home:input", (event) => { inputs.push(event); });
-    app.on("home:change", (event) => { changes.push(event); });
+    app.on("iot:input", (event) => { inputs.push(event); });
+    app.on("iot:change", (event) => { changes.push(event); });
     await reported(app, provider, entity.id, entity, entity);
     await reported(app, provider, entity.id, { ...entity, attributes: { ...entity.attributes, brightness: 80 } }, entity);
     assertEquals([inputs.length, changes.map((event) => event.changed)], [2, [["brightness"]]]);

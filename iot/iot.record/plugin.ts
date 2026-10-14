@@ -1,13 +1,13 @@
 import { ApiError, sql } from "@qino/qino";
-import { datapoint, datapoints, entities, providers, value } from "@qino/qino/home";
+import { datapoint, datapoints, entities, providers, value } from "@qino/qino/iot";
 
 import { record } from "./mod.ts";
 import { table, write } from "./lib/write.ts";
 
 import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
-import type { Datapoint, Entity } from "@qino/qino/home";
-import type { Read } from "@qino/qino/home.history";
+import type { Datapoint, Entity } from "@qino/qino/iot";
+import type { Read } from "@qino/qino/iot.history";
 
 export { api } from "./api.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
@@ -27,7 +27,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   const capture = (point: Datapoint, entity: Entity | null, time: number, reported = false) => {
     if (signal.aborted) return;
     return write(app, point, value(point, entity), time, { reported })
-      .catch((error) => console.error("home.record:", error));
+      .catch((error) => console.error("iot.record:", error));
   };
   // Adapters that connected before this listener existed: take one current observation; a disabled
   // provider has none to give.
@@ -39,34 +39,34 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
           const entity = current.find((entity) => entity.id === point.entity) ?? null;
           capture(point, entity, updated(entity));
         }
-      }).catch((error) => console.error("home.record:", error));
+      }).catch((error) => console.error("iot.record:", error));
     }
   };
   await load();
-  app.on("home:observe", async ({ provider, id, entity, time }) => {
+  app.on("iot:observe", async ({ provider, id, entity, time }) => {
     for (const point of recorded.get(key(provider, id)) ?? []) await capture(point, entity, time);
   }, { signal });
   // A change report follows its observation at the same time: the row is replaced, not repeated.
-  app.on("home:change", async ({ provider, id, entity }) => {
+  app.on("iot:change", async ({ provider, id, entity }) => {
     const time = updated(entity);
     for (const point of recorded.get(key(provider, id)) ?? []) await capture(point, entity, time, true);
   }, { signal });
-  app.on("home:datapoint", async ({ id }) => {
+  app.on("iot:datapoint", async ({ id }) => {
     const known = [...recorded.values()].flat().some((point) => point.id === id);
     await load();
     const point = [...recorded.values()].flat().find((point) => point.id === id);
-    if (point && !known) snapshot([point]).catch((error) => console.error("home.record:", error));
+    if (point && !known) snapshot([point]).catch((error) => console.error("iot.record:", error));
   }, { signal });
-  app.on("home.history:read", (request) => read(app, request), { signal });
-  snapshot([...recorded.values()].flat()).catch((error) => console.error("home.record:", error));
+  app.on("iot.history:read", (request) => read(app, request), { signal });
+  snapshot([...recorded.values()].flat()).catch((error) => console.error("iot.record:", error));
 }
 
 /** Expected intervals detect stale streams with one null gap; cached states are never copied. */
 export const cron = { stale: { every: 60, run: async (app: App) => {
   const interval = sql.id("interval");
-  const ids = await app.db.col<number>`SELECT id FROM home_datapoint WHERE record = ${true} AND ${interval} > 0
+  const ids = await app.db.col<number>`SELECT id FROM iot_datapoint WHERE record = ${true} AND ${interval} > 0
     AND value IS NOT NULL AND time < ${Date.now()} - ${interval} * 2000`;
-  for (const id of ids) await record(app, Number(id), null).catch((error) => console.error("home.record:", error));
+  for (const id of ids) await record(app, Number(id), null).catch((error) => console.error("iot.record:", error));
 } } } satisfies Jobs;
 
 /** Query one local datapoint without requiring its provider to be running. */

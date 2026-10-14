@@ -48,8 +48,8 @@ export type Provider = { id: number; name: string; adapter: string; config: Reco
 
 /** Adapter names identify implementations; provider IDs identify configured connections. */
 export function adapters(app: App): Adapter[] {
-  const all = app.modules.linked().flatMap((mod) => mod.plugin.homeProvider ? [mod.plugin.homeProvider as Adapter] : []);
-  if (new Set(all.map((adapter) => adapter.name)).size !== all.length) throw new Error("home: duplicate adapter names");
+  const all = app.modules.linked().flatMap((mod) => mod.plugin.iotProvider ? [mod.plugin.iotProvider as Adapter] : []);
+  if (new Set(all.map((adapter) => adapter.name)).size !== all.length) throw new Error("iot: duplicate adapter names");
   return all;
 }
 
@@ -63,12 +63,12 @@ const decode = (row: Provider): Provider => ({
 
 /** Trusted server access, including credentials. Public APIs redact write-only configuration. */
 export async function providers(app: App): Promise<Provider[]> {
-  return (await app.db.query<Provider>`SELECT * FROM home_provider ORDER BY id`).map(decode);
+  return (await app.db.query<Provider>`SELECT * FROM iot_provider ORDER BY id`).map(decode);
 }
 
 export async function provider(app: App, id: number): Promise<Provider> {
-  const row = await app.db.row<Provider>`SELECT * FROM home_provider WHERE id = ${id}`;
-  if (!row) throw new NotFoundError("Home provider was not found");
+  const row = await app.db.row<Provider>`SELECT * FROM iot_provider WHERE id = ${id}`;
+  if (!row) throw new NotFoundError("IoT provider was not found");
   return decode(row);
 }
 
@@ -111,7 +111,7 @@ export async function save(app: App, input: {
   id?: number; name: string; adapter: string; config?: Record<string, unknown>; enabled?: boolean;
 }): Promise<number> {
   const selected = adapter(app, input.adapter);
-  if (!selected) throw new ApiError(400, "Home adapter is not linked");
+  if (!selected) throw new ApiError(400, "IoT adapter is not linked");
   if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 191)
     throw new ApiError(400, "Invalid provider name");
   if (input.enabled !== undefined && typeof input.enabled !== "boolean") throw new ApiError(400, "Invalid enabled flag");
@@ -121,43 +121,43 @@ export async function save(app: App, input: {
   const schema = selected.schema ?? { type: "object", properties: {} };
   const old = previous?.adapter === input.adapter ? previous.config : {};
   const config = merge(input.config ?? {}, old, schema) as Record<string, unknown>;
-  if (validate(schema, config).length) throw new ApiError(400, "Invalid home provider configuration");
+  if (validate(schema, config).length) throw new ApiError(400, "Invalid IoT provider configuration");
   const values = {
     name: input.name, adapter: input.adapter, config: JSON.stringify(config),
     enabled: input.enabled ?? previous?.enabled ?? true,
   };
   const id = await app.db.unit(async () => {
-    if (previous) { await app.db.table("home_provider").update(previous.id, values); return previous.id; }
-    return Number(await app.db.table("home_provider").insert(values));
+    if (previous) { await app.db.table("iot_provider").update(previous.id, values); return previous.id; }
+    return Number(await app.db.table("iot_provider").insert(values));
   });
-  await app.fire("home:provider", { id, adapter: input.adapter, previousAdapter: previous?.adapter });
+  await app.fire("iot:provider", { id, adapter: input.adapter, previousAdapter: previous?.adapter });
   return id;
 }
 
 // Datapoints and commands refer to the provider's entity and action IDs.
 const used = async (app: App, id: number) =>
-  await app.db.one`SELECT id FROM home_datapoint WHERE provider = ${id} LIMIT 1`
-  ?? await app.db.one`SELECT id FROM home_command WHERE provider = ${id} LIMIT 1`;
+  await app.db.one`SELECT id FROM iot_datapoint WHERE provider = ${id} LIMIT 1`
+  ?? await app.db.one`SELECT id FROM iot_command WHERE provider = ${id} LIMIT 1`;
 
 export async function enable(app: App, id: number, enabled: boolean): Promise<void> {
   const previous = await provider(app, id);
-  await app.db.exec`UPDATE home_provider SET enabled = ${enabled} WHERE id = ${id}`;
-  await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
+  await app.db.exec`UPDATE iot_provider SET enabled = ${enabled} WHERE id = ${id}`;
+  await app.fire("iot:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
 
 /** Retiring a provider leaves its measurement identities and archive intact. */
 export async function remove(app: App, id: number): Promise<void> {
   const previous = await provider(app, id);
   if (await used(app, id)) throw new ApiError(409, "Provider has datapoints or commands; disable it instead");
-  await app.db.exec`DELETE FROM home_provider WHERE id = ${id}`;
-  await app.fire("home:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
+  await app.db.exec`DELETE FROM iot_provider WHERE id = ${id}`;
+  await app.fire("iot:provider", { id, adapter: previous.adapter, previousAdapter: previous.adapter });
 }
 
 /** The adapter serving an enabled provider. */
 export async function active(app: App, id: number): Promise<Adapter> {
   const row = await provider(app, id);
-  if (!row.enabled) throw new ApiError(503, "Home provider is disabled");
-  return adapter(app, row.adapter) ?? Promise.reject(new ApiError(503, "Home adapter is not linked"));
+  if (!row.enabled) throw new ApiError(503, "IoT provider is disabled");
+  return adapter(app, row.adapter) ?? Promise.reject(new ApiError(503, "IoT adapter is not linked"));
 }
 
 /** Without an ID, enabled providers that fail (offline, unlinked) are left out; query one to see its error. */
@@ -184,7 +184,7 @@ export async function observed(
   app: App, provider: number, id: string, entity: Entity | null,
   time = entity?.updated === undefined ? Date.now() : Date.parse(entity.updated),
 ): Promise<void> {
-  await app.fire("home:observe", { provider, id, entity, time });
+  await app.fire("iot:observe", { provider, id, entity, time });
 }
 
 /** The paths whose values differ; all on creation (`previous: null`) or removal (`entity: null`). */
@@ -198,13 +198,13 @@ export function differ(entity: Entity | null, previous: Entity | null): string[]
 
 /**
  * Publish a report of the source, including creation (`previous: null`) or removal (`entity: null`):
- * `home:input` for every report, `home:change` when values differ; `changed` lists their paths.
+ * `iot:input` for every report, `iot:change` when values differ; `changed` lists their paths.
  */
 export async function reported(
   app: App, provider: number, id: string, entity: Entity | null, previous: Entity | null,
 ): Promise<void> {
   await observed(app, provider, id, entity);
   const event = { provider, id, entity, previous, changed: differ(entity, previous) };
-  await app.fire("home:input", event);
-  if (event.changed.length) await app.fire("home:change", event);
+  await app.fire("iot:input", event);
+  if (event.changed.length) await app.fire("iot:change", event);
 }

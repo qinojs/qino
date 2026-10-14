@@ -5,24 +5,24 @@ import { apply, removeVirtual, saveVirtual, templates, virtual, virtuals } from 
 import type { ApiTree, Ctx, Params } from "@qino/qino";
 import type { Virtual } from "./mod.ts";
 
-// Like home's own routes: virtual entities reach into the house.
+// Like iot's own routes: virtual entities reach into the house.
 const access = Access.SUPERUSER;
 const fields = {
   name: s.string(),
   source_provider: s.optional(s.number()).describe("Provider of the source entity; 0 for an entity that is only set"),
   source_entity: s.optional(s.string()).describe("Provider-local source entity ID"),
-  command: s.optional(s.number()).describe("Stored home command that sets the entity; 0 for read only"),
+  command: s.optional(s.number()).describe("Stored IoT command that sets the entity; 0 for read only"),
   value: s.optional(s.record(s.any())).describe("JSON schema of the value the entity is set to"),
 };
 
 export const api: ApiTree = {
   virtuals: {
     get: {
-      access, description: "List virtual home entities", query: s.object({ provider: s.optional(s.number()) }),
+      access, description: "List virtual IoT entities", query: s.object({ provider: s.optional(s.number()) }),
       execute: ({ provider }: Params, ctx: Ctx) => virtuals(ctx.app, provider as number | undefined),
     },
     post: {
-      access, description: "Create a virtual home entity: read from a source entity, set through a command",
+      access, description: "Create a virtual IoT entity: read from a source entity, set through a command",
       input: s.object({ provider: s.number(), ...fields }),
       execute: async (input: Params, ctx: Ctx) => ({ id: await saveVirtual(ctx.app, input as Partial<Virtual>) }),
     },
@@ -30,16 +30,16 @@ export const api: ApiTree = {
   virtual: { ":virtual": {
     paramSchema: s.number(),
     get: {
-      access, description: "Read one virtual home entity",
+      access, description: "Read one virtual IoT entity",
       execute: ({ virtual: id }: Params, ctx: Ctx) => virtual(ctx.app, Number(id)),
     },
     put: {
-      access, description: "Edit one virtual home entity", input: s.object({ ...fields, name: s.optional(s.string()) }),
+      access, description: "Edit one virtual IoT entity", input: s.object({ ...fields, name: s.optional(s.string()) }),
       execute: async ({ virtual: id, ...input }: Params, ctx: Ctx) =>
         ({ id: await saveVirtual(ctx.app, { ...input, id: Number(id) } as Partial<Virtual>) }),
     },
     delete: {
-      access, description: "Delete one virtual home entity",
+      access, description: "Delete one virtual IoT entity",
       execute: async ({ virtual: id }: Params, ctx: Ctx) => {
         await removeVirtual(ctx.app, Number(id));
         return { ok: true };

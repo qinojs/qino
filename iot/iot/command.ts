@@ -34,14 +34,14 @@ function place(data: Record<string, unknown>, path: string, value: unknown) {
 
 export async function commands(app: App, provider?: number): Promise<Command[]> {
   const rows = provider === undefined
-    ? await app.db.query<Command>`SELECT * FROM home_command ORDER BY name, id`
-    : await app.db.query<Command>`SELECT * FROM home_command WHERE provider = ${provider} ORDER BY name, id`;
+    ? await app.db.query<Command>`SELECT * FROM iot_command ORDER BY name, id`
+    : await app.db.query<Command>`SELECT * FROM iot_command WHERE provider = ${provider} ORDER BY name, id`;
   return rows.map(decode);
 }
 
 export async function command(app: App, id: number): Promise<Command> {
-  const row = await app.db.row<Command>`SELECT * FROM home_command WHERE id = ${id}`;
-  if (!row) throw new NotFoundError("Home command was not found");
+  const row = await app.db.row<Command>`SELECT * FROM iot_command WHERE id = ${id}`;
+  if (!row) throw new NotFoundError("IoT command was not found");
   return decode(row);
 }
 
@@ -57,13 +57,13 @@ export async function saveCommand(app: App, input: Partial<Command>): Promise<nu
   const values = {
     provider: id, name, action, targets: JSON.stringify(targets), data: JSON.stringify(data), parameter,
   };
-  if (previous) { await app.db.table("home_command").update(previous.id, values); return previous.id; }
-  return Number(await app.db.table("home_command").insert(values));
+  if (previous) { await app.db.table("iot_command").update(previous.id, values); return previous.id; }
+  return Number(await app.db.table("iot_command").insert(values));
 }
 
 export async function removeCommand(app: App, id: number): Promise<void> {
   await command(app, id);
-  await app.db.exec`DELETE FROM home_command WHERE id = ${id}`;
+  await app.db.exec`DELETE FROM iot_command WHERE id = ${id}`;
 }
 
 /**

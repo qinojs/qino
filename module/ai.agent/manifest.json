@@ -15,6 +15,7 @@
     "lib/declared.ts",
     "lib/live.ts",
     "lib/memory.ts",
+    "lib/notes.ts",
     "lib/record.ts",
     "lib/search.ts",
     "lib/turn.ts",

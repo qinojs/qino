@@ -1,10 +1,10 @@
 {
   "properties": {
-    "home_virtual": {
+    "iot_virtual": {
       "additionalProperties": {
         "properties": {
           "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
-          "provider": { "type": "integer", "x-index": true, "x-qg-parent": "home_provider" },
+          "provider": { "type": "integer", "x-index": true, "x-qg-parent": "iot_provider" },
           "name": { "type": "string", "maxLength": 191 },
           "source_provider": { "type": "integer", "default": 0 },
           "source_entity": { "type": "string", "maxLength": 191, "default": "" },

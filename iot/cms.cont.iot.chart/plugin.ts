@@ -1,10 +1,10 @@
 import { errMsg, html } from "@qino/qino";
-import { history } from "@qino/qino/home.history";
+import { history } from "@qino/qino/iot.history";
 
 import { chart, format } from "./chart.ts";
 
 import type { Node } from "@qino/qino/cms";
-import type { Source } from "@qino/qino/home.history";
+import type { Source } from "@qino/qino/iot.history";
 
 const time = (at: number, precision = "minute") => {
   const iso = new Date(at).toISOString();
@@ -64,7 +64,7 @@ export const cms = { node: {
   parts: { plot },
   js: ["pub/main.js"],
   settingsSchema: { properties: {
-    datapoint: { type: "integer", minimum: 0, default: 0, description: "Numeric home datapoint ID." },
+    datapoint: { type: "integer", minimum: 0, default: 0, description: "Numeric IoT datapoint ID." },
     source: { type: "string", enum: ["auto", "local", "provider"], default: "auto" },
     hours: { type: "number", minimum: 0.01, default: 24, description: "Initial period in hours." },
     consumption: { type: "boolean", default: false, description: "Show differences of cumulative counter readings." },

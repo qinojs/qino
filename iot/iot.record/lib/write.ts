@@ -1,7 +1,7 @@
 import { ApiError, sql } from "@qino/qino";
 
 import type { App } from "@qino/qino";
-import type { Datapoint } from "@qino/qino/home";
+import type { Datapoint } from "@qino/qino/iot";
 
 /**
  * Unchanged values are skipped until the expected interval has passed, so steady streams cost a row
@@ -31,10 +31,10 @@ export async function write(
     : sql`ON CONFLICT (datapoint, time) DO UPDATE SET value = ${value}`;
   await app.db.unit(async () => {
     await app.db.exec`INSERT INTO ${sql.id(table(point))} (datapoint, time, value)
-      SELECT id, ${time}, ${value} FROM home_datapoint WHERE ${fresh} ${conflict}`;
-    await app.db.exec`UPDATE home_datapoint SET time = ${time}, value = ${value}
+      SELECT id, ${time}, ${value} FROM iot_datapoint WHERE ${fresh} ${conflict}`;
+    await app.db.exec`UPDATE iot_datapoint SET time = ${time}, value = ${value}
       WHERE ${fresh} AND (time IS NULL OR time <= ${time})`;
   });
 }
 
-export const table = (point: Datapoint): string => point.type === "number" ? "home_number" : "home_state";
+export const table = (point: Datapoint): string => point.type === "number" ? "iot_number" : "iot_state";

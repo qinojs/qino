@@ -2,7 +2,7 @@ import { assertEquals } from "@qino/qino/tests";
 
 import { dataOf, read } from "../pub/action.js";
 
-Deno.test("home backend submits once from the form, parses typed data and displays failures without executing", async () => {
+Deno.test("iot backend submits once from the form, parses typed data and displays failures without executing", async () => {
   const source = await Deno.readTextFile(new URL("../pub/main.js", import.meta.url));
   const listeners: Record<string, (event: unknown) => Promise<void>> = {};
   const calls: unknown[] = [], messages: string[] = [];
@@ -10,7 +10,7 @@ Deno.test("home backend submits once from the form, parses typed data and displa
   const button = { disabled: false };
   const form = {
     dataset: { provider: "1" },
-    hasAttribute: (name: string) => name === "data-home-action",
+    hasAttribute: (name: string) => name === "data-iot-action",
     elements: { action: { value: "set" }, data: { value: '{"value":false}' }, entities: { selectedOptions: [{ value: "sensor.temp" }] } },
     querySelector: () => button, querySelectorAll: () => [], closest: () => null,
   };
@@ -27,7 +27,7 @@ Deno.test("home backend submits once from the form, parses typed data and displa
     api: { post: (input: unknown) => { calls.push(input); return new Promise((resolve) => { release = resolve; }); } },
     html: { part: () => ({ get: () => Promise.resolve("") }) },
   }) } };
-  const helper = await Deno.readTextFile(new URL("../../cms.backend/pub/js/node.mjs", import.meta.url));
+  const helper = await Deno.readTextFile(new URL("../../../module/cms.backend/pub/js/node.mjs", import.meta.url));
   const nodePanel = new Function("api", "cms", "show", helper.replace(/^import[^\n]*\n/, "").replace("export function", "function")
     .replace(/const alert = async[^\n]*/, "const alert = show;") + "\nreturn nodePanel;")(api, cms, (message: string) => { messages.push(message); });
   new Function("cms", "nodePanel", "dataOf", "read", "location", source.replace(/^import[^\n]*\n/gm, ""))(
@@ -117,7 +117,7 @@ Deno.test("home backend submits once from the form, parses typed data and displa
 
 });
 
-Deno.test("home backend reads action fields typed and leaves empty ones out", () => {
+Deno.test("iot backend reads action fields typed and leaves empty ones out", () => {
   const field = (name: string, type: string, value: string) => ({ name: "data." + name, value, dataset: { type } });
   const form = (fields: unknown[], free?: unknown) => ({ elements: { data: free }, querySelectorAll: () => fields });
   assertEquals(dataOf(form([
@@ -130,7 +130,7 @@ Deno.test("home backend reads action fields typed and leaves empty ones out", ()
   assertEquals(message, "extra: invalid JSON");
 });
 
-Deno.test("home backend reads free command values as JSON where they parse", () => {
+Deno.test("iot backend reads free command values as JSON where they parse", () => {
   const field = (value: string) => ({ name: "value", value, dataset: { type: "auto" } });
   assertEquals(["153", "true", '{"a":1}', "on", ""].map((value) => read(field(value))), [153, true, { a: 1 }, "on", ""]);
 });

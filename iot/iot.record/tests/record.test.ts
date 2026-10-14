@@ -1,30 +1,31 @@
 import { App, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
-import { reported, observed, configure, datapoint, save, value } from "@qino/qino/home";
-import { history } from "@qino/qino/home.history";
+import { reported, observed, configure, datapoint, save, value } from "@qino/qino/iot";
+import { history } from "@qino/qino/iot.history";
 
 import { record } from "../mod.ts";
 import { api, cron } from "../plugin.ts";
 
-import type { Adapter } from "@qino/qino/home";
+import type { Adapter } from "@qino/qino/iot";
 
 const start = Date.parse("2026-01-01T00:00:00Z");
 const period = { start: new Date(start).toISOString(), end: new Date(start + 3600_000).toISOString(), source: "local" as const };
 
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-home-record-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  const dir = await Deno.makeTempDir({ prefix: "qino-iot-record-test-" }), app = new App({ dir, db: "sqlite::memory:" });
   await Deno.writeTextFile(`${dir}/plugin.ts`, `
-export const homeProvider = {
+export const iotProvider = {
   name: "fake", schema: { type: "object", properties: { url: { type: "string" } } },
   entities: async () => [], actions: async () => [], call: async () => null,
   history: async (_app, _provider, id, period) => [{ id, name: id, state: 73, unit: "°C", attributes: {}, available: true, updated: period.start }],
 };
 `);
-  for (const name of ["home", "home.history", "cron", "home.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
+  for (const name of ["iot", "iot.history", "iot.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
+  app.modules.add(new URL("../../../module/cron/plugin.ts", import.meta.url)); // from the module store
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init();
   const provider = await save(app, { name: "First", adapter: "fake", config: { url: "http://first.test/" } });
-  return { app, provider, close: async () => { app.modules.unlink("home.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
+  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
 }
 
 Deno.test("measurement rows contain numeric datapoint/time/value only, replace repeated instants and retain millisecond precision", async () => {
@@ -37,7 +38,7 @@ Deno.test("measurement rows contain numeric datapoint/time/value only, replace r
     await record(app, id, null, start + 2);
     const result = await history(app, id, period);
     assertEquals(result.samples, [{ time: start, value: 22 }, { time: start + 1, value: 23 }, { time: start + 2, value: null }]);
-    assertEquals((await app.db.columns("home_number")).map((field) => field.Field), ["datapoint", "time", "value"]);
+    assertEquals((await app.db.columns("iot_number")).map((field) => field.Field), ["datapoint", "time", "value"]);
     await assertRejects(() => record(app, id, 1, NaN), Error, "time");
     await assertRejects(() => record(app, id, Infinity, start), Error, "datatype");
   } finally { await close(); }
@@ -54,7 +55,7 @@ Deno.test("numeric and discrete datapoints have different typed storage and immu
     assertEquals(value(point, { ...entity, state: "unknown" }), null);
     assertEquals(value(point, { ...entity, state: "on", unit: "unexpected" }), null);
     await record(app, id, 0, start);
-    assertEquals(await app.db.one`SELECT value FROM home_state WHERE datapoint = ${id} AND time = ${start}`, 0);
+    assertEquals(await app.db.one`SELECT value FROM iot_state WHERE datapoint = ${id} AND time = ${start}`, 0);
     await assertRejects(() => record(app, id, 0.5, start), Error, "datatype");
     await assertRejects(() => record(app, id, 128, start), Error, "datatype");
     // The same interpretation reuses the datapoint; editing by ID changes only its metadata.
@@ -94,16 +95,16 @@ Deno.test("recording follows source observations, records gaps and removes liste
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
     const entity = { id: "temperature", name: "Temperature", unit: "°C", state: 5, attributes: {}, available: true, updated: new Date(start).toISOString() };
     let changes = 0;
-    app.on("home:change", () => { changes++; });
+    app.on("iot:change", () => { changes++; });
     await observed(app, provider, entity.id, entity, start);
     assertEquals(changes, 0);
     await reported(app, provider, entity.id, entity, null);
     await reported(app, provider, entity.id, { ...entity, available: false, updated: new Date(start + 1).toISOString() }, entity);
     assertEquals((await history(app, id, period)).samples, [{ time: start, value: 5 }, { time: start + 1, value: null }]);
-    app.modules.unlink("home.record");
-    const count = await app.db.one`SELECT COUNT(*) FROM home_number`;
+    app.modules.unlink("iot.record");
+    const count = await app.db.one`SELECT COUNT(*) FROM iot_number`;
     await reported(app, provider, entity.id, { ...entity, updated: new Date(start + 2).toISOString() }, entity);
-    assertEquals(await app.db.one`SELECT COUNT(*) FROM home_number`, count);
+    assertEquals(await app.db.one`SELECT COUNT(*) FROM iot_number`, count);
   } finally { await close(); }
 });
 
@@ -111,13 +112,13 @@ Deno.test("recording tools enforce user access; stale detection writes one gap i
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", interval: 30, record: true });
-    const tool = toTools({ "home.record": api })[0], user = await testContext({ app, set: { app, user: { id: 7, superuser: true } } });
+    const tool = toTools({ "iot.record": api })[0], user = await testContext({ app, set: { app, user: { id: 7, superuser: true } } });
     await requestStorage.run(user, () => tool.execute({ datapoint: id, time: Date.now(), value: 2 }, user));
-    await app.db.query`UPDATE home_datapoint SET time = ${Date.now() - 120_000} WHERE id = ${id}`;
+    await app.db.query`UPDATE iot_datapoint SET time = ${Date.now() - 120_000} WHERE id = ${id}`;
     await cron.stale.run(app);
-    const count = await app.db.one`SELECT COUNT(*) FROM home_number`;
+    const count = await app.db.one`SELECT COUNT(*) FROM iot_number`;
     await cron.stale.run(app);
-    assertEquals(await app.db.one`SELECT COUNT(*) FROM home_number`, count);
+    assertEquals(await app.db.one`SELECT COUNT(*) FROM iot_number`, count);
     assertEquals((await datapoint(app, id)).value, null);
     const guest = await testContext({ app, set: { app } });
     await requestStorage.run(guest, () => assertRejects(() => tool.execute({ datapoint: id, time: start, value: 9 }, guest), Error, "Access denied"));
@@ -168,12 +169,12 @@ Deno.test("starting the recorder after a ready provider captures a snapshot with
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
-    app.modules.unlink("home.record");
-    const adapter = app.modules.linked("fake.adapter")!.plugin.homeProvider as Adapter;
+    app.modules.unlink("iot.record");
+    const adapter = app.modules.linked("fake.adapter")!.plugin.iotProvider as Adapter;
     adapter.entities = async () => [{ id: "temperature", name: "Temperature", unit: "°C", state: 12, attributes: {}, available: true }];
     let changes = 0;
-    app.on("home:change", () => { changes++; });
-    await app.modules.link("home.record");
+    app.on("iot:change", () => { changes++; });
+    await app.modules.link("iot.record");
     for (let i = 0; i < 100 && (await datapoint(app, id)).value !== 12; i++) await new Promise((resolve) => setTimeout(resolve, 1));
     assertEquals((await datapoint(app, id)).value, 12);
     assertEquals(changes, 0);

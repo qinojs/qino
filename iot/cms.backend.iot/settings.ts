@@ -1,12 +1,12 @@
 import { html, toInput } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { adapters as linked, commands, datapoints, entities, providers as stored, redact } from "@qino/qino/home";
+import { adapters as linked, commands, datapoints, entities, providers as stored, redact } from "@qino/qino/iot";
 
 import { dialog, field, link } from "./render.ts";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Provider } from "@qino/qino/home";
+import type { Provider } from "@qino/qino/iot";
 
 type Schema = {
   properties?: Record<string, Schema>; title?: string; writeOnly?: boolean; readOnly?: boolean;

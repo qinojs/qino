@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 
-import type { Sample } from "@qino/qino/home.history";
+import type { Sample } from "@qino/qino/iot.history";
 
 /** Significant digits only: bucket means would otherwise print 15 decimals. */
 export const format = (value: number, digits = 6): number => Number(value.toPrecision(digits));
