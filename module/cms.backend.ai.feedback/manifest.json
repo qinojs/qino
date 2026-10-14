@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.ai.feedback",
+  "description": "What agents report about the system, by what it is about, and the tool calls that failed.",
+  "dependencies": ["cms.backend.ai", "ai.agent.feedback"],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

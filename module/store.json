@@ -2,6 +2,7 @@
   "modules": {
     "ai": {},
     "ai.agent": {},
+    "ai.agent.feedback": {},
     "ai.agent.recall": {},
     "ai.agent.sleep": {},
     "ai.api": {},
@@ -25,6 +26,7 @@
     "cms.backend": {},
     "cms.backend.ai": {},
     "cms.backend.ai.agents": {},
+    "cms.backend.ai.feedback": {},
     "cms.backend.ai.calls": {},
     "cms.backend.ai.chat": {},
     "cms.backend.ai.chatgpt": {},
