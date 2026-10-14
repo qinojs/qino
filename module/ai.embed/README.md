@@ -5,21 +5,14 @@ sqlite-vec (Deno needs `--allow-ffi`), MariaDB ≥ 11.7 or PostgreSQL with pgvec
 PostgreSQL search through an HNSW index, SQLite scans exactly.
 
 Whatever is embedded gets its own table `embedding_<name>`, declared by the module that embeds it,
-usually named `<table>_<aspect>`: `product_text`, `product_image`, `node_text`, `user_bio`. The key is up
-to the module (primary key columns besides `chunk` and `collection_id`); a key column with
-`x-qg-parent` deletes the vectors along with its row. Only the column `embedding` is special:
+usually named `<table>_<aspect>`: `product_text`, `product_image`, `node_text`, `user_bio`. Only the
+key columns are declared; they become the primary key, and `chunk`, `collection_id`, `hash`,
+`content` and `embedding` are added. A key column with `x-qg-parent` deletes the vectors along with
+its row:
 
 ```json
 "embedding_product_image": { "additionalProperties": {
-  "properties": {
-    "product_id":    { "type": "integer", "x-index": "primary", "x-qg-parent": "product", "x-qg-on-parent-delete": "cascade" },
-    "chunk":         { "type": "integer", "x-index": "primary", "default": 0 },
-    "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_embed_collection", "x-qg-on-parent-delete": "cascade" },
-    "hash":          { "type": "string", "maxLength": 64, "x-index": true },
-    "content":       { "type": "string" },
-    "embedding":     { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
-  },
-  "required": ["product_id", "chunk", "collection_id", "hash", "embedding"]
+  "properties": { "product_id": { "type": "integer", "x-qg-parent": "product" } }
 }}
 ```
 

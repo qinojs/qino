@@ -10,7 +10,30 @@ import type { App } from "@qino/qino";
 export { cron } from "./sources/file.ts";
 export { healthChecks } from "./healthChecks.ts";
 
-export const dbSchema = { properties: { ...schema.properties, ...fileSchema.properties } };
+type Props = Record<string, Record<string, unknown>>;
+
+/** Every `embedding_<name>` table, declared with its key columns only, complete: they become the
+ *  primary key (vectors go along with the entry of a key column that has `x-qg-parent`), the chunk,
+ *  collection and vector columns are added. */
+export function dbSchema(merged: { properties: Record<string, { additionalProperties?: { properties?: Props } }> }) {
+  const own = { ...schema.properties, ...fileSchema.properties };
+  const tables = Object.entries({ ...merged.properties, ...own } as typeof merged.properties).filter(([table]) => table.startsWith("embedding_"));
+  return { properties: { ...own, ...Object.fromEntries(tables.map(([table, schema]) => {
+    const props = schema.additionalProperties?.properties ?? {}, keys = Object.keys(props);
+    const key = (col: string) => ({ ...props[col], "x-index": "primary", ...props[col]["x-qg-parent"] ? { "x-qg-on-parent-delete": "cascade" } : {} });
+    return [table, { ...schema, additionalProperties: {
+      properties: {
+        ...Object.fromEntries(keys.map((col) => [col, key(col)])),
+        chunk: { type: "integer", "x-index": "primary", default: 0 },
+        collection_id: { type: "integer", "x-index": "primary", "x-qg-parent": "ai_embed_collection", "x-qg-on-parent-delete": "cascade" },
+        hash: { type: "string", maxLength: 64, "x-index": true },
+        content: { type: "string" },
+        embedding: { type: "array", items: { type: "number" }, "x-vector": true, "x-index": true },
+      },
+      required: [...keys, "chunk", "collection_id", "hash", "embedding"],
+    } }];
+  })) } };
+}
 
 export const settingsSchema = {
   properties: {

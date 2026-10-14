@@ -3,31 +3,19 @@ import { Db } from "@qino/qino";
 import { aiCapabilities } from "@qino/m/ai/plugin.ts";
 import aiSchema from "@qino/m/ai/dbschema.json" with { type: "json" };
 
-import schema from "../dbschema.json" with { type: "json" };
+import { dbSchema } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
 
-/** A table a module declares to embed something, as in the README: its key columns plus the fixed ones. */
-export const embeddingTable = (key: Record<string, Record<string, unknown>>) => ({
-  additionalProperties: {
-    properties: {
-      ...Object.fromEntries(Object.entries(key).map(([col, prop]) => [col, { ...prop, "x-index": "primary" }])),
-      chunk: { type: "integer", "x-index": "primary", default: 0 },
-      collection_id: { type: "integer", "x-index": "primary", "x-qg-parent": "ai_embed_collection", "x-qg-on-parent-delete": "cascade" },
-      hash: { type: "string", maxLength: 64, "x-index": true },
-      content: { type: "string" },
-      embedding: { type: "array", items: { type: "number" }, "x-vector": true, "x-index": true },
-    },
-    required: [...Object.keys(key), "chunk", "collection_id", "hash", "embedding"],
-  },
-});
+/** A table a module declares to embed something, as in the README: its key columns only. */
+export const embeddingTable = (key: Record<string, Record<string, unknown>>) => ({ additionalProperties: { properties: key } });
 
 /** An app with the fake models "multi" (2 dimensions: "cat" → [1,0], other texts → [0,1], images →
  *  [0.8,0.6]), "wide" (the same plus a third dimension of 1) and "textonly" (no images). */
 export async function fakeApp(conn: string, tables: Record<string, unknown> = {}) {
   const db = new Db(conn);
   if (db.dialect === "sqlite") sqliteVec.load(db);
-  db.schema = { properties: { ...aiSchema.properties, ...schema.properties, ...tables } };
+  db.schema = { properties: { ...aiSchema.properties, ...tables, ...dbSchema({ properties: tables as never }).properties } };
   await db.migrate(db.schema, { patch: true });
   await db.loadTables();
   await db.table("ai_provider").insert({ name: "fake", type: "fake", endpoint: "" });

@@ -17,15 +17,7 @@
     },
     "embedding_ai_web_page": {
       "additionalProperties": {
-        "properties": {
-          "page_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_web_page", "x-qg-on-parent-delete": "cascade" },
-          "chunk": { "type": "integer", "x-index": "primary", "default": 0 },
-          "collection_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_embed_collection", "x-qg-on-parent-delete": "cascade" },
-          "hash": { "type": "string", "maxLength": 64, "x-index": true },
-          "content": { "type": "string" },
-          "embedding": { "type": "array", "items": { "type": "number" }, "x-vector": true, "x-index": true }
-        },
-        "required": ["page_id", "chunk", "collection_id", "hash", "embedding"]
+        "properties": { "page_id": { "type": "integer", "x-qg-parent": "ai_web_page" } }
       }
     }
   }
