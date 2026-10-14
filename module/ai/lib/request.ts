@@ -71,7 +71,7 @@ const cooldowns = new WeakMap<object, Map<number | string, number>>();
 export async function request(app: App, capability: string, input: unknown, opts: Opts = {}, chain: string[] = []): Promise<any> {
   if (!app.modules.linked("ai")) throw new AiError('module "ai" is not loaded');
   opts.signal?.throwIfAborted();
-  const adapters: Record<string, Adapter> = Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.aiAdapters));
+  const types = adapters(app);
   chain = [...chain, capability];
   const via = definitions(app, capability).flatMap((def) => Object.entries(def.via ?? {})).filter(([c]) => !chain.includes(c));
   const cooling = cooldowns.get(app) ?? cooldowns.set(app, new Map()).get(app)!;
@@ -80,7 +80,7 @@ export async function request(app: App, capability: string, input: unknown, opts
 
   for (const candidate of await candidates(app, capability, input, opts)) {
     if (Math.max(cooling.get(candidate.id) ?? 0, cooling.get(candidate.provider) ?? 0) > Date.now()) continue;
-    const adapter = adapters[candidate.type] ?? {};
+    const adapter = types[candidate.type] ?? {};
     const [through, convert] = via.find(([c]) => adapter[c]) ?? [];
     if (!adapter[capability] && !convert) continue;
     // every attempt is reported (`ai:call`), so others can measure speed and reliability
@@ -114,6 +114,9 @@ export async function request(app: App, capability: string, input: unknown, opts
   }
   throw new AiError(errors.join("; ") || `No model for "${capability}"`);
 }
+
+/** The provider types of all linked modules, by `ai_provider.type`. */
+export const adapters = (app: App): Record<string, Adapter> => Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.aiAdapters));
 
 const definitions = (app: App, capability: string): Capability[] => app.modules.linked().flatMap((mod) => mod.plugin.aiCapabilities?.[capability] ?? []);
 
@@ -171,7 +174,8 @@ export async function candidates(app: App, capability: string, input: unknown, {
   return one ? list.filter((c) => c.model === (model ?? list[0]?.model)) : list;
 }
 
-async function bind(app: App, candidate: Candidate, used: { input: number; output: number }, signal?: AbortSignal,
+/** A `Call` to the candidate's provider, its usage added to `used`. */
+export async function bind(app: App, candidate: Pick<Candidate, "provider" | "endpoint" | "model" | "provider_model" | "timeout_ms">, used: { input: number; output: number }, signal?: AbortSignal,
   onResponse?: (response: Response) => void): Promise<Call> {
   return {
     provider: candidate.provider,

@@ -52,7 +52,7 @@ const tools = [
 /** A real app with ai, the fake model and user 7, for `fn`. */
 async function withApp(fn: (app: App) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  app.modules.add(new URL("../../ai/plugin.ts", import.meta.url));
+  for (const mod of ["cron", "ai"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
   current = app;

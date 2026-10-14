@@ -8,9 +8,9 @@ const MEASURED_MS = 10_000;
 
 /** Count an `ai:call` and its usage, and log it if it failed; successful ones that give output
  *  tokens are timed for the speed (whatever the capability; translation services and embeddings
- *  give none, so units don't mix). */
-export async function record(app: App, e: { id: number; capability: string; ms: number; input: number; output: number; error?: string }): Promise<void> {
-  const timed = !e.error && e.output > 0, time = unixTime();
+ *  give none, so units don't mix), batched ones not. */
+export async function record(app: App, e: { id: number; capability: string; ms: number; input: number; output: number; error?: string; batch?: boolean }): Promise<void> {
+  const timed = !e.error && e.output > 0 && !e.batch, time = unixTime();
   await app.db.table("ai_model_provider_stat").ensure({ model_provider_id: e.id });
   await app.db.exec`UPDATE ai_model_provider_stat SET
     calls = calls + 1, errors = errors + ${e.error ? 1 : 0}, used_input = used_input + ${e.input}, used_output = used_output + ${e.output},

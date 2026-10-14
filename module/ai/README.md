@@ -121,6 +121,20 @@ back any more.
 single call gains nothing; `run()` of ai.tools sets it, its steps send the same start again. OpenAI,
 Gemini and others cache on their own.
 
+## Batches
+
+For work nobody waits for: many calls at once, answered within a day at about half the price.
+
+```ts
+await batch(app, "embed", { owner: "my.module", items: [{ id: "7", input: { texts: ["…"] } }, …] });
+app.on("ai:batched", ({ owner, id, output, error }) => { if (owner === "my.module") … });
+```
+
+The best model whose provider has a batch API takes them (OpenAI's for OpenAI-compatible ones,
+OpenRouter's: `text`, `structured`, `embed`); without one they run one by one in the background. Either way each
+answer comes as `ai:batched`, polled every 5 minutes, after a restart too; after a crash one may
+come twice. A structured answer is shaped by its schema, not validated.
+
 ## Browser
 
 [ai.api](../ai.api/) offers the capabilities to signed-in users; [`pub/live.js`](pub/live.js) is the
@@ -128,7 +142,7 @@ browser side of `live`.
 
 ## Watching
 
-Every attempt fires `ai:call` with `{ capability, id, model, provider, ms, input, output, error? }`
+Every attempt fires `ai:call` with `{ capability, id, model, provider, ms, input, output, error?, batch? }`
 (`id` is the `ai_model_provider`). [ai.stats](../ai.stats/) measures usage, errors and the
 speed ai chooses by.
 

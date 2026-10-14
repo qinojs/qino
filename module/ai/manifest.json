@@ -2,15 +2,18 @@
   "name": "ai",
   "description": "AI providers and models behind one interface: text, structured answers, embeddings, images, transcription, translation and decisions, with fallbacks.",
   "dependencies": [
-    "core"
+    "core",
+    "cron"
   ],
   "files": [
     "README.md",
     "dbschema.json",
+    "lib/batch.ts",
     "lib/capabilities.ts",
     "lib/decide.ts",
     "lib/jina.ts",
     "lib/nvidia.ts",
+    "lib/openai.batch.ts",
     "lib/openai.realtime.ts",
     "lib/openai.ts",
     "lib/request.ts",

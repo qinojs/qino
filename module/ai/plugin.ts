@@ -1,5 +1,7 @@
 import { App, s } from "@qino/qino";
 
+import { poll } from "./lib/batch.ts";
+
 import { systemone, decisions } from "./lib/decide.ts";
 import { jina } from "./lib/jina.ts";
 import { nvidia } from "./lib/nvidia.ts";
@@ -7,6 +9,7 @@ import { openai, openrouter } from "./lib/openai.ts";
 import { deepl, google } from "./lib/translate.ts";
 
 import type { EventDecls } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
@@ -22,9 +25,25 @@ Object.assign(App.events, {
       input: s.number().describe("Input units (tokens, characters)."),
       output: s.number().describe("Output units."),
       error: s.optional(s.string().describe("Why it failed.")),
+      batch: s.optional(s.boolean().describe("Answered in a batch: later, at its price, so not timed.")),
+    }),
+  },
+  "ai:batched": {
+    description: "A call of a batch was answered, or failed.",
+    data: s.object({
+      owner: s.string().describe("Who submitted the batch."),
+      capability: s.string(),
+      id: s.string().describe("The call's id, as submitted."),
+      output: s.optional(s.any().describe("The answer, as the capability gives it.")),
+      error: s.optional(s.string().describe("Why there is none.")),
     }),
   },
 } satisfies EventDecls);
+
+/** Deliver the answers of ended batches. */
+export const cron = {
+  batches: { every: 5 * 60, run: (app: App) => poll(app) },
+} satisfies Jobs;
 
 /** How capabilities are served and fall back to others. Other modules add theirs the same way. */
 export { aiCapabilities } from "./lib/capabilities.ts";

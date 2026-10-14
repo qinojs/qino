@@ -148,6 +148,21 @@
         },
         "required": ["model_id", "metric"]
       }
+    },
+    "ai_batch": {
+      "description": "Batches submitted to a provider, until their answers are delivered (ai:batched)",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "owner": { "type": "string", "maxLength": 64, "description": "Who submitted it" },
+          "capability": { "type": "string", "maxLength": 32 },
+          "model_provider_id": { "type": "integer", "x-qg-parent": "ai_model_provider", "x-qg-on-parent-delete": "cascade" },
+          "handle": { "type": "string", "maxLength": 191, "description": "The batch's id at the provider" },
+          "items": { "type": "string", "description": "The ids of its calls, as JSON" },
+          "time": { "type": "integer", "description": "When it was submitted" }
+        },
+        "required": ["id", "owner", "capability", "model_provider_id", "handle", "items", "time"]
+      }
     }
   }
 }

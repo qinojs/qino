@@ -4,6 +4,7 @@ import { errMsg } from "@qino/qino";
 import { AiError } from "./request.ts";
 import { systemone } from "./decide.ts";
 import { jsonSchema, parseStructured } from "./capabilities.ts";
+import { batch, batched, openrouterBatch, openrouterBatched } from "./openai.batch.ts";
 import { live } from "./openai.realtime.ts";
 
 import type { Transcript } from "@qino/qino";
@@ -12,12 +13,12 @@ import type { Adapter, Call } from "./request.ts";
 
 // OpenAI-compatible providers: OpenAI itself, groq, Gemini's compat endpoint, local servers.
 
-const auth = (call: Call): Record<string, string> => call.key ? { authorization: "Bearer " + call.key } : {};
+export const auth = (call: Call): Record<string, string> => call.key ? { authorization: "Bearer " + call.key } : {};
 
 const request = (call: Call, path: string, body: unknown) =>
   call.fetch(path, { method: "POST", headers: { ...auth(call), "content-type": "application/json" }, body: JSON.stringify(body) });
 
-const post = async (call: Call, path: string, body: unknown) => (await request(call, path, body)).json();
+export const post = async (call: Call, path: string, body: unknown) => (await request(call, path, body)).json();
 
 /** The vectors of an `/embeddings` call; the body differs by provider. */
 export const vectors = async (call: Call, body: unknown): Promise<number[][]> => {
@@ -47,10 +48,10 @@ const note = (content: string | Part[]): Message => ({
   content: typeof content === "string" ? `<system-reminder>\n${content}\n</system-reminder>` : [{ type: "text", text: "<system-reminder>" }, ...content, { type: "text", text: "</system-reminder>" }],
 });
 
-/** `more` goes into the request as it is: a response format, a cache mark. */
-async function text(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, more: Record<string, unknown> = {}): Promise<Omit<TextOutput, "model" | "modelProvider">> {
+/** A chat completion's body; `more` goes in as it is: a response format, a cache mark. */
+export function chatBody(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, more: Record<string, unknown> = {}) {
   const start = messages.findIndex((m) => m.role !== "system");
-  const body = {
+  return {
     model: call.model,
     messages: messages.map((m, i) => toOpenAi(m.role === "system" && i > start && start >= 0 ? note(m.content) : m)),
     tools: tools?.length ? tools.map(({ name, description, parameters }) => ({ type: "function", function: { name, description, parameters } })) : undefined,
@@ -59,6 +60,16 @@ async function text(call: Call, { messages, tools, temperature, maxTokens, onTex
     ...(onText && { stream: true, stream_options: { include_usage: true } }),
     ...more,
   };
+}
+
+/** A chat completion's answer, from its message and finish reason. */
+export function chatAnswer(message: any, finish?: string): Omit<TextOutput, "model" | "modelProvider"> {
+  const toolCalls = (message.tool_calls ?? []).map((tc: any) => ({ id: tc.id, name: tc.function.name, args: json(tc.function.arguments || "{}"), ...tc.extra_content && { extra_content: tc.extra_content } }));
+  return { text: message.content ?? "", toolCalls, truncated: finish === "length" };
+}
+
+async function text(call: Call, input: TextInput, more: Record<string, unknown> = {}): Promise<Omit<TextOutput, "model" | "modelProvider">> {
+  const { onText } = input, body = chatBody(call, input, more);
   const res = await request(call, "/chat/completions", body).catch((e) => {
     // not merged yet: a late system note right after a user message makes two in a row
     const twice = body.messages.some((m, i) => i && m.role === "user" && body.messages[i - 1].role === "user");
@@ -69,8 +80,7 @@ async function text(call: Call, { messages, tools, temperature, maxTokens, onTex
     : await res.json().then((data) => ({ message: data.choices?.[0]?.message, usage: data.usage, finish: data.choices?.[0]?.finish_reason }));
   if (!message) throw new AiError(`No answer from "${call.provider}"`);
   call.usage(usage?.prompt_tokens, usage?.completion_tokens);
-  const toolCalls = (message.tool_calls ?? []).map((tc: any) => ({ id: tc.id, name: tc.function.name, args: json(tc.function.arguments || "{}"), ...tc.extra_content && { extra_content: tc.extra_content } }));
-  return { text: message.content ?? "", toolCalls, truncated: finish === "length" };
+  return chatAnswer(message, finish);
 }
 
 // Collect a streamed answer: content deltas go to `onText`, tool-call fragments are joined by index.
@@ -129,12 +139,14 @@ export async function readSse(res: Response, onData: (data: any) => void): Promi
   }
 }
 
-const format = (schema: StructuredInput<unknown>["schema"]) =>
+export const format = (schema: StructuredInput<unknown>["schema"]) =>
   ({ response_format: { type: "json_schema", json_schema: { name: "output", schema: jsonSchema(schema) } } });
 
 export const openai: Adapter = {
   text,
   live,
+  batch,
+  batched,
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, format(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");
@@ -169,8 +181,8 @@ export const openai: Adapter = {
 // OpenRouter caches only when asked (Anthropic); the mark at the top caches up to the last message.
 const cache = (input: TextInput) => input.cache ? { cache_control: { type: "ephemeral" } } : {};
 
-/** OpenRouter: OpenAI-compatible, but images at /images, and decision models (TypeSafe Jev) through
- *  its System One API. */
+/** OpenRouter: OpenAI-compatible, but images at /images, batches inline, and decision models
+ *  (TypeSafe Jev) through its System One API. */
 export const openrouter: Adapter = {
   ...openai,
   text: (call, input: TextInput) => text(call, input, cache(input)),
@@ -178,4 +190,6 @@ export const openrouter: Adapter = {
     parseStructured((await text(call, input, { ...format(schema), ...cache(input) })).text, schema),
   image: async (call, { prompt, n }: { prompt: string; n?: number }) => urls(call, prompt, await post(call, "/images", { model: call.model, prompt, n })),
   decide: systemone.decide,
+  batch: openrouterBatch,
+  batched: openrouterBatched,
 };

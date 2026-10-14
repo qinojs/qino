@@ -4,8 +4,10 @@ import type { App, StandardSchema, Tool, Transcript } from "@qino/qino";
 import type { Opts } from "./lib/request.ts";
 
 export { AiError, candidates, request } from "./lib/request.ts";
+export { batch } from "./lib/batch.ts";
 export { readSse } from "./lib/openai.ts";
 export type { Adapter, Opts } from "./lib/request.ts";
+export type { BatchAnswer, BatchInput, BatchItem } from "./lib/batch.ts";
 
 /** Provider-neutral content. An image `url` may be a data URL. */
 export type Part = { type: "text"; text: string } | { type: "image"; url: string };

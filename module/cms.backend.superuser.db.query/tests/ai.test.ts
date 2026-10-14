@@ -19,7 +19,7 @@ const fake: Adapter = {
 
 Deno.test("db.query ai: tries statements without keeping anything; the user gets the query", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["ai", "ai.tools"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  for (const mod of ["cron", "ai", "ai.tools"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
   try {
