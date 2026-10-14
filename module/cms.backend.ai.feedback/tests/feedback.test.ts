@@ -26,10 +26,10 @@ Deno.test("cms.backend.ai.feedback: reports by what they are about, to deal with
     const node = { app, page: () => ({ url: () => "/feedback" }), cms: { nodeByModule: () => undefined } } as unknown as Node;
     const as = (fn: () => Promise<unknown>) => runAs(app, 7, "test", fn).then(String);
 
-    const qino = await as(() => topics(node, { vars: { for: "qino" } })), operator = await as(() => topics(node, { vars: { for: "operator" } }));
-    for (const part of ['href="/feedback?kind=description&amp;about=iot_get"', "<td>2\n      <td>2\n      <td>1\n      <td>2"]) assertStringIncludes(qino, part); // 2 open, 2 reports, 1 session, 2 models
-    for (const part of ['href="/feedback?kind=config&amp;about=-"', "<i>system</i>"]) assertStringIncludes(operator, part);
-    assert(!qino.includes("config") && !operator.includes("iot_get")); // each for whom it is
+    const all = await as(() => topics(node)), operator = await as(() => topics(node, { vars: { kind: "config" } }));
+    for (const part of ['href="/feedback?kind=description&amp;about=iot_get"', "<td>2\n      <td>2\n      <td>1\n      <td>2", 'href="/feedback?kind=config&amp;about=-"']) assertStringIncludes(all, part); // 2 open, 2 reports, 1 session, 2 models
+    assertStringIncludes(operator, "<i>system</i>");
+    assert(!operator.includes("iot_get")); // only of its kind
     const open = await as(() => reports(node));
     for (const part of ["what is &lt;b&gt;an&lt;/b&gt; entity?", "no credit left", `session ${session.id}`, "ann@example.test", `data-done="${unclear}"`, ">m</span>"]) assertStringIncludes(open, part);
     assert(!(await as(() => reports(node, { vars: { about: "-" } }))).includes("entity?")); // only those about the whole

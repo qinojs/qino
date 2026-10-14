@@ -1,11 +1,12 @@
 {
   "name": "@qino/qino",
-  "// minimumDependencyAge, unstable": "stay here: in the published repo this file is the root and Deno reads it. Inside the monorepo it is a workspace member, where the root wins and Deno warns about these lines — that warning is the cheaper price.",
+  "// minimumDependencyAge, unstable, nodeModulesDir": "stay here: in the published repo this file is the root and Deno reads it. Inside the monorepo it is a workspace member, where the root wins and Deno warns about these lines — that warning is the cheaper price. nodeModulesDir none: Deno takes npm packages from its cache, without a node_modules folder (package.json is for Node and Bun).",
   "minimumDependencyAge": {
     "age": "P1D",
     "exclude": ["jsr:@nuxodin/item"]
   },
   "unstable": ["worker-options"],
+  "nodeModulesDir": "none",
   "version": "0.7.7",
   "exports": {
     ".": "./module/core/mod.ts",

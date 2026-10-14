@@ -30,12 +30,9 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "AI feedback", de: "KI-Feedback" });
 }
 
-/** For whom a report is, by its kind: `config` for the site's operator, the others for Qino's developers. */
-const FOR = { operator: sql`kind = ${"config"}`, qino: sql`kind <> ${"config"}` };
-
-/** What reports for `vars.for` (operator, qino) are about, by kind, the most open first; a click shows only those. */
+/** What reports are about, by kind (only `vars.kind`'s with it), the most open first; a click shows only those. */
 export async function topics(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
-  const { db, t } = node.app, url = await pageUrl(node), only = FOR[vars.for as keyof typeof FOR] ?? sql`1 = 1`;
+  const { db, t } = node.app, url = await pageUrl(node), only = vars.kind ? sql`kind = ${vars.kind}` : sql`1 = 1`;
   const rows = await db.query`SELECT kind, about, SUM(CASE WHEN done THEN 0 ELSE 1 END) AS open, COUNT(*) AS reports,
       COUNT(DISTINCT session_id) AS sessions, COUNT(DISTINCT model) AS models, MAX(time) AS last_time
     FROM ai_agent_feedback WHERE ${only} GROUP BY kind, about ORDER BY open DESC, last_time DESC LIMIT ${LIMIT}`;
@@ -128,20 +125,20 @@ export async function failed(node: Node): Promise<HtmlString> {
       <td>${time(r.last)}`) : html.async`<tr><td colspan=5>${t`No tool call failed`}`}</tbody>`;
 }
 
-/** The topics for the operator and for Qino, the open reports and the failed tool calls; with `?kind=` and `?about=`
- *  the reports of one, `?done=1` also those dealt with. */
+/** The topics, the open reports and the failed tool calls; with `?kind=` only those of a kind (config: for the
+ *  site's operator, the others for Qino), with `?about=` the reports about one, `?done=1` also those dealt with. */
 async function render(node: Node) {
-  const { t } = node.app, query = getCtx().req.query, url = await pageUrl(node);
+  const { db, t } = node.app, query = getCtx().req.query, url = await pageUrl(node);
   const only = { ...query.kind && { kind: String(query.kind) }, ...query.about != null && { about: String(query.about) } };
   const vars = { ...only, ...query.done && { done: 1 } }, toggle = backend.toUrl(url, { ...only, ...!query.done && { done: 1 } });
+  // the kinds there are, to show only one
+  const kinds = (await db.col`SELECT DISTINCT kind FROM ai_agent_feedback ORDER BY kind`).filter(Boolean).map(String);
+  const filter = (kind: string, text: unknown) =>
+    html`<a href="${backend.toUrl(url, kind ? { kind } : {})}" ${(query.kind ?? "") === kind ? "aria-current=true" : ""}>${text}</a>`;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head title="${t`config: credit, keys, models, settings, rights`}">${t`For the operator`}</div>
-      <table class=u2-table cms-part=topics data-for=operator>${topics(node, { vars: { for: "operator" } })}</table>
-    </div>
-    <div class=u2-card style="flex:0 1 auto">
-      <div class=-head title="${t`description, bug, idea`}">${t`For Qino`}</div>
-      <table class=u2-table cms-part=topics data-for=qino>${topics(node, { vars: { for: "qino" } })}</table>
+      <div class=-head>${t`Topics`} <small>${filter("", "all")}${kinds.map((kind) => html` · ${filter(kind, kind)}`)}</small></div>
+      <table class=u2-table cms-part=topics>${topics(node, { vars: only.kind ? { kind: only.kind } : {} })}</table>
     </div>
     <div class=u2-card style="flex:1 1 30rem; min-width:0">
       <div class=-head>
