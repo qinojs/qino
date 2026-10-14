@@ -118,7 +118,7 @@ const onlineDesc = (sample: string) => `ISO string ("${sample}"), Unix timestamp
 // ───── Node ───────────────────────────────────────────────────────────────
 
 const node = {
-  paramSchema: s.number().describe("Node-ID"),
+  paramSchema: s.number().describe("Node id: a page, or a content block"),
 
   resolve: async (id: number, ctx: Ctx) => {
     const n = await cms(ctx.app).node(id);

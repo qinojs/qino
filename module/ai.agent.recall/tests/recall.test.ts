@@ -61,3 +61,13 @@ Deno.test("ai.agent.recall: what is close to what was said and not given yet com
   await session.ask("the logo again");
   assertEquals((await notes(app, session.id)).length, 1); // given already
 }));
+
+Deno.test("ai.agent.recall: a text said before comes to mind too, with its stored vector", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "tool lead", tools: ["many_*"] });
+  const tools = "## Possibly relevant tools\nNot in your tool list; call them with core_toolCalls_post.\n- many_logo_get: Draws a logo";
+  for (const _ of [1, 2]) { // the second session's message is embedded already
+    const session = await agent.start(7);
+    await session.ask("draw the logo");
+    assertEquals(await notes(app, session.id), [tools]);
+  }
+}));

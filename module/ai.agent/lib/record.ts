@@ -1,4 +1,5 @@
 import { errMsg, unixTime } from "@qino/qino";
+import { embedded } from "@qino/qino/ai.embed";
 
 import * as search from "./search.ts";
 
@@ -26,9 +27,13 @@ export async function save(
     ...modelProvider && { model_provider_id: modelProvider },
   }));
   if (message.role !== "user" && message.role !== "assistant") return;
-  search.keep(app, "ai_session_message", { agent_id: agent, message_id: id }, search.textOf(message.content))
-    .then(async ([vector]) => {
-      if (message.role !== "user" || !vector) return;
+  const key = { agent_id: agent, message_id: id };
+  search.keep(app, "ai_session_message", key, search.textOf(message.content))
+    .then(async () => {
+      if (message.role !== "user") return;
+      // as stored: a text said before reuses its vector, keep() returns only those it had to embed
+      const [vector] = await embedded(app, "ai_session_message", key);
+      if (!vector) return;
       await search.associate(app, agent, vector);
       await app.fire("ai.agent:associate", { agent, session, vector });
     })

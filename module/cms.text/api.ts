@@ -217,7 +217,7 @@ export const api: ApiTree = {
   },
   page: {
     ":page": {
-      paramSchema: s.number().describe("Node-ID"),
+      paramSchema: s.number().describe("Node id: a page, or a content block"),
       translate: {
         post: {
           description: "Translate all texts of a page/content into a target language",
