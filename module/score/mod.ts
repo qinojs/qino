@@ -12,7 +12,7 @@ import { sql, unixTime } from "@qino/qino";
 import type { Db, Sql } from "@qino/qino";
 
 /** Rows weaker than this many accesses are dropped by the prune job. */
-const FORGET = 0.02;
+const FORGET = 0.01;
 
 const rate = (halfLife: number) => Math.LN2 / halfLife;
 
