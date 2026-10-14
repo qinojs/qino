@@ -18,7 +18,7 @@ export const situation = (agent: number, session: number, url: string): string =
 const names = (entry: string, name: string) => entry.endsWith("_*") ? name.startsWith(entry.slice(0, -1)) : name === entry;
 
 /** The api's tools the entries name. */
-const toolsOf = (app: App, entries: string[]) => toTools(app.apiTree).filter((tool) => entries.some((entry) => names(entry, tool.name)));
+export const toolsOf = (app: App, entries: string[]) => toTools(app.apiTree).filter((tool) => entries.some((entry) => names(entry, tool.name)));
 
 /** Refuses entries that name no tool, as a misspelt one would leave the agent without it. */
 export function checkTools(app: App, entries: string[]): void {
@@ -110,6 +110,28 @@ function answered(messages: Message[]) {
   });
 }
 
+/** What the model of `session` was given as it started (none before its first question), and the history
+ *  after it, as other modules let it be sent (compaction); what is kept stays. `ids`: those of both. */
+async function sent(app: App, agent: number, session: number) {
+  const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
+    .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
+  const { history } = await app.fire("ai.agent:history", { agent, session, history: kept.filter((row) => row.message.role !== "error" && !isGiven(row.message)) });
+  const given = kept.find((row) => isGiven(row.message)), rows = history as { id: number; message: Message & { known?: string[] } }[];
+  return { given: given?.message, history: rows, ids: new Set([...given ? [given.id] : [], ...rows.map((row) => row.id)]) };
+}
+
+const agentOf = async (app: App, session: number) => Number(await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`);
+
+/** The ids of the messages kept in `session` its model is still sent: after a compaction fewer. */
+export const sentIds = async (app: App, session: number): Promise<Set<number>> => (await sent(app, await agentOf(app, session), session)).ids;
+
+/** What the model of `session` has in its context, by key: its tools as given, and what the messages
+ *  still sent list as `known` (memories by id, `5`; others' by theirs, `u5`; tools by name). */
+export async function known(app: App, session: number): Promise<Set<string>> {
+  const { given, history } = await sent(app, await agentOf(app, session), session);
+  return new Set([...given?.tools?.map((tool: Tool) => tool.name) ?? [], ...given?.known ?? [], ...history.flatMap((row) => row.message.known ?? [])]);
+}
+
 /** What the model is given in `session`, as for a turn: the role with memories and the tools as the
  *  session started with them (kept as its first message, of role `system`), run as they are now; the
  *  history after it, as other modules let it be sent (compaction); how the model is chosen. What was
@@ -117,14 +139,12 @@ function answered(messages: Message[]) {
 export async function context(app: App, session: number) {
   const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai_session s JOIN ai_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
   if (!agent) throw new Error(`No session ${session}`);
-  const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
-    .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
   const id = Number(agent.agent_id), usrId = Number(agent.usr_id);
-  // other modules add to what the model is given: texts to its context, tools
-  const { parts, tools: more } = await app.fire("ai.agent:turn", { agent: id, session, usrId, parts: [] as string[], tools: [] as Tool[] });
+  // other modules add to what the model is given: texts to its context (with their keys), tools
+  const { parts, known, tools: more } = await app.fire("ai.agent:turn", { agent: id, session, usrId, parts: [] as string[], known: [] as string[], tools: [] as Tool[] });
   const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
   // given once, as the session starts: later changes come with the next session; ranked only then, and with many
-  let given = kept.map((row) => row.message).find(isGiven);
+  let { given, history } = await sent(app, id, session);
   const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]")));
   const list = await choice(app, id, String(agent.system ?? ""), allowed, !given && allowed.length > AT_ONCE);
   const tools = [...more, ...list.map((r) => r.tool)];
@@ -132,10 +152,12 @@ export async function context(app: App, session: number) {
     const role = agent.system ? `## Your role\n${agent.system}` : "";
     const system = [situation(id, session, await app.url()), role, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
     const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
-    await save(app, session, id, given = { role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })), prefer });
+    const memories = (await memory.list(app, id, memory.IN_MIND)).map((m) => String(m.id));
+    await save(app, session, id, given = {
+      role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })),
+      known: [...memories, ...known], prefer,
+    });
   }
-  // other modules may send less of the history than was said (compaction); what is kept stays
-  const { history } = await app.fire("ai.agent:history", { agent: id, session, history: kept.filter((row) => row.message.role !== "error" && !isGiven(row.message)) });
   // the tools as given, run as they are now
   const now = new Map(tools.map((tool) => [tool.name, tool]));
   const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));

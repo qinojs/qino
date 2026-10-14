@@ -72,3 +72,18 @@ Deno.test("ai.user_memory: what the user says strengthens their memories close t
   for (let i = 0; i < 100 && (await order())[0] === 1; i++) await new Promise((r) => setTimeout(r, 10));
   assertEquals(await order(), [2, 1]);
 }));
+
+Deno.test("ai.user_memory: what is close to what the user says and not given yet comes to mind, as a note", () => withApp(async (app) => {
+  const session = await (await Agent.create(app, { system: "lead" })).start(7);
+  await session.ask("hi");
+  const id = Number(await app.db.table("ai_user_memory").insert({ usr_id: 7, content: "always a round logo" })); // not given: kept later
+  await index(app, "ai_user_memory", { usr_id: 7, memory_id: id }, "always a round logo");
+  await session.ask("how round is the logo?");
+  const note = `## Possibly relevant memories about the user\n[u${id}] always a round logo`, notes = () =>
+    app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} AND message LIKE ${"%Possibly relevant%"}`;
+  for (let i = 0; i < 100 && !(await notes()).length; i++) await new Promise((r) => setTimeout(r, 10));
+  assertEquals((await notes()).map((json) => JSON.parse(String(json)).content), [note]);
+  await session.ask("the logo again");
+  await new Promise((r) => setTimeout(r, 60));
+  assertEquals((await notes()).length, 1); // given already
+}));

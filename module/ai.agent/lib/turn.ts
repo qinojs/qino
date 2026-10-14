@@ -2,6 +2,7 @@ import { errMsg, unixTime } from "@qino/qino";
 import { run } from "@qino/qino/ai.tools";
 
 import { context } from "./context.ts";
+import * as notes from "./notes.ts";
 import { save } from "./record.ts";
 
 import type { App } from "@qino/qino";
@@ -15,11 +16,11 @@ const STEPS = 100;
 const PAUSE = 5 * 60;
 
 /** The time as a note before a question: at the first one, and after a pause since `last`. */
-function clock(last: number, now = unixTime()): Message | undefined {
+function clock(last: number, now = unixTime()): string | undefined {
   if (last && now - last < PAUSE) return;
   const at = Temporal.Instant.fromEpochMilliseconds(now * 1000).toZonedDateTimeISO(Temporal.Now.timeZoneId())
     .toString({ smallestUnit: "minute", timeZoneName: "never" });
-  return { role: "system", content: `Now: ${at}` };
+  return `Now: ${at}`;
 }
 
 // One turn after the other per session, as a person answers: a message waits for the one before.
@@ -56,14 +57,14 @@ export function cancel(app: App, session: number): boolean {
   return !!abort;
 }
 
-/** A note in `session`, kept in the history. The agent reads it with the next question (the model
- *  gets it as a `system` message in the history). */
-export function note(app: App, session: number, content: string | Part[]): Promise<void> {
-  return inTurn(app, session, async () => {
-    const agent = await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`;
-    if (!agent) throw new Error(`No session ${session}`);
-    await save(app, session, Number(agent), { role: "system", content });
-  });
+/** A note in `session`, kept in the history (the model gets it as a `system` message). While a turn is on
+ *  its way the agent reads it with the next step, else with the next question; notes waiting together
+ *  come as one. */
+export async function note(app: App, session: number, content: string | Part[], known?: string[]): Promise<void> {
+  const agent = await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`;
+  if (!agent) throw new Error(`No session ${session}`);
+  notes.add(app, session, { content, known });
+  if (!running(app, session)) await inTurn(app, session, () => notes.flush(app, session, Number(agent)));
 }
 
 /** Answer `content` in `session`, from its agent's role and memories, the session so far and the
@@ -71,12 +72,12 @@ export function note(app: App, session: number, content: string | Part[]): Promi
  *  message of role `error`, not sent again. */
 export function ask(app: App, session: number, content: string | Part[], { onText }: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
   return inTurn(app, session, async (signal) => {
-    // the time, as a note: the user's message stays as it was said; asked before the context is kept
+    // the notes waiting, the time first, before the question: the user's message stays as it was said;
+    // the time asked before the context is kept
     const time = clock(Number(await app.db.one`SELECT MAX(time) FROM ai_session_message WHERE session_id = ${session}`));
     const { agent: id, usrId, prefer, tools, messages: given } = await context(app, session);
-    const asked: Message = { role: "user", content }, messages = [...given, ...time ? [time] : [], asked];
-    if (time) await save(app, session, id, time);
-    await save(app, session, id, asked);
+    const asked: Message = { role: "user", content }, before = notes.take(app, session, time), messages = [...given, ...before, asked];
+    for (const message of [...before, asked]) await save(app, session, id, message);
     // always streamed: a long answer is no silence, and what a cancelled step said so far stays
     let partial = "";
     const out = await run(app, {
@@ -85,12 +86,14 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
       usrId,
       onText: (delta) => { partial += delta; onText?.(delta); },
       maxSteps: STEPS,
+      notes: () => notes.take(app, session),
       onMessage: (message, modelProvider) => (partial = "", save(app, session, id, message, modelProvider)), // each step, as it comes
     }, { prefer, signal })
       .catch(async (e) => {
         if (partial) await save(app, session, id, { role: "assistant", content: `${partial}\n\n(interrupted)` });
         throw (await save(app, session, id, { role: "error", content: errMsg(e) }), e);
-      });
+      })
+      .finally(() => notes.flush(app, session, id)); // what came up after the last step
     // in the background: all the model was given and answered, as it was sent (e.g. to compact it)
     const { model, modelProvider } = out;
     app.fire("ai.agent:answered", { agent: id, session, usrId, messages: [...messages, ...out.messages], tools, model, modelProvider, prefer })

@@ -240,6 +240,7 @@ cms.initNode("backend.ai.agents", (el) => {
     if (list && news.length) {
       list.append(...news);
       await Promise.all(news.map(render));
+      cms.reloadPart(nid, "session", { session }).catch(() => {}); // its tools, context and known with them
     }
     setTimeout(poll, busy ? 1000 : 3000);
   };

@@ -11,7 +11,8 @@ Hooked into [ai.agent](../ai.agent/), so it can be left out or replaced by anoth
 - `ai.agent:turn`: who the user is (name, email, id) and the strongest 10 of what is known about them go into the
   context as the session starts ("## User", ids as `u5`), and the tool to forget it. To change one, the agent forgets it and remembers
   the new one: `decide()` sorts every new memory.
-- `ai.agent:associate`: what the user says strengthens their memories close to it.
+- `ai.agent:associate`: what the user says strengthens their memories close to it; those not given yet in the
+  session come to mind as a note (`## Possibly relevant memories about the user`), at most 3.
 - `ai.agent:remember`: a new memory is theirs if it is about them, as a quick `decide()` judges;
   else it stays the agent's.
 

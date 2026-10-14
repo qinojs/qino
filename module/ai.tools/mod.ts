@@ -22,17 +22,20 @@ export async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<
  *  the new ones (assistant and tool), for a history to keep; `onMessage` gets each as it comes, an
  *  answer with the model at its provider that gave it. The run acts as user `usrId` (its rights bound
  *  the tools), through the actor "ai". `maxSteps` (default 10) bounds the calls. Each step sends the
- *  history again: `cache` (default true) keeps it in the provider's cache. */
-export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, cache = true, ...input }: Omit<TextInput, "tools"> & {
+ *  history again: `cache` (default true) keeps it in the provider's cache. `notes` gives messages to add
+ *  before each step, e.g. what came up while the last one ran. */
+export function run(app: App, { usrId, tools, maxSteps = 10, onMessage, notes, cache = true, ...input }: Omit<TextInput, "tools"> & {
   tools: Tool[];
   usrId: number;
   maxSteps?: number;
   onMessage?: (message: Message, modelProvider?: number) => unknown;
+  notes?: () => Message[];
 }, opts?: Opts): Promise<TextOutput & { messages: Message[] }> {
   return runAs(app, usrId, "ai", async () => {
     const messages: Message[] = [], ctx = getCtx();
     const add = async (message: Message, modelProvider?: number) => { messages.push(message); await onMessage?.(message, modelProvider); };
     for (let step = 0, pin = opts; step < maxSteps; step++) {
+      for (const note of notes?.() ?? []) await add(note);
       const answer = await text(app, { ...input, cache, tools, messages: [...input.messages, ...messages] }, pin);
       pin = { ...opts, model: answer.model, modelProvider: answer.modelProvider }; // prefer the provider with the cached history
       await add({ role: "assistant", content: answer.text, toolCalls: answer.toolCalls }, answer.modelProvider);

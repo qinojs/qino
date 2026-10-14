@@ -16,7 +16,7 @@ const cached: unknown[] = [];
 const fake: Adapter = {
   text: (call, { messages, onText, cache }) => {
     cached.push(cache);
-    const asked = messages[0].content, last = messages.at(-1);
+    const asked = messages[0].content, last = messages.findLast((m: any) => m.role !== "system"); // notes aside
     if (asked === "stay") {
       if (last.role === "tool") return Promise.resolve({ text: call.model, toolCalls: [], truncated: false });
       return current.db.table("ai_model_score").insert({ model_id: 2, metric: "intelligence", value: 99 })
@@ -127,4 +127,11 @@ Deno.test("ai.tools: each step asks for the provider's cache, unless told not to
   await run(testApp, ask("echo"));
   await run(testApp, { ...ask("echo"), cache: false });
   assertEquals(cached, [true, true, false, false]);
+}));
+
+Deno.test("ai.tools: notes come before each step, kept as the steps", () => withApp(async (testApp) => {
+  const waiting = [[], [{ role: "system" as const, content: "noted" }]], kept: string[] = [];
+  const out = await run(testApp, { ...ask("echo"), notes: () => waiting.shift() ?? [], onMessage: (m) => kept.push(m.role) });
+  assertEquals(out.messages.map((m) => m.role), ["assistant", "tool", "system", "assistant"]); // after the first step
+  assertEquals(kept, ["assistant", "tool", "system", "assistant"]);
 }));

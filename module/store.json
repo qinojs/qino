@@ -2,6 +2,7 @@
   "modules": {
     "ai": {},
     "ai.agent": {},
+    "ai.agent.recall": {},
     "ai.agent.sleep": {},
     "ai.api": {},
     "ai.discover": {},

@@ -21,8 +21,9 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   messages of role `error`, not sent again. What was sent is never changed, only added to (prompt
   cache): what changes meanwhile (role, memories, tools) comes with the next session. A tool taken
   from the agent meanwhile no longer runs.
-- **Notes:** `session.note(content)` tells the agent something without asking. It reads it with the
-  next question (the model gets it as a `system` message in the history).
+- **Notes:** `session.note(content)` tells the agent something without asking (the model gets it as a
+  `system` message in the history). While a turn is on its way it reads it with the next step, else
+  before the next question; notes waiting together come as one message, the time first.
 - **The time** comes as a note before the first question of a session and after 5 minutes without a
   message (`Now: 2026-10-10T21:40+02:00`); what the user said stays as it is.
 - **One turn after the other** per session: a message waits for the answer to the one before.
@@ -118,7 +119,7 @@ What the agent grows into, modelled on how a person thinks and remembers.
 | Deliberate thinking ("system 2") | slow, thorough | the model with its tools (`ai.tools`) | built |
 | Episodic memory | experiences: what happened when | `search` in all past sessions; later a summary per session | search built |
 | Semantic memory | knowledge, facts | memories: short facts, the strongest 10 in context | built |
-| Attention | only what matters comes to mind | association strengthens the memories close to what is said; later only the strongest and the close ones in the context | association built |
+| Attention | only what matters comes to mind | association strengthens the memories close to what is said; what is close and not in the context comes as a note ([ai.agent.recall](../ai.agent.recall/)) | built |
 | Knowing people | what the other one is like | memories about the user (preferences, language) | with memories |
 | Sleep | consolidate, clean up, replay | long sessions compacted, what lasts kept first ([ai.agent.sleep](../ai.agent.sleep/)); memories merged, skills derived | compaction built |
 | Procedural memory | skills, routines, habits | skills: instructions it writes itself | later |

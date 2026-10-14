@@ -2,6 +2,7 @@
 import { Access, errMsg, getCtx, NotFoundError, s, sql, toTools, unixTime } from "@qino/qino";
 import { collection, index, search } from "@qino/qino/ai.embed";
 import { hit, scored, sqlScore } from "@qino/qino/score";
+import { Session } from "@qino/qino/ai.agent";
 
 import { IN_MIND, personal } from "./mod.ts";
 
@@ -70,14 +71,23 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     const who = [name, await usr?.contact("email"), `id ${turn.usrId}`].filter(Boolean).join(", ");
     turn.parts.push(`## User: ${who}\nKnown to every agent, in every session with them.` +
       memories.map((m) => `\n[u${m.id}] ${m.content}`).join(""));
+    turn.known.push(...memories.map((m) => `u${m.id}`));
     turn.tools.push(...toTools({ user: app.apiTree["ai.user_memory"] }, { apis: { "/user/memories/:memory": ["delete"] } }));
   }, { signal });
 
-  // what the user says strengthens their memories close to it, the closer the more
-  app.on("ai.agent:associate", async ({ session, vector }) => {
-    const usr = await app.db.one`SELECT usr_id FROM ai_session WHERE id = ${session}`;
+  // what the user says strengthens their memories close to it, the closer the more; those not given yet
+  // in the session come to mind, as a note the agent reads with its next step
+  app.on("ai.agent:associate", async ({ session: id, vector }) => {
+    const usr = await app.db.one`SELECT usr_id FROM ai_session WHERE id = ${id}`;
     const close = await search(app, { ai_user_memory: sql`e.usr_id = ${usr}` }, vector, { limit: 5 }).catch((e) => (log(e), []));
     for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_user_memory", Number(key.memory_id), score);
+    const session = new Session(app, id), known = await session.known(), lines = new Map<string, string>();
+    for (const { key, content, score } of close) {
+      const id = `u${key.memory_id}`; // the nearest chunk of each
+      if (score >= CLOSE && !known.has(id) && !lines.has(id)) lines.set(id, `[${id}] ${content}`);
+    }
+    const near = [...lines].slice(0, 3);
+    if (near.length) await session.note(`## Possibly relevant memories about the user\n${near.map(([, line]) => line).join("\n")}`, { known: near.map(([id]) => id) });
   }, { signal });
 
   // a new memory about the person is theirs, not the agent's

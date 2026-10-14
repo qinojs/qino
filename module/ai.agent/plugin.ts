@@ -18,6 +18,7 @@ Object.assign(App.events, {
       agent, session,
       usrId: s.number().describe("The user it talks with."),
       parts: s.array(s.string()).describe("Texts for its context; push yours."),
+      known: s.array(s.string()).describe("Keys of what your parts bring into its context (u5); push yours."),
       tools: s.array(s.any()).describe("Tools it may use; push yours."),
     }),
   },

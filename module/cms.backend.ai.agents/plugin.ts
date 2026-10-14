@@ -90,11 +90,14 @@ const short = (text: string) => text.length > SHORT ? text.slice(0, SHORT) + " �
 const count = (value: unknown, danger = false) => Number(value) ? html`<span style="${danger ? "color:var(--red)" : ""}">${Number(value)}</span>` : "–";
 /** A stored `prefer`, "–" when empty: then the agent's or ai's own. */
 const choice = (json: unknown) => json ? html`<small>${json}</small>` : "–";
+const kilo = (tokens: number) => tokens < 1000 ? String(tokens) : `${Math.round(tokens / 1000)}k`;
 const firstLine = (text: unknown) => short(String(text ?? "").split("\n", 1)[0]);
 /** The link to an agent's page: in its own color. */
 const agentLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(url, { agent: id })}">${colored(id)}</a>`;
 /** The link to a session's page. */
 const sessionLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(url, { session: id })}">${id}</a>`;
+/** What the model has in its context, by key (memories `5`, the user's `u5`, tools by name), each in its color. */
+const keys = (known: Iterable<string>) => [...known].map((key) => html`<span class=u2-badge style="background-color:${uniqueColor(key)};color:white">${key}</span> `);
 const pageUrl = async (node: Node) => (await node.page()).url();
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -304,10 +307,10 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
 }
 
 /** All about session `vars.session`: who, with which agent, what it was given, which models answered,
- *  which tools it called. */
+ *  its tools: called, and known (in its model's context). */
 export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, id = Number(vars.session) || 0, url = await pageUrl(node);
-  const [s, models, calls] = await Promise.all([
+  const [s, models, calls, known, given, last, size] = await Promise.all([
     db.row`SELECT s.id, s.agent_id, s.usr_id, s.prefer, s.time, u.username, MAX(m.time) AS last_time
       FROM ai_session s LEFT JOIN usr u ON u.id = s.usr_id
       LEFT JOIN ai_session_message m ON m.session_id = s.id
@@ -316,9 +319,19 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       FROM ai_session_message m ${answeredBy}
       WHERE m.session_id = ${id} AND mp.id IS NOT NULL GROUP BY am.name, p.name ORDER BY answers DESC`,
     db.col`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND m.message LIKE ${'%"toolCalls":[{%'}`,
+    new Session(node.app, id).known().catch(() => new Set<string>()),
+    db.one`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND ${role("system")} AND m.message LIKE ${'%"tools":[%'} ORDER BY m.id LIMIT 1`,
+    db.row`SELECT am.name AS model, am.context_length FROM ai_session_message m ${answeredBy} WHERE m.session_id = ${id} AND mp.id IS NOT NULL ORDER BY m.id DESC LIMIT 1`,
+    raw(node.app, id).then((sent) => sent.messages.length ? Math.ceil(JSON.stringify(sent).length / 4) : 0).catch(() => 0), // tokens, roughly as ai estimates them
   ]);
   if (!s) return html.async`<div>${t`No such session`}</div>`;
   const used = Map.groupBy(calls.flatMap((json) => JSON.parse(String(json)).toolCalls ?? []), (c: any) => String(c.name));
+  // the keys of tools: given as it started, or of its api paths (recalled); the others are memories
+  const names = new Set([...JSON.parse(String(given ?? "{}")).tools?.map((tool: any) => tool.name) ?? [],
+    ...(await new Agent(node.app, Number(s.agent_id)).allowed()).map((tool) => tool.name)]);
+  const tools = [...new Set([...used.keys(), ...[...known].filter((key) => names.has(key))])]
+    .sort((a, b) => (used.get(b)?.length ?? 0) - (used.get(a)?.length ?? 0) || a.localeCompare(b));
+  const memories = [...known].filter((key) => !names.has(key));
   return html.async`<div>
     <table class=u2-table>
       <tr>
@@ -333,6 +346,12 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       <tr>
         <th>${t`Started`}
         <td>${time(s.time)}
+      <tr>
+        <th title="${t`What its model is sent at the next turn, in tokens roughly; of the context of the model that answered last`}">context
+        <td>${size ? html`<span style="${last?.context_length && size > Number(last.context_length) ? "color:var(--red)" : ""}">~${kilo(size)}</span>` : "–"}${last?.context_length ? html` / ${kilo(Number(last.context_length))} (${colored(last.model)})` : ""}
+      <tr>
+        <th title="${t`The memories in its model's context now: its own (5), the user's (u5)`}">known
+        <td>${memories.length ? keys(memories) : "–"}
       <tr>
         <th>${t`Last active`}
         <td>${time(s.last_time)}${unixTime() - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
@@ -350,11 +369,13 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
   </table>
   <table class=u2-table>
     <thead><tr>
-      <th>${t`Tools called`}
-      <th>${t`Calls`}
-    <tbody>${used.size ? [...used].sort((a, b) => b[1].length - a[1].length).map(([tool, list]) => html`<tr>
+      <th>${t`Tools`}
+      <th title="${t`How often its model called it`}">called
+      <th title="${t`In its model's context now: given as it started, or recalled`}">known
+    <tbody>${tools.length ? tools.map((tool) => html`<tr>
       <td>${colored(tool)}
-      <td>${count(list.length)}`) : html.async`<tr><td colspan=2>${t`No tools called yet`}`}</tbody>
+      <td>${count(used.get(tool)?.length)}
+      <td>${known.has(tool) ? "✓" : "–"}`) : html.async`<tr><td colspan=3>${t`No tools`}`}</tbody>
   </table>
   `;
 }
@@ -376,17 +397,21 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
   const rows = await node.app.db.query`SELECT m.id, m.time, m.message, am.name AS model, p.name AS provider
     FROM ai_session_message m ${answeredBy}
     WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
-  const running = new Session(node.app, Number(vars.session)).running;
+  const session = new Session(node.app, Number(vars.session)), running = session.running;
+  // what its model is no longer sent (compacted, failures) is faded; what follows along is always sent
+  const sent = vars.after ? undefined : await session.sent().catch(() => undefined);
+  const faded = (id: unknown) => sent?.size && !sent.has(Number(id)) ? "opacity:.5;" : "";
   return html`<div class="u2-flex -Col" style="flex-wrap:nowrap; max-width:80rem" ${running ? "data-running" : ""}>${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
-    const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}</small>`;
+    const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}${faded(row.id) ? " · not sent" : ""}</small>`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note
-    if (m.role === "system") return html`<div data-message=${row.id}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
+    if (m.role === "system") return html`<div data-message=${row.id} style="${faded(row.id)}">${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
       ${folded(text, text)}
-      ${m.tools ? folded(`${m.tools.length} tools: ${m.tools.map((t: any) => t.name).join(", ")}`, pretty(m.tools)) : ""}</div>`;
+      ${m.tools ? folded(`${m.tools.length} tools: ${m.tools.map((t: any) => t.name).join(", ")}`, pretty(m.tools)) : ""}
+      ${m.known?.length ? html`<div><small>known: ${keys(m.known)}</small></div>` : ""}</div>`;
     if (m.role === "tool") return ""; // shown with its call, in the dialog of the calls
     const side = m.role === "user" ? "flex-end" : "flex-start";
-    return html`<div data-message=${row.id} style="align-self:${side}; max-width:80%">
+    return html`<div data-message=${row.id} style="${faded(row.id)}align-self:${side}; max-width:80%">
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
         : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}
@@ -408,7 +433,7 @@ async function render(node: Node) {
       <div class=-head>
         <a href="${url}">${t`Agents`}</a> › ${agentId ? html.async`<a href="${backend.toUrl(url, { agent: agentId })}" style="color:${uniqueColor(agentId)}">${t`Agent`} ${agentId}</a> › ` : ""}${t`Session`} ${sessionId}
       </div>
-      ${session(node, { vars })}
+      <div cms-part=session style="display:contents">${session(node, { vars })}</div>
     </div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Conversation`} <button type=button data-raw title="${t`What the model is given at the next turn`}">${t`Raw`}</button></div>

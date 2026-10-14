@@ -73,7 +73,7 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
 
     // a session's page: everything about it
     const its2 = await as(() => aboutSession(node, { vars: { session: session.id } }));
-    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">m</span>", ">search_post</span>"]) {
+    for (const part of [`href="/agents?agent=${agent.id}"`, "ann@example.test", ">context", ">m</span>", ">search_post</span>\n      <td><span style=\"\">1</span>\n      <td>✓", ">known"]) {
       assertStringIncludes(its2, part);
     }
     assert(!its2.includes("[object Promise]"));
@@ -92,7 +92,7 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
     assert(!kept.includes("[object Promise]"));
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
-    for (const part of ["align-self:flex-end", "color:white\">search_post</small>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: search_post", "prefer {&quot;cost&quot;:1}", "@ <span"]) {
+    for (const part of ["align-self:flex-end", "color:white\">search_post</small>", "<button type=button class=u2-unstyle data-call=", "<details>", "color:var(--red)", "1 tools: search_post", "prefer {&quot;cost&quot;:1}", "@ <span", "error · not sent"]) {
       assertStringIncludes(talk, part);
     }
     // the dialog of the calls: each with its result

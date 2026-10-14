@@ -21,8 +21,9 @@ const sent: unknown[][] = [];
 // the situation, the role header, the standing hint and an empty memories header are left out of what the fake echoes
 const shown = (system: string) => system.replace(/^[^]*?## Your role\n/, "").replace(`\n${HINT}`, "").replace(/\n\n## Your memories(?!\n)/, "");
 
-// Talking live, it hands what it was given to `talked` and answers the offer reversed.
-let talked: any;
+// Talking live, it hands what it was given to `talked` and answers the offer reversed. Asked "hold", it
+// waits for `held` (`holding` meanwhile), then calls a tool.
+let talked: any, held: Promise<void> | undefined, holding = false;
 const fake: Adapter = {
   live: (_call, input) => (talked = input, Promise.resolve({ sdp: [...input.sdp].reverse().join(""), close: () => Promise.resolve(), done: new Promise(() => {}) })),
   embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => t.includes("logo") ? [1, 0] : [0, 1])),
@@ -36,7 +37,8 @@ const fake: Adapter = {
     const typed = String(last.content).split("\n\n(internal")[0]; // without the memories it brought to mind
     if (typed === "fail") throw new Error("down");
     if (typed === "break") throw (onText?.("so far"), new AiError("broken", 502, true));
-    if (typed === "time?") return { text: "", toolCalls: [{ id: "1", name: "toolset_clock_get", args: {} }], truncated: false };
+    if (typed === "hold") holding = true, await held;
+    if (typed === "time?" || typed === "hold") return { text: "", toolCalls: [{ id: "1", name: "toolset_clock_get", args: {} }], truncated: false };
     const [verb, a, b] = typed.split(":");
     const call = { remember: ["memories_post", { content: a }], replace: ["memories_post", { content: b, replaces: Number(a) }], forget: ["memories_delete", { memory: Number(a) }], search: ["search_post", { query: a }],
       find: ["find_tools", { search: a }], call: ["core_toolCalls_post", { calls: [{ name: a }] }] }[verb];
@@ -169,6 +171,20 @@ Deno.test("ai.agent: the time comes as a note before the first question and afte
   assertEquals(notes.length, 2);
 }));
 
+Deno.test("ai.agent: notes said during a turn come with its next step, as one", () => withApp(async (app) => {
+  const session = await (await Agent.create(app, { system: "lead", tools: ["toolset_*"] })).start(7);
+  let release!: () => void;
+  held = new Promise((r) => release = r), holding = false;
+  const answer = session.ask("hold");
+  while (!holding) await new Promise((r) => setTimeout(r, 5));
+  await session.note("a");
+  await session.note("b");
+  release();
+  await answer;
+  assertEquals(sent.at(-1)!.slice(-3).map((m: any) => [m.role, m.content]), [["assistant", ""], ["tool", '"noon"'], ["system", "a\n\nb"]]);
+  assertEquals((await kept(app, session.id)).slice(-3).map(([role, content]) => [role, content]), [["tool", '"noon"'], ["system", "a\n\nb"], ["assistant", "lead #1 a\n\nb"]]);
+}));
+
 Deno.test("ai.agent: the api, for anyone signed in; a session only for its user", () => withApp(async (app) => {
   const agents = () => app.api["ai.agent"].agents, agent = () => app.api["ai.agent"].agent;
   const { id } = await runAs(app, 7, "test", () => agents().post({ system: "lead" })) as { id: number };
@@ -225,8 +241,11 @@ Deno.test("ai.agent: what the model is given is kept as the session starts: role
     .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
   assertEquals(given.map((m) => clocked(m.content)), [`${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, "Now", "the logo is round"]); // given once, and the notes
   assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]);
+  assertEquals([...await session.known()], ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]); // no memory yet as it started
   assertEquals(given[0].prefer, { cost: 1 });
-  assertEquals((await (await agent.start(7)).ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
+  const next = await agent.start(7);
+  assertEquals((await next.ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
+  assertEquals([...await next.known()], ["memories_post", "memories_delete", "search_post", "1"]); // its memories by id
 }));
 
 Deno.test("ai.agent: a failure is kept, but not sent again", () => withApp(async (app) => {
@@ -234,6 +253,8 @@ Deno.test("ai.agent: a failure is kept, but not sent again", () => withApp(async
   await assertRejects(() => session.ask("fail"), Error, "down");
   assertEquals((await session.ask("hi")).text, "lead #2 hi");
   assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "system", "user", "error", "user", "assistant"]);
+  const ids = (await app.db.col`SELECT id FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`).map(Number);
+  assertEquals([...await session.sent()], ids.filter((_, i) => i !== 3)); // all but the failure
 }));
 
 Deno.test("ai.agent: one turn after the other in a session", () => withApp(async (app) => {

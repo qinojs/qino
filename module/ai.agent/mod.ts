@@ -1,7 +1,7 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { checkTools, context, ranked } from "./lib/context.ts";
+import { checkTools, context, known, ranked, sentIds, toolsOf } from "./lib/context.ts";
 import { live } from "./lib/live.ts";
 import { ask, cancel, note, running } from "./lib/turn.ts";
 
@@ -40,6 +40,11 @@ export class Agent {
   tools(): ReturnType<typeof ranked> {
     return ranked(this.#app, this.#id);
   }
+
+  /** The tools of its api paths, unranked. */
+  async allowed(): Promise<Tool[]> {
+    return toolsOf(this.#app, JSON.parse(String(await this.#app.db.one`SELECT tools FROM ai_agent WHERE id = ${this.#id}` || "[]")));
+  }
 }
 
 /** A conversation with an agent, kept exactly. */
@@ -65,9 +70,21 @@ export class Session {
     return { messages, tools: tools.map(({ name, description, parameters }) => ({ name, description, parameters })) };
   }
 
-  /** Tell the agent something without asking. It reads it with the next question. */
-  note(content: string | Part[]): Promise<void> {
-    return note(this.#app, this.#id, content);
+  /** Tell the agent something without asking. It reads it with its next step, or the next question;
+   *  `known`: the keys of what it brings into its context. */
+  note(content: string | Part[], { known }: { known?: string[] } = {}): Promise<void> {
+    return note(this.#app, this.#id, content, known);
+  }
+
+  /** The ids of its kept messages its model is still sent: after a compaction fewer. */
+  sent(): Promise<Set<number>> {
+    return sentIds(this.#app, this.#id);
+  }
+
+  /** What its model has in its context, by key: its tools by name, memories by id (`5`), those of other
+   *  modules as they name them (`u5`). After a compaction only what is still sent. */
+  known(): Promise<Set<string>> {
+    return known(this.#app, this.#id);
   }
 
   /** Talk live, by voice: `sdp` is the browser's WebRTC offer, the answer's goes back to it. */
