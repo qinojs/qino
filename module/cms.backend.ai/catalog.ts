@@ -22,6 +22,7 @@ export const CATALOG: {
   { name: "api.x.ai", type: "openai", endpoint: "https://api.x.ai/v1" },
   { name: "integrate.api.nvidia.com", type: "nvidia", endpoint: "https://integrate.api.nvidia.com/v1" },
   { name: "aihubmix.com", type: "openai", endpoint: "https://aihubmix.com/v1" },
+  { name: "tokenharbor.ai", type: "openai", endpoint: "https://tokenharbor.ai/v1", console: "https://tokenharbor.ai/dashboard" },
   { name: "api.together.xyz", type: "openai", endpoint: "https://api.together.xyz/v1" },
   { name: "api.fireworks.ai", type: "openai", endpoint: "https://api.fireworks.ai/inference/v1" },
   { name: "api.deepinfra.com", type: "openai", endpoint: "https://api.deepinfra.com/v1/openai" },

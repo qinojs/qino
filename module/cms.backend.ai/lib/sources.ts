@@ -64,16 +64,18 @@ export async function offered(app: App, provider: { name: string; endpoint: stri
   return path ? list(path) : [...await list("/models"), ...await list("/embeddings/models").catch(() => [])];
 }
 
-/** Such a description in models.dev's words, or undefined. Prices come per token. */
+/** Such a description in models.dev's words, or undefined. Prices come per token (Token Harbor: per million). */
 const described = (m: any) => m.pricing || m.architecture || m.input_modalities || m.output_modalities ? {
   id: m.id,
   name: m.name,
   description: m.description,
   modalities: { input: m.architecture?.input_modalities ?? m.input_modalities, output: m.architecture?.output_modalities ?? m.output_modalities },
-  tool_call: m.supported_parameters?.includes("tools"),
+  tool_call: m.tool_call ?? m.supported_parameters?.includes("tools"),
   structured_output: m.supported_parameters?.some((p: string) => p === "response_format" || p === "structured_outputs"),
   limit: { context: m.context_length },
-  cost: m.pricing && { input: Number(m.pricing.prompt) * 1e6, output: Number(m.pricing.completion) * 1e6 },
+  cost: m.pricing && (m.pricing.input_usd_per_1m != null
+    ? { input: Number(m.pricing.input_usd_per_1m), output: Number(m.pricing.output_usd_per_1m) }
+    : { input: Number(m.pricing.prompt) * 1e6, output: Number(m.pricing.completion) * 1e6 }),
 } : undefined;
 
 /** Rough guesses where the sources say nothing: a model that reads images to text and is named for OCR does OCR. */
