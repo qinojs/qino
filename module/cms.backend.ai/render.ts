@@ -72,6 +72,7 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <button type=button data-evaluate title="${t`Import all models, their data and benchmarks`}">${t`Import now`}</button>
       <button type=button data-benchmark-key>${t`Benchmark key`}</button>
     </div>
+    ${models ? gaps(app) : ""}
     ${models ? filters(app, vars) : ""}
     ${show === "model" ? "" : part}
     <div class=-body><small>
@@ -84,6 +85,20 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ${models ? tryCard(app) : ""}
   ${models ? batches(app) : ""}
 </div>`;
+}
+
+/** A warning per capability no switched-on model has: another one answers through `via`, at more
+ *  cost (decide by a text model, say), or none at all (embed). */
+async function gaps(app: App) {
+  const t = app.t;
+  const defs = app.modules.linked().flatMap((mod) => Object.entries<any>(mod.plugin.aiCapabilities ?? {}));
+  const served = new Set((await app.db.col`SELECT DISTINCT c.capability FROM ai_model_capability c
+    JOIN ai_model m ON m.id = c.model_id WHERE ${USABLE}`).map(String));
+  const lines = defs.filter(([capability]) => !served.has(capability)).map(([capability, def]) => {
+    const via = Object.keys(def.via ?? {}).join(", ");
+    return html.async`<div><b>${capability}</b>: ${via ? t`no model of its own, ${via} models answer instead` : t`no model, not available`}</div>`;
+  });
+  return lines.length ? html.async`<u2-alert open variant=warning>${lines}</u2-alert>` : "";
 }
 
 /** The batches waiting for their answers (ai `batch`): at a provider, or kept to run here, by the

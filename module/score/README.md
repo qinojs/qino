@@ -49,7 +49,7 @@ A hit sets `ln(exp(score) + exp(rate · now))`, computed in JS. `strength()` con
   (`score' = ln(strength) + rate' · time`) or clear the table.
 - **Positive only.** In log space you can scale down but not subtract: use `forget(…, keep)`.
 
-A daily cron job deletes rows below 0.02 accesses.
+A daily cron job deletes rows below 0.01 accesses.
 
 ## Possible extensions
 
