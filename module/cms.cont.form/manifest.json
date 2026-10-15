@@ -1,10 +1,10 @@
 {
-  "name": "cms.cont.form4",
+  "name": "cms.cont.form",
   "description": "Form: renders its fields, validates them, keeps every entry and optionally mails it.",
   "dependencies": [
     "cms",
     "messaging.email",
-    "cms.cont.form4.fields",
+    "cms.cont.form.fields",
     "cms.cont.text",
     "u2"
   ],

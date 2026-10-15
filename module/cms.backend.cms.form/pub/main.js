@@ -1,6 +1,6 @@
 import { api } from "@qino/pub/api.js";
 
-cms.initNode("backend.cms.form4", (el) => {
+cms.initNode("backend.cms.form", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-search]");
   let form = "", sort = "created", dir = "desc", page = 0, timer;

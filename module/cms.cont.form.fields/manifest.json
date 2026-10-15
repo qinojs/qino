@@ -1,6 +1,6 @@
 {
-  "name": "cms.cont.form4.fields",
-  "description": "The fields of a cms.cont.form4 — each one named after the label it was given.",
+  "name": "cms.cont.form.fields",
+  "description": "The fields of a cms.cont.form — each one named after the label it was given.",
   "dependencies": [
     "cms",
     "u2"

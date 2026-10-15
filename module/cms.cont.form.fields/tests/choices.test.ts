@@ -5,10 +5,10 @@ import { assertStringIncludes } from "@qino/qino/tests";
 Deno.test("choices are what the textarea wrote: no entities, no stripped markup, the empty first line kept", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
-  app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form4.fields");
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form.fields");
   await app.init();
   try {
-    const node = await (await cms(app).node(1)).createCont({ module: "cms.cont.form4.fields" });
+    const node = await (await cms(app).node(1)).createCont({ module: "cms.cont.form.fields" });
     await node.settings.fields.size.type("select");
     const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
     ctx.lang = app.languages.def;

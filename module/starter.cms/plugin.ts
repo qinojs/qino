@@ -101,7 +101,7 @@ async function firstSteps(app: App, root: Node, imprint: Node, privacy: Node) {
     it: `<p>Sotto ${identity}. L'indirizzo e-mail indicato riceve i messaggi del modulo di contatto.</p>`,
   });
   const mail = await moduleLink(app, "cms.backend.superuser.messaging.email", "Backend → Superuser → Messaging → Email");
-  const entries = await moduleLink(app, "cms.backend.cms.form4", "Backend → CMS → Form entries");
+  const entries = await moduleLink(app, "cms.backend.cms.form", "Backend → CMS → Form entries");
   await todo(app, "todo-mail", {
     en: "Sending email", de: "E-Mail-Versand",
     fr: "Envoi d'e-mails", it: "Invio di e-mail",
@@ -191,10 +191,10 @@ async function contactForm(p: Node) {
     fr: "<h1>Contact</h1>\n<p>Écrivez-nous — nous vous répondrons dès que possible.</p>",
     it: "<h1>Contatto</h1>\n<p>Scriveteci — vi risponderemo il prima possibile.</p>",
   });
-  // cms.cont.form4 creates the same two contents on its first render; done here, they hold fields
-  const form = await section(p, "cms.cont.form4");
+  // cms.cont.form creates the same two contents on its first render; done here, they hold fields
+  const form = await section(p, "cms.cont.form");
   await form.settings.__inited(true);
-  const fields = await form.cont("main", "cms.cont.form4.fields");
+  const fields = await form.cont("main", "cms.cont.form.fields");
   const spec = [
     ["name", "text", "name", { en: "Name", de: "Name", fr: "Nom", it: "Nome" }],
     ["email", "email", "email", { en: "Email", de: "E-Mail", fr: "E-mail", it: "E-mail" }],

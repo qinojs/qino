@@ -4,7 +4,7 @@ import * as u2 from "@qino/qino/u2";
 
 import { keepEntry, openForm } from "./mod.ts";
 
-import type { Ctx } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Form } from "./mod.ts";
 
@@ -22,7 +22,7 @@ const settingsSchema = {
 async function init(node: Node) {
   if (node.settings.__inited()) return;
   node.settings.__inited(true);
-  await node.cont("main", "cms.cont.form4.fields");
+  await node.cont("main", "cms.cont.form.fields");
   const success = await node.cont("success", "cms.cont.text");
   await success.text("main", "en", "Thank you<br>We will take care of your request as soon as possible.");
   await success.text("main", "de", "Vielen Dank<br>Wir werden uns schnellstmöglich um Ihr Anliegen kümmern.");
@@ -35,19 +35,19 @@ async function clientAge(ctx: Ctx) {
   return first ? unixTime() - Number(first) : Infinity;
 }
 
-/** Bot heuristics, as in form2: an entry that fails them is refused before it is kept. */
+/** Bot heuristics: an entry that fails them is refused before it is kept. */
 async function spamCheck(node: Node, form: Form, ctx: Ctx) {
   const app = node.app;
   if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
-    app.fire("suspicious", { ctx, weight: 3, reason: "form4 honeypot filled" }).catch(() => {});
+    app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" }).catch(() => {});
     return app.t`Your entry looks like spam. Please try again or contact us directly.`;
   }
   const age = await clientAge(ctx);
   if (age < 3) {
-    app.fire("suspicious", { ctx, weight: 5, reason: "form4 submit from a brand-new client" }).catch(() => {});
+    app.fire("suspicious", { ctx, weight: 5, reason: "form submit from a brand-new client" }).catch(() => {});
     return app.t`Your entry could not be sent. Please try again.`;
   }
-  if (age < 10) app.fire("suspicious", { ctx, reason: "form4 submit from a very young client" }).catch(() => {});
+  if (age < 10) app.fire("suspicious", { ctx, reason: "form submit from a very young client" }).catch(() => {});
   return "";
 }
 
@@ -144,6 +144,28 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     </div>
   </form>
 </div>`;
+}
+
+/** Takes over what the form4 modules left: their nodes, module rows and entries. */
+export async function install({ app }: { app: App }): Promise<void> {
+  const db = app.db, tables = await db.listTables();
+  await db.transaction(async () => {
+    for (const name of ["cms.cont.form", "cms.cont.form.fields", "cms.cont.form.entries", "cms.backend.cms.form"]) {
+      const old = name.replace(/\.form\b/, ".form4");
+      for (const table of ["page", "_vers_page"].filter((t) => tables.includes(t))) {
+        await db.exec`UPDATE ${sql.id(table)} SET module = ${name} WHERE module = ${old}`;
+      }
+      const access = await db.one`SELECT cms_access FROM module WHERE name = ${old}`;
+      if (access != null) await db.table("module").ensure({ name, cms_access: access });
+      await db.exec`DELETE FROM module WHERE name = ${old}`;
+    }
+    for (const table of ["form_entry", "form_entry_file"]) { // parents first
+      const old = table.replace("form", "form4");
+      if (!tables.includes(old)) continue;
+      for (const row of await db.query`SELECT * FROM ${sql.id(old)}`) await db.table(table).insert(row);
+    }
+    for (const table of ["form4_entry_file", "form4_entry"].filter((t) => tables.includes(t))) await db.exec`DROP TABLE ${sql.id(table)}`;
+  });
 }
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };

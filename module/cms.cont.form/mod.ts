@@ -1,4 +1,4 @@
-/* Field values collected during render, and storage of submitted entries. Unlike form2, fields
+/* Field values collected during render, and storage of submitted entries. Fields
  * have editor-defined names and entries are stored. */
 import { getCtx, unixTime } from "@qino/qino";
 
@@ -33,7 +33,7 @@ export class Form {
   }
 }
 
-const openForms = () => getCtx().state.form4 ??= new Map<number, Form>();
+const openForms = () => getCtx().state.form ??= new Map<number, Form>();
 
 /** Open a form for `node`; everything rendered below it finds it via `formOf()`. */
 export function openForm(node: Node): Form {
@@ -57,11 +57,12 @@ export async function formOf(node: Node): Promise<Form | undefined> {
  * entry grants access).
  */
 export async function keepEntry(node: Node, form: Form): Promise<number> {
-  const app = node.app;
-  const id = Number(await app.db.table("form4_entry").insert({
+  const app = node.app, ctx = getCtx();
+  const id = Number(await app.db.table("form_entry").insert({
     node_id: node.id,
+    log_id: await ctx.logId,
     created: unixTime(),
-    lang: getCtx().lang,
+    lang: ctx.lang,
     data: JSON.stringify(form.values),
   }));
 
@@ -69,7 +70,7 @@ export async function keepEntry(node: Node, form: Form): Promise<number> {
     const file = await app.dbFiles.add();
     // Not `replaceBy(tmpPath)`: that would keep the temp name and lose the mime type.
     await file.replaceFromUpload(upload);
-    await app.db.table("form4_entry_file").insert({ entry_id: id, file_id: file.id, field });
+    await app.db.table("form_entry_file").insert({ entry_id: id, file_id: file.id, field });
   }
   return id;
 }

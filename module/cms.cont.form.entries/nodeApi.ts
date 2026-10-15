@@ -11,11 +11,11 @@ export default async function (node: Node, vars: any): Promise<any> {
   const app = node.app;
   const id = Number(vars.release);
   const nodeId = await app.db.one`
-    SELECT node_id FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id}`;
+    SELECT node_id FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id}`;
   if (!nodeId) return false;
   const form = await cms(app).node(Number(nodeId));
   if (!form.exists() || await form.access() < 2) return false;
 
-  await app.db.table("form4_entry").update(id, { released: vars.on ? 1 : 0 });
+  await app.db.table("form_entry").update(id, { released: vars.on ? 1 : 0 });
   return { ok: true };
 }

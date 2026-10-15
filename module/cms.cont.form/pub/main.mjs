@@ -4,11 +4,11 @@ import { api } from '@qino/pub/api.js';
 // normal POST. File uploads use the normal POST.
 document.addEventListener('submit', e => {
   const form = e.target;
-  const node = form.closest('[qcms-mod="cont.form4"]');
+  const node = form.closest('[qcms-mod="cont.form"]');
   if (!node) return;
   // File uploads and configured redirects need the browser's own submit.
   if (form.hasAttribute('data-native')) return;
-  if (form.querySelector('input[type=file]')?.files.length) return;
+  if ([...form.querySelectorAll('input[type=file]')].some(input => input.files.length)) return;
 
   // the api sends its own csrf header and finds the node by url
   const vars = {};

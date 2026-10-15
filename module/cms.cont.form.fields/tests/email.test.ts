@@ -1,15 +1,15 @@
 import { App, Ctx, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { openForm } from "@qino/qino/cms.cont.form4";
+import { openForm } from "@qino/qino/cms.cont.form";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 Deno.test("an e-mail field refuses what is no address — the mail would fail for the site owner too", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
-  app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form4");
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form");
   await app.init();
   try {
-    const node = await (await cms(app).node(1)).createCont({ module: "cms.cont.form4.fields" });
+    const node = await (await cms(app).node(1)).createCont({ module: "cms.cont.form.fields" });
     await node.settings.fields.mail.type("email");
     for (const [posted, errors, replyTo] of [["nope", 1, ""], ["a@b.ch", 0, "a@b.ch"]] as const) {
       const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });

@@ -6,10 +6,10 @@ import { t } from '@qino/pub/t.js';
 import { bindSettings } from '../../cms/pub/js/settings.js';
 
 export const css = `
-.-form4 td { padding:.3em .6em .3em 0; vertical-align:top; }
-.-form4 .-input { min-height:1.9em; padding:.4em; border:1px solid var(--cms-dark); outline:none; }
-.-form4 .-input:focus { border-color:var(--cms-color); }
-.-form4 label { display:block; }
+.-form td { padding:.3em .6em .3em 0; vertical-align:top; }
+.-form .-input { min-height:1.9em; padding:.4em; border:1px solid var(--cms-dark); outline:none; }
+.-form .-input:focus { border-color:var(--cms-color); }
+.-form label { display:block; }
 `;
 
 export default async function (widget, { node, signal }) {
@@ -26,7 +26,7 @@ export default async function (widget, { node, signal }) {
 
   const { mailSubject: subject, email_before: before, email_after: after } = texts;
 
-  await widget.html`<table class="-form4 u2-table -Fields -Flex -NoSideGaps">
+  await widget.html`<table class="-form u2-table -Fields -Flex -NoSideGaps">
     <tr>
       <td>${t`Entries`}
       <td><label><input type=checkbox setting=keep ${settings.keep ?? true ? 'checked' : ''}> ${t`Keep in the database`}</label>

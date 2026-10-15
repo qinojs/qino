@@ -5,7 +5,7 @@ import api from "./nodeApi.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Form } from "@qino/qino/cms.cont.form4";
+import type { Form } from "@qino/qino/cms.cont.form";
 
 const settingsSchema = {
   properties: {
@@ -142,22 +142,22 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  /* One walk up the tree: the open form comes from form4's render state (read, not imported —
-     form4 depends on this module); whether we are in a form at all comes from the tree, which also
+  /* One walk up the tree: the open form comes from form's render state (read, not imported —
+     form depends on this module); whether we are in a form at all comes from the tree, which also
      works when the node renders alone (panel reload). */
   u2.assets(ctx, [
     "attr/disableif/disableif.js", "class/table/table.css", "class/flex/flex.css",
     "el/alert/alert.js", "el/alert/alert.css",
   ]);
   const path = [...(await node.path()).values()].reverse();
-  const open: Map<number, Form> | undefined = getCtx().state.form4;
+  const open: Map<number, Form> | undefined = getCtx().state.form;
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;
 
   const fields = [];
   for (const name of sortedNames(node)) fields.push(await field(node, name, form, ctx));
 
-  const warning = await node.edit() && !path.some((n) => n.vs.module === "cms.cont.form4")
-    ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form4" module.`}</u2-alert>`
+  const warning = await node.edit() && !path.some((n) => n.vs.module === "cms.cont.form")
+    ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form" module.`}</u2-alert>`
     : "";
 
   return html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;

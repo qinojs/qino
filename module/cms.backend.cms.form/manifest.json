@@ -1,10 +1,10 @@
 {
-  "name": "cms.backend.cms.form4",
+  "name": "cms.backend.cms.form",
   "description": "Form entries: every form of this site, its table of entries, and the export.",
   "dependencies": [
     "cms",
     "cms.backend",
-    "cms.cont.form4"
+    "cms.cont.form"
   ],
   "files": [
     "manifest.json",

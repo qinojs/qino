@@ -10,7 +10,7 @@ const PER_PAGE = 50;
 /** Forms this user may view — reading entries requires edit access to the form. */
 export async function forms(app: App): Promise<Node[]> {
   const ids = await app.db.col<number>`
-    SELECT id FROM ${sql.id(tableRef("page"))} WHERE module = ${"cms.cont.form4"} ORDER BY id`;
+    SELECT id FROM ${sql.id(tableRef("page"))} WHERE module = ${"cms.cont.form"} ORDER BY id`;
   const mine = [];
   for (const id of ids) {
     const node = await cms(app).node(Number(id));
@@ -29,7 +29,7 @@ async function pageOf(node: Node) {
  * so their values stay visible.
  */
 export async function columns(node: Node, rows: { data: Record<string, unknown> }[]): Promise<string[]> {
-  const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form4.fields");
+  const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form.fields");
   const declared = fields ? Object.keys(fields.settings.fields) : [];
   const sorted = String(fields?.settings.sort() ?? "").split(",").filter((n) => declared.includes(n));
   const names = [...sorted, ...declared.filter((n) => !sorted.includes(n))];
@@ -39,7 +39,7 @@ export async function columns(node: Node, rows: { data: Record<string, unknown> 
 
 /** The labels of a form's fields, for the table head and the export. */
 export async function labels(node: Node): Promise<Record<string, string>> {
-  const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form4.fields");
+  const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form.fields");
   const labels: Record<string, string> = {};
   if (!fields) return labels;
   for (const name of Object.keys(fields.settings.fields)) {
@@ -64,7 +64,7 @@ export async function entries(app: App, node: Node, opt: {
 } = {}) {
   const sh = sqlSearch(String(opt.search ?? ""), ["data"]);
   const rows = await app.db.query`
-    SELECT id, created, lang, data FROM ${sql.id(tableRef("form4_entry"))}
+    SELECT id, created, lang, data FROM ${sql.id(tableRef("form_entry"))}
     WHERE node_id = ${node.id} AND ${sh.where} ORDER BY created DESC, id DESC`;
 
   // Values stay in `data`, so fields named `id` or `created` don't clash with the entry's columns.
@@ -112,7 +112,7 @@ async function uploads(app: App, ids: number[]) {
   if (!ids.length) return out;
   const rows = await app.db.query`
     SELECT ef.entry_id, ef.field, ef.file_id, f.name, f.mime
-    FROM ${sql.id(tableRef("form4_entry_file"))} ef
+    FROM ${sql.id(tableRef("form_entry_file"))} ef
     JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
     WHERE ef.entry_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")}) ORDER BY ef.id`;
 
@@ -195,19 +195,19 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 async function save(app: App, form: Node, vs: Record<string, string>) {
   const id = Number(vs.id);
   const row = await app.db.row`
-    SELECT data FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
+    SELECT data FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
   if (!row) return; // an entry of another form is none of this table's business
   const data = JSON.parse(String(row.data ?? "{}") || "{}");
   const old = data[vs.field];
   data[vs.field] = typeof old === "number" && vs.value !== "" && !isNaN(Number(vs.value)) ? Number(vs.value) : String(vs.value);
-  await app.db.table("form4_entry").update(id, { data: JSON.stringify(data) });
+  await app.db.table("form_entry").update(id, { data: JSON.stringify(data) });
 }
 
 /** Throw one entry away. Its files hang on it and go along. */
 async function remove(app: App, form: Node, id: number) {
   const own = await app.db.one`
-    SELECT id FROM ${sql.id(tableRef("form4_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
-  if (own) await app.db.table("form4_entry").delete(id);
+    SELECT id FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
+  if (own) await app.db.table("form_entry").delete(id);
 }
 
 /** The form a request talks about, if the user may see it. */
@@ -215,7 +215,7 @@ export async function formOfVars(app: App, vars: Record<string, unknown>): Promi
   const id = Number(vars.form ?? 0);
   if (!id) return (await forms(app))[0];
   const node = await cms(app).node(id);
-  if (!node.exists() || node.vs.module !== "cms.cont.form4" || await node.access() < 2) return;
+  if (!node.exists() || node.vs.module !== "cms.cont.form" || await node.access() < 2) return;
   return node;
 }
 
@@ -225,7 +225,7 @@ export async function formOfVars(app: App, vars: Record<string, unknown>): Promi
  */
 export async function formLine(app: App, node: Node, active: boolean): Promise<HtmlString> {
   const count = await app.db.one`
-    SELECT count(*) FROM ${sql.id(tableRef("form4_entry"))} WHERE node_id = ${node.id}`;
+    SELECT count(*) FROM ${sql.id(tableRef("form_entry"))} WHERE node_id = ${node.id}`;
   const page = await pageOf(node);
   const plain = async (n: Node) => (await n.showTitle()).plain();
   const title = await plain(node) || (page ? await plain(page) : "");
@@ -247,7 +247,7 @@ export async function csv(app: App, node: Node, search: string): Promise<string>
   if (rows.length) {
     const files = await app.db.query`
       SELECT ef.entry_id, ef.field, f.name
-      FROM ${sql.id(tableRef("form4_entry_file"))} ef
+      FROM ${sql.id(tableRef("form_entry_file"))} ef
       JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
       WHERE ef.entry_id IN (${sql.join(rows.map((row) => sql`${row.id}`), ", ")}) ORDER BY ef.id`;
     for (const f of files) {

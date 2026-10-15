@@ -1,6 +1,6 @@
 {
   "properties": {
-    "form4_entry": {
+    "form_entry": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -38,7 +38,7 @@
         "required": ["id", "node_id", "created"]
       }
     },
-    "form4_entry_file": {
+    "form_entry_file": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -49,7 +49,7 @@
           "entry_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "form4_entry",
+            "x-qg-parent": "form_entry",
             "x-qg-on-parent-delete": "cascade"
           },
           "file_id": {

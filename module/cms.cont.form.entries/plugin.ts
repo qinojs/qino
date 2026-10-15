@@ -12,7 +12,7 @@ const settingsSchema = {
     form: {
       type: "integer",
       minimum: 1,
-      description: "The cms.cont.form4 whose entries are shown. Empty: the first form on this page.",
+      description: "The cms.cont.form whose entries are shown. Empty: the first form on this page.",
       "x-html": { type: "qgcms-page" },
     },
     limit: { type: "integer", minimum: 1, default: 20, description: "How many entries are shown." },
@@ -27,11 +27,11 @@ async function formOf(node: Node) {
   const id = Number(node.settings.form());
   if (id) {
     const form = await cmsOf(node.app).node(id);
-    return form.exists() && form.vs.module === "cms.cont.form4" ? form : undefined;
+    return form.exists() && form.vs.module === "cms.cont.form" ? form : undefined;
   }
   const page = [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
   if (!page) return;
-  for (const cont of (await page.bough()).values()) if (cont.vs.module === "cms.cont.form4") return cont;
+  for (const cont of (await page.bough()).values()) if (cont.vs.module === "cms.cont.form") return cont;
 }
 
 /**
@@ -39,7 +39,7 @@ async function formOf(node: Node) {
  * so their values stay visible.
  */
 async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], only: string[]) {
-  const cont = (await form.conts()).find((c) => c.vs.module === "cms.cont.form4.fields");
+  const cont = (await form.conts()).find((c) => c.vs.module === "cms.cont.form.fields");
   const declared = cont ? Object.keys(cont.settings.fields) : [];
   const sorted = String(cont?.settings.sort() ?? "").split(",").filter((name) => declared.includes(name));
   let names = [...sorted, ...declared.filter((name) => !sorted.includes(name))];
@@ -65,7 +65,7 @@ async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; 
   /* The client comes from the entry's log row, so an unreleased entry is shown to its author only. */
   const rows = await app.db.query`
     SELECT e.id, e.created, e.data, e.released, l.client_id
-    FROM ${sql.id(tableRef("form4_entry"))} e
+    FROM ${sql.id(tableRef("form_entry"))} e
     LEFT JOIN ${sql.id(tableRef("log"))} l ON l.id = e.log_id
     WHERE e.node_id = ${form.id} ORDER BY e.created DESC, e.id DESC`;
 
@@ -92,7 +92,7 @@ async function uploads(app: App, ids: number[]) {
   if (!ids.length) return out;
   const rows = await app.db.query`
     SELECT ef.entry_id, ef.field, f.id, f.name, f.mime
-    FROM ${sql.id(tableRef("form4_entry_file"))} ef
+    FROM ${sql.id(tableRef("form_entry_file"))} ef
     JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
     WHERE ${sql.in("ef.entry_id", ids)} ORDER BY ef.id`;
   for (const row of rows) {
