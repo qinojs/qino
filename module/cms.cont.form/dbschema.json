@@ -30,6 +30,11 @@
             "maxLength": 12,
             "description": "Language the form was filled in — the language to answer in."
           },
+          "spam": {
+            "type": "number",
+            "x-index": true,
+            "description": "How likely the entry is spam, 0 to 1 (security's spamScore; a filled honeypot is 1). From 0.5 on it is not mailed and not shown in public."
+          },
           "data": {
             "type": "string",
             "description": "Submitted values as a JSON object, keyed by field name: {\"name\":\"…\",\"email\":\"…\"}. Numbers and checkboxes keep their JSON type so that data ->> '$.field' sorts and compares as one."

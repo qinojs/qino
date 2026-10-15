@@ -4,6 +4,7 @@
   "dependencies": [
     "cms",
     "messaging.email",
+    "security",
     "cms.cont.form.fields",
     "cms.cont.text",
     "u2"

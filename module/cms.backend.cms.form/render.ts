@@ -1,6 +1,6 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { entryData, fields, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
+import { entryData, fields, SPAM, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -40,7 +40,7 @@ export async function entries(app: App, node: Node, opt: {
 } = {}) {
   const sh = sqlSearch(String(opt.search ?? ""), ["data"]);
   const rows = await app.db.query`
-    SELECT id, created, lang, data FROM ${sql.id(tableRef("form_entry"))}
+    SELECT id, created, lang, spam, data FROM ${sql.id(tableRef("form_entry"))}
     WHERE node_id = ${node.id} AND ${sh.where} ORDER BY created DESC, id DESC`;
 
   // Values stay in `data`, so fields named `id` or `created` don't clash with the entry's columns.
@@ -48,6 +48,7 @@ export async function entries(app: App, node: Node, opt: {
     id: Number(row.id),
     created: Number(row.created),
     lang: String(row.lang ?? ""),
+    spam: Number(row.spam ?? 0),
     data: entryData(row.data),
   }));
 
@@ -130,7 +131,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
     <tbody>
       ${rows.map((row) =>
     html.async`<tr data-entry="${row.id}">
-        <td>${date(row.created)}
+        <td>${row.spam >= SPAM ? html.async`<u2-ico inline icon=report title="${t`Spam`} ${Math.round(row.spam * 100)}%">⚠</u2-ico> ` : ""}${date(row.created)}
         ${cells(row)}
         <td><button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
   )}

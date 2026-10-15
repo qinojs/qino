@@ -1,8 +1,9 @@
-import { fs, hee, html, sql, tableRef, unixTime } from "@qino/qino";
+import { fs, hee, html, sql } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
+import { spamScore } from "@qino/qino/security";
 import * as u2 from "@qino/qino/u2";
 
-import { keepEntry, openForm } from "./mod.ts";
+import { keepEntry, openForm, SPAM } from "./mod.ts";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -27,27 +28,15 @@ async function init(node: Node) {
   await success.text("main", "de", "Vielen Dank<br>Wir werden uns schnellstmöglich um Ihr Anliegen kümmern.");
 }
 
-/** Seconds since this client was first seen (new clients are mostly bots). Infinity if unknown. */
-async function clientAge(ctx: Ctx) {
-  if (!ctx.clientId) return Infinity;
-  const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;
-  return first ? unixTime() - Number(first) : Infinity;
-}
-
-/** Bot heuristics: an entry that fails them is refused before it is kept. */
-async function spamCheck(node: Node, form: Form, ctx: Ctx) {
-  const app = node.app;
-  if (form.posted?.your_name) { // honeypot: hidden from humans, filled by bots
-    app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" }).catch(() => {});
-    return app.t`Your entry looks like spam. Please try again or contact us directly.`;
+/** How likely the entry is spam. A filled honeypot (hidden from humans) is sure; otherwise security
+ *  judges what was sent, by its labels. */
+async function spam(node: Node, form: Form, ctx: Ctx) {
+  if (form.posted?.your_name) {
+    node.app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" }).catch(() => {});
+    return 1;
   }
-  const age = await clientAge(ctx);
-  if (age < 3) {
-    app.fire("suspicious", { ctx, weight: 5, reason: "form submit from a brand-new client" }).catch(() => {});
-    return app.t`Your entry could not be sent. Please try again.`;
-  }
-  if (age < 10) app.fire("suspicious", { ctx, reason: "form submit from a very young client" }).catch(() => {});
-  return "";
+  const labeled = Object.fromEntries(Object.entries(form.values).map(([name, value]) => [form.labels[name] || name, value]));
+  return await spamScore(node.app, labeled, { ctx });
 }
 
 /** Upper bounds for an entry, far above any real form: what else it sends, and its size. */
@@ -110,11 +99,9 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const form = openForm(node);
   if (Object.keys(vars).length) form.posted = vars;
 
-  let error = form.sent ? await spamCheck(node, form, ctx) : "";
-
-  // Rendering the fields fills `form` with their values, so it must run before the check below.
+  // Rendering the fields fills `form` with their values, so it must run before the checks below.
   const fields = await (await node.cont("main")).html();
-  if (form.sent && !error) error = await others(node, form);
+  const error = form.sent ? await others(node, form) : "";
   if (error) form.errors++;
 
   const warnings = [];
@@ -128,9 +115,13 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   if (form.sent && !form.errors) {
     // Keeping comes first: a mail that does not go out must not lose the entry. It moves the
     // uploads away, so the attachments are read before.
-    const attachments = await Promise.all(form.files.map(async ({ upload }) => ({ name: upload.name, content: await fs.bytes(upload.tmpPath) })));
+    // Spam is kept and marked, but not mailed; the visitor sees the same confirmation, which tells a
+    // bot nothing.
+    form.spam = await spam(node, form, ctx);
+    const mail = form.spam < SPAM;
+    const attachments = !mail ? [] : await Promise.all(form.files.map(async ({ upload }) => ({ name: upload.name, content: await fs.bytes(upload.tmpPath) })));
     await keepEntry(node, form);
-    await send(node, form, attachments);
+    if (mail) await send(node, form, attachments);
     const redirect = await cms.url(String(successPage ?? ""));
     if (redirect) {
       ctx.res.headers.set("Location", redirect);

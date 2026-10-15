@@ -6,6 +6,9 @@ import { sortedNames } from "@qino/qino/cms.cont.form.fields";
 import type { App, UploadedFile } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+/** From this spam score on an entry is spam: kept and marked, but neither mailed nor shown in public. */
+export const SPAM = 0.5;
+
 export class Form {
   /** Submitted values by field name; numbers and checkboxes keep their type into the JSON, a name
    *  sent more than once without a field block (same-named checkboxes) keeps all its values. */
@@ -19,6 +22,8 @@ export class Form {
   /** Addresses contributed by fields, e.g. a confirmation copy to the sender. */
   recipients: string[] = [];
   replyTo = "";
+  /** How likely the entry is spam, 0 to 1; judged once it is valid. */
+  spam = 0;
   /** Failed validations; the form is only accepted at zero. */
   errors = 0;
   /** POST body of this submit, undefined while the form was not sent. */
@@ -115,6 +120,7 @@ export async function keepEntry(node: Node, form: Form): Promise<number> {
     log_id: await ctx.logId,
     created: unixTime(),
     lang: ctx.lang,
+    spam: form.spam,
     data: JSON.stringify(form.values),
   }));
 

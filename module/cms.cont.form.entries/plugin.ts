@@ -1,6 +1,6 @@
 import { html, sql, tableRef } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
-import { entryData, fields, uploads } from "@qino/qino/cms.cont.form";
+import { entryData, fields, SPAM, uploads } from "@qino/qino/cms.cont.form";
 import * as u2 from "@qino/qino/u2";
 
 import api from "./nodeApi.ts";
@@ -44,13 +44,14 @@ async function formOf(node: Node) {
 async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; moderated: boolean; all: boolean; client: unknown }) {
   /* The client comes from the entry's log row, so an unreleased entry is shown to its author only. */
   const rows = await app.db.query`
-    SELECT e.id, e.created, e.data, e.released, l.client_id
+    SELECT e.id, e.created, e.data, e.released, e.spam, l.client_id
     FROM ${sql.id(tableRef("form_entry"))} e
     LEFT JOIN ${sql.id(tableRef("log"))} l ON l.id = e.log_id
     WHERE e.node_id = ${form.id} ORDER BY e.created DESC, e.id DESC`;
 
   const out = [];
   for (const row of rows) {
+    if (Number(row.spam) >= SPAM) continue; // spam is for the backend only
     const data = entryData(row.data);
     if (opt.onlyIf && data[opt.onlyIf] === undefined) continue;
     const released = !!Number(row.released);

@@ -4,7 +4,7 @@ import { assertEquals } from "@qino/qino/tests";
 
 const quiet = { sanitizeOps: false, sanitizeResources: false };
 
-Deno.test({ name: "form: what the form sends beside its fields is kept, within bounds", ...quiet, fn: async () => {
+Deno.test({ name: "form: what the form sends beside its fields is kept, within bounds; spam is marked", ...quiet, fn: async () => {
   const dir = await Deno.makeTempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form");
@@ -22,8 +22,10 @@ Deno.test({ name: "form: what the form sends beside its fields is kept, within b
       const many = Object.fromEntries(Array.from({ length: 101 }, (_, i) => ["f" + i, "x"]));
       await form.html({ name: "Bob", ...many });
       await form.html({ name: "Cy", note: "x".repeat(100_001) });
+      await form.html({ name: "Bot", your_name: "x" });
     });
-    assertEquals(await entries(), [{ name: "Ada", phone: "079", topics: ["a", "b"] }], "more than 100 others or 100,000 characters are refused");
+    assertEquals(await entries(), [{ name: "Ada", phone: "079", topics: ["a", "b"] }, { name: "Bot" }], "more than 100 others or 100,000 characters are refused");
+    assertEquals((await app.db.col`SELECT spam FROM form_entry ORDER BY id`).map(Number), [0, 1], "a filled honeypot is kept as spam");
   } finally {
     await app.db.close();
     await Deno.remove(dir, { recursive: true });
