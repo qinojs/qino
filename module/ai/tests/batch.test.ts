@@ -5,18 +5,18 @@ import { assertEquals } from "@qino/qino/tests";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { batch } from "../mod.ts";
 import { poll } from "../lib/batch.ts";
-import { batch as submit, batched, openrouterBatch, openrouterBatched } from "../lib/openai.batch.ts";
+import { openai, openrouter } from "../lib/openai.batch.ts";
 import { aiCapabilities } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
-import type { Adapter, BatchItem } from "../mod.ts";
+import type { Adapter, BatchApi, BatchItem } from "../mod.ts";
 import type { Call } from "../lib/request.ts";
 
 // A provider type with a batch API, kept in memory: answers "<model>: <last message>" once `ended`.
 const submitted = new Map<string, BatchItem[]>();
 let ended = false;
-const batching: Adapter = {
-  text: () => Promise.reject(new Error("not called directly")),
+const batching: Adapter = { text: () => Promise.reject(new Error("not called directly")) };
+const batchingApi: BatchApi = {
   batch: (_call, { items }) => (submitted.set("b" + submitted.size, items), Promise.resolve("b" + (submitted.size - 1))),
   batched: (call, { handle }) => Promise.resolve(ended ? (async function* () {
     for (const { id, input } of submitted.get(handle)!.slice(1)) yield { id, output: { text: `${call.model}: ${(input as any).messages.at(-1).content}`, toolCalls: [] }, usage: [3, 5] };
@@ -34,7 +34,7 @@ async function setup(type: string) {
   await db.table("ai_model_provider").insert({ model_id: model, provider_id: provider });
   await db.table("ai_model_capability").insert({ model_id: model, capability: "text" });
   const fired: [string, any][] = [];
-  const mods = [{ name: "ai", plugin: { aiAdapters: { batching, plain }, aiCapabilities } }];
+  const mods = [{ name: "ai", plugin: { aiAdapters: { batching, plain }, aiBatches: { batching: batchingApi }, aiCapabilities } }];
   const app = { db, settings: { core: { keys: {} } }, fire: (name: string, e: unknown) => (fired.push([name, e]), Promise.resolve(e)), modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods } } as unknown as App;
   return { app, db, fired };
 }
@@ -62,11 +62,23 @@ Deno.test("ai: a batch goes to the provider's batch API, its answers come with t
   await db.close();
 });
 
-Deno.test("ai: without a batch API the calls run one by one in the background, answered the same way", async () => {
+Deno.test("ai: without a batch API the calls are kept and run in the background, answered the same way", async () => {
   const { app, db, fired } = await setup("plain");
   await batch(app, "text", { owner: "test", items });
+  assertEquals(await db.col`SELECT id FROM ai_batch_item ORDER BY id`, ["a", "b", "c"]); // kept before they run
   await new Promise((r) => setTimeout(r, 20));
-  assertEquals(answered(fired).map((e) => [e.id, e.output.text]), [["a", "m: a"], ["b", "m: b"], ["c", "m: c"]]);
+  assertEquals(answered(fired).map((e) => [e.id, e.output.text]).sort(), [["a", "m: a"], ["b", "m: b"], ["c", "m: c"]]);
+  assertEquals([await db.one`SELECT COUNT(*) FROM ai_batch`, await db.one`SELECT COUNT(*) FROM ai_batch_item`], [0, 0]); // gone once answered
+  await db.close();
+});
+
+Deno.test("ai: kept calls a restart left are run by the next poll", async () => {
+  const { app, db, fired } = await setup("plain");
+  const id = await db.table("ai_batch").insert({ owner: "test", capability: "text", model_provider_id: 0, handle: "", items: "[]", opts: "{}", time: 1 });
+  await db.table("ai_batch_item").insert({ batch_id: id, id: "left", input: JSON.stringify(items[0].input) });
+  await poll(app);
+  await new Promise((r) => setTimeout(r, 20));
+  assertEquals(answered(fired).map((e) => [e.id, e.output.text]), [["left", "m: a"]]);
   assertEquals(await db.one`SELECT COUNT(*) FROM ai_batch`, 0);
   await db.close();
 });
@@ -88,7 +100,7 @@ Deno.test("ai: the OpenAI batch API gets a JSONL file and its answers are read l
     },
   } as unknown as Call;
 
-  assertEquals(await submit(call, { capability: "embed", items: [{ id: "x", input: { texts: ["hi"] } }, { id: "y", input: { texts: ["long"] } }] }), "batch1");
+  assertEquals(await openai.batch(call, { capability: "embed", items: [{ id: "x", input: { texts: ["hi"] } }, { id: "y", input: { texts: ["long"] } }] }), "batch1");
   assertEquals(requests[0][2], [
     { custom_id: "x", method: "POST", url: "/v1/embeddings", body: { model: "e", input: ["hi"] } },
     { custom_id: "y", method: "POST", url: "/v1/embeddings", body: { model: "e", input: ["long"] } },
@@ -96,7 +108,7 @@ Deno.test("ai: the OpenAI batch API gets a JSONL file and its answers are read l
   assertEquals(requests[1].slice(1), ["/batches", { input_file_id: "in", endpoint: "/v1/embeddings", completion_window: "24h" }]);
 
   const answers = [];
-  for await (const answer of (await batched(call, { handle: "batch1", capability: "embed" }))!) answers.push(answer);
+  for await (const answer of (await openai.batched(call, { handle: "batch1", capability: "embed" }))!) answers.push(answer);
   assertEquals(answers, [{ id: "x", output: [[1, 0]], usage: [4] }, { id: "y", error: "too long" }]);
   assertEquals(requests.filter(([method]) => method === "DELETE").map(([, path]) => path), ["/files/out", "/files/in"]); // cleaned up
 });
@@ -117,15 +129,15 @@ Deno.test("ai: the OpenRouter batch API gets the calls inline, its answers come 
   } as unknown as Call;
 
   const ask = (content: string) => ({ messages: [{ role: "user", content }] });
-  assertEquals(await openrouterBatch(call, { capability: "text", items: [{ id: "x", input: ask("a") }, { id: "y", input: ask("b") }] }), "b1");
+  assertEquals(await openrouter.batch(call, { capability: "text", items: [{ id: "x", input: ask("a") }, { id: "y", input: ask("b") }] }), "b1");
   const sent = requests[0][2] as any;
   assertEquals([sent.endpoint, sent.model, Object.keys(sent).at(-1)], ["/v1/chat/completions", "anthropic/claude", "requests"]); // requests last
   assertEquals(sent.requests[0], { custom_id: "x", body: { model: "anthropic/claude", messages: [{ role: "user", content: "a" }] } });
 
-  assertEquals(await openrouterBatched(call, { handle: "b1", capability: "text" }), undefined); // not ended
+  assertEquals(await openrouter.batched(call, { handle: "b1", capability: "text" }), undefined); // not ended
   status = "completed";
   const answers = [];
-  for await (const answer of (await openrouterBatched(call, { handle: "b1", capability: "text" }))!) answers.push(answer);
+  for await (const answer of (await openrouter.batched(call, { handle: "b1", capability: "text" }))!) answers.push(answer);
   assertEquals(answers, [{ id: "x", output: { text: "hi", toolCalls: [], truncated: false }, usage: [2, 1] }, { id: "y", error: "no batch endpoint" }]);
   assertEquals(requests.at(-1)!.slice(0, 2), ["DELETE", "/batches/b1"]); // cleaned up
 });

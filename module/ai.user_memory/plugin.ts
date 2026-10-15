@@ -19,8 +19,23 @@ const CLOSE = 0.75; // todo? adjustable
 
 const log = (e: unknown) => console.error("[ai.user_memory] embedding:", errMsg(e));
 
-const list = (app: App, usr: number, limit?: number) => app.db.query`SELECT id, content FROM ai_user_memory m WHERE usr_id = ${usr}
-  ORDER BY ${sqlScore(app.db, "ai_user_memory_use", { memory_id: sql`m.id` })} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`;
+/** Memories read at a time, until `chars` are filled. */
+const BLOCK = 100;
+
+/** The user's memories, the strongest first; with `chars`, those that fit in as many characters. */
+async function list(app: App, usr: number, chars = Infinity) {
+  const out = [];
+  let used = 0;
+  for (let at = 0;; at += BLOCK) {
+    const rows = await app.db.query`SELECT id, content FROM ai_user_memory m WHERE usr_id = ${usr}
+      ORDER BY ${sqlScore(app.db, "ai_user_memory_use", { memory_id: sql`m.id` })} DESC, id LIMIT ${BLOCK} OFFSET ${at}`;
+    for (const r of rows) {
+      if ((used += String(r.content).length) > chars) return out;
+      out.push(r);
+    }
+    if (rows.length < BLOCK) return out;
+  }
+}
 
 async function own(app: App, usr: number, id: number) {
   if (!await app.db.one`SELECT id FROM ai_user_memory WHERE id = ${id} AND usr_id = ${usr}`) throw new NotFoundError("No such memory");

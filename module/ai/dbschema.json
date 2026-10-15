@@ -150,18 +150,31 @@
       }
     },
     "ai_batch": {
-      "description": "Batches submitted to a provider, until their answers are delivered (ai:batched)",
+      "description": "Batches until their answers are delivered (ai:batched): at a provider, or kept to run here (ai_batch_item)",
       "additionalProperties": {
         "properties": {
           "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
           "owner": { "type": "string", "maxLength": 64, "description": "Who submitted it" },
           "capability": { "type": "string", "maxLength": 32 },
-          "model_provider_id": { "type": "integer", "x-qg-parent": "ai_model_provider", "x-qg-on-parent-delete": "cascade" },
+          "model_provider_id": { "type": "integer", "x-qg-parent": "ai_model_provider", "x-qg-on-parent-delete": "cascade", "description": "The provider's batch API it went to; 0: kept here" },
           "handle": { "type": "string", "maxLength": 191, "description": "The batch's id at the provider" },
-          "items": { "type": "string", "description": "The ids of its calls, as JSON" },
+          "items": { "type": "string", "maxLength": 1073741823, "description": "The ids of its calls at the provider, as JSON" },
+          "opts": { "type": "string", "description": "How the kept calls choose their model (ai Opts), as JSON" },
+          "usr_id": { "type": "integer", "default": 0, "description": "Who submitted it: its calls run, and its answers come, as them; 0: no one" },
           "time": { "type": "integer", "description": "When it was submitted" }
         },
         "required": ["id", "owner", "capability", "model_provider_id", "handle", "items", "time"]
+      }
+    },
+    "ai_batch_item": {
+      "description": "A call of a batch without a batch API, kept until it is answered",
+      "additionalProperties": {
+        "properties": {
+          "batch_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_batch", "x-qg-on-parent-delete": "cascade" },
+          "id": { "type": "string", "maxLength": 191, "x-index": "primary", "description": "The caller's id of the call" },
+          "input": { "type": "string", "maxLength": 1073741823, "description": "The call's input, as JSON" }
+        },
+        "required": ["batch_id", "id", "input"]
       }
     }
   }

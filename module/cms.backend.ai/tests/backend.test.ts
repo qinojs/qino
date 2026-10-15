@@ -6,7 +6,7 @@ import { dbSchema, record } from "@qino/m/ai.stats/tests/deps.ts";
 import { evaluate, importModels, key, unit } from "../lib/sources.ts";
 import api from "../nodeApi.ts";
 import { dbSchema as metaSchema } from "../plugin.ts";
-import { capabilities, view, widget } from "../render.ts";
+import { capabilities, render, view, widget } from "../render.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -53,6 +53,7 @@ Deno.test("cms.backend.ai: capabilities come from adapters, capability definitio
   await app.db.table("ai_model_capability").insert({ model_id: 1, capability: "summarize" });
   const caps = await capabilities(app);
   for (const c of ["text", "structured", "embed", "translate", "decide", "vision", "tools", "summarize"]) assert(caps.includes(c), c);
+  assert(!caps.includes("batch") && !caps.includes("batched")); // a way to serve them, not a capability (aiBatches)
 });
 
 Deno.test("cms.backend.ai: providers, models, capabilities and keys are managed through the node api", async () => {
@@ -463,4 +464,22 @@ Deno.test("cms.backend.ai: a provider with plain ids gets its models without the
     { name: "jina-embeddings-v5-omni-small", capability: "embed" },
     { name: "jina-embeddings-v5-omni-small", capability: "vision" },
   ]);
+});
+
+Deno.test("cms.backend.ai: the batches waiting at a provider are listed beside the models; none, no card", async () => {
+  const { app, node } = await setup();
+  await api(node, { add: "provider", name: "api.openai.com", type: "openai", endpoint: "https://x.test/v1" });
+  await api(node, { add: "model", name: "m" });
+  await api(node, { add: "offer", model: 1, provider_id: 1 });
+  const page = async () => String(await requestStorage.run(await testContext(), async () => render(node, { ctx: await testContext() } as any)));
+  assert(!(await page()).includes("Batches"));
+  await app.db.table("ai_batch").insert({ owner: "ai.agent.sleep", capability: "structured", model_provider_id: 1, handle: "b1", items: '["a","b"]', time: 1 });
+  const shown = await page();
+  assertStringIncludes(shown, "ai.agent.sleep <small>structured</small>");
+  assertStringIncludes(shown, "m <small>api.openai.com</small>");
+  assertStringIncludes(shown, "<td>2");
+  // kept here, without a batch API: the calls left
+  const kept = await app.db.table("ai_batch").insert({ owner: "x", capability: "text", model_provider_id: 0, handle: "", items: "[]", opts: "{}", time: 1 });
+  await app.db.table("ai_batch_item").insert({ batch_id: kept, id: "a", input: "{}" });
+  assertStringIncludes(await page(), "one by one, here");
 });

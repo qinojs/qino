@@ -5,7 +5,7 @@ import { AiError } from "@qino/qino/ai";
 import { collections, create, drop } from "@qino/qino/ai.embed";
 import { hit } from "@qino/qino/score";
 
-import { HINT, index } from "../lib/memory.ts";
+import { HINT, IN_MIND, index, list } from "../lib/memory.ts";
 import { keep } from "../lib/search.ts";
 import { situation } from "../lib/context.ts";
 import { declare } from "../lib/declared.ts";
@@ -354,4 +354,15 @@ Deno.test("ai.agent: a module's declared agents follow their file, by name", () 
   assertEquals(await app.db.row`SELECT id, system FROM ai_agent WHERE name = ${"toolset/clockwork"}`, { id: row!.id, system: "Own role." });
   // its file sets it: changed here, the next start would undo it
   await assertRejects(() => runAs(app, 7, "test", () => (app.api as any)["ai.agent"].agent(Number(row!.id)).patch({ system: "x" })), ConflictError);
+}));
+
+Deno.test("ai.agent: the strongest memories go into the context, as many as fit in IN_MIND characters", () => withApp(async (app) => {
+  const agent = await Agent.create(app, { system: "lead" });
+  const long = (c: string) => c.repeat(IN_MIND / 3);
+  for (const [content, strength] of [[long("a"), 1], [long("b"), 3], [long("c"), 2], ["short", 0.5]] as const) {
+    const id = Number(await app.db.table("ai_agent_memory").insert({ agent_id: agent.id, content }));
+    await hit(app.db, "ai_agent_memory_use", { memory_id: id }, strength);
+  }
+  assertEquals((await list(app, agent.id, IN_MIND)).map((m) => m.content[0]), ["b", "c", "a"]); // "short" no longer fits
+  assertEquals((await list(app, agent.id)).length, 4); // without a budget: all
 }));

@@ -28,7 +28,9 @@ const textOf = (content) => typeof content === "string" ? content : (content ?? 
 async function entry({ role, content, time: at }) {
   const text = textOf(content);
   if (!text || role === "system" || role === "tool") return "";
-  const div = h("div", { style: `align-self:${role === "user" ? "flex-end" : "flex-start"}; max-width:80%` }, h("small", {}, at ? time(at) : ""));
+  const bubble = role === "user" ? "background:color-mix(in oklch, var(--accent) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-left:1.5rem"
+    : role === "assistant" ? "background:color-mix(in oklch, var(--gray) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-right:1.5rem" : "";
+  const div = h("div", { style: `align-self:${role === "user" ? "flex-end" : "flex-start"}; max-width:80%; ${bubble}` }, h("small", {}, at ? time(at) : ""));
   if (role === "assistant") div.append(h("div", { innerHTML: await markdown(text) }));
   else div.append(h("div", { style: `white-space:pre-wrap;${role === "error" ? "color:var(--red)" : ""}` }, text));
   return div;

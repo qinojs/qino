@@ -4,7 +4,6 @@ import { errMsg } from "@qino/qino";
 import { AiError } from "./request.ts";
 import { systemone } from "./decide.ts";
 import { jsonSchema, parseStructured } from "./capabilities.ts";
-import { batch, batched, openrouterBatch, openrouterBatched } from "./openai.batch.ts";
 import { live } from "./openai.realtime.ts";
 
 import type { Transcript } from "@qino/qino";
@@ -145,8 +144,6 @@ export const format = (schema: StructuredInput<unknown>["schema"]) =>
 export const openai: Adapter = {
   text,
   live,
-  batch,
-  batched,
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, format(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");
@@ -181,8 +178,8 @@ export const openai: Adapter = {
 // OpenRouter caches only when asked (Anthropic); the mark at the top caches up to the last message.
 const cache = (input: TextInput) => input.cache ? { cache_control: { type: "ephemeral" } } : {};
 
-/** OpenRouter: OpenAI-compatible, but images at /images, batches inline, and decision models
- *  (TypeSafe Jev) through its System One API. */
+/** OpenRouter: OpenAI-compatible, but images at /images, and decision models (TypeSafe Jev) through
+ *  its System One API. */
 export const openrouter: Adapter = {
   ...openai,
   text: (call, input: TextInput) => text(call, input, cache(input)),
@@ -190,6 +187,4 @@ export const openrouter: Adapter = {
     parseStructured((await text(call, input, { ...format(schema), ...cache(input) })).text, schema),
   image: async (call, { prompt, n }: { prompt: string; n?: number }) => urls(call, prompt, await post(call, "/images", { model: call.model, prompt, n })),
   decide: systemone.decide,
-  batch: openrouterBatch,
-  batched: openrouterBatched,
 };

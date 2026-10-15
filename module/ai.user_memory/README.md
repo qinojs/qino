@@ -8,7 +8,7 @@ with every agent, and only in their own sessions.
 
 Hooked into [ai.agent](../ai.agent/), so it can be left out or replaced by another module:
 
-- `ai.agent:turn`: who the user is (name, email, id) and the strongest 10 of what is known about them go into the
+- `ai.agent:turn`: who the user is (name, email, id) and the strongest of what is known about them, as many as fit in 4000 characters, go into the
   context as the session starts ("## User", ids as `u5`), and the tool to forget it. To change one, the agent forgets it and remembers
   the new one: `decide()` sorts every new memory.
 - `ai.agent:associate`: what the user says strengthens their memories close to it; those not given yet in the

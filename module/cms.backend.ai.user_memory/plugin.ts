@@ -84,6 +84,9 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
   const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_user_memory_use", { memory_id: sql`m.id` })} AS score,
       EXISTS (SELECT 1 FROM embedding_ai_user_memory e WHERE e.memory_id = m.id) AS findable
     FROM ai_user_memory m WHERE m.usr_id = ${usr} ORDER BY score DESC, m.id`;
+  // in context: the strongest within IN_MIND characters, as a session takes them
+  let used = 0;
+  const inMind = rows.map((m) => (used += String(m.content).length) <= IN_MIND);
   return html.async`
     <thead><tr>
       <th>#
@@ -99,7 +102,7 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
       <td>${m.content}
       <td>${m.score}
       <td>${strength(db, "ai_user_memory_use", Number(m.score), now).toFixed(2)}
-      <td>${i < IN_MIND ? "✓" : "–"}
+      <td>${inMind[i] ? "✓" : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
       <td>${time(m.time)}
       <td>${remove(m.id)}`) : html.async`<tr><td colspan=8>${t`No memories yet`}`}</tbody>`;

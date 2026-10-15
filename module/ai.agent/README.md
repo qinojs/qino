@@ -118,7 +118,7 @@ What the agent grows into, modelled on how a person thinks and remembers.
 | Record | (a diary, at most) | the exact protocol, `ai_session_message` | built |
 | Deliberate thinking ("system 2") | slow, thorough | the model with its tools (`ai.tools`) | built |
 | Episodic memory | experiences: what happened when | `search` in all past sessions; later a summary per session | search built |
-| Semantic memory | knowledge, facts | memories: short facts, the strongest 10 in context | built |
+| Semantic memory | knowledge, facts | memories: short facts, the strongest in context, up to 8000 characters | built |
 | Attention | only what matters comes to mind | association strengthens the memories close to what is said; what is close and not in the context comes as a note ([ai.agent.recall](../ai.agent.recall/)) | built |
 | Knowing people | what the other one is like | memories about the user (preferences, language) | with memories |
 | Sleep | consolidate, clean up, replay | long sessions compacted, what lasts kept first ([ai.agent.sleep](../ai.agent.sleep/)); memories merged, skills derived | compaction built |

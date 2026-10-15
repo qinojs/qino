@@ -82,7 +82,34 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   </div>
   ${show === "model" ? part : ""}
   ${models ? tryCard(app) : ""}
+  ${models ? batches(app) : ""}
 </div>`;
+}
+
+/** The batches waiting for their answers (ai `batch`): at a provider, or kept to run here, by the
+ *  calls left; none, no card. */
+async function batches(app: App) {
+  const t = app.t;
+  const rows = await app.db.query`SELECT b.owner, b.capability, b.time, b.items, m.name AS model, p.name AS provider,
+      (SELECT COUNT(*) FROM ai_batch_item i WHERE i.batch_id = b.id) AS kept
+    FROM ai_batch b LEFT JOIN ai_model_provider mp ON mp.id = b.model_provider_id LEFT JOIN ai_model m ON m.id = mp.model_id
+    LEFT JOIN ai_provider p ON p.id = mp.provider_id ORDER BY b.id`;
+  if (!rows.length) return "";
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Batches`}</div>
+    <table class=u2-table>
+      <thead><tr>
+        <th>${t`For`}
+        <th>${t`Model`}
+        <th>${t`Calls`}
+        <th>${t`Since`}
+      <tbody>${rows.map((b) => html.async`<tr>
+        <td>${b.owner} <small>${b.capability}</small>
+        <td>${b.model ? html`${b.model} <small>${b.provider}</small>` : html.async`<small>${t`one by one, here`}</small>`}
+        <td>${b.model ? JSON.parse(String(b.items)).length : Number(b.kept)}
+        <td>${u2.el.time(b.time, { narrow: true })}`)}</tbody>
+    </table>
+  </div>`;
 }
 
 /** The part: the models, the providers or one model. */

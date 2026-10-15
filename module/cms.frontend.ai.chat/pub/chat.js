@@ -94,7 +94,7 @@ async function entry({ role, content }) {
   if (role === "system") { // this chat's notes, by their first line
     return text.startsWith(SHOWN) || text.startsWith(ON) ? h("div", { className: "-note", title: text }, text.split("\n")[0]) : "";
   }
-  if (role === "assistant") return h("div", { innerHTML: await markdown(text) });
+  if (role === "assistant") return h("div", { className: "-assistant", innerHTML: await markdown(text) });
   return h("div", { className: role === "error" ? "-error" : "-user" }, text);
 }
 

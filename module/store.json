@@ -26,6 +26,7 @@
     "cms.backend": {},
     "cms.backend.ai": {},
     "cms.backend.ai.agents": {},
+    "cms.backend.ai.agents.sleep": {},
     "cms.backend.ai.feedback": {},
     "cms.backend.ai.calls": {},
     "cms.backend.ai.chat": {},

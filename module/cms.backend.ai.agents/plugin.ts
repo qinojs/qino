@@ -215,6 +215,9 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
   const rows = await db.query`SELECT m.id, m.content, m.time, ${sqlScore(db, "ai_agent_memory_use", { memory_id: sql`m.id` })} AS score,
       EXISTS (SELECT 1 FROM embedding_ai_agent_memory e WHERE e.memory_id = m.id) AS findable
     FROM ai_agent_memory m WHERE m.agent_id = ${agent} ORDER BY score DESC, m.id`;
+  // in context: the strongest within IN_MIND characters, as a session takes them
+  let used = 0;
+  const inMind = rows.map((m) => (used += String(m.content).length) <= IN_MIND);
   return html.async`
     <thead><tr>
       <th>#
@@ -227,7 +230,7 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
       <td>${m.id}
       <td><button type=button class=u2-unstyle data-memory=${m.id} data-content="${m.content}" title="${t`Edit memory`}">${short(String(m.content))}</button>
       <td>${strength(db, "ai_agent_memory_use", Number(m.score), now).toFixed(2)}
-      <td>${i < IN_MIND ? html.async`<u2-ico icon=push_pin title="${t`Included when a session starts`}">📌</u2-ico>` : "–"}
+      <td>${inMind[i] ? html.async`<u2-ico icon=push_pin title="${t`Included when a session starts`}">📌</u2-ico>` : "–"}
       <td>${Number(m.findable) ? "✓" : "–"}
       <td>${time(m.time)}`) : html.async`<tr><td colspan=6>${t`No memories yet`}`}</tbody>`;
 }
@@ -411,7 +414,9 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
       ${m.known?.length ? html`<div><small>known: ${keys(m.known)}</small></div>` : ""}</div>`;
     if (m.role === "tool") return ""; // shown with its call, in the dialog of the calls
     const side = m.role === "user" ? "flex-end" : "flex-start";
-    return html`<div data-message=${row.id} style="${faded(row.id)}align-self:${side}; max-width:80%">
+    const bubble = m.role === "user" ? "background:color-mix(in oklch, var(--accent) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-left:1.5rem"
+      : m.role === "assistant" ? "background:color-mix(in oklch, var(--gray) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-right:1.5rem" : "";
+    return html`<div data-message=${row.id} style="${faded(row.id)}align-self:${side}; max-width:80%; ${bubble}">
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
         : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}

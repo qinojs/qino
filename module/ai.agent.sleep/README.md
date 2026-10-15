@@ -3,6 +3,29 @@
 What an [agent](../ai.agent/) does while nobody talks with it, as a person sleeps. Hooked into
 ai.agent, so it can be left out or replaced for experiments.
 
+## Sleep (`lib/agent.sleep.ts`)
+
+At night (cron, 2 am) every agent with new messages since it last slept goes over them, as a person
+sleeps: what was said is processed, what went under found, what matters firmed up, the rest let go.
+Its role is the yardstick: nothing it keeps may drift from its goal or change it.
+
+- **Thinkers** read each session (`thinkers`: models, comma-separated; empty: one as ai chooses) and
+  list what the memories lack, which memories held, which are outdated, each with the messages it
+  rests on. What cites no message of that session is dropped: the merger would believe it.
+- **The merger** weighs all thoughts against the memories and their strength: add (from which
+  session), merge, strengthen, weaken, forget (only the wrong or replaced; fading does the rest).
+- **Batches** (ai `batch`): slow, about half the price; nobody waits.
+- **Review first:** the plan is kept in `ai_agent_sleep` and applied by `sleeps/:sleep/apply`, or at
+  once with `apply`. A new memory is kept as its session's user, so a personal one becomes theirs
+  ([ai.user_memory](../ai.user_memory/)); merged ones keep the first id and the others' strength.
+- **Only with enough to go over:** an agent sleeps once `minChars` (2000) characters were said since it
+  last slept; asked to (`{ agent }`), on whatever is new.
+- **Budget:** at most `sessions` sessions a night, of each the latest `chars` characters.
+- **As whom:** the models run as the user who started the night ("Sleep now"), at night as `usr`; models
+  that need a user (a ChatGPT plan) only work so.
+
+`sleeps` `get` lists the latest nights, `post` starts one now, for all agents or `{ agent }` (superuser); the agents' backend has it as "Sleep now".
+
 ## Compaction (`lib/session.compaction.ts`)
 
 A session grown past 80 % of its model's context (`ai_model.context_length`) is compacted after an
@@ -30,4 +53,4 @@ over 90 % ("Lost in Compaction", 2026). Summarizing with the session's model rea
 the cache, a small model would read it all anew.
 
 Later, when measured: old tool results cleared before summarizing, compaction between the tool
-steps of one turn (needs a hook in `ai.tools`), merging similar memories.
+steps of one turn (needs a hook in `ai.tools`).

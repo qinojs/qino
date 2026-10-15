@@ -1,6 +1,7 @@
 import { App, s } from "@qino/qino";
 
 import { poll } from "./lib/batch.ts";
+import * as batches from "./lib/openai.batch.ts";
 
 import { systemone, decisions } from "./lib/decide.ts";
 import { jina } from "./lib/jina.ts";
@@ -50,3 +51,6 @@ export { aiCapabilities } from "./lib/capabilities.ts";
 
 /** Provider types by `ai_provider.type`. Other modules add theirs the same way. */
 export const aiAdapters = { openai, openrouter, systemone, decisions, jina, nvidia, deepl, google };
+
+/** Batch APIs by provider type (see `batch`). Other modules add theirs the same way. */
+export const aiBatches = { openai: batches.openai, openrouter: batches.openrouter };

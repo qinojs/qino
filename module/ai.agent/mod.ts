@@ -3,6 +3,7 @@ import { unixTime } from "@qino/qino";
 import { keep } from "./lib/search.ts";
 import { checkTools, context, known, ranked, sentIds, toolsOf } from "./lib/context.ts";
 import { live } from "./lib/live.ts";
+import * as memory from "./lib/memory.ts";
 import { ask, cancel, note, running } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
@@ -44,6 +45,17 @@ export class Agent {
   /** The tools of its api paths, unranked. */
   async allowed(): Promise<Tool[]> {
     return toolsOf(this.#app, JSON.parse(String(await this.#app.db.one`SELECT tools FROM ai_agent WHERE id = ${this.#id}` || "[]")));
+  }
+
+  /** Keep a short fact, or replace the memory `replaces`; either grows stronger. Another module may
+   *  keep a new one instead (`ai.agent:remember`). */
+  remember(content: string, replaces?: number): Promise<unknown> {
+    return memory.remember(this.#app, this.#id, content, replaces);
+  }
+
+  /** Forget one of its memories. */
+  forget(id: number): Promise<{ forgotten: number }> {
+    return memory.forget(this.#app, this.#id, id);
   }
 }
 

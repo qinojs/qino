@@ -131,9 +131,10 @@ app.on("ai:batched", ({ owner, id, output, error }) => { if (owner === "my.modul
 ```
 
 The best model whose provider has a batch API takes them (OpenAI's for OpenAI-compatible ones,
-OpenRouter's: `text`, `structured`, `embed`); without one they run one by one in the background. Either way each
-answer comes as `ai:batched`, polled every 5 minutes, after a restart too; after a crash one may
-come twice. A structured answer is shaped by its schema, not validated.
+OpenRouter's: `text`, `structured`, `embed`); without one they are kept (`ai_batch_item`) and run
+four at a time in the background. Either way each answer comes as `ai:batched`, polled every 5
+minutes, after a restart too; after a crash one may come twice. A structured answer is shaped by its
+schema, not validated.
 
 ## Browser
 
@@ -148,5 +149,5 @@ speed ai chooses by.
 
 ## Extending
 
-Modules declare `aiAdapters` (provider types) and `aiCapabilities` (needs and fallbacks per
-capability) in their plugin, as ai does for its own.
+Modules declare `aiAdapters` (provider types), `aiCapabilities` (needs and fallbacks per
+capability) and `aiBatches` (batch APIs by provider type) in their plugin, as ai does for its own.

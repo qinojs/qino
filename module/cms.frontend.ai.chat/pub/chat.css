@@ -22,7 +22,10 @@
     background: var(--cms-light, #eee);
     &[hidden] { display: none }
   }
-  & .-user { align-self: flex-end; max-width: 80%; white-space: pre-wrap }
+  & .-user { align-self: flex-end; max-width: 80%; white-space: pre-wrap; background: color-mix(in oklch, var(--accent) 10%, #fff); padding: .3rem; border-radius: .4rem; margin-left: 1.5rem }
+  & .-assistant { background: color-mix(in oklch, var(--gray) 10%, #fff); padding: .3rem; border-radius: .4rem; margin-right: 1.5rem;
+    & > :first-child { margin-top: 0 }
+    & > :last-child { margin-bottom: 0 } }
   & .-note { opacity: .6; font-size: .8em }
   & .-error { color: var(--red, red); white-space: pre-wrap }
   & textarea { flex: 1; resize: none; font: inherit }

@@ -2,8 +2,8 @@ import { decide } from "@qino/qino/ai";
 
 import type { App } from "@qino/qino";
 
-/** How many of a user's memories are in the context: the strongest, those kept most and latest. */
-export const IN_MIND = 10; // todo? adjustable
+/** The characters of a user's memories in the context: the strongest, those kept most and latest. */
+export const IN_MIND = 4000; // todo? adjustable
 
 // A wish how this agent works ("use subagents") is for the agent, even if the user wished it.
 const QUESTION = "Should every other agent, even with a different job, know this about the person?";

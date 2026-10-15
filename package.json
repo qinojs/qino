@@ -9,6 +9,7 @@
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",
     "./ai.agent": "./module/ai.agent/mod.ts",
+    "./ai.agent.sleep": "./module/ai.agent.sleep/mod.ts",
     "./ai.chatgpt": "./module/ai.chatgpt/mod.ts",
     "./ai.discover": "./module/ai.discover/mod.ts",
     "./ai.embed": "./module/ai.embed/mod.ts",

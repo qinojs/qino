@@ -3,7 +3,7 @@ import { AiError } from "./request.ts";
 import { auth, chatAnswer, chatBody, format, post } from "./openai.ts";
 
 import type { EmbedInput, StructuredInput, TextInput } from "../mod.ts";
-import type { BatchAnswer, BatchInput } from "./batch.ts";
+import type { BatchAnswer, BatchApi, BatchInput } from "./batch.ts";
 import type { Call } from "./request.ts";
 
 // Batch APIs of OpenAI-compatible providers, answered within 24 hours at about half the price:
@@ -48,7 +48,7 @@ const state = async (call: Call, handle: string) => (await call.fetch(`/batches/
 const ENDED = new Set(["completed", "expired", "cancelled", "failed"]);
 
 /** OpenAI: upload the calls and start the batch; resolves to its id. */
-export async function batch(call: Call, { capability, items }: BatchInput): Promise<string> {
+async function batch(call: Call, { capability, items }: BatchInput): Promise<string> {
   const kind = kindOf(capability);
   const url = "/v1" + kind.path; // as the API names it, whatever the endpoint's own path
   const lines = items.map(({ id, input }) => JSON.stringify({ custom_id: id, method: "POST", url, body: kind.body(call, input) }));
@@ -60,7 +60,7 @@ export async function batch(call: Call, { capability, items }: BatchInput): Prom
 }
 
 /** OpenAI: the answers once the batch ended (undefined before), read line by line; a failed batch throws. */
-export async function batched(call: Call, { handle, capability }: { handle: string; capability: string }): Promise<AsyncIterable<BatchAnswer> | undefined> {
+async function batched(call: Call, { handle, capability }: { handle: string; capability: string }): Promise<AsyncIterable<BatchAnswer> | undefined> {
   const { status, output_file_id, error_file_id, input_file_id, errors } = await state(call, handle);
   if (!ENDED.has(status)) return;
   const files = [output_file_id, error_file_id].filter(Boolean);
@@ -89,7 +89,7 @@ async function* lines(res: Response) {
 }
 
 /** OpenRouter: the calls inline, one model for all; resolves to the batch's id. */
-export async function openrouterBatch(call: Call, { capability, items }: BatchInput): Promise<string> {
+async function openrouterBatch(call: Call, { capability, items }: BatchInput): Promise<string> {
   const kind = kindOf(capability);
   // `requests` last, as OpenRouter asks
   const body = { endpoint: "/v1" + kind.path, model: call.model, completion_window: "24h", requests: items.map(({ id, input }) => ({ custom_id: id, body: kind.body(call, input) })) };
@@ -97,7 +97,7 @@ export async function openrouterBatch(call: Call, { capability, items }: BatchIn
 }
 
 /** OpenRouter: the answers come with the ended batch, which is deleted then. */
-export async function openrouterBatched(call: Call, { handle, capability }: { handle: string; capability: string }): Promise<AsyncIterable<BatchAnswer> | undefined> {
+async function openrouterBatched(call: Call, { handle, capability }: { handle: string; capability: string }): Promise<AsyncIterable<BatchAnswer> | undefined> {
   const { status, results } = await state(call, handle);
   if (!ENDED.has(status)) return;
   if (!results?.length) throw new AiError(`Batch ${status}: no answers`);
@@ -107,3 +107,7 @@ export async function openrouterBatched(call: Call, { handle, capability }: { ha
     await call.fetch(`/batches/${handle}`, { method: "DELETE", headers: auth(call) }).catch(() => {});
   })();
 }
+
+/** The batch APIs by provider type (`aiBatches`). */
+export const openai: BatchApi = { batch, batched };
+export const openrouter: BatchApi = { batch: openrouterBatch, batched: openrouterBatched };

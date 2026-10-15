@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.ai.agents.sleep",
+  "description": "Lets agents sleep and shows their nights: what the thinkers found, and the plan for the memories, to apply.",
+  "dependencies": ["cms.backend.ai", "ai.agent.sleep"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
+}

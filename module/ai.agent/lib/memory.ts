@@ -8,13 +8,24 @@ import type { App } from "@qino/qino";
 // The agent's memory: short facts it keeps across sessions, always in its context, the strongest
 // first. What it keeps renewing stays strong, the rest fades (score).
 
-/** How many memories are in the context; the weaker ones are left to its search. */
-export const IN_MIND = 10;
+/** The characters of memories in the context, the strongest first; the weaker ones are left to its search. */
+export const IN_MIND = 8000;
+/** Memories read at a time, until `chars` are filled. */
+const BLOCK = 100;
 
-/** Its memories, the strongest first. */
-export async function list(app: App, agent: number, limit?: number): Promise<{ id: number; content: string }[]> {
-  return (await app.db.query`SELECT id, content FROM ai_agent_memory m WHERE agent_id = ${agent}
-    ORDER BY ${sqlScore(app.db, "ai_agent_memory_use", { memory_id: sql`m.id` })} DESC, id ${limit ? sql`LIMIT ${limit}` : sql``}`).map((r) => ({ id: Number(r.id), content: String(r.content) }));
+/** Its memories, the strongest first; with `chars`, those that fit in as many characters. */
+export async function list(app: App, agent: number, chars = Infinity): Promise<{ id: number; content: string }[]> {
+  const out = [];
+  let used = 0;
+  for (let at = 0;; at += BLOCK) {
+    const rows = await app.db.query`SELECT id, content FROM ai_agent_memory m WHERE agent_id = ${agent}
+      ORDER BY ${sqlScore(app.db, "ai_agent_memory_use", { memory_id: sql`m.id` })} DESC, id LIMIT ${BLOCK} OFFSET ${at}`;
+    for (const r of rows) {
+      if ((used += String(r.content).length) > chars) return out;
+      out.push({ id: Number(r.id), content: String(r.content) });
+    }
+    if (rows.length < BLOCK) return out;
+  }
 }
 
 /** Told to the agent above its memories. */

@@ -1,20 +1,36 @@
-import { errMsg, unixTime } from "@qino/qino";
+import { errMsg, requestStorage, runAs, unixTime } from "@qino/qino";
 
 import { AiError, adapters, bind, candidates, request } from "./request.ts";
 
 import type { App } from "@qino/qino";
-import type { Opts } from "./request.ts";
+import type { Call, Opts } from "./request.ts";
 
 // Many calls at once, answered later (minutes, at most a day) at about half the price: through the
-// batch API of a provider whose adapter has `batch` and `batched`. Without one, the calls run one by
-// one in the background. Either way each answer comes as `ai:batched`, after a restart too.
+// batch API of the provider's type, as modules declare them (`aiBatches`). Without one, the calls are
+// kept (`ai_batch_item`) and run a few at a time in the background. Either way each answer comes as
+// `ai:batched`, after a restart too.
 
 /** One call of a batch: `id` is the caller's, to know the answer by. */
 export type BatchItem = { id: string; input: unknown };
-/** What an adapter's `batch` gets. */
+/** What a batch API's `batch` gets. */
 export type BatchInput = { capability: string; items: BatchItem[] };
-/** What an adapter's `batched` yields per call: the answer or why there is none, `usage` as `Call.usage`. */
+/** What a batch API's `batched` yields per call: the answer or why there is none, `usage` as `Call.usage`. */
 export type BatchAnswer = { id: string; output?: unknown; error?: string; usage?: (number | undefined)[] };
+/** A provider type's batch API: `batch` submits and resolves to the batch's id at the provider,
+ *  `batched` the answers once it ended, undefined before. */
+export type BatchApi = {
+  batch(call: Call, input: BatchInput): Promise<string>;
+  batched(call: Call, batch: { handle: string; capability: string }): Promise<AsyncIterable<BatchAnswer> | undefined>;
+};
+
+/** The batch APIs of all linked modules, by `ai_provider.type`. */
+const apis = (app: App): Record<string, BatchApi> => Object.assign({}, ...app.modules.linked().map((mod) => mod.plugin.aiBatches));
+
+/** Run `fn` as user `usr`, as the batch was submitted (a ChatGPT plan, say, needs one); 0: as it is. */
+const as = <T>(app: App, usr: number, fn: () => Promise<T>) => usr ? runAs(app, usr, "ai", fn) : fn();
+
+/** Calls without a batch API run this many at a time. */
+const PARALLEL = 4;
 
 /** At most this per batch: the lower limits of the providers. */
 const LIMIT = { items: 50_000, bytes: 100 * 2 ** 20 };
@@ -35,20 +51,21 @@ function* chunks(items: BatchItem[]) {
  * Submit `items` for `capability` (`text`, `structured`, `embed` …), all with one model chosen as
  * `request` does, the best that has a batch API. Resolves once submitted; the answers come later, as
  * `ai:batched` with `owner`: an answer may come twice after a crash. A structured answer is shaped by
- * its schema, not validated.
+ * its schema, not validated. The calls run, and their answers come, as the user who submitted them.
  */
 export async function batch(app: App, capability: string, { owner, items }: { owner: string; items: BatchItem[] }, opts: Opts = {}): Promise<void> {
   let rest = items;
+  const usr = requestStorage.getStore()?.userId ?? 0;
   const largest = items.reduce((a, b) => size(a) >= size(b) ? a : b, items[0]);
   for (const candidate of largest ? await candidates(app, capability, largest.input, opts) : []) {
-    const adapter = adapters(app)[candidate.type] ?? {};
-    if (!adapter.batch || !adapter[capability]) continue;
+    const api = apis(app)[candidate.type];
+    if (!api || !adapters(app)[candidate.type]?.[capability]) continue;
     try {
       for (const chunk of chunks(rest)) {
         const call = await bind(app, candidate, { input: 0, output: 0 });
-        const handle = await adapter.batch(call, { capability, items: chunk });
+        const handle = await api.batch(call, { capability, items: chunk });
         await app.db.table("ai_batch").insert({
-          owner, capability, model_provider_id: candidate.id, handle: String(handle), items: JSON.stringify(chunk.map((i) => i.id)), time: unixTime(),
+          owner, capability, model_provider_id: candidate.id, handle: String(handle), items: JSON.stringify(chunk.map((i) => i.id)), usr_id: usr, time: unixTime(),
         });
         rest = rest.slice(chunk.length);
       }
@@ -57,35 +74,68 @@ export async function batch(app: App, capability: string, { owner, items }: { ow
       console.error(`[ai] batch at ${candidate.provider}/${candidate.model}:`, errMsg(e)); // the rest goes to the next
     }
   }
-  if (rest.length) direct(app, capability, owner, rest, opts).catch(console.error);
+  if (!rest.length) return;
+  // without a batch API: kept, so a restart goes on with them; what can be kept of `opts`
+  const { model, modelProvider, needs, prefer } = opts;
+  await app.db.transaction(async () => { // all of them, or none
+    const id = Number(await app.db.table("ai_batch").insert({
+      owner, capability, model_provider_id: 0, handle: "", items: "[]", opts: JSON.stringify({ model, modelProvider, needs, prefer }), usr_id: usr, time: unixTime(),
+    }));
+    for (const item of rest) await app.db.table("ai_batch_item").insert({ batch_id: id, id: item.id, input: JSON.stringify(item.input) });
+  });
+  work(app).catch(console.error);
 }
 
-/** Without a batch API: one by one in the background, falling back as `request` does. */
-async function direct(app: App, capability: string, owner: string, items: BatchItem[], opts: Opts) {
-  for (const { id, input } of items) {
-    const answer = await request(app, capability, input, opts).then((output) => ({ output }), (e) => ({ error: errMsg(e) }));
-    await app.fire("ai:batched", { owner, capability, id, ...answer });
+const working = new WeakSet<App>();
+
+/** The kept calls, `PARALLEL` at a time, falling back as `request` does; each is gone once answered.
+ *  Runs once per app: started again while running, it returns. */
+async function work(app: App) {
+  if (working.has(app)) return;
+  working.add(app);
+  try {
+    for (;;) {
+      const next = await app.db.query`SELECT i.batch_id, i.id, i.input, b.owner, b.capability, b.opts, b.usr_id
+        FROM ai_batch_item i JOIN ai_batch b ON b.id = i.batch_id ORDER BY i.batch_id LIMIT ${PARALLEL}`;
+      if (!next.length) return;
+      await Promise.all(next.map(async (item) => {
+        const { owner, capability } = item, id = String(item.id);
+        await as(app, Number(item.usr_id), async () => {
+          const answer = await request(app, capability, JSON.parse(String(item.input)), JSON.parse(String(item.opts || "{}")))
+            .then((output) => ({ output }), (e) => ({ error: errMsg(e) }));
+          await app.fire("ai:batched", { owner, capability, id, ...answer });
+        });
+        await app.db.exec`DELETE FROM ai_batch_item WHERE batch_id = ${item.batch_id} AND id = ${id}`;
+      }));
+      for (const batch of new Set(next.map((i) => Number(i.batch_id)))) {
+        if (!await app.db.one`SELECT 1 FROM ai_batch_item WHERE batch_id = ${batch} LIMIT 1`) await app.db.table("ai_batch").delete(batch);
+      }
+    }
+  } finally {
+    working.delete(app);
   }
 }
 
-/** Deliver the answers of the batches that ended; run regularly (cron). A provider that can't be
- *  reached now is asked again next time. */
+/** Deliver the answers of the batches that ended, and go on with the kept calls (after a restart);
+ *  run regularly (cron). A provider that can't be reached now is asked again next time. */
 export async function poll(app: App): Promise<void> {
+  work(app).catch(console.error);
   const rows = await app.db.query`
-    SELECT b.id, b.owner, b.capability, b.handle, b.items, b.model_provider_id,
+    SELECT b.id, b.owner, b.capability, b.handle, b.items, b.model_provider_id, b.usr_id,
       m.name AS model, mp.provider_model, p.name AS provider, p.type, p.endpoint, p.timeout_ms
     FROM ai_batch b
     JOIN ai_model_provider mp ON mp.id = b.model_provider_id
     JOIN ai_model m ON m.id = mp.model_id
     JOIN ai_provider p ON p.id = mp.provider_id`;
   for (const row of rows) {
-    const adapter = adapters(app)[row.type];
-    if (!adapter?.batched) continue; // its module is not loaded now
+    const api = apis(app)[row.type];
+    if (!api) continue; // its module is not loaded now
     const { owner, capability, model, provider } = row, modelProvider = Number(row.model_provider_id);
     const missing = new Set<string>(JSON.parse(row.items));
-    const deliver = (id: string, answer: { output?: unknown; error?: string }) => (missing.delete(id), app.fire("ai:batched", { owner, capability, id, ...answer }));
+    const deliver = (id: string, answer: { output?: unknown; error?: string }) =>
+      (missing.delete(id), as(app, Number(row.usr_id), () => app.fire("ai:batched", { owner, capability, id, ...answer })));
     try {
-      const answers = await adapter.batched(await bind(app, row as never, { input: 0, output: 0 }), { handle: row.handle, capability }) as AsyncIterable<BatchAnswer> | undefined;
+      const answers = await api.batched(await bind(app, row as never, { input: 0, output: 0 }), { handle: row.handle, capability });
       if (!answers) continue;
       for await (const { id, output, error, usage: [input = 0, used = 0] = [] } of answers) {
         app.fire("ai:call", { capability, id: modelProvider, model, provider, ms: 0, input, output: used, error, batch: true }).catch(console.error);
