@@ -7,7 +7,7 @@ import { t } from '@qino/pub/t.js';
 import { bindSettings } from '../../cms/pub/js/settings.js';
 
 export const css = `
-.-fields4 {
+.-fields {
   .-list { display:flex; flex-direction:column; gap:.2em; }
 
   .-field { border:1px solid var(--cms-light); }
@@ -17,8 +17,8 @@ export const css = `
     display:flex; align-items:center; gap:.2em;
     padding:.4em;
     > select { flex:0 1 auto; }
-    /* the name identifies the row now that the label sits in the details */
-    > .-name { flex:1 1 auto; min-width:calc(var(--rem) * 3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* the name identifies the row now that the label sits in the details; a click opens them */
+    > .-name { flex:1 1 auto; min-width:calc(var(--rem) * 3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
     /* u2 sizes icons in rem — pin them to our own anchor, the way the other widgets do */
     > button { flex:0 0 auto; padding:0 .2em; --size:calc(var(--rem) * 1.4); }
     > .-handle { cursor:n-resize; }
@@ -33,23 +33,31 @@ export const css = `
   .-more label { display:block; margin-block:.4em; }
   .-more input:not([type=checkbox]), .-more textarea, .-more select { width:100%; }
   .-more .-remove { margin-top:.6em; }
+
+  /* only what the chosen type uses */
+  .-field:not(:has([name=type] :checked:is([value=select], [value=radio], [value=file]))) .-choices,
+  .-field:not(:has([name=type] :checked[value=email])) .-copy,
+  .-field:has([name=type] :checked:is([value=checkbox], [value=radio], [value=select], [value=file], [value=date])) .-placeholder,
+  .-field:has([name=type] :checked[value=file]) :is(.-default, .-forChoices),
+  .-field:not(:has([name=type] :checked[value=file])) .-forFile { display:none; }
 }
 `;
 
 const TYPES = ['text', 'textarea', 'email', 'number', 'date', 'tel', 'url', 'checkbox', 'select', 'radio', 'file'];
 
 const options = (list, active) => list.map((value) =>
-  html`<option ${value === String(active) ? 'selected' : ''}>${value}`);
+  html`<option value="${value}" ${value === String(active) ? 'selected' : ''}>${value}`);
 
 export default async function (widget, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
+  // the page's language: the texts are read and written in it, and the labels say which it is
+  const lang = document.documentElement.lang;
   const [settings, texts] = await Promise.all([
     ref.settings.get({}, { signal }),
-    ref.texts.get({ values: true }, { signal }),
+    ref.texts.get({ values: true, lang }, { signal }),
     // dynamic: the drag attributes pull a cdn dependency that `deno check --all` cannot follow
     import('@qino/u2/attr/dropzone/dropzone.js'),
     import('@qino/u2/attr/draghandle/draghandle.js'),
-    import('@qino/u2/attr/disableif/disableif.js'),
   ]);
   const fields = settings.fields ?? {}; // a form that has no field yet has none
 
@@ -62,44 +70,41 @@ export default async function (widget, { node, dialogs, signal }) {
   /* The condition of one field names the others — offer them, the operators are typed. */
   const others = (self) => names.filter((n) => n !== self);
 
-  /* Each field is its own form (u2-disableif uses `el.form`), so names must be unique. Nothing is
-     submitted; each change saves itself. */
+  /* Each change saves itself. */
   const field = (name) => {
     const set = fields[name] ?? {};
     const title = txt(name + '_title'), choices = txt(name + '_options'), place = txt(name + '_placeholder');
-    return html.async`<form class=-field itemid=${name} draggable>
+    return html.async`<div class=-field itemid=${name} draggable>
       <div class=-head>
         <button type=button class="u2-unstyle -handle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
-        <code class=-name title="${t`Field name`}">${name}</code>
+        <span class=-name title="${t`Field name`}">${name}</span>
         <select name=type setting="fields.${name}.type">${options(TYPES, set.type ?? 'text')}</select>
         <button type=button class="u2-unstyle -toggle" aria-expanded=false title="${t`Details`}"><u2-ico icon=expand_more>▾</u2-ico></button>
       </div>
       <div class=-more>
-        <label>${t`Label:`}<input value="${unhee(title.value)}" cmstxt=${title.id}></label>
+        <label>${t`Label`} (${lang}):<input value="${unhee(title.value)}" cmstxt=${title.id} cmslang=${lang}></label>
         <label><input type=checkbox setting="fields.${name}.required" ${set.required ? 'checked' : ''}> ${t`Required`}</label>
-        <label><input type=checkbox u2-disableif="type!=email" setting="fields.${name}.copy_to_sender" ${set.copy_to_sender ? 'checked' : ''}> ${t`Send a copy to this address`}</label>
-        <label>${t`Choices (one per line):`}<textarea u2-disableif="type=checkbox" cmstxt=${choices.id}>${unhee(choices.value)}</textarea></label>
-        <label>${t`Default value:`}<input u2-disableif="type=file" setting="fields.${name}.default" value="${set.default}"></label>
-        <label>${t`Placeholder:`}<input u2-disableif="type=checkbox" cmstxt=${place.id} value="${unhee(place.value)}"></label>
-        <label>${t`Disable if:`}<input setting="fields.${name}.disable_if" value="${set.disable_if}" placeholder="${others(name)[0] ? others(name)[0] + '=yes' : 'field=value'}" list=fields4-names></label>
-        <button type=button class="-remove u2-button" u2-confirm="${t`Delete field?`}">${t`Delete field`}</button>
+        <label class=-copy><input type=checkbox setting="fields.${name}.copy_to_sender" ${set.copy_to_sender ? 'checked' : ''}> ${t`Send a copy to this address`}</label>
+        <label class=-choices><span class=-forChoices>${t`Choices, one per line`}</span><span class=-forFile>${t`Allowed file types, one per line`}</span> (${lang}):<textarea cmstxt=${choices.id} cmslang=${lang}>${unhee(choices.value)}</textarea></label>
+        <label class=-default>${t`Default value:`}<input setting="fields.${name}.default" value="${set.default}"></label>
+        <label class=-placeholder>${t`Placeholder`} (${lang}):<input cmstxt=${place.id} cmslang=${lang} value="${unhee(place.value)}"></label>
+        <label>${t`Disable if:`}<input setting="fields.${name}.disable_if" value="${set.disable_if}" placeholder="${others(name)[0] ? others(name)[0] + '=yes' : 'field=value'}" list=fields-names></label>
+        <button type=button class=-remove u2-confirm="${t`Delete field?`}">${t`Delete field`}</button>
       </div>
-    </form>`;
+    </div>`;
   };
 
-  await widget.html`<div class=-fields4>
+  await widget.html`<div class=-fields>
     <div class=-list u2-dropzone style="padding-bottom:.5rem">${names.map(field)}</div>
-    <datalist id=fields4-names>${names.map((n) => html`<option value="${n}">`)}</datalist>
+    <datalist id=fields-names>${names.map((n) => html`<option value="${n}">`)}</datalist>
     <button type=button class="-add">${t`Add field`}</button>
   </div>`;
 
   bindSettings(widget, ref);
-  // A field block is a form only for u2-disableif — Enter must not navigate away.
-  widget.on('submit', (_, e) => e.preventDefault());
 
-  widget.on('click', '.-toggle', (btn) => {
-    const open = btn.closest('.-field').toggleAttribute('open');
-    btn.setAttribute('aria-expanded', open);
+  widget.on('click', '.-toggle, .-name', (el) => {
+    const field = el.closest('.-field'), open = field.toggleAttribute('open');
+    field.querySelector('.-toggle').setAttribute('aria-expanded', open);
   });
 
   /* Via the module's api: it derives the name from the label and deletes the field's texts. */

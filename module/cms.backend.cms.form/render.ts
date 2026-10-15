@@ -1,5 +1,6 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
+import { fields } from "@qino/qino/cms.cont.form";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -29,24 +30,14 @@ async function pageOf(node: Node) {
  * so their values stay visible.
  */
 export async function columns(node: Node, rows: { data: Record<string, unknown> }[]): Promise<string[]> {
-  const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form.fields");
-  const declared = fields ? Object.keys(fields.settings.fields) : [];
-  const sorted = String(fields?.settings.sort() ?? "").split(",").filter((n) => declared.includes(n));
-  const names = [...sorted, ...declared.filter((n) => !sorted.includes(n))];
+  const names = [...(await fields(node)).keys()];
   for (const row of rows) for (const name of Object.keys(row.data)) if (!names.includes(name)) names.push(name);
   return names;
 }
 
 /** The labels of a form's fields, for the table head and the export. */
 export async function labels(node: Node): Promise<Record<string, string>> {
-  const fields = (await node.conts()).find((c) => c.vs.module === "cms.cont.form.fields");
-  const labels: Record<string, string> = {};
-  if (!fields) return labels;
-  for (const name of Object.keys(fields.settings.fields)) {
-    const label = (await fields.showText(name + "_title")).plain();
-    if (label) labels[name] = label;
-  }
-  return labels;
+  return Object.fromEntries(await fields(node));
 }
 
 /**

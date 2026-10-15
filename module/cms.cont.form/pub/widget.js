@@ -14,10 +14,12 @@ export const css = `
 
 export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
+  // the page's language: the texts are read and written in it, and the labels say which it is
+  const lang = document.documentElement.lang;
   const [settings, texts, contents] = await Promise.all([
     ref.settings.get({}, { signal }),
     // naming them creates the ones this node has not written yet, so each has an id to bind to
-    ref.texts.get({ values: true, names: 'mailSubject,email_before,email_after' }, { signal }),
+    ref.texts.get({ values: true, lang, names: 'mailSubject,email_before,email_after' }, { signal }),
     ref.contents.get({}, { signal }),
   ]);
   // the success content is created with the node; without it the row stays empty
@@ -37,14 +39,14 @@ export default async function (widget, { node, signal }) {
       <td>${t`Recipients`}<br><small>${t`(empty: the site's own address)`}</small>
       <td><textarea rows=2 setting=recipients>${settings.recipients}</textarea>
     <tr>
-      <td>${t`Subject`}<br><small>${t`(the page title is used when empty)`}</small>
-      <td><input cmstxt="${subject.id}" value="${unhee(subject.value)}">
+      <td>${t`Subject`} (${lang})<br><small>${t`(the page title is used when empty)`}</small>
+      <td><input cmstxt="${subject.id}" cmslang=${lang} value="${unhee(subject.value)}">
     <tr>
-      <td>${t`E-Mail above`}
-      <td><div class=-input contenteditable cmstxt="${before.id}">${html.raw(before.value)}</div>
+      <td>${t`E-Mail above`} (${lang})
+      <td><div class=-input contenteditable cmstxt="${before.id}" cmslang=${lang}>${html.raw(before.value)}</div>
     <tr>
-      <td>${t`E-Mail below`}
-      <td><div class=-input contenteditable cmstxt="${after.id}">${html.raw(after.value)}</div>
+      <td>${t`E-Mail below`} (${lang})
+      <td><div class=-input contenteditable cmstxt="${after.id}" cmslang=${lang}>${html.raw(after.value)}</div>
     <tr>
       <td>${t`Buttons`}
       <td>

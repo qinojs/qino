@@ -4,3 +4,10 @@
 :where([qcms-mod="cont.form.fields"] tr:has([disabled])) {
 	opacity: .4;
 }
+
+/* In edit mode: a field whose name another block of the form has too (its title says so). */
+[qcms-mod="cont.form.fields"] .-taken {
+	color: var(--red, #dc2626);
+	font-weight: bold;
+	cursor: help;
+}

@@ -50,6 +50,21 @@ async function spamCheck(node: Node, form: Form, ctx: Ctx) {
   return "";
 }
 
+/** Upper bounds for an entry, far above any real form: what else it sends, and its size. */
+const MAX_FIELDS = 100, MAX_CHARS = 100_000;
+
+/** Whatever else the form sends is kept beside the field blocks' fields: inputs of static HTML
+ *  or of other modules. Returns an error when the entry is beyond the bounds. */
+async function others(node: Node, form: Form) {
+  const rest = Object.entries(form.posted ?? {}).filter(([name]) => name !== "your_name" && !form.owners.has(name));
+  for (const [name, value] of rest) {
+    const values = [value].flat().filter((v): v is string => typeof v === "string" && v !== "");
+    if (values.length) form.values[name] = values.length > 1 ? values : values[0];
+  }
+  if (rest.length <= MAX_FIELDS && JSON.stringify(form.values).length <= MAX_CHARS) return "";
+  return await node.app.t`Your entry is too long.`;
+}
+
 /** Recipients: the form's list plus addresses from fields; if none, the site's own address. */
 async function recipients(node: Node, form?: Form) {
   const own = String(node.settings.recipients() ?? "").match(/[^\s,;<>]+@[^\s,;<>]+/g) ?? [];
@@ -68,7 +83,7 @@ async function send(node: Node, form: Form, attachments: { name: string; content
   let body = String(await node.showText("email_before"));
   for (const [name, value] of Object.entries(form.values)) {
     const label = form.labels[name] || name;
-    body += `<p><b>${hee(label)}</b><br>${hee(value).replace(/\n/g, "<br>")}</p>`;
+    body += `<p><b>${hee(label)}</b><br>${hee([value].flat().join(", ")).replace(/\n/g, "<br>")}</p>`;
   }
   body += String(await node.showText("email_after"));
 
@@ -95,11 +110,12 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const form = openForm(node);
   if (Object.keys(vars).length) form.posted = vars;
 
-  const error = form.sent ? await spamCheck(node, form, ctx) : "";
-  if (error) form.errors++;
+  let error = form.sent ? await spamCheck(node, form, ctx) : "";
 
   // Rendering the fields fills `form` with their values, so it must run before the check below.
   const fields = await (await node.cont("main")).html();
+  if (form.sent && !error) error = await others(node, form);
+  if (error) form.errors++;
 
   const warnings = [];
   if (edit) {
@@ -152,11 +168,11 @@ export async function install({ app }: { app: App }): Promise<void> {
       await db.exec`DELETE FROM module WHERE name = ${old}`;
     }
     // settings renamed since: redirect, is-recipient, disableif; keep is gone
-    const renamed = (settings: Record<string, any>) => {
+    const renamed = (settings: Record<string, unknown>) => {
       if ("redirect" in settings) settings.success_page = settings.redirect;
       delete settings.redirect;
       delete settings.keep; // entries are always kept
-      for (const field of Object.values<Record<string, unknown>>(settings.fields ?? {})) {
+      for (const field of Object.values((settings.fields ?? {}) as Record<string, Record<string, unknown>>)) {
         if ("is-recipient" in field) field.copy_to_sender = field["is-recipient"];
         if ("disableif" in field) field.disable_if = field.disableif;
         delete field["is-recipient"];

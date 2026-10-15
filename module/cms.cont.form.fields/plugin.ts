@@ -1,6 +1,7 @@
 import { contactKey, getCtx, hee, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
+import { sortedNames } from "./mod.ts";
 import api from "./nodeApi.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -25,13 +26,6 @@ const settingsSchema = {
     },
   },
 };
-
-/** Field names in display order: those listed in `sort` first, then the rest. */
-function sortedNames(node: Node) {
-  const all = Object.keys(node.settings.fields);
-  const sorted = String(node.settings.sort() ?? "").split(",").filter((name) => all.includes(name));
-  return [...sorted, ...all.filter((name) => !sorted.includes(name))];
-}
 
 /** A node text exactly as the textarea wrote it — no markup to strip, nothing trimmed. */
 const rawText = async (node: Node, name: string) => (await (await node.text(name)).string()) ?? "";
@@ -61,7 +55,7 @@ function attrs(list: Record<string, string | number | boolean | undefined>) {
 const isEmail = (value: string) => { try { return !!contactKey("email", value); } catch { return false; } };
 
 /** One field: its markup plus everything it contributes to the form. */
-async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx) {
+async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx, taken: boolean) {
   const set = node.settings.fields[name];
   const type = String(set.type() ?? "") || "text";
   const label = await plain(node, name + "_title") || name;
@@ -137,7 +131,9 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
   }
 
   return html.async`<tr class="-item -item-${name}">
-      <th scope=row><label for="${common.id}">${node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>
+      <th scope=row><label for="${common.id}">${node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>${taken
+        ? html.async` <span class=-taken title="${node.app.t`Another field block of this form has a field "${name}" too: only one value is kept.`}">!</span>`
+        : ""}
       <td>${control}${error}`;
 }
 
@@ -153,14 +149,22 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const open: Map<number, Form> | undefined = getCtx().state["cms.cont.form"];
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;
 
+  const edit = await node.edit();
   const fields = [];
-  for (const name of sortedNames(node)) fields.push(await field(node, name, form, ctx));
+  for (const name of sortedNames(node)) {
+    // names are one per form: another block's field of the same name would take its value
+    const taken = !!form && (form.owners.get(name) ?? node.id) !== node.id;
+    if (!taken) form?.owners.set(name, node.id);
+    fields.push(await field(node, name, form, ctx, edit && taken));
+  }
 
-  const warning = await node.edit() && !path.some((n) => n.vs.module === "cms.cont.form")
+  const warning = edit && !path.some((n) => n.vs.module === "cms.cont.form")
     ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form" module.`}</u2-alert>`
     : "";
 
-  return html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;
+  const table = html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;
+  const title = (await node.showTitle()).plain();
+  return title ? html.async`<fieldset><legend>${title}</legend>${table}</fieldset>` : table;
 }
 
 export const cms = {

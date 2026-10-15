@@ -1,5 +1,7 @@
 /* Field names. The label is what the editor types; the name is the storage key, created once and
  * then kept, so old entries stay valid. */
+import type { Node } from "@qino/qino/cms";
+
 /**
  * Reserved names (as `fieldName()` produces them). `your_name` is the honeypot. `then` would make
  * the settings proxy a thenable, so `await settings.fields` would hang. `__proto__` becomes `proto`,
@@ -18,4 +20,11 @@ export function fieldName(label: string): string {
     .slice(0, 64);
   if (!name) return "feld";
   return RESERVED.has(name) ? name + "_" : name; // trailing _ keeps the word, drops the meaning
+}
+
+/** Field names in display order: those listed in `sort` first, then the rest. */
+export function sortedNames(node: Node): string[] {
+  const all = Object.keys(node.settings.fields);
+  const sorted = String(node.settings.sort() ?? "").split(",").filter((name) => all.includes(name));
+  return [...sorted, ...all.filter((name) => !sorted.includes(name))];
 }

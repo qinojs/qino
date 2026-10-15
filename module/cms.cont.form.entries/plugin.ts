@@ -1,5 +1,6 @@
 import { html, sql, tableRef } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
+import { entryData, fields, uploads } from "@qino/qino/cms.cont.form";
 import * as u2 from "@qino/qino/u2";
 
 import api from "./nodeApi.ts";
@@ -35,27 +36,6 @@ async function formOf(node: Node) {
 }
 
 /**
- * The form's fields in order, with labels. Fields only found in entries (deleted later) come last,
- * so their values stay visible.
- */
-async function fieldsOf(form: Node, rows: { data: Record<string, unknown> }[], only: string[]) {
-  const cont = (await form.conts()).find((c) => c.vs.module === "cms.cont.form.fields");
-  const declared = cont ? Object.keys(cont.settings.fields) : [];
-  const sorted = String(cont?.settings.sort() ?? "").split(",").filter((name) => declared.includes(name));
-  let names = [...sorted, ...declared.filter((name) => !sorted.includes(name))];
-  for (const row of rows) for (const name of Object.keys(row.data)) if (!names.includes(name)) names.push(name);
-  // A chosen list is also the order — and it is what keeps an answer out of a public listing.
-  if (only.length) names = only.filter((name) => names.includes(name));
-
-  const out: { name: string; label: string }[] = [];
-  for (const name of names) {
-    const label = cont ? (await cont.showText(name + "_title")).plain() : "";
-    out.push({ name, label: label || name });
-  }
-  return out;
-}
-
-/**
  * A form's entries, newest first (own query, no shared helper).
  *
  * `onlyIf`: a field the entry must have, e.g. a consent checkbox (unticked sends nothing). Checked
@@ -71,33 +51,13 @@ async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; 
 
   const out = [];
   for (const row of rows) {
-    let data: Record<string, unknown> = {};
-    try {
-      const parsed = JSON.parse(String(row.data ?? "") || "{}");
-      if (parsed && typeof parsed === "object") data = parsed;
-    } catch { /* a broken row shows as an empty one; it does not take the listing down */ }
+    const data = entryData(row.data);
     if (opt.onlyIf && data[opt.onlyIf] === undefined) continue;
     const released = !!Number(row.released);
     const mine = !!opt.client && String(row.client_id ?? "") === String(opt.client);
     if (opt.moderated && !released && !opt.all && !mine) continue;
     out.push({ id: Number(row.id), created: Number(row.created), data, released });
     if (out.length >= opt.limit) break;
-  }
-  return out;
-}
-
-/** The uploads of these entries, keyed `<entry>:<field>` — one query for the whole listing. */
-async function uploads(app: App, ids: number[]) {
-  const out = new Map<string, { id: number; name: string; mime: string }[]>();
-  if (!ids.length) return out;
-  const rows = await app.db.query`
-    SELECT ef.entry_id, ef.field, f.id, f.name, f.mime
-    FROM ${sql.id(tableRef("form_entry_file"))} ef
-    JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
-    WHERE ${sql.in("ef.entry_id", ids)} ORDER BY ef.id`;
-  for (const row of rows) {
-    out.getOrInsertComputed(`${row.entry_id}:${row.field}`, () => [])
-      .push({ id: Number(row.id), name: String(row.name ?? ""), mime: String(row.mime ?? "") });
   }
   return out;
 }
@@ -128,8 +88,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     client: ctx.clientId,
   });
   const files = await uploads(app, rows.map((row) => row.id));
-  const only = String(node.settings.fields() ?? "").split(",").map((name) => name.trim()).filter(Boolean);
-  const fields = await fieldsOf(form, rows, only);
+  const all = await fields(form, rows);
+  // A chosen list is also the order — and it is what keeps an answer out of a public listing.
+  const only = String(node.settings.fields() ?? "").split(",").map((name) => name.trim()).filter((name) => all.has(name));
+  const shown = only.length ? only : [...all.keys()];
 
   /**
    * Images only, re-encoded via transform (an svg with a script becomes a plain image). Other files
@@ -149,14 +111,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const entry = async (row: { id: number; created: number; released: boolean; data: Record<string, unknown> }) => {
     const lines = [];
-    for (const { name, label } of fields) {
-      const shown = await pictures(row.id, name);
-      const value = String(row.data[name] ?? "").trim();
-      if (!value && !shown.length) continue; // a field nobody filled in says nothing
+    for (const name of shown) {
+      const images = await pictures(row.id, name);
+      const value = [row.data[name] ?? ""].flat().join(", ").trim();
+      if (!value && !images.length) continue; // a field nobody filled in says nothing
       // explicit `</div>`: a `<div>` doesn't close a `<dd>`, fields would nest otherwise
       lines.push(html`<div class="-field-${name}">
-        <dt>${label}
-        <dd>${shown.length ? shown : value}
+        <dt>${all.get(name)}
+        <dd>${images.length ? images : value}
       </div>`);
     }
     const when = new Date(row.created * 1000);

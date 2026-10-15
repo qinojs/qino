@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { fs, sql, unhee } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { fieldName } from "@qino/qino/cms.cont.form.fields";

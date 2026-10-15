@@ -1,15 +1,19 @@
 /* Field values collected during render, and storage of submitted entries. Fields
  * have editor-defined names and entries are stored. */
-import { getCtx, unixTime } from "@qino/qino";
+import { getCtx, sql, tableRef, unixTime } from "@qino/qino";
+import { sortedNames } from "@qino/qino/cms.cont.form.fields";
 
-import type { UploadedFile } from "@qino/qino";
+import type { App, UploadedFile } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export class Form {
-  /** Submitted values by field name; numbers and checkboxes keep their type into the JSON. */
-  values: Record<string, string | number | boolean> = {};
+  /** Submitted values by field name; numbers and checkboxes keep their type into the JSON, a name
+   *  sent more than once without a field block (same-named checkboxes) keeps all its values. */
+  values: Record<string, string | number | boolean | string[]> = {};
   /** Field name → label, for the mail. */
   labels: Record<string, string> = {};
+  /** Field name → the field block that rendered it first: names are one per form. */
+  owners = new Map<string, number>();
   /** Uploads waiting to become dbFiles, as the request delivered them. */
   files: { field: string; upload: UploadedFile }[] = [];
   /** Addresses contributed by fields, e.g. a confirmation copy to the sender. */
@@ -50,6 +54,54 @@ export async function formOf(node: Node): Promise<Form | undefined> {
     const form = open.get(id);
     if (form) return form;
   }
+}
+
+/**
+ * The fields of all field blocks in `form`, in the order they render, then names only found in
+ * `rows` (fields removed since, inputs of static HTML), so their values stay visible: name → label.
+ */
+export async function fields(form: Node, rows: { data: Record<string, unknown> }[] = []): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const walk = async (node: Node) => {
+    for (const cont of await node.conts()) {
+      if (cont.vs.module === "cms.cont.form") continue; // a form inside has its own
+      if (cont.vs.module === "cms.cont.form.fields") {
+        for (const name of sortedNames(cont)) {
+          if (!out.has(name)) out.set(name, (await cont.showText(name + "_title")).plain() || name);
+        }
+      }
+      await walk(cont);
+    }
+  };
+  await walk(form);
+  for (const row of rows) for (const name of Object.keys(row.data)) if (!out.has(name)) out.set(name, name);
+  return out;
+}
+
+/** An entry's stored values; a broken row is an empty one rather than taking a listing down. */
+export function entryData(json: unknown): Record<string, unknown> {
+  try {
+    const data = JSON.parse(String(json ?? "") || "{}");
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The uploads of these entries, keyed `<entry>:<field>`, in one query. */
+export async function uploads(app: App, ids: number[]): Promise<Map<string, { id: number; name: string; mime: string }[]>> {
+  const out = new Map<string, { id: number; name: string; mime: string }[]>();
+  if (!ids.length) return out;
+  const rows = await app.db.query`
+    SELECT ef.entry_id, ef.field, f.id, f.name, f.mime
+    FROM ${sql.id(tableRef("form_entry_file"))} ef
+    JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
+    WHERE ${sql.in("ef.entry_id", ids)} ORDER BY ef.id`;
+  for (const row of rows) {
+    out.getOrInsertComputed(`${row.entry_id}:${row.field}`, () => [])
+      .push({ id: Number(row.id), name: String(row.name ?? ""), mime: String(row.mime ?? "") });
+  }
+  return out;
 }
 
 /**

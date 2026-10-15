@@ -1,7 +1,7 @@
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
-import { Form, formOf, openForm } from "../mod.ts";
+import { fields, Form, formOf, openForm } from "../mod.ts";
 
 /** Minimal stand-in: only `id` and `path()` matter for the form lookup. */
 function node(id: number, ancestors: number[] = []) {
@@ -33,4 +33,27 @@ Deno.test("Form.value reflects the submitted body only once sent", () => {
   assertEquals(form.sent, true);
   assertEquals(form.value("name"), "hand");
   assertEquals(form.value("missing"), "", "a sent form reports untouched fields as empty");
+});
+
+/** A node of `module` with `conts`; a field block's fields map name → label. */
+function tree(module: string, conts: unknown[] = [], fields?: Record<string, string>, sort = "") {
+  return {
+    vs: { module },
+    conts: () => Promise.resolve(conts),
+    settings: { fields: fields ?? {}, sort: () => sort },
+    showText: (name: string) => Promise.resolve({ plain: () => fields?.[name.replace(/_title$/, "")] ?? "" }),
+    // deno-lint-ignore no-explicit-any
+  } as any;
+}
+
+Deno.test("fields: every field block in the form, nested ones too, in render order", async () => {
+  const form = tree("cms.cont.form", [
+    tree("cms.cont.flexible", [
+      tree("cms.cont.form.fields", [], { name: "Name", email: "E-Mail" }, "email,name"),
+      tree("cms.cont.text"),
+      tree("cms.cont.form.fields", [], { street: "Street", name: "Name again" }),
+      tree("cms.cont.form", [tree("cms.cont.form.fields", [], { other: "Other form" })]),
+    ]),
+  ]);
+  assertEquals([...await fields(form)], [["email", "E-Mail"], ["name", "Name"], ["street", "Street"]]);
 });
