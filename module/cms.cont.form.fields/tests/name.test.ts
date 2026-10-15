@@ -7,7 +7,7 @@ Deno.test("fieldName turns a label into a name", () => {
   assertEquals(fieldName("E-Mail"), "e_mail");
   assertEquals(fieldName("Grösse in m²"), "groesse_in_m");
   assertEquals(fieldName("Prénom"), "prenom");
-  assertEquals(fieldName("  ***  "), "feld", "a label without letters still needs a name");
+  assertEquals(fieldName("  ***  "), "field", "a label without letters still needs a name");
 });
 
 Deno.test("fieldName defuses names that mean something on an object", () => {

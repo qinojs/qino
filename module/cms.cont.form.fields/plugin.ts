@@ -164,7 +164,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const table = html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;
   const title = (await node.showTitle()).plain();
-  return title ? html.async`<fieldset><legend>${title}</legend>${table}</fieldset>` : table;
+  return title ? html.async`<fieldset>${node.cms.text(node, "title", { tag: "legend" })}${table}</fieldset>` : table;
 }
 
 export const cms = {

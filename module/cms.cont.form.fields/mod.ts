@@ -18,7 +18,7 @@ export function fieldName(label: string): string {
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_|_$/g, "")
     .slice(0, 64);
-  if (!name) return "feld";
+  if (!name) return "field";
   return RESERVED.has(name) ? name + "_" : name; // trailing _ keeps the word, drops the meaning
 }
 

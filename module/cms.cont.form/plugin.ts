@@ -66,9 +66,9 @@ async function others(node: Node, form: Form) {
 }
 
 /** Recipients: the form's list plus addresses from fields; if none, the site's own address. */
-async function recipients(node: Node, form?: Form) {
+async function recipients(node: Node, form: Form) {
   const own = String(node.settings.recipients() ?? "").match(/[^\s,;<>]+@[^\s,;<>]+/g) ?? [];
-  const to = [...new Set([...own, ...(form?.recipients ?? [])])];
+  const to = [...new Set([...own, ...form.recipients])];
   if (to.length) return to;
   const owner = String(await node.app.settings.identity.contact.email ?? "").trim();
   return owner ? [owner] : [];
@@ -154,7 +154,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 </div>`;
 }
 
-/** Takes over what the form4 modules left: their nodes, module rows and entries. */
+/** Takes over what the form4 modules left: their nodes, module rows and entries.
+ *  Delete once z3280-murten.ch has been migrated — no other site ever ran form4. */
 export async function install({ app }: { app: App }): Promise<void> {
   const db = app.db, tables = await db.listTables();
   await db.transaction(async () => {
@@ -167,10 +168,12 @@ export async function install({ app }: { app: App }): Promise<void> {
       if (access != null) await db.table("module").ensure({ name, cms_access: access });
       await db.exec`DELETE FROM module WHERE name = ${old}`;
     }
-    // settings renamed since: redirect, is-recipient, disableif; keep is gone
+    // settings renamed since: redirect, is-recipient, disableif, onlyIf; keep is gone
     const renamed = (settings: Record<string, unknown>) => {
       if ("redirect" in settings) settings.success_page = settings.redirect;
+      if ("onlyIf" in settings) settings.only_if = settings.onlyIf;
       delete settings.redirect;
+      delete settings.onlyIf;
       delete settings.keep; // entries are always kept
       for (const field of Object.values((settings.fields ?? {}) as Record<string, Record<string, unknown>>)) {
         if ("is-recipient" in field) field.copy_to_sender = field["is-recipient"];
@@ -180,7 +183,7 @@ export async function install({ app }: { app: App }): Promise<void> {
       }
       return settings;
     };
-    for (const row of await db.query`SELECT id, settings FROM page WHERE module IN ('cms.cont.form', 'cms.cont.form.fields') AND settings != ''`) {
+    for (const row of await db.query`SELECT id, settings FROM page WHERE module IN ('cms.cont.form', 'cms.cont.form.fields', 'cms.cont.form.entries') AND settings != ''`) {
       const before = String(row.settings), after = JSON.stringify(renamed(JSON.parse(before)));
       if (after !== before) await db.exec`UPDATE page SET settings = ${after} WHERE id = ${row.id}`;
     }

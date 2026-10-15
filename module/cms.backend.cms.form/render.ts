@@ -1,6 +1,6 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { fields } from "@qino/qino/cms.cont.form";
+import { entryData, fields, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -26,21 +26,6 @@ async function pageOf(node: Node) {
 }
 
 /**
- * The form's columns: its fields in order, plus fields only found in entries (deleted later),
- * so their values stay visible.
- */
-export async function columns(node: Node, rows: { data: Record<string, unknown> }[]): Promise<string[]> {
-  const names = [...(await fields(node)).keys()];
-  for (const row of rows) for (const name of Object.keys(row.data)) if (!names.includes(name)) names.push(name);
-  return names;
-}
-
-/** The labels of a form's fields, for the table head and the export. */
-export async function labels(node: Node): Promise<Record<string, string>> {
-  return Object.fromEntries(await fields(node));
-}
-
-/**
  * A form's entries, searched and sorted. `sort` is a field name or "created".
  *
  * Search in SQL (LIKE over the json text); sorting and paging in JS, since JSON paths differ per
@@ -63,7 +48,7 @@ export async function entries(app: App, node: Node, opt: {
     id: Number(row.id),
     created: Number(row.created),
     lang: String(row.lang ?? ""),
-    data: parse(String(row.data ?? "")),
+    data: entryData(row.data),
   }));
 
   const dir = String(opt.dir).toUpperCase() === "ASC" ? 1 : -1;
@@ -82,15 +67,6 @@ export async function entries(app: App, node: Node, opt: {
   return { total: all.length, rows: opt.all ? all : all.slice(from, from + PER_PAGE) };
 }
 
-function parse(json: string): Record<string, unknown> {
-  try {
-    const data = JSON.parse(json || "{}");
-    return data && typeof data === "object" ? data : {};
-  } catch {
-    return {}; // a broken row shows empty rather than taking the table down
-  }
-}
-
 /** What the transformer can turn into an image: pictures, and a PDF's first page. */
 const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") || mime === "application/pdf";
 
@@ -99,25 +75,16 @@ const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") |
  * session only — uploads are not public.
  */
 async function uploads(app: App, ids: number[]) {
-  const out = new Map<string, HtmlString>();
-  if (!ids.length) return out;
-  const rows = await app.db.query`
-    SELECT ef.entry_id, ef.field, ef.file_id, f.name, f.mime
-    FROM ${sql.id(tableRef("form_entry_file"))} ef
-    JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
-    WHERE ef.entry_id IN (${sql.join(ids.map((id) => sql`${id}`), ", ")}) ORDER BY ef.id`;
-
-  for (const row of rows) {
-    const file = await app.dbFiles.file(Number(row.file_id));
-    const download = await file.url({ dl: true, grant: "session" });
-    const preview = previewable(row.mime)
-      ? await file.url({ fmt: "avif", w: 60, h: 60, max: true, grant: "session" })
-      : "";
-    const link = html`<a href="${download}" download title="${row.name}">${
-      preview ? html`<img src="${preview}" alt="${row.name}" loading=lazy>` : html`<u2-ico inline icon=download>↓</u2-ico> ${row.name}`
-    }</a> `;
-    const key = `${row.entry_id}:${row.field}`;
-    out.set(key, html`${out.get(key)}${link}`);
+  const out = new Map<string, HtmlString[]>();
+  for (const [key, files] of await uploadsOf(app, ids)) {
+    out.set(key, await Promise.all(files.map(async ({ id, name, mime }) => {
+      const file = await app.dbFiles.file(id);
+      const download = await file.url({ dl: true, grant: "session" });
+      const preview = previewable(mime) ? await file.url({ fmt: "avif", w: 60, h: 60, max: true, grant: "session" }) : "";
+      return html`<a href="${download}" download title="${name}">${
+        preview ? html`<img src="${preview}" alt="${name}" loading=lazy>` : html`<u2-ico inline icon=download>↓</u2-ico> ${name}`
+      }</a> `;
+    })));
   }
   return out;
 }
@@ -139,8 +106,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 
   const page = Number(vars.page ?? 0);
   const { rows, total } = await entries(app, form, { ...vars, page });
-  const names = await columns(form, rows);
-  const label = await labels(form);
+  const label = await fields(form, rows), names = [...label.keys()];
 
   const sort = String(vars.sort ?? "created");
   const dir = String(vars.dir ?? "desc").toLowerCase() === "asc" ? "asc" : "desc";
@@ -158,7 +124,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 
   return html.async`<thead><tr>
       ${head("created", await t`Received`)}
-      ${names.map((name) => head(name, label[name] || name))}
+      ${names.map((name) => head(name, label.get(name)!))}
       <th>
     </tr></thead>
     <tbody>
@@ -188,7 +154,7 @@ async function save(app: App, form: Node, vs: Record<string, string>) {
   const row = await app.db.row`
     SELECT data FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
   if (!row) return; // an entry of another form is none of this table's business
-  const data = JSON.parse(String(row.data ?? "{}") || "{}");
+  const data = entryData(row.data);
   const old = data[vs.field];
   data[vs.field] = typeof old === "number" && vs.value !== "" && !isNaN(Number(vs.value)) ? Number(vs.value) : String(vs.value);
   await app.db.table("form_entry").update(id, { data: JSON.stringify(data) });
@@ -230,25 +196,14 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
 /** The export of what the table currently shows — the search included, the paging not. */
 export async function csv(app: App, node: Node, search: string): Promise<string> {
   const { rows } = await entries(app, node, { search, sort: "created", dir: "asc", all: true });
-  const names = await columns(node, rows);
-  const label = await labels(node);
+  const label = await fields(node, rows), names = [...label.keys()];
   // Every cell quoted, quotes doubled — the one escaping rule csv actually has.
-  const cell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const attached = new Map<string, string>();
-  if (rows.length) {
-    const files = await app.db.query`
-      SELECT ef.entry_id, ef.field, f.name
-      FROM ${sql.id(tableRef("form_entry_file"))} ef
-      JOIN ${sql.id(tableRef("file"))} f ON f.id = ef.file_id
-      WHERE ef.entry_id IN (${sql.join(rows.map((row) => sql`${row.id}`), ", ")}) ORDER BY ef.id`;
-    for (const f of files) {
-      const key = `${f.entry_id}:${f.field}`;
-      attached.set(key, [attached.get(key), f.name].filter(Boolean).join(", "));
-    }
-  }
-  const head = [await app.t`Received`, ...names.map((n) => label[n] || n)].map(cell).join(";");
+  const cell = (v: unknown) => `"${[v ?? ""].flat().join(", ").replace(/"/g, '""')}"`;
+  const files = await uploadsOf(app, rows.map((row) => row.id));
+  const attached = (id: number, name: string) => files.get(`${id}:${name}`)?.map((f) => f.name);
+  const head = [await app.t`Received`, ...label.values()].map(cell).join(";");
   const body = rows.map((row) =>
-    [date(row.created), ...names.map((n) => attached.get(`${row.id}:${n}`) ?? row.data[n])].map(cell).join(";")
+    [date(row.created), ...names.map((n) => attached(row.id, n) ?? row.data[n])].map(cell).join(";")
   );
   return [head, ...body].join("\r\n") + "\r\n";
 }

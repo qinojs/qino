@@ -17,7 +17,7 @@ const settingsSchema = {
       "x-html": { type: "qgcms-page" },
     },
     limit: { type: "integer", minimum: 1, default: 20, description: "How many entries are shown." },
-    onlyIf: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
+    only_if: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
     moderated: { type: "boolean", description: "An entry is shown once someone with write access let it through. Its own author sees it before that." },
     fields: { type: "string", description: "Comma-separated field names to show, in that order. Empty: every field, in the order the form asks." },
   },
@@ -81,7 +81,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (mayRelease && moderated) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
   const rows = await read(app, form, {
-    onlyIf: String(node.settings.onlyIf() ?? "").trim(),
+    onlyIf: String(node.settings.only_if() ?? "").trim(),
     limit: Number(node.settings.limit()) || 20,
     moderated,
     all: mayRelease,
