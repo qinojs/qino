@@ -54,7 +54,7 @@ export async function entries(app: App, node: Node, opt: {
 
   const dir = String(opt.dir).toUpperCase() === "ASC" ? 1 : -1;
   const sort = String(opt.sort ?? "created");
-  if (sort === "created") all.sort((a, b) => dir * (a.created - b.created || a.id - b.id));
+  if (sort === "created" || sort === "spam") all.sort((a, b) => dir * (a[sort] - b[sort] || a.id - b.id));
   else {
     // Numbers compare as numbers, everything else as text — the type a value was stored with.
     all.sort((a, b) => {
@@ -90,6 +90,7 @@ async function uploads(app: App, ids: number[]) {
   return out;
 }
 
+const percent = (score: number) => Math.round(score * 100) + "%";
 const date = (unix: unknown) => new Date(Number(unix) * 1000).toISOString().slice(0, 16).replace("T", " ");
 
 /**
@@ -125,20 +126,22 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 
   return html.async`<thead><tr>
       ${head("created", await t`Received`)}
+      ${head("spam", await t`Spam`)}
       ${names.map((name) => head(name, label.get(name)!))}
       <th>
     </tr></thead>
     <tbody>
       ${rows.map((row) =>
     html.async`<tr data-entry="${row.id}">
-        <td>${row.spam >= SPAM ? html.async`<u2-ico inline icon=report title="${t`Spam`} ${Math.round(row.spam * 100)}%">⚠</u2-ico> ` : ""}${date(row.created)}
+        <td>${date(row.created)}
+        <td class=-num>${row.spam >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${percent(row.spam)}
         ${cells(row)}
         <td><button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
   )}
-      ${!rows.length ? html.async`<tr><td colspan="${names.length + 2}">${t`No entries.`}` : ""}
+      ${!rows.length ? html.async`<tr><td colspan="${names.length + 3}">${t`No entries.`}` : ""}
     </tbody>
     <tfoot><tr>
-      <td colspan="${names.length + 2}">
+      <td colspan="${names.length + 3}">
         ${total} ${t`entries`}
         ${total > PER_PAGE
     ? html`
@@ -202,9 +205,9 @@ export async function csv(app: App, node: Node, search: string): Promise<string>
   const cell = (v: unknown) => `"${[v ?? ""].flat().join(", ").replace(/"/g, '""')}"`;
   const files = await uploadsOf(app, rows.map((row) => row.id));
   const attached = (id: number, name: string) => files.get(`${id}:${name}`)?.map((f) => f.name);
-  const head = [await app.t`Received`, ...label.values()].map(cell).join(";");
+  const head = [await app.t`Received`, await app.t`Spam`, ...label.values()].map(cell).join(";");
   const body = rows.map((row) =>
-    [date(row.created), ...names.map((n) => attached(row.id, n) ?? row.data[n])].map(cell).join(";")
+    [date(row.created), percent(row.spam), ...names.map((n) => attached(row.id, n) ?? row.data[n])].map(cell).join(";")
   );
   return [head, ...body].join("\r\n") + "\r\n";
 }

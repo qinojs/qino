@@ -32,11 +32,14 @@ async function init(node: Node) {
  *  judges what was sent, by its labels. */
 async function spam(node: Node, form: Form, ctx: Ctx) {
   if (form.posted?.your_name) {
-    node.app.fire("suspicious", { ctx, weight: 3, reason: "form honeypot filled" }).catch(() => {});
+    // a bot for sure: its address's next entries are spam for a while, a second honeypot blocks it
+    node.app.fire("suspicious", { ctx, weight: 10, reason: "form honeypot filled" }).catch(() => {});
     return 1;
   }
   const labeled = Object.fromEntries(Object.entries(form.values).map(([name, value]) => [form.labels[name] || name, value]));
-  return await spamScore(node.app, labeled, { ctx });
+  const title = (await node.showTitle()).plain(), page = (await (await node.page()).showTitle()).plain();
+  const context = `the form${title ? ` "${title}"` : ""} on the page "${page}"`;
+  return await spamScore(node.app, labeled, { ctx, context });
 }
 
 /** Upper bounds for an entry, far above any real form: what else it sends, and its size. */

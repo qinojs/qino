@@ -40,8 +40,10 @@ entry, a comment, an incoming message. The caller decides what to do with it.
 - `ctx` (sent by a request): the address's record counts, and a client younger than 20 s looks like
   a bot. A signed-in user has the account's history.
 - With [`ai`](../ai/) linked, a model's `decide` judges the content, once per user, address or
-  `sender` (e.g. `"email:a@b.ch"`); its verdict replaces the age, so a quick but honest agent passes.
-  The content goes to the model as data, with the note that instructions in it are not meant for it.
+  `sender` (e.g. `"email:a@b.ch"`). `context` tells it what the content was sent through, e.g.
+  `'the form "Complaints"'`. The content goes to the model as data, with the note that instructions
+  in it are not meant for it.
+- The signals are independent and add up: one strong one is enough, weak ones together can be too.
 - A score from 0.5 on is reported against the address, so it is known next time.
 
 `mod.ts` exposes `suspects(app)`, `reports(app)` (the most recent, in memory) and

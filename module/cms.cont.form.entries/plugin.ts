@@ -20,6 +20,7 @@ const settingsSchema = {
     only_if: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
     moderated: { type: "boolean", description: "An entry is shown once someone with write access let it through. Its own author sees it before that." },
     fields: { type: "string", description: "Comma-separated field names to show, in that order. Empty: every field, in the order the form asks." },
+    spam_threshold: { type: "number", minimum: 0, maximum: 1, default: SPAM, description: "Entries with a spam score from this value on (0 to 1) are not shown." },
   },
 };
 
@@ -41,7 +42,7 @@ async function formOf(node: Node) {
  * `onlyIf`: a field the entry must have, e.g. a consent checkbox (unticked sends nothing). Checked
  * in JS, since JSON paths differ per database.
  */
-async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; moderated: boolean; all: boolean; client: unknown }) {
+async function read(app: App, form: Node, opt: { onlyIf: string; spam: number; limit: number; moderated: boolean; all: boolean; client: unknown }) {
   /* The client comes from the entry's log row, so an unreleased entry is shown to its author only. */
   const rows = await app.db.query`
     SELECT e.id, e.created, e.data, e.released, e.spam, l.client_id
@@ -51,7 +52,7 @@ async function read(app: App, form: Node, opt: { onlyIf: string; limit: number; 
 
   const out = [];
   for (const row of rows) {
-    if (Number(row.spam) >= SPAM) continue; // spam is for the backend only
+    if (Number(row.spam) >= opt.spam) continue;
     const data = entryData(row.data);
     if (opt.onlyIf && data[opt.onlyIf] === undefined) continue;
     const released = !!Number(row.released);
@@ -83,6 +84,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const rows = await read(app, form, {
     onlyIf: String(node.settings.only_if() ?? "").trim(),
+    spam: Number(node.settings.spam_threshold()) || SPAM, // 0 would hide every entry
     limit: Number(node.settings.limit()) || 20,
     moderated,
     all: mayRelease,

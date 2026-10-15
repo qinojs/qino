@@ -98,10 +98,22 @@ function saveTxt(el) {
   cleanUpEl(el);
   api.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
+// querySelectorAll across the document and all open shadow roots
+const queryAllDeep = (selector, root = document) => [...root.querySelectorAll(selector),
+  ...[...root.querySelectorAll('*')].flatMap(el => el.shadowRoot ? queryAllDeep(selector, el.shadowRoot) : [])];
+// mirror the edited text into other elements showing the same text in the same language
+const txtLang = el => el.getAttribute('cmslang') || document.documentElement.lang;
+const txtProp = el => isFormEl(el) ? 'value' : 'innerHTML';
+function syncTxt(el) {
+  if (!el?.hasAttribute?.('cmstxt')) return;
+  for (const other of queryAllDeep('[cmstxt="' + el.getAttribute('cmstxt') + '"]')) {
+    if (other !== el && txtLang(other) === txtLang(el)) other[txtProp(other)] = el[txtProp(el)];
+  }
+}
 // composedPath()[0] (read before debounce) finds the target inside the qino-cms shadow root too
 const saveTxtDebounced = debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
-document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
+document.body.addEventListener('input', e => (syncTxt(e.composedPath()[0]), saveTxtDebounced(e.composedPath()[0])));
 
 cms.reloadNode = (nid, vars) =>
   api.cms.node(nid).html.post({ vars }).then(html =>
