@@ -33,7 +33,7 @@ async function init(node: Node) {
 async function spam(node: Node, form: Form, ctx: Ctx) {
   if (form.posted?.your_name) {
     // a bot for sure: its address's next entries are spam for a while, a second honeypot blocks it
-    node.app.fire("suspicious", { ctx, weight: 10, reason: "form honeypot filled" }).catch(() => {});
+    node.app.fire("suspicious", { ctx, weight: 15, reason: "form honeypot filled" }).catch(() => {});
     return 1;
   }
   const labeled = Object.fromEntries(Object.entries(form.values).map(([name, value]) => [form.labels[name] || name, value]));

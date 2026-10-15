@@ -1,5 +1,6 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
 import { entryData, fields, SPAM, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
 
 import type { App, HtmlString } from "@qino/qino";
@@ -18,11 +19,6 @@ export async function forms(app: App): Promise<Node[]> {
     if (node.exists() && await node.access() >= 2) mine.push(node);
   }
   return mine;
-}
-
-/** The page a form sits on — its title is what makes the form recognisable in the list. */
-async function pageOf(node: Node) {
-  return [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
 }
 
 /**
@@ -181,20 +177,15 @@ export async function formOfVars(app: App, vars: Record<string, unknown>): Promi
 }
 
 /**
- * A form in the picker: name, page, number of entries. The block's title wins (a page may have two
- * forms).
+ * A form in the picker: where it sits (as in the history) and its number of entries. Picking one is
+ * a link, so a form's entries can be linked to.
  */
 export async function formLine(app: App, node: Node, active: boolean): Promise<HtmlString> {
   const count = await app.db.one`
     SELECT count(*) FROM ${sql.id(tableRef("form_entry"))} WHERE node_id = ${node.id}`;
-  const page = await pageOf(node);
-  const plain = async (n: Node) => (await n.showTitle()).plain();
-  const title = await plain(node) || (page ? await plain(page) : "");
-  const url = page ? await page.url() : "";
   return html.async`<tr${active ? html.raw(" class=-active") : ""}>
-      <td><button class=u2-unstyle data-form="${node.id}">${title || html.raw(`#${node.id}`)}</button>
-      <td>${url ? html.async`<a href="${url}" target=_blank title="${app.t`Open the page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}
-      <td>${Number(count)}`;
+      <td><a href="?form=${node.id}"${active ? html.raw(" aria-current=page") : ""}>${Number(count)} ${app.t`entries`}</a>
+      <td class=-where>${backend.breadcrumb(node, node.id)}`;
 }
 
 /** The export of what the table currently shows — the search included, the paging not. */

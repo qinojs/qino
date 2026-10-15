@@ -90,11 +90,10 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   }
 
   if (!order.length) return html.async`<tr class=-empty><td colspan=5>${app.t`No changes found.`}`;
-  const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
-  return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!, titles))));
+  return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!))));
 }
 
-async function renderRow(node: Node, ev: Event, titles: Map<number, string>) {
+async function renderRow(node: Node, ev: Event) {
   const t = node.app.t;
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
@@ -114,7 +113,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>) {
 <tr class=-row data-key="${ev.key}" data-nc="${ev.ncMax}">
   <td class=-when><u2-time datetime="${iso}" type=relative title="${stamp}">${stamp}</u2-time>
   <td class=-who>${actorCell(r, t)}
-  <td class=-where>${backend.breadcrumb(node, Number(r.node_id), titles)}
+  <td class=-where>${backend.breadcrumb(node, Number(r.node_id))}
   <td class=-what>${labels}
   <td class=-client><span style="color:${backend.uniqueColor(r.ip)}">${r.ip ?? "-"}</span><br><small style="color:${backend.uniqueColor(ua.browser)}">${ua.browser} ${ua.version.split(".")[0]}${
     ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : ""

@@ -5,7 +5,7 @@ import api from "./nodeApi.ts";
 import { formLine, formOfVars, forms, list } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -25,9 +25,10 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 
 /* Entries of the site's forms. Forms are found by their module, so new ones appear automatically.
    Visibility follows the form's access rights. */
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const app = node.app;
   const { t } = app;
+  vars = { ...ctx.req.query, ...vars }; // ?form=… picks a form, so it can be linked to
   const all = await forms(app);
   const active = await formOfVars(app, vars);
 
@@ -41,7 +42,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-grow:0">
         <div class=-head>${t`Forms`}</div>
-        <table class=u2-table>${all.map((form) => formLine(app, form, form.id === active?.id))}</table>
+        <table class=u2-table>
+          <tr><th>${t`Entries`}<th>${t`Where`}
+          ${all.map((form) => formLine(app, form, form.id === active?.id))}
+        </table>
     </div>
 
     <div class=u2-card>

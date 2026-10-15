@@ -144,10 +144,9 @@ export function uaInfo(ua: string): { browser: string; version: string; os: stri
 }
 
 // Linked breadcrumb from the tree root down to a node (a page or a content
-// within it). Pass a `titles` map to cache ancestors across many breadcrumbs.
-// Contents usually have no title, so fall back to their (shortened) module name,
-// then the id.
-export async function breadcrumb(host: Node, nodeId: number, titles = new Map<number, string>()): Promise<HtmlString> {
+// within it). Contents usually have no title, so fall back to their (shortened)
+// module name, then the id.
+export async function breadcrumb(host: Node, nodeId: number): Promise<HtmlString> {
   const node = await host.cms.node(nodeId);
   const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
@@ -155,19 +154,11 @@ export async function breadcrumb(host: Node, nodeId: number, titles = new Map<nu
   const crumbs = [];
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
-    const title = (await nodeTitle(n, titles)) || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
+    const title = (await (await n.title()).string()).trim() || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
     let url = "";
     try { url = await n.url(); } catch { /* no url (e.g. detached) */ }
     crumbs.push(html`<a href="${url}">${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
   }
   if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
   return html.join(crumbs, ' <span class=-sep>›</span> ');
-}
-
-async function nodeTitle(n: Node, cache: Map<number, string>) {
-  const hit = cache.get(n.id);
-  if (hit !== undefined) return hit;
-  const s = (await (await n.title()).string()).trim();
-  cache.set(n.id, s);
-  return s;
 }

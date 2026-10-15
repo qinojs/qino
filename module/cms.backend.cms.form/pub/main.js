@@ -3,9 +3,10 @@ import { api } from "@qino/pub/api.js";
 cms.initNode("backend.cms.form", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-search]");
-  let form = "", sort = "created", dir = "desc", page = 0, timer;
-  // Without a pick the server showed the first form — the export has to mean the same one.
-  const active = () => el.querySelector("tr.-active [data-form]")?.dataset.form;
+  // the form comes from the url (?form=…); without, the server showed the first one
+  const form = new URLSearchParams(location.search).get("form") ?? "";
+  let sort = "created", dir = "desc", page = 0, timer;
+  const active = () => form || el.querySelector("tr.-active [href]")?.getAttribute("href").replace("?form=", "");
 
   // reload only the table part (it keeps form, search, sort, page)
   const reloadList = (vars) => cms.reloadPart(nid, "list", { form, search: search.value, sort, dir, page, ...vars });
@@ -23,9 +24,6 @@ cms.initNode("backend.cms.form", (el) => {
   });
 
   el.addEventListener("click", async (e) => {
-    const pick = e.target.closest("[data-form]");
-    if (pick) { form = pick.dataset.form; page = 0; sort = "created"; dir = "desc"; return cms.reloadNode(nid, { form, sort, dir, page }); }
-
     const th = e.target.closest("[data-sort]");
     if (th) { sort = th.dataset.sort; dir = th.dataset.dir; page = 0; return reloadList({ page }); }
 
@@ -37,7 +35,7 @@ cms.initNode("backend.cms.form", (el) => {
 
     const exp = e.target.closest("[data-export]");
     if (exp) {
-      const res = await api.cms.node(nid).api.post({ export: form || active(), search: search.value });
+      const res = await api.cms.node(nid).api.post({ export: active(), search: search.value });
       if (!res?.csv) return;
       // The file is made here rather than fetched: the api already carries the rights.
       const url = URL.createObjectURL(new Blob([res.csv], { type: "text/csv;charset=utf-8" }));

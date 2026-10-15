@@ -128,7 +128,7 @@ async function replace(node: Node, vars: Record<string, unknown>) {
 
 // Change history of the given nodes — same source as cms.backend.cms.history,
 // narrowed to this module's nodes. One row per request and node.
-async function historyRows(node: Node, ids: number[], titles: Map<number, string>) {
+async function historyRows(node: Node, ids: number[]) {
   if (!ids.length) return [];
   const t = node.app.t;
   const rows = await node.app.db.query`
@@ -155,7 +155,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
     out.push(html`<tr>
       <td data-value="${r.time}">${u2.el.time(r.time)}
       <td>${who}
-      <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
+      <td class=-where>${await backend.breadcrumb(node, Number(r.node_id))}
       <td>${Array.from(labels, (l) => html`<div>${html.raw(l)}</div>`)}`);
   }
   return out;
@@ -186,7 +186,6 @@ async function renderDetail(node: Node, modName: string, message: string) {
     : Number(await app.db.one`SELECT COUNT(*) FROM page WHERE module = ${modName}`);
 
   const [lCont, lPage] = await Promise.all([t`content`, t`page`]); // plain html`` does not await
-  const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
   const trs = [];
   const visible = [];
   let editable = 0;
@@ -201,7 +200,7 @@ async function renderDetail(node: Node, modName: string, message: string) {
       <td>${nodeAccess >= WRITE ? html`<input type=checkbox data-check value="${n.id}">` : ""}
       <td><a href="${await n.url()}">${n.id}</a>
       <td>${row.type === "c" ? lCont : lPage}
-      <td class=-where>${await backend.breadcrumb(node, n.id, titles)}
+      <td class=-where>${await backend.breadcrumb(node, n.id)}
       <td>${accessWord(nodeAccess)}`);
   }
 
@@ -215,7 +214,7 @@ async function renderDetail(node: Node, modName: string, message: string) {
   const canReplace = access >= ADMIN && editable > 0 && !!targets.length;
   // the code/plugin view of the same module, if that backend page is installed and readable
   const codeUrl = (await backend.toModuleUrl(node, "cms.backend.superuser.module"))({ mod: modName });
-  const history = await historyRows(node, visible, titles);
+  const history = await historyRows(node, visible);
 
   return html.async`<div class="u2-flex cmsBackendCmsModule" data-mod="${modName}">
   <div class=u2-card style="flex:0 0 auto">
