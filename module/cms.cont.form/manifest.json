@@ -14,7 +14,7 @@
     "mod.ts",
     "plugin.ts",
     "pub/main.css",
-    "pub/main.mjs",
+    "pub/main.js",
     "pub/module.svg",
     "pub/widget.js"
   ]

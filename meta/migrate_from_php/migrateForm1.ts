@@ -59,8 +59,8 @@ async function migrateFields(app: App, page: number, lang: string) {
     let name = fieldName(String(input.name ?? "") || await label(app, page, id + "_title", lang) || id);
     while (name in fields) name += "_";
     names[id] = name;
-    const { name: _, type, ...rest } = input;
-    fields[name] = { ...rest, ...type && { type: type === "email-reply-to" ? "email" : type } };
+    const { name: _, type, "is-recipient": copy, ...rest } = input;
+    fields[name] = { ...rest, ...type && { type: type === "email-reply-to" ? "email" : type }, ...copy && { copy_to_sender: copy } };
     for (const suffix of ["_title", "_placeholder", "_options"]) {
       await app.db.exec`UPDATE page_text SET name = ${name + suffix} WHERE page_id = ${page} AND name = ${id + suffix}`;
     }
@@ -83,7 +83,6 @@ export async function migrateForm1(app: App): Promise<void> {
 
     const settings = json(form.settings);
     delete settings["send with mail1"];
-    settings.keep = false; // form1 only mailed its entries
     settings.__inited = true; // the legacy children and confirmation text already exist
 
     if (fields) {

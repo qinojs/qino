@@ -18,8 +18,8 @@ const settingsSchema = {
           required: { type: "boolean", description: "The form cannot be sent while this field is empty." },
           default: { type: "string", description: "Prefilled value." },
           autocomplete: { type: "string", description: "HTML autocomplete token." },
-          disableif: { type: "string", description: "Disable this field while a condition on another one holds, in u2-disableif syntax: \"age>33\", \"kind=other\", \"newsletter\", \"!newsletter\"." },
-          "is-recipient": { type: "boolean", description: "For email: also send a copy of the entry to this address." },
+          disable_if: { type: "string", description: "Disable this field while a condition on another one holds, in u2-disableif syntax: \"age>33\", \"kind=other\", \"newsletter\", \"!newsletter\"." },
+          copy_to_sender: { type: "boolean", description: "For email: also send a copy of the entry to the address entered here." },
         },
       },
     },
@@ -89,7 +89,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
       form.labels[name] = label;
       if (type === "email") {
         form.replyTo ||= value;
-        if (set["is-recipient"]()) form.recipients.push(value);
+        if (set.copy_to_sender()) form.recipients.push(value);
       }
     }
   }
@@ -97,7 +97,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
   const placeholder = await plain(node, name + "_placeholder");
 
   // The condition refers to other fields by name; render() loads its script.
-  const disableif = String(set.disableif() ?? "").trim();
+  const disableIf = String(set.disable_if() ?? "").trim();
 
   const common = {
     id: `${node.id}_${name}`,
@@ -105,7 +105,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
     autocomplete: String(set.autocomplete() ?? ""),
     placeholder,
     required,
-    "u2-disableif": disableif,
+    "u2-disableif": disableIf,
   };
 
   let control: HtmlString;
@@ -114,8 +114,8 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx)
       control = html`<textarea${attrs(common)}>${value}</textarea>`;
       break;
     case "checkbox":
-      // an unchecked box sends nothing — the empty hidden twin keeps the field present in the body
-      control = html`<input type=hidden name="${name}"><input type=checkbox value=1${attrs({ ...common, checked: !!value })}>`;
+      // an unchecked box sends nothing: Form.value() reports a sent form's missing field as ""
+      control = html`<input type=checkbox value=1${attrs({ ...common, checked: !!value })}>`;
       break;
     case "radio": {
       const boxes = choices.filter(Boolean).map((choice, i) =>
@@ -150,7 +150,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     "el/alert/alert.js", "el/alert/alert.css",
   ]);
   const path = [...(await node.path()).values()].reverse();
-  const open: Map<number, Form> | undefined = getCtx().state.form;
+  const open: Map<number, Form> | undefined = getCtx().state["cms.cont.form"];
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;
 
   const fields = [];

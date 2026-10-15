@@ -288,7 +288,7 @@ Dieser Lauf hat drei generische Lücken sichtbar gemacht und geschlossen:
    sofort Deutsch und braucht keinen Neustart.
 2. `cms.cont.form1(.fields2)` wird strukturell nach `cms.cont.form(.fields)` migriert. Die Felder
    heissen danach nach ihrem Label statt nach ihrer Setting-ID; Empfänger, Buttons und der vorhandene
-   Bestätigungstext bleiben erhalten. Einträge werden wie bisher nur gemailt (`keep: false`).
+   Bestätigungstext bleiben erhalten.
 3. Die gemeinsamen Legacy-Ports für `cms.layout.custom.7`, `cms.cont.slideshow.schwups2` und
    `cms.cont.gallery.photoswipe1` liegen im `cms-legacy`-Store. Nur das eigentliche Layout-Template
    der Schule bleibt projektspezifisch.

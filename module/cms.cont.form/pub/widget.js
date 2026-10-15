@@ -28,16 +28,13 @@ export default async function (widget, { node, signal }) {
 
   await widget.html`<table class="-form u2-table -Fields -Flex -NoSideGaps">
     <tr>
-      <td>${t`Entries`}
-      <td><label><input type=checkbox setting=keep ${settings.keep ?? true ? 'checked' : ''}> ${t`Keep in the database`}</label>
-    <tr>
       <td>${t`On success go to page`}
-      <td><input type=number min=1 setting=redirect value="${settings.redirect}">
+      <td><input type=number min=1 setting=success_page value="${settings.success_page}">
     <tr>
       <td>${t`…or show this content`}
       <td>${html.raw(successHtml)}
     <tr>
-      <td>${t`Recipients`}<br><small>${t`(empty: the entry is only kept)`}</small>
+      <td>${t`Recipients`}<br><small>${t`(empty: the site's own address)`}</small>
       <td><textarea rows=2 setting=recipients>${settings.recipients}</textarea>
     <tr>
       <td>${t`Subject`}<br><small>${t`(the page title is used when empty)`}</small>

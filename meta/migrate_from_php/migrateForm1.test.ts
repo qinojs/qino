@@ -32,11 +32,11 @@ Deno.test("migrateForm1: form1 becomes cms.cont.form, its fields are named after
   };
   assertEquals(await page(1), {
     basis: 0, name: "", module: "cms.cont.form",
-    settings: { recipients: "a@example.com", button_submit: 1, keep: false, __inited: true },
+    settings: { recipients: "a@example.com", button_submit: 1, __inited: true },
   });
   assertEquals(await page(2), {
     basis: 1, name: "main", module: "cms.cont.form.fields",
-    settings: { fields: { ihre_e_mail: { type: "email", "is-recipient": true, required: true }, name: { type: "text" } }, sort: "name,ihre_e_mail" },
+    settings: { fields: { ihre_e_mail: { type: "email", copy_to_sender: true, required: true }, name: { type: "text" } }, sort: "name,ihre_e_mail" },
   });
   assertEquals((await page(3)).name, "success");
   assertEquals(await db.col`SELECT name FROM page_text ORDER BY text_id`, ["ihre_e_mail_title", "name_title", "name_placeholder"]);

@@ -28,12 +28,12 @@ export class Form {
   value(name: string): string | undefined {
     if (!this.posted) return;
     const v = this.posted[name];
-    // repeated names arrive as array (checkbox + hidden fallback) — the last one counts
+    // repeated names arrive as array — the last one counts
     return String((Array.isArray(v) ? v.at(-1) : v) ?? "");
   }
 }
 
-const openForms = () => getCtx().state.form ??= new Map<number, Form>();
+const openForms = () => getCtx().state["cms.cont.form"] ??= new Map<number, Form>();
 
 /** Open a form for `node`; everything rendered below it finds it via `formOf()`. */
 export function openForm(node: Node): Form {

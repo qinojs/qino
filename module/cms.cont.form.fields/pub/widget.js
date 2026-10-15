@@ -77,11 +77,11 @@ export default async function (widget, { node, dialogs, signal }) {
       <div class=-more>
         <label>${t`Label:`}<input value="${unhee(title.value)}" cmstxt=${title.id}></label>
         <label><input type=checkbox setting="fields.${name}.required" ${set.required ? 'checked' : ''}> ${t`Required`}</label>
-        <label><input type=checkbox u2-disableif="type!=email" setting="fields.${name}.is-recipient" ${set['is-recipient'] ? 'checked' : ''}> ${t`Send a copy to this address`}</label>
+        <label><input type=checkbox u2-disableif="type!=email" setting="fields.${name}.copy_to_sender" ${set.copy_to_sender ? 'checked' : ''}> ${t`Send a copy to this address`}</label>
         <label>${t`Choices (one per line):`}<textarea u2-disableif="type=checkbox" cmstxt=${choices.id}>${unhee(choices.value)}</textarea></label>
         <label>${t`Default value:`}<input u2-disableif="type=file" setting="fields.${name}.default" value="${set.default}"></label>
         <label>${t`Placeholder:`}<input u2-disableif="type=checkbox" cmstxt=${place.id} value="${unhee(place.value)}"></label>
-        <label>${t`Disable if:`}<input setting="fields.${name}.disableif" value="${set.disableif}" placeholder="${others(name)[0] ? others(name)[0] + '=yes' : 'field=value'}" list=fields4-names></label>
+        <label>${t`Disable if:`}<input setting="fields.${name}.disable_if" value="${set.disable_if}" placeholder="${others(name)[0] ? others(name)[0] + '=yes' : 'field=value'}" list=fields4-names></label>
         <button type=button class="-remove u2-button" u2-confirm="${t`Delete field?`}">${t`Delete field`}</button>
       </div>
     </form>`;

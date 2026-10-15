@@ -10,11 +10,10 @@ import type { Form } from "./mod.ts";
 
 const settingsSchema = {
   properties: {
-    keep: { type: "boolean", default: true, description: "Keeps every entry in the database, where a listing can read it." },
     button_submit: { type: "boolean", default: true, description: "Shows the submit button; its label is the text of the same name." },
     button_reset: { type: "boolean", description: "Shows a reset button; its label is the text of the same name." },
     recipients: { type: "string", description: "Recipient addresses for submitted entries, separated by comma or newline. Empty: the address from the site's identity." },
-    redirect: { type: "integer", minimum: 1, description: "Page ID to redirect to after a successful send; without it the success content is shown." },
+    success_page: { type: "integer", minimum: 1, description: "Page ID to redirect to after a successful send; without it the success content is shown." },
   },
 };
 
@@ -61,7 +60,7 @@ async function recipients(node: Node, form?: Form) {
 }
 
 /** Build and send the mail — the copy for whoever has to react to an entry. */
-async function send(node: Node, form: Form) {
+async function send(node: Node, form: Form, attachments: { name: string; content: Uint8Array }[]) {
   const app = node.app;
   const subject = (await node.showText("mailSubject")).plain() ||
     (await (await node.page()).showTitle()).plain();
@@ -74,15 +73,14 @@ async function send(node: Node, form: Form) {
   body += String(await node.showText("email_after"));
 
   const to = await recipients(node, form);
-  if (!to.length) return true; // nothing to send is not a failure — the entry is kept
-  const attachments = form.files.map(({ upload }) => ({ name: upload.name, content: fs.bytes(upload.tmpPath) }));
-  return await sendMail(app, { email: to }, {
+  if (!to.length) return;
+  await sendMail(app, { email: to }, {
     title: subject,
     text: body,
     format: "html",
     replyTo: form.replyTo || undefined,
     attachments,
-  }) > 0;
+  });
 }
 
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
@@ -91,8 +89,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const edit = await node.edit();
   const t = node.app.t;
   const cms = node.cms;
-  const redirectId = node.settings.redirect();
-  const keep = node.settings.keep() ?? true;
+  const successPage = node.settings.success_page();
 
   // Empty vars = page view; a form post (with or without JS) has vars.
   const form = openForm(node);
@@ -105,25 +102,20 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const fields = await (await node.cont("main")).html();
 
   const warnings = [];
-  const mailed = edit || !keep ? (await recipients(node)).length > 0 : true;
   if (edit) {
     const success = await node.cont("success", "cms.cont.text");
-    if (!keep && !mailed) warnings.push(html.async`<u2-alert open variant=warning>${t`Entries are neither kept nor sent — they would be lost.`}</u2-alert>`);
-    if (!redirectId && !(await success.showText()).plain()) {
+    if (!successPage && !(await success.showText()).plain()) {
       warnings.push(html.async`<u2-alert open variant=warning>${t`A confirmation text or a redirect should be defined.`}</u2-alert>`);
     }
   }
 
   if (form.sent && !form.errors) {
-    // Keeping comes first: a mail that does not go out must not lose the entry.
-    if (keep) await keepEntry(node, form);
-    const sent = await send(node, form);
-    if (!sent && !keep) {
-      return html.async`<div class=u2-width>${warnings}
-  <u2-alert open variant=error>${t`Sorry, the form could not be sent. Please contact us directly.`}</u2-alert>
-</div>`;
-    }
-    const redirect = await cms.url(String(redirectId ?? ""));
+    // Keeping comes first: a mail that does not go out must not lose the entry. It moves the
+    // uploads away, so the attachments are read before.
+    const attachments = await Promise.all(form.files.map(async ({ upload }) => ({ name: upload.name, content: await fs.bytes(upload.tmpPath) })));
+    await keepEntry(node, form);
+    await send(node, form, attachments);
+    const redirect = await cms.url(String(successPage ?? ""));
     if (redirect) {
       ctx.res.headers.set("Location", redirect);
       ctx.res.status = 302;
@@ -134,13 +126,13 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 
   return html.async`<div class=u2-width>${warnings}
   ${error ? html`<u2-alert open variant=error>${error}</u2-alert>` : ""}
-  <form method=post enctype="multipart/form-data"${redirectId ? html.raw(" data-native") : ""}>
+  <form method=post enctype="multipart/form-data"${successPage ? html.raw(" data-native") : ""}>
     ${cms.formFields(node)}
     <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
     ${fields}
     <div class="-btns u2-flex">
       ${node.settings.button_reset() ? cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
-      ${(node.settings.button_submit() ?? true) && (keep || mailed || edit) ? cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
+      ${node.settings.button_submit() ?? true ? cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
     </div>
   </form>
 </div>`;
@@ -159,6 +151,23 @@ export async function install({ app }: { app: App }): Promise<void> {
       if (access != null) await db.table("module").ensure({ name, cms_access: access });
       await db.exec`DELETE FROM module WHERE name = ${old}`;
     }
+    // settings renamed since: redirect, is-recipient, disableif; keep is gone
+    const renamed = (settings: Record<string, any>) => {
+      if ("redirect" in settings) settings.success_page = settings.redirect;
+      delete settings.redirect;
+      delete settings.keep; // entries are always kept
+      for (const field of Object.values<Record<string, unknown>>(settings.fields ?? {})) {
+        if ("is-recipient" in field) field.copy_to_sender = field["is-recipient"];
+        if ("disableif" in field) field.disable_if = field.disableif;
+        delete field["is-recipient"];
+        delete field.disableif;
+      }
+      return settings;
+    };
+    for (const row of await db.query`SELECT id, settings FROM page WHERE module IN ('cms.cont.form', 'cms.cont.form.fields') AND settings != ''`) {
+      const before = String(row.settings), after = JSON.stringify(renamed(JSON.parse(before)));
+      if (after !== before) await db.exec`UPDATE page SET settings = ${after} WHERE id = ${row.id}`;
+    }
     for (const table of ["form_entry", "form_entry_file"]) { // parents first
       const old = table.replace("form", "form4");
       if (!tables.includes(old)) continue;
@@ -176,6 +185,6 @@ export const cms = {
     widget: "pub/widget.js",
     settingsSchema,
     css: ["pub/main.css"],
-    js: ["pub/main.mjs"],
+    js: ["pub/main.js"],
   },
 };
