@@ -7,7 +7,7 @@ import type { App, ResHtml } from "@qino/qino";
 const { name } = manifest;
 
 /** An address, anchored on "@" with the local part as lookbehind — the engine searches a literal,
- *  14× faster on big pages. */
+ *  about 10× faster on big pages. */
 const ADDRESS = /(?<=([\w.!#$%&'*+/=?^{|}~-]+))@[a-z0-9-]+(?:\.[a-z0-9-]+)+/gi;
 
 /** Regions an address is left alone in: code, text shown verbatim, and comments. */
