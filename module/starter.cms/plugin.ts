@@ -204,7 +204,7 @@ async function contactForm(p: Node) {
     await fields.settings.fields[field]({ type, required: true, ...(autocomplete && { autocomplete }) });
     await text(fields, field + "_title", labels);
   }
-  await fields.settings.sort(spec.map(([field]) => field).join(","));
+  await fields.settings.field_order(spec.map(([field]) => field).join(","));
   await text(await form.cont("success", "cms.cont.text"), "main", {
     en: "<p>Thank you! We will take care of your request as soon as possible.</p>",
     de: "<p>Vielen Dank! Wir kümmern uns so bald wie möglich um Ihr Anliegen.</p>",

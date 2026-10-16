@@ -10,7 +10,7 @@ import type { Form } from "@qino/qino/cms.cont.form";
 
 const settingsSchema = {
   properties: {
-    sort: { type: "string", description: "Comma-separated field names defining their order." },
+    field_order: { type: "string", description: "Comma-separated field names defining their order." },
     fields: {
       description: "The fields, keyed by the name their label was turned into.",
       additionalProperties: {

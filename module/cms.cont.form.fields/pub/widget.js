@@ -62,7 +62,7 @@ export default async function (widget, { node, dialogs, signal }) {
   const fields = settings.fields ?? {}; // a form that has no field yet has none
 
   const all = Object.keys(fields);
-  const order = String(settings.sort ?? '').split(',').filter((n) => all.includes(n));
+  const order = String(settings.field_order ?? '').split(',').filter((n) => all.includes(n));
   const names = [...order, ...all.filter((n) => !order.includes(n))];
   widget.badge = names.length;
 
@@ -123,10 +123,10 @@ export default async function (widget, { node, dialogs, signal }) {
     widget.reload();
   });
 
-  /* reorder: u2-dropzone shows an indicator and reorders on drop; the dom order is the new sort */
+  /* reorder: u2-dropzone shows an indicator and reorders on drop; the dom order is the new field_order */
   widget.on('u2-dropzone-drop', '.-list', (list, e) => {
     if (!e.detail?.add) return; // the same zone fires remove+add -> react only once
     requestAnimationFrame(() =>
-      ref.settings.sort.put({ value: [...list.children].map((c) => c.getAttribute('itemid')).join(',') }));
+      ref.settings.field_order.put({ value: [...list.children].map((c) => c.getAttribute('itemid')).join(',') }));
   });
 }

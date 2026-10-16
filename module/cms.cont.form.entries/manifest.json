@@ -8,10 +8,12 @@
   ],
   "files": [
     "dbschema.json",
+    "lib/source.ts",
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",
     "pub/edit.mjs",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/widget.js"
   ]
 }

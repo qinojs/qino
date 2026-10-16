@@ -66,8 +66,8 @@ async function migrateFields(app: App, page: number, lang: string) {
       await app.db.exec`UPDATE page_text SET name = ${name + suffix} WHERE page_id = ${page} AND name = ${id + suffix}`;
     }
   }
-  const sort = String(settings.sort ?? "").split(",").map((id) => names[id]).filter(Boolean).join(",");
-  const next = { fields, ...sort && { sort } };
+  const order = String(settings.sort ?? "").split(",").map((id) => names[id]).filter(Boolean).join(",");
+  const next = { fields, ...order && { field_order: order } };
   await app.db.exec`UPDATE page SET module = 'cms.cont.form.fields', settings = ${JSON.stringify(next)} WHERE id = ${page}`;
 }
 

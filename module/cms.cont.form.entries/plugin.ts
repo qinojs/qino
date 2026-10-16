@@ -1,8 +1,8 @@
 import { html, sql, tableRef } from "@qino/qino";
-import { cms as cmsOf } from "@qino/qino/cms";
 import { entryData, fields, SPAM, uploads } from "@qino/qino/cms.cont.form";
 import * as u2 from "@qino/qino/u2";
 
+import { formOf, listedBy } from "./lib/source.ts";
 import api from "./nodeApi.ts";
 
 import type { App, Ctx } from "@qino/qino";
@@ -15,26 +15,15 @@ const settingsSchema = {
       minimum: 1,
       description: "The cms.cont.form whose entries are shown. Empty: the first form on this page.",
       "x-html": { type: "qgcms-page" },
+      // shown only if that form lists this block in its `listing_nodes`: who may edit it decides
     },
     limit: { type: "integer", minimum: 1, default: 20, description: "How many entries are shown." },
     only_if: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
     moderated: { type: "boolean", description: "An entry is shown once someone with write access let it through. Its own author sees it before that." },
-    fields: { type: "string", description: "Comma-separated field names to show, in that order. Empty: every field, in the order the form asks." },
+    show_fields: { type: "string", description: "Comma-separated field names to show, in that order. Empty: every field, in the order the form asks." },
     spam_threshold: { type: "number", minimum: 0, maximum: 1, default: SPAM, description: "Entries with a spam score from this value on (0 to 1) are not shown." },
   },
 };
-
-/** The form to show entries of: the configured one, else the first on the page. */
-async function formOf(node: Node) {
-  const id = Number(node.settings.form());
-  if (id) {
-    const form = await cmsOf(node.app).node(id);
-    return form.exists() && form.vs.module === "cms.cont.form" ? form : undefined;
-  }
-  const page = [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
-  if (!page) return;
-  for (const cont of (await page.bough()).values()) if (cont.vs.module === "cms.cont.form") return cont;
-}
 
 /**
  * A form's entries, newest first (own query, no shared helper).
@@ -71,14 +60,22 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   u2.assets(ctx, ["el/time/time.js", "el/alert/alert.js", "el/alert/alert.css", "class/width/width.css"]);
   const form = await formOf(node);
+  const edit = await node.edit();
   if (!form) {
-    return await node.edit()
+    return edit
       ? html.async`<div><u2-alert open variant=warning>${app.t`No form found for these entries.`}</u2-alert></div>`
+      : html`<div></div>`;
+  }
+  /* The form decides who may show its entries, so an editor of this block cannot pick any form:
+     only who may edit the form can allow it (an ordinary settings write on the form). */
+  if (!listedBy(form, node)) {
+    return edit
+      ? html.async`<div><u2-alert open variant=warning>${app.t`The form does not allow showing its entries here: only who may edit it can choose it in this block's settings.`}</u2-alert></div>`
       : html`<div></div>`;
   }
 
   /* Releasing only in edit mode; outside it, the page looks like for visitors (no waiting entries). */
-  const mayRelease = await node.edit();
+  const mayRelease = edit;
   const moderated = !!node.settings.moderated();
   if (mayRelease && moderated) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
@@ -93,7 +90,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const files = await uploads(app, rows.map((row) => row.id));
   const all = await fields(form, rows);
   // A chosen list is also the order — and it is what keeps an answer out of a public listing.
-  const only = String(node.settings.fields() ?? "").split(",").map((name) => name.trim()).filter((name) => all.has(name));
+  const only = String(node.settings.show_fields() ?? "").split(",").map((name) => name.trim()).filter((name) => all.has(name));
   const shown = only.length ? only : [...all.keys()];
 
   /**
@@ -147,6 +144,7 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export const cms = {
   node: {
     render,
+    widget: "pub/widget.js",
     settingsSchema,
     api,
   },

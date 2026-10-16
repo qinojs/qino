@@ -15,6 +15,11 @@ const settingsSchema = {
     button_reset: { type: "boolean", description: "Shows a reset button; its label is the text of the same name." },
     recipients: { type: "string", description: "Recipient addresses for submitted entries, separated by comma or newline. Empty: the address from the site's identity." },
     success_page: { type: "integer", minimum: 1, description: "Page ID to redirect to after a successful send; without it the success content is shown." },
+    listing_nodes: {
+      type: "object",
+      additionalProperties: { type: "boolean" },
+      description: "Content blocks (cms.cont.form.entries) allowed to show this form's entries in public, by node ID: {\"389\": true}. Only who may edit the form can add one.",
+    },
   },
 };
 
@@ -162,24 +167,42 @@ export async function install({ app }: { app: App }): Promise<void> {
       if (access != null) await db.table("module").ensure({ name, cms_access: access });
       await db.exec`DELETE FROM module WHERE name = ${old}`;
     }
-    // settings renamed since: redirect, is-recipient, disableif, onlyIf; keep is gone
-    const renamed = (settings: Record<string, unknown>) => {
-      if ("redirect" in settings) settings.success_page = settings.redirect;
-      if ("onlyIf" in settings) settings.only_if = settings.onlyIf;
-      delete settings.redirect;
-      delete settings.onlyIf;
-      delete settings.keep; // entries are always kept
-      for (const field of Object.values((settings.fields ?? {}) as Record<string, Record<string, unknown>>)) {
-        if ("is-recipient" in field) field.copy_to_sender = field["is-recipient"];
-        if ("disableif" in field) field.disable_if = field.disableif;
-        delete field["is-recipient"];
-        delete field.disableif;
-      }
-      return settings;
+    // settings renamed since, each by the module it belongs to; keep is gone (entries are always kept)
+    const move = (o: Record<string, unknown>, from: string, to: string) => {
+      if (from in o) o[to] = o[from];
+      delete o[from];
     };
-    for (const row of await db.query`SELECT id, settings FROM page WHERE module IN ('cms.cont.form', 'cms.cont.form.fields', 'cms.cont.form.entries') AND settings != ''`) {
-      const before = String(row.settings), after = JSON.stringify(renamed(JSON.parse(before)));
-      if (after !== before) await db.exec`UPDATE page SET settings = ${after} WHERE id = ${row.id}`;
+    const renames: Record<string, (settings: Record<string, unknown>) => void> = {
+      "cms.cont.form": (s) => {
+        move(s, "redirect", "success_page");
+        delete s.keep;
+      },
+      "cms.cont.form.fields": (s) => {
+        move(s, "sort", "field_order");
+        for (const field of Object.values((s.fields ?? {}) as Record<string, Record<string, unknown>>)) {
+          move(field, "is-recipient", "copy_to_sender");
+          move(field, "disableif", "disable_if");
+        }
+      },
+      "cms.cont.form.entries": (s) => {
+        move(s, "onlyIf", "only_if");
+        move(s, "fields", "show_fields");
+      },
+    };
+    for (const row of await db.query`SELECT id, module, settings FROM page WHERE ${sql.in("module", Object.keys(renames))} AND settings != ''`) {
+      const settings = JSON.parse(String(row.settings));
+      renames[String(row.module)](settings);
+      const after = JSON.stringify(settings);
+      if (after !== row.settings) await db.exec`UPDATE page SET settings = ${after} WHERE id = ${row.id}`;
+    }
+    // a listing that was set up before forms had to allow it keeps working
+    for (const row of await db.query`SELECT id, settings FROM page WHERE module = 'cms.cont.form.entries' AND settings != ''`) {
+      const form = Number(JSON.parse(String(row.settings)).form);
+      const settings = form && await db.one`SELECT settings FROM page WHERE id = ${form} AND module = 'cms.cont.form'`;
+      if (settings == null || settings === false) continue;
+      const data = JSON.parse(String(settings || "{}"));
+      (data.listing_nodes ??= {})[row.id] = true;
+      await db.exec`UPDATE page SET settings = ${JSON.stringify(data)} WHERE id = ${form}`;
     }
     for (const table of ["form_entry", "form_entry_file"]) { // parents first
       const old = table.replace("form", "form4");

@@ -22,9 +22,9 @@ export function fieldName(label: string): string {
   return RESERVED.has(name) ? name + "_" : name; // trailing _ keeps the word, drops the meaning
 }
 
-/** Field names in display order: those listed in `sort` first, then the rest. */
+/** Field names in display order: those listed in `field_order` first, then the rest. */
 export function sortedNames(node: Node): string[] {
   const all = Object.keys(node.settings.fields);
-  const sorted = String(node.settings.sort() ?? "").split(",").filter((name) => all.includes(name));
+  const sorted = String(node.settings.field_order() ?? "").split(",").filter((name) => all.includes(name));
   return [...sorted, ...all.filter((name) => !sorted.includes(name))];
 }

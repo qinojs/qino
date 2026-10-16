@@ -36,11 +36,11 @@ Deno.test("Form.value reflects the submitted body only once sent", () => {
 });
 
 /** A node of `module` with `conts`; a field block's fields map name → label. */
-function tree(module: string, conts: unknown[] = [], fields?: Record<string, string>, sort = "") {
+function tree(module: string, conts: unknown[] = [], fields?: Record<string, string>, order = "") {
   return {
     vs: { module },
     conts: () => Promise.resolve(conts),
-    settings: { fields: fields ?? {}, sort: () => sort },
+    settings: { fields: fields ?? {}, field_order: () => order },
     showText: (name: string) => Promise.resolve({ plain: () => fields?.[name.replace(/_title$/, "")] ?? "" }),
     // deno-lint-ignore no-explicit-any
   } as any;
