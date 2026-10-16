@@ -50,6 +50,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     template: null,
     data: '{"to":{"grp":1}}',
     time: 10,
+    spam: null,
     recipient_count: 2,
     attachments: [],
     deliveries: [
@@ -71,6 +72,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     template: null,
     data: '{"to":{"grp":1}}',
     time: 10,
+    spam: null,
     recipient_count: 2,
     attachments: [],
     deliveries: [

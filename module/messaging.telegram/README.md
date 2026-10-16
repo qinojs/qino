@@ -56,6 +56,10 @@ first use and stored in settings. Register the webhook in the backend
 
 The endpoint always answers 200; anything else makes Telegram resend the update.
 
+Private messages are journaled with a `spam` score: 0 for a linked chat, otherwise security's
+`spamScore` per chat (with ai, a model judges the text). The request itself is not judged — it
+comes from Telegram's servers.
+
 **Local development needs a public HTTPS URL** (tunnel), otherwise no updates arrive and nobody can
 link. Sending to linked chats works anyway.
 

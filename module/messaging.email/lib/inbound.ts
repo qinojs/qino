@@ -3,6 +3,7 @@ import { record } from "@qino/qino/messaging";
 
 import { addressOf } from "./address.ts";
 import { inbound } from "./settings.ts";
+import { spamOf } from "./spam.ts";
 
 import type { App } from "@qino/qino";
 
@@ -17,6 +18,7 @@ type Parsed = {
   from?: { value: { address?: string; name?: string }[] };
   to?: { text?: string };
   attachments?: { filename?: string; contentType?: string; content: Uint8Array }[];
+  headerLines?: { key: string; line: string }[];
 };
 
 /**
@@ -71,6 +73,7 @@ async function journal(app: App, mail: Parsed, to: string) {
   const sender = addressOf(mail.from?.value?.[0] ?? "");
   const usrId = sender ? await contactOwner(app.db, "email", sender.address) : undefined;
   const time = mail.date ? Math.floor(mail.date.getTime() / 1000) : unixTime();
+  const spam = await spamOf(app, mail, { from: sender?.address, usrId, to });
   await record(app, {
     channel: "email",
     direction: "in",
@@ -85,6 +88,7 @@ async function journal(app: App, mail: Parsed, to: string) {
     },
     data: { from: sender?.address, name: sender?.name, to: mail.to?.text ?? to, html: mail.html || undefined },
     time,
+    spam,
   }, [{ usrId, address: sender?.address, externalId: mail.messageId?.slice(0, 191), sent: unixTime() }]);
 }
 

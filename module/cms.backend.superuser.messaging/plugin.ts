@@ -15,6 +15,7 @@ const { name } = manifest;
 
 const PREVIEWS = 3; // enough to recognise a message, few enough to keep the row a row
 const LIST_LIMIT = 100;
+const SPAM = 0.5; // from this score on an incoming message is flagged
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
@@ -65,6 +66,7 @@ async function renderOverview(node: Node, url: URL) {
             <th>${app.t`Id`}
             <th>${view.time}
             <th>${app.t`Type`}
+            <th>${view.spam}
             <th>${app.t`Text`}
             <th>${view.attachments}
             <th>${view.recipients}
@@ -88,7 +90,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const sh = sqlSearch(search, ["m.title", "m.text"], { exact: ["m.id", "m.channel"] });
   const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, m.spam, g.name AS grp_name,
       (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.sent IS NOT NULL) AS sent_count,
@@ -100,7 +102,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY m.time DESC, m.id DESC
     LIMIT ${LIST_LIMIT}`;
   const [tracked, thumbs, view] = await Promise.all([trackingStats(app, rows), previews(app, rows), labels(app)]);
-  if (!rows.length) return html`<tr><td colspan=9>${search || filter ? view.noMatch : view.noMessages}`;
+  if (!rows.length) return html`<tr><td colspan=10>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
   const msgUrl = (id: unknown) => backend.toUrl(pageUrl, { msg: id });
@@ -112,6 +114,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
+      <td style="white-space:nowrap">${spam(row.spam)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
       <td data-attachments>${thumbs.get(Number(row.id)) ?? (Number(row.attachment_count) || 0)}
       <td style="white-space:nowrap">${reached(row, view)}
@@ -119,6 +122,13 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}
       <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
   }));
+}
+
+/** The spam score as a percentage, flagged from SPAM on; empty when not judged. */
+function spam(score: unknown) {
+  if (score == null) return "";
+  const p = Number(score);
+  return html`${p >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${Math.round(p * 100)}%`;
 }
 
 /** How far a message got: how many of its recipients it reached, and what is still owed. */
@@ -215,6 +225,7 @@ async function renderMessage(node: Node, id: number, url: URL) {
       <table class=u2-table>
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
         <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
+        ${row.spam == null ? "" : html`<tr><td>${view.spam}<td>${spam(row.spam)}`}
         <tr><td>${app.t`Title`}<td>${row.title}
         <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
@@ -382,7 +393,7 @@ async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments:
   return html`<div class="u2-card -bubble"><div>
     <div class=-text>${body(row)}</div>
     ${await attachments(app, row.attachments, true)}
-    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
+    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${Number(row.spam) >= SPAM ? html` · ${spam(row.spam)}` : ""}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
 
@@ -441,12 +452,13 @@ function cut(text: string, max = 120) {
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due] = await Promise
-    .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`]);
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam] =
+    await Promise.all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
+      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`,
+      app.t`Spam`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");

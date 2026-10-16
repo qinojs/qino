@@ -1,5 +1,6 @@
 import { Output, safeEqual, unixTime } from "@qino/qino";
 import { record } from "@qino/qino/messaging";
+import { spamScore } from "@qino/qino/security";
 
 import { call, webhookSecret } from "./bot.ts";
 import { readLinkToken } from "./link.ts";
@@ -29,12 +30,14 @@ async function update(app: App, up: any) {
   const knownUsrId = Number(await app.db.one`SELECT usr_id FROM telegram_chat WHERE chat_id = ${chatId}`) || undefined;
   const linkedUsrId = command === "start" && payload ? await readLinkToken(app, payload) : undefined;
   const usrId = linkedUsrId || knownUsrId;
+  const text = String(msg.text ?? "");
   await record(app, {
     channel: "telegram",
     direction: "in",
-    msg: { text: String(msg.text ?? "") },
+    msg: { text },
     data: { updateId: up.update_id, messageId: msg.message_id, chatId },
     time: Number(msg.date) || unixTime(),
+    spam: await spam(app, text, chatId, usrId),
   }, [{ usrId, sent: unixTime() }]);
   if (!command) return;
 
@@ -52,6 +55,13 @@ async function update(app: App, up: any) {
   if (known) await table.update(known, values);
   else await table.insert({ ...values, chat_id: chatId, created: unixTime() });
   await reply(app, chatId, await app.t`Connected. You will receive messages here.`, linkedUsrId);
+}
+
+/** How likely a message is spam: a linked chat is someone known. Judged by chat, never by the request —
+ *  that comes from Telegram's servers, not from the sender. */
+function spam(app: App, text: string, chatId: number, usrId?: number) {
+  if (usrId) return 0;
+  return spamScore(app, text, { sender: `telegram:${chatId}`, context: "a Telegram message to the website's bot" });
 }
 
 async function reply(app: App, chatId: number, text: string, usrId?: number) {

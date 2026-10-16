@@ -56,7 +56,8 @@ each attempt; plain success needs no write.
 
 `msg` is the channel-independent part and goes into the `title` and `text` columns, so the journal
 can be read and searched without knowing any channel. `data` holds the channel's own payload and
-routing. A message without text (a code, a link) simply has none.
+routing. A message without text (a code, a link) simply has none. `spam` (0 to 1) is how likely an
+incoming message is spam, for channels that judge it.
 
 `messages(app, limit)` and `userMessages(app, usrId, limit)` read it with the deliveries nested.
 `channel` is a plain string, so it survives module renames.

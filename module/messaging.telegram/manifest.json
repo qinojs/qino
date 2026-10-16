@@ -2,7 +2,8 @@
   "name": "messaging.telegram",
   "description": "Telegram — links accounts to a bot chat and delivers messages to them.",
   "dependencies": [
-    "messaging"
+    "messaging",
+    "security"
   ],
   "files": [
     "README.md",
