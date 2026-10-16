@@ -1,6 +1,6 @@
-import { html, getCtx } from "@qino/qino";
+import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { currency } from "@qino/qino/locale.currency";
+import { currency, EVERY } from "@qino/qino/locale.currency";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -17,7 +17,6 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-const EVERY = ["never", "daily", "hourly"] as const;
 const label = (t: App["t"], every: string) => every === "hourly" ? t`every hour` : every === "daily" ? t`once a day` : t`never`;
 
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
