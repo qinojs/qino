@@ -35,10 +35,10 @@ cms.initNode("backend.cms.form", (el) => {
 
     const exp = e.target.closest("[data-export]");
     if (exp) {
-      const res = await api.cms.node(nid).api.post({ export: active(), search: search.value });
-      if (!res?.csv) return;
+      const res = await api.cms.node(nid).api.post({ export: active(), search: search.value, format: exp.dataset.export });
+      if (!res?.data) return;
       // The file is made here rather than fetched: the api already carries the rights.
-      const url = URL.createObjectURL(new Blob([res.csv], { type: "text/csv;charset=utf-8" }));
+      const url = URL.createObjectURL(new Blob([Uint8Array.fromBase64(res.data)], { type: res.type }));
       Object.assign(document.createElement("a"), { href: url, download: res.name }).click();
       URL.revokeObjectURL(url);
     }

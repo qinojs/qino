@@ -84,7 +84,8 @@ export default async function (widget, { node, dialogs, signal }) {
         <label>${t`Label`} (${lang}):<input value="${unhee(title.value)}" cmstxt=${title.id} cmslang=${lang}></label>
         <label><input type=checkbox setting="fields.${name}.required" ${set.required ? 'checked' : ''}> ${t`Required`}</label>
         <label class=-copy><input type=checkbox setting="fields.${name}.copy_to_sender" ${set.copy_to_sender ? 'checked' : ''}> ${t`Send a copy to this address`}</label>
-        <label class=-choices><span class=-forChoices>${t`Choices, one per line`}</span><span class=-forFile>${t`Allowed file types, one per line`}</span> (${lang}):<textarea cmstxt=${choices.id} cmslang=${lang}>${unhee(choices.value)}</textarea></label>
+        <label class=-choices><span class=-forChoices>${t`Choices, one per line`}</span><span class=-forFile>${t`Allowed file types, one per line`}</span> (${lang}):<textarea cmstxt=${choices.id} cmslang=${lang}>
+${unhee(choices.value)}</textarea></label>
         <label class=-default>${t`Default value:`}<input setting="fields.${name}.default" value="${set.default}"></label>
         <label class=-placeholder>${t`Placeholder`} (${lang}):<input cmstxt=${place.id} cmslang=${lang} value="${unhee(place.value)}"></label>
         <label>${t`Disable if:`}<input setting="fields.${name}.disable_if" value="${set.disable_if}" placeholder="${others(name)[0] ? others(name)[0] + '=yes' : 'field=value'}" list=fields-names></label>

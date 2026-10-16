@@ -11,6 +11,7 @@
     "lib/ipKey.ts",
     "lib/pathReports.ts",
     "lib/robotsHoneypot.ts",
+    "lib/spam.ts",
     "manifest.json",
     "mod.ts",
     "plugin.ts",
