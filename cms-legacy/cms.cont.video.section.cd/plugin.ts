@@ -1,4 +1,4 @@
-import { hee, html } from "@qino/qino";
+import { html } from "@qino/qino";
 
 import { backgroundAttr } from "../lib/bg.ts";
 
@@ -16,7 +16,7 @@ async function render(node: Node) {
   const darken = !!await node.settings.darken;
   const video = await node.file("Background");
   const videoHtml = await video.exists()
-    ? html.raw(`<div class=-videoWrapper><video autoplay muted loop playsinline><source src="${hee(await video.url())}" type="video/mp4"></video></div>`)
+    ? html`<div class=-videoWrapper><video autoplay muted loop playsinline><source src="${await video.url()}" type="video/mp4"></video></div>`
     : "";
 
   const darkenStyle = darken
