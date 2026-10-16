@@ -1,6 +1,7 @@
 import { dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
+import { DbFile } from '@qino/pub/dbFile.js';
 import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
 import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 
@@ -71,7 +72,7 @@ async function addFile(txtEl, f) {
       img.onload = () => {
         const max = txtEl.offsetWidth;
         ph.replaceWith(img);
-        if (img.width > max) new dbFile(img).set('w', max).set('h', max / img.width * img.height).write();
+        if (img.width > max) new DbFile(img).set('w', max).set('h', max / img.width * img.height).write();
         selectNode(img);
         img.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); // why
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
