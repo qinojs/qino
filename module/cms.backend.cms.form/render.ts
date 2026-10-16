@@ -192,8 +192,14 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
 export async function csv(app: App, node: Node, search: string): Promise<string> {
   const { rows } = await entries(app, node, { search, sort: "created", dir: "asc", all: true });
   const label = await fields(node, rows), names = [...label.keys()];
-  // Every cell quoted, quotes doubled — the one escaping rule csv actually has.
-  const cell = (v: unknown) => `"${[v ?? ""].flat().join(", ").replace(/"/g, '""')}"`;
+  // Every cell quoted, quotes doubled — the one escaping rule csv actually has. Text that starts
+  // like a formula (=, +, -, @, tab, return) would run as one in a spreadsheet: a ' keeps it text.
+  // Numbers stay numbers.
+  const cell = (v: unknown) => {
+    const text = [v ?? ""].flat().join(", ");
+    const safe = typeof v !== "number" && /^[=+\-@\t\r\n]/.test(text) ? "'" + text : text;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
   const files = await uploadsOf(app, rows.map((row) => row.id));
   const attached = (id: number, name: string) => files.get(`${id}:${name}`)?.map((f) => f.name);
   const head = [await app.t`Received`, await app.t`Spam`, ...label.values()].map(cell).join(";");

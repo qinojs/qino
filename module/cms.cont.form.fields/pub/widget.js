@@ -11,7 +11,6 @@ export const css = `
   .-list { display:flex; flex-direction:column; gap:.2em; }
 
   .-field { border:1px solid var(--cms-light); }
-  .-field[open] { background-color:#ffffdd; }
 
   .-head {
     display:flex; align-items:center; gap:.2em;
@@ -27,7 +26,7 @@ export const css = `
   /* The details fold out under the head; the arrow turns with them. */
   .-more { max-height:0; overflow:hidden; box-sizing:border-box;
     transition:max-height .2s linear, padding .2s linear; padding:0 .6em; }
-  .-field[open] .-more { max-height:31em; padding:.6em; }
+  .-field[open] .-more { max-height:31em; padding:1em; }
   .-field[open] .-toggle u2-ico { rotate:180deg; }
 
   .-more label { display:block; margin-block:.4em; }
