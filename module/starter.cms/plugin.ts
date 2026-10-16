@@ -33,7 +33,7 @@ async function build(app: App) {
     (p) => prose(p, welcome(login)));
   await redirect(app, "", home);
   // signed in, the login page has nothing more to offer: on to the site, where editing starts
-  const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login4");
+  const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login.password");
   if (form && !await form.settings.redirect()) await form.settings.redirect(home.id);
 
   await page(root, "contact", TITLES.contact, { access: 1, visible: true, searchable: true }, contactForm);
@@ -161,23 +161,28 @@ async function systemPages(app: App, root: Node) {
   const plain = { access: 1, visible: false, searchable: false, module: "cms.layout.system" };
 
   const reset = await page(system, "password", TITLES.password, plain,
-    async (p) => (await p.cont("main")).cont("1", "cms.cont.pwReset"));
+    async (p) => (await p.cont("main")).cont("1", "cms.cont.password_reset"));
   const login = await page(system, "login", TITLES.login, plain, async (p) => {
     await before(p, "password");
     const main = await p.cont("main");
-    await main.cont("1", "cms.cont.login4");
+    await main.cont("known", "cms.cont.login.known");
+    await main.cont("1", "cms.cont.login.password");
     await text(await main.cont("2", "cms.cont.text"), "main", {
       en: `<p>${link(reset, "Forgot your password?")}</p>`,
       de: `<p>${link(reset, "Passwort vergessen?")}</p>`,
       fr: `<p>${link(reset, "Mot de passe oublié ?")}</p>`,
       it: `<p>${link(reset, "Password dimenticata?")}</p>`,
     });
+    await main.cont("logout", "cms.cont.logout");
   });
   await redirect(app, "login", login);
 
   // In the site's own layout: visitors land here from anywhere
   const shown = { access: 1, visible: false, searchable: false };
-  await page(system, "no-access", TITLES.noAccess, shown, (p) => section(p, "cms.cont.login4"));
+  await page(system, "no-access", TITLES.noAccess, shown, async (p) => {
+    await section(p, "cms.cont.login.password");
+    await section(p, "cms.cont.logout");
+  });
   await page(system, "not-found", TITLES.notFound, shown, (p) => section(p, "cms.cont.not_found1"));
   await page(system, "trash", TITLES.trash, { ...plain, access: 0 },
     async (p) => (await p.cont("main")).cont("1", "cms.cont.trash"));

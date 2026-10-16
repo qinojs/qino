@@ -1,6 +1,16 @@
 {
   "name": "cms.backend.iot.virtual",
   "description": "Backend page for virtual IoT entities and their device templates.",
-  "dependencies": ["cms.backend.iot", "iot.virtual"],
-  "files": ["README.md", "manifest.json", "plugin.ts", "render.ts", "pub/main.js", "pub/module.svg"]
+  "dependencies": [
+    "cms.backend.iot",
+    "iot.virtual"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
 }

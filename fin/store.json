@@ -1,6 +1,5 @@
 {
   "modules": {
-    "fin": {},
     "cms.backend.superuser.fin": {},
     "cms.backend.superuser.fin.accounting": {},
     "cms.backend.superuser.fin.accounting.export": {},
@@ -14,6 +13,7 @@
     "cms.cont.fin.my.credit": {},
     "cms.cont.fin.my.invoices": {},
     "cms.cont.fin.my.subscriptions": {},
+    "fin": {},
     "fin.accounting": {},
     "fin.accounting.ch": {},
     "fin.bank": {},

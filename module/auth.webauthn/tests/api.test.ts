@@ -87,7 +87,7 @@ Deno.test("auth.webauthn: public login challenge stores challenge state without 
   const { app, challenges, execs } = makeApp();
   const c = await testContext({ app });
   const out = await requestStorage.run(c, () =>
-    invoke((app as any).apiTree["auth.webauthn"], "POST", "/login/challenge", { email: " nobody@example.test " })
+    invoke((app as any).apiTree["auth.webauthn"], "POST", "/login/challenge")
   ) as any;
 
   assertEquals(typeof out.token, "string");

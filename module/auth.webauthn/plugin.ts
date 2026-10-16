@@ -212,35 +212,14 @@ export const api: ApiTree = {
       post: {
         description: "Request WebAuthn login challenge",
         access: Access.PUBLIC,
-        input: s.object({ email: s.optional(s.string()) }),
-        execute: async ({ email }: any) => {
+        execute: async () => {
           const ctx = getCtx();
-          const db = ctx.app.db;
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          let usrId = 0;
-          const allowCredentials = [];
-
-          if (email) {
-            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(username)) = LOWER(${String(email).trim()}) AND active = ${true}`;
-            if (usr) {
-              usrId = Number(usr.id);
-              const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;
-              for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
-            } else {
-              ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login challenge for unknown email" }).catch(() => {});
-            }
-          }
-
-          const token = await storeChallenge(db, challenge, usrId, "login");
+          const token = await storeChallenge(ctx.app.db, challenge, 0, "login");
           return {
             token,
-            publicKey: {
-              rpId, challenge,
-              timeout: CHALLENGE_TTL * 1000,
-              userVerification: "preferred",
-              allowCredentials: allowCredentials.length ? allowCredentials : undefined,
-            },
+            publicKey: { rpId, challenge, timeout: CHALLENGE_TTL * 1000, userVerification: "preferred" },
           };
         },
       },
@@ -262,8 +241,6 @@ export const api: ApiTree = {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login verification failed" }).catch(() => {});
             return r;
           }
-
-          if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });

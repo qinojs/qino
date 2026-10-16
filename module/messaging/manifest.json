@@ -6,8 +6,8 @@
     "cron"
   ],
   "files": [
-    "api.ts",
     "README.md",
+    "api.ts",
     "dbschema.json",
     "lib/contact.ts",
     "lib/dispatch.ts",

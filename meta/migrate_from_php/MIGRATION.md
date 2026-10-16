@@ -256,7 +256,7 @@ wurden von Hand nach `index.ts` portiert. Die Seite rendert damit Struktur, CSS,
 der Site.
 
 Zusätzlich installiert `server.ts` die Module, die es in qino schon gibt (`cms.text`, `cms.image2`,
-`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image2`, `cms.cont.login4`, `cms.layout.system`).
+`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image2`, `cms.cont.login.password`, `cms.layout.system`).
 
 > **Achtung beim Reset:** `data/` wird gelöscht. Portierte Templates deshalb immer unter
 > `site-templates/` behalten und nach dem Wiederherstellen von `qg/` erneut darüberkopieren.
@@ -538,7 +538,7 @@ Backendseiten; sie beeinflussen die öffentliche Site nicht.
 
 ## 10. Login
 
-<http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login4` und
+<http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login.password` und
 `cms.layout.system` (in PHP hiess das Layout `cms.layout.login`).
 
 Die Passwörter der PHP-Installation gelten weiter: qino ersetzt beim Prüfen PHPs `$2y$`-Präfix

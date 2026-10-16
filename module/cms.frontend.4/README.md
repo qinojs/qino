@@ -65,13 +65,13 @@ und `src` — an der `options`-Stelle das `cms.node.widget` des Moduls. Ein Eint
 mitgeben, der in den Widget-Kontext gemischt wird.
 
 Widgets funktionieren auch ausserhalb des Panels:
-[cms.cont.test.cmd-widget](../cms.cont.test.cmd-widget/pub/main.mjs) mountet das `media`-Widget im
+[cms.cont.test.cmd-widget](../../test-modules/cms.cont.test.cmd-widget/pub/main.mjs) mountet das `media`-Widget im
 **Seiteninhalt**, ueber eine Laufzeit-URL statt eines Imports, also ohne Abhaengigkeit von
 `cms.frontend.4`. Mit `SelectorObserver`, weil `cms.reloadNode()` den Block per `outerHTML` ersetzt.
 
 ## TODO
 
-- **Widgets im Seiteninhalt ohne Edit-Modus.** [cms.cont.test.cmd-widget](../cms.cont.test.cmd-widget/pub/main.mjs)
+- **Widgets im Seiteninhalt ohne Edit-Modus.** [cms.cont.test.cmd-widget](../../test-modules/cms.cont.test.cmd-widget/pub/main.mjs)
   mountet nur im Edit-Modus, weil das Widget die Admin-API und `cms.panelRoot` fuer Dialoge braucht.
   Fuer oeffentliche Widgets muessen Dialoge und Kernel ohne Panel verfuegbar sein.
 - **Styling ausserhalb des Panels.** Das `css` des Widgets kommt mit, aber die gemeinsamen

@@ -116,6 +116,7 @@
     "pub/js/c1/loading.mjs",
     "pub/js/c1/scrollSync.mjs",
     "pub/js/c1/tableHandles.mjs",
+    "pub/js/dbFile.js",
     "pub/js/finishLogin.mjs",
     "pub/js/html.js",
     "pub/js/qg/combobox.js",

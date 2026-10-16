@@ -61,7 +61,10 @@ Deno.test({
       "home", "contact", "first-steps", "service", "system", "backend",
     ]);
     const login = (await cms(app).nodesByName("login")).values().next().value!;
-    const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login4")!;
+    const form = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login.password")!;
+    const loginModules = (await (await login.cont("main")).conts()).map((c) => c.vs.module);
+    assert(loginModules.includes("cms.cont.login.known"));
+    assert(loginModules.includes("cms.cont.logout"));
     const homeId = Number(await app.db.one`SELECT redirect FROM page_redirect WHERE request = ''`);
     assertEquals(Number(await form.settings.redirect()), homeId, "signed in, the login page leads home");
     const contact = await html(app, "/en/contact");

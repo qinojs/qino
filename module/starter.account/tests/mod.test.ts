@@ -24,7 +24,7 @@ Deno.test({
       for (const name of ["account", "passkeys", "two-factor", "devices", "home", "login", "todo-passkeys"]) {
         assertEquals((await cm.nodesByName(name)).size, 1, name);
       }
-      const passkey = await cm.nodeByModule("cms.cont.webauthn");
+      const passkey = await cm.nodeByModule("cms.cont.login.webauthn");
       const login = (await cm.nodesByName("login")).values().next().value!;
       assert(passkey && await passkey.in(login), "passkeys sit on the login page");
 
@@ -35,7 +35,7 @@ Deno.test({
       const menu = pages.values().filter((p) => p.vs.visible).map((p) => p.vs.name);
       assertEquals([...menu], ["home", "contact", "account", "first-steps"]);
       await app.modules.repair("starter.account");
-      assertEquals((await cm.nodesByModule("cms.cont.webauthn")).size, 1);
+      assertEquals((await cm.nodesByModule("cms.cont.login.webauthn")).size, 1);
     } finally {
       await app.db.close();
       await Deno.remove(dir, { recursive: true });

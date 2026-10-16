@@ -53,7 +53,7 @@ Weitere OAuth2-Provider: neue Zeile mit `authorize_url`, `token_url`, `userinfo_
 
 ## Login starten
 
-**`cms.cont.oauth`** zeigt einen „Log in with …"-Link pro Provider, **`cms.cont.my.oauth`**
+**`cms.cont.login.oauth`** zeigt einen „Log in with …"-Link pro Provider, **`cms.cont.my.oauth`**
 zeigt dem Benutzer seine Verknüpfungen und verbindet weitere. Oder direkt verlinken:
 
 ```html

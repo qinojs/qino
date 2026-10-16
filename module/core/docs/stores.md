@@ -206,7 +206,7 @@ start, and a health check lists incomplete modules.
   the list (see *Public files* above).
 
   Two more uses of that list are open: copying a remote module into the own store under a new name
-  (**fork** — [cms.backend.superuser.module.ownStore](../../cms.backend.superuser.module.ownStore/plugin.ts)
+  (**fork** — [cms.backend.superuser.module.own](../../cms.backend.superuser.module.own/plugin.ts)
   refuses it today), and generating the list when **publishing**. A publishing app has the
   directory and needs no file; only a static host (CDN, pages) has to keep one.
 
