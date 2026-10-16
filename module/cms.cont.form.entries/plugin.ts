@@ -13,9 +13,8 @@ const settingsSchema = {
     form: {
       type: "integer",
       minimum: 1,
-      description: "The cms.cont.form whose entries are shown. Empty: the first form on this page.",
+      description: "The cms.cont.form whose entries are shown. Empty: the first form on this page. Shown only if that form allows this block (its listing_nodes), which only who may edit the form can grant.",
       "x-html": { type: "qgcms-page" },
-      // shown only if that form lists this block in its `listing_nodes`: who may edit it decides
     },
     limit: { type: "integer", minimum: 1, default: 20, description: "How many entries are shown." },
     only_if: { type: "string", description: "Only entries whose field of this name is set are shown — a consent checkbox, say." },
@@ -54,8 +53,7 @@ async function read(app: App, form: Node, opt: { onlyIf: string; spam: number; l
 }
 
 /* A form's entries, with the form's fields and labels in order. Styling is up to the site; all
-   values look the same. Without `moderated` every saved entry is shown, so don't add this block
-   to forms whose entries are private. */
+   values look the same. Without `moderated` every entry the form allows to be shown is shown. */
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   u2.assets(ctx, ["el/time/time.js", "el/alert/alert.js", "el/alert/alert.css", "class/width/width.css"]);
@@ -135,7 +133,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   };
 
   return html.async`<div class=u2-width>${
-    rows.length ? rows.map(entry) : await node.edit() ? html.async`<p>${app.t`No entries yet.`}</p>` : ""
+    rows.length ? rows.map(entry) : edit ? html.async`<p>${app.t`No entries yet.`}</p>` : ""
   }</div>`;
 }
 

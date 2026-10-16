@@ -35,7 +35,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   if (!all.length) {
     return html.async`<div class=u2-card>
       <div class=-head>${t`Form entries`}</div>
-      <div>${t`No form on this site keeps its entries yet.`}</div>
+      <div>${t`This site has no form yet.`}</div>
     </div>`;
   }
 

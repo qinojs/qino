@@ -37,11 +37,13 @@ async function init(node: Node) {
  *  judges what was sent, by its labels. */
 async function spam(node: Node, form: Form, ctx: Ctx) {
   if (form.posted?.your_name) {
-    // a bot for sure: its address's next entries are spam for a while, a second honeypot blocks it
+    // a bot for sure: it weighs on its address, so what else it sends is suspect too
     node.app.fire("suspicious", { ctx, weight: 15, reason: "form honeypot filled" }).catch(() => {});
     return 1;
   }
-  const labeled = Object.fromEntries(Object.entries(form.values).map(([name, value]) => [form.labels[name] || name, value]));
+  const labeled = Object.fromEntries(
+    Object.entries(form.values).map(([name, value]) => [form.labels[name] || name, value]),
+  );
   const title = (await node.showTitle()).plain(), page = (await (await node.page()).showTitle()).plain();
   const context = `the form${title ? ` "${title}"` : ""} on the page "${page}"`;
   return await spamScore(node.app, labeled, { ctx, context });
@@ -121,13 +123,14 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   }
 
   if (form.sent && !form.errors) {
-    // Keeping comes first: a mail that does not go out must not lose the entry. It moves the
-    // uploads away, so the attachments are read before.
     // Spam is kept and marked, but not mailed; the visitor sees the same confirmation, which tells a
-    // bot nothing.
+    // bot nothing. Keeping comes first: a mail that does not go out must not lose the entry. It
+    // moves the uploads away, so the attachments are read before.
     form.spam = await spam(node, form, ctx);
     const mail = form.spam < SPAM;
-    const attachments = !mail ? [] : await Promise.all(form.files.map(async ({ upload }) => ({ name: upload.name, content: await fs.bytes(upload.tmpPath) })));
+    const attachments = !mail ? [] : await Promise.all(
+      form.files.map(async ({ upload }) => ({ name: upload.name, content: await fs.bytes(upload.tmpPath) })),
+    );
     await keepEntry(node, form);
     if (mail) await send(node, form, attachments);
     const redirect = await cms.url(String(successPage ?? ""));
@@ -189,18 +192,19 @@ export async function install({ app }: { app: App }): Promise<void> {
         move(s, "fields", "show_fields");
       },
     };
+    const parse = (json: unknown) => { try { return JSON.parse(String(json || "{}")); } catch { return undefined; } };
     for (const row of await db.query`SELECT id, module, settings FROM page WHERE ${sql.in("module", Object.keys(renames))} AND settings != ''`) {
-      const settings = JSON.parse(String(row.settings));
+      const settings = parse(row.settings);
+      if (!settings) continue; // broken: left as it is
       renames[String(row.module)](settings);
       const after = JSON.stringify(settings);
       if (after !== row.settings) await db.exec`UPDATE page SET settings = ${after} WHERE id = ${row.id}`;
     }
     // a listing that was set up before forms had to allow it keeps working
     for (const row of await db.query`SELECT id, settings FROM page WHERE module = 'cms.cont.form.entries' AND settings != ''`) {
-      const form = Number(JSON.parse(String(row.settings)).form);
-      const settings = form && await db.one`SELECT settings FROM page WHERE id = ${form} AND module = 'cms.cont.form'`;
-      if (settings == null || settings === false) continue;
-      const data = JSON.parse(String(settings || "{}"));
+      const form = Number(parse(row.settings)?.form) || 0; // none: the first form on its page, chosen anew
+      const data = form && parse(await db.one`SELECT settings FROM page WHERE id = ${form} AND module = 'cms.cont.form'`);
+      if (!data) continue;
       (data.listing_nodes ??= {})[row.id] = true;
       await db.exec`UPDATE page SET settings = ${JSON.stringify(data)} WHERE id = ${form}`;
     }

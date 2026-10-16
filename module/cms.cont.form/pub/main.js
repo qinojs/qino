@@ -15,7 +15,7 @@ document.addEventListener('submit', e => {
   const vars = {};
   for (const [key, value] of new FormData(form)) {
     if (typeof value !== 'string' || key === 'qcms-node' || key === 'csrfToken') continue;
-    vars[key] = key in vars ? [vars[key]].flat().concat(value) : value;
+    vars[key] = Object.hasOwn(vars, key) ? [vars[key]].flat().concat(value) : value;
   }
   e.preventDefault();
   form.inert = true; // one entry per click

@@ -1,5 +1,5 @@
-/* Field values collected during render, and storage of submitted entries. Fields
- * have editor-defined names and entries are stored. */
+/* The form being rendered — what its fields collect — and storing a submitted entry; plus what the
+ * listings read of it: its fields, entries and uploads. */
 import { getCtx, sql, tableRef, unixTime } from "@qino/qino";
 import { sortedNames } from "@qino/qino/cms.cont.form.fields";
 
