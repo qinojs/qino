@@ -57,11 +57,11 @@ async function update(app: App, up: any) {
   await reply(app, chatId, await app.t`Connected. You will receive messages here.`, linkedUsrId);
 }
 
-/** How likely a message is spam: a linked chat is someone known. Judged by chat, never by the request —
- *  that comes from Telegram's servers, not from the sender. */
+/** How likely a message is spam. A linked chat is judged too — an account can be taken over — but
+ *  the model is told. By chat, never by the request: that comes from Telegram's servers. */
 function spam(app: App, text: string, chatId: number, usrId?: number) {
-  if (usrId) return 0;
-  return spamScore(app, text, { sender: `telegram:${chatId}`, context: "a Telegram message to the website's bot" });
+  const context = `a Telegram message to the website's bot${usrId ? " from a linked user" : ""}`;
+  return spamScore(app, text, { sender: `telegram:${chatId}`, context });
 }
 
 async function reply(app: App, chatId: number, text: string, usrId?: number) {

@@ -131,8 +131,10 @@ function spam(score: unknown) {
   return html`${p >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${Math.round(p * 100)}%`;
 }
 
-/** How far a message got: how many of its recipients it reached, and what is still owed. */
+/** How far a message got: how many of its recipients it reached, and what is still owed. An incoming
+ *  message has only us. */
 function reached(row: Row, view: View) {
+  if (row.direction === "in") return "";
   const all = Number(row.recipient_count) || 0;
   const sent = Number(row.sent_count) || 0;
   const owed = Number(row.owed_count) || 0;

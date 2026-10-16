@@ -31,14 +31,14 @@ const mailed = async (app: App, address: string) =>
     AND d.sent IS NOT NULL AND d.error IS NULL LIMIT 1`;
 
 /**
- * How likely an incoming mail is spam, 0 to 1. A known sender (a user's address, or one mailed before)
- * is clean, unless a sender check failed — then the From may be forged. Otherwise the receiving
- * server's verdict and security's spamScore count.
+ * How likely an incoming mail is spam, 0 to 1: the receiving server's verdict and security's spamScore.
+ * A known sender (a user's address, or one mailed before) is judged too — an account can be taken
+ * over — but the model is told; not if a sender check failed, then the From may be forged.
  */
 export async function spamOf(app: App, mail: Mail, { from, usrId, to }: { from?: string; usrId?: number; to: string }) {
   const server = verdict(mail.headerLines);
-  if (!server && (usrId || from && await mailed(app, from))) return 0;
+  const known = !server && (usrId || from && await mailed(app, from));
   const content = { Subject: mail.subject ?? "", Text: mail.text ?? "" };
-  const score = await spamScore(app, content, { sender: from && `email:${from}`, context: `an email to ${to}` });
-  return combine(server, score);
+  const context = `an email to ${to}${known ? " from a known sender" : ""}`;
+  return combine(server, await spamScore(app, content, { sender: from && `email:${from}`, context }));
 }

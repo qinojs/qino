@@ -45,14 +45,12 @@ Deno.test("spamOf: the server's filter flags spam", () => withApp(async (app) =>
   assertEquals(await spamOf(app, mail("X-Spam-Status: No, score=0.3"), { from: "a@b.test", to }), 0);
 }));
 
-Deno.test("spamOf: a known sender is clean, unless a sender check failed", () => withApp(async (app) => {
+Deno.test("spamOf: a known sender is judged like anyone — an account can be taken over", () => withApp(async (app) => {
   const flagged = mail("X-Spam-Flag: YES");
   const failed = mail("Authentication-Results: mx.qino.test; dmarc=fail");
   assert(await spamOf(app, flagged, { from: "a@b.test", usrId: 1, to }) >= 0.9);
-  assertEquals(await spamOf(app, mail(), { from: "a@b.test", usrId: 1, to }), 0);
   assert(await spamOf(app, failed, { from: "a@b.test", usrId: 1, to }) >= 0.9);
 
   await record(app, { channel: "email", direction: "out", msg: "Offer" }, [{ address: "c@d.test", sent: 1 }]);
-  assertEquals(await spamOf(app, mail(), { from: "c@d.test", to }), 0, "mailed before");
-  assert(await spamOf(app, failed, { from: "c@d.test", to }) >= 0.9);
+  assert(await spamOf(app, flagged, { from: "c@d.test", to }) >= 0.9, "mailed before");
 }));
