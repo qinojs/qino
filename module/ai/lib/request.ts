@@ -5,6 +5,8 @@ import type { App } from "@qino/qino";
 
 /** What an adapter gets per call: the model and a fetch bound to its provider. */
 export type Call = {
+  /** The app the call runs for, also where no request is (cron, background work) */
+  app: App;
   provider: string;
   endpoint: string;
   /** The model's name at the provider */
@@ -178,6 +180,7 @@ export async function candidates(app: App, capability: string, input: unknown, {
 export async function bind(app: App, candidate: Pick<Candidate, "provider" | "endpoint" | "model" | "provider_model" | "timeout_ms">, used: { input: number; output: number }, signal?: AbortSignal,
   onResponse?: (response: Response) => void): Promise<Call> {
   return {
+    app,
     provider: candidate.provider,
     endpoint: candidate.endpoint,
     model: candidate.provider_model || candidate.model,

@@ -3,7 +3,7 @@ import { AiError, candidates, text } from "@qino/qino/ai";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { authorize, models, pending, store } from "../lib/account.ts";
-import { completed, input } from "../lib/response.ts";
+import { chatgpt, completed, input } from "../lib/response.ts";
 import { init } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -155,4 +155,21 @@ Deno.test("ChatGPT account actions return to the same Qino app, never another si
     body.return_to = "//elsewhere.example/steal";
     assertEquals(await redirect(), "/cms1/ai-chatgpt");
   } finally { globalThis.fetch = original; await Deno.remove(dir, { recursive: true }); }
+});
+
+Deno.test("ChatGPT plan without a signed-in user answers through the user set in usr", async () => {
+  const dir = await Deno.makeTempDir();
+  const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
+  const source = app.stores.add(new URL("../../store.json", import.meta.url));
+  try {
+    await app.init();
+    await source.install("ai.chatgpt");
+    const call = { app, endpoint: "https://api.openai.com/v1", model: "m" } as never; // the adapter reads only these
+    const ask = () => chatgpt.text!(call, { messages: [{ role: "user", content: "Hi" }] });
+    await assertRejects(ask, AiError, "needs a signed-in Qino user", "no user, none set: no plan");
+    await app.settings["ai.chatgpt"].usr(7);
+    await assertRejects(ask, AiError, "Connect a ChatGPT account", "user 7's plan is asked for (7 has none connected)");
+  } finally {
+    await app.db.close(); await Deno.remove(dir, { recursive: true });
+  }
 });

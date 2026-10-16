@@ -16,8 +16,9 @@ installation opened locally at `http://127.0.0.1:<port>/`. It does not use an Op
    `text` and local function-tool offers for this provider. It preserves existing models and offers. Qino's AI selection
    determines which model handles a request; select a listed model to target ChatGPT plan usage.
 3. The account page offers disconnect and reauthorization. A returning connection reuses its
-   issued client ID. The module refreshes short-lived tokens as needed. Calls require a signed-in
-   Qino user; background jobs without a user cannot spend someone's ChatGPT plan.
+   issued client ID. The module refreshes short-lived tokens as needed. Calls use the signed-in
+   Qino user's plan. Without one — cron, background work, visitors without a login — the plan of the
+   user set in the setting `usr` answers; 0 (the default) leaves such calls to other models.
 
 For a user-facing Qino page, install `cms.cont.my.chatgpt` and place its content node on an account
 page. It shows the connection and model IDs and returns users to that page after authorization.

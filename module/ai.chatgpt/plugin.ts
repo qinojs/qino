@@ -9,6 +9,15 @@ import type { Pending } from "./lib/account.ts";
 
 export const aiAdapters = { "chatgpt-plan": chatgpt };
 
+export const settingsSchema = {
+  properties: {
+    usr: {
+      type: "integer", minimum: 0, default: 0,
+      description: "The user whose ChatGPT plan answers when no one is signed in: cron, background work, visitors without a login; 0: none.",
+    },
+  },
+};
+
 const base = (ctx: Ctx) => ctx.req.appUrl + "ai-chatgpt";
 const local = (ctx: Ctx) => ctx.req.url.protocol === "http:" && ctx.req.url.hostname === "127.0.0.1";
 const returnTo = (ctx: Ctx, raw: unknown) => {

@@ -72,9 +72,10 @@ export async function completed(response: Response, onText?: (delta: string) => 
 async function text(call: Call, value: TextInput): Promise<Omit<TextOutput, "model" | "modelProvider">> {
   if (call.endpoint.replace(/\/+$/, "") !== "https://api.openai.com/v1")
     throw new AiError("The ChatGPT plan endpoint must be https://api.openai.com/v1", 400);
-  const ctx = requestStorage.getStore();
-  if (!ctx?.userId) throw new AiError("A signed-in Qino user is required for ChatGPT plan use", 401);
-  const account = await active(ctx.app, ctx.userId);
+  // the signed-in user's plan; without one (cron, background work, a visitor) the one set for that
+  const user = requestStorage.getStore()?.userId || Number(await call.app.settings["ai.chatgpt"].usr) || 0;
+  if (!user) throw new AiError("ChatGPT plan use needs a signed-in Qino user, or one set in ai.chatgpt's usr", 401);
+  const account = await active(call.app, user);
   if (!account) throw new AiError("Connect a ChatGPT account at /ai-chatgpt", 401);
   const body = { model: call.model, ...input(value.messages, value.tools), store: false, stream: true };
   const response = await call.fetch("/responses", { method: "POST", headers: {

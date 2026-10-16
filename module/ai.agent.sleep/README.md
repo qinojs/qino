@@ -21,8 +21,8 @@ Its role is the yardstick: nothing it keeps may drift from its goal or change it
 - **Only with enough to go over:** an agent sleeps once `minChars` (2000) characters were said since it
   last slept; asked to (`{ agent }`), on whatever is new.
 - **Budget:** at most `sessions` sessions a night, of each the latest `chars` characters.
-- **As whom:** the models run as the user who started the night ("Sleep now"), at night as `usr`; models
-  that need a user (a ChatGPT plan) only work so.
+- **As whom:** the models run as the user who started the night ("Sleep now"), at night as nobody; a ChatGPT
+  plan then answers through the user set in [`ai.chatgpt`](../ai.chatgpt/)'s `usr`.
 
 `sleeps` `get` lists the latest nights, `post` starts one now, for all agents or `{ agent }` (superuser); the agents' backend has it as "Sleep now".
 
