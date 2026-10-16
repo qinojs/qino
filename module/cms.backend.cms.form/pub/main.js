@@ -6,7 +6,7 @@ cms.initNode("backend.cms.form", (el) => {
   // the form comes from the url (?form=…); without, the server showed the first one
   const form = new URLSearchParams(location.search).get("form") ?? "";
   let sort = "created", dir = "desc", page = 0, timer;
-  const active = () => form || el.querySelector("tr.-active [href]")?.getAttribute("href").replace("?form=", "");
+  const active = () => form || el.querySelector("[aria-current]")?.getAttribute("href").replace("?form=", "");
 
   // reload only the table part (it keeps form, search, sort, page)
   const reloadList = (vars) => cms.reloadPart(nid, "list", { form, search: search.value, sort, dir, page, ...vars });

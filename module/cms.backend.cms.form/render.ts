@@ -1,6 +1,5 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { backend } from "@qino/qino/cms.backend";
 import { entryData, fields, SPAM, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
 
 import type { App, HtmlString } from "@qino/qino";
@@ -177,15 +176,24 @@ export async function formOfVars(app: App, vars: Record<string, unknown>): Promi
 }
 
 /**
- * A form in the picker: where it sits (as in the history) and its number of entries. Picking one is
- * a link, so a form's entries can be linked to.
+ * A form in the picker: its name — the link that picks it, so a form's entries can be linked to —,
+ * where it sits as plain text beneath, and its number of entries. The name is the block's title, else
+ * its page's; contents without a title go by their module.
  */
 export async function formLine(app: App, node: Node, active: boolean): Promise<HtmlString> {
   const count = await app.db.one`
     SELECT count(*) FROM ${sql.id(tableRef("form_entry"))} WHERE node_id = ${node.id}`;
-  return html.async`<tr${active ? html.raw(" class=-active") : ""}>
-      <td><a href="?form=${node.id}"${active ? html.raw(" aria-current=page") : ""}>${Number(count)} ${app.t`entries`}</a>
-      <td class=-where>${backend.breadcrumb(node, node.id)}`;
+  const path = [...(await node.path()).values()].filter((n) => n.id !== 1 && n.id !== node.id); // no system root
+  const page = path.findLast((n) => n.vs.type === "p");
+  const title = async (n: Node) => (await n.showTitle()).plain() || String(n.vs.module ?? "").replace(/^cms\.\w+\./, "");
+  const name = (await node.showTitle()).plain() || (page ? await title(page) : "") || `#${node.id}`;
+  const where = (await Promise.all(path.map(title))).join(" › ");
+  const url = await node.url().catch(() => ""); // the form itself: its page with #cmspid… to scroll to it
+  // the whole row picks the form (u2-href takes its first link); ↗ opens it on its page
+  return html.async`<tr u2-href>
+      <td><a href="?form=${node.id}"${active ? html.raw(" aria-current=page") : ""}>${name}</a><br><small>${where}</small>
+      <td class=-num>${Number(count)}
+      <td>${url ? html.async`<a href="${url}" target=_blank title="${app.t`Show the form on its page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}`;
 }
 
 /** The export of what the table currently shows — the search included, the paging not. */

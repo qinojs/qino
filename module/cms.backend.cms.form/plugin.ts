@@ -43,7 +43,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     <div class=u2-card style="flex-grow:0">
         <div class=-head>${t`Forms`}</div>
         <table class=u2-table>
-          <tr><th>${t`Entries`}<th>${t`Where`}
+          <tr><th>${t`Form`}<th>${t`Entries`}<th>
           ${all.map((form) => formLine(app, form, form.id === active?.id))}
         </table>
     </div>
@@ -63,6 +63,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 export const cms = {
   node: {
     js: ["pub/main.js"],
+    css: ["pub/main.css"],
     render,
     parts: { list },
     api,
