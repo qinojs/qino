@@ -1,6 +1,8 @@
 import { html, sql, sqlSearch, unhee } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
+import { record } from "./record.ts";
+
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
@@ -141,13 +143,15 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
 }
 
 /** The results for a term; also rendered alone as the part "hits" while the visitor types. */
-async function results(node: Node, ctx: Ctx, search: string) {
+async function results(node: Node, ctx: Ctx, search: string, vars: Record<string, unknown> = {}) {
   if (!search) return "";
   const found = await hits(node, ctx, search);
+  const entry = await record(node, ctx, search, found.length, vars);
   const words = terms(search);
-  return found.length
+  const list = found.length
     ? html.async`<ol>${found.map((r) => item(node, r.page, r.text, words))}</ol>`
     : html.async`<p class=-empty>${ctx.app.t`No results found`}</p>`;
+  return html.async`${entry}${list}`;
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
@@ -174,7 +178,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 }
 
 const hitsPart = (node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) =>
-  results(node, ctx, String(vars.search ?? "").trim());
+  results(node, ctx, String(vars.search ?? "").trim(), vars);
+
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const cms = {
   node: { render, settingsSchema, css: ["pub/main.css"], js: ["pub/main.js"], parts: { hits: hitsPart } },

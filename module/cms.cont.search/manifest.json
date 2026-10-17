@@ -6,8 +6,10 @@
     "u2"
   ],
   "files": [
+    "dbschema.json",
     "manifest.json",
     "plugin.ts",
+    "record.ts",
     "pub/main.css",
     "pub/main.js",
     "pub/module.svg"

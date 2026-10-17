@@ -40,6 +40,7 @@
     "cms.backend.cms.history": {},
     "cms.backend.cms.module": {},
     "cms.backend.cms.redirects": {},
+    "cms.backend.cms.search": {},
     "cms.backend.cms.tree": {},
     "cms.backend.cms.tree.access": {},
     "cms.backend.cms.tree.urls": {},
