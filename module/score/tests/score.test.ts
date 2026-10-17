@@ -2,10 +2,8 @@ import { Db, sql, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertThrows } from "@qino/qino/tests";
 
 import { forget, halfLife, hit, prune, scores, sqlScore, strength } from "../mod.ts";
-import { cron, dbSchema, init } from "../plugin.ts";
+import { cron, dbSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-
-import type { App } from "@qino/qino";
 
 const { name, dependencies } = manifest;
 
@@ -135,18 +133,4 @@ Deno.test("score: a deleted row loses its scores", async () => {
   await db.table("doc").delete(1);
 
   assertEquals([await ranked(db), await db.col`SELECT doc_id FROM score_doc_usr`], [[], []]);
-});
-
-Deno.test("score: scores of the old score table move to the declared one", async () => {
-  await using db = await testDb();
-  await db.exec`CREATE TABLE score_scope (id INTEGER PRIMARY KEY, tbl TEXT)`;
-  await db.exec`CREATE TABLE score (scope_id INTEGER, id INTEGER, score REAL, time INTEGER)`;
-  await db.exec`INSERT INTO score_scope VALUES (1, 'doc'), (2, 'gone')`;
-  await db.exec`INSERT INTO score VALUES (1, 5, 3.5, 100), (2, 6, 1, 100)`;
-  await db.loadTables();
-  await init({ db } as App);
-
-  assertEquals(await db.query`SELECT doc_id, score, time FROM score_doc_view`, [{ doc_id: 5, score: 3.5, time: 100 }]);
-  assertEquals(await db.col`SELECT doc_id FROM score_doc_usr`, []); // two key columns: not the one
-  assertEquals([(await db.columns("score")).length, (await db.columns("score_scope")).length], [0, 0]);
 });

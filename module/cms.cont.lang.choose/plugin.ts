@@ -1,12 +1,8 @@
 import { html } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
-import manifest from "./manifest.json" with { type: "json" };
-
-import type { App, Ctx } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-
-const OLD = "cms.cont.lang.choose2"; // this module replaces it
 
 const LANG_NAMES: Record<string, string> = {
   de: "Deutsch",
@@ -79,12 +75,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (!filteredItems.length) return html`<span></span>`;
 
   return html`<nav aria-label=Languages><ul>${filteredItems}</ul></nav>`;
-}
-
-/** Take over the contents of the module this one replaces, and retire it. */
-export async function install({ app }: { app: App }): Promise<void> {
-  await app.db.exec`UPDATE page SET module = ${manifest.name} WHERE module = ${OLD}`;
-  await app.modules.uninstall(OLD).catch(() => {});
 }
 
 export const cms = {

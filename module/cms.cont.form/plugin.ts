@@ -1,11 +1,11 @@
-import { fs, hee, html, sql } from "@qino/qino";
+import { fs, hee, html } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
 import { spamScore } from "@qino/qino/security";
 import * as u2 from "@qino/qino/u2";
 
 import { keepEntry, openForm, SPAM } from "./mod.ts";
 
-import type { App, Ctx } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Form } from "./mod.ts";
 
@@ -154,67 +154,6 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     </div>
   </form>
 </div>`;
-}
-
-/** Takes over what the form4 modules left: their nodes, module rows and entries.
- *  Delete once z3280-murten.ch has been migrated — no other site ever ran form4. */
-export async function install({ app }: { app: App }): Promise<void> {
-  const db = app.db, tables = await db.listTables();
-  await db.transaction(async () => {
-    for (const name of ["cms.cont.form", "cms.cont.form.fields", "cms.cont.form.entries", "cms.backend.cms.form"]) {
-      const old = name.replace(/\.form\b/, ".form4");
-      for (const table of ["page", "_vers_page"].filter((t) => tables.includes(t))) {
-        await db.exec`UPDATE ${sql.id(table)} SET module = ${name} WHERE module = ${old}`;
-      }
-      const access = await db.one`SELECT cms_access FROM module WHERE name = ${old}`;
-      if (access != null) await db.table("module").ensure({ name, cms_access: access });
-      await db.exec`DELETE FROM module WHERE name = ${old}`;
-    }
-    // settings renamed since, each by the module it belongs to; keep is gone (entries are always kept)
-    const move = (o: Record<string, unknown>, from: string, to: string) => {
-      if (from in o) o[to] = o[from];
-      delete o[from];
-    };
-    const renames: Record<string, (settings: Record<string, unknown>) => void> = {
-      "cms.cont.form": (s) => {
-        move(s, "redirect", "success_page");
-        delete s.keep;
-      },
-      "cms.cont.form.fields": (s) => {
-        move(s, "sort", "field_order");
-        for (const field of Object.values((s.fields ?? {}) as Record<string, Record<string, unknown>>)) {
-          move(field, "is-recipient", "copy_to_sender");
-          move(field, "disableif", "disable_if");
-        }
-      },
-      "cms.cont.form.entries": (s) => {
-        move(s, "onlyIf", "only_if");
-        move(s, "fields", "show_fields");
-      },
-    };
-    const parse = (json: unknown) => { try { return JSON.parse(String(json || "{}")); } catch { return undefined; } };
-    for (const row of await db.query`SELECT id, module, settings FROM page WHERE ${sql.in("module", Object.keys(renames))} AND settings != ''`) {
-      const settings = parse(row.settings);
-      if (!settings) continue; // broken: left as it is
-      renames[String(row.module)](settings);
-      const after = JSON.stringify(settings);
-      if (after !== row.settings) await db.exec`UPDATE page SET settings = ${after} WHERE id = ${row.id}`;
-    }
-    // a listing that was set up before forms had to allow it keeps working
-    for (const row of await db.query`SELECT id, settings FROM page WHERE module = 'cms.cont.form.entries' AND settings != ''`) {
-      const form = Number(parse(row.settings)?.form) || 0; // none: the first form on its page, chosen anew
-      const data = form && parse(await db.one`SELECT settings FROM page WHERE id = ${form} AND module = 'cms.cont.form'`);
-      if (!data) continue;
-      (data.listing_nodes ??= {})[row.id] = true;
-      await db.exec`UPDATE page SET settings = ${JSON.stringify(data)} WHERE id = ${form}`;
-    }
-    for (const table of ["form_entry", "form_entry_file"]) { // parents first
-      const old = table.replace("form", "form4");
-      if (!tables.includes(old)) continue;
-      for (const row of await db.query`SELECT * FROM ${sql.id(old)}`) await db.table(table).insert(row);
-    }
-    for (const table of ["form4_entry_file", "form4_entry"].filter((t) => tables.includes(t))) await db.exec`DROP TABLE ${sql.id(table)}`;
-  });
 }
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };

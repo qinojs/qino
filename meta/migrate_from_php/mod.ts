@@ -1,5 +1,6 @@
 import { migrate as renameColumns } from "./renameColumns.ts";
 import { namePages } from "./namePages.ts";
+import { parkText } from "./migrateText.ts";
 
 import type { App } from "@qino/qino";
 
@@ -7,4 +8,5 @@ import type { App } from "@qino/qino";
 export async function migrate(app: App): Promise<void> {
   await renameColumns(app);
   await namePages(app);
+  await parkText(app.db);
 }

@@ -1,8 +1,6 @@
-import { sql } from "@qino/qino";
+import { prune } from "./mod.ts";
 
-import { prune, scores } from "./mod.ts";
-
-import type { App, Db } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 type Props = Record<string, Record<string, unknown>>;
@@ -29,23 +27,3 @@ export function dbSchema(merged: { properties: Record<string, { additionalProper
 export const cron = {
   prune: { every: "day", at: { hour: 4 }, jitter: 60 * 60, run: (app: App) => prune(app.db) },
 } satisfies Jobs;
-
-/** One-off: scores were in `score`, by table name in `score_scope`. Each goes to the score table whose
- *  only key column has that table as parent; without one it is dropped. Removable once every
- *  installation has booted once (> 1.0). */
-async function unscope(db: Db) {
-  if (!(await db.columns("score_scope").catch(() => [])).length) return;
-  for (const { id, tbl } of await db.query`SELECT id, tbl FROM score_scope`) {
-    for (const { table, keys: [key, more] } of scores(db)) {
-      if (more || db.schema.properties[table].additionalProperties.properties[key]["x-qg-parent"] !== tbl) continue;
-      await db.exec`INSERT INTO ${sql.id(table)} (${sql.id(key)}, score, time) SELECT id, score, time FROM score WHERE scope_id = ${id}`;
-    }
-  }
-  await db.exec`DROP TABLE score`;
-  await db.exec`DROP TABLE score_scope`;
-  await db.loadTables();
-}
-
-export function init(app: App): Promise<void> {
-  return unscope(app.db);
-}

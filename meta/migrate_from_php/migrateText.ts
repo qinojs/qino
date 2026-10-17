@@ -1,12 +1,9 @@
-import type { Db } from "./db/Db.ts";
+import type { Db } from "@qino/qino";
 
 const has = async (db: Db, table: string) => !!(await db.columns(table).catch(() => [])).length;
 
-/** One-off: `text` had (id, lang, text), a composite key no dialect can auto-increment (SQLite left
- *  rows with NULL id). Now language rows are in `text_lang`, `text` keeps the id. Ids stay, so
- *  page.title_id stays valid.
- *
- *  Removable once every installation has booted once (> 1.0).
+/** The PHP `text` had (id, lang, text), a composite key no dialect can auto-increment. In qino the
+ *  language rows are in `text_lang`, `text` keeps the id. Ids stay, so page.title_id stays valid.
  *
  *  Two steps around the schema migration, which would fail on a table with duplicate ids: copy the
  *  rows aside, drop the old tables, let the migration create both tables, copy the rows back. An

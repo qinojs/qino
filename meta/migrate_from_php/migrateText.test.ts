@@ -1,6 +1,7 @@
-import { assertEquals } from "./deps.ts";
-import { Db } from "../lib/db/Db.ts";
-import { parkText, unparkText } from "../lib/migrateTextLang.ts";
+import { Db } from "@qino/qino";
+import { assertEquals } from "@qino/qino/tests";
+
+import { parkText, unparkText } from "./migrateText.ts";
 
 /** The old shape: `text` carried (id, lang, text), so an id repeats once per language. */
 async function oldShape() {
@@ -23,7 +24,7 @@ async function newTables(db: Db) {
   await db.loadTables();
 }
 
-Deno.test("migrateTextLang: the language rows move to text_lang, the ids stay", async () => {
+Deno.test("migrateText: the language rows move to text_lang, the ids stay", async () => {
   const db = await oldShape();
   await parkText(db);
   await newTables(db);

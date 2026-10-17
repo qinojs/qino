@@ -595,6 +595,10 @@ Erledigt heute `usr.email → username`, `firstname → given_name`, `lastname �
 `company → organization`, jeweils samt `_vers_`-Spiegel. Idempotent, und still auf einer
 Datenbank, die es noch nicht gibt.
 
+Ausserdem legt es die Zeilen der PHP-Tabelle `text` (id, lang, text) beiseite: qino trennt sie in
+`text` und `text_lang`, und die Schema-Migration scheitert an doppelten ids. `install()` schreibt sie
+zurück, die ids bleiben ([migrateText.ts](migrateText.ts)).
+
 ## Was `tools/prepare-db.sh` erledigt
 
 Fünf Dinge, alle idempotent, alle vor dem ersten qino-Start nötig, weil `migrate_from_php` erst

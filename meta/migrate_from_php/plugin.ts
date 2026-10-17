@@ -7,11 +7,13 @@ import { migrateFiles } from "./moveFiles.ts";
 import { migrateCss } from "./migrateCss.ts";
 import { migrateForm1, prepareForm1Settings } from "./migrateForm1.ts";
 import { migrateTable1 } from "./migrateTable1.ts";
+import { unparkText } from "./migrateText.ts";
 import { renamedModules } from "./renamedModules.ts";
 
 import type { App } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await unparkText(app.db); // the texts parked by migrate(), before anything reads them
   await dropLegacyColumns(app);
   await removeObsoleteSettings(app);
   const moved = await migrateAppSettings(app);

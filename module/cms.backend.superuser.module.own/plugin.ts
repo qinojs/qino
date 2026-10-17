@@ -19,12 +19,7 @@ const ownStore = (app: App) => {
   return store;
 };
 
-const OLD = "cms.backend.superuser.module.ownStore"; // this module replaces it
-
 export async function install({ app }: { app: App }): Promise<void> {
-  // take over the pages of the module this one replaces first, or backend.install() adds another
-  await app.db.exec`UPDATE page SET module = ${name} WHERE module = ${OLD}`;
-  await app.modules.uninstall(OLD).catch(() => {});
   await backend.install(app, name, { en: "Own modules", de: "Eigene Module" });
   await fs.mkdir(storeDir(app));
   await app.stores.install(storeUrl(app));
