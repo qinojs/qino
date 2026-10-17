@@ -1,8 +1,12 @@
 import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx } from "@qino/qino";
+import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+
+const OLD = "cms.cont.login4"; // this module replaces it
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["class/card/card.css", "class/flex/flex.css"]);
@@ -28,6 +32,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <div class="-providers u2-flex">${node.cont("oauth", "cms.cont.login.oauth")}</div>
     ${edit ? node.cont("logout", "cms.cont.logout") : ""}
   </div>`;
+}
+
+/** Take over the contents of the module this one replaces, and retire it. */
+export async function install({ app }: { app: App }): Promise<void> {
+  await app.db.exec`UPDATE page SET module = ${manifest.name} WHERE module = ${OLD}`;
+  await app.modules.uninstall(OLD).catch(() => {});
 }
 
 export const cms = { node: { render, css: ["pub/main.css"] } };
