@@ -4,9 +4,14 @@ import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
-import { label, modules as moduleList } from './modules.js';
+import { modules as moduleList, shortName } from './modules.js';
 
 const FALLBACK = () => ctx.moduleUrl + 'cms.frontend/pub/img/module_default.svg';
+
+const label = (name) => {
+  const short = shortName(name).replace(/\./g, ' ');
+  return short.charAt(0).toUpperCase() + short.slice(1);
+};
 
 const svg = (icon) => html`<svg class=-img aria-hidden=true><use href="${(icon ?? FALLBACK()) + '#main'}"></svg>`;
 

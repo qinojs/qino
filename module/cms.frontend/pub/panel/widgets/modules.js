@@ -9,10 +9,5 @@ export const modules = () => list ??= api.cms.modules.get().catch((err) => {
   throw err;
 });
 
-/** Display name: content and layout modules without their prefix ("cms.cont.text" → "Text",
- *  "cms.layout.deck.1" → "Deck 1"), any other module just without "cms." ("backend.cms"). */
-export const label = (name) => {
-  if (!/^cms\.(cont|layout)\./.test(name)) return name.replace(/^cms\./, '');
-  const short = name.replace(/^cms\.(cont|layout)\./, '').replace(/\./g, ' ');
-  return short.charAt(0).toUpperCase() + short.slice(1);
-};
+/** Shown name: "cms.cont.text" → "text", "cms.layout.deck.1" → "deck.1", "cms.backend.cms" → "backend.cms". */
+export const shortName = (name) => name.replace(/^cms\.((cont|layout)\.)?/, '');
