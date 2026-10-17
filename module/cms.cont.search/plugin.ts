@@ -31,6 +31,10 @@ const settingsSchema = {
       type: "boolean",
       description: "Shows the first image attached to a result.",
     },
+    "group by": {
+      enum: ["pages", "contents"], default: "pages",
+      description: "One result per page, or per titled content — then a hit links straight to its section.",
+    },
   },
 };
 
@@ -48,7 +52,15 @@ function snippet(text: string, words: string[], parts = 7, before = 30, after = 
   return html.join(out);
 }
 
-/** Matching pages, best first. A hit on a content counts for the page that carries it. */
+/** The visible, titled content around a hit, or else its page: what a hit links to when grouped by contents. */
+async function section(hit: Node): Promise<Node> {
+  for (let n: Node | undefined = hit; n?.vs.type === "c"; n = await n.parent())
+    if (n.vs.visible && (await n.showTitle()).plain()) return n;
+  return hit.page();
+}
+
+/** Matching pages, best first. A hit on a content counts for the page that carries it, or for its
+ *  section when grouped by contents. */
 async function hits(node: Node, ctx: Ctx, search: string) {
   const db = ctx.app.db;
   const words = terms(search);
@@ -57,6 +69,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   const scope = pattern ? sql`AND p.module LIKE ${pattern}` : sql``;
   const startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
+  const bySection = node.settings["group by"]() === "contents";
 
   const [titles, texts] = await Promise.all([
     db.query`
@@ -77,7 +90,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
     const page = await hit.page();
     if (!page.vs.searchable || !await hit.isReadable()) return;
     if (start && !await hit.in(start)) return;
-    return page;
+    return bySection ? section(hit) : page;
   }));
 
   const found = new Map<number, { page: Node; text: string; score: number }>();
@@ -127,9 +140,20 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
   </li>`;
 }
 
+/** The results for a term; also rendered alone as the part "hits" while the visitor types. */
+async function results(node: Node, ctx: Ctx, search: string) {
+  if (!search) return "";
+  const found = await hits(node, ctx, search);
+  const words = terms(search);
+  return found.length
+    ? html.async`<ol>${found.map((r) => item(node, r.page, r.text, words))}</ol>`
+    : html.async`<p class=-empty>${ctx.app.t`No results found`}</p>`;
+}
+
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = ctx.app.t;
   const search = String(ctx.req.query[QUERY] ?? "").trim();
+  u2.assets(ctx, ["attr/href/href.js"]);
 
   let form: Promise<HtmlString> | HtmlString | string = "";
   if (!await node.settings["hide input"]) {
@@ -143,17 +167,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     </form></search>`;
   }
 
-  if (!search) return html.async`<div>${form}</div>`;
-  const results = await hits(node, ctx, search);
-  const words = terms(search);
-  if (results.length) u2.assets(ctx, ["attr/href/href.js"]);
+  // aria-live: results replaced while typing are announced
   return html.async`<div>${form}
-    ${results.length
-      ? html.async`<ol>${results.map((r) => item(node, r.page, r.text, words))}</ol>`
-      : html.async`<p class=-empty>${t`No results found`}</p>`}
+    <div cms-part=hits aria-live=polite>${results(node, ctx, search)}</div>
   </div>`;
 }
 
+const hitsPart = (node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) =>
+  results(node, ctx, String(vars.search ?? "").trim());
+
 export const cms = {
-  node: { render, settingsSchema, css: ["pub/main.css"] },
+  node: { render, settingsSchema, css: ["pub/main.css"], js: ["pub/main.js"], parts: { hits: hitsPart } },
 };

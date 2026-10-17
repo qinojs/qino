@@ -4,6 +4,14 @@ import { cmsCtx } from "@qino/qino/cms";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+// The page title is the heading; the text explains and leads to the suggestions.
+const INITIAL = {
+  de: "<p>Die gewünschte Seite konnte nicht gefunden werden (Fehler 404). Vielleicht suchen Sie eine dieser Seiten:</p>",
+  en: "<p>The page you requested could not be found (error 404). Perhaps you are looking for one of these pages:</p>",
+  fr: "<p>La page demandée est introuvable (erreur 404). Vous cherchez peut-être l’une de ces pages :</p>",
+  it: "<p>La pagina richiesta non è stata trovata (errore 404). Forse cerchi una di queste pagine:</p>",
+};
+
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   // Extract words from request URI for fulltext search
@@ -35,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   return html.async`<div>
   <div class=u2-width>
-    ${node.cms.text(node, "main")}
+    ${node.cms.text(node, "main", { initial: INITIAL })}
     <ul>${listItems}</ul>
     ${renderEditBox(node, ctx)}
   </div>

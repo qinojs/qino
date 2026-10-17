@@ -27,6 +27,7 @@ Deno.test("cms.cont.not_found: suggests readable pages matching the address, and
     });
     assertEquals([out.includes("Apple pie"), out.includes("Home")], [true, true], out);
     assertEquals([out.includes("Apple secret"), out.includes("Apple soon")], [false, false], out);
+    assertEquals(out.includes("404"), true, out); // a new box starts with an explanation
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
