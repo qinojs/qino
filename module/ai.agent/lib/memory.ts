@@ -9,7 +9,7 @@ import type { App } from "@qino/qino";
 // first. What it keeps renewing stays strong, the rest fades (score).
 
 /** The characters of memories in the context, the strongest first; the weaker ones are left to its search. */
-export const IN_MIND = 8000;
+export const IN_MIND = 8000; // todo? adjustable
 /** Memories read at a time, until `chars` are filled. */
 const BLOCK = 100;
 

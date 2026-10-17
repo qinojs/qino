@@ -18,15 +18,6 @@ async function build(app: App) {
   const cm = cms(app);
   const root = await cm.node(1);
 
-  // Passkeys on the login page of starter.cms, above the password form
-  const login = await (await root.child("system")).child("login");
-  if (!await cm.nodeByModule("cms.cont.login.webauthn")) {
-    const main = await login.cont("main");
-    const first = (await main.conts())[0];
-    const passkey = await main.cont("passkey", "cms.cont.login.webauthn");
-    if (first) await main.insertBefore(passkey, first);
-  }
-
   // Readable for everyone: guests get the login, the pages below ask them to sign in
   const shown = { access: 1, visible: true, searchable: false };
   const titles = { en: "My account", de: "Mein Konto", fr: "Mon compte", it: "Il mio account" };
@@ -38,9 +29,7 @@ async function build(app: App) {
       fr: "<h1>Mon compte</h1>\n<p>Connectez-vous ici. Ci-dessous, vous choisissez comment vous vous connectez et quels appareils restent connectés.</p>",
       it: "<h1>Il mio account</h1>\n<p>Accedete qui. Qui sotto scegliete come accedere e quali dispositivi restano connessi.</p>",
     });
-    await section(p, "cms.cont.login.known");
-    await section(p, "cms.cont.login.password");
-    await section(p, "cms.cont.logout");
+    await section(p, "cms.cont.login");
   });
 
   const passkeys = { en: "Passkeys", de: "Passkeys", fr: "Clés d'accès", it: "Passkey" };

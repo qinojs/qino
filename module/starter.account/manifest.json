@@ -6,7 +6,6 @@
     "auth.webauthn",
     "auth.totp",
     "auth.backup_codes",
-    "cms.cont.login.webauthn",
     "cms.cont.my.webauthn",
     "cms.cont.my.totp",
     "cms.cont.my.backup_codes",

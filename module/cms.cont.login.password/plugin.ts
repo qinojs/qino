@@ -17,7 +17,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const edit = await node.edit();
   const cms = node.cms;
   const settings = node.settings;
-  const csrfToken = ctx.csrfToken;
 
   // Redirect if already logged in
   if (!edit && ctx.user) {
@@ -33,6 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   }
 
   if (ctx.user && !edit) return html.raw("");
+  const csrfToken = ctx.csrfToken;
 
   // Login error message
   let errorHtml: HtmlString | string = "";

@@ -8,7 +8,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["class/card/card.css", "class/flex/flex.css"]);
   const app = node.app;
   const edit = await node.edit();
+  // signed in, the password form renders nothing but still applies its redirect setting
   if (ctx.user && !edit) return html.async`<div class=u2-card>
+    ${node.cont("password", "cms.cont.login.password")}
     <div>${node.cont("logout", "cms.cont.logout")}</div>
   </div>`;
 

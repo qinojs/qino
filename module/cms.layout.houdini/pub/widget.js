@@ -5,7 +5,8 @@ import { t } from '@qino/pub/t.js';
 import { DESIGN_MARKER, FIELDS, safeValue, themeCss } from './theme.js';
 
 export const css = `
-  .-houdiniEditor label { display: grid; gap: .25em; margin-block: .75em; }
+  .-houdiniEditor label, .-houdiniEditor .-field { display: grid; gap: .25em; margin-block: .75em; }
+  .-houdiniEditor .-field > label { margin: 0; }
   .-houdiniEditor input { inline-size: 100%; min-inline-size: 0; }
   .-houdiniEditor .-value { display: flex; align-items: center; gap: .5em; }
   .-houdiniEditor input[type=color] { inline-size: 3em; block-size: 2.75em; flex: none; padding: .2em; }
@@ -36,13 +37,13 @@ export default async function (widget, { node, signal }) {
       <datalist id="${schemeList}"><option value=light></option><option value=dark></option><option value="light dark"></option></datalist>
       ${groups.map((group) => html.async`<details>
         <summary>${t([group])}</summary>
-        ${FIELDS.filter((field) => field.group === group).map((field) => html.async`<label>
-          <span>${t([field.label])} ${field.property === 'color' ? html`<span class=-swatch data-swatch="${field.key}" aria-hidden=true></span>` : ''}</span>
+        ${FIELDS.filter((field) => field.group === group).map((field) => html.async`<div class=-field>
+          <label for="houdini-${node.id}-${field.key}"><span>${t([field.label])} ${field.property === 'color' ? html`<span class=-swatch data-swatch="${field.key}" aria-hidden=true></span>` : ''}</span></label>
           <span class=-value>
-            <input name="${field.key}" value="${safeValue(layout.design?.[field.key])}" placeholder="${field.hint}" list="${field.property === 'font-family' ? fontList : field.property === 'color-scheme' ? schemeList : ''}" spellcheck=false autocomplete=off>
+            <input id="houdini-${node.id}-${field.key}" name="${field.key}" value="${safeValue(layout.design?.[field.key])}" placeholder="${field.hint}" list="${field.property === 'font-family' ? fontList : field.property === 'color-scheme' ? schemeList : ''}" spellcheck=false autocomplete=off>
             ${field.property === 'color' ? html.async`<input type=color data-color="${field.key}" aria-label="${t([field.label])}">` : ''}
           </span>
-        </label>`)}
+        </div>`)}
       </details>`)}
       <p class=-actions>
         <button type=submit>${t`Save design`}</button>

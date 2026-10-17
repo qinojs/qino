@@ -6,7 +6,7 @@ import { Agent, Session } from "@qino/qino/ai.agent";
 import type { App } from "@qino/qino";
 
 /** Only what is this close to what was said comes to mind. */
-const CLOSE = 0.65;
+const CLOSE = 0.65; // todo? adjustable
 /** Of memories and of tools at most this many, the nearest. */
 const MOST = 3;
 

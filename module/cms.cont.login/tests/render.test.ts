@@ -58,6 +58,13 @@ Deno.test({
       assert(editing.includes("name=core_login"));
       assert(editing.includes("data-action=login"));
       assert(editing.includes("oauth/start/"));
+      await request(undefined, "?cms_editmode=0");
+      const password = (await login.conts()).find((c) => c.vs.module === "cms.cont.login.password")!;
+      await password.settings.redirect(root.id);
+      const res = await app.fetch(new Request("http://localhost/en/login", {
+        headers: { cookie: [...cookies].map(([k, v]) => `${k}=${v}`).join("; ") },
+      }));
+      assertEquals(res.status, 302, "signed in, the password child's redirect still applies");
     } finally {
       await new Promise((resolve) => setTimeout(resolve, 100));
       await app.db.close();

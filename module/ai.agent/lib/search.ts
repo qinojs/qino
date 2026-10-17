@@ -12,7 +12,7 @@ export const textOf = (content: string | Part[]): string =>
   typeof content === "string" ? content : content.flatMap((p) => p.type === "text" ? [p.text] : []).join("\n");
 
 /** Only memories this close to what was said come to mind. */
-const CLOSE = 0.75;
+const CLOSE = 0.75; // todo? adjustable
 
 const log = (e: unknown) => console.error("[ai.agent] embedding:", errMsg(e));
 

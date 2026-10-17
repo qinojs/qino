@@ -12,7 +12,7 @@ Deno.test("starter.account: every module it brings is in the store", async () =>
 });
 
 Deno.test({
-  name: "starter.account: adds the account area and passkeys on the login page, on top of starter.cms",
+  name: "starter.account: adds the account area with the login, on top of starter.cms",
   ...quiet,
   fn: async () => {
     const dir = await Deno.makeTempDir() + "/";
@@ -24,9 +24,8 @@ Deno.test({
       for (const name of ["account", "passkeys", "two-factor", "devices", "home", "login", "todo-passkeys"]) {
         assertEquals((await cm.nodesByName(name)).size, 1, name);
       }
-      const passkey = await cm.nodeByModule("cms.cont.login.webauthn");
-      const login = (await cm.nodesByName("login")).values().next().value!;
-      assert(passkey && await passkey.in(login), "passkeys sit on the login page");
+      const account = await app.fetch(new Request("http://localhost/en/my-account"));
+      assert((await account.text()).includes("data-action=login"), "the account page offers passkey login");
 
       const res = await app.fetch(new Request("http://localhost/en/my-account/passkeys"));
       assertEquals(res.status, 200);
@@ -35,7 +34,7 @@ Deno.test({
       const menu = pages.values().filter((p) => p.vs.visible).map((p) => p.vs.name);
       assertEquals([...menu], ["home", "contact", "account", "first-steps"]);
       await app.modules.repair("starter.account");
-      assertEquals((await cm.nodesByModule("cms.cont.login.webauthn")).size, 1);
+      assertEquals((await cm.nodesByModule("cms.cont.login")).size, 3, "login, no-access, account");
     } finally {
       await app.db.close();
       await Deno.remove(dir, { recursive: true });

@@ -61,7 +61,7 @@
   :where(input[type=checkbox], input[type=radio]) { accent-color: var(--accent); }
   :where(textarea) { resize: vertical; }
   :where(input, textarea)::placeholder { color: currentColor; opacity: .55; }
-  :focus-visible { outline-offset: .2em; }
+  :focus-visible { outline: .15rem solid var(--color-text); outline-offset: .2em; }
   :where(svg) { flex-shrink: 0; }
   .u2-grid {
     --u2-Items-width: 20rem;
@@ -275,7 +275,7 @@
       box-shadow: 0 1rem 3rem color-mix(in srgb, var(--color-text), transparent 90%);
     }
     nav > ul > li:last-child > ul { inset-inline-start: auto; inset-inline-end: 0; }
-    nav > ul > li:is(:hover, :focus-within) > ul { display: block; }
+    nav > ul > li:not(.-dismissed):is(:hover, :focus-within) > ul { display: block; }
   }
 }
 

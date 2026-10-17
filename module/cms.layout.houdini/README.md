@@ -129,6 +129,9 @@ still decides which page visitors reach.
 - Ordinary CMS links retain URLs, active state, edit markers and access filtering.
 - Wide mouse layouts show submenus on hover and keyboard focus. Deeper levels
   remain ordinary nested lists inside the panel, with a scrollable height limit.
+  Escape dismisses the open submenu and returns focus to its parent link when
+  focus was inside it. Leaving and re-entering the item by pointer or keyboard
+  opens it again.
 - Small screens and devices without hover use a native popover drawer. Escape,
   light dismiss and focus return come from the browser. Links close the drawer;
   `aria-expanded` follows its actual open state.
@@ -139,6 +142,8 @@ still decides which page visitors reach.
 - Without JavaScript, the native buttons still open and close the drawer. Without
   popover support, the navigation remains an ordinary visible list.
 - The skip link appears on focus and targets the focusable main landmark.
+  Keyboard focus uses a solid outline in the local text color, including in dark
+  sections; it remains separate from the brand-colored hover treatment.
 - Language links keep their native names, `lang`, `hreflang` and active state.
 - Select mode gets its accessible name from the editable `languageLabel` text;
   the association is restored when the CMS reloads the selector.
