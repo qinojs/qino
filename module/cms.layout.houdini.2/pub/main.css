@@ -1,0 +1,69 @@
+@import url("../../cms.layout.houdini/pub/main.css");
+
+/* The same u2 vocabulary, composed as an editorial layout. */
+@layer houdini {
+  html {
+    --color: #8b422d;
+    --font-2: Georgia, 'Times New Roman', serif;
+    --width: 78rem;
+    --radius: .15rem;
+    --heading-weight: 400;
+    --heading-spacing: -.045em;
+  }
+}
+
+:where(#container.houdini-2) {
+  :where(h1) { font-size: clamp(3rem, 1.8rem + 5.5vw, 7.5rem); max-inline-size: 20ch; }
+  :where(h2) { font-size: clamp(2.2rem, 1.6rem + 2.5vw, 4.2rem); }
+  :where(h3) { font-size: clamp(1.6rem, 1.2rem + 1vw, 2.4rem); }
+}
+
+#container.houdini-2 {
+  #head {
+    .-masthead {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      justify-content: space-between;
+      gap: var(--gap);
+      padding-block: clamp(1.5rem, 4vw, 3rem);
+      border-block-end: var(--line-width) solid color-mix(in srgb, var(--color-line), transparent 78%);
+      .-brand {
+        font-family: var(--font-2);
+        font-weight: var(--heading-weight, 400);
+        font-size: clamp(2.5rem, 1.5rem + 4vw, 5rem);
+        letter-spacing: var(--heading-spacing, -.045em);
+        line-height: 1;
+        img { max-block-size: 4rem; }
+      }
+      > div { max-inline-size: 32ch; min-inline-size: 0; font-size: .85em; overflow-wrap: anywhere; }
+    }
+    .-bar { min-block-size: 2.75rem; }
+    #head-nav { margin-inline-end: auto; }
+    .-open { margin-inline-end: auto; }
+  }
+
+  #content > [qcms-mod="cont.flexible"] > [qcms-mod="cont.section"] {
+    margin-block: clamp(3rem, 7vw, 7rem);
+  }
+
+  #foot {
+    background: var(--color-bg);
+    color: var(--color-text);
+    .-columns { padding-block: clamp(3rem, 6vw, 5rem); }
+    .-about > .-brand { font-family: var(--font-2); font-weight: var(--heading-weight, 400); font-size: 2.5rem; }
+    .-about > div { max-inline-size: 30ch; }
+  }
+}
+
+@media (width < 64rem), (hover: none) {
+  #container.houdini-2 #head .-masthead { padding-block: calc(var(--gap) * 1.5); }
+}
+
+@media print {
+  #container.houdini-2 #foot {
+    color-scheme: light;
+    background: transparent;
+    color: inherit;
+  }
+}

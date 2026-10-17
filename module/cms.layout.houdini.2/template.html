@@ -1,0 +1,51 @@
+<div id=container class="houdini houdini-2">
+  <a class=-skip href=#content cms-text=skip node=layout>Skip to content</a>
+
+  <aside id=notice>
+    <div class=u2-width><div cms-text=notice node=layout if></div></div>
+  </aside>
+
+  <header id=head>
+    <div class="u2-width -masthead">
+      <a href="{{cms.layout.houdini.home}}" class=-brand aria-label="{{identity.name|Home}}">{{identity.brand.logo}}<span>{{identity.name|Home}}</span></a>
+      <div cms-text=edition node=layout if></div>
+    </div>
+    <u2-responsive class="u2-width -bar" strategies=drawer mutation>
+      <button type=button class=-open popovertarget=head-nav aria-controls=head-nav>
+        <svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        <span cms-text=menu node=layout>Menu</span>
+      </button>
+      <div id=head-nav popover>
+        <div class=-menuHead>
+          <span>{{identity.name|Home}}</span>
+          <button type=button class=-close popovertarget=head-nav popovertargetaction=hide>
+            <span cms-text=close node=layout>Close</span>
+            <svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true><path d="m6 6 12 12M6 18 18 6" /></svg>
+          </button>
+        </div>
+        <cms-cont name=nav module=cms.cont.nav4 node=layout />
+      </div>
+      <div class=-languages>
+        <span id=head-language-label class=-label cms-text=languageLabel node=layout>Language</span>
+        <cms-cont name=lang module=cms.cont.lang.choose2 node=layout />
+      </div>
+      <div class=-action><div cms-text=action node=layout if></div></div>
+    </u2-responsive>
+  </header>
+
+  <main id=content tabindex=-1><cms-cont name=main /></main>
+
+  <footer id=foot u2-skin=dark>
+    <div class="u2-width -columns">
+      <div class=-about>
+        <a href="{{cms.layout.houdini.home}}" class=-brand aria-label="{{identity.name|Home}}">{{identity.brand.logo}}<span>{{identity.name|Home}}</span></a>
+        <div cms-text=about node=layout if></div>
+      </div>
+      <cms-cont name=foot node=layout />
+    </div>
+    <div class="u2-width -bottom">
+      <div cms-text=footNote node=layout if></div>
+      <cms-cont name=footNav node=layout />
+    </div>
+  </footer>
+</div>

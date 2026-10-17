@@ -1,0 +1,351 @@
+/* u2 owns the palette and controls. Identity, the visual editor and site CSS override these defaults. */
+@layer normalize, houdini;
+@layer houdini {
+  html {
+    --color: #315b49;
+    --width: 76rem;
+    --font-2: var(--font-1);
+    --font-size: clamp(1rem, .95rem + .2vw, 1.125rem);
+    --line-height: 1.65;
+    --radius: .5rem;
+    --control-padding-x: 1.2em;
+    --control-padding-y: .75em;
+    color-scheme: var(--color-scheme, light dark);
+    font-size: var(--font-size);
+  }
+}
+
+#container.houdini {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  line-height: var(--line-height);
+  overflow-wrap: break-word;
+}
+
+:where(#container.houdini) {
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-2);
+    font-variation-settings: var(--font-2-variation);
+    font-weight: var(--heading-weight, 600);
+    line-height: var(--heading-line-height, 1.12);
+    letter-spacing: var(--heading-spacing, -.035em);
+    text-wrap: balance;
+  }
+  :where(h1) { font-size: clamp(2.5rem, 1.5rem + 4vw, 5.5rem); max-inline-size: 18ch; }
+  :where(p + h1) { margin-block-start: .65em; }
+  :where(h2) { font-size: clamp(1.9rem, 1.4rem + 2vw, 3.5rem); }
+  :where(h3) { font-size: clamp(1.4rem, 1.2rem + .8vw, 2rem); }
+  :where(p) { text-wrap: pretty; }
+  :where(#content p, #content ul, #content ol, #content blockquote) { max-inline-size: var(--measure, 70ch); }
+  :where(a) { text-underline-offset: .2em; }
+  :where(a:not(.btn)) { color: light-dark(var(--color), var(--color-light)); }
+  :where(a:not(.btn):hover) { color: var(--color-text); }
+  :where(button, .btn, input, select, textarea) { min-block-size: 2.75rem; }
+  :where(input[type=checkbox], input[type=radio], input[type=range], input[type=color]) { min-block-size: revert; }
+  :is(button, .btn, input:where([type=submit], [type=button], [type=reset])) {
+    background: var(--button-color, light-dark(var(--color), var(--color-light)));
+    color: var(--button-text, var(--color-bg));
+    border-radius: var(--button-radius, var(--control-radius));
+    font-weight: 600;
+  }
+  :is(button, .btn, input:where([type=submit], [type=button], [type=reset])):not(:disabled):where(:hover, :focus-visible) {
+    background: color-mix(in srgb, var(--button-color, light-dark(var(--color), var(--color-light))), var(--color-text) 18%);
+  }
+  :where(input:not([type=checkbox], [type=radio], [type=range], [type=submit], [type=button], [type=reset]), textarea, select) {
+    background: var(--input-bg, var(--color-bg));
+    color: var(--input-text, var(--color-text));
+    border-color: var(--input-line, color-mix(in srgb, var(--color-line), transparent 72%));
+    border-radius: var(--input-radius, var(--control-radius));
+  }
+  :where(input[type=checkbox], input[type=radio]) { accent-color: var(--accent); }
+  :where(textarea) { resize: vertical; }
+  :where(input, textarea)::placeholder { color: currentColor; opacity: .55; }
+  :focus-visible { outline-offset: .2em; }
+  :where(svg) { flex-shrink: 0; }
+  .u2-grid {
+    --u2-Items-width: 20rem;
+    --u2-Gap: calc(var(--gap) * 2);
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--u2-Items-width), 100%), 1fr));
+  }
+}
+
+#container.houdini {
+  > .-skip {
+    position: fixed;
+    inset-block-start: var(--gap);
+    inset-inline-start: var(--gap);
+    z-index: 10;
+    padding: var(--gap);
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: var(--line-width) solid currentColor;
+    translate: 0 calc(-100% - var(--gap) * 2);
+    &:focus { translate: 0; }
+  }
+
+  .-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--gap) * .75);
+    min-inline-size: 0;
+    color: inherit;
+    text-decoration: none;
+    font-weight: 650;
+    font-size: 1.15em;
+    line-height: 1.2;
+    letter-spacing: -.025em;
+    img {
+      inline-size: auto;
+      block-size: auto;
+      max-block-size: 2.5rem;
+      max-inline-size: min(12rem, 30vw);
+      object-fit: contain;
+    }
+    span { overflow-wrap: anywhere; }
+  }
+
+  #notice {
+    background: light-dark(var(--color), var(--color-light));
+    color: var(--color-bg);
+    text-align: center;
+    font-size: .85em;
+    &:not(:has([cmstxt], .u2-width > div:not(:empty))) { display: none; }
+    .u2-width { padding-block: calc(var(--gap) * .6); }
+    a { color: inherit; }
+  }
+
+  #head {
+    position: relative;
+    z-index: 2;
+    background: var(--color-bg);
+    border-block-end: var(--line-width) solid color-mix(in srgb, var(--color-line), transparent 88%);
+    .-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--gap);
+      padding-block: calc(var(--gap) * 1.25);
+      min-block-size: 3rem;
+      overflow: visible;
+      > * { min-inline-size: 0; }
+      > .-brand { margin-inline-end: auto; }
+    }
+    .-open, .-close {
+      display: none;
+      align-items: center;
+      gap: calc(var(--gap) * .5);
+      background: transparent;
+      color: inherit;
+      border-color: color-mix(in srgb, var(--color-line), transparent 80%);
+      svg { inline-size: 1.2em; block-size: 1.2em; fill: none; stroke: currentColor; stroke-width: 1.5; }
+    }
+    .-menuHead { display: none; }
+    .-action:empty { display: none; }
+    .-action a:not(.btn) { color: inherit; }
+    .-languages {
+      max-inline-size: 100%;
+      &:not(:has(nav, select, [qcms-edit])) { display: none; }
+      > .-label {
+        position: absolute;
+        inline-size: 1rem;
+        block-size: 1rem;
+        clip-path: inset(50%);
+        overflow: hidden;
+        white-space: nowrap;
+        &[cmstxt] { position: static; inline-size: auto; block-size: auto; clip-path: none; overflow: visible; white-space: normal; }
+      }
+      &:not(:has(select)) > .-label:not([cmstxt]) { display: none; }
+      nav ul { display: flex; flex-wrap: wrap; align-items: center; gap: .15em; margin: 0; padding: 0; }
+      nav li::after { display: none; }
+      nav li { min-inline-size: 0; }
+      nav a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-inline-size: 2.75rem;
+        min-block-size: 2.75rem;
+        padding-inline: .5em;
+        color: inherit;
+        font-size: .8em;
+        font-weight: 550;
+        text-transform: uppercase;
+        border-radius: var(--control-radius);
+        overflow-wrap: anywhere;
+      }
+      nav a:is([aria-current], :hover) { background: var(--color-area); }
+    }
+    #head-nav {
+      all: unset;
+      display: block;
+      min-inline-size: 0;
+      nav ul { margin: 0; padding: 0; list-style: none; }
+      nav > ul { display: flex; flex-wrap: wrap; gap: calc(var(--gap) * .3); }
+      nav a {
+        display: flex;
+        align-items: center;
+        gap: .5em;
+        min-block-size: 2.75rem;
+        padding: .6em .85em;
+        color: inherit;
+        text-decoration: none;
+        border-radius: var(--radius);
+        font-size: .9em;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+      nav a:hover { background: var(--color-area); }
+      nav :is(.cmsInside, .cmsActive) > a { color: light-dark(var(--color), var(--color-light)); text-decoration: underline; text-underline-offset: .4em; }
+      nav .cmsActive > a { font-weight: 700; }
+      nav ul ul { padding-inline-start: var(--gap); }
+    }
+  }
+
+  #content {
+    flex: 1;
+    min-inline-size: 0;
+    scroll-margin-block-start: var(--gap);
+    > [qcms-mod="cont.flexible"] > [qcms-mod="cont.section"] {
+      margin-block: clamp(3rem, 6vw, 6rem);
+    }
+  }
+
+  #foot {
+    border-block-start: var(--line-width) solid color-mix(in srgb, var(--color-line), transparent 85%);
+    background: color-mix(in srgb, var(--color-bg), var(--color-area) 35%);
+    .-columns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: calc(var(--gap) * 3);
+      padding-block: clamp(2rem, 5vw, 4rem);
+      > .-about { flex: 1 1 16rem; min-inline-size: 0; }
+      > [qcms-id] { flex: 2 1 24rem; min-inline-size: 0; }
+      > [qcms-mod="cont.flexible"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+        gap: calc(var(--gap) * 2);
+      }
+      .-about > div { max-inline-size: 36ch; margin-block-start: var(--gap); font-size: .9em; }
+    }
+    .-bottom {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--gap);
+      padding-block: calc(var(--gap) * 1.25);
+      border-block-start: var(--line-width) solid color-mix(in srgb, var(--color-line), transparent 88%);
+      font-size: .8em;
+      > * { min-inline-size: 0; }
+      &:not(:has(> :not(:empty), [cmstxt], [qcms-edit])) { display: none; }
+      nav ul { display: flex; flex-wrap: wrap; gap: var(--gap); margin: 0; padding: 0; }
+      a { color: inherit; }
+    }
+  }
+}
+
+/* Every level stays reachable by keyboard and by touch; nested lists never depend on hover. */
+@media (width >= 64rem) and (hover: hover) {
+  #container.houdini #head:not(:has(u2-responsive:state(drawer))) #head-nav {
+    nav > ul > li { position: relative; }
+    nav > ul > .cmsHasSub > a::after {
+      content: '';
+      inline-size: .4em;
+      block-size: .4em;
+      border-inline-end: 1px solid currentColor;
+      border-block-end: 1px solid currentColor;
+      rotate: 45deg;
+      margin-block-start: -.25em;
+    }
+    nav > ul > li > ul {
+      display: none;
+      position: absolute;
+      inset-block-start: 100%;
+      inset-inline-start: 0;
+      z-index: 1;
+      inline-size: max-content;
+      min-inline-size: 15rem;
+      max-inline-size: min(24rem, 80vw);
+      max-block-size: 70dvh;
+      overflow: auto;
+      padding: calc(var(--gap) * .5);
+      border: var(--line-width) solid color-mix(in srgb, var(--color-line), transparent 85%);
+      border-radius: var(--radius);
+      background: var(--color-bg);
+      box-shadow: 0 1rem 3rem color-mix(in srgb, var(--color-text), transparent 90%);
+    }
+    nav > ul > li:last-child > ul { inset-inline-start: auto; inset-inline-end: 0; }
+    nav > ul > li:is(:hover, :focus-within) > ul { display: block; }
+  }
+}
+
+/* Native popovers provide Escape, light dismiss and focus return. Without support the list remains visible. */
+@supports selector(:popover-open) {
+  #container.houdini #head {
+    .-bar { gap: calc(var(--gap) * .5); padding-block: var(--gap); }
+    .-open { display: inline-flex; }
+    #head-nav:not(:popover-open) { display: none; }
+    #head-nav:popover-open {
+      position: fixed;
+      inset-block: 0;
+      inset-inline: auto 0;
+      display: flex;
+      flex-direction: column;
+      inline-size: min(100%, 30rem);
+      max-inline-size: 100%;
+      block-size: 100dvh;
+      max-block-size: 100dvh;
+      box-sizing: border-box;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: calc(var(--gap) * 1.5);
+      padding-block-end: max(calc(var(--gap) * 1.5), env(safe-area-inset-bottom));
+      background: var(--color-bg);
+      color: var(--color-text);
+      border: none;
+      box-shadow: -1rem 0 4rem color-mix(in srgb, var(--color-text), transparent 85%);
+      .-menuHead {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--gap);
+        margin-block-end: var(--gap);
+        > span { min-inline-size: 0; overflow-wrap: anywhere; }
+      }
+      .-close { display: inline-flex; }
+      .-close > span { min-inline-size: 0; overflow-wrap: anywhere; }
+      nav > ul { flex-direction: column; }
+      nav > ul > li { border-block-end: var(--line-width) solid var(--color-area); }
+      nav a { padding-block: .8em; }
+    }
+    #head-nav::backdrop { background: color-mix(in srgb, var(--color-text), transparent 65%); }
+  }
+}
+
+/* No script: a wrapping desktop list. With u2: use a drawer whenever the actual contents no longer fit. */
+@media (width >= 64rem) and (hover: hover) {
+  #container.houdini #head:not(:has(u2-responsive:state(drawer))) {
+    .-bar { gap: var(--gap); padding-block: calc(var(--gap) * 1.25); }
+    .-open { display: none; }
+    #head-nav:not(:popover-open) { display: block; }
+    @supports selector(:state(drawer)) {
+      u2-responsive.-bar:defined {
+        flex-wrap: nowrap;
+        > * { flex-shrink: 0; }
+        > .-brand { white-space: nowrap; }
+        #head-nav nav > ul { flex-wrap: nowrap; }
+        #head-nav nav > ul > li { flex-shrink: 0; }
+        .-languages nav ul { flex-wrap: nowrap; }
+      }
+    }
+  }
+}
+
+@media print {
+  #container.houdini {
+    min-block-size: 0;
+    > .-skip, #notice, #head .-open, #head #head-nav, #head .-languages, #head .-action { display: none; }
+    #head { position: static; }
+    #foot { background: transparent; }
+  }
+}
