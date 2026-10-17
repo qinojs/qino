@@ -130,7 +130,7 @@ export class Req {
 
 /** Behind a TLS proxy `request.url` is `http://`, which would break absolute self-links. Trusted
  *  like `clientIp`: only when hops > 0. */
-function publicScheme(request: Request, url: URL, hops: number): URL {
+function publicScheme(request: Request, url: URL, hops: number) {
   if (hops <= 0) return url;
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
   if ((proto !== "http" && proto !== "https") || url.protocol === proto + ":") return url;

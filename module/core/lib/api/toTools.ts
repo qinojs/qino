@@ -62,7 +62,7 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
   return tools;
 }
 
-function pathValue(v: unknown, rest = false): string[] {
+function pathValue(v: unknown, rest = false) {
   const vals = rest && Array.isArray(v) ? v : rest ? String(v ?? "").split("/") : [v];
   return vals.map((x) => encodeURIComponent(String(x ?? "")));
 }

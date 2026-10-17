@@ -12,9 +12,10 @@ export const css = `
 .-table2 .-export { display:block; margin-top:calc(var(--rem) * .8); }
 `;
 
-const exportUrl = (id) => {
+const exportUrl = (id, format) => {
   const url = new URL(location.href);
   url.searchParams.set('export_table', id);
+  if (format) url.searchParams.set('format', format);
   return url.pathname + url.search;
 };
 
@@ -30,8 +31,9 @@ export default async function (widget, { node, signal }) {
     <label><input type=number setting=cols class=-cols min=1 max=15 value="${cols}" style="width:5em">
       ${t`Columns (max: 15)`}</label>
     <div class=-widths>${widths.map((i) => html`<div>${i}<br>
-      <input setting="${'row_' + i}" value="${settings['row_' + i] ?? ''}" placeholder="50%"></div>`)}</div>
-    <a class=-export href="${exportUrl(node.id)}">${t`Export table as Excel`}</a>
+      <input setting="${'row_' + i}" value="${settings['row_' + i]}" placeholder="50%"></div>`)}</div>
+    <div class=-export><a href="${exportUrl(node.id)}">${t`Export table as Excel`}</a> ·
+      <a href="${exportUrl(node.id, 'csv')}">${t`as CSV`}</a></div>
   </div>`;
 
   bindSettings(widget, ref);

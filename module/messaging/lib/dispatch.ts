@@ -5,7 +5,7 @@ import { renderer } from "./template.ts";
 import { unsubscribeGroup } from "./unsubscribe.ts";
 
 import type { App, Row } from "@qino/qino";
-import type { Attachment, Channel, Msg } from "../mod.ts";
+import type { Channel, Msg } from "../mod.ts";
 
 /** What a channel needs to send a recorded delivery. `uses`: placeholders the message uses,
  *  `group`: the group the recipient may leave — both only used by mail. */
@@ -26,7 +26,7 @@ const load = (app: App, batch: number[]) =>
     WHERE ${sql.in("d.id", batch)}`;
 
 /** The message's attachments as files. */
-async function attachments(app: App, messageId: number): Promise<Attachment[] | undefined> {
+async function attachments(app: App, messageId: number) {
   const files = await app.db.col`SELECT file_id FROM message_attachment WHERE message_id = ${messageId} ORDER BY sort, file_id`;
   if (!files.length) return;
   return Promise.all(files.map(async (id) => {
@@ -54,7 +54,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
   if (!batch.length) return 0;
   // undeliverable addresses are already finished and skipped
   const rows = (await load(app, batch)).filter((row) => row.sent == null);
-  if (!rows.length) return void await bookkeeping(app, channel, batch, onError), 0;
+  if (!rows.length) return await bookkeeping(app, channel, batch, onError), 0;
   msg ??= await messageOf(app, rows[0]);
   const usrOf = (row: Row) => Number(row.usr_id) || undefined;
   const [{ render, uses }, leavable] = await Promise.all([
@@ -84,7 +84,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
  * Store the outcomes. All failures are reported, but only real delivery failures mark the contact;
  * our own failures leave it due and don't touch the contact's mark.
  */
-async function bookkeeping(app: App, channel: Channel, batch: number[], onError?: (message: string) => void): Promise<void> {
+async function bookkeeping(app: App, channel: Channel, batch: number[], onError?: (message: string) => void) {
   if (!onError && !channel.contact) return;
   const rows = await app.db.query`SELECT usr_id, address, error, sent FROM message_delivery WHERE ${sql.in("id", batch)}`;
   for (const row of rows) {

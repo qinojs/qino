@@ -42,7 +42,7 @@ export async function rewriteLinks(app: App, msg: Msg): Promise<{ msg: Msg; link
   const short = shortener(app);
   const trades = new Map<string, string>(); // original → replacement
   const links = new Map<string, Link>(); // by replacement: two spellings may give the same link
-  const swap = async ({ url, kind }: Link): Promise<string> => {
+  const swap = async ({ url, kind }: Link) => {
     const known = trades.get(url);
     if (known !== undefined) return known;
     const target = absolute(url, root); // mailto, tel, cid, anchors: unchanged
@@ -85,7 +85,7 @@ const BOUNDARY = /&(?!amp;|#38;|#x26;)[a-z#][a-z0-9]*;/i;
 const decode = (url: string) => url.replace(ENTITY, "&");
 
 /** Plain URLs in a text. */
-function bare(text: string, offset = 0, markup = false): Span[] {
+function bare(text: string, offset = 0, markup = false) {
   return [...text.matchAll(BARE)].map((m) => {
     const url = (markup ? m[0].split(BOUNDARY)[0] : m[0]).replace(TAIL, "");
     return { url: decode(url), kind: "click" as const, at: offset + m.index, end: offset + m.index + url.length };
@@ -94,7 +94,7 @@ function bare(text: string, offset = 0, markup = false): Span[] {
 
 /** All URLs in markup: tag attributes and plain text URLs. A link labelled with its own URL is
  *  replaced in both places with the same code. */
-function fromHtml(html: string): Span[] {
+function fromHtml(html: string) {
   const spans: Span[] = [];
   let quiet = 0;
   const parser = new Parser({
@@ -122,7 +122,7 @@ function fromHtml(html: string): Span[] {
 }
 
 /** Uses the parser, not a regex, so URLs in code blocks are skipped. */
-function fromMarkdown(md: string): Link[] {
+function fromMarkdown(md: string) {
   const links: Link[] = [];
   markdown.walkTokens(markdown.lexer(md), (token) => {
     if (token.type === "link") links.push({ url: (token as Tokens.Link).href, kind: "click" });
@@ -132,7 +132,7 @@ function fromMarkdown(md: string): Link[] {
 }
 
 /** Make absolute like a browser does; non-web addresses stay unchanged. */
-function absolute(url: string, root: string): URL | undefined {
+function absolute(url: string, root: string) {
   const trimmed = url.trim();
   if (!trimmed || trimmed.startsWith("#") || UNFILLED.test(trimmed)) return;
   const target = URL.parse(trimmed, root) ?? undefined;
@@ -141,14 +141,14 @@ function absolute(url: string, root: string): URL | undefined {
 }
 
 /** Replace all at once, longest first — a URL may be the prefix of another. */
-function trade(text: string, trades: Map<string, string>): string {
+function trade(text: string, trades: Map<string, string>) {
   const changed = [...trades].filter(([from, to]) => from !== to).sort((a, b) => b[0].length - a[0].length);
   for (const [from, to] of changed) text = text.replaceAll(from, to);
   return text;
 }
 
 /** Replace each URL in place; everything else stays as written. */
-async function spliced(text: string, spans: Span[], swap: (link: Link) => Promise<string>, markup: boolean): Promise<string> {
+async function spliced(text: string, spans: Span[], swap: (link: Link) => Promise<string>, markup: boolean) {
   let out = "";
   let at = 0;
   for (const span of spans.sort((a, b) => a.at - b.at)) {

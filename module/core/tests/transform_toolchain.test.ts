@@ -23,7 +23,7 @@ const engine = (name: string, priority: number): TranscriptEngine => ({
   transcribe: () => Promise.resolve({ kind: "qino.transcript", version: 1, text: "", segments: [] }),
 });
 
-async function keyOf(dir: string, build: (t: FileTransformer) => void): Promise<string> {
+async function keyOf(dir: string, build: (t: FileTransformer) => void) {
   const t = new FileTransformer({ cacheDir: dir + "/cache" });
   t.register(stamp);
   build(t);

@@ -5,6 +5,7 @@ import * as pages from "./seeders/pages.ts";
 import * as traffic from "./seeders/traffic.ts";
 import * as links from "./seeders/links.ts";
 import * as errors from "./seeders/errors.ts";
+import * as fin from "./seeders/fin.ts";
 
 import type { Seed } from "./seed.ts";
 
@@ -17,4 +18,5 @@ export const seeders: Seeder[] = [
   { name: "traffic", title: "Visits and rankings", needs: ["log"], run: traffic.run },
   { name: "links", title: "Short links", needs: ["shorturl"], run: links.run },
   { name: "errors", title: "Error reports", needs: ["m_error_report"], run: errors.run },
+  { name: "fin", title: "Invoices, payments and a bank statement", needs: ["invoice", "payment"], run: fin.run },
 ];

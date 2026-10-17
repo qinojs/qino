@@ -1,0 +1,15 @@
+{
+  "name": "ai.agent.recall",
+  "description": "What comes to mind as the user talks: memories and tools close to it, given to the agent as a note.",
+  "dependencies": [
+    "ai.agent",
+    "ai.discover",
+    "ai.embed"
+  ],
+  "files": [
+    "README.md",
+    "lib/recall.ts",
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

@@ -6,6 +6,15 @@ import { foreignPaths, suspiciousPaths } from "./lib/pathReports.ts";
 
 import type { App } from "@qino/qino";
 
+export const dbSchema = {
+  properties: {
+    score_log_ip_suspicious: {
+      description: "How suspicious each client address is, by reports (score)",
+      additionalProperties: { properties: { ip_id: { type: "integer", "x-qg-parent": "log_ip" } } },
+    },
+  },
+};
+
 export const settingsSchema = {
   properties: {
     foreignPaths: { type: "boolean", default: true, description: "Count 404s on paths of other systems (*.php, wp-admin, js/). Turn off for a while after replacing an old site." },

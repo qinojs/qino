@@ -3,7 +3,7 @@ import { html } from "@qino/qino";
 import { sectionAttr } from "../lib/bg.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -13,7 +13,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
+async function render(node: Node, data: { ctx: Ctx }) {
   const site = await siteTemplate(node, data);
   if (site) return site;
 

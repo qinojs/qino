@@ -36,11 +36,11 @@ export class ProviderError extends Error {
 }
 
 /** Every provider declared by a linked module. */
-function providers(app: App): Provider[] {
+function providers(app: App) {
   return app.modules.linked().filter((mod) => mod.plugin.socialProvider).map((mod) => mod.plugin.socialProvider as Provider);
 }
 
-function provider(app: App, name: string): Provider | undefined {
+function provider(app: App, name: string) {
   return providers(app).find((p) => p.name === name);
 }
 
@@ -113,7 +113,7 @@ export function posts(app: App, filter: { provider?: string; target?: string; se
     filter.provider ? sql`provider = ${filter.provider}` : null,
     filter.target ? sql`target = ${filter.target}` : null,
     filter.sent == null ? null : filter.sent ? sql`sent IS NOT NULL` : sql`sent IS NULL`,
-    sql`remote_id IS NOT NULL`,
+    sql`external_id IS NOT NULL`,
   ].flatMap((term) => term ?? []);
   return app.db.query`SELECT * FROM social_post WHERE ${sql.join(where, " AND ")} ORDER BY time DESC LIMIT ${filter.limit ?? 100}`;
 }
@@ -127,11 +127,11 @@ export async function outbox(app: App, limit = 100): Promise<number> {
   return done.filter(Boolean).length;
 }
 
-async function send(app: App, id: number): Promise<boolean> {
+async function send(app: App, id: number) {
   const row = await app.db.row`SELECT * FROM social_post WHERE id = ${id}`;
   if (!row || row.sent != null) return false;
   const p = provider(app, String(row.provider));
-  if (!p) return void await failed(app, id, new Error(`social: provider not linked: ${row.provider}`)), false;
+  if (!p) return await failed(app, id, new Error(`social: provider not linked: ${row.provider}`)), false;
   try {
     const post = await p.publish(app, String(row.target), String(row.text), `qino-social-${id}`);
     await attach(app, row, post);
@@ -142,7 +142,7 @@ async function send(app: App, id: number): Promise<boolean> {
   }
 }
 
-async function attach(app: App, row: Row, post: Post): Promise<void> {
+async function attach(app: App, row: Row, post: Post) {
   if (post.target !== row.target) throw new Error(`social.${row.provider}: publish returned another target`);
   const hash = await hashOf(String(row.provider), post);
   const known = await app.db.one`SELECT id FROM social_post WHERE hash = ${hash}`;
@@ -154,7 +154,7 @@ async function attach(app: App, row: Row, post: Post): Promise<void> {
   });
 }
 
-async function failed(app: App, id: number, error: unknown): Promise<void> {
+async function failed(app: App, id: number, error: unknown) {
   const attempts = Number(await app.db.one`SELECT attempts FROM social_post WHERE id = ${id}` ?? 0) + 1;
   const retry = error instanceof ProviderError && attempts < MAX_ATTEMPTS;
   await app.db.table("social_post").update(id, {
@@ -170,7 +170,7 @@ function valuesOf(post: Post, hash: string) {
   return {
     target: post.target,
     hash,
-    remote_id: post.id,
+    external_id: post.id,
     parent_id: post.parentId ?? null,
     own: post.own ?? false,
     text: post.text,

@@ -11,12 +11,13 @@ export const renamedModules: Record<string, string> = {
   "cms.cont.phpfile": "cms.cont.ts", // per-node code — the file itself still needs porting
   "cms.cont.table1": "cms.cont.table2", // same texts and settings; migrateTable1 pins the width unit
   "cms.cont.table": "cms.cont.table2", // predecessor of table1 with the same cell texts/settings
-  "cms.cont.form1": "cms.cont.form2", // migrateForm1 also reshapes its children and settings
-  "cms.cont.form1.fields2": "cms.cont.form2.fields1",
+  "cms.cont.form1": "cms.cont.form", // migrateForm1 also reshapes its children and settings
+  "cms.cont.form1.fields2": "cms.cont.form.fields",
   "cms.cont.text.cd": "cms.cont.text",
   "cms.cont.search": "cms.cont.search1",
-  "cms.cont.login2": "cms.cont.login4",
-  "cms.cont.login3": "cms.cont.login4",
+  "cms.cont.login2": "cms.cont.login.password",
+  "cms.cont.login3": "cms.cont.login.password",
+  "cms.cont.login4": "cms.cont.login.password",
   "cms.cont.youtubevideo": "cms.cont.video.youtube2",
   "cms.backendLayout": "cms.layout.backend",
   "cms.cont.shp3.order.cart3": "cms.cont.shp3.order.cart1",

@@ -51,7 +51,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   }
 }
 
-async function saveProvider(app: Node["app"], values: Record<string, unknown>): Promise<void> {
+async function saveProvider(app: Node["app"], values: Record<string, unknown>) {
   const type = String(values.type ?? "");
   if (type !== "twilio" && type !== "http") throw new Error("Choose an SMS provider");
   const settings = app.settings["messaging.sms"].provider;

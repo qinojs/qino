@@ -61,3 +61,13 @@ Deno.test("StandardSchema: toJsonSchema keeps descriptions and required fields",
     description: "Root",
   });
 });
+
+Deno.test("StandardSchema: enum takes one of its values, also described and optional", () => {
+  const kind = s.enum(["config", "bug"]).describe("For whom");
+  assertEquals(kind["~standard"].validate("bug"), { value: "bug" });
+  assertEquals(kind["~standard"].validate("other").issues, [{ message: "expected one of: config, bug", path: [] }]);
+  assertEquals(toJsonSchema(s.object({ kind, also: s.optional(s.enum(["a"])) })), {
+    type: "object", required: ["kind"],
+    properties: { kind: { type: "string", enum: ["config", "bug"], description: "For whom" }, also: { type: "string", enum: ["a"] } },
+  });
+});

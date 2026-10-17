@@ -15,7 +15,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const slides: HtmlString[] = [];
   const edit = await node.edit();
   for (const file of (await node.files()).values()) {

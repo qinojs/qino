@@ -33,7 +33,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
 
   const pageUrl = node ? await (await node.page()).url() : "";
 
-  const parts: Array<HtmlString | Promise<HtmlString>> = [];
+  const parts: (HtmlString | Promise<HtmlString>)[] = [];
   for (const vs of rows) {
     const detailUrl = backend.toUrl(pageUrl, { id: vs.id });
     const isEmail = vs.username && /@/.test(vs.username);

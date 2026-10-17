@@ -5,7 +5,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 const yesNo = (v?: boolean) => v ? html`<u2-ico icon=check_circle>✓</u2-ico>` : "";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const declared = factors(node.app).sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
   const via = viaOf(ctx);
   const mine = ctx.userId ? await userFactors(node.app, ctx.userId) : [];

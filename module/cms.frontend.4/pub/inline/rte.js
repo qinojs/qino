@@ -10,6 +10,7 @@ import { blockStyles } from '@qino/u2/js/rte/src/client/blocks.js';
 import { linkEditor } from '@qino/u2/js/rte/src/client/link.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
+import { DbFile } from '@qino/pub/dbFile.js';
 import { debounce, Eventer, dom } from '@qino/pub/c1.js';
 
 // scoped query helpers
@@ -23,9 +24,9 @@ function possibleClasses(el) {
     sel = sel.trim();
     if (!sel.includes('.')) return;
     if (!/\.[A-Z]/.test(sel)) return;
-    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
+    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : /^\.[^ ]+$/;
     if (reg.test(sel)) {
-      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
+      const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, '$2');
       ret[name] = sel;
     }
   }
@@ -154,7 +155,7 @@ editor.add({
     const controller = new AbortController();
     surface.addEventListener('u2-rte-change', () => {
       for (const img of surface.element.querySelectorAll('img[src*="dbFile/"]')) {
-        const file = new dbFile(img);
+        const file = new DbFile(img);
         // the url spells the size w/h, the element width/height
         const same = (attr, part) => !img.hasAttribute(attr) || Number(img.getAttribute(attr)) === Number(file.get(part));
         if (!img.hasAttribute('width') && !img.hasAttribute('height')) continue;
@@ -245,7 +246,7 @@ document.addEventListener('qgResize',e=>{
     el.style.maxWidth = '100%';
     el.style.width = width+'px';
     el.style.height = 'auto';
-    new dbFile(el).set('w',width).set('h',height).set('max', 0);
+    new DbFile(el).set('w',width).set('h',height).set('max', 0);
     el.setAttribute('width',width);
     el.setAttribute('height',height);
     if (el.style.display === 'inline-block') el.style.display = '';
@@ -255,7 +256,7 @@ document.addEventListener('qgResize',e=>{
   }
 });
 
-// dbclick zoomer
+// dblclick zoomer
 addEventListener('dblclick', e => {
   const img = e.target;
   if (img.isContentEditable && img.tagName === 'IMG' && img.src.includes('/dbFile')) {
@@ -278,7 +279,7 @@ addEventListener('dblclick', e => {
       const change = () => {
         const vpos = zoomer.y / ( zoomer.img.height - zoomer.h ) || 0;
         const hpos = zoomer.x / ( zoomer.img.width  - zoomer.w ) || 0;
-        new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', zoomer.factor() );
+        new DbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', zoomer.factor() );
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
       };
       zoomer.on('change',debounce(change, 500));
@@ -313,7 +314,6 @@ class ImageZoomer {
     this.y = 0;
     this.w = 100;
     this.h = 100;
-    this.f = 1;
 
     this.img = img;
     this.canvas = document.createElement('canvas');
@@ -386,7 +386,7 @@ class ImageZoomer {
     const x = e.offsetX;
     const y = e.offsetY;
     return {
-      x: ( x + 2*this.ctx.width  ) / 5, //(x+4*xhalbe durch 5)
+      x: ( x + 2*this.ctx.width  ) / 5, // (x + 4 * width/2) / 5
       y: ( y + 2*this.ctx.height ) / 5
     };
   }
@@ -401,14 +401,14 @@ function limit(number, min, max) {
 }
 let lastTime = 0;
 function wheelIntervalToFaktor(e) {
-  // intervall diff
+  // interval diff
   const time = e.timeStamp;
   let diff = time-lastTime;
   if (!e._eventChecked) {
     lastTime = time;
     e._eventChecked = true;
   }
-  // faktor
+  // factor
   const MAX = 400;
   const MIN = 10;
   diff = limit(diff, MIN, MAX+MIN);

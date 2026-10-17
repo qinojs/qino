@@ -2,7 +2,6 @@ import { debounce } from '@qino/pub/c1.js';
 import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
 import { Combobox } from '@qino/pub/qg/combobox.js';
 import { api } from '@qino/pub/api.js';
-import { ctx } from '@qino/pub/qino.js';
 
 export const cms = {};
 //Object.assign(cms, c1.Eventer);
@@ -24,43 +23,6 @@ cms.el = {
   nid(el)    { return el.closest('[qcms-id]')?.getAttribute('qcms-id') ?? null; },
   module(el) { return el.closest('[qcms-mod]')?.getAttribute('qcms-mod') ?? null; },
 };
-
-// dbFile
-const proto = {
-  get(part)        { return this.parts[part]; },
-  set(part, value) { this.parts[part] = value; this.write(); return this; },
-  write()          { this.el?.setAttribute('src', this.toString()); },
-  toString() {
-    let src = '';
-    for (const part in this.parts) {
-      src += '/' + part;
-      if (this.parts[part] !== undefined) src += '-' + this.parts[part];
-    }
-    return ctx.appUrl + 'dbFile/' + this.id + src + '/' + this.name;
-  },
-};
-
-class DbFile {
-  constructor(el) {
-    const parts = el.getAttribute('src').replace(/.*dbFile\//, '').split('/');
-    this.el   = el;
-    this.name = parts.pop();
-    this.id   = parts.shift();
-    this.parts = {};
-    for (const s of parts) { if (s) { const [k, v] = s.split('-'); this.parts[k] = v; } }
-  }
-}
-class DbFileUrl {
-  constructor(url) {
-    const parts = url.replace(/.*dbFile\//, '').split('/');
-    this.name = parts.pop();
-    this.id   = parts.shift();
-    this.parts = {};
-    for (const s of parts) { if (s) { const [k, v] = s.split('-'); this.parts[k] = v; } }
-  }
-}
-Object.assign(DbFile.prototype, proto);
-Object.assign(DbFileUrl.prototype, proto);
 
 // api: special inputs
 function abortableCombobox(input, apiFn) {
@@ -98,10 +60,22 @@ function saveTxt(el) {
   cleanUpEl(el);
   api.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
+// querySelectorAll across the document and all open shadow roots
+const queryAllDeep = (selector, root = document) => [...root.querySelectorAll(selector),
+  ...[...root.querySelectorAll('*')].flatMap(el => el.shadowRoot ? queryAllDeep(selector, el.shadowRoot) : [])];
+// mirror the edited text into other elements showing the same text in the same language
+const txtLang = el => el.getAttribute('cmslang') || document.documentElement.lang;
+const txtProp = el => isFormEl(el) ? 'value' : 'innerHTML';
+function syncTxt(el) {
+  if (!el?.hasAttribute?.('cmstxt')) return;
+  for (const other of queryAllDeep('[cmstxt="' + el.getAttribute('cmstxt') + '"]')) {
+    if (other !== el && txtLang(other) === txtLang(el)) other[txtProp(other)] = el[txtProp(el)];
+  }
+}
 // composedPath()[0] (read before debounce) finds the target inside the qino-cms shadow root too
 const saveTxtDebounced = debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
-document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
+document.body.addEventListener('input', e => (syncTxt(e.composedPath()[0]), saveTxtDebounced(e.composedPath()[0])));
 
 cms.reloadNode = (nid, vars) =>
   api.cms.node(nid).html.post({ vars }).then(html =>
@@ -118,8 +92,6 @@ cms.reloadPart = (nid, part, vars) => {
 
 // global exports for legacy scripts
 globalThis.cms      = cms;
-globalThis.dbFile   = DbFile;
-globalThis.dbFileUrl = DbFileUrl;
 
 // last: on() runs at once for existing nodes and needs cms
 new SelectorObserver({ on: el => {

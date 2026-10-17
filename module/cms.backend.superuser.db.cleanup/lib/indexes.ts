@@ -3,8 +3,8 @@ import { tableIndexes } from "@qino/qino/cms.backend.superuser.db";
 
 import type { Db } from "@qino/qino";
 
-const same = (a: string[], b: string[]): boolean => a.length === b.length && a.every((field, i) => field === b[i]);
-const prefix = (a: string[], b: string[]): boolean => a.length <= b.length && a.every((field, i) => field === b[i]);
+const same = (a: string[], b: string[]) => a.length === b.length && a.every((field, i) => field === b[i]);
+const prefix = (a: string[], b: string[]) => a.length <= b.length && a.every((field, i) => field === b[i]);
 
 /** Missing schema/relation indexes and indexes that are safe candidates for removal. */
 export async function indexIssues(db: Db, tableName: string) {
@@ -43,6 +43,12 @@ export async function indexIssues(db: Db, tableName: string) {
     if (covering) issues.push({ kind: "redundant", index: index.name, other: covering.name, actionable: true });
   }
   return issues;
+}
+
+/** Fields the schema wants a fulltext index on, which only MySQL creates; elsewhere a search scans them. */
+export function fulltextMissing(db: Db, tableName: string): string[] {
+  if (db.dialect === "mysql") return [];
+  return [...db.tables[tableName]?.fields ?? []].filter(([, field]) => field.schema["x-index"] === "fulltext").map(([name]) => name);
 }
 
 function wantedIndex(db: Db, table: string, field: string): "index" | "unique" | "fulltext" {

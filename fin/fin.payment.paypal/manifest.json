@@ -1,0 +1,16 @@
+{
+  "name": "fin.payment.paypal",
+  "description": "PayPal as payment provider: approved on PayPal, captured on return.",
+  "dependencies": [
+    "fin",
+    "fin.payment",
+    "locale.currency"
+  ],
+  "files": [
+    "README.md",
+    "lib/provider.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

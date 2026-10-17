@@ -3,7 +3,6 @@ import { cms_image2 } from "@qino/qino/cms.image2";
 
 import { cmsText } from "../lib/text.ts";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -13,7 +12,7 @@ const settingsSchema = {
   },
 };
 
-async function half(node: Node, side: "left" | "right", url: string): Promise<HtmlString> {
+async function half(node: Node, side: "left" | "right", url: string) {
   const image = cms_image2(await node.file(side), { width: 1000, style: "max-width:none", if: 1, editable: await node.edit() });
   const body = html.async`
     <div class=-image>${image}</div>
@@ -22,7 +21,7 @@ async function half(node: Node, side: "left" | "right", url: string): Promise<Ht
   return url ? html.async`<a href="${url}" target=_blank>${body}</a>` : html.async`<div>${body}</div>`;
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   return html.async`<div>
   ${half(node, "left", String(await node.settings["url links"] ?? ""))}
   ${half(node, "right", String(await node.settings["url right"] ?? ""))}

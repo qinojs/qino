@@ -60,6 +60,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <td>${row.format || "text"}
       <td><small>${firstLine(row.text)}</small>`;
   }) : html`<tr><td colspan=5>${none}`;
+  const samples = await sampleValues(app);
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 40rem">
@@ -86,12 +87,12 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <button name=create>${t`Create`}</button>
     </form>
   </div>
-  ${placeholders(node, await sampleValues(app))}
+  ${placeholders(node, samples)}
 </div>`;
 }
 
 /** One template: what it says, and what a message looks like inside it. */
-async function detail(node: Node, name: string, channel: string): Promise<HtmlString | string> {
+async function detail(node: Node, name: string, channel: string) {
   const app = node.app;
   const t = app.t;
   const ctx = getCtx();
@@ -147,7 +148,7 @@ async function detail(node: Node, name: string, channel: string): Promise<HtmlSt
 
 /** The saved template around a sample message, in the channel's actual forms (only mail goes
  *  through the client simulator). */
-async function preview(node: Node, row: Row, values: Computed): Promise<HtmlString> {
+async function preview(node: Node, row: Row, values: Computed) {
   const app = node.app;
   const t = app.t;
   const channel = String(row.channel);
@@ -173,7 +174,7 @@ async function preview(node: Node, row: Row, values: Computed): Promise<HtmlStri
   </div>`;
 }
 
-async function placeholders(node: Node, values: Computed): Promise<HtmlString> {
+async function placeholders(node: Node, values: Computed) {
   const app = node.app;
   const t = app.t;
   const offered = new Map([...contributed(app)].map(([mod, made]) =>
@@ -215,7 +216,7 @@ const codes = (names: string[] = [], copy = "") =>
   names.map((name) => html`<code data-copy title="${copy}">{{${name}}}</code> `);
 
 /** What the modules offer, each under the name of whoever offers it. */
-function contributed(app: App): Map<string, Record<string, Placeholder>> {
+function contributed(app: App) {
   return new Map(app.modules.linked().flatMap((mod) => {
     const made = mod.plugin.templatePlaceholders as Record<string, Placeholder> | undefined;
     return made && !isEmptyObject(made) ? [[mod.name, made] as const] : [];
@@ -236,14 +237,14 @@ export async function sampleValues(app: App): Promise<Computed> {
 
 const EMPTY = { text: "" };
 
-function redirect(to: string): string {
+function redirect(to: string) {
   const ctx = getCtx();
   ctx.res.status = 302;
   ctx.res.headers.set("Location", to);
   return "";
 }
 
-function firstLine(text: unknown): string {
+function firstLine(text: unknown) {
   const line = String(text ?? "").trim().split("\n", 1)[0];
   return line.length > 60 ? line.slice(0, 60) + "…" : line;
 }

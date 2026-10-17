@@ -1,6 +1,8 @@
-/** True when `cmd` exists and exits 0. A missing binary throws synchronously from `output()`. */
+import { sys } from "../sys.ts";
+
+/** True when `cmd` exists and exits 0. */
 export async function tryCommand(cmd: string, args: string[]): Promise<boolean> {
-  try { return (await new Deno.Command(cmd, { args, stdout: 'piped', stderr: 'piped' }).output()).code === 0; }
+  try { return (await sys.command(cmd, { args, stdout: 'piped', stderr: 'piped' })).code === 0; }
   catch { return false; }
 }
 

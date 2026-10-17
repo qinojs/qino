@@ -13,7 +13,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "cms.legacy.c1/pub/c1/stretchedItems.js");
 
   const cols = Math.max(1, Number(await node.settings.cols) || 1);

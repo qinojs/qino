@@ -37,7 +37,7 @@ export const cron = {
 } satisfies Jobs;
 
 /** `s/<code>` redirects; anything after the code is the caller's own marker. */
-async function handleHit(ctx: Ctx): Promise<void> {
+async function handleHit(ctx: Ctx) {
   const path = ctx.req.appPath;
   if (!path.startsWith(PREFIX)) return; // every request passes here; nothing is allocated to say no
   const [code, tag] = path.slice(PREFIX.length).split("/");

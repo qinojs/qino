@@ -2,12 +2,12 @@ import { hee, html } from "@qino/qino";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const lpage = await node.cms.layoutPage(name);
   const font = String(await lpage.settings["google-font"] ?? "").trim();
   if (font) {

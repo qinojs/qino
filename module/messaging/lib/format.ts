@@ -53,7 +53,7 @@ export function htmlOf(msg: Msg, profile: Profile = "html"): string | undefined 
   return render(msg.text, profile);
 }
 
-function render(text: string, profile: Profile): string {
+function render(text: string, profile: Profile) {
   const parser = profile === "telegram" ? markdownTelegram : markdown;
   return sanitizeHtml(parser.parse(text, { async: false }), profile).trim();
 }

@@ -6,11 +6,11 @@ import { cmsText } from "../lib/text.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const level = Number(await node.settings.Heading);
   const heading = [1, 2, 3, 4].includes(level) ? level : 2;
   const texts = await node.texts();
-  const sections: HtmlString[] = [];
+  const sections = [];
   const preferred = ["accountable_body", "revocation", "grievance", "data_portability", "your_data", "https", "logs", "contactform", "youtube", "google_fonts", "cookies"];
   const available = texts.keys().filter((name) => name.startsWith("content_")).map((name) => name.slice(8)).toArray();
   const keys = [...preferred.filter((key) => available.includes(key)), ...available.filter((key) => !preferred.includes(key))];
@@ -36,14 +36,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     }
     if (key === "logs" && await node.app.settings["cms.cont.privacy_policy1"]["anonymize IP"])
       owner = html`<p>IP-Adressen sind anonymisiert.</p>`;
-    sections.push(await html.async`<div class=-section>
+    sections.push(html.async`<div class=-section>
   ${cmsText(node, "title_" + key, "h" + heading)}
   ${cmsText(node, name)}
   ${owner}
 </div>`);
   }
-  return html`<div><div class=u2-width>
-  ${await cmsText(node, "title", "h1")}
+  return html.async`<div><div class=u2-width>
+  ${cmsText(node, "title", "h1")}
   ${sections}
   <p><small>Quelle: Datenschutz-Konfigurator von <a href="http://www.mein-datenschutzbeauftragter.de" target=_blank>mein-datenschutzbeauftragter.de</a></small></p>
 </div></div>`;

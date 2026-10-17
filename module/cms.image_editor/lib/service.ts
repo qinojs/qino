@@ -1,10 +1,10 @@
+// deno-lint-ignore-file no-explicit-any
 import { DbFile, fs, html, isEmptyObject } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
 import type { App, Ctx } from "@qino/qino";
 
-// deno-lint-ignore-file no-explicit-any
 
 const ALLOWED_META = new Set(["name", "vpos", "hpos"]);
 
@@ -72,11 +72,11 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
         <td style="padding:.1875rem .25rem .1875rem 0; width:3.75rem"><img log="${log}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">
         <td style="padding:.1875rem 0 .1875rem 0;">${niceDate(Number(row.log_time))}${usr ? html`<br>${usr}` : ""}`);
     }
-    return html`<table style="width:100%">${trs}</table>`.toString(); // api endpoint: plain string output
+    return html`<table style="width:100%">${trs}</table>`.html; // api endpoint: plain string output
 }
 
 // 60×40 thumbnail (same size as the media preview) of a specific version row, as data URL.
-async function versionThumb(app: App, fileId: number, row: any): Promise<string | undefined> {
+async function versionThumb(app: App, fileId: number, row: any) {
     if (!row.md5) return;
     try {
         const dbFile = new DbFile(app.dbFiles, fileId, row); // detached: path points at this version's md5, live cache untouched
@@ -87,7 +87,7 @@ async function versionThumb(app: App, fileId: number, row: any): Promise<string 
     } catch {/**/}
 }
 
-function niceDate(ts: number): string {
+function niceDate(ts: number) {
     if (!ts) return "";
     return new Date(ts * 1000).toLocaleString();
 }

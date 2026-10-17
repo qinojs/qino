@@ -17,7 +17,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const text = await node.showText("main");
 
   const settings = node.settings;
@@ -57,11 +57,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     editable: edit ? await img.url() : null,
   };
 
-  const imgHtml = await cms_image2(img, options);
+  const imgHtml = cms_image2(img, options);
 
-  let editHtml: HtmlString | string = "";
+  let editHtml: Promise<HtmlString> | string = "";
   if (edit) {
-    editHtml = await html.async`
+    editHtml = html.async`
         <div class="-alt-edit qgCMS">
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text.plain()}">
         </div>

@@ -1,4 +1,5 @@
-import { fromFileUrl } from "../deps.ts";
+import { fileURLToPath } from "node:url";
+
 import { fs } from "./fs.ts";
 import { isModuleName, readManifest, resolveSpecifier } from "./ModuleManager.ts";
 
@@ -6,10 +7,10 @@ import type { App } from "./App.ts";
 import type { Manifest, Module } from "./ModuleManager.ts";
 
 /** A folder store: its subfolders that contain a plugin file. */
-async function readFolder(url: string): Promise<string[]> {
+async function readFolder(url: string) {
   // HTTP directory listings are unreliable, so remote stores need a catalog.
   if (!url.startsWith("file:")) throw new Error(`Store ${url}: a folder store is local only, a remote store needs a store.json`);
-  const dir = fromFileUrl(url);
+  const dir = fileURLToPath(url);
   const names = [];
   for (const e of await fs.list(dir))
     if (e.isDirectory && isModuleName(e.name) && await fs.isFile(`${dir}${e.name}/plugin.ts`)) names.push(e.name);
@@ -17,7 +18,7 @@ async function readFolder(url: string): Promise<string[]> {
 }
 
 /** The catalog's module names, sorted; validates the format. */
-async function readCatalog(url: string): Promise<string[]> {
+async function readCatalog(url: string) {
   const res = await fetch(url); // works for file: and http(s):
   if (!res.ok) throw new Error(`Store ${url}: ${res.status} ${res.statusText}`);
   const modules = (await res.json())?.modules;
@@ -134,8 +135,8 @@ export class StoreManager {
 
   /** Register the saved stores, so the backend can list and install from them. */
   async init(): Promise<void> {
-    // Read before migration, like ModuleManager.init().
-    for (const { url } of await this.#app.db.query`SELECT * FROM store`.catch(() => []))
-      if (url) this.#ensure(url, false);
+    // Read before migration, like ModuleManager.init(); a new database has no table yet.
+    if (!(await this.#app.db.listTables()).includes("store")) return;
+    for (const { url } of await this.#app.db.query`SELECT * FROM store`) if (url) this.#ensure(url, false);
   }
 }

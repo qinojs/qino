@@ -1,11 +1,10 @@
 import { html } from "@qino/qino";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const flags = ["autoplay", "muted", "loop", "controls"] as const;
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const file = await node.file("Video mp4");
   if (!await file.exists()) return html`<div></div>`;
   const active: string[] = [];

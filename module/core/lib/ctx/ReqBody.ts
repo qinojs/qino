@@ -32,7 +32,7 @@ export class ReqBody {
     });
   }
 
-  #spool(key: string): Promise<UploadedFile> {
+  #spool(key: string) {
     let p = this.#spooled[key];
     if (!p) {
       p = this.#spooled[key] = readUploadFile(this.#rawFiles[key], { maxSize: this.#maxSize })
@@ -84,7 +84,7 @@ export class ReqBody {
 }
 
 /** Buffer a cloned body with a size cap — for bodies without content-length. */
-async function cappedResponse(request: Request, maxSize: number): Promise<Response> {
+async function cappedResponse(request: Request, maxSize: number) {
   const chunks = [];
   let size = 0;
   const reader = request.clone().body!.getReader();
@@ -101,7 +101,7 @@ async function cappedResponse(request: Request, maxSize: number): Promise<Respon
 }
 
 // deno-lint-ignore no-explicit-any
-function deepFreeze(v: any): any {
+function deepFreeze(v: any) {
   if (v && typeof v === "object") {
     for (const child of Object.values(v)) deepFreeze(child);
     Object.freeze(v);

@@ -47,7 +47,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
     // affected page shows the metadata (who/when/ip); other rows are skipped. Logs without an
     // editable page stay closed.
     const t = ctx.app.t;
-    const contOrPage = async (page: any): Promise<string> => {
+    const contOrPage = async (page: any) => {
         const title = (await page.showTitle()).plain();
         return `${page.vs?.type === "p" ? await t`page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${page.id})`;
     };

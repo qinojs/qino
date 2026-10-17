@@ -3,7 +3,7 @@ import { getCtx, html } from "@qino/qino";
 import type { HtmlString } from "@qino/qino";
 
 /** A sidebar item: the frame and its label. The widget module fills the container on mount. */
-function sidebar(name: string, title: unknown, tooltip: unknown, open: boolean): Promise<HtmlString> {
+function sidebar(name: string, title: unknown, tooltip: unknown, open: boolean) {
   return html.async`<div class="-item ${open ? "-open" : ""}" itemid="${name}">
   <div class=-content widget=${name}></div>
   <div class=-title>

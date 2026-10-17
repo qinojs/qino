@@ -1,4 +1,5 @@
-import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
+import { dirname, resolve as resolvePath, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { errMsg, fs, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
@@ -21,7 +22,7 @@ async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: str
   }
 }
 
-async function renderModule(node: Node, modName: string): Promise<HtmlString> {
+async function renderModule(node: Node, modName: string) {
   const app = node.app;
   const t = app.t;
   const ctx = getCtx();
@@ -50,12 +51,12 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
     : "";
   const modSource = modObj.source;
   const modDir = modObj.dir ?? null;
-  const modPath = modDir ? fromFileUrl(modSource) : null;
+  const modPath = modDir ? fileURLToPath(modSource) : null;
 
   // --- Exports ---
   const SKIP = new Set(["cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
-  const knownKeys: { key: string; label: string }[] = [
+  const knownKeys = [
     { key: "settingsSchema",    label: "settingsSchema" },
     { key: "ctxSettingsSchema", label: "ctxSettingsSchema" },
     { key: "dbSchema",          label: "dbSchema" },
@@ -69,7 +70,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   const presentExports = knownKeys.filter(({ key }) => mod[key] !== undefined);
 
   // the members an export contributes, shown next to its badge
-  const members = (key: string): string[] => {
+  const members = (key: string) => {
     if (key === "api" || key === "cms") return Object.keys(mod[key] ?? {});
     if (key !== "settingsSchema" && key !== "ctxSettingsSchema") return [];
     const props = (mod[key] as { properties?: unknown })?.properties;
@@ -166,7 +167,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
 </div>`;
 }
 
-function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""): Record<string, string[]> {
+function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = "") {
   const result: Record<string, string[]> = {};
   const verbs = ["get", "post", "put", "delete", "patch"];
   for (const [key, val] of Object.entries(tree ?? {})) {
@@ -186,9 +187,9 @@ const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); //
 
 // Enable/disable at runtime (link/unlink). Not persisted — a restart links all modules again.
 // Superuser only.
-async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<void> {
+async function toggleModule(node: Node, vars: Record<string, unknown>) {
   const ctx = getCtx();
-  if (!(ctx.user?.superuser)) return;
+  if (!ctx.user?.superuser) return;
   try {
     if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.modules.unlink(n); }
     else if (vars.enable) await node.app.modules.link(String(vars.enable));
@@ -198,14 +199,14 @@ async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<
 }
 
 /** Create an empty file inside the module, so the editor has something to open. Superuser only. */
-async function createFile(node: Node, modName: string, rel: string): Promise<void> {
+async function createFile(node: Node, modName: string, rel: string) {
   const ctx = getCtx();
-  if (!(ctx.user?.superuser)) return;
+  if (!ctx.user?.superuser) return;
   try {
     const dir = node.app.modules.get(modName)?.dir;
     if (!dir) throw new Error(`Module "${modName}" has no files here`);
     const file = resolvePath(dir, rel);
-    if (!file.startsWith(resolvePath(dir) + SEPARATOR)) throw new Error(`"${rel}" is outside the module`);
+    if (!file.startsWith(resolvePath(dir) + sep)) throw new Error(`"${rel}" is outside the module`);
     if (await fs.stat(file, { ttl: 0 })) throw new Error(`"${rel}" exists already`);
     await fs.mkdir(dirname(file));
     await fs.write(file, "");

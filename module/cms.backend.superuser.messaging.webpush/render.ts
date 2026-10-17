@@ -122,7 +122,7 @@ export async function subscriptions(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-function subscription(s: Row, labels: Record<string, string>): HtmlString {
+function subscription(s: Row, labels: Record<string, string>) {
   const host = String(s.endpoint).split("/")[2] ?? "?";
   return html`<tr>
     <td>${s.username ?? (s.usr_id ? "#" + s.usr_id : labels.anonymous)}

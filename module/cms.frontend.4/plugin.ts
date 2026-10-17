@@ -1,9 +1,9 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
-
 import { $item, Access, AccessError, ValidationError, fs, hee, s, unixTime } from "@qino/qino";
 import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
 import { send } from "@qino/qino/messaging.email";
+
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
@@ -74,7 +74,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
 /* The two file roots of a node's module: the site's files and the module's own. */
 const ROOTS = ["data", "app"] as const;
 
-async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string> {
+async function moduleRoot(ctx: Ctx, pid: number, scope: string) {
   const node = await cms(ctx.app).node(pid);
   const mod = node.module as { data?: string; dir?: string } | undefined;
   const root = scope === "app" ? mod?.dir : mod?.data;
@@ -83,7 +83,7 @@ async function moduleRoot(ctx: Ctx, pid: number, scope: string): Promise<string>
 }
 
 /** Resolve a path inside a root; escaping it is a bad request. */
-function inRoot(root: string, path: string): string {
+function inRoot(root: string, path: string) {
   const file = resolve(root, path);
   const rel = relative(resolve(root), file);
   if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new ValidationError([{ message: "invalid path", path: ["path"] }]);
@@ -222,8 +222,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     qino.cms ??= {};
 
     if (access > 1 || inBackend) {
-      const pageNotFound = await app.settings.cms.pageNotFound ?? 0;
-      if (pageNotFound != node.id) {
+      if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         const url = ctx.req.url;

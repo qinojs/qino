@@ -28,9 +28,9 @@ Deno.test("cms.frontend.4: stores request URI without base path", async () => {
   let listener: (e: Record<string, unknown>) => Promise<void> = null!;
   let stored = "";
   const app = {
-    settings: { cms: { frontend: "cms.frontend.4", pageNotFound: 0 } },
+    settings: { cms: { frontend: "cms.frontend.4" } },
   };
-  fakeCms(app, { on: (_name: string, fn: typeof listener) => listener = fn });
+  fakeCms(app, { on: (_name: string, fn: typeof listener) => listener = fn, nodeByPath: () => undefined });
   init(app as unknown as App, { signal: new AbortController().signal });
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
@@ -59,9 +59,9 @@ Deno.test("cms.frontend.4: stores request URI without base path", async () => {
 Deno.test("cms.frontend.4: exposes stored app path unchanged", async () => {
   let listener: (e: Record<string, unknown>) => Promise<void> = null!;
   const app = {
-    settings: { cms: { frontend: "cms.frontend.4", pageNotFound: 0 } },
+    settings: { cms: { frontend: "cms.frontend.4" } },
   };
-  fakeCms(app, { on: (_name: string, fn: typeof listener) => listener = fn });
+  fakeCms(app, { on: (_name: string, fn: typeof listener) => listener = fn, nodeByPath: () => undefined });
   init(app as unknown as App, { signal: new AbortController().signal });
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};

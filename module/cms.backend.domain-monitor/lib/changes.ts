@@ -9,7 +9,7 @@ import type { DomainRow } from "./monitor.ts";
 // (contains a clock) and dns_changed from older results.
 const IGNORED = new Set(["response_time", "cert_days", "checked", "checked_deep", "dns_changed", "log_id", "log_id_ch", "mail_banner"]);
 
-function flattened(value: unknown, path = "", target = new Map<string, unknown>()): Map<string, unknown> {
+function flattened(value: unknown, path = "", target = new Map<string, unknown>()) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     for (const [key, child] of Object.entries(value)) {
       if (IGNORED.has(key)) continue;

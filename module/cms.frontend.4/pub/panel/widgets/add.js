@@ -20,7 +20,7 @@ async function templates(signal) {
   const own = await api.core['ctx-settings']('cms', 'models').get({}, { signal }).catch(() => '');
   const ids = [...new Set(String(own ?? '').split(',').map((v) => v.trim()).filter(Boolean))];
   const nodes = await Promise.all(ids.map((id) => api.cms.node(id).get({}, { signal }).catch(() => null)));
-  return nodes.filter((n) => n && n.type === 'c' && n.myaccess >= 2);
+  return nodes.filter((n) => n?.type === 'c' && n.myaccess >= 2);
 }
 
 export default async function (widget, { signal }) {

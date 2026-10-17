@@ -6,7 +6,7 @@
 // expiry there too.
 import { timedSignal, ua } from "./net.ts";
 
-const registrar = (entities: unknown): string | null => {
+const registrar = (entities: unknown) => {
   for (const entity of Array.isArray(entities) ? entities : []) {
     if (!entity?.roles?.includes("registrar")) continue;
     // vcardArray is ["vcard", [["fn", {}, "text", "Name"], …]] — the display name is the "fn" entry
@@ -15,7 +15,7 @@ const registrar = (entities: unknown): string | null => {
   return null;
 };
 
-const eventDate = (events: unknown, action: string): number | null => {
+const eventDate = (events: unknown, action: string) => {
   const found = (Array.isArray(events) ? events : []).find((e) => e?.eventAction === action)?.eventDate;
   const ms = found ? Date.parse(found) : NaN;
   return isNaN(ms) ? null : Math.floor(ms / 1000);

@@ -1,4 +1,4 @@
-import { Output, header } from "@qino/qino";
+import { csv, header, Output, xlsx } from "@qino/qino";
 
 import api from "./nodeApi.ts";
 
@@ -19,13 +19,13 @@ const settingsSchema = {
 };
 
 /** Column width: a number uses the `units` setting (default px), a CSS length stays, else dropped. */
-function cssWidth(raw: string, units: string): string {
+function cssWidth(raw: string, units: string) {
   const w = raw.trim();
   if (/^\d+(\.\d+)?$/.test(w)) return w + units;
   return /^\d+(\.\d+)?(px|%|em|rem)$/.test(w) ? w : "";
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const edit = await node.edit();
   if (edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
@@ -34,9 +34,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const units = node.settings.units() === "%" ? "%" : "px";
   const bottomUp = !!node.settings.direction();
 
-  if (
-    ctx.req.query.export_table && ctx.req.query.export_table === String(node)
-  ) {
+  if (ctx.req.query.export_table === String(node)) {
     const titleStr = (await node.showTitle()).plain();
     const d = new Date();
     const dateStr = `${String(d.getDate()).padStart(2, "0")}.${
@@ -47,19 +45,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     for (let i = 0; i < rows; i++) {
       const r = bottomUp ? rows - 1 - i : i;
       const row = [];
-      for (let j = 0; j < cols; j++) {
-        const text = (await node.showText(`${r}_${j}`)).plain();
-        row.push(text);
-      }
-      lines.push(row.map((f) => `"${f.replace(/"/g, '""')}"`).join(","));
+      for (let j = 0; j < cols; j++) row.push((await node.showText(`${r}_${j}`)).plain());
+      lines.push(row);
     }
-    const csv = "\uFEFF" + lines.join("\r\n"); // BOM: Excel reads UTF-8 CSV correctly with it
 
+    // Excel for people, CSV (?format=csv) for machines
+    const asCsv = ctx.req.query.format === "csv";
     const headers = ctx.res.headers;
-    headers.set("Content-Type", "text/csv; charset=utf-8");
-    headers.set(...header.contentDisposition("attachment", `${titleStr}_${dateStr}.csv`));
+    const type = asCsv ? "text/csv; charset=utf-8" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    headers.set("Content-Type", type);
+    headers.set(...header.contentDisposition("attachment", `${titleStr}_${dateStr}.${asCsv ? "csv" : "xlsx"}`));
     headers.set("Cache-Control", "no-cache");
-    throw new Output(csv);
+    throw new Output(asCsv ? csv(lines) : await xlsx(lines));
   }
 
   let html = `<div>\n  <table class=u2-width>\n    <tbody>\n`;

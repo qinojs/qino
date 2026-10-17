@@ -5,9 +5,9 @@ import { shp3 } from "@qino/qino/shp3";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { HtmlString, App, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Order } from "@qino/qino/shp3";
+import type { Currency, Order } from "@qino/qino/shp3";
 
 const { name } = manifest;
 
@@ -19,13 +19,15 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 }
 
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
+const total = (vs: Row, currency?: Currency) => `${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}`;
+const paidMark = (vs: Row) => Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : "";
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const id = Number(getCtx().req.query.shp3_orderId ?? 0);
   return id ? renderOrder(node, id) : renderList(node);
 }
 
-async function renderList(node: Node): Promise<HtmlString> {
+async function renderList(node: Node) {
   const { app } = node;
   const t = app.t;
   const open = getCtx().req.query.shp3_open !== undefined;
@@ -42,8 +44,8 @@ async function renderList(node: Node): Promise<HtmlString> {
     <td>${vs.username}
     <td>${vs.payment}
     <td>${vs.shipping}
-    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}
-    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}
+    <td>${total(vs, currency)}
+    <td>${paidMark(vs)}
     <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
 
   return html.async`<div class=u2-card>
@@ -69,7 +71,7 @@ async function renderList(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-async function renderOrder(node: Node, id: number): Promise<HtmlString> {
+async function renderOrder(node: Node, id: number) {
   const { app } = node;
   const t = app.t;
   const order = await app.db.table("shp3_order").get<Order>(id);
@@ -95,7 +97,7 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
       <td align=right>${money(g.price)}`);
   }
 
-  const email = await app.db.one`SELECT username FROM usr WHERE id = ${order.usr_id}`;
+  const email = app.db.one`SELECT username FROM usr WHERE id = ${order.usr_id}`;
 
   return html.async`<div class=u2-card style="flex-grow:0;">
   <div class=-head><a href="?">${t`Orders`}</a> — ${t`Order`} ${order.id}</div>
@@ -137,8 +139,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     <td><a href="${url}?shp3_orderId=${vs.id}">${vs.id}</a>
     <td>${showTime(Number(vs.time_ordered))}
     <td>${vs.username}
-    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency}
-    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}`);
+    <td>${total(vs, currency)}
+    <td>${paidMark(vs)}`);
 
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">

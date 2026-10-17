@@ -2,7 +2,7 @@ import { errMsg, safeFetch, unixTime } from "@qino/qino";
 import { ProviderError } from "@qino/qino/social";
 
 import type { App } from "@qino/qino";
-import type { Provider, Target } from "@qino/qino/social";
+import type { Provider } from "@qino/qino/social";
 
 const BASE = new URL("https://graph.threads.net/v1.0/");
 
@@ -28,7 +28,7 @@ async function account(app: App): Promise<any> {
   return call(app, "me?fields=id,username,name");
 }
 
-async function targets(app: App): Promise<Omit<Target, "provider">[]> {
+async function targets(app: App) {
   if (!String(await app.settings["social.threads"].accessToken ?? "").trim()) return [];
   const user = await account(app);
   const username = String(user.username ?? "");

@@ -121,8 +121,7 @@ export class OrderItem extends ShopRow {
 
   /** What the unit would cost today — the yardstick for a price that went stale in the cart. */
   async calcPrice(): Promise<number> {
-    const order = await this.order();
-    const product = await this.product();
+    const [order, product] = await Promise.all([this.order(), this.product()]);
     if (!order || !product) return this.price;
     const prices = await product.pricesFor({
       currency: await order.currencyRow(),

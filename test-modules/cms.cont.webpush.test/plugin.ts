@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { channels } from "@qino/qino/messaging.webpush";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const cms = {
@@ -11,7 +10,7 @@ export const cms = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const t = node.app.t;
   const names = (await channels(node.app)).map((c) => String(c.name));
   if (!names.length) return html.async`<p>${t`No push channels are defined yet.`}`;

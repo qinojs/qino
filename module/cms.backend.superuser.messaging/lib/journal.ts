@@ -16,7 +16,7 @@ export function userMessages(app: App, usrId: number, limit?: number): Promise<J
   return read(app, limit, usrId);
 }
 
-async function read(app: App, limit?: number, usrId?: number): Promise<JournalMessage[]> {
+async function read(app: App, limit?: number, usrId?: number) {
   const where = usrId == null ? sql`` : sql`WHERE EXISTS (
     SELECT 1 FROM message_delivery selected
     WHERE selected.message_id = m.id AND selected.usr_id = ${usrId}
@@ -24,7 +24,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<JournalMe
   const delivery = usrId == null ? sql`` : sql`AND d.usr_id = ${usrId}`;
   const take = limit == null ? sql`` : sql`LIMIT ${limit}`;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.title, m.text, m.format, m.template, m.data, m.time,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.title, m.text, m.format, m.template, m.data, m.time, m.spam,
       (SELECT COUNT(*) FROM message_delivery md WHERE md.message_id = m.id) AS recipient_count,
       g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.address, d.sent AS delivery_sent,
       d.due, d.attempts, d.error, u.username
@@ -49,6 +49,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<JournalMe
       template: row.template,
       data: row.data,
       time: row.time,
+      spam: row.spam,
       recipient_count: row.recipient_count,
       deliveries: [],
       attachments: [],

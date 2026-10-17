@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.fin.my.address",
+  "description": "Lets signed-in users keep the postal address their invoices go to.",
+  "dependencies": [
+    "cms",
+    "fin"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

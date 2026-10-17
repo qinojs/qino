@@ -18,7 +18,7 @@ cms.initNode("backend.superuser.db.processes", (el) => {
     const oldBody = bodyOf(listEl), newBody = bodyOf(fresh);
     if (!oldBody || !newBody) { listEl.innerHTML = htmlStr; return; }
 
-    if (!keep.checked) { oldBody.replaceWith(newBody); }
+    if (!keep.checked) oldBody.replaceWith(newBody);
     else {
       // key by statement (data-key), not connection id — pooled connections reuse ids
       const seen = new Map([...oldBody.children].map((tr) => [tr.dataset.key, tr]));

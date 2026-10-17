@@ -1,6 +1,5 @@
 import { addContact, ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
-
 import { ChannelError, outbox, pendingContacts } from "@qino/qino/messaging";
 
 import { deliver as transmit } from "../lib/provider.ts";
@@ -8,7 +7,7 @@ import { addPhone, approvePhone, messagingChannel, send, setProvider, verifyPhon
 
 import type { SmsProvider } from "../mod.ts";
 
-async function makeDb(): Promise<Db> {
+async function makeDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties, ...authAttemptDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT)`;
@@ -28,7 +27,7 @@ const makeApp = (db: Db) => ({
   // deno-lint-ignore no-explicit-any
 }) as any;
 
-function codeFrom(text: string): string {
+function codeFrom(text: string) {
   const code = text.match(/\d{6}/)?.[0];
   if (!code) throw new Error("verification code missing");
   return code;

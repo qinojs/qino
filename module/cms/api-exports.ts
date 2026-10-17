@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { FileTransformer, getCtx, hee, Output, sql, unixTime } from "@qino/qino";
+import { AccessError, ApiError, FileTransformer, getCtx, hee, sql, unixTime } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { ADMIN } from "./lib/access.ts";
@@ -9,18 +9,20 @@ import type { Node } from "./lib/Node.ts";
 // ─── business logic used by REST ──────────────
 
 export async function nodeToJson(node: Node, type = "*"): Promise<any> {
-    const title = await node.showTitle();
-    const access = await node.access();
+    const access = await node.access(); // first: showTitle() and url() reuse the cached level
+    const [title, children, url, online, isPublic] = await Promise.all([
+        node.showTitle(), node.children({ type }), node.url(), node.isOnline(), node.isPublic(),
+    ]);
     return {
         id:          node.id,
         title:       access ? (String(title).trim() || "-") : "(no access)",
         title_id:    title.id,
-        numChildren: (await node.children({ type })).size,
-        url:         await node.url(),
+        numChildren: children.size,
+        url,
         myaccess:    access,
         visible:     Number(node.vs?.visible ?? 0),
-        online:      (await node.isOnline()) ? 1 : 0,
-        public:      (await node.isPublic()) ? 1 : 0,
+        online:      online ? 1 : 0,
+        public:      isPublic ? 1 : 0,
         type:        node.vs.type,
         module:      node.vs.module,
         name:        String(node.vs.name ?? ""),
@@ -105,17 +107,17 @@ export function nodeRemove(node: any): Promise<{ parent_id: number }> {
 async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
     const ctx  = getCtx();
     const ret  = { parent_id: Number(await node.parent()) };
-    const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
+    const trash = await cms(ctx.app).nodeByPath(["system", "trash"]);
+    if (!trash) throw new ApiError(500, "No trash page (system/trash)");
     if (await node.in(trash)) {
-        if (await node.access() < 3) throw new Output({ error: "Forbidden" }, { status: 403 });
+        if (await node.access() < 3) throw new AccessError("Forbidden");
         await (await node.parent()).removeChild(node);
     } else {
-        const trashNode = await cms(ctx.app).node(trash);
         const parent = await node.parent();
         const siblings = parent ? [...(await parent.children({ type: node.vs.type })).values()] : [];
         const idx = siblings.findIndex(s => s.id === node.id);
         const before = siblings[idx + 1] ?? null;
-        await trashNode.insertBefore(node, await trashNode.cont("main"));
+        await trash.insertBefore(node, await trash.cont("main"));
         await node.settings.__deleted({
             from:   String(parent ?? ""),
             before: String(before ?? ""),
@@ -137,20 +139,19 @@ export function nodeRestore(node: any): Promise<{ url: string }> {
 }
 async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     const ctx   = getCtx();
-    const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
-    if (!await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
-    if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
+    const trash = await cms(ctx.app).nodeByPath(["system", "trash"]);
+    if (!trash || !await node.in(trash)) throw new ApiError(400, "Node is not in trash");
+    if (await node.access() < 2) throw new AccessError("Forbidden");
     const fromId   = Number(await node.settings.__deleted.from);
     const beforeId = Number(await node.settings.__deleted.before);
     const toNode   = fromId ? await cms(ctx.app).node(fromId) : null;
-    if (!toNode || await toNode.access() < 2) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
+    if (!toNode || await toNode.access() < 2) throw new AccessError("Original parent no longer accessible");
     const before = beforeId ? await cms(ctx.app).node(beforeId) : null;
     await toNode.insertBefore(node, before);
     await node.settings.__deleted(undefined);
     return { url: await node.url() };
 }
 
-/** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order. */
 /** A preview at the requested size, if the tools for that file type are installed. */
 const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool: "magick" | "ffmpeg" }> = {
     jpg: { page: 1, tool: "magick" }, jpeg: { page: 1, tool: "magick" }, gif: { page: 1, tool: "magick" },
@@ -172,7 +173,8 @@ async function thumbUrl(file: any, size: string): Promise<string | undefined> {
     return file.url({ w, h, max: true, ...opt });
 }
 
-/** `thumb` is a "WxH" the caller wants a preview in; without it none is built. */
+/** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order.
+ *  `thumb` is a "WxH" the caller wants a preview in; without it none is built. */
 export async function nodeFilesJson(node: Node, thumbSize = ""): Promise<Record<string, any>> {
     const files = await node.files();
     const all = await node.filesAndPlaceholders();
@@ -196,7 +198,7 @@ async function nodeFileAddTx(node: Node, file: any, slot?: string): Promise<{ ur
     let added: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
         const dbF = await ctx.app.dbFiles.file(Number(file));
-        if (!await dbF.access()) throw new Output({ error: "Forbidden" }, { status: 403 });
+        if (!await dbF.access()) throw new AccessError("Forbidden");
         if (slot) {
             const existing = await node.file(slot);
             added = await dbF.clone(existing?.id);
@@ -205,7 +207,7 @@ async function nodeFileAddTx(node: Node, file: any, slot?: string): Promise<{ ur
         }
     } else {
         if (file != null && !/^(https?|data):/.test(String(file))) {
-            throw new Output({ error: "Forbidden" }, { status: 403 });
+            throw new AccessError("Forbidden");
         }
         added = await node.addFile(file, slot);
     }
@@ -238,8 +240,10 @@ export const cleanRequest = (v: string): string => String(v ?? "").trim().replac
 export async function requestUsed(v: string): Promise<boolean> {
     v = cleanRequest(v);
     const db = getCtx().app.db;
-    const r  = await db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`;
-    const u  = await db.one`SELECT count(*) FROM page_url WHERE url = ${v}`;
+    const [r, u] = await Promise.all([
+        db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`,
+        db.one`SELECT count(*) FROM page_url WHERE url = ${v}`,
+    ]);
     return !!(r || u);
 }
 
@@ -272,10 +276,9 @@ export async function searchNodes(search: string): Promise<any[]> {
     return res;
 }
 
-export async function searchFiles(search: string): Promise<any[]> {
+export async function searchFiles(s: string): Promise<any[]> {
     const ctx = getCtx();
     const db  = ctx.app.db;
-    const s   = search;
     const id  = /^\d+$/.test(s) ? Number(s) : 0;
     const res = [];
     let i = 0;

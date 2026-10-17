@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { Emitter, Output } from "@qino/qino";
+
 import { init } from "../plugin.ts";
 
 import type { App, AppEvents } from "@qino/qino";

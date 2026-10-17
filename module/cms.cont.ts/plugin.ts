@@ -1,4 +1,4 @@
-import { toFileUrl } from "@std/path";
+import { pathToFileURL } from "node:url";
 import { fs, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 
@@ -26,7 +26,7 @@ const render = async (node, { html }) => {
 export default render;
 `;
 
-async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown> }): Promise<string> {
+async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown> }) {
   const code = codeFiles(node);
   if (await node.edit()) await code.create(initialSrc(node.id));
   await code.addAssets();
@@ -34,7 +34,7 @@ async function render(node: Node, opt: { ctx: Ctx; vars: Record<string, unknown>
   // mtime busts the ESM cache, so a saved file takes effect with the next request
   const mtime = await fs.mtime(code.src);
   if (mtime === undefined) return "<div></div>";
-  const mod = await import(`${toFileUrl(code.src).href}?v=${mtime}`);
+  const mod = await import(`${pathToFileURL(code.src).href}?v=${mtime}`);
   if (typeof mod.default !== "function") throw new Error(`${node.id}.ts has no default exported function`);
   return String(await mod.default(node, { ...opt, html }) ?? "");
 }

@@ -1,0 +1,157 @@
+{
+  "title": "Home Assistant Android app",
+  "adapter": "homeassistant",
+  "description": "The app's one-value commands, paired with its sensors; {device} as in notify.mobile_app_{device}.",
+  "entities": [
+    {
+      "name": "Screen brightness", "source": "sensor.{device}_screen_brightness",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_screen_brightness_level" },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0, "maximum": 255 }
+    },
+    {
+      "name": "Auto brightness",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_auto_screen_brightness" },
+      "parameter": "data.command", "value": { "type": "string", "enum": ["turn_on", "turn_off"] }
+    },
+    {
+      "name": "Screen off timeout", "source": "sensor.{device}_screen_off_timeout",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_screen_off_timeout" },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Flashlight",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_flashlight" },
+      "parameter": "data.command", "value": { "type": "string", "enum": ["turn_on", "turn_off"] }
+    },
+    {
+      "name": "Ringer mode", "source": "sensor.{device}_ringer_mode",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_ringer_mode" },
+      "parameter": "data.command", "value": { "type": "string", "enum": ["normal", "vibrate", "silent"] }
+    },
+    {
+      "name": "Do not disturb", "source": "sensor.{device}_do_not_disturb_sensor",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_dnd" },
+      "parameter": "data.command",
+      "value": { "type": "string", "enum": ["off", "priority_only", "alarms_only", "total_silence"] }
+    },
+    {
+      "name": "Alarm volume", "source": "sensor.{device}_volume_level_alarm",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "alarm_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Call volume", "source": "sensor.{device}_volume_level_call",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "call_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "DTMF volume", "source": "sensor.{device}_volume_level_dtmf",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "dtmf_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Media volume", "source": "sensor.{device}_volume_level_music",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "music_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Notification volume", "source": "sensor.{device}_volume_level_notification",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "notification_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Ring volume", "source": "sensor.{device}_volume_level_ring",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "ring_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "System volume", "source": "sensor.{device}_volume_level_system",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "system_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Accessibility volume", "source": "sensor.{device}_volume_level_accessibility",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_volume_level", "data": { "media_stream": "accessibility_stream" } },
+      "parameter": "data.command", "value": { "type": "integer", "minimum": 0 }
+    },
+    {
+      "name": "Bluetooth", "source": "binary_sensor.{device}_bluetooth_state",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_bluetooth" },
+      "parameter": "data.command", "value": { "type": "string", "enum": ["turn_on", "turn_off"] }
+    },
+    {
+      "name": "Screen on",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_screen_on" }
+    },
+    {
+      "name": "BLE transmitter", "source": "sensor.{device}_ble_transmitter",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_ble_transmitter" },
+      "parameter": "data.command", "value": { "type": "string", "enum": ["turn_on", "turn_off"] }
+    },
+    {
+      "name": "Beacon monitor", "source": "sensor.{device}_beacon_monitor",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_beacon_monitor" },
+      "parameter": "data.command", "value": { "type": "string", "enum": ["start", "stop"] }
+    },
+    {
+      "name": "High accuracy mode", "source": "binary_sensor.{device}_high_accuracy_mode",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_high_accuracy_mode" },
+      "parameter": "data.command",
+      "value": { "type": "string", "enum": ["turn_on", "turn_off", "force_on", "force_off"] }
+    },
+    {
+      "name": "Persistent connection",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_persistent_connection" },
+      "parameter": "data.persistent",
+      "value": { "type": "string", "enum": ["always", "home_wifi", "screen_on", "never"] }
+    },
+    {
+      "name": "Launch app",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_launch_app" },
+      "parameter": "data.package_name", "value": { "type": "string", "minLength": 1 }
+    },
+    {
+      "name": "Open view",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_webview" },
+      "parameter": "data.command", "value": { "type": "string" }
+    },
+    {
+      "name": "Speak",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "TTS" },
+      "parameter": "data.tts_text", "value": { "type": "string", "minLength": 1 }
+    },
+    {
+      "name": "Stop speaking",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_stop_tts" }
+    },
+    {
+      "name": "Update sensors",
+      "action": "notify.mobile_app_{device}",
+      "data": { "message": "command_update_sensors" }
+    }
+  ]
+}

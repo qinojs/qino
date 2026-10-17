@@ -4,7 +4,7 @@ import { ResHtml, unb64url } from "@qino/qino";
 import { protect } from "../plugin.ts";
 
 /** What the client script does, so a test proves the round trip rather than the encoding. */
-function decode(token: string, key: string): string {
+function decode(token: string, key: string) {
   const bytes = unb64url(token).map((b, i) => b ^ key.charCodeAt(i % key.length));
   return new TextDecoder().decode(bytes);
 }

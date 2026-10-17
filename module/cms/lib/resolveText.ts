@@ -8,7 +8,7 @@ export async function resolveText(cms: CMS, value: string, links = true): Promis
   return value;
 }
 
-async function replaceLinks(cms: CMS, pid: string): Promise<string> {
+async function replaceLinks(cms: CMS, pid: string) {
   const page = await cms.node(Number(pid));
   if (!page.exists()) {
     console.warn(`[content-issue] DeadInternalLink cmspid://${pid}`);
@@ -17,16 +17,14 @@ async function replaceLinks(cms: CMS, pid: string): Promise<string> {
   return page.url();
 }
 
-async function replaceFileUrls(cms: CMS, id: string): Promise<string> {
+async function replaceFileUrls(cms: CMS, id: string) {
   const file = await cms.app.dbFiles.file(Number(id));
-  if (await file.exists()) {
-    return `/dbFile/${id}/u-${String(await file.get("md5") ?? "").slice(0, 5)}/`;
-  }
+  if (await file.exists()) return `/dbFile/${id}/u-${String(await file.get("md5") ?? "").slice(0, 5)}/`;
   console.warn(`[content-issue] MissingFile dbFile://${id}`);
   return `/dbFile/${id}/`;
 }
 
-async function replaceAsync(str: string, regex: RegExp, fn: (match: string, ...groups: string[]) => Promise<string>): Promise<string> {
+async function replaceAsync(str: string, regex: RegExp, fn: (match: string, ...groups: string[]) => Promise<string>) {
   let result = "", last = 0;
   for (const m of str.matchAll(regex)) {
     result += str.slice(last, m.index) + await fn(m[0], ...m.slice(1));

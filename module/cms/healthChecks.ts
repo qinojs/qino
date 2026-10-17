@@ -5,20 +5,18 @@ import type { HealthChecks } from "@qino/qino/cms.backend.system";
 
 export function healthChecks(app: App): HealthChecks {
   const db       = app.db;
-  const settings = app.settings;
   return {
     cleanup: {
       "pages in trash": async () => {
-        const trashId = Number(await settings.cms?.pageTrash);
-        if (!trashId) return;
-        const count = Number(await db.one`SELECT count(*) FROM page WHERE basis = ${trashId}`);
+        const trashNode = await cms(app).nodeByPath(["system", "trash"]);
+        if (!trashNode) return;
+        const count = Number(await db.one`SELECT count(*) FROM page WHERE basis = ${trashNode.id}`);
         if (!count) return;
         return {
           info: `There are ${count} items in the trash`,
           solutions: {
             "empty trash": {
               solve: async () => {
-                const trashNode = await cms(app).node(trashId);
                 for (const child of (await trashNode.children({ type: "*" })).values()) {
                   await trashNode.removeChild(child);
                 }
@@ -37,9 +35,8 @@ export function healthChecks(app: App): HealthChecks {
           solutions: {
             "move to trash": {
               solve: async () => {
-                const trashId = Number(await settings.cms?.pageTrash);
-                if (!trashId) throw new Error("No trash page configured");
-                const trashNode = await cms(app).node(trashId);
+                const trashNode = await cms(app).nodeByPath(["system", "trash"]);
+                if (!trashNode) throw new Error("No trash page (system/trash)");
                 const trashCont = await trashNode.cont("main");
                 for (const pid of all) {
                   const p = await cms(app).node(Number(pid));

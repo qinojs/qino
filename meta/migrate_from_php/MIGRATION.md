@@ -256,7 +256,7 @@ wurden von Hand nach `index.ts` portiert. Die Seite rendert damit Struktur, CSS,
 der Site.
 
 Zusätzlich installiert `server.ts` die Module, die es in qino schon gibt (`cms.text`, `cms.image2`,
-`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image2`, `cms.cont.login4`, `cms.layout.system`).
+`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image2`, `cms.cont.login.password`, `cms.layout.system`).
 
 > **Achtung beim Reset:** `data/` wird gelöscht. Portierte Templates deshalb immer unter
 > `site-templates/` behalten und nach dem Wiederherstellen von `qg/` erneut darüberkopieren.
@@ -286,8 +286,9 @@ Dieser Lauf hat drei generische Lücken sichtbar gemacht und geschlossen:
 1. `core.langs` war vor der Migration bereits leer gecacht. Nach `qg.langs` → `core.langs` wird
    deshalb auch der laufende Settings- und Sprachcache aktualisiert; der erste Prozess rendert nun
    sofort Deutsch und braucht keinen Neustart.
-2. `cms.cont.form1(.fields2)` wird strukturell nach `cms.cont.form2(.fields1)` migriert. Dabei
-   bleiben Feld-IDs, Empfänger, Buttons und der vorhandene Bestätigungstext erhalten.
+2. `cms.cont.form1(.fields2)` wird strukturell nach `cms.cont.form(.fields)` migriert. Die Felder
+   heissen danach nach ihrem Label statt nach ihrer Setting-ID; Empfänger, Buttons und der vorhandene
+   Bestätigungstext bleiben erhalten.
 3. Die gemeinsamen Legacy-Ports für `cms.layout.custom.7`, `cms.cont.slideshow.schwups2` und
    `cms.cont.gallery.photoswipe1` liegen im `cms-legacy`-Store. Nur das eigentliche Layout-Template
    der Schule bleibt projektspezifisch.
@@ -537,7 +538,7 @@ Backendseiten; sie beeinflussen die öffentliche Site nicht.
 
 ## 10. Login
 
-<http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login4` und
+<http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login.password` und
 `cms.layout.system` (in PHP hiess das Layout `cms.layout.login`).
 
 Die Passwörter der PHP-Installation gelten weiter: qino ersetzt beim Prüfen PHPs `$2y$`-Präfix

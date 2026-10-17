@@ -15,6 +15,6 @@ Deno.test("migrateCss: module and node classes become qcms attributes", async ()
 
   assertEquals(
     await Deno.readTextFile(path),
-    '[qcms-id="123"] [qcms-mod="cont.form2"], .-pid1234x { background:url(pub/a.svg) }',
+    '[qcms-id="123"] [qcms-mod="cont.form"], .-pid1234x { background:url(pub/a.svg) }',
   );
 });

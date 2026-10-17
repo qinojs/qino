@@ -348,7 +348,7 @@ async function inRequest<T>(fn: () => Promise<T>): Promise<T> {
 
 // Built from the shipped schema instead of a copy of it — the column list keeps growing and a
 // hand-written CREATE TABLE here would quietly drift out of date.
-async function testApp(): Promise<{ db: Db; app: App }> {
+async function testApp() {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema, { patch: true });
   db.schema = dbSchema;

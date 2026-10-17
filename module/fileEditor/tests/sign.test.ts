@@ -3,8 +3,6 @@ import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { sign, check } from "../lib/sign.ts";
 
-import type { Ctx } from "@qino/qino";
-
 // One session, with the key slot sign() lazily fills.
 function session(): Record<string, unknown> {
   let key = "";
@@ -12,7 +10,7 @@ function session(): Record<string, unknown> {
   return { data: { core: { userId: () => 1, grantKey: item } } };
 }
 
-const ctxOf = (sess = session()): Promise<Ctx> => testContext({ sess });
+const ctxOf = (sess = session()) => testContext({ sess });
 
 const FILE = "/app/module/x/mod.ts";
 

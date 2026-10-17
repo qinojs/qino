@@ -36,14 +36,14 @@ export async function bot(node: Node): Promise<HtmlString> {
     <div>
       ${token}
       <p>${state}</p>
-      ${configured ? "" : html`<small>${await t`Create a bot with @BotFather and enter its token above.`}</small>`}
+      ${configured ? "" : html.async`<small>${t`Create a bot with @BotFather and enter its token above.`}</small>`}
     </div>`;
   }
 
   const [me, hook] = state;
   const url = webhookUrl();
   const registered = hook.url === url;
-  const status = await (registered ? t`registered` : hook.url ? t`registered elsewhere` : t`not registered`);
+  const status = registered ? t`registered` : hook.url ? t`registered elsewhere` : t`not registered`;
   const [pending, remove] = await Promise.all([t`pending`, t`Remove`]);
   return html.async`<div class=-head>${t`Bot`}</div>
   <div>
@@ -123,7 +123,7 @@ export async function chats(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-function chat(c: Row, labels: Record<string, string>): HtmlString {
+function chat(c: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${c.username ?? "#" + c.usr_id}
     <td>${c.username ? "@" + c.username : "-"}

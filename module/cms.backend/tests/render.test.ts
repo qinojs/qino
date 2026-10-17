@@ -22,7 +22,7 @@ Deno.test("cms.backend: render collects visible child widgets", async () => {
   const child = {
     vs: { visible: 1 },
     access: () => 1,
-    url: () => "/backend/settings",
+    url: () => Promise.resolve("/backend/settings"),
     title: () => ({ string: () => "Settings" }),
     conts: () => [{
       module: { plugin: { backendDashboardWidget: () => "<table><tr><td>OK</table>" } },
@@ -40,7 +40,7 @@ Deno.test("cms.backend: render escapes child links and titles", async () => {
   const child = {
     vs: { visible: 1 },
     access: () => 1,
-    url: () => `/backend?q="><script>x</script>`,
+    url: () => Promise.resolve(`/backend?q="><script>x</script>`),
     title: () => ({ string: () => `Settings"><script>x</script>` }),
     conts: () => [{
       module: { plugin: { backendDashboardWidget: () => "OK" } },

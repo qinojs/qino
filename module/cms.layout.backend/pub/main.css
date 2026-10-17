@@ -109,8 +109,8 @@ u2-accordion {
 }
 #nav .-item:where(:hover, .-active) { background:#fff; }
 #nav ul { padding-inline-start:0; }
-#nav ul ul .-item { padding-left:3.3rem; }
-#nav ul ul ul .-item { padding-left:4.4rem; }
+/* each level one step further in: 3.3rem on the second, 4.4rem on the third … */
+#nav ul ul .-item { padding-left:calc(1.1rem * (var(--level) + 1)); }
 
 /* content  */
 #content {

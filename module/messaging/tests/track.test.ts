@@ -29,7 +29,7 @@ Deno.test("the template's links are shortened with the message's own, and both c
     name: "letter", channel: "email", main: true, format: "md",
     text: "{{content}}\n\n[abmelden](/unsubscribe)",
   });
-  const { render: render } = await renderer(a, { text: "[shop](/shop)", format: "md" }, "email");
+  const { render } = await renderer(a, { text: "[shop](/shop)", format: "md" }, "email");
   const plain = (await render({ deliveryId: 7 })).text;
   const marker = plain.match(/s\/c1\/(\S+)/)![1];
   assertEquals(plain, `shop: https://qino.test/s/c1/${marker}\n\nabmelden: https://qino.test/s/c2/${marker}`);

@@ -15,7 +15,7 @@ const FIELDS = new Set([
 const ASSETS = new Set(["logo", "icon", "font"]);
 const FONT_EXTENSIONS = new Set(["woff2", "woff", "ttf", "otf"]);
 
-function assetName(value: unknown): string {
+function assetName(value: unknown) {
   const name = String(value ?? "");
   if (!ASSETS.has(name)) throw new Error("Unknown identity file");
   return name;

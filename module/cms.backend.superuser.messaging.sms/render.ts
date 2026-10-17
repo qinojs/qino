@@ -19,7 +19,8 @@ export async function provider(node: Node): Promise<HtmlString> {
   const type = String(await root.type ?? "");
   const twilio = root.twilio;
   const http = root.http;
-  const secret = async (name: string) => Boolean(await twilio[name]);
+  const secret = async (name: string) => await twilio[name] ? "••••••" : "";
+  const apiKeySecret = await secret("apiKeySecret"), authToken = await secret("authToken");
   const httpToken = Boolean(await http.token);
 
   return html.async`<div class=-head>${t`Provider`}</div>
@@ -35,9 +36,9 @@ export async function provider(node: Node): Promise<HtmlString> {
       ${t`Account SID`} <input name=accountSid value="${twilio.accountSid}">
       ${t`API key SID`} <input name=apiKeySid value="${twilio.apiKeySid}">
       ${t`API key secret`} <input type=password name=apiKeySecret autocomplete=off
-        placeholder="${await secret("apiKeySecret") ? "••••••" : ""}">
+        placeholder="${apiKeySecret}">
       ${t`Auth token`} <input type=password name=authToken autocomplete=off
-        placeholder="${await secret("authToken") ? "••••••" : ""}">
+        placeholder="${authToken}">
       ${t`From`} <input name=twilioFrom value="${twilio.from}">
       ${t`Messaging Service SID`} <input name=messagingServiceSid value="${twilio.messagingServiceSid}">
     </u2-fields>
@@ -113,7 +114,7 @@ export async function phones(node: Node): Promise<HtmlString> {
   </table>`;
 }
 
-function phone(p: Row, labels: Record<string, string>): HtmlString {
+function phone(p: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${p.username ?? "#" + p.usr_id}
     <td>${p.address}
@@ -127,7 +128,7 @@ function phone(p: Row, labels: Record<string, string>): HtmlString {
 }
 
 /** A number someone claimed but has not proven yet — it belongs to no user until they do. */
-function claim(c: Row, labels: Record<string, string>): HtmlString {
+function claim(c: Row, labels: Record<string, string>) {
   return html`<tr>
     <td>${c.username ?? "#" + c.usr_id}
     <td>${c.address}

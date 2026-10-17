@@ -3,14 +3,12 @@
 //   await api.core.user.me.get();
 import { ApiClient } from "./ApiClient.js";
 
-function defaultBase() {
-  const el = document.querySelector('#qino-data');
-  let appUrl = globalThis.qino?.appUrl;
-  if (!appUrl && el?.textContent) try { appUrl = JSON.parse(el.textContent)?.qino?.appUrl; } catch { /* not json */ }
-  return new URL("api/", location.origin + (appUrl ?? "/"));
-}
+// The page's data — app url, csrf token —, where nothing read it yet: a frontend page loads no c1.js,
+// which does so on the cms's pages. Without the token, every call that writes would be refused.
+const el = document.querySelector('#qino-data');
+if (!globalThis.qino && el?.textContent) try { globalThis.qino = JSON.parse(el.textContent)?.qino; } catch { /* not json */ }
 
-export const api = new ApiClient(defaultBase());
+export const api = new ApiClient(new URL("api/", location.origin + (globalThis.qino?.appUrl ?? "/")));
 // Retry only after a step-up the user answered. The dialog is loaded on first use.
 api.recover = async (error) =>
   error.code === "step_up_required" && await (await import("./stepUpDialog.js")).stepUp(error.data);

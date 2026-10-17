@@ -3,7 +3,7 @@ import { assert, assertEquals } from "@qino/qino/tests";
 import { git, refs, reposOf, status } from "../lib/git.ts";
 
 /** A real repository: the parsing is only worth testing against git's actual output. */
-async function repo(): Promise<string> {
+async function repo() {
   const dir = await Deno.makeTempDir() + "/";
   await git(dir, ["init", "-q", "-b", "main"]);
   await Deno.writeTextFile(dir + "kept.txt", "one\n");

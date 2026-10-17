@@ -1,0 +1,14 @@
+{
+  "name": "ai.agent.feedback",
+  "description": "What agents tell the developers about the system: unclear tool descriptions, failures, what was missing.",
+  "dependencies": [
+    "ai.agent"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

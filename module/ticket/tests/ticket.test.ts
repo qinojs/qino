@@ -9,7 +9,7 @@ import type { Ticket, TicketKind } from "../mod.ts";
 const passwords: string[] = [];
 
 // how a consumer writes a handler: the payload it was issued with, plus what the redeemer brings
-function setPassword(_app: unknown, t: Ticket, input?: unknown): number {
+function setPassword(_app: unknown, t: Ticket, input?: unknown) {
   return passwords.push(`${(t.data as { usrId: number }).usrId}:${(input as { pw: string }).pw}`);
 }
 

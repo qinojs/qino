@@ -35,7 +35,7 @@ Deno.test("cms.backend.superuser.security lists suspicious IPs and releases them
     const res = await cms.node.api(node, { release: "6.6.6.6" }) as { ok: boolean };
     assertEquals(res.ok, true);
     assertStringIncludes(String(await cms.node.parts.suspects(node, opts)), "No suspicious IPs.");
-    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM score`), 0);
+    assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM score_log_ip_suspicious`), 0);
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();

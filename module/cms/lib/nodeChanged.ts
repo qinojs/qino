@@ -16,7 +16,7 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
     const db = app.db;
 
     // nearest ancestor of type 'p', starting at (and including) id
-    const containingPage = async (id: number): Promise<number> => {
+    const containingPage = async (id: number) => {
         let cur = id;
         for (let i = 0; i < 100; i++) {
             const row = await db.row`SELECT type, basis FROM page WHERE id = ${cur}`;
@@ -33,7 +33,7 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
     // affected node ids; row values = key values merged with changed data.
     // text_lang/file rows are found via the link tables. New unlinked rows give none (the link
     // insert records it); a new language on an existing text is still found.
-    const nodeIds = async (table: string, vs: Record<string, any>): Promise<number[]> => {
+    const nodeIds = async (table: string, vs: Record<string, any>) => {
         const id = idOf(table, vs);
         if (table === "page" || LINKED.has(table)) return [Number(id)];
         if (table === "text_lang") {

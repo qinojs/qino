@@ -1,5 +1,6 @@
 import * as nodePath from "node:path";
-import { typeByExtension } from "@std/media-types";
+// @ts-types="@types/mime-types"
+import mimeTypes from "mime-types";
 import { fs, html, getCtx } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
@@ -69,7 +70,7 @@ export default async function codemirrorView(file: string): Promise<string> {
   </div>`); // res.html.content is a plain string
 }
 
-function extToCodeMirrorMime(ext: string): string {
+function extToCodeMirrorMime(ext: string) {
   const overrides: Record<string, string> = {
     ts: "text/typescript",
     tsx: "text/typescript-jsx",
@@ -77,7 +78,7 @@ function extToCodeMirrorMime(ext: string): string {
     cjs: "text/javascript",
   };
   if (overrides[ext]) return overrides[ext];
-  const mime = typeByExtension(ext) ?? "application/octet-stream";
-  if (mime === "image/svg+xml") return "application/xml";
-  return mime.replace("application/x-javascript", "text/javascript");
+  const type = mimeTypes.lookup(ext) || "application/octet-stream";
+  if (type === "image/svg+xml") return "application/xml";
+  return type.replace("application/x-javascript", "text/javascript");
 }

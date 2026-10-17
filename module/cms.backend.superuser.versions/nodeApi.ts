@@ -8,9 +8,7 @@ export default async function (node: Node, vars: any): Promise<any> {
   if (await node.access() < 2) return false;
   const db = node.app.db;
 
-  if ("thin" in vars) {
-    return { done: true, deleted: await thinHistory(db) };
-  }
+  if ("thin" in vars) return { done: true, deleted: await thinHistory(db) };
 
   // Delete one non-live space (history + space rows).
   if ("deleteSpace" in vars) {

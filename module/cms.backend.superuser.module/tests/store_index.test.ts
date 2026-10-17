@@ -1,5 +1,5 @@
+import { pathToFileURL } from "node:url";
 import { assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
-import { toFileUrl } from "@std/path";
 import { App } from "@qino/qino";
 
 import { writeIndex } from "../storeIndex.ts";
@@ -14,8 +14,8 @@ async function fixture() {
   await Deno.writeTextFile(mod + "manifest.json", `{\n  "name": "t.one",\n  "description": "One."\n}\n`);
   await Deno.writeTextFile(mod + "pub/main.css", "");
   await Deno.writeTextFile(mod + "tests/one.test.ts", "");
-  const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
-  return { dir, app, store: app.stores.add(toFileUrl(dir + "store/").href) };
+  const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
+  return { dir, app, store: app.stores.add(pathToFileURL(dir + "store/").href) };
 }
 
 Deno.test({
@@ -34,7 +34,7 @@ Deno.test({
     // A local catalog may still name a removed folder. Rewriting follows the folders and keeps
     // metadata of modules that remain instead of trying to enter the stale one.
     await Deno.writeTextFile(dir + "store/store.json", JSON.stringify({ modules: { "t.one": { channel: "dev" }, gone: {} } }));
-    const catalogStore = app.stores.add(toFileUrl(dir + "store/store.json").href);
+    const catalogStore = app.stores.add(pathToFileURL(dir + "store/store.json").href);
     assertStringIncludes(await writeIndex(catalogStore), "store.json written (1 modules)");
     assertEquals(JSON.parse(await Deno.readTextFile(dir + "store/store.json")), { modules: { "t.one": { channel: "dev" } } });
 

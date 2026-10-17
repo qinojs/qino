@@ -5,7 +5,7 @@ import { socialProvider } from "@qino/qino/social.telegram";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Telegram", de: "Telegram" });
 }
 
-async function act(app: App, vars: Record<string, unknown> | undefined): Promise<string> {
+async function act(app: App, vars: Record<string, unknown> | undefined) {
   if (!vars) return "";
   try {
     if (vars.save != null) {
@@ -31,7 +31,7 @@ async function act(app: App, vars: Record<string, unknown> | undefined): Promise
   }
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const note = await act(node.app, postedVars(node.id));
   const targets = String(await node.app.settings["social.telegram"].targets ?? "");
   return html.async`<div class=u2-card>

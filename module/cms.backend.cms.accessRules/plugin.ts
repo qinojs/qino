@@ -17,10 +17,10 @@ const clamp = (v: unknown, min = 0) => Math.min(Math.max(min, Number(v) || 0), 3
 const level = (v: unknown) => (v === "" || v == null ? "" : String(clamp(v)));
 
 /** One handler for every edit: override cell, CAP row, standard column, bulk (standard/override), add group. */
-function save(node: Node, vars: Record<string, unknown>): Promise<void> {
+function save(node: Node, vars: Record<string, unknown>) {
   return node.app.db.transaction(() => saveTx(node, vars));
 }
-async function saveTx(node: Node, vars: Record<string, unknown>): Promise<void> {
+async function saveTx(node: Node, vars: Record<string, unknown>) {
   const app = node.app;
   const modules = () => String(vars.modules ?? "").split(",").filter(Boolean);
   const setOverride = async (module: string, grpId: number, access: string) => {
@@ -56,17 +56,18 @@ async function saveTx(node: Node, vars: Record<string, unknown>): Promise<void> 
   }
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }) {
   const app = node.app, t = app.t;
   await save(node, vars);
 
-  const groupRows = await app.db.query`SELECT id, name, cms_access FROM grp WHERE cms_access > 0 ORDER BY name`;
-  const overrides = new Map<string, number>();
-  for (const r of await app.db.query`SELECT module, grp_id, access FROM cms_module_access_grp`)
-    overrides.set(`${r.module}:${r.grp_id}`, Number(r.access) || 0);
-  const modRows = new Map((await app.db.query`
-    SELECT m.name, m.cms_access, (SELECT COUNT(*) FROM page WHERE module = m.name) AS used FROM module m`)
-    .map((r) => [String(r.name), r]));
+  const [groupRows, overrideRows, moduleRows, other] = await Promise.all([
+    app.db.query`SELECT id, name, cms_access FROM grp WHERE cms_access > 0 ORDER BY name`,
+    app.db.query`SELECT module, grp_id, access FROM cms_module_access_grp`,
+    app.db.query`SELECT m.name, m.cms_access, (SELECT COUNT(*) FROM page WHERE module = m.name) AS used FROM module m`,
+    app.db.query`SELECT id, name FROM grp WHERE cms_access IS NULL OR cms_access = 0 ORDER BY name`,
+  ]);
+  const overrides = new Map(overrideRows.map((r) => [`${r.module}:${r.grp_id}`, Number(r.access) || 0]));
+  const modRows = new Map(moduleRows.map((r) => [String(r.name), r]));
 
   // labels (plain html`` doesn't await app.t) + value→word map for the coloured cells
   const [lGroup, lName, lNew, lCap, lRead, lEdit, lInsertable, lAdd, lSearch, lSet, lNone, lDeny, lSave, lStd] = await Promise.all(
@@ -101,7 +102,6 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   }
 
   const canCreate = node.settings.canCreateGroups() ?? true;
-  const other = await app.db.query`SELECT id, name FROM grp WHERE cms_access IS NULL OR cms_access = 0 ORDER BY name`;
   const bulkCols = groupRows.map((g) => html`<option value="${g.id}">${g.name}`);
 
   return html.async`<div class="u2-flex cmsAccessRules" data-labels="${JSON.stringify(word)}">

@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import { mysql, postgres, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
 
+import type { DatabaseSync } from "node:sqlite";
 import type { Pool } from "../../deps.ts";
 
 export type ExecResult = { insertId: number; affectedRows: number };
@@ -26,8 +26,9 @@ export abstract class DbDriver {
   abstract listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
   abstract columns(table: string): Promise<Row[]>;
-  /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). */
-  abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<void>;
+  /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). `warnings`:
+   *  what the schema asks for that this dialect cannot do. */
+  abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<{ executed: string[]; warnings: string[] }>;
   /** Idempotent — the underlying pools throw when ended twice. */
   close(): Promise<void> { return this.#closed ? Promise.resolve() : (this.#closed = true, this.closeDriver()); }
   protected abstract closeDriver(): Promise<void>;
@@ -114,8 +115,8 @@ class MysqlDriver extends DbDriver {
   override async syncAutoIncrement(table: string, _field: string, value: number) {
     await this.exec(`ALTER TABLE ${this.quoteId(table)} AUTO_INCREMENT=${value + 1}`);
   }
-  async migrate(schema: unknown, opts: MigrateOptions = {}) {
-    await schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
+  migrate(schema: unknown, opts: MigrateOptions = {}) {
+    return schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
   }
   override async ensureDatabase() {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
@@ -126,6 +127,18 @@ class MysqlDriver extends DbDriver {
     }
   }
   protected override closeDriver() { return this.#pool.end(); }
+}
+
+// deno-lint-ignore no-explicit-any
+const { Bun, Deno, process } = globalThis as any;
+
+/** `node:sqlite`, in Bun `bun:sqlite` — both answer `exec`, `prepare().all/run`, `loadExtension`
+ *  and `close` alike. Loaded on first use, so other backends never load it. */
+function openSqlite(path: string): DatabaseSync {
+  if (Bun) return new (process.getBuiltinModule("bun:sqlite").Database)(path);
+  // Deno: extensions need FFI rights, the flag alone throws without them
+  const allowExtension = !Deno || Deno.permissions.querySync({ name: "ffi" }).state === "granted";
+  return new (process.getBuiltinModule("node:sqlite").DatabaseSync)(path, { allowExtension });
 }
 
 // How long a transaction may hold the connection while work waits, before it counts as deadlock.
@@ -143,8 +156,7 @@ class SqliteDriver extends DbDriver {
 
   constructor(path: string) {
     super();
-    // Extensions need FFI rights in Deno; the flag alone throws without them.
-    this.#db = new DatabaseSync(path, { allowExtension: Deno.permissions.querySync({ name: "ffi" }).state === "granted" });
+    this.#db = openSqlite(path);
     this.#db.exec("PRAGMA foreign_keys = ON");
     // One sync per commit instead of per write (a request writes session, log, settings…).
     // NORMAL survives a process crash; only power loss can lose the last commits.
@@ -229,12 +241,20 @@ class SqliteDriver extends DbDriver {
   override async syncAutoIncrement(table: string, _field: string, value: number) {
     await this.exec("UPDATE sqlite_sequence SET seq = ? WHERE name = ? AND seq < ?", [value, table, value]).catch(() => {});
   }
-  async migrate(schema: unknown, opts: MigrateOptions = {}) {
-    await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
+  migrate(schema: unknown, opts: MigrateOptions = {}) {
+    return schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
   override loadExtension(path: string) { this.#db.loadExtension(path); }
   protected override closeDriver() { this.#db.close(); return Promise.resolve(); }
 }
+
+/** Dates and times as the text Postgres sends, like the other backends: DATE, TIME, TIMESTAMP,
+ *  TIMESTAMPTZ. Per pool, not `pg.types` — that one is process-wide, shared by every app. */
+const DATE_OIDS = new Set([1082, 1083, 1114, 1184]);
+export const pgTypes = {
+  getTypeParser: (oid: number, format?: string) =>
+    DATE_OIDS.has(oid) ? (value: string) => value : postgres.types.getTypeParser(oid, format),
+};
 
 class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
@@ -251,7 +271,7 @@ class PostgresDriver extends DbDriver {
     this.#database = decodeURIComponent(url.pathname.slice(1));
     url.pathname = "/postgres";
     this.#adminParams = { connectionString: url.href };
-    this.#pool = new postgres.Pool({ connectionString: conn });
+    this.#pool = new postgres.Pool({ connectionString: conn, types: pgTypes });
   }
 
   quoteId(id: string) { return pgDialect.quoteId(id); }
@@ -319,8 +339,9 @@ class PostgresDriver extends DbDriver {
     `, [table]);
   }
   async migrate(schema: any, opts: MigrateOptions = {}) {
-    await schemaToDbPg(schema, (sql: string) => this.query(sql), opts);
+    const result = await schemaToDbPg(schema, (sql: string) => this.query(sql), opts);
     await this.#syncAutoIncrements(schema);
+    return result;
   }
   async #syncAutoIncrements(schema: any) {
     for (const [table, tableSchema] of Object.entries(schema?.properties ?? {}) as [string, any][]) {

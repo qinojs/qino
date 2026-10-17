@@ -4,7 +4,6 @@ import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels } from "@qino/qino/messaging";
 
 import { userMessages } from "./lib/journal.ts";
-
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -16,6 +15,7 @@ const { name } = manifest;
 
 const PREVIEWS = 3; // enough to recognise a message, few enough to keep the row a row
 const LIST_LIMIT = 100;
+const SPAM = 0.5; // from this score on an incoming message is flagged
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
@@ -30,13 +30,13 @@ export function render(node: Node): Promise<HtmlString> {
   return renderOverview(node, url);
 }
 
-function intParam(url: URL, key: string): number {
+function intParam(url: URL, key: string) {
   const value = Number(url.searchParams.get(key));
   return Number.isSafeInteger(value) && value > 0 ? value : 0;
 }
 
 /** The journal as a table: one row per logical message, filtered by text and channel. */
-async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
+async function renderOverview(node: Node, url: URL) {
   const app = node.app;
   const ctx = getCtx();
   const search = url.searchParams.get("search") ?? "";
@@ -66,6 +66,7 @@ async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
             <th>${app.t`Id`}
             <th>${view.time}
             <th>${app.t`Type`}
+            <th>${view.spam}
             <th>${app.t`Text`}
             <th>${view.attachments}
             <th>${view.recipients}
@@ -82,14 +83,14 @@ async function renderOverview(node: Node, url: URL): Promise<HtmlString> {
 }
 
 // List part - re-rendered live on search/filter input via cms.reloadPart(nid, "list", form values).
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const app = ctx.app;
   const search = String(vars.search ?? "").trim();
   const filter = String(vars.channel ?? "");
   const sh = sqlSearch(search, ["m.title", "m.text"], { exact: ["m.id", "m.channel"] });
   const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, m.spam, g.name AS grp_name,
       (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.sent IS NOT NULL) AS sent_count,
@@ -101,7 +102,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY m.time DESC, m.id DESC
     LIMIT ${LIST_LIMIT}`;
   const [tracked, thumbs, view] = await Promise.all([trackingStats(app, rows), previews(app, rows), labels(app)]);
-  if (!rows.length) return html`<tr><td colspan=9>${search || filter ? view.noMatch : view.noMessages}`;
+  if (!rows.length) return html`<tr><td colspan=10>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
   const msgUrl = (id: unknown) => backend.toUrl(pageUrl, { msg: id });
@@ -113,8 +114,9 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
+      <td style="white-space:nowrap">${spam(row.spam)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
-      <td data-attachments>${thumbs.get(Number(row.id)) ?? html`${Number(row.attachment_count) || 0}`}
+      <td data-attachments>${thumbs.get(Number(row.id)) ?? (Number(row.attachment_count) || 0)}
       <td style="white-space:nowrap">${reached(row, view)}
       <td style="white-space:nowrap">${trackedStat(stats?.opened_count, stats?.opened_first)}
       <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}
@@ -122,8 +124,17 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   }));
 }
 
-/** How far a message got: how many of its recipients it reached, and what is still owed. */
-function reached(row: Row, view: View): HtmlString {
+/** The spam score as a percentage, flagged from SPAM on; empty when not judged. */
+function spam(score: unknown) {
+  if (score == null) return "";
+  const p = Number(score);
+  return html`${p >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${Math.round(p * 100)}%`;
+}
+
+/** How far a message got: how many of its recipients it reached, and what is still owed. An incoming
+ *  message has only us. */
+function reached(row: Row, view: View) {
+  if (row.direction === "in") return "";
   const all = Number(row.recipient_count) || 0;
   const sent = Number(row.sent_count) || 0;
   const owed = Number(row.owed_count) || 0;
@@ -134,8 +145,8 @@ function reached(row: Row, view: View): HtmlString {
 }
 
 /** Thumbnails of the first attachments of the visible messages. One query, including the file rows. */
-async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>> {
-  if (!rows.length) return new Map();
+async function previews(app: App, rows: Row[]) {
+  if (!rows.length) return new Map<number, HtmlString>();
   const files = await app.db.query`
     SELECT a.message_id, f.* FROM message_attachment a JOIN file f ON f.id = a.file_id
     WHERE ${sql.in("a.message_id", rows.map((row) => row.id))} ORDER BY a.message_id, a.sort, a.file_id`;
@@ -156,8 +167,8 @@ async function previews(app: App, rows: Row[]): Promise<Map<number, HtmlString>>
 
 /** Recipient counts and first hits of the visible messages. A click also counts as open (mail
  *  clients block the pixel, not links). */
-async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
-  if (!rows.length) return new Map();
+async function trackingStats(app: App, rows: Row[]) {
+  if (!rows.length) return new Map<number, Row>();
   const stats = await app.db.query`
     SELECT d.message_id,
       COUNT(DISTINCT t.delivery_id) AS opened_count,
@@ -171,18 +182,18 @@ async function trackingStats(app: App, rows: Row[]): Promise<Map<number, Row>> {
   return new Map(stats.map((row) => [Number(row.message_id), row]));
 }
 
-function trackedStat(count: unknown, first: unknown): HtmlString {
+function trackedStat(count: unknown, first: unknown) {
   const n = Number(count) || 0;
   return first == null ? html`${n}` : html`${n} <small>${u2.el.time(first, { narrow: true })}</small>`;
 }
 
 /** One message with its payload and the result per recipient. */
-async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlString> {
+async function renderMessage(node: Node, id: number, url: URL) {
   const app = node.app;
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
-      SELECT d.usr_id, d.address, d.ref, d.sent, d.due, d.attempts, d.error, u.username,
+      SELECT d.usr_id, d.address, d.external_id, d.sent, d.due, d.attempts, d.error, u.username,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
@@ -216,6 +227,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
       <table class=u2-table>
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
         <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
+        ${row.spam == null ? "" : html`<tr><td>${view.spam}<td>${spam(row.spam)}`}
         <tr><td>${app.t`Title`}<td>${row.title}
         <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
@@ -230,7 +242,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
           <thead><tr>
             <th>${view.user}
             <th>${app.t`Address`}
-            <th>${app.t`Reference`}
+            <th>${app.t`External ID`}
             <th>${view.time}
             <th>${app.t`Opened`}
             <th>${app.t`Clicks`}
@@ -238,7 +250,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${recipient(d, url, view)}
             <td>${d.address}
-            <td>${d.ref}
+            <td>${d.external_id}
             <td>${d.sent ? u2.el.time(d.sent) : d.due ? html`${view.due} ${u2.el.time(d.due)}` : ""}
             <td>${d.opened ? u2.el.time(d.opened) : ""}
             <td>${Number(d.clicks) || ""}
@@ -251,7 +263,7 @@ async function renderMessage(node: Node, id: number, url: URL): Promise<HtmlStri
 }
 
 /** Tracked links reached for this message, aggregated across every recipient. */
-async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>): Promise<HtmlString> {
+async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>) {
   const empty = await app.t`No links yet.`;
   return html.async`<div class=u2-card style="flex:1 1 31.25rem">
     <div class=-head>${app.t`Links`}</div>
@@ -274,7 +286,7 @@ async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>): Pr
   </div>`;
 }
 
-async function renderConversation(node: Node, usrId: number, url: URL): Promise<HtmlString> {
+async function renderConversation(node: Node, usrId: number, url: URL) {
   const app = node.app;
   const user = await app.db.row`SELECT id, username, given_name, family_name FROM usr WHERE id = ${usrId}`;
   if (!user) {
@@ -297,7 +309,7 @@ async function renderConversation(node: Node, usrId: number, url: URL): Promise<
       <div class=-scroll>
         ${rows.length
           ? html`<table class=-chat><tbody>${messages}</table>`
-          : html`<div>${await app.t`No messages yet.`}</div>`}
+          : html.async`<div>${app.t`No messages yet.`}</div>`}
       </div>
       <div>
         ${reachable.length ? html.async`<form class=-composer>
@@ -329,7 +341,7 @@ function selectedChannel(rows: Row[], reachable: Channel[]): string | undefined 
   return reachable.some((c) => c.name === latest) ? latest : reachable[0]?.name;
 }
 
-async function userCard(node: Node, url: URL, usrId: number): Promise<HtmlString> {
+async function userCard(node: Node, url: URL, usrId: number) {
   const app = node.app;
   const users = await app.db.query`
     SELECT u.id, u.username, u.given_name, u.family_name
@@ -349,13 +361,13 @@ async function userCard(node: Node, url: URL, usrId: number): Promise<HtmlString
 }
 
 /** Carries the rest of the query string through a GET form; `own` are the fields the form owns. */
-function hidden(url: URL, own: string[]): HtmlString[] {
+function hidden(url: URL, own: string[]) {
   return [...url.searchParams]
     .filter(([key]) => !own.includes(key))
     .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`);
 }
 
-function paramUrl(url: URL, params: Record<string, string>): string {
+function paramUrl(url: URL, params: Record<string, string>) {
   const next = new URL(url);
   for (const [key, value] of Object.entries(params)) {
     if (value) next.searchParams.set(key, value);
@@ -364,33 +376,33 @@ function paramUrl(url: URL, params: Record<string, string>): string {
   return next.pathname + next.search;
 }
 
-function recipient(row: Row, url: URL, view: View): HtmlString {
+function recipient(row: Row, url: URL, view: View) {
   return row.usr_id
     ? html`<a href="${paramUrl(url, { usr: String(row.usr_id), msg: "" })}">${row.username ?? "#" + row.usr_id}</a>`
     : html`${view.anonymous}`;
 }
 
-async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
+async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View) {
   const bubble = await chatBubble(app, row, view);
   return html`<tr class="${row.direction === "in" ? "-user" : "-platform"}">
     <td>${row.direction === "in" ? bubble : ""}
     <td>${row.direction === "out" ? bubble : ""}`;
 }
 
-async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View): Promise<HtmlString> {
+async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View) {
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
   const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div>
     <div class=-text>${body(row)}</div>
     ${await attachments(app, row.attachments, true)}
-    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
+    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${Number(row.spam) >= SPAM ? html` · ${spam(row.spam)}` : ""}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
 
 /** What the transformer can turn into an image: pictures, and a PDF's first page. */
 const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") || mime === "application/pdf";
 
-async function attachments(app: App, rows: Row[], compact = false): Promise<HtmlString> {
+async function attachments(app: App, rows: Row[], compact = false) {
   if (!rows.length) return html``;
   const items = await Promise.all(rows.map(async (row) => {
     const file = await app.dbFiles.file(Number(row.file_id));
@@ -407,26 +419,26 @@ async function attachments(app: App, rows: Row[], compact = false): Promise<Html
   return html`<div class=-attachments>${items}</div>`;
 }
 
-function messageTarget(row: Row, view: View): string {
+function messageTarget(row: Row, view: View) {
   if (row.grp_id) return `[${row.grp_name ?? view.group} #${row.grp_id}]`;
   const count = Number(row.recipient_count ?? row.deliveries?.length ?? 0);
   return count > 1 ? `[${count} ${view.recipients}]` : "";
 }
 
 /** Incoming or outgoing, as the call-log icons say it. */
-function direction(row: Row, view: View): HtmlString {
+function direction(row: Row, view: View) {
   return row.direction === "out"
     ? html`<u2-ico inline icon=call_made aria-label="${view.outgoing}">→</u2-ico>`
     : html`<u2-ico inline icon=call_received aria-label="${view.incoming}">←</u2-ico>`;
 }
 
 /** What the message says, without its markup — for previews and search results. */
-function plain(row: Row): string {
+function plain(row: Row) {
   return textOf(rowMsg(row));
 }
 
 /** The body for the panel: sanitized markup or escaped text. Messages are untrusted. */
-function body(row: Row): HtmlString {
+function body(row: Row) {
   const markup = htmlOf(rowMsg(row));
   return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text}`;
 }
@@ -435,19 +447,20 @@ function rowMsg(row: Row): Msg {
   return { text: String(row.text ?? ""), format: (row.format || undefined) as Msg["format"] };
 }
 
-function cut(text: string, max = 120): string {
+function cut(text: string, max = 120) {
   const line = text.replace(/\s+/g, " ").trim();
   return line.length > max ? line.slice(0, max) + "…" : line;
 }
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due] = await Promise
-    .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`]);
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam] =
+    await Promise.all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
+      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`,
+      app.t`Spam`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");
@@ -463,11 +476,11 @@ async function labels(app: App) {
 }
 type View = Awaited<ReturnType<typeof labels>>;
 
-function readableData(data: unknown): string {
+function readableData(data: unknown) {
   try { return JSON.stringify(JSON.parse(String(data)), null, 2); } catch { return String(data ?? ""); }
 }
 
-function userName(user: Row): string {
+function userName(user: Row) {
   const name = [user.given_name, user.family_name].filter(Boolean).join(" ");
   return name ? `${name}${user.username ? " · " + user.username : ""}` : String(user.username ?? "#" + user.id);
 }
@@ -492,7 +505,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   return html.async`<div class=-body>
     <b>${Number(totals?.n ?? 0)}</b> ${app.t`messages in 7 days`}
     · ${Number(totals?.incoming ?? 0)} ${app.t`incoming`}
-    ${Number(totals?.errors ?? 0) ? html` · <span class=u2-badge>${totals!.errors} ${await app.t`errors`}</span>` : ""}
+    ${Number(totals?.errors ?? 0) ? html.async` · <span class=u2-badge>${totals!.errors} ${app.t`errors`}</span>` : ""}
   </div>
   ${recent.length ? html`<div style="overflow:auto;padding:0"><table class=u2-table>${recent.map((row) => {
     const errors = Number(row.error_count) || 0;

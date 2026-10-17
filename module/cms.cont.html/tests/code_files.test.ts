@@ -42,6 +42,7 @@ Deno.test("codeFiles: create writes the initial content, existing files are kept
 }
 `);
   assertEquals((await read(files.js))?.includes(`observe('[qcms-id="7"]')`), true);
+  assertEquals((await read(files.js))?.includes("// const node = await api.cms.node(7).get();"), true); // api examples, commented out
   await Deno.remove(dir, { recursive: true });
 });
 

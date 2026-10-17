@@ -37,7 +37,7 @@ export async function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-function renderTable(app: App, result: TableSearch, terms: string[]): Promise<HtmlString> {
+function renderTable(app: App, result: TableSearch, terms: string[]) {
   const t = app.t;
   const how = result.parts.map((part) => `${part.mode}: ${part.fields.join(", ")}`).join(" · ");
   const fields = result.parts.flatMap((part) => part.fields);
@@ -63,14 +63,14 @@ function renderTable(app: App, result: TableSearch, terms: string[]): Promise<Ht
   </div>`;
 }
 
-function renderRow(row: Row, fields: string[], terms: string[]): HtmlString {
+function renderRow(row: Row, fields: string[], terms: string[]) {
   const cells = Object.entries(row).map(([field, value]) =>
     html`<td>${cell(value, fields.includes(field) ? terms : [])}`
   );
   return html`<tr>${cells}`;
 }
 
-function cell(value: unknown, terms: string[]): HtmlString | unknown {
+function cell(value: unknown, terms: string[]) {
   if (value == null) return html`<small>NULL</small>`;
   if (value instanceof Date) return value.toISOString();
   const text = typeof value === "object" ? JSON.stringify(value) : String(value);
@@ -78,7 +78,7 @@ function cell(value: unknown, terms: string[]): HtmlString | unknown {
 }
 
 /** Cut a window around the first hit so long texts stay readable. */
-function snippet(text: string, terms: string[]): string {
+function snippet(text: string, terms: string[]) {
   if (text.length <= MAX_CELL) return text;
   const at = terms.length ? text.toLowerCase().indexOf(terms[0]) : -1;
   if (at < 0) return text.slice(0, MAX_CELL) + "…";
@@ -87,7 +87,7 @@ function snippet(text: string, terms: string[]): string {
 }
 
 /** Wrap every search word in <mark>; the parts stay escaped by html``. */
-function mark(text: string, terms: string[]): HtmlString {
+function mark(text: string, terms: string[]) {
   if (!terms.length) return html`${text}`;
   const parts = text.split(new RegExp(`(${terms.map(RegExp.escape).join("|")})`, "ig"));
   return html.join(parts.map((part, i) => i % 2 ? html`<mark>${part}</mark>` : html`${part}`));

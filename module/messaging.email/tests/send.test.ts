@@ -1,15 +1,13 @@
 import { Db } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, templatePlaceholders } from "@qino/qino/tests";
-
-
-import { inbound } from "../lib/settings.ts";
 import { outbox } from "@qino/qino/messaging";
 
+import { inbound } from "../lib/settings.ts";
 import { messagingChannel, send, setTransport } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
-async function makeApp(): Promise<App> {
+async function makeApp() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...fileDbSchema.properties, ...messageSchema.properties, ...contactDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
@@ -34,7 +32,7 @@ async function makeApp(): Promise<App> {
   return app;
 }
 
-async function close(app: App): Promise<void> {
+async function close(app: App) {
   await new Promise((r) => setTimeout(r, 0)); // send leaves contact bookkeeping running on purpose
   await app.db.close();
   await Deno.remove(app.dir, { recursive: true });
@@ -55,7 +53,7 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   assertEquals(journaled.channel, "email");
   assertEquals(journaled.title, "Invoice");
   assertEquals(journaled.text, "Attached.");
-  assertEquals((await app.db.row`SELECT ref FROM message_delivery`)?.ref, "<a@qino.test>", "the transport's id is the far side's name for it");
+  assertEquals((await app.db.row`SELECT external_id FROM message_delivery`)?.external_id, "<a@qino.test>", "the transport's id is the far side's name for it");
   assertEquals(journaled.deliveries, [{ id: 1, usr_id: 1, address: "one@qino.test", username: "one@qino.test", sent: journaled.deliveries[0].sent, due: null, attempts: 0, error: null }]);
 
   await close(app);

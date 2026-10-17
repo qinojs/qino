@@ -16,7 +16,7 @@ export const unb64url = (str: string): Uint8Array<ArrayBuffer> => Uint8Array.fro
 /** n random bytes as base64url. */
 export const randB64 = (n: number): string => b64url(crypto.getRandomValues(new Uint8Array(n)));
 
-const digest = async (str: string): Promise<Uint8Array> =>
+const digest = async (str: string) =>
   new Uint8Array(await crypto.subtle.digest("SHA-256", ENCODER.encode(str)));
 
 /** SHA-256 of a string as base64 (44 chars), as used by CSP hashes and SRI `integrity`. */
@@ -59,7 +59,7 @@ function sign(owner: Session | App, resource: string, options: { ttl?: number } 
 
 function verify(sess: Session, resource: string, params: Params): SessionState;
 function verify(app: App, resource: string, params: Params): Promise<PermanentState>;
-function verify(owner: Session | App, resource: string, params: Params): SessionState | Promise<PermanentState> {
+function verify(owner: Session | App, resource: string, params: Params) {
   return isSession(owner) ? verifySession(owner, resource, params) : verifyPermanent(owner, resource, params);
 }
 
@@ -69,7 +69,7 @@ function isSession(owner: Session | App): owner is Session {
   return "data" in owner;
 }
 
-function sessionSecret(sess: Session): string {
+function sessionSecret(sess: Session) {
   const item = sess.data.core.grantKey;
   let value = String(item() ?? "");
   if (!value) item(value = uid());
@@ -90,12 +90,12 @@ async function verifyPermanent(app: App, resource: string, { sig }: Params): Pro
 }
 
 /** The app's signing key, created by core on first init. */
-async function appSecret(app: App): Promise<string> {
+async function appSecret(app: App) {
   const secret = String(await app.settings.core._secret ?? "");
   if (!secret) throw new Error("Core secret is not initialized");
   return secret;
 }
 
-function mac(secret: string, resource: string, len = SIGNATURE_LENGTH): string {
+function mac(secret: string, resource: string, len = SIGNATURE_LENGTH) {
   return createHmac("sha256", secret).update(resource).digest("base64url").slice(0, len);
 }

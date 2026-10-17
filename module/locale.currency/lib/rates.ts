@@ -51,13 +51,13 @@ export async function updateRates(app: App, sources = SOURCES): Promise<{ source
   throw new Error(`locale.currency: no source answered — ${failed.join("; ")}`);
 }
 
-async function read(source: typeof SOURCES[number]): Promise<Rates> {
+async function read(source: typeof SOURCES[number]) {
   const res = await fetch(source.url);
   if (!res.ok) throw new Error(`${res.status}`);
   return source.parse(await res.text());
 }
 
-async function store(app: App, rates: Rates): Promise<number> {
+async function store(app: App, rates: Rates) {
   const usd = rates.get("USD")!;
   const known = new Set(await app.db.col<string>`SELECT id FROM currency`);
   const table = app.db.table("currency");

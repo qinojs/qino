@@ -12,6 +12,7 @@
     "lib/seed.ts",
     "lib/seeders.ts",
     "lib/seeders/errors.ts",
+    "lib/seeders/fin.ts",
     "lib/seeders/groups.ts",
     "lib/seeders/links.ts",
     "lib/seeders/pages.ts",

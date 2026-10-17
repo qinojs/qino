@@ -36,7 +36,7 @@ const settingsSchema = {
 const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 4);
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
-function snippet(text: string, words: string[], parts = 7, before = 30, after = 10): HtmlString {
+function snippet(text: string, words: string[], parts = 7, before = 30, after = 10) {
   const plain = unhee(text.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); // \s takes the decoded &nbsp; too
   if (!words.length) return html`${plain.slice(0, before + after)}`;
   const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i")).slice(0, parts).map((piece) =>
@@ -57,15 +57,17 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   const startId = Number(node.settings.startPage() ?? 0);
   const start = startId ? await node.cms.node(startId) : undefined;
 
-  const titles = await db.query`
-    SELECT p.id, t.text FROM page p
-    JOIN text_lang t ON t.text_id = p.title_id AND t.lang = ${ctx.lang}
-    WHERE ${where} ${scope} LIMIT 100`;
-  const texts = await db.query`
-    SELECT p.id, t.text, pt.name FROM page p
-    JOIN page_text pt ON pt.page_id = p.id
-    JOIN text_lang t ON t.text_id = pt.text_id AND t.lang = ${ctx.lang}
-    WHERE ${where} ${scope} LIMIT 200`;
+  const [titles, texts] = await Promise.all([
+    db.query`
+      SELECT p.id, t.text FROM page p
+      JOIN text_lang t ON t.text_id = p.title_id AND t.lang = ${ctx.lang}
+      WHERE ${where} ${scope} LIMIT 100`,
+    db.query`
+      SELECT p.id, t.text, pt.name FROM page p
+      JOIN page_text pt ON pt.page_id = p.id
+      JOIN text_lang t ON t.text_id = pt.text_id AND t.lang = ${ctx.lang}
+      WHERE ${where} ${scope} LIMIT 200`,
+  ]);
 
   const found = new Map<number, { page: Node; text: string; score: number }>();
   for (const [rows, isTitle] of [[titles, true], [texts, false]] as const) {
@@ -75,7 +77,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
       if (!page.vs.searchable || !await hit.isReadable()) continue;
       if (start && !await hit.in(start)) continue;
 
-      const group = found.get(page.id) ?? { page, text: "", score: 0 };
+      const group = found.getOrInsertComputed(page.id, () => ({ page, text: "", score: 0 }));
       const text = String(row.text ?? "");
       if (isTitle) group.score += 3;
       else {
@@ -85,13 +87,12 @@ async function hits(node: Node, ctx: Ctx, search: string) {
         // Names starting with "_" are internal texts — searchable, but not worth showing.
         if (!String(row.name ?? "").startsWith("_")) group.text += " " + text;
       }
-      found.set(page.id, group);
     }
   }
   return [...found.values()].sort((a, b) => b.score - a.score);
 }
 
-async function item(node: Node, page: Node, text: string, words: string[]): Promise<HtmlString> {
+async function item(node: Node, page: Node, text: string, words: string[]) {
   const href = await page.url();
   const cms = node.cms;
 
@@ -119,7 +120,7 @@ async function item(node: Node, page: Node, text: string, words: string[]): Prom
   </div>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = ctx.app.t;
   const search = String(ctx.req.query[QUERY] ?? "").trim();
 
@@ -140,7 +141,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const words = terms(search);
   return html.async`<div>${form}
     ${results.length
-      ? html.join(await Promise.all(results.map((r) => item(node, r.page, r.text, words))))
+      ? results.map((r) => item(node, r.page, r.text, words))
       : html.async`<div class=-empty>${t`No results found`}</div>`}
   </div>`;
 }

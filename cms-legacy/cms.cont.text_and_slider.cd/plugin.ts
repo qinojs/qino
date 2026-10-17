@@ -4,8 +4,8 @@ import { cms_image2 } from "@qino/qino/cms.image2";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const slides: HtmlString[] = [], texts: HtmlString[] = [];
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const slides: HtmlString[] = [], texts = [];
   const edit = await node.edit();
   for (const [name, file] of await node.files()) {
     if (!file.mime.startsWith("image/")) continue;
@@ -17,7 +17,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         editable: edit,
       })}</div>`);
     }
-    texts.push(await html.async`<div data-id="${name}">${node.showText("file_" + name)}</div>`);
+    texts.push(html.async`<div data-id="${name}">${node.showText("file_" + name)}</div>`);
   }
   const floating = await cms_image2(await node.file("fliegendes Bild"), {
     width: 400,
@@ -28,7 +28,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   });
   const arrow = ctx.req.moduleUrl + "cms.cont.slideshow.schwups2/pub/arrow.svg#main";
 
-  return html`<div>
+  return html.async`<div>
   <div class=-slideshow>
     ${floating}
     <div class=b1_slideshow><div class=-slides>${slides}</div></div>

@@ -4,7 +4,7 @@ import { cmsCtx } from "@qino/qino/cms";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const active = cmsCtx(ctx).mainNode;
   const startId = Number(await node.settings.startPage);
   let start = startId ? await node.cms.node(startId) : await node.page();
@@ -17,12 +17,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (maxLevel && level >= maxLevel) return;
     const children = [...(await parent.children("readable")).values()].filter((child) => !!child.vs.visible !== invert);
     if (!children.length) return;
-    const items: HtmlString[] = [];
+    const items = [];
     for (const child of children) {
-      const sub = await active.in(child) ? await branch(child, level + 1) : undefined;
-      items.push(await html.async`<li>${node.cms.link(child)}${sub}</li>`);
+      const sub = await active.in(child) ? branch(child, level + 1) : undefined;
+      items.push(html.async`<li>${node.cms.link(child)}${sub}</li>`);
     }
-    return html`<div class=level><ul class="cmsChilds${parent.id}">${items}<div class=clear></div></ul></div>`;
+    return html.async`<div class=level><ul class="cmsChilds${parent.id}">${items}<div class=clear></div></ul></div>`;
   };
 
   return await branch(start, 0) ?? html`<div class=level></div>`;

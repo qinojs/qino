@@ -5,10 +5,10 @@ import { fakeSettings } from "./appFake.ts";
 
 import type { Ctx } from "@qino/qino";
 
-const app = (core: Record<string, string>): App =>
+const app = (core: Record<string, string>) =>
   ({ settings: fakeSettings({ core: fakeSettings(core) }), url: App.prototype.url }) as unknown as App;
 
-const on = <T>(host: string, run: () => Promise<T>): Promise<T> =>
+const on = <T>(host: string, run: () => Promise<T>) =>
   requestStorage.run({ req: { url: new URL(`https://${host}/shop/a`), appUrl: "/shop/" } } as unknown as Ctx, run);
 
 Deno.test("app.url reads core.url and adds the missing slash", async () => {

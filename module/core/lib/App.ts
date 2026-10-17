@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import * as nodePath from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { fromFileUrl, serveFile } from "../deps.ts";
 import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
@@ -18,12 +18,14 @@ import { appEvents } from "./AppEvents.ts";
 import { LangManager } from "./LangManager.ts";
 import { apiFetch, apiClient } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
+import { sys } from "./sys.ts";
+import { serveFile } from "./serveFile.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { ApiTree, ApiProxy } from "./api/mod.ts";
 import type { AppEvents } from "./AppEvents.ts";
 
-const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir = fileURLToPath(new URL(".", sys.mainModule));
 
 const DEFAULT_CONFIG = {
     dir: mainDir,
@@ -79,7 +81,7 @@ export class App extends Emitter<AppEvents> {
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
         const cfg = { ...DEFAULT_CONFIG, ...config };
-        const dir = cfg.dir.startsWith("file:") ? fromFileUrl(cfg.dir) : cfg.dir;
+        const dir = cfg.dir.startsWith("file:") ? fileURLToPath(cfg.dir) : cfg.dir;
 
         this.dir   = ensureSlash(dir);
         // before opening the database: sqlite only says "unable to open database file" when the
@@ -116,7 +118,7 @@ export class App extends Emitter<AppEvents> {
     /** `await using app = new App(...)` — closes the database. Files under `dir` are the caller's. */
     [Symbol.asyncDispose](): Promise<void> { return this.db.close(); }
 
-    /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
+    /** Web-standard entry point — `sys.serve({}, app.fetch)`. */
     get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
         return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
     }
@@ -147,7 +149,7 @@ export class App extends Emitter<AppEvents> {
         return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.req.cleanup()));
     }
 
-    async #run(ctx: Ctx): Promise<Response> {
+    async #run(ctx: Ctx) {
         let res: Response;
         try {
             await initRequest(ctx);
@@ -162,7 +164,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Routing: explicit, ordered dispatch by request path. */
-    #route(ctx: Ctx): Promise<Response> {
+    #route(ctx: Ctx) {
         const uri = ctx.req.appPath;
 
         if (uri === "dbFile" || uri.startsWith("dbFile/"))
@@ -177,18 +179,19 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Everything that isn't dbFile or api: the modules render it. */
-    async #render(ctx: Ctx): Promise<Response> {
+    async #render(ctx: Ctx) {
         await this.fire("render", { ctx });
         // Nothing rendered: 404, not an empty 200 (also for /favicon.ico).
         if (!ctx.res.answered) ctx.res.status = 404;
         return this.#buildResponse(ctx);
     }
 
-    async #buildResponse(ctx: Ctx): Promise<Response> {
+    async #buildResponse(ctx: Ctx) {
         const res = ctx.res;
         // Send the document unless a body or Location was set — so a route can end with
         // `throw new Output()` and its page is sent.
         if (res.hasHtml && !res.body && !res.headers.has("Location")) {
+            res.html.resolve(); // before html-ready: its handlers (uncdn, csp) see real urls
             await this.fire("html-ready", { ctx });
             res.html.lang = ctx.lang;
             const qino = res.html.jsData.qino ??= {};
@@ -206,7 +209,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Every response passes here. Adds default headers; headers already set are kept. */
-    async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">): Promise<Response> {
+    async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">) {
         for (const [name, value] of Object.entries(RESPONSE_HEADERS))
             if (!res.headers.has(name)) res.headers.set(name, value);
         await this.fire("response-ready", { ...meta, res });
@@ -232,7 +235,7 @@ export class App extends Emitter<AppEvents> {
 }
 
 /** Apply what ended the route — a control-flow signal or an error — to the response. */
-function applyThrown(ctx: Ctx, e: unknown): void {
+function applyThrown(ctx: Ctx, e: unknown) {
     if (e instanceof Output) {
         for (const [k, v] of e.buildHeaders()) ctx.res.headers.set(k, v);
         // A signal only overrides what it sets (200 = unset), so a bare `throw new Output()` keeps
@@ -249,7 +252,7 @@ function applyThrown(ctx: Ctx, e: unknown): void {
 const ERROR_500 = "<h1>500 Internal Server Error</h1>";
 
 /** Errors raised before a request context exists (init, pre-filter, 413). */
-function earlyError(e: unknown): Response {
+function earlyError(e: unknown) {
     if (e instanceof Output) return e.toResponse();
     console.error("Error:", e);
     return new Response(ERROR_500, { status: 500 });

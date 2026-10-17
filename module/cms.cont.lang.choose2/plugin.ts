@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const LANG_NAMES: Record<string, string> = {
@@ -37,7 +37,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const cms = node.cms;
   const settings = node.settings;
 
@@ -52,12 +52,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
 
   if (type === "select") {
-    const options = await Promise.all(langs.map(async (l) => {
+    const options = langs.map((l) => {
       const label = longText ? (LANG_NAMES[l] ?? l) : l;
       const selected = l === ctx.lang ? " selected" : "";
-      return html`<option${selected} value="${await page.url(l)}" lang="${l}" class="-${l}">${label}`;
-    }));
-    return html`<select>${options}</select>`;
+      return html.async`<option${selected} value="${page.url(l)}" lang="${l}" class="-${l}">${label}`;
+    });
+    return html.async`<select>${options}</select>`;
   }
 
   // links (default)

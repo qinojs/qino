@@ -22,7 +22,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const width = Math.max(1, Number(await node.settings.width) || 500);
   const height = Math.max(1, Number(await node.settings.height) || 250);
   const slides: HtmlString[] = [];

@@ -47,6 +47,7 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
       assertEquals(nav.module?.name, "cms.cont.nav4");
       assertEquals(nav.settings.pathOnly(), undefined);
       assertStringIncludes(out, 'id="head-nav" popover');
+      assertEquals((await global.cont("lang")).module?.name, "cms.cont.lang.choose2");
 
       const main = await f.page.cont("main");
       assertEquals((await main.conts()).length, 1);
@@ -64,17 +65,18 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
         const mod = f.page.module!;
         const template = moduleTemplate(mod);
         await template.create("#container { color: red; }");
+        const pinned = () => f.ctx.res.html.importMap.get("@u2/")!; // the layout's and its contents' release
         await f.render();
-        assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.6.0/class/flex/flex.css"))); // its own pin
+        assert(f.ctx.res.html.styles.has("@u2/class/flex/flex.css"));
+        assert(pinned().endsWith("@1.6.0/")); // its own pin
         await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5.19"); // the site moves on
         await f.render();
-        assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.5.19/class/flex/flex.css")));
+        assert(pinned().endsWith("@1.5.19/"));
         for (const directive of ["style-src", "script-src", "connect-src"] as const) // its release is allowed
           assert(Object.keys(f.ctx.res.csp[directive]).some((src) => src.endsWith("@1.5.19/")));
         await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5."); // half typed in the panel: the pin
-        f.ctx.res.html.styles.clear();
         await f.render();
-        assert([...f.ctx.res.html.styles].some((url) => url.endsWith("@1.6.0/class/flex/flex.css")));
+        assert(pinned().endsWith("@1.6.0/"));
         await fs.write(template.file, "<div id=own></div>");
         assertEquals(await f.render(), '<div id="own"></div>');
         await fs.write(template.file, "");

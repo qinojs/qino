@@ -128,9 +128,8 @@ export default class Placer {
       y += scrollY;
     }
 
-    if (this.options.use === 'transform') {
-      this.el.style.transform  = 'translate('+x+'px,'+y+'px)';
-    } else {
+    if (this.options.use === 'transform') this.el.style.transform  = 'translate('+x+'px,'+y+'px)';
+    else {
       this.el.style.top  = y + 'px';
       this.el.style.left = x + 'px';
     }

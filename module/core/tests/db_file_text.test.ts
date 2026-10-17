@@ -11,7 +11,7 @@ function fixture(dir: string, row: Record<string, unknown>) {
       table: () => ({
         update: (_id: number, vs: Record<string, unknown>) => { updates.push(vs); return Promise.resolve(); },
       }),
-      query: (...a: any[]) => { queries.push(fakeRender(a[0], a.slice(1)) as any); return Promise.resolve([]); },
+      exec: (...a: any[]) => { queries.push(fakeRender(a[0], a.slice(1)) as any); return Promise.resolve({}); },
     },
   };
   return { updates, queries, files: new DbFileManager(app as never, dir) };

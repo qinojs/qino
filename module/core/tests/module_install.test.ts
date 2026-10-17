@@ -1,12 +1,13 @@
+import { pathToFileURL } from "node:url";
+
 import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
-import { toFileUrl } from "../deps.ts";
 import { App } from "../lib/App.ts";
 
 const corePlugin = new URL("../plugin.ts", import.meta.url).href;
 
 // Two throwaway modules: one the app declares, one installed at runtime. install() appends a line
 // to a file, so "ran once" survives the second boot.
-async function fixture(): Promise<string> {
+async function fixture() {
   const dir = await Deno.makeTempDir() + "/";
   for (const name of ["t.one", "t.two"]) {
     await Deno.mkdir(dir + name, { recursive: true });
@@ -20,7 +21,7 @@ async function fixture(): Promise<string> {
     `);
     await Deno.writeTextFile(`${dir + name}/manifest.json`, `{ "dependencies": ["core"] }`);
   }
-  // A bundle: brings the other two along, the way cms.installation.default does — from init(),
+  // A bundle: brings the other two along from init(),
   // guarded by its own list, so an uninstalled one stays gone and a later addition still arrives.
   await Deno.mkdir(dir + "t.bundle", { recursive: true });
   await Deno.writeTextFile(`${dir}t.bundle/plugin.ts`, `
@@ -54,9 +55,9 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
-      app.modules.add(toFileUrl(`${dir}t.one/plugin.ts`).href);
+      app.modules.add(pathToFileURL(`${dir}t.one/plugin.ts`).href);
       await app.init();
       return app;
     };
@@ -65,7 +66,7 @@ Deno.test({
     assert(app1.modules.declared("t.one"));
     assertEquals(await lines(dir + "installs.log"), ["t.one"]);
 
-    await app1.modules.install(toFileUrl(`${dir}t.two/plugin.ts`).href, "t.two");
+    await app1.modules.install(pathToFileURL(`${dir}t.two/plugin.ts`).href, "t.two");
     assert(app1.modules.linked("t.two"));
     assert(!app1.modules.declared("t.two"), "a module installed at runtime is not declared");
     assertEquals(await lines(dir + "installs.log"), ["t.one", "t.two"]);
@@ -93,7 +94,7 @@ Deno.test({
 });
 
 /** Two modules of one store, one needing the other. */
-async function chain(): Promise<string> {
+async function chain() {
   const dir = await Deno.makeTempDir() + "/";
   for (const [name, deps] of [["d.leaf", []], ["d.top", ["d.leaf"]]] as [string, string[]][]) {
     await Deno.mkdir(dir + name, { recursive: true });
@@ -113,17 +114,17 @@ Deno.test({
   fn: async () => {
     const dir = await chain();
 
-    const declaring = new App({ dir: dir, db: `sqlite:${dir}a.sqlite` });
+    const declaring = new App({ dir, db: `sqlite:${dir}a.sqlite` });
     declaring.modules.add(corePlugin);
-    declaring.stores.add(new URL(toFileUrl(dir + "store.json").href)).add("d.top");
+    declaring.stores.add(new URL(pathToFileURL(dir + "store.json").href)).add("d.top");
     await declaring.init();
     assert(declaring.modules.linked("d.leaf"), "declared d.top, got d.leaf along");
     await declaring.db.close();
 
     // The same at runtime, where it also has to be remembered — both are installed, both removable.
-    const installing = new App({ dir: dir, db: `sqlite:${dir}b.sqlite` });
+    const installing = new App({ dir, db: `sqlite:${dir}b.sqlite` });
     installing.modules.add(corePlugin);
-    const store = installing.stores.add(new URL(toFileUrl(dir + "store.json").href));
+    const store = installing.stores.add(new URL(pathToFileURL(dir + "store.json").href));
     await installing.init();
     await store.install("d.top");
     assert(installing.modules.linked("d.leaf"));
@@ -144,8 +145,8 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
-      app.modules.add(toFileUrl(`${dir}t.bundle/plugin.ts`).href);
+      const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
+      app.modules.add(pathToFileURL(`${dir}t.bundle/plugin.ts`).href);
       await app.init();
       return app;
     };
@@ -189,7 +190,7 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       await app.init();
       return app;
@@ -197,7 +198,7 @@ Deno.test({
 
     const app1 = await boot();
     // A row pointing nowhere — same situation as a deleted folder or an unreachable host.
-    await app1.db.table("module").ensure({ name: "t.gone", url: toFileUrl(`${dir}t.gone/plugin.ts`).href });
+    await app1.db.table("module").ensure({ name: "t.gone", url: pathToFileURL(`${dir}t.gone/plugin.ts`).href });
     await app1.db.close();
 
     const app2 = await boot(); // boots at all: that is the assertion
@@ -220,7 +221,7 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       await app.init();
       return app;
@@ -251,9 +252,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     const dir = await fixture();
-    const catalog = toFileUrl(dir + "store.json").href;
+    const catalog = pathToFileURL(dir + "store.json").href;
     const boot = async () => {
-      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       await app.init();
       return app;
@@ -271,7 +272,7 @@ Deno.test({
     assertEquals(app2.stores.all().length, 0);
     await app2.db.close();
 
-    const app3 = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+    const app3 = new App({ dir, db: `sqlite:${dir}test.sqlite` });
     app3.modules.add(corePlugin);
     app3.stores.add(catalog); // declared in the application now
     await app3.init();
@@ -289,9 +290,9 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     const dir = await fixture();
-    const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
-    const folder = app.stores.add(toFileUrl(dir).href);
-    const catalog = app.stores.add(toFileUrl(dir + "store.json").href);
+    const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
+    const folder = app.stores.add(pathToFileURL(dir).href);
+    const catalog = app.stores.add(pathToFileURL(dir + "store.json").href);
 
     assertEquals(await folder.names(), await catalog.names(), "same modules, other discovery");
     assertEquals(folder.moduleUrl("t.one"), catalog.moduleUrl("t.one"), "the module URL is convention, not catalog");
@@ -336,9 +337,9 @@ Deno.test({
       `);
       await Deno.writeTextFile(`${dir + store}/r.mod/manifest.json`, `{ "dependencies": ["core"] }`);
     }
-    const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
+    const app = new App({ dir, db: `sqlite:${dir}test.sqlite` });
     app.modules.add(corePlugin);
-    const [a, b] = [app.stores.add(toFileUrl(dir + "a/").href), app.stores.add(toFileUrl(dir + "b/").href)];
+    const [a, b] = [app.stores.add(pathToFileURL(dir + "a/").href), app.stores.add(pathToFileURL(dir + "b/").href)];
     await app.init();
 
     await a.install("r.mod");

@@ -1,6 +1,0 @@
-{
-  "name": "ai1.transform",
-  "description": "Reads images (OCR) and transcribes audio and video with ai1 when files are transformed.",
-  "dependencies": ["ai1"],
-  "files": ["README.md", "manifest.json", "plugin.ts"]
-}

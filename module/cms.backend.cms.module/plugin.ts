@@ -48,7 +48,7 @@ const moduleStats = (app: App) => app.db.query`
     (SELECT MAX(l.time) FROM page p JOIN log l ON l.id = p.log_id_ch WHERE p.module = m.name) AS changed
   FROM module m`;
 
-async function renderOverview(node: Node): Promise<HtmlString> {
+async function renderOverview(node: Node) {
   const app = node.app, t = app.t, ctx = getCtx();
   const u = ctx.req.url.toURL();
 
@@ -107,7 +107,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 }
 
 /** Move nodes to another module — module axis on the target, edit access on every node. */
-async function replace(node: Node, vars: Record<string, unknown>): Promise<string> {
+async function replace(node: Node, vars: Record<string, unknown>) {
   const app = node.app, t = app.t;
   const target = String(vars.replace ?? "");
   const ids = String(vars.ids ?? "").split(",").map(Number).filter(Boolean);
@@ -128,7 +128,7 @@ async function replace(node: Node, vars: Record<string, unknown>): Promise<strin
 
 // Change history of the given nodes — same source as cms.backend.cms.history,
 // narrowed to this module's nodes. One row per request and node.
-async function historyRows(node: Node, ids: number[], titles: Map<number, string>): Promise<HtmlString[]> {
+async function historyRows(node: Node, ids: number[]) {
   if (!ids.length) return [];
   const t = node.app.t;
   const rows = await node.app.db.query`
@@ -144,8 +144,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   for (const r of rows) {
     const key = `${r.log_id}:${r.node_id}`;
     if (!events.has(key) && events.size >= 60) break;
-    const ev = events.get(key) ?? { row: r, labels: new Set<string>() };
-    events.set(key, ev);
+    const ev = events.getOrInsertComputed(key, () => ({ row: r, labels: new Set<string>() }));
     ev.labels.add(await describeChange(r.data, t)); // already HTML-escaped
   }
 
@@ -156,13 +155,13 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
     out.push(html`<tr>
       <td data-value="${r.time}">${u2.el.time(r.time)}
       <td>${who}
-      <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
+      <td class=-where>${await backend.breadcrumb(node, Number(r.node_id))}
       <td>${Array.from(labels, (l) => html`<div>${html.raw(l)}</div>`)}`);
   }
   return out;
 }
 
-async function renderDetail(node: Node, modName: string, message: string): Promise<HtmlString> {
+async function renderDetail(node: Node, modName: string, message: string) {
   const app = node.app, t = app.t;
   const ctx = getCtx();
   const back = ctx.req.url.toURL();
@@ -175,8 +174,10 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
     </div>`;
   }
 
-  const access = await modAccess(app, modName);
-  const standard = await app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`;
+  const [access, standard] = await Promise.all([
+    modAccess(app, modName),
+    app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`,
+  ]);
 
   const LIMIT = 500;
   const rows = await app.db.query`
@@ -185,7 +186,6 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
     : Number(await app.db.one`SELECT COUNT(*) FROM page WHERE module = ${modName}`);
 
   const [lCont, lPage] = await Promise.all([t`content`, t`page`]); // plain html`` does not await
-  const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
   const trs = [];
   const visible = [];
   let editable = 0;
@@ -200,7 +200,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
       <td>${nodeAccess >= WRITE ? html`<input type=checkbox data-check value="${n.id}">` : ""}
       <td><a href="${await n.url()}">${n.id}</a>
       <td>${row.type === "c" ? lCont : lPage}
-      <td class=-where>${await backend.breadcrumb(node, n.id, titles)}
+      <td class=-where>${await backend.breadcrumb(node, n.id)}
       <td>${accessWord(nodeAccess)}`);
   }
 
@@ -214,7 +214,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
   const canReplace = access >= ADMIN && editable > 0 && !!targets.length;
   // the code/plugin view of the same module, if that backend page is installed and readable
   const codeUrl = (await backend.toModuleUrl(node, "cms.backend.superuser.module"))({ mod: modName });
-  const history = await historyRows(node, visible, titles);
+  const history = await historyRows(node, visible);
 
   return html.async`<div class="u2-flex cmsBackendCmsModule" data-mod="${modName}">
   <div class=u2-card style="flex:0 0 auto">
@@ -268,7 +268,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
   const ctx = getCtx();
   const message = vars.replace ? await replace(node, vars) : "";
   const modName = String(vars.mod ?? ctx.req.query.mod ?? "");

@@ -67,9 +67,7 @@ Combobox.prototype = {
     if (el.offsetTop + el.offsetHeight > dialog.scrollTop + dialog.offsetHeight - 10) {
       dialog.scrollTop = el.offsetTop + el.offsetHeight - dialog.offsetHeight + 4;
     }
-    if (el.offsetTop < dialog.scrollTop + 10) {
-      dialog.scrollTop = el.offsetTop - 2;
-    }
+    if (el.offsetTop < dialog.scrollTop + 10) dialog.scrollTop = el.offsetTop - 2;
   },
   handleEvent(e){
     if (!this['on'+e.type]) return;

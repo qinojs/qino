@@ -28,12 +28,12 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const rootId = Number(admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
 
-  const trs: HtmlString[] = [];
+  const trs: Promise<HtmlString>[] = [];
 
   await renderChildren(rootNode, 0);
-  return html.join(trs);
+  return html.async`${trs}`;
 
-  async function loopConts(page: Node): Promise<{ onlineStart: number; onlineEnd: number; access: number }> {
+  async function loopConts(page: Node) {
     const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
     for (const cont of await page.conts()) {
       const child = await loopConts(cont);
@@ -47,7 +47,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return data;
   }
 
-  async function renderChildren(parent: Node, level: number): Promise<void> {
+  async function renderChildren(parent: Node, level: number) {
     const children = await parent.children({ type: treeType });
     for (const [, subPage] of children) {
       const subAccess = await subPage.access();
@@ -60,9 +60,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         : html`<span class=-toggle></span>`;
 
       // Title cell
-      let titleCell: HtmlString;
+      let titleCell: HtmlString | Promise<HtmlString>;
       if (subAccess < 1) {
-        titleCell = html`<span style="flex:1; color:#bbb">(${await t`no access`})</span>`;
+        titleCell = html.async`<span style="flex:1; color:#bbb">(${t`no access`})</span>`;
       } else {
         const titleObj = await subPage.title();
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
@@ -72,21 +72,19 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         titleCell = html`<input value="${titleText}" ${inputStyle} ${edit}>`;
       }
 
-      const linkCell = html`<a style="vertical-align:middle" href="${await subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`;
-
-      trs.push(html`
+      trs.push(html.async`
 <tr${isCont ? html.raw(' class=-isCont') : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${await t`Set as start point`}" href="${"?rp=" + subPage.id}">${subPage.id}</a>
+    <a title="${t`Set as start point`}" href="?rp=${subPage.id}">${subPage.id}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}
       ${titleCell}
-      ${linkCell}
+      <a style="vertical-align:middle" href="${subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>
     </div>
   <td>${renderOnlineStart(subPage, subAccess)}
-  <td>${await renderOnlineEnd(subPage, subAccess, contsData.onlineEnd)}
-  <td>${await renderAccess(subPage, subAccess, contsData.access)}
+  <td>${renderOnlineEnd(subPage, subAccess, contsData.onlineEnd)}
+  <td>${renderAccess(subPage, subAccess, contsData.access)}
   <td>${renderFlag("visible", subPage, subAccess)}
   <td>${renderFlag("searchable", subPage, subAccess)}
   <td><span>${subPage.vs.module}</span>`);
@@ -95,7 +93,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     }
   }
 
-  function renderOnlineStart(subPage: Node, access: number): HtmlString | string {
+  function renderOnlineStart(subPage: Node, access: number) {
     if (access === 0) return "---";
     const onlineStart = subPage.vs.online_start;
     const ok = !onlineStart || Number(onlineStart) < unixTime();
@@ -104,7 +102,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return html`<span style="color:${ok ? "green" : "red"}">${date}</span>`;
   }
 
-  async function renderOnlineEnd(subPage: Node, access: number, numNotInherit: number): Promise<HtmlString | string> {
+  async function renderOnlineEnd(subPage: Node, access: number, numNotInherit: number) {
     if (access === 0) return "---";
     const onlineEnd = subPage.vs.online_end;
     const ts = onlineEnd == null ? null : Number(onlineEnd);
@@ -125,7 +123,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return html`<span style="color:rgb(${r},${g},0)">${date}</span>${badge}`;
   }
 
-  async function renderAccess(subPage: Node, access: number, numNotInherit: number): Promise<HtmlString | string> {
+  async function renderAccess(subPage: Node, access: number, numNotInherit: number) {
     if (access === 0) return "---";
     const v = subPage.vs.access;
     const label = v == null ? await t`inherited` : (v ? await t`yes` : await t`no`);
@@ -136,14 +134,14 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   }
 
   /** Checkbox column for a boolean node flag ("visible" / "searchable"). */
-  function renderFlag(flag: string, subPage: Node, access: number): HtmlString | string {
+  function renderFlag(flag: string, subPage: Node, access: number) {
     if (access === 0) return "---";
     return html`<input type=checkbox data-toggle=${flag} data-pid="${subPage.id}"${subPage.vs[flag] ? " checked" : ""}${access === 1 ? " disabled" : ""}>`;
   }
 }
 
 /** Warning badge counting contents that override an inherited value. */
-function notInheritBadge(num: number, access: number, what: string): HtmlString | string {
+function notInheritBadge(num: number, access: number, what: string) {
   if (!num || access <= 2) return "";
   return html` <span title="Contents where ${html.raw(what)} is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${num}</span>`;
 }

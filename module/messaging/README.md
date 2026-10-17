@@ -56,7 +56,8 @@ each attempt; plain success needs no write.
 
 `msg` is the channel-independent part and goes into the `title` and `text` columns, so the journal
 can be read and searched without knowing any channel. `data` holds the channel's own payload and
-routing. A message without text (a code, a link) simply has none.
+routing. A message without text (a code, a link) simply has none. `spam` (0 to 1) is how likely an
+incoming message is spam, for channels that judge it.
 
 `messages(app, limit)` and `userMessages(app, usrId, limit)` read it with the deliveries nested.
 `channel` is a plain string, so it survives module renames.
@@ -329,7 +330,7 @@ Both land in the journal, and the type decides whether the outbox retries.
 Releasing is up to the caller: a backend button sets `due` to now, a schedule sets a time, an
 approval rule sets it when satisfied. `messaging` only asks what is due.
 
-`delivered(app, id, error?, ref?)` finishes one attempt. On `ChannelError` the delivery is retried
+`delivered(app, id, error?, externalId?)` finishes one attempt. On `ChannelError` the delivery is retried
 after one, then four minutes, and given up after three tries; other errors are final. The `outbox`
 cron job takes what is due and runs the same path as `send()` (the diagram above, from
 `recipients`). One path only, so retries behave exactly like the first send, and a batch shares its
@@ -379,7 +380,7 @@ claims; `dropClaim(app, type, usrId, address)` accepts one without code (admin a
 
 `message_delivery` — one row per recipient, with attempt time and error. `address` is where it
 really went; `usr_id` is set only if that address is a verified contact of the user, so the journal
-never claims a delivery to someone based on an unverified address. `ref` is the other side's id for
+never claims a delivery to someone based on an unverified address. `external_id` is the other side's id for
 it — a mail's `Message-ID`, a Twilio `sid`, a Telegram message. Ids that are only unique within a
 provider or chat get a prefix (`twilio:SM…`, `<chat>:<message>`), so they are never ambiguous.
 

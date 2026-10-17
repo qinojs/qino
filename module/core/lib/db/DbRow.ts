@@ -18,7 +18,7 @@ export function anonRowClass(table: string): typeof DbRow {
 }
 
 /** A base class already defines this column's accessor. */
-function boundAbove(cls: typeof DbRow, name: string): boolean {
+function boundAbove(cls: typeof DbRow, name: string) {
   for (let c = Object.getPrototypeOf(cls); c; c = Object.getPrototypeOf(c)) {
     if (boundNames.get(c)?.has(name)) return true;
   }
@@ -26,7 +26,7 @@ function boundAbove(cls: typeof DbRow, name: string): boolean {
 }
 
 /** Columns as accessors on the class, per column, so reloadFields() can add new ones. */
-function bindColumns(cls: typeof DbRow, fields: Map<string, unknown>): void {
+function bindColumns(cls: typeof DbRow, fields: Map<string, unknown>) {
   let done = boundNames.get(cls);
   if (!done) boundNames.set(cls, done = new Set());
   if (done.size === fields.size) return;
@@ -80,7 +80,7 @@ export class DbRow {
     return this.$save(); // the object form returns a promise
   }
 
-  #assign(name: string, value: unknown): void {
+  #assign(name: string, value: unknown) {
     const field = this.#table.field(name);
     if (!field) throw new Error(`${this.#table}.${name}: unknown column`);
     // valueTransform returns SQL strings; in memory a column must look like a SELECT returns it.

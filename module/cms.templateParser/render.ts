@@ -30,7 +30,7 @@ export async function renderNodes(nodes: TNode[], node: Node): Promise<string> {
   return render(nodes, new Tpl(node, named.size ? await templateValues(named, node) : undefined));
 }
 
-async function render(nodes: TNode[], t: Tpl): Promise<string> {
+async function render(nodes: TNode[], t: Tpl) {
   let out = "";
   for (const n of nodes) out += n.type === "text" ? t.html(n.value) : await renderElement(n, t);
   return out;
@@ -52,12 +52,12 @@ async function renderElement(el: El, t: Tpl): Promise<string> {
 }
 
 /** Typos in templates must be visible: warn in dev and edit mode */
-async function warn(node: Node, msg: string): Promise<void> {
+async function warn(node: Node, msg: string) {
   if (node.app.dev || await node.edit()) console.warn(`templateParser: ${msg} (module ${node.module?.name})`);
 }
 
 /** Resolve node= — a node id, "page", "parent"/"parent(2)" or "layout" (default: current node) */
-async function targetNode(el: El, t: Tpl): Promise<Node | undefined> {
+async function targetNode(el: El, t: Tpl) {
   const spec = attrValue(el, "node", t);
   if (spec === undefined) return t.node;
   const target = await resolveNodeSpec(spec, t.node);
@@ -65,7 +65,7 @@ async function targetNode(el: El, t: Tpl): Promise<Node | undefined> {
   return target;
 }
 
-async function resolveNodeSpec(spec: string, node: Node): Promise<Node | undefined> {
+async function resolveNodeSpec(spec: string, node: Node) {
   if (/^\d+$/.test(spec)) return (await node.cms.node(Number(spec))).exists();
   if (spec === "page")    return node.page();
   if (spec === "layout") {
@@ -80,7 +80,7 @@ async function resolveNodeSpec(spec: string, node: Node): Promise<Node | undefin
 // cms-link — stable internal href resolved from a node
 // ---------------------------------------------------------------------------
 
-async function renderCmsLink(el: El, spec: string, t: Tpl): Promise<string> {
+async function renderCmsLink(el: El, spec: string, t: Tpl) {
   const target = await resolveNodeSpec(spec, t.node);
   if (!target) {
     await warn(t.node, `unresolvable cms-link="${spec}" on <${el.tag}>`);
@@ -102,26 +102,26 @@ async function renderCmsLink(el: El, spec: string, t: Tpl): Promise<string> {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function attrValue(el: El, name: string, t: Tpl): string | undefined {
+function attrValue(el: El, name: string, t: Tpl) {
   const a = el.attrs.find(a => a.name === name);
   return a ? t.text(a.value ?? "") : undefined;
 }
 
 const hasAttr = (el: El, name: string) => el.attrs.some(a => a.name === name);
 
-function attrsHtml(attrs: TAttr[], t: Tpl): string {
+function attrsHtml(attrs: TAttr[], t: Tpl) {
   let out = "";
   for (const a of attrs) out += a.value === null ? ` ${a.name}` : ` ${a.name}="${hee(t.text(a.value))}"`;
   return out;
 }
 
-function tagHtml(el: El, inner: string, t: Tpl): string {
+function tagHtml(el: El, inner: string, t: Tpl) {
   const open = `<${el.tag}${attrsHtml(el.attrs, t)}>`;
   return el.self && VOID.has(el.tag) ? open : `${open}${inner}</${el.tag}>`;
 }
 
 /** Static subtree back to HTML (cms-text initial content) */
-function serialize(nodes: TNode[], t: Tpl): string {
+function serialize(nodes: TNode[], t: Tpl) {
   let out = "";
   for (const n of nodes) out += n.type === "text" ? t.html(n.value) : tagHtml(n, serialize(n.children, t), t);
   return out;
@@ -131,7 +131,7 @@ function serialize(nodes: TNode[], t: Tpl): string {
 // cms-text — the tag becomes the wrapper, inner html is the initial content
 // ---------------------------------------------------------------------------
 
-async function renderCmsText(el: El, name: string, t: Tpl): Promise<string> {
+async function renderCmsText(el: El, name: string, t: Tpl) {
   const target = await targetNode(el, t);
   if (!target) return "";
   const options: Record<string, unknown> = { tag: el.tag };
@@ -139,6 +139,7 @@ async function renderCmsText(el: El, name: string, t: Tpl): Promise<string> {
     if (a.name === "cms-text" || a.name === "node") continue;
     options[a.name] = a.value === null ? true : t.text(a.value);
   }
+  if (!/^[a-z][a-z0-9-]*$/i.test(String(options.tag))) options.tag = el.tag; // tag= may come from a setting
   const initial = serialize(el.children, t).trim();
   if (initial) options.initial = initial;
   return String(await target.cms.text(target, name, options));
@@ -148,7 +149,7 @@ async function renderCmsText(el: El, name: string, t: Tpl): Promise<string> {
 // <cms-image name=... /> — rendered via cms.image2, attributes become options
 // ---------------------------------------------------------------------------
 
-async function renderCmsImage(el: El, t: Tpl): Promise<string> {
+async function renderCmsImage(el: El, t: Tpl) {
   const name = attrValue(el, "name", t);
   if (!name) { await warn(t.node, "<cms-image> without name"); return ""; }
   const target = await targetNode(el, t);
@@ -170,7 +171,7 @@ async function renderCmsImage(el: El, t: Tpl): Promise<string> {
 // <cms-cont name=... /> — embedded sub-content node
 // ---------------------------------------------------------------------------
 
-async function renderCmsCont(el: El, t: Tpl): Promise<string> {
+async function renderCmsCont(el: El, t: Tpl) {
   const name = attrValue(el, "name", t);
   if (!name) { await warn(t.node, "<cms-cont> without name"); return ""; }
   const target = await targetNode(el, t);
@@ -179,11 +180,22 @@ async function renderCmsCont(el: El, t: Tpl): Promise<string> {
   return String(await (await target.cont(name, module)).html());
 }
 
+/** `{{settings.<path>}}`: a scalar setting of the node being rendered. */
+function setting(node: Node, path: string): TemplateValue | undefined {
+  const value = path.split(".").reduce((item: any, key) => item?.[key], node.settings)?.();
+  return ["string", "number", "boolean"].includes(typeof value) && value !== "" ? { text: String(value) } : undefined;
+}
+
 /** Static template text only: generated CMS content never passes through this resolver. */
-async function templateValues(named: Set<string>, node: Node): Promise<Record<string, TemplateValue>> {
+async function templateValues(named: Set<string>, node: Node) {
   const values: Record<string, TemplateValue> = {};
   const made = modulePlaceholders<Node>(node.app);
   for (const name of named) {
+    if (name.startsWith("settings.")) {
+      const value = setting(node, name.slice("settings.".length));
+      if (value) values[name] = value;
+      continue;
+    }
     const make = made[name];
     if (!make) { await warn(node, `unknown placeholder {{${name}}}`); continue; }
     const value = await make(node.app, node);
@@ -195,7 +207,7 @@ async function templateValues(named: Set<string>, node: Node): Promise<Record<st
 /** The placeholder names depend only on the source, so they are read once per parsed tree (shared
  *  across apps). A reparsed file is a new tree. */
 const namesOf = new WeakMap<TNode[], Set<string>>();
-function templateNames(nodes: TNode[]): Set<string> {
+function templateNames(nodes: TNode[]) {
   let names = namesOf.get(nodes);
   // joined, not spread: a big template has more text nodes than a call takes arguments
   if (!names) namesOf.set(nodes, names = placeholderNames(templateTexts(nodes).join("\n")));

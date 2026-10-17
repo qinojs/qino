@@ -15,7 +15,7 @@ export function sortTableNames(names: string[]): string[] {
 
 type FieldVisitor = (modName: string, table: string, field: string, fieldSchema: Record<string, unknown>) => void;
 
-function iterateSchemaFields(modules: Map<string, any>, visit: FieldVisitor): void {
+function iterateSchemaFields(modules: Map<string, any>, visit: FieldVisitor) {
   for (const [modName, mod] of modules) {
     const tables = mod.plugin?.dbSchema?.properties;
     if (!tables) continue;

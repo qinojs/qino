@@ -1,7 +1,8 @@
 import { b64url, randB64 } from "@qino/qino";
-import type { App, ResHtml } from "@qino/qino";
 
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, ResHtml } from "@qino/qino";
 
 const { name } = manifest;
 

@@ -1,4 +1,4 @@
-import { fs } from "@qino/qino";
+import { fs, sys } from "@qino/qino";
 
 // Instances sharing one dir overwrite each other's data/, cache/ and tmp/. Each instance keeps
 // touching a marker file; counting fresh ones finds other processes and machines.
@@ -9,12 +9,12 @@ const dirOf = (appDir: string) => appDir + "tmp/cms.backend.system/instance/";
 
 /** Announce this instance until `signal` aborts. */
 export async function markInstance(appDir: string, signal: AbortSignal): Promise<void> {
-  const file = dirOf(appDir) + Deno.pid + "-" + crypto.randomUUID().slice(0, 8);
+  const file = dirOf(appDir) + sys.pid + "-" + crypto.randomUUID().slice(0, 8);
   await fs.mkdir(dirOf(appDir));
   const beat = () => fs.write(file, "").catch(() => {});
   await beat();
   const timer = setInterval(beat, BEAT);
-  Deno.unrefTimer(timer); // never a reason to keep the process alive
+  sys.unrefTimer(timer); // never a reason to keep the process alive
   signal.addEventListener("abort", () => {
     clearInterval(timer);
     fs.remove(file).catch(() => {});

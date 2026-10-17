@@ -31,14 +31,13 @@ export const cron = {
 
 const CHALLENGE_TTL = 5 * 60;
 
-async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
-  const rpId   = String(await app.settings["auth.webauthn"].rpId   ?? "") || "localhost";
-  const rpName = String(await app.settings["auth.webauthn"].rpName ?? "") || "Qino";
-  return { rpId, rpName };
+async function getRp(app: App) {
+  const set = app.settings["auth.webauthn"];
+  return { rpId: String(await set.rpId ?? "") || "localhost", rpName: String(await set.rpName ?? "") || "Qino" };
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
-async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
+async function expectedOrigins(ctx: Ctx, rpId: string) {
   const setting = String(await ctx.app.settings["auth.webauthn"].origin ?? "");
   if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
   const url = ctx.req.url;
@@ -46,7 +45,7 @@ async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
   return [rpId === "localhost" ? "http://localhost" : `https://${rpId}`];
 }
 
-async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
+async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm") {
   const token = randB64(24);
   await db.table("webauthn_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
   return token;
@@ -213,35 +212,14 @@ export const api: ApiTree = {
       post: {
         description: "Request WebAuthn login challenge",
         access: Access.PUBLIC,
-        input: s.object({ email: s.optional(s.string()) }),
-        execute: async ({ email }: any) => {
+        execute: async () => {
           const ctx = getCtx();
-          const db = ctx.app.db;
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          let usrId = 0;
-          const allowCredentials = [];
-
-          if (email) {
-            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(username)) = LOWER(${String(email).trim()}) AND active = ${true}`;
-            if (usr) {
-              usrId = Number(usr.id);
-              const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;
-              for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
-            } else {
-              ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login challenge for unknown email" }).catch(() => {});
-            }
-          }
-
-          const token = await storeChallenge(db, challenge, usrId, "login");
+          const token = await storeChallenge(ctx.app.db, challenge, 0, "login");
           return {
             token,
-            publicKey: {
-              rpId, challenge,
-              timeout: CHALLENGE_TTL * 1000,
-              userVerification: "preferred",
-              allowCredentials: allowCredentials.length ? allowCredentials : undefined,
-            },
+            publicKey: { rpId, challenge, timeout: CHALLENGE_TTL * 1000, userVerification: "preferred" },
           };
         },
       },
@@ -263,8 +241,6 @@ export const api: ApiTree = {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login verification failed" }).catch(() => {});
             return r;
           }
-
-          if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
@@ -352,7 +328,7 @@ export const api: ApiTree = {
           const ctx  = getCtx();
           const cred = await ctx.app.db.row`SELECT usr_id FROM webauthn_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
-          if (Number(cred.usr_id) !== ctx.userId && !(ctx.user?.superuser)) throw new AccessError();
+          if (Number(cred.usr_id) !== ctx.userId && !ctx.user?.superuser) throw new AccessError();
           await ctx.app.db.table("webauthn_credential").delete(credId);
           return { ok: true };
         },

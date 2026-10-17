@@ -17,8 +17,7 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
   let node = await cm.nodeByModule("cms.backend");
   if (!node) {
     const root = await cm.node(1);
-    const page = await root.createChild({
-      id: 100,
+    const page = await root.child("backend", {
       module: "cms.layout.backend",
       access: 0,
       offline: 0,
@@ -26,15 +25,11 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       searchable: false,
       sort: 20,
     });
-    if (page) {
-      await page.changeGroup(1, 0);
-      await page.changeGroup(2, 0);
-      await page.changeGroup(3, 0);
-      const c = await page.cont('1');
-      await c.set("module", "cms.backend");
-      page.settings.childXML('<page visible=1></page>');
-      app.settings.cms.backend(String(page.id));
-    }
+    await page.changeGroup(1, 0);
+    await page.changeGroup(2, 0);
+    await page.changeGroup(3, 0);
+    await (await page.cont('1')).set("module", "cms.backend");
+    page.settings.childXML('<page visible=1></page>');
     node = await cm.nodeByModule("cms.backend");
   }
   return node?.page();
@@ -149,31 +144,21 @@ export function uaInfo(ua: string): { browser: string; version: string; os: stri
 }
 
 // Linked breadcrumb from the tree root down to a node (a page or a content
-// within it). Pass a `titles` map to cache ancestors across many breadcrumbs.
-// Contents usually have no title, so fall back to their (shortened) module name,
-// then the id.
-export async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string> = new Map()): Promise<HtmlString> {
+// within it). Contents usually have no title, so fall back to their (shortened)
+// module name, then the id.
+export async function breadcrumb(host: Node, nodeId: number): Promise<HtmlString> {
   const node = await host.cms.node(nodeId);
   const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
-  let pageIdx = -1;
-  for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
+  const pageIdx = nodes.findLastIndex((n) => n.vs?.type === "p");
   const crumbs = [];
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
-    const title = (await nodeTitle(n, titles)) || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
+    const title = (await (await n.title()).string()).trim() || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
     let url = "";
     try { url = await n.url(); } catch { /* no url (e.g. detached) */ }
     crumbs.push(html`<a href="${url}">${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
   }
   if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
   return html.join(crumbs, ' <span class=-sep>›</span> ');
-}
-
-async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
-  const hit = cache.get(n.id);
-  if (hit !== undefined) return hit;
-  const s = (await (await n.title()).string()).trim();
-  cache.set(n.id, s);
-  return s;
 }

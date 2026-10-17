@@ -102,6 +102,31 @@ export async function healthChecks(app: App) {
     });
   }
 
+  // A setting its module's schema no longer declares: left behind when the setting was dropped.
+  // Free objects (additionalProperties) take any key.
+  const rows = await db.query<{ id: number; basis: number; key: string }>`
+    SELECT id, basis, ${sql.id("offset")} AS ${sql.id("key")} FROM qg_setting`;
+  const below = Map.groupBy(rows, (r) => Number(r.basis));
+  const undeclared: { id: number; path: string }[] = [];
+  // deno-lint-ignore no-explicit-any
+  const walk = (basis: number, schema: any, path: string) => {
+    for (const row of below.get(basis) ?? []) {
+      const sub = schema.properties?.[row.key] ?? schema.additionalProperties;
+      if (sub === undefined && schema.properties) undeclared.push({ id: row.id, path: path + row.key });
+      else if (sub && typeof sub === "object") walk(row.id, sub, path + row.key + ".");
+    }
+  };
+  for (const row of below.get(0) ?? []) {
+    const schema = installedModules.get(row.key)?.plugin.settingsSchema;
+    if (schema) walk(row.id, schema, row.key + ".");
+  }
+  if (undeclared.length) {
+    notice["settings no module declares"] = () => ({
+      info: undeclared.map((s) => hee(s.path)).join("<br>"),
+      solutions: { "delete them": { solve: async () => { for (const s of undeclared) await deleteSetting(s.id); } } },
+    });
+  }
+
   // ── database ─────────────────────────────────────────────────────────────
   error["corrupt tables"] = async () => {
     const corrupt = await corruptTables(db);
@@ -267,7 +292,7 @@ export async function healthChecks(app: App) {
 
   // Counts stale files, or deletes them and sums their size. Counting stops early (the checks only
   // need "many"). A file being written has a fresh mtime, so the age limit protects it.
-  async function staleFiles(dir: string, maxAge: number, del = false): Promise<number> {
+  async function staleFiles(dir: string, maxAge: number, del = false) {
     let n = 0;
     try {
       for (const entry of await fs.list(dir)) {
@@ -323,7 +348,7 @@ async function corruptTables(db: App["db"]): Promise<Record<string, string>> {
 }
 
 // SQL for "now as unix epoch" per dialect.
-function dbEpochSql(dialect: string): string {
+function dbEpochSql(dialect: string) {
   if (dialect === "postgres") return "SELECT floor(extract(epoch FROM now()))";
   if (dialect === "sqlite") return "SELECT strftime('%s','now')";
   return "SELECT UNIX_TIMESTAMP()";

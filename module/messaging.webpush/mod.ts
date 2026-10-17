@@ -60,7 +60,7 @@ export const send = (
 ): Promise<number> => dispatch(app, messagingChannel, to, titled(message));
 
 /** Send a batch. Subscriptions the push service dropped are removed. */
-async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering): Promise<number> {
+async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering) {
   const table = app.db.table("webpush_subscription");
   const options = pushOptions(msg as PushMsg);
   const [subs, vapidDetails] = await Promise.all([

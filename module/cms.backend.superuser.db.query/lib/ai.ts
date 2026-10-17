@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, getCtx, sql } from "@qino/qino";
-import { run } from "@qino/qino/ai1.tools";
+import { run } from "@qino/qino/ai.tools";
 
 import type { App, Sql, Tool } from "@qino/qino";
 
@@ -15,7 +15,7 @@ const cap = (rows: unknown[], max: number) => rows.length > max ? [...rows.slice
 
 /** Run one statement in a transaction that is always rolled back, within SECONDS where the database
  *  can stop it (not SQLite): a read's first rows, a plan, or how many rows a write would change. */
-async function tryIt(app: App, statement: string): Promise<unknown> {
+async function tryIt(app: App, statement: string) {
   const db = app.db, text = String(statement).trim().replace(/;$/, ""), kind = TRY.exec(text);
   if (!kind || text.includes(";")) return { error: "One SELECT, EXPLAIN, INSERT, UPDATE or DELETE only" };
   if (!kind[1] && !kind[2] && db.dialect === "mysql" && Number(await db.one`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND engine <> 'InnoDB'`)) {
@@ -39,7 +39,7 @@ const trySql = (app: App): Tool => ({
   execute: (args: any) => tryIt(app, args?.sql),
 });
 
-// Natural-language → SQL via ai1, checked with try_sql. Returns the generated SQL (never auto-run).
+// Natural-language → SQL via ai, checked with try_sql. Returns the generated SQL (never auto-run).
 // `current` is the query already in the editor, passed so the model can refine it.
 export function askDbAi(app: App, question: string, schema: string, current = ""): Promise<{ sql: string; note: string }> {
   const system = `You are a SQL assistant for a ${app.db.dialect} database.

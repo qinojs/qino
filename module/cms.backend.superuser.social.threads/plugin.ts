@@ -5,7 +5,7 @@ import { socialProvider } from "@qino/qino/social.threads";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Threads", de: "Threads" });
 }
 
-async function act(app: App, vars: Record<string, unknown> | undefined): Promise<string> {
+async function act(app: App, vars: Record<string, unknown> | undefined) {
   if (!vars) return "";
   try {
     if (vars.save != null) {
@@ -29,7 +29,7 @@ async function act(app: App, vars: Record<string, unknown> | undefined): Promise
   }
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const note = await act(node.app, postedVars(node.id));
   const configured = Boolean(await node.app.settings["social.threads"].accessToken);
   return html.async`<div class=u2-card>
@@ -40,7 +40,7 @@ async function render(node: Node): Promise<HtmlString> {
       <p><small><a href="https://developers.facebook.com/apps/" target=_blank rel=noopener>${node.app.t`Open Meta apps`}</a></small>
       <u2-fields>
         ${node.app.t`User access token`} <input type=password name=accessToken autocomplete=new-password
-          placeholder="${configured ? await node.app.t`Configured — enter a token to replace` : ""}">
+          placeholder="${configured ? node.app.t`Configured — enter a token to replace` : ""}">
       </u2-fields>
       <button name=save value=1>${node.app.t`Save and check`}</button>
       <button name=check value=1>${node.app.t`Check`}</button>

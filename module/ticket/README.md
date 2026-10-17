@@ -52,7 +52,7 @@ Used-up tickets are not deleted. `uses` is how often it may be redeemed, `used` 
 issued and what happened. A daily cron removes them a year after issue, but only if invalid: an
 unused link without expiry is kept.
 
-Consumers: [cms.cont.pwReset](../cms.cont.pwReset/) issues them,
+Consumers: [cms.cont.password_reset](../cms.cont.password_reset/) issues them,
 [cms.backend.superuser.tickets](../cms.backend.superuser.tickets/) watches them.
 
 ## Possible extensions

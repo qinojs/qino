@@ -2,10 +2,9 @@ import { html } from "@qino/qino";
 
 import { backgroundAttr } from "../lib/bg.ts";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   return html.async`<section>
   <div class=-viewport>
     <div class=-content${html.raw(await backgroundAttr(node, "Image"))}></div>

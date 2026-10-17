@@ -144,6 +144,15 @@ and edit mode.
 </a>
 ```
 
+`{{settings.<path>}}` reads a scalar setting of the node being rendered; the
+module's `settingsSchema` makes it editable and gives its default. With
+`tag=`, `cms-text` takes its wrapper from it — only a tag name, else the
+template's own.
+
+```html
+<h2 cms-text=title tag="{{settings.heading|h2}}" if></h2>
+```
+
 ## Ideas (not implemented)
 
 - `<a cms-file=flyer>` — download links, editable in edit mode like images.

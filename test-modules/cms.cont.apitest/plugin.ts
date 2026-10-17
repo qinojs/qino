@@ -1,6 +1,6 @@
 import { Access, html, walk } from "@qino/qino";
 
-import type { Ctx, HtmlString, Route, Verb } from "@qino/qino";
+import type { Ctx, Route, Verb } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Static access category — the baseline badge; a dynamic guard may still differ per identity. */
@@ -13,10 +13,10 @@ function accessLabel(verb: Verb): string {
   return "custom";
 }
 
-const paramNames = (r: Route): string[] =>
+const paramNames = (r: Route) =>
   r.segments.flatMap((seg, i) => seg.startsWith(":") && r.nodes[i] ? [seg.slice(1).replace(/\*$/, "")] : []);
 
-function render(node: Node, { ctx }: { ctx: Ctx }): HtmlString {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   // smart prefill: current node feeds node-ish params, current user feeds user-ish ones
   const nid = String(node.id), uid = ctx.userId ? String(ctx.userId) : "";
   const prefill: Record<string, string> = { id: nid, pid: nid, node: nid, page: nid, lang: ctx.lang, user: uid, usr: uid, uid };

@@ -19,7 +19,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 
 /* Direct links are created in the node's URL panel, the admin box on 404 pages, and here. This
    list shows all of them. Data is in page_redirect. */
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t } = node.app;
 
   let message: HtmlString | "" = "";

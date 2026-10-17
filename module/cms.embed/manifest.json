@@ -1,6 +1,6 @@
 {
   "name": "cms.embed",
-  "description": "Indexes CMS page titles and texts in ai1.embed.",
-  "dependencies": ["cms", "ai1.embed", "cron"],
+  "description": "Indexes CMS page titles and texts in ai.embed.",
+  "dependencies": ["cms", "ai.embed", "cron"],
   "files": ["README.md", "dbschema.json", "manifest.json", "mod.ts", "plugin.ts"]
 }

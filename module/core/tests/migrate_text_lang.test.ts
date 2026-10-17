@@ -3,7 +3,7 @@ import { Db } from "../lib/db/Db.ts";
 import { parkText, unparkText } from "../lib/migrateTextLang.ts";
 
 /** The old shape: `text` carried (id, lang, text), so an id repeats once per language. */
-async function oldShape(): Promise<Db> {
+async function oldShape() {
   const db = new Db("sqlite:");
   await db.exec`CREATE TABLE text (id INTEGER, lang TEXT, text TEXT, log_id INTEGER, log_id_ch INTEGER)`;
   await db.exec`INSERT INTO text (id, lang, text, log_id) VALUES (1,'de','eins',10), (1,'en','one',10), (2,'de','zwei',11)`;

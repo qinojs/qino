@@ -1,0 +1,17 @@
+{
+  "name": "fin.bank",
+  "description": "Statements of any account: lines stored once, matched to payments by reference, the rest assigned by hand.",
+  "dependencies": [
+    "core",
+    "fin.payment"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -37,7 +37,7 @@ export async function at(secret: string, counter: number): Promise<string> {
   return String((mac.getUint32(offset) & 0x7fffffff) % 10 ** DIGITS).padStart(DIGITS, "0");
 }
 
-function encode(bytes: Uint8Array): string {
+function encode(bytes: Uint8Array) {
   let bits = 0, value = 0, out = "";
   for (const byte of bytes) {
     value = (value << 8) | byte;
@@ -46,7 +46,7 @@ function encode(bytes: Uint8Array): string {
   return bits ? out + ALPHABET[(value << (5 - bits)) & 31] : out;
 }
 
-function decode(base32: string): Uint8Array<ArrayBuffer> {
+function decode(base32: string) {
   let bits = 0, value = 0;
   const out: number[] = [];
   for (const char of base32.toUpperCase()) {

@@ -1,5 +1,4 @@
 import { renderTemplateFile } from "@qino/qino/cms.templateParser";
-
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import { codeFiles } from "./codeFiles.ts";
@@ -12,7 +11,7 @@ const { name } = manifest;
 
 export const api = nodeApi(name);
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node) {
   const code = codeFiles(node);
   if (await node.edit()) await code.create();
   await code.addAssets();

@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "WebAuthn", de: "WebAuthn" });
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const db  = node.app.db;
 
   if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "delete_cred" in ctx.req.body) {

@@ -1,6 +1,7 @@
 import { dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
+import { DbFile } from '@qino/pub/dbFile.js';
 import { dataTransferToUrl } from '@qino/pub/util/transfer.mjs';
 import { isImage, toBlob, toImage } from '../../../cms/pub/js/fileHelpers.mjs';
 
@@ -71,9 +72,7 @@ async function addFile(txtEl, f) {
       img.onload = () => {
         const max = txtEl.offsetWidth;
         ph.replaceWith(img);
-        if (img.width > max) {
-          new dbFile(img).set('w', max).set('h', max / img.width * img.height).write();
-        }
+        if (img.width > max) new DbFile(img).set('w', max).set('h', max / img.width * img.height).write();
         selectNode(img);
         img.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); // why
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
@@ -154,8 +153,8 @@ const drop = async e => {
   e.preventDefault(); // before await!!
   const pid = await cms.txtIdToPid(tid);
   // todo: intern file
-  // Add file to awoid access problems, but its a copy!!!!
-  // we only get here if its on other winodw!! (if internalDrag return)
+  // Add file to avoid access problems, but its a copy!!!!
+  // we only get here if its on other window!! (if internalDrag return)
   const intern = dbFileId(fileUrl);
   if (intern) {
     api.cms.node(pid).files.post({ file: intern });
@@ -186,7 +185,7 @@ const paste = e => {
   }
   // PDF viewers label plain text as text/html without tags; html would drop the line breaks. It is
   // already escaped, so only add the breaks.
-  const html = e.clipboardData.getData('text/html').replace(/\s+$/, '');
+  const html = e.clipboardData.getData('text/html').trimEnd();
   if (html.includes('\n') && !html.includes('<')) {
     e.preventDefault();
     const range = getSelection().getRangeAt(0);

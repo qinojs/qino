@@ -2,16 +2,16 @@ import { html } from "@qino/qino";
 
 import { cssLength } from "../lib/css.ts";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-function videoId(value: string): string {
+function videoId(value: string) {
   const url = URL.parse(value);
   const id = url?.hostname === "youtu.be" ? url.pathname.slice(1) : url?.searchParams.get("v") ?? url?.pathname.match(/\/embed\/([^/]+)/)?.[1];
   return /^[\w-]{6,32}$/.test(id ?? value) ? (id ?? value) : "";
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const textUrl = (await node.showText("__url")).plain();
   const raw = textUrl || String(await node.settings.url ?? "").trim();
   if (raw === "-") return html`<div></div>`;

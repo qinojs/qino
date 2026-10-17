@@ -18,10 +18,9 @@ export async function renderDashboard(node: Node): Promise<HtmlString> {
     try {
       const body = await widget(node.app, child); // child = the widget's own backend page, for deep links
       if (!body) continue;
-      const url = await child.url();
-      const title = await (await child.title()).string();
+      const [url, title] = await Promise.all([child.url(), child.title()]);
       // widget bodies are trusted markup from the module itself
-      widgets.push(html`<div class=u2-card><a class=-head href="${url}">${title}</a>${html.raw(body)}</div>`);
+      widgets.push(html`<div class=u2-card><a class=-head href="${url}">${await title.string()}</a>${html.raw(body)}</div>`);
     } catch (e) { console.error(e); }
   }
 

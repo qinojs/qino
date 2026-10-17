@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { cms_image2 } from "@qino/qino/cms.image2";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const boxes = [1, 2, 3, 4, 5]; // fixed count, as in the PHP module
@@ -13,12 +13,12 @@ const settingsSchema = {
   ])),
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const more = ctx.app.t`mehr`;
   const items = [];
   const edit = await node.edit();
   for (const nr of boxes) {
-    const url = await node.cms.url(node.settings[`link_${nr}`]()) ?? "";
+    const url = node.cms.url(node.settings[`link_${nr}`]());
     const image = cms_image2(await node.file(`bild_${nr}`), { width: 550, if: 1, editable: edit });
     items.push(html.async`<a class=-item href="${url}">
       <div class=-image>${image}</div>

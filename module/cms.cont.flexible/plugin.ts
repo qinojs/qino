@@ -28,7 +28,7 @@ const nodeSettingsSchema = {
   },
 };
 
-async function render(node: Node, { vars }: any = {}): Promise<string> {
+async function render(node: Node, { vars }: any = {}) {
   let conts = await node.conts();
 
   // Init a default child module once per node; deleting all children must not bring it back

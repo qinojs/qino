@@ -3,6 +3,7 @@ import { record } from "@qino/qino/messaging";
 
 import { addressOf } from "./address.ts";
 import { inbound } from "./settings.ts";
+import { spamOf } from "./spam.ts";
 
 import type { App } from "@qino/qino";
 
@@ -17,6 +18,7 @@ type Parsed = {
   from?: { value: { address?: string; name?: string }[] };
   to?: { text?: string };
   attachments?: { filename?: string; contentType?: string; content: Uint8Array }[];
+  headerLines?: { key: string; line: string }[];
 };
 
 /**
@@ -30,8 +32,8 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
   if (!config.enabled && !probe) return 0;
   if (!config.host || !config.pass) throw new Error("Inbound email needs an IMAP host and password");
 
-  const { ImapFlow } = await import("npm:imapflow@^1") as { ImapFlow: new (options: unknown) => ImapClient };
-  const { simpleParser } = await import("npm:mailparser@^3") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
+  const { ImapFlow } = await import("imapflow") as { ImapFlow: new (options: unknown) => ImapClient };
+  const { simpleParser } = await import("mailparser") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
   const client = new ImapFlow({
     host: config.host,
     port: config.port,
@@ -64,13 +66,14 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
 }
 
 /** One incoming mail as a journal entry, tied to the user the address belongs to. */
-async function journal(app: App, mail: Parsed, to: string): Promise<void> {
+async function journal(app: App, mail: Parsed, to: string) {
   // the Message-ID is the far side's name for it: a mail already journaled is not taken twice
   if (mail.messageId && await app.db.one`SELECT d.id FROM message_delivery d JOIN message m ON m.id = d.message_id
-    WHERE d.ref = ${mail.messageId} AND m.channel = ${"email"}`) return;
+    WHERE d.external_id = ${mail.messageId} AND m.channel = ${"email"}`) return;
   const sender = addressOf(mail.from?.value?.[0] ?? "");
   const usrId = sender ? await contactOwner(app.db, "email", sender.address) : undefined;
   const time = mail.date ? Math.floor(mail.date.getTime() / 1000) : unixTime();
+  const spam = await spamOf(app, mail, { from: sender?.address, usrId, to });
   await record(app, {
     channel: "email",
     direction: "in",
@@ -85,7 +88,8 @@ async function journal(app: App, mail: Parsed, to: string): Promise<void> {
     },
     data: { from: sender?.address, name: sender?.name, to: mail.to?.text ?? to, html: mail.html || undefined },
     time,
-  }, [{ usrId, address: sender?.address, ref: mail.messageId?.slice(0, 191), sent: unixTime() }]);
+    spam,
+  }, [{ usrId, address: sender?.address, externalId: mail.messageId?.slice(0, 191), sent: unixTime() }]);
 }
 
 type ImapClient = {

@@ -1,0 +1,24 @@
+{
+  "name": "cms.backend.ai",
+  "description": "Configures and evaluates ai: all models of all providers with capabilities and priorities, context length, prices, speed, benchmarks and measured errors.",
+  "dependencies": [
+    "cms.backend",
+    "ai",
+    "ai.stats",
+    "cron"
+  ],
+  "files": [
+    "catalog.ts",
+    "dbschema.json",
+    "lib/sources.ts",
+    "manifest.json",
+    "mod.ts",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/markdown.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

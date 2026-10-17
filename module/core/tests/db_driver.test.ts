@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "./deps.ts";
-import { DbDriver } from "../lib/db/DbDriver.ts";
+import { DbDriver, pgTypes } from "../lib/db/DbDriver.ts";
 import { Db } from "../lib/db/Db.ts";
 
 Deno.test("PostgreSQL driver exposes its dialect and escapes identifiers", async () => {
@@ -7,6 +7,15 @@ Deno.test("PostgreSQL driver exposes its dialect and escapes identifiers", async
   assertEquals(driver.dialect, "postgres");
   assertEquals(driver.quoteId('a"b'), '"a""b"');
   await driver.close();
+});
+
+Deno.test("PostgreSQL dates come as text, like on the other backends; other types parse as usual", () => {
+  const parse = (oid: number, text: string) => pgTypes.getTypeParser(oid)(text);
+  assertEquals(parse(1082, "2026-10-07"), "2026-10-07");
+  assertEquals(parse(1114, "2026-10-07 15:25:32"), "2026-10-07 15:25:32");
+  assertEquals(parse(1184, "2026-10-07 15:25:32+02"), "2026-10-07 15:25:32+02");
+  assertEquals(parse(16, "t"), true); // bool
+  assertEquals(parse(1007, "{1,2}"), [1, 2]); // int4[]
 });
 
 Deno.test("MySQL driver exposes its dialect and escapes identifiers", async () => {

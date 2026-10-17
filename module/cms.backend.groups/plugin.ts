@@ -17,7 +17,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node) {
   const ctx = getCtx();
   const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 
@@ -25,7 +25,7 @@ function render(node: Node): Promise<HtmlString> {
   return renderOverview(node);
 }
 
-async function renderOverview(node: Node): Promise<HtmlString> {
+async function renderOverview(node: Node) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;
@@ -41,18 +41,17 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
     FROM grp ORDER BY grp.type, grp.name`;
 
-  const trs = [];
-  for (const vs of rows) {
+  const trs = rows.map((vs) => {
     const membersUrl = usersUrl({ grp_id: vs.id });
-    trs.push(html`<tr itemid=${vs.id}>
+    return html`<tr itemid=${vs.id}>
       <td>${vs.id}
       <td><a href="?id=${vs.id}">${vs.name}</a>
       <td>${vs.type}
       <td style="text-align:right">${
         membersUrl ? html`<a href="${membersUrl}">${Number(vs.members)}</a>` : Number(vs.members)
       }
-      <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
-  }
+      <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
+  });
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex-grow:0">
@@ -89,7 +88,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
   const db = app.db;
@@ -97,23 +96,23 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const vs = await db.row`SELECT * FROM grp WHERE id = ${id}`;
   if (!vs) return html.async`<div class=u2-card><div>${t`Group not found.`}</div></div>`;
 
-  const usersUrl = await backend.toModuleUrl(node, "cms.backend.users");
-  const canManage = await canManageMembers(id);
+  const [usersUrl, canManage, members] = await Promise.all([
+    backend.toModuleUrl(node, "cms.backend.users"),
+    canManageMembers(id),
+    db.query`
+      SELECT usr.id, usr.username, usr.given_name, usr.family_name
+      FROM usr JOIN usr_grp ON usr.id = usr_grp.usr_id
+      WHERE usr_grp.grp_id = ${id} ORDER BY usr.family_name, usr.given_name`,
+  ]);
 
-  const members = await db.query`
-    SELECT usr.id, usr.username, usr.given_name, usr.family_name
-    FROM usr JOIN usr_grp ON usr.id = usr_grp.usr_id
-    WHERE usr_grp.grp_id = ${id} ORDER BY usr.family_name, usr.given_name`;
-
-  const memberRows = [];
-  for (const m of members) {
+  const memberRows = members.map((m) => {
     const label = [m.given_name, m.family_name].filter(Boolean).join(" ") || m.username || m.id;
     const userUrl = usersUrl({ id: m.id });
-    memberRows.push(html`<tr>
+    return html`<tr>
       <td>${userUrl ? html`<a href="${userUrl}">${label}</a>` : label}
       <td>${m.username}
-      <td>${canManage ? html`<button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`);
-  }
+      <td>${canManage ? html`<button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`;
+  });
 
   return html.async`<div class=u2-flex itemid="${id}">
   <div class=u2-card style="flex:0 1 21.25rem">

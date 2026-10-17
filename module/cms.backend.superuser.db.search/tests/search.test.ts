@@ -8,7 +8,7 @@ import manifest from "../manifest.json" with { type: "json" };
 const { name, dependencies } = manifest;
 
 /** `big` is past the scan limit, `small` is not — the two sides of the plan. */
-async function testDb(): Promise<Db> {
+async function testDb() {
   const db = new Db("sqlite:");
   await db.exec`CREATE TABLE big (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, body TEXT)`;
   await db.exec`CREATE INDEX idx_big_title ON big (title)`;
@@ -23,7 +23,7 @@ async function testDb(): Promise<Db> {
 const plan = (result: { table: string; parts: { mode: string; fields: string[] }[] }[]) =>
   result.map((r) => [r.table, ...r.parts.map((p) => `${p.mode}:${p.fields.join(",")}`)]);
 
-async function renderSearch(db: Db, term: string): Promise<string> {
+async function renderSearch(db: Db, term: string) {
   const ctx = await testContext({ url: `http://qino.test/?db_search=${encodeURIComponent(term)}`, app: { db, t: fakeT } });
   return String(await requestStorage.run(ctx, () => render({ app: { db, t: fakeT } } as never)));
 }

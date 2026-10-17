@@ -74,6 +74,8 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
   if (!verb || typeof verb.execute !== "function") throw new NotFoundError(`no ${method} on ${path}`);
 
   const ctx = getCtx();
+  if (!verb.access) throw new AccessError("no access defined");
+  if (!await verb.access(ctx)) throw new AccessError();
   const params: Params = Object.create(null);
   const isSplit = "input" in rawParams || "query" in rawParams;
   const input = isSplit ? asParams(rawParams.input) : rawParams;
@@ -90,8 +92,6 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
     params[name] = node.resolve ? await node.resolve(value, ctx, params) : value;
   }
 
-  if (!verb.access) throw new AccessError("no access defined");
-  if (!await verb.access(ctx)) throw new AccessError();
   // a dry run has no input, so the guard only sees the path params
   if (!opts.checkAccess) Object.assign(params, validatePart(verb.input, input, "input", !BODY_METHODS.has(m)), validatePart(verb.query, query, "query", true));
   if (verb.guard && !await verb.guard(params, ctx)) throw new AccessError();

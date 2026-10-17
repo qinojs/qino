@@ -1,4 +1,4 @@
-// Visits: log rows plus their scores, so log view, charts and rankings have data.
+// Visits: log rows, so log view and charts have data.
 import { createHash } from "node:crypto";
 
 import type { Seed } from "../seed.ts";
@@ -6,7 +6,7 @@ import type { Seed } from "../seed.ts";
 const md5 = (s: string) => createHash("md5").update(s).digest("hex");
 
 /** Id of a dictionary row (url, ip, user agent), inserting it the first time that value is seen. */
-async function dictId(s: Seed, table: string, field: string, value: string, rest: Record<string, unknown> = {}): Promise<string> {
+async function dictId(s: Seed, table: string, field: string, value: string, rest: Record<string, unknown> = {}) {
   const row = await s.db.table(table).rowBy(field, value);
   return row ? String(row) : String(await s.db.table(table).insert({ [field]: value, ...rest }));
 }
@@ -30,13 +30,5 @@ export async function run(s: Seed): Promise<void> {
       post: "",
     });
     s.count("visits");
-  }
-
-  if (!s.table("score")) return;
-  const { hit, scored, scopes } = await import("@qino/qino/score");
-  if (!scopes(s.db).get("page")) await scored(s.db, "page", 30 * 86400);
-  for (const page of s.pages) {
-    for (let i = s.rnd.int(0, 12); i > 0; i--) await hit(s.db, "page", page.id);
-    s.count("scores");
   }
 }

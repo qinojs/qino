@@ -1,0 +1,13 @@
+{
+  "properties": {
+    "embedding_ai_discover": {
+      "description": "Tables, events and tools of the app, embedded to find them by meaning (ai.discover)",
+      "additionalProperties": {
+        "properties": {
+          "kind": { "type": "string", "maxLength": 8, "description": "tables, events or tools" },
+          "name": { "type": "string", "maxLength": 52 }
+        }
+      }
+    }
+  }
+}

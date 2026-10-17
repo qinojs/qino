@@ -2,7 +2,7 @@ import { html } from "@qino/qino";
 import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 
 import { findOrphans, maintenanceActions, schemaExtras } from "./lib/cleanup.ts";
-import { indexIssues } from "./lib/indexes.ts";
+import { fulltextMissing, indexIssues } from "./lib/indexes.ts";
 import { sequenceIssue } from "./lib/sequences.ts";
 import { isEmptyField, isEmptyTable, longestValue, sqliteFreeBytes } from "./lib/validate.ts";
 import { isLarge } from "./nodeApi.ts";
@@ -15,13 +15,13 @@ export function backendDashboardWidget(app: App): HtmlString {
   return html`<div class=-body>${count ? html`<small class=u2-badge>${count} schema leftovers</small><br>` : ""}<small>Integrity, schema leftovers and database maintenance</small></div>`;
 }
 
-function issueBadge(name: string, label: string, count: number, body: HtmlString): HtmlString {
+function issueBadge(name: string, label: string, count: number, body: HtmlString) {
   if (!count) return html``;
   return html`<button class=u2-unstyle data-inspect="${name}"><small class=u2-badge>${label} ${count}</small></button>
     <template data-inspect-body="${name}">${body}</template>`;
 }
 
-function issueTable(title: string, head: HtmlString, rows: HtmlString[]): HtmlString {
+function issueTable(title: string, head: HtmlString, rows: HtmlString[]) {
   return html`<h3>${title}</h3>
     <table class=u2-table>
       <thead><tr>${head}
@@ -117,7 +117,7 @@ export async function renderRow(
       <td><code>${issue.field}</code>
       <td>${issue.current}
       <td>${issue.required}
-      <td>${longest == null ? "not checked" : longest}`;
+      <td>${longest ?? "not checked"}`;
   }));
   const oversizedBody = issueTable(`Wider than the schema in ${table}`, html`
     <th>Field
@@ -149,8 +149,10 @@ export async function renderRow(
     const warning = isLarge(status) ? " This is a large table and the database may be blocked for a long time." : " This may lock the table.";
     return html`<li><button data-action=maintenance data-maintenance="${maintenance}" data-table="${table}" u2-confirm="Run ${maintenance} on ${table}?${warning}">${maintenance}</button>`;
   });
+  const fulltext = fulltextMissing(db, table);
   return html`<tr data-table-name="${table}">
     <td data-value="${table}">${table} <small>${status.engine}</small> ${isLarge(status) ? html`<small class=u2-badge title="Maintenance may take a long time and block the database">large</small>` : ""}
+      ${fulltext.length ? html`<u2-ico inline icon=warning title="No fulltext index on ${fulltext.join(", ")}: ${db.dialect} has none of its own, a search scans the column">!</u2-ico>` : ""}
     <td data-value="${status.rows ?? -1}" style="text-align:right">${status.rows ?? "?"}
     <td data-value="${status.bytes ?? -1}">${status.bytes != null ? html`<u2-bytes>${status.bytes}</u2-bytes>` : "?"}
     <td data-value="${status.overhead ?? status.deadRows ?? -1}">${status.overhead != null ? html`<u2-bytes>${status.overhead}</u2-bytes>` : status.deadRows ? html`<small class=u2-badge>${status.deadRows} dead rows</small>` : "–"}
@@ -164,7 +166,7 @@ export async function renderRow(
     </u2-menubutton>`;
 }
 
-async function tableRows(node: Node): Promise<HtmlString> {
+async function tableRows(node: Node) {
   const orphans = await findOrphans(node.app.db);
   const extras = schemaExtras(node.app.db);
   return html.join(await Promise.all(Object.keys(node.app.db.tables).sort().map((table) => renderRow(node, table, orphans, extras))));

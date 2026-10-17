@@ -23,7 +23,23 @@ export class ResHtml {
   // deno-lint-ignore no-explicit-any
   get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
-  #renderHead(): string {
+  /** Turn import-map names in `scripts` and `styles` (`@u2/el/alert/alert.js`) into their urls,
+   *  as the browser resolves an import: an exact entry, else the longest "/"-prefix. */
+  resolve(): void {
+    const prefixes = [...this.importMap.keys()].filter((k) => k.endsWith("/")).sort((a, b) => b.length - a.length);
+    const resolve = (url: string) => {
+      const to = this.importMap.get(url);
+      if (to) return to;
+      const prefix = prefixes.find((p) => url.startsWith(p));
+      if (prefix) return this.importMap.get(prefix) + url.slice(prefix.length);
+      if (!URL.canParse(url) && !/^[./]/.test(url)) console.warn(`ResHtml: "${url}" is not in the import map`);
+      return url;
+    };
+    this.scripts = new Set([...this.scripts].map(resolve));
+    this.styles = new Set([...this.styles].map(resolve));
+  }
+
+  #renderHead() {
     const hasScripts = this.scripts.size || this.legacyScripts.size || this.inlineScripts.size;
     let ret = '<meta charset=utf-8>\n';
 
@@ -86,6 +102,6 @@ const attrs = (o: Record<string, string>) =>
   Object.entries(o).map(([k, v]) => /^[a-zA-Z][\w-]*$/.test(k) ? ` ${k}="${hee(v)}"` : "").join("");
 
 /** JSON serialized safely for inlining into a <script> element (escapes `<` so `</script>` can't break out). */
-function jsonScript(value: unknown): string {
+function jsonScript(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }

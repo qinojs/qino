@@ -1,6 +1,0 @@
-{
-  "name": "cms.frontend.ai1",
-  "description": "An assistant in the CMS text editor that rewrites a field on instruction, answered by ai1.",
-  "dependencies": ["ai1.api", "cms"],
-  "files": ["README.md", "manifest.json", "plugin.ts", "pub/module.svg", "pub/rte.js"]
-}

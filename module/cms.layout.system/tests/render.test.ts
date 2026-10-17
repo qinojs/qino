@@ -23,6 +23,7 @@ Deno.test("cms.layout.system: render adds assets and wraps the main cont", async
   const out = String(await cms.node.render(node as any, { ctx }));
   assertEquals(out.includes("<h1>Login</h1>"), true);
   assertEquals(out.includes("<form>Form</form>"), true);
+  ctx.res.html.resolve(); // as the request does before html-ready
   assertEquals(ctx.res.html.styles.has(u2Root + "css/norm/norm.css"), true);
   assertEquals(ctx.res.html.styles.has("/m/cms/pub/css/ui.css"), true);
   assertEquals(ctx.res.html.scripts.has("/m/cms/pub/js/cms.mjs"), true);
@@ -33,7 +34,7 @@ Deno.test("cms.layout.system: install takes over the pages of cms.layout.login",
   const values: unknown[] = [];
   const uninstalled: string[] = [];
   const app = {
-    db: { query: (parts: TemplateStringsArray, ...vs: unknown[]) => { sql = parts.join("?"); values.push(...vs); } },
+    db: { exec: (parts: TemplateStringsArray, ...vs: unknown[]) => { sql = parts.join("?"); values.push(...vs); } },
     modules: { uninstall: (name: string) => Promise.resolve(void uninstalled.push(name)) },
   };
 

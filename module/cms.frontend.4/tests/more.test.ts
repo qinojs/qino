@@ -7,7 +7,7 @@ import { api } from "../plugin.ts";
 import type { App, Ctx } from "@qino/qino";
 
 /** Just enough app for the email channel to journal and deliver. */
-async function makeApp(): Promise<App> {
+async function makeApp() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...fileDbSchema.properties, ...messagingDbSchema.properties, ...contactDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
@@ -32,7 +32,7 @@ async function makeApp(): Promise<App> {
 }
 
 /** The panel's context: a logged-in user and the feedback draft in the session. */
-function makeCtx(app: App, draft: { value: string }, user: Record<string, unknown>): Ctx {
+function makeCtx(app: App, draft: { value: string }, user: Record<string, unknown>) {
   return {
     app,
     req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },
@@ -41,7 +41,7 @@ function makeCtx(app: App, draft: { value: string }, user: Record<string, unknow
   } as unknown as Ctx;
 }
 
-async function close(app: App): Promise<void> {
+async function close(app: App) {
   await app.db.close();
   await Deno.remove(app.dir, { recursive: true });
 }

@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.superuser.flow",
-  "description": "Lists the flows, switches them on, off or to test, shows their steps and tries them.",
+  "description": "Lists the flows, switches them on, off or to test, edits their code and tries them.",
   "dependencies": [
     "cms.backend",
     "sandbox.flow"

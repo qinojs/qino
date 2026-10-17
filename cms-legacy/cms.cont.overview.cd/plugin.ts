@@ -2,10 +2,9 @@ import { html } from "@qino/qino";
 
 import { backgroundAttr } from "../lib/bg.ts";
 
-import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const page = await node.page();
   const startId = Number(await node.settings["start page"]);
   let start = startId ? await node.cms.node(startId) : page;
@@ -25,14 +24,13 @@ async function render(node: Node): Promise<HtmlString> {
   }
   if (await node.settings["sort direction"] === "Descending") pages.reverse();
   const limit = Math.max(0, Number(await node.settings.limit) || 0);
-  const items: HtmlString[] = [];
-  for (const item of limit ? pages.slice(0, limit) : pages) {
+  const items = (limit ? pages.slice(0, limit) : pages).map(async (item) => {
     const url = await item.url();
-    items.push(await html.async`<div class=-item-wrapper><div class=-item data-c1-href="${url}"${html.raw(await backgroundAttr(item, "overview preview"))}>
+    return html.async`<div class=-item-wrapper><div class=-item data-c1-href="${url}"${html.raw(await backgroundAttr(item, "overview preview"))}>
   <span class=-text><a href="${url}">${item.showTitle()}</a><br></span>
-</div></div>`);
-  }
-  return html`<div class=cd-overview>${items}</div>`;
+</div></div>`;
+  });
+  return html.async`<div class=cd-overview>${items}</div>`;
 }
 
 export const cms = { node: { render } };

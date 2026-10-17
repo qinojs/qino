@@ -1,0 +1,214 @@
+{
+  "properties": {
+    "invoice": {
+      "description": "A claim: out = we issued it (receivable), in = we received it (payable)",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["in", "out"],
+            "maxLength": 3,
+            "x-index": true
+          },
+          "type": {
+            "type": "string",
+            "enum": ["invoice", "credit_note"],
+            "default": "invoice",
+            "maxLength": 16,
+            "x-index": true,
+            "description": "An invoice (EN 16931 380), or a credit note (381) that corrects one — its amounts are negative"
+          },
+          "corrects": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "invoice",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The invoice a credit note corrects (EN 16931 BT-25)"
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true,
+            "description": "Drawn when an outgoing invoice is issued; the sender's for an incoming one"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "open", "paid", "canceled"],
+            "maxLength": 8,
+            "x-index": true
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "x-index": true,
+            "description": "Issue date"
+          },
+          "due": {
+            "type": "string",
+            "format": "date",
+            "x-index": true,
+            "description": "Due date, YYYY-MM-DD; overdue is derived from it"
+          },
+          "sent": {
+            "type": "string",
+            "format": "date",
+            "description": "When it first went to the customer; set by hand where it went by post"
+          },
+          "term": {
+            "type": "integer",
+            "description": "Days to pay, as agreed and printed; the due date follows from it on issue"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "ISO 4217 code"
+          },
+          "tax_included": {
+            "type": "boolean",
+            "default": false,
+            "description": "Line prices include tax"
+          },
+          "net": {
+            "type": "integer",
+            "default": 0,
+            "description": "In minor units; negative for a credit note"
+          },
+          "tax": {
+            "type": "integer",
+            "default": 0,
+            "description": "In minor units; negative for a credit note"
+          },
+          "total": {
+            "type": "integer",
+            "default": 0,
+            "description": "Net plus tax, in minor units; negative for a credit note, so open is total - paid for all"
+          },
+          "paid": {
+            "type": "integer",
+            "default": 0,
+            "description": "Settled so far — payments less refunds, and credit notes taken off — in minor units; negative for a credit note"
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "What the invoice is for, as <module>:<id>"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 8,
+            "description": "The language it is written in"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The PDF as it was printed"
+          },
+          "party": {
+            "type": "string",
+            "description": "The other side as printed, JSON shaped like identity.organization"
+          },
+          "text": {
+            "type": "string",
+            "description": "Notes printed on the invoice"
+          },
+          "data": {
+            "type": "string",
+            "description": "What other modules keep with it, JSON"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "direction", "status", "currency", "created", "changed"]
+      }
+    },
+    "invoice_line": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "invoice_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "invoice",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "description": {
+            "type": "string",
+            "description": "More about the item, printed below its name"
+          },
+          "quantity": {
+            "type": "number",
+            "default": 1,
+            "description": "Negative on a credit note: what is given back"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "h, pcs, kg …"
+          },
+          "price": {
+            "type": "number",
+            "description": "Per unit, in minor units, finer if need be (23.45 = 0.2345 CHF); with tax if tax_included"
+          },
+          "tax_rate": {
+            "type": "number",
+            "default": 0,
+            "description": "Percent"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "quantity × price, rounded half away from zero, in minor units; negative on a credit note"
+          }
+        },
+        "required": ["id", "invoice_id", "price", "amount"]
+      }
+    },
+    "invoice_counter": {
+      "description": "The last number drawn per format, so a format with {year} restarts each year",
+      "additionalProperties": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary",
+            "description": "The number format with the year filled in"
+          },
+          "n": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "required": ["format", "n"]
+      }
+    }
+  }
+}

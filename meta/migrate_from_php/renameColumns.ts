@@ -34,7 +34,7 @@ export async function migrate(app: App): Promise<void> {
 
 async function carryOver(db: Db, table: string, old: string, current: string): Promise<void> {
   const set = sql`${sql.id(current)} = ${sql.id(old)}`;
-  await db.query`UPDATE ${sql.id(table)} SET ${set} WHERE ${sql.id(current)} IS NULL OR ${sql.id(current)} = ${""}`;
+  await db.exec`UPDATE ${sql.id(table)} SET ${set} WHERE ${sql.id(current)} IS NULL OR ${sql.id(current)} = ${""}`;
   // SQLite and PostgreSQL can't drop an indexed column (MySQL drops the index too). Indexes are
   // named idx_<table>_<column>.
   if (db.dialect !== "mysql") await db.query`DROP INDEX IF EXISTS ${sql.id(`idx_${table}_${old}`)}`;

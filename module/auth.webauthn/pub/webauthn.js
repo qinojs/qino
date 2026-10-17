@@ -69,10 +69,10 @@ export class WebAuthn {
 
   // ── Login ─────────────────────────────────────────────────────────────────
 
-  async login(opts = {}) {
+  async login() {
     if (!globalThis.PublicKeyCredential) throw new Error(await t`WebAuthn is not supported.`);
 
-    const { token, publicKey } = await this.#post("/login/challenge", { email: opts.email ?? null });
+    const { token, publicKey } = await this.#post("/login/challenge", {});
     return this.#verify("/login/verify", token, await this.#getAssertion(publicKey));
   }
 

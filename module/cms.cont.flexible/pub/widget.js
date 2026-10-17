@@ -18,7 +18,7 @@ export default async function (widget, context) {
   // Only a container with exactly one entry has something to step aside for.
   const extra = (rows) => rows.length !== 1 ? '' : html`
     <p class=-unwrap-note>${t`Replace this flexible container by its single content? No further content can be added here afterwards.`}</p>
-    <button type=button class="-unwrap u2-button">${t`Replace by content`}</button>`;
+    <button type=button class=-unwrap>${t`Replace by content`}</button>`;
 
   await list(widget, { ...context, extra });
 

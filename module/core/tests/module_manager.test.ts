@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
+import { pathToFileURL } from "node:url";
+
 import { assert, assertEquals, assertRejects } from "./deps.ts";
-import { toFileUrl, $item } from "../deps.ts";
+import { $item } from "../deps.ts";
 import { Module, ModuleManager } from "../lib/ModuleManager.ts";
 import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";
@@ -9,6 +11,7 @@ import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 // The managers read their `module` and `store` rows on init; these tests have no database.
 const fakeDb = () => ({
+  listTables: () => Promise.resolve(["module", "store"]),
   query: () => Promise.resolve([]),
   table: () => ({ ensure: () => Promise.resolve(), delete: () => Promise.resolve() }),
 });
@@ -66,7 +69,7 @@ Deno.test({
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
     };
     const modules = new ModuleManager(app as any);
-    const local = await modules.import(toFileUrl(localModDir + "local.foo/plugin.ts").href);
+    const local = await modules.import(pathToFileURL(localModDir + "local.foo/plugin.ts").href);
     assertEquals(local.name, "local.foo");
     assertEquals(local.plugin.value, "local");
     assert(local.source.endsWith("/local.foo/plugin.ts"));
@@ -81,16 +84,16 @@ Deno.test({
     assertEquals(local.cache, dir + "cache/local.foo/");
     assertEquals(local.tmp,   dir + "tmp/local.foo/");
 
-    const privateModule = await modules.import(toFileUrl(dir + "private/private.foo/plugin.ts").href);
+    const privateModule = await modules.import(pathToFileURL(dir + "private/private.foo/plugin.ts").href);
     assertEquals(privateModule.name, "private.foo");
     assertEquals(privateModule.plugin.value, "private");
     assert(modules.get("local.foo"));
 
-    const jsModule = await modules.import(toFileUrl(dir + "private/private.js/plugin.js").href);
+    const jsModule = await modules.import(pathToFileURL(dir + "private/private.js/plugin.js").href);
     assertEquals(jsModule.name, "private.js");
     assertEquals(jsModule.plugin.value, "js");
 
-    const fileUrlModule = await modules.import(toFileUrl(dir + "remote-ish/plugin.ts").href);
+    const fileUrlModule = await modules.import(pathToFileURL(dir + "remote-ish/plugin.ts").href);
     assertEquals(fileUrlModule.name, "remote-ish");
     assertEquals(fileUrlModule.plugin.value, "file-url");
 
@@ -154,17 +157,17 @@ Deno.test("ModuleManager rejects invalid plugins", async () => {
 
     const modules = new ModuleManager({} as any);
     await assertRejects(
-      () => modules.import(toFileUrl(root + "/plugin.ts").href),
+      () => modules.import(pathToFileURL(root + "/plugin.ts").href),
       Error,
       "has an invalid name",
     );
     await assertRejects(
-      () => modules.import(toFileUrl(root + "/bad/plugin.ts").href),
+      () => modules.import(pathToFileURL(root + "/bad/plugin.ts").href),
       Error,
       "dependencies must be an array",
     );
     await assertRejects(
-      () => modules.import(toFileUrl(root + "/").href),
+      () => modules.import(pathToFileURL(root + "/").href),
       Error,
       "Plugin import needs a file",
     );
@@ -212,7 +215,7 @@ Deno.test("Store selects modules by directory name", async () => {
     assertEquals([...selected.modules.all().keys()], ["hello.world"]);
 
     const all = createApp();
-    await all.stores.add(toFileUrl(root + "/store.json").href).addAll();
+    await all.stores.add(pathToFileURL(root + "/store.json").href).addAll();
     await all.modules.init();
     assertEquals(all.loaded, ["hello.analytics", "hello.world"]);
   } finally {
@@ -246,7 +249,7 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     };
 
     const missing = new ModuleManager(app as any);
-    await missing.import(toFileUrl(root + "/missing/plugin.ts").href);
+    await missing.import(pathToFileURL(root + "/missing/plugin.ts").href);
     await assertRejects(
       () => missing.init(),
       Error,
@@ -259,7 +262,7 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
         ...fakeDb(),
         query: () => Promise.resolve([{
           name: "missing.dep",
-          url: toFileUrl(root + "/missing/plugin.ts").href,
+          url: pathToFileURL(root + "/missing/plugin.ts").href,
           installed: 1,
         }]),
       },
@@ -267,13 +270,13 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     await installed.init();
     assert(!installed.linked("missing.dep"));
     assert(installed.failures().has("missing.dep"));
-    await installed.install(toFileUrl(root + "/not.imported/plugin.ts").href);
+    await installed.install(pathToFileURL(root + "/not.imported/plugin.ts").href);
     assert(installed.linked("missing.dep"));
     assertEquals(installed.failures().size, 0);
 
     const cyclic = new ModuleManager(app as any);
-    await cyclic.import(toFileUrl(root + "/a/plugin.ts").href);
-    await cyclic.import(toFileUrl(root + "/b/plugin.ts").href);
+    await cyclic.import(pathToFileURL(root + "/a/plugin.ts").href);
+    await cyclic.import(pathToFileURL(root + "/b/plugin.ts").href);
     await assertRejects(
       () => cyclic.init(),
       Error,

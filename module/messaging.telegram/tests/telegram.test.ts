@@ -10,7 +10,7 @@ import type { Ctx } from "@qino/qino";
 
 const SECRET = "test-secret";
 
-async function makeDb(): Promise<Db> {
+async function makeDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT)`;
@@ -24,7 +24,7 @@ const makeApp = (db?: Db) => ({
   t: fakeT,
   settings: { "messaging.telegram": { botToken: "123456:test-token", webhookSecret: SECRET } },
   url: () => Promise.resolve("https://qino.test/"),
-  modules: { linked: () => [] },
+  modules: { linked: (name?: string) => name ? undefined : [] },
   fire: () => Promise.resolve({}),
   // deno-lint-ignore no-explicit-any
 }) as any;
@@ -41,7 +41,7 @@ function fakeTelegram(replies: unknown[] = []) {
   return { calls, restore: () => void (globalThis.fetch = original) };
 }
 
-const update = (db: Db, message: unknown, secret = SECRET): Promise<Ctx> =>
+const update = (db: Db, message: unknown, secret = SECRET) =>
   testContext({
     url: "http://qino.test/telegram/webhook",
     method: "POST",
@@ -133,11 +133,16 @@ Deno.test("a linked user's incoming Telegram message is journaled for the conver
       text: "Hello back",
     })), 200);
     const row = await db.row`
-      SELECT m.channel, m.direction, m.text, m.data, d.usr_id
+      SELECT m.channel, m.direction, m.text, m.data, m.spam, d.usr_id
       FROM message m JOIN message_delivery d ON d.message_id = m.id`;
     assertEquals([row?.channel, row?.direction, row?.usr_id], ["telegram", "in", 1]);
     assertEquals(row?.text, "Hello back");
     assertEquals(JSON.parse(String(row?.data)).messageId, 9);
+    assertEquals(row?.spam, 0, "judged; without ai nothing speaks against it");
+
+    // a stranger likewise
+    assertEquals(await run(update(db, { chat: { id: 777, type: "private" }, text: "Buy now" })), 200);
+    assertEquals(await db.one`SELECT spam FROM message ORDER BY id DESC LIMIT 1`, 0);
   } finally {
     bot.restore();
   }
@@ -153,7 +158,7 @@ Deno.test("send delivers, clears a stale error and drops a chat that blocked the
     assertEquals(bot.calls[0].method, "sendMessage");
     assertEquals(bot.calls[0].params, { text: "<b>hi</b>", parse_mode: "HTML", chat_id: 555 });
     // the counter is the chat's, so the chat is part of the name
-    assertEquals((await db.row`SELECT ref FROM message_delivery`)?.ref, "555:42");
+    assertEquals((await db.row`SELECT external_id FROM message_delivery`)?.external_id, "555:42");
     assertEquals((await db.row`SELECT error FROM telegram_chat`)?.error, null);
   } finally {
     bot.restore();

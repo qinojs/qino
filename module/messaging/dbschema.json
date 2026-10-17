@@ -59,6 +59,11 @@
           "time": {
             "type": "integer",
             "x-index": true
+          },
+          "spam": {
+            "type": "number",
+            "x-index": true,
+            "description": "How likely an incoming message is spam, 0 to 1; null when not judged"
           }
         },
         "required": ["id", "channel", "direction", "data", "time"]
@@ -165,7 +170,7 @@
             "default": 0,
             "description": "With due and time both null: 0 is held back, more is given up"
           },
-          "ref": {
+          "external_id": {
             "type": "string",
             "maxLength": 191,
             "x-index": true,

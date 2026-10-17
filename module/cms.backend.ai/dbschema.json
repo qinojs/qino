@@ -1,0 +1,42 @@
+{
+  "properties": {
+    "ai_model_meta": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "model_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_model",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "model_provider_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_model_provider",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "The offer it describes; none for what is about the model itself (benchmarks)"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Where it comes from: the provider's model list, models.dev, Artificial Analysis"
+          },
+          "data": {
+            "type": "object",
+            "description": "The source's own entry, as it came"
+          },
+          "time": {
+            "type": "integer",
+            "description": "Last imported"
+          }
+        },
+        "required": ["id"]
+      }
+    }
+  }
+}

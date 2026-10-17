@@ -17,12 +17,12 @@ const backoff = (attempts: number) => 60 * 4 ** (attempts - 1);
 
 /**
  * Store the outcome of an attempt. Our fault and attempts left: queue again. Otherwise final.
- * `ref` is the other side's id.
+ * `externalId` is the other side's id.
  */
-export async function delivered(app: App, id: number, error?: unknown, ref?: string): Promise<void> {
+export async function delivered(app: App, id: number, error?: unknown, externalId?: string): Promise<void> {
   const table = app.db.table("message_delivery");
   const message = error == null ? null : errMsg(error);
-  if (!(error instanceof ChannelError)) return void await table.update(id, { error: message, ref: ref ?? null, sent: unixTime(), due: null });
+  if (!(error instanceof ChannelError)) return void await table.update(id, { error: message, external_id: externalId ?? null, sent: unixTime(), due: null });
   const attempts = Number(await app.db.one`SELECT attempts FROM message_delivery WHERE id = ${id}` ?? 0) + 1;
   await table.update(id, { error: message, attempts, due: attempts < ATTEMPTS ? unixTime() + backoff(attempts) : null });
 }

@@ -41,7 +41,7 @@ async function run(db: ReturnType<typeof makeDb>, vars: Record<string, unknown>,
   const node = makeNode(db);
   const ctx = await testContext({
     userId: 5,
-    app: { db, t: (s: TemplateStringsArray) => s.join("") },
+    app: { db, t: (s: TemplateStringsArray) => Promise.resolve(s.join("")) },
     set: { user },
   });
   return requestStorage.run(ctx, () => nodeApi(node as never, vars));

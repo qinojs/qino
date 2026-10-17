@@ -107,7 +107,7 @@ export class SessionManager {
     ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, { path: ctx.req.appUrl, secure: ctx.app.https }));
   }
 
-  async #create(token = uid()): Promise<Session> {
+  async #create(token = uid()) {
     const time = unixTime();
     const id = await this.#db.table('sess').insert({ token, time, access: time, data: EMPTY_SESSION });
     if (!id) throw new Error("Could not create session");

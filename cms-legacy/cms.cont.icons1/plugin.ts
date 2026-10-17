@@ -15,7 +15,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const width = String(await node.settings.width ?? "");
   const height = String(await node.settings.height ?? "");
   const items: HtmlString[] = [];

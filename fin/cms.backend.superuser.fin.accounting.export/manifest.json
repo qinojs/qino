@@ -1,0 +1,20 @@
+{
+  "name": "cms.backend.superuser.fin.accounting.export",
+  "description": "The books of a period for the fiduciary: journal and balances as CSV, the receipts, in one ZIP.",
+  "dependencies": [
+    "cms.backend.superuser.fin",
+    "fin",
+    "fin.accounting",
+    "locale.currency"
+  ],
+  "files": [
+    "README.md",
+    "lib/export.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

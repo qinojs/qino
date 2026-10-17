@@ -58,7 +58,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
   }, { signal });
 }
 
-async function search(s_: string, ctx: Ctx): Promise<any[]> {
+async function search(s_: string, ctx: Ctx) {
   const db = ctx.app.db;
 
   // file contents live in the fulltext-indexed `text` column; only MySQL can use that index

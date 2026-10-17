@@ -6,10 +6,12 @@ header or hover menu.
 
 It pins its own u2 release (`U2_VERSION`), so a CMS update cannot change its look. The panel sets
 another one for the site (`u2Version` on the global layout page), once its CSS is checked against it.
+Contents load that release through `u2.assets()` (import map entry `@u2/`); the panel keeps qino's own (`@qino/u2/`).
 
 | Content | Owner | Initial module |
 |---|---|---|
 | `nav` | Global layout page | `cms.cont.nav4` |
+| `lang` | Global layout page | `cms.cont.lang.choose2` |
 | `main` | Current page | `cms.cont.flexible`, starting with a Section and Text |
 | `foot` | Global layout page | `cms.cont.flexible` |
 
@@ -58,6 +60,6 @@ page.
 
 ## Agent
 
-Where `ai1.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
+Where `ai.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
 ([agents/designer.md](agents/designer.md)). It knows the template syntax and reads u2's index
 online before a change. A copy in `data/cms.layout.standard.2/agents/` wins.

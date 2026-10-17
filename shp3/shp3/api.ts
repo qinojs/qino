@@ -25,9 +25,7 @@ async function sellable(id: string) {
 async function summary() {
   const order = await cart(getCtx(), false);
   if (!order) return { items: 0, quantity: 0, net: 0, gross: 0, currency: "", grossText: "" };
-  const items = await order.items();
-  const costs = await order.costs();
-  const currency = await order.currencyRow();
+  const [items, costs, currency] = await Promise.all([order.items(), order.costs(), order.currencyRow()]);
   return {
     items: items.length,
     quantity: items.reduce((sum, i) => sum + i.quantity, 0),

@@ -6,7 +6,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** What the posted form asked for, and what came of it — the message shown above the cards. */
-async function act(ctx: Ctx): Promise<{ note: string; started?: { secret: string; uri: string } }> {
+async function act(ctx: Ctx) {
   const body = ctx.req.body;
   if (!body || !safeEqual(body.csrfToken, ctx.csrfToken)) return { note: "" };
   try {
@@ -40,7 +40,7 @@ async function act(ctx: Ctx): Promise<{ note: string; started?: { secret: string
   return { note: "" };
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { note, started } = await act(ctx);
   const mine = ctx.userId ? await stored(ctx.app, ctx.userId, "totp") : [];
   const all = await node.app.db.query`

@@ -22,7 +22,7 @@ Deno.test("nav4: global navigation, settings and content anchors on a real CMS t
       }
       const services = await page(root, "Services");
       const current = await page(services, "Consulting");
-      const detail = await page(current, "Detail");
+      await page(current, "Detail");
       const contact = await page(root, "Contact");
       await page(contact, "Other branch");
       await page(root, "Hidden", { visible: false });

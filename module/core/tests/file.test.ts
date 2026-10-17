@@ -1,5 +1,6 @@
-import { assertEquals } from "./deps.ts";
 import { createHash } from "node:crypto";
+
+import { assertEquals } from "./deps.ts";
 import { File } from "../lib/File.ts";
 import { fs } from "../lib/fs.ts";
 

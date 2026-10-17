@@ -34,7 +34,7 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
 const inFlight = new Map<string, Promise<Place | null>>();
 const misses = new Map<string, number>();
 
-async function ask(address: string, agent: string, lang?: string): Promise<Place | null> {
+async function ask(address: string, agent: string, lang?: string) {
   const url = `${SERVICE}?q=${encodeURIComponent(address)}&format=jsonv2&limit=1`;
   const res = await fetch(url, {
     headers: { "user-agent": agent, accept: "application/json", ...(lang ? { "accept-language": lang } : {}) },

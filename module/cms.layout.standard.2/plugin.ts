@@ -16,7 +16,7 @@ export { api } from "./api.ts";
 const U2_VERSION = "1.6.0";
 
 /** The u2 release the layout loads: its global layout page's, else the pin. */
-const u2Version = (layout: Node): string => {
+const u2Version = (layout: Node) => {
   const version = String(layout.settings.u2Version() ?? "");
   return /^\d+\.\d+\.\d+$/.test(version) ? version : U2_VERSION;
 };
@@ -27,11 +27,12 @@ const U2_ASSETS = [
   "class/width/width.css", "class/flex/flex.css", "u2/auto.js",
 ];
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
   if (await node.edit()) await codeFiles(node).create();
 
-  u2.assets(ctx, U2_ASSETS, u2Version(await node.cms.layoutPage(node.module!.name)));
+  u2.pin(ctx, u2Version(await node.cms.layoutPage(node.module!.name)));
+  u2.assets(ctx, U2_ASSETS);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
   // The template decides whether and how main exists; the starter only fills a flexible it just created.
@@ -42,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 }
 
 /** A new main starts with a section whose text holds an editable h1; an emptied main stays empty. */
-async function starter(page: Node): Promise<boolean> {
+async function starter(page: Node) {
   const main = (await page.conts()).find((c) => c.vs.name === "main");
   if (main?.vs.module !== "cms.cont.flexible" || (await main.conts()).length) return false;
   await page.app.db.transaction(async () => {
@@ -73,8 +74,8 @@ const panelApi = async (node: Node, vars: Record<string, unknown>) => {
 /** The designer agent (agents/designer.md) learns which u2 release the site loads. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const name = "cms.layout.standard.2";
-  app.on("ai1.agent:turn", async (turn: { agent: number; parts: string[] }) => {
-    if (await app.db.one`SELECT name FROM ai1_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
+  app.on("ai.agent:turn", async (turn: { agent: number; parts: string[] }) => {
+    if (await app.db.one`SELECT name FROM ai_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
     const version = u2Version(await cmsOf(app).layoutPage(name));
     turn.parts.push(`## u2\nThis site loads u2 ${version}. Its index: ${u2.root(version)}SKILL.md`);
   }, { signal });

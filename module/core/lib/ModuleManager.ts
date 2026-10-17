@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
+import { isAbsolute } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { $item } from "../deps.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults, errMsg, isEmptyObject, newestMtime, unixTime } from "./util.ts";
 import { fs } from "./fs.ts";
@@ -15,8 +18,8 @@ export const isModuleName = (name: string): boolean =>
 
 export function resolveSpecifier(app: App, spec: string | URL): string {
   if (spec instanceof URL) return spec.href;
-  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, toFileUrl(app.dir)).href;
-  if (isAbsolute(spec)) return toFileUrl(spec).href;
+  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, pathToFileURL(app.dir)).href;
+  if (isAbsolute(spec)) return pathToFileURL(spec).href;
   return import.meta.resolve(spec);
 }
 
@@ -52,7 +55,7 @@ export type Plugin = Record<string, any> & {
   api?: Record<string, unknown>;
 };
 
-function mergeSchema(a: any, b: any): any {
+function mergeSchema(a: any, b: any) {
   for (const [k, v] of Object.entries(b ?? {})) {
     if (Array.isArray(v)) a[k] = [...new Set([...(Array.isArray(a[k]) ? a[k] : []), ...v])];
     else if (v && typeof v === "object") a[k] = mergeSchema(a[k] && typeof a[k] === "object" && !Array.isArray(a[k]) ? a[k] : {}, v);
@@ -85,7 +88,7 @@ export class Module {
   /** Resolved file:/https: URL of the plugin file. */
   get source(): string { return this.#source; }
   /** Directory the module lives in; undefined for remote modules. */
-  get dir(): string | undefined { return this.#source.startsWith("file:") ? fromFileUrl(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
+  get dir(): string | undefined { return this.#source.startsWith("file:") ? fileURLToPath(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
   /** Directory of the served files. A remote module serves the files mirrored on import, in a
    *  subfolder of its cache so they don't mix with its own cache files. */
   get pubDir(): string { return this.dir ? this.dir + "pub" : this.cache + "remote/pub"; }
@@ -158,8 +161,8 @@ export class ModuleManager {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported by import(). Use app.modules.add("${spec}") before app.init()`);
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
     if (!/\/plugin\.(?:ts|js)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
-    const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
-    const source = path ? toFileUrl(path).href : spec;
+    const path = spec.startsWith("file:") ? fileURLToPath(spec) : isAbsolute(spec) ? spec : undefined;
+    const source = path ? pathToFileURL(path).href : spec;
     // The manifest is read, not imported: a store must not need to run code.
     const manifest = await readManifest(source);
     if (manifest.name !== undefined && (typeof manifest.name !== "string" || !manifest.name)) throw new Error(`Manifest of ${source} has an invalid name`);
@@ -191,7 +194,8 @@ export class ModuleManager {
     this.#declared = new Set(this.#modules.keys());
     // `url` says which modules to import, but only those modules complete the schema. So read the
     // table before migration — a new database has no table, an older install no `url` column.
-    const rows = await this.#app.db.query`SELECT * FROM module`.catch(() => []);
+    const exists = (await this.#app.db.listTables()).includes("module");
+    const rows = exists ? await this.#app.db.query`SELECT * FROM module` : [];
     for (const { name, url, installed } of rows) {
       if (installed) this.#installed.set(name, installed);
       if (!url || this.#modules.has(name)) continue;
@@ -321,7 +325,7 @@ export class ModuleManager {
   }
 
   // Run one module's hooks.
-  async #linkOne(mod: Module): Promise<void> {
+  async #linkOne(mod: Module) {
     const { plugin } = mod;
     try {
       await plugin.init?.(this.#app, { signal: mod.newSignal() });
@@ -341,7 +345,7 @@ export class ModuleManager {
   }
 
   // Rebuild app/ctx settings schema from the given (dependency-ordered) modules and re-apply defaults.
-  #applySchemas(order: string[]): void {
+  #applySchemas(order: string[]) {
     const appSettingsSchema = { properties: {} as Record<string, unknown> };
     const ctxSettingsSchema = { properties: {} as Record<string, unknown> };
     for (const name of order) {
@@ -356,7 +360,7 @@ export class ModuleManager {
   }
 
   // Merge the given modules' dbSchema (static, then function-form) and migrate additively.
-  async #applyDbSchema(order: string[]): Promise<void> {
+  async #applyDbSchema(order: string[]) {
     const dbSchema = { properties: {} };
     const schemas = order.map((name) => this.#modules.get(name)!.plugin.dbSchema);
     for (const schema of schemas) if (typeof schema !== "function") mergeSchema(dbSchema, schema);
@@ -370,7 +374,7 @@ export class ModuleManager {
   }
 
   // Seed translations from a module's locale/<lang>.json (namespace = module name; core = "")
-  async #loadLocales(mod: Module): Promise<void> {
+  async #loadLocales(mod: Module) {
     const dir = mod.dir;
     if (!dir) return;
     const ns = mod.name === "core" ? "" : mod.name;
@@ -386,7 +390,7 @@ export class ModuleManager {
 
   /** Import the dependencies of the declared modules via locate(). What can't be located stays
    *  missing and is reported by #skipMissing() and #order(). */
-  async #importDependencies(): Promise<void> {
+  async #importDependencies() {
     const tried = new Set<string>();
     // One at a time: the next round picks up the new module's own dependencies.
     const next = () => this.#modules.values().flatMap((mod) => mod.dependencies)
@@ -403,7 +407,7 @@ export class ModuleManager {
   }
 
   // An installed module whose dependency is gone is marked broken; the boot continues.
-  #skipMissing(): void {
+  #skipMissing() {
     const gone = (need: string) => !this.#modules.has(need) || this.#failed.has(need);
     // A broken module breaks its dependents, so repeat until nothing changes.
     for (let again = true; again;) {
@@ -421,7 +425,7 @@ export class ModuleManager {
   }
 
   // Dependency-ordered subset (default: all imported). Recurses dependencies only within the set.
-  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()): string[] {
+  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()) {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
     const set = new Set(names);
@@ -452,20 +456,20 @@ export class ModuleManager {
  *
  * A file that fails to download stays missing; it must not stop the module.
  */
-async function mirrorPub(mod: Module): Promise<void> {
-  const files = (mod.manifest.files ?? []).filter((file: string) => file.startsWith("pub/") && !file.includes(".."));
+async function mirrorPub(mod: Module) {
+  const files = (mod.manifest.files ?? []).filter((file) => file.startsWith("pub/") && !file.includes(".."));
   if (!files.length) return;
   const dir = `${mod.cache}remote/`;
   // Source + file list identify the release; a different address is a different mirror.
   const stamp = dir + ".source";
   const marked = await fs.text(stamp).catch(() => "");
   if (marked === mod.source && (await Promise.all(
-    files.map((file: string) => fs.isFile(dir + file)),
+    files.map((file) => fs.isFile(dir + file)),
   )).every(Boolean)) return;
   // one mkdir per directory, not per file
-  const dirs = new Set(files.map((file: string) => (dir + file).replace(/\/[^/]+$/, "")));
+  const dirs = new Set(files.map((file) => (dir + file).replace(/\/[^/]+$/, "")));
   await Promise.all([...dirs].map((d) => fs.mkdir(d).catch(() => {})));
-  const got = await Promise.all(files.map(async (file: string) => {
+  const got = await Promise.all(files.map(async (file) => {
     const target = dir + file;
     try {
       const res = await safeFetch(new URL(file, mod.source).href);

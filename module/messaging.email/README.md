@@ -34,6 +34,11 @@ over IMAP ([imapflow](https://www.npmjs.com/package/imapflow) +
 Each message is recorded as `direction: "in"`, assigned to the sender's user, and marked `\Seen`.
 That flag is the only state: if the app crashes on a message, it stays unseen and is read next time.
 
+Each incoming mail gets a `spam` score (0 to 1): the receiving server's verdict (`Authentication-Results`:
+DMARC/SPF/DKIM `fail`, and an `X-Spam-Flag`/`X-Spam-Status`/`X-Spam` saying yes) and security's
+`spamScore`; with ai, a model judges the content. A known sender — the address of a user, or one
+mailed before — is judged too, since an account can be taken over; the model is only told.
+
 ## Settings
 
 | Key | Meaning |

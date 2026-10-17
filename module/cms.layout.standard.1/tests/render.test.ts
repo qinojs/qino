@@ -37,6 +37,7 @@ Deno.test("cms.layout.standard.1: renders the shipped template and adds the u2 a
   assertStringIncludes(out, "<div>main</div>"); // the page content
   assertStringIncludes(out, "<div>nav</div>"); // from the layout page
   assertStringIncludes(out, `<a href="/" class="cmsLink3"></a>`); // logo link remains while the image is empty
+  ctx.res.html.resolve(); // as the request does before html-ready
   const u2 = [...ctx.res.html.styles].find((s) => s.endsWith("css/norm/norm.css"))!;
   assertStringIncludes(u2, "u2@"); // pinned in the layout, not taken from core
   assertEquals(ctx.res.csp["script-src"][u2.replace("css/norm/norm.css", "")], true);

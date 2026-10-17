@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertRejects } from "@std/assert";
 import { App } from "@qino/qino";
+
 import { historicalViews, versedTables } from "../lib/Vers.ts";
 
 async function versionedApp() {

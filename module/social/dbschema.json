@@ -22,9 +22,9 @@
             "type": "string",
             "maxLength": 43,
             "x-index": "unique",
-            "description": "Hash of provider, target and remote id; set once the provider supplies an id"
+            "description": "Hash of provider, target and external id; set once the provider supplies an id"
           },
-          "remote_id": {
+          "external_id": {
             "type": "string",
             "maxLength": 191
           },

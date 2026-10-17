@@ -59,11 +59,11 @@ export const unixTime = (): number => Math.floor(Date.now() / 1000);
 export async function newestMtime(dir: string): Promise<number> {
   let newest = 0;
   try {
-    for (const e of await fs.list(dir)) {
+    await Promise.all((await fs.list(dir)).map(async e => {
       const path = `${dir}/${e.name}`;
       const time = e.isDirectory ? await newestMtime(path) : Math.floor((await fs.mtime(path) ?? 0) / 1000);
       if (time > newest) newest = time;
-    }
+    }));
   } catch { /* no such directory */ }
   return newest;
 }
@@ -183,7 +183,7 @@ export async function itemReadDeep(item: any): Promise<unknown> {
 /** Apply schema defaults and type coercion on item.js get event. */
 // tobi: Schema defaults apply only to existing items. Do we need to act on this?
 // deno-lint-ignore no-explicit-any
-function itemGetIn(e: any): void {
+function itemGetIn(e: any) {
   const schema = e.target.schema;
   if (e.value == null && schema?.default !== undefined) e.value = schema.default;
   if (e.value == null || typeof e.value === 'object' || !schema?.type) return;

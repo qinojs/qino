@@ -20,7 +20,7 @@ function render(node: Node): Promise<HtmlString | string> {
   return renderOverview(node);
 }
 
-async function renderOverview(node: Node): Promise<HtmlString | string> {
+async function renderOverview(node: Node) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;
@@ -54,7 +54,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
 
   const grpId = ctx.req.query.grp_id ? Number(ctx.req.query.grp_id) : 0;
   const grps = await db.query`SELECT id, name FROM grp ORDER BY name`;
-  const grpOpts: Array<HtmlString | Promise<HtmlString>> = [html.async`<option value="">${t`All groups`}</option>`];
+  const grpOpts: (HtmlString | Promise<HtmlString>)[] = [html.async`<option value="">${t`All groups`}</option>`];
   for (const g of grps) {
     grpOpts.push(html`<option value=${g.id}${Number(g.id) === grpId ? " selected" : ""}>${g.name}</option>`);
   }
@@ -167,12 +167,12 @@ export async function adoptUsername(app: App, usrId: number, username: string): 
 }
 
 /** `contactKey` throws for non-addresses; here that just means "no". */
-function mailAddressOf(username: string): string | undefined {
+function mailAddressOf(username: string) {
   try { return contactKey("email", username); } catch { return; }
 }
 
 /** A user's contacts, editable. Inner content only; the `cms-part` wrapper is in `renderDetail`. */
-async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
+async function contactsCard(node: Node, usrId: number) {
   const app = node.app;
   const t = app.t;
   const types = contactTypes();
@@ -195,18 +195,18 @@ async function contactsCard(node: Node, usrId: number): Promise<HtmlString> {
             ? "★"
             : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${makeMain}">☆</button>`}
           <td><button class=u2-unstyle data-contact-delete="${row.type}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
-        : html`<tr><td colspan=4>${await t`No contact yet — this user cannot be reached.`}`}
+        : html.async`<tr><td colspan=4>${t`No contact yet — this user cannot be reached.`}`}
     </table>
-    ${html.async`<form class=-body data-contact-add>
+    <form class=-body data-contact-add>
       <select name=type>
         ${types.map((type) => html`<option value="${type}">${type}</option>`)}
       </select>
       <input name=address placeholder="${t`Address`}">
       <button>${t`add`}</button>
-    </form>`}`;
+    </form>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<HtmlString> {
+async function renderDetail(node: Node, id: number) {
   const ctx = getCtx();
   const app = node.app;
   const t = app.t;

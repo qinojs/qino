@@ -1,0 +1,13 @@
+/* A field whose condition holds is disabled by u2-disableif — its whole row steps back,
+   otherwise only the control looks switched off and the label keeps claiming attention.
+   :where() keeps the rule at zero specificity: the site decides how a disabled row reads. */
+:where([qcms-mod="cont.form.fields"] tr:has([disabled])) {
+	opacity: .4;
+}
+
+/* In edit mode: a field whose name another block of the form has too (its title says so). */
+[qcms-mod="cont.form.fields"] .-taken {
+	color: var(--red, #dc2626);
+	font-weight: bold;
+	cursor: help;
+}

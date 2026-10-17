@@ -1,0 +1,16 @@
+{
+  "name": "iot.virtual",
+  "description": "Virtual IoT entities: read from one source entity, set through one stored command, of any provider.",
+  "dependencies": [
+    "iot"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "templates/android.json"
+  ]
+}

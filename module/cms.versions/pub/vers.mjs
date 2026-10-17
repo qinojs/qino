@@ -1,6 +1,7 @@
 import { debounce, Eventer, dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { ctx } from '@qino/pub/qino.js';
+import { hee } from '@qino/pub/html.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);
@@ -66,7 +67,7 @@ CmsVersViewer.prototype = {
       list.innerHTML = '';
       rows.forEach(row=>{
         const li = dom.el(
-          `<li v=${row.vers}><div class=-date>${relativeDate(row.time)}</div><div class=-usr>${row.usr}</div>`
+          `<li v=${row.vers}><div class=-date>${relativeDate(row.time)}</div><div class=-usr>${hee(row.usr)}</div>`
         );
         find(li, '.-date').title = exactDate.format(row.time*1000);
         li.addEventListener('mouseover',()=>{
@@ -133,7 +134,7 @@ CmsVersViewer.prototype = {
         for (el of els) el.style.outline = '3px solid red';
         el?.scrollIntoView();
       }
-      document.readyState === 'complete' ? ready() : doc.addEventListener('DOMContentLoaded',ready);
+      doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded',ready) : ready();
       li.classList.remove('-loading');
     };
     this.trigger('before-load', {vers});

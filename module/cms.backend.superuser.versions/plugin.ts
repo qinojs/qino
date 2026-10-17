@@ -6,7 +6,7 @@ import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Versions", de: "Versionen" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node) {
   const app = node.app;
   const t = app.t;
   const db = app.db;
@@ -56,13 +56,11 @@ async function render(node: Node): Promise<HtmlString> {
 </div>`;
 
   // ── spaces (vers_space holds non-live spaces; 0 = live, deletable) ──────────
-  const spaceRows = await Promise.all(
-    (await db.query`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
-      .map((s) => html.async`<tr>
+  const spaceRows = (await db.query`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
+    .map((s) => html.async`<tr>
         <td>${s.space}
         <td>${s.time_created}
-        <td><button class=-del-space data-space="${s.space}" u2-confirm="${t`Delete space ${s.space} (draft + its history)?`}">✕</button>`)
-  );
+        <td><button class=-del-space data-space="${s.space}" u2-confirm="${t`Delete space ${s.space} (draft + its history)?`}">✕</button>`);
   const spacesBox = html.async`
 <div class=u2-card style="flex-grow:0">
   <div class=-head>${t`Spaces`}</div>

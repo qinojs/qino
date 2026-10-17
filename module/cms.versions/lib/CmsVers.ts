@@ -38,8 +38,10 @@ export function initHistoricalNodes(app: App, signal: AbortSignal): void {
         const ctx = requestStorage.getStore();
         if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
 
-        const historical = await app.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${node.id}`;
-        const current = await app.db.row`SELECT * FROM page WHERE id = ${node.id}`;
+        const [historical, current] = await Promise.all([
+            app.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${node.id}`,
+            app.db.row`SELECT * FROM page WHERE id = ${node.id}`,
+        ]);
         node.vs = current ?? historical ?? {};
         node.vs = (await node.access() >= 2 ? historical : current) ?? {};
         if (node.vs !== historical) return;
@@ -69,7 +71,7 @@ export async function copyNode(
 ): Promise<void> {
     const ctx = getCtx();
 
-    const generate = async (id: number): Promise<void> => {
+    const generate = async (id: number) => {
         const page = await cms(ctx.app).node(id);
         if (await page.access() <= 1) return;
 
