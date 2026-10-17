@@ -7,7 +7,7 @@ export const renamedModules: Record<string, string> = {
   "cms.frontend.1": "cms.frontend.4",
   "cms.cont.notFound1": "cms.cont.not_found1", // both render the "main" text
   "cms.cont.notFound": "cms.cont.not_found1", // older spelling, same public purpose
-  "cms.cont.lang.choose1": "cms.cont.lang.choose2", // no content, unknown settings fall back
+  "cms.cont.lang.choose1": "cms.cont.lang.choose", // no content, unknown settings fall back
   "cms.cont.phpfile": "cms.cont.ts", // per-node code — the file itself still needs porting
   "cms.cont.table1": "cms.cont.table2", // same texts and settings; migrateTable1 pins the width unit
   "cms.cont.table": "cms.cont.table2", // predecessor of table1 with the same cell texts/settings

@@ -1,5 +1,5 @@
 {
-  "name": "cms.cont.lang.choose2",
+  "name": "cms.cont.lang.choose",
   "description": "Language links or selection menu.",
   "dependencies": [
     "cms"

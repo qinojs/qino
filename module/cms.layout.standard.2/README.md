@@ -11,7 +11,7 @@ Contents load that release through `u2.assets()` (import map entry `@u2/`); the 
 | Content | Owner | Initial module |
 |---|---|---|
 | `nav` | Global layout page | `cms.cont.nav4` |
-| `lang` | Global layout page | `cms.cont.lang.choose2` |
+| `lang` | Global layout page | `cms.cont.lang.choose` |
 | `main` | Current page | `cms.cont.flexible`, starting with a Section and Text |
 | `foot` | Global layout page | `cms.cont.flexible` |
 

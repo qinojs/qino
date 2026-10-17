@@ -27,7 +27,7 @@
     "cms.cont.gallery.masonry",
     "cms.cont.nav4",
     "cms.cont.table2",
-    "cms.cont.lang.choose2",
+    "cms.cont.lang.choose",
     "cms.cont.redirect",
     "cms.cont.form",
     "cms.cont.form.fields",
