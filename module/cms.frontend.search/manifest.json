@@ -1,0 +1,6 @@
+{
+  "name": "cms.frontend.search",
+  "description": "Searches pages, contents, files and users from the CMS administration panel, including node module names.",
+  "dependencies": ["cms.frontend"],
+  "files": ["manifest.json", "plugin.ts", "search.ts", "pub/init.js", "pub/widget.js", "README.md"]
+}

@@ -46,7 +46,7 @@
   & > .-sidebar > .-item > .-title:before {
     content:'';
     position:absolute;
-    left:calc(var(--rem) * -.72);
+    left:calc(var(--rem) * -.69);
     border-top: calc(var(--rem) * .75) solid transparent;
     border-bottom: calc(var(--rem) * .75) solid transparent;
     opacity:0;

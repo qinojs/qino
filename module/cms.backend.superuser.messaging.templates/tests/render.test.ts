@@ -1,8 +1,8 @@
 import { Db, requestStorage } from "@qino/qino";
-import { assertEquals, assertStringIncludes, fakeT, messagingDbSchema, templatePlaceholders, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, contactDbSchema, fakeT, messagingDbSchema, templatePlaceholders, testContext } from "@qino/qino/tests";
 
 import manifest from "../manifest.json" with { type: "json" };
-import { overview, render } from "../render.ts";
+import { overview, render, sampleValues } from "../render.ts";
 
 const { name, dependencies } = manifest;
 
@@ -29,7 +29,7 @@ Deno.test("cms.backend.superuser.messaging.templates lists the frames and names 
 
 Deno.test("the preview asks the modules themselves, so a template shows the real identity", async () => {
   const db = new Db("sqlite::memory:");
-  await db.migrate(messagingDbSchema);
+  await db.migrate({ properties: { ...messagingDbSchema.properties, ...contactDbSchema.properties } });
   await db.loadTables();
   await db.table("message_template").insert({
     name: "letter",
@@ -43,7 +43,7 @@ Deno.test("the preview asks the modules themselves, so a template shows the real
       name: "identity",
       plugin: {
         templatePlaceholders: {
-          brand: () => Promise.resolve({ text: "Qino Demo", html: "Qino Demo" }),
+          brand: () => ({ text: "Qino Demo", html: "Qino Demo" }),
         },
       },
     },
@@ -56,4 +56,18 @@ Deno.test("the preview asks the modules themselves, so a template shows the real
   assertStringIncludes(output, "Hallo Ada");
   assertStringIncludes(output, `<code data-copy title="Click to copy">{{identity.brand}}</code>`); // whose it is, ready to paste
   await db.close();
+});
+
+Deno.test("template previews accept sync and async placeholders and isolate their failures", async () => {
+  const app = { modules: { linked: () => [{ name: "example", plugin: { templatePlaceholders: {
+    sync: () => ({ text: "sync" }),
+    async: () => Promise.resolve({ text: "async" }),
+    empty: () => undefined,
+    throws: () => { throw new Error("No sample recipient"); },
+    rejects: () => Promise.reject(new Error("Unavailable")),
+  } } }] } };
+  assertEquals(await sampleValues(app as never), {
+    "example.sync": { text: "sync" }, "example.async": { text: "async" },
+    "example.empty": { text: "" }, "example.throws": { text: "" }, "example.rejects": { text: "" },
+  });
 });

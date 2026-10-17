@@ -144,6 +144,7 @@
     "cms.frontend": {},
     "cms.frontend.ai": {},
     "cms.frontend.ai.chat": {},
+    "cms.frontend.search": {},
     "cms.image": {},
     "cms.image_editor": {},
     "cms.layout.backend": {},

@@ -230,7 +230,7 @@ export async function sampleValues(app: App): Promise<Computed> {
     Object.entries(made).map(([name, make]) => [placeholderName(mod, name), make] as const));
   // a preview is not a send: one placeholder that cannot answer must not take the page down
   const values = await Promise.all(made.map(async ([name, make]) =>
-    [name, await make(app, SAMPLE).catch(() => EMPTY) ?? EMPTY] as const
+    [name, await Promise.resolve().then(() => make(app, SAMPLE)).catch(() => EMPTY) ?? EMPTY] as const
   ));
   return Object.fromEntries(values);
 }
