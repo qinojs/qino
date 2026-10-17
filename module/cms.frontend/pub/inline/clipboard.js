@@ -17,7 +17,7 @@ export default function (pid) {
       t`Paste from clipboard`,
       html`<table>
         <tr><th> ${t`Title`}: &nbsp;<td> ${res.title}
-        <tr><th> ${t`Module`}: &nbsp;<td> ${res.module}
+        <tr><th> ${t`Module`}: &nbsp;<td> ${res.module?.replace(/^cms\./, '')}
         <tr><th> Id: &nbsp;<td> ${pid}
       </table>`,
       [{

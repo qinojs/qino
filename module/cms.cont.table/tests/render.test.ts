@@ -10,7 +10,7 @@ Deno.test("cms.cont.table: the title is the caption, the first row can head the 
   try {
     const root = await cms(app).node(1);
     const page = await root.createChild({ access: 1, online_start: 0 });
-    const table = await page.createCont({ module: "cms.cont.table", settings: { cols: 2, rows: 2 } });
+    const table = await page.createCont({ module: "cms.cont.table", settings: { cols: 2, rows: 2, width_1: "40%" } });
     const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
     ctx.sess = await app.sessions.load();
     ctx.lang = app.languages.def;
@@ -29,8 +29,8 @@ Deno.test("cms.cont.table: the title is the caption, the first row can head the 
     });
     const headed = await render();
     assertEquals(headed.includes("<caption>Prices &amp; more</caption>"), true, headed);
-    assertEquals(/<thead>\s*<tr>\s*<th scope=col>Name\s*<th scope=col>Price/.test(headed), true, headed);
-    assertEquals(/<tbody>\s*<tr>\s*<td>Tea\s*<td>3.50/.test(headed), true, headed);
+    assertEquals(/<thead>\s*<tr>\s*<th scope=col style="width:40%">Name\s*<th scope=col>Price/.test(headed), true, headed);
+    assertEquals(/<tbody>\s*<tr>\s*<td style="width:40%">Tea\s*<td>3.50/.test(headed), true, headed);
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();

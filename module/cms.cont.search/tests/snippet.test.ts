@@ -27,7 +27,7 @@ Deno.test("cms.cont.search: a hit shows its text once escaped, not its entities"
     assertEquals(/<input type=search[^>]*aria-label=/.test(out), true, out);
     assertEquals(out.includes("autofocus"), false, out);
     const list = out.slice(out.indexOf("<ol>"), out.indexOf("</ol>"));
-    assertEquals(list.match(/<li>/g)?.length, 1, out);
+    assertEquals(list.match(/<li u2-href>/g)?.length, 1, out);
     assertEquals(list.match(/<a /g)?.length, 1, out);
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

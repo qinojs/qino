@@ -3,6 +3,7 @@ import { AiError, translate } from "@qino/qino/ai";
 import { cms, sanitizeHtml } from "@qino/qino/cms";
 
 import type { ApiTree, Params, Ctx } from "@qino/qino";
+import type { TranslateInput } from "@qino/qino/ai";
 
 class CmsTextService {
   #ctx: Ctx;
@@ -48,7 +49,7 @@ class CmsTextService {
     const db = this.#app.db;
     const input = String(await db.one`SELECT text FROM text_lang WHERE text_id = ${textId} AND lang = ${sourceLang}` ?? "");
     if (!input.trim()) throw new ApiError(400, "Source text is empty");
-    let output = await this.transl(input, targetLang, sourceLang);
+    let output = await this.transl(input, targetLang, sourceLang, "html");
     if (!output) throw new ApiError(502, "Translation service returned nothing");
 
     if (/^[A-Z]/.test(input)) output = output.charAt(0).toUpperCase() + output.slice(1);
@@ -122,7 +123,7 @@ class CmsTextService {
     if (sourceLang === "clean") text = "";
     else {
       const sourceText = await textEntry.lang(sourceLang).get();
-      const translated = await this.transl(sourceText, targetLang, sourceLang);
+      const translated = await this.transl(sourceText, targetLang, sourceLang, "html");
       if (!translated) return 0;
       text = translated;
     }
@@ -130,11 +131,12 @@ class CmsTextService {
     return 1;
   }
 
-  /** Through ai: whichever translation service or chat model serves `translate` there. */
-  async transl(text: string, targetLang: string, sourceLang: string): Promise<string> {
+  /** Through ai: whichever translation service or chat model serves `translate` there. Plain text
+   *  unless `format` says otherwise — an html translation escapes quotes as entities. */
+  async transl(text: string, targetLang: string, sourceLang: string, format?: TranslateInput["format"]): Promise<string> {
     if (sourceLang && sourceLang === targetLang) return text; // nothing to translate
     if (!this.#app.modules.linked("ai")) throw new ApiError(501, "Translation needs the module ai");
-    return await translate(this.#app, { text, to: targetLang, from: sourceLang || undefined, format: "html" })
+    return await translate(this.#app, { text, to: targetLang, from: sourceLang || undefined, format })
       .catch((e) => { throw e instanceof AiError ? new ApiError(e.status === 504 ? 504 : 502, e.message) : e; });
   }
 

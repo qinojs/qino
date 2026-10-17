@@ -1,4 +1,5 @@
 import { html, sql, sqlSearch, unhee } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -69,30 +70,35 @@ async function hits(node: Node, ctx: Ctx, search: string) {
       WHERE ${where} ${scope} LIMIT 200`,
   ]);
 
-  const found = new Map<number, { page: Node; text: string; score: number }>();
-  for (const [rows, isTitle] of [[titles, true], [texts, false]] as const) {
-    for (const row of rows) {
-      const hit = await node.cms.node(Number(row.id));
-      const page = await hit.page();
-      if (!page.vs.searchable || !await hit.isReadable()) continue;
-      if (start && !await hit.in(start)) continue;
+  // checked all at once: each hit loads its node, page and access
+  const rows = [...titles.map((row) => ({ row, isTitle: true })), ...texts.map((row) => ({ row, isTitle: false }))];
+  const pages = await Promise.all(rows.map(async ({ row }) => {
+    const hit = await node.cms.node(Number(row.id));
+    const page = await hit.page();
+    if (!page.vs.searchable || !await hit.isReadable()) return;
+    if (start && !await hit.in(start)) return;
+    return page;
+  }));
 
-      const group = found.getOrInsertComputed(page.id, () => ({ page, text: "", score: 0 }));
-      const text = String(row.text ?? "");
-      if (isTitle) group.score += 3;
-      else {
-        const plain = text.replace(/<[^>]*>/g, " ").toLowerCase();
-        const count = words.reduce((n, w) => n + plain.split(w).length - 1, 0);
-        group.score += 0.2 * Math.min(count, 7);
-        // Names starting with "_" are internal texts — searchable, but not worth showing.
-        if (!String(row.name ?? "").startsWith("_")) group.text += " " + text;
-      }
+  const found = new Map<number, { page: Node; text: string; score: number }>();
+  rows.forEach(({ row, isTitle }, i) => {
+    const page = pages[i];
+    if (!page) return;
+    const group = found.getOrInsertComputed(page.id, () => ({ page, text: "", score: 0 }));
+    const text = String(row.text ?? "");
+    if (isTitle) group.score += 3;
+    else {
+      const plain = text.replace(/<[^>]*>/g, " ").toLowerCase();
+      const count = words.reduce((n, w) => n + plain.split(w).length - 1, 0);
+      group.score += 0.2 * Math.min(count, 7);
+      // Names starting with "_" are internal texts — searchable, but not worth showing.
+      if (!String(row.name ?? "").startsWith("_")) group.text += " " + text;
     }
-  }
+  });
   return [...found.values()].sort((a, b) => b.score - a.score);
 }
 
-/** One link per hit, on its title: the image and the snippet only illustrate it. */
+/** One link per hit, on its title; u2-href makes the whole hit follow it. */
 async function item(node: Node, page: Node, text: string, words: string[]) {
   const cms = node.cms;
 
@@ -112,7 +118,7 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
     path = html`<div class=-breadcrumb>${html.join(links, " - ")}</div>`;
   }
 
-  return html.async`<li>${image}
+  return html.async`<li u2-href>${image}
     <div>
       <div class=-title>${cms.link(page)}</div>
       ${path}
@@ -140,6 +146,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (!search) return html.async`<div>${form}</div>`;
   const results = await hits(node, ctx, search);
   const words = terms(search);
+  if (results.length) u2.assets(ctx, ["attr/href/href.js"]);
   return html.async`<div>${form}
     ${results.length
       ? html.async`<ol>${results.map((r) => item(node, r.page, r.text, words))}</ol>`

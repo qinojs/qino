@@ -32,7 +32,7 @@ export default async function (widget, { node, signal }) {
       ${t`Columns (max: 15)`}</label><br>
     <label><input type=checkbox setting=header ${settings.header ? 'checked' : ''}> ${t`First row is a header`}</label>
     <div class=-widths>${widths.map((i) => html`<div>${i}<br>
-      <input setting="${'row_' + i}" value="${settings['row_' + i]}" placeholder="50%"></div>`)}</div>
+      <input setting="${'width_' + i}" value="${settings['width_' + i] ?? ''}" placeholder="50%"></div>`)}</div>
     <div class=-export><a href="${exportUrl(node.id)}">${t`Export table as Excel`}</a> ·
       <a href="${exportUrl(node.id, 'csv')}">${t`as CSV`}</a></div>
   </div>`;

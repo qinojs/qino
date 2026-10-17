@@ -2,7 +2,8 @@
   "name": "cms.cont.search",
   "description": "Searches page titles and texts and lists the matching pages.",
   "dependencies": [
-    "cms"
+    "cms",
+    "u2"
   ],
   "files": [
     "manifest.json",

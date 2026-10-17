@@ -1,4 +1,4 @@
-import { csv, header, hee, Output, xlsx } from "@qino/qino";
+import { csv, header, Output, xlsx } from "@qino/qino";
 
 import api from "./nodeApi.ts";
 
@@ -8,7 +8,7 @@ import type { Node } from "@qino/qino/cms";
 const settingsSchema = {
   additionalProperties: {
     type: "string",
-    description: "Free additional setting. Column widths are stored as row_1, row_2, etc.",
+    description: "Free additional setting. Column widths are stored as width_1, width_2, etc.",
   },
   properties: {
     cols: { type: "integer", minimum: 1, maximum: 15, description: "Number of table columns." },
@@ -56,17 +56,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     throw new Output(asCsv ? csv(lines) : await xlsx(lines));
   }
 
-  const widths = colIds.map((j) => cssWidth(String(node.settings[`row_${j + 1}`]() ?? ""), units));
+  const widths = colIds.map((j) => cssWidth(String(node.settings[`width_${j + 1}`]() ?? ""), units));
   const row = (cells: typeof texts[number], tag: "td" | "th") => `      <tr>\n` + cells.map((text, j) => {
     const attrs = (tag === "th" ? " scope=col" : "") + (widths[j] ? ` style="width:${widths[j]}"` : "") +
       (edit ? ` contenteditable cmstxt=${text.id}` : "");
     return `        <${tag}${attrs}>${text}\n`;
   }).join("");
 
-  const title = (await node.showTitle()).plain();
+  // the title, editable in place; without one and outside edit mode no caption at all
+  const caption = edit || (await node.showTitle()).plain() ? await node.cms.text(node, "title", { tag: "caption" }) : "";
   const head = node.settings.header() ? texts.shift() : undefined;
   return `<div>\n  <table class=u2-width>\n` +
-    (title ? `    <caption>${hee(title)}</caption>\n` : "") +
+    (caption ? `    ${caption}\n` : "") +
     (head ? `    <thead>\n${row(head, "th")}    </thead>\n` : "") +
     `    <tbody>\n${texts.map((cells) => row(cells, "td")).join("")}  </table>\n</div>`;
 }
