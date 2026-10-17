@@ -42,7 +42,7 @@ return html.async`
 
 ## `<cms-image name=... />`
 
-Editable image via `cms.image2`. Other attributes are passed as options
+Editable image via `cms.image`. Other attributes are passed as options
 (`width`/`height` as numbers, bare attributes as `true`). With `localized`, each
 language has its own image (`cms.fileLang`).
 
@@ -55,8 +55,8 @@ language has its own image (`cms.fileLang`).
 const image1 = await node.file("image1");
 const logo   = await cms.fileLang(node, "logo");
 return html.async`
-  ${cms_image2(image1, { width: 110, height: 110, fit: "contain", if: 1 })}
-  ${logo && cms_image2(logo, { width: 110, height: 110, if: 1 })}`;
+  ${cms_image(image1, { width: 110, height: 110, fit: "contain", if: 1 })}
+  ${logo && cms_image(logo, { width: 110, height: 110, if: 1 })}`;
 ```
 
 ## `<cms-cont name=... />`

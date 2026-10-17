@@ -18,8 +18,8 @@ const app = new App({
 const std = app.stores.add(url("../../qino/module/store.json")).add("cms");
 for (
   const mod of [
-    "cms.text", "cms.image2", "cms.cont.flexible", "cms.cont.text", "cms.cont.image2",
-    "cms.frontend.4", "cms.filebrowser", "fileEditor", // inline editing
+    "cms.text", "cms.image", "cms.cont.flexible", "cms.cont.text", "cms.cont.image",
+    "cms.frontend", "cms.filebrowser", "fileEditor", // inline editing
     // the site's own modules, under the names they end up with after the migration
 __STD__
   ]

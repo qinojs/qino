@@ -683,7 +683,7 @@ export const api = {
 
   module: {
     ":name": {
-      paramSchema: s.string().describe("Module name, e.g. \"cms.cont.image2\""),
+      paramSchema: s.string().describe("Module name, e.g. \"cms.cont.image\""),
       get: {
         description: "One assignable module with its settings schema",
         access: Access.USER,

@@ -3,7 +3,7 @@
   "description": "Legacy row of five linked teaser boxes with image and text.",
   "dependencies": [
     "cms",
-    "cms.image2",
+    "cms.image",
     "cms.text"
   ],
   "files": [

@@ -50,7 +50,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
             <g class=-close><path d="M5 5l14 14M5 19L19 5"/></g>
           </svg>
         </label>
-        <div id=nav>${layoutPage.cont("nav", "cms.cont.nav3")}</div>
+        <div id=nav>${layoutPage.cont("nav", "cms.cont.nav")}</div>
       </div>
     </div>
   </header>

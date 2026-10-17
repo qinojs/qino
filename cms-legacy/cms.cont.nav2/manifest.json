@@ -1,6 +1,6 @@
 {
   "name": "cms.cont.nav2",
-  "description": "Legacy navigation of the PHP CMS; renders through cms.cont.nav3.",
+  "description": "Legacy navigation of the PHP CMS; renders through cms.cont.nav.",
   "dependencies": [
     "cms"
   ],

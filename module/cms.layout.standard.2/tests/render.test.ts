@@ -44,7 +44,7 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
       assert(!out.includes("cookiebanner"));
       const global = await f.cm.layoutPage(NAME);
       const nav = await global.cont("nav");
-      assertEquals(nav.module?.name, "cms.cont.nav4");
+      assertEquals(nav.module?.name, "cms.cont.nav");
       assertEquals(nav.settings.pathOnly(), undefined);
       assertStringIncludes(out, 'id="head-nav" popover');
       assertEquals((await global.cont("lang")).module?.name, "cms.cont.lang.choose");

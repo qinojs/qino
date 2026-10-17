@@ -3,7 +3,7 @@
   "description": "Legacy responsive image collection.",
   "dependencies": [
     "cms",
-    "cms.image2"
+    "cms.image"
   ],
   "files": [
     "manifest.json",

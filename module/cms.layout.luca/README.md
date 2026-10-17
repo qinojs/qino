@@ -34,7 +34,7 @@ content of each page.
 | slot         | kind                    | intended for                        |
 |--------------|-------------------------|-------------------------------------|
 | `logo`       | image, layout           | shown in header and footer          |
-| `nav`        | `cms.cont.nav3`, layout | main navigation                     |
+| `nav`        | `cms.cont.nav`, layout | main navigation                     |
 | `action`     | `cms.cont.text`, layout | the call to action in the header    |
 | `main`       | cont, per page          | the page itself                     |
 | `address`    | `cms.cont.text`, layout | postal address under the footer logo|
@@ -42,7 +42,7 @@ content of each page.
 | `footB`      | cont, layout            | free footer column                  |
 | `footImage`  | image, layout           | illustration or map in the footer   |
 | `footNote`   | `cms.cont.text`, layout | copyright line                      |
-| `footNav`    | `cms.cont.nav3`, layout | imprint, privacy                    |
+| `footNav`    | `cms.cont.nav`, layout | imprint, privacy                    |
 
 ## Identity
 

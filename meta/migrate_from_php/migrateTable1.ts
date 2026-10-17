@@ -1,6 +1,6 @@
 import type { App } from "@qino/qino";
 
-/** table1 read a bare column width as percent, table2 reads it as px. Nodes that never set `units`
+/** table1 read a bare column width as percent, cms.cont.table reads it as px. Nodes that never set `units`
  *  relied on that default, so it gets written out before the rename. */
 export async function migrateTable1(app: App): Promise<void> {
   const nodes = await app.db.query`SELECT id, settings FROM page WHERE module IN ('cms.cont.table1', 'cms.cont.table')`;

@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -11,7 +11,7 @@ async function render(node: Node) {
   for (const product of products.values()) {
     const url = await product.url();
     const image = await product.file("Produkt");
-    images.push(html`<a href="${url}">${await cms_image2(image, {
+    images.push(html`<a href="${url}">${await cms_image(image, {
       width: 200,
       height: 500,
       fit: "contain",

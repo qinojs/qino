@@ -1,0 +1,13 @@
+{
+  "name": "cms.image",
+  "description": "Renders transformed CMS images with responsive previews and focal points.",
+  "files": [
+    "imageData.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/cms-image.css",
+    "pub/cms-image.js",
+    "pub/module.svg"
+  ]
+}

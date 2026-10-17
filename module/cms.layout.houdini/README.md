@@ -106,7 +106,7 @@ declaration. Navigation and language selector keep their own CMS options.
 |---|---|---|
 | `skip`, `menu`, `close` | Layout text | Editable and translatable interface labels |
 | `notice` | Optional layout text | Announcement or service message; empty is hidden |
-| `nav` | `cms.cont.nav4` | Main navigation from the page tree |
+| `nav` | `cms.cont.nav` | Main navigation from the page tree |
 | `lang` | `cms.cont.lang.choose` | Languages of the current page; links or select |
 | `action` | Optional layout text | Header link or `.btn` call to action |
 | `main` | Flexible content on each page | Full-width content; sections use `u2-width` |

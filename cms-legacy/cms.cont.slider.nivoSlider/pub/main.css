@@ -4,7 +4,7 @@
 }
 [qcms-mod="cont.slider.nivoSlider"] > .-slides,
 [qcms-mod="cont.slider.nivoSlider"] > .-slides > .-slide,
-[qcms-mod="cont.slider.nivoSlider"] > .-slides > .-slide > cms-image2 {
+[qcms-mod="cont.slider.nivoSlider"] > .-slides > .-slide > cms-image {
   position:absolute;
   inset:0;
   width:100%;

@@ -161,7 +161,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     // ─── page:render-after: add frontend JS ──────────────────────────────────────────
     cms(app).on("page:render-after", async ({ ctx }) => {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
-        const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.4");
+        const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend");
         ctx.res.html.jsData.cmsFrontend = frontend;
         ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
         ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/vers.mjs");

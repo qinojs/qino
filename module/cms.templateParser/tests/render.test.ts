@@ -120,8 +120,8 @@ Deno.test("cms-cont: name, module and default module", async () => {
   const node = fakeNode();
   const out = await render(`<cms-cont name=body module=cms.cont.text /><cms-cont name=aside />`, node);
   assertEquals(out, "[cont:body:cms.cont.text][cont:aside:cms.cont.flexible]");
-  const out2 = await render(`<cms-cont name=x default-module=cms.cont.nav3 />`, node);
-  assertEquals(out2, "[cont:x:cms.cont.nav3]");
+  const out2 = await render(`<cms-cont name=x default-module=cms.cont.nav />`, node);
+  assertEquals(out2, "[cont:x:cms.cont.nav]");
 });
 
 Deno.test("cms-cont / cms-image: without name render nothing", async () => {

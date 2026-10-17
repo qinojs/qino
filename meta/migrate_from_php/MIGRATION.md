@@ -237,7 +237,7 @@ unter demselben Namen, 20 nicht — ohne Modul rendert die Seite leer. Die alten
 in einem eigenen Store: [cms-legacy](../../cms-legacy/README.md).
 
 Der Store enthält inzwischen die für beide Testprojekte benötigten Layout-, Inhalts-, Slideshow-
-und Galerie-Module. `cms.cont.nav2` ist dabei nur ein Re-Export von `cms.cont.nav3` — der Nachfolger
+und Galerie-Module. `cms.cont.nav2` ist dabei nur ein Re-Export von `cms.cont.nav` — der Nachfolger
 hat exakt dieselben Einstellungsnamen. Die vollständige Liste und die Abgrenzung zu echten
 Umbenennungen stehen in [qino/cms-legacy/README.md](../../cms-legacy/README.md).
 
@@ -255,8 +255,8 @@ Die Site-Templates `data/cms.layout.custom.6/index.php` und `data/cms.cont.secti
 wurden von Hand nach `index.ts` portiert. Die Seite rendert damit Struktur, CSS, JS und Schriften
 der Site.
 
-Zusätzlich installiert `server.ts` die Module, die es in qino schon gibt (`cms.text`, `cms.image2`,
-`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image2`, `cms.cont.login.password`, `cms.layout.system`).
+Zusätzlich installiert `server.ts` die Module, die es in qino schon gibt (`cms.text`, `cms.image`,
+`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image`, `cms.cont.login.password`, `cms.layout.system`).
 
 > **Achtung beim Reset:** `data/` wird gelöscht. Portierte Templates deshalb immer unter
 > `site-templates/` behalten und nach dem Wiederherstellen von `qg/` erneut darüberkopieren.
@@ -383,7 +383,7 @@ Was der Lauf an den Werkzeugen und am Kern geändert hat:
 3. Der Hinweis auf zu portierende Site-Templates zeigt nur noch die, die das Modul auch einbindet.
    Der Installer kopiert `custom/`-Ordner nach `qg/`, in denen manchmal eine `index.php` liegt, die
    kein Modul liest (`cms.cont.quote.cd` bei bioforskin).
-4. `cms.cont.table1` → `cms.cont.table2` ist jetzt eine Umbenennung. `table2` kennt dazu die zwei
+4. `cms.cont.table1` → `cms.cont.table` ist jetzt eine Umbenennung. `cms.cont.table` kennt dazu die zwei
    Legacy-Settings `units` und `direction`, und `migrateTable1` schreibt `units: "%"` dort hin, wo
    das PHP-Modul es als Default annahm — sonst würde aus `33.3 %` Spaltenbreite `33.3 px`.
 5. `cms_text($Cont,'title')` meint in PHP den **Knotentitel**, nicht einen Text namens `title`.
@@ -563,7 +563,7 @@ ergibt eine Session mit „Log out", falsches den Fehlertext.
 | Module nachinstallieren | — | ✓ `/en/backend/superuser/module-stores` |
 
 `cms.frontend` stand nach der Migration auf `cms.frontend.1`, dem PHP-Modul — dadurch lud die
-Editier-UI nie. `migrate_from_php` bildet den Namen jetzt auf `cms.frontend.4` ab; weitere
+Editier-UI nie. `migrate_from_php` bildet den Namen jetzt auf `cms.frontend` ab; weitere
 Umbenennungen kommen in dieselbe Tabelle.
 
 Beim ersten Rendern nennt qino selbst fehlende Module; diese Meldungen sind zuverlässiger als ein

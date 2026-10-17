@@ -87,7 +87,7 @@ Deno.test({
     const after = await boot(dir, false);
     assert(after.modules.linked("cms.cont.form") && !after.modules.get("starter.cms"));
     assertEquals((await html(after, "/en/contact")).status, 200);
-    await after.modules.uninstall("cms.cont.search1"); // and each can go on its own
+    await after.modules.uninstall("cms.cont.search"); // and each can go on its own
     await after.db.close();
   }),
 });

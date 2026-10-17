@@ -3,7 +3,7 @@
   "description": "Legacy image section with overlaid text.",
   "dependencies": [
     "cms",
-    "cms.image2",
+    "cms.image",
     "cms.text"
   ],
   "files": [

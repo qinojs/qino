@@ -49,7 +49,7 @@
 #navtoggle:checked ~ #burger .-menu { display: none; }
 #navtoggle:checked ~ #burger .-close { display: inline; }
 
-/* Nav (cms.cont.nav3 markup) ------------------------------------------- */
+/* Nav (cms.cont.nav markup) ------------------------------------------- */
 #nav ul {
   display: flex;
   flex-wrap: wrap;

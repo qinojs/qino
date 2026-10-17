@@ -31,7 +31,7 @@ Deno.test("houdini.2: isolated install reuses the editor but owns its settings, 
       assertStringIncludes(out, 'id="foot" u2-skin="dark"');
       assertStringIncludes(out, "u2-responsive");
       assertEquals(second.module?.plugin.cms?.node?.widget, "pub/widget.js");
-      assertEquals((await (await cm.layoutPage(NAME)).cont("nav")).module?.name, "cms.cont.nav4");
+      assertEquals((await (await cm.layoutPage(NAME)).cont("nav")).module?.name, "cms.cont.nav");
 
       const globalFirst = await cm.layoutPage("cms.layout.houdini");
       const globalSecond = await cm.layoutPage(NAME);

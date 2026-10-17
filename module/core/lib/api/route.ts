@@ -39,8 +39,8 @@ export function* walk(tree: ApiTree, segments: string[] = [], nodes: ApiNode[] =
 export function toolName(verb: Method, segments: string[]): string {
   const parts = [...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s]), verb];
   // the path, its method last: `_` only between segments, so `cms_node_*` is all below cms/node.
-  // Separators within a segment become camelCase, before a digit they are dropped ("cms.frontend.4"
-  // → "cmsFrontend4"); [A-Za-z0-9_] is valid with every provider and in JavaScript.
+  // Separators within a segment become camelCase, before a digit they are dropped ("cms.layout.deck.1"
+  // → "cmsLayoutDeck1"); [A-Za-z0-9_] is valid with every provider and in JavaScript.
   return parts.map((p) => p.replace(/[-._]([a-z])?/g, (_, c) => c ? c.toUpperCase() : "")).join("_");
 }
 

@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.image.test",
+  "description": "Test block: renders the same image as <cms-image> and as a native <img> side by side in many CSS situations.",
+  "dependencies": [
+    "cms.image"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.mjs",
+    "pub/module.svg"
+  ]
+}

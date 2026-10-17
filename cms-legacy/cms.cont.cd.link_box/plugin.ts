@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import { backgroundStyle } from "../lib/bg.ts";
 import { cmsText } from "../lib/text.ts";
@@ -21,7 +21,7 @@ async function render(node: Node) {
   <a href="${link}" class=-body target=_blank>
     ${cmsText(node, "title", "h2")}
     ${cmsText(node, "price", "h3")}
-    <div class=-image>${cms_image2(await node.file("Bild"), { width: 470, editable: await node.edit() })}</div>
+    <div class=-image>${cms_image(await node.file("Bild"), { width: 470, editable: await node.edit() })}</div>
     ${cmsText(node, "nr", "p")}
   </a>
 </div>`;

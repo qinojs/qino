@@ -3,7 +3,7 @@
   "description": "Legacy teaser box: background image, texts and one outgoing link.",
   "dependencies": [
     "cms",
-    "cms.image2",
+    "cms.image",
     "cms.text"
   ],
   "files": [

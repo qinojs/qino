@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import { cmsText } from "../lib/text.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     slides.push(html.async`<div class=-cd_slide>
           <div class=-cd_image>
-            <div class=-wrapper>${cms_image2(file, { width: 815, height: 1086 })}
+            <div class=-wrapper>${cms_image(file, { width: 815, height: 1086 })}
               ${arrows}
             </div>
           </div>

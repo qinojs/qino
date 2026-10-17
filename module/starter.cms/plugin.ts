@@ -19,7 +19,7 @@ async function build(app: App) {
   const { settings } = app;
   await adopt(app, name);
   if (!await settings.core.langs) await settings.core.langs("en");
-  if (!await settings.cms.frontend) await settings.cms.frontend("cms.frontend.4");
+  if (!await settings.cms.frontend) await settings.cms.frontend("cms.frontend");
 
   const root = await cms(app).node(1);
   // cms starts the root on a bare fallback; a layout the site already chose stays
@@ -41,7 +41,7 @@ async function build(app: App) {
   // what visitors look for at the bottom, not in the menu: the footer lists it
   const service = await page(root, "service", TITLES.service, { access: 1, visible: false, searchable: false });
   const listed = { access: 1, visible: true, searchable: false };
-  await page(service, "search", TITLES.search, listed, (p) => section(p, "cms.cont.search1"));
+  await page(service, "search", TITLES.search, listed, (p) => section(p, "cms.cont.search"));
   const imprint = await page(service, "imprint", TITLES.imprint, listed, (p) => prose(p, IMPRINT));
   const privacy = await page(service, "privacy", TITLES.privacy, listed, (p) => prose(p, PRIVACY));
 
@@ -49,7 +49,7 @@ async function build(app: App) {
   const foot = await (await cms(app).layoutPage(LAYOUT)).cont("foot", "cms.cont.flexible");
   if (!(await foot.conts()).length) {
     await foot.settings.__inited(true);
-    const nav = await foot.createCont({ module: "cms.cont.nav4" });
+    const nav = await foot.createCont({ module: "cms.cont.nav" });
     await nav.settings.startPage(service.id);
     await nav.settings.level(1);
   }
@@ -173,7 +173,7 @@ async function systemPages(app: App, root: Node) {
   // In the site's own layout: visitors land here from anywhere
   const shown = { access: 1, visible: false, searchable: false };
   await page(system, "no-access", TITLES.noAccess, shown, (p) => section(p, "cms.cont.login"));
-  await page(system, "not-found", TITLES.notFound, shown, (p) => section(p, "cms.cont.not_found1"));
+  await page(system, "not-found", TITLES.notFound, shown, (p) => section(p, "cms.cont.not_found"));
   await page(system, "trash", TITLES.trash, { ...plain, access: 0 },
     async (p) => (await p.cont("main")).cont("1", "cms.cont.trash"));
   return login;

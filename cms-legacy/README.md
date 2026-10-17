@@ -10,7 +10,7 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.layout.custom.3` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.layout.custom.6` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.layout.custom.7` | `cms.layout.custom.9` | own shell, layout markup stays site data |
-| `cms.cont.nav2` | `cms.cont.nav3` | re-exports nav3 — same settings, same output |
+| `cms.cont.nav2` | `cms.cont.nav` | re-exports it — same settings |
 | `cms.cont.section3` | — | own shell, section markup stays site data |
 | `cms.cont.video.section.cd` | — | ported |
 | `cms.cont.cd.boxes` | — | ported site module |
@@ -55,8 +55,8 @@ A ported module brings the CSS of its PHP original along. `migrateCss` rewrites 
 files under `data/`: module and node classes become `[qcms-mod="…"]` and `[qcms-id="…"]`, while
 absolute `/qg/<module>/` asset paths become relative to the CSS file. Store files stay untouched.
 
-`lib/bg.ts` replaces PHP's `cms_image2_bg()`: qino's `cms.image2` only ports the foreground
-`<cms-image2>`, so a background image is plain CSS here — same picture, no lazy upgrade.
+`lib/bg.ts` replaces PHP's `cms_image2_bg()`: qino's `cms.image` only ports the foreground
+`<cms-image>`, so a background image is plain CSS here — same picture, no lazy upgrade.
 `sectionAttr()` adds what every legacy section shared: the `background-color` setting and white text
 once that colour is dark. `lib/text.ts` is PHP's `cms_text()`, `lib/siteTemplate.ts` loads the
 site's own `data/<module>/index.ts`.

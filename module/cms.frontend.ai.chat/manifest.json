@@ -5,7 +5,7 @@
     "ai.agent",
     "cms",
     "cms.backend.ai",
-    "cms.frontend.4"
+    "cms.frontend"
   ],
   "files": [
     "README.md",

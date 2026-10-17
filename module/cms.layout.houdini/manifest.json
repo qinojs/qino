@@ -3,7 +3,7 @@
   "description": "A carefully composed u2 layout with visual design controls, responsive navigation, language selection and editable site templates.",
   "dependencies": [
     "cms", "cms.templateParser", "identity", "u2", "fileEditor",
-    "cms.cont.nav4", "cms.cont.lang.choose", "cms.cont.flexible", "cms.cont.section", "cms.cont.text"
+    "cms.cont.nav", "cms.cont.lang.choose", "cms.cont.flexible", "cms.cont.section", "cms.cont.text"
   ],
   "files": [
     "README.md", "api.ts", "codeFiles.ts", "manifest.json", "plugin.ts",

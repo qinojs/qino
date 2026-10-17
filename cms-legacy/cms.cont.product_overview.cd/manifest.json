@@ -3,7 +3,7 @@
   "description": "Legacy paired product-image and product-title overview.",
   "dependencies": [
     "cms",
-    "cms.image2"
+    "cms.image"
   ],
   "files": [
     "manifest.json",

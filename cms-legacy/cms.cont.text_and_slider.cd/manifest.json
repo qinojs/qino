@@ -3,7 +3,7 @@
   "description": "Legacy synchronized image slider and text panels.",
   "dependencies": [
     "cms",
-    "cms.image2"
+    "cms.image"
   ],
   "files": [
     "manifest.json",

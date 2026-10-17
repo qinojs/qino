@@ -1,7 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
-import { onShortcut } from "@qino/m/cms.frontend.4/pub/js/shortcut.js";
+import { onShortcut } from "@qino/m/cms.frontend/pub/js/shortcut.js";
 
 // The site assistant as an item of the CMS panel's sidebar, beside "Structure" and "Settings" (mounted into
 // the panel as cms.versions does). One session per user that stays (the module's `session` route); the

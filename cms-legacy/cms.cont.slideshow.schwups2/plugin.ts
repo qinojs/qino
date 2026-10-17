@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -24,7 +24,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     const captionHtml = edit || caption.plain()
       ? html`<div class=-caption>${caption.html()}</div>`
       : "";
-    slides.push(html`<div>${await cms_image2(file, {
+    slides.push(html`<div>${await cms_image(file, {
       width: 2000,
       height: 500,
       fit: node.settings["full image"]() ? "contain" : "cover",

@@ -1,5 +1,5 @@
 import { fillPlaceholders, hee, modulePlaceholders, placeholderNames } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import { VOID } from "./parse.ts";
 
@@ -146,7 +146,7 @@ async function renderCmsText(el: El, name: string, t: Tpl) {
 }
 
 // ---------------------------------------------------------------------------
-// <cms-image name=... /> — rendered via cms.image2, attributes become options
+// <cms-image name=... /> — rendered via cms.image, attributes become options
 // ---------------------------------------------------------------------------
 
 async function renderCmsImage(el: El, t: Tpl) {
@@ -164,7 +164,7 @@ async function renderCmsImage(el: El, t: Tpl) {
   }
   if (opts.width)  opts.width  = Number(opts.width)  || opts.width;
   if (opts.height) opts.height = Number(opts.height) || opts.height;
-  return String(await cms_image2(file, opts));
+  return String(await cms_image(file, opts));
 }
 
 // ---------------------------------------------------------------------------

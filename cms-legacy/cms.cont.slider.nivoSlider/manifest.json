@@ -3,7 +3,7 @@
   "description": "Legacy Nivo-style image slider.",
   "dependencies": [
     "cms",
-    "cms.image2"
+    "cms.image"
   ],
   "files": [
     "manifest.json",
