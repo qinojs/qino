@@ -15,10 +15,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const base = ctx.req.appUrl;
   const returnTo = ctx.req.url.pathname + ctx.req.url.search;
-  const label = await app.t`Log in with`;
   const buttons = list.map((p) => {
     const href = base + "oauth/start/" + encodeURIComponent(p.name) + "?return_to=" + encodeURIComponent(returnTo);
-    return html`<a class=btn href="${href}">${label + " " + p.name}</a>`;
+    return html`<a class=btn href="${href}">${p.name}</a>`;
   });
   return html`<div>${html.join(buttons, "\n")}</div>`;
 }

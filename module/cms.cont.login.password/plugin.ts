@@ -62,7 +62,7 @@ ${errorHtml}
   <form method=post>
   <input type=hidden name=csrfToken value="${csrfToken}">
   ${fixUser ? html`<input type=hidden name=email value="${fixUser}">` : ""}
-  <table>
+  <table class="u2-table -Flex -NoSideGaps">
     ${
       !fixUser
         ? html.async`<tr class=-email>

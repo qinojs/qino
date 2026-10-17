@@ -1,0 +1,20 @@
+{
+  "name": "cms.cont.login",
+  "description": "Combined login with known accounts, password, passkey and OAuth; logout when signed in.",
+  "dependencies": [
+    "cms",
+    "u2",
+    "cms.cont.login.known",
+    "cms.cont.login.password",
+    "cms.cont.login.webauthn",
+    "cms.cont.login.oauth",
+    "cms.cont.logout"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg"
+  ]
+}

@@ -109,6 +109,7 @@
     "cms.cont.image2": {},
     "cms.cont.items": {},
     "cms.cont.lang.choose2": {},
+    "cms.cont.login": {},
     "cms.cont.login.known": {},
     "cms.cont.login.oauth": {},
     "cms.cont.login.password": {},

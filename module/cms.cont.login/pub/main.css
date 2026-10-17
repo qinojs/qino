@@ -1,0 +1,42 @@
+[qcms-mod="cont.login"] {
+    inline-size: min(100%, 28rem);
+    margin-inline: auto;
+
+    & > [qcms-mod="cont.login.password"] > form > table {
+        display: block;
+
+        & > tbody {
+            display: block;
+
+            & > tr {
+                display: grid;
+
+                & > th { text-align: start; }
+                & > td > input:not([type=checkbox]),
+                & > td > button { inline-size: 100%; }
+
+                &.-save_login {
+                    display: flex;
+                    flex-direction: row-reverse;
+                    justify-content: start;
+                    align-items: center;
+                }
+            }
+        }
+    }
+
+    & > [qcms-mod="cont.login.webauthn"] > button,
+    & > [qcms-mod="cont.logout"] > button,
+    & > div > [qcms-mod="cont.logout"] > button { inline-size: 100%; }
+
+    & > .-providers > [qcms-mod="cont.login.oauth"] {
+        display: contents;
+
+        & > a { flex: 1 1 auto; text-align: center; }
+    }
+
+    & > .-or { text-align: center; }
+    & > [qcms-mod="cont.login.known"] > .loginError { display: none; }
+    & > .-providers:not(:has(> [qcms-mod="cont.login.oauth"] > a)) { display: none; }
+    & > [qcms-mod]:empty { display: none; }
+}
