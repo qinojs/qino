@@ -93,11 +93,8 @@
       img.removeAttribute('loading'); // some images have loading=lazy
       requestAnimationFrame(()=>{
         img.parentNode.setAttribute('loaded','');
-        //img.parentNode.style.backgroundImage = 'none'; // zzz
-//        img.parentNode.style.backgroundImage = '';
         setTimeout(()=>{ // wait for possible animation, problem: semi-transparent images
           img.parentNode.style.backgroundImage = '';
-        //   img.parentNode.style.backgroundImage = 'none';
         },400)
       })
     });
