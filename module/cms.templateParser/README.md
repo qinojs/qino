@@ -5,6 +5,8 @@ function. If a module has `template.html` next to its `plugin.ts`, this module
 provides `cms.node.render` from it. Local templates are reparsed when they change;
 remote templates are cached for the process lifetime, like their plugin.
 
+Writes through `fs` are seen at once, external edits after `fs.ttl()`.
+
 `renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
 other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.
 

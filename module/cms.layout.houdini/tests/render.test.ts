@@ -7,11 +7,6 @@ import { cms as layout } from "../plugin.ts";
 
 const NAME = "cms.layout.houdini";
 
-const save = async (file: string, content: string) => {
-  await new Promise((resolve) => setTimeout(resolve, 10));
-  await fs.write(file, content);
-};
-
 async function fixture() {
   const dir = await Deno.makeTempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
@@ -82,9 +77,9 @@ Deno.test("houdini: isolated install, navigation, starter content and CSS preced
         await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5."); // half typed in the panel: the pin
         await f.render();
         assert(pinned().endsWith("@1.8.0/"));
-        await save(template.file, "<div id=own></div>");
+        await fs.write(template.file, "<div id=own></div>");
         assertEquals(await f.render(), '<div id="own"></div>');
-        await save(template.file, "");
+        await fs.write(template.file, "");
         assertEquals(await f.render(), "");
         await fs.remove(template.file);
         assertStringIncludes(await f.render(), 'id="container"');
@@ -114,11 +109,11 @@ Deno.test("houdini: site template controls creation; apps keep separate identity
     await requestStorage.run(a.ctx, async () => {
       const template = moduleTemplate(custom.module!);
       await template.create("/* Site */");
-      await save(template.file, "<main><cms-cont name=main module=cms.cont.text /></main>");
+      await fs.write(template.file, "<main><cms-cont name=main module=cms.cont.text /></main>");
       await layout.node.render(custom, { ctx: a.ctx });
       assertEquals((await custom.cont("main")).module?.name, "cms.cont.text");
       assertEquals((await (await custom.cont("main")).conts()).length, 0);
-      await save(template.file, "<div></div>");
+      await fs.write(template.file, "<div></div>");
       const empty = await (await a.cm.node(1)).createChild({ module: NAME });
       await layout.node.render(empty, { ctx: a.ctx });
       assertEquals((await empty.conts()).length, 0);
@@ -135,11 +130,11 @@ Deno.test("houdini: starter content follows the module the template gives main",
     await requestStorage.run(f.ctx, async () => {
       const template = moduleTemplate(f.page.module!);
       await template.create("/* Site */");
-      await save(template.file, `<div cms-text=main><cms-cont name=main /></div>`);
+      await fs.write(template.file, `<div cms-text=main><cms-cont name=main /></div>`);
       await f.render();
       assertEquals((await f.page.conts()).length, 0);
 
-      await save(template.file, `<div><cms-cont name=main module=cms.cont.text /><cms-cont name=main /></div>`);
+      await fs.write(template.file, `<div><cms-cont name=main module=cms.cont.text /><cms-cont name=main /></div>`);
       await f.render();
       assertEquals((await f.page.cont("main")).module?.name, "cms.cont.text");
       assertEquals((await (await f.page.cont("main")).conts()).length, 0);
@@ -157,7 +152,7 @@ Deno.test("houdini: starter titles are editable language snapshots; removed slot
     await requestStorage.run(f.ctx, async () => {
       const template = moduleTemplate(f.page.module!);
       await template.create("/* Site */");
-      await save(template.file, "<main><cms-cont name=main /></main>");
+      await fs.write(template.file, "<main><cms-cont name=main /></main>");
       await f.render();
       assertEquals((await (await f.cm.layoutPage(NAME)).conts()).length, 0);
       const main = await f.page.cont("main");
@@ -167,7 +162,7 @@ Deno.test("houdini: starter titles are editable language snapshots; removed slot
       await f.page.title("en", "Changed page title");
       await f.render();
       assertEquals(await (await text.text("main", "en")).get(), "<h1>Editorial title</h1>");
-      await save(template.file, "<div></div>");
+      await fs.write(template.file, "<div></div>");
       assertEquals(await f.render(), "<div></div>");
       assertEquals((await main.conts()).length, 1);
       assertEquals(await (await text.text("main", "en")).get(), "<h1>Editorial title</h1>");

@@ -8,7 +8,7 @@ import type { Node } from "@qino/qino/cms";
 import type { TNode } from "./parse.ts";
 
 // Parsed templates keyed by path/URL — derived from the source only, safe to share across apps.
-const cache = new Map<string, { mtime?: number; ast: TNode[] }>();
+const cache = new Map<string, { info?: object; source?: string; ast: TNode[] }>();
 
 /** Parsed local or remote template; local files are reparsed when they change. */
 export async function loadTemplate(source: string | URL): Promise<TNode[] | undefined> {
@@ -25,13 +25,12 @@ export async function loadTemplate(source: string | URL): Promise<TNode[] | unde
   const path = key.startsWith("file:") ? fileURLToPath(key) : key;
   const info = await fs.stat(path);
   if (!info?.isFile) return;
-  const mtime = info.mtime?.getTime() ?? 0;
   const cached = cache.get(key);
-  if (cached?.mtime === mtime) return cached.ast;
+  if (cached?.info === info) return cached.ast;
   const html = await fs.text(path).catch(() => undefined);
   if (html === undefined) return;
-  const ast = parseTemplate(html);
-  cache.set(key, { mtime, ast });
+  const ast = cached?.source === html ? cached.ast : parseTemplate(html);
+  cache.set(key, { info, source: html, ast });
   return ast;
 }
 
