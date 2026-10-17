@@ -9,8 +9,10 @@ export const modules = () => list ??= api.cms.modules.get().catch((err) => {
   throw err;
 });
 
-/** Display name: "cms.cont.text" → "Text", "cms.layout.deck.1" → "Deck 1", "cms.backend.cms" → "Backend cms". */
+/** Display name: content and layout modules without their prefix ("cms.cont.text" → "Text",
+ *  "cms.layout.deck.1" → "Deck 1"), any other module just without "cms." ("backend.cms"). */
 export const label = (name) => {
-  const short = name.replace(/^cms\.((cont|layout)\.)?/, '').replace(/\./g, ' ');
+  if (!/^cms\.(cont|layout)\./.test(name)) return name.replace(/^cms\./, '');
+  const short = name.replace(/^cms\.(cont|layout)\./, '').replace(/\./g, ' ');
   return short.charAt(0).toUpperCase() + short.slice(1);
 };
