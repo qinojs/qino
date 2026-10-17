@@ -64,17 +64,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     editHtml = html.async`
         <div class="-alt-edit qgCMS">
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text.plain()}">
-        </div>
-        <style>
-        [qcms-mod="cont.image"] .-alt-edit { position:relative; }
-        [qcms-mod="cont.image"] .-alt-edit > input {
-            opacity:0; transition:opacity .3s;
-            width:calc(100% - .4rem);
-            position:absolute; bottom:.2rem; left:.2rem; right:.2rem; margin:0;
-        }
-        [qcms-mod="cont.image"]:hover .-alt-edit > input,
-        [qcms-mod="cont.image"] .-alt-edit > input:focus { opacity:1; }
-        </style>`;
+        </div>`;
   }
 
   return html.async`<${tag}${hrefAttr}>\n    ${imgHtml}${editHtml}\n</${tag}>`;

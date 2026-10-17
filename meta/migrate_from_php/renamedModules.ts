@@ -10,9 +10,12 @@ export const renamedModules: Record<string, string> = {
   "cms.cont.lang.choose1": "cms.cont.lang.choose", // no content, unknown settings fall back
   "cms.cont.phpfile": "cms.cont.ts", // per-node code — the file itself still needs porting
   "cms.cont.table1": "cms.cont.table", // same texts and settings; migrateTable1 pins the width unit
+  "cms.cont.table2": "cms.cont.table", // migrateTable1 renames the widths
   "cms.cont.form1": "cms.cont.form", // migrateForm1 also reshapes its children and settings
   "cms.cont.form1.fields2": "cms.cont.form.fields",
   "cms.cont.text.cd": "cms.cont.text",
+  "cms.cont.search1": "cms.cont.search",
+  "cms.cont.nav3": "cms.cont.nav", // same setting names
   "cms.cont.login2": "cms.cont.login.password",
   "cms.cont.login3": "cms.cont.login.password",
   "cms.cont.login4": "cms.cont.login.password",
