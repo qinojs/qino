@@ -1,6 +1,7 @@
 import { api } from '@qino/pub/api.js';
 import { html } from '@qino/pub/html.js';
 import { t } from '@qino/pub/t.js';
+import { label } from '../panel/widgets/modules.js';
 
 import { dialog } from './inline.js';
 
@@ -17,7 +18,7 @@ export default function (pid) {
       t`Paste from clipboard`,
       html`<table>
         <tr><th> ${t`Title`}: &nbsp;<td> ${res.title}
-        <tr><th> ${t`Module`}: &nbsp;<td> ${res.module?.replace(/^cms\./, '')}
+        <tr><th> ${t`Module`}: &nbsp;<td> ${res.module ? label(res.module) : ''}
         <tr><th> Id: &nbsp;<td> ${pid}
       </table>`,
       [{

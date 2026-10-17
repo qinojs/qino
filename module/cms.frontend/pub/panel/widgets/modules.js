@@ -8,3 +8,9 @@ export const modules = () => list ??= api.cms.modules.get().catch((err) => {
   list = undefined; // a failed load must not stick
   throw err;
 });
+
+/** Display name: "cms.cont.text" → "Text", "cms.layout.deck.1" → "Deck 1". */
+export const label = (name) => {
+  const short = name.replace(/^cms\.(cont|layout)\./, '').replace(/\./g, ' ');
+  return short.charAt(0).toUpperCase() + short.slice(1);
+};

@@ -5,7 +5,7 @@ import { t } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 import { widget as mount } from '../widget.js';
-import { modules as moduleList } from './modules.js';
+import { label, modules as moduleList } from './modules.js';
 
 const FALLBACK_ICON = () => ctx.moduleUrl + 'cms.frontend/pub/img/module_default.svg';
 
@@ -61,7 +61,7 @@ export default async function (widget, { node, dialogs, signal }) {
         <select class=-changemodule
                 style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-.25rem;margin-bottom:-.1875rem;background:transparent">
           ${modules.filter((m) => m.kind === (isPage ? 'layout' : 'cont') || m.name === vs.module)
-            .map((m) => html`<option value="${m.name}" ${m.name === vs.module ? 'selected' : ''}>${m.name.replace(/^cms\./, '')}`)}
+            .map((m) => html`<option value="${m.name}" ${m.name === vs.module ? 'selected' : ''}>${label(m.name)}`)}
         </select>
       </div>
     </div>
@@ -69,7 +69,7 @@ export default async function (widget, { node, dialogs, signal }) {
       ? html.async`<div class="-editparent u2-flex">
           <span style="flex:0 1 3.6em">${t`Parent:`}</span>
           <a href="${parent.url}" style="font-weight:bold">${parent.title}${parent.type === 'c'
-            ? html` ${parent.module.replace(/^cms\./, '')} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-.125rem">✎</span>`
+            ? html` ${label(parent.module)} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-.125rem">✎</span>`
             : ''}</a></div>`
       : ''}
   </div>`;
