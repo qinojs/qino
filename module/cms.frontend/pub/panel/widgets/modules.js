@@ -9,8 +9,8 @@ export const modules = () => list ??= api.cms.modules.get().catch((err) => {
   throw err;
 });
 
-/** Display name: "cms.cont.text" → "Text", "cms.layout.deck.1" → "Deck 1". */
+/** Display name: "cms.cont.text" → "Text", "cms.layout.deck.1" → "Deck 1", "cms.backend.cms" → "Backend cms". */
 export const label = (name) => {
-  const short = name.replace(/^cms\.(cont|layout)\./, '').replace(/\./g, ' ');
+  const short = name.replace(/^cms\.((cont|layout)\.)?/, '').replace(/\./g, ' ');
   return short.charAt(0).toUpperCase() + short.slice(1);
 };
