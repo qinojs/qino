@@ -36,20 +36,27 @@ const CLOSE = 15;
 
 const log = (e: unknown) => console.error("[ai.agent] tools:", errMsg(e));
 
-/** To find the agent's tools and call them by name (core's tool-calls), only those. */
+/** Calls one of the agent's tools by name: one it found, not given. */
+export const CALL = "call_tool";
+
+/** A call as made: through `CALL`, the tool it called. */
+export const called = <T extends { name: string; args?: unknown }>(call: T): T => call.name === CALL ? { ...call, ...call.args as object } : call;
+
+/** To find the agent's tools and call them by name, only those. */
 function finders(app: App, tools: Tool[]): Tool[] {
-  const names = new Set(tools.map((tool) => tool.name)), among = all(app, "tools").filter((e) => names.has(e.name));
-  const [calls] = toTools(app.apiTree, { apis: { "/core/tool-calls": ["post"] } });
+  const byName = new Map(tools.map((tool) => [tool.name, tool])), among = all(app, "tools").filter((e) => byName.has(e.name));
   return [{
     name: "find_tools",
-    description: `Find more of your tools by what they should do: name, description and parameters. Call them with ${calls.name}.`,
+    description: `Find more of your tools by what they should do: name, description and parameters. Call them with ${CALL}.`,
     parameters: { type: "object", properties: { search: { type: "string", description: "What the tool should do" } }, required: ["search"] },
     execute: async (args) => (await find(app, "tools", String((args as { search?: string }).search ?? ""), among)).map((e) => e.detail),
   }, {
-    ...calls,
-    execute: (args, ctx) => {
-      const other = ((args as { calls?: { name?: string }[] }).calls ?? []).find((call) => !names.has(String(call?.name)));
-      return other ? Promise.reject(new NotFoundError(`Not one of your tools: ${other.name}`)) : calls.execute(args, ctx);
+    name: CALL,
+    description: "Call one of your tools by name",
+    parameters: { type: "object", properties: { name: { type: "string" }, args: { type: "object" } }, required: ["name"] },
+    execute: (call, ctx) => {
+      const { name, args = {} } = call as { name: string; args?: object };
+      return byName.get(name)?.execute(args, ctx) ?? Promise.reject(new NotFoundError(`Not one of your tools: ${name}`));
     },
   }];
 }

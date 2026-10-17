@@ -49,7 +49,7 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   name (`cms_node_html_get`) or `prefix_*` for all below a path (`cms_*`, `cms_node_*`); an entry
   naming none is refused. Its own routes (memories, search) every agent has, with its id set.
 - **Many tools:** with more than 20, it is given the 15 closest to its role, `find_tools` to find the
-  others by meaning ([ai.discover](../ai.discover/)) and core's `core_toolCalls_post` to call them,
+  others by meaning ([ai.discover](../ai.discover/)) and `call_tool` to call them,
   only its own. What it is given stays the same all session long (prompt cache).
 
 ## Agents modules bring

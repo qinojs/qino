@@ -15,7 +15,7 @@ ai.agent, so it can be left out or replaced for experiments.
 ## Possibly relevant memories
 [42] Invoices always in CHF
 ## Possibly relevant tools
-Not in your tool list; call them with core_toolCalls_post.
+Not in your tool list; call them with call_tool.
 - fin_invoices_get: List invoices
 ```
 

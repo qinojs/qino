@@ -165,7 +165,7 @@ cms.initNode("backend.ai.agents", (el) => {
         const run = dom("button", { type: "button", textContent: label[3] });
         run.onclick = async () => {
           run.disabled = true;
-          try { output.value = pretty((await api.core["tool-calls"].post({ calls: [{ name: call.name, arguments: JSON.parse(input.value) }] })).results[0] ?? null); }
+          try { output.value = pretty((await node.api.post({ run: call.name, args: JSON.parse(input.value) })).result ?? null); }
           catch (err) { output.value = pretty({ error: err.message, ...err.data !== undefined && { data: err.data } }); }
           finally { run.disabled = false; }
         };

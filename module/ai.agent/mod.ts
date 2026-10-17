@@ -7,6 +7,7 @@ import * as memory from "./lib/memory.ts";
 import { ask, cancel, note, running } from "./lib/turn.ts";
 
 export { IN_MIND } from "./lib/memory.ts";
+export { CALL, called } from "./lib/context.ts";
 
 import type { App, Tool } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai";

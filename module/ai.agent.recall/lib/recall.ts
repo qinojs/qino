@@ -1,7 +1,7 @@
-import { sql, toTools } from "@qino/qino";
+import { sql } from "@qino/qino";
 import { search } from "@qino/qino/ai.embed";
 import { all, find } from "@qino/qino/ai.discover";
-import { Agent, Session } from "@qino/qino/ai.agent";
+import { Agent, CALL, Session } from "@qino/qino/ai.agent";
 
 import type { App } from "@qino/qino";
 
@@ -33,11 +33,10 @@ async function tools(app: App, agent: number, vector: number[], known: Set<strin
 export async function recall(app: App, agent: number, id: number, vector: number[]): Promise<void> {
   const session = new Session(app, id), known = await session.known();
   const [mine, more] = await Promise.all([memories(app, agent, vector, known), tools(app, agent, vector, known)]);
-  const [calls] = toTools(app.apiTree, { apis: { "/core/tool-calls": ["post"] } });
   const lines = (list: readonly (readonly [string, string])[]) => list.map(([, line]) => line).join("\n");
   const note = [
     mine.length ? `## Possibly relevant memories\n${lines(mine)}` : "",
-    more.length ? `## Possibly relevant tools\nNot in your tool list; call them with ${calls?.name}.\n${lines(more)}` : "",
+    more.length ? `## Possibly relevant tools\nNot in your tool list; call them with ${CALL}.\n${lines(more)}` : "",
   ].filter(Boolean).join("\n\n");
   if (note) await session.note(note, { known: [...mine, ...more].map(([key]) => key) });
 }

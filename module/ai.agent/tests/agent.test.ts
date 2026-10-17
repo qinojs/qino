@@ -41,7 +41,7 @@ const fake: Adapter = {
     if (typed === "time?" || typed === "hold") return { text: "", toolCalls: [{ id: "1", name: "toolset_clock_get", args: {} }], truncated: false };
     const [verb, a, b] = typed.split(":");
     const call = { remember: ["memories_post", { content: a }], replace: ["memories_post", { content: b, replaces: Number(a) }], forget: ["memories_delete", { memory: Number(a) }], search: ["search_post", { query: a }],
-      find: ["find_tools", { search: a }], call: ["core_toolCalls_post", { calls: [{ name: a }] }] }[verb];
+      find: ["find_tools", { search: a }], call: ["call_tool", { name: a }] }[verb];
     if (last.role === "user" && call) return { text: "", toolCalls: [{ id: "1", name: call[0], args: call[1] }], truncated: false };
     if (typed === "slow") await new Promise((r) => setTimeout(r, 30));
     if (typed === "hang") await new Promise(() => {}); // deaf to the signal too
@@ -270,11 +270,11 @@ Deno.test("ai.agent: with more than 20 tools, it is given those closest to its r
   const [given] = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`)
     .map((json) => JSON.parse(String(json)));
   const names = given.tools.map((t: { name: string }) => t.name);
-  assertEquals(names.length, 3 + 15 + 2); // its own, the 15 closest, find_tools and core's tool-calls
-  assertEquals([names.includes("many_logo_get"), names.slice(-2)], [true, ["find_tools", "core_toolCalls_post"]]);
+  assertEquals(names.length, 3 + 15 + 2); // its own, the 15 closest, find_tools and call_tool
+  assertEquals([names.includes("many_logo_get"), names.slice(-2)], [true, ["find_tools", "call_tool"]]);
   assertStringIncludes((await session.ask("find:draw a logo")).text, '"name":"many_logo_get"');
   const missing = Array.from({ length: 24 }, (_, i) => `many_tool${i}_get`).find((name) => !names.includes(name))!;
-  assertStringIncludes((await session.ask(`call:${missing}`)).text, `it is {"results":[`);
+  assertStringIncludes((await session.ask(`call:${missing}`)).text, `it is ${missing.slice(9, -4)}`);
   assertStringIncludes((await session.ask("call:core_t_post")).text, '"error":"Not one of your tools: core_t_post"');
 }));
 
@@ -284,7 +284,7 @@ Deno.test("ai.agent: its tools by nearness to its role, and which a session star
   assertEquals(paths[0].tool.name, "many_logo_get"); // the nearest to its role first
   assert(paths[0].score! > paths.at(-1)!.score!);
   assertEquals(paths.filter((t) => t.given).length, 15); // with many, the 15 closest
-  assertEquals(tools.filter((t) => t.always).map((t) => t.tool.name).slice(-2), ["find_tools", "core_toolCalls_post"]); // its own, and to find the others
+  assertEquals(tools.filter((t) => t.always).map((t) => t.tool.name).slice(-2), ["find_tools", "call_tool"]); // its own, and to find the others
   const few = await (await Agent.create(app, { system: "lead", tools: ["toolset_*"] })).tools();
   assert(few.length > 3 && few.every((t) => t.given)); // with few, all
 }));

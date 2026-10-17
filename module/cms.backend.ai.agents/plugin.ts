@@ -1,11 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, html, sql, unixTime, walk } from "@qino/qino";
+import { getCtx, html, sql, toTools, unixTime, walk } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { candidates } from "@qino/qino/ai";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai";
 import { sqlScore, strength } from "@qino/qino/score";
-import { Agent, IN_MIND, Session } from "@qino/qino/ai.agent";
+import { Agent, called, IN_MIND, Session } from "@qino/qino/ai.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -109,7 +109,7 @@ const textOf = (content: any): string => typeof content === "string" ? content :
 /** A message in one line: who, and what it said, called or got. */
 function said(json: string): { role: string; text: string } {
   const m = JSON.parse(json), text = textOf(m.content);
-  const calls = (m.toolCalls ?? []).map((c: any) => `→ ${c.name}(${JSON.stringify(c.args)})`).join("\n");
+  const calls = (m.toolCalls ?? []).map(called).map((c: any) => `→ ${c.name}(${JSON.stringify(c.args)})`).join("\n");
   return { role: m.role, text: [text, calls].filter(Boolean).join("\n") };
 }
 
@@ -328,7 +328,7 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
     raw(node.app, id).then((sent) => sent.messages.length ? Math.ceil(JSON.stringify(sent).length / 4) : 0).catch(() => 0), // tokens, roughly as ai estimates them
   ]);
   if (!s) return html.async`<div>${t`No such session`}</div>`;
-  const used = Map.groupBy(calls.flatMap((json) => JSON.parse(String(json)).toolCalls ?? []), (c: any) => String(c.name));
+  const used = Map.groupBy(calls.flatMap((json) => JSON.parse(String(json)).toolCalls?.map(called) ?? []), (c: any) => String(c.name));
   // the keys of tools: given as it started, or of its api paths (recalled); the others are memories
   const names = new Set([...JSON.parse(String(given ?? "{}")).tools?.map((tool: any) => tool.name) ?? [],
     ...(await new Agent(node.app, Number(s.agent_id)).allowed()).map((tool) => tool.name)]);
@@ -420,7 +420,7 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
         : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}
-      ${m.toolCalls?.length ? html`<div>${m.toolCalls.map((c: any) => html`<button type=button class=u2-unstyle data-call=${c.id}><small class=u2-badge style="background-color:${uniqueColor(c.name)};color:white">${c.name}</small></button> `)}</div>` : ""}
+      ${m.toolCalls?.length ? html`<div>${m.toolCalls.map(called).map((c: any) => html`<button type=button class=u2-unstyle data-call=${c.id}><small class=u2-badge style="background-color:${uniqueColor(c.name)};color:white">${c.name}</small></button> `)}</div>` : ""}
     </div>`;
   })}</div>`;
 }
@@ -493,7 +493,7 @@ async function calls(db: Db, id: number, call: string) {
     else if (m.role === "tool") {
       const call = byId.get(m.id);
       if (call) call.result = JSON.parse(m.content), call.failed = !!call.result?.error;
-    } else for (const c of m.toolCalls) {
+    } else for (const c of m.toolCalls.map(called)) {
       const call = { id: c.id, step: row.id, time: row.time, name: c.name, color: uniqueColor(c.name), args: c.args };
       byId.set(c.id, call);
       requests.at(-1)!.push(call);
@@ -512,6 +512,7 @@ async function raw(app: App, id: number) {
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (vars.raw) return { ok: true, ...await raw(node.app, Number(vars.raw)) };
   if (vars.calls) return { ok: true, calls: await calls(node.app.db, Number(vars.calls), String(vars.call)) };
+  if (vars.run) return { ok: true, result: await toTools(node.app.apiTree).find((t) => t.name === vars.run)?.execute(vars.args ?? {}, getCtx()) };
   if (!vars.preview || typeof vars.preview !== "object") return null;
   const prefer = Object.fromEntries(Object.entries(vars.preview).filter(([, weight]) => typeof weight === "number"));
   const list = await candidates(node.app, "text", { messages: [], tools: [{}] }, { prefer: Object.keys(prefer).length ? prefer : undefined });
