@@ -3,7 +3,7 @@ import { Db } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { AiError, candidates, decide, embed, image, live, ocr, speak, structured, text, transcribe, translate } from "../mod.ts";
+import { AiError, candidates, decide, embed, image, live, music, ocr, speak, structured, text, transcribe, translate } from "../mod.ts";
 import { aiAdapters, aiCapabilities } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
@@ -522,6 +522,53 @@ Deno.test("ai: openai speaks at /audio/speech; the audio comes as a data URL", a
     const testApp = await openaiApp({ tts: ["speak"] });
     assertEquals(await speak(testApp, { text: "Hallo", voice: "nova" }), "data:audio/mpeg;base64,AQID");
     assertEquals(body, { model: "tts", input: "Hallo", voice: "nova", response_format: "mp3" });
+  });
+});
+
+Deno.test("ai: fal puts the input into the model's fields, waits in its queue and takes the file", async () => {
+  const asked: [string, unknown][] = [];
+  let polls = 0;
+  // a second model sings only: it needs lyrics
+  const schema = (url: string) => ({
+    properties: { prompt: { type: "string" }, seconds_total: { type: "integer" }, lyrics_prompt: { type: "string" } },
+    required: url.includes("singer") ? ["prompt", "lyrics_prompt"] : ["prompt"],
+  });
+  const openapi = (url: string) => ({ paths: { "/x": { post: { requestBody: { content: { "application/json": { schema: { $ref: "#/components/schemas/In" } } } } } } }, components: { schemas: { In: schema(url) } } });
+  await withFetch((url, init) => {
+    asked.push([url, init?.body && JSON.parse(String(init.body))]);
+    if (url.startsWith("https://api.fal.ai/")) return Response.json({ models: [{ openapi: openapi(url) }] });
+    if (url.endsWith("/status")) return Response.json({ status: ++polls < 2 ? "IN_PROGRESS" : "COMPLETED" });
+    if (url.endsWith("/requests/1")) return Response.json({ audio_file: { url: "https://fal.test/song.wav" }, seed: 7 });
+    return Response.json({ status_url: "https://q.fal.test/fal-ai/stable/requests/1/status", response_url: "https://q.fal.test/fal-ai/stable/requests/1" });
+  }, async () => {
+    const testApp = await app({ "fal-ai/singer": ["music"], "fal-ai/stable": ["music"] });
+    await testApp.db.exec`UPDATE ai_provider SET type = 'fal', endpoint = 'https://q.fal.test'`;
+    assertEquals(await music(testApp, { prompt: "calm piano", seconds: 12.4 }), "https://fal.test/song.wav");
+    assertEquals(asked.map(([url, body]) => body ? [url, body] : url), [
+      "https://api.fal.ai/v1/models?endpoint_id=fal-ai%2Fsinger&expand=openapi-3.0", // no lyrics: falls back before sending
+      "https://api.fal.ai/v1/models?endpoint_id=fal-ai%2Fstable&expand=openapi-3.0",
+      ["https://q.fal.test/fal-ai/stable", { prompt: "calm piano", seconds_total: 12 }],
+      "https://q.fal.test/fal-ai/stable/requests/1/status",
+      "https://q.fal.test/fal-ai/stable/requests/1/status",
+      "https://q.fal.test/fal-ai/stable/requests/1",
+    ]);
+    asked.length = 0;
+    await music(testApp, { prompt: "pop", lyrics: "la la" });
+    assertEquals(asked[0], ["https://q.fal.test/fal-ai/singer", { prompt: "pop", lyrics_prompt: "la la" }]); // the schema is kept
+  });
+});
+
+Deno.test("ai: gemini makes music through its Interactions API, lyrics and length in the prompt", async () => {
+  let asked: [string, any, any] | undefined;
+  await withFetch((url, init) => (asked = [new URL(url).href, init?.headers, JSON.parse(String(init?.body))], Response.json({ steps: [
+    { type: "model_output", content: [{ type: "text", text: "[Verse] …" }, { type: "audio", data: "AQID" }] },
+  ] })), async () => {
+    const testApp = await app({ "models/lyria-3.5": ["music"] });
+    await testApp.db.exec`UPDATE ai_provider SET type = 'gemini', endpoint = 'https://gl.test/v1beta/openai'`;
+    (testApp.settings.core.keys as any).fake = "k";
+    assertEquals(await music(testApp, { prompt: "calm piano", lyrics: "la la", seconds: 30 }), "data:audio/mpeg;base64,AQID");
+    assertEquals(asked, ["https://gl.test/v1beta/interactions", { "x-goog-api-key": "k", "content-type": "application/json" },
+      { model: "lyria-3.5", input: "calm piano\n\nLength: about 30 seconds.\n\nLyrics:\nla la", response_format: { type: "audio" } }]);
   });
 });
 

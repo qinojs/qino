@@ -45,6 +45,8 @@ export type EmbedInput = ({ texts: string[]; images?: never } | { images: string
 export type TranslateInput = { text: string | string[]; to: string; from?: string; format?: "md" | "html" };
 /** `image`: its URL, or a data URL. */
 export type OcrInput = { image: string };
+/** `lyrics` to sing, else the model writes its own or plays instrumental; `seconds`: the length. */
+export type MusicInput = { prompt: string; lyrics?: string; seconds?: number };
 /** A live talk: the media go straight between the browser and the provider, what is said and the tool
  *  calls come here. `sdp`: the browser's WebRTC offer; the answer's `sdp` goes back to it. */
 export type LiveInput = {
@@ -74,6 +76,8 @@ export const image = (app: App, input: { prompt: string; size?: string; n?: numb
 export const transcribe = (app: App, input: { file: File; language?: string }, opts?: Opts): Promise<Transcript> => request(app, "transcribe", input, opts);
 /** Text to speech: the audio as a data URL. */
 export const speak = (app: App, input: { text: string; voice?: string; format?: string }, opts?: Opts): Promise<string> => request(app, "speak", input, opts);
+/** Music from a description: the audio's URL (a data URL where the provider returns bytes). */
+export const music = (app: App, input: MusicInput, opts?: Opts): Promise<string> => request(app, "music", input, opts);
 /** Talk live, by voice: see `LiveInput`. */
 export const live = (app: App, input: LiveInput, opts?: Opts): Promise<LiveOutput> => request(app, "live", input, opts);
 /** An image's text, as Markdown. */

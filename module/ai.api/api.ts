@@ -74,4 +74,9 @@ export const api: ApiTree = {
     voice: s.optional(s.string()),
     format: s.optional(s.string()),
   }),
+  music: capability(ai.music, "Music from a description; the audio's URL", {
+    prompt: s.string(),
+    lyrics: s.optional(s.string()),
+    seconds: s.optional(s.number()),
+  }),
 };

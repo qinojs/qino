@@ -20,7 +20,7 @@ await translate(app, { text: ["Titel", "Hallo"], to: "en" }); // many at once: [
 const { text: answer, truncated, model } = await text(app, "Hi"); // model: who answered
 ```
 
-`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `ocr` (image to Markdown), `translate`, `decide`, `live`: each is `request(app, capability, input)`.
+`text`, `structured`, `embed`, `image`, `transcribe` (speech to text), `speak` (text to speech), `music`, `ocr` (image to Markdown), `translate`, `decide`, `live`: each is `request(app, capability, input)`.
 
 **`live`** talks by voice. The browser's WebRTC offer (`sdp`) goes to the server, which hands it to
 the provider with instructions and tools; the media then flow straight between browser and provider.
@@ -65,6 +65,11 @@ Perplexity's reported `/v1/decisions` route can use
 its hosted HTTP contract has not been verified here. SDK/binding gateways (Vercel, Cloudflare,
 Netlify) and differently shaped LiteLLM routes need their own adapter integration.
 Tests mock HTTP responses; no provider has been called with live credentials for this change.
+
+**`music`** goes through [fal.ai](https://fal.ai) (type `fal`, endpoint `https://queue.fal.run`): one
+queue for many models, each with its own input fields. Its public OpenAPI tells them, so `prompt`,
+`lyrics` and `seconds` go into the fields the model has; a required one left empty fails before the call. Gemini (type `gemini`) makes it with Lyria through its
+Interactions API, `lyrics` and `seconds` in the prompt.
 
 ## Models, providers, capabilities
 

@@ -1,6 +1,6 @@
 {
   "name": "ai",
-  "description": "AI providers and models behind one interface: text, structured answers, embeddings, images, transcription, translation and decisions, with fallbacks.",
+  "description": "AI providers and models behind one interface: text, structured answers, embeddings, images, music, transcription, translation and decisions, with fallbacks.",
   "dependencies": [
     "core",
     "cron"
@@ -11,6 +11,8 @@
     "lib/batch.ts",
     "lib/capabilities.ts",
     "lib/decide.ts",
+    "lib/fal.ts",
+    "lib/gemini.ts",
     "lib/jina.ts",
     "lib/nvidia.ts",
     "lib/openai.batch.ts",

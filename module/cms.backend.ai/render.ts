@@ -16,7 +16,7 @@ const NEEDS = ["vision", "tools"];
 const LIMIT = 200;
 const INTELLIGENCE = "intelligence";
 /** What Try offers; the fields each asks for carry `data-for`. */
-const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "transcribe", "ocr"];
+const ACTIONS = ["text", "structured", "translate", "decide", "embed", "image", "speak", "music", "transcribe", "ocr"];
 const SCHEMA = '{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"]}';
 /** A usable model: one with a switched-on offer. */
 const USABLE = sql`EXISTS (SELECT 1 FROM ai_model_provider o WHERE o.model_id = m.id AND o.enabled = ${true})`;
@@ -431,6 +431,10 @@ async function tryCard(app: App) {
         <input name=options value="yes, no" placeholder="${t`options, comma separated`}">
       </div>
       <input name=voice data-for=speak hidden placeholder="${t`voice, e.g. alloy`}">
+      <div class=u2-flex data-for=music hidden>
+        <textarea name=lyrics placeholder="${t`lyrics (optional)`}"></textarea>
+        <input type=number name=seconds min=1 placeholder="${t`seconds (optional)`}">
+      </div>
       <input type=file name=file accept="audio/*,video/*,image/*" data-for="transcribe ocr" hidden>
       <div class=u2-flex>
         <select name=model><option value="">${t`any model`}${options(names.map((n) => ({ value: n, label: n })), "")}</select>

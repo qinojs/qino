@@ -185,6 +185,19 @@ Deno.test("cms.backend.ai: all models of every provider are imported, switched o
   await withFetch(() => ({}), () => evaluate(app).then(() => {}));
   const deepl = Number(await app.db.one`SELECT id FROM ai_model WHERE name = 'deepl'`);
   assertEquals(await app.db.query`SELECT metric, value FROM ai_model_score WHERE model_id = ${deepl}`, [{ metric: "intelligence", value: 35 }]); // judged within translating
+  await api(node, { add: "provider", name: "fal.ai", type: "fal", endpoint: "https://queue.fal.run" });
+  await withFetch(() => ({}), () => evaluate(app).then(() => {}));
+  assertEquals(await app.db.row`SELECT m.name, mp.provider_model, c.capability FROM ai_model m JOIN ai_model_provider mp ON mp.model_id = m.id
+    JOIN ai_model_capability c ON c.model_id = m.id WHERE m.name = 'elevenlabs-music-v2.5'`, { name: "elevenlabs-music-v2.5", provider_model: "elevenlabs/music/v2.5", capability: "music" }); // named by the catalog
+});
+
+Deno.test("cms.backend.ai: a music model gives text too (the lyrics), but is no chat model", async () => {
+  const { app, node } = await setup();
+  await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
+  const lyria = { id: "google/lyria-3-pro-preview", description: "Google's music generation models", supported_parameters: ["response_format"],
+    architecture: { input_modalities: ["text", "image"], output_modalities: ["text", "audio"] } };
+  await withFetch((url) => url.includes("models.dev") ? {} : { data: [lyria] }, () => evaluate(app).then(() => {}));
+  assertEquals(await app.db.col`SELECT capability FROM ai_model_capability ORDER BY capability`, ["music", "vision"]);
 });
 
 const MODELS_DEV = {

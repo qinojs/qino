@@ -95,15 +95,19 @@ async function describe(app: App, offer: { id: number; model_id: number }, meta:
   const inputs: string[] = meta.modalities?.input ?? [], outputs: string[] = meta.modalities?.output ?? [];
   // embedding models: models.dev says their output is text, so it's the family or the name
   const embedding = outputs.includes("embeddings") || meta.family === "text-embedding" || /embed/i.test(meta.id ?? "");
+  // music models give text too (the lyrics), but don't chat
+  const music = outputs.includes("audio") && /\b(music|songs?)\b/i.test(`${meta.id} ${meta.name ?? ""} ${meta.description ?? ""}`);
+  const chat = !embedding && !music;
   const capabilities = [
     embedding && "embed",
-    !embedding && inputs.includes("text") && outputs.includes("text") && "text", // not speech to text
+    chat && inputs.includes("text") && outputs.includes("text") && "text", // not speech to text
     inputs.includes("image") && "vision",
-    !embedding && meta.tool_call && "tools",
-    !embedding && meta.structured_output && "structured",
+    chat && meta.tool_call && "tools",
+    chat && meta.structured_output && "structured",
+    music && "music",
     !embedding && outputs.includes("image") && "image",
     !embedding && (String(inputs) === "audio" && outputs.includes("text") || outputs.includes("transcription")) && "transcribe", // speech to text
-    !embedding && (String(outputs) === "audio" && inputs.includes("text") || outputs.includes("speech")) && "speak", // text to speech
+    chat && (String(outputs) === "audio" && inputs.includes("text") || outputs.includes("speech")) && "speak", // text to speech
     outputs.includes("decisions") && "decide",
     ...guess(meta),
   ].filter(Boolean);
@@ -152,7 +156,8 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
         if (offer) await db.table("ai_model_provider").update(offer, { enabled: false });
       }
       for (const [id, meta] of entries) {
-        const name = unit(id); // the first one seen names the model
+        const fromCatalog = extra.find((m) => m.id === id);
+        const name = fromCatalog?.name ?? unit(id); // the first one seen names the model
         let found = models.get(same(name));
         if (!found) models.set(same(name), found = { id: Number(await db.table("ai_model").insert({ name })), name, enabled: true });
         const model = found.id;
@@ -161,7 +166,6 @@ export async function importModels(app: App, priced = new Set<number>(), told = 
           offers.set(`${provider.id} ${id}`, offer = Number(await db.table("ai_model_provider").insert({ model_id: model, provider_id: provider.id, provider_model: id === found.name ? "" : id, enabled: !!provider.enabled && found.enabled })));
           added++;
         }
-        const fromCatalog = extra.find((m) => m.id === id);
         if (raw.has(id)) await keep(app, String(provider.name), raw.get(id), model, offer);
         if (meta) await describe(app, { id: offer, model_id: model }, meta, true);
         if (fromCatalog) { // from the catalog

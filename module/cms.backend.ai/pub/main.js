@@ -138,6 +138,7 @@ cms.initNode("backend.ai", (el) => {
       embed: () => ({ texts: prompt.split("\n").filter(Boolean) }),
       image: () => ({ prompt }),
       speak: () => ({ text: prompt, ...(f.voice.value && { voice: f.voice.value }) }),
+      music: () => ({ prompt, ...(f.lyrics.value && { lyrics: f.lyrics.value }), ...(f.seconds.value && { seconds: +f.seconds.value }) }),
       transcribe: async () => file ? { file: await dataUrl(file), name: file.name } : {},
       ocr: async () => file ? { image: await dataUrl(file) } : {},
     }[f.capability.value]();
@@ -145,7 +146,7 @@ cms.initNode("backend.ai", (el) => {
   // the answer as fits it: images as images, vectors by their size, the rest as text
   const shown = async (capability, result) => {
     if (capability === "image") return result.map((src) => Object.assign(document.createElement("img"), { src }));
-    if (capability === "speak") return [Object.assign(document.createElement("audio"), { src: result, controls: true })];
+    if (capability === "speak" || capability === "music") return [Object.assign(document.createElement("audio"), { src: result, controls: true })];
     const text = {
       text: () => result.text + (result.truncated ? " …" : ""),
       decide: () => `${result.choice}${result.probabilities ? `\n${JSON.stringify(result.probabilities)}` : ""}`,
