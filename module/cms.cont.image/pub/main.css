@@ -1,14 +1,15 @@
 [qcms-mod="cont.image"] {
   text-align:center;
   display:block;
-}
 
-/* edit mode: the alt text field shows on hover or focus */
-[qcms-mod="cont.image"] .-alt-edit { position:relative; }
-[qcms-mod="cont.image"] .-alt-edit > input {
-  opacity:0; transition:opacity .3s;
-  width:calc(100% - .4rem);
-  position:absolute; bottom:.2rem; left:.2rem; right:.2rem; margin:0;
+  /* edit mode: the alt text field shows on hover or focus */
+  & .-alt-edit {
+    position:relative;
+    & > input {
+      opacity:0; transition:opacity .3s;
+      width:calc(100% - .4rem);
+      position:absolute; bottom:.2rem; left:.2rem; right:.2rem; margin:0;
+    }
+  }
+  &:hover .-alt-edit > input, & .-alt-edit > input:focus { opacity:1; }
 }
-[qcms-mod="cont.image"]:hover .-alt-edit > input,
-[qcms-mod="cont.image"] .-alt-edit > input:focus { opacity:1; }
