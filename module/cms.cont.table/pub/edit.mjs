@@ -17,7 +17,7 @@ const foreignCleaner = () => cleanerLoad ??= import('@qino/pub/c1/NodeCleaner.mj
 const handles = new TableHandles();
 let active, pid;
 document.documentElement.addEventListener('focus', e => {
-  const el = e.target.closest('[qcms-mod="cont.table"] > table > tbody > tr > td');
+  const el = e.target.closest('[qcms-mod="cont.table"] > table > * > tr > :is(td, th)');
   if (!el) return;
   active = el;
   handles.showTd(active);
@@ -48,7 +48,7 @@ cms.initNode('cont.table', function(el) {
     e.preventDefault(); // not working!
     setTimeout(async () => {
       const cleaner = await foreignCleaner();
-      let targetTd = e.target.closest('[qcms-id] > table > * > tr > td');
+      let targetTd = e.target.closest('[qcms-id] > table > * > tr > :is(td, th)');
       const startCellIndex = targetTd.cellIndex;
       for (const tbody of table.children) {
         for (const tr of tbody.children) {
@@ -60,7 +60,7 @@ cms.initNode('cont.table', function(el) {
             if (!targetTd.nextElementSibling) break;
             targetTd = targetTd.nextElementSibling;
           }
-          const targetTr = targetTd.parentNode.nextElementSibling;
+          const targetTr = targetTd.closest('table').rows[targetTd.parentNode.rowIndex + 1]; // thead → tbody too
           if (!targetTr) break;
           targetTd = targetTr.children[startCellIndex];
         }

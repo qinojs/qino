@@ -22,6 +22,13 @@ Deno.test("cms.cont.search: a hit shows its text once escaped, not its entities"
     });
     assertEquals(out.includes("Q&amp;A"), true, out);
     assertEquals(out.includes("&amp;amp;"), false, out);
+    // a labelled search landmark, no focus jump, an ordered list with one link per hit
+    assertEquals(out.includes("<search><form>"), true, out);
+    assertEquals(/<input type=search[^>]*aria-label=/.test(out), true, out);
+    assertEquals(out.includes("autofocus"), false, out);
+    const list = out.slice(out.indexOf("<ol>"), out.indexOf("</ol>"));
+    assertEquals(list.match(/<li>/g)?.length, 1, out);
+    assertEquals(list.match(/<a /g)?.length, 1, out);
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();

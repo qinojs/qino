@@ -9,7 +9,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // Extract words from request URI for fulltext search
   const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ");
 
-  const possiblePages = new Set<string>();
+  const pages = new Set<number>();
 
   if (words) {
     const db = node.app.db;
@@ -21,18 +21,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       const { where } = sqlSearch(words, ["t.text"]);
       rows = await db.query`SELECT p.id FROM page p INNER JOIN text_lang t ON p.title_id = t.text_id WHERE p.searchable AND ${where} GROUP BY p.id LIMIT 100`;
     }
-    let limit = 5;
     for (const row of rows) {
-      const p = await node.cms.node(row.id);
-      if (!await p.access()) continue;
-      possiblePages.add(String(row.id));
-      if (--limit <= 0) break;
+      if (!await (await node.cms.node(row.id)).isReadable()) continue;
+      pages.add(Number(row.id));
+      if (pages.size >= 5) break;
     }
   }
-  // Always include the home page (id=2)
-  possiblePages.add("2");
+  // Always offer the home page
+  const home = await node.cms.nodeByPath(["home"]);
+  if (home && await home.isReadable()) pages.add(home.id);
 
-  const listItems = [...possiblePages].map((pid) => html.async`<li>${node.cms.link(Number(pid))}`);
+  const listItems = [...pages].map((id) => html.async`<li>${node.cms.link(id)}`);
 
   return html.async`<div>
   <div class=u2-width>

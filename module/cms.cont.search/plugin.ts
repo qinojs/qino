@@ -92,14 +92,14 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   return [...found.values()].sort((a, b) => b.score - a.score);
 }
 
+/** One link per hit, on its title: the image and the snippet only illustrate it. */
 async function item(node: Node, page: Node, text: string, words: string[]) {
-  const href = await page.url();
   const cms = node.cms;
 
   let image: HtmlString | string = "";
   if (await node.settings["preview image"]) {
     const file = (await page.files()).values().find((f) => f.mime.startsWith("image/"));
-    if (file) image = html`<a href="${href}"><img src="${await file.url({ w: 120, h: 400, max: true })}" alt=""></a>`;
+    if (file) image = html`<img src="${await file.url({ w: 120, h: 400, max: true })}" alt="" loading=lazy>`;
   }
 
   let path: HtmlString | string = "";
@@ -112,12 +112,13 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
     path = html`<div class=-breadcrumb>${html.join(links, " - ")}</div>`;
   }
 
-  return html.async`<div class=-item>
-    ${image}
-    <div class=-title>${cms.link(page)}</div>
-    ${path}
-    <a href="${href}" class=-content>${snippet(text, words)}</a>
-  </div>`;
+  return html.async`<li>${image}
+    <div>
+      <div class=-title>${cms.link(page)}</div>
+      ${path}
+      <p class=-content>${snippet(text, words)}</p>
+    </div>
+  </li>`;
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
@@ -130,10 +131,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     const keep = Object.entries(ctx.req.query)
       .filter(([k, v]) => k !== QUERY && typeof v === "string")
       .map(([k, v]) => html`<input type=hidden name="${k}" value="${v}">`);
-    form = html.async`<form>${keep}
-      <input type=search name="${QUERY}" value="${search}" placeholder="${t`Search`}" autofocus>
+    form = html.async`<search><form>${keep}
+      <input type=search name="${QUERY}" value="${search}" placeholder="${t`Search`}" aria-label="${t`Search`}">
       <button>${t`Search`}</button>
-    </form>`;
+    </form></search>`;
   }
 
   if (!search) return html.async`<div>${form}</div>`;
@@ -141,11 +142,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const words = terms(search);
   return html.async`<div>${form}
     ${results.length
-      ? results.map((r) => item(node, r.page, r.text, words))
-      : html.async`<div class=-empty>${t`No results found`}</div>`}
+      ? html.async`<ol>${results.map((r) => item(node, r.page, r.text, words))}</ol>`
+      : html.async`<p class=-empty>${t`No results found`}</p>`}
   </div>`;
 }
 
 export const cms = {
-  node: { render, settingsSchema },
+  node: { render, settingsSchema, css: ["pub/main.css"] },
 };

@@ -29,7 +29,8 @@ export default async function (widget, { node, signal }) {
     <label><input type=number setting=rows min=1 max=300 value="${Math.max(1, Number(settings.rows) || 1)}" style="width:5em">
       ${t`Rows (max: 300)`}</label><br>
     <label><input type=number setting=cols class=-cols min=1 max=15 value="${cols}" style="width:5em">
-      ${t`Columns (max: 15)`}</label>
+      ${t`Columns (max: 15)`}</label><br>
+    <label><input type=checkbox setting=header ${settings.header ? 'checked' : ''}> ${t`First row is a header`}</label>
     <div class=-widths>${widths.map((i) => html`<div>${i}<br>
       <input setting="${'row_' + i}" value="${settings['row_' + i]}" placeholder="50%"></div>`)}</div>
     <div class=-export><a href="${exportUrl(node.id)}">${t`Export table as Excel`}</a> ·

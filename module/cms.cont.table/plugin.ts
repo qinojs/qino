@@ -1,4 +1,4 @@
-import { csv, header, Output, xlsx } from "@qino/qino";
+import { csv, header, hee, Output, xlsx } from "@qino/qino";
 
 import api from "./nodeApi.ts";
 
@@ -15,6 +15,7 @@ const settingsSchema = {
     rows: { type: "integer", minimum: 1, maximum: 300, description: "Number of table rows." },
     units: { type: "string", enum: ["px", "%"], description: "Unit of a bare column width." },
     direction: { type: "boolean", description: "Renders the rows bottom-up." },
+    header: { type: "boolean", description: "The first row labels the columns." },
   },
 };
 
@@ -32,7 +33,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const cols = Math.min(Math.max(1, Number(node.settings.cols()) || 2), 15);
   const rows = Math.min(Math.max(1, Number(node.settings.rows()) || 2), 300);
   const units = node.settings.units() === "%" ? "%" : "px";
-  const bottomUp = !!node.settings.direction();
+  const order = Array.from({ length: rows }, (_, i) => node.settings.direction() ? rows - 1 - i : i);
+  const colIds = Array.from({ length: cols }, (_, j) => j);
+  // every cell at once: up to 300 × 15 texts
+  const texts = await Promise.all(order.map((r) => Promise.all(colIds.map((j) => node.showText(`${r}_${j}`)))));
 
   if (ctx.req.query.export_table === String(node)) {
     const titleStr = (await node.showTitle()).plain();
@@ -40,14 +44,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     const dateStr = `${String(d.getDate()).padStart(2, "0")}.${
       String(d.getMonth() + 1).padStart(2, "0")
     }.${String(d.getFullYear()).slice(-2)}`;
-
-    const lines = [];
-    for (let i = 0; i < rows; i++) {
-      const r = bottomUp ? rows - 1 - i : i;
-      const row = [];
-      for (let j = 0; j < cols; j++) row.push((await node.showText(`${r}_${j}`)).plain());
-      lines.push(row);
-    }
+    const lines = texts.map((row) => row.map((text) => text.plain()));
 
     // Excel for people, CSV (?format=csv) for machines
     const asCsv = ctx.req.query.format === "csv";
@@ -59,20 +56,19 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     throw new Output(asCsv ? csv(lines) : await xlsx(lines));
   }
 
-  let html = `<div>\n  <table class=u2-width>\n    <tbody>\n`;
-  for (let i = 0; i < rows; i++) {
-    const r = bottomUp ? rows - 1 - i : i;
-    html += `      <tr>\n`;
-    for (let j = 0; j < cols; j++) {
-      const text = await node.showText(`${r}_${j}`);
-      const w = cssWidth(String(node.settings[`row_${j + 1}`]() ?? ""), units);
-      const styleAttr = w ? ` style="width:${w}"` : "";
-      const editAttr = edit ? ` contenteditable cmstxt=${text.id}` : "";
-      html += `        <td${styleAttr}${editAttr}>${text}\n`;
-    }
-  }
-  html += `  </table>\n</div>`;
-  return html;
+  const widths = colIds.map((j) => cssWidth(String(node.settings[`row_${j + 1}`]() ?? ""), units));
+  const row = (cells: typeof texts[number], tag: "td" | "th") => `      <tr>\n` + cells.map((text, j) => {
+    const attrs = (tag === "th" ? " scope=col" : "") + (widths[j] ? ` style="width:${widths[j]}"` : "") +
+      (edit ? ` contenteditable cmstxt=${text.id}` : "");
+    return `        <${tag}${attrs}>${text}\n`;
+  }).join("");
+
+  const title = (await node.showTitle()).plain();
+  const head = node.settings.header() ? texts.shift() : undefined;
+  return `<div>\n  <table class=u2-width>\n` +
+    (title ? `    <caption>${hee(title)}</caption>\n` : "") +
+    (head ? `    <thead>\n${row(head, "th")}    </thead>\n` : "") +
+    `    <tbody>\n${texts.map((cells) => row(cells, "td")).join("")}  </table>\n</div>`;
 }
 
 export const cms = {

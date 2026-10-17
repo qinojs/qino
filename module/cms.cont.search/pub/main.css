@@ -1,0 +1,9 @@
+[qcms-mod="cont.search"] {
+  & search form { display:flex; gap:.5rem; }
+  & search input { flex:1; min-width:0; }
+  & ol { list-style:none; margin:1.5rem 0 0; padding:0; display:grid; gap:1.25rem; }
+  & li { display:flex; gap:1rem; align-items:start; }
+  & li > img { flex:none; width:7.5rem; }
+  & .-breadcrumb { font-size:.875em; opacity:.7; }
+  & .-content { margin:.25rem 0 0; }
+}
