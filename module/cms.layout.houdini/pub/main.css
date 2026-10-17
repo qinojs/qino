@@ -146,16 +146,6 @@
     .-languages {
       max-inline-size: 100%;
       &:not(:has(nav, select, [qcms-edit])) { display: none; }
-      > .-label {
-        position: absolute;
-        inline-size: 1rem;
-        block-size: 1rem;
-        clip-path: inset(50%);
-        overflow: hidden;
-        white-space: nowrap;
-        &[cmstxt] { position: static; inline-size: auto; block-size: auto; clip-path: none; overflow: visible; white-space: normal; }
-      }
-      &:not(:has(select)) > .-label:not([cmstxt]) { display: none; }
       nav ul { display: flex; flex-wrap: wrap; align-items: center; gap: .15em; margin: 0; padding: 0; }
       nav li::after { display: none; }
       nav li { min-inline-size: 0; }

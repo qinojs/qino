@@ -104,7 +104,7 @@ declaration. Navigation and language selector keep their own CMS options.
 
 | Name | Kind | Intended use |
 |---|---|---|
-| `skip`, `menu`, `close`, `languageLabel` | Layout text | Editable and translatable interface labels |
+| `skip`, `menu`, `close` | Layout text | Editable and translatable interface labels |
 | `notice` | Optional layout text | Announcement or service message; empty is hidden |
 | `nav` | `cms.cont.nav4` | Main navigation from the page tree |
 | `lang` | `cms.cont.lang.choose2` | Languages of the current page; links or select |
@@ -145,8 +145,7 @@ still decides which page visitors reach.
   Keyboard focus uses a solid outline in the local text color, including in dark
   sections; it remains separate from the brand-colored hover treatment.
 - Language links keep their native names, `lang`, `hreflang` and active state.
-- Select mode gets its accessible name from the editable `languageLabel` text;
-  the association is restored when the CMS reloads the selector.
+- The language module supplies its own accessible name in both links and select mode.
 - Logical CSS properties support right-to-left content. u2 supplies reduced
   motion and print defaults; layout navigation controls are hidden in print.
 - Button and announcement defaults adapt their foreground/background pairing

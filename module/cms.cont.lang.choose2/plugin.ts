@@ -57,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       const selected = l === ctx.lang ? " selected" : "";
       return html.async`<option${selected} value="${page.url(l)}" lang="${l}" class="-${l}">${label}`;
     });
-    return html.async`<select>${options}</select>`;
+    return html.async`<select aria-label="Languages">${options}</select>`;
   }
 
   // links (default)

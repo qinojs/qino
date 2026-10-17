@@ -2,16 +2,6 @@ import { cms } from '../../cms/pub/js/cms.mjs';
 
 /* Native popovertarget exposes the open state to assistive technology, including light dismiss and Escape. */
 export function init(el) {
-  const languages = el.querySelector('.-languages');
-  const label = languages?.querySelector('.-label');
-  if (label?.id) {
-    const name = () => {
-      for (const select of languages.querySelectorAll('select:not([aria-label], [aria-labelledby])'))
-        select.setAttribute('aria-labelledby', label.id);
-    };
-    name();
-    new MutationObserver(name).observe(languages, { childList: true, subtree: true });
-  }
   const menu = el.querySelector('#head-nav');
   if (!menu || typeof menu.hidePopover !== 'function') return;
   for (const type of ['focusin', 'pointerover']) menu.addEventListener(type, (event) => {
