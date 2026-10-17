@@ -60,6 +60,7 @@ export default async function (widget, { node, dialogs, signal }) {
         <span style="flex:0 1 3.6em" title="${vs.module}">${isPage ? 'Layout' : 'Module'}: </span>
         <select class=-changemodule
                 style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-.25rem;margin-bottom:-.1875rem;background:transparent">
+          ${!vs.module || modules.some((m) => m.name === vs.module) ? '' : html`<option value="${vs.module}" selected>${label(vs.module)}`}
           ${modules.filter((m) => m.kind === (isPage ? 'layout' : 'cont') || m.name === vs.module)
             .map((m) => html`<option value="${m.name}" ${m.name === vs.module ? 'selected' : ''}>${label(m.name)}`)}
         </select>
