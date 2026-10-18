@@ -1,0 +1,19 @@
+[qcms-mod="backend.ai.agents"] {
+  /* a session's conversation: the user on the right, the agent on the left */
+  & [cms-part=conversation] { max-height: 80vh; overflow: auto; }
+  & [cms-part=conversation] > div { flex-wrap: nowrap; max-width: 80rem; }
+  & [data-message]:where(:not([data-role=system])) { align-self: flex-start; max-width: 80%; }
+  & [data-unsent] { opacity: .5; } /* no longer sent to its model */
+  & [data-role=user], & [data-role=assistant] { padding: .3rem; border-radius: .4rem; }
+  & [data-role=user] { align-self: flex-end; margin-left: 1.5rem; background: color-mix(in oklch, var(--accent) 10%, #fff); }
+  & [data-role=assistant] { margin-right: 1.5rem; background: color-mix(in oklch, var(--gray) 10%, #fff); }
+  & [data-text] { white-space: pre-wrap; }
+  & [data-role=error] > [data-text] { color: var(--red); }
+  /* what its model was given, or a note: a line of each text up to "…", all of them on a click */
+  & [data-role=system] {
+    margin-inline: 1.5rem; padding: .3rem; border-radius: .4rem; cursor: pointer;
+    border: 1px dashed color-mix(in oklch, var(--gray) 40%, #fff);
+  }
+  & [data-role=system] > [data-text] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
+  & [data-role=system][data-open] > [data-text] { -webkit-line-clamp: none; }
+}

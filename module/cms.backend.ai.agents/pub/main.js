@@ -211,6 +211,8 @@ cms.initNode("backend.ai.agents", (el) => {
     const button = e.target.closest("button[data-call]");
     if (button) showCalls(button.dataset.call).catch((err) => alert(err.message));
     if (e.target.closest("button[data-raw]")) showRaw().catch((err) => alert(err.message));
+    const system = e.target.closest("[data-role=system]"); // its texts: all of them, or their starts again
+    if (system && !getSelection()?.toString()) system.toggleAttribute("data-open");
   });
   const refresh = () => Promise.all(parts.map((part) => cms.reloadPart(nid, part, vars)));
   const timer = setInterval(() => el.isConnected ? refresh() : clearInterval(timer), 10000);

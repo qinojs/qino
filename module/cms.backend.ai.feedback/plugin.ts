@@ -80,7 +80,7 @@ export async function reports(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       <td>${r.id}
       <td>${colored(r.kind)}
       <td>${topic(r.about)}
-      <td style="white-space:pre-wrap">${r.content}
+      <td style="white-space:pre-wrap; width:40rem">${r.content}
       <td>${r.model ? colored(r.model) : "–"}
       <td>${r.session_id ? link({ session: r.session_id }, `session ${r.session_id}`) : ""}${r.agent_id ? html` · ${link({ agent: r.agent_id }, colored(r.agent_id))}` : ""}${r.username ? html` · ${colored(r.username)}` : ""}
       <td>${time(r.time)}
@@ -140,7 +140,7 @@ async function render(node: Node) {
       <div class=-head>${t`Topics`} <small>${filter("", "all")}${kinds.map((kind) => html` · ${filter(kind, kind)}`)}</small></div>
       <table class=u2-table cms-part=topics>${topics(node, { vars: only.kind ? { kind: only.kind } : {} })}</table>
     </div>
-    <div class=u2-card style="flex:1 1 30rem; min-width:0">
+    <div class=u2-card style="flex:0 1 auto">
       <div class=-head>
         ${query.about != null ? html.async`<a href="${url}">${t`Feedback`}</a> › ${query.kind ? html`${colored(query.kind)} ` : ""}${topic(query.about === "-" ? "" : query.about)}` : t`Feedback`}
         <a href="${toggle}"><small>${query.done ? t`only open` : t`with done`}</small></a>

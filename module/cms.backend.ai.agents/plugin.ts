@@ -97,7 +97,7 @@ const agentLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(ur
 /** The link to a session's page. */
 const sessionLink = (url: string, id: unknown) => html`<a href="${backend.toUrl(url, { session: id })}">${id}</a>`;
 /** What the model has in its context, by key (memories `5`, the user's `u5`, tools by name), each in its color. */
-const keys = (known: Iterable<string>) => [...known].map((key) => html`<span class=u2-badge style="background-color:${uniqueColor(key)};color:white">${key}</span> `);
+const keys = (known: Iterable<string>) => [...known].map((key) => html`${colored(key)} `);
 const pageUrl = async (node: Node) => (await node.page()).url();
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -334,7 +334,6 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
     ...(await new Agent(node.app, Number(s.agent_id)).allowed()).map((tool) => tool.name)]);
   const tools = [...new Set([...used.keys(), ...[...known].filter((key) => names.has(key))])]
     .sort((a, b) => (used.get(b)?.length ?? 0) - (used.get(a)?.length ?? 0) || a.localeCompare(b));
-  const memories = [...known].filter((key) => !names.has(key));
   return html.async`<div>
     <table class=u2-table>
       <tr>
@@ -352,9 +351,6 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       <tr>
         <th title="${t`What its model is sent at the next turn, in tokens roughly; of the context of the model that answered last`}">context
         <td>${size ? html`<span style="${last?.context_length && size > Number(last.context_length) ? "color:var(--red)" : ""}">~${kilo(size)}</span>` : "–"}${last?.context_length ? html` / ${kilo(Number(last.context_length))} (${colored(last.model)})` : ""}
-      <tr>
-        <th title="${t`The memories in its model's context now: its own (5), the user's (u5)`}">known
-        <td>${memories.length ? keys(memories) : "–"}
       <tr>
         <th>${t`Last active`}
         <td>${time(s.last_time)}${unixTime() - Number(s.last_time) < ACTIVE ? html` <small class=u2-badge>active</small>` : ""}
@@ -383,16 +379,6 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
   `;
 }
 
-/** Small and cut, all of it when opened. */
-const folded = (summary: string, all: string) =>
-  html`<details><summary><small>${short(summary)}</small></summary><pre style="white-space:pre-wrap;overflow:auto;max-height:20rem"><small>${all}</small></pre></details>`;
-
-/** JSON text indented, other text as it is. */
-const pretty = (value: unknown) => {
-  if (typeof value === "string") try { value = JSON.parse(value); } catch { return value as string; }
-  return JSON.stringify(value, null, 2);
-};
-
 /** One session's conversation, everything it kept: the user on the right, the agent on the left, its
  *  tool calls as buttons which open them with their results. With `after` (a message id) only the messages since;
  *  `data-running` while an answer is on its way. */
@@ -403,23 +389,21 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
   const session = new Session(node.app, Number(vars.session)), running = session.running;
   // what its model is no longer sent (compacted, failures) is faded; what follows along is always sent
   const sent = vars.after ? undefined : await session.sent().catch(() => undefined);
-  const faded = (id: unknown) => sent?.size && !sent.has(Number(id)) ? "opacity:.5;" : "";
-  return html`<div class="u2-flex -Col" style="flex-wrap:nowrap; max-width:80rem" ${running ? "data-running" : ""}>${rows.map((row) => { // one message below the other: then align-self puts them left and right
+  const unsent = (id: unknown) => sent?.size && !sent.has(Number(id)) ? "data-unsent" : "";
+  return html`<div class="u2-flex -Col" ${running ? "data-running" : ""}>${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
-    const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}${faded(row.id) ? " · not sent" : ""}</small>`;
+    const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}${unsent(row.id) ? " · not sent" : ""}</small>`;
+    const box = html`data-message=${row.id} data-role=${m.role} ${unsent(row.id)}`;
     // what the model was given as the session started (its role with memories, its tools, prefer), or a note
-    if (m.role === "system") return html`<div data-message=${row.id} style="${faded(row.id)}">${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
-      ${folded(text, text)}
-      ${m.tools ? folded(`${m.tools.length} tools: ${m.tools.map((t: any) => t.name).join(", ")}`, pretty(m.tools)) : ""}
-      ${m.known?.length ? html`<div><small>known: ${keys(m.known)}</small></div>` : ""}</div>`;
+    const known = [...m.tools?.map((tool: { name: string }) => tool.name) ?? [], ...m.known ?? []];
+    if (m.role === "system") return html`<div ${box}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
+      <div data-text><small>${text}</small></div>
+      ${known.length ? html`<div><small>known: ${keys(known)}</small></div>` : ""}</div>`;
     if (m.role === "tool") return ""; // shown with its call, in the dialog of the calls
-    const side = m.role === "user" ? "flex-end" : "flex-start";
-    const bubble = m.role === "user" ? "background:color-mix(in oklch, var(--accent) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-left:1.5rem"
-      : m.role === "assistant" ? "background:color-mix(in oklch, var(--gray) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-right:1.5rem" : "";
-    return html`<div data-message=${row.id} style="${faded(row.id)}align-self:${side}; max-width:80%; ${bubble}">
+    return html`<div ${box}>
       ${head}
       ${!text ? "" : m.role === "assistant" ? html`<div data-md>${text}</div>` // markdown, rendered by pub/main.js
-        : html`<div style="white-space:pre-wrap; ${m.role === "error" ? "color:var(--red)" : ""}">${text}</div>`}
+        : html`<div data-text>${text}</div>`}
       ${m.toolCalls?.length ? html`<div>${m.toolCalls.map(called).map((c: any) => html`<button type=button class=u2-unstyle data-call=${c.id}><small class=u2-badge style="background-color:${uniqueColor(c.name)};color:white">${c.name}</small></button> `)}</div>` : ""}
     </div>`;
   })}</div>`;
@@ -442,7 +426,7 @@ async function render(node: Node) {
     </div>
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Conversation`} <button type=button data-raw title="${t`What the model is given at the next turn`}">${t`Raw`}</button></div>
-      <div cms-part=conversation style="max-height:80vh; overflow:auto">${conversation(node, { vars })}</div>
+      <div cms-part=conversation>${conversation(node, { vars })}</div>
       ${s && Number(s.usr_id) === getCtx().userId ? html.async`<form class=u2-flex data-ask>
         <textarea name=content rows=3 required style="flex:1" placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
         <button data-stop="${t`Stop`}">${t`Send`}</button>
@@ -519,4 +503,4 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return { ok: true, list: list.slice(0, 5).map((c) => ({ model: c.model, provider: c.provider, rank: Math.round(c.rank * 100) / 100 })) };
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, api, parts: { agents, agent, sessions, session, memories, tools, conversation } } };
+export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, api, parts: { agents, agent, sessions, session, memories, tools, conversation } } };
