@@ -73,7 +73,7 @@ export const api: ApiTree = {
     get: {
       description: "Search the pages already read and kept here (not the web); without search the latest",
       query: s.object({
-        search: s.optional(s.string()),
+        search: s.optional(s.string()).describe("Vector search"),
         root: s.optional(s.string()).describe("Only pages whose url starts with it, e.g. where a crawl started"),
       }),
       access: Access.USER,

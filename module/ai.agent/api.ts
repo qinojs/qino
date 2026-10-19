@@ -27,7 +27,7 @@ export const api: ApiTree = {
   agents: {
     get: {
       description: "Find agents by their role: id and the first line of it; with search those nearest to it by meaning",
-      query: s.object({ search: s.optional(s.string()).describe("What the agent should do, in words") }),
+      query: s.object({ search: s.optional(s.string()).describe("Vector search: what the agent should do") }),
       access: Access.USER,
       execute: ({ search: query }: { search?: string }, ctx: Ctx) => search.agents(ctx.app, query),
     },
@@ -89,7 +89,7 @@ export const api: ApiTree = {
         post: verb<{ agent: number; query: string }>(
           "Search this agent's own memory, by meaning: its memories and all its past sessions, with anyone; a message found comes with its session and id, to read on from there",
           ({ agent, query }, ctx) => search.find(ctx.app, agent, query),
-          { query: s.string() },
+          { query: s.string().describe("Vector search") },
         ),
       },
     },

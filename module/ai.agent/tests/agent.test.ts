@@ -375,3 +375,12 @@ Deno.test("ai.agent: the strongest memories go into the context, as many as fit 
   assertEquals((await list(app, agent.id, IN_MIND)).map((m) => m.content[0]), ["b", "c", "a"]); // "short" no longer fits
   assertEquals((await list(app, agent.id)).length, 4); // without a budget: all
 }));
+
+Deno.test("ai.agent: reading what the model is given keeps nothing; a turn keeps its start once", () => withApp(async (app) => {
+  const session = await (await Agent.create(app, { system: "lead" })).start(7);
+  await session.context();
+  assertEquals(await kept(app, session.id), []); // only read
+  await session.ask("hi");
+  await Promise.all([session.context(), session.context()]);
+  assertEquals((await kept(app, session.id)).filter(([role]) => role === "start").length, 1);
+}));

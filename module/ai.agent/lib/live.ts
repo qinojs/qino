@@ -20,7 +20,7 @@ const SO_FAR = 20;
 
 /** Talk live in `session`: `sdp` is the browser's WebRTC offer, the answer's goes back to it. */
 export async function live(app: App, session: number, sdp: string): Promise<string> {
-  const { agent, usrId, prefer, tools, messages } = await context(app, session);
+  const { agent, usrId, prefer, tools, messages } = await context(app, session, { keep: true });
   const [first, ...history] = messages;
   const said = (first?.role === "system" ? history : messages)
     .filter((m) => (m.role === "user" || m.role === "assistant") && textOf(m.content))

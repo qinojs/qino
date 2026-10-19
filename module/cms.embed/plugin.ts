@@ -23,7 +23,7 @@ export const api: ApiTree = {
     get: {
       description: "Find CMS pages by meaning, in the current language: by their texts and the files on them; only pages you may read. The best first, each with its best matching text",
       query: s.object({
-        search: s.string().describe("What to find, in words"),
+        search: s.string().describe("Vector search"),
         start: s.optional(s.number().describe("Only this page and those below it")),
         limit: s.optional(s.number().describe("At most this many pages, 20 if not given, at most 50")),
       }),

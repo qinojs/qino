@@ -48,7 +48,7 @@ function finders(app: App, tools: Tool[]): Tool[] {
   return [{
     name: "find_tools",
     description: `Find more of your tools by what they should do: name, description and parameters. Call them with ${CALL}.`,
-    parameters: { type: "object", properties: { search: { type: "string", description: "What the tool should do" } }, required: ["search"] },
+    parameters: { type: "object", properties: { search: { type: "string", description: "Vector search: what the tool should do" } }, required: ["search"] },
     execute: async (args) => (await find(app, "tools", String((args as { search?: string }).search ?? ""), among)).map((e) => e.detail),
   }, {
     name: CALL,
@@ -141,8 +141,9 @@ export async function known(app: App, session: number): Promise<Set<string>> {
  *  latest start (kept as a message of role `start`), run as they are now; the history, as other modules
  *  let it be sent (compaction); how the model is chosen. What was sent stays the same while the provider's
  *  cache holds it (prompt cache): the start is renewed only once the history was cut (compaction) or
- *  with `renew` (after a pause longer than the cache keeps it). */
-export async function context(app: App, session: number, renew = false) {
+ *  with `renew` (after a pause longer than the cache keeps it), and kept only with `keep` (a turn):
+ *  reading it changes nothing. */
+export async function context(app: App, session: number, { renew = false, keep = false } = {}) {
   const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai_session s JOIN ai_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
   if (!agent) throw new Error(`No session ${session}`);
   const id = Number(agent.agent_id), usrId = Number(agent.usr_id);
@@ -161,10 +162,11 @@ export async function context(app: App, session: number, renew = false) {
     const system = [situation(id, session, await app.url()), role, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
     const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
     const memories = (await memory.list(app, id, memory.IN_MIND)).map((m) => String(m.id));
-    await save(app, session, id, given = {
+    given = {
       role: "start" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })),
       known: [...memories, ...known], prefer,
-    });
+    };
+    if (keep) await save(app, session, id, given);
   }
   // the tools as given, run as they are now
   const now = new Map(tools.map((tool) => [tool.name, tool]));

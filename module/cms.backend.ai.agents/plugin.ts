@@ -486,12 +486,8 @@ async function calls(db: Db, id: number, call: string) {
   return requests.find((list) => list.some((c) => c.id === call)) ?? [];
 }
 
-/** What the model of session `id` is given at the next turn; none before it was asked, as reading it
- *  would keep what it is given from now on. */
-async function raw(app: App, id: number) {
-  if (!await app.db.one`SELECT id FROM ai_session_message WHERE session_id = ${id} LIMIT 1`) return { messages: [], tools: [] };
-  return new Session(app, id).context();
-}
+/** What the model of session `id` is given at the next turn. */
+const raw = (app: App, id: number) => new Session(app, id).context();
 
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (vars.raw) return { ok: true, ...await raw(node.app, Number(vars.raw)) };

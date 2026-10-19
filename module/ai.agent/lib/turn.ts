@@ -80,7 +80,7 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     if (!row) throw new Error(`No session ${session}`);
     const id = Number(row.agent_id), last = Number(row.last), now = unixTime();
     for (const message of [...notes.take(app, session, clock(last, now)), { role: "user" as const, content }]) await save(app, session, id, message);
-    const { usrId, prefer, tools, messages } = await context(app, session, now - last > CACHE_TTL);
+    const { usrId, prefer, tools, messages } = await context(app, session, { renew: now - last > CACHE_TTL, keep: true });
     // always streamed: a long answer is no silence, and what a cancelled step said so far stays
     let partial = "";
     const out = await run(app, {

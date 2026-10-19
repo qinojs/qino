@@ -77,7 +77,7 @@ export class Session {
     return ask(this.#app, this.#id, content, opts);
   }
 
-  /** What the model is given at the next turn: the messages and the tools' definitions. */
+  /** What the model is given at the next turn: the messages and the tools' definitions; reading it changes nothing. */
   async context(): Promise<{ messages: Message[]; tools: Omit<Tool, "execute">[] }> {
     const { messages, tools } = await context(this.#app, this.#id);
     return { messages, tools: tools.map(({ name, description, parameters }) => ({ name, description, parameters })) };

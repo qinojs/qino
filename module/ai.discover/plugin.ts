@@ -13,7 +13,7 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 const kind = (kind: Kind, param: string, what: string, detail: string) => ({
   [kind]: { get: {
     description: `${what}: name and description of each; with search only those nearest to it by meaning`,
-    query: s.object({ search: s.optional(s.string()).describe("What to find, in words") }),
+    query: s.object({ search: s.optional(s.string()).describe("Vector search") }),
     access: Access.USER,
     execute: async ({ search }: { search?: string }, ctx: Ctx) =>
       (search ? await find(ctx.app, kind, search, await entries(ctx, kind)) : await entries(ctx, kind)).map(({ name, description }) => ({ name, description })),
