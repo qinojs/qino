@@ -165,18 +165,38 @@ Deno.test("ai.agent: what the user says strengthens the memories close to it, in
   assertEquals(await index(app, agent.id), `## Your memories\n${HINT}\n[1] the logo is blue\n[2] apples are red`);
 }));
 
-Deno.test("ai.agent: the time comes as a note before the first question and after a pause", () => withApp(async (app) => {
+/** Run `fn` with the clock moved by `later(seconds)`. */
+async function timeTravel(fn: (later: (seconds: number) => void) => Promise<void>) {
+  const now = Date.now;
+  let offset = 0;
+  Date.now = () => now() + offset * 1000;
+  try { await fn((seconds) => offset += seconds); } finally { Date.now = now; }
+}
+
+Deno.test("ai.agent: the time comes as a note every 5 minutes, before a question", () => withApp((app) => timeTravel(async (later) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   await session.ask("hi");
-  await session.ask("again"); // no pause: no note
-  await app.db.query`UPDATE ai_session_message SET time = time - 600 WHERE session_id = ${session.id}`;
+  await session.ask("again"); // within 5 minutes: no note
+  later(600);
   await session.ask("back");
   const roles = async (name: string) => (await kept(app, session.id)).filter(([role]) => role === name).length;
   assertEquals([await roles("system"), await roles("start")], [2, 1]); // the cache still keeps the start
-  await app.db.query`UPDATE ai_session_message SET time = time - 4000 WHERE session_id = ${session.id}`;
+  later(4000);
   await session.ask("later");
   assertEquals([await roles("system"), await roles("start")], [3, 2]); // lost by now: the start renewed
-}));
+})));
+
+Deno.test("ai.agent: the time comes as a note every 5 minutes, before a step too", () => withApp((app) => timeTravel(async (later) => {
+  const session = await (await Agent.create(app, { system: "lead", tools: ["toolset_*"] })).start(7);
+  let release!: () => void;
+  held = new Promise((r) => release = r), holding = false;
+  const answer = session.ask("hold");
+  while (!holding) await new Promise((r) => setTimeout(r, 5));
+  later(600); // the turn takes long
+  release();
+  await answer;
+  assertEquals(clocked((sent.at(-1)!.at(-1) as { content: string }).content), "Now"); // before its next step
+})));
 
 Deno.test("ai.agent: notes said during a turn come with its next step, as one", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead", tools: ["toolset_*"] })).start(7);

@@ -12,19 +12,9 @@ import type { Message, Part, TextOutput } from "@qino/qino/ai";
 const TURN_MS = 60 * 60_000;
 /** Model calls per turn at most: a big task takes many steps, the time bounds it. */
 const STEPS = 100;
-/** Seconds without a message after which the agent is told the time again. */
-const PAUSE = 5 * 60;
 /** Seconds the providers keep a prompt in their cache, at most: after a pause this long the context is
  *  renewed (role, memories, tools), as sending it differently costs nothing more then. */
 const CACHE_TTL = 60 * 60;
-
-/** The time as a note before a question: at the first one, and after a pause since `last`. */
-function clock(last: number, now = unixTime()): string | undefined {
-  if (last && now - last < PAUSE) return;
-  const at = Temporal.Instant.fromEpochMilliseconds(now * 1000).toZonedDateTimeISO(Temporal.Now.timeZoneId())
-    .toString({ smallestUnit: "minute", timeZoneName: "never" });
-  return `Now: ${at}`;
-}
 
 // One turn after the other per session, as a person answers: a message waits for the one before.
 const queues = new WeakMap<App, Map<number, Promise<unknown>>>();
@@ -79,7 +69,7 @@ export function ask(app: App, session: number, content: string | Part[], { onTex
     const row = await app.db.row`SELECT agent_id, (SELECT MAX(time) FROM ai_session_message WHERE session_id = ${session}) AS last FROM ai_session WHERE id = ${session}`;
     if (!row) throw new Error(`No session ${session}`);
     const id = Number(row.agent_id), last = Number(row.last), now = unixTime();
-    for (const message of [...notes.take(app, session, clock(last, now)), { role: "user" as const, content }]) await save(app, session, id, message);
+    for (const message of [...notes.take(app, session), { role: "user" as const, content }]) await save(app, session, id, message);
     const { usrId, prefer, tools, messages } = await context(app, session, { renew: now - last > CACHE_TTL, keep: true });
     // always streamed: a long answer is no silence, and what a cancelled step said so far stays
     let partial = "";

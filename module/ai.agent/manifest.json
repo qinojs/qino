@@ -18,6 +18,7 @@
     "lib/notes.ts",
     "lib/record.ts",
     "lib/search.ts",
+    "lib/tools.ts",
     "lib/turn.ts",
     "manifest.json",
     "mod.ts",

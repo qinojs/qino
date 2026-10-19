@@ -1,13 +1,14 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { checkTools, context, known, ranked, toolsOf } from "./lib/context.ts";
+import { context, known } from "./lib/context.ts";
+import { checkTools, ranked, toolsOf } from "./lib/tools.ts";
 import { live } from "./lib/live.ts";
 import * as memory from "./lib/memory.ts";
 import { ask, cancel, note, running } from "./lib/turn.ts";
 
 export { IN_MIND, Memories } from "./lib/memory.ts";
-export { CALL, called } from "./lib/context.ts";
+export { CALL, called } from "./lib/tools.ts";
 
 import type { App, Tool } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai";

@@ -25,8 +25,8 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
 - **Notes:** `session.note(content)` tells the agent something without asking (the model gets it as a
   `system` message in the history). While a turn is on its way it reads it with the next step, else
   before the next question; notes waiting together come as one message, the time first.
-- **The time** comes as a note before the first question of a session and after 5 minutes without a
-  message (`Now: 2026-10-10T21:40+02:00`); what the user said stays as it is.
+- **The time** comes as a note before a question or a step of a turn, once 5 minutes passed since it
+  was told last (`Now: 2026-10-10T21:40+02:00`); what the user said stays as it is.
 - **One turn after the other** per session: a message waits for the answer to the one before.
   `session.cancel()` stops the one on its way; after an hour it is cancelled anyway, so a stream
   that never ends cannot keep the session. What a cancelled step said so far stays, marked

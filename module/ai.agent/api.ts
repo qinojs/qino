@@ -2,7 +2,7 @@ import { Access, ConflictError, errMsg, NotFoundError, s } from "@qino/qino";
 
 import * as memory from "./lib/memory.ts";
 import * as search from "./lib/search.ts";
-import { checkTools } from "./lib/context.ts";
+import { checkTools } from "./lib/tools.ts";
 import { Agent, Session } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";

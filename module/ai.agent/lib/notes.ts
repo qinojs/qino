@@ -1,3 +1,5 @@
+import { unixTime } from "@qino/qino";
+
 import { save } from "./record.ts";
 
 import type { App } from "@qino/qino";
@@ -21,7 +23,7 @@ export function add(app: App, session: number, note: Note): void {
 }
 
 /** The notes waiting in `session`, `first` before them, taken as one message; none if there are none. */
-export function take(app: App, session: number, first?: string | Part[]): (Message & { known?: string[] })[] {
+function drain(app: App, session: number, first?: string | Part[]): (Message & { known?: string[] })[] {
   const notes = [...first ? [{ content: first }] : [], ...waiting(app).get(session) ?? []];
   waiting(app).delete(session);
   if (!notes.length) return [];
@@ -29,7 +31,26 @@ export function take(app: App, session: number, first?: string | Part[]): (Messa
   return [{ role: "system", content: joined(notes.map((note) => note.content)), ...known.length && { known } }];
 }
 
+/** The notes waiting in `session`, the time first when it is due (see `clock`), before a question or a step. */
+export const take = (app: App, session: number) => drain(app, session, clock(app, session));
+
 /** Keep the notes still waiting in `session`, for the next question. */
 export async function flush(app: App, session: number, agent: number): Promise<void> {
-  for (const message of take(app, session)) await save(app, session, agent, message);
+  for (const message of drain(app, session)) await save(app, session, agent, message);
+}
+
+/** Seconds after which the agent is told the time again. */
+const CLOCK = 5 * 60;
+
+// When each session was last told the time; after a restart it is told again.
+const told = new WeakMap<App, Map<number, number>>();
+
+/** The time as a note, once `CLOCK` passed since `session` was last told it. */
+function clock(app: App, session: number): string | undefined {
+  const last = told.get(app) ?? told.set(app, new Map()).get(app)!, now = unixTime();
+  if (now - (last.get(session) ?? 0) < CLOCK) return;
+  last.set(session, now);
+  const at = Temporal.Instant.fromEpochMilliseconds(now * 1000).toZonedDateTimeISO(Temporal.Now.timeZoneId())
+    .toString({ smallestUnit: "minute", timeZoneName: "never" });
+  return `Now: ${at}`;
 }
