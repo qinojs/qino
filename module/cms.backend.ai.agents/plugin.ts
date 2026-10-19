@@ -310,7 +310,7 @@ export async function agent(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
 }
 
 /** All about session `vars.session`: who, with which agent, what it was given, which models answered,
- *  its tools: called, and known (in its model's context). */
+ *  all its tools: called, and known (in its model's context). */
 export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const { db, t } = node.app, id = Number(vars.session) || 0, url = await pageUrl(node);
   const [s, models, calls, known, given, last, size] = await Promise.all([
@@ -332,8 +332,8 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
   // the keys of tools: given as it started, or of its api paths (recalled); the others are memories
   const names = new Set([...JSON.parse(String(given ?? "{}")).tools?.map((tool: any) => tool.name) ?? [],
     ...(await new Agent(node.app, Number(s.agent_id)).allowed()).map((tool) => tool.name)]);
-  const tools = [...new Set([...used.keys(), ...[...known].filter((key) => names.has(key))])]
-    .sort((a, b) => (used.get(b)?.length ?? 0) - (used.get(a)?.length ?? 0) || a.localeCompare(b));
+  const tools = [...new Set([...used.keys(), ...names])] // the called first, then the known
+    .sort((a, b) => (used.get(b)?.length ?? 0) - (used.get(a)?.length ?? 0) || +known.has(b) - +known.has(a) || a.localeCompare(b));
   return html.async`<div>
     <table class=u2-table>
       <tr>
@@ -366,7 +366,7 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       <td>${count(r.answers)}
       <td>${time(r.last_time)}`) : html.async`<tr><td colspan=3>${t`No answers yet`}`}</tbody>
   </table>
-  <table class=u2-table>
+  <div data-tools><table class="u2-table -Sticky">
     <thead><tr>
       <th>${t`Tools`}
       <th title="${t`How often its model called it`}">called
@@ -375,7 +375,7 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       <td>${colored(tool)}
       <td>${count(used.get(tool)?.length)}
       <td>${known.has(tool) ? "✓" : "–"}`) : html.async`<tr><td colspan=3>${t`No tools`}`}</tbody>
-  </table>
+  </table></div>
   `;
 }
 

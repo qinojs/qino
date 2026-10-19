@@ -29,6 +29,12 @@ export const READERS: Record<string, { key?: string; read: Reader }> = {
 /** A page read is read again after this many seconds. */
 const MAX_AGE = 60 * 86400; // two months
 
+/** Markdown without inline data (base64 images, logos): an image as its alt text (with its {attributes}),
+ *  a link as its text, an HTML <img> not at all. A data url may hold parentheses, one level deep. */
+const withoutData = (markdown: string) => markdown
+  .replace(/!?\[([^[\]]*)\]\(<?data:(?:[^()]|\([^()]*\))*\)(?:\{[^}]*\})?/g, "$1")
+  .replace(/<img\b[^>]*\ssrc=["']?data:[^>]*>/gi, "");
+
 const keyOf = async (app: App, name: string) => String(await app.settings.core.keys[name] ?? "");
 
 /** Search the web with the first engine that has a key; if it fails, with the next. */
@@ -56,9 +62,9 @@ export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge
   const key = reader.key ? await keyOf(app, reader.key) : "";
   if (reader.key && !key) throw new ApiError(503, `Reader ${name}: set a key in core.keys for ${reader.key}`);
   const page = await reader.read(app, url, key).catch((e) => { throw new ApiError(502, errMsg(e)); });
-  const values = { url, url_hash: hash, title: page.title, content: page.content, reader: name, time: unixTime() };
+  const values = { url, url_hash: hash, title: page.title, content: withoutData(page.content), reader: name, time: unixTime() };
   const id = kept ? (await db.table("ai_web_page").update(Number(kept.id), values), Number(kept.id)) : Number(await db.table("ai_web_page").insert(values));
-  if (await collection(app)) index(app, "ai_web_page", { page_id: id }, page.content).catch((e) => console.error("[ai.web] embedding:", errMsg(e)));
+  if (await collection(app)) index(app, "ai_web_page", { page_id: id }, values.content).catch((e) => console.error("[ai.web] embedding:", errMsg(e)));
   return { id, ...values };
 }
 

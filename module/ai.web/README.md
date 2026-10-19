@@ -5,7 +5,7 @@ and readers are no models, each is used with its key in `core.keys`.
 
 ```
 search   get  { query, count? }                      the pages found: [{ title, url, snippet }]
-read     get  { url, maxAge?, offset?, length? }     a page as Markdown, a part at a time (20,000 characters):
+read     get  { url, maxAge?, offset?, length? }     a page as Markdown, a part at a time (2,000 characters):
                                                      { id, url, title, content, offset, size, reader, time }
 crawl    post { url, max?, maxAge?, wait? }          read the pages below url, following their links;
                                                      with wait: { read, failed, left }

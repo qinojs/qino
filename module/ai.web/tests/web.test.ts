@@ -44,7 +44,7 @@ Deno.test("ai.web: read a page by the chosen reader, keep it, find it", async ()
   const fetchOrg = globalThis.fetch, asked: string[] = [];
   globalThis.fetch = (input) => {
     asked.push(String(input));
-    return Promise.resolve(Response.json({ data: { title: "Qino", content: "# Qino\n\nA CMS for agents" } }));
+    return Promise.resolve(Response.json({ data: { title: "Qino", content: "# Qino\n\n![](data:image/svg+xml;base64,PHN2Zy8+){width=9}<img src=\"data:image/png;base64,AA\">A CMS for agents" } })); // without its inline data, kept
   };
   try {
     await app.settings.core.url("https://example.test/");
