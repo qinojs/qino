@@ -6,7 +6,7 @@ import { collections, create, drop } from "@qino/qino/ai.embed";
 import { hit } from "@qino/qino/score";
 
 import { HINT, IN_MIND, index, list } from "../lib/memory.ts";
-import { keep } from "../lib/search.ts";
+import { findable } from "../lib/search.ts";
 import { situation } from "../lib/context.ts";
 import { declare } from "../lib/declared.ts";
 import { Agent, Session } from "../mod.ts";
@@ -157,7 +157,7 @@ Deno.test("ai.agent: what the user says strengthens the memories close to it, in
   for (const [content, strength] of [["the logo is blue", 1], ["apples are red", 1.5]] as const) {
     const id = Number(await app.db.table("ai_agent_memory").insert({ agent_id: agent.id, content }));
     await hit(app.db, "ai_agent_memory_use", { memory_id: id }, strength);
-    await keep(app, "ai_agent_memory", { agent_id: agent.id, memory_id: id }, content);
+    await findable(app, "ai_agent_memory", { agent_id: agent.id, memory_id: id }, content);
   }
   assertEquals(await index(app, agent.id), `## Your memories\n${HINT}\n[2] apples are red\n[1] the logo is blue`); // the stronger first
   assertEquals((await (await agent.start(7)).ask("how round is the logo?")).text, "lead\n\n## Your memories\n[2] apples are red\n[1] the logo is blue #1 how round is the logo?"); // no waiting

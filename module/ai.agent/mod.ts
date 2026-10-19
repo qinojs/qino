@@ -1,6 +1,6 @@
 import { unixTime } from "@qino/qino";
 
-import { keep } from "./lib/search.ts";
+import { findable } from "./lib/search.ts";
 import { context, known } from "./lib/context.ts";
 import { checkTools, ranked, toolsOf } from "./lib/tools.ts";
 import { live } from "./lib/live.ts";
@@ -28,7 +28,7 @@ export class Agent {
   static async create(app: App, { system = "", tools = [], prefer }: { system?: string; tools?: string[]; prefer?: Record<string, number> } = {}): Promise<Agent> {
     checkTools(app, tools);
     const id = Number(await app.db.table("ai_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() }));
-    keep(app, "ai_agent", { agent_id: id }, system);
+    findable(app, "ai_agent", { agent_id: id }, system);
     return new Agent(app, id);
   }
 

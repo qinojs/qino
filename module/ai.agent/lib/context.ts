@@ -59,33 +59,42 @@ export async function known(app: App, session: number): Promise<Set<string>> {
  *  with `renew` (after a pause longer than the cache keeps it), and kept only with `keep` (a turn):
  *  reading it changes nothing. */
 export async function context(app: App, session: number, { renew = false, keep = false } = {}) {
-  const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai_session s JOIN ai_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
-  if (!agent) throw new Error(`No session ${session}`);
-  const id = Number(agent.agent_id), usrId = Number(agent.usr_id);
+  const row = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools
+    FROM ai_session s JOIN ai_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
+  if (!row) throw new Error(`No session ${session}`);
+  const agent = Number(row.agent_id), usrId = Number(row.usr_id);
   // other modules add to what the model is given: texts to its context (with their keys), tools
-  const { parts, known, tools: more } = await app.fire("ai.agent:turn", { agent: id, session, usrId, parts: [] as string[], known: [] as string[], tools: [] as Tool[] });
-  const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
-  const { start, history } = await sent(app, id, session);
+  const { parts, known, tools: added } = await app.fire("ai.agent:turn", {
+    agent, session, usrId, parts: [] as string[], known: [] as string[], tools: [] as Tool[],
+  });
+  const prefer = weights(row.prefer) ?? weights(row.agent_prefer); // the session's, else the agent's
+  const { start, history } = await sent(app, agent, session);
   // a start is saved after the question it answers: history newer than it came after a cut
   const fresh = renew || !start || (history[0]?.id ?? 0) > start.id;
-  const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]")));
-  const list = await choice(app, id, String(agent.system ?? ""), allowed, fresh && allowed.length > AT_ONCE); // ranked only when it starts
-  const tools = [...more, ...list.map((r) => r.tool)];
+  const allowed = toolsOf(app, JSON.parse(String(row.tools || "[]")));
+  // ranked only when it starts
+  const chosen = await choice(app, agent, String(row.system ?? ""), allowed, fresh && allowed.length > AT_ONCE);
   let given = start?.message;
   if (fresh) {
-    const role = agent.system ? `## Your role\n${agent.system}` : "";
-    const system = [situation(id, session, await app.url()), role, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
-    const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
-    const memories = (await memory.list(app, id, memory.IN_MIND)).map((m) => String(m.id));
+    const role = row.system ? `## Your role\n${row.system}` : "";
+    const system = [situation(agent, session, await app.url()), role, await memory.index(app, agent), ...parts].filter(Boolean).join("\n\n");
+    const offer = [...added, ...chosen.filter((c) => c.given).map((c) => c.tool)];
+    const memories = (await memory.list(app, agent, memory.IN_MIND)).map((m) => String(m.id));
     given = {
       role: "start" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })),
       known: [...memories, ...known], prefer,
     };
-    if (keep) await save(app, session, id, given);
+    if (keep) await save(app, session, agent, given);
   }
   // the tools as given, run as they are now
-  const now = new Map(tools.map((tool) => [tool.name, tool]));
-  const offered = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({ ...tool, execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)) }));
-  const messages: Message[] = [...given.content ? [{ role: "system" as const, content: given.content }] : [], ...answered(history.map((row: { message: Message }) => row.message))];
-  return { agent: id, usrId, prefer, tools: offered, messages };
+  const now = new Map([...added, ...chosen.map((c) => c.tool)].map((tool) => [tool.name, tool]));
+  const tools = (given.tools as Omit<Tool, "execute">[]).map((tool) => ({
+    ...tool,
+    execute: (args: unknown, ctx: Ctx) => now.get(tool.name)?.execute(args, ctx) ?? Promise.reject(new ApiError(404, `No longer available: ${tool.name}`)),
+  }));
+  const messages: Message[] = [
+    ...given.content ? [{ role: "system" as const, content: given.content }] : [],
+    ...answered(history.map((row: { message: Message }) => row.message)),
+  ];
+  return { agent, usrId, prefer, tools, messages };
 }

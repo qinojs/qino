@@ -26,10 +26,10 @@ export async function save(
   }));
   if (message.role !== "user" && message.role !== "assistant") return;
   const key = { agent_id: agent, message_id: id };
-  search.keep(app, "ai_session_message", key, search.textOf(message.content))
+  search.findable(app, "ai_session_message", key, search.textOf(message.content))
     .then(async () => {
       if (message.role !== "user") return;
-      // as stored: a text said before reuses its vector, keep() returns only those it had to embed
+      // as stored: a text said before reuses its vector, findable() returns only those it had to embed
       const [vector] = await embedded(app, "ai_session_message", key);
       if (!vector) return;
       await memory.associate(app, agent, vector);

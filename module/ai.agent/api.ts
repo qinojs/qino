@@ -58,7 +58,7 @@ export const api: ApiTree = {
             ...tools && { tools: JSON.stringify(tools) },
             ...prefer && { prefer: JSON.stringify(prefer) },
           });
-          if (system !== undefined) search.keep(ctx.app, "ai_agent", { agent_id: agent }, system); // findable as it is now
+          if (system !== undefined) search.findable(ctx.app, "ai_agent", { agent_id: agent }, system); // findable as it is now
           return { id: agent };
         },
         fields,

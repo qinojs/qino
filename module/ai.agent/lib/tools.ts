@@ -16,7 +16,7 @@ export const toolsOf = (app: App, entries: string[]) => toTools(app.apiTree).fil
 
 /** Refuses entries that name no tool, as a misspelt one would leave the agent without it. */
 export function checkTools(app: App, entries: string[]): void {
-  const all = toTools(app.apiTree), unknown = entries.filter((entry) => !all.some((tool) => names(entry, tool.name)));
+  const tools = toTools(app.apiTree), unknown = entries.filter((entry) => !tools.some((tool) => names(entry, tool.name)));
   if (unknown.length) throw new ApiError(400, `No such tools: ${unknown.join(", ")} (a tool's name, or prefix_* for all below a path)`);
 }
 
@@ -25,7 +25,7 @@ export function checkTools(app: App, entries: string[]): void {
 /** More tools than this, and the agent finds them. */
 export const AT_ONCE = 20;
 /** How many of them it is given, the closest to its role. */
-const CLOSE = 15;
+const GIVEN = 15;
 
 const log = (e: unknown) => console.error("[ai.agent] tools:", errMsg(e));
 
@@ -55,19 +55,19 @@ function finders(app: App, tools: Tool[]): Tool[] {
 }
 
 /** What the agent may use, as a session starts with it: its own tools, those of its api paths `allowed`
- *  and, with many, those to find the others. `ranked`: the ones of its api paths by nearness to its role
+ *  and, with many, those to find the others. `rank`: the ones of its api paths by nearness to its role
  *  (ai.discover), the nearest first, with how near (`score`, 1 the same); `given`: a session starts
  *  with it — all, or with many the nearest; `always`: no api path's, every session has it. */
-export async function choice(app: App, agent: number, role: string, allowed: Tool[], ranked: boolean) {
-  const many = allowed.length > AT_ONCE, names = new Set(allowed.map((tool) => tool.name));
+export async function choice(app: App, agent: number, role: string, allowed: Tool[], rank: boolean) {
+  const many = allowed.length > AT_ONCE, mine = new Set(allowed.map((tool) => tool.name));
   // the role's vector as kept, else (no collection) its words
-  const query = ranked && role ? await search.role(app, agent, role) ?? role : undefined;
-  const near = query ? await find(app, "tools", query, all(app, "tools").filter((e) => names.has(e.name)), allowed.length).catch((e) => (log(e), [])) : [];
+  const query = rank && role ? await search.role(app, agent, role) ?? role : undefined;
+  const near = query ? await find(app, "tools", query, all(app, "tools").filter((e) => mine.has(e.name)), allowed.length).catch((e) => (log(e), [])) : [];
   const at = new Map(near.map((e, i) => [e.name, i])), place = (name: string) => at.get(name) ?? allowed.length;
   const always = (tools: Tool[]) => tools.map((tool) => ({ tool, given: true, always: true }));
   return [
     ...always(ownTools(app, agent)),
-    ...allowed.map((tool) => ({ tool, score: near[at.get(tool.name) ?? -1]?.score, given: !many || place(tool.name) < CLOSE, always: false }))
+    ...allowed.map((tool) => ({ tool, score: near[at.get(tool.name) ?? -1]?.score, given: !many || place(tool.name) < GIVEN, always: false }))
       .sort((a, b) => place(a.tool.name) - place(b.tool.name)),
     ...always(many ? finders(app, allowed) : []),
   ];

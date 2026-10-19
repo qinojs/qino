@@ -2,7 +2,7 @@ import { errMsg, NotFoundError, sql, unixTime } from "@qino/qino";
 import { search } from "@qino/qino/ai.embed";
 import { hit, sqlScore } from "@qino/qino/score";
 
-import { keep } from "./search.ts";
+import { findable } from "./search.ts";
 
 import type { App } from "@qino/qino";
 
@@ -52,7 +52,7 @@ export class Memories {
     const table = this.#app.db.table(this.#table), values = { ...this.#owner, content, time: unixTime() };
     const id = replaces ? (await this.#own(replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
     hit(this.#app.db, `${this.#table}_use`, { memory_id: id });
-    keep(this.#app, this.#table, { ...this.#owner, memory_id: id }, content);
+    findable(this.#app, this.#table, { ...this.#owner, memory_id: id }, content);
     return id;
   }
 
@@ -85,7 +85,7 @@ export const list = (app: App, agent: number, chars?: number): Promise<{ id: num
 export const associate = (app: App, agent: number, vector: number[]): Promise<unknown> => of(app, agent).associate(vector);
 
 /** Told to the agent above its memories. */
-export const HINT = "Save durable knowledge with post_memories: rules, preferences, workflows, corrections, solutions worth reusing. Before each final answer, check: learned something lasting? Then save first. Update instead of duplicating; skip temporary details.";
+export const HINT = "Save durable knowledge with memories_post: rules, preferences, workflows, corrections, solutions worth reusing. Before each final answer, check: learned something lasting? Then save first. Update instead of duplicating; skip temporary details.";
 
 /** The strongest memories for the context, under the hint on how to keep them. */
 export async function index(app: App, agent: number): Promise<string> {

@@ -15,7 +15,7 @@ const log = (e: unknown) => console.error("[ai.agent] embedding:", errMsg(e));
 
 /** Make `text` findable (where there is an embedding collection). Resolves to the vectors it
  *  embedded; never rejects. */
-export async function keep(app: App, name: string, key: Record<string, number>, text: string): Promise<number[][]> {
+export async function findable(app: App, name: string, key: Record<string, number>, text: string): Promise<number[][]> {
   return text ? await index(app, name, key, text).catch((e) => (log(e), [])) : [];
 }
 
@@ -36,7 +36,7 @@ export async function find(app: App, agent: number, query: string): Promise<Reco
 /** The agent's role as one vector, the mean of its chunks: embedded once, again only when it changed;
  *  none without an embedding collection or role. */
 export async function role(app: App, agent: number, text: string): Promise<number[] | undefined> {
-  await keep(app, "ai_agent", { agent_id: agent }, text);
+  await findable(app, "ai_agent", { agent_id: agent }, text);
   const chunks = await embedded(app, "ai_agent", { agent_id: agent }).catch((e) => (log(e), []));
   return chunks.length ? chunks[0].map((_, i) => chunks.reduce((sum, v) => sum + v[i], 0) / chunks.length) : undefined;
 }
@@ -52,7 +52,7 @@ export async function agents(app: App, query?: string, limit = 10): Promise<{ id
   }
   // the roles not embedded yet, before they are searched
   for (const a of await db.query`SELECT id, system FROM ai_agent WHERE id NOT IN (SELECT agent_id FROM embedding_ai_agent)`) {
-    await keep(app, "ai_agent", { agent_id: Number(a.id) }, String(a.system ?? ""));
+    await findable(app, "ai_agent", { agent_id: Number(a.id) }, String(a.system ?? ""));
   }
   const best = new Map<number, number>();
   for (const { key, score } of await search(app, "ai_agent", query, { limit: limit * 3 })) {

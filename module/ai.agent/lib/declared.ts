@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { errMsg, fs, unixTime } from "@qino/qino";
 
-import { keep } from "./search.ts";
+import { findable } from "./search.ts";
 
 import type { App } from "@qino/qino";
 
@@ -36,7 +36,7 @@ export async function declare(app: App): Promise<void> {
         const row = await app.db.row`SELECT id, system FROM ai_agent WHERE name = ${name}`;
         const id = row ? Number(row.id) : Number(await app.db.table("ai_agent").insert({ ...vs, time: unixTime() }));
         if (row) await app.db.table("ai_agent").update(id, vs);
-        if (row?.system !== body) keep(app, "ai_agent", { agent_id: id }, body); // findable by its role, as it is now
+        if (row?.system !== body) findable(app, "ai_agent", { agent_id: id }, body); // findable by its role, as it is now
       } catch (e) {
         console.error(`[ai.agent] ${name}:`, errMsg(e));
       }
