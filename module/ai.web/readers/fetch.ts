@@ -21,13 +21,19 @@ function titleOf(html: string) {
   return title.trim();
 }
 
-export const own: Reader = async (app, url) => {
+/** The page as served: its media type and its bytes. */
+export async function fetched(url: string): Promise<{ mime: string; bytes: Uint8Array }> {
   const res = await safeFetch(url, { headers: { accept: "text/html, text/markdown;q=0.9, text/plain;q=0.8, */*;q=0.5" } });
   if (!res.ok) throw new Error(`fetch: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
   if (Number(res.headers.get("content-length")) > MAX_SIZE) throw new Error(`fetch: larger than ${MAX_SIZE} bytes`);
   const mime = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
   const bytes = new Uint8Array(await res.arrayBuffer());
   if (bytes.length > MAX_SIZE) throw new Error(`fetch: larger than ${MAX_SIZE} bytes`);
+  return { mime, bytes };
+}
+
+export const own: Reader = async (app, url) => {
+  const { mime, bytes } = await fetched(url);
   const text = new TextDecoder().decode(bytes);
   if (mime.startsWith("text/") && mime !== "text/html") return { title: "", content: text };
   const title = mime === "text/html" ? titleOf(text) : "";

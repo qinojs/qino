@@ -5,8 +5,9 @@ and readers are no models, each is used with its key in `core.keys`.
 
 ```
 search   get  { query, count? }                      the pages found: [{ title, url, snippet }]
-read     get  { url, maxAge?, offset?, length? }     a page as Markdown, a part at a time (2,000 characters):
-                                                     { id, url, title, content, offset, size, reader, time }
+read     get  { url, maxAge?, offset?, length?,      a page as Markdown, or with source its HTML, a part at a
+               source? }                             time (2,000 characters): { id, url, title, content, offset,
+                                                     size, reader, time }
 crawl    post { url, max?, maxAge?, wait? }          read the pages below url, following their links;
                                                      with wait: { read, failed, left }
 pages    get  { search?, root? }                     search the pages read, only those below root
@@ -33,6 +34,8 @@ const { content } = await read(app, first.url);
   how many links found were not read yet. No `robots.txt`.
 - **Searching the pages read:** `read` with `length: 0` only keeps a page, so an agent can read many
   and then search them with `pages`.
+- **Source:** `source` gives the page as served, by our own fetch whatever the reader, kept as a file
+  in the module's cache (never served) for as long as `maxAge`.
 - **Cache:** every page read is kept (`ai_web_page`) and read again after two months (`maxAge`). Where
   there is an embedding collection ([ai.embed](../ai.embed/)), it is findable by meaning
   (`pages`), else by its words.

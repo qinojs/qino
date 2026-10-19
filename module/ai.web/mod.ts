@@ -1,9 +1,9 @@
-import { ApiError, errMsg, sha256hex, sql, sqlSearch, unixTime } from "@qino/qino";
+import { ApiError, errMsg, fs, sha256hex, sql, sqlSearch, unixTime } from "@qino/qino";
 import { collection, index, search as nearest } from "@qino/qino/ai.embed";
 
 import { brave } from "./engines/brave.ts";
 import { serper } from "./engines/serper.ts";
-import { own } from "./readers/fetch.ts";
+import { fetched, own } from "./readers/fetch.ts";
 import { firecrawl } from "./readers/firecrawl.ts";
 import { jina } from "./readers/jina.ts";
 
@@ -66,6 +66,21 @@ export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge
   const id = kept ? (await db.table("ai_web_page").update(Number(kept.id), values), Number(kept.id)) : Number(await db.table("ai_web_page").insert(values));
   if (await collection(app)) index(app, "ai_web_page", { page_id: id }, values.content).catch((e) => console.error("[ai.web] embedding:", errMsg(e)));
   return { id, ...values };
+}
+
+/** A page's source as served (our own fetch, scripts not run), kept in the cache while younger than
+ *  `maxAge` seconds: only text, HTML and the like. */
+export async function source(app: App, url: string, { maxAge = MAX_AGE }: { maxAge?: number } = {}) {
+  if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
+  const dir = app.modules.get("ai.web")!.cache, path = `${dir}${await sha256hex(url)}.html`;
+  const kept = Math.floor((await fs.mtime(path) ?? 0) / 1000);
+  if (kept > unixTime() - maxAge) return { url, content: await fs.text(path), time: kept };
+  const { mime, bytes } = await fetched(url).catch((e) => { throw new ApiError(502, errMsg(e)); });
+  if (!/^text\/|xml|json/.test(mime)) throw new ApiError(415, `No source to read: ${mime || "unknown type"}`);
+  const content = new TextDecoder().decode(bytes);
+  await fs.mkdir(dir);
+  await fs.write(path, content);
+  return { url, content, time: unixTime() };
 }
 
 /** Links of a page in Markdown (`[text](url)`, `<url>`), absolute and without their #fragment. */

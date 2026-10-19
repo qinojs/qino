@@ -1,6 +1,6 @@
 import { Access, ApiError, errMsg, s } from "@qino/qino";
 
-import { crawl, pages, read, READERS, search } from "./mod.ts";
+import { crawl, pages, read, READERS, search, source } from "./mod.ts";
 
 import type { ApiTree, Ctx } from "@qino/qino";
 
@@ -34,16 +34,17 @@ export const api: ApiTree = {
   },
   read: {
     get: {
-      description: "Read a web page as Markdown, a part at a time; size is the whole page",
+      description: "Read a web page as Markdown, or its source, a part at a time; size is the whole page",
       query: s.object({
         url: s.string().describe("The page's address, http or https"),
         maxAge: s.optional(s.number()).describe("Rarely needed: read anew if the stored copy is older than this many seconds"),
         offset: s.optional(s.number()).describe("Where to start, in characters; default 0"),
         length: s.optional(s.number()).describe(`How many characters; default ${PART}, 0 only keeps it to search`),
+        source: s.optional(s.boolean()).describe("Its HTML source as served, instead of Markdown"),
       }),
       access: Access.USER,
-      execute: async ({ url, maxAge, offset = 0, length = PART }: { url: string; maxAge?: number; offset?: number; length?: number }, ctx: Ctx) => {
-        const page = await read(ctx.app, url, { maxAge });
+      execute: async ({ url, maxAge, offset = 0, length = PART, source: raw }: { url: string; maxAge?: number; offset?: number; length?: number; source?: boolean }, ctx: Ctx) => {
+        const page = await (raw ? source : read)(ctx.app, url, { maxAge });
         const content = String(page.content ?? "");
         return { ...page, content: content.slice(offset, offset + length), offset, size: content.length };
       },

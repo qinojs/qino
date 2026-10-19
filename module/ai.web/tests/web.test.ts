@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { App, runAs } from "@qino/qino";
+import { App, fs, runAs, sha256hex } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 import { collections, drop } from "@qino/qino/ai.embed";
 
@@ -74,6 +74,14 @@ Deno.test("ai.web: read a page by the chosen reader, keep it, find it", async ()
     for (const { id } of await collections(app)) await drop(app, id);
     assertEquals((await as(() => web.pages.get(undefined, { search: "agents" }))).map((p: any) => p.url).sort(), ["https://qino.test/A", "https://qino.test/a"]);
     assertEquals(await as(() => web.pages.get(undefined, { search: "nothing" })), []);
+
+    // the source: kept in the cache, read by our own fetch only when older than maxAge
+    const cached = `${app.modules.get("ai.web")!.cache}${await sha256hex("https://qino.test/A")}.html`;
+    await fs.mkdir(app.modules.get("ai.web")!.cache);
+    await fs.write(cached, "<h1>Qino</h1>");
+    const src = await as(() => web.read.get(undefined, { url: "https://qino.test/A", source: true, length: 4 }));
+    assertEquals([src.content, src.size], ["<h1>", 13]);
+    await assertRejects(() => as(() => web.read.get(undefined, { url: "http://127.0.0.1/", source: true })), Error, "SSRF blocked");
   } finally {
     globalThis.fetch = fetchOrg;
     await new Promise((r) => setTimeout(r, 60)); // the session writes 50 ms later
