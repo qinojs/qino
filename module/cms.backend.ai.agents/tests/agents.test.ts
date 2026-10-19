@@ -24,8 +24,8 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
     const at = Number(await app.db.table("ai_model_provider").insert({ model_id: model, provider_id: provider }));
     const ids: number[] = [];
     for (const [message, by] of [
-      [{ role: "system", content: "lead", tools: [{ name: "search_post", description: "Search", parameters: {} }], prefer: { cost: 1 } }, 0],
       [{ role: "user", content: "hi" }, 0],
+      [{ role: "start", content: "lead", tools: [{ name: "search_post", description: "Search", parameters: {} }], prefer: { cost: 1 } }, 0], // after the question it answers
       [{ role: "assistant", content: "", toolCalls: [{ id: "1", name: "search_post", args: { query: "logo" } }] }, 0],
       [{ role: "tool", id: "1", content: '[{"text":"round"}]' }, 0],
       [{ role: "error", content: "down" }, 0],
@@ -92,7 +92,7 @@ Deno.test("cms.backend.ai.agents: agents, their sessions and memories, and a ses
     assert(!kept.includes("[object Promise]"));
 
     const talk = await as(() => conversation(node, { vars: { session: session.id } }));
-    for (const part of ["data-role=user", "color:white\">search_post</small>", "<button type=button class=u2-unstyle data-call=", "data-role=system", "<div data-text><small>lead</small></div>", "data-role=error", "known: <span style=\"color:", "prefer {&quot;cost&quot;:1}", "@ <span", "error · not sent"]) {
+    for (const part of ["data-role=user", "color:white\">search_post</small>", "<button type=button class=u2-unstyle data-call=", "data-role=start", "<div data-text><small>lead</small></div>", "data-role=error", "known: <span style=\"color:", "prefer {&quot;cost&quot;:1}", "@ <span", "error · not sent"]) {
       assertStringIncludes(talk, part);
     }
     // the dialog of the calls: each with its result

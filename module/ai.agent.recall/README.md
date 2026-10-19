@@ -5,15 +5,18 @@ ai.agent, so it can be left out or replaced for experiments.
 
 - **From what was said:** the vector each user message gets anyway (`ai.agent:associate`), in the
   background: the answer does not wait for it.
-- **Only what is missing:** the agent's memories and the tools of its api paths that are close to it
-  (score ≥ 0.75), at most 3 of each, and not given yet in the session (first message or an earlier note).
-  Tools only come up for an agent with more than it is given at the start.
+- **Only what is missing:** the agent's memories, what was said earlier in the session and is no
+  longer sent (compacted), and the tools of its api paths, close to it (score ≥ 0.65), at most 3 of
+  each, and not in its context (its start or an earlier note). Messages shorter than 40 characters
+  don't come to mind. Tools only come up for an agent with more than it is given at the start.
 - **As a note** (`session.note`): the agent reads it with its next step, else with the next question;
   with other notes waiting, as one message. Nothing close, no note.
 
 ```
 ## Possibly relevant memories
 [42] Invoices always in CHF
+## Said earlier in this session
+[#318] The invoices of Müller AG go to the accounting address, not the office
 ## Possibly relevant tools
 Not in your tool list; call them with call_tool.
 - fin_invoices_get: List invoices

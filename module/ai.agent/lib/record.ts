@@ -8,16 +8,13 @@ import type { Message, Part } from "@qino/qino/ai";
 
 // The session's record: every message kept exactly, as it was said or sent.
 
-/** What the model was given as the session started (the notes have no tools). */
-export const isGiven = (m: { role: string; tools?: unknown }) => m.role === "system" && !!m.tools;
-
 /** Keep a message in the protocol. In the background, what was said is made findable, and what the
  *  user says strengthens the memories close to it, with the same vector (`ai.agent:associate`). */
 export async function save(
   app: App,
   session: number,
   agent: number,
-  message: Message | { role: "error" | "system"; content: string | Part[]; [more: string]: unknown },
+  message: Message | { role: "error" | "system" | "start"; content: string | Part[]; [more: string]: unknown },
   modelProvider?: number,
 ) {
   const id = Number(await app.db.table("ai_session_message").insert({

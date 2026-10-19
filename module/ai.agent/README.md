@@ -17,10 +17,11 @@ await new Session(app, session.id).ask("And then?"); // later, e.g. from the bro
   sessions with shared memories, the user's rights), then its role (`## Your role`) and its memories.
 - **Sessions** are fresh starts of the same agent. Each keeps everything exactly
   (`ai_session_message`): questions, answers, tool calls and results; what the model was given
-  (role with memories, tool definitions, prefer) as its first message, of role `system`; failures as
-  messages of role `error`, not sent again. What was sent is never changed, only added to (prompt
-  cache): what changes meanwhile (role, memories, tools) comes with the next session. A tool taken
-  from the agent meanwhile no longer runs.
+  (role with memories, tool definitions, prefer) as a message of role `start`; failures as messages
+  of role `error`; neither is sent as it is. What was sent is never changed, only added to, while
+  the provider's cache keeps it (prompt cache). The start is renewed (what changed meanwhile: role,
+  memories, tools) only where that cache is lost anyway: after an hour without a message, and once
+  the history was cut (compaction). A tool taken from the agent meanwhile no longer runs.
 - **Notes:** `session.note(content)` tells the agent something without asking (the model gets it as a
   `system` message in the history). While a turn is on its way it reads it with the next step, else
   before the next question; notes waiting together come as one message, the time first.

@@ -40,7 +40,8 @@ answer, in the background (`ai.agent:answered`):
 - **The last 4 turns stay word for word**, fewer while they alone fill more than 40 % of the context.
 - **The summary is kept** as a `system` message with `summary: { from }` (the first message kept
   word for word). Before each turn (`ai.agent:history`) only the latest summary and what came from
-  `from` on are sent; a compaction still running is waited for.
+  `from` on are sent; a compaction still running is waited for. The next turn starts afresh: role,
+  memories and tools as they are now (ai.agent).
 - **The record stays:** nothing is deleted; `search` still finds everything. Without this module the
   summaries go out as notes amid the history.
 

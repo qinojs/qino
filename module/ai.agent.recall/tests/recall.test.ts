@@ -43,7 +43,7 @@ async function notes(app: App, session: number) {
     n = now;
   }
   return (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
-    .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system" && !m.tools && !m.content.startsWith("Now: "))
+    .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system" && !m.content.startsWith("Now: "))
     .map((m) => m.content);
 }
 
@@ -70,4 +70,16 @@ Deno.test("ai.agent.recall: a text said before comes to mind too, with its store
     await session.ask("draw the logo");
     assertEquals(await notes(app, session.id), [tools]);
   }
+}));
+
+Deno.test("ai.agent.recall: what was said earlier and is no longer sent comes to mind", () => withApp(async (app) => {
+  const session = await (await Agent.create(app, { system: "lead" })).start(7);
+  const said = "the logo must stay round in every version we make";
+  await session.ask(said);
+  assertEquals((await notes(app, session.id)).filter((note) => note.includes("Said earlier")), []); // still sent
+  // as a compaction would: what was said is no longer sent
+  app.on("ai.agent:history", (turn) => { turn.history = turn.history.filter((row: { message: { content: unknown } }) => row.message.content !== said); });
+  await session.ask("draw the logo");
+  const id = Number(await app.db.one`SELECT id FROM ai_session_message WHERE message LIKE ${`%${said}%`}`);
+  assertEquals((await notes(app, session.id)).filter((note) => note.includes("Said earlier")), [`## Said earlier in this session\n[#${id}] ${said}`]);
 }));

@@ -74,6 +74,9 @@ async function withApp(fn: (app: App) => Promise<void>) {
   }
 }
 
+/** What the model has in its context, without the messages (`#7`). */
+const keys = (known: Set<string>) => [...known].filter((key) => !key.startsWith("#"));
+
 /** The time note before a question, without the time. */
 const clocked = (content: unknown) => typeof content === "string" ? content.replace(/^Now: .*/, "Now") : content;
 
@@ -93,8 +96,9 @@ Deno.test("ai.agent: a session goes on from what was said, with the agent's role
   assertEquals((await session.ask("hi")).text, "lead #1 hi");
   assertEquals((await session.ask("time?")).text, "lead #2 it is noon");
   assertEquals(await kept(app, session.id), [
-    ["system", `${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while it does not change
-    ["system", "Now", ""], ["user", "hi", ""], ["assistant", "lead #1 hi", "m"], // the time, before the first question
+    ["system", "Now", ""], ["user", "hi", ""], // the time, before the first question
+    ["start", `${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, ""], // what the model is given, once while the cache keeps it
+    ["assistant", "lead #1 hi", "m"],
     ["user", "time?", ""], ["assistant", "toolset_clock_get", "m"], ["tool", '"noon"', ""], ["assistant", "lead #2 it is noon", "m"],
   ]);
   const answered = await app.db.col`SELECT model_provider_id FROM ai_session_message
@@ -167,8 +171,11 @@ Deno.test("ai.agent: the time comes as a note before the first question and afte
   await session.ask("again"); // no pause: no note
   await app.db.query`UPDATE ai_session_message SET time = time - 600 WHERE session_id = ${session.id}`;
   await session.ask("back");
-  const notes = (await kept(app, session.id)).filter(([role], i) => role === "system" && i);
-  assertEquals(notes.length, 2);
+  const roles = async (name: string) => (await kept(app, session.id)).filter(([role]) => role === name).length;
+  assertEquals([await roles("system"), await roles("start")], [2, 1]); // the cache still keeps the start
+  await app.db.query`UPDATE ai_session_message SET time = time - 4000 WHERE session_id = ${session.id}`;
+  await session.ask("later");
+  assertEquals([await roles("system"), await roles("start")], [3, 2]); // lost by now: the start renewed
 }));
 
 Deno.test("ai.agent: notes said during a turn come with its next step, as one", () => withApp(async (app) => {
@@ -199,7 +206,7 @@ Deno.test("ai.agent: the api, for anyone signed in; a session only for its user"
   assertEquals(answer.text, "lead #1 it is noon"); // the tools of its api paths
   assertEquals(await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).note.post({ content: "noted" })), { ok: true });
   const { messages } = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get()) as { messages: { id: number; role: string }[] };
-  assertEquals(messages.map((m) => m.role), ["system", "system", "user", "assistant", "tool", "assistant", "system"]);
+  assertEquals(messages.map((m) => m.role), ["system", "user", "start", "assistant", "tool", "assistant", "system"]);
   assertEquals(messages.every((m) => typeof m.id === "number"), true); // a tool message's own id doesn't replace the row's
   const since = await runAs(app, 7, "test", () => app.api["ai.agent"].sessions(session).get({ after: messages.at(-2)!.id })) as { messages: { role: string }[] };
   assertEquals(since.messages.map((m) => m.role), ["system"]); // only what came after
@@ -237,24 +244,25 @@ Deno.test("ai.agent: what the model is given is kept as the session starts: role
   assertStringIncludes((await session.ask("time?")).text, "lead #5 it is {\"error\":\"No longer available: toolset_clock_get\""); // as given; runs only while still the agent's
   const calls = sent.slice(from).map((messages) => JSON.stringify(messages));
   for (const [i, call] of calls.entries()) if (i) assertEquals(call.slice(0, calls[i - 1].length - 1), calls[i - 1].slice(0, -1)); // only added to
-  const given = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`)
-    .map((json) => JSON.parse(String(json))).filter((m) => m.role === "system");
-  assertEquals(given.map((m) => clocked(m.content)), [`${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, "Now", "the logo is round"]); // given once, and the notes
-  assertEquals(given[0].tools.map((t: { name: string }) => t.name), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]);
-  assertEquals([...await session.known()], ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]); // no memory yet as it started
-  assertEquals(given[0].prefer, { cost: 1 });
+  const kept = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`).map((json) => JSON.parse(String(json)));
+  const [given, ...again] = kept.filter((m) => m.role === "start");
+  assertEquals([given.content, again.length], [`${situation(agent.id, session.id, await app.url())}\n\n## Your role\nlead\n\n## Your memories\n${HINT}`, 0]); // given once
+  assertEquals(kept.filter((m) => m.role === "system").map((m) => clocked(m.content)), ["Now", "the logo is round"]); // the notes
+  assertEquals(given.tools.map((t: { name: string }) => t.name), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]);
+  assertEquals(keys(await session.known()), ["memories_post", "memories_delete", "search_post", "toolset_clock_get"]); // no memory yet as it started
+  assertEquals(given.prefer, { cost: 1 });
   const next = await agent.start(7);
   assertEquals((await next.ask("hi")).text, "boss\n\n## Your memories\n[1] blue #1 hi"); // the next session
-  assertEquals([...await next.known()], ["memories_post", "memories_delete", "search_post", "1"]); // its memories by id
+  assertEquals(keys(await next.known()), ["memories_post", "memories_delete", "search_post", "1"]); // its memories by id
 }));
 
 Deno.test("ai.agent: a failure is kept, but not sent again", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   await assertRejects(() => session.ask("fail"), Error, "down");
   assertEquals((await session.ask("hi")).text, "lead #2 hi");
-  assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "system", "user", "error", "user", "assistant"]);
+  assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "user", "start", "error", "user", "assistant"]);
   const ids = (await app.db.col`SELECT id FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`).map(Number);
-  assertEquals([...await session.sent()], ids.filter((_, i) => i !== 3)); // all but the failure
+  assertEquals([...await session.sent()].sort((a, b) => a - b), ids.filter((_, i) => i !== 3)); // all but the failure
 }));
 
 Deno.test("ai.agent: one turn after the other in a session", () => withApp(async (app) => {
@@ -267,8 +275,8 @@ Deno.test("ai.agent: with more than 20 tools, it is given those closest to its r
   const agent = await Agent.create(app, { system: "logo designer", tools: ["many_*", "toolset_*"] });
   const session = await agent.start(7);
   await session.ask("hi");
-  const [given] = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`)
-    .map((json) => JSON.parse(String(json)));
+  const given = (await app.db.col`SELECT message FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`)
+    .map((json) => JSON.parse(String(json))).find((m) => m.role === "start");
   const names = given.tools.map((t: { name: string }) => t.name);
   assertEquals(names.length, 3 + 15 + 2); // its own, the 15 closest, find_tools and call_tool
   assertEquals([names.includes("many_logo_get"), names.slice(-2)], [true, ["find_tools", "call_tool"]]);
@@ -318,7 +326,7 @@ Deno.test("ai.agent: cancel stops the answer on its way, even one that never com
 Deno.test("ai.agent: what a step said before it broke off stays, marked", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "lead" }), session = await agent.start(7);
   await assertRejects(() => session.ask("break"), Error, "broken");
-  assertEquals((await kept(app, session.id)).slice(-3), [["user", "break", ""], ["assistant", "so far\n\n(interrupted)", ""], ["error", "broken", ""]]);
+  assertEquals((await kept(app, session.id)).slice(-2), [["assistant", "so far\n\n(interrupted)", ""], ["error", "broken", ""]]);
 }));
 
 Deno.test("ai.agent: asked over the api, the agent answers in the background; the answer is kept", () => withApp(async (app) => {

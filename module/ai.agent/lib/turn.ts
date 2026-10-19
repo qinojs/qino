@@ -14,6 +14,9 @@ const TURN_MS = 60 * 60_000;
 const STEPS = 100;
 /** Seconds without a message after which the agent is told the time again. */
 const PAUSE = 5 * 60;
+/** Seconds the providers keep a prompt in their cache, at most: after a pause this long the context is
+ *  renewed (role, memories, tools), as sending it differently costs nothing more then. */
+const CACHE_TTL = 60 * 60;
 
 /** The time as a note before a question: at the first one, and after a pause since `last`. */
 function clock(last: number, now = unixTime()): string | undefined {
@@ -72,12 +75,12 @@ export async function note(app: App, session: number, content: string | Part[], 
  *  message of role `error`, not sent again. */
 export function ask(app: App, session: number, content: string | Part[], { onText }: { onText?: (delta: string) => void } = {}): Promise<TextOutput & { messages: Message[] }> {
   return inTurn(app, session, async (signal) => {
-    // the notes waiting, the time first, before the question: the user's message stays as it was said;
-    // the time asked before the context is kept
-    const time = clock(Number(await app.db.one`SELECT MAX(time) FROM ai_session_message WHERE session_id = ${session}`));
-    const { agent: id, usrId, prefer, tools, messages: given } = await context(app, session);
-    const asked: Message = { role: "user", content }, before = notes.take(app, session, time), messages = [...given, ...before, asked];
-    for (const message of [...before, asked]) await save(app, session, id, message);
+    // the notes waiting, the time first, before the question: the user's message stays as it was said
+    const row = await app.db.row`SELECT agent_id, (SELECT MAX(time) FROM ai_session_message WHERE session_id = ${session}) AS last FROM ai_session WHERE id = ${session}`;
+    if (!row) throw new Error(`No session ${session}`);
+    const id = Number(row.agent_id), last = Number(row.last), now = unixTime();
+    for (const message of [...notes.take(app, session, clock(last, now)), { role: "user" as const, content }]) await save(app, session, id, message);
+    const { usrId, prefer, tools, messages } = await context(app, session, now - last > CACHE_TTL);
     // always streamed: a long answer is no silence, and what a cancelled step said so far stays
     let partial = "";
     const out = await run(app, {

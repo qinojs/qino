@@ -323,7 +323,7 @@ export async function session(node: Node, { vars = {} }: { vars?: Vars } = {}): 
       WHERE m.session_id = ${id} AND mp.id IS NOT NULL GROUP BY am.name, p.name ORDER BY answers DESC`,
     db.col`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND m.message LIKE ${'%"toolCalls":[{%'}`,
     new Session(node.app, id).known().catch(() => new Set<string>()),
-    db.one`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND ${role("system")} AND m.message LIKE ${'%"tools":[%'} ORDER BY m.id LIMIT 1`,
+    db.one`SELECT message FROM ai_session_message m WHERE m.session_id = ${id} AND ${role("start")} ORDER BY m.id DESC LIMIT 1`,
     db.row`SELECT am.name AS model, am.context_length FROM ai_session_message m ${answeredBy} WHERE m.session_id = ${id} AND mp.id IS NOT NULL ORDER BY m.id DESC LIMIT 1`,
     raw(node.app, id).then((sent) => sent.messages.length ? Math.ceil(JSON.stringify(sent).length / 4) : 0).catch(() => 0), // tokens, roughly as ai estimates them
   ]);
@@ -394,9 +394,9 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
     const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}${unsent(row.id) ? " · not sent" : ""}</small>`;
     const box = html`data-message=${row.id} data-role=${m.role} ${unsent(row.id)}`;
-    // what the model was given as the session started (its role with memories, its tools, prefer), or a note
+    // what the model was given as it started (its role with memories, its tools, prefer), or a note
     const known = [...m.tools?.map((tool: { name: string }) => tool.name) ?? [], ...m.known ?? []];
-    if (m.role === "system") return html`<div ${box}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
+    if (m.role === "start" || m.role === "system") return html`<div ${box}>${head}${m.prefer ? html` <small>prefer ${JSON.stringify(m.prefer)}</small>` : ""}
       <div data-text><small>${text}</small></div>
       ${known.length ? html`<div><small>known: ${keys(known)}</small></div>` : ""}</div>`;
     if (m.role === "tool") return ""; // shown with its call, in the dialog of the calls

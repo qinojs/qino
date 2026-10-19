@@ -68,7 +68,7 @@ export async function compact(app: App, { session, usrId, messages, tools, model
     if (!wanted && (!limit || size({ messages, tools }) < AT * limit)) return;
     // what is sent now, and of it the last turns to keep: at least one turn before them to summarize
     const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
-      .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
+      .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) })).filter((row) => row.message.role !== "start");
     const sent = from(kept), asked = sent.filter((row) => row.message.role === "user");
     let turns = Math.min(TURNS, asked.length - 1);
     const tail = () => sent.filter((row) => row.id >= asked[asked.length - turns].id).map((row) => row.message);

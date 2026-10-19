@@ -65,7 +65,9 @@ Deno.test("ai.agent.sleep: a long session is compacted, the record stays", () =>
 
   await session.ask("next");
   const next = sent.at(-1)!, from = summary.summary.from;
-  assertEquals(next[1], { role: "system", content: summary.content }); // after the given block
+  assertEquals(next[1], { role: "system", content: summary.content }); // after the start
+  const starts = (await app.db.col`SELECT message FROM ai_session_message`).filter((json) => String(json).startsWith('{"role":"start"'));
+  assertEquals(starts.length, 2); // renewed after the cut: the cache was lost anyway
   const first = String(await app.db.one`SELECT message FROM ai_session_message WHERE id = ${from}`);
   assertStringIncludes(String(next[2].content), JSON.parse(first).content.slice(0, 3)); // then word for word from `from` on
   assert(!next.some((m) => String(m.content).startsWith("q1 "))); // what came before is not sent

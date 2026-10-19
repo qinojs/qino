@@ -93,7 +93,7 @@ async function transcript(app: App, session: number, since: number, chars: numbe
   const lines = [];
   for (const row of await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} AND id > ${since} ORDER BY id`) {
     const m = JSON.parse(String(row.message));
-    const said = m.role === "tool" || (m.role === "system" && !m.summary) ? "" : textOf(m.content)
+    const said = m.role === "tool" || m.role === "start" || (m.role === "system" && !m.summary) ? "" : textOf(m.content)
       + (m.toolCalls?.length ? ` (called ${m.toolCalls.map((c: { name: string }) => c.name).join(", ")})` : "");
     if (said.trim()) lines.push(`[#${row.id} ${m.summary ? "summary" : m.role}] ${said}`);
   }

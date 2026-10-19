@@ -2,7 +2,7 @@ import { ApiError, errMsg, NotFoundError, toTools } from "@qino/qino";
 import { all, find } from "@qino/qino/ai.discover";
 
 import * as memory from "./memory.ts";
-import { isGiven, save } from "./record.ts";
+import { save } from "./record.ts";
 import * as search from "./search.ts";
 
 import type { ApiTree, App, Ctx, Method, Tool } from "@qino/qino";
@@ -117,14 +117,14 @@ function answered(messages: Message[]) {
   });
 }
 
-/** What the model of `session` was given as it started (none before its first question), and the history
- *  after it, as other modules let it be sent (compaction); what is kept stays. `ids`: those of both. */
+/** What the model of `session` was given at its latest start (none before its first question), and the
+ *  history, as other modules let it be sent (compaction); what is kept stays. `ids`: those of both. */
 async function sent(app: App, agent: number, session: number) {
   const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
     .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
-  const { history } = await app.fire("ai.agent:history", { agent, session, history: kept.filter((row) => row.message.role !== "error" && !isGiven(row.message)) });
-  const given = kept.find((row) => isGiven(row.message)), rows = history as { id: number; message: Message & { known?: string[] } }[];
-  return { given: given?.message, history: rows, ids: new Set([...given ? [given.id] : [], ...rows.map((row) => row.id)]) };
+  const { history } = await app.fire("ai.agent:history", { agent, session, history: kept.filter((row) => row.message.role !== "error" && row.message.role !== "start") });
+  const start = kept.findLast((row) => row.message.role === "start"), rows = history as { id: number; message: Message & { known?: string[] } }[];
+  return { start, history: rows, ids: new Set([...start ? [start.id] : [], ...rows.map((row) => row.id)]) };
 }
 
 const agentOf = async (app: App, session: number) => Number(await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`);
@@ -132,36 +132,40 @@ const agentOf = async (app: App, session: number) => Number(await app.db.one`SEL
 /** The ids of the messages kept in `session` its model is still sent: after a compaction fewer. */
 export const sentIds = async (app: App, session: number): Promise<Set<number>> => (await sent(app, await agentOf(app, session), session)).ids;
 
-/** What the model of `session` has in its context, by key: its tools as given, and what the messages
- *  still sent list as `known` (memories by id, `5`; others' by theirs, `u5`; tools by name). */
+/** What the model of `session` has in its context, by key: its tools as given, the messages still sent
+ *  (`#7`) and what they list as `known` (memories by id, `5`; others' by theirs, `u5`; tools by name). */
 export async function known(app: App, session: number): Promise<Set<string>> {
-  const { given, history } = await sent(app, await agentOf(app, session), session);
-  return new Set([...given?.tools?.map((tool: Tool) => tool.name) ?? [], ...given?.known ?? [], ...history.flatMap((row) => row.message.known ?? [])]);
+  const { start, history } = await sent(app, await agentOf(app, session), session);
+  return new Set([...start?.message.tools.map((tool: Tool) => tool.name) ?? [], ...start?.message.known ?? [],
+    ...history.flatMap((row) => [`#${row.id}`, ...row.message.known ?? []])]);
 }
 
-/** What the model is given in `session`, as for a turn: the role with memories and the tools as the
- *  session started with them (kept as its first message, of role `system`), run as they are now; the
- *  history after it, as other modules let it be sent (compaction); how the model is chosen. What was
- *  sent is never changed, only added to (prompt cache). */
-export async function context(app: App, session: number) {
+/** What the model is given in `session`, as for a turn: the role with memories and the tools as of its
+ *  latest start (kept as a message of role `start`), run as they are now; the history, as other modules
+ *  let it be sent (compaction); how the model is chosen. What was sent stays the same while the provider's
+ *  cache holds it (prompt cache): the start is renewed only once the history was cut (compaction) or
+ *  with `renew` (after a pause longer than the cache keeps it). */
+export async function context(app: App, session: number, renew = false) {
   const agent = await app.db.row`SELECT s.usr_id, s.agent_id, s.prefer, a.prefer AS agent_prefer, a.system, a.tools FROM ai_session s JOIN ai_agent a ON a.id = s.agent_id WHERE s.id = ${session}`;
   if (!agent) throw new Error(`No session ${session}`);
   const id = Number(agent.agent_id), usrId = Number(agent.usr_id);
   // other modules add to what the model is given: texts to its context (with their keys), tools
   const { parts, known, tools: more } = await app.fire("ai.agent:turn", { agent: id, session, usrId, parts: [] as string[], known: [] as string[], tools: [] as Tool[] });
   const prefer = weights(agent.prefer) ?? weights(agent.agent_prefer); // the session's, else the agent's
-  // given once, as the session starts: later changes come with the next session; ranked only then, and with many
-  let { given, history } = await sent(app, id, session);
+  const { start, history } = await sent(app, id, session);
+  // a start is saved after the question it answers: history newer than it came after a cut
+  const fresh = renew || !start || (history[0]?.id ?? 0) > start.id;
   const allowed = toolsOf(app, JSON.parse(String(agent.tools || "[]")));
-  const list = await choice(app, id, String(agent.system ?? ""), allowed, !given && allowed.length > AT_ONCE);
+  const list = await choice(app, id, String(agent.system ?? ""), allowed, fresh && allowed.length > AT_ONCE); // ranked only when it starts
   const tools = [...more, ...list.map((r) => r.tool)];
-  if (!given) {
+  let given = start?.message;
+  if (fresh) {
     const role = agent.system ? `## Your role\n${agent.system}` : "";
     const system = [situation(id, session, await app.url()), role, await memory.index(app, id), ...parts].filter(Boolean).join("\n\n");
     const offer = [...more, ...list.filter((r) => r.given).map((r) => r.tool)];
     const memories = (await memory.list(app, id, memory.IN_MIND)).map((m) => String(m.id));
     await save(app, session, id, given = {
-      role: "system" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })),
+      role: "start" as const, content: system, tools: offer.map(({ name, description, parameters }) => ({ name, description, parameters })),
       known: [...memories, ...known], prefer,
     });
   }

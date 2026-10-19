@@ -7,7 +7,7 @@ import type { App } from "@qino/qino";
 
 /** Only what is this close to what was said comes to mind. */
 const CLOSE = 0.65; // todo? adjustable
-/** Of memories and of tools at most this many, the nearest. */
+/** Of each kind at most this many, the nearest. */
 const MOST = 3;
 
 /** The agent's memories close to `vector` and not in the context, by id: `[id] content`. */
@@ -16,6 +16,20 @@ async function memories(app: App, agent: number, vector: number[], known: Set<st
   for (const { key, content, score } of await search(app, { ai_agent_memory: sql`e.agent_id = ${agent}` }, vector, { limit: MOST * 3 })) {
     const id = String(key.memory_id); // the nearest chunk of each
     if (score >= CLOSE && !known.has(id) && !lines.has(id)) lines.set(id, `[${id}] ${content}`);
+  }
+  return [...lines].slice(0, MOST);
+}
+
+/** Messages shorter than this ("ok", "go on") are close to too much to come to mind. */
+const SHORT = 40;
+
+/** What was said earlier in session `id`, close to `vector` and no longer sent (compacted), by id: `[#7] content`. */
+async function said(app: App, agent: number, id: number, vector: number[], known: Set<string>) {
+  const lines = new Map<string, string>();
+  const mine = sql`e.agent_id = ${agent} AND e.message_id IN (SELECT id FROM ai_session_message WHERE session_id = ${id})`;
+  for (const { key, content, score } of await search(app, { ai_session_message: mine }, vector, { limit: MOST * 3 })) {
+    const ref = `#${key.message_id}`;
+    if (score >= CLOSE && content.length >= SHORT && !known.has(ref) && !lines.has(ref)) lines.set(ref, `[${ref}] ${content}`);
   }
   return [...lines].slice(0, MOST);
 }
@@ -29,14 +43,16 @@ async function tools(app: App, agent: number, vector: number[], known: Set<strin
 }
 
 /** What comes to mind about what the user said in session `id` (its `vector`), as a note the agent reads
- *  with its next step: the memories and tools close to it, not in its context; nothing if none is close. */
+ *  with its next step: the memories, earlier messages and tools close to it, not in its context; nothing
+ *  if none is close. */
 export async function recall(app: App, agent: number, id: number, vector: number[]): Promise<void> {
   const session = new Session(app, id), known = await session.known();
-  const [mine, more] = await Promise.all([memories(app, agent, vector, known), tools(app, agent, vector, known)]);
+  const [mine, before, more] = await Promise.all([memories(app, agent, vector, known), said(app, agent, id, vector, known), tools(app, agent, vector, known)]);
   const lines = (list: readonly (readonly [string, string])[]) => list.map(([, line]) => line).join("\n");
   const note = [
     mine.length ? `## Possibly relevant memories\n${lines(mine)}` : "",
+    before.length ? `## Said earlier in this session\n${lines(before)}` : "",
     more.length ? `## Possibly relevant tools\nNot in your tool list; call them with ${CALL}.\n${lines(more)}` : "",
   ].filter(Boolean).join("\n\n");
-  if (note) await session.note(note, { known: [...mine, ...more].map(([key]) => key) });
+  if (note) await session.note(note, { known: [...mine, ...before, ...more].map(([key]) => key) });
 }
