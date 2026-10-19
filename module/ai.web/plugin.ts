@@ -39,7 +39,7 @@ export const api: ApiTree = {
         url: s.string().describe("The page's address, http or https"),
         maxAge: s.optional(s.number()).describe("Rarely needed: read anew if the stored copy is older than this many seconds"),
         offset: s.optional(s.number()).describe("Where to start, in characters; default 0"),
-        length: s.optional(s.number()).describe(`How many characters; default ${PART}, 0 only keeps it to search`),
+        length: s.optional(s.number()).describe(`How many characters; default ${PART}; 0 gives none, only stores it for pages`),
         source: s.optional(s.boolean()).describe("Its HTML source as served, instead of Markdown"),
       }),
       access: Access.USER,
