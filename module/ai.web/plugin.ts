@@ -23,10 +23,10 @@ const PART = 2_000;
 export const api: ApiTree = {
   search: {
     get: {
-      description: "Search the web: the pages found, each with title, url and a snippet",
+      description: "Search the web",
       query: s.object({
-        query: s.string().describe("What to find"),
-        count: s.optional(s.number()).describe("How many pages, at most 20; default 10"),
+        query: s.string(),
+        count: s.optional(s.number()).describe("At most 20; default 10"),
       }),
       access: Access.USER,
       execute: ({ query, count }: { query: string; count?: number }, ctx: Ctx) => search(ctx.app, query, { count }),
@@ -34,12 +34,12 @@ export const api: ApiTree = {
   },
   read: {
     get: {
-      description: "Read a web page as Markdown, or its source, a part at a time; size is the whole page",
+      description: "Read a web page as Markdown, or its source",
       query: s.object({
-        url: s.string().describe("The page's address, http or https"),
+        url: s.string().describe("http or https"),
         maxAge: s.optional(s.number()).describe("Rarely needed: read anew if the stored copy is older than this many seconds"),
-        offset: s.optional(s.number()).describe("Where to start, in characters; default 0"),
-        length: s.optional(s.number()).describe(`How many characters; default ${PART}; 0 gives none, only stores it for pages`),
+        offset: s.optional(s.number()).describe("In characters"),
+        length: s.optional(s.number()).describe(`How many characters; default ${PART}; 0 gives none, only stores it for the pages tool`),
         source: s.optional(s.boolean()).describe("Its HTML source as served, instead of Markdown"),
       }),
       access: Access.USER,
@@ -52,10 +52,10 @@ export const api: ApiTree = {
   },
   crawl: {
     post: {
-      description: "Read the pages below a url, following their links; then search them with pages and root",
+      description: "Read the pages below a url, following their links; then find them with the pages tool, root: this url",
       input: s.object({
         url: s.string().describe("Where to start: only links that start with it are followed"),
-        max: s.optional(s.number()).describe("How many pages at most; default 100"),
+        max: s.optional(s.number()).describe("Pages; default 100"),
         maxAge: s.optional(s.number()).describe("Rarely needed: read anew if the stored copy is older than this many seconds"),
         wait: s.optional(s.boolean()).describe("Answer when done, with how many were read and are left; else it runs in the background"),
       }),
@@ -71,9 +71,9 @@ export const api: ApiTree = {
   },
   pages: {
     get: {
-      description: "Search the pages already read and kept here (not the web), by meaning; without search the latest",
+      description: "Search the pages already read and kept here (not the web); without search the latest",
       query: s.object({
-        search: s.optional(s.string()).describe("What to find, in words"),
+        search: s.optional(s.string()),
         root: s.optional(s.string()).describe("Only pages whose url starts with it, e.g. where a crawl started"),
       }),
       access: Access.USER,
