@@ -1,6 +1,7 @@
 import { errMsg, unixTime } from "@qino/qino";
 import { embedded } from "@qino/qino/ai.embed";
 
+import * as memory from "./memory.ts";
 import * as search from "./search.ts";
 
 import type { App } from "@qino/qino";
@@ -31,7 +32,7 @@ export async function save(
       // as stored: a text said before reuses its vector, keep() returns only those it had to embed
       const [vector] = await embedded(app, "ai_session_message", key);
       if (!vector) return;
-      await search.associate(app, agent, vector);
+      await memory.associate(app, agent, vector);
       await app.fire("ai.agent:associate", { agent, session, vector });
     })
     .catch((e) => console.error("[ai.agent] associate:", errMsg(e)));

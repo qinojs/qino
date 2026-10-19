@@ -1,12 +1,12 @@
 import { unixTime } from "@qino/qino";
 
 import { keep } from "./lib/search.ts";
-import { checkTools, context, known, ranked, sentIds, toolsOf } from "./lib/context.ts";
+import { checkTools, context, known, ranked, toolsOf } from "./lib/context.ts";
 import { live } from "./lib/live.ts";
 import * as memory from "./lib/memory.ts";
 import { ask, cancel, note, running } from "./lib/turn.ts";
 
-export { IN_MIND } from "./lib/memory.ts";
+export { IN_MIND, Memories } from "./lib/memory.ts";
 export { CALL, called } from "./lib/context.ts";
 
 import type { App, Tool } from "@qino/qino";
@@ -89,13 +89,8 @@ export class Session {
     return note(this.#app, this.#id, content, known);
   }
 
-  /** The ids of its kept messages its model is still sent: after a compaction fewer. */
-  sent(): Promise<Set<number>> {
-    return sentIds(this.#app, this.#id);
-  }
-
-  /** What its model has in its context, by key: its tools by name, memories by id (`5`), those of other
-   *  modules as they name them (`u5`). After a compaction only what is still sent. */
+  /** What its model has in its context, by key: its kept messages still sent (`#7`), its tools by name,
+   *  memories by id (`5`), those of other modules as they name them (`u5`). After a compaction fewer. */
   known(): Promise<Set<string>> {
     return known(this.#app, this.#id);
   }

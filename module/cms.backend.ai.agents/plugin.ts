@@ -388,8 +388,8 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
     WHERE m.session_id = ${Number(vars.session)} AND m.id > ${Number(vars.after) || 0} ORDER BY m.id`;
   const session = new Session(node.app, Number(vars.session)), running = session.running;
   // what its model is no longer sent (compacted, failures) is faded; what follows along is always sent
-  const sent = vars.after ? undefined : await session.sent().catch(() => undefined);
-  const unsent = (id: unknown) => sent?.size && !sent.has(Number(id)) ? "data-unsent" : "";
+  const sent = vars.after ? undefined : await session.known().catch(() => undefined);
+  const unsent = (id: unknown) => sent?.size && !sent.has(`#${id}`) ? "data-unsent" : "";
   return html`<div class="u2-flex -Col" ${running ? "data-running" : ""}>${rows.map((row) => { // one message below the other: then align-self puts them left and right
     const m = JSON.parse(String(row.message)), text = textOf(m.content);
     const head = html`<small>${time(row.time)} · ${row.model ? by(row) : m.role}${unsent(row.id) ? " · not sent" : ""}</small>`;

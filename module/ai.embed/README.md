@@ -23,7 +23,7 @@ allows 256 bytes of primary key for a vector index: hash long string keys such a
 A collection is one embedding model with its vector length. Collections share the tables, so a new
 model can be indexed while the old one still answers. New installations start with
 `jina-embeddings-v5-omni-small/1024`; the model and its provider are configured in `ai`. Calls
-without `collection` use the primary one.
+without `collection` use the primary one; without any, `index` and `search` do nothing.
 
 ```ts
 import { sql } from "@qino/qino";

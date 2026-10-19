@@ -118,26 +118,23 @@ function answered(messages: Message[]) {
 }
 
 /** What the model of `session` was given at its latest start (none before its first question), and the
- *  history, as other modules let it be sent (compaction); what is kept stays. `ids`: those of both. */
+ *  history, as other modules let it be sent (compaction); what is kept stays. */
 async function sent(app: App, agent: number, session: number) {
   const kept = (await app.db.query`SELECT id, message FROM ai_session_message WHERE session_id = ${session} ORDER BY id`)
     .map((row) => ({ id: Number(row.id), message: JSON.parse(String(row.message)) }));
   const { history } = await app.fire("ai.agent:history", { agent, session, history: kept.filter((row) => row.message.role !== "error" && row.message.role !== "start") });
   const start = kept.findLast((row) => row.message.role === "start"), rows = history as { id: number; message: Message & { known?: string[] } }[];
-  return { start, history: rows, ids: new Set([...start ? [start.id] : [], ...rows.map((row) => row.id)]) };
+  return { start, history: rows };
 }
 
 const agentOf = async (app: App, session: number) => Number(await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`);
 
-/** The ids of the messages kept in `session` its model is still sent: after a compaction fewer. */
-export const sentIds = async (app: App, session: number): Promise<Set<number>> => (await sent(app, await agentOf(app, session), session)).ids;
-
-/** What the model of `session` has in its context, by key: its tools as given, the messages still sent
- *  (`#7`) and what they list as `known` (memories by id, `5`; others' by theirs, `u5`; tools by name). */
+/** What the model of `session` has in its context, by key: the kept messages still sent (`#7`), its tools
+ *  as given and what the messages list as `known` (memories by id, `5`; others' by theirs, `u5`; tools by name). */
 export async function known(app: App, session: number): Promise<Set<string>> {
   const { start, history } = await sent(app, await agentOf(app, session), session);
-  return new Set([...start?.message.tools.map((tool: Tool) => tool.name) ?? [], ...start?.message.known ?? [],
-    ...history.flatMap((row) => [`#${row.id}`, ...row.message.known ?? []])]);
+  return new Set([...start ? [start, ...history] : history].flatMap((row) =>
+    [`#${row.id}`, ...row.message.tools?.map((tool: Tool) => tool.name) ?? [], ...row.message.known ?? []]));
 }
 
 /** What the model is given in `session`, as for a turn: the role with memories and the tools as of its

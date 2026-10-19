@@ -64,7 +64,7 @@ export async function read(app: App, url: string, { maxAge = MAX_AGE }: { maxAge
   const page = await reader.read(app, url, key).catch((e) => { throw new ApiError(502, errMsg(e)); });
   const values = { url, url_hash: hash, title: page.title, content: withoutData(page.content), reader: name, time: unixTime() };
   const id = kept ? (await db.table("ai_web_page").update(Number(kept.id), values), Number(kept.id)) : Number(await db.table("ai_web_page").insert(values));
-  if (await collection(app)) index(app, "ai_web_page", { page_id: id }, values.content).catch((e) => console.error("[ai.web] embedding:", errMsg(e)));
+  index(app, "ai_web_page", { page_id: id }, values.content).catch((e) => console.error("[ai.web] embedding:", errMsg(e)));
   return { id, ...values };
 }
 

@@ -11,22 +11,12 @@ import type { Part } from "@qino/qino/ai";
 export const textOf = (content: string | Part[]): string =>
   typeof content === "string" ? content : content.flatMap((p) => p.type === "text" ? [p.text] : []).join("\n");
 
-/** Only memories this close to what was said come to mind. */
-const CLOSE = 0.75; // todo? adjustable
-
 const log = (e: unknown) => console.error("[ai.agent] embedding:", errMsg(e));
 
-/** Make `text` findable, only where there is an embedding collection. Resolves to the vectors it
+/** Make `text` findable (where there is an embedding collection). Resolves to the vectors it
  *  embedded; never rejects. */
-export async function keep(app: App, name: "ai_agent" | "ai_agent_memory" | "ai_session_message", key: Record<string, number>, text: string): Promise<number[][]> {
-  return text && await collection(app) ? await index(app, name, key, text).catch((e) => (log(e), [])) : [];
-}
-
-/** Recalling by association: the memories close to what was just said grow stronger, the closer the
- *  more — with the vector the message got anyway. */
-export async function associate(app: App, agent: number, vector: number[]): Promise<void> {
-  const close = await search(app, { ai_agent_memory: sql`e.agent_id = ${agent}` }, vector, { limit: 5 }).catch((e) => (log(e), []));
-  for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_agent_memory_use", { memory_id: Number(key.memory_id) }, score);
+export async function keep(app: App, name: string, key: Record<string, number>, text: string): Promise<number[][]> {
+  return text ? await index(app, name, key, text).catch((e) => (log(e), [])) : [];
 }
 
 /** The agent's memories and the messages of all its sessions, with anyone, nearest to `query`. A

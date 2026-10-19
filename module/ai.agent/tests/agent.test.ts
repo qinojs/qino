@@ -262,7 +262,8 @@ Deno.test("ai.agent: a failure is kept, but not sent again", () => withApp(async
   assertEquals((await session.ask("hi")).text, "lead #2 hi");
   assertEquals((await kept(app, session.id)).map(([role]) => role), ["system", "user", "start", "error", "user", "assistant"]);
   const ids = (await app.db.col`SELECT id FROM ai_session_message WHERE session_id = ${session.id} ORDER BY id`).map(Number);
-  assertEquals([...await session.sent()].sort((a, b) => a - b), ids.filter((_, i) => i !== 3)); // all but the failure
+  const known = await session.known();
+  assertEquals(ids.map((id) => known.has(`#${id}`)), ids.map((_, i) => i !== 3)); // all but the failure
 }));
 
 Deno.test("ai.agent: one turn after the other in a session", () => withApp(async (app) => {

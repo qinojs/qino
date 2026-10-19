@@ -73,7 +73,7 @@ Deno.test("ai.agent.sleep: a long session is compacted, the record stays", () =>
   assert(!next.some((m) => String(m.content).startsWith("q1 "))); // what came before is not sent
   assertEquals((await app.db.col`SELECT message FROM ai_session_message`).filter((json) => String(json).includes('"q1 ')).length, 1); // but kept
   const q1 = Number(await app.db.one`SELECT id FROM ai_session_message WHERE message LIKE ${'%"q1 %'}`);
-  assertEquals([(await session.sent()).has(q1), (await session.sent()).has(from)], [false, true]); // so the session tells
+  assertEquals([(await session.known()).has(`#${q1}`), (await session.known()).has(`#${from}`)], [false, true]); // so the session tells
 }));
 
 Deno.test("ai.agent.sleep: a short session is sent as it is", () => withApp(async (app) => {

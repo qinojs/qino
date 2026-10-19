@@ -61,10 +61,11 @@ async function vectors(app: App, c: Collection, input: EmbedInput) {
 
 /** Embed `input` in `embedding_<name>` under `key`. Unchanged chunks are skipped, content known from
  *  elsewhere in the table reuses its vector, chunks a shorter text no longer has are removed; empty
- *  text removes all. Resolves to the vectors it had to embed, e.g. to `search` with one of them. */
+ *  text removes all. Resolves to the vectors it had to embed, e.g. to `search` with one of them; without a
+ *  collection, as `search`, to none. */
 export async function index(app: App, name: string, key: Key, input: Input, options: Options = {}): Promise<number[][]> {
   const c = await collection(app, options.collection), db = app.db, { table, keys } = tableOf(db, name), t = sql.id(table);
-  if (!c) throw new Error("No embedding collection");
+  if (!c) return [];
   const text = typeof input === "string";
   if (!text && !c.vision) throw new Error(`"${c.model}" has no vision: it embeds no images`);
   const contents = text ? chunks(input, Number(await app.settings["ai.embed"].chunkChars)) : [input.image];

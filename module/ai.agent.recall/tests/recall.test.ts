@@ -81,5 +81,15 @@ Deno.test("ai.agent.recall: what was said earlier and is no longer sent comes to
   app.on("ai.agent:history", (turn) => { turn.history = turn.history.filter((row: { message: { content: unknown } }) => row.message.content !== said); });
   await session.ask("draw the logo");
   const id = Number(await app.db.one`SELECT id FROM ai_session_message WHERE message LIKE ${`%${said}%`}`);
-  assertEquals((await notes(app, session.id)).filter((note) => note.includes("Said earlier")), [`## Said earlier in this session\n[#${id}] ${said}`]);
+  assertEquals((await notes(app, session.id)).filter((note) => note.includes("Said earlier")), [`## Said earlier in this session\n[#${id} user] ${said}`]);
+}));
+
+Deno.test("ai.agent.recall: of a long message earlier only its start comes to mind", () => withApp(async (app) => {
+  const session = await (await Agent.create(app, { system: "lead" })).start(7);
+  const said = "the logo " + "x".repeat(2000);
+  await session.ask(said);
+  app.on("ai.agent:history", (turn) => { turn.history = turn.history.filter((row: { message: { content: unknown } }) => row.message.content !== said); });
+  await session.ask("draw the logo");
+  const [note] = (await notes(app, session.id)).filter((note) => note.includes("Said earlier"));
+  assertEquals(note.split("] ")[1], said.slice(0, 1000) + "…");
 }));

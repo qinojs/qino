@@ -22,14 +22,21 @@ async function memories(app: App, agent: number, vector: number[], known: Set<st
 
 /** Messages shorter than this ("ok", "go on") are close to too much to come to mind. */
 const SHORT = 40;
+/** Of a message at most this many characters: the rest it can read on, by its id. */
+const LONG = 1000;
 
-/** What was said earlier in session `id`, close to `vector` and no longer sent (compacted), by id: `[#7] content`. */
+/** What was said earlier in session `id`, close to `vector` and no longer sent (compacted), by id and who
+ *  said it: `[#7 user] content`. */
 async function said(app: App, agent: number, id: number, vector: number[], known: Set<string>) {
   const lines = new Map<string, string>();
   const mine = sql`e.agent_id = ${agent} AND e.message_id IN (SELECT id FROM ai_session_message WHERE session_id = ${id})`;
-  for (const { key, content, score } of await search(app, { ai_session_message: mine }, vector, { limit: MOST * 3 })) {
+  const hits = await search(app, { ai_session_message: mine }, vector, { limit: MOST * 3 });
+  const roles = new Map((await app.db.query`SELECT id, message FROM ai_session_message WHERE ${sql.in("id", hits.map((h) => h.key.message_id))}`)
+    .map((m) => [`#${m.id}`, JSON.parse(String(m.message)).role]));
+  for (const { key, content, score } of hits) {
     const ref = `#${key.message_id}`;
-    if (score >= CLOSE && content.length >= SHORT && !known.has(ref) && !lines.has(ref)) lines.set(ref, `[${ref}] ${content}`);
+    if (score < CLOSE || content.length < SHORT || known.has(ref) || lines.has(ref)) continue;
+    lines.set(ref, `[${ref} ${roles.get(ref)}] ${content.length > LONG ? content.slice(0, LONG) + "…" : content}`);
   }
   return [...lines].slice(0, MOST);
 }

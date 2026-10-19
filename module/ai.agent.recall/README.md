@@ -8,7 +8,7 @@ ai.agent, so it can be left out or replaced for experiments.
 - **Only what is missing:** the agent's memories, what was said earlier in the session and is no
   longer sent (compacted), and the tools of its api paths, close to it (score ≥ 0.65), at most 3 of
   each, and not in its context (its start or an earlier note). Messages shorter than 40 characters
-  don't come to mind. Tools only come up for an agent with more than it is given at the start.
+  don't come to mind, longer ones than 1000 are cut. Tools only come up for an agent with more than it is given at the start.
 - **As a note** (`session.note`): the agent reads it with its next step, else with the next question;
   with other notes waiting, as one message. Nothing close, no note.
 
@@ -16,7 +16,7 @@ ai.agent, so it can be left out or replaced for experiments.
 ## Possibly relevant memories
 [42] Invoices always in CHF
 ## Said earlier in this session
-[#318] The invoices of Müller AG go to the accounting address, not the office
+[#318 user] The invoices of Müller AG go to the accounting address, not the office
 ## Possibly relevant tools
 Not in your tool list; call them with call_tool.
 - fin_invoices_get: List invoices

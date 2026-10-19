@@ -1,8 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, errMsg, getCtx, NotFoundError, s, sql, toTools, unixTime } from "@qino/qino";
-import { collection, index, search } from "@qino/qino/ai.embed";
-import { hit, sqlScore } from "@qino/qino/score";
-import { Session } from "@qino/qino/ai.agent";
+import { Access, getCtx, s, toTools } from "@qino/qino";
+import { Memories, Session } from "@qino/qino/ai.agent";
 
 import { IN_MIND, personal } from "./mod.ts";
 
@@ -14,45 +12,16 @@ import type { ApiTree, App, Ctx, Usr } from "@qino/qino";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-/** Only memories this close to what the user said come to mind (as with ai.agent). */
-const CLOSE = 0.75; // todo? adjustable
+/** The user's memories. */
+const of = (app: App, usr: number) => new Memories(app, "ai_user_memory", { usr_id: usr });
 
-const log = (e: unknown) => console.error("[ai.user_memory] embedding:", errMsg(e));
-
-/** Memories read at a time, until `chars` are filled. */
-const BLOCK = 100;
-
-/** The user's memories, the strongest first; with `chars`, those that fit in as many characters. */
-async function list(app: App, usr: number, chars = Infinity) {
-  const out = [];
-  let used = 0;
-  for (let at = 0;; at += BLOCK) {
-    const rows = await app.db.query`SELECT id, content FROM ai_user_memory m WHERE usr_id = ${usr}
-      ORDER BY ${sqlScore(app.db, "ai_user_memory_use", { memory_id: sql`m.id` })} DESC, id LIMIT ${BLOCK} OFFSET ${at}`;
-    for (const r of rows) {
-      if ((used += String(r.content).length) > chars) return out;
-      out.push(r);
-    }
-    if (rows.length < BLOCK) return out;
-  }
-}
-
-async function own(app: App, usr: number, id: number) {
-  if (!await app.db.one`SELECT id FROM ai_user_memory WHERE id = ${id} AND usr_id = ${usr}`) throw new NotFoundError("No such memory");
-}
-
-async function keep(app: App, usr: number, content: string, replaces?: number) {
-  const table = app.db.table("ai_user_memory"), values = { usr_id: usr, content, time: unixTime() };
-  const id = replaces ? (await own(app, usr, replaces), await table.update(replaces, values), replaces) : Number(await table.insert(values));
-  hit(app.db, "ai_user_memory_use", { memory_id: id });
-  if (await collection(app)) index(app, "ai_user_memory", { usr_id: usr, memory_id: id }, content).catch(log); // findable by meaning
-  return { id: `u${id}` };
-}
+/** Keep a memory about the user, by its key (`u5`). */
+const keep = async (app: App, usr: number, content: string, replaces?: number) => ({ id: `u${await of(app, usr).keep(content, replaces)}` });
 
 /** The signed-in user's memories: to see and change them, and the agents' tools for them. */
 export const api: ApiTree = {
   memories: {
-    get: { description: "The memories every agent keeps about you", access: Access.USER, execute: (_: unknown, ctx: Ctx) => list(ctx.app, ctx.userId) },
+    get: { description: "The memories every agent keeps about you", access: Access.USER, execute: (_: unknown, ctx: Ctx) => of(ctx.app, ctx.userId).list() },
     post: {
       description: "Keep a short fact about who the user is (name, language, how to address them), for every agent; or replace one of theirs (u5: replaces 5)",
       input: s.object({ content: s.string(), replaces: s.optional(s.number()) }),
@@ -65,8 +34,7 @@ export const api: ApiTree = {
         description: "Forget one of the user's memories (u5: memory 5)",
         access: Access.USER,
         execute: async ({ memory }: any, ctx: Ctx) => {
-          await own(ctx.app, ctx.userId, memory);
-          await ctx.app.db.table("ai_user_memory").delete(memory);
+          await of(ctx.app, ctx.userId).forget(memory);
           return { forgotten: `u${memory}` };
         },
       },
@@ -78,7 +46,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   // into every turn: who the user is and what is known about them, and the tool to forget it; what is new about
   // them, decide sorts out when the agent remembers it (below)
   app.on("ai.agent:turn", async (turn) => {
-    const memories = await list(app, turn.usrId, IN_MIND);
+    const memories = await of(app, turn.usrId).list(IN_MIND);
     const usr = await app.db.table("usr").get<Usr>(turn.usrId);
     const name = [usr?.given_name, usr?.family_name].filter(Boolean).join(" ") || usr?.username;
     const who = [name, await usr?.contact("email"), `id ${turn.usrId}`].filter(Boolean).join(", ");
@@ -92,12 +60,11 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   // in the session come to mind, as a note the agent reads with its next step
   app.on("ai.agent:associate", async ({ session: id, vector }) => {
     const usr = await app.db.one`SELECT usr_id FROM ai_session WHERE id = ${id}`;
-    const close = await search(app, { ai_user_memory: sql`e.usr_id = ${usr}` }, vector, { limit: 5 }).catch((e) => (log(e), []));
-    for (const { key, score } of close) if (score >= CLOSE) hit(app.db, "ai_user_memory_use", { memory_id: Number(key.memory_id) }, score);
+    const close = await of(app, Number(usr)).associate(vector);
     const session = new Session(app, id), known = await session.known(), lines = new Map<string, string>();
-    for (const { key, content, score } of close) {
+    for (const { key, content } of close) {
       const id = `u${key.memory_id}`; // the nearest chunk of each
-      if (score >= CLOSE && !known.has(id) && !lines.has(id)) lines.set(id, `[${id}] ${content}`);
+      if (!known.has(id) && !lines.has(id)) lines.set(id, `[${id}] ${content}`);
     }
     const near = [...lines].slice(0, 3);
     if (near.length) await session.note(`## Possibly relevant memories about the user\n${near.map(([, line]) => line).join("\n")}`, { known: near.map(([id]) => id) });
