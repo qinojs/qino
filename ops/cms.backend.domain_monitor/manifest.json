@@ -15,6 +15,7 @@
     "lib/net.ts",
     "lib/rdap.ts",
     "manifest.json",
+    "mod.ts",
     "nodeApi.ts",
     "plugin.ts",
     "pub/main.css",

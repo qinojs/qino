@@ -1,13 +1,15 @@
 // Rebuilds the accounting of a qino app from the JSON of export.ts and the PHP invoice PDFs, through
-// the fin modules: invoices are issued, payments recorded, so both book themselves. PHP stays the
-// master: every run first removes what is there (fin data, the customers of an earlier run), then
-// imports anew. Run it in the app's directory, with the service stopped or restarted after:
+// the fin modules: invoices are issued, payments recorded, so both book themselves; with fin.hosting
+// the customers' domains too, their subscriptions linked. PHP stays the master: every run first
+// removes what is there (fin data, the customers of an earlier run), then imports anew. Run it in
+// the app's directory, with the service stopped or restarted after:
 //
 //   deno run -A qino/meta/migrate_from_php/accounting/import.ts accounting.json [invoice-pdfs/]
 import { pathToFileURL } from "node:url";
 import { addContact, fs, sql, unixTime } from "@qino/qino";
 import { attach, create, issue, refOf, setSent } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
+import { link, normalize, save } from "@qino/qino/fin.hosting";
 
 import type { App } from "@qino/qino";
 
@@ -34,6 +36,7 @@ async function clear(app: App) {
     await (await app.dbFiles.file(Number(file))).remove().catch(() => {});
   }
   // through the tables: what hangs on a row by schema (lines, periods, entry lines) goes with it
+  if (app.modules.linked("fin.hosting")) await db.exec`DELETE FROM fin_hosting_domain`;
   const tables = ["invoice", "subscription", ...app.modules.linked("fin.accounting") ? ["accounting_entry"] : []];
   for (const table of tables) {
     for (const id of await db.col`SELECT id FROM ${sql.id(table)}`) await db.table(table).delete(id);
@@ -121,6 +124,7 @@ async function invoices(app: App, data: Record<string, Rows>, usrs: Map<number, 
 /** Yearly subscriptions; PHP billed them per calendar year, its years become billed periods. */
 async function subscriptions(app: App, data: Record<string, Rows>, usrs: Map<number, number>, invs: Map<number, number>, report: string[]) {
   const years = groupBy(data.accounting1_abo1_year, "abo_id");
+  const ids = new Map<number, number>();
   for (const abo of data.accounting1_abo1) {
     const usrId = usrs.get(Number(abo.usr_id));
     if (!usrId) {
@@ -132,6 +136,7 @@ async function subscriptions(app: App, data: Record<string, Rows>, usrs: Map<num
       usr_id: usrId, name: String(abo.title ?? ""), price: minor(abo.cost), currency: "CHF",
       interval_unit: "year", interval_count: 1, start_date: start, end_date: day(abo.end_date), created: unixTime(),
     }));
+    ids.set(Number(abo.id), id);
     for (const y of years.get(Number(abo.id)) ?? []) {
       if (`${y.year}-12-31` < start) {
         report.push(`subscription ${abo.id} (${abo.title}): year ${y.year} before its start ${start}, left out`);
@@ -144,6 +149,33 @@ async function subscriptions(app: App, data: Record<string, Rows>, usrs: Map<num
       });
     }
   }
+  return ids;
+}
+
+/**
+ * The domains of `managed_domains` and those subscriptions are titled after ("Hosting example.ch"):
+ * whose they are follows from the subscriptions — the newest where they disagree —, which are then
+ * linked to them. Free ones have no subscription, so no owner either.
+ */
+async function domains(app: App, data: Rows, abos: Rows, usrs: Map<number, number>, subs: Map<number, number>, report: string[]) {
+  const domainOf = (title: unknown) => normalize(String(title ?? "").trim().split(/\s+/).pop() ?? "");
+  const owners = new Map<string, number>();
+  for (const abo of [...abos].sort((a, b) => a.id - b.id)) {
+    const name = domainOf(abo.title), usrId = usrs.get(Number(abo.usr_id));
+    if (!name || !usrId) continue;
+    if (owners.has(name) && owners.get(name) !== usrId) report.push(`domain ${name}: subscriptions of several customers, the newest wins`);
+    owners.set(name, usrId);
+  }
+  const registrars = new Map(data.map((d) => [normalize(String(d.domain ?? "")), String(d.registrar ?? "")]));
+  for (const raw of data) if (raw.domain && !normalize(String(raw.domain))) report.push(`domain "${raw.domain}": not a domain, left out`);
+  const names = new Set([...registrars.keys(), ...owners.keys()].filter(Boolean));
+  for (const name of names) await save(app, name, { usrId: owners.get(name) ?? null, registrar: registrars.get(name) || null });
+  for (const abo of abos) {
+    const name = domainOf(abo.title), id = subs.get(Number(abo.id));
+    if (!name || !id) continue;
+    await link(app, name, id).catch((e) => report.push(`subscription ${abo.id} (${abo.title}): ${e.message}`));
+  }
+  return names.size;
 }
 
 /** What each customer owes by PHP's account against what is open in qino. */
@@ -167,10 +199,13 @@ export async function importAccounting(app: App, data: Record<string, Rows>, pdf
     await clear(app);
     const usrs = await users(app, data.usr);
     const invs = await invoices(app, data, usrs, pdfs, report);
-    await subscriptions(app, data, usrs, invs, report);
+    const subs = await subscriptions(app, data, usrs, invs, report);
+    const domainCount = app.modules.linked("fin.hosting") && data.managed_domains
+      ? await domains(app, data.managed_domains, data.accounting1_abo1, usrs, subs, report)
+      : 0;
     await balances(app, data, usrs, report);
     await app.db.exec`DELETE FROM invoice_counter`; // new invoices count from their own format
-    report.unshift(`${usrs.size} customers, ${invs.size} invoices, ${data.accounting1_abo1.length} subscriptions`);
+    report.unshift(`${usrs.size} customers, ${invs.size} invoices, ${subs.size} subscriptions, ${domainCount} domains`);
   } finally {
     await settings.method(method ?? "");
   }

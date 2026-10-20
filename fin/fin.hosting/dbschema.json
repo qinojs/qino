@@ -1,0 +1,45 @@
+{
+  "properties": {
+    "fin_hosting_domain": {
+      "description": "A customer's domain: what their hosting, domain and service subscriptions are for",
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary",
+            "description": "The domain, lower case: example.ch"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Whose it is; without one it is ours or nobody's yet"
+          },
+          "alias_of": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "x-qg-parent": "fin_hosting_domain",
+            "x-qg-parent-field": "name",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The domain it is an alias of: served the same, billed with it"
+          },
+          "registrar": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Where it is registered"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["name", "created", "changed"]
+      }
+    }
+  }
+}

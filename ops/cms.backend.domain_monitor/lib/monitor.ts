@@ -233,6 +233,15 @@ export async function addDomains(app: App, list: string): Promise<string[]> {
   return skipped;
 }
 
+/** Watch a domain from now on: checked by the `frequency` job, not right away, so many may come at
+ *  once (an import). One watched already keeps its row and frequency. */
+export async function watch(app: App, domain: string, frequency: CheckFrequency = "daily"): Promise<void> {
+  const name = normalizeDomain(domain);
+  if (!name) throw new Error(`domain monitor: not a domain: ${domain}`);
+  if (await app.db.one`SELECT domain FROM monitor_domain WHERE domain = ${name}`) return;
+  await table(app).insert({ domain: name, check_frequency: frequency, created: unixTime() });
+}
+
 export async function rowsFor(app: App, domains: string[]): Promise<DomainRow[]> {
   if (!domains.length) return [];
   return app.db.query<DomainRow>`SELECT * FROM monitor_domain WHERE ${sql.in("domain", domains)}`;

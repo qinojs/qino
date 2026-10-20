@@ -13,6 +13,7 @@ const TABLES = [
   "accounting1_usr_credit_history",
   "accounting1_abo1",
   "accounting1_abo1_year",
+  "managed_domains",
 ];
 
 const [url, out = "accounting.json"] = Deno.args;

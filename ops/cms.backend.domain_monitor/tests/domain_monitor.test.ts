@@ -6,6 +6,7 @@ import { errText } from "../lib/net.ts";
 import { diffResults, pruneHistory } from "../lib/changes.ts";
 import { dmarc, spf } from "../lib/mail.ts";
 import { FREQUENCIES, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
+import { watch } from "../mod.ts";
 import api from "../nodeApi.ts";
 import { cron, ctxSettingsSchema, dbSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
@@ -35,6 +36,24 @@ Deno.test("cms.backend.domain_monitor: schema and cron jobs are wired", () => {
   // every selectable frequency except "disabled" needs a job, or it would never run
   assertEquals(FREQUENCIES.filter((v) => v !== "disabled").every((v) => v in cron), true);
   assertEquals(cron.prune.every, "day");
+});
+
+Deno.test("cms.backend.domain_monitor: watch adds a domain unchecked, keeps one already watched as it is", async () => {
+  const { db, app } = await testApp();
+  try {
+    await watch(app, "https://Example.CH/");
+    await watch(app, "other.ch", "weekly");
+    await db.exec`UPDATE monitor_domain SET check_frequency = ${"disabled"} WHERE domain = ${"other.ch"}`;
+    await watch(app, "other.ch"); // switched off on purpose: it stays off
+    assertEquals(await db.query`SELECT domain, check_frequency FROM monitor_domain ORDER BY domain`, [
+      { domain: "example.ch", check_frequency: "daily" },
+      { domain: "other.ch", check_frequency: "disabled" },
+    ]);
+    assertEquals(await db.one`SELECT COUNT(*) FROM monitor_domain_check`, 0); // the job checks, not watch
+    await assertRejects(() => watch(app, "no domain"), Error, "not a domain");
+  } finally {
+    await db.close();
+  }
 });
 
 Deno.test("cms.backend.domain_monitor: frequency follows node access and validates values", async () => {

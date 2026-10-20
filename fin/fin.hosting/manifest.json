@@ -1,0 +1,17 @@
+{
+  "name": "fin.hosting",
+  "description": "Fin for hosting providers: customers' domains, with their aliases, and the subscriptions they are billed by.",
+  "dependencies": [
+    "fin",
+    "fin.subscription"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

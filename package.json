@@ -58,6 +58,8 @@
     "./fin.payment": "./fin/fin.payment/mod.ts",
     "./fin.payment.credit": "./fin/fin.payment.credit/mod.ts",
     "./fin.subscription": "./fin/fin.subscription/mod.ts",
+    "./fin.hosting": "./fin/fin.hosting/mod.ts",
+    "./cms.backend.domain_monitor": "./ops/cms.backend.domain_monitor/mod.ts",
     "./iot": "./iot/iot/mod.ts",
     "./iot.record": "./iot/iot.record/mod.ts",
     "./iot.history": "./iot/iot.history/mod.ts",

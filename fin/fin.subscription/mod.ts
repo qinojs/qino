@@ -84,7 +84,7 @@ type Values = {
   count?: number | null;
   start?: string;
   end?: string | null;
-  ref?: string;
+  ref?: string | null;
 };
 
 /** The columns for `values`, as far as given. */
