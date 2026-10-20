@@ -18,6 +18,7 @@ export { xlsx } from "./lib/sheet/xlsx.ts";
 export { fs } from "./lib/fs.ts";
 export { sys } from "./lib/sys.ts";
 export { serveFile } from "./lib/serveFile.ts";
+export { uaInfo } from "./lib/userAgent.ts";
 export { fillPlaceholders, modulePlaceholders, placeholderName, placeholderNames } from "./lib/templatePlaceholder.ts";
 export type { TemplatePlaceholder, TemplateValue } from "./lib/templatePlaceholder.ts";
 // HtmlString is type-only: create it via html.raw / html.join (like sql.raw / sql.join).

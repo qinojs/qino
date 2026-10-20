@@ -93,6 +93,7 @@
     "lib/transform/transformers/videoDecode.ts",
     "lib/transform/tryCommand.ts",
     "lib/transform/types.ts",
+    "lib/userAgent.ts",
     "lib/util.ts",
     "locale/de.json",
     "locale/en.json",

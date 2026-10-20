@@ -1,5 +1,5 @@
 import { dump } from "@nuxodin/dump";
-import { html, getCtx, sql, sqlSearch, unixTime } from "@qino/qino";
+import { html, getCtx, sql, sqlSearch, uaInfo, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -88,7 +88,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
     const own = String(row.client_id) === String(ctx.clientId);
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     // referer is red only when it comes from another host (compare origins, not paths)
     let foreignRef = false;
     if (row.referer) { try { foreignRef = new URL(row.referer).host !== ownHost; } catch { foreignRef = true; } }
@@ -264,7 +264,7 @@ async function renderDetail(node: Node, id: number) {
 
   const sess = log.sess_id ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr = sess?.usr_id ? await db.row`SELECT * FROM usr WHERE id = ${sess.usr_id}` : null;
-  const info = backend.uaInfo(log.user_agent ?? "");
+  const info = uaInfo(log.user_agent ?? "");
 
   // relations: rows in other tables referencing this log entry
   const relationTrs = [];
@@ -377,7 +377,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   if (!rows.length) return html``;
   const href = (id: unknown) => backend.toUrl(pageUrl, { id });
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     const user = [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
     return html`<tr u2-href>
     <td style="white-space:nowrap"><a href="${href(row.id)}" style="color:${ageColor(row.time)}">${u2.el.time(row.time, { narrow: true })}</a>

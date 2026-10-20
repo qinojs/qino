@@ -1,6 +1,6 @@
 import { Resolver } from "node:dns/promises";
 import { isIP } from "node:net";
-import { getCtx, html, sql, unixTime } from "@qino/qino";
+import { getCtx, html, sql, uaInfo, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -63,7 +63,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const trs = [];
   for (const row of rows) {
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     if (f.no_bots && info.bot) continue;
     if (f.users && !row.users) continue;
     const own = String(row.client_id) === String(ctx.clientId);
@@ -172,7 +172,7 @@ async function renderDetail(node: Node, id: number) {
     range?.last ? logRow(db, range.last) : undefined,
     hostname(ips[0]?.ip),
   ]);
-  const info = backend.uaInfo(last?.user_agent ?? "");
+  const info = uaInfo(last?.user_agent ?? "");
   const now = unixTime();
   const active = sessions.some((s) => Number(s.access) >= now - ACTIVE);
   const [lastLabel, activeLabel, mobileLabel, desktopLabel, badges] = await Promise.all([t`last`, t`active`, t`mobile`, t`desktop`, ipBadges(node.app)]);
@@ -238,7 +238,7 @@ async function renderDetail(node: Node, id: number) {
         <div class=-head>${t`User agents`} (${agents.length})</div>
         <table class=u2-table>
             <tbody>${agents.map((row) => {
-              const ua = backend.uaInfo(row.user_agent ?? "");
+              const ua = uaInfo(row.user_agent ?? "");
               return html`<tr>
               <td><span style="color:${uniqueColor(ua.browser)}">${ua.browser} ${ua.version}</span> <small>${ua.os}</small><br><small style="word-break:break-all">${row.user_agent}</small>
               <td style="text-align:right">${row.n}
@@ -269,7 +269,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const pageUrl = await page.url();
   const href = (client: unknown) => backend.toUrl(pageUrl, { id: client });
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     return html`<tr u2-href>
     <td><a href="${href(row.client_id)}" style="color:${uniqueColor(row.client_id)}">${row.client_id}</a>
     <td style="white-space:nowrap">${info.bot ? "bot" : html`<span style="color:${uniqueColor(info.browser)}">${info.browser}</span>`} ${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${userName(row)}</small>` : ""}

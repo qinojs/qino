@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
 import * as u2 from "@qino/qino/u2";
-import { html, sql } from "@qino/qino";
+import { html, sql, uaInfo } from "@qino/qino";
 import { cms as cmsOf, describeChange, WRITE } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -98,7 +98,7 @@ async function renderRow(node: Node, ev: Event) {
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
   const stamp = iso.slice(0, 16).replace("T", " ");
-  const ua = backend.uaInfo(r.ua ?? "");
+  const ua = uaInfo(r.ua ?? "");
 
   const seen = new Set<string>();
   const labels = [];

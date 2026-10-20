@@ -1,5 +1,5 @@
 import { Resolver } from "node:dns/promises";
-import { getCtx, html, sql } from "@qino/qino";
+import { getCtx, html, sql, uaInfo } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import type { Ctx } from "@qino/qino";
@@ -29,31 +29,12 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<Re
   return { ok: true };
 }
 
-// Longest-match first: every user agent claims to be the ones below it.
-const BROWSERS: Record<string, RegExp> = {
-  Claude: /Claude/i,
-  Edge: /Edg\//,
-  Opera: /OPR\/|Opera/,
-  "Samsung Internet": /SamsungBrowser/,
-  Firefox: /Firefox\/|FxiOS/,
-  Chrome: /Chrome\/|Chromium|CriOS/,
-  Safari: /Safari\//,
-  Bot: /bot|crawler|spider|curl|wget/i,
-};
-
-const SYSTEMS: Record<string, RegExp> = {
-  Windows: /Windows/,
-  Android: /Android/,
-  iOS: /iPhone|iPad|iPod/,
-  macOS: /Mac OS X|Macintosh/,
-  ChromeOS: /CrOS/,
-  Linux: /Linux/,
-};
-
-const label = (list: Record<string, RegExp>, ua: string) => Object.keys(list).find((name) => list[name].test(ua)) ?? "";
-
 /** "Firefox · Windows", as much of it as the user agent gives away. */
-const device = (ua: string) => [label(BROWSERS, ua), label(SYSTEMS, ua)].filter(Boolean).join(" · ") || ua.slice(0, 40);
+const device = (ua: string) => {
+  const info = uaInfo(ua);
+  const browser = info.bot ? "Bot" : info.browser === "?" ? "" : info.browser;
+  return ua && [browser, info.os].filter(Boolean).join(" · ") || ua.slice(0, 40);
+};
 
 /** Reverse-DNS name of an IP, in-addr.arpa for v4, ip6.arpa for v6. */
 /** Host names for the IPs, "" if none. Best effort, with short timeout. */
