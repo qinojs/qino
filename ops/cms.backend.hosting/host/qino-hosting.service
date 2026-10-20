@@ -8,7 +8,7 @@ Group=<manager>
 UMask=0007
 RuntimeDirectory=qino-hosting
 RuntimeDirectoryMode=0750
-ExecStart=/usr/local/bin/deno run -A /usr/local/lib/qino-hosting/helper.ts
+ExecStart=/usr/local/bin/deno run -A --no-config /usr/local/lib/qino-hosting/helper.ts
 Restart=on-failure
 RestartSec=3
 
