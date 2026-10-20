@@ -9,6 +9,10 @@ and deleting need a fresh passkey (step-up). Deleting archives: directory, unit 
 A project is a directory in `/var/www/` with a systemd unit of the same name. The managing instance is
 the one named like the helper's group; it does not stop or delete itself.
 
+**Not Qino-specific.** The module runs in Qino, but what it manages need not: the helper knows systemd,
+Caddy and Linux, never Qino. Qino knowledge goes into a template (like [qino](host/templates/qino/)), not
+into the helper or the panel; what a project does inside (updates, its data) is its own business.
+
 ## Root helper
 
 Reading other projects and changing them needs root; the managing instance must not have it.
