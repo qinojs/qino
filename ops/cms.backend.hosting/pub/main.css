@@ -1,0 +1,9 @@
+[qcms-mod="backend.hosting"] {
+  & > .-head { display: flex; align-items: center; gap: .5rem; }
+  & > .-head > button { margin-left: auto; }
+  /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
+  & > u2-table { padding: 0; overflow: auto; }
+
+  & .-projects td { vertical-align: top; }
+  & .-projects td > :is(a, code, span) { display: block; }
+}

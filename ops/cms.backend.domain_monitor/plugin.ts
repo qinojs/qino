@@ -49,7 +49,12 @@ export const cron = {
   },
 } satisfies Jobs;
 
+const OLD = "cms.backend.domain-monitor"; // this module replaces it
+
 export async function install({ app }: { app: App }): Promise<void> {
+  // take over the pages of the module this one replaces first, or backend.install() adds another
+  await app.db.exec`UPDATE page SET module = ${name} WHERE module = ${OLD}`;
+  await app.modules.uninstall(OLD).catch(() => {});
   await backend.install(app, name, { en: "Domain monitor", de: "Domain-Überwachung" });
 }
 

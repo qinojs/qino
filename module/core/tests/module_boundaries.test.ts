@@ -10,9 +10,10 @@ const testModuleDir = fileURLToPath(new URL("../../../test-modules/", import.met
 const shp3Dir = fileURLToPath(new URL("../../../shp3/", import.meta.url));
 const finDir = fileURLToPath(new URL("../../../fin/", import.meta.url));
 const iotDir = fileURLToPath(new URL("../../../iot/", import.meta.url));
+const opsDir = fileURLToPath(new URL("../../../ops/", import.meta.url));
 const qinoDir = fileURLToPath(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shp3Dir, finDir, iotDir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, iotDir, testModuleDir];
+const stores = [moduleDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {

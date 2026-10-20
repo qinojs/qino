@@ -533,7 +533,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const empty = html`<tr><td colspan=28 class=-empty>No domains yet.`;
 
   // Hidden column groups, per user. Mail is hidden by default.
-  const stored = String(ctx.settings["cms.backend.domain-monitor"].cols() ?? "mail").split(",");
+  const stored = String(ctx.settings["cms.backend.domain_monitor"].cols() ?? "mail").split(",");
   const hidden = GROUPS.filter((group) => stored.includes(group));
 
   return html`<div class=u2-card>

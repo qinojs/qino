@@ -15,10 +15,10 @@ import type { App } from "@qino/qino";
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
+Deno.test("cms.backend.domain_monitor: schema and cron jobs are wired", () => {
   const domain = dbSchema.properties.monitor_domain.additionalProperties.properties;
   const check = dbSchema.properties.monitor_domain_check.additionalProperties.properties;
-  assertEquals(name, "cms.backend.domain-monitor");
+  assertEquals(name, "cms.backend.domain_monitor");
   assertEquals(dependencies, ["cms.backend", "cron"]);
   assertEquals(domain.check_frequency.enum, [...FREQUENCIES]);
   assertEquals(domain.check_frequency.default, "disabled");
@@ -37,7 +37,7 @@ Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   assertEquals(cron.prune.every, "day");
 });
 
-Deno.test("cms.backend.domain-monitor: frequency follows node access and validates values", async () => {
+Deno.test("cms.backend.domain_monitor: frequency follows node access and validates values", async () => {
   const { db, app } = await testApp();
   try {
     await db.exec`INSERT INTO monitor_domain (domain, check_frequency, created, sort) VALUES (${"example.com"}, ${"disabled"}, ${1}, ${0})`;
@@ -55,7 +55,7 @@ Deno.test("cms.backend.domain-monitor: frequency follows node access and validat
   }
 });
 
-Deno.test("cms.backend.domain-monitor: one frequency call covers a whole selection", async () => {
+Deno.test("cms.backend.domain_monitor: one frequency call covers a whole selection", async () => {
   const { db, app } = await testApp();
   try {
     for (const domain of ["a.example", "b.example", "c.example"]) {
@@ -74,7 +74,7 @@ Deno.test("cms.backend.domain-monitor: one frequency call covers a whole selecti
   }
 });
 
-Deno.test("cms.backend.domain-monitor: detail renders current and historical values safely", async () => {
+Deno.test("cms.backend.domain_monitor: detail renders current and historical values safely", async () => {
   const { db, app } = await testApp();
   try {
     const result = {
@@ -154,7 +154,7 @@ Deno.test("cms.backend.domain-monitor: detail renders current and historical val
   }
 });
 
-Deno.test("cms.backend.domain-monitor: hostname and certificate name matching", () => {
+Deno.test("cms.backend.domain_monitor: hostname and certificate name matching", () => {
   assertEquals(normalizeDomain(" https://Example.COM/path?x=1 "), "example.com");
   assertEquals(normalizeDomain("sub.example.co.uk"), "sub.example.co.uk");
   assertEquals(normalizeDomain("xn--bcher-kva.example"), "xn--bcher-kva.example");
@@ -175,7 +175,7 @@ Deno.test("cms.backend.domain-monitor: hostname and certificate name matching", 
   assertEquals(covers("other.com", "example.com"), false);
 });
 
-Deno.test("cms.backend.domain-monitor: SPF and DMARC are read by value, not by presence", () => {
+Deno.test("cms.backend.domain_monitor: SPF and DMARC are read by value, not by presence", () => {
   assertEquals(spf(["v=spf1 include:_spf.example.com -all"]).policy, "-all");
   assertEquals(spf(["v=spf1 ip4:192.0.2.0/24 ~all"]).error, "");
   // a record that lets everyone send, and a pair of records receivers must discard entirely
@@ -194,7 +194,7 @@ Deno.test("cms.backend.domain-monitor: SPF and DMARC are read by value, not by p
   assertEquals(dmarc([]).pct, null);
 });
 
-Deno.test("cms.backend.domain-monitor: overview folds column groups per user", async () => {
+Deno.test("cms.backend.domain_monitor: overview folds column groups per user", async () => {
   const { db, app } = await testApp();
   try {
     await db.table("monitor_domain").insert({ domain: "example.com", created: 1 });
@@ -202,7 +202,7 @@ Deno.test("cms.backend.domain-monitor: overview folds column groups per user", a
       const ctx = await testContext({
         url: "http://qino.test/backend",
         app: { db },
-        set: { settings: { "cms.backend.domain-monitor": { cols: () => cols } } },
+        set: { settings: { "cms.backend.domain_monitor": { cols: () => cols } } },
       });
       return String(await render(testNode(app) as never, { ctx }));
     };
@@ -229,7 +229,7 @@ Deno.test("cms.backend.domain-monitor: overview folds column groups per user", a
   }
 });
 
-Deno.test("cms.backend.domain-monitor: row grades TTL, expiry and mail policy", () => {
+Deno.test("cms.backend.domain_monitor: row grades TTL, expiry and mail policy", () => {
   const day = 86400;
   const base = { domain: "example.com", checked: 1, online: true, status_code: 200 };
   const cell = (row: Record<string, unknown>) => String(rowHtml({ ...base, ...row } as never, new URL("http://qino.test/cms2/?cmspid=1488&lang=en")));
@@ -261,7 +261,7 @@ Deno.test("cms.backend.domain-monitor: row grades TTL, expiry and mail policy", 
   assertEquals(nasty.includes("&lt;script&gt;"), true);
 });
 
-Deno.test("cms.backend.domain-monitor: a change is what the last check found different", () => {
+Deno.test("cms.backend.domain_monitor: a change is what the last check found different", () => {
   const result = { status_code: 200, checked: 1000, dns_a: "192.0.2.1", response_time: 10 };
   // a first check compares against nothing, and the fields that move on their own do not count
   assertEquals(diffResults(undefined, result), []);
@@ -281,7 +281,7 @@ Deno.test("cms.backend.domain-monitor: a change is what the last check found dif
   assertEquals(cell(now).includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;domain=example.com"'), true);
 });
 
-Deno.test("cms.backend.domain-monitor: an expired certificate reads the same on every check", () => {
+Deno.test("cms.backend.domain_monitor: an expired certificate reads the same on every check", () => {
   // rustls puts the moment of the check into the message; the same dead cert must not look new
   const message = (now: number, ago: number) =>
     `client error (Connect): invalid peer certificate: certificate expired: verification time ${now} (UNIX), but certificate is not valid after 1619219664 (${ago} seconds ago)`;
@@ -291,7 +291,7 @@ Deno.test("cms.backend.domain-monitor: an expired certificate reads the same on 
   assertEquals(diffResults({ status_code: null, checked: 1, error: first }, { status_code: null, checked: 2, error: first }), []);
 });
 
-Deno.test("cms.backend.domain-monitor: the dashboard widget lists what changed last", async () => {
+Deno.test("cms.backend.domain_monitor: the dashboard widget lists what changed last", async () => {
   const { db, app } = await testApp();
   try {
     const node = testNode(app) as never;
@@ -310,7 +310,7 @@ Deno.test("cms.backend.domain-monitor: the dashboard widget lists what changed l
   }
 });
 
-Deno.test("cms.backend.domain-monitor: pruning keeps the checks that dated a state", async () => {
+Deno.test("cms.backend.domain_monitor: pruning keeps the checks that dated a state", async () => {
   const { db, app } = await testApp();
   try {
     const check = async (checked_at: number, result: Record<string, unknown>) =>

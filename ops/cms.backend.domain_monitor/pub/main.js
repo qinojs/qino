@@ -1,7 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { settings } from "@qino/pub/settings.js";
 
-cms.initNode("backend.domain-monitor", (el) => {
+cms.initNode("backend.domain_monitor", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
   const table = el.querySelector("table.-domains");
@@ -111,7 +111,7 @@ cms.initNode("backend.domain-monitor", (el) => {
   const setCols = (group, show) => {
     table?.classList.toggle("-no-" + group, !show);
     const hidden = [...el.querySelectorAll("[data-col]")].filter((box) => !box.checked).map((box) => box.dataset.col);
-    settings["cms.backend.domain-monitor"].cols(hidden.join(","));
+    settings["cms.backend.domain_monitor"].cols(hidden.join(","));
   };
 
   el.addEventListener("change", (event) => {

@@ -1,5 +1,5 @@
 {
-  "name": "cms.backend.domain-monitor",
+  "name": "cms.backend.domain_monitor",
   "description": "Monitors domain, DNS, TLS, HTTP, and mail health.",
   "dependencies": [
     "cms.backend",

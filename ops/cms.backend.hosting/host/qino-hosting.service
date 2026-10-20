@@ -1,0 +1,16 @@
+[Unit]
+Description=Qino hosting helper, the root side of cms.backend.hosting
+After=network.target
+
+[Service]
+# root, but the socket belongs to the group of the managing instance: only it may talk to the helper
+Group=<manager>
+UMask=0007
+RuntimeDirectory=qino-hosting
+RuntimeDirectoryMode=0750
+ExecStart=/usr/local/bin/deno run -A /usr/local/lib/qino-hosting/helper.ts
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,4 @@
-[qcms-mod="backend.domain-monitor"] {
+[qcms-mod="backend.domain_monitor"] {
   &.-detail { align-items: flex-start; }
   &.-detail pre { margin: .5rem 0 0; max-width: 40rem; overflow: auto; white-space: pre-wrap; }
 

@@ -1,0 +1,19 @@
+{
+  "name": "cms.backend.hosting",
+  "description": "Lists the projects of a server with state, resources, ports and domains, through a root helper.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "README.md",
+    "host/helper.ts",
+    "host/qino-hosting.service",
+    "lib/helper.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}
