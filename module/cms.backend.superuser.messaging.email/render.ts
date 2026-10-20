@@ -146,6 +146,7 @@ export async function inbound(node: Node): Promise<HtmlString> {
     <span class=u2-badge>${receiving ? t`polling` : t`off`}</span></div>
   <form class=-body data-settings>
     <div class="u2-table -Fields -NoSideGaps">${fields(own, values)}</div>
+    <small>${t`Imports every mail in the mailbox, read ones too, and leaves its flags unchanged.`}</small>
     <details style="margin-block:.5em; border:0">
       <summary>${t`Advanced`}</summary>
       <div class="u2-table -Fields">${fields(own, values, true)}</div>

@@ -7,6 +7,9 @@ import { spamOf } from "./spam.ts";
 
 import type { App } from "@qino/qino";
 
+/** Tries before a mail that keeps failing is skipped. */
+const FAILS = 3;
+
 /** What the MIME parser hands back — only the parts this module reads. */
 type Parsed = {
   subject?: string;
@@ -24,7 +27,7 @@ type Parsed = {
  * Import new mails into the journal without changing mailbox flags.
  *
  * Resolves with the number processed; 0 if disabled. A probe only connects and opens the mailbox.
- * The cursor advances only after a successful import; receipts survive deletion of journal entries.
+ * The cursor advances with each import; receipts survive deletion of journal entries.
  */
 export async function receive(app: App, { limit = 50, probe }: { limit?: number; probe?: boolean } = {}): Promise<number> {
   const config = await inbound(app);
@@ -46,41 +49,44 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
   try {
     const lock = await client.getMailboxLock(config.mailbox);
     try {
-      if (probe || limit <= 0) return 0;
+      if (probe) return 0;
       const mailbox = client.mailbox;
       if (!mailbox) throw new Error("Inbound mailbox is not open");
       const id = await sha256hex(JSON.stringify([config.host, config.port, config.user, config.mailbox]));
       const validity = String(mailbox.uidValidity);
-      const table = app.db.table("email_inbox");
-      const cursor = await app.db.row`SELECT uid, validity FROM email_inbox WHERE id = ${id}`;
-      const uid = cursor?.validity === validity ? Number(cursor.uid) : 0;
-      if (!cursor) await table.insert({ id, validity, uid });
+      const inbox = app.db.table("email_inbox");
+      const cursor = await app.db.row`SELECT uid, validity, failed FROM email_inbox WHERE id = ${id}`;
+      const same = cursor?.validity === validity;
+      let uid = same ? Number(cursor.uid) : 0, failed = same ? Number(cursor.failed) : 0;
       const last = mailbox.uidNext - 1;
       if (uid >= last) return 0;
       const uids = await client.search({ uid: `${uid + 1}:${last}` }, { uid: true });
       if (!uids || !uids.length) return 0;
-      uids.sort((a, b) => a - b);
       // No other IMAP command may run while a fetch streams — finish fetching before importing.
-      const messages = await client.fetchAll(uids.slice(0, limit), { uid: true, source: true }, { uid: true });
-      for (const message of messages.sort((a, b) => a.uid - b.uid)) {
+      const batch = uids.sort((a, b) => a - b).slice(0, limit);
+      const messages = await client.fetchAll(batch, { uid: true, source: true }, { uid: true });
+      for (const { uid: next, source } of messages.sort((a, b) => a.uid - b.uid)) {
         try {
-          if (!message.source) throw new Error("Inbound message has no source");
-          const mail = await simpleParser(message.source);
-          // The Message-ID survives renumbering; without one only identical source can be recognized.
+          const mail = await simpleParser(source!);
+          // The Message-ID survives renumbering; without one only identical source is recognized.
           const receipt = mail.messageId
-            ? await sha256hex(`id:${mail.messageId}`)
-            : await sha256hex(`source:${new Uint8Array(await crypto.subtle.digest("SHA-256", message.source.slice())).toHex()}`);
+            ? await sha256hex(mail.messageId)
+            : new Uint8Array(await crypto.subtle.digest("SHA-256", source!.slice())).toHex();
+          // Judged before the transaction: on SQLite it holds every other query.
+          const write = !await taken(app, receipt, mail.messageId) && await journal(app, mail, config.address);
           await app.db.transaction(async () => {
-            if (!await app.db.one`SELECT id FROM email_import WHERE id = ${receipt}`) {
-              await journal(app, mail, config.address);
-              await app.db.table("email_import").insert({ id: receipt });
-            }
-            await table.update(id, { validity, uid: message.uid });
+            if (write) await write();
+            await app.db.table("email_receipt").ensure({ id: receipt });
+            await inbox.ensure({ id, validity, uid: next, failed: 0 });
           });
-          done++;
+          uid = next, failed = 0, done++;
         } catch (e) {
-          console.error("[email] inbound message failed —", e);
-          break;
+          // A mail that keeps failing is skipped, or it would block the mailbox for good.
+          const skip = ++failed >= FAILS;
+          console.error(`[email] inbound mail ${next} failed${skip ? ", skipped" : ""} —`, e);
+          if (skip) uid = next, failed = 0;
+          await inbox.ensure({ id, validity, uid, failed });
+          if (!skip) break;
         }
       }
     } finally {
@@ -92,16 +98,19 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
   return done;
 }
 
-/** One incoming mail as a journal entry, tied to the user the address belongs to. */
+/** Taken before: by its receipt, or as a journaled Message-ID — the far side's name for it. */
+const taken = async (app: App, receipt: string, messageId?: string) =>
+  !!(await app.db.one`SELECT id FROM email_receipt WHERE id = ${receipt}` || messageId && await app.db.one`
+    SELECT d.id FROM message_delivery d JOIN message m ON m.id = d.message_id
+    WHERE d.external_id = ${messageId} AND m.channel = ${"email"}`);
+
+/** One incoming mail as a journal entry, tied to the user the address belongs to; resolves with its write. */
 async function journal(app: App, mail: Parsed, to: string) {
-  // the Message-ID is the far side's name for it: a mail already journaled is not taken twice
-  if (mail.messageId && await app.db.one`SELECT d.id FROM message_delivery d JOIN message m ON m.id = d.message_id
-    WHERE d.external_id = ${mail.messageId} AND m.channel = ${"email"}`) return;
   const sender = addressOf(mail.from?.value?.[0] ?? "");
   const usrId = sender ? await contactOwner(app.db, "email", sender.address) : undefined;
   const time = mail.date ? Math.floor(mail.date.getTime() / 1000) : unixTime();
   const spam = await spamOf(app, mail, { from: sender?.address, usrId, to });
-  await record(app, {
+  return () => record(app, {
     channel: "email",
     direction: "in",
     msg: {

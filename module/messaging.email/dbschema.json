@@ -6,13 +6,14 @@
         "properties": {
           "id": { "type": "string", "maxLength": 64, "x-index": "primary" },
           "validity": { "type": "string", "maxLength": 32 },
-          "uid": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+          "uid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+          "failed": { "type": "integer", "default": 0, "description": "Failed tries of the next mail" }
         },
         "required": ["id", "validity", "uid"]
       }
     },
-    "email_import": {
-      "description": "Permanent hashes of imported Message-IDs, or raw source when missing; independent of journal deletion",
+    "email_receipt": {
+      "description": "Hash of each imported mail's Message-ID, or of its source; outlives the journal entry",
       "additionalProperties": {
         "properties": {
           "id": { "type": "string", "maxLength": 64, "x-index": "primary" }
