@@ -51,6 +51,7 @@ Deno.test("a user pays what is open on their invoice, but changes nothing on it"
       await assertRejects(() => asAnna("POST", `/invoice/${id}/${step}`), Error, "Access denied");
     }
     await assertRejects(() => asAnna("PATCH", `/invoice/${id}`, { text: "x" }), Error, "Access denied");
+    await app.settings.core.url("https://not-yet-in-dns.test/"); // the link is where one asked, not core.url
     const pdf = await asUser(app, anna, () => invoke(api, "GET", `/invoice/${id}/pdf`)) as { url: string };
     assertEquals(pdf.url.startsWith("https://shop.test/"), true);
     assertEquals(new URL(pdf.url).searchParams.has("sig"), true); // signed: it needs no other right
