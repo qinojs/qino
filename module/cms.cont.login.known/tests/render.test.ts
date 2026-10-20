@@ -20,7 +20,8 @@ Deno.test("known accounts distinguish remembered logins from those needing a pas
   } as unknown as Node;
   const out = String(await requestStorage.run(ctx, () => cms.node.render(node, { ctx })));
   assertEquals(out.match(/<form /g)?.length, 2);
-  assertEquals(out.match(/name=pw /g)?.length, 1);
+  assertEquals(out.match(/name=pw type=password autocomplete=current-password>/g)?.length, 1);
+  assertEquals(out.includes('<input name=email type=text value="known@example.test" autocomplete=username readonly hidden>'), true);
   assertEquals(out.includes("saved&quot;&gt;&lt;script&gt;x&lt;/script&gt;"), true);
   assertEquals(out.includes("<script>"), false);
   assertEquals(out.includes('name=csrfToken value="' + ctx.csrfToken + '"'), true);

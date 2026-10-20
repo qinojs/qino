@@ -57,8 +57,9 @@ Deno.test("cms.cont.login.password: render shows login form for guests", async (
 
   const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any, { ctx })));
   assertEquals(out.includes("<form method=post>"), true);
-  assertEquals(out.includes("<input name=email type=text required autofocus>"), true);
+  assertEquals(out.includes("<input name=email type=text autocomplete=username autocapitalize=none required autofocus>"), true);
   assertEquals(out.includes('name=csrfToken value="tok"'), true);
+  assertEquals(out.includes("<input name=pw type=password autocomplete=current-password required>"), true);
   assertEquals(out.includes("<input name=save_login type=checkbox value=1>"), true);
   assertEquals(out.includes("[user]"), true);
   assertEquals(out.includes("[pw]"), true);

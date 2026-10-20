@@ -37,9 +37,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         : ""
     }
   ${email}
-  <input name=email type=hidden value="${email}">
+  <input name=email type=text value="${email}" autocomplete=username readonly hidden>
   <input type=hidden name=csrfToken value="${csrfToken}">
-  ${showPwField ? html`<input name=pw type=password>` : ""}
+  ${showPwField ? html`<input name=pw type=password autocomplete=current-password>` : ""}
   <button name=core_login>${app.t`Log in`}</button>
 </form>\n`);
   }

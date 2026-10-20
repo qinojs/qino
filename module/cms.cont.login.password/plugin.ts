@@ -61,7 +61,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
 ${errorHtml}
   <form method=post>
   <input type=hidden name=csrfToken value="${csrfToken}">
-  ${fixUser ? html`<input type=hidden name=email value="${fixUser}">` : ""}
+  ${fixUser ? html`<input name=email type=text value="${fixUser}" autocomplete=username readonly hidden>` : ""}
   <table class="u2-table -Flex -NoSideGaps">
     ${
       !fixUser
@@ -70,7 +70,7 @@ ${errorHtml}
           tag: "div",
           initial: { en: "E-Mail:" },
         })}
-      <td><input name=email type=text required${
+      <td><input name=email type=text autocomplete=username autocapitalize=none required${
           noAutofocus ? "" : " autofocus"
         }>`
         : ""
@@ -80,7 +80,7 @@ ${errorHtml}
       tag: "div",
       initial: { en: "Password:" },
     })}
-      <td><input name=pw type=password required>
+      <td><input name=pw type=password autocomplete=current-password required>
     ${
       showSaveLogin
         ? html.async`<tr class=-save_login>
