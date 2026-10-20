@@ -2,11 +2,12 @@ import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 import { nameOf } from "@qino/qino/fin";
-import { billable, blockers, domains, get, open, registrars, running, subscriptionsBy } from "@qino/qino/fin.hosting";
+import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, registrars, running, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+import type { Kind } from "@qino/qino/fin.hosting";
 
 const selected = (yes: boolean) => yes ? html.raw(" selected") : "";
 
@@ -29,37 +30,50 @@ function aliasSelect(all: Row[], current: unknown, except = "") {
     html`<option${selected(d.name === current)}>${d.name}`)}</select>`;
 }
 
+/** What a subscription is for, in a word: domain, hosting, or other. */
+const kindWord = (app: App, kind: Kind | undefined) =>
+  kind === "domain" ? app.t`Domain` : kind === "hosting" ? app.t`Hosting` : app.t`Other`;
+
 /** Per period: "CHF 240.00 / year". */
 const price = (app: App, s: Row) =>
   html.async`${money(s.amount, s.currencyCode)} / ${Number(s.count) > 1 ? `${s.count} ` : ""}${s.unit === "month" ? app.t`month` : app.t`year`}`;
 
-/** What a domain is billed by; or — one we registered and bill (`billable`) without a running
- *  subscription — that it is not; or that it is free. */
+/** What a domain is billed by, each subscription with what it is for; what we bill for (`billable`)
+ *  without a running subscription for it; what is free. */
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
-  if (live.length) return html.async`${live.map((s) => html.async`<div>${s.label} <small>${price(app, s)}</small></div>`)}`;
-  if (d.free) return badge(app.t`free`);
-  return billable(d) ? badge(app.t`not billed`, "--orange") : "";
+  const unbilled = billable(d).filter((kind) => !live.some((s) => kindOf(s) === kind));
+  return html.async`${live.map((s) => html.async`<div><small>${kindWord(app, kindOf(s))}</small> ${s.label} <small>${price(app, s)}</small></div>`)}
+    ${unbilled.map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}
+    ${KINDS.filter((kind) => d[`${kind}_free`]).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`free`}`))}`;
 }
 
-const freeBox = (app: App, checked: unknown) =>
-  html.async`<label title="${app.t`Nothing is billed for it: ours, or given`}"><input type=checkbox name=free value=1${checked ? html.raw(" checked") : ""}> ${app.t`free`}</label>`;
+const checkbox = (name: string, label: string | Promise<string>, title: string | Promise<string>, checked: unknown) =>
+  html.async`<label title="${title}"><input type=checkbox name=${name} value=1${checked ? html.raw(" checked") : ""}> ${label}</label>`;
 
-/** What is still to do — domains we registered without a customer, or a customer's without a
- *  subscription —, and the registrars' sync; nothing but the sync when all is done. */
+/** The fields of a domain: where it is registered and hosted, each free or not; an alias has no host. */
+const placeFields = (app: App, d: Row | undefined) => html.async`
+  ${app.t`Registrar`} <input name=registrar value="${d?.registrar ?? ""}">
+  <span></span> ${checkbox("domainFree", app.t`Domain free`, app.t`Its registration is billed for nothing: ours, or given`, d?.domain_free)}
+  ${d?.alias_of ? "" : html.async`${app.t`Host`} <input name=host value="${d?.host ?? ""}">
+  <span></span> ${checkbox("hostingFree", app.t`Hosting free`, app.t`Its hosting is billed for nothing: ours, or given`, d?.hosting_free)}`}`;
+
+/** What is still to do — domains we bill for without a customer, or a customer's without a
+ *  subscription for what we bill —, and the sources' sync; nothing but the sync when all is done. */
 async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const [todo, names] = await Promise.all([open(app), Promise.resolve(registrars(app).map((r) => r.name))]);
+  const [todo, from] = await Promise.all([open(app), Promise.all([registrars(app), hosts(app)])]);
+  const names = from.flat().map((s) => s.name);
   return html.async`<div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`To do`} <small>${todo.length}</small>
       ${names.length ? html.async`<button data-sync style="margin-left:auto">${t`Sync`} <small>${names.join(", ")}</small></button>` : ""}</div>
-    ${todo.length ? html.async`<table class=u2-table>${todo.map(({ domain, missing }) => html.async`<tr>
+    ${todo.length ? html.async`<table class=u2-table>${todo.map(({ domain, missing, kind }) => html.async`<tr>
       <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
-      <td>${missing === "customer" ? badge(t`no customer`, "--red") : badge(t`not billed`, "--orange")}
-      <td>${domain.registrar}
-      <td>${domain.expires ? html.async`<small>${t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`)}
-    </table>` : html.async`<p>${t`Every domain we registered has a customer and is billed.`}`}
+      <td>${missing === "customer" ? badge(t`no customer`, "--red") : badge(html.async`${kindWord(app, kind)} ${t`not billed`}`, "--orange")}
+      <td>${kind === "hosting" ? domain.host : domain.registrar}
+      <td>${kind !== "hosting" && domain.expires ? html.async`<small>${t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`)}
+    </table>` : html.async`<p>${t`Every domain we register or host has a customer and is billed.`}`}
   </div>`;
 }
 
@@ -67,7 +81,7 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
 const nameCell = (pageUrl: string, d: Row) =>
   html`${d.alias_of ? html`<small>↳</small> ` : ""}<a href="${backend.toUrl(pageUrl, { domain: d.name })}">${d.name}</a>`;
 
-/** All domains with owner, aliases and what they are billed by; a new one. */
+/** All domains with owner, registrar, host and what they are billed by; a new one. */
 async function overview(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
@@ -81,7 +95,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   ${openCard(node, pageUrl)}
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
     <div class=-head>${t`Domains`} <small>${rows.length}</small>
-      <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias or registrar sync?`}">${t`Remove unlinked`}</button></div>
+      <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias, hosting or registrar sync?`}">${t`Remove unlinked`}</button></div>
     <form>
       <input type=search name=search value="${search}" placeholder="${t`Domain`}">
       ${customerSelect(users, usr, t`All customers`, "usr")}
@@ -94,12 +108,14 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
         <th>${t`Customer`}
         <th>${t`Registrar`}
         <th>${t`until`}
+        <th>${t`Host`}
         <th>${t`Billed by`}
       <tbody>${rows.map((d) => html.async`<tr>
         <td style="white-space:nowrap">${nameCell(pageUrl, d)}
         <td>${d.usr_id == null ? "" : rowLink(node, "cms.backend.superuser.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)))}
         <td>${d.registrar}
         <td style="white-space:nowrap">${d.expires ? String(d.expires).slice(0, 10) : ""}
+        <td>${d.host}
         <td>${billing(app, d, subs.get(String(d.name)) ?? [])}`)}
     </table></div>` : html.async`<p>${t`No domains yet`}`}
   </div>
@@ -110,8 +126,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
         ${t`Domain`} <input name=name required placeholder="example.ch">
         ${t`Customer`} ${customerSelect(users, usr, "—")}
         ${t`Alias of`} ${aliasSelect(all, "")}
-        ${t`Registrar`} <input name=registrar>
-        <span></span> ${freeBox(app, false)}
+        ${placeFields(app, undefined)}
       </u2-fields>
       <button>${t`Add`}</button>
     </form>
@@ -119,7 +134,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
 </div>`;
 }
 
-/** One domain: owner, alias, registrar; its aliases; the subscriptions it is billed by; removing it. */
+/** One domain: owner, alias, registrar, host; its aliases; the subscriptions it is billed by; removing it. */
 async function detail(node: Node, name: string): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
@@ -141,12 +156,13 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
   const owner = users.find((u) => Number(u.id) === usrId);
   const monitorUrl = monitor({ domain: d.name });
   const reasons: Record<string, Promise<string>> = {
-    synced: t`The registrar's sync brings it back.`,
+    synced: t`A sync brings it back.`,
     aliases: t`It has aliases.`,
     running: t`Subscriptions still run for it.`,
     unpaid: t`An invoice of its subscriptions is unpaid.`,
   };
   const held = (await Promise.all(why.map((w) => reasons[w]))).join(" ");
+  const kinds = d.alias_of ? ["domain" as const] : KINDS;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Domains`}</a> › ${d.name}</div>
@@ -154,8 +170,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
       <u2-fields>
         ${d.alias_of ? "" : html.async`${t`Customer`} ${customerSelect(users, d.usr_id, "—")}`}
         ${t`Alias of`} ${aliasSelect(all, d.alias_of, String(d.name))}
-        ${t`Registrar`} <input name=registrar value="${d.registrar}">
-        <span></span> ${freeBox(app, d.free)}
+        ${placeFields(app, d)}
       </u2-fields>
       ${d.expires ? html.async`<p><small>${t`Registered until`} ${String(d.expires).slice(0, 10)}</small>` : ""}
       <button>${t`Save`}</button>
@@ -173,6 +188,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
   <div class=u2-card style="flex:0 1 auto" data-domain="${d.name}">
     <div class=-head>${t`Billed by`}</div>
     ${subs.length ? html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
+      <td>${kindWord(app, kindOf(s))}
       <td>${rowLink(node, "cms.backend.superuser.fin.subscription", "subscription", s.id, String(s.label))}
       <td style="text-align:end">${price(app, s)}
       <td>${running(s) ? s.next : badge(t`ended`)}
@@ -180,6 +196,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     </table>` : html.async`<p>${t`No subscriptions yet`}`}
     ${free.length ? html.async`<form data-link="${d.name}">
       <select name=subscription>${free.map((s) => html`<option value="${s.id}">${s.label}`)}</select>
+      <select name=kind>${kinds.map((k) => html.async`<option value=${k}>${kindWord(app, k)}`)}<option value="">${t`Other`}</select>
       <button>${t`Link`}</button>
     </form>` : ""}
   </div>

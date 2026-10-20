@@ -1,6 +1,6 @@
 # fin.hosting.infomaniak
 
-The domains registered at Infomaniak, as a registrar of [fin.hosting](../fin.hosting/README.md): its
+The domains registered at Infomaniak, as a registrar (`domainRegistrars`) of [fin.hosting](../fin.hosting/README.md): its
 daily job takes them over — new ones show up to be assigned to a customer, ones moved away are no
 longer billed, each with the day its registration ends.
 

@@ -1,14 +1,17 @@
 import { Access, s } from "@qino/qino";
 import { visible, whose, WHOSE } from "@qino/qino/fin";
 
-import { domains, get, link, remove, save, subscriptionsBy, unlink } from "./mod.ts";
+import { domains, get, KINDS, link, remove, save, subscriptionsBy, unlink } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params, Row } from "@qino/qino";
 
 const VALUES = {
   usrId: s.optional(s.number().describe("Whose it is")),
   aliasOf: s.optional(s.string().describe("The domain it is an alias of; empty: none")),
-  registrar: s.optional(s.string()),
+  registrar: s.optional(s.string().describe("Where we registered it; empty: the customer keeps it elsewhere")),
+  host: s.optional(s.string().describe("Where we host it; empty: not hosted by us")),
+  domainFree: s.optional(s.boolean().describe("Its registration is billed for nothing")),
+  hostingFree: s.optional(s.boolean().describe("Its hosting is billed for nothing")),
 };
 
 /** A user reads their own domains; keeping them is a superuser's. */
@@ -26,7 +29,7 @@ export const api: ApiTree = {
       },
     },
     post: {
-      description: "Add a domain, or change one: owner, alias, registrar; its name comes back",
+      description: "Add a domain, or change one: owner, alias, registrar, host; its name comes back",
       access: Access.SUPERUSER,
       input: s.object({ name: s.string().describe("example.ch"), ...VALUES }),
       execute: ({ name, ...values }: Params, ctx: Ctx) => save(ctx.app, String(name), values as Parameters<typeof save>[2]),
@@ -46,7 +49,7 @@ export const api: ApiTree = {
         },
       },
       delete: {
-        description: "Remove it — refused while a registrar syncs it, or it has aliases, running subscriptions or unpaid invoices",
+        description: "Remove it — refused while a sync brings it back, or it has aliases, running subscriptions or unpaid invoices",
         access: Access.SUPERUSER,
         execute: async ({ domain }: Params, ctx: Ctx) => {
           await remove(ctx.app, String((domain as Row).name));
@@ -55,11 +58,11 @@ export const api: ApiTree = {
       },
       link: {
         post: {
-          description: "Bill a subscription of the domain's owner for it",
+          description: "Bill a subscription of the domain's owner for it: its registration, its hosting, or else",
           access: Access.SUPERUSER,
-          input: s.object({ subscription: s.number() }),
-          execute: async ({ domain, subscription }: Params, ctx: Ctx) => {
-            await link(ctx.app, String((domain as Row).name), Number(subscription));
+          input: s.object({ subscription: s.number(), kind: s.optional(s.enum(KINDS).describe("domain or hosting; none: anything else")) }),
+          execute: async ({ domain, subscription, kind }: Params, ctx: Ctx) => {
+            await link(ctx.app, String((domain as Row).name), Number(subscription), kind as Parameters<typeof link>[3]);
             return { ok: true };
           },
         },

@@ -1,7 +1,7 @@
 {
   "properties": {
     "fin_hosting_domain": {
-      "description": "A customer's domain: what their hosting, domain and service subscriptions are for",
+      "description": "A domain: where it is registered and hosted, whose it is; what their domain, hosting and service subscriptions are for",
       "additionalProperties": {
         "properties": {
           "name": {
@@ -29,17 +29,27 @@
           "registrar": {
             "type": "string",
             "maxLength": 100,
-            "description": "Where we registered it — then it is billed, unless free. Empty: the customer keeps it elsewhere"
+            "description": "Where we registered it — then its registration is billed, unless free. Empty: the customer keeps it elsewhere"
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Where we host it — then the hosting is billed, unless free. Empty: not hosted by us. An alias never is"
           },
           "expires": {
             "type": "string",
             "format": "date",
             "description": "When its registration ends, as the registrar says"
           },
-          "free": {
+          "domain_free": {
             "type": "boolean",
             "default": false,
-            "description": "Nothing is billed for it: ours, or given"
+            "description": "Its registration is billed for nothing: ours, or given"
+          },
+          "hosting_free": {
+            "type": "boolean",
+            "default": false,
+            "description": "Its hosting is billed for nothing: ours, or given"
           },
           "created": {
             "type": "integer"

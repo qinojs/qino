@@ -22,6 +22,7 @@
     "fin.bank.camt": {},
     "fin.hosting": {},
     "fin.hosting.infomaniak": {},
+    "fin.hosting.plesk": {},
     "fin.invoice": {},
     "fin.invoice.reminder": {},
     "fin.payment": {},

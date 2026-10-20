@@ -13,6 +13,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 }
 
 export const cron = {
-  // what the registrars hold: new domains show up to be assigned, moved-away ones are no longer billed
+  // what the registrars and hosts hold: new domains show up to be assigned, moved-away ones are no longer billed
   sync: { every: "day", at: { hour: 5 }, jitter: 60 * 60, run: (app: App) => sync(app).then(() => {}) },
 } satisfies Jobs;

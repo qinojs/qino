@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 import { addContact, fs, sql, unixTime } from "@qino/qino";
 import { attach, create, issue, refOf, setSent } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
-import { link, normalize, save } from "@qino/qino/fin.hosting";
+import { kindIn, link, normalize, save } from "@qino/qino/fin.hosting";
 
 import type { App } from "@qino/qino";
 
@@ -155,7 +155,8 @@ async function subscriptions(app: App, data: Record<string, Rows>, usrs: Map<num
 /**
  * The domains of `managed_domains` and those subscriptions are titled after ("Hosting example.ch"):
  * whose they are follows from the subscriptions — the newest where they disagree —, which are then
- * linked to them. Free ones have no subscription, so no owner either.
+ * linked to them, for what their title says ("Domain …", "Hosting …", else anything). Free ones —
+ * PHP's free is the whole domain — have no subscription, so no owner either.
  */
 async function domains(app: App, data: Rows, abos: Rows, usrs: Map<number, number>, subs: Map<number, number>, report: string[]) {
   const domainOf = (title: unknown) => normalize(String(title ?? "").trim().split(/\s+/).pop() ?? "");
@@ -171,12 +172,13 @@ async function domains(app: App, data: Rows, abos: Rows, usrs: Map<number, numbe
   for (const raw of data) if (raw.domain && !normalize(String(raw.domain))) report.push(`domain "${raw.domain}": not a domain, left out`);
   const names = new Set([...registrars.keys(), ...owners.keys()].filter(Boolean));
   for (const name of names) {
-    await save(app, name, { usrId: owners.get(name) ?? null, registrar: registrars.get(name) || null, free: free.has(name) });
+    await save(app, name, { usrId: owners.get(name) ?? null, registrar: registrars.get(name) || null,
+      domainFree: free.has(name), hostingFree: free.has(name) });
   }
   for (const abo of abos) {
     const name = domainOf(abo.title), id = subs.get(Number(abo.id));
     if (!name || !id) continue;
-    await link(app, name, id).catch((e) => report.push(`subscription ${abo.id} (${abo.title}): ${e.message}`));
+    await link(app, name, id, kindIn(String(abo.title))).catch((e) => report.push(`subscription ${abo.id} (${abo.title}): ${e.message}`));
   }
   return names.size;
 }
