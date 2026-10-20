@@ -3,7 +3,7 @@ import { backend } from "@qino/qino/cms.backend";
 import {
   amounts, badge, direction, money, refLink, rowLink, status,
 } from "@qino/qino/cms.backend.superuser.fin";
-import { mainCurrency, nameOf } from "@qino/qino/fin";
+import { addMonths, mainCurrency, nameOf, today } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString } from "@qino/qino";
@@ -28,11 +28,18 @@ async function overview(node: Node, url: URL) {
     exact: ["u.id"],
   });
   const role = q("role");
-  const having = role === "customer"
-    ? sql`HAVING SUM(CASE WHEN i.direction = 'out' THEN 1 ELSE 0 END) > 0`
-    : role === "supplier"
-    ? sql`HAVING SUM(CASE WHEN i.direction = 'in' THEN 1 ELSE 0 END) > 0`
-    : sql``;
+  const credit = app.modules.linked("fin.payment.credit");
+  // current unless asked for former ones too, or searched: something open, or an invoice within two years
+  const current = q("former") || q("search") ? null : sql`(MAX(i.date) >= ${addMonths(today(), -24)}
+    OR SUM(CASE WHEN i.status = 'open' THEN 1 ELSE 0 END) > 0${credit
+      ? sql` OR u.id IN (SELECT usr_id FROM payment_credit GROUP BY usr_id HAVING SUM(amount) <> 0)`
+      : sql``})`;
+  const conditions = [
+    role === "customer" ? sql`SUM(CASE WHEN i.direction = 'out' THEN 1 ELSE 0 END) > 0` : null,
+    role === "supplier" ? sql`SUM(CASE WHEN i.direction = 'in' THEN 1 ELSE 0 END) > 0` : null,
+    current,
+  ].filter((c) => c !== null);
+  const having = conditions.length ? sql`HAVING ${sql.join(conditions, " AND ")}` : sql``;
   const rows = await app.db.query`
     SELECT u.id, u.given_name, u.family_name, u.organization, u.address_locality,
       SUM(CASE WHEN i.direction = 'out' THEN 1 ELSE 0 END) AS issued,
@@ -49,7 +56,7 @@ async function overview(node: Node, url: URL) {
       WHERE status = 'open' AND ${sql.in("usr_id", ids)} GROUP BY usr_id, direction, currency ORDER BY currency`
     : [];
   // what users hold as credit, where credit is kept
-  const credits = ids.length && app.modules.linked("fin.payment.credit")
+  const credits = ids.length && credit
     ? await app.db.query`SELECT usr_id, currency, SUM(amount) AS amount FROM payment_credit
       WHERE ${sql.in("usr_id", ids)} GROUP BY usr_id, currency HAVING SUM(amount) <> 0 ORDER BY currency`
     : undefined;
@@ -64,11 +71,14 @@ async function overview(node: Node, url: URL) {
       <input type=search name=search value="${q("search")}" placeholder="${t`Name, place, id`}">
       <select name=role>${option("", t`All`)}${option("customer", t`Customers`)}${
     option("supplier", t`Suppliers`)}</select>
+      <label title="${t`Without anything open and without an invoice for two years`}"><input type=checkbox name=former value=1${
+    q("former") ? html.raw(" checked") : ""}> ${t`former too`}</label>
       <button>${t`Filter`}</button>
     </form>
     ${rows.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">
       <thead><tr>
+        <th>#
         <th>${t`Name`}
         <th>${t`Place`}
         <th>${t`Role`}
@@ -77,7 +87,8 @@ async function overview(node: Node, url: URL) {
         <th>${t`Payable`}
         ${credits ? html.async`<th>${t`Credit`}` : ""}
       <tbody>${rows.map((row) => html.async`<tr u2-href>
-        <td><a href="${backend.toUrl(pageUrl, { usr: row.id })}">${nameOf(row)}</a> <small>#${row.id}</small>
+        <td><a href="${backend.toUrl(pageUrl, { usr: row.id })}">${row.id}</a>
+        <td>${nameOf(row)}
         <td>${row.address_locality}
         <td>${Number(row.issued) ? badge(t`customer`, "--blue") : ""} ${
       Number(row.received) ? badge(t`supplier`, "--orange") : ""}

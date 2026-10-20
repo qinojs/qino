@@ -1,4 +1,5 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { today } from "@qino/qino/fin";
 import { create, issue } from "@qino/qino/fin.invoice";
 
 import api from "../nodeApi.ts";
@@ -51,5 +52,26 @@ Deno.test("the page speaks with the texts of the namespace fin", async () => {
     const page = String(await inRequest(app, "http://qino.test/backend/parties", () =>
       app.languages.with({ lang: "de" }, () => cms.node.render(node))));
     assertStringIncludes(page, "Kunden &amp; Lieferanten");
+  });
+});
+
+Deno.test("the list shows current parties; former ones on request or when searched for", async () => {
+  await withFinApp(["fin.payment", "fin.invoice"], async (app) => {
+    const node = backendNode(app, "/backend/parties");
+    const base = "http://qino.test/backend/parties";
+    const party = (organization: string) =>
+      app.db.table("usr").insert({ active: 0, pw: "", superuser: 0, given_name: "", family_name: "", organization }).then(Number);
+    const lines = [{ name: "Hosting", price: 24000 }];
+    const [old, open, recent] = [await party("Alt AG"), await party("Offen AG"), await party("Neu AG")];
+    for (const [usrId, date] of [[old, "2019-03-01"], [open, "2019-03-01"], [recent, today()]] as const) {
+      const id = Number((await issue(app, await create(app, { currency: "CHF", date, lines, usrId })))?.id);
+      if (usrId !== open) await app.db.exec`UPDATE invoice SET status = 'paid', paid = total WHERE id = ${id}`;
+    }
+    const list = (query = "") => inRequest(app, base + query, () => render(node)).then(String);
+    const page = await list();
+    assert(page.includes("Offen AG") && page.includes("Neu AG") && !page.includes("Alt AG"));
+    assertStringIncludes(page, `<td><a href="/backend/parties?usr=${recent}">${recent}</a>`);
+    assertStringIncludes(await list("?former=1"), "Alt AG");
+    assertStringIncludes(await list("?search=Alt"), "Alt AG");
   });
 });
