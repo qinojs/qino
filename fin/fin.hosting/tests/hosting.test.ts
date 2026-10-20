@@ -1,9 +1,9 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
-import { cancel, subscribe, update } from "@qino/qino/fin.subscription";
+import { cancel, plan, subscribe, update } from "@qino/qino/fin.subscription";
 
 import { withFinApp } from "../../tests/app.ts";
-import { adopt, billable, blockers, domains, get, link, normalize, open, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
+import { adopt, billable, blockers, domains, get, kindOf, link, normalize, open, parseRef, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -11,6 +11,8 @@ const FIN = ["fin.payment", "fin.invoice", "fin.subscription", "fin.hosting"];
 
 const customer = async (app: App, name: string) =>
   Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, given_name: name, family_name: "Muster" }));
+
+const planOf = (app: App, name: string) => plan(app, { name, price: 2500, currency: "CHF", unit: "year" });
 
 const hosting = (app: App, usrId: number, name = "Hosting") =>
   subscribe(app, { usrId, name, price: 24000, currency: "CHF", start: "2026-01-01" });
@@ -116,10 +118,14 @@ Deno.test("fin.hosting: a subscription named after a domain is for it — domain
     const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
     const named = await hosting(app, anna, "Hosting Neu.CH"); // subscribe fires subscription:save
     assertEquals((await get(app, "neu.ch"))?.usr_id, anna);
-    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${named}`, refOf("neu.ch"));
-    // a plan's subscription: its name is the detail
-    const detail = await hosting(app, anna, "plan.ch");
-    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${detail}`, refOf("plan.ch"));
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${named}`, refOf("neu.ch", "hosting"));
+    // a plan's subscription: its name is the detail, the plan's tells what for
+    const plan = await planOf(app, "Domain .ch");
+    const detail = Number(await subscribe(app, { usrId: anna, planId: plan, name: "plan.ch", start: "2026-01-01" }));
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${detail}`, refOf("plan.ch", "domain"));
+    // a service: neither
+    const service = await hosting(app, anna, "Service neu.ch");
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${service}`, refOf("neu.ch"));
     // another customer's domain is not taken; no domain in the name, nothing happens
     const foreign = await hosting(app, ben, "Domain neu.ch");
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${foreign}`, null);
@@ -128,41 +134,106 @@ Deno.test("fin.hosting: a subscription named after a domain is for it — domain
     // renamed after a domain later: linked then
     const later = await hosting(app, ben, "Hosting");
     await update(app, later, { name: "Hosting ben.ch" });
-    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${later}`, refOf("ben.ch"));
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${later}`, refOf("ben.ch", "hosting"));
   });
 });
 
-Deno.test("fin.hosting: the registrars say which domains are ours to bill; what is open stands out", async () => {
+Deno.test("fin.hosting: a ref names the domain and what it pays for", () => {
+  assertEquals(parseRef(refOf("example.ch", "hosting")), { name: "example.ch", kind: "hosting" });
+  assertEquals(parseRef(refOf("example.ch")), { name: "example.ch", kind: undefined });
+  assertEquals([parseRef("fin.invoice:7"), parseRef("fin.hosting:"), parseRef("fin.hosting:x.ch/other")], [undefined, undefined, undefined]);
+  assertEquals(kindOf({ ref: refOf("example.ch", "domain") }), "domain");
+});
+
+Deno.test("fin.hosting: registration and hosting are billed apart, each unless free; an alias has no hosting", async () => {
+  await withFinApp(FIN, async (app) => {
+    const anna = await customer(app, "Anna");
+    await save(app, "both.ch", { usrId: anna, registrar: "infomaniak", host: "plesk:s3" });
+    await save(app, "hosted.ch", { usrId: anna, host: "plesk:s3" }); // the customer registered it
+    await save(app, "shop.hosted.ch", { usrId: anna, host: "plesk:s3", hostingFree: true });
+    await save(app, "registered.ch", { usrId: anna, registrar: "infomaniak", domainFree: true });
+    assertEquals([billable(await get(app, "both.ch") ?? {}), billable(await get(app, "shop.hosted.ch") ?? {})], [["domain", "hosting"], []]);
+    await link(app, "both.ch", await hosting(app, anna, "Webspace"), "hosting");
+    const todo = async () => (await open(app)).map((o) => [o.domain.name, o.missing, o.kind]);
+    assertEquals(await todo(), [["both.ch", "billed", "domain"], ["hosted.ch", "billed", "hosting"]]);
+    await link(app, "both.ch", await hosting(app, anna, "Registration"), "domain");
+    await link(app, "hosted.ch", await hosting(app, anna, "Service")); // anything else bills no hosting
+    assertEquals(await todo(), [["hosted.ch", "billed", "hosting"]]);
+
+    await assertRejects(() => save(app, "alias.ch", { aliasOf: "both.ch", host: "plesk:s3" }), Error, "an alias is not");
+    await save(app, "alias.ch", { aliasOf: "both.ch" });
+    const webspace = await hosting(app, anna);
+    await assertRejects(() => link(app, "alias.ch", webspace, "hosting"), Error, "is an alias, it has no hosting");
+  });
+});
+
+Deno.test("fin.hosting: the registrars say which domains are ours to register; what is open stands out", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     await save(app, "theirs.ch", { usrId: anna }); // the customer keeps it elsewhere: nothing to bill
     await save(app, "moved.ch", { usrId: anna, registrar: "test" });
     let list = [{ name: "Example.CH", expires: "2027-03-01" }, { name: "ours.ch" }, { name: "anna.ch" }];
     const registrar = { name: "test", domains: () => Promise.resolve(list) };
-    assertEquals(await sync(app, [registrar]), [{ registrar: "test", found: 3, added: 3, gone: 1 }]);
+    assertEquals(await sync(app, { registrars: [registrar] }), [{ name: "test", found: 3, added: 3, gone: 1 }]);
     assertEquals((await get(app, "example.ch"))?.expires, "2027-03-01");
     assertEquals((await get(app, "moved.ch"))?.registrar, null); // gone from there: no longer ours to bill
-    await save(app, "ours.ch", { free: true });
-    await link(app, "anna.ch", await hosting(app, anna, "Domain"));
+    await save(app, "ours.ch", { domainFree: true });
+    await link(app, "anna.ch", await hosting(app, anna, "Domain"), "domain");
     // registered by us, not free: example.ch has no customer; theirs, moved, ours and the billed anna.ch are fine
     assertEquals((await open(app)).map((o) => [o.domain.name, o.missing]), [["example.ch", "customer"]]);
     await save(app, "example.ch", { usrId: anna });
-    assertEquals((await open(app)).map((o) => [o.domain.name, o.missing]), [["example.ch", "billed"]]);
-    assertEquals([billable({ registrar: "test" }), billable({ registrar: "test", free: true }), billable({ registrar: null })], [true, false, false]);
+    assertEquals((await open(app)).map((o) => [o.domain.name, o.missing, o.kind]), [["example.ch", "billed", "domain"]]);
 
     // a registrar that fails changes nothing
     list = [];
     const failing = { name: "test", domains: () => Promise.reject(new Error("down")) };
-    assertEquals(await sync(app, [failing]), [{ registrar: "test", found: 0, added: 0, gone: 0, error: "down" }]);
+    assertEquals(await sync(app, { registrars: [failing] }), [{ name: "test", found: 0, added: 0, gone: 0, error: "down" }]);
     assertEquals((await get(app, "example.ch"))?.registrar, "test");
   });
 });
 
-Deno.test("fin.hosting: a synced domain is held; prune removes what nothing links to", async () => {
-  await withFinApp([...FIN, "fin.hosting.infomaniak"], async (app) => {
+Deno.test("fin.hosting: a host's domains are hosted, with the aliases it lists; what it no longer lists is not", async () => {
+  await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
+    await save(app, "example.ch", { usrId: anna, registrar: "infomaniak" });
+    await save(app, "own.ch", { aliasOf: "example.ch" }); // an alias the host does not list
+    await save(app, "was.ch");
+    await save(app, "alias.ch", { aliasOf: "was.ch" }); // a hosted domain is no alias: it becomes one of example.ch
+    await save(app, "gone.ch", { host: "plesk:s3" });
+    let list: { name: string; aliases?: string[] }[] = [
+      { name: "example.ch", aliases: ["alias.ch", "new-alias.ch", "not a domain"] },
+      { name: "shop.example.ch" },
+      { name: "was.ch" },
+    ];
+    const host = { name: "plesk:s3", domains: () => Promise.resolve(list) };
+    assertEquals(await sync(app, { hosts: [host] }), [{ name: "plesk:s3", found: 3, added: 2, gone: 1 }]);
+    const d = async (name: string) => [(await get(app, name))?.host ?? null, (await get(app, name))?.alias_of ?? null];
+    assertEquals(await d("example.ch"), ["plesk:s3", null]);
+    assertEquals((await get(app, "example.ch"))?.registrar, "infomaniak"); // where it is registered stays
+    assertEquals(await d("shop.example.ch"), ["plesk:s3", null]);
+    assertEquals(await d("alias.ch"), [null, "example.ch"]);
+    assertEquals(await d("new-alias.ch"), [null, "example.ch"]);
+    assertEquals((await get(app, "new-alias.ch"))?.usr_id, anna); // its domain's customer's
+    assertEquals(await d("own.ch"), [null, null]); // the host knows example.ch's aliases
+    assertEquals(await d("gone.ch"), [null, null]);
+
+    // what cannot be taken over is reported, the rest is
+    await save(app, "solo.ch");
+    await save(app, "sub.solo.ch", { aliasOf: "solo.ch" });
+    list = [{ name: "example.ch", aliases: ["solo.ch"] }];
+    const [report] = await sync(app, { hosts: [host] });
+    assertEquals(report.failed, ["solo.ch: solo.ch has aliases of its own"]);
+    assertEquals(await d("shop.example.ch"), [null, null]);
+  });
+});
+
+Deno.test("fin.hosting: a synced domain is held; prune removes what nothing links to", async () => {
+  await withFinApp([...FIN, "fin.hosting.infomaniak", "fin.hosting.plesk"], async (app) => {
+    const anna = await customer(app, "Anna");
+    await app.settings["fin.hosting.plesk"].servers("https://k3y@s3.example.com:8443");
     await save(app, "synced.ch", { registrar: "infomaniak" });
-    assertEquals(await blockers(app, "synced.ch"), ["synced"]);
+    await save(app, "served.ch", { host: "plesk:s3.example.com" });
+    assertEquals([await blockers(app, "synced.ch"), await blockers(app, "served.ch")], [["synced"], ["synced"]]);
     await save(app, "main.ch");
     await save(app, "alias.ch", { aliasOf: "main.ch" });
     await save(app, "billed.ch", { usrId: anna });
@@ -173,8 +244,9 @@ Deno.test("fin.hosting: a synced domain is held; prune removes what nothing link
     await link(app, "ended.ch", ended);
     await cancel(app, ended);
     await save(app, "lost.ch", { usrId: anna, registrar: "Hostpoint" }); // kept by hand: not synced
+    await save(app, "elsewhere.ch", { host: "plesk:old" }); // hosted, by hand
     await save(app, "lone.ch");
     assertEquals(await prune(app), ["lone.ch", "lost.ch"]);
-    assertEquals((await domains(app)).map((d) => d.name), ["billed.ch", "ended.ch", "main.ch", "alias.ch", "synced.ch"]);
+    assertEquals((await domains(app)).map((d) => d.name), ["billed.ch", "elsewhere.ch", "ended.ch", "main.ch", "alias.ch", "served.ch", "synced.ch"]);
   });
 });
