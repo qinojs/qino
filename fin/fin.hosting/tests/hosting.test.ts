@@ -37,7 +37,7 @@ Deno.test("fin.hosting: domains with owner, registrar and aliases one level deep
     // each alias right after its domain, before its subdomains
     await save(app, "shop.example.ch", { usrId: anna });
     await save(app, "example-ch.net", { aliasOf: "example.ch" });
-    assertEquals((await domains(app, anna)).map((d) => d.name), ["aaa.ch", "example.ch", "example-ch.net", "example.com", "shop.example.ch"]);
+    assertEquals((await domains(app, anna)).map((d) => d.name), ["aaa.ch", "example.ch", "example.com", "example-ch.net", "shop.example.ch"]);
     assertEquals(await domains(app, anna + 1), []);
 
     await assertRejects(() => save(app, "x.ch", { aliasOf: "example.com" }), Error, "is an alias itself");
