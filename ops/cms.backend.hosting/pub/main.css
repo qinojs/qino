@@ -5,5 +5,6 @@
   & > u2-table { padding: 0; overflow: auto; }
 
   & .-projects td { vertical-align: top; }
+  & .-projects .-num { text-align: right; white-space: nowrap; }
   & .-projects td > :is(a, code, span) { display: block; }
 }

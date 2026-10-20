@@ -35,11 +35,11 @@ export function renderProjects(app: App, projects: Project[]): Promise<HtmlStrin
       <th>${app.t`State`}
       <th>${app.t`Domains`}
       <th>${app.t`Listens on`}
-      <th>${app.t`Memory`}
-      <th>${app.t`CPU`}
-      <th>${app.t`Tasks`}
-      <th>${app.t`Disk`}
-      <th>${app.t`Restarts`}
+      <th class=-num>${app.t`Memory`}
+      <th class=-num>${app.t`CPU`}
+      <th class=-num>${app.t`Tasks`}
+      <th class=-num>${app.t`Disk`}
+      <th class=-num>${app.t`Restarts`}
       <th>${app.t`Since`}
     <tbody>${projects.map((p) => renderRow(app, p))}
   </table>`;
@@ -58,10 +58,10 @@ function renderRow(app: App, p: Project) {
     <td><span class=u2-badge style="background:${STATE_COLOR[p.state] ?? "var(--gray)"}">${p.state}</span> <small>${p.sub}</small>
     <td>${p.domains.map((d) => html`<a href="https://${d}/" target=_blank rel=noopener>${d}</a>`)}
     <td>${listen}
-    <td>${bytes(p.memory)}
-    <td>${p.cpu == null ? "–" : html`${p.cpu} %`}
-    <td>${p.tasks ?? "–"}
-    <td>${bytes(p.disk)}
-    <td>${p.restarts ?? "–"}
+    <td class=-num>${bytes(p.memory)}
+    <td class=-num>${p.cpu == null ? "–" : html`${p.cpu} %`}
+    <td class=-num>${p.tasks ?? "–"}
+    <td class=-num>${bytes(p.disk)}
+    <td class=-num>${p.restarts ?? "–"}
     <td>${p.since ? u2.el.time(p.since) : "–"}`;
 }
