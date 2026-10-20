@@ -33,5 +33,8 @@ in `auth.oauth` der jeweiligen App.
 ## Sicherheit
 
 - Ohne Eintrag in `hosts` keine Weiterleitung — sonst wäre der Relay ein Open Redirect.
+- Ziel ist nur ein `…/oauth/callback/<name>` ohne Query: Jede andere Seite eines erlaubten Hosts könnte
+  den Code weiterreichen (Referer, eigene Redirects), und ein Angreifer könnte ihn mit seiner eigenen
+  Session einlösen.
 - Ein abgefangener Code nützt nichts: `state` hängt an der Session der App, bei OIDC zusätzlich PKCE.
 - `client_secret` liegt in jeder App — gedacht für Apps, die man selbst betreibt.

@@ -46,7 +46,14 @@ Deno.test("auth.oauth.relay: a form_post becomes a GET with the same fields", as
 
 Deno.test("auth.oauth.relay: refuses unlisted hosts, plain http and broken states", async () => {
   assertEquals((await run(ctxWith({ code: "c", state: state("https://evil.test/cb") }))).status, 400);
-  assertEquals((await run(ctxWith({ code: "c", state: state("http://kunde.example.ch/cb") }))).status, 400);
+  assertEquals((await run(ctxWith({ code: "c", state: state("http://kunde.example.ch/oauth/callback/google") }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: "rnd.%%%" }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: "rnd" }))).status, 400);
+});
+
+Deno.test("auth.oauth.relay: only forwards to auth.oauth callbacks, not other pages of an allowed host", async () => {
+  assertEquals((await run(ctxWith({ code: "c", state: state("https://kunde.example.ch/go?to=https://evil.test") }))).status, 400);
+  assertEquals((await run(ctxWith({ code: "c", state: state("https://kunde.example.ch/oauth/callback/x/y") }))).status, 400);
+  assertEquals((await run(ctxWith({ code: "c", state: state(CALLBACK + "?next=/x") }))).status, 400);
+  assertEquals((await run(ctxWith({ code: "c", state: state("https://kunde.example.ch/app/oauth/callback/x") }))).status, 303);
 });

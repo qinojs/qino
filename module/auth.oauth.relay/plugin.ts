@@ -21,12 +21,14 @@ function target(state: string) {
 }
 
 /** The provider's callback: forward its answer to the app that started the login. A POST (Apple's form_post)
- *  becomes a GET, so the browser sends the app's SameSite=Lax session cookie along. */
+ *  becomes a GET, so the browser sends the app's SameSite=Lax session cookie along.
+ *  Only to auth.oauth callbacks: any other page of an allowed host could leak the code (Referer, redirects). */
 export async function relay(ctx: Ctx): Promise<never> {
   const params = new URLSearchParams({ ...ctx.req.query, ...ctx.req.body });
   const url = target(params.get("state") ?? "");
   const hosts = String(await ctx.app.settings["auth.oauth.relay"].hosts ?? "");
-  if (url?.protocol !== "https:" || !allowed(hosts, url.hostname)) {
+  const ok = url?.protocol === "https:" && /\/oauth\/callback\/[^/]+$/.test(url.pathname) && !url.search && !url.hash;
+  if (!ok || !allowed(hosts, url.hostname)) {
     throw new Output("oauth relay target not allowed", { status: 400 });
   }
   for (const [k, v] of params) url.searchParams.set(k, v);
