@@ -77,10 +77,24 @@ function discover(issuer: string) {
 }
 
 /** A provider's endpoints. `authorize_url` set = OAuth2 (identity via userinfo); else OIDC discovery. */
-async function endpoints(p: any): Promise<{ authorize: string; token: string; userinfo?: string; oidc: boolean }> {
+async function endpoints(p: any): Promise<{ authorize: string; token: string; userinfo?: string; issuer?: string; oidc: boolean }> {
   if (p.authorize_url) return { authorize: p.authorize_url, token: p.token_url, userinfo: p.userinfo_url || undefined, oidc: false };
   const m = await discover(p.issuer);
-  return { authorize: m.authorization_endpoint, token: m.token_endpoint, userinfo: m.userinfo_endpoint, oidc: true };
+  return { authorize: m.authorization_endpoint, token: m.token_endpoint, userinfo: m.userinfo_endpoint, issuer: m.issuer, oidc: true };
+}
+
+/** The client secret. With `key_id` set it is an ES256 JWT, signed with the private key kept in `client_secret`
+ *  (Apple: `iss` = Team ID); fresh per exchange, so it never expires on its own. */
+export async function clientSecret(p: any, aud: string): Promise<string> {
+  if (!p.key_id) return p.client_secret;
+  const pkcs8 = Uint8Array.fromBase64(String(p.client_secret).replace(/-----[^-]+-----|\s/g, ""));
+  const key = await crypto.subtle.importKey("pkcs8", pkcs8, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const enc = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)));
+  const now = unixTime();
+  const data = enc({ alg: "ES256", kid: p.key_id }) + "." +
+    enc({ iss: p.team_id || p.client_id, sub: p.client_id, aud, iat: now, exp: now + 300 });
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(data));
+  return data + "." + b64url(new Uint8Array(sig));
 }
 
 const ownCallback = (ctx: Ctx, name: string) => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
@@ -104,7 +118,8 @@ export function identity(c: any): { sub: string; email: string; verified: boolea
   return {
     sub: String(c.sub ?? c.id ?? ""), // OIDC calls it sub, plain OAuth2 userinfos usually id
     email: String(c.email ?? "").trim().toLowerCase(),
-    verified: String(c.email_verified ?? c.verified) === "true", // missing counts as unconfirmed
+    // missing counts as unconfirmed; Microsoft sends the optional claim xms_edov instead
+    verified: String(c.email_verified ?? c.verified ?? c.xms_edov) === "true",
     given_name: String(c.given_name ?? first ?? ""),
     family_name: String(c.family_name ?? rest.join(" ")),
   };
@@ -186,6 +201,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   u.searchParams.set("redirect_uri", redirectUri);
   u.searchParams.set("scope", p.scopes || "openid email profile");
   u.searchParams.set("state", state);
+  if (p.response_mode) u.searchParams.set("response_mode", p.response_mode); // e.g. form_post (Apple)
   if (e.oidc) { // PKCE + nonce only for OIDC; plain-OAuth2 providers (e.g. GitHub) may reject them
     u.searchParams.set("nonce", nonce);
     u.searchParams.set("code_challenge", await sha256b64url(verifier));
@@ -196,6 +212,12 @@ async function start(ctx: Ctx, name: string): Promise<never> {
 
 /** Provider redirect back: exchange the code, obtain identity (id_token or userinfo), log in. */
 async function callback(ctx: Ctx, name: string): Promise<never> {
+  // form_post: a cross-site POST carries no SameSite=Lax session cookie, so come back as a GET
+  if (ctx.req.method === "POST") {
+    const u = ctx.req.url.toURL();
+    for (const [k, v] of Object.entries(ctx.req.body ?? {})) u.searchParams.set(k, String(v));
+    throw new Redirect(u.href, 303);
+  }
   const q = ctx.req.query;
   const { prov, state, nonce, verifier, returnTo } = (ctx.sess.data.oauth() ?? {}) as Record<string, string>;
   ctx.sess.data.oauth({}); // spent whatever the outcome
@@ -209,7 +231,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
     code: q.code,
     redirect_uri: callbackUrl(ctx, p),
     client_id: p.client_id,
-    client_secret: p.client_secret,
+    client_secret: await clientSecret(p, e.issuer ?? p.issuer),
     ...(verifier && { code_verifier: verifier }),
   };
   const res = await fetch(e.token, {
@@ -224,7 +246,9 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   if (tok.id_token) { // OIDC — validate the id_token
     claims = jwtPayload(tok.id_token);
     const aud = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-    const issOk = String(claims.iss ?? "").replace(/\/$/, "") === String(p.issuer).replace(/\/$/, "");
+    // a multi-tenant issuer (Microsoft "common") names the user's tenant: .../{tenantid}/v2.0
+    const issuer = String(e.issuer ?? p.issuer).replace("{tenantid}", String(claims.tid ?? ""));
+    const issOk = String(claims.iss ?? "").replace(/\/$/, "") === issuer.replace(/\/$/, "");
     if (!issOk || !aud.includes(p.client_id) || claims.nonce !== nonce || (claims.exp && claims.exp < unixTime()))
       throw new Output("oauth token invalid", { status: 400 });
   } else if (e.userinfo && tok.access_token) { // plain OAuth2 — identity from the userinfo endpoint

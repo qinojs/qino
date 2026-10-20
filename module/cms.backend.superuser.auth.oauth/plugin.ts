@@ -19,6 +19,7 @@ type Preset = {
   token_url?: string;
   userinfo_url?: string;
   email_url?: string;
+  response_mode?: string;
   console_url: string; // where to create the client ID/secret
 };
 
@@ -27,7 +28,7 @@ type Preset = {
 const PRESETS: Record<string, Preset> = {
   google:     { issuer: "https://accounts.google.com", scopes: "openid email profile", console_url: "https://console.cloud.google.com/apis/credentials" },
   microsoft:  { issuer: "https://login.microsoftonline.com/common/v2.0", scopes: "openid email profile", console_url: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" }, // "common" instead of a fixed tenant, so it works without a customer tenant id
-  apple:      { issuer: "https://appleid.apple.com", scopes: "openid email name", console_url: "https://developer.apple.com/account/resources/identifiers/list/serviceId" },
+  apple:      { issuer: "https://appleid.apple.com", scopes: "openid email name", response_mode: "form_post", console_url: "https://developer.apple.com/account/resources/identifiers/list/serviceId" },
   auth0:      { issuer: "https://<tenant>.auth0.com", scopes: "openid email profile", console_url: "https://manage.auth0.com/" },
   okta:       { issuer: "https://<tenant>.okta.com", scopes: "openid email profile", console_url: "https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/" },
   keycloak:   { issuer: "https://<domain>/realms/<realm>", scopes: "openid email profile", console_url: "https://www.keycloak.org/docs/latest/server_admin/#proc-creating-oidc-client_server_administration_guide" },
@@ -54,7 +55,7 @@ export async function install({ app }: { app: App }): Promise<void> {
     await app.db.table("oauth_provider").insert({
       name: pname, issuer: def.issuer ?? "", authorize_url: def.authorize_url ?? "", token_url: def.token_url ?? "",
       userinfo_url: def.userinfo_url ?? "", email_url: def.email_url ?? "", client_id: "", client_secret: "",
-      scopes: def.scopes, auto_create: 1, allowed_domains: "",
+      scopes: def.scopes, auto_create: 1, allowed_domains: "", response_mode: def.response_mode ?? "",
     });
   }
 }
@@ -86,6 +87,9 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
       Scopes ${text("scopes", "openid email profile")}
       Allowed domains ${text("allowed_domains", "example.com")}
       Shared redirect URI ${text("redirect_uri", "https://auth.example.com/oauth/relay")}
+      Response mode ${text("response_mode", "form_post")}
+      Key ID (JWT secret) ${text("key_id")}
+      Team ID (JWT secret) ${text("team_id")}
       <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
     </u2-fields>
     <fieldset>
@@ -133,6 +137,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         auto_create: b.auto_create ? 1 : 0,
         allowed_domains: String(b.allowed_domains ?? "").trim(),
         redirect_uri: String(b.redirect_uri ?? "").trim(),
+        response_mode: String(b.response_mode ?? "").trim(),
+        key_id: String(b.key_id ?? "").trim(),
+        team_id: String(b.team_id ?? "").trim(),
       };
       const id = Number(b.id);
       if (id) { if (secret) vals.client_secret = secret; await db.table("oauth_provider").update(id, vals); }

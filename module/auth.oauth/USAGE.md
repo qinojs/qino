@@ -28,6 +28,7 @@ Tabelle `oauth_provider`:
 | `auto_create` | `1` = unbekannte, verifizierte User anlegen, `0` = nur bestehende |
 | `allowed_domains` | optional, kommagetrennt (z.B. `example.com`) — begrenzt öffentliche Provider |
 | `redirect_uri` | optional, geteilter Callback statt `{appUrl}oauth/callback/<name>` (siehe `auth.oauth.relay`) |
+| `response_mode` | optional, z.B. `form_post` (Apple verlangt es für `name`/`email`) |
 
 ## Viele Domains, ein Eintrag beim Provider
 
@@ -53,7 +54,11 @@ gelöscht, verschwinden seine Verknüpfungen.
   (`<tenant>` bei `microsoft`/`auth0` durch deine Domain/Tenant ersetzen).
 - **OAuth2:** `github`, `discord`.
 - **`apple`** braucht als `client_secret` ein kurzlebiges ES256-JWT statt eines festen
-  Secrets — das Modul erzeugt es nicht.
+  Secrets — das Modul erzeugt es nicht. Antwortet per `form_post`; der Callback macht daraus einen
+  GET, damit das Session-Cookie (`SameSite=Lax`) mitkommt.
+- **`microsoft`** mit `common`: `iss` nennt den Tenant des Users, geprüft gegen `{tenantid}` aus der
+  Discovery. Microsoft schickt kein `email_verified` — in der App-Registrierung das optionale Claim
+  `xms_edov` aktivieren, sonst gelten E-Mails als unbestätigt.
 
 Weitere OAuth2-Provider: neue Zeile mit `authorize_url`, `token_url`, `userinfo_url`
 (+ ggf. `email_url`).
@@ -90,8 +95,7 @@ Optional `?return_to=/pfad` (nur lokale Pfade werden akzeptiert).
 Kern:
 - **JWKS-Signaturprüfung** als Defense-in-Depth; **`azp`** prüfen bei mehreren `aud`.
 - **Refresh-Tokens / RP-Logout** (`end_session_endpoint`): nicht implementiert.
-- **Apple client_secret-JWT** (ES256) generieren; **Microsoft Multi-Tenant** (`iss` mit
-  Tenant-ID) unterstützen.
+- **Apple client_secret-JWT** (ES256) generieren.
 - **Zwei Logins parallel** (zwei Tabs) überschreiben sich in der Session → Fix: per `state`
   speichern.
 

@@ -39,7 +39,7 @@
           },
           "client_secret": {
             "type": "string",
-            "maxLength": 255
+            "maxLength": 1024
           },
           "scopes": {
             "type": "string",
@@ -55,6 +55,18 @@
           "redirect_uri": {
             "type": "string",
             "maxLength": 255
+          },
+          "response_mode": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "key_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "team_id": {
+            "type": "string",
+            "maxLength": 64
           }
         },
         "required": ["id", "name", "client_id", "client_secret"]
