@@ -13,8 +13,9 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 
-/** Where projects, their units, Caddy sites, templates and archived projects are; `self` is the managing project. */
-type Host = { www: string; units: string; caddy: string; templates: string; archive: string; self: string };
+/** Where projects, their units, Caddy sites, templates and archived projects are; `self` is the managing project;
+ *  `preview` a domain under which every project is reachable too, as `<domain>.<preview>` (empty: none). */
+type Host = { www: string; units: string; caddy: string; templates: string; archive: string; self: string; preview: string };
 type Args = Record<string, unknown>;
 
 const PROPS = ["Id", "ActiveState", "SubState", "MemoryCurrent", "CPUUsageNSec", "TasksCurrent", "NRestarts", "ActiveEnterTimestamp"];
@@ -67,6 +68,12 @@ export async function parseSs(text: string, unitOf: (pid: number) => Promise<str
 /** `{{key}}` replaced by its value; unknown keys stay. */
 export const fill = (text: string, vars: Record<string, string>): string =>
   text.replace(/\{\{(\w+)\}\}/g, (all, key) => vars[key] ?? all);
+
+/** The addresses of a new project: its domain, and its preview address unless it is under the preview's parent already. */
+export function addresses(domain: string, preview: string): string[] {
+  const parent = preview.split(".").slice(1).join(".");
+  return preview && !domain.endsWith(`.${parent}`) ? [domain, `${domain}.${preview}`] : [domain];
+}
 
 /** The lowest port in range that nothing uses. */
 export function freePort(used: Set<number>, [from, to] = PORTS): number {
@@ -210,8 +217,8 @@ async function usedPorts(host: Host, sites: { ports: number[] }[]) {
 
 /** A new project from a template: user, directory, the template's files, its install.sh (run as the
  *  user), unit and Caddy site, then started. A template is a directory with `files/`, `unit.service`,
- *  `site.caddy` and optionally `install.sh`; `{{name}}`, `{{domain}}`, `{{port}}` and `{{root}}` are
- *  filled in. Anything that fails takes the done steps back. */
+ *  `site.caddy` and optionally `install.sh`; `{{name}}`, `{{domain}}`, `{{addresses}}` (the domain and its
+ *  preview address), `{{port}}` and `{{root}}` are filled in. Anything that fails takes the done steps back. */
 async function create(host: Host, args: Args) {
   const name = String(args.domain ?? "").toLowerCase(), template = String(args.template ?? "");
   if (!NAME.test(name) || !name.includes(".")) throw new Error(`invalid domain "${name}"`);
@@ -220,10 +227,10 @@ async function create(host: Host, args: Args) {
   const unitFile = `${host.units}${name}.service`, site = `${host.caddy}${name}.caddy`;
   for (const path of [root, unitFile, site]) if (await exists(path)) throw new Error(`${path} exists already`);
   if (await run("id", ["-u", name]).then(() => true, () => false)) throw new Error(`user "${name}" exists already`);
-  const sites = await caddy(host.caddy);
-  if (sites.some((s) => s.domains.includes(name))) throw new Error(`${name} is served already`);
+  const sites = await caddy(host.caddy), served = addresses(name, host.preview);
+  for (const a of served) if (sites.some((s) => s.domains.includes(a))) throw new Error(`${a} is served already`);
   const port = freePort(await usedPorts(host, sites));
-  const vars = { name, domain: name, port: String(port), root };
+  const vars = { name, domain: name, addresses: served.join(", "), port: String(port), root };
   const env = Object.fromEntries(Object.entries(vars).map(([k, v]) => [k.toUpperCase(), v]));
 
   await steps(async (undo) => {
@@ -249,7 +256,7 @@ async function create(host: Host, args: Args) {
     await run("caddy", ["validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]);
     await run("systemctl", ["reload", "caddy"]);
   });
-  return { name, port };
+  return { name, port, addresses: served };
 }
 
 /** Moves `from` to `to`, across filesystems too. */
@@ -327,5 +334,6 @@ if (import.meta.main) {
     templates: env.HOSTING_TEMPLATES ?? new URL("templates/", import.meta.url).pathname,
     archive: env.HOSTING_ARCHIVE ?? "/var/backups/qino-hosting/",
     self: (await run("id", ["-gn"])).stdout.trim(),
+    preview: env.HOSTING_PREVIEW ?? "",
   });
 }

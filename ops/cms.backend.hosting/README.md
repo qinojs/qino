@@ -30,8 +30,11 @@ is logged in the helper's journal, out of the instance's reach.
 
 A template is a directory in `templates/`: `files/` is copied into the new project, `unit.service` and
 `site.caddy` become its unit and Caddy site, `install.sh` (optional) runs as the project's user in its
-directory. `{{name}}`, `{{domain}}`, `{{port}}` and `{{root}}` are filled in; `install.sh` gets them as
-`NAME`, `DOMAIN`, `PORT` and `ROOT`. The port is the lowest free one from 8090.
+directory. `{{name}}`, `{{domain}}`, `{{addresses}}`, `{{port}}` and `{{root}}` are filled in; `install.sh` gets
+them as `NAME`, `DOMAIN`, `ADDRESSES`, `PORT` and `ROOT`. The port is the lowest free one from 8090.
+
+With `HOSTING_PREVIEW=preview.example.com` in the helper's unit, `{{addresses}}` adds `<domain>.preview.example.com`:
+a project can be looked at before its domain points to the server (a wildcard DNS record covers it).
 
 [qino](host/templates/qino/) clones Qino and starts with `starter.account`. Its first boot writes the
 superuser's password to the log (the project's "Log" button).

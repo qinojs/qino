@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-import { fill, freePort, parseCaddy, parseMeminfo, parseShow, parseSs } from "../host/helper.ts";
+import { addresses, fill, freePort, parseCaddy, parseMeminfo, parseShow, parseSs } from "../host/helper.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 import { list, renderList } from "../render.ts";
@@ -104,6 +104,9 @@ Deno.test("cms.backend.hosting: totals, server capacity, actions by state, never
 Deno.test("cms.backend.hosting: templates, ports and memory", () => {
   assertEquals(fill("{{domain}}:{{port}} {{other}}", { domain: "a.ch", port: "8097" }), "a.ch:8097 {{other}}");
   assertEquals(freePort(new Set([8090, 8091, 8093])), 8092);
+  assertEquals(addresses("a.ch", "preview.s4.example.ch"), ["a.ch", "a.ch.preview.s4.example.ch"]);
+  assertEquals(addresses("x.s4.example.ch", "preview.s4.example.ch"), ["x.s4.example.ch"]);
+  assertEquals(addresses("a.ch", ""), ["a.ch"]);
   assertEquals(freePort(new Set(), [9000, 9000]), 9000);
   assertEquals(parseMeminfo("MemTotal:       8000 kB\nMemFree:  10 kB\nMemAvailable:   6000 kB\n"), { total: 8192000, available: 6144000 });
 });
