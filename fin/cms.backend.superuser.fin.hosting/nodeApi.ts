@@ -12,7 +12,8 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const v = vars.save as Record<string, string>;
       // a new one has its name typed; a changed one carries it in data-save
       const name = await save(app, v.id || v.name, {
-        usrId: Number(v.usrId) || null,
+        // an alias's form has no customer: it takes its domain's
+        ...("usrId" in v ? { usrId: Number(v.usrId) || null } : {}),
         aliasOf: v.aliasOf || null,
         registrar: v.registrar ?? null,
       });
@@ -29,7 +30,8 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true };
     }
     if (vars.unlink) {
-      await unlink(app, Number(vars.unlink));
+      const v = vars.unlink as Record<string, string>;
+      await unlink(app, v.id, Number(v.subscription));
       return { ok: true };
     }
   } catch (e) {

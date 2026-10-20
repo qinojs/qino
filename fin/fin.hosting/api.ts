@@ -66,11 +66,11 @@ export const api: ApiTree = {
       },
       unlink: {
         post: {
-          description: "The subscription is for no domain any more",
+          description: "The subscription is for this domain no more",
           access: Access.SUPERUSER,
           input: s.object({ subscription: s.number() }),
-          execute: async ({ subscription }: Params, ctx: Ctx) => {
-            await unlink(ctx.app, Number(subscription));
+          execute: async ({ domain, subscription }: Params, ctx: Ctx) => {
+            await unlink(ctx.app, String((domain as Row).name), Number(subscription));
             return { ok: true };
           },
         },

@@ -107,8 +107,8 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     backend.toModuleUrl(node, "cms.backend.domain_monitor"),
   ]);
   const subs = by.get(String(d.name)) ?? [];
-  // the owner's running subscriptions that are for nothing yet
-  const free = usrId == null ? [] : (await subscriptions(app, usrId)).filter((s) => !s.ref && running(s));
+  // the owner's running subscriptions that are for nothing yet; an alias is billed with its domain
+  const free = usrId == null || d.alias_of ? [] : (await subscriptions(app, usrId)).filter((s) => !s.ref && running(s));
   const aliases = all.filter((a) => a.alias_of === d.name);
   const owner = users.find((u) => Number(u.id) === usrId);
   const monitorUrl = monitor({ domain: d.name });
@@ -117,12 +117,13 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     running: t`Subscriptions still run for it.`,
     unpaid: t`An invoice of its subscriptions is unpaid.`,
   };
+  const held = (await Promise.all(why.map((w) => reasons[w]))).join(" ");
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Domains`}</a> › ${d.name}</div>
     <form data-save="${d.name}">
       <u2-fields>
-        ${t`Customer`} ${customerSelect(users, d.usr_id, "—")}
+        ${d.alias_of ? "" : html.async`${t`Customer`} ${customerSelect(users, d.usr_id, "—")}`}
         ${t`Alias of`} ${aliasSelect(all, d.alias_of, String(d.name))}
         ${t`Registrar`} <input name=registrar value="${d.registrar}">
       </u2-fields>
@@ -135,16 +136,16 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     </p>
     ${aliases.length ? html.async`<p>${t`Aliases`}: ${html.join(aliases.map((a) => nameCell(pageUrl, a)), ", ")}` : ""}
     ${why.length
-      ? html.async`<p><small>${t`It cannot be removed:`} ${why.map((w) => reasons[w])}</small>`
+      ? html.async`<p><small>${t`It cannot be removed:`} ${held}</small>`
       : html.async`<button data-remove="${d.name}" u2-confirm="${t`Remove this domain?`}">${t`Remove`}</button>`}
   </div>
-  <div class=u2-card style="flex:0 1 auto">
+  <div class=u2-card style="flex:0 1 auto" data-domain="${d.name}">
     <div class=-head>${t`Billed by`}</div>
     ${subs.length ? html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
       <td>${rowLink(node, "cms.backend.superuser.fin.subscription", "subscription", s.id, String(s.label))}
       <td style="text-align:end">${price(app, s)}
       <td>${running(s) ? s.next : badge(t`ended`)}
-      <td><button data-unlink="${s.id}">${t`Unlink`}</button>`)}
+      <td>${running(s) ? html.async`<button data-unlink="${s.id}">${t`Unlink`}</button>` : ""}`)}
     </table>` : html.async`<p>${t`No subscriptions yet`}`}
     ${free.length ? html.async`<form data-link="${d.name}">
       <select name=subscription>${free.map((s) => html`<option value="${s.id}">${s.label}`)}</select>

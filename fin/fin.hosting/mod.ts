@@ -53,33 +53,43 @@ type Values = { usrId?: number | null; aliasOf?: string | null; registrar?: stri
 
 /**
  * Add a domain, or change one: whose it is, what it is an alias of (one level: an alias has no
- * aliases), where it is registered. Fields not given stay; an alias without an owner takes its
- * domain's. Watched by `cms.backend.domain_monitor` from then on, where that is installed.
+ * aliases), where it is registered. Fields not given stay. An alias is its domain's, owner and all:
+ * a `usrId` of its own does not count, and its domain's owner passes on to it. Refused where the
+ * bills would no longer fit: another owner while the present one's subscriptions still run for it,
+ * an alias while subscriptions still run for it. Watched by `cms.backend.domain_monitor` from then
+ * on, where that is installed.
  */
 export async function save(app: App, name: string, values: Values = {}): Promise<string> {
   const domain = normalize(name);
   if (!domain) throw new Error(`fin.hosting: not a domain: ${name}`);
+  const current = await get(app, domain);
+  const live = ((await subscriptionsBy(app)).get(domain) ?? []).filter(running);
   const fields: Record<string, unknown> = {};
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
-  if (values.aliasOf !== undefined) {
-    const main = values.aliasOf ? normalize(values.aliasOf) : null;
-    if (values.aliasOf && !main) throw new Error(`fin.hosting: not a domain: ${values.aliasOf}`);
-    if (main) {
-      if (main === domain) throw new Error("fin.hosting: a domain is no alias of itself");
-      const of = await get(app, main);
-      if (!of) throw new Error(`fin.hosting: no domain ${main}`);
-      if (of.alias_of) throw new Error(`fin.hosting: ${main} is an alias itself`);
-      if (await app.db.one`SELECT 1 FROM fin_hosting_domain WHERE alias_of = ${domain}`) {
-        throw new Error(`fin.hosting: ${domain} has aliases of its own`);
-      }
-      if (values.usrId == null) fields.usr_id = of.usr_id;
+  const main = values.aliasOf === undefined ? current?.alias_of ?? null : values.aliasOf ? normalize(values.aliasOf) : null;
+  if (values.aliasOf && !main) throw new Error(`fin.hosting: not a domain: ${values.aliasOf}`);
+  if (main) {
+    if (main === domain) throw new Error("fin.hosting: a domain is no alias of itself");
+    const of = await get(app, main);
+    if (!of) throw new Error(`fin.hosting: no domain ${main}`);
+    if (of.alias_of) throw new Error(`fin.hosting: ${main} is an alias itself`);
+    if (await app.db.one`SELECT 1 FROM fin_hosting_domain WHERE alias_of = ${domain}`) {
+      throw new Error(`fin.hosting: ${domain} has aliases of its own`);
     }
-    fields.alias_of = main;
+    if (live.length) throw new Error(`fin.hosting: subscriptions run for ${domain}; link them to ${main} first`);
+    fields.usr_id = of.usr_id;
+  }
+  if (values.aliasOf !== undefined) fields.alias_of = main;
+  const owner = "usr_id" in fields ? fields.usr_id : current?.usr_id;
+  if (live.some((sub) => Number(sub.usr_id) !== Number(owner))) {
+    throw new Error(`fin.hosting: the subscriptions of its owner still run for ${domain}`);
   }
   if (values.registrar !== undefined) fields.registrar = values.registrar?.trim() || null;
   const time = unixTime();
-  if (await get(app, domain)) await table(app).update(domain, { ...fields, changed: time });
+  if (current) await table(app).update(domain, { ...fields, changed: time });
   else await table(app).insert({ name: domain, ...fields, created: time, changed: time });
+  // its aliases are its own: they follow its owner
+  if (!main && "usr_id" in fields) await app.db.exec`UPDATE fin_hosting_domain SET usr_id = ${owner ?? null}, changed = ${time} WHERE alias_of = ${domain}`;
   await watch(app, domain);
   return domain;
 }
@@ -106,20 +116,28 @@ export async function remove(app: App, name: string): Promise<void> {
   await table(app).delete(normalize(name));
 }
 
-/** Bill a subscription for a domain; it must be the domain owner's. */
+/** Bill a subscription for a domain — not an alias: it is billed with its domain. A domain without
+ *  an owner becomes the subscription's customer's, aliases and all; one with an owner takes only
+ *  their subscriptions. */
 export async function link(app: App, name: string, subscriptionId: number): Promise<void> {
   const domain = await get(app, name);
   if (!domain) throw new Error(`fin.hosting: no domain ${name}`);
+  if (domain.alias_of) throw new Error(`fin.hosting: ${domain.name} is an alias; link ${domain.alias_of}`);
   const sub = await app.db.row`SELECT usr_id FROM subscription WHERE id = ${subscriptionId}`;
   if (!sub) throw new Error(`fin.hosting: no subscription ${subscriptionId}`);
   if (domain.usr_id != null && Number(sub.usr_id) !== Number(domain.usr_id)) {
     throw new Error("fin.hosting: the subscription is another customer's");
   }
   await update(app, subscriptionId, { ref: refOf(String(domain.name)) });
+  if (domain.usr_id == null) await save(app, String(domain.name), { usrId: Number(sub.usr_id) });
 }
 
-/** The subscription is for no domain any more. */
-export const unlink = (app: App, subscriptionId: number): Promise<void> => update(app, subscriptionId, { ref: null });
+/** The subscription is for this domain no more. */
+export async function unlink(app: App, name: string, subscriptionId: number): Promise<void> {
+  const ref = await app.db.one`SELECT ref FROM subscription WHERE id = ${subscriptionId}`;
+  if (ref !== refOf(normalize(name))) throw new Error(`fin.hosting: subscription ${subscriptionId} is not for ${name}`);
+  await update(app, subscriptionId, { ref: null });
+}
 
 /** Hand the domain to `cms.backend.domain_monitor`, if installed, to be checked from now on. */
 async function watch(app: App, domain: string) {

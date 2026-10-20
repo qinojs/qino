@@ -62,13 +62,29 @@ Deno.test("domains: one is added, changed, linked, unlinked and removed; refusal
     await as(() => api(node, { link: { id: "anna.ch", subscription: String(sub) } }));
     const linked = String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node)));
     assertStringIncludes(linked, `data-unlink="${sub}"`);
-    assertStringIncludes(linked, "Subscriptions still run for it.");
+    assertStringIncludes(linked, "It cannot be removed: Subscriptions still run for it.</small>");
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).ok, false);
 
-    await as(() => api(node, { unlink: String(sub) }));
+    await as(() => api(node, { unlink: { id: "anna.ch", subscription: String(sub) } }));
     assertEquals((await as(() => api(node, { save: { id: "anna.ch", usrId: String(anna), aliasOf: "", registrar: "Infomaniak" } }))).ok, true);
     assertEquals(await app.db.one`SELECT registrar FROM fin_hosting_domain WHERE name = 'anna.ch'`, "Infomaniak");
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).url, "/backend/domains");
     assertStringIncludes(String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node))), "No domain anna.ch");
+  });
+});
+
+Deno.test("domains: an alias's page offers no customer and nothing to link — it is its domain's", async () => {
+  await withFinApp(FIN, async (app) => {
+    const node = backendNode(app, "/backend/domains");
+    const anna = await customer(app, "Anna AG");
+    await save(app, "anna.ch", { usrId: anna });
+    await save(app, "anna.com", { aliasOf: "anna.ch" });
+    await subscribe(app, { usrId: anna, name: "Hosting", price: 24000, currency: "CHF", start: "2026-01-01" });
+    const page = String(await inRequest(app, `${BASE}?domain=anna.com`, () => render(node)));
+    assert(!page.includes("name=usrId") && !page.includes("data-link="));
+    assertStringIncludes(page, `<option selected>anna.ch`);
+    // saved without a customer field, it stays its domain's
+    await inRequest(app, BASE, () => api(node, { save: { id: "anna.com", aliasOf: "anna.ch", registrar: "x" } }));
+    assertEquals(await app.db.one`SELECT usr_id FROM fin_hosting_domain WHERE name = 'anna.com'`, anna);
   });
 });

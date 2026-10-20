@@ -15,6 +15,6 @@ cms.initNode("backend.superuser.fin.hosting", (el) => {
     const button = e.target.closest("[data-remove], [data-unlink]");
     if (!button) return;
     if (button.dataset.remove) execute(button, { remove: button.dataset.remove });
-    else execute(button, { unlink: button.dataset.unlink });
+    else execute(button, { unlink: { id: button.closest("[data-domain]").dataset.domain, subscription: button.dataset.unlink } });
   });
 });

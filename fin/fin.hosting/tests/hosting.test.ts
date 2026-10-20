@@ -53,7 +53,8 @@ Deno.test("fin.hosting: subscriptions are linked by ref, only the owner's, and g
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${own}`, refOf("example.ch"));
     await assertRejects(() => link(app, "example.ch", other), Error, "another customer's");
     assertEquals([...(await subscriptionsBy(app, anna)).entries()].map(([d, subs]) => [d, subs.map((s) => Number(s.id))]), [["example.ch", [own]]]);
-    await unlink(app, own);
+    await assertRejects(() => unlink(app, "other.ch", own), Error, "is not for other.ch");
+    await unlink(app, "example.ch", own);
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${own}`, null);
   });
 });
@@ -80,5 +81,29 @@ Deno.test("fin.hosting: a domain is held by aliases, running subscriptions and u
     assertEquals(await get(app, "example.ch"), undefined);
     // what the ended subscription was for stays readable
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${sub}`, refOf("example.ch"));
+  });
+});
+
+Deno.test("fin.hosting: an alias is its domain's — owner and all — and bills never point at the wrong customer", async () => {
+  await withFinApp(FIN, async (app) => {
+    const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
+    await save(app, "example.ch", { usrId: anna });
+    await save(app, "example.com", { aliasOf: "example.ch", usrId: ben }); // its own owner does not count
+    assertEquals((await get(app, "example.com"))?.usr_id, anna);
+    await save(app, "example.ch", { usrId: ben }); // nothing billed yet: it may change hands, its alias with it
+    assertEquals((await get(app, "example.com"))?.usr_id, ben);
+
+    const sub = await hosting(app, ben);
+    await assertRejects(() => link(app, "example.com", sub), Error, "is an alias; link example.ch");
+    await link(app, "example.ch", sub);
+    await assertRejects(() => save(app, "example.ch", { usrId: anna }), Error, "subscriptions of its owner still run");
+    await save(app, "solo.ch", { usrId: ben });
+    await link(app, "solo.ch", await hosting(app, ben));
+    await assertRejects(() => save(app, "solo.ch", { aliasOf: "example.ch" }), Error, "link them to example.ch first");
+
+    // a domain without an owner becomes the subscription's customer's
+    await save(app, "free.ch");
+    await link(app, "free.ch", await hosting(app, anna));
+    assertEquals((await get(app, "free.ch"))?.usr_id, anna);
   });
 });

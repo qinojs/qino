@@ -190,7 +190,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     ${billed.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">${billed.map((p) => html.async`<tr>
         <td>${date(p.period_start)} – ${date(p.period_end)}
-        <td>${rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", p.invoice_id)}`)}
+        <td>${Number(p.invoice_id) ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", p.invoice_id) : "—"}`)}
       </table></div>` : html.async`<p>${t`Nothing billed yet`}`}
   </div>
 </div>`;

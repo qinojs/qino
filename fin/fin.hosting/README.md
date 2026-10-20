@@ -4,12 +4,14 @@ Fin for hosting providers: the domains of customers, what is an alias of what, a
 subscriptions each domain is billed by — its hosting, the domain itself, a service.
 
 ```ts
-import { blockers, domains, link, remove, save, subscriptionsBy } from "@qino/qino/fin.hosting";
+import { blockers, domains, link, remove, save, subscriptionsBy, unlink } from "@qino/qino/fin.hosting";
 
 await save(app, "example.ch", { usrId: 42, registrar: "Hostpoint" });
-await save(app, "example.com", { aliasOf: "example.ch" }); // served and billed with example.ch, owner taken over
+await save(app, "example.com", { aliasOf: "example.ch" }); // served and billed with example.ch, its owner too
 await link(app, "example.ch", subscriptionId); // the subscription's ref becomes fin.hosting:example.ch
+await unlink(app, "example.ch", subscriptionId);
 await domains(app, 42); // a customer's, each alias right after its domain
+await subscriptionsBy(app, 42); // their subscriptions, by domain
 await blockers(app, "example.ch"); // ["aliases", "running", "unpaid"]: why it may not go
 await remove(app, "example.com");
 ```
@@ -17,7 +19,10 @@ await remove(app, "example.com");
 The domain is the key (`fin_hosting_domain.name`, lower case, punycode). A subscription is for a
 domain through its `ref` (`fin.hosting:example.ch`), the convention all of fin uses — so plans,
 prices, periods and billing stay [fin.subscription](../fin.subscription/README.md)'s. An alias is
-one level deep and costs nothing of its own: its domain carries the subscriptions.
+one level deep and is its domain's: same owner, nothing of its own billed — its domain carries the
+subscriptions. The bills always fit the owner: only the owner's subscriptions are linked (a domain
+without one takes the subscription's customer), and a domain does not change hands, nor become an
+alias, while subscriptions still run for it.
 
 **Held, not deleted.** A domain with aliases, a running subscription or an unpaid invoice of one
 cannot be removed; ended subscriptions keep their `ref`, so what they were for stays readable.
