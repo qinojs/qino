@@ -229,8 +229,18 @@ Deno.test("the list shows overdue as status, the due date on hover, no column of
     const fresh = Number(await create(app, { currency: "CHF", lines: [{ name: "Domain", price: 1000 }] }));
     await issue(app, fresh);
     const page = String(await as("http://qino.test/backend/invoices", () => render(node)));
-    assert(!page.includes("<th>Due"));
+    assert(!page.includes("<th>Due") && !page.includes("<th>Paid") && page.includes("<th>#"));
     assertStringIncludes(page, `<span title="Due 2020-01-31"><small class=u2-badge style="background:var(--red)">overdue</small></span>`);
     assertEquals(page.match(/>overdue</g)?.length, 1); // the fresh one is open, not overdue
+  });
+});
+
+Deno.test("the list says what of an open invoice is paid already, only where part of it is", async () => {
+  await withApp(async (app, as, node) => {
+    const id = Number(await create(app, { currency: "CHF", lines: [{ name: "Hosting", price: 24000 }] }));
+    await issue(app, id);
+    await app.db.exec`UPDATE invoice SET paid = 10000 WHERE id = ${id}`;
+    const page = String(await as("http://qino.test/backend/invoices", () => render(node)));
+    assert(/<small title="Paid">CHF\s100\.00<\/small>/.test(page));
   });
 });

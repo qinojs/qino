@@ -104,12 +104,11 @@ async function list(node: Node, url: URL) {
   const pageUrl = await (await node.page()).url();
   return html.async`<table class=u2-table style="white-space:nowrap">
     <thead><tr>
-      <th>${t`Number`}
+      <th>#
       <th>
       <th>${t`Party`}
       <th>${t`Date`}
       <th>${t`Total`}
-      <th>${t`Paid`}
       <th>${t`Status`}
       <th>${t`For`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
@@ -119,17 +118,20 @@ async function list(node: Node, url: URL) {
       <td>${row.usr_id ? userLink(node, row.usr_id, partyName(row)) : partyName(row)}
       <td style="white-space:nowrap">${row.date}
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
-      <td style="text-align:end; white-space:nowrap">${money(row.paid, row.currency)}
       <td>${overdue(row)
       ? html.async`<span title="${t`Due`} ${row.due}">${badge(t`overdue`, "--red")}</span>`
       : html.async`<span title="${row.due ? html.async`${t`Due`} ${row.due}` : ""}">${status(row.status)}</span>`}
+        ${partly(row) ? html.async`<small title="${t`Paid`}">${money(row.paid, row.currency)}</small>` : ""}
       <td>${refLink(node, row.ref)}`)}
-    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 8 })}
+    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 7 })}
   </table>`;
 }
 
 /** Open past its due date — a credit note is never overdue. */
 const overdue = (row: Row) => row.status === "open" && row.type === "invoice" && !!row.due && String(row.due) < today();
+
+/** Open with part of it paid: the status alone would not tell. */
+const partly = (row: Row) => row.status === "open" && Number(row.paid) !== 0 && Number(row.paid) !== Number(row.total);
 
 /** The due date, marked once it has passed. */
 const due = (app: App, row: Row) => overdue(row) ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}` : String(row.due ?? "");
