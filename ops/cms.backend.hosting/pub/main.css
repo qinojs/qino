@@ -4,7 +4,10 @@
   /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
   & > u2-table { padding: 0; overflow: auto; }
 
-  & .-projects td { vertical-align: top; }
-  & .-projects .-num { text-align: right; white-space: nowrap; }
+  & td { vertical-align: top; }
+  & .-num { text-align: right; white-space: nowrap; }
+  & .-server { width: auto; }
   & .-projects td > :is(a, code, span) { display: block; }
+  & .-actions { white-space: nowrap; }
+  & .-create { display: flex; flex-wrap: wrap; gap: .5rem; }
 }

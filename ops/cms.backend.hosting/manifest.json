@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.hosting",
-  "description": "Lists the projects of a server with state, resources, ports and domains, through a root helper.",
+  "description": "Lists, creates, starts, stops and archives the projects of a server, through a root helper.",
   "dependencies": [
     "cms.backend"
   ],
@@ -8,8 +8,13 @@
     "README.md",
     "host/helper.ts",
     "host/qino-hosting.service",
+    "host/templates/qino/files/server.ts",
+    "host/templates/qino/install.sh",
+    "host/templates/qino/site.caddy",
+    "host/templates/qino/unit.service",
     "lib/helper.ts",
     "manifest.json",
+    "nodeApi.ts",
     "plugin.ts",
     "pub/main.css",
     "pub/main.js",

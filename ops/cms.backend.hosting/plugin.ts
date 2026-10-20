@@ -1,5 +1,6 @@
 import { backend } from "@qino/qino/cms.backend";
 
+import api from "./nodeApi.ts";
 import { list, render } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -30,6 +31,7 @@ export const cms = {
     css: ["pub/main.css"],
     js: ["pub/main.js"],
     render,
+    api,
     parts: { list },
   },
 };
