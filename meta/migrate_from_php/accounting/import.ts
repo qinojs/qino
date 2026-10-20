@@ -167,9 +167,12 @@ async function domains(app: App, data: Rows, abos: Rows, usrs: Map<number, numbe
     owners.set(name, usrId);
   }
   const registrars = new Map(data.map((d) => [normalize(String(d.domain ?? "")), String(d.registrar ?? "")]));
+  const free = new Set(data.filter((d) => Number(d.free)).map((d) => normalize(String(d.domain ?? ""))));
   for (const raw of data) if (raw.domain && !normalize(String(raw.domain))) report.push(`domain "${raw.domain}": not a domain, left out`);
   const names = new Set([...registrars.keys(), ...owners.keys()].filter(Boolean));
-  for (const name of names) await save(app, name, { usrId: owners.get(name) ?? null, registrar: registrars.get(name) || null });
+  for (const name of names) {
+    await save(app, name, { usrId: owners.get(name) ?? null, registrar: registrars.get(name) || null, free: free.has(name) });
+  }
   for (const abo of abos) {
     const name = domainOf(abo.title), id = subs.get(Number(abo.id));
     if (!name || !id) continue;
