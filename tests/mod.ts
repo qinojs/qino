@@ -3,6 +3,7 @@ export { aiAdapters, aiCapabilities, dbSchema as aiDbSchema } from "../module/ai
 export { fakeCms, render as cmsRender } from "../module/cms/tests/deps.ts";
 export { dbSchema as messagingDbSchema, templatePlaceholders } from "../module/messaging/tests/deps.ts";
 export { dbSchema as paymentDbSchema } from "../fin/fin.payment/tests/deps.ts";
+export { dbSchema as reportingServerDbSchema, intake as reportingIntake } from "../ops/cms.backend.reporting_server/tests/deps.ts";
 export { journal, userJournal } from "../module/cms.backend.superuser.messaging/tests/deps.ts";
 export { messagingChannel as emailMessagingChannel } from "../module/messaging.email/tests/deps.ts";
 export { dbSchema as telegramDbSchema, messagingChannel as telegramMessagingChannel } from "../module/messaging.telegram/tests/deps.ts";

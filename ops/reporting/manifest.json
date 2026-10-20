@@ -1,0 +1,15 @@
+{
+  "name": "reporting",
+  "description": "Reports this instance home: versions, modules and new errors, to a reporting server.",
+  "dependencies": [
+    "core",
+    "cron",
+    "error_report"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

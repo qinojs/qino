@@ -1,0 +1,10 @@
+[qcms-mod="backend.reporting_server"] {
+  & > .u2-card { flex: 1 1 100%; min-width: 0; }
+  & > .u2-card > .-head { display: flex; align-items: center; gap: .5rem; }
+  & > .u2-card > .-head > button { margin-left: auto; }
+  /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
+  & > .u2-card > u2-table { padding: 0; overflow: auto; }
+
+  & td { vertical-align: top; }
+  & .-message { white-space: pre-wrap; max-width: 40rem; }
+}

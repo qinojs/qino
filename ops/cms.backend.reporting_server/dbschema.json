@@ -1,0 +1,45 @@
+{
+  "properties": {
+    "reporting_instance": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "string", "maxLength": 64, "x-index": "primary" },
+          "key_hash": { "type": "string", "maxLength": 64, "description": "SHA-256 of the key the instance chose on its first report." },
+          "url": { "type": "string", "maxLength": 255 },
+          "qino": { "type": "string", "maxLength": 32 },
+          "commit": { "type": "string", "maxLength": 64 },
+          "runtime": { "type": "string", "maxLength": 64 },
+          "modules": { "type": "string", "description": "Linked modules, comma separated." },
+          "ip": { "type": "string", "maxLength": 39 },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time", "x-index": true }
+        },
+        "required": ["id", "key_hash"]
+      }
+    },
+    "reporting_error": {
+      "additionalProperties": {
+        "properties": {
+          "instance": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary",
+            "x-qg-parent": "reporting_instance",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "fp": { "type": "string", "maxLength": 64, "x-index": "primary", "description": "Hash of source, file, line and col: the same error on every instance." },
+          "source": { "type": "string", "maxLength": 10 },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "col": { "type": "integer" },
+          "prio": { "type": "string", "maxLength": 10 },
+          "message": { "type": "string" },
+          "hits": { "type": "integer" },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time", "x-index": true }
+        },
+        "required": ["instance", "fp"]
+      }
+    }
+  }
+}
