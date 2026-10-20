@@ -95,6 +95,8 @@ Deno.test("cms.backend.hosting: totals, server capacity, actions by state, never
   assertStringIncludes(out, "<td class=-num><u2-bytes>60000000000</u2-bytes>"); // disk used
   assertStringIncludes(out, "<td class=-num><u2-bytes>35</u2-bytes>"); // disk of all projects
   assertStringIncludes(out, "4 cores");
+  assertStringIncludes(out, `<meter min=0 max="8000000000" value="2000000000" high="6400000000" optimum=0 title="25 %"></meter>`);
+  assertStringIncludes(out, `<meter min=0 max="100000000000" value="60000000000" high="80000000000" optimum=0 title="60 %"></meter>`);
   assertStringIncludes(out, `data-verb=stop data-name="a"`);
   assertStringIncludes(out, `data-verb=start data-name="b"`);
   assertEquals(out.includes(`data-verb=stop data-name="b"`), false);
