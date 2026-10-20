@@ -30,9 +30,12 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
     const sub = await subscribe(app, { usrId: anna, name: "Webspace", price: 24000, currency: "CHF", start: "2026-01-01" });
     await link(app, "anna.ch", sub, "hosting");
 
+    await save(app, "anna.net", { aliasOf: "anna.ch" }); // nothing to bill: folded under its domain
     const page = String(await inRequest(app, BASE, () => render(node)));
     assertStringIncludes(page, `<a href="/backend/domains?domain=anna.ch">anna.ch</a>`);
-    assertStringIncludes(page, `<small>↳</small> <a href="/backend/domains?domain=anna.com">`);
+    assertStringIncludes(page, `<tr data-alias-of="anna.ch" hidden>`);
+    assertStringIncludes(page, `<button data-aliases="anna.ch">+1</button>`);
+    assertStringIncludes(page, `<tr>\n        <td style="white-space:nowrap"><small>↳</small> <a href="/backend/domains?domain=anna.com">`); // to bill: shown
     assert(/<small>Hosting<\/small> Webspace <small>CHF\s240\.00 \/ year<\/small>/.test(page)); // Intl puts a no-break space
     const row = (name: string) => page.slice(page.lastIndexOf(`>${name}</a>`)).split("<tr>")[0];
     assertStringIncludes(row("anna.ch"), "Domain not billed"); // its hosting is, its registration not
@@ -46,8 +49,10 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
 
     const filtered = String(await inRequest(app, `${BASE}?search=ours`, () => render(node)));
     assert(filtered.includes("ours.ch") && !filtered.includes("?domain=theirs.ch")); // the to-do card lists the others still
+    // searched for, an alias shows unfolded
+    assert(!String(await inRequest(app, `${BASE}?search=anna.com`, () => render(node))).includes("data-alias-of="));
 
-    assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>6</b> domains · <small class=u2-badge style=\"background:var(--orange)\">4 to do");
+    assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>7</b> domains · <small class=u2-badge style=\"background:var(--orange)\">4 to do");
     const card = String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna, await node.page())));
     assertStringIncludes(card, "anna.com");
     assertEquals(String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna + 1, await node.page()))), "");

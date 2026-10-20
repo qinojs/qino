@@ -13,6 +13,11 @@ cms.initNode("backend.superuser.fin.hosting", (el) => {
 
   el.addEventListener("click", (e) => {
     if (e.target.closest("[data-sync]")) return execute(e.target.closest("[data-sync]"), { sync: true });
+    const fold = e.target.closest("[data-aliases]");
+    if (fold) {
+      for (const row of el.querySelectorAll(`[data-alias-of="${CSS.escape(fold.dataset.aliases)}"]`)) row.hidden = !row.hidden;
+      return;
+    }
     if (e.target.closest("[data-prune]")) return execute(e.target.closest("[data-prune]"), { prune: true });
     const button = e.target.closest("[data-remove], [data-unlink]");
     if (!button) return;

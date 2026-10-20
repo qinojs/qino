@@ -38,13 +38,15 @@ const kindWord = (app: App, kind: Kind | undefined) =>
 const price = (app: App, s: Row) =>
   html.async`${money(s.amount, s.currencyCode)} / ${Number(s.count) > 1 ? `${s.count} ` : ""}${s.unit === "month" ? app.t`month` : app.t`year`}`;
 
+/** What we bill a domain for (`billable`) without a running subscription for it. */
+const unbilled = (d: Row, subs: Row[]) => billable(d).filter((kind) => !subs.some((s) => running(s) && kindOf(s) === kind));
+
 /** What a domain is billed by, each subscription with what it is for; what we bill for (`billable`)
  *  without a running subscription for it; what is free. */
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
-  const unbilled = billable(d).filter((kind) => !live.some((s) => kindOf(s) === kind));
   return html.async`${live.map((s) => html.async`<div><small>${kindWord(app, kindOf(s))}</small> ${s.label} <small>${price(app, s)}</small></div>`)}
-    ${unbilled.map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}
+    ${unbilled(d, subs).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}
     ${KINDS.filter((kind) => d[`${kind}_free`]).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`free`}`))}`;
 }
 
@@ -91,6 +93,9 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   const [all, subs, users] = await Promise.all([domains(app, usr), subscriptionsBy(app, usr), customers(app)]);
   const names = new Map(users.map((u) => [Number(u.id), nameOf(u)]));
   const rows = search ? all.filter((d) => String(d.name).includes(search)) : all;
+  // an alias folds under its domain, unless searched for or still to bill
+  const folds = (d: Row) => !!d.alias_of && !search && !unbilled(d, subs.get(String(d.name)) ?? []).length;
+  const aliasesOf = Map.groupBy(all.filter(folds), (d) => d.alias_of);
   return html.async`<div class=u2-flex>
   ${openCard(node, pageUrl)}
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
@@ -110,8 +115,9 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
         <th>${t`until`}
         <th>${t`Host`}
         <th>${t`Billed by`}
-      <tbody>${rows.map((d) => html.async`<tr>
-        <td style="white-space:nowrap">${nameCell(pageUrl, d)}
+      <tbody>${rows.map((d) => html.async`<tr${folds(d) ? html` data-alias-of="${d.alias_of}" hidden` : ""}>
+        <td style="white-space:nowrap">${nameCell(pageUrl, d)}${aliasesOf.has(d.name)
+          ? html` <button data-aliases="${d.name}">+${aliasesOf.get(d.name)?.length}</button>` : ""}
         <td>${d.usr_id == null ? "" : rowLink(node, "cms.backend.superuser.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)))}
         <td>${d.registrar}
         <td style="white-space:nowrap">${d.expires ? String(d.expires).slice(0, 10) : ""}
