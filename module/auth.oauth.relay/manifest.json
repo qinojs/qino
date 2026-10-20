@@ -2,6 +2,7 @@
   "name": "auth.oauth.relay",
   "description": "One shared OAuth callback for many apps: forwards the provider's answer to the app that started the login.",
   "dependencies": [
+    "auth.oauth",
     "core"
   ],
   "files": [

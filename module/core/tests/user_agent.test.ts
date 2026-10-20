@@ -16,7 +16,8 @@ Deno.test("uaInfo classifies browser, os and device", () => {
   assertEquals([ios("CriOS/140.0").browser, ios("FxiOS/142.0").browser], ["Chrome", "Firefox"]);
   assertEquals(uaInfo("Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Claude/1.2.3 Chrome/140.0 Safari/537.36").browser, "Claude");
   assertEquals(uaInfo("Googlebot/2.1").bot, true);
-  for (const ua of ["Go-http-client/1.1", "curl/8.5.0", "python-requests/2.31", "Apache-HttpClient/4.5", "okhttp/4.12"]) {
+  for (const ua of ["Go-http-client/1.1", "curl/8.5.0", "python-requests/2.31", "Apache-HttpClient/4.5", "okhttp/4.12",
+    "NetworkingExtension/8624.5.1.10.3 Network/5812.160.9 iOS/26.6.2"]) {
     assertEquals(uaInfo(ua).bot, true, ua);
   }
   assertEquals(uaInfo(""), { browser: "-", version: "", os: "", mobile: false, bot: true });

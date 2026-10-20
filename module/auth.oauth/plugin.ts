@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { createHmac } from "node:crypto";
 import { Access, addContact, ApiError, b64url, contactOwner, getCtx, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
@@ -97,6 +98,9 @@ export async function clientSecret(p: any, aud: string): Promise<string> {
   return data + "." + b64url(new Uint8Array(sig));
 }
 
+/** Signature of a relayed state; auth.oauth.relay checks it the same way. */
+const stateSig = (key: string, data: string) => createHmac("sha256", key).update(data).digest("base64url").slice(0, 22);
+
 const ownCallback = (ctx: Ctx, name: string) => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
 /** Where the provider sends the browser back. A set `redirect_uri` is a shared callback, e.g. auth.oauth.relay. */
 const callbackUrl = (ctx: Ctx, p: any): string => p.redirect_uri || ownCallback(ctx, p.name);
@@ -192,8 +196,11 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);
   const own = ownCallback(ctx, name), redirectUri = callbackUrl(ctx, p);
-  // a shared callback learns from the state where to send the browser on
-  const state = randB64(24) + (redirectUri === own ? "" : "." + b64url(new TextEncoder().encode(own)));
+  // a shared callback learns from the state where to send the browser on; signed with the client secret,
+  // so a relay that knows it trusts the target without a host list
+  const rnd = randB64(24), target = b64url(new TextEncoder().encode(own));
+  const sig = stateSig(String(p.client_secret).trim(), `${rnd}.${target}`);
+  const state = redirectUri === own ? rnd : `${rnd}.${target}.${sig}`;
   const nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
 
   // one-shot, for the callback; replacing the whole value also spends the `connect` mark
