@@ -34,6 +34,12 @@ const userLabel = (u: Row) =>
 const userLink = (node: Node, id: unknown, label = "") =>
   id ? rowLink(node, "cms.backend.superuser.fin.party", "usr", id, label || `#${id}`) : "";
 
+/** A small link to the party's page, behind its name: the list stays about the invoices. */
+async function partyIcon(node: Node, id: unknown) {
+  const url = (await backend.toModuleUrl(node, "cms.backend.superuser.fin.party"))({ usr: id });
+  return url ? html.async` <a href="${url}" title="${node.app.t`Customer`}"><u2-ico icon=person>👤</u2-ico></a>` : "";
+}
+
 /** A user's email address, the main one first; empty without one. */
 export const emailOf = async (app: App, id: unknown) => id
   ? String(await app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${Number(id)} AND type = 'email'
@@ -115,7 +121,7 @@ async function list(node: Node, url: URL) {
       <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
         ${row.type === "credit_note" ? badge(t`credit note`) : ""}
       <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
-      <td>${row.usr_id ? userLink(node, row.usr_id, partyName(row)) : partyName(row)}
+      <td><span class=-party title="${partyName(row)}">${partyName(row)}</span>${row.usr_id ? partyIcon(node, row.usr_id) : ""}
       <td style="white-space:nowrap">${row.date}
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
       <td>${overdue(row)
