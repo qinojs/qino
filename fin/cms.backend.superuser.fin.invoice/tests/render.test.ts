@@ -234,7 +234,7 @@ Deno.test("the list shows overdue as status, the due date on hover, no column of
     assertEquals(page.match(/>overdue</g)?.length, 1); // the fresh one is open, not overdue
     // the party is text, cut by CSS where long, whole in its title — not a link of its own
     const party = await app.db.table("usr").insert({ active: 0, pw: "", superuser: 0, given_name: "", family_name: "", organization: "Lange Firma AG" });
-    await issue(app, Number(await create(app, { currency: "CHF", usrId: Number(party), lines: [{ name: "Hosting", price: 100 }] })));
+    await issue(app, Number(await create(app, { currency: "CHF", usrId: Number(party), party: { name: "Lange Firma AG" }, lines: [{ name: "Hosting", price: 100 }] })));
     assertStringIncludes(String(await as("http://qino.test/backend/invoices", () => render(node))), `<span class=-party title="Lange Firma AG">Lange Firma AG</span>`);
   });
 });
