@@ -91,11 +91,13 @@ let session, last = 0, sent, busy = false, poll, showing = Promise.resolve(), ch
 async function entry({ role, content }) {
   const text = textOf(content);
   if (!text || role === "tool") return "";
-  if (role === "system") { // this chat's notes, by their first line
-    return text.startsWith(SHOWN) || text.startsWith(ON) ? h("div", { className: "-note", title: text }, text.split("\n")[0]) : "";
+  if (role === "system") { // this chat's notes, by their first line; notes waiting together come as one
+    const line = text.split("\n").find((l) => l.startsWith(SHOWN) || l.startsWith(ON));
+    return line ? h("div", { className: "-note", title: text }, line) : "";
   }
   if (role === "assistant") return h("div", { className: "-assistant", innerHTML: await markdown(text) });
-  return h("div", { className: role === "error" ? "-error" : "-user" }, text);
+  if (role === "user" || role === "error") return h("div", { className: `-${role}` }, text);
+  return ""; // e.g. what the model was given at its start
 }
 
 // at the end, the log stays there while it or what is in it grows or shrinks (new messages, markdown,
