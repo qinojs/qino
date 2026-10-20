@@ -8,6 +8,7 @@
   ],
   "files": [
     "README.md",
+    "dbschema.json",
     "healthChecks.ts",
     "lib/address.ts",
     "lib/inbound.ts",

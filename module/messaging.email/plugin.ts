@@ -5,6 +5,7 @@ import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { messagingChannel } from "./mod.ts";
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export { settingsSchema } from "./lib/settings.ts";
 export { healthChecks } from "./healthChecks.ts";

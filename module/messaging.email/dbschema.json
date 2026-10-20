@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "email_inbox": {
+      "description": "Import cursor per server, account and mailbox",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "string", "maxLength": 64, "x-index": "primary" },
+          "validity": { "type": "string", "maxLength": 32 },
+          "uid": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+        },
+        "required": ["id", "validity", "uid"]
+      }
+    },
+    "email_import": {
+      "description": "Permanent hashes of imported Message-IDs, or raw source when missing; independent of journal deletion",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "string", "maxLength": 64, "x-index": "primary" }
+        },
+        "required": ["id"]
+      }
+    }
+  }
+}

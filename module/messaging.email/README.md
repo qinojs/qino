@@ -31,8 +31,17 @@ sent as `Reply-To`. So replies arrive in a mailbox this module reads, in the sam
 With `inbound.enabled`, the cron job `messaging.email.inbox` checks the mailbox every five minutes
 over IMAP ([imapflow](https://www.npmjs.com/package/imapflow) +
 [mailparser](https://www.npmjs.com/package/mailparser), loaded only when a host is configured).
-Each message is recorded as `direction: "in"`, assigned to the sender's user, and marked `\Seen`.
-That flag is the only state: if the app crashes on a message, it stays unseen and is read next time.
+Each message is recorded as `direction: "in"` and assigned to the sender's user. Mailbox flags
+stay unchanged, and already-read mail is imported too. `email_inbox` stores UIDVALIDITY and the
+last processed UID per server, account and folder; only newer UIDs are fetched. The first run
+imports the existing mailbox. An import failure stops the batch and is retried next time.
+
+`email_import` permanently stores a SHA-256 hash of each imported Message-ID (or the raw source
+when absent). Receipts and cursor are committed with the journal entry and survive local deletion.
+If UIDVALIDITY changes, the mailbox is scanned again, but receipts prevent reimporting deleted
+messages. Without a Message-ID, recognition requires unchanged source. Resetting the cursor alone
+does not reimport known mail; deleting receipts removes that protection. Local deletion never
+deletes mail on the server. Receipts grow by one small row per distinct imported mail.
 
 Each incoming mail gets a `spam` score (0 to 1): the receiving server's verdict (`Authentication-Results`:
 DMARC/SPF/DKIM `fail`, and an `X-Spam-Flag`/`X-Spam-Status`/`X-Spam` saying yes) and security's

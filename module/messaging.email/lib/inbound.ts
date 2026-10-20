@@ -1,4 +1,4 @@
-import { contactOwner, unixTime } from "@qino/qino";
+import { contactOwner, sha256hex, unixTime } from "@qino/qino";
 import { record } from "@qino/qino/messaging";
 
 import { addressOf } from "./address.ts";
@@ -7,8 +7,7 @@ import { spamOf } from "./spam.ts";
 
 import type { App } from "@qino/qino";
 
-/** What the IMAP client and the MIME parser hand back — only the parts this module reads. */
-type Fetched = { uid: number; source: Uint8Array };
+/** What the MIME parser hands back — only the parts this module reads. */
 type Parsed = {
   subject?: string;
   text?: string;
@@ -22,17 +21,17 @@ type Parsed = {
 };
 
 /**
- * Import new mails from the mailbox into the journal and mark them seen.
+ * Import new mails into the journal without changing mailbox flags.
  *
- * Resolves with the number imported; 0 if disabled. A probe only connects and opens the mailbox.
- * Unseen = not imported, so a mail that crashed the app is retried next time.
+ * Resolves with the number processed; 0 if disabled. A probe only connects and opens the mailbox.
+ * The cursor advances only after a successful import; receipts survive deletion of journal entries.
  */
 export async function receive(app: App, { limit = 50, probe }: { limit?: number; probe?: boolean } = {}): Promise<number> {
   const config = await inbound(app);
   if (!config.enabled && !probe) return 0;
   if (!config.host || !config.pass) throw new Error("Inbound email needs an IMAP host and password");
 
-  const { ImapFlow } = await import("imapflow") as { ImapFlow: new (options: unknown) => ImapClient };
+  const { ImapFlow } = await import("imapflow");
   const { simpleParser } = await import("mailparser") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
   const client = new ImapFlow({
     host: config.host,
@@ -43,26 +42,54 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
   });
 
   await client.connect();
-  const lock = await client.getMailboxLock(config.mailbox);
-  const done: number[] = [];
+  let done = 0;
   try {
-    if (probe) return 0;
-    // No other IMAP command may run while a fetch streams — flag the uids once the loop is closed.
-    for await (const message of client.fetch({ seen: false }, { uid: true, source: true })) {
-      if (done.length >= limit) break;
-      try {
-        await journal(app, await simpleParser(message.source), config.address);
-        done.push(message.uid);
-      } catch (e) {
-        console.error("[email] inbound message failed —", e);
+    const lock = await client.getMailboxLock(config.mailbox);
+    try {
+      if (probe || limit <= 0) return 0;
+      const mailbox = client.mailbox;
+      if (!mailbox) throw new Error("Inbound mailbox is not open");
+      const id = await sha256hex(JSON.stringify([config.host, config.port, config.user, config.mailbox]));
+      const validity = String(mailbox.uidValidity);
+      const table = app.db.table("email_inbox");
+      const cursor = await app.db.row`SELECT uid, validity FROM email_inbox WHERE id = ${id}`;
+      const uid = cursor?.validity === validity ? Number(cursor.uid) : 0;
+      if (!cursor) await table.insert({ id, validity, uid });
+      const last = mailbox.uidNext - 1;
+      if (uid >= last) return 0;
+      const uids = await client.search({ uid: `${uid + 1}:${last}` }, { uid: true });
+      if (!uids || !uids.length) return 0;
+      uids.sort((a, b) => a - b);
+      // No other IMAP command may run while a fetch streams — finish fetching before importing.
+      const messages = await client.fetchAll(uids.slice(0, limit), { uid: true, source: true }, { uid: true });
+      for (const message of messages.sort((a, b) => a.uid - b.uid)) {
+        try {
+          if (!message.source) throw new Error("Inbound message has no source");
+          const mail = await simpleParser(message.source);
+          // The Message-ID survives renumbering; without one only identical source can be recognized.
+          const receipt = mail.messageId
+            ? await sha256hex(`id:${mail.messageId}`)
+            : await sha256hex(`source:${new Uint8Array(await crypto.subtle.digest("SHA-256", message.source.slice())).toHex()}`);
+          await app.db.transaction(async () => {
+            if (!await app.db.one`SELECT id FROM email_import WHERE id = ${receipt}`) {
+              await journal(app, mail, config.address);
+              await app.db.table("email_import").insert({ id: receipt });
+            }
+            await table.update(id, { validity, uid: message.uid });
+          });
+          done++;
+        } catch (e) {
+          console.error("[email] inbound message failed —", e);
+          break;
+        }
       }
+    } finally {
+      lock.release();
     }
-    if (done.length) await client.messageFlagsAdd(done.join(","), ["\\Seen"], { uid: true });
   } finally {
-    lock.release();
     await client.logout();
   }
-  return done.length;
+  return done;
 }
 
 /** One incoming mail as a journal entry, tied to the user the address belongs to. */
@@ -91,11 +118,3 @@ async function journal(app: App, mail: Parsed, to: string) {
     spam,
   }, [{ usrId, address: sender?.address, externalId: mail.messageId?.slice(0, 191), sent: unixTime() }]);
 }
-
-type ImapClient = {
-  connect(): Promise<void>;
-  logout(): Promise<void>;
-  getMailboxLock(mailbox: string): Promise<{ release(): void }>;
-  fetch(range: unknown, options: unknown): AsyncIterable<Fetched>;
-  messageFlagsAdd(range: unknown, flags: string[], options: unknown): Promise<boolean>;
-};
