@@ -1,2 +1,2 @@
 export * as backend from "./lib/backend.ts";
-export { renderDashboard } from "./lib/dashboard.ts";
+export { renderDashboard, renderRowWidgets } from "./lib/dashboard.ts";

@@ -3,7 +3,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import api from "../nodeApi.ts";
 import { render } from "../render.ts";
-import { backendDashboardWidget } from "../plugin.ts";
+import { backendDashboardWidget, backendRowWidget } from "../plugin.ts";
 
 type Answer = { ok: boolean; message?: string };
 
@@ -20,6 +20,11 @@ Deno.test("subscriptions are added, billed from the run, canceled, and deleted o
       as(() => api(node, { subscribe: { usrId: String(usr), name, price: "240", currency: "chf", start: today } }));
     await add("Hosting example.ch");
     assertStringIncludes(String(await as(() => backendDashboardWidget(app))), "<b>1</b>");
+    const backendPage = await node.page();
+    const card = String(await as(() => backendRowWidget.usr(app, usr, backendPage)));
+    assertStringIncludes(card, "Hosting example.ch</a>");
+    assertStringIncludes(card, "?subscription=");
+    assertEquals(String(await as(() => backendRowWidget.usr(app, usr + 1, backendPage))), ""); // someone without any
     let page = String(await as(() => render(node)));
     assertStringIncludes(page, "Hosting example.ch");
     assertStringIncludes(page, "data-action=bill");

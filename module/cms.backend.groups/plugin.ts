@@ -1,5 +1,5 @@
 import { html, getCtx, safeEqual } from "@qino/qino";
-import { backend } from "@qino/qino/cms.backend";
+import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 
 import api, { canManageMembers } from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -141,6 +141,7 @@ async function renderDetail(node: Node, id: number) {
     </form>`
       : html.async`<div class=-body>${t`You can only add users to groups you are a member of yourself.`}</div>`}
   </div>
+  ${renderRowWidgets(node, "grp", id)}
 </div>`;
 }
 

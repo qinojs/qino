@@ -105,7 +105,7 @@ function split(items: Row[], taxIncluded: boolean, fallback: string) {
 export async function onPayment(app: App, payment: Row): Promise<void> {
   const id = Number(String(payment.ref ?? "").split(":")[1]);
   if (payment.ref !== invoiceRef(id)) return; // what else a payment is for, its consumer books
-  const { roles, currency, moneyBy } = await setup(app);
+  const { roles, currency, moneyBy, closed } = await setup(app);
   if (payment.currency !== currency) return;
   const invoice = await app.db.row`SELECT direction FROM invoice WHERE id = ${id}`;
   if (!invoice) return;
@@ -135,8 +135,10 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
       { account: money, amount: -dMoved - dFee },
       { account: roles.fees, amount: dFee },
     ];
+  // on the day the money moved, where known and still open; a closed period is not booked into
+  const date = payment.date && !(closed && String(payment.date) <= closed) ? String(payment.date) : today();
   await book(app, {
-    date: today(),
+    date,
     text: String(payment.description || `Payment #${payment.id}`),
     ref,
     lines: lines.filter((line) => line.account),

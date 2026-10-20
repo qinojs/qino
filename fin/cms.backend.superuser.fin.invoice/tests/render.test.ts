@@ -4,6 +4,7 @@ import { setTransport } from "@qino/qino/messaging.email";
 
 import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
+import { backendRowWidget } from "../plugin.ts";
 import { render } from "../render.ts";
 
 import type { App } from "@qino/qino";
@@ -205,5 +206,18 @@ Deno.test("issued, it goes to the customer at once where asked to, and says when
     assertEquals(mails.length, 1);
     const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, `data-sent="${id}"`);
+  });
+});
+
+Deno.test("a customer's page shows their invoices as a card, and nothing without any", async () => {
+  await withApp(async (app, as, node) => {
+    const id = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, given_name: "Anna" }));
+    const page = await node.page();
+    const card = () => as("http://qino.test/", () => backendRowWidget.usr(app, id, page)).then(String);
+    assertEquals(await card(), "");
+    const draft = Number(await create(app, { currency: "CHF", lines: [], usrId: id }));
+    const out = await card();
+    assertStringIncludes(out, `?invoice=${draft}">#${draft}</a>`);
+    assertStringIncludes(out, "draft");
   });
 });

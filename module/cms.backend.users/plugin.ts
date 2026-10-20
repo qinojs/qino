@@ -1,5 +1,5 @@
 import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, safeEqual, setMainContact } from "@qino/qino";
-import { backend } from "@qino/qino/cms.backend";
+import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
 import { list, allowLoginAs } from "./parts/list.ts";
@@ -269,5 +269,6 @@ async function renderDetail(node: Node, id: number) {
       ${grpHtml}
     </table>
   </div>
+  ${renderRowWidgets(node, "usr", id)}
 </div>`;
 }

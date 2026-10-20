@@ -50,6 +50,11 @@
             "default": 0,
             "description": "Amount the provider kept, in minor units"
           },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "When the money moved, YYYY-MM-DD, where it is known: given to a recorded payment. Its entry is booked on it"
+          },
           "status": {
             "type": "string",
             "enum": ["pending", "processing", "paid", "failed", "canceled", "expired", "refunded"],

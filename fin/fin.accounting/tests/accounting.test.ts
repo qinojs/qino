@@ -1,5 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { attach, cancel, create, creditNote, issue, refOf, update } from "@qino/qino/fin.invoice";
+import { today } from "@qino/qino/fin";
 import { record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
@@ -63,6 +64,21 @@ Deno.test("invoices and their payments book themselves, in parts, with fees, and
     const other = Number((await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Hosting", price: 20000 }] })))?.id);
     await cancel(app, other);
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM accounting_entry WHERE ref = ${refOf(other)}`), 2); // booked and reversed
+  });
+});
+
+Deno.test("a recorded payment is booked on the day the money moved, a closed period on today", async () => {
+  await withApp(async (app) => {
+    const invoice = async () => Number((await issue(app, await create(app, {
+      currency: "CHF", date: "2026-03-01", lines: [{ name: "Hosting", price: 24000 }],
+    })))?.id);
+    const dateOf = (payment: number) => app.db.one`SELECT date FROM accounting_entry WHERE ref = ${`fin.payment:${payment}`}`;
+    const first = await record(app, { direction: "in", provider: "bank", amount: 24000, currency: "CHF", ref: refOf(await invoice()), date: "2026-03-20" });
+    assertEquals(await dateOf(first), "2026-03-20");
+    await app.settings["fin.accounting"].closedUntil("2026-06-30");
+    const late = await record(app, { direction: "in", provider: "bank", amount: 24000, currency: "CHF", ref: refOf(await invoice()), date: "2026-04-02" });
+    assertEquals(await dateOf(late), today());
+    await assertRejects(() => record(app, { direction: "in", provider: "bank", amount: 1, currency: "CHF", date: "2.4.2026" }), Error, "YYYY-MM-DD");
   });
 });
 

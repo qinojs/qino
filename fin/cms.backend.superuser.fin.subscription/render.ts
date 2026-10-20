@@ -195,3 +195,17 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   </div>
 </div>`;
 }
+
+/** A customer's subscriptions, as card on their page (`backendRowWidget`); "" without any. */
+export async function userSubscriptions(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+  const subs = await subscriptions(app, Number(id));
+  if (!subs.length) return "";
+  const pageUrl = await page.url();
+  const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
+  return html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
+    <td><a href="${backend.toUrl(pageUrl, { subscription: s.id })}">${s.label}</a>
+    <td style="text-align:end">${money(s.amount, s.currencyCode)}
+    <td>${every(app, s.unit, s.count)}
+    <td>${ended(s) ? badge(app.t`ended`) : s.next}`)}
+  </table>`;
+}

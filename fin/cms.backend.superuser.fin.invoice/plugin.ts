@@ -3,11 +3,12 @@ import { backend } from "@qino/qino/cms.backend";
 import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
 import { today } from "@qino/qino/fin";
 
-import { render } from "./render.ts";
+import { render, userInvoices } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
@@ -40,3 +41,7 @@ export const cms = {
 };
 
 export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));
+
+export const backendRowWidget = {
+  usr: (app: App, id: unknown, page: Node): Promise<HtmlString | string> => finTexts(app, () => userInvoices(app, id, page)),
+};

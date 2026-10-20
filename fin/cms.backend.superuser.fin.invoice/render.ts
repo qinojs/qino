@@ -441,3 +441,17 @@ async function detail(node: Node, id: number) {
   </div>`}
 </div>`;
 }
+
+/** A customer's latest invoices, as card on their page (`backendRowWidget`); "" without any. */
+export async function userInvoices(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+  const rows = await app.db.query`SELECT * FROM invoice WHERE usr_id = ${id} ORDER BY id DESC LIMIT 10`;
+  if (!rows.length) return "";
+  const pageUrl = await page.url();
+  return html.async`<table class=u2-table style="white-space:nowrap">${rows.map((row) => html.async`<tr>
+    <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || `#${row.id}`}</a>
+    <td>${direction(row.direction, row.direction === "out" ? app.t`issued` : app.t`received`)}
+    <td>${row.date}
+    <td style="text-align:end">${money(row.total, row.currency)}
+    <td>${status(row.status)}`)}
+  </table>`;
+}
