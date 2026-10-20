@@ -51,6 +51,10 @@
           "allowed_domains": {
             "type": "string",
             "maxLength": 255
+          },
+          "redirect_uri": {
+            "type": "string",
+            "maxLength": 255
           }
         },
         "required": ["id", "name", "client_id", "client_secret"]

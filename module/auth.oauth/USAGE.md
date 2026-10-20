@@ -27,6 +27,13 @@ Tabelle `oauth_provider`:
 | `scopes` | leer = `openid email profile` |
 | `auto_create` | `1` = unbekannte, verifizierte User anlegen, `0` = nur bestehende |
 | `allowed_domains` | optional, kommagetrennt (z.B. `example.com`) — begrenzt öffentliche Provider |
+| `redirect_uri` | optional, geteilter Callback statt `{appUrl}oauth/callback/<name>` (siehe `auth.oauth.relay`) |
+
+## Viele Domains, ein Eintrag beim Provider
+
+Mit `redirect_uri` zeigt der Provider auf einen geteilten Callback, z.B. **`auth.oauth.relay`** — dann
+muss beim Provider nicht jede Domain eingetragen werden. Die eigene Callback-URL reist dabei im `state`
+mit.
 
 ## Wer mit wem verknüpft ist
 

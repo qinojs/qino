@@ -18,6 +18,7 @@
     "auth.api_keys": {},
     "auth.backup_codes": {},
     "auth.oauth": {},
+    "auth.oauth.relay": {},
     "auth.otp": {},
     "auth.totp": {},
     "auth.webauthn": {},

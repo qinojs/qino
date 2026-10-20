@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, addContact, ApiError, contactOwner, getCtx, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, addContact, ApiError, b64url, contactOwner, getCtx, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
 import { links, unlink } from "./mod.ts";
@@ -83,7 +83,9 @@ async function endpoints(p: any): Promise<{ authorize: string; token: string; us
   return { authorize: m.authorization_endpoint, token: m.token_endpoint, userinfo: m.userinfo_endpoint, oidc: true };
 }
 
-const callbackUrl = (ctx: Ctx, name: string) => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
+const ownCallback = (ctx: Ctx, name: string) => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
+/** Where the provider sends the browser back. A set `redirect_uri` is a shared callback, e.g. auth.oauth.relay. */
+const callbackUrl = (ctx: Ctx, p: any): string => p.redirect_uri || ownCallback(ctx, p.name);
 
 /** Only allow local, same-app return targets — blocks open-redirect via ?return_to=. */
 const safeReturn = (base: string, raw: unknown) =>
@@ -170,7 +172,10 @@ async function start(ctx: Ctx, name: string): Promise<never> {
 
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);
-  const state = randB64(24), nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
+  const own = ownCallback(ctx, name), redirectUri = callbackUrl(ctx, p);
+  // a shared callback learns from the state where to send the browser on
+  const state = randB64(24) + (redirectUri === own ? "" : "." + b64url(new TextEncoder().encode(own)));
+  const nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
 
   // one-shot, for the callback; replacing the whole value also spends the `connect` mark
   ctx.sess.data.oauth({ prov: name, state, nonce, verifier, returnTo: safeReturn(ctx.req.appUrl, ctx.req.query.return_to) });
@@ -178,7 +183,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   const u = new URL(e.authorize);
   u.searchParams.set("response_type", "code");
   u.searchParams.set("client_id", p.client_id);
-  u.searchParams.set("redirect_uri", callbackUrl(ctx, name));
+  u.searchParams.set("redirect_uri", redirectUri);
   u.searchParams.set("scope", p.scopes || "openid email profile");
   u.searchParams.set("state", state);
   if (e.oidc) { // PKCE + nonce only for OIDC; plain-OAuth2 providers (e.g. GitHub) may reject them
@@ -202,7 +207,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   const form: Record<string, string> = {
     grant_type: "authorization_code",
     code: q.code,
-    redirect_uri: callbackUrl(ctx, name),
+    redirect_uri: callbackUrl(ctx, p),
     client_id: p.client_id,
     client_secret: p.client_secret,
     ...(verifier && { code_verifier: verifier }),

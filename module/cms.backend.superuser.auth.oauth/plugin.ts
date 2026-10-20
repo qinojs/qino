@@ -73,7 +73,7 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
     ${PRESETS[v("name")]?.console_url ? 
       html`<a href="${PRESETS[v("name")]?.console_url ?? "#"}" target=_blank rel=noopener>Provider console</a><br>
     ` : ""}
-    <small>Redirect URI: <code>${selfBase + "oauth/callback/" + String(p.name)}</code></small>
+    <small>Redirect URI: <code>${p.redirect_uri || selfBase + "oauth/callback/" + String(p.name)}</code></small>
   </div>`}
   <div>
     <input type=hidden name=csrfToken value="${csrf}">
@@ -85,6 +85,7 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
       Client secret <input type=password name=client_secret value="" autocomplete=new-password${isNew ? "" : html.raw(` placeholder="•••••• (unchanged)"`)}>
       Scopes ${text("scopes", "openid email profile")}
       Allowed domains ${text("allowed_domains", "example.com")}
+      Shared redirect URI ${text("redirect_uri", "https://auth.example.com/oauth/relay")}
       <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
     </u2-fields>
     <fieldset>
@@ -131,6 +132,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         scopes: String(b.scopes ?? "").trim(),
         auto_create: b.auto_create ? 1 : 0,
         allowed_domains: String(b.allowed_domains ?? "").trim(),
+        redirect_uri: String(b.redirect_uri ?? "").trim(),
       };
       const id = Number(b.id);
       if (id) { if (secret) vals.client_secret = secret; await db.table("oauth_provider").update(id, vals); }
