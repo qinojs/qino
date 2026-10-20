@@ -31,7 +31,7 @@ Deno.test("domains: the list shows owner, aliases and billing, flags what a cust
     assertStringIncludes(page, `<a href="/backend/domains?domain=anna.ch">anna.ch</a>`);
     assertStringIncludes(page, `<small>↳</small> <a href="/backend/domains?domain=anna.com">`);
     assert(/Hosting anna\.ch <small>CHF\s240\.00 \/ year<\/small>/.test(page)); // Intl puts a no-break space
-    assertEquals(page.match(/not billed/g)?.length, 1); // unbilled.ch — not the alias, not ours.ch
+    assertEquals(page.match(/not billed/g)?.length, 2); // unbilled.ch and the alias anna.com — not ours.ch
     assertStringIncludes(page, "Anna AG");
 
     const filtered = String(await inRequest(app, `${BASE}?search=ours`, () => render(node)));
@@ -49,14 +49,15 @@ Deno.test("domains: one is added, changed, linked, unlinked and removed; refusal
     const node = backendNode(app, "/backend/domains");
     const as = (run: () => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
     const anna = await customer(app, "Anna AG");
-    const sub = await subscribe(app, { usrId: anna, name: "Domain anna.ch", price: 2500, currency: "CHF", start: "2026-01-01" });
+    // named after no domain: nothing links it by itself, here it is done by hand
+    const sub = await subscribe(app, { usrId: anna, name: "Domain", price: 2500, currency: "CHF", start: "2026-01-01" });
 
     const added = await as(() => api(node, { save: { name: "Anna.CH", usrId: String(anna), aliasOf: "", registrar: "" } }));
     assertEquals(added.url, "/backend/domains?domain=anna.ch");
     assertEquals((await as(() => api(node, { save: { name: "nonsense", usrId: "" } }))).message, "not a domain: nonsense");
 
     const detail = String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node)));
-    assertStringIncludes(detail, `<option value="${sub}">Domain anna.ch`); // the owner's subscription, ready to link
+    assertStringIncludes(detail, `<option value="${sub}">Domain`); // the owner's subscription, ready to link
     assertStringIncludes(detail, "data-remove=");
 
     await as(() => api(node, { link: { id: "anna.ch", subscription: String(sub) } }));
@@ -73,7 +74,7 @@ Deno.test("domains: one is added, changed, linked, unlinked and removed; refusal
   });
 });
 
-Deno.test("domains: an alias's page offers no customer and nothing to link — it is its domain's", async () => {
+Deno.test("domains: an alias's page offers no customer — it is its domain's — but its own subscriptions to link", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/domains");
     const anna = await customer(app, "Anna AG");
@@ -81,7 +82,7 @@ Deno.test("domains: an alias's page offers no customer and nothing to link — i
     await save(app, "anna.com", { aliasOf: "anna.ch" });
     await subscribe(app, { usrId: anna, name: "Hosting", price: 24000, currency: "CHF", start: "2026-01-01" });
     const page = String(await inRequest(app, `${BASE}?domain=anna.com`, () => render(node)));
-    assert(!page.includes("name=usrId") && !page.includes("data-link="));
+    assert(!page.includes("name=usrId") && page.includes("data-link="));
     assertStringIncludes(page, `<option selected>anna.ch`);
     // saved without a customer field, it stays its domain's
     await inRequest(app, BASE, () => api(node, { save: { id: "anna.com", aliasOf: "anna.ch", registrar: "x" } }));

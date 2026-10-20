@@ -1,9 +1,9 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
-import { cancel, subscribe } from "@qino/qino/fin.subscription";
+import { cancel, subscribe, update } from "@qino/qino/fin.subscription";
 
 import { withFinApp } from "../../tests/app.ts";
-import { blockers, domains, get, link, normalize, refOf, remove, save, subscriptionsBy, unlink } from "../mod.ts";
+import { adopt, blockers, domains, get, link, normalize, refOf, remove, save, subscriptionsBy, unlink } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -84,7 +84,7 @@ Deno.test("fin.hosting: a domain is held by aliases, running subscriptions and u
   });
 });
 
-Deno.test("fin.hosting: an alias is its domain's — owner and all — and bills never point at the wrong customer", async () => {
+Deno.test("fin.hosting: an alias is its domain's customer's, may cost on its own, and bills never point at the wrong customer", async () => {
   await withFinApp(FIN, async (app) => {
     const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
     await save(app, "example.ch", { usrId: anna });
@@ -94,16 +94,40 @@ Deno.test("fin.hosting: an alias is its domain's — owner and all — and bills
     assertEquals((await get(app, "example.com"))?.usr_id, ben);
 
     const sub = await hosting(app, ben);
-    await assertRejects(() => link(app, "example.com", sub), Error, "is an alias; link example.ch");
     await link(app, "example.ch", sub);
+    await link(app, "example.com", await hosting(app, ben, "Domain")); // the alias's registration costs
     await assertRejects(() => save(app, "example.ch", { usrId: anna }), Error, "subscriptions of its owner still run");
+    // a domain becomes an alias with its own subscription still on it
     await save(app, "solo.ch", { usrId: ben });
-    await link(app, "solo.ch", await hosting(app, ben));
-    await assertRejects(() => save(app, "solo.ch", { aliasOf: "example.ch" }), Error, "link them to example.ch first");
+    const soloSub = await hosting(app, ben, "Domain");
+    await link(app, "solo.ch", soloSub);
+    await save(app, "solo.ch", { aliasOf: "example.ch" });
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${soloSub}`, refOf("solo.ch"));
 
     // a domain without an owner becomes the subscription's customer's
     await save(app, "free.ch");
     await link(app, "free.ch", await hosting(app, anna));
     assertEquals((await get(app, "free.ch"))?.usr_id, anna);
+  });
+});
+
+Deno.test("fin.hosting: a subscription named after a domain is for it — domain added and linked, as it is saved", async () => {
+  await withFinApp(FIN, async (app) => {
+    const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
+    const named = await hosting(app, anna, "Hosting Neu.CH"); // subscribe fires subscription:save
+    assertEquals((await get(app, "neu.ch"))?.usr_id, anna);
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${named}`, refOf("neu.ch"));
+    // a plan's subscription: its name is the detail
+    const detail = await hosting(app, anna, "plan.ch");
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${detail}`, refOf("plan.ch"));
+    // another customer's domain is not taken; no domain in the name, nothing happens
+    const foreign = await hosting(app, ben, "Domain neu.ch");
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${foreign}`, null);
+    assertEquals(await adopt(app, { id: 0, usr_id: anna, name: "Service", ref: null }), undefined);
+    assertEquals(await adopt(app, { id: named, usr_id: anna, name: "Hosting x.ch", ref: "shop.order:1" }), undefined);
+    // renamed after a domain later: linked then
+    const later = await hosting(app, ben, "Hosting");
+    await update(app, later, { name: "Hosting ben.ch" });
+    assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${later}`, refOf("ben.ch"));
   });
 });

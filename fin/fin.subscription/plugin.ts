@@ -1,10 +1,19 @@
+import { App, s } from "@qino/qino";
+
 import { bill } from "./mod.ts";
 
-import type { App } from "@qino/qino";
+import type { EventDecls } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export { api } from "./api.ts";
+
+Object.assign(App.events, {
+  "subscription:save": {
+    description: "A subscription was added or changed — what it is for (its ref) may follow from it.",
+    data: s.object({ subscription: s.record().describe("The subscription row, after the change.") }),
+  },
+} satisfies EventDecls);
 
 export const settingsSchema = {
   properties: {

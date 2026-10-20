@@ -33,11 +33,11 @@ function aliasSelect(all: Row[], current: unknown, except = "") {
 const price = (app: App, s: Row) =>
   html.async`${money(s.amount, s.currencyCode)} / ${Number(s.count) > 1 ? `${s.count} ` : ""}${s.unit === "month" ? app.t`month` : app.t`year`}`;
 
-/** What a domain is billed by, or — a domain of a customer without a running subscription — that it is not. */
+/** What a domain is billed by, or — a customer's domain, an alias too, without a running subscription — that it is not. */
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
   if (live.length) return html.async`${live.map((s) => html.async`<div>${s.label} <small>${price(app, s)}</small></div>`)}`;
-  return d.alias_of || d.usr_id == null ? "" : badge(app.t`not billed`, "--orange");
+  return d.usr_id == null ? "" : badge(app.t`not billed`, "--orange");
 }
 
 /** The name, or "↳ alias" below its domain. */
@@ -107,8 +107,8 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     backend.toModuleUrl(node, "cms.backend.domain_monitor"),
   ]);
   const subs = by.get(String(d.name)) ?? [];
-  // the owner's running subscriptions that are for nothing yet; an alias is billed with its domain
-  const free = usrId == null || d.alias_of ? [] : (await subscriptions(app, usrId)).filter((s) => !s.ref && running(s));
+  // the owner's running subscriptions that are for nothing yet
+  const free = usrId == null ? [] : (await subscriptions(app, usrId)).filter((s) => !s.ref && running(s));
   const aliases = all.filter((a) => a.alias_of === d.name);
   const owner = users.find((u) => Number(u.id) === usrId);
   const monitorUrl = monitor({ domain: d.name });
@@ -170,7 +170,7 @@ export async function userDomains(app: App, id: unknown, page: Node): Promise<Ht
 /** How many domains there are, and how many of a customer are billed by nothing. */
 export async function widget(app: App): Promise<HtmlString> {
   const [list, subs] = await Promise.all([domains(app), subscriptionsBy(app)]);
-  const unbilled = list.filter((d) => !d.alias_of && d.usr_id != null && !(subs.get(String(d.name)) ?? []).some(running));
+  const unbilled = list.filter((d) => d.usr_id != null && !(subs.get(String(d.name)) ?? []).some(running));
   return html.async`<div><b>${list.length}</b> ${app.t`domains`}${unbilled.length
     ? html.async` · ${badge(html.async`${unbilled.length} ${app.t`not billed`}`, "--orange")}`
     : ""}</div>`;

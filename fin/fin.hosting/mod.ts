@@ -53,11 +53,11 @@ type Values = { usrId?: number | null; aliasOf?: string | null; registrar?: stri
 
 /**
  * Add a domain, or change one: whose it is, what it is an alias of (one level: an alias has no
- * aliases), where it is registered. Fields not given stay. An alias is its domain's, owner and all:
- * a `usrId` of its own does not count, and its domain's owner passes on to it. Refused where the
- * bills would no longer fit: another owner while the present one's subscriptions still run for it,
- * an alias while subscriptions still run for it. Watched by `cms.backend.domain_monitor` from then
- * on, where that is installed.
+ * aliases), where it is registered. Fields not given stay. An alias is served by its domain's
+ * hosting and is its domain's customer's: a `usrId` of its own does not count, its domain's owner
+ * passes on to it. It may have subscriptions of its own (the domain itself costs). Refused where the
+ * bills would no longer fit: another owner while the present one's subscriptions still run for it.
+ * Watched by `cms.backend.domain_monitor` from then on, where that is installed.
  */
 export async function save(app: App, name: string, values: Values = {}): Promise<string> {
   const domain = normalize(name);
@@ -76,7 +76,6 @@ export async function save(app: App, name: string, values: Values = {}): Promise
     if (await app.db.one`SELECT 1 FROM fin_hosting_domain WHERE alias_of = ${domain}`) {
       throw new Error(`fin.hosting: ${domain} has aliases of its own`);
     }
-    if (live.length) throw new Error(`fin.hosting: subscriptions run for ${domain}; link them to ${main} first`);
     fields.usr_id = of.usr_id;
   }
   if (values.aliasOf !== undefined) fields.alias_of = main;
@@ -116,13 +115,12 @@ export async function remove(app: App, name: string): Promise<void> {
   await table(app).delete(normalize(name));
 }
 
-/** Bill a subscription for a domain — not an alias: it is billed with its domain. A domain without
- *  an owner becomes the subscription's customer's, aliases and all; one with an owner takes only
+/** Bill a subscription for a domain, an alias too (its registration costs). A domain without an
+ *  owner becomes the subscription's customer's, aliases and all; one with an owner takes only
  *  their subscriptions. */
 export async function link(app: App, name: string, subscriptionId: number): Promise<void> {
   const domain = await get(app, name);
   if (!domain) throw new Error(`fin.hosting: no domain ${name}`);
-  if (domain.alias_of) throw new Error(`fin.hosting: ${domain.name} is an alias; link ${domain.alias_of}`);
   const sub = await app.db.row`SELECT usr_id FROM subscription WHERE id = ${subscriptionId}`;
   if (!sub) throw new Error(`fin.hosting: no subscription ${subscriptionId}`);
   if (domain.usr_id != null && Number(sub.usr_id) !== Number(domain.usr_id)) {
@@ -137,6 +135,23 @@ export async function unlink(app: App, name: string, subscriptionId: number): Pr
   const ref = await app.db.one`SELECT ref FROM subscription WHERE id = ${subscriptionId}`;
   if (ref !== refOf(normalize(name))) throw new Error(`fin.hosting: subscription ${subscriptionId} is not for ${name}`);
   await update(app, subscriptionId, { ref: null });
+}
+
+/**
+ * A subscription named after a domain is for it — "Hosting example.ch", or a plan's subscription
+ * whose name is the detail "example.ch": the domain is added as the customer's, and linked. Not
+ * where the subscription is for something already, nor where the domain is another customer's.
+ * Called on `subscription:save`; returns the domain it linked.
+ */
+export async function adopt(app: App, sub: Row): Promise<string | undefined> {
+  if (sub.ref) return;
+  const name = normalize(String(sub.name ?? "").trim().split(/\s+/).pop() ?? "");
+  if (!name) return;
+  const domain = await get(app, name);
+  if (domain?.usr_id != null && Number(domain.usr_id) !== Number(sub.usr_id)) return;
+  if (!domain) await save(app, name, { usrId: Number(sub.usr_id) });
+  await link(app, name, Number(sub.id));
+  return name;
 }
 
 /** Hand the domain to `cms.backend.domain_monitor`, if installed, to be checked from now on. */

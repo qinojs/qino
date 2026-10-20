@@ -16,6 +16,9 @@ await update(app, id, { price: 22000 }); // from the next period
 await cancel(app, id); // ends with the period under way
 ```
 
+Each subscription added or changed fires `subscription:save` with its row: what it is for (`ref`)
+may follow from it — [fin.hosting](../fin.hosting/README.md) links one named after a domain.
+
 **Plans** (`subscription_plan`) are the catalog: name, description, price, currency, tax, period.
 A subscription of a plan takes from it what it leaves empty — price, currency, tax, period,
 description — and its own `name` becomes the detail (example.ch). A new price in the plan applies
