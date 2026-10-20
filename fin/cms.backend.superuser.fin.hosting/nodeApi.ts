@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { link, remove, save, unlink } from "@qino/qino/fin.hosting";
+import { link, remove, save, sync, unlink } from "@qino/qino/fin.hosting";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -16,9 +16,18 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         ...("usrId" in v ? { usrId: Number(v.usrId) || null } : {}),
         aliasOf: v.aliasOf || null,
         registrar: v.registrar ?? null,
+        free: v.free === "1",
       });
       if (v.id) return { ok: true, message: await app.t`Saved.` };
       return { ok: true, url: backend.toUrl(await (await node.page()).url(), { domain: name }) };
+    }
+    if (vars.sync) {
+      const report = await sync(app);
+      const t = app.t;
+      const lines = await Promise.all(report.map(async (r) => r.error
+        ? `${r.registrar}: ${r.error}`
+        : `${r.registrar}: ${r.found} ${await t`found`}, ${r.added} ${await t`new`}, ${r.gone} ${await t`gone`}`));
+      return { ok: true, message: lines.join("\n") };
     }
     if (typeof vars.remove === "string") {
       await remove(app, vars.remove);

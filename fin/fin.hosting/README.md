@@ -29,6 +29,15 @@ example.ch", or a plan's subscription whose name is the detail "example.ch". Whe
 (`subscription:save`), the domain is added as the customer's, if it is not there, and linked —
 unless the domain is another customer's. By hand remains what no name tells: an alias.
 
+**What to bill.** A domain we registered (`registrar` set) is billed, unless it is `free` (ours, or
+given); one the customer keeps elsewhere (no `registrar`) costs us nothing. `open(app)` lists what is
+still to do: such a domain without a customer, or a customer's without a running subscription.
+
+**Registrars.** A module declaring `export const domainRegistrar = { name, domains(app) }` lists the
+domains registered there; a daily job (`sync`) takes them over — new ones show up without a customer,
+ones no longer there lose their `registrar` (moved away, or ended), each gets its `expires`. A
+registrar that fails changes nothing. The first: [fin.hosting.infomaniak](../fin.hosting.infomaniak/README.md).
+
 **Held, not deleted.** A domain with aliases, a running subscription or an unpaid invoice of one
 cannot be removed; ended subscriptions keep their `ref`, so what they were for stays readable.
 That is why the domains live here and not in a monitor: monitoring is a tool, billing is not.

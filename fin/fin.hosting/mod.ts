@@ -49,7 +49,7 @@ export async function subscriptionsBy(app: App, usrId?: number): Promise<Map<str
   return map;
 }
 
-type Values = { usrId?: number | null; aliasOf?: string | null; registrar?: string | null };
+type Values = { usrId?: number | null; aliasOf?: string | null; registrar?: string | null; free?: boolean };
 
 /**
  * Add a domain, or change one: whose it is, what it is an alias of (one level: an alias has no
@@ -84,6 +84,7 @@ export async function save(app: App, name: string, values: Values = {}): Promise
     throw new Error(`fin.hosting: the subscriptions of its owner still run for ${domain}`);
   }
   if (values.registrar !== undefined) fields.registrar = values.registrar?.trim() || null;
+  if (values.free !== undefined) fields.free = values.free;
   const time = unixTime();
   if (current) await table(app).update(domain, { ...fields, changed: time });
   else await table(app).insert({ name: domain, ...fields, created: time, changed: time });
@@ -91,6 +92,70 @@ export async function save(app: App, name: string, values: Values = {}): Promise
   if (!main && "usr_id" in fields) await app.db.exec`UPDATE fin_hosting_domain SET usr_id = ${owner ?? null}, changed = ${time} WHERE alias_of = ${domain}`;
   await watch(app, domain);
   return domain;
+}
+
+/** Whether we bill for a domain: we registered it (`registrar`), and it is not `free`. One a customer
+ *  keeps elsewhere costs us nothing. */
+export const billable = (d: Row): boolean => !!d.registrar && !d.free;
+
+/**
+ * What is still to do, the domain each: one we registered without a customer (`customer`), or a
+ * customer's without a running subscription (`billed`). Empty when everything is billed.
+ */
+export async function open(app: App): Promise<{ domain: Row; missing: "customer" | "billed" }[]> {
+  const [all, subs] = await Promise.all([domains(app), subscriptionsBy(app)]);
+  const out: { domain: Row; missing: "customer" | "billed" }[] = [];
+  for (const domain of all.filter(billable)) {
+    if (domain.usr_id == null) out.push({ domain, missing: "customer" });
+    else if (!(subs.get(String(domain.name)) ?? []).some(running)) out.push({ domain, missing: "billed" });
+  }
+  return out;
+}
+
+/** A registrar's domains, as a module declares it: `export const domainRegistrar = { name, domains }`. */
+export type Registrar = {
+  /** Stored as the domains' `registrar`. */
+  name: string;
+  /** Every domain registered there, with when its registration ends (YYYY-MM-DD) where known. */
+  domains(app: App): Promise<{ name: string; expires?: string | null }[]>;
+};
+
+/** The registrars of the linked modules. */
+export const registrars = (app: App): Registrar[] =>
+  app.modules.linked().flatMap((m) => m.plugin.domainRegistrar ? [m.plugin.domainRegistrar as Registrar] : []);
+
+/**
+ * Take over what the registrars say: every domain registered there is ours to bill (added if new,
+ * without a customer yet), with its end; one of theirs no longer there is no longer ours
+ * (`registrar` cleared — moved away, or ended). A registrar that fails changes nothing.
+ * Run daily; returns per registrar what it found, or why not.
+ */
+export async function sync(app: App, from = registrars(app)): Promise<{ registrar: string; found: number; added: number; gone: number; error?: string }[]> {
+  const out = [];
+  for (const registrar of from) {
+    let list;
+    try {
+      list = await registrar.domains(app);
+    } catch (e) {
+      out.push({ registrar: registrar.name, found: 0, added: 0, gone: 0, error: e instanceof Error ? e.message : String(e) });
+      continue;
+    }
+    const seen = new Set<string>();
+    let added = 0;
+    for (const entry of list) {
+      const name = normalize(entry.name);
+      if (!name) continue;
+      seen.add(name);
+      if (!await get(app, name)) added++;
+      await save(app, name, { registrar: registrar.name });
+      if (entry.expires !== undefined) await app.db.exec`UPDATE fin_hosting_domain SET expires = ${entry.expires} WHERE name = ${name}`;
+    }
+    const before = await app.db.col`SELECT name FROM fin_hosting_domain WHERE registrar = ${registrar.name}`;
+    const gone = before.map(String).filter((name) => !seen.has(name));
+    for (const name of gone) await app.db.exec`UPDATE fin_hosting_domain SET registrar = ${null}, changed = ${unixTime()} WHERE name = ${name}`;
+    out.push({ registrar: registrar.name, found: seen.size, added, gone: gone.length });
+  }
+  return out;
 }
 
 /** Why a domain may not go: it has aliases, subscriptions still run for it, or theirs are unpaid. */

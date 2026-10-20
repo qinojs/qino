@@ -3,7 +3,7 @@ import { create, issue } from "@qino/qino/fin.invoice";
 import { cancel, subscribe, update } from "@qino/qino/fin.subscription";
 
 import { withFinApp } from "../../tests/app.ts";
-import { adopt, blockers, domains, get, link, normalize, refOf, remove, save, subscriptionsBy, unlink } from "../mod.ts";
+import { adopt, billable, blockers, domains, get, link, normalize, open, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -129,5 +129,31 @@ Deno.test("fin.hosting: a subscription named after a domain is for it — domain
     const later = await hosting(app, ben, "Hosting");
     await update(app, later, { name: "Hosting ben.ch" });
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${later}`, refOf("ben.ch"));
+  });
+});
+
+Deno.test("fin.hosting: the registrars say which domains are ours to bill; what is open stands out", async () => {
+  await withFinApp(FIN, async (app) => {
+    const anna = await customer(app, "Anna");
+    await save(app, "theirs.ch", { usrId: anna }); // the customer keeps it elsewhere: nothing to bill
+    await save(app, "moved.ch", { usrId: anna, registrar: "test" });
+    let list = [{ name: "Example.CH", expires: "2027-03-01" }, { name: "ours.ch" }, { name: "anna.ch" }];
+    const registrar = { name: "test", domains: () => Promise.resolve(list) };
+    assertEquals(await sync(app, [registrar]), [{ registrar: "test", found: 3, added: 3, gone: 1 }]);
+    assertEquals((await get(app, "example.ch"))?.expires, "2027-03-01");
+    assertEquals((await get(app, "moved.ch"))?.registrar, null); // gone from there: no longer ours to bill
+    await save(app, "ours.ch", { free: true });
+    await link(app, "anna.ch", await hosting(app, anna, "Domain"));
+    // registered by us, not free: example.ch has no customer; theirs, moved, ours and the billed anna.ch are fine
+    assertEquals((await open(app)).map((o) => [o.domain.name, o.missing]), [["example.ch", "customer"]]);
+    await save(app, "example.ch", { usrId: anna });
+    assertEquals((await open(app)).map((o) => [o.domain.name, o.missing]), [["example.ch", "billed"]]);
+    assertEquals([billable({ registrar: "test" }), billable({ registrar: "test", free: true }), billable({ registrar: null })], [true, false, false]);
+
+    // a registrar that fails changes nothing
+    list = [];
+    const failing = { name: "test", domains: () => Promise.reject(new Error("down")) };
+    assertEquals(await sync(app, [failing]), [{ registrar: "test", found: 0, added: 0, gone: 0, error: "down" }]);
+    assertEquals((await get(app, "example.ch"))?.registrar, "test");
   });
 });

@@ -24,12 +24,22 @@
             "x-qg-parent": "fin_hosting_domain",
             "x-qg-parent-field": "name",
             "x-qg-on-parent-delete": "setnull",
-            "description": "The domain it is an alias of: served the same, billed with it"
+            "description": "The domain it is an alias of: served by its hosting, its customer's"
           },
           "registrar": {
             "type": "string",
             "maxLength": 100,
-            "description": "Where it is registered"
+            "description": "Where we registered it — then it is billed, unless free. Empty: the customer keeps it elsewhere"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date",
+            "description": "When its registration ends, as the registrar says"
+          },
+          "free": {
+            "type": "boolean",
+            "default": false,
+            "description": "Nothing is billed for it: ours, or given"
           },
           "created": {
             "type": "integer"

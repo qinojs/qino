@@ -22,22 +22,29 @@ Deno.test("domains: the list shows owner, aliases and billing, flags what a cust
     const node = backendNode(app, "/backend/domains");
     const anna = await customer(app, "Anna AG");
     await save(app, "anna.ch", { usrId: anna, registrar: "Hostpoint" });
-    await save(app, "anna.com", { aliasOf: "anna.ch" });
-    await save(app, "unbilled.ch", { usrId: anna });
-    await save(app, "ours.ch");
+    await save(app, "anna.com", { aliasOf: "anna.ch", registrar: "infomaniak" }); // its own registration: to bill
+    await save(app, "unbilled.ch", { usrId: anna, registrar: "infomaniak" });
+    await save(app, "theirs.ch", { usrId: anna }); // the customer keeps it elsewhere: nothing to bill
+    await save(app, "ours.ch", { registrar: "infomaniak", free: true });
+    await save(app, "nobodys.ch", { registrar: "infomaniak" });
     await link(app, "anna.ch", await subscribe(app, { usrId: anna, name: "Hosting anna.ch", price: 24000, currency: "CHF", start: "2026-01-01" }));
 
     const page = String(await inRequest(app, BASE, () => render(node)));
     assertStringIncludes(page, `<a href="/backend/domains?domain=anna.ch">anna.ch</a>`);
     assertStringIncludes(page, `<small>↳</small> <a href="/backend/domains?domain=anna.com">`);
     assert(/Hosting anna\.ch <small>CHF\s240\.00 \/ year<\/small>/.test(page)); // Intl puts a no-break space
-    assertEquals(page.match(/not billed/g)?.length, 2); // unbilled.ch and the alias anna.com — not ours.ch
+    // the list: unbilled.ch, the alias anna.com, nobodys.ch; the to-do card the first two, nobodys.ch as "no customer"
+    assertEquals(page.match(/>not billed</g)?.length, 5);
+    assertStringIncludes(page, `>no customer</small>`);
+    assertStringIncludes(page, `>free</small>`);
+    const row = (name: string) => page.slice(page.indexOf(`>${name}</a>`)).split("<tr>")[0];
+    assert(!row("theirs.ch").includes("not billed")); // the customer keeps it elsewhere
     assertStringIncludes(page, "Anna AG");
 
     const filtered = String(await inRequest(app, `${BASE}?search=ours`, () => render(node)));
     assert(filtered.includes("ours.ch") && !filtered.includes("?domain=anna.ch"));
 
-    assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>4</b>");
+    assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>6</b> domains · <small class=u2-badge style=\"background:var(--orange)\">3 to do");
     const card = String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna, await node.page())));
     assertStringIncludes(card, "anna.com");
     assertEquals(String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna + 1, await node.page()))), "");

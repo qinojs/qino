@@ -12,6 +12,7 @@ cms.initNode("backend.superuser.fin.hosting", (el) => {
   });
 
   el.addEventListener("click", (e) => {
+    if (e.target.closest("[data-sync]")) return execute(e.target.closest("[data-sync]"), { sync: true });
     const button = e.target.closest("[data-remove], [data-unlink]");
     if (!button) return;
     if (button.dataset.remove) execute(button, { remove: button.dataset.remove });

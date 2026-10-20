@@ -2,7 +2,7 @@ import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 import { nameOf } from "@qino/qino/fin";
-import { blockers, domains, get, running, subscriptionsBy } from "@qino/qino/fin.hosting";
+import { billable, blockers, domains, get, open, registrars, running, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -33,11 +33,34 @@ function aliasSelect(all: Row[], current: unknown, except = "") {
 const price = (app: App, s: Row) =>
   html.async`${money(s.amount, s.currencyCode)} / ${Number(s.count) > 1 ? `${s.count} ` : ""}${s.unit === "month" ? app.t`month` : app.t`year`}`;
 
-/** What a domain is billed by, or — a customer's domain, an alias too, without a running subscription — that it is not. */
+/** What a domain is billed by; or — one we registered and bill (`billable`) without a running
+ *  subscription — that it is not; or that it is free. */
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
   if (live.length) return html.async`${live.map((s) => html.async`<div>${s.label} <small>${price(app, s)}</small></div>`)}`;
-  return d.usr_id == null ? "" : badge(app.t`not billed`, "--orange");
+  if (d.free) return badge(app.t`free`);
+  return billable(d) ? badge(app.t`not billed`, "--orange") : "";
+}
+
+const freeBox = (app: App, checked: unknown) =>
+  html.async`<label title="${app.t`Nothing is billed for it: ours, or given`}"><input type=checkbox name=free value=1${checked ? html.raw(" checked") : ""}> ${app.t`free`}</label>`;
+
+/** What is still to do — domains we registered without a customer, or a customer's without a
+ *  subscription —, and the registrars' sync; nothing but the sync when all is done. */
+async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
+  const app = node.app;
+  const t = app.t;
+  const [todo, names] = await Promise.all([open(app), Promise.resolve(registrars(app).map((r) => r.name))]);
+  return html.async`<div class=u2-card style="flex:1 1 100%">
+    <div class=-head>${t`To do`} <small>${todo.length}</small>
+      ${names.length ? html.async`<button data-sync style="margin-left:auto">${t`Sync`} <small>${names.join(", ")}</small></button>` : ""}</div>
+    ${todo.length ? html.async`<table class=u2-table>${todo.map(({ domain, missing }) => html.async`<tr>
+      <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
+      <td>${missing === "customer" ? badge(t`no customer`, "--red") : badge(t`not billed`, "--orange")}
+      <td>${domain.registrar}
+      <td>${domain.expires ? html.async`<small>${t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`)}
+    </table>` : html.async`<p>${t`Every domain we registered has a customer and is billed.`}`}
+  </div>`;
 }
 
 /** The name, or "↳ alias" below its domain. */
@@ -55,6 +78,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   const names = new Map(users.map((u) => [Number(u.id), nameOf(u)]));
   const rows = search ? all.filter((d) => String(d.name).includes(search)) : all;
   return html.async`<div class=u2-flex>
+  ${openCard(node, pageUrl)}
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
     <div class=-head>${t`Domains`} <small>${rows.length}</small></div>
     <form>
@@ -68,11 +92,13 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
         <th>${t`Domain`}
         <th>${t`Customer`}
         <th>${t`Registrar`}
+        <th>${t`until`}
         <th>${t`Billed by`}
       <tbody>${rows.map((d) => html.async`<tr>
         <td style="white-space:nowrap">${nameCell(pageUrl, d)}
         <td>${d.usr_id == null ? "" : rowLink(node, "cms.backend.superuser.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)))}
         <td>${d.registrar}
+        <td style="white-space:nowrap">${d.expires ? String(d.expires).slice(0, 10) : ""}
         <td>${billing(app, d, subs.get(String(d.name)) ?? [])}`)}
     </table></div>` : html.async`<p>${t`No domains yet`}`}
   </div>
@@ -84,6 +110,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
         ${t`Customer`} ${customerSelect(users, usr, "—")}
         ${t`Alias of`} ${aliasSelect(all, "")}
         ${t`Registrar`} <input name=registrar>
+        <span></span> ${freeBox(app, false)}
       </u2-fields>
       <button>${t`Add`}</button>
     </form>
@@ -126,7 +153,9 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
         ${d.alias_of ? "" : html.async`${t`Customer`} ${customerSelect(users, d.usr_id, "—")}`}
         ${t`Alias of`} ${aliasSelect(all, d.alias_of, String(d.name))}
         ${t`Registrar`} <input name=registrar value="${d.registrar}">
+        <span></span> ${freeBox(app, d.free)}
       </u2-fields>
+      ${d.expires ? html.async`<p><small>${t`Registered until`} ${String(d.expires).slice(0, 10)}</small>` : ""}
       <button>${t`Save`}</button>
     </form>
     <p>
@@ -169,9 +198,9 @@ export async function userDomains(app: App, id: unknown, page: Node): Promise<Ht
 
 /** How many domains there are, and how many of a customer are billed by nothing. */
 export async function widget(app: App): Promise<HtmlString> {
-  const [list, subs] = await Promise.all([domains(app), subscriptionsBy(app)]);
-  const unbilled = list.filter((d) => d.usr_id != null && !(subs.get(String(d.name)) ?? []).some(running));
-  return html.async`<div><b>${list.length}</b> ${app.t`domains`}${unbilled.length
-    ? html.async` · ${badge(html.async`${unbilled.length} ${app.t`not billed`}`, "--orange")}`
+  const list = await domains(app);
+  const todo = await open(app);
+  return html.async`<div><b>${list.length}</b> ${app.t`domains`}${todo.length
+    ? html.async` · ${badge(html.async`${todo.length} ${app.t`to do`}`, "--orange")}`
     : ""}</div>`;
 }
