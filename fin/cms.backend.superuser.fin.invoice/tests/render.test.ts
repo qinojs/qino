@@ -248,3 +248,15 @@ Deno.test("the list says what of an open invoice is paid already, only where par
     assert(/<small title="Paid">CHF\s100\.00<\/small>/.test(page));
   });
 });
+
+Deno.test("a party's invoices: the list filters by it, its card links there once there are more than it shows", async () => {
+  await withApp(async (app, as, node) => {
+    const usr = Number(await app.db.table("usr").insert({ active: 0, pw: "", superuser: 0, given_name: "", family_name: "", organization: "Viel AG" }));
+    for (let i = 0; i < 11; i++) await create(app, { currency: "CHF", usrId: usr, party: { name: "Viel AG" }, lines: [{ name: "x", price: 100 }] });
+    await create(app, { currency: "CHF", party: { name: "Andere AG" }, lines: [{ name: "y", price: 100 }] });
+    const list = String(await as(`http://qino.test/backend/invoices?usr=${usr}`, () => render(node)));
+    assert(list.includes("Viel AG") && !list.includes("Andere AG"));
+    const card = String(await as("http://qino.test/", async () => backendRowWidget.usr(app, usr, await node.page())));
+    assertStringIncludes(card, `?usr=${usr}">All 11 invoices</a>`);
+  });
+});

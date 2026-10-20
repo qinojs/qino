@@ -53,6 +53,7 @@ export async function inRequest<T>(app: App, url: string, fn: () => Promise<T>):
 /** A backend node at `url`, without a CMS around it: links to other backend pages become text. */
 export const backendNode = (app: App, url: string): Node => ({
   app,
+  vs: {},
   page: () => Promise.resolve({ url: () => Promise.resolve(url), children: () => Promise.resolve(new Map()) }),
   cms: { nodeByModule: () => Promise.resolve(undefined) },
 }) as unknown as Node;

@@ -75,9 +75,12 @@ Deno.test("cms.backend: row widgets come from modules whose backend page the vie
       ],
     },
   };
-  const node = { app, cms: { nodeByModule: (name: string) => pages[name] && { page: () => pages[name] } } };
+  const node = { app, vs: { module: "x.empty" }, cms: { nodeByModule: (name: string) => pages[name] && { page: () => pages[name] } } };
   const out = String(await renderRowWidgets(node as any, "usr", 7));
   assertEquals(out, `<div class=u2-card><a class=-head href="/invoices">invoices</a><b>3 open</b> of 7</div>`);
   assertEquals(calls, [7]); // the hidden module's widget is not even called
   assertEquals(String(await renderRowWidgets(node as any, "shop_product", 7)), "");
+  // the page's own module adds no card: the page shows the row in full
+  const own = { ...node, vs: { module: "x.invoices" } };
+  assertEquals(String(await renderRowWidgets(own as any, "usr", 7)), "");
 });

@@ -141,6 +141,27 @@ ${loginRows}
 </div>`;
 }
 
+/** How a user signs in, as a card on other pages showing them (`backendRowWidget`): changed here. */
+async function loginCard(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+  const usrId = Number(id);
+  const u = await app.db.row`SELECT username, active, superuser FROM usr WHERE id = ${usrId}`;
+  if (!u) return "";
+  const t = app.t;
+  const [email, groups, url] = await Promise.all([
+    app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${usrId} AND type = 'email' ORDER BY main DESC`,
+    app.db.col`SELECT grp.name FROM grp JOIN usr_grp ON grp.id = usr_grp.grp_id WHERE usr_grp.usr_id = ${usrId} ORDER BY grp.name`,
+    page.url().then((pageUrl) => backend.toUrl(pageUrl, { id: usrId })),
+  ]);
+  return html.async`<table class=u2-table style="white-space:nowrap">
+    <tr><th>${t`Username`}<td><a href="${url}">${u.username || html`<small>#${usrId}</small>`}</a>
+    <tr><th>${t`Email`}<td>${email}
+    <tr><th>${t`Active`}<td>${u.active ? "✓" : "–"}${u.superuser ? html.async` · ${t`Superuser`}` : ""}
+    <tr><th>${t`Groups`}<td>${groups.join(", ")}
+  </table>`;
+}
+
+export const backendRowWidget = { usr: loginCard };
+
 export const cms = {
   node: {
     js: ["pub/main.js"],

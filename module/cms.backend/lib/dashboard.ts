@@ -38,11 +38,13 @@ async function card(page: Node, body: unknown): Promise<HtmlString> {
 /**
  * Cards for one row of `table` (a user, a group, a product …) from every module whose plugin exports
  * `backendRowWidget[table](app, id, page)`. A module adds its card only where the viewer may see its
- * backend page: what the card shows, that page shows anyway. An empty result adds no card.
+ * backend page: what the card shows, that page shows anyway. An empty result adds no card, and the
+ * page's own module none: the page shows the row in full already.
  */
 export async function renderRowWidgets(node: Node, table: string, id: unknown): Promise<HtmlString> {
   const cards = [];
   for (const mod of node.app.modules.linked()) {
+    if (mod.name === node.vs.module) continue;
     const widget = mod.plugin.backendRowWidget?.[table];
     if (typeof widget !== "function") continue;
     const page = await (await node.cms.nodeByModule(mod.name))?.page();

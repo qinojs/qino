@@ -97,6 +97,7 @@ async function list(node: Node, url: URL) {
   const where = [
     sh.where,
     q("direction") ? sql`direction = ${q("direction")}` : null,
+    Number(q("usr")) ? sql`usr_id = ${Number(q("usr"))}` : null, // a party's, linked from its card
     q("status") ? sql`status = ${q("status")}` : null,
     q("overdue") ? sql`status = 'open' AND type = 'invoice' AND due < ${today()}` : null,
   ].flatMap((term) => term ?? []);
@@ -452,14 +453,20 @@ async function detail(node: Node, id: number) {
 
 /** A customer's latest invoices, as card on their page (`backendRowWidget`); "" without any. */
 export async function userInvoices(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
-  const rows = await app.db.query`SELECT * FROM invoice WHERE usr_id = ${id} ORDER BY id DESC LIMIT 10`;
+  const [rows, count] = await Promise.all([
+    app.db.query`SELECT * FROM invoice WHERE usr_id = ${id} ORDER BY id DESC LIMIT 10`,
+    app.db.one`SELECT COUNT(*) FROM invoice WHERE usr_id = ${id}`.then(Number),
+  ]);
   if (!rows.length) return "";
   const pageUrl = await page.url();
+  const all = count > rows.length
+    ? html.async`<p><a href="${backend.toUrl(pageUrl, { usr: id })}">${app.t`All`} ${count} ${app.t`invoices`}</a>`
+    : "";
   return html.async`<table class=u2-table style="white-space:nowrap">${rows.map((row) => html.async`<tr>
     <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || `#${row.id}`}</a>
     <td>${direction(row.direction, row.direction === "out" ? app.t`issued` : app.t`received`)}
     <td>${row.date}
     <td style="text-align:end">${money(row.total, row.currency)}
     <td>${status(row.status)}`)}
-  </table>`;
+  </table>${all}`;
 }

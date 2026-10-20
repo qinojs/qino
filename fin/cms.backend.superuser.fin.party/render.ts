@@ -1,12 +1,12 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
-import { backend } from "@qino/qino/cms.backend";
+import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import {
-  amounts, badge, direction, money, refLink, rowLink, status,
+  amounts, badge, money, refLink,
 } from "@qino/qino/cms.backend.superuser.fin";
 import { addMonths, mainCurrency, nameOf, today } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
 
-import type { HtmlString } from "@qino/qino";
+import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export function render(node: Node): Promise<HtmlString> {
@@ -114,14 +114,14 @@ async function overview(node: Node, url: URL) {
 </div>`;
 }
 
-/** One party: its name and postal address, kept here, and its invoices. */
+/** One party: its name and postal address and its credit, kept here; around them what other modules
+ *  know of it (invoices, subscriptions, sign-in …) as cards. */
 async function detail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const pageUrl = node.page().then((page) => page.url());
   const u = await app.db.row`SELECT * FROM usr WHERE id = ${id}`;
   if (!u) return html.async`<div class=u2-card><div>${t`No user`} ${id}</div></div>`;
-  const invoices = await app.db.query`SELECT * FROM invoice WHERE usr_id = ${id} ORDER BY id DESC LIMIT 100`;
   const input = (label: string | Promise<string>, name: string, attrs = "") =>
     html.async`${label} <input name=${name} value="${u[name]}"${html.raw(attrs)}>`;
   return html.async`<div class=u2-flex>
@@ -144,19 +144,27 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     <p><small>${t`New invoices take this address; issued ones keep the one they were issued with.`}</small>
   </div>
   ${app.modules.linked("fin.payment.credit") ? credit(node, id) : ""}
-  <div class=u2-card style="flex:0 1 auto">
-    <div class=-head>${t`Invoices`}</div>
-    ${invoices.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
-      <table class=u2-table style="white-space:nowrap">
-      ${invoices.map((row) => html.async`<tr>
-        <td>${rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", row.id, String(row.number || `#${row.id}`))}
-        <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
-        <td>${row.date}
-        <td style="text-align:end">${money(row.total, row.currency)}
-        <td>${status(row.status)}`)}
-    </table></div>` : html.async`<p>${t`No invoices yet`}`}
-  </div>
+  ${renderRowWidgets(node, "usr", id)}
 </div>`;
+}
+
+/** Address, IBAN and credit, as a card on other pages showing the user (`backendRowWidget`): kept here. */
+export async function partyCard(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+  const usrId = Number(id);
+  const u = await app.db.row`SELECT * FROM usr WHERE id = ${usrId}`;
+  if (!u) return "";
+  const credits = app.modules.linked("fin.payment.credit")
+    ? await app.db.query`SELECT currency, SUM(amount) AS amount FROM payment_credit
+      WHERE usr_id = ${usrId} GROUP BY currency HAVING SUM(amount) <> 0 ORDER BY currency`
+    : [];
+  const place = [u.postal_code, u.address_locality].filter(Boolean).join(" ");
+  const lines = [nameOf(u), u.street_address, place, u.address_country].filter(Boolean);
+  const url = backend.toUrl(await page.url(), { usr: usrId });
+  return html.async`<div>
+    <a href="${url}">${lines[0] || html`#${usrId}`}</a>${lines.slice(1).map((line) => html`<br>${line}`)}
+    ${u.iban ? html`<br><small>${u.iban}</small>` : ""}
+    ${credits.length ? html.async`<p>${app.t`Credit`} ${amounts(credits)}` : ""}
+  </div>`;
 }
 
 /** A party's credit: the balance per currency, what moved, and adding to it by hand. */
