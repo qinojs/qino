@@ -45,7 +45,7 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
     assertStringIncludes(page, "Anna AG");
 
     const filtered = String(await inRequest(app, `${BASE}?search=ours`, () => render(node)));
-    assert(filtered.includes("ours.ch") && !filtered.includes("?domain=anna.ch"));
+    assert(filtered.includes("ours.ch") && !filtered.includes("?domain=theirs.ch")); // the to-do card lists the others still
 
     assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>6</b> domains · <small class=u2-badge style=\"background:var(--orange)\">4 to do");
     const card = String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna, await node.page())));
