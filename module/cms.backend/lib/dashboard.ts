@@ -28,16 +28,18 @@ export async function renderDashboard(node: Node): Promise<HtmlString> {
   return html`<div class=u2-flex>${widgetsHtml}</div>`;
 }
 
-/** A widget as card, headed by a link to the module's backend page. Widget bodies are trusted markup
- *  from the module itself. */
-async function card(page: Node, body: unknown): Promise<HtmlString> {
-  const [url, title] = await Promise.all([page.url(), page.title()]);
-  return html`<div class=u2-card><a class=-head href="${url}">${await title.string()}</a>${html.raw(String(body))}</div>`;
+/** A widget as card, headed by a link to the module's backend page — named after it, or as the widget
+ *  says. Widget bodies are trusted markup from the module itself. */
+async function card(page: Node, body: unknown, title?: unknown): Promise<HtmlString> {
+  const url = await page.url();
+  const head = title ?? await (await page.title()).string();
+  return html`<div class=u2-card><a class=-head href="${url}">${head}</a>${html.raw(String(body))}</div>`;
 }
 
 /**
  * Cards for one row of `table` (a user, a group, a product …) from every module whose plugin exports
- * `backendRowWidget[table](app, id, page)`. A module adds its card only where the viewer may see its
+ * `backendRowWidget[table](app, id, page)`, which returns the card's body, or `{ title, body }` where the
+ * page's name does not fit the one row (a page "Users", a card "Login"). A module adds its card only where the viewer may see its
  * backend page: what the card shows, that page shows anyway. An empty result adds no card, and the
  * page's own module none: the page shows the row in full already.
  */
@@ -50,8 +52,9 @@ export async function renderRowWidgets(node: Node, table: string, id: unknown): 
     const page = await (await node.cms.nodeByModule(mod.name))?.page();
     if (!page || !(await page.access())) continue;
     try {
-      const body = await widget(node.app, id, page);
-      if (body) cards.push(await card(page, body));
+      const out = await widget(node.app, id, page);
+      const { title, body } = out && typeof out === "object" && "body" in out ? out : { title: undefined, body: out };
+      if (body) cards.push(await card(page, body, title));
     } catch (e) { console.error(e); }
   }
   return html.join(cards, "\n");

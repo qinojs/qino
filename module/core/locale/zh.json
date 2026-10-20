@@ -244,5 +244,7 @@
   "Write current translations into each module's locale folder.": "将当前翻译写入每个模块的 locale 文件夹。",
   "Write current translations to each module's locale/{0}.json files.": "将当前翻译写入每个模块的 locale/{0}.json 文件。",
   "yes": "是",
-  "{0}": "{0}"
+  "{0}": "{0}",
+  "Login": "登录",
+  "Username": "用户名"
 }

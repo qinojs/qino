@@ -364,5 +364,7 @@
   "Write current translations into each module's locale folder.": "Write current translations into each module's locale folder.",
   "Write current translations to each module's locale/{0}.json files.": "Write current translations to each module's locale/{0}.json files.",
   "yes": "yes",
-  "Your message here": "Your message here"
+  "Your message here": "Your message here",
+  "Login": "Login",
+  "Username": "Username"
 }

@@ -149,7 +149,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
 }
 
 /** Address, IBAN and credit, as a card on other pages showing the user (`backendRowWidget`): kept here. */
-export async function partyCard(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+export async function partyCard(app: App, id: unknown, page: Node): Promise<{ title: string; body: HtmlString } | ""> {
   const usrId = Number(id);
   const u = await app.db.row`SELECT * FROM usr WHERE id = ${usrId}`;
   if (!u) return "";
@@ -160,11 +160,12 @@ export async function partyCard(app: App, id: unknown, page: Node): Promise<Html
   const place = [u.postal_code, u.address_locality].filter(Boolean).join(" ");
   const lines = [nameOf(u), u.street_address, place, u.address_country].filter(Boolean);
   const url = backend.toUrl(await page.url(), { usr: usrId });
-  return html.async`<div>
+  const body = await html.async`<div>
     <a href="${url}">${lines[0] || html`#${usrId}`}</a>${lines.slice(1).map((line) => html`<br>${line}`)}
     ${u.iban ? html`<br><small>${u.iban}</small>` : ""}
     ${credits.length ? html.async`<p>${app.t`Credit`} ${amounts(credits)}` : ""}
   </div>`;
+  return { title: await app.t`Address`, body };
 }
 
 /** A party's credit: the balance per currency, what moved, and adding to it by hand. */

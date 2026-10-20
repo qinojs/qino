@@ -244,5 +244,7 @@
   "Write current translations into each module's locale folder.": "Zapisz bieżące tłumaczenia do folderu locale każdego modułu.",
   "Write current translations to each module's locale/{0}.json files.": "Zapisz bieżące tłumaczenia do plików locale/{0}.json każdego modułu.",
   "yes": "tak",
-  "{0}": "{0}"
+  "{0}": "{0}",
+  "Login": "Logowanie",
+  "Username": "Nazwa użytkownika"
 }

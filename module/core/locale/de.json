@@ -375,5 +375,7 @@
   "used by": "verwendet von",
   "without schema": "ohne Schema",
   "yes": "ja",
-  "{0}": "{0}"
+  "{0}": "{0}",
+  "Login": "Anmeldung",
+  "Username": "Benutzername"
 }

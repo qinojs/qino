@@ -23,5 +23,5 @@ export const cms = {
 };
 
 export const backendRowWidget = {
-  usr: (app: App, id: unknown, page: Node): Promise<HtmlString | string> => finTexts(app, () => partyCard(app, id, page)),
+  usr: (app: App, id: unknown, page: Node) => finTexts(app, () => partyCard(app, id, page)),
 };
