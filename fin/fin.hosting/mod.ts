@@ -158,14 +158,17 @@ export async function sync(app: App, from = registrars(app)): Promise<{ registra
   return out;
 }
 
-/** Why a domain may not go: it has aliases, subscriptions still run for it, or theirs are unpaid. */
-export async function blockers(app: App, name: string): Promise<("aliases" | "running" | "unpaid")[]> {
+/** Why a domain may not go: a registrar's sync brings it back, it has aliases, subscriptions still
+ *  run for it, or theirs are unpaid. */
+export async function blockers(app: App, name: string): Promise<("synced" | "aliases" | "running" | "unpaid")[]> {
   const domain = normalize(name);
+  const registrar = (await get(app, domain))?.registrar;
   const subs = (await subscriptionsBy(app)).get(domain) ?? [];
   const ids = subs.map((s) => Number(s.id));
   const unpaid = ids.length && await app.db.one`SELECT 1 FROM subscription_invoice si
     JOIN invoice i ON i.id = si.invoice_id WHERE ${sql.in("si.subscription_id", ids)} AND i.status = 'open'`;
   return [
+    ...registrars(app).some((r) => r.name === registrar) ? ["synced" as const] : [],
     ...await app.db.one`SELECT 1 FROM fin_hosting_domain WHERE alias_of = ${domain}` ? ["aliases" as const] : [],
     ...subs.some(running) ? ["running" as const] : [],
     ...unpaid ? ["unpaid" as const] : [],
@@ -178,6 +181,18 @@ export async function remove(app: App, name: string): Promise<void> {
   const why = await blockers(app, name);
   if (why.length) throw new Error(`fin.hosting: ${normalize(name)} is held: ${why.join(", ")}`);
   await table(app).delete(normalize(name));
+}
+
+/** Remove every domain linked to nothing — no subscription, ended ones too, no alias either way —
+ *  that no registrar's sync brings back; returns their names. */
+export async function prune(app: App): Promise<string[]> {
+  const [all, subs] = await Promise.all([domains(app), subscriptionsBy(app)]);
+  const synced = new Set(registrars(app).map((r) => r.name));
+  const mains = new Set(all.map((d) => d.alias_of));
+  const names = all.filter((d) => !d.alias_of && !mains.has(d.name) && !synced.has(String(d.registrar)) && !subs.has(String(d.name)))
+    .map((d) => String(d.name));
+  for (const name of names) await table(app).delete(name);
+  return names;
 }
 
 /** Bill a subscription for a domain, an alias too (its registration costs). A domain without an

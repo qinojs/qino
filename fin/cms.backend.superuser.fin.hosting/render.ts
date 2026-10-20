@@ -80,7 +80,8 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   ${openCard(node, pageUrl)}
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
-    <div class=-head>${t`Domains`} <small>${rows.length}</small></div>
+    <div class=-head>${t`Domains`} <small>${rows.length}</small>
+      <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias or registrar sync?`}">${t`Remove unlinked`}</button></div>
     <form>
       <input type=search name=search value="${search}" placeholder="${t`Domain`}">
       ${customerSelect(users, usr, t`All customers`, "usr")}
@@ -140,6 +141,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
   const owner = users.find((u) => Number(u.id) === usrId);
   const monitorUrl = monitor({ domain: d.name });
   const reasons: Record<string, Promise<string>> = {
+    synced: t`The registrar's sync brings it back.`,
     aliases: t`It has aliases.`,
     running: t`Subscriptions still run for it.`,
     unpaid: t`An invoice of its subscriptions is unpaid.`,

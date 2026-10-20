@@ -46,7 +46,7 @@ export const api: ApiTree = {
         },
       },
       delete: {
-        description: "Remove it — refused while it has aliases, running subscriptions or unpaid invoices",
+        description: "Remove it — refused while a registrar syncs it, or it has aliases, running subscriptions or unpaid invoices",
         access: Access.SUPERUSER,
         execute: async ({ domain }: Params, ctx: Ctx) => {
           await remove(ctx.app, String((domain as Row).name));

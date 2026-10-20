@@ -4,7 +4,7 @@ Fin for hosting providers: the domains of customers, what is an alias of what, a
 subscriptions each domain is billed by — its hosting, the domain itself, a service.
 
 ```ts
-import { adopt, blockers, domains, link, remove, save, subscriptionsBy, unlink } from "@qino/qino/fin.hosting";
+import { adopt, blockers, domains, link, prune, remove, save, subscriptionsBy, unlink } from "@qino/qino/fin.hosting";
 
 await save(app, "example.ch", { usrId: 42, registrar: "Hostpoint" });
 await save(app, "example.com", { aliasOf: "example.ch" }); // served by example.ch's hosting, its owner too
@@ -14,6 +14,7 @@ await domains(app, 42); // a customer's, each alias right after its domain
 await subscriptionsBy(app, 42); // their subscriptions, by domain
 await blockers(app, "example.ch"); // ["aliases", "running", "unpaid"]: why it may not go
 await remove(app, "example.com");
+await prune(app); // every domain linked to nothing
 ```
 
 The domain is the key (`fin_hosting_domain.name`, lower case, punycode). A subscription is for a
@@ -38,8 +39,9 @@ domains registered there; a daily job (`sync`) takes them over — new ones show
 ones no longer there lose their `registrar` (moved away, or ended), each gets its `expires`. A
 registrar that fails changes nothing. The first: [fin.hosting.infomaniak](../fin.hosting.infomaniak/README.md).
 
-**Held, not deleted.** A domain with aliases, a running subscription or an unpaid invoice of one
-cannot be removed; ended subscriptions keep their `ref`, so what they were for stays readable.
+**Held, not deleted.** A domain a registrar's sync brings back, with aliases, a running subscription
+or an unpaid invoice of one cannot be removed; ended subscriptions keep their `ref`, so what they were
+for stays readable. `prune` clears out the rest: what no subscription, ended or not, and no alias links to.
 That is why the domains live here and not in a monitor: monitoring is a tool, billing is not.
 
 **Monitored.** Where [cms.backend.domain_monitor](../../ops/cms.backend.domain_monitor/) is

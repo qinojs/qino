@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { link, remove, save, sync, unlink } from "@qino/qino/fin.hosting";
+import { link, prune, remove, save, sync, unlink } from "@qino/qino/fin.hosting";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -32,6 +32,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (typeof vars.remove === "string") {
       await remove(app, vars.remove);
       return { ok: true, url: await (await node.page()).url() };
+    }
+    if (vars.prune) {
+      const names = await prune(app);
+      return { ok: true, message: `${names.length} ${await app.t`removed`}${names.length ? `: ${names.join(", ")}` : ""}` };
     }
     if (vars.link) {
       const v = vars.link as Record<string, string>;

@@ -3,7 +3,7 @@ import { create, issue } from "@qino/qino/fin.invoice";
 import { cancel, subscribe, update } from "@qino/qino/fin.subscription";
 
 import { withFinApp } from "../../tests/app.ts";
-import { adopt, billable, blockers, domains, get, link, normalize, open, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
+import { adopt, billable, blockers, domains, get, link, normalize, open, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -155,5 +155,26 @@ Deno.test("fin.hosting: the registrars say which domains are ours to bill; what 
     const failing = { name: "test", domains: () => Promise.reject(new Error("down")) };
     assertEquals(await sync(app, [failing]), [{ registrar: "test", found: 0, added: 0, gone: 0, error: "down" }]);
     assertEquals((await get(app, "example.ch"))?.registrar, "test");
+  });
+});
+
+Deno.test("fin.hosting: a synced domain is held; prune removes what nothing links to", async () => {
+  await withFinApp([...FIN, "fin.hosting.infomaniak"], async (app) => {
+    const anna = await customer(app, "Anna");
+    await save(app, "synced.ch", { registrar: "infomaniak" });
+    assertEquals(await blockers(app, "synced.ch"), ["synced"]);
+    await save(app, "main.ch");
+    await save(app, "alias.ch", { aliasOf: "main.ch" });
+    await save(app, "billed.ch", { usrId: anna });
+    const sub = await hosting(app, anna);
+    await link(app, "billed.ch", sub);
+    await save(app, "ended.ch", { usrId: anna });
+    const ended = await hosting(app, anna);
+    await link(app, "ended.ch", ended);
+    await cancel(app, ended);
+    await save(app, "lost.ch", { usrId: anna, registrar: "Hostpoint" }); // kept by hand: not synced
+    await save(app, "lone.ch");
+    assertEquals(await prune(app), ["lone.ch", "lost.ch"]);
+    assertEquals((await domains(app)).map((d) => d.name), ["billed.ch", "ended.ch", "main.ch", "alias.ch", "synced.ch"]);
   });
 });
