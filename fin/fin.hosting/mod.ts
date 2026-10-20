@@ -40,13 +40,18 @@ const key = (name: string) => name.split(".").reverse().join(".");
 export const get = (app: App, name: string): Promise<Row | undefined> =>
   app.db.row`SELECT * FROM fin_hosting_domain WHERE name = ${normalize(name)}`;
 
-/** A user's domains, or all; each alias right after the domain it is an alias of. */
+/** A user's domains, or all; each alias right after the domain it is an alias of, before its subdomains. */
 export async function domains(app: App, usrId?: number): Promise<Row[]> {
   const rows = usrId == null
     ? await app.db.query`SELECT * FROM fin_hosting_domain`
     : await app.db.query`SELECT * FROM fin_hosting_domain WHERE usr_id = ${usrId}`;
-  const order = (d: Row) => d.alias_of ? `${key(String(d.alias_of))}\u0000${key(String(d.name))}` : key(String(d.name));
-  return rows.sort((a, b) => order(a).localeCompare(order(b)));
+  // by domain (an alias by its own), the domain first, then its aliases
+  const order = (d: Row) => [key(String(d.alias_of ?? d.name)), d.alias_of ? 1 : 0, key(String(d.name))] as const;
+  const cmp = (x: string | number, y: string | number) => x < y ? -1 : x > y ? 1 : 0;
+  return rows.sort((a, b) => {
+    const [x, y] = [order(a), order(b)];
+    return cmp(x[0], y[0]) || cmp(x[1], y[1]) || cmp(x[2], y[2]);
+  });
 }
 
 /** Whether a subscription still runs: a period begins before its end, or it has none. */
