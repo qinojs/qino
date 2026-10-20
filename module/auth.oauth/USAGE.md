@@ -29,6 +29,7 @@ Tabelle `oauth_provider`:
 | `allowed_domains` | optional, kommagetrennt (z.B. `example.com`) — begrenzt öffentliche Provider |
 | `redirect_uri` | optional, geteilter Callback statt `{appUrl}oauth/callback/<name>` (siehe `auth.oauth.relay`) |
 | `response_mode` | optional, z.B. `form_post` (Apple verlangt es für `name`/`email`) |
+| `key_id` / `team_id` | gesetzt = `client_secret` ist ein privater ES256-Schlüssel; das Modul signiert daraus pro Login ein JWT (Apple) |
 
 ## Viele Domains, ein Eintrag beim Provider
 
@@ -53,9 +54,9 @@ gelöscht, verschwinden seine Verknüpfungen.
 - **OIDC:** `google`, `microsoft`, `apple`, `auth0`, `gitlab`, `linkedin`, `slack`
   (`<tenant>` bei `microsoft`/`auth0` durch deine Domain/Tenant ersetzen).
 - **OAuth2:** `github`, `discord`.
-- **`apple`** braucht als `client_secret` ein kurzlebiges ES256-JWT statt eines festen
-  Secrets — das Modul erzeugt es nicht. Antwortet per `form_post`; der Callback macht daraus einen
-  GET, damit das Session-Cookie (`SameSite=Lax`) mitkommt.
+- **`apple`**: `client_id` = Services ID, `client_secret` = Inhalt der `.p8`-Datei, dazu `key_id`
+  und `team_id` — das kurzlebige JWT erzeugt das Modul selbst. Antwortet per `form_post`; der
+  Callback macht daraus einen GET, damit das Session-Cookie (`SameSite=Lax`) mitkommt.
 - **`microsoft`** mit `common`: `iss` nennt den Tenant des Users, geprüft gegen `{tenantid}` aus der
   Discovery. Microsoft schickt kein `email_verified` — in der App-Registrierung das optionale Claim
   `xms_edov` aktivieren, sonst gelten E-Mails als unbestätigt.
@@ -95,7 +96,6 @@ Optional `?return_to=/pfad` (nur lokale Pfade werden akzeptiert).
 Kern:
 - **JWKS-Signaturprüfung** als Defense-in-Depth; **`azp`** prüfen bei mehreren `aud`.
 - **Refresh-Tokens / RP-Logout** (`end_session_endpoint`): nicht implementiert.
-- **Apple client_secret-JWT** (ES256) generieren.
 - **Zwei Logins parallel** (zwei Tabs) überschreiben sich in der Session → Fix: per `state`
   speichern.
 
