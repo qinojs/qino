@@ -153,12 +153,16 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
   // own provider account as second factor. Connecting needs a session.
   if (here && !ctx.userId) return 0;
   let usrId = ctx.userId;
+  // `trust_email`: the provider only hands out confirmed addresses but doesn't say so (Facebook) — good
+  // enough for a new account, never to enter an existing one
+  const trusted = !id.verified && !!Number(p.trust_email ?? 0);
   if (!usrId) {
     // Only verified e-mails; a missing claim counts as unverified (editable provider e-mails would
     // otherwise allow takeovers).
-    if (!id.email || !id.verified) return 0;
+    if (!id.email || !(id.verified || trusted)) return 0;
     // whoever owns the address owns the account — the contact is proven, a login handle is not
     usrId = await contactOwner(db, "email", id.email) ?? 0;
+    if (usrId && trusted) return 0;
     if (!usrId) {
       // a taken login handle is someone's account: they sign in and connect, nobody gets a twin
       if (!p.auto_create || await db.one`SELECT id FROM usr WHERE LOWER(TRIM(username)) = ${id.email}`) return 0;
@@ -168,7 +172,7 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
     }
   }
   // A provider-verified address counts like our own verification; addresses of other users stay theirs.
-  if (id.email && id.verified) await addContact(db, usrId, "email", id.email).catch(() => {});
+  if (id.email && (id.verified || trusted && !ctx.userId)) await addContact(db, usrId, "email", id.email).catch(() => {});
   if (id.sub) {
     const now = unixTime();
     await db.table("oauth_provider_usr").insert({ provider: p.name, sub: id.sub, usr_id: usrId, created: now, last_used: now });

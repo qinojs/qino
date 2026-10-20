@@ -27,6 +27,7 @@ Tabelle `oauth_provider`:
 | `scopes` | leer = `openid email profile` |
 | `auto_create` | `1` = unbekannte, verifizierte User anlegen, `0` = nur bestehende |
 | `allowed_domains` | optional, kommagetrennt (z.B. `example.com`) — begrenzt öffentliche Provider |
+| `trust_email` | `1` = E-Mails ohne Bestätigungs-Flag gelten für **neue** Konten als bestätigt (Facebook liefert keins); bestehende Konten nur über Verknüpfung |
 | `redirect_uri` | optional, geteilter Callback statt `{appUrl}oauth/callback/<name>` (siehe `auth.oauth.relay`) |
 | `response_mode` | optional, z.B. `form_post` (Apple verlangt es für `name`/`email`) |
 | `key_id` / `team_id` | gesetzt = `client_secret` ist ein privater ES256-Schlüssel; das Modul signiert daraus pro Login ein JWT (Apple) |

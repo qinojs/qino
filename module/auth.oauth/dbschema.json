@@ -48,6 +48,9 @@
           "auto_create": {
             "type": "integer"
           },
+          "trust_email": {
+            "type": "integer"
+          },
           "allowed_domains": {
             "type": "string",
             "maxLength": 255

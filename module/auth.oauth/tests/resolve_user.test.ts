@@ -59,6 +59,16 @@ Deno.test("auth.oauth: an unverified e-mail is refused", async () => {
   assertEquals(db.inserted.length, 0);
 });
 
+Deno.test("auth.oauth: trust_email lets an unflagged e-mail create a new account, never enter an existing one", async () => {
+  const facebook = { ...PROVIDER, name: "facebook", trust_email: 1 };
+  const fresh = fakeDb();
+  assertEquals(await resolveUser(ctxWith(fresh), facebook, github({ email_verified: undefined })), 99);
+  assertEquals(fresh.inserted.map(([t]) => t), ["usr", "usr_contact", "oauth_provider_usr"]);
+  const taken = fakeDb({ usr: 8 });
+  assertEquals(await resolveUser(ctxWith(taken), facebook, github({ email_verified: undefined })), 0);
+  assertEquals(taken.inserted.length, 0);
+});
+
 Deno.test("auth.oauth: auto_create off means an unknown e-mail creates nobody", async () => {
   const db = fakeDb();
   assertEquals(await resolveUser(ctxWith(db), { ...PROVIDER, auto_create: 0 }, github()), 0);

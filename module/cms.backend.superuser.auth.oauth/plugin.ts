@@ -20,6 +20,7 @@ type Preset = {
   userinfo_url?: string;
   email_url?: string;
   response_mode?: string;
+  trust_email?: number;
   console_url: string; // where to create the client ID/secret
 };
 
@@ -43,7 +44,7 @@ const PRESETS: Record<string, Preset> = {
   paypal:     { issuer: "https://www.paypal.com", scopes: "openid email profile", console_url: "https://developer.paypal.com/dashboard/applications/live" },
   github:   { scopes: "read:user user:email", authorize_url: "https://github.com/login/oauth/authorize", token_url: "https://github.com/login/oauth/access_token", userinfo_url: "https://api.github.com/user", email_url: "https://api.github.com/user/emails", console_url: "https://github.com/settings/applications/new" },
   discord:  { scopes: "identify email", authorize_url: "https://discord.com/oauth2/authorize", token_url: "https://discord.com/api/oauth2/token", userinfo_url: "https://discord.com/api/users/@me", console_url: "https://discord.com/developers/applications" },
-  facebook: { scopes: "email public_profile", authorize_url: "https://www.facebook.com/v19.0/dialog/oauth", token_url: "https://graph.facebook.com/v19.0/oauth/access_token", userinfo_url: "https://graph.facebook.com/me?fields=id,name,email", console_url: "https://developers.facebook.com/apps/" },
+  facebook: { trust_email: 1, scopes: "email public_profile", authorize_url: "https://www.facebook.com/v19.0/dialog/oauth", token_url: "https://graph.facebook.com/v19.0/oauth/access_token", userinfo_url: "https://graph.facebook.com/me?fields=id,name,email", console_url: "https://developers.facebook.com/apps/" },
   twitter:  { scopes: "users.read tweet.read", authorize_url: "https://twitter.com/i/oauth2/authorize", token_url: "https://api.twitter.com/2/oauth2/token", userinfo_url: "https://api.twitter.com/2/users/me", console_url: "https://console.x.com/" },
   spotify:  { scopes: "user-read-email", authorize_url: "https://accounts.spotify.com/authorize", token_url: "https://accounts.spotify.com/api/token", userinfo_url: "https://api.spotify.com/v1/me", console_url: "https://developer.spotify.com/dashboard" },
   bitbucket:{ scopes: "account email", authorize_url: "https://bitbucket.org/site/oauth2/authorize", token_url: "https://bitbucket.org/site/oauth2/access_token", userinfo_url: "https://api.bitbucket.org/2.0/user", console_url: "https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/" },
@@ -56,6 +57,7 @@ export async function install({ app }: { app: App }): Promise<void> {
       name: pname, issuer: def.issuer ?? "", authorize_url: def.authorize_url ?? "", token_url: def.token_url ?? "",
       userinfo_url: def.userinfo_url ?? "", email_url: def.email_url ?? "", client_id: "", client_secret: "",
       scopes: def.scopes, auto_create: 1, allowed_domains: "", response_mode: def.response_mode ?? "",
+      trust_email: def.trust_email ?? 0,
     });
   }
 }
@@ -91,6 +93,8 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
       Key ID (JWT secret) ${text("key_id")}
       Team ID (JWT secret) ${text("team_id")}
       <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
+      <div><label><input type=checkbox name=trust_email value=1${Number(p.trust_email) ? " checked" : ""}>
+        trust e-mails without verified flag (new accounts only, e.g. Facebook)</label></div>
     </u2-fields>
     <fieldset>
       <legend>OAuth2 (no discovery)</legend>
@@ -135,6 +139,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         client_id: String(b.client_id ?? "").trim(),
         scopes: String(b.scopes ?? "").trim(),
         auto_create: b.auto_create ? 1 : 0,
+        trust_email: b.trust_email ? 1 : 0,
         allowed_domains: String(b.allowed_domains ?? "").trim(),
         redirect_uri: String(b.redirect_uri ?? "").trim(),
         response_mode: String(b.response_mode ?? "").trim(),
