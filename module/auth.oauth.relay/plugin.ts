@@ -6,7 +6,8 @@ export const settingsSchema = {
   properties: {
     hosts: {
       type: "string",
-      description: "Hosts the relay forwards to, space or comma-separated; \"*.example.com\" covers subdomains.",
+      "x-multiline": true,
+      description: "Hosts the relay forwards to, one per line; \"*.example.com\" covers subdomains.",
     },
   },
 };

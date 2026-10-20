@@ -13,7 +13,7 @@ in `auth.oauth` der jeweiligen App.
 
 | Setting | Bedeutung |
 |---|---|
-| `hosts` | Hosts, an die weitergeleitet wird, durch Leerzeichen/Komma getrennt; `*.example.ch` deckt Subdomains ab |
+| `hosts` | Hosts, an die weitergeleitet wird, einer pro Zeile; `*.example.ch` deckt Subdomains ab |
 
 **Beim Provider:** als Redirect-URI `https://auth.example.com/oauth/relay` eintragen.
 
