@@ -74,7 +74,7 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
       <th class=-num>${app.t`Restarts`}
       <th>${app.t`Since`}
       <th>
-    <tbody>${projects.map((p) => renderRow(app, p, p.name === server.self))}
+    <tbody>${projects.map((p) => renderRow(app, p, p.name === server.self, server.preview ?? ""))}
     <tfoot><tr>
       <th colspan=4>${projects.length} ${app.t`projects`}
       <td class=-num>${bytes(sum(projects, "memory"))}
@@ -92,7 +92,19 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
 
 const STATE_COLOR: Record<string, string> = { active: "var(--green)", failed: "var(--red)", activating: "var(--orange)" };
 
-function renderRow(app: App, p: Project, self: boolean) {
+/** Each domain as a link; its preview address, if served, as an icon beside it. */
+function domains(app: App, all: string[], preview: string) {
+  const isPreview = (d: string) => !!preview && d.endsWith(`.${preview}`);
+  return all.filter((d) => !isPreview(d)).map((d) => {
+    const alias = `${d}.${preview}`;
+    const link = preview && all.includes(alias)
+      ? html.async` <a href="https://${alias}/" target=_blank rel=noopener title="${app.t`Preview Link`}"><u2-ico icon=visibility>👁</u2-ico></a>`
+      : "";
+    return html.async`<span><a href="https://${d}/" target=_blank rel=noopener>${d}</a>${link}</span>`;
+  });
+}
+
+function renderRow(app: App, p: Project, self: boolean, preview: string) {
   // anything but loopback bypasses the proxy
   const listen = p.listen.map((s) => /^(127\.|\[::1\])/.test(s)
     ? html`<code>${s}</code>`
@@ -106,7 +118,7 @@ function renderRow(app: App, p: Project, self: boolean) {
   return html.async`<tr>
     <td><b>${p.name}</b>
     <td><span class=u2-badge style="background:${STATE_COLOR[p.state] ?? "var(--gray)"}">${p.state}</span> <small>${p.sub}</small>
-    <td>${p.domains.map((d) => html`<a href="https://${d}/" target=_blank rel=noopener>${d}</a>`)}
+    <td>${domains(app, p.domains, preview)}
     <td>${listen}
     <td class=-num>${bytes(p.memory)}
     <td class=-num>${p.cpu == null ? "–" : html`${p.cpu} %`}

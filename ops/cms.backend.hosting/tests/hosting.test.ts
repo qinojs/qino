@@ -62,7 +62,7 @@ LISTEN 0 4096 0.0.0.0:22 0.0.0.0:* users:(("sshd",pid=1,fd=3))`;
 
 const server = (o: Partial<List["server"]> = {}): List["server"] => ({
   memory: { total: 8e9, available: 6e9 }, disk: { total: 100e9, available: 40e9 }, cpus: 4, load: [0.5, 0.25, 0.125],
-  self: "ops.example", templates: ["qino"], ...o,
+  self: "ops.example", preview: "preview.example", templates: ["qino"], ...o,
 });
 const project = (o: Partial<Project>): Project => ({
   name: "a", state: "active", sub: "running", since: null, restarts: 0, memory: 2048, cpu: 3, tasks: 9,
@@ -71,13 +71,15 @@ const project = (o: Partial<Project>): Project => ({
 
 Deno.test("cms.backend.hosting: table flags sockets beside the proxy and escapes", async () => {
   const out = String(await renderList(app, { server: server(), projects: [
-    project({ name: "<b>x", listen: ["127.0.0.1:8091"], domains: ["a.ch"] }),
+    project({ name: "<b>x", listen: ["127.0.0.1:8091"], domains: ["a.ch", "a.ch.preview.example"] }),
     project({ name: "b", state: "failed", listen: ["0.0.0.0:8092"] }),
   ] }));
   assertStringIncludes(out, "&lt;b&gt;x");
   assertStringIncludes(out, `<code>127.0.0.1:8091</code>`);
   assertStringIncludes(out, `title="Reachable without the proxy">0.0.0.0:8092</span>`);
   assertStringIncludes(out, `href="https://a.ch/"`);
+  assertStringIncludes(out, `<a href="https://a.ch.preview.example/" target=_blank rel=noopener title="Preview Link"><u2-ico icon=visibility>👁</u2-ico></a>`);
+  assertEquals(out.includes(">a.ch.preview.example<"), false);
   assertStringIncludes(out, "<u2-bytes>2048</u2-bytes>");
   assertStringIncludes(out, "var(--red)");
 });

@@ -7,7 +7,7 @@
   & td { vertical-align: top; }
   & .-num { text-align: right; white-space: nowrap; }
   & .-server { width: auto; }
-  & .-projects td > :is(a, code, span) { display: block; }
+  & .-projects td > :is(code, span) { display: block; }
   & .-actions { white-space: nowrap; }
   & .-create { display: flex; flex-wrap: wrap; gap: .5rem; }
 }

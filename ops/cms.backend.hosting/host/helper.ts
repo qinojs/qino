@@ -5,7 +5,7 @@
 // the project named like the socket's group; it can see itself, but not stop, restart or delete itself.
 
 import { execFile } from "node:child_process";
-import { chmod, cp, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, chown, cp, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { availableParallelism, loadavg } from "node:os";
 import process from "node:process";
@@ -127,6 +127,7 @@ async function server(host: Host) {
     cpus: availableParallelism(),
     load: loadavg(),
     self: host.self,
+    preview: host.preview,
     templates: await templates(host.templates),
   };
 }
@@ -194,6 +195,13 @@ async function steps(fn: (undo: (f: () => Promise<unknown>) => void) => Promise<
   }
 }
 
+/** For files others read (systemd, Caddy): the helper's umask keeps them from the world otherwise. */
+async function publish(path: string, text: string) {
+  await writeFile(path, text);
+  await chown(path, 0, 0); // not the helper's group
+  await chmod(path, 0o644);
+}
+
 /** Copy `from` into `to`, `{{…}}` filled in every file. */
 async function copy(from: string, to: string, vars: Record<string, string>) {
   for (const entry of await readdir(from, { withFileTypes: true })) {
@@ -246,12 +254,12 @@ async function create(host: Host, args: Args) {
         cwd: root, env: { PATH: process.env.PATH ?? "/usr/bin:/bin", HOME: root, ...env }, timeout: 5 * 60_000,
       });
     }
-    await writeFile(unitFile, fill(await readFile(`${tpl}unit.service`, "utf8"), vars));
+    await publish(unitFile, fill(await readFile(`${tpl}unit.service`, "utf8"), vars));
     undo(() => rm(unitFile, { force: true }).then(() => run("systemctl", ["daemon-reload"])));
     await run("systemctl", ["daemon-reload"]);
     await run("systemctl", ["enable", "--now", `${name}.service`]);
     undo(() => run("systemctl", ["disable", "--now", `${name}.service`]));
-    await writeFile(site, fill(await readFile(`${tpl}site.caddy`, "utf8"), vars));
+    await publish(site, fill(await readFile(`${tpl}site.caddy`, "utf8"), vars));
     undo(() => rm(site, { force: true }).then(() => run("systemctl", ["reload", "caddy"])));
     await run("caddy", ["validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]);
     await run("systemctl", ["reload", "caddy"]);
