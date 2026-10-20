@@ -64,6 +64,7 @@
   "Delete the entire version history?": "Usunąć całą historię wersji?",
   "Delete unused": "Usuń nieużywane",
   "Deleted": "Usunięto",
+  "Login": "Logowanie",
   "Runtime": "Środowisko uruchomieniowe",
   "The text has been saved.": "Tekst został zapisany.",
   "Directory": "Katalog",
@@ -237,6 +238,7 @@
   "Used": "Użyte",
   "used by": "używane przez",
   "User": "Użytkownik",
+  "Username": "Nazwa użytkownika",
   "Visibility changed": "Zmieniono widoczność",
   "Visible": "Widoczny",
   "Warning: only files older than 7 days.": "Uwaga: tylko pliki starsze niż 7 dni.",
@@ -244,7 +246,5 @@
   "Write current translations into each module's locale folder.": "Zapisz bieżące tłumaczenia do folderu locale każdego modułu.",
   "Write current translations to each module's locale/{0}.json files.": "Zapisz bieżące tłumaczenia do plików locale/{0}.json każdego modułu.",
   "yes": "tak",
-  "{0}": "{0}",
-  "Login": "Logowanie",
-  "Username": "Nazwa użytkownika"
+  "{0}": "{0}"
 }

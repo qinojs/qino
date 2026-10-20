@@ -84,7 +84,9 @@ Deno.test("a user's address and credit, as a card on other pages, links to where
       street_address: "Seeweg 2", postal_code: "3000", address_locality: "Bern", iban: "CH9300762011623852957",
     }));
     await app.db.table("payment_credit").insert({ usr_id: id, currency: "CHF", amount: 500, text: "", created: 1 });
-    const card = String(await inRequest(app, "http://qino.test/", async () => backendRowWidget.usr(app, id, await node.page())));
+    const out = await inRequest(app, "http://qino.test/", async () => backendRowWidget.usr(app, id, await node.page()));
+    assertEquals(out && out.title, "Address");
+    const card = String(out && out.body);
     assertStringIncludes(card, `<a href="/backend/parties?usr=${id}">Druck AG</a><br>Seeweg 2<br>3000 Bern`);
     assertStringIncludes(card, "CH9300762011623852957");
     assert(/Credit[\s\S]*5\.00/.test(card));

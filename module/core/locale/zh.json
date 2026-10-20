@@ -64,6 +64,7 @@
   "Delete the entire version history?": "删除整个版本历史？",
   "Delete unused": "删除未使用",
   "Deleted": "已删除",
+  "Login": "登录",
   "Runtime": "运行时",
   "The text has been saved.": "文本已保存。",
   "Directory": "目录",
@@ -237,6 +238,7 @@
   "Used": "已用",
   "used by": "被使用于",
   "User": "用户",
+  "Username": "用户名",
   "Visibility changed": "可见性已更改",
   "Visible": "可见",
   "Warning: only files older than 7 days.": "警告：仅限超过 7 天的文件。",
@@ -244,7 +246,5 @@
   "Write current translations into each module's locale folder.": "将当前翻译写入每个模块的 locale 文件夹。",
   "Write current translations to each module's locale/{0}.json files.": "将当前翻译写入每个模块的 locale/{0}.json 文件。",
   "yes": "是",
-  "{0}": "{0}",
-  "Login": "登录",
-  "Username": "用户名"
+  "{0}": "{0}"
 }

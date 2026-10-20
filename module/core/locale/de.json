@@ -78,6 +78,7 @@
   "Delete the entire version history?": "Den gesamten Versionsverlauf löschen?",
   "Delete unused": "Nicht verwendete Dateien löschen",
   "Deleted": "Gelöscht",
+  "Login": "Anmeldung",
   "Runtime": "Runtime",
   "The text has been saved.": "Der Text wurde gespeichert.",
   "Description": "Beschreibung",
@@ -293,6 +294,7 @@
   "Use the gear for module settings and the handle to move the module.": "Verwenden Sie das Zahnrad für die Moduleinstellungen und den Griff zum Bewegen des Moduls.",
   "Used": "Verwendet",
   "User": "Benutzer",
+  "Username": "Benutzername",
   "Users": "Benutzer",
   "View": "Sicht",
   "Visibility changed": "Sichtbarkeit geändert",
@@ -375,7 +377,5 @@
   "used by": "verwendet von",
   "without schema": "ohne Schema",
   "yes": "ja",
-  "{0}": "{0}",
-  "Login": "Anmeldung",
-  "Username": "Benutzername"
+  "{0}": "{0}"
 }

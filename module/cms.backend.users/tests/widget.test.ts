@@ -82,7 +82,9 @@ Deno.test("how a user signs in, as a card on other pages, links to where it is c
   await adoptUsername({ db } as unknown as App, 1, "eva@qino.test");
   const app = { db, t: fakeT } as unknown as App;
   const page = { url: () => Promise.resolve("/backend/users") } as never;
-  const card = String(await backendRowWidget.usr(app, 1, page));
+  const out = await backendRowWidget.usr(app, 1, page);
+  assertEquals(out && out.title, "Login"); // one user: not the page's name, "Users"
+  const card = String(out && out.body);
   assertStringIncludes(card, `<a href="/backend/users?id=1">&lt;eva&gt;</a>`);
   assertStringIncludes(card, "eva@qino.test");
   assertStringIncludes(card, "<td>admin");

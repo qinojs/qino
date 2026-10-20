@@ -1,4 +1,6 @@
 {
+  "Login": "Connexion",
+  "Username": "Nom d'utilisateur",
   "{0}": "{0}",
   "404 and bots": "404 et bots",
   "404 and old browsers": "404 et navigateurs anciens",
@@ -364,7 +366,5 @@
   "Write current translations into each module's locale folder.": "Écrire les traductions actuelles dans le dossier de localisation de chaque module.",
   "Write current translations to each module's locale/{0}.json files.": "Écrire les traductions actuelles dans les fichiers locale/{0}.json de chaque module.",
   "yes": "oui",
-  "Your message here": "Votre message ici",
-  "Login": "Connexion",
-  "Username": "Nom d'utilisateur"
+  "Your message here": "Votre message ici"
 }

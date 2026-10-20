@@ -80,6 +80,10 @@ Deno.test("cms.backend: row widgets come from modules whose backend page the vie
   assertEquals(out, `<div class=u2-card><a class=-head href="/invoices">invoices</a><b>3 open</b> of 7</div>`);
   assertEquals(calls, [7]); // the hidden module's widget is not even called
   assertEquals(String(await renderRowWidgets(node as any, "shop_product", 7)), "");
+  // a widget may name its card where the page's name does not fit the one row
+  const titled = { ...app, modules: { linked: () => [mod("x.invoices", { usr: () => ({ title: "Login <1>", body: "<b>eva</b>" }) })] } };
+  assertEquals(String(await renderRowWidgets({ ...node, app: titled } as any, "usr", 7)),
+    `<div class=u2-card><a class=-head href="/invoices">Login &lt;1&gt;</a><b>eva</b></div>`);
   // the page's own module adds no card: the page shows the row in full
   const own = { ...node, vs: { module: "x.invoices" } };
   assertEquals(String(await renderRowWidgets(own as any, "usr", 7)), "");
