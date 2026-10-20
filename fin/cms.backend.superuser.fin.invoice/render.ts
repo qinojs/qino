@@ -108,7 +108,6 @@ async function list(node: Node, url: URL) {
       <th>
       <th>${t`Party`}
       <th>${t`Date`}
-      <th>${t`Due`}
       <th>${t`Total`}
       <th>${t`Paid`}
       <th>${t`Status`}
@@ -119,20 +118,21 @@ async function list(node: Node, url: URL) {
       <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
       <td>${row.usr_id ? userLink(node, row.usr_id, partyName(row)) : partyName(row)}
       <td style="white-space:nowrap">${row.date}
-      <td style="white-space:nowrap">${due(app, row)}
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
       <td style="text-align:end; white-space:nowrap">${money(row.paid, row.currency)}
-      <td>${status(row.status)}
+      <td>${overdue(row)
+      ? html.async`<span title="${t`Due`} ${row.due}">${badge(t`overdue`, "--red")}</span>`
+      : html.async`<span title="${row.due ? html.async`${t`Due`} ${row.due}` : ""}">${status(row.status)}</span>`}
       <td>${refLink(node, row.ref)}`)}
-    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 9 })}
+    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 8 })}
   </table>`;
 }
 
-/** The due date, marked once it has passed on an open invoice — a credit note is never overdue. */
-const due = (app: App, row: Row) =>
-  row.status === "open" && row.type === "invoice" && row.due && String(row.due) < today()
-  ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}`
-  : String(row.due ?? "");
+/** Open past its due date — a credit note is never overdue. */
+const overdue = (row: Row) => row.status === "open" && row.type === "invoice" && !!row.due && String(row.due) < today();
+
+/** The due date, marked once it has passed. */
+const due = (app: App, row: Row) => overdue(row) ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}` : String(row.due ?? "");
 
 /** A new invoice: what it is, then the editor takes over. */
 async function newForm(app: App) {

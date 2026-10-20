@@ -221,3 +221,16 @@ Deno.test("a customer's page shows their invoices as a card, and nothing without
     assertStringIncludes(out, "draft");
   });
 });
+
+Deno.test("the list shows overdue as status, the due date on hover, no column of its own", async () => {
+  await withApp(async (app, as, node) => {
+    const late = Number(await create(app, { currency: "CHF", date: "2020-01-01", term: 30, lines: [{ name: "Hosting", price: 24000 }] }));
+    await issue(app, late);
+    const fresh = Number(await create(app, { currency: "CHF", lines: [{ name: "Domain", price: 1000 }] }));
+    await issue(app, fresh);
+    const page = String(await as("http://qino.test/backend/invoices", () => render(node)));
+    assert(!page.includes("<th>Due"));
+    assertStringIncludes(page, `<span title="Due 2020-01-31"><small class=u2-badge style="background:var(--red)">overdue</small></span>`);
+    assertEquals(page.match(/>overdue</g)?.length, 1); // the fresh one is open, not overdue
+  });
+});

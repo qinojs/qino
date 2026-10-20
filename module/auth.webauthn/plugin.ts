@@ -9,7 +9,14 @@ import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", stepUp: true, order: 10 }];
+export const authFactors: Factor[] = [{
+  name: "webauthn",
+  label: "Passkey",
+  stepUp: true,
+  order: 10,
+  // without it every user would count as having a passkey: a second-factor login would ask them for one
+  has: async (app: App, usrId: number) => !!await app.db.one`SELECT 1 FROM webauthn_credential WHERE usr_id = ${usrId} LIMIT 1`,
+}];
 
 export const settingsSchema = {
   properties: {

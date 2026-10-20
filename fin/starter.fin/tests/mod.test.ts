@@ -34,6 +34,14 @@ Deno.test({
       assertEquals(res.status, 200);
       await res.body?.cancel();
       assert(await cms(app).nodeByModule("cms.backend.superuser.fin.invoice"), "the backend page is there");
+      // nothing switched on behind one's back: warned instead, until a second factor is asked for
+      const warning = async (mod: string, name: string) =>
+        (await (await app.modules.get(mod)!.plugin.healthChecks(app)).warning[name]())?.info;
+      assertEquals(await warning("auth", "superusers without a second factor"), "su: set up an authenticator app or a passkey");
+      assert(await warning("fin", "sign-in without a second factor"));
+      const solve = (await app.modules.get("fin")!.plugin.healthChecks(app)).warning["sign-in without a second factor"];
+      await (await solve()).solutions["ask for a second factor"].solve();
+      assertEquals(await warning("fin", "sign-in without a second factor"), undefined);
     } finally {
       await app.db.close();
       await Deno.remove(dir, { recursive: true });

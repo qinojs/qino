@@ -1,7 +1,8 @@
-import { AccessError, invoke, toTools, requestStorage } from "@qino/qino";
+import { AccessError, Db, invoke, toTools, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
-import { api, cron, settingsSchema } from "../plugin.ts";
+import { api, authFactors, cron, settingsSchema } from "../plugin.ts";
+import dbSchema from "../dbschema.json" with { type: "json" };
 import manifest from "../manifest.json" with { type: "json" };
 
 const { name } = manifest;
@@ -104,4 +105,19 @@ Deno.test("auth.webauthn: cron purges expired challenges", async () => {
   const { app, execs } = makeApp();
   await cron.challenges.run(app as any);
   assertEquals(execs.length, 1);
+});
+
+Deno.test("auth.webauthn: a user has the factor only with a passkey of their own", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.migrate(dbSchema);
+  await db.loadTables();
+  try {
+    const app = { db } as never;
+    const has = authFactors[0].has!;
+    assertEquals(await has(app, 7), false);
+    await db.table("webauthn_credential").insert({ usr_id: 7, credential_id: "c", public_key: "k", sign_count: 0, created: 1 });
+    assertEquals([await has(app, 7), await has(app, 8)], [true, false]);
+  } finally {
+    await db.close();
+  }
 });
