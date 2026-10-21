@@ -29,18 +29,19 @@ export function render(node: Node): Promise<HtmlString> {
 
 export async function instances(node: Node): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const rows = await app.db.query`
     SELECT i.*, (SELECT COUNT(*) FROM reporting_error e WHERE e.instance = i.id) AS errors
     FROM reporting_instance i ORDER BY i.last_seen DESC`;
   return html.async`<table class="u2-table -instances -Sticky">
     <thead><tr>
-      <th>${app.t`Instance`}
-      <th>${app.t`Qino`}
-      <th>${app.t`Runtime`}
-      <th>${app.t`Modules`}
-      <th>${app.t`Errors`}
-      <th>${app.t`Last report`}
-      <th>${app.t`First report`}
+      <th>${t`Instance`}
+      <th>${t`Qino`}
+      <th>${t`Runtime`}
+      <th>${t`Modules`}
+      <th>${t`Errors`}
+      <th>${t`Last report`}
+      <th>${t`First report`}
       <th>
     <tbody>${rows.map((r) => instanceRow(app, r))}
   </table>`;
@@ -63,17 +64,18 @@ function instanceRow(app: App, r: Record<string, unknown>) {
 /** The same error on several instances is one row. */
 export async function errors(node: Node): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const rows = await app.db.query`
     SELECT fp, MAX(source) AS source, MAX(file) AS file, MAX(line) AS line, MAX(col) AS col, MAX(prio) AS prio,
       MAX(message) AS message, COUNT(*) AS instances, SUM(hits) AS hits, MAX(last_seen) AS last_seen
     FROM reporting_error GROUP BY fp ORDER BY MAX(last_seen) DESC LIMIT 500`;
   return html.async`<table class="u2-table -errors -Sticky">
     <thead><tr>
-      <th>${app.t`Message`}
-      <th>${app.t`Where`}
-      <th>${app.t`Instances`}
-      <th>${app.t`Hits`}
-      <th>${app.t`Last seen`}
+      <th>${t`Message`}
+      <th>${t`Where`}
+      <th>${t`Instances`}
+      <th>${t`Hits`}
+      <th>${t`Last seen`}
       <th>
     <tbody>${rows.map((r) => html.async`<tr>
       <td class=-message>${r.prio === "error" ? "" : html`<small>${r.prio}</small> `}${r.message}
@@ -81,6 +83,6 @@ export async function errors(node: Node): Promise<HtmlString> {
       <td>${r.instances}
       <td>${r.hits}
       <td>${at(r.last_seen)}
-      <td><button type=button data-delete-error="${r.fp}">${app.t`Done`}</button>`)}
+      <td><button type=button data-delete-error="${r.fp}">${t`Done`}</button>`)}
   </table>`;
 }

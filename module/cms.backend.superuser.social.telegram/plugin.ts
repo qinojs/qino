@@ -32,20 +32,21 @@ async function act(app: App, vars: Record<string, unknown> | undefined) {
 }
 
 async function render(node: Node) {
+  const t = node.app.t;
   const note = await act(node.app, postedVars(node.id));
   const targets = String(await node.app.settings["social.telegram"].targets ?? "");
   return html.async`<div class=u2-card>
-    <div class=-head>${node.app.t`Telegram`}</div>
+    <div class=-head>${t`Telegram`}</div>
     <form class=-body method=post>
       ${node.cms.formFields(node)}
       ${note ? html`<p>${note}</p>` : ""}
-      <p><small><a href="https://t.me/BotFather" target=_blank rel=noopener>${node.app.t`Open BotFather`}</a></small>
+      <p><small><a href="https://t.me/BotFather" target=_blank rel=noopener>${t`Open BotFather`}</a></small>
       <u2-fields>
-        ${node.app.t`Targets`} <input name=targets value="${targets}" placeholder="-1001234567890, @channel" required>
+        ${t`Targets`} <input name=targets value="${targets}" placeholder="-1001234567890, @channel" required>
       </u2-fields>
-      <button name=save value=1>${node.app.t`Save and check`}</button>
-      <button name=check value=1>${node.app.t`Check`}</button>
-      <p><small>${node.app.t`Uses the bot token configured in Messaging → Telegram. The bot must be an administrator of each channel.`}</small>
+      <button name=save value=1>${t`Save and check`}</button>
+      <button name=check value=1>${t`Check`}</button>
+      <p><small>${t`Uses the bot token configured in Messaging → Telegram. The bot must be an administrator of each channel.`}</small>
     </form>
   </div>`;
 }

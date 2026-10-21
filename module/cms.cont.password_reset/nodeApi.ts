@@ -14,23 +14,24 @@ export const TTL = 60 * 60;
  */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
+  const t = app.t;
   if (vars.request) {
     const email = String(vars.request).trim().toLowerCase();
     // the address has to be a verified contact: a login handle that looks like one proves nothing
     const usrId = await contactOwner(app.db, "email", email);
     const active = usrId && await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND active = ${true}`;
     if (active) await sendLink(node, usrId, email);
-    return { ok: true, message: await app.t`If that address has an account, a link is on its way.` };
+    return { ok: true, message: await t`If that address has an account, a link is on its way.` };
   }
   if (vars.reset) {
     const { handle, pw } = vars.reset as { handle: string; pw: string };
-    if (String(pw ?? "").length < 8) return { ok: false, message: await app.t`The password is too short.` };
+    if (String(pw ?? "").length < 8) return { ok: false, message: await t`The password is too short.` };
     // only a spent or unknown handle is answered softly — anything else is a real fault
     const ok = await redeem(app, String(handle), PURPOSE, { pw })
       .then(() => true, (e) => e instanceof ApiError ? false : Promise.reject(e));
     const message = ok
-      ? await app.t`Your password is set. You can sign in now.`
-      : await app.t`This link is no longer valid. Please request a new one.`;
+      ? await t`Your password is set. You can sign in now.`
+      : await t`This link is no longer valid. Please request a new one.`;
     return { ok, message };
   }
   return null;

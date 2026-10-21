@@ -56,19 +56,20 @@ async function read(app: App, form: Node, opt: { onlyIf: string; spam: number; l
    values look the same. Without `moderated` every entry the form allows to be shown is shown. */
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
+  const t = app.t;
   u2.assets(ctx, ["el/time/time.js", "el/alert/alert.js", "el/alert/alert.css", "class/width/width.css"]);
   const form = await formOf(node);
   const edit = await node.edit();
   if (!form) {
     return edit
-      ? html.async`<div><u2-alert open variant=warning>${app.t`No form found for these entries.`}</u2-alert></div>`
+      ? html.async`<div><u2-alert open variant=warning>${t`No form found for these entries.`}</u2-alert></div>`
       : html`<div></div>`;
   }
   /* The form decides who may show its entries, so an editor of this block cannot pick any form:
      only who may edit the form can allow it (an ordinary settings write on the form). */
   if (!listedBy(form, node)) {
     return edit
-      ? html.async`<div><u2-alert open variant=warning>${app.t`The form does not allow showing its entries here: only who may edit it can choose it in this block's settings.`}</u2-alert></div>`
+      ? html.async`<div><u2-alert open variant=warning>${t`The form does not allow showing its entries here: only who may edit it can choose it in this block's settings.`}</u2-alert></div>`
       : html`<div></div>`;
   }
 
@@ -127,13 +128,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       <u2-time datetime="${when.toISOString()}" type=relative>${when.toLocaleDateString(ctx.lang || undefined)}</u2-time>
       <dl>${lines}</dl>
       ${mayRelease && moderated
-      ? html.async`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${app.t`Released`}</label>`
+      ? html.async`<label class=-release><input type=checkbox data-release="${row.id}"${row.released ? html.raw(" checked") : ""}> ${t`Released`}</label>`
       : ""}
     </article>`;
   };
 
   return html.async`<div class=u2-width>${
-    rows.length ? rows.map(entry) : edit ? html.async`<p>${app.t`No entries yet.`}</p>` : ""
+    rows.length ? rows.map(entry) : edit ? html.async`<p>${t`No entries yet.`}</p>` : ""
   }</div>`;
 }
 

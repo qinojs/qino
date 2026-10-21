@@ -34,25 +34,26 @@ async function act(app: App, vars: Record<string, unknown> | undefined) {
 }
 
 async function render(node: Node) {
+  const t = node.app.t;
   const note = await act(node.app, postedVars(node.id));
   const settings = node.app.settings["social.bluesky"];
   const url = String(await settings.url ?? "https://bsky.social");
   const handle = String(await settings.handle ?? "");
   const configured = Boolean(await settings.appPassword);
   return html.async`<div class=u2-card>
-    <div class=-head>${node.app.t`Bluesky`}</div>
+    <div class=-head>${t`Bluesky`}</div>
     <form class=-body method=post>
       ${node.cms.formFields(node)}
       ${note ? html`<p>${note}</p>` : ""}
-      <p><small><a href="https://bsky.app/settings/app-passwords" target=_blank rel=noopener>${node.app.t`Open Bluesky app passwords`}</a></small>
+      <p><small><a href="https://bsky.app/settings/app-passwords" target=_blank rel=noopener>${t`Open Bluesky app passwords`}</a></small>
       <u2-fields>
-        ${node.app.t`Server URL`} <input type=url name=url value="${url}" required>
-        ${node.app.t`Handle`} <input name=handle value="${handle}" placeholder="name.bsky.social" required>
-        ${node.app.t`App password`} <input type=password name=appPassword autocomplete=new-password
-          placeholder="${configured ? node.app.t`Configured — leave empty to keep` : ""}">
+        ${t`Server URL`} <input type=url name=url value="${url}" required>
+        ${t`Handle`} <input name=handle value="${handle}" placeholder="name.bsky.social" required>
+        ${t`App password`} <input type=password name=appPassword autocomplete=new-password
+          placeholder="${configured ? t`Configured — leave empty to keep` : ""}">
       </u2-fields>
-      <button name=save value=1>${node.app.t`Save and check`}</button>
-      <button name=check value=1>${node.app.t`Check`}</button>
+      <button name=save value=1>${t`Save and check`}</button>
+      <button name=check value=1>${t`Check`}</button>
     </form>
   </div>`;
 }

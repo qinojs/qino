@@ -30,21 +30,22 @@ async function act(app: App, vars: Record<string, unknown> | undefined) {
 }
 
 async function render(node: Node) {
+  const t = node.app.t;
   const note = await act(node.app, postedVars(node.id));
   const configured = Boolean(await node.app.settings["social.threads"].accessToken);
   return html.async`<div class=u2-card>
-    <div class=-head>${node.app.t`Threads`}</div>
+    <div class=-head>${t`Threads`}</div>
     <form class=-body method=post>
       ${node.cms.formFields(node)}
       ${note ? html`<p>${note}</p>` : ""}
-      <p><small><a href="https://developers.facebook.com/apps/" target=_blank rel=noopener>${node.app.t`Open Meta apps`}</a></small>
+      <p><small><a href="https://developers.facebook.com/apps/" target=_blank rel=noopener>${t`Open Meta apps`}</a></small>
       <u2-fields>
-        ${node.app.t`User access token`} <input type=password name=accessToken autocomplete=new-password
-          placeholder="${configured ? node.app.t`Configured — enter a token to replace` : ""}">
+        ${t`User access token`} <input type=password name=accessToken autocomplete=new-password
+          placeholder="${configured ? t`Configured — enter a token to replace` : ""}">
       </u2-fields>
-      <button name=save value=1>${node.app.t`Save and check`}</button>
-      <button name=check value=1>${node.app.t`Check`}</button>
-      <p><small>${node.app.t`Requires threads_basic and threads_content_publish in the Meta developer app.`}</small>
+      <button name=save value=1>${t`Save and check`}</button>
+      <button name=check value=1>${t`Check`}</button>
+      <p><small>${t`Requires threads_basic and threads_content_publish in the Meta developer app.`}</small>
     </form>
   </div>`;
 }

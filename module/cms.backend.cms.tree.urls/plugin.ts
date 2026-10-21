@@ -17,6 +17,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const t = node.app.t;
   const admin = ctx.settings.cms.admin;
   if (ctx.req.query.rp) {
     const root = await node.cms.node(Number(ctx.req.query.rp));
@@ -33,15 +34,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const langs = node.app.languages.all;
   const head = html.join(langs.map((lang) => html`<th>${lang}`));
   return html.async`<div class=u2-card style="flex:0 1 auto">
-  <div class=-head>${node.app.t`URLs`}</div>
+  <div class=-head>${t`URLs`}</div>
   <div>
-    <label><input type=checkbox data-toggle-contents${admin.showContents() ? " checked" : ""}> ${node.app.t`Show contents`}</label>
+    <label><input type=checkbox data-toggle-contents${admin.showContents() ? " checked" : ""}> ${t`Show contents`}</label>
     <div>${path}</div>
   </div>
   <table class="u2-table cmsBeTree">
     <thead><tr>
-      <th style="width:1.25rem">${node.app.t`No.`}
-      <th style="min-width:15.625rem">${node.app.t`Page`}
+      <th style="width:1.25rem">${t`No.`}
+      <th style="min-width:15.625rem">${t`Page`}
       ${head}
     <tbody cms-part=list>${list(node, { ctx })}
   </table>

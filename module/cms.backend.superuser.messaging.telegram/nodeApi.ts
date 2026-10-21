@@ -8,13 +8,14 @@ import type { Node } from "@qino/qino/cms";
 /** Node access is the permission — whoever may read this backend node may send from here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
+  const t = app.t;
   try {
     if (vars.botToken != null) {
       const token = String(vars.botToken).trim();
-      if (!token) return { ok: false, message: await app.t`A bot token is required.` };
+      if (!token) return { ok: false, message: await t`A bot token is required.` };
       const setting = app.settings[$item].sub(["messaging.telegram"]).item("botToken");
       const previous = await app.settings["messaging.telegram"].botToken;
-      if (previous) return { ok: false, message: await app.t`The bot token is already configured.` };
+      if (previous) return { ok: false, message: await t`The bot token is already configured.` };
       await setting.set(token);
       try {
         await bot(app);
@@ -22,35 +23,35 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         previous == null ? await setting.remove() : await setting.set(previous);
         throw e;
       }
-      return { ok: true, message: await app.t`Bot token saved.` };
+      return { ok: true, message: await t`Bot token saved.` };
     }
     if (vars.webhookSet) {
       await setWebhook(app, webhookUrl());
-      return { ok: true, message: await app.t`Webhook registered.` };
+      return { ok: true, message: await t`Webhook registered.` };
     }
     if (vars.webhookDelete) {
       await deleteWebhook(app);
-      return { ok: true, message: await app.t`Webhook removed.` };
+      return { ok: true, message: await t`Webhook removed.` };
     }
     if (vars.delete) {
       await removeChat(app, Number(vars.delete));
-      return { ok: true, message: await app.t`Chat disconnected.` };
+      return { ok: true, message: await t`Chat disconnected.` };
     }
     if (vars.test) {
-      const sent = await send(app, { chat: Number(vars.test) }, { text: await app.t`Test message` });
+      const sent = await send(app, { chat: Number(vars.test) }, { text: await t`Test message` });
       return sent
-        ? { ok: true, message: await app.t`Sent.` }
-        : { ok: false, message: await app.t`Not delivered — the chat was dropped.` };
+        ? { ok: true, message: await t`Sent.` }
+        : { ok: false, message: await t`Not delivered — the chat was dropped.` };
     }
     if (vars.send) {
       const { to, text, html } = vars.send as { to: string; text: string; html?: boolean };
-      if (!text) return { ok: false, message: await app.t`A text is required.` };
+      if (!text) return { ok: false, message: await t`A text is required.` };
       const [kind, value] = to.split(":");
       const recipient = kind === "grp" ? { grp: Number(value) }
         : kind === "usr" ? { usr: Number(value) }
         : { all: true } as const;
       const sent = await send(app, recipient, html ? { text, format: "html" as const } : { text });
-      return { ok: true, message: await app.t`Delivered to ${sent} chats.` };
+      return { ok: true, message: await t`Delivered to ${sent} chats.` };
     }
     return null;
   } catch (e) {

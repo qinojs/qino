@@ -29,6 +29,7 @@ async function nodeAnchor(node: Node, id: number) {
 
 async function render(node: Node) {
   const app = node.app;
+  const t = app.t;
   const db = app.db;
 
   // ── recently edited nodes ──────────────────────────────────────────────────
@@ -48,14 +49,14 @@ async function render(node: Node) {
       <td>${r.username ?? "guest"}`);
   const recentBox = html.async`
 <div class=u2-card>
-  <div class=-head>${app.t`Recently edited`}</div>
+  <div class=-head>${t`Recently edited`}</div>
   <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead><tr>
-        <th>${app.t`Node`}
-        <th>${app.t`Edited`}
-        <th>${app.t`By`}
-      <tbody>${recentParts.length ? recentParts : html.async`<tr><td colspan=3>${app.t`No history yet`}`}
+        <th>${t`Node`}
+        <th>${t`Edited`}
+        <th>${t`By`}
+      <tbody>${recentParts.length ? recentParts : html.async`<tr><td colspan=3>${t`No history yet`}`}
     </table>
   </div>
 </div>`;
@@ -65,11 +66,11 @@ async function render(node: Node) {
   const topParts = top.map((r) => html.async`<tr><td>${nodeAnchor(node, Number(r.page_id))}<td style="text-align:right">${r.n}`);
   const topBox = html.async`
 <div class=u2-card>
-  <div class=-head>${app.t`Nodes with most history`}</div>
+  <div class=-head>${t`Nodes with most history`}</div>
   <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <thead><tr><th>${app.t`Node`}<th style="text-align:right">${app.t`Changes`}
-      <tbody>${topParts.length ? topParts : html.async`<tr><td colspan=2>${app.t`No history yet`}`}
+      <thead><tr><th>${t`Node`}<th style="text-align:right">${t`Changes`}
+      <tbody>${topParts.length ? topParts : html.async`<tr><td colspan=2>${t`No history yet`}`}
     </table>
   </div>
 </div>`;

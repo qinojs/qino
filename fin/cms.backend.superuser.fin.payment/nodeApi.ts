@@ -7,17 +7,18 @@ import type { Node } from "@qino/qino/cms";
 /** Node access is the permission — whoever may open this backend page may act on payments. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
+  const t = app.t;
   try {
     if (vars.sync) {
       const row = await sync(app, Number(vars.sync));
-      return { ok: true, message: `${await app.t`The provider says`}: ${row?.status}` };
+      return { ok: true, message: `${await t`The provider says`}: ${row?.status}` };
     }
     if (vars.refund) {
       const { id, amount } = vars.refund as { id: string; amount: string };
       const row = await app.db.row`SELECT currency FROM payment WHERE id = ${Number(id)}`;
-      if (!row) return { ok: false, message: await app.t`No payment` };
+      if (!row) return { ok: false, message: await t`No payment` };
       await refund(app, Number(id), amount ? parseAmount(amount, String(row.currency)) : undefined);
-      return { ok: true, message: await app.t`Paid back.` };
+      return { ok: true, message: await t`Paid back.` };
     }
     if (vars.record) {
       const v = vars.record as Record<string, string>;
@@ -30,7 +31,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         ref: v.ref || undefined,
         description: v.description || undefined,
       });
-      return { ok: true, message: `${await app.t`Recorded as payment`} #${id}` };
+      return { ok: true, message: `${await t`Recorded as payment`} #${id}` };
     }
     return null;
   } catch (e) {

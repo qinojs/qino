@@ -19,6 +19,7 @@ const RECENT = 7; // days the counter looks back
 const SHOWN = 7; // rows of the newest numbers
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+  const t = app.t;
   const week = unixTime() - RECENT * 86400;
   const [totals, claims, recent, labels] = await Promise.all([
     app.db.row`SELECT COUNT(*) AS n,
@@ -27,7 +28,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
       FROM usr_contact WHERE type = ${"phone"}`.catch(() => undefined),
     pendingContacts(app, "phone").catch(() => []),
     typeContacts(app.db, "phone", SHOWN),
-    Promise.all([app.t`phone numbers`, app.t`pending`, app.t`new in ${RECENT} days`, app.t`failing`]),
+    Promise.all([t`phone numbers`, t`pending`, t`new in ${RECENT} days`, t`failing`]),
   ]);
   const [phonesLabel, pendingLabel, freshLabel, failingLabel] = labels;
   const pending = claims.length;

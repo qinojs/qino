@@ -18,6 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 const RECENT = 7;
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+  const t = app.t;
   const week = unixTime() - RECENT * 86400;
   const [totals, recent, labels] = await Promise.all([
     app.db.row`SELECT COUNT(*) AS n,
@@ -27,7 +28,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
         (SELECT COUNT(*) FROM webpush_channel) AS channels
       FROM webpush_subscription`.catch(() => undefined),
     subscriptionList(app, RECENT),
-    Promise.all([app.t`subscriptions`, app.t`anonymous`, app.t`channels`, app.t`new in ${RECENT} days`, app.t`failing`]),
+    Promise.all([t`subscriptions`, t`anonymous`, t`channels`, t`new in ${RECENT} days`, t`failing`]),
   ]);
   const [subsLabel, anonLabel, channelsLabel, freshLabel, failingLabel] = labels;
   const fresh = Number(totals?.fresh ?? 0);

@@ -38,6 +38,7 @@ function intParam(url: URL, key: string) {
 /** The journal as a table: one row per logical message, filtered by text and channel. */
 async function renderOverview(node: Node, url: URL) {
   const app = node.app;
+  const t = app.t;
   const ctx = getCtx();
   const search = url.searchParams.get("search") ?? "";
   const filter = url.searchParams.get("channel") ?? "";
@@ -48,30 +49,30 @@ async function renderOverview(node: Node, url: URL) {
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head>${app.t`Messages`}</div>
+      <div class=-head>${t`Messages`}</div>
       <div>
         <form method=get data-filter>
           ${hidden(url, ["search", "channel", "usr", "msg"])}
-          <input type=search name=search value="${search}" placeholder="${app.t`Search...`}">
+          <input type=search name=search value="${search}" placeholder="${t`Search...`}">
           <select name=channel>
-            <option value="">${app.t`All types`}</option>
+            <option value="">${t`All types`}</option>
             ${used.map((c) => html`<option value="${c}"${c === filter ? " selected" : ""}>${view.label(c)}</option>`)}
           </select>
-          <button>${app.t`Search`}</button>
+          <button>${t`Search`}</button>
         </form>
       </div>
       <div style="overflow:auto; padding:0">
         <table class=u2-table>
           <thead><tr>
-            <th>${app.t`Id`}
+            <th>${t`Id`}
             <th>${view.time}
-            <th>${app.t`Type`}
+            <th>${t`Type`}
             <th>${view.spam}
-            <th>${app.t`Text`}
+            <th>${t`Text`}
             <th>${view.attachments}
             <th>${view.recipients}
-            <th>${app.t`Opened`}
-            <th>${app.t`Clicks`}
+            <th>${t`Opened`}
+            <th>${t`Clicks`}
             <th>${view.errors}
           <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter } })}
         </table>
@@ -190,6 +191,7 @@ function trackedStat(count: unknown, first: unknown) {
 /** One message with its payload and the result per recipient. */
 async function renderMessage(node: Node, id: number, url: URL) {
   const app = node.app;
+  const t = app.t;
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
@@ -213,7 +215,7 @@ async function renderMessage(node: Node, id: number, url: URL) {
       ORDER BY t.code`,
     labels(app),
   ]);
-  if (!row) return html.async`<div class=u2-card><div>${app.t`Message does not exist.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div>${t`Message does not exist.`}</div></div>`;
   const attachmentList = await attachments(app, files);
   // shorturl knows what a code stands for; without that module the code stands for itself
   const targets = links.length
@@ -223,13 +225,13 @@ async function renderMessage(node: Node, id: number, url: URL) {
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-basis:50rem">
-      <div class=-head>${app.t`Message`} #${row.id}</div>
+      <div class=-head>${t`Message`} #${row.id}</div>
       <table class=u2-table>
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
-        <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
+        <tr><td>${t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
         ${row.spam == null ? "" : html`<tr><td>${view.spam}<td>${spam(row.spam)}`}
-        <tr><td>${app.t`Title`}<td>${row.title}
-        <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
+        <tr><td>${t`Title`}<td>${row.title}
+        <tr><td>${t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
         ${files.length ? html`<tr><td>${view.attachments}<td>${attachmentList}` : ""}
         <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
@@ -241,11 +243,11 @@ async function renderMessage(node: Node, id: number, url: URL) {
         <table class=u2-table>
           <thead><tr>
             <th>${view.user}
-            <th>${app.t`Address`}
-            <th>${app.t`External ID`}
+            <th>${t`Address`}
+            <th>${t`External ID`}
             <th>${view.time}
-            <th>${app.t`Opened`}
-            <th>${app.t`Clicks`}
+            <th>${t`Opened`}
+            <th>${t`Clicks`}
             <th>${view.error}
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${recipient(d, url, view)}
@@ -264,15 +266,16 @@ async function renderMessage(node: Node, id: number, url: URL) {
 
 /** Tracked links reached for this message, aggregated across every recipient. */
 async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>) {
-  const empty = await app.t`No links yet.`;
+  const t = app.t;
+  const empty = await t`No links yet.`;
   return html.async`<div class=u2-card style="flex:1 1 31.25rem">
-    <div class=-head>${app.t`Links`}</div>
+    <div class=-head>${t`Links`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>
         <thead><tr>
-          <th>${app.t`Link`}
-          <th>${app.t`Loads`}
-          <th>${app.t`Clicks`}
+          <th>${t`Link`}
+          <th>${t`Loads`}
+          <th>${t`Clicks`}
         <tbody>${rows.length
           ? rows.map((row) => html`<tr>
             <td>${urls.has(row.code)
@@ -288,11 +291,12 @@ async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>) {
 
 async function renderConversation(node: Node, usrId: number, url: URL) {
   const app = node.app;
+  const t = app.t;
   const user = await app.db.row`SELECT id, username, given_name, family_name FROM usr WHERE id = ${usrId}`;
   if (!user) {
     return html.async`<div class=u2-flex>
       ${userCard(node, url, 0)}
-      <div class=u2-card><div>${app.t`User not found.`}</div></div>
+      <div class=u2-card><div>${t`User not found.`}</div></div>
     </div>`;
   }
   const [rows, reachable, view] = await Promise.all([
@@ -305,31 +309,31 @@ async function renderConversation(node: Node, usrId: number, url: URL) {
   return html.async`<div class=u2-flex>
     ${userCard(node, url, usrId)}
     <div class="u2-card -conversation" style="flex-basis:80rem">
-      <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
+      <div class=-head>${t`Communication with ${userName(user)}`} (${rows.length})</div>
       <div class=-scroll>
         ${rows.length
           ? html`<table class=-chat><tbody>${messages}</table>`
-          : html.async`<div>${app.t`No messages yet.`}</div>`}
+          : html.async`<div>${t`No messages yet.`}</div>`}
       </div>
       <div>
         ${reachable.length ? html.async`<form class=-composer>
           <input type=hidden name=usr value="${user.id}">
           <label>
-            ${app.t`Channel`}:
+            ${t`Channel`}:
             <select name=channel>
               ${reachable.map((c) => html`<option value="${c.name}"${c.name === selectedChannel(rows, reachable) ? " selected" : ""}>${c.label}</option>`)}
             </select>
           </label>
-          <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
+          <textarea name=text maxlength=4096 rows=3 required placeholder="${t`Message`}"></textarea>
           <label>
-            ${app.t`Format`}:
+            ${t`Format`}:
             <select name=format>
-              <option value="">${app.t`Text`}</option>
+              <option value="">${t`Text`}</option>
               <option value=md>Markdown</option>
             </select>
           </label>
-          <button data-reply>${app.t`Send`}</button>
-        </form>` : html.async`<div>${app.t`No reachable channel.`}</div>`}
+          <button data-reply>${t`Send`}</button>
+        </form>` : html.async`<div>${t`No reachable channel.`}</div>`}
       </div>
     </div>
   </div>`;
@@ -454,10 +458,11 @@ function cut(text: string, max = 120) {
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
+  const t = app.t;
   const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam] =
-    await Promise.all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`,
-      app.t`Spam`]);
+    await Promise.all([t`Recipients`, t`Errors`, t`User`, t`Time`, t`Error`, t`anonymous`, t`group`, t`Payload`,
+      t`No matching messages`, t`No messages yet.`, t`incoming`, t`outgoing`, t`Template`, t`Attachments`, t`due`,
+      t`Spam`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
     recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam,

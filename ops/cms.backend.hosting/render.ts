@@ -15,12 +15,13 @@ export function render(node: Node): Promise<HtmlString> {
 
 export async function list(node: Node): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const socket = String(await app.settings[manifest.name].socket);
   return call(socket, "list").then(
     (data) => renderList(app, data as List),
     (e) => html.async`<div class=u2-card>
-      <div class=-head><span>${app.t`Projects`}</span></div>
-      <div>${app.t`The hosting helper does not answer`} (<code>${socket}</code>): ${errMsg(e)}</div>
+      <div class=-head><span>${t`Projects`}</span></div>
+      <div>${t`The hosting helper does not answer`} (<code>${socket}</code>): ${errMsg(e)}</div>
     </div>`,
   );
 }
@@ -34,33 +35,34 @@ const sum = (projects: Project[], key: "memory" | "cpu" | "tasks" | "disk") =>
 
 export function renderList(app: App, { server, projects }: List): Promise<HtmlString> {
   const { memory, disk } = server;
+  const t = app.t;
   return html.async`<div class=u2-card>
     <div class=-head>
-      <span>${app.t`Projects`}</span>
-      <button type=button data-refresh>${app.t`Refresh`}</button>
+      <span>${t`Projects`}</span>
+      <button type=button data-refresh>${t`Refresh`}</button>
     </div>
     <form class=-create>
-      <input name=domain required placeholder="example.com" aria-label="${app.t`Domain`}">
-      <select name=template aria-label="${app.t`Template`}">${server.templates.map((t) => html`<option>${t}</option>`)}</select>
-      <button>${app.t`Create project`}</button>
+      <input name=domain required placeholder="example.com" aria-label="${t`Domain`}">
+      <select name=template aria-label="${t`Template`}">${server.templates.map((name) => html`<option>${name}</option>`)}</select>
+      <button>${t`Create project`}</button>
     </form>
     <u2-table><table class="u2-table -projects -Sticky">
       <thead><tr>
-        <th>${app.t`Project`}
-        <th>${app.t`Program`}
-        <th>${app.t`State`}
-        <th>${app.t`Domains`}
-        <th>${app.t`Listens on`}
-        <th class=-num>${app.t`Memory`}
-        <th class=-num>${app.t`CPU`}
-        <th class=-num>${app.t`Tasks`}
-        <th class=-num>${app.t`Disk`}
-        <th class=-num>${app.t`Restarts`}
-        <th>${app.t`Since`}
+        <th>${t`Project`}
+        <th>${t`Program`}
+        <th>${t`State`}
+        <th>${t`Domains`}
+        <th>${t`Listens on`}
+        <th class=-num>${t`Memory`}
+        <th class=-num>${t`CPU`}
+        <th class=-num>${t`Tasks`}
+        <th class=-num>${t`Disk`}
+        <th class=-num>${t`Restarts`}
+        <th>${t`Since`}
         <th>
       <tbody>${projects.map((p) => renderRow(app, p, p.name === server.self, server.preview ?? ""))}
       <tfoot><tr>
-        <th colspan=5>${projects.length} ${app.t`projects`}
+        <th colspan=5>${projects.length} ${t`projects`}
         <td class=-num>${bytes(sum(projects, "memory"))}
         <td class=-num>${sum(projects, "cpu")} %
         <td class=-num>${sum(projects, "tasks")}
@@ -69,37 +71,37 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
     </table></u2-table>
   </div>
   <div class=u2-card>
-    <div class=-head><span>${app.t`Overview`}</span></div>
+    <div class=-head><span>${t`Overview`}</span></div>
     <u2-table><table class="u2-table -server">
       <thead><tr>
         <th>
         <th>
-        <th class=-num>${app.t`Projects`}
-        <th class=-num>${app.t`Used`}
-        <th class=-num>${app.t`Free`}
-        <th class=-num>${app.t`Total`}
+        <th class=-num>${t`Projects`}
+        <th class=-num>${t`Used`}
+        <th class=-num>${t`Free`}
+        <th class=-num>${t`Total`}
       <tbody>
         <tr>
-          <th>${app.t`Memory`}
+          <th>${t`Memory`}
           <td>${meter(memory.total - memory.available, memory.total)}
           <td class=-num>${bytes(sum(projects, "memory"))}
           <td class=-num>${bytes(memory.total - memory.available)}
           <td class=-num>${bytes(memory.available)}
           <td class=-num>${bytes(memory.total)}
         <tr>
-          <th>${app.t`Disk`}
+          <th>${t`Disk`}
           <td>${meter(disk.total - disk.available, disk.total)}
           <td class=-num>${bytes(sum(projects, "disk"))}
           <td class=-num>${bytes(disk.total - disk.available)}
           <td class=-num>${bytes(disk.available)}
           <td class=-num>${bytes(disk.total)}
         <tr>
-          <th>${app.t`CPU`}
+          <th>${t`CPU`}
           <td>${meter(Math.min(server.load[0], server.cpus), server.cpus)}
           <td class=-num>${sum(projects, "cpu")} %
           <td class=-num>${server.load.map((l) => l.toFixed(2)).join(" ")}
           <td>
-          <td class=-num>${server.cpus} ${app.t`cores`}
+          <td class=-num>${server.cpus} ${t`cores`}
     </table></u2-table>
   </div>`;
 }
@@ -108,27 +110,29 @@ const STATE_COLOR: Record<string, string> = { active: "var(--green)", failed: "v
 
 /** Each domain as a link; its preview address, if served, as an icon beside it. */
 function domains(app: App, all: string[], preview: string) {
+  const t = app.t;
   const isPreview = (d: string) => !!preview && d.endsWith(`.${preview}`);
   return all.filter((d) => !isPreview(d)).map((d) => {
     const alias = `${d}.${preview}`;
     const link = preview && all.includes(alias)
-      ? html.async` <a href="https://${alias}/" target=_blank rel=noopener title="${app.t`Preview Link`}"><u2-ico icon=visibility>👁</u2-ico></a>`
+      ? html.async` <a href="https://${alias}/" target=_blank rel=noopener title="${t`Preview Link`}"><u2-ico icon=visibility>👁</u2-ico></a>`
       : "";
     return html.async`<span><a href="https://${d}/" target=_blank rel=noopener>${d}</a>${link}</span>`;
   });
 }
 
 function renderRow(app: App, p: Project, self: boolean, preview: string) {
+  const t = app.t;
   // anything but loopback bypasses the proxy
   const listen = p.listen.map((s) => /^(127\.|\[::1\])/.test(s)
     ? html`<code>${s}</code>`
-    : html.async`<span class=u2-badge style="background:var(--red)" title="${app.t`Reachable without the proxy`}">${s}</span>`);
+    : html.async`<span class=u2-badge style="background:var(--red)" title="${t`Reachable without the proxy`}">${s}</span>`);
   const button = (verb: string, label: Promise<string>, confirm?: Promise<string>) =>
     html.async`<button type=button data-verb=${verb} data-name="${p.name}" ${confirm ? html.async`u2-confirm="${confirm}"` : ""}>${label}</button>`;
   const running = p.state === "active" || p.state === "activating";
   const actions = self ? [] : running
-    ? [button("restart", app.t`Restart`, app.t`Restart this project?`), button("stop", app.t`Stop`, app.t`Stop this project?`)]
-    : [button("start", app.t`Start`)];
+    ? [button("restart", t`Restart`, t`Restart this project?`), button("stop", t`Stop`, t`Stop this project?`)]
+    : [button("start", t`Start`)];
   return html.async`<tr>
     <td><b>${p.name}</b>
     <td>${p.program ?? "–"}
@@ -141,6 +145,6 @@ function renderRow(app: App, p: Project, self: boolean, preview: string) {
     <td class=-num>${bytes(p.disk)}
     <td class=-num>${p.restarts ?? "–"}
     <td>${p.since ? u2.el.time(p.since) : "–"}
-    <td class=-actions>${actions}${button("log", app.t`Log`)}${self ? "" : button("delete", app.t`Delete`,
-      app.t`Stop the project and move it into the archive? Its domain goes offline.`)}`;
+    <td class=-actions>${actions}${button("log", t`Log`)}${self ? "" : button("delete", t`Delete`,
+      t`Stop the project and move it into the archive? Its domain goes offline.`)}`;
 }

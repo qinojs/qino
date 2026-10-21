@@ -6,44 +6,45 @@ import type { Node } from "@qino/qino/cms";
 /** Node access is the permission — whoever may read this backend node may manage SMS. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
+  const t = app.t;
   try {
     if (vars.providerSave) {
       await saveProvider(app, vars.providerSave as Record<string, unknown>);
-      return { ok: true, message: await app.t`Provider saved.` };
+      return { ok: true, message: await t`Provider saved.` };
     }
     if (vars.approve) {
       const { usr, number } = vars.approve as { usr: string; number: string };
       await approvePhone(app, Number(usr), String(number));
-      return { ok: true, message: await app.t`Phone number approved.` };
+      return { ok: true, message: await t`Phone number approved.` };
     }
     if (vars.main) {
       const number = String(vars.main);
       const usrId = await contactOwner(app.db, "phone", number);
-      if (!usrId) return { ok: false, message: await app.t`Phone number not found.` };
+      if (!usrId) return { ok: false, message: await t`Phone number not found.` };
       await setMainContact(app.db, usrId, "phone", number);
-      return { ok: true, message: await app.t`Main number changed.` };
+      return { ok: true, message: await t`Main number changed.` };
     }
     if (vars.delete) {
       const number = String(vars.delete);
       const usrId = await contactOwner(app.db, "phone", number);
       if (usrId) await removeContact(app.db, usrId, "phone", number);
-      return { ok: true, message: await app.t`Phone number deleted.` };
+      return { ok: true, message: await t`Phone number deleted.` };
     }
     if (vars.test) {
-      const sent = await send(app, { phone: String(vars.test) }, await app.t`Test message`);
+      const sent = await send(app, { phone: String(vars.test) }, await t`Test message`);
       return sent
-        ? { ok: true, message: await app.t`Sent.` }
-        : { ok: false, message: await app.t`Not delivered.` };
+        ? { ok: true, message: await t`Sent.` }
+        : { ok: false, message: await t`Not delivered.` };
     }
     if (vars.send) {
       const { to, text } = vars.send as { to: string; text: string };
-      if (!text) return { ok: false, message: await app.t`A text is required.` };
+      if (!text) return { ok: false, message: await t`A text is required.` };
       const [kind, value] = to.split(":");
       const recipient = kind === "grp" ? { grp: Number(value) }
         : kind === "usr" ? { usr: Number(value) }
         : { all: true } as const;
       const sent = await send(app, recipient, text);
-      return { ok: true, message: await app.t`Delivered to ${sent} phones.` };
+      return { ok: true, message: await t`Delivered to ${sent} phones.` };
     }
     return null;
   } catch (e) {

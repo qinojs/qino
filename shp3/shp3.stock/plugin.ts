@@ -42,17 +42,18 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 }
 
 async function warn(app: App, order: Order, product: Product, trigger: number) {
+  const t = app.t;
   const to = String(await app.settings["shp3.stock"].notification_email ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!to.length) return;
   const title = await app.db.one`SELECT name FROM page WHERE id = ${product.$id}`;
   await send(app, { email: to }, {
-    title: `${await app.t`Minimum stock reached`}: ${title ?? product.$id}`,
+    title: `${await t`Minimum stock reached`}: ${title ?? product.$id}`,
     format: "html",
     text: `<table>
-      <tr><td><b>${hee(await app.t`Product`)}</b><td>${hee(title)}
-      <tr><td><b>${hee(await app.t`Order`)}</b><td>${hee(order.$id)}
-      <tr><td><b>${hee(await app.t`In stock`)}</b><td>${product.stock}
-      <tr><td><b>${hee(await app.t`Minimum`)}</b><td>${trigger}
+      <tr><td><b>${hee(await t`Product`)}</b><td>${hee(title)}
+      <tr><td><b>${hee(await t`Order`)}</b><td>${hee(order.$id)}
+      <tr><td><b>${hee(await t`In stock`)}</b><td>${product.stock}
+      <tr><td><b>${hee(await t`Minimum`)}</b><td>${trigger}
     </table>`,
   });
 }

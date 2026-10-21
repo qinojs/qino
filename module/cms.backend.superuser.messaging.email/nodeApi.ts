@@ -12,59 +12,60 @@ const CONTACT = "email";
 /** Node access is the permission — whoever may read this backend node may manage mail. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
+  const t = app.t;
   try {
     if (vars.settings) {
       await saveSettings(app, vars.settings as Record<string, unknown>);
-      return { ok: true, message: await app.t`Saved.` };
+      return { ok: true, message: await t`Saved.` };
     }
     if (vars.fetch) {
       const taken = await receive(app);
-      return { ok: true, message: await app.t`${taken} messages taken over.` };
+      return { ok: true, message: await t`${taken} messages taken over.` };
     }
     if (vars.inboundTest) {
       await receive(app, { probe: true });
-      return { ok: true, message: await app.t`Connected.` };
+      return { ok: true, message: await t`Connected.` };
     }
     if (vars.contactAdd) {
       const { usr, address } = vars.contactAdd as { usr: string; address: string };
       await addContact(app.db, Number(usr), CONTACT, String(address));
-      return { ok: true, message: await app.t`Address added.` };
+      return { ok: true, message: await t`Address added.` };
     }
     if (vars.approve) {
       const { usr, address } = vars.approve as { usr: string; address: string };
       const claimed = await dropClaim(app, CONTACT, Number(usr), String(address));
-      if (!claimed) return { ok: false, message: await app.t`Nothing to verify.` };
+      if (!claimed) return { ok: false, message: await t`Nothing to verify.` };
       await addContact(app.db, Number(claimed.usr_id), CONTACT, String(claimed.address));
-      return { ok: true, message: await app.t`Address approved.` };
+      return { ok: true, message: await t`Address approved.` };
     }
     if (vars.main) {
       const address = String(vars.main);
       const usrId = await contactOwner(app.db, CONTACT, address);
-      if (!usrId) return { ok: false, message: await app.t`Address not found.` };
+      if (!usrId) return { ok: false, message: await t`Address not found.` };
       await setMainContact(app.db, usrId, CONTACT, address);
-      return { ok: true, message: await app.t`Main address changed.` };
+      return { ok: true, message: await t`Main address changed.` };
     }
     if (vars.delete) {
       const address = String(vars.delete);
       const usrId = await contactOwner(app.db, CONTACT, address);
       if (usrId) await removeContact(app.db, usrId, CONTACT, address);
-      return { ok: true, message: await app.t`Address deleted.` };
+      return { ok: true, message: await t`Address deleted.` };
     }
     if (vars.test != null) {
-      if (!vars.test) return { ok: false, message: await app.t`A system address is required.` };
+      if (!vars.test) return { ok: false, message: await t`A system address is required.` };
       let error = "";
-      await send(app, { email: String(vars.test) }, await app.t`Test message`, { onError: (message) => error ||= message });
-      return error ? { ok: false, message: error } : { ok: true, message: await app.t`Sent.` };
+      await send(app, { email: String(vars.test) }, await t`Test message`, { onError: (message) => error ||= message });
+      return error ? { ok: false, message: error } : { ok: true, message: await t`Sent.` };
     }
     if (vars.send) {
       const { to, address, title, text, format, template, attachments } = vars.send as Record<string, unknown>;
-      if (!text) return { ok: false, message: await app.t`A text is required.` };
+      if (!text) return { ok: false, message: await t`A text is required.` };
       const [kind, value] = String(to).split(":");
       const recipient = kind === "grp" ? { grp: Number(value) }
         : kind === "usr" ? { usr: Number(value) }
         : kind === "address" ? { email: String(address) }
         : { all: true } as const;
-      if (kind === "address" && !address) return { ok: false, message: await app.t`An address is required.` };
+      if (kind === "address" && !address) return { ok: false, message: await t`An address is required.` };
       let error = "";
       const sent = await send(app, recipient, {
         text: String(text),
@@ -73,7 +74,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         template: template === "-" ? null : template ? String(template) : undefined,
         attachments: await attachmentsOf(attachments),
       }, { onError: (message) => error ||= message });
-      const message = await app.t`Delivered to ${sent} addresses.`;
+      const message = await t`Delivered to ${sent} addresses.`;
       return error ? { ok: false, message: `${message} ${error}` } : { ok: true, message };
     }
     return null;

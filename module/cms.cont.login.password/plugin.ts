@@ -14,6 +14,7 @@ const settingsSchema = {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
   const app = node.app;
+  const t = app.t;
   const edit = await node.edit();
   const cms = node.cms;
   const settings = node.settings;
@@ -40,12 +41,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
   if (ctx.loginError === "pending") {
     // no failure: the password was right and one more proof is owed; core loads the script that asks
-    errorHtml = html`<div class=loginError>${await app.t`One more step: confirm it is you.`}</div>`;
+    errorHtml = html`<div class=loginError>${await t`One more step: confirm it is you.`}</div>`;
   } else if (ctx.loginError === "throttled") {
     const secs = ctx.loginRetryAfter ?? 0;
     const msg = secs < 60
-      ? await app.t`Too many attempts. Please try again in ${secs} seconds.`
-      : await app.t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`;
+      ? await t`Too many attempts. Please try again in ${secs} seconds.`
+      : await t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`;
     errorHtml = html`<div class=loginError>${msg}</div>`;
   } else if (ctx.loginError) {
     errorHtml = html`<div class=loginError>${html.raw(await node.showText("login failed"))}</div>`; // sanitized, like every text output
@@ -94,7 +95,7 @@ ${errorHtml}
     }
     <tr class=-login>
       <th>
-      <td><button name=core_login>${app.t`Log in`}</button>
+      <td><button name=core_login>${t`Log in`}</button>
   </table>
   </form>
 </div>`;

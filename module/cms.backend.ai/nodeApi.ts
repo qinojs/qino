@@ -33,6 +33,7 @@ function coerce(type: string, value: unknown): unknown {
 /** Node access is the permission. Answers `{ ok, message? }`. */
 export default async function api(node: Node, vars: Record<string, any>): Promise<unknown> {
   const app = node.app, db = app.db;
+  const t = app.t;
   const key = (name: string, value: unknown) => app.settings.core.keys[name](String(value ?? "").trim() || undefined);
   try {
     if (vars.set) {
@@ -59,7 +60,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
     if (vars.add) {
       const name = String(vars.name ?? "").trim();
       if (vars.add === "offer") await db.table("ai_model_provider").insert({ model_id: Number(vars.model), provider_id: Number(vars.provider_id) });
-      else if (!name) return { ok: false, message: await app.t`A name is required.` };
+      else if (!name) return { ok: false, message: await t`A name is required.` };
       else if (vars.add === "provider") await db.table("ai_provider").insert({ name, type: CATALOG.find((provider) => provider.name === name)?.type ?? String(vars.type || "openai"), endpoint: String(vars.endpoint ?? "").trim() });
       else if (vars.add === "model") await db.table("ai_model").insert({ name });
       return { ok: true };
@@ -72,7 +73,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       // filtered by a provider, only its offers; else the models and all their offers
       if (ids.length && !provider) await db.exec`UPDATE ai_model SET enabled = ${on} WHERE ${sql.in("id", ids)}`;
       if (ids.length) await db.exec`UPDATE ai_model_provider SET enabled = ${on} WHERE ${sql.in("model_id", ids)} ${provider ? sql`AND provider_id = ${provider}` : sql``}`;
-      return { ok: true, message: `${ids.length} ${vars.switch.on ? await app.t`models on` : await app.t`models off`}` };
+      return { ok: true, message: `${ids.length} ${vars.switch.on ? await t`models on` : await t`models off`}` };
     }
     if (vars.remove) {
       const { table, id } = vars.remove;
@@ -88,7 +89,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
     }
     if ("benchmarkKey" in vars) {
       await key(BENCHMARKS_KEY, vars.benchmarkKey);
-      return { ok: true, message: await app.t`Saved.` };
+      return { ok: true, message: await t`Saved.` };
     }
     if (vars.evaluate) return { ok: true, message: await evaluate(app) };
     if (vars.preview) {

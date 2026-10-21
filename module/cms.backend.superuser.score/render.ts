@@ -46,24 +46,26 @@ export async function list(node: Node): Promise<HtmlString> {
 
 /** One score table: its numbers, then the strongest rows. */
 async function renderScore(app: App, { name, table, keys, half }: Score, now: number) {
-  const db = app.db, t = sql.id(table);
+  const t = app.t;
+  const db = app.db, tbl = sql.id(table);
   const limit = fadeLimit(db, name, now);
   const stats = await db.row<Stats>`
-    SELECT COUNT(*) AS total, SUM(CASE WHEN score < ${limit} THEN 1 ELSE 0 END) AS faded, MAX(time) AS last FROM ${t}`;
-  const top = await db.query<ScoreRow>`SELECT * FROM ${t} ORDER BY score DESC LIMIT ${TOP}`;
+    SELECT COUNT(*) AS total, SUM(CASE WHEN score < ${limit} THEN 1 ELSE 0 END) AS faded, MAX(time) AS last FROM ${tbl}`;
+  const top = await db.query<ScoreRow>`SELECT * FROM ${tbl} ORDER BY score DESC LIMIT ${TOP}`;
   const faded = Number(stats?.faded ?? 0);
 
   return html.async`<div class=-body>
     <code>${table}</code>
-    · ${app.t`half-life`} ${duration(half)}
-    · <b>${Number(stats?.total ?? 0)}</b> ${app.t`rows`}
-    ${faded ? html.async` · <span class=u2-badge>${faded} ${app.t`faded`}</span>` : ""}
-    · ${app.t`last access`} ${u2.el.time(stats?.last, { second: true })}
+    · ${t`half-life`} ${duration(half)}
+    · <b>${Number(stats?.total ?? 0)}</b> ${t`rows`}
+    ${faded ? html.async` · <span class=u2-badge>${faded} ${t`faded`}</span>` : ""}
+    · ${t`last access`} ${u2.el.time(stats?.last, { second: true })}
   </div>
-  ${top.length ? renderTop(app, name, keys, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;
+  ${top.length ? renderTop(app, name, keys, top, now) : html.async`<div class=-body>${t`No accesses recorded yet.`}</div>`}`;
 }
 
 function renderTop(app: App, name: string, keys: string[], top: ScoreRow[], now: number) {
+  const t = app.t;
   const rows = top.map((row, i) =>
     html`<tr>
       <td>${i + 1}
@@ -75,10 +77,10 @@ function renderTop(app: App, name: string, keys: string[], top: ScoreRow[], now:
   return html.async`<table class="u2-table -Sticky">
     <thead><tr>
       <th>#
-      <th>${app.t`Key`} <small>${app.t`db`}</small>
-      <th><code>score</code> <small>${app.t`db`}</small>
-      <th>${app.t`Strength`} <small>${app.t`computed`}</small>
-      <th><code>time</code> <small>${app.t`db`}</small>
+      <th>${t`Key`} <small>${t`db`}</small>
+      <th><code>score</code> <small>${t`db`}</small>
+      <th>${t`Strength`} <small>${t`computed`}</small>
+      <th><code>time</code> <small>${t`db`}</small>
     <tbody>${rows}
   </table>`;
 }
