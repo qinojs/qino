@@ -62,7 +62,7 @@ LISTEN 0 4096 0.0.0.0:22 0.0.0.0:* users:(("sshd",pid=1,fd=3))`;
 
 const server = (o: Partial<List["server"]> = {}): List["server"] => ({
   memory: { total: 8e9, available: 6e9 }, disk: { total: 100e9, available: 40e9 }, cpus: 4, load: [0.5, 0.25, 0.125],
-  self: "ops.example", preview: "preview.example", templates: ["qino"], ...o,
+  self: "ops.example", preview: "preview.example", templates: ["qino-deno"], ...o,
 });
 const project = (o: Partial<Project>): Project => ({
   name: "a", state: "active", sub: "running", since: null, restarts: 0, memory: 2048, cpu: 3, tasks: 9,
@@ -102,7 +102,7 @@ Deno.test("cms.backend.hosting: totals, server capacity, actions by state, never
   assertEquals(out.includes(`data-verb=stop data-name="b"`), false);
   assertEquals(/data-verb=(stop|restart|delete) data-name="ops.example"/.test(out), false);
   assertStringIncludes(out, `data-verb=log data-name="ops.example"`);
-  assertStringIncludes(out, "<option>qino</option>");
+  assertStringIncludes(out, "<option>qino-deno</option>");
 });
 
 Deno.test("cms.backend.hosting: templates, ports and memory", () => {

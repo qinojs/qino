@@ -10,8 +10,8 @@ A project is a directory in `/var/www/` with a systemd unit of the same name. Th
 the one named like the helper's group; it does not stop or delete itself.
 
 **Not Qino-specific.** The module runs in Qino, but what it manages need not: the helper knows systemd,
-Caddy and Linux, never Qino. Qino knowledge goes into a template (like [qino](host/templates/qino/)), not
-into the helper or the panel; what a project does inside (updates, its data) is its own business.
+Caddy and Linux, never Qino. Qino knowledge goes into a template (like [qino-deno](host/templates/qino-deno/)),
+not into the helper or the panel; what a project does inside (updates, its data) is its own business.
 
 ## Root helper
 
@@ -40,5 +40,6 @@ them as `NAME`, `DOMAIN`, `ADDRESSES`, `PORT` and `ROOT`. The port is the lowest
 With `HOSTING_PREVIEW=preview.example.com` in the helper's unit, `{{addresses}}` adds `<domain>.preview.example.com`:
 a project can be looked at before its domain points to the server (a wildcard DNS record covers it).
 
-[qino](host/templates/qino/) clones Qino and starts with `starter.account`. Its first boot writes the
-superuser's password to the log (the project's "Log" button).
+[qino-deno](host/templates/qino-deno/) clones Qino and starts with `starter.account`. Its first boot writes the
+superuser's password to the log (the project's "Log" button). [qino-bun](host/templates/qino-bun/) is the
+same on Bun (`/usr/local/bin/bun`), with a `package.json` workspace instead of `deno.json`.
