@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 import { addContact, fs, sql, unixTime } from "@qino/qino";
 import { attach, create, issue, refOf, setSent } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
-import { kindIn, link, normalize, save } from "@qino/qino/fin.hosting";
+import { kindIn, link, normalize, OURS, save } from "@qino/qino/fin.hosting";
 
 import type { App } from "@qino/qino";
 
@@ -155,8 +155,8 @@ async function subscriptions(app: App, data: Record<string, Rows>, usrs: Map<num
 /**
  * The domains of `managed_domains` and those subscriptions are titled after ("Hosting example.ch"):
  * whose they are follows from the subscriptions — the newest where they disagree —, which are then
- * linked to them, for what their title says ("Domain …", "Hosting …", else anything). Free ones —
- * PHP's free is the whole domain — have no subscription, so no owner either.
+ * linked to them, for what their title says ("Domain …", "Hosting …", else anything). Free ones have
+ * no subscription: they are ours.
  */
 async function domains(app: App, data: Rows, abos: Rows, usrs: Map<number, number>, subs: Map<number, number>, report: string[]) {
   const domainOf = (title: unknown) => normalize(String(title ?? "").trim().split(/\s+/).pop() ?? "");
@@ -172,8 +172,7 @@ async function domains(app: App, data: Rows, abos: Rows, usrs: Map<number, numbe
   for (const raw of data) if (raw.domain && !normalize(String(raw.domain))) report.push(`domain "${raw.domain}": not a domain, left out`);
   const names = new Set([...registrars.keys(), ...owners.keys()].filter(Boolean));
   for (const name of names) {
-    await save(app, name, { usrId: owners.get(name) ?? null, registrar: registrars.get(name) || null,
-      domainFree: free.has(name), hostingFree: free.has(name) });
+    await save(app, name, { usrId: owners.get(name) ?? (free.has(name) ? OURS : null), registrar: registrars.get(name) || null });
   }
   for (const abo of abos) {
     const name = domainOf(abo.title), id = subs.get(Number(abo.id));

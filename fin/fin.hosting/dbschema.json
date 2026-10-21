@@ -15,7 +15,7 @@
             "x-index": true,
             "x-qg-parent": "usr",
             "x-qg-on-parent-delete": "setnull",
-            "description": "Whose it is; without one it is ours or nobody's yet"
+            "description": "Whose it is: a customer, or 0: ours. None: not assigned yet"
           },
           "alias_of": {
             "type": "string",
@@ -29,27 +29,17 @@
           "registrar": {
             "type": "string",
             "maxLength": 100,
-            "description": "Where we registered it — then its registration is billed, unless free. Empty: the customer keeps it elsewhere"
+            "description": "Where we registered it — then its registration is billed, unless ours. Empty: the customer keeps it elsewhere"
           },
           "host": {
             "type": "string",
             "maxLength": 100,
-            "description": "Where we host it — then the hosting is billed, unless free. Empty: not hosted by us. An alias never is"
+            "description": "Where we host it — then its hosting is billed, unless ours. Empty: not hosted by us. An alias never is"
           },
           "expires": {
             "type": "string",
             "format": "date",
             "description": "When its registration ends, as the registrar says"
-          },
-          "domain_free": {
-            "type": "boolean",
-            "default": false,
-            "description": "Its registration is billed for nothing: ours, or given"
-          },
-          "hosting_free": {
-            "type": "boolean",
-            "default": false,
-            "description": "Its hosting is billed for nothing: ours, or given"
           },
           "created": {
             "type": "integer"

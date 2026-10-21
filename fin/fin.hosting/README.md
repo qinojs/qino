@@ -30,9 +30,14 @@ not change hands while subscriptions still run for it.
 
 **Registered, hosted — apart.** Where a domain is registered (`registrar`) and where it is hosted
 (`host`) are two things: we may register one the customer hosts elsewhere, host one the customer
-registered themselves (or a subdomain, which is registered with its parent), or both. Each is billed
-unless free (`domain_free`, `hosting_free`: ours, or given). An alias is one level deep, served by its
-domain's hosting — it has no host of its own — and its domain's customer's; its registration may cost.
+registered themselves (or a subdomain, which is registered with its parent), or both. Each is billed,
+unless the domain is ours.
+
+**Whose.** `usr_id` is the customer, `0` (`OURS`) ours, none not assigned yet. Ours costs nothing; one
+given to a customer is billed by a subscription at price 0 — so it shows with them, per kind, and may
+cost later. A new subdomain is its parent's owner's; one without owner becomes theirs as they get one.
+An alias is one level deep, served by its domain's hosting — it has no host of its own — and its
+domain's customer's; its registration may cost.
 
 **Nothing to link by hand, mostly.** A subscription named after a domain is for it: "Hosting
 example.ch", or a plan's subscription whose name is the detail "example.ch", for what its or its
@@ -40,8 +45,8 @@ plan's name says (`domain`, `hosting`, else anything). When it is saved (`subscr
 domain is added as the customer's, if it is not there, and linked — unless the domain is another
 customer's.
 
-**What to bill.** `open(app)` lists what is still to do: a domain we register or host without a
-customer, or a customer's without a running subscription for its registration or its hosting.
+**What to bill.** `open(app)` lists what is still to do: a domain we register or host not assigned
+yet, or a customer's without a running subscription for its registration or its hosting.
 
 **Registrars and hosts.** A module declares where domains are: `export const domainRegistrars = (app)
 => Source[]` where they are registered, `export const domainHosts = (app) => Source[]` where hosted —

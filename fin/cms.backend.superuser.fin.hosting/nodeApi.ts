@@ -14,12 +14,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const v = vars.save as Record<string, string>;
       // a new one has its name typed; a changed one carries it in data-save
       const name = await save(app, v.id || v.name, {
-        // an alias's form has no customer and no host: it takes its domain's
-        ...("usrId" in v ? { usrId: Number(v.usrId) || null } : {}),
-        ...("host" in v ? { host: v.host || null, hostingFree: v.hostingFree === "1" } : {}),
+        // an alias's form has no customer and no host: it takes its domain's; "0" is ours, "" none yet
+        ...("usrId" in v ? { usrId: v.usrId === "" ? null : Number(v.usrId) } : {}),
+        ...("host" in v ? { host: v.host || null } : {}),
         aliasOf: v.aliasOf || null,
         registrar: v.registrar ?? null,
-        domainFree: v.domainFree === "1",
       });
       if (v.id) return { ok: true, message: await t`Saved.` };
       return { ok: true, url: backend.toUrl(await (await node.page()).url(), { domain: name }) };

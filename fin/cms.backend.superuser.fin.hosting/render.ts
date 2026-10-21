@@ -2,7 +2,7 @@ import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 import { nameOf } from "@qino/qino/fin";
-import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, registrars, running, subscriptionsBy } from "@qino/qino/fin.hosting";
+import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, registrars, running, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -20,10 +20,16 @@ export function render(node: Node): Promise<HtmlString> {
 const customers = (app: App) =>
   app.db.query`SELECT id, given_name, family_name, organization FROM usr ORDER BY organization, family_name, given_name`;
 
-function customerSelect(users: Row[], current: unknown, empty: string | Promise<string>, name = "usrId") {
-  return html.async`<select name=${name}><option value="">${empty}${users.map((u) =>
-    html`<option value="${u.id}"${selected(Number(u.id) === Number(current))}>${nameOf(u)}`)}</select>`;
+/** The customers to choose from, and "Ours" (`OURS`); `empty` stands for none. */
+function customerSelect(app: App, users: Row[], current: unknown, empty: string | Promise<string>, name = "usrId") {
+  const is = (id: unknown) => current != null && current !== "" && Number(id) === Number(current);
+  return html.async`<select name=${name}><option value="">${empty}<option value=${OURS}${selected(is(OURS))}>${app.t`Ours`}${users.map((u) =>
+    html`<option value="${u.id}"${selected(is(u.id))}>${nameOf(u)}`)}</select>`;
 }
+
+/** Whose a domain is: its customer, linked; "Ours"; or nothing yet. */
+const ownerCell = (node: Node, d: Row, names: Map<number, string>) =>
+  ours(d) ? node.app.t`Ours` : d.usr_id == null ? "" : rowLink(node, "cms.backend.superuser.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)));
 
 function aliasSelect(all: Row[], current: unknown, except = "") {
   return html.async`<select name=aliasOf><option value="">—${all.filter((d) => !d.alias_of && d.name !== except).map((d) =>
@@ -42,23 +48,17 @@ const price = (app: App, s: Row) =>
 const unbilled = (d: Row, subs: Row[]) => billable(d).filter((kind) => !subs.some((s) => running(s) && kindOf(s) === kind));
 
 /** What a domain is billed by, each subscription with what it is for; what we bill for (`billable`)
- *  without a running subscription for it; what is free. */
+ *  without a running subscription for it. */
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
   return html.async`${live.map((s) => html.async`<div><small>${kindWord(app, kindOf(s))}</small> ${s.label} <small>${price(app, s)}</small></div>`)}
-    ${unbilled(d, subs).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}
-    ${KINDS.filter((kind) => d[`${kind}_free`]).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`free`}`))}`;
+    ${unbilled(d, subs).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}`;
 }
 
-const checkbox = (name: string, label: string | Promise<string>, title: string | Promise<string>, checked: unknown) =>
-  html.async`<label title="${title}"><input type=checkbox name=${name} value=1${checked ? html.raw(" checked") : ""}> ${label}</label>`;
-
-/** The fields of a domain: where it is registered and hosted, each free or not; an alias has no host. */
+/** The fields of a domain: where it is registered and hosted; an alias has no host. */
 const placeFields = (app: App, d: Row | undefined) => html.async`
   ${app.t`Registrar`} <input name=registrar value="${d?.registrar ?? ""}">
-  <span></span> ${checkbox("domainFree", app.t`Domain free`, app.t`Its registration is billed for nothing: ours, or given`, d?.domain_free)}
-  ${d?.alias_of ? "" : html.async`${app.t`Host`} <input name=host value="${d?.host ?? ""}">
-  <span></span> ${checkbox("hostingFree", app.t`Hosting free`, app.t`Its hosting is billed for nothing: ours, or given`, d?.hosting_free)}`}`;
+  ${d?.alias_of ? "" : html.async`${app.t`Host`} <input name=host value="${d?.host ?? ""}">`}`;
 
 /** What is still to do — domains we bill for without a customer, or a customer's without a
  *  subscription for what we bill —, and the sources' sync; nothing but the sync when all is done. */
@@ -88,7 +88,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const pageUrl = await (await node.page()).url();
-  const usr = Number(url.searchParams.get("usr")) || undefined;
+  const usr = url.searchParams.get("usr") ? Number(url.searchParams.get("usr")) : undefined;
   const search = (url.searchParams.get("search") ?? "").trim().toLowerCase();
   const [all, subs, users] = await Promise.all([domains(app, usr), subscriptionsBy(app, usr), customers(app)]);
   const names = new Map(users.map((u) => [Number(u.id), nameOf(u)]));
@@ -103,7 +103,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
       <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias, hosting or registrar sync?`}">${t`Remove unlinked`}</button></div>
     <form>
       <input type=search name=search value="${search}" placeholder="${t`Domain`}">
-      ${customerSelect(users, usr, t`All customers`, "usr")}
+      ${customerSelect(app, users, usr, t`All customers`, "usr")}
       <button>${t`Filter`}</button>
     </form>
     ${rows.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
@@ -118,7 +118,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
       <tbody>${rows.map((d) => html.async`<tr${folds(d) ? html` data-alias-of="${d.alias_of}" hidden` : ""}>
         <td style="white-space:nowrap">${nameCell(pageUrl, d)}${aliasesOf.has(d.name)
           ? html` <button data-aliases="${d.name}">+${aliasesOf.get(d.name)?.length}</button>` : ""}
-        <td>${d.usr_id == null ? "" : rowLink(node, "cms.backend.superuser.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)))}
+        <td>${ownerCell(node, d, names)}
         <td>${d.registrar}
         <td style="white-space:nowrap">${d.expires ? String(d.expires).slice(0, 10) : ""}
         <td>${d.host}
@@ -130,7 +130,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
     <form data-save>
       <u2-fields>
         ${t`Domain`} <input name=name required placeholder="example.ch">
-        ${t`Customer`} ${customerSelect(users, usr, "—")}
+        ${t`Customer`} ${customerSelect(app, users, usr, "—")}
         ${t`Alias of`} ${aliasSelect(all, "")}
         ${placeFields(app, undefined)}
       </u2-fields>
@@ -174,7 +174,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     <div class=-head><a href="${pageUrl}">${t`Domains`}</a> › ${d.name}</div>
     <form data-save="${d.name}">
       <u2-fields>
-        ${d.alias_of ? "" : html.async`${t`Customer`} ${customerSelect(users, d.usr_id, "—")}`}
+        ${d.alias_of ? "" : html.async`${t`Customer`} ${customerSelect(app, users, d.usr_id, "—")}`}
         ${t`Alias of`} ${aliasSelect(all, d.alias_of, String(d.name))}
         ${placeFields(app, d)}
       </u2-fields>

@@ -3,7 +3,7 @@ import { create, issue } from "@qino/qino/fin.invoice";
 import { cancel, plan, subscribe, update } from "@qino/qino/fin.subscription";
 
 import { withFinApp } from "../../tests/app.ts";
-import { adopt, billable, blockers, domains, get, kindOf, link, normalize, open, parseRef, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
+import { adopt, billable, OURS, blockers, domains, get, kindOf, link, normalize, open, parseRef, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -147,14 +147,14 @@ Deno.test("fin.hosting: a ref names the domain and what it pays for", () => {
   assertEquals(kindOf({ ref: refOf("example.ch", "domain") }), "domain");
 });
 
-Deno.test("fin.hosting: registration and hosting are billed apart, each unless free; an alias has no hosting", async () => {
+Deno.test("fin.hosting: registration and hosting are billed apart, ours not at all; an alias has no hosting", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     await save(app, "both.ch", { usrId: anna, registrar: "infomaniak", host: "plesk:s3" });
     await save(app, "hosted.ch", { usrId: anna, host: "plesk:s3" }); // the customer registered it
-    await save(app, "shop.hosted.ch", { usrId: anna, host: "plesk:s3", hostingFree: true });
-    await save(app, "registered.ch", { usrId: anna, registrar: "infomaniak", domainFree: true });
-    assertEquals([billable(await get(app, "both.ch") ?? {}), billable(await get(app, "shop.hosted.ch") ?? {})], [["domain", "hosting"], []]);
+    await save(app, "ours.ch", { usrId: OURS, registrar: "infomaniak", host: "plesk:s3" });
+    assertEquals([billable(await get(app, "both.ch") ?? {}), billable(await get(app, "ours.ch") ?? {})], [["domain", "hosting"], []]);
+    await assertRejects(async () => link(app, "ours.ch", await hosting(app, anna), "hosting"), Error, "is ours");
     await link(app, "both.ch", await hosting(app, anna, "Webspace"), "hosting");
     const todo = async () => (await open(app)).map((o) => [o.domain.name, o.missing, o.kind]);
     assertEquals(await todo(), [["both.ch", "billed", "domain"], ["hosted.ch", "billed", "hosting"]]);
@@ -179,9 +179,9 @@ Deno.test("fin.hosting: the registrars say which domains are ours to register; w
     assertEquals(await sync(app, { registrars: [registrar] }), [{ name: "test", found: 3, added: 3, gone: 1 }]);
     assertEquals((await get(app, "example.ch"))?.expires, "2027-03-01");
     assertEquals((await get(app, "moved.ch"))?.registrar, null); // gone from there: no longer ours to bill
-    await save(app, "ours.ch", { domainFree: true });
+    await save(app, "ours.ch", { usrId: OURS });
     await link(app, "anna.ch", await hosting(app, anna, "Domain"), "domain");
-    // registered by us, not free: example.ch has no customer; theirs, moved, ours and the billed anna.ch are fine
+    // registered by us, not ours: example.ch has no customer; theirs, moved, ours and the billed anna.ch are fine
     assertEquals((await open(app)).map((o) => [o.domain.name, o.missing]), [["example.ch", "customer"]]);
     await save(app, "example.ch", { usrId: anna });
     assertEquals((await open(app)).map((o) => [o.domain.name, o.missing, o.kind]), [["example.ch", "billed", "domain"]]);
@@ -250,5 +250,26 @@ Deno.test("fin.hosting: a synced domain is held; prune removes what nothing link
     await save(app, "lone.ch");
     assertEquals(await prune(app), ["lone.ch", "lost.ch"]);
     assertEquals((await domains(app)).map((d) => d.name), ["billed.ch", "elsewhere.ch", "ended.ch", "main.ch", "alias.ch", "served.ch", "synced.ch"]);
+  });
+});
+
+Deno.test("fin.hosting: a subdomain is its parent's owner's, by default", async () => {
+  await withFinApp(FIN, async (app) => {
+    const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
+    await save(app, "example.ch", { usrId: anna });
+    await save(app, "shop.example.ch");
+    await save(app, "a.b.example.ch"); // the nearest parent there is
+    await save(app, "other.example.ch", { usrId: ben }); // given: stays
+    const owner = async (name: string) => (await get(app, name))?.usr_id ?? null;
+    assertEquals([await owner("shop.example.ch"), await owner("a.b.example.ch"), await owner("other.example.ch")], [anna, anna, ben]);
+
+    // one without owner becomes the parent's as it gets one, with its aliases
+    await save(app, "late.ch");
+    await save(app, "www.late.ch");
+    await save(app, "late-alias.ch", { aliasOf: "www.late.ch" });
+    await save(app, "late.ch", { usrId: OURS });
+    assertEquals([await owner("www.late.ch"), await owner("late-alias.ch")], [OURS, OURS]);
+    await save(app, "notlate.ch"); // no subdomain of late.ch
+    assertEquals(await owner("notlate.ch"), null);
   });
 });

@@ -6,12 +6,10 @@ import { domains, get, KINDS, link, remove, save, subscriptionsBy, unlink } from
 import type { ApiTree, Ctx, Params, Row } from "@qino/qino";
 
 const VALUES = {
-  usrId: s.optional(s.number().describe("Whose it is")),
+  usrId: s.optional(s.number().describe("Whose it is: a customer, or 0: ours")),
   aliasOf: s.optional(s.string().describe("The domain it is an alias of; empty: none")),
   registrar: s.optional(s.string().describe("Where we registered it; empty: the customer keeps it elsewhere")),
   host: s.optional(s.string().describe("Where we host it; empty: not hosted by us")),
-  domainFree: s.optional(s.boolean().describe("Its registration is billed for nothing")),
-  hostingFree: s.optional(s.boolean().describe("Its hosting is billed for nothing")),
 };
 
 /** A user reads their own domains; keeping them is a superuser's. */

@@ -21,6 +21,12 @@ export function parseRef(ref: unknown): { name: string; kind?: Kind } | undefine
 /** The kind a subscription is for, or undefined. */
 export const kindOf = (sub: Row): Kind | undefined => parseRef(sub.ref)?.kind;
 
+/** The owner of a domain that is ours: no customer's, nothing to bill. None (`null`): not assigned yet. */
+export const OURS = 0;
+
+/** Whether a domain is ours. */
+export const ours = (d: Row): boolean => d.usr_id != null && Number(d.usr_id) === OURS;
+
 /** A domain as stored — lower case, punycode, without scheme, path or trailing dot — or "". */
 export function normalize(value: string): string {
   const input = String(value ?? "").trim().replace(/^https?:\/\//i, "").replace(/[/?#].*$/, "").replace(/\.$/, "");
@@ -67,18 +73,21 @@ export async function subscriptionsBy(app: App, usrId?: number): Promise<Map<str
   return map;
 }
 
-type Values = {
-  usrId?: number | null;
-  aliasOf?: string | null;
-  registrar?: string | null;
-  host?: string | null;
-  domainFree?: boolean;
-  hostingFree?: boolean;
-};
+type Values = { usrId?: number | null; aliasOf?: string | null; registrar?: string | null; host?: string | null };
+
+/** The owner of the nearest domain a new one is a subdomain of, or undefined: shop.example.ch takes example.ch's. */
+async function parentOwner(app: App, domain: string): Promise<number | null | undefined> {
+  const labels = domain.split(".");
+  const parents = labels.slice(1, -1).map((_, i) => labels.slice(i + 1).join("."));
+  if (!parents.length) return;
+  const rows = await app.db.query`SELECT name, usr_id FROM fin_hosting_domain WHERE ${sql.in("name", parents)}`;
+  return parents.map((p) => rows.find((r) => r.name === p)).find(Boolean)?.usr_id;
+}
 
 /**
- * Add a domain, or change one: whose it is, what it is an alias of (one level: an alias has no
- * aliases), where it is registered and where hosted. Fields not given stay. An alias is served by
+ * Add a domain, or change one: whose it is (a customer, `OURS`), what it is an alias of (one level:
+ * an alias has no aliases), where it is registered and where hosted. Fields not given stay. A new
+ * subdomain is its parent's owner's, one without owner becomes theirs as they get one. An alias is served by
  * its domain's hosting — it has none of its own — and is its domain's customer's: a `usrId` of its
  * own does not count, its domain's owner passes on to it. Its registration may cost on its own.
  * Refused where the bills would no longer fit: another owner while the present one's subscriptions
@@ -91,6 +100,7 @@ export async function save(app: App, name: string, values: Values = {}): Promise
   const live = ((await subscriptionsBy(app)).get(domain) ?? []).filter(running);
   const fields: Record<string, unknown> = {};
   if (values.usrId !== undefined) fields.usr_id = values.usrId;
+  else if (!current && !values.aliasOf) fields.usr_id = await parentOwner(app, domain) ?? null;
   const main = values.aliasOf === undefined ? current?.alias_of ?? null : values.aliasOf ? normalize(values.aliasOf) : null;
   if (values.aliasOf && !main) throw new Error(`fin.hosting: not a domain: ${values.aliasOf}`);
   const host = values.host === undefined ? current?.host ?? null : values.host?.trim() || null;
@@ -112,26 +122,32 @@ export async function save(app: App, name: string, values: Values = {}): Promise
   }
   if (values.registrar !== undefined) fields.registrar = values.registrar?.trim() || null;
   if (values.host !== undefined) fields.host = host;
-  if (values.domainFree !== undefined) fields.domain_free = values.domainFree;
-  if (values.hostingFree !== undefined) fields.hosting_free = values.hostingFree;
   const time = unixTime();
   if (current) await table(app).update(domain, { ...fields, changed: time });
   else await table(app).insert({ name: domain, ...fields, created: time, changed: time });
-  // its aliases are its own: they follow its owner
-  if (!main && "usr_id" in fields) await app.db.exec`UPDATE fin_hosting_domain SET usr_id = ${owner ?? null}, changed = ${time} WHERE alias_of = ${domain}`;
+  if (!main && "usr_id" in fields) {
+    // its aliases are its own: they follow its owner
+    await app.db.exec`UPDATE fin_hosting_domain SET usr_id = ${owner ?? null}, changed = ${time} WHERE alias_of = ${domain}`;
+    // its subdomains without owner, and their aliases, become theirs
+    if (owner != null) {
+      await app.db.exec`UPDATE fin_hosting_domain SET usr_id = ${owner}, changed = ${time}
+        WHERE usr_id IS NULL AND (name LIKE ${`%.${domain}`} OR alias_of LIKE ${`%.${domain}`})`;
+    }
+  }
   await watch(app, domain);
   return domain;
 }
 
 /** What we bill a domain for: its registration where we registered it (`registrar`), its hosting
- *  where we host it (`host`) — each unless free. One the customer keeps elsewhere costs us nothing. */
-export const billable = (d: Row): Kind[] => [
-  ...d.registrar && !d.domain_free ? ["domain" as const] : [],
-  ...d.host && !d.hosting_free ? ["hosting" as const] : [],
+ *  where we host it (`host`) — unless it is ours. One the customer keeps elsewhere costs us nothing;
+ *  one given costs nothing by its subscription (price 0). */
+export const billable = (d: Row): Kind[] => ours(d) ? [] : [
+  ...d.registrar ? ["domain" as const] : [],
+  ...d.host ? ["hosting" as const] : [],
 ];
 
 /**
- * What is still to do: a domain we bill for without a customer (`customer`), or a customer's
+ * What is still to do: a domain we bill for not assigned yet (`customer`), or a customer's
  * without a running subscription for its registration or its hosting (`billed`, with the `kind`).
  * Empty when everything is billed.
  */
@@ -273,6 +289,7 @@ export async function link(app: App, name: string, subscriptionId: number, kind?
   const domain = await get(app, name);
   if (!domain) throw new Error(`fin.hosting: no domain ${name}`);
   if (kind === "hosting" && domain.alias_of) throw new Error(`fin.hosting: ${domain.name} is an alias, it has no hosting`);
+  if (ours(domain)) throw new Error(`fin.hosting: ${domain.name} is ours, no customer's subscription is for it`);
   const sub = await app.db.row`SELECT usr_id FROM subscription WHERE id = ${subscriptionId}`;
   if (!sub) throw new Error(`fin.hosting: no subscription ${subscriptionId}`);
   if (domain.usr_id != null && Number(sub.usr_id) !== Number(domain.usr_id)) {

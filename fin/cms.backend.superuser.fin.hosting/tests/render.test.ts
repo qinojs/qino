@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { link, save } from "@qino/qino/fin.hosting";
+import { link, OURS, save } from "@qino/qino/fin.hosting";
 import { subscribe } from "@qino/qino/fin.subscription";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
@@ -25,7 +25,7 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
     await save(app, "anna.com", { aliasOf: "anna.ch", registrar: "infomaniak" }); // its own registration: to bill
     await save(app, "unbilled.ch", { usrId: anna, host: "plesk:s3" }); // registered by the customer, hosted by us
     await save(app, "theirs.ch", { usrId: anna }); // the customer keeps it elsewhere: nothing to bill
-    await save(app, "ours.ch", { registrar: "infomaniak", domainFree: true });
+    await save(app, "ours.ch", { usrId: OURS, registrar: "infomaniak" });
     await save(app, "nobodys.ch", { registrar: "infomaniak" });
     const sub = await subscribe(app, { usrId: anna, name: "Webspace", price: 24000, currency: "CHF", start: "2026-01-01" });
     await link(app, "anna.ch", sub, "hosting");
@@ -42,7 +42,8 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
     assert(!row("anna.ch").includes("Hosting not billed"));
     assertStringIncludes(row("unbilled.ch"), "Hosting not billed");
     assertStringIncludes(row("unbilled.ch"), "plesk:s3");
-    assertStringIncludes(row("ours.ch"), "Domain free");
+    assertStringIncludes(row("ours.ch"), "Ours");
+    assert(!row("ours.ch").includes("not billed"));
     assert(!row("theirs.ch").includes("not billed"));
     assertStringIncludes(page, `>no customer</small>`);
     assertStringIncludes(page, "Anna AG");
@@ -83,10 +84,10 @@ Deno.test("domains: one is added, changed, linked, unlinked and removed; refusal
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).ok, false);
 
     await as(() => api(node, { unlink: { id: "anna.ch", subscription: String(sub) } }));
-    const saved = { id: "anna.ch", usrId: String(anna), aliasOf: "", registrar: "Infomaniak", host: "plesk:s3", hostingFree: "1" };
+    const saved = { id: "anna.ch", usrId: String(OURS), aliasOf: "", registrar: "Infomaniak", host: "plesk:s3" };
     assertEquals((await as(() => api(node, { save: saved }))).ok, true);
-    const row = await app.db.row`SELECT registrar, host, domain_free, hosting_free FROM fin_hosting_domain WHERE name = 'anna.ch'`;
-    assertEquals([row?.registrar, row?.host, !!row?.domain_free, !!row?.hosting_free], ["Infomaniak", "plesk:s3", false, true]);
+    const row = await app.db.row`SELECT usr_id, registrar, host FROM fin_hosting_domain WHERE name = 'anna.ch'`;
+    assertEquals([row?.usr_id, row?.registrar, row?.host], [OURS, "Infomaniak", "plesk:s3"]); // "0": ours, not none
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).url, "/backend/domains");
     assertStringIncludes(String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node))), "No domain anna.ch");
   });
