@@ -130,7 +130,7 @@ function renderRow(app: App, p: Project, self: boolean, preview: string) {
     : [button("start", app.t`Start`)];
   return html.async`<tr>
     <td><b>${p.name}</b>
-    <td><span class=u2-badge style="background:${STATE_COLOR[p.state] ?? "var(--gray)"}">${p.state}</span> <small>${p.sub}</small>
+    <td><small class=u2-badge style="background:${STATE_COLOR[p.state] ?? "var(--gray)"}">${p.sub}</small>
     <td>${domains(app, p.domains, preview)}
     <td>${listen}
     <td class=-num>${bytes(p.memory)}
