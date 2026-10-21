@@ -34,10 +34,15 @@ Deno.test("fin.hosting: domains with owner, registrar and aliases one level deep
     assertEquals((await get(app, "example.com"))?.usr_id, anna);
     await save(app, "example.ch", { registrar: "Infomaniak" });
     assertEquals((await get(app, "example.ch"))?.usr_id, anna);
+    // by name, not by ending: a subdomain under its domain
+    await save(app, "v4.example.org", { usrId: anna });
+    await save(app, "example.org", { usrId: anna });
+    assertEquals((await domains(app, anna)).map((d) => d.name).slice(-2), ["example.org", "v4.example.org"]);
+    await app.db.exec`DELETE FROM fin_hosting_domain WHERE name LIKE ${"%example.org"}`;
     // each alias right after its domain, before its subdomains
     await save(app, "shop.example.ch", { usrId: anna });
     await save(app, "example-ch.net", { aliasOf: "example.ch" });
-    assertEquals((await domains(app, anna)).map((d) => d.name), ["aaa.ch", "example.ch", "example.com", "example-ch.net", "shop.example.ch"]);
+    assertEquals((await domains(app, anna)).map((d) => d.name), ["aaa.ch", "example.ch", "example-ch.net", "example.com", "shop.example.ch"]);
     assertEquals(await domains(app, anna + 1), []);
 
     await assertRejects(() => save(app, "x.ch", { aliasOf: "example.com" }), Error, "is an alias itself");

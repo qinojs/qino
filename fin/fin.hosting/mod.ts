@@ -39,8 +39,11 @@ export function normalize(value: string): string {
   }
 }
 
-/** Labels reversed, so a domain's aliases and subdomains follow it. */
-const key = (name: string) => name.split(".").reverse().join(".");
+/** The registered domain, then the labels below it outward: example.ch, then shop.example.ch under it. */
+const key = (name: string) => {
+  const labels = name.split(".");
+  return `${labels.slice(-2).join(".")}\u0000${labels.slice(0, -2).reverse().join(".")}`;
+};
 
 /** One domain, or undefined. */
 export const get = (app: App, name: string): Promise<Row | undefined> =>
