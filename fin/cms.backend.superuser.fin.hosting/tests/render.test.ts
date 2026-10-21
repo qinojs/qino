@@ -34,7 +34,7 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
     const page = String(await inRequest(app, BASE, () => render(node)));
     assertStringIncludes(page, `<a href="/backend/domains?domain=anna.ch">anna.ch</a>`);
     assertStringIncludes(page, `<tr data-alias-of="anna.ch" hidden>`);
-    assertStringIncludes(page, `<button data-aliases="anna.ch">+1</button>`);
+    assertStringIncludes(page, `<button data-aliases="anna.ch" class=u2-unstyle>+1</button>`);
     assertStringIncludes(page, `<tr>\n        <td style="white-space:nowrap"><small>↳</small> <a href="/backend/domains?domain=anna.com">`); // to bill: shown
     assert(/<small>Hosting<\/small> Webspace <small>CHF\s240\.00 \/ year<\/small>/.test(page)); // Intl puts a no-break space
     const row = (name: string) => page.slice(page.lastIndexOf(`>${name}</a>`)).split("<tr>")[0];

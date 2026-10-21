@@ -117,7 +117,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
         <th>${t`Billed by`}
       <tbody>${rows.map((d) => html.async`<tr${folds(d) ? html` data-alias-of="${d.alias_of}" hidden` : ""}>
         <td style="white-space:nowrap">${nameCell(pageUrl, d)}${aliasesOf.has(d.name)
-          ? html` <button data-aliases="${d.name}">+${aliasesOf.get(d.name)?.length}</button>` : ""}
+          ? html` <button data-aliases="${d.name}" class=u2-unstyle>+${aliasesOf.get(d.name)?.length}</button>` : ""}
         <td>${ownerCell(node, d, names)}
         <td>${d.registrar}
         <td style="white-space:nowrap">${d.expires ? String(d.expires).slice(0, 10) : ""}
