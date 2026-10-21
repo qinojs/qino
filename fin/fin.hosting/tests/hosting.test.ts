@@ -3,7 +3,7 @@ import { create, issue } from "@qino/qino/fin.invoice";
 import { cancel, plan, subscribe, update } from "@qino/qino/fin.subscription";
 
 import { withFinApp } from "../../tests/app.ts";
-import { adopt, billable, OURS, blockers, domains, get, kindOf, link, normalize, open, parseRef, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
+import { adopt, billable, OURS, removeSource, saveSource, sources, blockers, domains, get, kindOf, link, normalize, open, parseRef, prune, refOf, remove, save, subscriptionsBy, sync, unlink } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -232,9 +232,10 @@ Deno.test("fin.hosting: a host's domains are hosted, with the aliases it lists; 
 Deno.test("fin.hosting: a synced domain is held; prune removes what nothing links to", async () => {
   await withFinApp([...FIN, "fin.hosting.infomaniak", "fin.hosting.plesk"], async (app) => {
     const anna = await customer(app, "Anna");
-    await app.settings["fin.hosting.plesk"].servers("https://k3y@s3.example.com:8443");
+    await saveSource(app, { name: "infomaniak", type: "infomaniak", secret: "t0k" });
+    await saveSource(app, { name: "s3", type: "plesk", url: "https://s3.example.com:8443", secret: "k3y" });
     await save(app, "synced.ch", { registrar: "infomaniak" });
-    await save(app, "served.ch", { host: "plesk:s3.example.com" });
+    await save(app, "served.ch", { host: "s3" });
     assertEquals([await blockers(app, "synced.ch"), await blockers(app, "served.ch")], [["synced"], ["synced"]]);
     await save(app, "main.ch");
     await save(app, "alias.ch", { aliasOf: "main.ch" });
@@ -246,7 +247,7 @@ Deno.test("fin.hosting: a synced domain is held; prune removes what nothing link
     await link(app, "ended.ch", ended);
     await cancel(app, ended);
     await save(app, "lost.ch", { usrId: anna, registrar: "Hostpoint" }); // kept by hand: not synced
-    await save(app, "elsewhere.ch", { host: "plesk:old" }); // hosted, by hand
+    await save(app, "elsewhere.ch", { host: "old" }); // hosted, by hand
     await save(app, "lone.ch");
     assertEquals(await prune(app), ["lone.ch", "lost.ch"]);
     assertEquals((await domains(app)).map((d) => d.name), ["billed.ch", "elsewhere.ch", "ended.ch", "main.ch", "alias.ch", "served.ch", "synced.ch"]);
@@ -271,5 +272,17 @@ Deno.test("fin.hosting: a subdomain is its parent's owner's, by default", async 
     assertEquals([await owner("www.late.ch"), await owner("late-alias.ch")], [OURS, OURS]);
     await save(app, "notlate.ch"); // no subdomain of late.ch
     assertEquals(await owner("notlate.ch"), null);
+  });
+});
+
+Deno.test("fin.hosting: sources are kept by name, of a type a module brings; a secret is kept unless given", async () => {
+  await withFinApp([...FIN, "fin.hosting.plesk"], async (app) => {
+    await assertRejects(() => saveSource(app, { name: "x", type: "nowhere" }), Error, "no source type nowhere");
+    await assertRejects(() => saveSource(app, { name: " ", type: "plesk" }), Error, "needs a name");
+    await saveSource(app, { name: "s3", type: "plesk", url: "https://s3.example.com:8443", user: "admin", secret: "pw" });
+    await saveSource(app, { name: "s3", type: "plesk", url: "https://s3.example.com:8443", user: "root", secret: "" });
+    assertEquals((await sources(app)).map((s) => [s.name, s.user, s.secret]), [["s3", "root", "pw"]]);
+    await removeSource(app, "s3");
+    assertEquals(await sources(app), []);
   });
 });

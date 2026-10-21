@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { KINDS, link, prune, remove, save, sync, unlink } from "@qino/qino/fin.hosting";
+import { KINDS, link, prune, remove, removeSource, save, saveSource, sync, unlink } from "@qino/qino/fin.hosting";
 
 import type { Node } from "@qino/qino/cms";
 import type { Kind } from "@qino/qino/fin.hosting";
@@ -30,6 +30,15 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         : `${r.name}: ${r.found} ${await t`found`}, ${r.added} ${await t`new`}, ${r.gone} ${await t`gone`}`
           + (r.failed ? `\n${r.failed.join("\n")}` : "")));
       return { ok: true, message: lines.join("\n") || await t`Nothing to sync` };
+    }
+    if (vars.source) {
+      const v = vars.source as Record<string, string>;
+      await saveSource(app, { name: v.name, type: v.type, url: v.url, user: v.user, secret: v.secret });
+      return { ok: true, url: await (await node.page()).url() };
+    }
+    if (typeof vars.removeSource === "string") {
+      await removeSource(app, vars.removeSource);
+      return { ok: true, url: await (await node.page()).url() };
     }
     if (vars.prune) {
       const names = await prune(app);

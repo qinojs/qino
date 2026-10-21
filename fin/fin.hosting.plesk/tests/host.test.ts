@@ -1,13 +1,11 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { fakeSettings } from "@qino/qino/tests";
 
-import { domainHosts } from "../plugin.ts";
+import { domainSourceTypes } from "../plugin.ts";
 
-import type { App } from "@qino/qino";
 
-const app = (servers: string) => ({ settings: fakeSettings({ "fin.hosting.plesk": fakeSettings({ servers }) }) }) as unknown as App;
+const sites = (url: string | null, user: string | null, secret: string) => domainSourceTypes.plesk.domains({ name: "s3", type: "plesk", url, user, secret });
 
-Deno.test("fin.hosting.plesk: each server a host, its websites with their aliases, signed in by password or key", async () => {
+Deno.test("fin.hosting.plesk: a server's websites with their aliases, signed in by password or key", async () => {
   const fetch = globalThis.fetch;
   const asked: string[] = [];
   globalThis.fetch = (input, init) => {
@@ -21,18 +19,16 @@ Deno.test("fin.hosting.plesk: each server a host, its websites with their aliase
     ]));
   };
   try {
-    const hosts = await domainHosts(app("https://admin:p%40ss@s3.example.com:8443\nhttps://K3Y@down.example.com:8443"));
-    assertEquals(hosts.map((h) => h.name), ["plesk:s3.example.com", "plesk:down.example.com"]);
-    assertEquals(await hosts[0].domains(), [
+    assertEquals(await sites("https://s3.example.com:8443", "admin", "p@ss"), [
       { name: "example.ch", aliases: ["beispiel.ch"] },
       { name: "shop.example.ch", aliases: [] },
       { name: "xn--mller-kva.ch", aliases: [] },
     ]);
     assertEquals(asked[0], `https://s3.example.com:8443/api/v2/domains Basic ${btoa("admin:p@ss")}`);
-    await assertRejects(() => hosts[1].domains(), Error, "Plesk down.example.com answered 401");
+    await assertRejects(() => sites("https://down.example.com:8443", null, "K3Y"), Error, "Plesk down.example.com answered 401");
     assertEquals(asked[1], "https://down.example.com:8443/api/v2/domains K3Y");
   } finally {
     globalThis.fetch = fetch;
   }
-  assertEquals(await domainHosts(app("")), []);
+  await assertRejects(() => sites(null, null, "K3Y"), Error, "no URL");
 });

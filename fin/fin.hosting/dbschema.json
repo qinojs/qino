@@ -50,6 +50,46 @@
         },
         "required": ["name", "created", "changed"]
       }
+    },
+    "fin_hosting_source": {
+      "description": "Where domains are registered or hosted, to sync them from: an account, a server",
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "x-index": "primary",
+            "description": "Stored as its domains' registrar or host: infomaniak, s3"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "The source type a module declares (domainSourceTypes): infomaniak, plesk"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Where it is reached: https://s3.example.com:8443. Empty: the type's own"
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Who signs in, or the account; as the type reads it"
+          },
+          "secret": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Password, token or API key; never shown"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["name", "type", "created", "changed"]
+      }
     }
   }
 }

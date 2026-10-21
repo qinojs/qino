@@ -1,9 +1,10 @@
 # fin.hosting.infomaniak
 
-The domains registered at Infomaniak, as a registrar (`domainRegistrars`) of [fin.hosting](../fin.hosting/README.md): its
-daily job takes them over — new ones show up to be assigned to a customer, ones moved away are no
-longer billed, each with the day its registration ends.
+The source type `infomaniak` of [fin.hosting](../fin.hosting/README.md): an Infomaniak account as a
+registrar. Its daily sync takes the domains over — new ones show up to be assigned to a customer, ones
+moved away are no longer billed, each with the day its registration ends.
 
-Needs an API token of the Infomaniak manager (profile › developer › API tokens) that may read the
-products, in the setting `token`; `account` limits it to one account. It reads
-`GET https://api.infomaniak.com/1/products` and keeps the products of `service_name` `domain`.
+A source of it needs an API token of the Infomaniak manager (profile › developer › API tokens) that
+may read the products, as its secret; the account id as user limits it to that account. It reads
+`GET https://api.infomaniak.com/1/products` (or the source's URL) and keeps the products of
+`service_name` `domain`.

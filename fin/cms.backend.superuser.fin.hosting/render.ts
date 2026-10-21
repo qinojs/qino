@@ -2,7 +2,7 @@ import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
 import { nameOf } from "@qino/qino/fin";
-import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, registrars, running, subscriptionsBy } from "@qino/qino/fin.hosting";
+import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -79,6 +79,33 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
   </div>`;
 }
 
+/** Where the domains are synced from — accounts, servers —, and adding or changing one (`?source=`). */
+async function sourcesCard(app: App, pageUrl: string, editing: string | null): Promise<HtmlString> {
+  const t = app.t;
+  const [list, types] = [await sources(app), sourceTypes(app)];
+  const current = list.find((s) => s.name === editing);
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Sources`}</div>
+    ${list.length ? html.async`<table class=u2-table>${list.map((s) => html.async`<tr>
+      <td><a href="${backend.toUrl(pageUrl, { source: s.name })}">${s.name}</a>
+      <td>${types[String(s.type)] ? s.type : badge(html.async`${s.type} ${t`not installed`}`, "--red")}
+      <td>${s.url}
+      <td>${s.user}
+      <td><button data-remove-source="${s.name}" u2-confirm="${t`Remove this source? Its domains stay.`}">${t`Remove`}</button>`)}
+    </table>` : ""}
+    <form data-source>
+      <u2-fields>
+        ${t`Name`} <input name=name required value="${current?.name ?? ""}" placeholder="s3">
+        ${t`Type`} <select name=type>${Object.keys(types).map((type) => html`<option${selected(type === current?.type)}>${type}`)}</select>
+        ${t`URL`} <input name=url value="${current?.url ?? ""}" placeholder="https://s3.example.com:8443">
+        ${t`User`} <input name=user value="${current?.user ?? ""}" autocomplete=off>
+        ${t`Secret`} <input name=secret type=password autocomplete=new-password placeholder="${current?.secret ? t`unchanged` : ""}">
+      </u2-fields>
+      <button>${current ? t`Save` : t`Add`}</button>
+    </form>
+  </div>`;
+}
+
 /** The name, or "↳ alias" below its domain. */
 const nameCell = (pageUrl: string, d: Row) =>
   html`${d.alias_of ? html`<small>↳</small> ` : ""}<a href="${backend.toUrl(pageUrl, { domain: d.name })}">${d.name}</a>`;
@@ -98,6 +125,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   const aliasesOf = Map.groupBy(all.filter(folds), (d) => d.alias_of);
   return html.async`<div class=u2-flex>
   ${openCard(node, pageUrl)}
+  ${sourcesCard(app, pageUrl, url.searchParams.get("source"))}
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
     <div class=-head>${t`Domains`} <small>${rows.length}</small>
       <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias, hosting or registrar sync?`}">${t`Remove unlinked`}</button></div>

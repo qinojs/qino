@@ -1,34 +1,21 @@
-import type { App } from "@qino/qino";
-import type { Source } from "@qino/qino/fin.hosting";
-
-export const settingsSchema = {
-  properties: {
-    servers: {
-      type: "string",
-      description: "The Plesk servers, one URL per line, signing in as user and password, or with an API key alone: "
-        + "https://admin:password@s3.example.com:8443, https://<api key>@s4.example.com:8443",
-    },
-  },
-};
+import type { Row } from "@qino/qino";
+import type { SourceType } from "@qino/qino/fin.hosting";
 
 /** A website of the REST API, as far as read here: `ascii_name` is the punycode `name` without stray marks. */
 type Site = { ascii_name?: string; aliases?: { ascii_name?: string }[] };
 
-/** The servers of the setting, each as its URL. */
-const servers = async (app: App) =>
-  String(await app.settings["fin.hosting.plesk"].servers ?? "").split(/\s+/).filter(Boolean).map((line) => new URL(line));
-
-/** Each server, as one host: plesk:s3.example.com. */
-export const domainHosts = async (app: App): Promise<Source[]> =>
-  (await servers(app)).map((url) => ({ name: `plesk:${url.hostname}`, domains: () => sites(url) }));
+/** A Plesk server, as a host: signed in as user and password, or with an API key alone as the secret. */
+export const domainSourceTypes: Record<string, SourceType> = { plesk: { kind: "host", domains: sites } };
 
 /** Every website of a server — a webspace's, a subdomain, an addon domain — with its aliases. */
-async function sites(server: URL): Promise<{ name: string; aliases: string[] }[]> {
-  const [user, password] = [decodeURIComponent(server.username), decodeURIComponent(server.password)];
+async function sites(source: Row): Promise<{ name: string; aliases: string[] }[]> {
+  if (!source.url) throw new Error("no URL: https://s3.example.com:8443");
+  const server = new URL(String(source.url));
+  const [user, secret] = [String(source.user ?? ""), String(source.secret ?? "")];
   const res = await fetch(new URL("/api/v2/domains", server.origin), {
     headers: {
       accept: "application/json",
-      ...password ? { authorization: `Basic ${btoa(`${user}:${password}`)}` } : { "x-api-key": user },
+      ...user ? { authorization: `Basic ${btoa(`${user}:${secret}`)}` } : { "x-api-key": secret },
     },
     signal: AbortSignal.timeout(60_000),
   });

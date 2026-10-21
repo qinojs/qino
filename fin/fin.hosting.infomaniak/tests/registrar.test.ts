@@ -1,13 +1,9 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { fakeSettings } from "@qino/qino/tests";
 
-import { domainRegistrars } from "../plugin.ts";
+import { domainSourceTypes } from "../plugin.ts";
 
-import type { App } from "@qino/qino";
 
-const app = (token: string, account?: number) =>
-  ({ settings: fakeSettings({ "fin.hosting.infomaniak": fakeSettings({ token, account }) }) }) as unknown as App;
-const domains = (app: App) => domainRegistrars(app)[0].domains();
+const domains = (secret: string, user?: number) => domainSourceTypes.infomaniak.domains({ name: "infomaniak", type: "infomaniak", secret, user });
 
 Deno.test("fin.hosting.infomaniak: the domains of every page, of the account asked for, with their end", async () => {
   const fetch = globalThis.fetch;
@@ -22,16 +18,16 @@ Deno.test("fin.hosting.infomaniak: the domains of every page, of the account ask
     return Promise.resolve(Response.json({ result: "success", data, page, pages: 2 }));
   };
   try {
-    assertEquals(await domains(app("t0k")), [
+    assertEquals(await domains("t0k"), [
       { name: "example.ch", expires: "2027-01-01" },
       { name: "other.ch", expires: null },
     ]);
     assertEquals(asked[0], "https://api.infomaniak.com/1/products?per_page=500&page=1 Bearer t0k");
-    assertEquals((await domains(app("t0k", 2))).map((d) => d.name), ["other.ch"]);
+    assertEquals((await domains("t0k", 2)).map((d) => d.name), ["other.ch"]);
     globalThis.fetch = () => Promise.resolve(Response.json({ result: "error", error: { code: "not_authorized" } }, { status: 401 }));
-    await assertRejects(() => domains(app("bad")), Error, "Infomaniak answered 401");
+    await assertRejects(() => domains("bad"), Error, "Infomaniak answered 401");
   } finally {
     globalThis.fetch = fetch;
   }
-  await assertRejects(() => domains(app("")), Error, "no API token");
+  await assertRejects(() => domains(""), Error, "no API token");
 });

@@ -169,20 +169,57 @@ export async function open(app: App): Promise<{ domain: Row; missing: "customer"
 
 /** A registrar the domains are registered at, or a host they are hosted on: what it holds. */
 export type Source = {
-  /** Stored as the domains' `registrar`, or `host`: infomaniak, plesk:s3.example.com */
+  /** Stored as the domains' `registrar`, or `host`: infomaniak, s3 */
   name: string;
   /** Every domain there: a registrar's with when its registration ends (YYYY-MM-DD) where known, a
    *  host's with its aliases. */
   domains(): Promise<{ name: string; expires?: string | null; aliases?: string[] }[]>;
 };
 
-/** The sources of the linked modules, as each declares them: `export const domainRegistrars =
- *  (app) => Source[]`, `export const domainHosts = (app) => Source[]`. */
-const sources = async (app: App, kind: "domainRegistrars" | "domainHosts"): Promise<Source[]> =>
-  (await Promise.all(app.modules.linked().map((m) => m.plugin[kind]?.(app) ?? []))).flat();
+/** A kind of source, as a module declares it — `export const domainSourceTypes = { plesk: SourceType }`:
+ *  whether it registers or hosts, and how to read a source of it (`fin_hosting_source`). */
+export type SourceType = {
+  kind: "registrar" | "host";
+  domains(source: Row): Promise<{ name: string; expires?: string | null; aliases?: string[] }[]>;
+};
 
-export const registrars = (app: App): Promise<Source[]> => sources(app, "domainRegistrars");
-export const hosts = (app: App): Promise<Source[]> => sources(app, "domainHosts");
+/** The source types of the linked modules, by name. */
+export const sourceTypes = (app: App): Record<string, SourceType> =>
+  Object.assign({}, ...app.modules.linked().map((m) => m.plugin.domainSourceTypes ?? {}));
+
+/** The sources as kept: name, type, url, user — and secret, which no page shows. */
+export const sources = (app: App): Promise<Row[]> => app.db.query`SELECT * FROM fin_hosting_source ORDER BY name`;
+
+/** Add a source, or change one by its name; an empty secret keeps the present one. */
+export async function saveSource(app: App, values: { name: string; type: string; url?: string; user?: string; secret?: string }): Promise<string> {
+  const name = values.name.trim();
+  if (!name) throw new Error("fin.hosting: a source needs a name");
+  if (!sourceTypes(app)[values.type]) throw new Error(`fin.hosting: no source type ${values.type}`);
+  const fields = {
+    type: values.type,
+    url: values.url?.trim() || null,
+    user: values.user?.trim() || null,
+    ...values.secret ? { secret: values.secret } : {},
+    changed: unixTime(),
+  };
+  const table = app.db.table("fin_hosting_source");
+  if (await app.db.one`SELECT 1 FROM fin_hosting_source WHERE name = ${name}`) await table.update(name, fields);
+  else await table.insert({ name, ...fields, created: fields.changed });
+  return name;
+}
+
+/** Remove a source: its domains keep where they are, but no sync holds them any more. */
+export const removeSource = (app: App, name: string): Promise<unknown> => app.db.table("fin_hosting_source").delete(name);
+
+/** The sources there are a linked type for, of a kind, ready to read. */
+async function connected(app: App, kind: SourceType["kind"]): Promise<Source[]> {
+  const types = sourceTypes(app);
+  return (await sources(app)).filter((row) => types[String(row.type)]?.kind === kind)
+    .map((row) => ({ name: String(row.name), domains: () => types[String(row.type)].domains(row) }));
+}
+
+export const registrars = (app: App): Promise<Source[]> => connected(app, "registrar");
+export const hosts = (app: App): Promise<Source[]> => connected(app, "host");
 
 /** Whether a sync brings the domain back: its registrar or its host is one of the sources. */
 async function synced(app: App, d: Row): Promise<boolean> {

@@ -5,7 +5,7 @@ what is an alias of what, and the subscriptions each domain is billed by — its
 hosting, a service.
 
 ```ts
-import { adopt, blockers, domains, link, open, prune, remove, save, subscriptionsBy, sync, unlink } from "@qino/qino/fin.hosting";
+import { adopt, blockers, domains, link, open, prune, remove, save, saveSource, subscriptionsBy, sync, unlink } from "@qino/qino/fin.hosting";
 
 await save(app, "example.ch", { usrId: 42, registrar: "Hostpoint", host: "plesk:s3.example.com" });
 await save(app, "example.com", { aliasOf: "example.ch" }); // served by example.ch's hosting, its owner too
@@ -14,7 +14,8 @@ await unlink(app, "example.ch", subscriptionId);
 await domains(app, 42); // a customer's, each alias right after its domain
 await subscriptionsBy(app, 42); // their subscriptions, by domain
 await open(app); // what we bill for without a customer or a subscription
-await sync(app); // take over what the registrars and hosts hold
+await saveSource(app, { name: "s3", type: "plesk", url: "https://s3.example.com:8443", user: "admin", secret });
+await sync(app); // take over what the sources hold
 await blockers(app, "example.ch"); // ["synced", "aliases", "running", "unpaid"]: why it may not go
 await remove(app, "example.com");
 await prune(app); // every domain linked to nothing
@@ -48,12 +49,13 @@ customer's.
 **What to bill.** `open(app)` lists what is still to do: a domain we register or host not assigned
 yet, or a customer's without a running subscription for its registration or its hosting.
 
-**Registrars and hosts.** A module declares where domains are: `export const domainRegistrars = (app)
-=> Source[]` where they are registered, `export const domainHosts = (app) => Source[]` where hosted —
-a source each, `{ name, domains() }`, so one module may bring several (a server each). A daily job
-(`sync`) takes them over: new domains show up without a customer, a registrar's with its `expires`, a
-host's with its aliases; one no longer there loses its `registrar` or `host` (moved away, or ended),
-an alias its host no longer lists its domain. A source that fails changes nothing. They are
+**Sources.** Where domains are registered or hosted is a source, kept in `fin_hosting_source`: a name
+(stored as its domains' `registrar` or `host`), a type, a URL, a user and a secret — an account, a
+server; as many of a type as there are. Modules bring the types: `export const domainSourceTypes =
+{ plesk: { kind: "host", domains(source) } }`. A daily job (`sync`) takes the sources over: new domains
+show up without a customer, a registrar's with its `expires`, a host's with its aliases; one no longer
+there loses its `registrar` or `host` (moved away, or ended), an alias its host no longer lists its
+domain. A source that fails changes nothing. The types are
 [fin.hosting.infomaniak](../fin.hosting.infomaniak/README.md) and [fin.hosting.plesk](../fin.hosting.plesk/README.md).
 
 **Held, not deleted.** A domain a sync brings back, with aliases, a running subscription or an unpaid

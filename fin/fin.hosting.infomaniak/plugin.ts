@@ -1,12 +1,5 @@
-import type { App } from "@qino/qino";
-import type { Source } from "@qino/qino/fin.hosting";
-
-export const settingsSchema = {
-  properties: {
-    token: { type: "string", description: "API token of the Infomaniak manager (profile › developer), allowed to read the products" },
-    account: { type: "integer", description: "Only this account's domains; empty: every account the token sees" },
-  },
-};
+import type { Row } from "@qino/qino";
+import type { SourceType } from "@qino/qino/fin.hosting";
 
 const API = "https://api.infomaniak.com/1/products";
 
@@ -16,17 +9,16 @@ type Product = { service_name?: string; customer_name?: string; account_id?: num
 /** Unix seconds as the day in Switzerland. */
 const day = (seconds: number) => new Date(seconds * 1000).toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" });
 
-/** The Infomaniak account, as one registrar. */
-export const domainRegistrars = (app: App): Source[] => [{ name: "infomaniak", domains: () => domains(app) }];
+/** An Infomaniak account, as a registrar: its API token the secret, the account (optional) as user. */
+export const domainSourceTypes: Record<string, SourceType> = { infomaniak: { kind: "registrar", domains } };
 
-async function domains(app: App) {
-  const settings = app.settings["fin.hosting.infomaniak"];
-  const token = String(await settings.token ?? "");
-  if (!token) throw new Error("no API token set (fin.hosting.infomaniak.token)");
-  const account = Number(await settings.account) || undefined;
+async function domains(source: Row) {
+  const token = String(source.secret ?? "");
+  if (!token) throw new Error("no API token");
+  const account = Number(source.user) || undefined;
   const products: Product[] = [];
   for (let page = 1, pages = 1; page <= pages; page++) {
-    const res = await fetch(`${API}?per_page=500&page=${page}`, {
+    const res = await fetch(`${source.url || API}?per_page=500&page=${page}`, {
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(30_000),
     });
