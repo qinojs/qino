@@ -18,7 +18,7 @@ const run = promisify(execFile);
 type Host = { www: string; units: string; caddy: string; templates: string; archive: string; self: string; preview: string };
 type Args = Record<string, unknown>;
 
-const PROPS = ["Id", "ActiveState", "SubState", "MemoryCurrent", "CPUUsageNSec", "TasksCurrent", "NRestarts", "ActiveEnterTimestamp"];
+const PROPS = ["Id", "ActiveState", "SubState", "MemoryCurrent", "CPUUsageNSec", "TasksCurrent", "NRestarts", "ActiveEnterTimestamp", "ExecStart"];
 /** A project name is its main domain (or, for older ones, any hostname-like name). */
 const NAME = /^(?=.{1,100}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
 const PORTS: [number, number] = [8090, 8999];
@@ -26,6 +26,9 @@ const PORTS: [number, number] = [8090, 8999];
 /** Number or null for systemd's "[not set]" and its max-uint64 "infinity". */
 const num = (v = "") => /^\d+$/.test(v) && v !== "18446744073709551615" ? Number(v) : null;
 const exists = (path: string) => stat(path).then(() => true, () => false);
+
+/** The program a unit starts (`bun`, `deno` …), from systemctl's `ExecStart={ path=/usr/local/bin/bun ; … }`. */
+export const program = (exec = "") => exec.match(/path=\S*?([^/\s;]+) ;/)?.[1] ?? null;
 
 /** Blocks of `key=value` lines, as printed by `systemctl show a b …`. */
 export const parseShow = (text: string): Record<string, string>[] =>
@@ -147,6 +150,7 @@ async function list(host: Host) {
     const ports = sockets.map((s) => Number(s.split(":").pop()));
     return {
       name,
+      program: program(p.ExecStart),
       state: p.ActiveState,
       sub: p.SubState,
       since: num(p.ActiveEnterTimestamp?.slice(1)),

@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-import { addresses, fill, freePort, parseCaddy, parseMeminfo, parseShow, parseSs } from "../host/helper.ts";
+import { addresses, fill, freePort, parseCaddy, parseMeminfo, parseShow, parseSs, program } from "../host/helper.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 import { list, renderList } from "../render.ts";
@@ -25,6 +25,12 @@ Deno.test("cms.backend.hosting: systemctl show blocks", () => {
     ["a.service", "active", "1024"],
     ["b.service", "failed", "[not set]"],
   ]);
+});
+
+Deno.test("cms.backend.hosting: program of a unit", () => {
+  const exec = "{ path=/usr/local/bin/bun ; argv[]=/usr/local/bin/bun server.ts ; ignore_errors=no ; pid=0 }";
+  assertEquals(program(exec), "bun");
+  assertEquals(program(""), null);
 });
 
 Deno.test("cms.backend.hosting: caddy sites, ports, snippets and comments", () => {
@@ -65,7 +71,7 @@ const server = (o: Partial<List["server"]> = {}): List["server"] => ({
   self: "ops.example", preview: "preview.example", templates: ["qino-deno"], ...o,
 });
 const project = (o: Partial<Project>): Project => ({
-  name: "a", state: "active", sub: "running", since: null, restarts: 0, memory: 2048, cpu: 3, tasks: 9,
+  name: "a", program: "deno", state: "active", sub: "running", since: null, restarts: 0, memory: 2048, cpu: 3, tasks: 9,
   disk: null, listen: [], domains: [], ...o,
 });
 
@@ -80,6 +86,7 @@ Deno.test("cms.backend.hosting: table flags sockets beside the proxy and escapes
   assertStringIncludes(out, `href="https://a.ch/"`);
   assertStringIncludes(out, `<a href="https://a.ch.preview.example/" target=_blank rel=noopener title="Preview Link"><u2-ico icon=visibility>👁</u2-ico></a>`);
   assertEquals(out.includes(">a.ch.preview.example<"), false);
+  assertStringIncludes(out, "<td>deno\n");
   assertStringIncludes(out, "<u2-bytes>2048</u2-bytes>");
   assertStringIncludes(out, "var(--red)");
 });

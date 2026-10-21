@@ -7,6 +7,8 @@ Type=simple
 User={{name}}
 WorkingDirectory={{root}}
 Environment=PORT={{port}}
+# server-wide settings such as QINO_SHARED_STORE; optional
+EnvironmentFile=-/etc/qino-hosting/env
 ExecStart=/usr/local/bin/bun server.ts
 Restart=on-failure
 RestartSec=10

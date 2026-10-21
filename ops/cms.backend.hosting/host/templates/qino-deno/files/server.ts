@@ -6,6 +6,8 @@ export const app = new App({
   db: `sqlite:${import.meta.dirname}/data/app.sqlite`,
 });
 app.stores.add(import.meta.resolve("./qino/module/store.json")).add("starter.account");
+const shared = sys.env("QINO_SHARED_STORE"); // modules every site on this server gets
+if (shared) await app.stores.add(shared).addAll();
 await app.init();
 if (app.modules.failures().size) throw new Error(JSON.stringify([...app.modules.failures()]));
 

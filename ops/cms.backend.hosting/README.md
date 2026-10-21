@@ -43,3 +43,7 @@ a project can be looked at before its domain points to the server (a wildcard DN
 [qino-deno](host/templates/qino-deno/) clones Qino and starts with `starter.account`. Its first boot writes the
 superuser's password to the log (the project's "Log" button). [qino-bun](host/templates/qino-bun/) is the
 same on Bun (`/usr/local/bin/bun`), with a `package.json` workspace instead of `deno.json`.
+
+Both read `/etc/qino-hosting/env` if it exists (root only, systemd reads it). `QINO_SHARED_STORE` there names a
+store every site on the server loads, e.g. `/srv/qino-shared/store.json`. Its modules live outside the project,
+so they reach Qino through the app (`app.modules.get(name).source`), not through `import "@qino/qino"`.

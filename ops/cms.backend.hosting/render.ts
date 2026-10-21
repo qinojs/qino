@@ -47,6 +47,7 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
     <u2-table><table class="u2-table -projects -Sticky">
       <thead><tr>
         <th>${app.t`Project`}
+        <th>${app.t`Program`}
         <th>${app.t`State`}
         <th>${app.t`Domains`}
         <th>${app.t`Listens on`}
@@ -59,7 +60,7 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
         <th>
       <tbody>${projects.map((p) => renderRow(app, p, p.name === server.self, server.preview ?? ""))}
       <tfoot><tr>
-        <th colspan=4>${projects.length} ${app.t`projects`}
+        <th colspan=5>${projects.length} ${app.t`projects`}
         <td class=-num>${bytes(sum(projects, "memory"))}
         <td class=-num>${sum(projects, "cpu")} %
         <td class=-num>${sum(projects, "tasks")}
@@ -130,6 +131,7 @@ function renderRow(app: App, p: Project, self: boolean, preview: string) {
     : [button("start", app.t`Start`)];
   return html.async`<tr>
     <td><b>${p.name}</b>
+    <td>${p.program ?? "–"}
     <td><small class=u2-badge style="background:${STATE_COLOR[p.state] ?? "var(--gray)"}">${p.sub}</small>
     <td>${domains(app, p.domains, preview)}
     <td>${listen}
