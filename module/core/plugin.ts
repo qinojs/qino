@@ -167,14 +167,14 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     app.on("route", async ({ ctx }) => {
         // HTTPS redirect
-        const https = app.https;
-        if (https && ctx.req.url.protocol !== "https:") {
+        const https = ctx.req.url.protocol === "https:";
+        if (app.forceHttps && !https) {
             const url = ctx.req.url.toURL();
             url.protocol = "https:";
             throw new Redirect(url.href, 301);
         }
 
-        // HSTS
+        // HSTS, only valid on https: responses
         if (https) {
             const set = settings.HSTS;
             const maxAge = Number(await set["max-age"]) || 0;

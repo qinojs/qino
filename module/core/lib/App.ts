@@ -29,7 +29,7 @@ const mainDir = fileURLToPath(new URL(".", sys.mainModule));
 const DEFAULT_CONFIG = {
     dir: mainDir,
     appUrl: "",
-    https: false,
+    forceHttps: false, // redirect http: to https:; cookies are Secure on https: requests either way
     dev: false,
     trustedProxyHops: 0, // proxies in front of the app; 0 = none, x-forwarded-for ignored
     db: "", // mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
@@ -54,7 +54,7 @@ export class App extends Emitter<AppEvents> {
 
     dir: string;
     appUrl: string;
-    https: boolean;
+    forceHttps: boolean;
     dev: boolean;
     trustedProxyHops: number;
     db: Db;
@@ -87,7 +87,7 @@ export class App extends Emitter<AppEvents> {
         // directory is missing — the first thing a new installation would see
         mkdirSync(this.dir, { recursive: true });
         this.appUrl    = ensureSlash(cfg.appUrl || "/");
-        this.https     = cfg.https;
+        this.forceHttps = cfg.forceHttps;
         this.dev       = cfg.dev;
         this.trustedProxyHops = cfg.trustedProxyHops;
 

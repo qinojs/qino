@@ -178,8 +178,8 @@ export async function healthChecks(app: App) {
   };
 
   warning["https not enforced"] = () => {
-    if (app.https) return;
-    return { info: "set https: true in the app config" };
+    if (app.forceHttps) return;
+    return { info: "set forceHttps: true in the app config" };
   };
 
   // ── db-time vs os-time ───────────────────────────────────────────────────

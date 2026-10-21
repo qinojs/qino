@@ -11,7 +11,6 @@ const url = (path: string): string => new URL(path, base).href;
 const app = new App({
   dir: import.meta.dirname,
   db: Deno.env.get("__ENV__") ?? "__DBURL__",
-  https: false,
   dev: true,
 });
 

@@ -22,7 +22,7 @@ export async function initRequest(ctx: Ctx): Promise<void> {
 async function initClient(ctx: Ctx) {
   if (ctx.clientId) return;
 
-  const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
+  const cid = ctx.req.cookies[cookiePrefix(ctx.req.url.protocol === "https:", ctx.req.appUrl) + "cid"];
   if (!cid) return registerClient(ctx);
   const client = await ctx.app.db.table("client").rowBy("hash", cid); // SELECT *, so ctx.client is loaded
   if (!client) return registerClient(ctx);
@@ -31,7 +31,8 @@ async function initClient(ctx: Ctx) {
 
 async function registerClient(ctx: Ctx) {
   const hash = uid();
-  ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure: ctx.app.https, maxAge: 5 * 365 * 24 * 60 * 60 }));
+  const secure = ctx.req.url.protocol === "https:";
+  ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure, maxAge: 5 * 365 * 24 * 60 * 60 }));
   ctx.clientId = String(await ctx.app.db.table("client").add({ hash }));
 }
 

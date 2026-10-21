@@ -2,7 +2,6 @@ import { App, sys } from "@qino/qino";
 
 export const app = new App({
   dir: import.meta.resolve("./"),
-  https: false, // TLS ends at Caddy
   trustedProxyHops: 1,
   db: `sqlite:${import.meta.dirname}/data/app.sqlite`,
 });
