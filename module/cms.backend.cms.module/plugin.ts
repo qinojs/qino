@@ -299,8 +299,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
 
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${t`modules`}
-    ${missing ? html.async`<br><a href="${base}" style="color:var(--red)"><u2-ico inline icon=warning>⚠</u2-ico>
-      <b>${missing}</b> ${t`not available`}</a>` : ""}
+    ${missing ? html.async`<br><a href="${base}" style="color:var(--red)"><b>${missing}</b> ${t`not available`}</a>` : ""}
     <br><br><small>${t`Most used`}</small>
     ${top.map((r) => link(r, html`<small>${r.used}</small>`))}
     <br><small>${t`Recently changed`}</small>
