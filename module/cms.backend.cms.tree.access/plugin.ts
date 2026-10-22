@@ -127,12 +127,12 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
       for (const g of groups) {
         const v = grpAccess[String(g.id)] ?? 0;
         grpCells.push(editable
-          ? html`<td class=-cell data-pid="${accessPage}" data-gid="${g.id}" v="${v}" title="${g.name} (${g.id})">`
+          ? html`<td class=-cell data-pid="${accessPage.id}" data-gid="${g.id}" v="${v}" title="${g.name} (${g.id})">`
           : html`<td>`);
       }
 
       trs.push(html.async`
-<tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage}">
+<tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage.id}">
   <td style="text-align:right; font-weight:bold">
     <a title="${app.t`Set as start point`}" href="?rp=${id}">${id}</a>
   <td style="padding-left:${level * 15}px; white-space:nowrap">
