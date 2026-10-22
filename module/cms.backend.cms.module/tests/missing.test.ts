@@ -20,6 +20,7 @@ Deno.test("cms.backend.cms.module: modules nodes name but nothing renders are li
 
     const overview = await render();
     assertStringIncludes(overview, "cms.cont.gone2</a> <small>missing</small>");
+    assertStringIncludes(overview, "<u2-ico icon=warning");
     assert(!overview.includes("cms.cont.text</a> <small>"), "a module that renders is not marked");
     assertStringIncludes(await render({ mod: "cms.cont.gone2" }), "<small>missing</small>");
     assertStringIncludes(await render({ mod: "cms.cont.unused9" }), "not found.");

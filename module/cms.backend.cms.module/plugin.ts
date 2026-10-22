@@ -77,7 +77,8 @@ async function renderOverview(node: Node) {
     u.searchParams.set("mod", modName);
     const icon = moduleIcon(app.modules.get(modName));
     trs.push(html`<tr data-type="${type}" u2-href>
-      <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : ""}
+      <td style="padding-right:0">${missing.has(modName) ? html`<u2-ico icon=warning title="${lMissing}">⚠</u2-ico>`
+        : icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : ""}
       <td><a href="${u.search}">${modName}</a>${missing.has(modName) ? html` <small>${lMissing}</small>` : ""}
       <td>${type}
       <td style="text-align:right" data-value="${row.used}">${Number(row.used) || ""}
