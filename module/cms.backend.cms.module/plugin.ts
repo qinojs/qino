@@ -68,7 +68,7 @@ async function renderOverview(node: Node) {
   const types = new Set<string>();
   const trs = [];
   let total = 0;
-  for (const modName of [...contentModules(app), ...[...missing.keys()].sort()]) {
+  for (const modName of [...[...missing.keys()].sort(), ...contentModules(app)]) {
     const row = missing.get(modName) ?? mods.get(modName);
     if (!row) continue;
     total++;
@@ -289,6 +289,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const t = app.t;
   const rows = (await moduleStats(app)).filter((r) => isContent(app, String(r.name)));
+  const missing = (await missingModules(app)).length;
   const base = page ? await page.url() : "";
   const link = (r: Record<string, unknown>, extra: HtmlString | string) =>
     html`<div><a href="${modUrl(base, String(r.name))}">${r.name}</a> ${extra}</div>`;
@@ -298,6 +299,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
 
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${t`modules`}
+    ${missing ? html.async`<br><a href="${base}" style="color:var(--red)"><u2-ico inline icon=warning>⚠</u2-ico>
+      <b>${missing}</b> ${t`not available`}</a>` : ""}
     <br><br><small>${t`Most used`}</small>
     ${top.map((r) => link(r, html`<small>${r.used}</small>`))}
     <br><small>${t`Recently changed`}</small>
