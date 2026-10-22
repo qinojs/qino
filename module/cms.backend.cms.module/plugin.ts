@@ -48,11 +48,19 @@ const moduleStats = (app: App) => app.db.query`
     (SELECT MAX(l.time) FROM page p JOIN log l ON l.id = p.log_id_ch WHERE p.module = m.name) AS changed
   FROM module m`;
 
+/** Modules that nodes name but nothing renders (removed, renamed, failed) — listed so their nodes can be moved. */
+const missingModules = async (app: App) => (await app.db.query`
+  SELECT p.module AS name, COUNT(*) AS used, MAX(l.time) AS changed
+  FROM page p LEFT JOIN log l ON l.id = p.log_id_ch
+  GROUP BY p.module`).filter((r) => r.name && !isContent(app, String(r.name)));
+
 async function renderOverview(node: Node) {
   const app = node.app, t = app.t, ctx = getCtx();
   const u = ctx.req.url.toURL();
 
   const mods = new Map((await moduleStats(app)).map((r) => [String(r.name), r]));
+  const missing = new Map((await missingModules(app)).map((r) => [String(r.name), r]));
+  const lMissing = await t`missing`;
 
     console.log(getCtx().settings[name].filter.type());
 
@@ -60,8 +68,8 @@ async function renderOverview(node: Node) {
   const types = new Set<string>();
   const trs = [];
   let total = 0;
-  for (const modName of contentModules(app)) {
-    const row = mods.get(modName);
+  for (const modName of [...contentModules(app), ...[...missing.keys()].sort()]) {
+    const row = missing.get(modName) ?? mods.get(modName);
     if (!row) continue;
     total++;
     const type = modType(modName);
@@ -70,10 +78,10 @@ async function renderOverview(node: Node) {
     const icon = moduleIcon(app.modules.get(modName));
     trs.push(html`<tr data-type="${type}" u2-href>
       <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : ""}
-      <td><a href="${u.search}">${modName}</a>
+      <td><a href="${u.search}">${modName}</a>${missing.has(modName) ? html` <small>${lMissing}</small>` : ""}
       <td>${type}
       <td style="text-align:right" data-value="${row.used}">${Number(row.used) || ""}
-      <td>${stdWord(row.cms_access)}
+      <td>${stdWord(mods.get(modName)?.cms_access)}
       <td data-value="${row.changed ?? 0}">${u2.el.time(row.changed)}`);
   }
 
@@ -167,7 +175,8 @@ async function renderDetail(node: Node, modName: string, message: string) {
   const back = ctx.req.url.toURL();
   back.searchParams.delete("mod");
 
-  if (!isContent(app, modName)) {
+  const missing = !isContent(app, modName);
+  if (missing && !Number(await app.db.one`SELECT COUNT(*) FROM page WHERE module = ${modName}`)) {
     return html.async`<div class=u2-card>
       <div class=-head><a href="${back.search}">← ${t`Modules`}</a></div>
       <div>${t`Module`} ${modName} ${t`not found.`}</div>
@@ -220,7 +229,7 @@ async function renderDetail(node: Node, modName: string, message: string) {
   <div class=u2-card style="flex:0 0 auto">
     <div class=-head><a href="${back.search}">← ${t`Modules`}</a> ${modName}</div>
     <table class=u2-table>
-      <tr><th>${t`Type`}<td>${modType(modName)}
+      <tr><th>${t`Type`}<td>${modType(modName)}${missing ? html.async` <small>${t`missing`}</small>` : ""}
       <tr><th>${t`Used`}<td>${usedTotal}
       <tr><th>${t`Module access`}<td>${accessWord(access)}
       <tr><th>${t`Standard`}<td>${stdWord(standard)}
