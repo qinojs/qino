@@ -13,10 +13,10 @@ export default function (pid) {
     els().forEach(el => el.style.opacity = 1);
   }
   els().forEach(el => el.style.opacity = 0.4);
-  api.cms.node(pid).get().then(res => {
+  api.cms.node(pid).get().then(async res => {
     dialog(
-      t`Paste from clipboard`,
-      html`<table>
+      await t`Paste from clipboard`,
+      await html.async`<table>
         <tr><th> ${t`Title`}: &nbsp;<td> ${res.title}
         <tr><th> ${t`Module`}: &nbsp;<td> ${res.module ? shortName(res.module) : ''}
         <tr><th> Id: &nbsp;<td> ${pid}

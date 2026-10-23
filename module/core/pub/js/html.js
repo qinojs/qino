@@ -30,15 +30,18 @@ export class HtmlString {
 }
 
 // Arrays are concatenated: `<table>${rows.map((r) => html`<tr>…`)}</table>`. For a separator use
-// html.join().
+// html.join(). Values with an html() method render as their content; only HtmlString is markup, a
+// string from html() stays text.
 function htmlValue(v) {
   if (v instanceof HtmlString) return v.html;
   if (Array.isArray(v)) return v.map(htmlValue).join("");
+  if (typeof v?.html === "function") return htmlValue(v.html());
+  if (typeof v?.then === "function") throw new TypeError("html``: async value, use html.async``");
   return hee(v);
 }
 
-// Like htmlValue, but awaits promises and renders values with an async html() method (e.g. a cms
-// Node) recursively: html.async`<div>${node.cont("main")}</div>`.
+// Like htmlValue, but awaits promises, so html() may be async (e.g. a cms Node):
+// html.async`<div>${node.cont("main")}</div>`.
 async function htmlValueAsync(v) {
   v = await v;
   if (Array.isArray(v)) return (await Promise.all(v.map(htmlValueAsync))).join("");

@@ -16,7 +16,7 @@ const parentId = (id) =>
 export default async function (widget, context) {
   const { node, dialogs } = context;
   // Only a container with exactly one entry has something to step aside for.
-  const extra = (rows) => rows.length !== 1 ? '' : html`
+  const extra = (rows) => rows.length !== 1 ? '' : html.async`
     <p class=-unwrap-note>${t`Replace this flexible container by its single content? No further content can be added here afterwards.`}</p>
     <button type=button class=-unwrap>${t`Replace by content`}</button>`;
 

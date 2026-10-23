@@ -25,7 +25,7 @@ export default async function (widget, { node, signal }) {
     <u2-buttongroup data-edge=${field}>
       <button class=-always ${vs[field] === 0 ? 'disabled' : ''}>${t`unlimited`}</button>
       <button class=-inherit ${vs[field] === null ? 'disabled' : ''}>${t`inherited`}</button>
-      ${vs[field] ? html`<input type=datetime-local value="${toLocal(vs[field])}" required>` : html`<button class=-now>${t`scheduled`}</button>`}
+      ${vs[field] ? html`<input type=datetime-local value="${toLocal(vs[field])}" required>` : html.async`<button class=-now>${t`scheduled`}</button>`}
     </u2-buttongroup>
   </div>`;
 

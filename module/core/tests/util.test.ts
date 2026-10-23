@@ -54,6 +54,13 @@ Deno.test("util: html.async renders renderable values (Node-like .html()) recurs
   assertEquals(String(out), "<p><i>raw</i>|<i>raw</i>|&lt;plain&gt;</p>");
 });
 
+Deno.test("util: html renders sync .html() too, and throws on what only html.async can await", () => {
+  const box = { html: () => new HtmlString("<i>raw</i>") };
+  assertEquals(String(html`<p>${box}|${{ html: () => "<plain>" }}</p>`), "<p><i>raw</i>|&lt;plain&gt;</p>");
+  assertThrows(() => html`<p>${{ html: () => Promise.resolve("x") }}</p>`, TypeError, "html.async");
+  assertThrows(() => html`<p>${Promise.resolve("x")}</p>`, TypeError, "html.async");
+});
+
 Deno.test("util: urlize transliterates and normalizes text", () => {
   assertEquals(urlize(" Äpfel & Öl — 100% "), "aepfel-and-oel-100");
   assertEquals(urlize("foo---bar"), "foo-bar");
