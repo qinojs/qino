@@ -1,0 +1,16 @@
+{
+  "name": "cms.cont.slideshow.schwups3",
+  "description": "Legacy image slideshow with captions; slides or fades, plays by itself.",
+  "dependencies": [
+    "cms",
+    "cms.image",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/b1_slideshow.css",
+    "pub/b1_slideshow.js",
+    "pub/main.css"
+  ]
+}

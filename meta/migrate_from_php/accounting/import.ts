@@ -5,6 +5,8 @@
 // the app's directory, with the service stopped or restarted after:
 //
 //   deno run -A qino/meta/migrate_from_php/accounting/import.ts accounting.json [invoice-pdfs/]
+//
+// `--same-users`: the app runs on the PHP database itself, its users are the customers already.
 import { pathToFileURL } from "node:url";
 import { addContact, fs, sql, unixTime } from "@qino/qino";
 import { attach, create, issue, refOf, setSent } from "@qino/qino/fin.invoice";
@@ -15,6 +17,13 @@ import type { App } from "@qino/qino";
 
 // deno-lint-ignore no-explicit-any -- rows as PHP's MySQL had them
 type Rows = Record<string, any>[];
+
+/** PHP's accounting pages → the fin backend. */
+const BACKEND = [
+  ["cms.backend.accounting1", "cms.backend.superuser.fin.invoice"],
+  ["cms.backend.accounting1.import_camt054", "cms.backend.superuser.fin.bank"],
+  ["cms.backend.accounting1.settings", "cms.backend.superuser.fin"],
+];
 
 /** The customers an import brought: the next one removes them again. */
 const GROUP = "import:php";
@@ -37,11 +46,11 @@ async function clear(app: App) {
   }
   // through the tables: what hangs on a row by schema (lines, periods, entry lines) goes with it
   if (app.modules.linked("fin.hosting")) await db.exec`DELETE FROM fin_hosting_domain`;
-  const tables = ["invoice", "subscription", ...app.modules.linked("fin.accounting") ? ["accounting_entry"] : []];
-  for (const table of tables) {
+  const have = new Set(await db.listTables()); // what the linked fin modules brought
+  for (const table of ["invoice", "subscription", "accounting_entry"].filter((t) => have.has(t))) {
     for (const id of await db.col`SELECT id FROM ${sql.id(table)}`) await db.table(table).delete(id);
   }
-  for (const table of ["payment", "payment_credit", "invoice_counter"]) await db.exec`DELETE FROM ${sql.id(table)}`;
+  for (const table of ["payment", "payment_credit", "invoice_counter"].filter((t) => have.has(t))) await db.exec`DELETE FROM ${sql.id(table)}`;
   const grp = await db.one`SELECT id FROM grp WHERE name = ${GROUP}`;
   if (grp) for (const usr of await db.col`SELECT usr_id FROM usr_grp WHERE grp_id = ${grp}`) await db.table("usr").delete(usr);
 }
@@ -90,6 +99,8 @@ async function invoices(app: App, data: Record<string, Rows>, usrs: Map<number, 
       taxRate: Number(it.vat_rate) || undefined,
     }));
     const text = [inv.text_before, inv.text_after].map((t) => String(t ?? "").trim()).filter(Boolean).join("\n\n");
+    // PHP's id stays the invoice's id: links in mails sent before (`?invoice=…`) keep finding it
+    await app.db.syncAutoIncrement("invoice", "id", Number(inv.id) - 1);
     const id = await create(app, {
       currency, lines, party, usrId, date: day(inv.date), term: Number(inv.deadline_days) || null,
       lang: inv.lang || "de", text: text || undefined,
@@ -194,21 +205,30 @@ async function balances(app: App, data: Record<string, Rows>, usrs: Map<number, 
 }
 
 /** Removes what is there, imports anew; returns what did not add up. */
-export async function importAccounting(app: App, data: Record<string, Rows>, pdfs?: string): Promise<string[]> {
+export async function importAccounting(
+  app: App,
+  data: Record<string, Rows>,
+  pdfs?: string,
+  { sameUsers = false } = {},
+): Promise<string[]> {
   const report: string[] = [];
   const settings = app.settings["fin.invoice"];
   const method = await settings.method;
   await settings.method(""); // the past asks for no payment slips
   try {
     await clear(app);
-    const usrs = await users(app, data.usr);
+    const usrs = sameUsers ? new Map(data.usr.map((u) => [Number(u.id), Number(u.id)])) : await users(app, data.usr);
     const invs = await invoices(app, data, usrs, pdfs, report);
-    const subs = await subscriptions(app, data, usrs, invs, report);
+    const subs = data.accounting1_abo1 ? await subscriptions(app, data, usrs, invs, report) : new Map<number, number>();
     const domainCount = app.modules.linked("fin.hosting") && data.managed_domains
       ? await domains(app, data.managed_domains, data.accounting1_abo1, usrs, subs, report)
       : 0;
     await balances(app, data, usrs, report);
     await app.db.exec`DELETE FROM invoice_counter`; // new invoices count from their own format
+    // the accounting pages of the PHP backend show its successors, where they are installed
+    for (const [legacy, current] of BACKEND) {
+      if (app.modules.get(current)) await app.db.exec`UPDATE page SET module = ${current} WHERE module = ${legacy}`;
+    }
     report.unshift(`${usrs.size} customers, ${invs.size} invoices, ${subs.size} subscriptions, ${domainCount} domains`);
   } finally {
     await settings.method(method ?? "");
@@ -217,9 +237,11 @@ export async function importAccounting(app: App, data: Record<string, Rows>, pdf
 }
 
 if (import.meta.main) {
-  const [json, pdfs] = Deno.args;
-  if (!json) throw new Error("usage: import.ts accounting.json [invoice-pdfs/]");
+  const sameUsers = Deno.args.includes("--same-users");
+  const [json, pdfs] = Deno.args.filter((a) => a !== "--same-users");
+  if (!json) throw new Error("usage: import.ts accounting.json [invoice-pdfs/] [--same-users]");
   const { app } = await import(pathToFileURL(`${Deno.cwd()}/server.ts`).href);
-  for (const line of await importAccounting(app, JSON.parse(await Deno.readTextFile(json)), pdfs)) console.log(line);
+  const data = JSON.parse(await Deno.readTextFile(json));
+  for (const line of await importAccounting(app, data, pdfs, { sameUsers })) console.log(line);
   Deno.exit(0);
 }

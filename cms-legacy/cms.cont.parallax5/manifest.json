@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.parallax5",
+  "description": "Legacy parallax image section with overlaid text.",
+  "dependencies": [
+    "cms",
+    "cms.image",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

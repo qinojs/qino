@@ -5,4 +5,5 @@
 //   resHtml.legacyScripts.add(ctx.req.moduleUrl + "cms.legacy.c1/pub/c1.js");
 //   resHtml.legacyScripts.add(ctx.req.moduleUrl + "cms.legacy.c1/pub/c1/dom.js");
 //
-// c1.js must come first — the others attach to it.
+// c1.js must come first — the others attach to it. Except c1/accordion.js: a module of its own,
+// without `c1` (`resHtml.scripts.add(…)`).

@@ -1,0 +1,27 @@
+.c1-aspectRatio {
+	position:relative;
+	--c1-aspectRatio:.5;
+}
+.c1-aspectRatio > .-spacer {
+	max-height:inherit;
+	overflow:hidden;
+	display:block;
+	padding-bottom:0 !important;
+}
+.c1-aspectRatio > .-spacer::after {
+	content:'';
+	display:block;
+	box-sizing:border-box;
+	height:0;
+	width:0;
+	padding-bottom:calc(var(--c1-aspectRatio) * 100%);
+}
+.c1-aspectRatio > .-inner {
+	position:absolute;
+	top:0; left:0; right:0; bottom:0;
+}
+[qcms-mod="cont.slideshow.schwups3"] .-item > cms-image {
+	position:absolute;
+	top:0; left:0; right:0; bottom:0;
+	height:100%;
+}

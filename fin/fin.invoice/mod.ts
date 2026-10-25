@@ -105,6 +105,7 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
   }).then(async (issued) => {
     // outside the transaction: a provider may be asked over the network
     if (issued?.type === "credit_note") await settle(app, Number(issued.corrects ?? id));
+    else if (issued && !Number(issued.total)) await settle(app, id); // nothing owed: paid as issued
     else if (issued) await ask(app, issued).catch((e) => console.error(`fin.invoice: no payment asked for ${id}`, e));
     return get(app, id);
   });

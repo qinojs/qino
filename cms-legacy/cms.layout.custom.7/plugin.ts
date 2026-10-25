@@ -1,12 +1,9 @@
 import { hee, html } from "@qino/qino";
 
 import { siteTemplate } from "../lib/siteTemplate.ts";
-import manifest from "./manifest.json" with { type: "json" };
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-
-const { name } = manifest;
 
 export const settingsSchema = {
   properties: {
@@ -15,7 +12,7 @@ export const settingsSchema = {
 };
 
 async function render(node: Node, data: { ctx: Ctx }) {
-  const fontCss = String(await node.app.settings[name]["font-css-file"] ?? "");
+  const fontCss = String(await node.app.settings[node.module!.name]["font-css-file"] ?? ""); // custom.8 shares this shell
   if (fontCss) data.ctx.res.html.head += `<link rel=stylesheet href="${hee(fontCss.replace(/\|/g, "%7C"))}">\n`;
 
   return await siteTemplate(node, data) ?? html.async`<div id=container><main>${node.cont("main")}</main></div>`;

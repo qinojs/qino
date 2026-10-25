@@ -536,6 +536,27 @@ Ohne qino-Pendant bleiben `cms.backend.superuser.client1`,
 `cms.backend.superuser.performance` und `cms.backend.webmaster`. Das sind ausschließlich alte
 Backendseiten; sie beeinflussen die öffentliche Site nicht.
 
+## Achter Lauf: life-saver.ch, eine Fachanwendung
+
+Direkt von s3 statt aus dem Plesk-Backup (rsync + `mysqldump --skip-lock-tables`), Projekt unter
+`projects/life-saver.ch` (Doku dort in `doc/README.md`). 701 Seiten, Kursverwaltung mit Buchhaltung.
+Generisch dazugekommen:
+
+1. **`migrate_from_php` wird direkt nach `cms` registriert** (Regel 3 im AGENTS.md). Sonst legen
+   Backend-Module ihre Seiten unter neuem Namen neu an und nehmen IDs, die die geparkten Texte brauchen.
+2. **Alte URLs bleiben erreichbar**: `migrate()` hält jede PHP-URL als Weiterleitung auf die Seiten-ID
+   fest (`keepUrls.ts`); Titel-Änderungen erzeugen URLs neu, PHPs Kollisions-Suffixe (`-de881`) fallen weg.
+3. **`form1.fields3`** wie `fields2`; ein Bereich `1` mit Layout um die Felder bleibt Formularinhalt; ein
+   `buttons1` darin wird zum Senden-Knopf des Formulars; die Feldreihenfolge (`sort`) folgt den neuen IDs.
+4. **`cms.cont.phpfile1`** (Ordner pro Knoten) → `cms.cont.ts`; portierte Dateien gewinnen.
+5. **`cms.cont.l1.table1`** → `cms.cont.dbtable` (`migrateL1.ts`): Felder unter ihren PHP-Namen,
+   umbenannte Spalten (`usr.firstname` → `given_name` …) nachgezogen, auch in `fkSelect`-Ausdrücken;
+   ein `l1.table1.filter` wird zu den Filtern seiner Liste und verschwindet.
+6. `app1` → `identity` (Name, Inhaber, Farben, Icon/Logo), `qg.mail` → `messaging.email`, Layout-Font →
+   App-Setting.
+7. **Buchhaltung in derselben DB**: `accounting/import.ts --same-users`; Rechnungen behalten ihre PHP-ID,
+   die Backend-Seiten von `accounting1` zeigen das fin-Backend.
+
 ## 10. Login
 
 <http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login.password` und
@@ -570,7 +591,7 @@ Beim ersten Rendern nennt qino selbst fehlende Module; diese Meldungen sind zuve
 reiner Namensabgleich. Die Auflösung folgt drei Regeln:
 
 - Reine Umbenennungen stehen in `renamedModules.ts`, zum Beispiel `cms.backend.struct` →
-  `cms.backend.cms.tree` und `cms.backend.mails` → `cms.backend.mail`.
+  `cms.backend.cms.tree` und `cms.backend.mails` → `cms.backend.superuser.messaging`.
 - Module mit eigener Ausgabe oder eigenem Verhalten bleiben als Port im `cms-legacy`-Store, etwa
   `cms.cont.section3`, `cms.cont.cd.boxes` und die Slideshow der Schule.
 - `cms.cont.phpfile` wird zu `cms.cont.ts`; die Dateien werden nach `data/cms.cont.ts/` verschoben,

@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.cols4",
+  "description": "Legacy columns with gaps and a break width.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

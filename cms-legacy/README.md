@@ -10,8 +10,12 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.layout.custom.3` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.layout.custom.6` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.layout.custom.7` | `cms.layout.custom.9` | own shell, layout markup stays site data |
+| `cms.layout.custom.8` | `cms.layout.custom.9` | re-exports custom.7 — same shell |
 | `cms.cont.nav2` | `cms.cont.nav` | re-exports it — same settings |
 | `cms.cont.section3` | — | own shell, section markup stays site data |
+| `cms.cont.accordion4` | — | ported accordion, behavior in `cms.legacy.c1` |
+| `cms.cont.cols4` | — | ported column layout |
+| `cms.cont.parallax5` | — | ported parallax image section |
 | `cms.cont.video.section.cd` | — | ported |
 | `cms.cont.cd.boxes` | — | ported site module |
 | `cms.cont.cd.services_links` | — | ported site module |
@@ -24,6 +28,7 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.icons1` | — | ported icon row |
 | `cms.cont.stretchedItems1` | — | ported column layout |
 | `cms.cont.slideshow.schwups2` | — | ported slideshow shell and behavior |
+| `cms.cont.slideshow.schwups3` | — | ported slideshow, `<b1-slider>` without c1 |
 | `cms.cont.gallery.photoswipe1` | — | ported gallery shell with PhotoSwipe assets |
 | `cms.cont.images.cd` | — | ported linked image row |
 | `cms.cont.product_overview.cd` | — | ported product overview shell |
@@ -32,6 +37,8 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.text_and_slider.cd` | — | ported text and image slider |
 | `cms.cont.cols2` | — | ported responsive column layout |
 | `cms.cont.spacer` | — | ported spacing element |
+| `cms.cont.c1_box` | — | ported box with a title bar |
+| `cms.cont.flexible.plus1` | — | ported flex/grid content area |
 | `cms.cont.parallax2` | — | ported parallax section shell |
 | `cms.cont.video.nativ1` | — | ported native video player |
 | `cms.cont.video.youtube2` | — | ported privacy-aware YouTube embed |

@@ -2,6 +2,7 @@
 import { $item, fs, sql } from "@qino/qino";
 
 import { migrateContacts } from "./migrateContacts.ts";
+import { migrateL1 } from "./migrateL1.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
 import { migrateFiles } from "./moveFiles.ts";
 import { migrateCss } from "./migrateCss.ts";
@@ -20,12 +21,16 @@ export async function install({ app }: { app: App }): Promise<void> {
   const json = await migrateJsonSettings(app);
   await prepareForm1Settings(app);
   await migrateLegacyPageSettings(app);
+  await migrateLayoutFonts(app);
+  await migrateLegacyContact(app);
+  await migrateAppIcon(app);
   await migrateAccessLevels(app);
   await migrateContacts(app); // usr.username is the login handle from here on, usr_contact the address
   await migrateFiles(app); // qg/ → data/ first, the css lives there
   await migrateCss(app); // reads the still-legacy page.module, so before the rename
   await migrateForm1(app);
   await migrateTable1(app); // still the legacy module name, so before the rename
+  await migrateL1(app);
   await migrateRenamedModules(app);
 
   const langsId = await settingId(app, ["core", "langs"]);
@@ -43,6 +48,77 @@ export async function removeObsoleteSettings(app: App): Promise<boolean> {
   await removeSetting(app, id);
   console.log("[migrate_from_php] removed obsolete cms.backend.lastpage setting");
   return true;
+}
+
+/** Legacy setting → qino setting, where both modules are there; a value already set is kept. */
+const legacyContact: [string[], string, string[]][] = [
+  [["app1", "name"], "identity", ["name"]],
+  [["app1", "short_name"], "identity", ["alternateName"]],
+  [["app1", "description"], "identity", ["description"]],
+  [["app1", "owner", "company"], "identity", ["organization", "name"]],
+  [["app1", "owner", "address"], "identity", ["organization", "address", "streetAddress"]],
+  [["app1", "owner", "zip"], "identity", ["organization", "address", "postalCode"]],
+  [["app1", "owner", "city"], "identity", ["organization", "address", "addressLocality"]],
+  [["app1", "owner", "country"], "identity", ["organization", "address", "addressCountry"]],
+  [["app1", "owner", "name"], "identity", ["contact", "name"]],
+  [["app1", "owner", "email"], "identity", ["contact", "email"]],
+  [["app1", "owner", "phone"], "identity", ["contact", "telephone"]],
+  [["app1", "theme_color"], "identity", ["brand", "primaryColor"]], // webapp's theme_color, as app1's was
+  [["app1", "background_color"], "identity", ["brand", "backgroundColor"]],
+  [["qg", "mail", "defSender"], "messaging.email", ["address"]],
+  [["qg", "mail", "smtp", "host"], "messaging.email", ["transport", "smtp", "host"]],
+  [["qg", "mail", "smtp", "port"], "messaging.email", ["transport", "smtp", "port"]],
+  [["qg", "mail", "smtp", "username"], "messaging.email", ["transport", "smtp", "user"]],
+  [["qg", "mail", "smtp", "password"], "messaging.email", ["transport", "smtp", "pass"]],
+];
+
+/** Who the site is and how it mails: PHP's app1 and qg.mail, into identity and messaging.email.
+ *  Written to the table: those modules may install after this one. */
+async function migrateLegacyContact(app: App): Promise<void> {
+  let moved = 0;
+  for (const [from, mod, to] of legacyContact) {
+    if (!app.modules.get(mod)) continue;
+    const id = await settingId(app, from);
+    const value = String(id ? await app.db.one`SELECT value FROM qg_setting WHERE id = ${id}` ?? "" : "").trim();
+    if (!value) continue;
+    const basis = await ensurePath(app, [mod, ...to.slice(0, -1)]);
+    const key = to.at(-1)!;
+    const target = await app.db.row`SELECT id, value FROM qg_setting WHERE basis = ${basis} AND ${sql.id("offset")} = ${key} ORDER BY id LIMIT 1`;
+    if (String(target?.value ?? "")) continue;
+    if (target) await app.db.exec`UPDATE qg_setting SET value = ${value} WHERE id = ${target.id}`;
+    else await app.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${basis}, ${key}, ${value})`;
+    moved++;
+  }
+  if (moved) console.log(`[migrate_from_php] ${moved} legacy contact settings → identity, messaging.email`);
+}
+
+/** PHP's app1 kept the app icon as files `app<size>` of the root page; its biggest becomes the
+ *  site's icon and, where none is set, its logo — the invoices print it. */
+async function migrateAppIcon(app: App): Promise<void> {
+  if (!(await app.db.listTables()).includes("identity_file")) return;
+  const icons = await app.db.query`SELECT pf.name, f.id FROM page_file pf JOIN file f ON f.id = pf.file_id
+    WHERE pf.page_id = 1 AND pf.name LIKE 'app%' AND f.md5 IS NOT NULL AND f.md5 <> ''`;
+  const size = (name: unknown) => Number(String(name).slice(3)) || 0;
+  const biggest = icons.filter((row) => size(row.name)).sort((a, b) => size(b.name) - size(a.name))[0];
+  if (!biggest) return;
+  for (const name of ["icon", "logo"]) {
+    if (await app.db.one`SELECT 1 FROM identity_file WHERE name = ${name}`) continue;
+    await app.db.exec`INSERT INTO identity_file (name, file_id) VALUES (${name}, ${biggest.id})`;
+    console.log(`[migrate_from_php] app icon ${biggest.name} → identity ${name}`);
+  }
+}
+
+/** PHP kept a custom layout's font on its layout page; the qino layouts read it from the app
+ *  settings of the module — one font per site. */
+async function migrateLayoutFonts(app: App): Promise<void> {
+  const rows = await app.db.query`SELECT module, settings FROM page WHERE module LIKE 'cms.layout.%' AND settings LIKE '%font-css-file%'`;
+  for (const { module, settings } of rows) {
+    let font;
+    try { font = String(JSON.parse(String(settings))["font-css-file"] ?? ""); } catch { continue; }
+    if (!font || String(await app.settings[module]["font-css-file"] ?? "")) continue;
+    app.settings[module]["font-css-file"](font);
+    console.log(`[migrate_from_php] ${module}: font-css-file → app settings`);
+  }
 }
 
 // Legacy NOT NULL columns without default block inserts (qino doesn't write them). Unused ones are
@@ -96,16 +172,32 @@ async function migrateRenamedModules(app: App): Promise<void> {
 }
 
 /** Move `cms.cont.phpfile` sources (qg/cmsPhpFiles/) to where `cms.cont.ts` expects them, for
- *  porting. */
+ *  porting. `cms.cont.phpfile1` kept a folder per node: `<id>/index.php`, `<id>/pub/main.css|js`. */
 async function moveNodeCode(app: App): Promise<void> {
-  const from = app.dir + "data/cmsPhpFiles/";
   const to = app.dir + "data/cms.cont.ts/";
+  const from = app.dir + "data/cmsPhpFiles/";
   const files = await fs.list(from).catch(() => []);
-  if (!files.length) return;
-  await fs.mkdir(to);
-  for (const file of files) await fs.rename(from + file.name, to + file.name).catch(() => {});
-  await fs.remove(from).catch(() => {});
-  console.log(`[migrate_from_php] ${files.length} cmsPhpFiles → data/cms.cont.ts/ (still PHP, port by hand)`);
+  if (files.length) {
+    await fs.mkdir(to);
+    for (const file of files) await fs.rename(from + file.name, to + file.name).catch(() => {});
+    await fs.remove(from).catch(() => {});
+    console.log(`[migrate_from_php] ${files.length} cmsPhpFiles → data/cms.cont.ts/ (still PHP, port by hand)`);
+  }
+
+  const dir1 = app.dir + "data/cms.cont.phpfile1/";
+  const nodes = (await fs.list(dir1).catch(() => [])).filter((e) => e.isDirectory && /^\d+$/.test(e.name));
+  if (!nodes.length) return;
+  await fs.mkdir(to + "pub/");
+  for (const { name: id } of nodes) {
+    // a ported file already in place wins over its legacy source
+    const move = async (src: string, dst: string) =>
+      await fs.stat(to + dst, { ttl: 0 }) || await fs.rename(dir1 + id + "/" + src, to + dst).catch(() => {});
+    await move("index.php", id + ".php");
+    await move("pub/main.css", "pub/" + id + ".css");
+    await move("pub/main.js", "pub/" + id + ".js");
+  }
+  await fs.remove(dir1, { recursive: true }).catch(() => {});
+  console.log(`[migrate_from_php] ${nodes.length} cms.cont.phpfile1 nodes → data/cms.cont.ts/ (still PHP, port by hand)`);
 }
 
 /** Legacy on/off access flags → cms_access levels: module 1 → 2 (0 keeps the column default 1), grp 1 → 2. */

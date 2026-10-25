@@ -20,7 +20,10 @@ const [url, out = "accounting.json"] = Deno.args;
 if (!url) throw new Error("usage: export.ts mysql://user:pass@host/db [out.json]");
 const db = await mysql.createConnection({ uri: url, dateStrings: true, decimalNumbers: true });
 const data: Record<string, unknown[]> = {};
-for (const table of TABLES) data[table] = (await db.query(`SELECT * FROM \`${table}\``))[0] as unknown[];
+// not every installation has them all (abo1, managed_domains): a missing table is left out
+const [have] = await db.query("SHOW TABLES") as unknown as [Record<string, string>[]];
+const tables = new Set(have.map((row) => Object.values(row)[0]));
+for (const table of TABLES.filter((t) => tables.has(t))) data[table] = (await db.query(`SELECT * FROM \`${table}\``))[0] as unknown[];
 await db.end();
 // passwords stay behind
 for (const row of data.usr as Record<string, unknown>[]) delete row.pw;

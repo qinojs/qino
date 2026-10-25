@@ -15,6 +15,8 @@ const app = new App({
 });
 
 const std = app.stores.add(url("../../qino/module/store.json")).add("cms");
+// right after cms: renames the legacy modules and restores the texts before any other module installs
+app.stores.add(url("../../qino/meta/store.json")).add("migrate_from_php"); // qg/ → data/, legacy settings + access levels
 for (
   const mod of [
     "cms.text", "cms.image", "cms.cont.flexible", "cms.cont.text", "cms.cont.image",
@@ -23,8 +25,6 @@ for (
 __STD__
   ]
 ) std.add(mod);
-
-app.stores.add(url("../../qino/meta/store.json")).add("migrate_from_php"); // qg/ → data/, legacy settings + access levels
 
 // old page.module names — listed one by one, addAll() would pull in modules of other stores too
 const legacy = app.stores.add(url("../../qino/cms-legacy/store.json"));

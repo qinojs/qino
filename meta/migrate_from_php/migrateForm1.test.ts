@@ -43,3 +43,33 @@ Deno.test("migrateForm1: form1 becomes cms.cont.form, its fields are named after
 
   await db.close();
 });
+
+Deno.test("migrateForm1: an area with layout around its fields stays the form's content", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.query`CREATE TABLE qg_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, basis INTEGER, ${sql.id("offset")} TEXT, value TEXT)`;
+  await db.query`CREATE TABLE page (id INTEGER PRIMARY KEY, basis INTEGER, name TEXT, module TEXT, settings TEXT)`;
+  await db.query`CREATE TABLE page_text (page_id INTEGER, name TEXT, text_id INTEGER)`;
+  await db.query`CREATE TABLE text_lang (text_id INTEGER, lang TEXT, text TEXT)`;
+
+  await db.exec`INSERT INTO page VALUES (1, 0, '', 'cms.cont.form1', ${JSON.stringify({ button_submit: "" })})`;
+  await db.exec`INSERT INTO page VALUES (2, 1, '1', 'cms.cont.flexible', '')`;
+  await db.exec`INSERT INTO page VALUES (3, 2, '', 'cms.cont.cd.cols', '')`;
+  await db.exec`INSERT INTO page VALUES (4, 3, 'left', 'cms.cont.form1.fields3', ${JSON.stringify({ labelPosition: "left", inputs: { 8: { type: "text" } } })})`;
+  await db.exec`INSERT INTO page VALUES (5, 4, 'f8', 'cms.cont.flexible', '')`;
+  await db.exec`INSERT INTO page VALUES (6, 5, '', 'cms.cont.form1.buttons1', '')`;
+  await db.exec`INSERT INTO page_text VALUES (4, '8_title', 1)`;
+  await db.exec`INSERT INTO text_lang VALUES (1, 'de', 'Vorname')`;
+  await db.exec`INSERT INTO page_text VALUES (1, 'button_submit', 2)`; // never shown, the button was off
+  await db.exec`INSERT INTO text_lang VALUES (2, 'de', 'Formular absenden')`;
+
+  await migrateForm1({ db, dir: await Deno.makeTempDir() + "/" } as unknown as App);
+
+  const row = (id: number) => db.row`SELECT basis, name, module FROM page WHERE id = ${id}`;
+  assertEquals(await row(2), { basis: 1, name: "main", module: "cms.cont.flexible" }); // layout kept
+  assertEquals(await row(4), { basis: 3, name: "left", module: "cms.cont.form.fields" });
+  assertEquals(JSON.parse(String(await db.one`SELECT settings FROM page WHERE id = 4`)).fields, { vorname: { type: "text" } });
+  assertEquals(JSON.parse(String(await db.one`SELECT settings FROM page WHERE id = 1`)).button_submit, "1"); // buttons1 was the button
+  assertEquals(await db.col`SELECT name FROM page_text WHERE page_id = 1`, []); // its "Senden" is the default
+
+  await db.close();
+});

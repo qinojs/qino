@@ -1,0 +1,35 @@
+[qcms-mod="cont.dbtable"] {
+	> .-head:empty { display:none; }
+	.-tools {
+		display:flex;
+		flex-wrap:wrap;
+		align-items:center;
+		gap:.5rem 1rem;
+		.-search { width:16rem; max-width:100%; }
+	}
+	/* the table reaches the card's edges, the pager keeps its padding */
+	> [cms-part=list] { padding:0; }
+	.-scroll { overflow:auto; }
+	th[data-sort] { cursor:pointer; white-space:nowrap; }
+	th[aria-sort=ascending]::after { content:" ▲"; }
+	th[aria-sort=descending]::after { content:" ▼"; }
+	.-action { width:1px; cursor:pointer; }
+	.-action u2-ico { --size:1.2em; }
+	tr.-mark { outline:2px solid currentColor; outline-offset:-2px; }
+	.-pager:not([hidden]) {
+		display:flex;
+		padding:var(--gap);
+		align-items:center;
+		gap:.5rem;
+		.-total { margin-left:auto; }
+	}
+	[data-f].-saving { opacity:.5; }
+	.-html { max-height:12rem; overflow:auto; }
+	.-file { display:inline-flex; align-items:center; gap:.5rem; }
+}
+/* details and new rows open in a dialog, outside the node */
+.u2x-modal.-dbtable {
+	width:min(40rem, 90vw);
+	th { text-align:left; vertical-align:top; width:35%; }
+	:is(input:not([type=checkbox]), select, textarea, .-html) { width:100%; box-sizing:border-box; }
+}

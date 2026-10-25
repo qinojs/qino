@@ -8,6 +8,7 @@
     "manifest.json",
     "plugin.ts",
     "pub/c1.js",
+    "pub/c1/accordion.js",
     "pub/c1/dom.js",
     "pub/c1/onElement.js",
     "pub/c1/scroll.js",

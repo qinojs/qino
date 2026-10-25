@@ -1,0 +1,111 @@
+/* slideshow */
+.b1_slideshow {
+	display:flex;
+	/* custom
+	--b1-slider-slideshow-speed:6s;
+	--b1-slider-animation-speed:1s;
+	*/
+}
+.b1_slideshow > .-slider {
+	display:flex;
+	/* align-items:center;  todo default? */
+	overflow:auto;
+	width:100%;
+	scroll-snap-type: x mandatory;
+ 	/* if its a list */
+	list-style:none;
+	margin:0;
+	padding:0;
+}
+.b1_slideshow > .-slider > * {
+	width:100%;
+	flex-shrink:0;
+	box-sizing:border-box;
+	position:relative;
+	scroll-snap-align: center;
+}
+
+/* scroll */
+.b1_slideshow[data-mode=scroll] {
+	overflow:hidden;
+}
+
+/* slide */
+.b1_slideshow[data-mode=slide] {
+	overflow:hidden;
+}
+.b1_slideshow[data-mode=slide] > .-slider {
+	will-change: transform;
+	transition: transform var(--b1-slider-animation-speed, 1s) ease-out;
+	overflow: visible;
+}
+
+/* fade */
+.b1_slideshow[data-mode=fade] > .-slider {
+	z-index:0;
+	overflow: visible;
+}
+.b1_slideshow[data-mode=fade] > .-slider > * {
+    transition:opacity var(--b1-slider-animation-speed, 1s) ease-in-out;
+	opacity:0;
+	margin-left:-100%;
+}
+.b1_slideshow[data-mode=fade] > .-slider > :first-child {
+	margin-left:0;
+}
+.b1_slideshow[data-mode=fade] > .-slider > .-active {
+	opacity:1;
+	z-index:1;
+}
+
+
+
+/* before js transform */
+b1-slider > * {
+	flex:1 1 auto;
+}
+
+/* before js transform */
+b1-slider {
+	display:flex;
+	position:relative; /* to positionize the buttons */
+	z-index:0;
+}
+b1-slider > * {
+	min-width:0; /* needed if flex */
+}
+
+
+/* controls */
+
+b1-slider > .-arrow {
+    position: absolute;
+    padding:2em;
+    top: 0;
+	bottom: 0;
+	display:flex;
+	align-items: center; /* ie */
+    cursor: pointer;
+	border:none;
+	background:none;
+	user-select: none;
+	width:auto;
+	z-index: 1;
+}
+b1-slider > .-prev { left: 0; }
+b1-slider > .-next { right: 0; }
+
+b1-slider > .-arrow svg {
+	fill:none;
+    stroke:#000;
+	stroke-linejoin:round;
+	stroke-linecap:round;
+	stroke-width:.1rem;
+}
+b1-slider > .-prev svg {
+    transform:rotate(180deg);
+}
+b1-slider[item-count="0"] > .-arrow ,
+b1-slider[item-count="1"] > .-arrow {
+    display:none;
+}

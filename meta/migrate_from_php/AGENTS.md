@@ -6,7 +6,7 @@ sieben durchgespielten Sites steht in [MIGRATION.md](MIGRATION.md), die Verhalte
 
 Das PHP-Original liegt ausserhalb des Workspace unter `/var/www/workplace/v9` und wird nur gelesen.
 
-## Zwei Reihenfolge-Regeln
+## Drei Reihenfolge-Regeln
 
 Beides sind Eigenschaften der Startsequenz, keine Vorlieben — wer sie übergeht, verliert Daten
 oder kommt gar nicht erst hoch.
@@ -34,6 +34,12 @@ Konstruktor:
 await migrate(app);
 await app.init();
 ```
+
+**3. `migrate_from_php` wird direkt nach `cms` registriert.** Module installieren in
+Registrierungsreihenfolge. Käme z. B. `cms.backend.cms.tree` vorher dran, fände es seine Seite noch
+unter dem alten Namen (`cms.backend.struct`), legte sie neu an und nähme dabei IDs der frisch
+angelegten `text`-Tabelle, die die geparkten Legacy-Texte noch brauchen — `install()` bricht dann mit
+`Duplicate entry` ab.
 
 ## Werkzeuge
 

@@ -8,6 +8,11 @@ import type { Node } from "@qino/qino/cms";
 
 const workers = ["Kontaktadresse", "Technische Umsetzung", "Konzept", "Design", "Fotografie"];
 const fields = ["company", "name", "address", "zip", "city", "phone", "email", "website"];
+/** The legal texts, each shown where `Einblenden` has it on. */
+const PARTS = [
+  "Haftungsausschluss", "Haftung für Links", "Urheberrecht", "Datenschutzerklärung", "Cookies", "Datenschutz: Facebook",
+  "Datenschutz: Twitter", "Datenschutz: Google Adsense", "Datenschutz: Google Analytics", "Datenschutz: Google Remarketing",
+];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const level = Number(await node.settings.Heading);
@@ -42,13 +47,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ${ctx.lang === "en" ? "Half an hour of training and you can operate your website" : "Eine halbe Stunde Schulung und man kann seine Website bedienen"}</p>
 </div>`);
 
+  // in PHP's order, not in the order the texts were written
   const texts = await node.texts();
   const legal = [];
-  for (const name of texts.keys()) {
-    if (!name.endsWith("_p") || !texts.has(name.slice(0, -2) + "_h")) continue;
-    const key = name.slice(0, -2);
-    if (!await node.settings.Einblenden[key]) continue;
-    legal.push(html.async`<div class=-block>${cmsText(node, key + "_h", "h" + heading)}${cmsText(node, name, "p")}</div>`);
+  for (const key of PARTS) {
+    if (!texts.has(key + "_p") || !texts.has(key + "_h") || !await node.settings.Einblenden[key]) continue;
+    legal.push(html.async`<div class=-block>${cmsText(node, key + "_h", "h" + heading)}${cmsText(node, key + "_p", "p")}</div>`);
   }
   return html.async`<div><div class=u2-width>
   <div class=-contact>${blocks}</div>

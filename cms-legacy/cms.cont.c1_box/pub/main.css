@@ -1,0 +1,21 @@
+.c1-box {
+	display:flex;
+	flex-flow:column;
+	overflow:visible;
+	padding:0;
+}
+.c1-box > .-body {
+	flex:1 1 auto;
+	overflow:auto;
+	padding:20px;
+}
+.c1-box > .-head {
+	flex:0 0 auto;
+	display:flex;
+	background:#000;
+	color:#fff;
+	padding:10px 20px;
+}
+.c1-box > .-head > .-head {
+	flex:1;
+}
