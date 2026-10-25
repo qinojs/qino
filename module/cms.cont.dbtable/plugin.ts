@@ -1,6 +1,6 @@
-// A database table as a list: search, filters, order, pages, edit in place, details, new rows,
-// copy, delete, export. The table, its fields (along references into other tables too) and what
-// each field allows are set in the node's widget.
+// A database table as a list: search, filters, order, pages, edit in place, new rows, copy,
+// delete, export; a row links to its detail page. The table, its fields (along references into
+// other tables too) and what each field allows are set in the node's widget.
 import { csv, getCtx, header, hee, html, isTrustedOrigin, Output, safeEqual, sql } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import * as u2 from "@qino/qino/u2";
@@ -35,9 +35,7 @@ const settingsSchema = {
           path: { type: "string", description: "The column; along references `ref_id.column`. Default: the name." },
           type: { type: "string", enum: TYPES, description: "How it shows and is edited. Default: from the column." },
           list: flag("Shown in the list."),
-          list_edit: flag("Editable in the list."),
-          detail: flag("Shown in the details."),
-          edit: flag("Editable in the details."),
+          edit: flag("Editable in the list."),
           insert: flag("Asked for when adding a row."),
           search: flag("The search looks into it."),
           sort: flag("The list can be sorted by it."),
@@ -77,7 +75,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
   const pages = Math.max(1, Math.ceil(total / limit)), page = Math.min(pages, Math.max(1, Number(vars.page) || 1));
   const fields = q.shown("list"), detailPage = String(q.settings.detail_page ?? "");
   const detailUrl = detailPage ? await pageUrl(node, detailPage) : "";
-  const actions = [q.settings.delete && q.primary, q.settings.copy && q.primary?.autoIncrement, q.shown("detail").length, detailUrl].filter(Boolean).length;
+  const actions = [q.settings.delete && q.primary, q.settings.copy && q.primary?.autoIncrement, detailUrl].filter(Boolean).length;
 
   let head = "";
   for (const f of fields) {
@@ -92,12 +90,11 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
   for (const row of await q.rows(node.db, { limit, offset: (page - 1) * limit })) {
     body += `<tr data-row="${hee(String(row.__id))}">`;
     for (const f of fields) {
-      const cell = await show(f, row[f.name], node.app, f.is("edit") && f.is("list_edit"));
+      const cell = await show(f, row[f.name], node.app, f.is("edit"));
       body += "<td>" + (f.str("link") ? `<a href="${hee(withId(await pageUrl(node, f.str("link")), row[f.name]))}">${cell}</a>` : cell);
     }
     if (q.settings.delete && q.primary) body += `<td class=-action data-do=delete>${icon("delete", await t`Delete`)}`;
     if (q.settings.copy && q.primary?.autoIncrement) body += `<td class=-action data-do=copy>${icon("content_copy", await t`Copy`)}`;
-    if (q.shown("detail").length) body += `<td class=-action data-do=detail>${icon("info", await t`Details`)}`;
     if (detailUrl) body += `<td class=-action><a href="${hee(withId(detailUrl, row.__id))}">${icon("open_in_new", await t`Open`)}</a>`;
   }
   return html.raw(`<div class=-scroll><table class=u2-table>
@@ -110,20 +107,6 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
 	<button type=button class=-next${page >= pages ? " disabled" : ""}>›</button>
 	<span class=-total>${total}</span>
 </div>`);
-}
-
-/** One row with its detail fields; `index` counts in the list's current order. */
-async function detail(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
-  const q = await query(node, ctx, vars.id);
-  if (!q) return "";
-  const index = Math.max(0, Number(vars.index) || 0), total = await q.count(node.db);
-  const [row] = await q.rows(node.db, { limit: 1, offset: index });
-  if (!row) return "";
-  let fields = "";
-  for (const f of q.shown("detail")) {
-    fields += `<tr><th>${hee(await label(node, f))}<td>${await show(f, row[f.name], node.app, f.is("edit"))}`;
-  }
-  return html.raw(`<table class=u2-table data-row="${hee(String(row.__id))}" data-index=${index} data-total=${total}>${fields}</table>`);
 }
 
 /** The fields asked for when adding a row, with their defaults. */
@@ -291,7 +274,7 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
       const own = parts.length === 1, type = typeOf(column);
       fields[name]({
         ...parts.length > 1 || name !== path ? { path } : {}, type,
-        list: type !== "textarea", detail: true, edit: own && !column.primary, search: ["text", "textarea"].includes(type) || column.primary,
+        list: type !== "textarea", edit: own && !column.primary, search: ["text", "textarea"].includes(type) || column.primary,
         sort: true,
       });
       const order = String(await node.settings.field_order ?? "");
@@ -363,7 +346,7 @@ export const cms = {
     render,
     api,
     settingsSchema,
-    parts: { list, detail, insert },
+    parts: { list, insert },
     css: ["pub/main.css"],
     js: ["pub/main.js"],
     widget: "pub/widget.js",

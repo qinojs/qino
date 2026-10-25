@@ -60,7 +60,7 @@ export default async function (widget, { node, dialogs, signal }) {
   widget.badge = names.length;
 
   const FLAGS = [
-    ['list', t`List`], ['list_edit', t`Edit in list`], ['detail', t`Details`], ['edit', t`Edit`], ['insert', t`New`],
+    ['list', t`List`], ['edit', t`Edit`], ['insert', t`New`],
     ['search', t`Search`], ['sort', t`Sort`], ['filter', t`Filter`], ['fix', t`Fixed`],
   ];
   const checked = (v) => v === true || v === 1 || v === '1' ? 'checked' : '';

@@ -40,14 +40,15 @@ function suggest(type: string, length: string, key: boolean, primary: boolean, o
   };
 }
 
-/** One field of PHP's settings as cms.cont.dbtable keeps it. */
-function field(raw: any, path: string[], name: string): Record<string, unknown> {
+/** One field of PHP's settings as cms.cont.dbtable keeps it. Editable means in the list there;
+ *  PHP's detail view is gone, so without a detail page its editable fields move to the list. */
+function field(raw: any, path: string[], name: string, detailPage: boolean): Record<string, unknown> {
   const o = options(String(raw.options ?? ""));
   const handler = String(raw.handler || "default").toLowerCase();
   const out: Record<string, unknown> = {
     ...path.join(".") !== name ? { path: path.join(".") } : {},
     type: TYPES[handler] ?? "text",
-    list: on(raw.showList), list_edit: on(raw.listEdit), detail: on(raw.showDetail), edit: on(raw.editable),
+    list: on(raw.showList), edit: on(raw.editable) && (on(raw.listEdit) || (!detailPage && on(raw.showDetail))),
     insert: on(raw.insertable), search: on(raw.search) && on(raw.searchable), sort: on(raw.orderable), fix: on(raw.fix),
   };
   const def = String(raw.defaultValue ?? "");
@@ -118,7 +119,7 @@ export async function migrateL1(app: App): Promise<void> {
       const col = s.col ?? {};
       const [, type = "", length = ""] = String(col.Type ?? "").match(/^(\w+)(?:\(([^)]*)\))?/) ?? [];
       const set = raw?.handler ? raw : { ...suggest(type.toLowerCase(), length, !!col.Key, col.Key === "PRI", s.own, s.now), ...raw };
-      const f = fields[now[i]] = field(set, s.path, now[i]) as Record<string, unknown>;
+      const f = fields[now[i]] = field(set, s.path, now[i], !!old.detailLink);
       // an expression names columns too (`CONCAT(firstname,' ',lastname)`)
       for (const k of ["ref_label", "ref_where"]) {
         if (typeof f[k] === "string") f[k] = renamedColumns.reduce((e, [, o, c]) => e.replace(new RegExp(`\\b${o}\\b`, "g"), c), f[k] as string);
