@@ -33,17 +33,16 @@ Deno.test("migrateL1: a l1 list becomes cms.cont.dbtable, renamed columns follow
   const [row] = await db.query`SELECT module, settings FROM page WHERE id = 1`;
   const after = JSON.parse(String(row.settings));
   assertEquals(row.module, "cms.cont.dbtable");
-  assertEquals(after.field_order, "id,firstname,moderator_id,given_name,family_name");
-  assertEquals(after.order, "family_name DESC, firstname"); // PHP: the last ordered weighed most
+  assertEquals(after.field_order, "id,firstname,moderator_id,given_name");
+  assertEquals(after.order, "firstname"); // family_name showed in PHP's detail view only: it went
   assertEquals([after.delete, after.copy, after.detail_page, after.limit], [true, false, "437", 200]);
-  assertEquals(after.fields.given_name, { path: "moderator_id.given_name", type: "text", list: true, edit: true, insert: false, search: true, sort: true, fix: false });
-  // editable in PHP's details only: the list has a detail page, which edits it
-  assertEquals([after.fields.family_name.list, after.fields.family_name.edit], [false, false]);
+  assertEquals(after.fields.given_name, { path: "moderator_id.given_name", type: "text", edit: true, insert: false, search: true, sort: true, fix: false });
+  assertEquals(after.fields.family_name, undefined);
   assertEquals([after.fields.firstname.filter, after.fields.given_name.filter], [true, undefined]);
   assertEquals(after.fields.moderator_id.type, "reference");
   assertEquals([after.fields.moderator_id.fix, after.fields.moderator_id.default], [true, "{id}"]);
   assertEquals(after.fields.moderator_id.ref_label, "CONCAT(given_name,' ',family_name)");
-  assertEquals(await db.col`SELECT name FROM page_text ORDER BY text_id`, ["family_name_title", "firstname_title"]);
+  assertEquals(await db.col`SELECT name FROM page_text ORDER BY text_id`, ["firstname_title"]);
   assertEquals(await db.col`SELECT id FROM page`, [1]); // the filter lives in its list now
   await db.close();
 });

@@ -179,8 +179,8 @@ export class Query {
     }
   }
 
-  /** The fields in their order where `flag` is set; fixed ones never show. */
-  shown(flag: string): Field[] { return [...this.fields.values()].filter((f) => f.is(flag) && !f.is("fix")); }
+  /** The columns of the list in their order, those with `flag` set if given; fixed fields never show. */
+  shown(flag?: string): Field[] { return [...this.fields.values()].filter((f) => !f.is("fix") && (!flag || f.is(flag))); }
 
   #where(extra: Sql[] = [], narrow = true) {
     const all = [...this.#scope, ...narrow ? this.#narrow : [], ...extra];

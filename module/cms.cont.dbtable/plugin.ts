@@ -29,12 +29,11 @@ const settingsSchema = {
     detail_page: { type: "string", description: "Page (id or URL) a row links to, with its key as `?id=`." },
     field_order: { type: "string", description: "Comma-separated field names defining their order." },
     fields: {
-      description: "The fields, keyed by name.",
+      description: "The fields — each a column of the list, unless fixed —, keyed by name.",
       additionalProperties: {
         properties: {
           path: { type: "string", description: "The column; along references `ref_id.column`. Default: the name." },
           type: { type: "string", enum: TYPES, description: "How it shows and is edited. Default: from the column." },
-          list: flag("Shown in the list."),
           edit: flag("Editable in the list."),
           insert: flag("Asked for when adding a row."),
           search: flag("The search looks into it."),
@@ -73,7 +72,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
   const t = node.app.t, edit = await node.edit();
   const limit = Number(q.settings.limit) || 20, total = await q.count(node.db);
   const pages = Math.max(1, Math.ceil(total / limit)), page = Math.min(pages, Math.max(1, Number(vars.page) || 1));
-  const fields = q.shown("list"), detailPage = String(q.settings.detail_page ?? "");
+  const fields = q.shown(), detailPage = String(q.settings.detail_page ?? "");
   const detailUrl = detailPage ? await pageUrl(node, detailPage) : "";
   const actions = [q.settings.delete && q.primary, q.settings.copy && q.primary?.autoIncrement, detailUrl].filter(Boolean).length;
 
@@ -274,7 +273,7 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
       const own = parts.length === 1, type = typeOf(column);
       fields[name]({
         ...parts.length > 1 || name !== path ? { path } : {}, type,
-        list: type !== "textarea", edit: own && !column.primary, search: ["text", "textarea"].includes(type) || column.primary,
+        edit: own && !column.primary, search: ["text", "textarea"].includes(type) || column.primary,
         sort: true,
       });
       const order = String(await node.settings.field_order ?? "");
@@ -311,7 +310,7 @@ async function route(app: App, ctx: Ctx) {
   if (exported) {
     const q = await Query.of(node, { user: await state(ctx, node), id: ctx.req.query.id });
     if (!q?.settings.export) return;
-    const fields = q.shown("list");
+    const fields = q.shown();
     const rows: unknown[][] = [await Promise.all(fields.map((f) => label(node, f)))];
     for (const r of await q.rows(node.db)) rows.push(fields.map((f) => r[f.name] ?? ""));
     const title = (await (await node.page()).showTitle()).plain() || "export";

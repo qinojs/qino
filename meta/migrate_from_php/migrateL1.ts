@@ -48,7 +48,7 @@ function field(raw: any, path: string[], name: string, detailPage: boolean): Rec
   const out: Record<string, unknown> = {
     ...path.join(".") !== name ? { path: path.join(".") } : {},
     type: TYPES[handler] ?? "text",
-    list: on(raw.showList), edit: on(raw.editable) && (on(raw.listEdit) || (!detailPage && on(raw.showDetail))),
+    edit: on(raw.editable) && (on(raw.listEdit) || (!detailPage && on(raw.showDetail))),
     insert: on(raw.insertable), search: on(raw.search) && on(raw.searchable), sort: on(raw.orderable), fix: on(raw.fix),
   };
   const def = String(raw.defaultValue ?? "");
@@ -65,7 +65,8 @@ function field(raw: any, path: string[], name: string, detailPage: boolean): Rec
 
 /** cms.cont.l1.table1 becomes cms.cont.dbtable: the query's fields — under the names PHP gave them,
  *  columns renamed since (usr.firstname → given_name …) followed — with their settings, labels and
- *  order. A cms.cont.l1.table1.filter turns into the filters of its list and goes. */
+ *  order. A field neither listed nor fixed showed in PHP's detail view only, which is gone: it goes
+ *  too. A cms.cont.l1.table1.filter turns into the filters of its list and goes. */
 export async function migrateL1(app: App): Promise<void> {
   const tables = await app.db.listTables();
   const renamed = (table: string, f: string) => renamedColumns.find(([t, old]) => t === table && old === f)?.[2];
@@ -111,6 +112,7 @@ export async function migrateL1(app: App): Promise<void> {
     };
     const [before, now] = [name(shown.map((s) => s.old)), name(shown.map((s) => s.now))];
     const rename = new Map(before.map((a, i) => [a, now[i]] as const));
+    const dropped: string[] = [];
 
     const filter = filters.get(Number(node.id));
     const fields: Record<string, unknown> = {};
@@ -119,6 +121,11 @@ export async function migrateL1(app: App): Promise<void> {
       const col = s.col ?? {};
       const [, type = "", length = ""] = String(col.Type ?? "").match(/^(\w+)(?:\(([^)]*)\))?/) ?? [];
       const set = raw?.handler ? raw : { ...suggest(type.toLowerCase(), length, !!col.Key, col.Key === "PRI", s.own, s.now), ...raw };
+      if (!on(set.showList) && !on(set.fix)) {
+        rename.delete(before[i]);
+        dropped.push(before[i]);
+        return;
+      }
       const f = fields[now[i]] = field(set, s.path, now[i], !!old.detailLink);
       // an expression names columns too (`CONCAT(firstname,' ',lastname)`)
       for (const k of ["ref_label", "ref_where"]) {
@@ -134,10 +141,11 @@ export async function migrateL1(app: App): Promise<void> {
       table, where: String(old.addWhere ?? ""), limit: Number(old.limit) || 20, order: orders.join(", "),
       search: String(old.searchValue ?? ""), search_reset: on(old["clean search on reload"]),
       delete: on(old.deletable), copy: on(old.copyable), export: on(old["export button"]), detail_page: String(old.detailLink ?? ""),
-      field_order: [...sort.filter((a) => rename.has(a)).map((a) => rename.get(a)), ...now.filter((n) => !sort.some((a) => rename.get(a) === n))].join(","),
+      field_order: [...sort.filter((a) => rename.has(a)).map((a) => rename.get(a)), ...[...rename.values()].filter((n) => !sort.some((a) => rename.get(a) === n))].join(","),
       fields,
     };
     for (const [a, n] of rename) await app.db.exec`UPDATE page_text SET name = ${`${n}_title`} WHERE page_id = ${node.id} AND name = ${`field_${a}`}`;
+    for (const a of dropped) await app.db.exec`DELETE FROM page_text WHERE page_id = ${node.id} AND name = ${`field_${a}`}`;
     await app.db.exec`UPDATE page SET module = 'cms.cont.dbtable', settings = ${JSON.stringify(settings)} WHERE id = ${node.id}`;
     lists++;
   }

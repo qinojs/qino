@@ -36,8 +36,8 @@ const list = (node: Node) => node.createCont({
     table: "pupil", order: "name",
     field_order: "name,school,owner",
     fields: {
-      name: { type: "text", list: true, edit: true, search: true, sort: true },
-      school: { path: "school_id.name", list: true },
+      name: { type: "text", edit: true, search: true, sort: true },
+      school: { path: "school_id.name" },
       owner: { fix: true, default: "{id}" },
     },
   },
