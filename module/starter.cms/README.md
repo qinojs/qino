@@ -59,7 +59,7 @@ item.js is released together with qino, so it may be younger than Deno's minimum
 | System | Layout (holds the layout pages), Login with "forgot password", No access, Not found, Trash |
 | Footer | lists the pages below Service |
 | People | the group `admin`, allowed to edit every page, and the superuser `su` |
-| Modules | contents, forms, images, file browser, versions, SEO, error reports and the backend |
+| Modules | contents, forms, images, file browser, versions, SEO, error reports, local copies of CDN assets (uncdn) and the backend |
 
 Titles and texts come in English, German, French and Italian. Imprint and privacy policy are
 templates with `[placeholders]`. Service stays out of the menu; pages added below it appear in

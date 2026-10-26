@@ -32,6 +32,7 @@
     "./cms.backend.superuser.db": "./module/cms.backend.superuser.db/mod.ts",
     "./cms.backend.system": "./module/cms.backend.system/mod.ts",
     "./cms.cont.cd.fullcalendar": "./cms-legacy/cms.cont.cd.fullcalendar/mod.ts",
+    "./cms.cont.dbtable": "./module/cms.cont.dbtable/mod.ts",
     "./cms.cont.form": "./module/cms.cont.form/mod.ts",
     "./cms.cont.form.fields": "./module/cms.cont.form.fields/mod.ts",
     "./cms.cont.nav": "./module/cms.cont.nav/mod.ts",

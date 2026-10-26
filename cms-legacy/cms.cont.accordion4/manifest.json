@@ -3,11 +3,11 @@
   "description": "Legacy accordion: each child node opens under its title.",
   "dependencies": [
     "cms",
-    "cms.legacy.c1",
     "cms.text"
   ],
   "files": [
     "manifest.json",
-    "plugin.ts"
+    "plugin.ts",
+    "pub/main.js"
   ]
 }

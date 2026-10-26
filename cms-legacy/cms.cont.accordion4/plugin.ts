@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -10,27 +10,26 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.legacy.c1/pub/c1/accordion.js");
+/** Native `<details>`: one open at a time through a shared `name`, a linked item (`#cmspid<id>`)
+ *  opens by pub/main.js; while editing all are open, without `name`, so their titles can be typed. */
+async function render(node: Node) {
   let conts = await node.conts();
   if (!conts.length) conts = [await node.cont("first")];
   const visible = await node.settings["items visible in nav"] ? 1 : 0;
   const edit = await node.edit();
+  const name = await node.settings.singlemode ? ` name=accordion${node.id}` : "";
   const items: HtmlString[] = [];
   for (const cont of conts) {
     if (!await cont.isReadable()) continue;
     if (Number(cont.vs.visible) !== visible) await cont.set("visible", visible);
     const title = await cont.showTitle();
     const id = `cmspid${cont.id}`;
-    items.push(await html.async`<dt class=-trigger role=button aria-controls=${id}-panel tabindex=0 aria-expanded=false id=${id}>
-		<div id=${id}-title${html.raw(edit ? ` contenteditable cmstxt=${title.id}` : "")}>${title}</div>
-	</dt>
-	<dd id=${id}-panel class=-panel role=region aria-labelledby=${id}-title hidden>
+    items.push(await html.async`<details id=${id}${html.raw(edit ? " open" : name)}>
+		<summary><div${html.raw(edit ? ` contenteditable cmstxt=${title.id}` : "")}>${title}</div></summary>
 		<div class=-content>${cont.html()}</div>
-	</dd>`);
+	</details>`);
   }
-  const single = await node.settings.singlemode ? " data-singlemode" : "";
-  return html`<dl role=presentation class=c1-accordion${html.raw(single)}>${items}</dl>`;
+  return html`<div>${items}</div>`;
 }
 
-export const cms = { node: { render, settingsSchema } };
+export const cms = { node: { render, settingsSchema, js: ["pub/main.js"] } };

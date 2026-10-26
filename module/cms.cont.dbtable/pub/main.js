@@ -8,7 +8,8 @@ const dialogs = () => import('@qino/u2/js/dialog/dialog.js');
 
 for (const root of document.querySelectorAll('[qcms-mod="cont.dbtable"]')) init(root);
 
-function init(root) {
+/** Wires a node rendered like the list: its part (`cms-part`) reloads after uploads and row actions. */
+export function init(root) {
   const node = api.cms.node(root.getAttribute('qcms-id'));
   const id = root.dataset.id || undefined; // the page's ?id=, which fixed fields may name
   const call = (vars) => node.api.post({ ...vars, id });
@@ -16,7 +17,8 @@ function init(root) {
   const pager = () => root.querySelector('.-pager');
   const page = () => Number(pager()?.dataset.page) || 1;
   const list = async (p = page()) => {
-    root.querySelector('[cms-part=list]').innerHTML = await part('list', { page: p });
+    const el = root.querySelector('[cms-part]');
+    el.innerHTML = await part(el.getAttribute('cms-part'), { page: p });
   };
   const valueOf = (el) => el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.isContentEditable ? el.innerHTML : el.value;
 

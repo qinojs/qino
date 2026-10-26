@@ -1,5 +1,6 @@
 /* Panel widget: the table, its columns — along references into other tables too —, what each field
-   allows, the list's options and the SQL it makes. Each change saves itself. */
+   allows, the list's options and the SQL it makes. Each change saves itself. `setup()` makes it for
+   nodes showing the table otherwise: only some `flags`, without the `list` options. */
 import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
@@ -41,7 +42,7 @@ export const css = `
 }
 `;
 
-export default async function (widget, { node, dialogs, signal }) {
+export const setup = ({ flags, list = true } = {}) => async function (widget, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
   const call = (vars) => ref.api.post(vars);
   const lang = document.documentElement.lang;
@@ -62,7 +63,7 @@ export default async function (widget, { node, dialogs, signal }) {
   const FLAGS = [
     ['edit', t`Edit`], ['insert', t`New`],
     ['search', t`Search`], ['sort', t`Sort`], ['filter', t`Filter`], ['fix', t`Fixed`],
-  ];
+  ].filter(([key]) => !flags || flags.includes(key));
   const checked = (v) => v === true || v === 1 || v === '1' ? 'checked' : '';
   const txt = (name) => texts[name] ?? { id: '', value: '' };
   const option = (value, active, label = value) => html.async`<option value="${value}" ${value === String(active ?? '') ? 'selected' : ''}>${label}`;
@@ -95,13 +96,13 @@ export default async function (widget, { node, dialogs, signal }) {
         <label>${t`Label`} (${lang}):<input value="${unhee(title.value)}" cmstxt=${title.id} cmslang=${lang}></label>
         <label>${t`Column`}:<input value="${pathOf(name)}" readonly></label>
         <label>${t`Default value`} <small>({user}, {id})</small>:<input setting="fields.${name}.default" value="${set.default ?? ''}"></label>
-        <label>${t`Width`}:<input setting="fields.${name}.width" value="${set.width ?? ''}" placeholder="120"></label>
+        ${list ? html.async`<label>${t`Width`}:<input setting="fields.${name}.width" value="${set.width ?? ''}" placeholder="120"></label>` : ''}
         <label>${t`Link to page`} (id/URL):<input setting="fields.${name}.link" value="${set.link ?? ''}"></label>
         <label class=-choices>${t`Choices, one per line (value=Label)`}:<textarea setting="fields.${name}.choices">${set.choices ?? ''}</textarea></label>
         <label class=-ref>${t`Label of the row pointed to`} (SQL):<input setting="fields.${name}.ref_label" value="${set.ref_label ?? ''}" placeholder="name"></label>
         <label class=-ref>${t`Rows offered`} (SQL WHERE):<input setting="fields.${name}.ref_where" value="${set.ref_where ?? ''}"></label>
         <label class=-size>${t`Size`}:<input setting="fields.${name}.size" value="${set.size ?? ''}" placeholder="30x20"></label>
-        <label class=-cut>${t`Characters in the list`}:<input type=number setting="fields.${name}.cut" value="${set.cut ?? ''}"></label>
+        ${list ? html.async`<label class=-cut>${t`Characters in the list`}:<input type=number setting="fields.${name}.cut" value="${set.cut ?? ''}"></label>` : ''}
         <button type=button class=-remove>${t`Remove field`}</button>
       </div>
     </div>`;
@@ -116,7 +117,7 @@ export default async function (widget, { node, dialogs, signal }) {
       <details open><summary>${t`Fields`} (${names.length})</summary>
         <div class=-list u2-dropzone>${names.map(field)}</div>
       </details>
-      <details><summary>${t`List`}</summary>
+      ${list ? html.async`<details><summary>${t`List`}</summary>
         <label>${t`Rows per page`}:<input type=number setting=limit value="${settings.limit ?? 20}" min=1></label>
         <label>${t`Order`}:<input setting=order value="${settings.order ?? ''}" placeholder="name, date DESC" list=dbtable-fields></label>
         <label>${t`Search text to start with`}:<input setting=search value="${settings.search ?? ''}"></label>
@@ -127,7 +128,7 @@ export default async function (widget, { node, dialogs, signal }) {
         <label>${t`Detail page of a row`} (id/URL):<input setting=detail_page value="${settings.detail_page ?? ''}"></label>
         <label>${t`Only rows where`} (SQL):<textarea setting=where>${settings.where ?? ''}</textarea></label>
         <datalist id=dbtable-fields>${names.map((n) => html`<option value="${n}">`)}</datalist>
-      </details>
+      </details>` : html.async`<label>${t`Only rows where`} (SQL):<textarea setting=where>${settings.where ?? ''}</textarea></label>`}
       <details class=-sqlBox><summary>SQL</summary><pre class=-sql></pre></details>` : ''}
   </div>`;
 
@@ -173,4 +174,6 @@ export default async function (widget, { node, dialogs, signal }) {
   widget.on('click', '.-dbtable .-sqlBox > summary', async (summary) => {
     if (!summary.parentNode.open) summary.nextElementSibling.textContent = (await call({ do: 'sql' })).sql;
   });
-}
+};
+
+export default setup();

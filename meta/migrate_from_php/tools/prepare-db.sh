@@ -111,6 +111,27 @@ if [ -s "$TMP/time.sql" ]; then
   sql "$DB" < "$TMP/time.sql"
 fi
 
+# 4b. Zero dates (0000-00-00, 2020-00-00): PHP's "no date". MariaDB rejects them in strict mode, so
+#     the first MODIFY of such a column by qino's schema migration fails the start. They become NULL,
+#     their columns nullable.
+sql -N -e "SELECT table_name, column_name, column_type, is_nullable, column_default FROM information_schema.columns
+     WHERE table_schema='$DB' AND data_type IN ('date','datetime','timestamp')" |
+python3 -c '
+import sys
+for line in sys.stdin:
+    parts = line.rstrip("\n").split("\t")
+    if len(parts) < 5: continue
+    tbl, col, typ, nullable, default = parts
+    if nullable == "NO" or default.startswith("0000"):
+        print(f"ALTER TABLE `{tbl}` MODIFY COLUMN `{col}` {typ} NULL DEFAULT NULL;")
+    print(f"UPDATE `{tbl}` SET `{col}` = NULL WHERE YEAR(`{col}`) = 0 OR MONTH(`{col}`) = 0 OR DAY(`{col}`) = 0;")
+' > "$TMP/zero.sql"
+
+if [ -s "$TMP/zero.sql" ]; then
+  # without strict mode, else the zero dates themselves stop the statements
+  (echo "SET SESSION sql_mode = '';"; cat "$TMP/zero.sql") | sql "$DB"
+fi
+
 # 5. MyISAM ignores transactions, and qino installs inside one — a failed install would leave a
 #    half-migrated site behind.
 sql -N -e "SELECT table_name FROM information_schema.tables

@@ -96,12 +96,16 @@ export async function migrateForm1(app: App): Promise<void> {
     delete settings["send with mail1"];
     settings.__inited = true; // the legacy children and confirmation text already exist
     // a buttons1 inside a "flexible" field was the submit button; form.fields has no such field
-    if (await app.db.one`WITH RECURSIVE sub(id) AS (SELECT id FROM page WHERE basis = ${form.id}
+    const buttons = await app.db.col`WITH RECURSIVE sub(id) AS (SELECT id FROM page WHERE basis = ${form.id}
         UNION ALL SELECT p.id FROM page p JOIN sub ON p.basis = sub.id)
-      SELECT 1 FROM page WHERE id IN (SELECT id FROM sub) AND module = 'cms.cont.form1.buttons1' LIMIT 1`) {
+      SELECT id FROM page WHERE id IN (SELECT id FROM sub) AND module = 'cms.cont.form1.buttons1'`;
+    if (buttons.length) {
       // buttons1 said "Senden"; a text of the form's own, hidden button was never shown
       if (!Number(settings.button_submit)) await app.db.exec`DELETE FROM page_text WHERE page_id = ${form.id} AND name = 'button_submit'`;
       settings.button_submit = "1";
+      // the form's own button took its place
+      await app.db.exec`DELETE FROM page_text WHERE ${sql.in("page_id", buttons)}`;
+      await app.db.exec`DELETE FROM page WHERE ${sql.in("id", buttons)}`;
     }
 
     if (fields && alone) {

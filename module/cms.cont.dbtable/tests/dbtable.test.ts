@@ -36,7 +36,7 @@ const list = (node: Node) => node.createCont({
     table: "pupil", order: "name",
     field_order: "name,school,owner",
     fields: {
-      name: { type: "text", edit: true, search: true, sort: true },
+      name: { type: "text", edit: true, insert: true, search: true, sort: true },
       school: { path: "school_id.name" },
       owner: { fix: true, default: "{id}" },
     },
@@ -74,6 +74,9 @@ Deno.test("cms.cont.dbtable: a row the list does not reach is not touched", asyn
     // a new row takes the fixed value
     const { id } = await run(() => dbtable.node.api(node, { do: "insert", values: { owner: 99 }, id: "7" })) as unknown as { id: number };
     assertEquals(await app.db.one`SELECT owner FROM pupil WHERE id = ${id}`, 7);
+    // a list asking for no field adds no rows
+    const closed = await page.createCont({ module: "cms.cont.dbtable", settings: { table: "pupil", fields: { name: { edit: true } } } });
+    assertEquals(await run(() => dbtable.node.api(closed, { do: "insert", values: {} })), { error: "not insertable" });
   } finally {
     await close();
   }

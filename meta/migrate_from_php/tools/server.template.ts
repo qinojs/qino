@@ -35,6 +35,10 @@ __LEGACY__
   ]
 ) legacy.add(mod);
 
+// the standard set every site starts from: it adds the pages it does not find under its names
+// (home, contact, service/imprint …) — name the site's own ones first, or they come twice
+std.add("starter.cms");
+
 __MISSING__
 await migrate(app); // before init: renamed columns, names for the system pages
 await app.init();

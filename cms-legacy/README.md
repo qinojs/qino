@@ -13,7 +13,7 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.layout.custom.8` | `cms.layout.custom.9` | re-exports custom.7 — same shell |
 | `cms.cont.nav2` | `cms.cont.nav` | re-exports it — same settings |
 | `cms.cont.section3` | — | own shell, section markup stays site data |
-| `cms.cont.accordion4` | — | ported accordion, behavior in `cms.legacy.c1` |
+| `cms.cont.accordion4` | — | ported accordion, native `<details>` |
 | `cms.cont.cols4` | — | ported column layout |
 | `cms.cont.parallax5` | — | ported parallax image section |
 | `cms.cont.video.section.cd` | — | ported |

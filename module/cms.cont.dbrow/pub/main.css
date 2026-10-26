@@ -1,0 +1,8 @@
+[qcms-mod="cont.dbrow"] {
+	> .-head:empty { display:none; }
+	th { text-align:left; vertical-align:baseline; }
+	:is(input:not([type=checkbox]), select, textarea, .-html) { width:100%; box-sizing:border-box; }
+	[data-f].-saving { opacity:.5; }
+	.-html { max-height:12rem; overflow:auto; }
+	.-file { display:inline-flex; align-items:center; gap:.5rem; }
+}

@@ -69,6 +69,7 @@ Deno.test("migrateForm1: an area with layout around its fields stays the form's 
   assertEquals(await row(4), { basis: 3, name: "left", module: "cms.cont.form.fields" });
   assertEquals(JSON.parse(String(await db.one`SELECT settings FROM page WHERE id = 4`)).fields, { vorname: { type: "text" } });
   assertEquals(JSON.parse(String(await db.one`SELECT settings FROM page WHERE id = 1`)).button_submit, "1"); // buttons1 was the button
+  assertEquals(await db.one`SELECT COUNT(*) FROM page WHERE id = 6`, 0); // and is gone: the form's own button took its place
   assertEquals(await db.col`SELECT name FROM page_text WHERE page_id = 1`, []); // its "Senden" is the default
 
   await db.close();

@@ -9,6 +9,7 @@
     "security",
     "emailguard",
     "error_report",
+    "uncdn",
     "messaging.email",
     "cms.frontend",
     "cms.text",
@@ -57,6 +58,7 @@
     "cms.backend.system.health",
     "cms.backend.superuser",
     "cms.backend.superuser.module",
+    "cms.backend.superuser.uncdn",
     "cms.backend.superuser.error_report",
     "cms.backend.superuser.messaging",
     "cms.backend.superuser.messaging.email"

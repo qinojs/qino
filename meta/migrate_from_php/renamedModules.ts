@@ -36,6 +36,7 @@ export const renamedModules: Record<string, string> = {
   "cms.backend.db": "cms.backend.superuser.db", // browsing the tables
   "cms.backend.superuser.performance": "cms.backend.system", // cache and runtime
   "cms.backend.superuser.db-clean": "cms.backend.superuser.db.cleanup",
+  "cms.backend.superuser.db-merge-entries": "cms.backend.superuser.db.merge", // its settings were the last view only
   "cms.backend.superuser.vers": "cms.backend.superuser.versions",
   "cms.backend.superuser.dbfile_clean": "cms.backend.superuser.dbfiles",
 };

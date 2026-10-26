@@ -15,7 +15,7 @@ import type { Field } from "./lib/query.ts";
 const NAME = "cms.cont.dbtable";
 
 const flag = (description: string) => ({ type: "boolean", description });
-const settingsSchema = {
+export const settingsSchema = {
   properties: {
     table: { type: "string", description: "The table listed." },
     where: { type: "string", description: "An SQL condition every row of the list meets (trusted: only editors set it)." },
@@ -166,7 +166,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
 /** What the list asks, and the widget. Who may see the list may use it, as the fields allow; the
  *  widget's questions need editing rights. */
-async function api(node: Node, vars: Record<string, unknown>) {
+export async function api(node: Node, vars: Record<string, unknown>) {
   const app = node.app, db = node.db, ctx = getCtx();
   if (["tables", "table", "columns", "add", "remove", "sql"].includes(String(vars.do))) return await widgetApi(node, vars);
 
@@ -195,6 +195,7 @@ async function api(node: Node, vars: Record<string, unknown>) {
       return { done: true };
     }
     case "insert": {
+      if (!q.shown("insert").some((f) => f.own)) return { error: "not insertable" };
       const values: Record<string, unknown> = {};
       for (const f of q.fields.values()) {
         if (!f.own) continue;
@@ -309,13 +310,13 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
 }
 
 /** A file for an image or file field (`?dbtable_upload=<node>&row=&field=&id=`, POST), and the list
- *  as CSV (`?dbtable_export=<node>&id=`). */
-async function route(app: App, ctx: Ctx) {
+ *  as CSV (`?dbtable_export=<node>&id=`), for nodes of the module `name`. */
+export async function route(app: App, ctx: Ctx, name = NAME) {
   const upload = Number(ctx.req.query.dbtable_upload), exported = Number(ctx.req.query.dbtable_export);
   const id = upload || exported;
   if (!id) return;
   const node = await cmsOf(app).node(id);
-  if (node.module?.name !== NAME || !await node.isReadable()) return;
+  if (node.module?.name !== name || !await node.isReadable()) return;
   if (exported) {
     const q = await Query.of(node, { user: await state(ctx, node), id: ctx.req.query.id });
     if (!q?.settings.export) return;
