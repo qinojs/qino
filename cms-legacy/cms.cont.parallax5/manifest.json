@@ -4,7 +4,8 @@
   "dependencies": [
     "cms",
     "cms.image",
-    "cms.text"
+    "cms.text",
+    "u2"
   ],
   "files": [
     "manifest.json",

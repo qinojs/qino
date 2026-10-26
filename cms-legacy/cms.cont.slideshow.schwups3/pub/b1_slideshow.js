@@ -91,7 +91,7 @@ if (!customElements.get('b1-slider')) customElements.define('b1-slider', B1Slide
 
 // a link to an element inside a slide shows that slide
 function hashchange() {
-  const el = location.hash && document.getElementById(location.hash.slice(1));
+  const el = location.hash ? document.getElementById(location.hash.slice(1)) : null;
   el?.closest('b1-slider')?.slideTo(el.closest('.b1_slideshow > .-slider > *'));
 }
 addEventListener('DOMContentLoaded', hashchange);

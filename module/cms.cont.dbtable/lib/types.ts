@@ -117,8 +117,7 @@ const types: Record<string, Type> = {
       const [w, h] = size(f, 72, 48);
       const file = Number(v) ? await app.dbFiles.file(Number(v)) : undefined;
       const img = file && await file.exists() ? `<img src="${hee(await file.url({ w, h }))}" alt="" style="width:${w}px; height:${h}px; object-fit:contain">` : "";
-      return `<span class=-file>${img}<button type=button data-upload="${hee(f.name)}">${img ? "ersetzen" : "hochladen"}</button>` +
-        (img ? `<button type=button data-clear="${hee(f.name)}">entfernen</button>` : "") + "</span>";
+      return await fileButtons(f, !!img, app, img);
     },
   },
   file: {
@@ -128,11 +127,17 @@ const types: Record<string, Type> = {
     },
     async edit(f, v, app) {
       const link = await types.file.read(f, v, app);
-      return `<span class=-file>${link}<button type=button data-upload="${hee(f.name)}">${link ? "ersetzen" : "hochladen"}</button>` +
-        (link ? `<button type=button data-clear="${hee(f.name)}">entfernen</button>` : "") + "</span>";
+      return await fileButtons(f, !!link, app, link);
     },
   },
 };
+
+/** What a file field shows while editable: the file, and buttons to upload, replace or remove it. */
+async function fileButtons(f: Field, has: boolean, app: App, shown: string) {
+  const name = hee(f.name);
+  return `<span class=-file>${shown}<button type=button data-upload="${name}">${has ? await app.t`replace` : await app.t`upload`}</button>` +
+    (has ? `<button type=button data-clear="${name}">${await app.t`remove`}</button>` : "") + "</span>";
+}
 
 const digits = (f: Field) => Number(f.column.length.split(",")[1] ?? 2);
 function decimal(f: Field, v: unknown) {

@@ -90,6 +90,7 @@ Deno.test("cms.cont.dbtable: the widget adds a column along a reference and remo
     assertEquals(String(await node.settings.field_order), "name,school,owner,id");
     assertEquals(await api({ do: "remove", name: "id" }), { name: "id" });
     assertEquals(String(await node.settings.field_order), "name,school,owner");
+    assertEquals(Object.keys(JSON.parse(String((await node.cms.node(node.id)).vs.settings)).fields), ["name", "school", "owner"]);
     await new Promise((resolve) => setTimeout(resolve, 50));
   } finally {
     await close();

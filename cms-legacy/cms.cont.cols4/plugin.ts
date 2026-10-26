@@ -1,8 +1,9 @@
 import { html } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import { cssLength } from "../lib/css.ts";
 
-import type { HtmlString } from "@qino/qino";
+import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const node = {
@@ -20,7 +21,8 @@ const settingsSchema = {
   },
 };
 
-async function render(cont: Node) {
+async function render(cont: Node, { ctx }: { ctx: Ctx }) {
+  u2.assets(ctx, ["class/flex/flex.css"]);
   const defaults = cont.app.settings[cont.module!.name];
   const length = async (key: string) => cssLength(await cont.settings[key] || await defaults[key], "em");
   const cols = Math.max(2, Number(await cont.settings.cols) || 2);
@@ -33,10 +35,10 @@ async function render(cont: Node) {
   }
   return html`<div>
 	<style>
-		${sel} > .u1-flex-gap { --u1-Items-width:20rem; --u1-Row-gap:${rowGap}; --u1-Col-gap:${colGap}; }
-		${sel} > .u1-flex-gap > * { flex:1 1 1%; flex-basis:${breakAt}; }
+		${sel} > .u2-flex { --u2-Row-gap:${rowGap}; --u2-Col-gap:${colGap}; }
+		${sel} > .u2-flex > * { flex:1 1 1%; flex-basis:${breakAt}; }
 	</style>
-	<div class=u1-flex-gap>${items}</div>
+	<div class=u2-flex>${items}</div>
 </div>`;
 }
 
