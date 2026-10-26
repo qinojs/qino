@@ -98,8 +98,9 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
       const cell = await show(f, row[f.name], node.app, f.is("edit"));
       body += "<td>" + (f.str("link") ? `<a href="${hee(withId(await pageUrl(node, f.str("link")), row[f.name]))}">${cell}</a>` : cell);
     }
-    if (q.settings.delete && q.primary) body += `<td class=-action data-do=delete>${icon("delete", await t`Delete`)}`;
-    if (q.settings.copy && q.primary?.autoIncrement) body += `<td class=-action data-do=copy>${icon("content_copy", await t`Copy`)}`;
+    // buttons: a click on them is not one on the row's link
+    if (q.settings.delete && q.primary) body += `<td class=-action><button type=button class=u2-unstyle data-do=delete>${icon("delete", await t`Delete`)}</button>`;
+    if (q.settings.copy && q.primary?.autoIncrement) body += `<td class=-action><button type=button class=u2-unstyle data-do=copy>${icon("content_copy", await t`Copy`)}</button>`;
     if (href) body += `<td class=-action><a href="${hee(href)}">${icon("open_in_new", await t`Open`)}</a>`;
   }
   return html.raw(`<div class=-scroll><table class=u2-table>
@@ -127,7 +128,7 @@ async function insert(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  u2.assets(ctx, ["class/table/table.css", "class/card/card.css", "el/ico/ico.js", "el/ico/ico.css", "attr/href/href.js"]);
+  u2.assets(ctx, ["class/table/table.css", "class/card/card.css", "class/unstyle/unstyle.css", "el/ico/ico.js", "el/ico/ico.css", "attr/href/href.js"]);
   if (await node.settings.search_reset) await setState(ctx, node, (s) => delete s.search);
   const q = await query(node, ctx);
   const t = node.app.t;
@@ -251,7 +252,7 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
       const table = String(vars.table ?? "");
       if (table && !tables.includes(table)) return { error: "unknown table" };
       for (const name of Object.keys(JSON.parse(String(node.vs.settings || "{}")).fields ?? {})) await node.textDelete(name + "_title");
-      node.settings.fields({});
+      await node.settings.fields({});
       await node.settings.field_order("");
       await node.settings.table(table);
       return { table };
@@ -277,7 +278,7 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
       let name = parts.at(-1)!;
       for (let i = 2; name in fields; i++) name = `${parts.at(-1)}_${i}`;
       const own = parts.length === 1, type = typeOf(column);
-      fields[name]({
+      await fields[name]({
         ...parts.length > 1 || name !== path ? { path } : {}, type,
         edit: own && !column.primary, search: ["text", "textarea"].includes(type) || column.primary,
         sort: true,
@@ -290,7 +291,9 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
     }
     case "remove": {
       const name = String(vars.name ?? "");
-      delete node.settings.fields[name];
+      // written, not `delete`d: a delete cannot be awaited, and the next write would abort it
+      const { [name]: _, ...rest } = JSON.parse(String(node.vs.settings || "{}")).fields ?? {};
+      await node.settings.fields(rest);
       const order = String(await node.settings.field_order ?? "").split(",").filter((n) => n && n !== name).join(",");
       await node.settings.field_order(order);
       await node.textDelete(name + "_title");

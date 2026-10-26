@@ -133,44 +133,44 @@ export default async function (widget, { node, dialogs, signal }) {
 
   bindSettings(widget, ref);
 
-  widget.on('change', '.-table', async (sel) => {
+  widget.on('change', '.-dbtable .-table', async (sel) => {
     if (names.length && !await dialogs.confirm(await t`Change the table? The fields are removed.`)) return sel.value = settings.table ?? '';
     await call({ do: 'table', table: sel.value });
     widget.reload();
   });
 
-  widget.on('click', '.-open', async (el) => {
+  widget.on('click', '.-dbtable .-open', async (el) => {
     const li = el.closest('li');
     if (li.querySelector('ul')) return li.querySelector('ul').remove(), el.textContent = '▸';
     el.textContent = '▾';
     li.insertAdjacentHTML('beforeend', String(await columns(el.dataset.table, li.dataset.path + '.')));
   });
 
-  widget.on('change', '.-use', async (box) => {
+  widget.on('change', '.-dbtable .-use', async (box) => {
     const path = box.closest('li').dataset.path;
     if (box.checked) await call({ do: 'add', path });
     else await call({ do: 'remove', name: names.find((n) => pathOf(n) === path) });
     widget.reload();
   });
 
-  widget.on('click', '.-toggle, .-field .-name', (el) => {
+  widget.on('click', '.-dbtable :is(.-toggle, .-field .-name)', (el) => {
     const f = el.closest('.-field'), open = f.toggleAttribute('open');
     f.querySelector('.-toggle').setAttribute('aria-expanded', open);
   });
 
-  widget.on('click', '.-remove', async (btn) => {
+  widget.on('click', '.-dbtable .-remove', async (btn) => {
     await call({ do: 'remove', name: btn.closest('.-field').getAttribute('itemid') });
     widget.reload();
   });
 
-  widget.on('u2-dropzone-drop', '.-list', (list, e) => {
+  widget.on('u2-dropzone-drop', '.-dbtable .-list', (list, e) => {
     if (!e.detail?.add) return; // the same zone fires remove+add -> react only once
     requestAnimationFrame(() =>
       ref.settings.field_order.put({ value: [...list.children].map((c) => c.getAttribute('itemid')).join(',') }));
   });
 
   // loaded as it opens: the SQL changes with every setting
-  widget.on('click', '.-sqlBox > summary', async (summary) => {
+  widget.on('click', '.-dbtable .-sqlBox > summary', async (summary) => {
     if (!summary.parentNode.open) summary.nextElementSibling.textContent = (await call({ do: 'sql' })).sql;
   });
 }

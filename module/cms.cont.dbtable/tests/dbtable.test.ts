@@ -1,4 +1,4 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, requestStorage, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -74,6 +74,23 @@ Deno.test("cms.cont.dbtable: a row the list does not reach is not touched", asyn
     // a new row takes the fixed value
     const { id } = await run(() => dbtable.node.api(node, { do: "insert", values: { owner: 99 }, id: "7" })) as unknown as { id: number };
     assertEquals(await app.db.one`SELECT owner FROM pupil WHERE id = ${id}`, 7);
+  } finally {
+    await close();
+  }
+});
+
+Deno.test("cms.cont.dbtable: the widget adds a column along a reference and removes it", async () => {
+  const { app, page, close } = await setup();
+  try {
+    const node = await list(page);
+    await app.settings.core.url("https://example.test/");
+    const su = Number(await app.db.table("usr").insert({ username: "su@example.test", active: 1, superuser: 1 }));
+    const api = (vars: Record<string, unknown>) => runAs(app, su, "test", () => dbtable.node.api(node, vars)) as Promise<Record<string, unknown>>;
+    assertEquals(await api({ do: "add", path: "school_id.id" }), { name: "id" });
+    assertEquals(String(await node.settings.field_order), "name,school,owner,id");
+    assertEquals(await api({ do: "remove", name: "id" }), { name: "id" });
+    assertEquals(String(await node.settings.field_order), "name,school,owner");
+    await new Promise((resolve) => setTimeout(resolve, 50));
   } finally {
     await close();
   }

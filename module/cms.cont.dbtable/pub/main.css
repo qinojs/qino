@@ -13,7 +13,8 @@
 	th[data-sort] { cursor:pointer; white-space:nowrap; }
 	th[aria-sort=ascending]::after { content:" ▲"; }
 	th[aria-sort=descending]::after { content:" ▼"; }
-	.-action { width:1px; cursor:pointer; }
+	.-action { width:1px; }
+	.-action button { color:inherit; }
 	.-action u2-ico { --size:1.2em; }
 	.-pager:not([hidden]) {
 		display:flex;
