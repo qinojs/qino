@@ -59,7 +59,11 @@ export const ctxSettingsSchema = { properties: { nodes: { additionalProperties: 
 
 const label = async (node: Node, f: Field) => (await node.showText(f.name + "_title")).plain().trim() || f.name;
 const pageUrl = async (node: Node, link: string) => /^\d+$/.test(link) ? await (await node.cms.node(Number(link))).url() : link;
-const withId = (url: string, id: unknown) => `${url}${url.includes("?") ? "&" : "?"}id=${encodeURIComponent(String(id ?? ""))}`;
+/** `url` with `id=` in its query — before an #anchor, which a content node's url ends in. */
+const withId = (url: string, id: unknown) => {
+  const [path, hash] = url.split("#", 2);
+  return `${path}${path.includes("?") ? "&" : "?"}id=${encodeURIComponent(String(id ?? ""))}${hash ? "#" + hash : ""}`;
+};
 const width = (v: string) => /^\d+(\.\d+)?$/.test(v.trim()) ? v.trim() + "px" : v.trim().replace(/[;{}<>"]/g, "");
 const icon = (name: string, title: string) => `<u2-ico icon=${name} title="${hee(title)}">${hee(title)}</u2-ico>`;
 
@@ -87,14 +91,16 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
 
   let body = "";
   for (const row of await q.rows(node.db, { limit, offset: (page - 1) * limit })) {
-    body += `<tr data-row="${hee(String(row.__id))}">`;
+    // the whole row leads to its detail page; the link in its last cell says so to screen readers
+    const href = detailUrl ? withId(detailUrl, row.__id) : "";
+    body += `<tr data-row="${hee(String(row.__id))}"${href ? ` u2-href="${hee(href)}"` : ""}>`;
     for (const f of fields) {
       const cell = await show(f, row[f.name], node.app, f.is("edit"));
       body += "<td>" + (f.str("link") ? `<a href="${hee(withId(await pageUrl(node, f.str("link")), row[f.name]))}">${cell}</a>` : cell);
     }
     if (q.settings.delete && q.primary) body += `<td class=-action data-do=delete>${icon("delete", await t`Delete`)}`;
     if (q.settings.copy && q.primary?.autoIncrement) body += `<td class=-action data-do=copy>${icon("content_copy", await t`Copy`)}`;
-    if (detailUrl) body += `<td class=-action><a href="${hee(withId(detailUrl, row.__id))}">${icon("open_in_new", await t`Open`)}</a>`;
+    if (href) body += `<td class=-action><a href="${hee(href)}">${icon("open_in_new", await t`Open`)}</a>`;
   }
   return html.raw(`<div class=-scroll><table class=u2-table>
 	<thead><tr>${head}
@@ -121,7 +127,7 @@ async function insert(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  u2.assets(ctx, ["class/table/table.css", "class/card/card.css", "el/ico/ico.js", "el/ico/ico.css"]);
+  u2.assets(ctx, ["class/table/table.css", "class/card/card.css", "el/ico/ico.js", "el/ico/ico.css", "attr/href/href.js"]);
   if (await node.settings.search_reset) await setState(ctx, node, (s) => delete s.search);
   const q = await query(node, ctx);
   const t = node.app.t;
