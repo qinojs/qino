@@ -226,7 +226,7 @@ export const api: ApiTree = {
           const token = await storeChallenge(ctx.app.db, challenge, 0, "login");
           return {
             token,
-            publicKey: { rpId, challenge, timeout: CHALLENGE_TTL * 1000, userVerification: "preferred" },
+            publicKey: { rpId, challenge, timeout: CHALLENGE_TTL * 1000, userVerification: "required" },
           };
         },
       },
@@ -243,7 +243,7 @@ export const api: ApiTree = {
           const stored = await consumeChallenge(db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
 
-          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
+          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
           if (!r.ok) {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login verification failed" }).catch(() => {});
             return r;
