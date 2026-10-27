@@ -145,4 +145,9 @@ The read-only reference `/var/www/workplace/v9/m/ims1` informed the numeric data
 number/state tables, current-value cache, expected intervals and null gaps. `ims1.push1` informed
 the separation of commands and observations. Existing flows can calculate derived values or
 handle transitions; formula languages, physical counter offsets and alarm acknowledgement archives
-are separate extensions. See [REVIEW.md](REVIEW.md) for storage assumptions and limitations.
+are separate extensions.
+
+## Limits
+
+Chart queries aggregate raw SQL ranges: no precomputed aggregate cache, so long ranges are not
+constant-cost. Raw data is never deleted automatically. Open ideas: [ideas.md](../ideas.md).

@@ -21,9 +21,7 @@ class NodeCleaner {
   }
   cleanContents(el, andChildren) {
     if (!el) return;
-    for (const child of [...el.childNodes]) this.clean(child, andChildren);
-    //for (let child of el.childNodes) this.clean(child, andChildren);
-
+    for (const child of [...el.childNodes]) this.clean(child, andChildren); // copy: clean() replaces nodes
   }
   clean(el, andChildren) {
     if (el.nodeType === 1) {
@@ -33,18 +31,15 @@ class NodeCleaner {
       this.cleanAttributes(el);
       this.cleanStyle(el);
       this.conf.removeUnusedStyles && removeUnusedStyles(el);
-      // this.cleanClass(el); // todo
+      // this.cleanClass(el);
       removeUnusedAttributes(el);
       this.conf.removeEmptyInlineSpans && removeEmptyInlineSpans(el);
       this.conf.removeUnusedElements && removeUnusedElements(el);
     } else if (el.nodeType === 3) {
       if (this.conf.removeNbsp) el.data = el.data.replace(/\u00a0/g,' ');
       if (this.conf.replaceCombiningChars) nodeReplaceCombiningDiaeresis(el);
-      // if (el.previousSibling && el.previousSibling.nodeType === 3) { // verbinden
-      //   el.previousSibling.data += el.data;
-      //   el.remove();
-      // }
-      // if (el.data === '') el.remove();
+      // if (el.previousSibling?.nodeType === 3) { el.previousSibling.data += el.data; el.remove(); } // merge
+      // else if (el.data === '') el.remove();
     } else {
       this.conf.removeComments && el.remove();
     }
@@ -73,9 +68,7 @@ class NodeCleaner {
 
     if (el.hasAttribute('class')) nEl.className = el.className;
 
-    el.replaceWith(nEl);
-    nEl.append(el);
-    unwrap(el);
+    replaceNode(el, nEl);
     // restore styles that changed due to tag replacement
     const after = getComputedStyle(nEl);
     for (const prop of after) {
@@ -93,13 +86,13 @@ class NodeCleaner {
       if (!allowed) { el.removeAttribute(name); continue; }
       if (allowed === true || allowed === 1) continue;
       // values allowed
-      if (allowed[value] || allowed.includes(value)) continue;
+      if (allowed[value] || allowed.includes?.(value)) continue;
       el.removeAttribute(name);
     }
   }
   cleanStyle(el) {
     if (!this.conf.styles) return;
-    for (let i=0, style; (style = el.style[i++]);) {
+    for (const style of [...el.style]) { // copy: removeProperty() shifts the indices
       const allowed = this.conf.styles[style];
       if (!allowed) {
         el.style.removeProperty(style); continue;
@@ -108,27 +101,15 @@ class NodeCleaner {
       // values allowed
       let value = el.style.getPropertyValue(style);
       if (style === 'font-family') value = value.replace(/^["']|["']$/g,'');
-      //if (allowed.includes) { // isArray (array with allowed values)
-      if (allowed[value] || allowed.includes(value)) continue;
+      if (allowed[value] || allowed.includes?.(value)) continue;
       el.style.removeProperty(style);
-      //}
     }
   }
   /*
   cleanClass(el) {
-    if (!el.className) return;
-    var allowed = this.conf['classes'];
-    if (allowed === undefined) return;
-    if (allowed.length < 1) {
-      el.className = '';
-      return;
-    }
-    var classes = el.className.split(' ');
-    var nClasses = [];
-    for (var i=0, cl; cl=classes[i++];) {
-      allowed.includes(cl) && nClasses.push(cl);
-    }
-    el.className = nClasses.join(' ');
+    const allowed = this.conf.classes;
+    if (!allowed) return;
+    for (const cl of [...el.classList]) allowed.includes(cl) || el.classList.remove(cl);
   }
   */
 }
@@ -154,7 +135,7 @@ function removeUnusedStyles(el) {
 function removeUnusedAttributes(el) {
   el.getAttribute('style')?.trim() === '' && el.removeAttribute('style');
   el.getAttribute('class')?.trim() === '' && el.removeAttribute('class');
-  /* bugs ie8/9/10? */
+  // non-numeric sizes such as "auto" are invalid attribute values
   if (el.tagName === 'IMG') {
     if (!/^\d/.test(el.getAttribute('height'))) el.removeAttribute('height');
     if (!/^\d/.test(el.getAttribute('width'))) el.removeAttribute('width');
@@ -165,14 +146,12 @@ function removeEmptyInlineSpans(el) {
   if (el.tagName === 'SPAN' && getComputedStyle(el).getPropertyValue('display') === 'inline') unwrap(el);
 }
 function removeUnusedElements(el) {
-  if (el.tagName === 'A' && el.innerHTML.trim().length) {
-    //unwrap(el); return;
-  }
+  // if (el.tagName === 'A' && el.innerHTML.trim()) { unwrap(el); return; }
   // divs containing only block-likes
   if (!el.attributes.length && el.tagName === 'DIV') {
     let onlyBlocks = true;
     for (const child of el.childNodes) {
-      //if (child.nodeType === 2) continue; // comment
+      // if (child.nodeType === 8) continue; // comment
       if (child.nodeType === 3) {
         if (child.data.trim() === '') continue;
         onlyBlocks = false;
@@ -219,15 +198,10 @@ const COMBINING_CHARS = [
   ['⚫','\x1D'], // unrenderable; found as "ff" in PDF text
 ].map(data => [data[0], new RegExp(data[1], 'g')] );
 function nodeReplaceCombiningDiaeresis(textNode){
-
-  //textNode.data = textNode.data.normalize(); todo!
-
-  const string = textNode.data
-  for (const [char,regexp] of COMBINING_CHARS) {
-    if (string.match(regexp)) { // avoid resetting the cursor when unchanged
-      textNode.data = string.replace(regexp, char);
-    }
-  }
+  // let data = textNode.data.normalize(); // todo: NFC covers all combining chars
+  let data = textNode.data;
+  for (const [char, regexp] of COMBINING_CHARS) data = data.replace(regexp, char);
+  if (data !== textNode.data) textNode.data = data; // avoid resetting the cursor when unchanged
 }
 
 function modernize(n) {
@@ -243,61 +217,43 @@ function modernize(n) {
     color && (span.style.color = color);
     face  && (span.style.fontFamily = face);
     size  && (span.style.fontSize = (parseInt(size)+0.6)/2+'em');
-    n.after(span);
-    span.append(n);
-    unwrap(n);
+    replaceNode(n, span);
     return span;
   }
   if (n.tagName==='CENTER') {
     const div = document.createElement('div');
     div.style.textAlign = 'center';
-    n.after(div);
-    div.append(n);
-    unwrap(n);
+    replaceNode(n, div);
     return div;
   }
   return n;
 }
 
 
-/* example *
-var conf = {
-  tags:{
-    DIV:true,
-    SPAN:true,
-  },
-  tagsRemove: {
-    'FONT':  1,
-    'O:P':   1,
-    'STYLE': 1,
-    'SCRIPT':1,
-    'META':  1,
-    'LINK':  1,
-    'TITLE': 1
-  }
+/* example
+const cleaner = new NodeCleaner({
+  tags:       { DIV:1, SPAN:1 },
+  tagsRemove: { FONT:1, 'O:P':1, STYLE:1, SCRIPT:1, META:1, LINK:1, TITLE:1 },
+  attributes: { href:1, target:['_blank'] }, // true/1, or the allowed values
   styles: {
     'color':       true,
     'font-weight': true,
-    'font-family': {Arial:true, Times:true},
+    'font-family': ['Arial', 'Times'],
     'font-size':   true,
     'font-style':  true,
   },
-  //classes: ['myclass', 'yourClass'], // class:[]
-};
-var cleaner = new NodeCleaner(conf);
-cleaner.clean(el, bool_incContainings );
+  //classes: ['myclass', 'yourClass'], // [] removes all
+});
+cleaner.clean(el, true); // true: children too
 */
 
 
 
 /* todo?
-n.className = n.className.replace('Apple-style-span', '');
-n.className = n.className.replace('Apple-converted-space', '');
-n.className = n.className.replace(/(^| )Mso[^\s]+/, '');
-n.className = n.className.replace(/(^| )Apple-[^\s]+/, '');
+for (const cl of [...n.classList]) /^(Mso|Apple-)/.test(cl) && n.classList.remove(cl);
 n.removeAttribute('_moz_dirty');
 n.removeAttribute('id');
-if (n.style.position==='absolute') { n.style.position = ''; }
+if (n.style.position === 'absolute') n.style.position = '';
 */
 
 

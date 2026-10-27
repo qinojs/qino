@@ -6,7 +6,6 @@
   ],
   "files": [
     "README.md",
-    "REVIEW.md",
     "api.ts",
     "command.ts",
     "datapoint.ts",
