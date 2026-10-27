@@ -212,7 +212,7 @@
     "@upyo/smtp": "npm:@upyo/smtp@^0.6",
     "@types/sanitize-html": "npm:@types/sanitize-html@^2",
     "imapflow": "npm:imapflow@^1",
-    "mailparser": "npm:mailparser@^3",
+    "mailparser": "npm:mailparser@^3.12",
     "mime-types": "npm:mime-types@^3",
     "quickjs-emscripten": "npm:quickjs-emscripten@^0.32",
     "temporal-polyfill/": "npm:/temporal-polyfill@^1/",

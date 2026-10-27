@@ -10,7 +10,7 @@ const FLAGGED = 0.9;
 const FLAGS = ["x-spam-flag", "x-spam-status", "x-spam"];
 
 /** A mail as mailparser hands it over — only the parts read here. Header keys are lowercase. */
-type Mail = { subject?: string; text?: string; headerLines?: { key: string; line: string }[] };
+type Mail = { subject?: string; text?: string; headerLines?: readonly { key: string; line: string }[] };
 
 /** Independent signals, each 0 to 1, as one. */
 const combine = (...signals: number[]) => 1 - signals.reduce((clean, p) => clean * (1 - p), 1);

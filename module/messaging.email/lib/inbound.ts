@@ -6,22 +6,10 @@ import { inbound } from "./settings.ts";
 import { spamOf } from "./spam.ts";
 
 import type { App } from "@qino/qino";
+import type { ParsedMail } from "mailparser";
 
 /** Tries before a mail that keeps failing is skipped. */
 const FAILS = 3;
-
-/** What the MIME parser hands back — only the parts this module reads. */
-type Parsed = {
-  subject?: string;
-  text?: string;
-  html?: string | false;
-  messageId?: string;
-  date?: Date;
-  from?: { value: { address?: string; name?: string }[] };
-  to?: { text?: string };
-  attachments?: { filename?: string; contentType?: string; content: Uint8Array }[];
-  headerLines?: { key: string; line: string }[];
-};
 
 /**
  * Import new mails into the journal without changing mailbox flags.
@@ -35,7 +23,7 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
   if (!config.host || !config.pass) throw new Error("Inbound email needs an IMAP host and password");
 
   const { ImapFlow } = await import("imapflow");
-  const { simpleParser } = await import("mailparser") as { simpleParser: (source: Uint8Array) => Promise<Parsed> };
+  const { simpleParser } = await import("mailparser");
   const client = new ImapFlow({
     host: config.host,
     port: config.port,
@@ -105,7 +93,7 @@ const taken = async (app: App, receipt: string, messageId?: string) =>
     WHERE d.external_id = ${messageId} AND m.channel = ${"email"}`);
 
 /** One incoming mail as a journal entry, tied to the user the address belongs to; resolves with its write. */
-async function journal(app: App, mail: Parsed, to: string) {
+async function journal(app: App, mail: ParsedMail, to: string) {
   const sender = addressOf(mail.from?.value?.[0] ?? "");
   const usrId = sender ? await contactOwner(app.db, "email", sender.address) : undefined;
   const time = mail.date ? Math.floor(mail.date.getTime() / 1000) : unixTime();
@@ -122,7 +110,12 @@ async function journal(app: App, mail: Parsed, to: string) {
         content: file.content,
       })),
     },
-    data: { from: sender?.address, name: sender?.name, to: mail.to?.text ?? to, html: mail.html || undefined },
+    data: {
+      from: sender?.address,
+      name: sender?.name,
+      to: [mail.to ?? []].flat().map((a) => a.text).join(", ") || to,
+      html: mail.html || undefined,
+    },
     time,
     spam,
   }, [{ usrId, address: sender?.address, externalId: mail.messageId?.slice(0, 191), sent: unixTime() }]);
