@@ -33,7 +33,10 @@ Deno.test("backend.shp3: every shop page reports its numbers to the overview", a
   await using app = await shop();
   await app.db.table("page").insert({ id: 90, name: "Cup", access: 1 });
   await app.db.table("shp3_product").insert({ id: 90, price: 12 });
+  await app.db.table("page").insert({ id: 91, name: "Mug", access: 1 });
   await app.db.table("shp3_product").insert({ id: 91, price: 0 });
+  await app.db.table("page").insert({ id: 92, name: "Secret", access: 0 }); // not readable: not counted
+  await app.db.table("shp3_product").insert({ id: 92, price: 0 });
   await app.db.table("shp3_order").insert({ time_ordered: 1000, cost: 12, paid: 0 });
   await app.db.table("shp3_order").insert({ time_ordered: 0 });
   await app.settings.shp3.location.country("CH");
@@ -48,7 +51,8 @@ Deno.test("backend.shp3: every shop page reports its numbers to the overview", a
     assertStringIncludes(orders, "shp3_orderId="); // and the newest ones, each linked
     assertEquals(orders.includes("[object Promise]"), false);
     const products = String(await widget("cms.backend.shp3.products"));
-    assertStringIncludes(products, "<td>2");
+    assertStringIncludes(products, "Products:<td>2"); // readable ones only
+    assertStringIncludes(products, "Without a price:<td>1");
     const settings = String(await widget("cms.backend.shp3.settings"));
     assertStringIncludes(settings, "Switzerland"); // the shop's country, named by Intl
     assertStringIncludes(settings, "<td>1 ");
