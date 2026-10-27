@@ -28,13 +28,13 @@ const nodeSettingsSchema = {
   },
 };
 
-async function render(node: Node, { vars }: any = {}) {
+async function render(node: Node) {
   let conts = await node.conts();
 
   // Init a default child module once per node; deleting all children must not bring it back
   if (!conts.length && !node.settings.__inited()) {
-    const defaultModule = await node.app.settings[name]["init-child-module"];
-    const initModule = vars["init-child-module"] ?? defaultModule;
+    // only the site setting: render vars come from the client
+    const initModule = await node.app.settings[name]["init-child-module"];
     if (initModule) {
       node.settings.__inited(true);
       // The container is born with the site's module; from here the panel's picker owns it.
