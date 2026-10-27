@@ -43,7 +43,14 @@ Deno.test("cms.versions: API exposes publish/page/log endpoints", () => {
     type: "object",
     properties: {
       pid: { type: "number" },
-      options: { type: "object", additionalProperties: true },
+      options: {
+        type: "object",
+        properties: {
+          fromSpace: { type: "number" }, fromLog: { type: "number" },
+          toSpace: { type: "number" }, subPages: { type: "boolean" },
+        },
+        required: [],
+      },
     },
     required: ["pid"],
   });

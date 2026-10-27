@@ -79,7 +79,10 @@ export const api: ApiTree = {
         post: {
             description: "Publish a node (page/content) into a version space.",
             access: Access.USER,
-            input: s.object({ pid: s.number(), options: s.optional(s.record()) }),
+            input: s.object({ pid: s.number(), options: s.optional(s.object({
+                fromSpace: s.optional(s.number()), fromLog: s.optional(s.number()),
+                toSpace: s.optional(s.number()), subPages: s.optional(s.boolean()),
+            })) }),
             execute: ({ pid, options }: any, ctx: any) => publishNode(ctx, pid, options ?? {}),
         },
     },

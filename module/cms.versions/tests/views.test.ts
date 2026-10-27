@@ -2,7 +2,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { App } from "@qino/qino";
 
-import { historicalViews, versedTables } from "../lib/Vers.ts";
+import { ensureView, historicalViews, versedTables } from "../lib/Vers.ts";
 
 async function versionedApp() {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
@@ -60,4 +60,10 @@ Deno.test("historicalViews: a half-built set is dropped when setup itself fails"
   await assertRejects(() => historicalViews(ctx, 0, 2), Error, "setup failed");
 
   assertEquals(queries.length, 3); // create first view (2 queries), then drop it
+});
+
+Deno.test("ensureView: space and log must be integers, they end up as raw SQL", async () => {
+  await using app = await versionedApp();
+  for (const [space, log] of [["1) OR (1=1", 0], [0, 1.5], [NaN, 0]] as any[])
+    await assertRejects(() => ensureView(app.db, "page", space, log), TypeError);
 });

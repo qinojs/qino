@@ -94,6 +94,8 @@ export function shadowSchema(source: any): any {
  * Historical views are single-use: not cached, the caller drops them after use.
  */
 export async function ensureView(db: Db, tableName: string, space: number, log: number): Promise<string> {
+    // both end up as raw SQL in CREATE VIEW (no bound parameters there)
+    if (!Number.isSafeInteger(space) || !Number.isSafeInteger(log)) throw new TypeError(`Invalid version space/log: ${space}/${log}`);
     if (!versedTables(db)[tableName]) return tableName;
     if (space === 0 && log === 0) return tableName;
 
