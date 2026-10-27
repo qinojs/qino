@@ -37,7 +37,7 @@ class NodeCleaner {
       this.conf.removeUnusedElements && removeUnusedElements(el);
     } else if (el.nodeType === 3) {
       if (this.conf.removeNbsp) el.data = el.data.replace(/\u00a0/g,' ');
-      if (this.conf.replaceCombiningChars) nodeReplaceCombiningDiaeresis(el);
+      if (this.conf.replaceCombiningChars) normalizeText(el);
       // if (el.previousSibling?.nodeType === 3) { el.previousSibling.data += el.data; el.remove(); } // merge
       // else if (el.data === '') el.remove();
     } else {
@@ -186,21 +186,9 @@ function removeUnusedElements(el) {
 const NOT_INLINE = {block:1,table:1,flex:1,grid:1,'list-item':1,'table-cell':1};
 const BLOCK_LIKE_TAGS = {DIV:1,P:1,UL:1,OL:1,TABLE:1,HR:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,NAV:1,MAIN:1,SECTION:1,ARTICLE:1,HEADER:1,FOOTER:1}
 
-// others? http://donsnotes.com/tech/charsets/ascii.html
-// todo: rename to problematic chars
-const COMBINING_CHARS = [
-  ['ü','u\u0308'], // COMBINING DIAERESIS (combined chars)
-  ['Ü','U\u0308'],
-  ['ä','a\u0308'],
-  ['Ä','A\u0308'],
-  ['ö','o\u0308'],
-  ['Ö','O\u0308'],
-  ['⚫','\x1D'], // unrenderable; found as "ff" in PDF text
-].map(data => [data[0], new RegExp(data[1], 'g')] );
-function nodeReplaceCombiningDiaeresis(textNode){
-  // let data = textNode.data.normalize(); // todo: NFC covers all combining chars
-  let data = textNode.data;
-  for (const [char, regexp] of COMBINING_CHARS) data = data.replace(regexp, char);
+// NFC joins combining marks (u + \u0308 → ü); \x1D is unrenderable, found as "ff" in PDF text
+function normalizeText(textNode){
+  const data = textNode.data.normalize().replace(/\x1D/g, '⚫');
   if (data !== textNode.data) textNode.data = data; // avoid resetting the cursor when unchanged
 }
 

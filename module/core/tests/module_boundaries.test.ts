@@ -104,7 +104,7 @@ async function barrels() {
 const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
 
 // Still open, because the consumer is the defect and fixing it is a design change: `api` is a
-// manifest field the loader already publishes as app.apiTree["cms"]. See PLAN-modules.md.
+// manifest field the loader already publishes as app.apiTree["cms"]. See qinojs/doc/PLAN-modules.md.
 const OPEN = new Set<string>();
 
 /** The module folders below a store directory, as `<store dir><module>/`. */
@@ -245,7 +245,7 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 // Optional integrations: a value import of a module that need not be linked, so the installation
 // without it crashes on first use. Declaring the dependency is the wrong repair — it would drag the
 // whole module in for a link, a widget or a prompt. They want an extension point, and until that
-// vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
+// vocabulary exists (see qinojs/doc/PLAN-modules.md) they stay named here rather than invisible.
 const OPTIONAL = new Set([
   "cms.backend.iot/nodeApi.ts -> iot.record", // manual measurements, guarded by modules.linked("iot.record")
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
