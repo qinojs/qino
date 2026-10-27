@@ -11,7 +11,7 @@ import type { App, Ctx } from "@qino/qino";
 async function app() {
   const db = new Db("sqlite::memory:");
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
-  await db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER)`;
+  await db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER, PRIMARY KEY (usr_id, grp_id))`;
   await db.loadTables();
   await db.table("grp").insert({ name: "Newsletter" });
   await db.table("usr_grp").insert({ usr_id: 7, grp_id: 1 });
