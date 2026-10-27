@@ -2,6 +2,7 @@ import { ApiError, contactOwner, getCtx, unixTime } from "@qino/qino";
 import { send } from "@qino/qino/messaging.email";
 import { issue, redeem } from "@qino/qino/ticket";
 
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const PURPOSE = "auth.pwReset";
@@ -20,13 +21,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     const email = String(vars.request).trim().toLowerCase();
     // the address has to be a verified contact: a login handle that looks like one proves nothing
     const usrId = await contactOwner(app.db, "email", email);
-    const active = usrId && await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND active = ${true}`;
-    const exhausted = active && Number(await app.db.one`SELECT COUNT(*) FROM ticket WHERE purpose = ${PURPOSE}
-      AND data = ${JSON.stringify({ usrId })} AND created > ${unixTime() - 3600}`) >= PER_HOUR;
-    // anonymous and it mails: every request counts a little, one past the limit more
-    app.fire("suspicious", { ctx: getCtx(), weight: exhausted ? 3 : 1, reason: "password reset requested" })
-      .catch(() => {});
-    if (active && !exhausted) await sendLink(node, usrId, email);
+    // anonymous and it mails: every request counts a little, one past the limit more (sendLink)
+    suspicious(app, 1, "password reset requested");
+    // not awaited: the answer must take the same time whether or not the address has an account
+    if (usrId) sendLink(node, usrId, email).catch((e) => console.error("[pwReset]", e));
     const message = await t`If that address has an account, a link is on its way. Please also check your spam folder.`;
     return { ok: true, message };
   }
@@ -44,9 +42,17 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   return null;
 }
 
+/** Not awaited: the security module adds it up per IP. */
+const suspicious = (app: App, weight: number, reason: string) =>
+  app.fire("suspicious", { ctx: getCtx(), weight, reason }).catch(() => {});
+
 /* todo: ticket will be shortened by shorturl */
 async function sendLink(node: Node, usrId: number, email: string) {
   const app = node.app;
+  if (!await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND active = ${true}`) return;
+  const sent = await app.db.one`SELECT COUNT(*) FROM ticket WHERE purpose = ${PURPOSE}
+    AND data = ${JSON.stringify({ usrId })} AND created > ${unixTime() - 3600}`;
+  if (Number(sent) >= PER_HOUR) return suspicious(app, 2, "password reset past the limit");
   const handle = await issue(app, PURPOSE, { usrId });
   // the node's own page, not the api endpoint this call arrived at
   const url = new URL(await node.url(), await app.url());
@@ -55,7 +61,5 @@ async function sendLink(node: Node, usrId: number, email: string) {
   const text = await app.t`Open this link to set a new password: ${url.href}
 
 The link is valid until ${until} UTC. If you did not ask for it, ignore this mail.`;
-  // not awaited: the answer must take the same time whether or not the address has an account
-  send(app, { email }, { title: await app.t`Set a new password`, text })
-    .catch((e) => console.error("[pwReset]", e));
+  await send(app, { email }, { title: await app.t`Set a new password`, text });
 }

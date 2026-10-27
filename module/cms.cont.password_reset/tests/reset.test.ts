@@ -71,12 +71,16 @@ Deno.test("an account gets three links an hour; each request counts a little sus
   a.url = () => Promise.resolve("https://qino.test/");
   const node = { app: a, url: () => Promise.resolve("/reset") } as unknown as Node;
   const links = () => a.db.one`SELECT COUNT(*) FROM ticket WHERE purpose = ${PURPOSE}`;
+  const settle = () => new Promise((done) => setTimeout(done, 20)); // the link is sent in the background
   const message = { ok: true, message: "If that address has an account, a link is on its way. Please also check your spam folder." };
 
   await requestStorage.run({} as never, async () => {
     assertEquals(await api(node, { request: "nobody@qino.test" }), message); // same answer, nothing sent
-    for (let i = 0; i < 4; i++) assertEquals(await api(node, { request: "One@qino.test" }), message);
+    for (let i = 0; i < 4; i++) {
+      assertEquals(await api(node, { request: "One@qino.test" }), message);
+      await settle();
+    }
     assertEquals(await links(), 3); // the fourth within the hour sends nothing, and says the same
   });
-  assertEquals(weights, [1, 1, 1, 1, 3]);
+  assertEquals(weights, [1, 1, 1, 1, 1, 2]); // the one past the limit: 1 + 2
 });
