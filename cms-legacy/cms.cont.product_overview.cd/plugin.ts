@@ -9,6 +9,7 @@ async function render(node: Node) {
   const products = await root.bough({ module: "cms.cont.shp3.product.cd", type: "c" });
   const images: HtmlString[] = [], titles: HtmlString[] = [];
   for (const product of products.values()) {
+    if (!await product.isReadable()) continue;
     const url = await product.url();
     const image = await product.file("Produkt");
     images.push(html`<a href="${url}">${await cms_image(image, {
