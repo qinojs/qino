@@ -21,7 +21,7 @@ Deno.test({
     await app.init();
     try {
       const cm = cms(app);
-      for (const name of ["account", "passkeys", "two-factor", "devices", "home", "login", "todo-passkeys"]) {
+      for (const name of ["account", "profile", "passkeys", "two-factor", "devices", "home", "login", "todo-passkeys"]) {
         assertEquals((await cm.nodesByName(name)).size, 1, name);
       }
       const account = await app.fetch(new Request("http://localhost/en/my-account"));
@@ -30,6 +30,8 @@ Deno.test({
       const res = await app.fetch(new Request("http://localhost/en/my-account/passkeys"));
       assertEquals(res.status, 200);
       assert((await res.text()).includes("Please sign in"), "guests are asked to sign in");
+      const [emails] = (await cm.nodesByModule("cms.cont.my.emails")).values();
+      assertEquals(await emails.settings.single, true, "one address by default");
       const pages = await (await cm.node(1)).children({ type: "p" });
       const menu = pages.values().filter((p) => p.vs.visible).map((p) => p.vs.name);
       assertEquals([...menu], ["home", "contact", "account", "first-steps"]);

@@ -32,6 +32,17 @@ async function build(app: App) {
     await section(p, "cms.cont.login");
   });
 
+  const profile = { en: "Profile", de: "Profil", fr: "Profil", it: "Profilo" };
+  await page(account, "profile", profile, shown, async (p) => {
+    await prose(p, {
+      en: "<h1>Profile</h1>\n<p>The email address we reach you at.</p>",
+      de: "<h1>Profil</h1>\n<p>Die E-Mail-Adresse, unter der wir Sie erreichen.</p>",
+      fr: "<h1>Profil</h1>\n<p>L'adresse e-mail à laquelle nous vous joignons.</p>",
+      it: "<h1>Profilo</h1>\n<p>L'indirizzo e-mail al quale vi raggiungiamo.</p>",
+    });
+    const emails = await section(p, "cms.cont.my.emails");
+    await emails.settings.single(true); // most sites need one address; a site may allow more
+  });
   const passkeys = { en: "Passkeys", de: "Passkeys", fr: "Clés d'accès", it: "Passkey" };
   await sub(account, "passkeys", passkeys, ["cms.cont.my.webauthn"], {
     en: "<h1>Passkeys</h1>\n<p>Sign in with your fingerprint, face or device PIN — no password to type or forget.</p>",
