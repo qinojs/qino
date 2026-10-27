@@ -57,10 +57,11 @@ which collects chunks into an array — same cap, same peak.
 [`FileTransformer.transform`](../module/core/lib/transform/FileTransformer.ts#L120) writes one file per
 `(source, size, options, toolchain, accept)` combination and never deletes. A responsive image with
 four widths × three formats × two DPR is 24 files per source image. The only eviction is
-[healthChecks.ts:278](../module/core/healthChecks.ts#L278), which deletes entries whose `atime` is older
-than two days — a *manual* cleanup action in the backend, not a scheduled job. On a busy site this is
-the fastest-growing directory on the machine. Cache hits touch `atime` so the LRU is meaningful
-([FileTransformer.ts:157](../module/core/lib/transform/FileTransformer.ts#L157)).
+[healthChecks.ts:316](../module/core/healthChecks.ts#L316), which deletes entries unused for a chosen
+age (three months down to five minutes) — a *manual* cleanup action in the backend, not a scheduled
+job. On a busy site this is the fastest-growing directory on the machine. Cache hits touch `mtime`
+(at most once a day, since `atime` is unreliable) so the age is meaningful
+([FileTransformer.ts:151](../module/core/lib/transform/FileTransformer.ts#L151)).
 
 ### Database growth
 
@@ -70,8 +71,9 @@ entries on first sight, plus the redacted POST body (clipped to 10 000 chars) in
 Other steady growers: `sess`, `client`, and `smalltext`, which gains a row for every new
 translatable string.
 
-Cleanup lives in [healthChecks.ts:198](../module/core/healthChecks.ts#L198) — deletes logs, clients and
-sessions older than a month, capped at a million rows per statement on MySQL. It is operator-triggered.
+Cleanup lives in [healthChecks.ts:250](../module/core/healthChecks.ts#L250) — deletes logs older than a
+month and unreferenced clients and sessions, and clears tokens of idle sessions. It is
+operator-triggered.
 
 ## CPU
 
