@@ -74,6 +74,8 @@ export default async function (node: Node, vars:any): Promise<any> {
     if (name === "pw" && !String(vars.value ?? "")) return false;
     const value = name === "pw" ? await pwHash(String(vars.value)) : name === "username" ? String(vars.value ?? "").trim() : vars.value;
     await targetUsr.$set({ [name]: value });
+    // revoked, so a reactivation doesn't bring old sessions back
+    if (name === "active" && !targetUsr.$get("active")) await db.exec`DELETE FROM sess WHERE usr_id = ${targetUsr.$id}`;
     if (name === "username") await adoptUsername(node.app, Number(targetUsr.$id), String(value ?? ""));
     return 1;
   }

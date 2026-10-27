@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 
 import { uid } from "../crypto.ts";
 import { header, cookiePrefix, unixTime } from "../util.ts";
-import { loginFromRequest } from "../auth/login.ts";
+import { loginFromRequest, logout } from "../auth/login.ts";
 
 import type { Ctx } from "./Ctx.ts";
+import type { Usr } from "../rows.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: Ctx): Promise<void> {
@@ -12,8 +13,12 @@ export async function initRequest(ctx: Ctx): Promise<void> {
   ctx.sess ??= await ctx.app.sessions.loadFromRequest(ctx);
   await initClient(ctx);
   if (!ctx.statelessAuth) await loginFromRequest(ctx);
+  if (ctx.userId) {
+    const usr = await ctx.app.db.table("usr").get<Usr>(ctx.userId); // one SELECT, then ctx.user is synchronous
+    // a session outlives a deactivated or deleted user; tokens check that themselves
+    if (!ctx.statelessAuth && !usr?.active) await logout(ctx);
+  }
   ctx.sess.touch(ctx.userId);
-  if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user is synchronous
   await ctx.initSettings();
   await ctx.app.languages.initCtx(ctx);
   initLog(ctx);
