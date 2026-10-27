@@ -8,7 +8,6 @@ import { onShortcut } from "../js/shortcut.js";
 import "./contentMenu.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
-const activeId = () => cms.cont.active || nodeId;
 
 const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListener(e, fn));
 const sel = s => s[0] === ">" ? ":scope " + s : s;
@@ -49,7 +48,7 @@ const loadWidget = (widget) => {
   // sidebar items come from view/panel.ts; their widgets are named here
   const src = SIDEBAR_WIDGETS[widget];
   if (!src) return;
-  const context = { node: { id: activeId() }, dialogs: root };
+  const context = { node: { id: cms.cont.active || nodeId }, dialogs: root };
   const mounted = widgetEl.firstElementChild;
   if (mounted?.reload) return mounted.reload(context); // the active node may have changed
   widgetEl.replaceChildren(mountWidget(src, context));

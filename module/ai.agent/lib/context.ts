@@ -42,12 +42,11 @@ async function sent(app: App, agent: number, session: number) {
   return { start, history: rows };
 }
 
-const agentOf = async (app: App, session: number) => Number(await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`);
-
 /** What the model of `session` has in its context, by key: the kept messages still sent (`#7`), its tools
  *  as given and what the messages list as `known` (memories by id, `5`; others' by theirs, `u5`; tools by name). */
 export async function known(app: App, session: number): Promise<Set<string>> {
-  const { start, history } = await sent(app, await agentOf(app, session), session);
+  const agent = Number(await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`);
+  const { start, history } = await sent(app, agent, session);
   return new Set([...start ? [start, ...history] : history].flatMap((row) =>
     [`#${row.id}`, ...row.message.tools?.map((tool: Tool) => tool.name) ?? [], ...row.message.known ?? []]));
 }

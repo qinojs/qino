@@ -25,9 +25,6 @@ const modAccess = (app: App, module: string) =>
 const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;
 const contentModules = (app: App) => app.modules.linked().map((mod) => mod.name).filter((n) => isContent(app, n)).sort();
 
-/** Detail link of a module list page (this one or cms.backend.superuser.module). */
-const modUrl = (base: string, module: string) => backend.toUrl(base, { mod: module });
-
 const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number(v)] ?? "?";
 const accessWord = word(["none", "read", "edit", "admin"]);
 // module.cms_access: null = no rule, 0 = off for everyone, 1-3 = default level (see cms/ACCESS.md)
@@ -291,8 +288,9 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const rows = (await moduleStats(app)).filter((r) => isContent(app, String(r.name)));
   const missing = (await missingModules(app)).length;
   const base = page ? await page.url() : "";
+  // detail link of a module list page (this one or cms.backend.superuser.module)
   const link = (r: Record<string, unknown>, extra: HtmlString | string) =>
-    html`<div><a href="${modUrl(base, String(r.name))}">${r.name}</a> ${extra}</div>`;
+    html`<div><a href="${backend.toUrl(base, { mod: String(r.name) })}">${r.name}</a> ${extra}</div>`;
 
   const top = rows.toSorted((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
   const recent = rows.filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
