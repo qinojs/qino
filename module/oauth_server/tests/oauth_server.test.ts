@@ -4,7 +4,7 @@ import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { authorize, metadata, register, resourceMetadata, token } from "../mod.ts";
-import { mint, verify } from "../lib/tokens.ts";
+import { consume, mint, verify } from "../lib/tokens.ts";
 
 import type { Ctx } from "@qino/qino";
 
@@ -237,4 +237,12 @@ Deno.test("oauth_server: expired tokens never verify", async () => {
   const app = { db } as never;
   const access = await mint(app, { kind: "access", clientId: "1", usrId: 1, ttl: -1 });
   assertEquals(await verify(app, "access", access), undefined);
+});
+
+Deno.test("oauth_server: of two parallel redemptions of one refresh token, only one gets it", async () => {
+  const db = await makeDb();
+  const app = { db } as never;
+  const refresh = await mint(app, { kind: "refresh", clientId: "1", usrId: 1, ttl: 600 });
+  const got = await Promise.all([consume(app, "refresh", refresh), consume(app, "refresh", refresh)]);
+  assertEquals(got.filter(Boolean).length, 1);
 });
