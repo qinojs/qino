@@ -29,7 +29,7 @@ Deno.test({
         assert(p && await p.in(account), name);
       }
       const below = (await account.children({ type: "p" })).values().map((p) => p.vs.name);
-      assertEquals([...below], ["invoices", "address", "passkeys", "two-factor", "devices"]);
+      assertEquals([...below], ["profile", "invoices", "address", "passkeys", "two-factor", "devices"]);
       const res = await app.fetch(new Request("http://localhost/en/my-account/invoices"));
       assertEquals(res.status, 200);
       await res.body?.cancel();
