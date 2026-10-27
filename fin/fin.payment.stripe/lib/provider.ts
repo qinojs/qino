@@ -1,7 +1,8 @@
 import { createHmac } from "node:crypto";
 import { errMsg, safeEqual } from "@qino/qino";
+import { dataOf } from "@qino/qino/fin.payment";
 
-import type { App, Row } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Provider, State } from "@qino/qino/fin.payment";
 
 const API = "https://api.stripe.com/v1/";
@@ -43,8 +44,6 @@ async function call(app: App, path: string, body?: Record<string, unknown>) {
   }
   return json;
 }
-
-const dataOf = (payment: Row) => JSON.parse(String(payment.data ?? "{}")) ?? {};
 
 /**
  * Stripe Checkout: the payer pays on Stripe's page with whatever the Stripe account offers —

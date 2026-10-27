@@ -1,10 +1,10 @@
 import { errMsg, html, unixTime } from "@qino/qino";
 import { fromMinor } from "@qino/qino/fin";
-import { qr } from "@qino/qino/fin.payment";
+import { dataOf, qr } from "@qino/qino/fin.payment";
 
 import { address } from "./address.ts";
 
-import type { App, Row } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Provider, State } from "@qino/qino/fin.payment";
 
 const SATS = 100_000_000;
@@ -28,8 +28,6 @@ async function get(url: string) {
   if (!res.ok) throw new Error(`fin.payment.bitcoin: ${res.status} from ${new URL(url).host}`);
   return res.json();
 }
-
-const dataOf = (payment: Row) => JSON.parse(String(payment.data ?? "{}")) ?? {};
 
 /** What arrived at an address, in satoshis: all of it, and what is confirmed deep enough. */
 async function received(esplora: string, to: string, confirmations: number) {

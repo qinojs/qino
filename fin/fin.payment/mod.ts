@@ -78,6 +78,10 @@ export async function methods(app: App, offer: Offer): Promise<{ method: string;
 /** The `ref` of what follows from a payment elsewhere: a move on a user's credit, an entry. */
 export const refOf = (id: number): string => `fin.payment:${id}`;
 
+/** A payment's `data`: what its provider stored as `State.data`. */
+export const dataOf = (payment: { data?: unknown }): Record<string, any> =>
+  JSON.parse(String(payment.data ?? "{}")) ?? {};
+
 /** What every payment has. `ref` is the consumer's: `<module>:<id>`, found again in `payment:change`. */
 type Base = { amount: number; currency: string; ref?: string; description?: string; usrId?: number; payer?: Payer };
 
