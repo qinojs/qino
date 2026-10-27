@@ -35,7 +35,7 @@ async function targets(app: App) {
   return [{
     id: String(user.id),
     label: String(user.name ?? (username || user.id)),
-    ...(username ? { url: `https://www.threads.net/@${username}` } : {}),
+    ...(username && { url: `https://www.threads.net/@${username}` }),
   }];
 }
 

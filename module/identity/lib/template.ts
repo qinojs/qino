@@ -1,4 +1,4 @@
-import { hee, html } from "@qino/qino";
+import { html } from "@qino/qino";
 
 import { file } from "../mod.ts";
 
@@ -27,7 +27,7 @@ export const templatePlaceholders: Record<string, TemplatePlaceholder> = {
     const org = app.settings.identity.organization;
     const town = [await line(org.address.postalCode), await line(org.address.addressLocality)].filter(Boolean).join(" ");
     const parts = [await line(org.name), await line(org.address.streetAddress), town].filter(Boolean);
-    return parts.length ? { text: parts.join(", "), html: html.raw(parts.map(hee).join("<br>")) } : undefined;
+    return parts.length ? { text: parts.join(", "), html: html.join(parts, "<br>") } : undefined;
   },
   ...asset("logo", 40),
   ...asset("icon", 64, true),
@@ -37,8 +37,8 @@ export const templatePlaceholders: Record<string, TemplatePlaceholder> = {
 function asset(name: string, height: number, square = false): Record<string, TemplatePlaceholder> {
   const transform = square ? { w: height * 2, h: height * 2 } : { h: height * 2 };
   const url = async (app: App) => {
-    const asset = await file(app, name).catch(() => undefined);
-    const [path, base] = await Promise.all([asset?.url(transform).catch(() => undefined), app.url().catch(() => undefined)]);
+    const found = await file(app, name).catch(() => undefined);
+    const [path, base] = await Promise.all([found?.url(transform).catch(() => undefined), app.url().catch(() => undefined)]);
     return path && base ? new URL(path, base).href : undefined;
   };
   return {
@@ -46,7 +46,7 @@ function asset(name: string, height: number, square = false): Record<string, Tem
       const src = await url(app);
       if (!src) return;
       const alt = await line(app.settings.identity.name);
-      return { text: alt, html: html.raw(`<img src="${hee(src)}" alt="${hee(alt)}" height="${height}">`) };
+      return { text: alt, html: html`<img src="${src}" alt="${alt}" height=${height}>` };
     },
     [`brand.${name}Url`]: async (app) => {
       const value = await url(app);
