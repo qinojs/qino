@@ -8,7 +8,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name } = manifest;
 
-function context(dir: string, access = 2, module = name, exists = true) {
+function context(dir: string, access = 3, module = name, exists = true) {
   const node = {
     id: 7, vs: { module }, exists: () => exists,
     access: () => Promise.resolve(3), // Page access does not grant global file access.
@@ -61,17 +61,19 @@ Deno.test("standard.2 API: HTML/CSS tools; reading a missing file returns its st
   }
 });
 
-Deno.test("standard.2 API: global WRITE required, wrong module and missing node rejected", async () => {
+Deno.test("standard.2 API: global ADMIN required, wrong module and missing node rejected", async () => {
   const dir = await Deno.makeTempDir() + "/";
   try {
-    const denied = context(dir, 1);
-    for (const key of ["html", "css"]) {
-      await assertRejects(() => denied.call("GET", key), AccessError);
-      await assertRejects(() => denied.call("PUT", key, { content: "" }), AccessError);
+    for (const access of [1, 2]) {
+      const denied = context(dir, access);
+      for (const key of ["html", "css"]) {
+        await assertRejects(() => denied.call("GET", key), AccessError);
+        await assertRejects(() => denied.call("PUT", key, { content: "" }), AccessError);
+      }
+      assertEquals(await fs.isFile(codeFiles(denied.node as any).html), false);
     }
-    assertEquals(await fs.isFile(codeFiles(denied.node as any).html), false);
-    await assertRejects(() => context(dir, 2, "cms.cont.html").call("GET", "html"), ConflictError);
-    await assertRejects(() => context(dir, 2, name, false).call("GET", "html"), NotFoundError);
+    await assertRejects(() => context(dir, 3, "cms.cont.html").call("GET", "html"), ConflictError);
+    await assertRejects(() => context(dir, 3, name, false).call("GET", "html"), NotFoundError);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

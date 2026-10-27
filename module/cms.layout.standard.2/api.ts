@@ -1,5 +1,5 @@
 import { Access, ConflictError, NotFoundError, fs, s, unixTime } from "@qino/qino";
-import { cms, WRITE } from "@qino/qino/cms";
+import { ADMIN, cms } from "@qino/qino/cms";
 
 import { codeFiles } from "./codeFiles.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -8,24 +8,24 @@ import type { ApiTree, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const content = s.object({ content: s.string().describe("Complete file content") });
-const LAYOUT_WRITE = {
+const LAYOUT_CODE = {
   access: Access.USER,
   guard: async ({ node }: { node: Node }, ctx: Ctx) => {
     const layout = await node.cms.layoutPage(manifest.name);
-    return await layout.access(ctx.user) >= WRITE;
+    return await layout.access(ctx.user) >= ADMIN;
   },
 };
 
 const codeFile = (key: "html" | "css", label: string) => ({
   get: {
     description: `Read the app-wide layout ${label}; a missing file returns its starting point.`,
-    ...LAYOUT_WRITE,
+    ...LAYOUT_CODE,
     output: content,
     execute: async ({ node }: { node: Node }) => ({ content: await codeFiles(node).read(key) }),
   },
   put: {
     description: `Save the app-wide layout ${label}. Read it first.`,
-    ...LAYOUT_WRITE,
+    ...LAYOUT_CODE,
     input: content,
     output: s.string().describe("Rendered HTML of the page after saving"),
     execute: async ({ node, content }: { node: Node; content: string }, ctx: Ctx) => {

@@ -14,8 +14,9 @@ Files of node `12`, below the app directory:
 
 The HTML file is created with starter content when the node is rendered in edit mode or opened;
 its examples are commented out. CSS and JS are created when opened in the panel or via the API,
-and are only linked while they exist (JS as module script). Superusers edit all three in the
-options panel via [fileEditor](../fileEditor/); changes apply on the next request.
+and are only linked while they exist (JS as module script). All three need admin access (3) on
+the node, editors (2) only maintain its texts and images. They are edited in the options panel
+via [fileEditor](../fileEditor/); changes apply on the next request.
 
 Paths and creation: [codeFiles.ts](codeFiles.ts); `data/<module>/` is the module's data directory
 ([Module.data](../core/lib/ModuleManager.ts)).

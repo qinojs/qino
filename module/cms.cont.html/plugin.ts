@@ -5,6 +5,8 @@ import { codeFiles } from "./codeFiles.ts";
 import { nodeApi } from "./api.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
+import { ADMIN } from "@qino/qino/cms";
+
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -18,9 +20,9 @@ async function render(node: Node) {
   return await renderTemplateFile(code.src, node) ?? "<div></div>";
 }
 
-/** The node's files for the panel, for editors. Each url allows editing for this session. */
+/** The node's files for the panel, for admins. Each url allows editing for this session. */
 const panelApi = async (node: Node, vars: Record<string, unknown>) => {
-  if (vars.do !== "getFileEditorLinks" || await node.access() < 2) return [];
+  if (vars.do !== "getFileEditorLinks" || await node.access() < ADMIN) return [];
   const files = codeFiles(node);
   await files.create();
   return (["src", "css", "js"] as const)

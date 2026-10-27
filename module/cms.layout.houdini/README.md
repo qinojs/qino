@@ -13,7 +13,8 @@ language selector, flexible contents and text editor.
 
 The page's **Houdini** options panel edits the global layout page. Changes apply
 to every page using Houdini in this app; a different app has its own settings,
-template, CSS and contents. WRITE access on the global layout page is required.
+template, CSS and contents. WRITE access on the global layout page is required, ADMIN for
+the template files.
 
 The editor previews changes when the visible page uses this layout. **Save design** stores them and
 reloads the page. **Discard changes** restores the values from when the panel
@@ -163,7 +164,7 @@ The existing layout file API is available for tools and integrations:
 /cms.layout.houdini/node/:node/codefiles/css
 ```
 
-`:node` must use this layout. Both GET and PUT require WRITE on the global layout
+`:node` must use this layout. Both GET and PUT require ADMIN on the global layout
 page. GET returns `{ content }`, including the starting point for a missing file.
 PUT accepts `{ content }`, saves the entire file and returns rendered page HTML.
 CSS saves change the app's asset revision. Read before writing; files are shared

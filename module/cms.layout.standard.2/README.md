@@ -36,7 +36,7 @@ free). Breakpoint and behaviour live in `pub/main.css`.
 The first render in edit mode copies `template.html` and a small `pub/main.css`
 into `data/cms.layout.standard.2/`, if that directory does not exist yet. The panel
 opens them in the file editor, writing a missing file's starting point first; editing
-requires WRITE on the global layout page.
+requires ADMIN on the global layout page.
 
 - The site's template wins while it exists; updates never overwrite it. Deleting it
   falls back to the shipped one until opened again; an empty file is an intentional empty override.
@@ -55,7 +55,7 @@ Like `cms.cont.html`, for agents and tools:
 
 `:node` is any page using this layout; the files are shared by all of them. GET
 returns `{ content }` — the starting point while the file is missing. PUT saves
-`{ content }` and returns the rendered page. Both require WRITE on the global layout
+`{ content }` and returns the rendered page. Both require ADMIN on the global layout
 page.
 
 ## Agent

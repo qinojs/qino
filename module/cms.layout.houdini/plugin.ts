@@ -1,5 +1,5 @@
 import { getCtx, hee } from "@qino/qino";
-import { WRITE } from "@qino/qino/cms";
+import { ADMIN, WRITE } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
@@ -65,17 +65,18 @@ async function starter(page: Node) {
   return true;
 }
 
-/** Global layout access governs both the visual editor and the shared template files. */
+/** Global layout access governs the visual editor (WRITE) and the shared template files (ADMIN). */
 const panelApi = async (node: Node, vars: Record<string, unknown>) => {
   if (vars.do !== "getLayout" && vars.do !== "openFile") return;
   const layout = await node.cms.layoutPage(node.module!.name);
-  if (await layout.access() < WRITE) return;
-  const files = codeFiles(node);
-  if (vars.do === "openFile") return (vars.key === "html" || vars.key === "css") && await files.open(vars.key);
+  const access = await layout.access();
+  if (access < WRITE) return;
+  const files = codeFiles(node), code = access >= ADMIN; // code runs in the app origin
+  if (vars.do === "openFile") return code && (vars.key === "html" || vars.key === "css") && await files.open(vars.key);
   return {
     id: layout.id, module: node.module!.name, design: layout.settings.design() ?? {},
     u2Version: layout.settings.u2Version() ?? "", u2Default: U2_VERSION,
-    files: (["html", "css"] as const)
+    files: (code ? ["html", "css"] as const : [])
       .map((key) => ({ key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url),
   };
 };

@@ -8,7 +8,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name } = manifest;
 
-function context(dir: string, access = 2, module = name, exists = true) {
+function context(dir: string, access = 3, module = name, exists = true) {
   const node = {
     id: 7, vs: { module }, exists: () => exists,
     access: () => Promise.resolve(3), // Page access does not grant global file access.
@@ -71,25 +71,28 @@ Deno.test("houdini API: HTML/CSS tools; reading a missing file returns its start
   }
 });
 
-Deno.test("houdini API: global WRITE required, wrong module and missing node rejected", async () => {
+Deno.test("houdini API: global ADMIN required, wrong module and missing node rejected", async () => {
   const dir = await Deno.makeTempDir() + "/";
   try {
-    const denied = context(dir, 1);
-    for (const key of ["html", "css"]) {
-      await assertRejects(() => denied.call("GET", key), AccessError);
-      await assertRejects(() => denied.call("PUT", key, { content: "" }), AccessError);
+    for (const access of [1, 2]) {
+      const denied = context(dir, access);
+      for (const key of ["html", "css"]) {
+        await assertRejects(() => denied.call("GET", key), AccessError);
+        await assertRejects(() => denied.call("PUT", key, { content: "" }), AccessError);
+      }
+      assertEquals(await fs.isFile(codeFiles(denied.node as any).html), false);
     }
-    assertEquals(await fs.isFile(codeFiles(denied.node as any).html), false);
-    await assertRejects(() => context(dir, 2, "cms.cont.html").call("GET", "html"), ConflictError);
-    await assertRejects(() => context(dir, 2, name, false).call("GET", "html"), NotFoundError);
+    await assertRejects(() => context(dir, 3, "cms.cont.html").call("GET", "html"), ConflictError);
+    await assertRejects(() => context(dir, 3, name, false).call("GET", "html"), NotFoundError);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("houdini panel: global WRITE protects design values and file editor capabilities", async () => {
+Deno.test("houdini panel: global WRITE protects design values, ADMIN the file editor capabilities", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const denied = context(dir, 1);
+  const editor = context(dir, 2);
   const allowed = context(dir);
   const panel = (f: ReturnType<typeof context>, vars: Record<string, unknown>) =>
     requestStorage.run(f.ctx as any, () => layout.node.api(f.node as any, vars));
@@ -97,6 +100,10 @@ Deno.test("houdini panel: global WRITE protects design values and file editor ca
     assertEquals(await panel(denied, { do: "getLayout" }), undefined);
     assertEquals(await panel(denied, { do: "openFile", key: "html" }), undefined);
     assertEquals(await fs.isFile(codeFiles(denied.node as any).html), false);
+    const design = await panel(editor, { do: "getLayout" }) as any;
+    assertEquals([design.design, design.files], [{ color: "#80502e" }, []]);
+    assertEquals(await panel(editor, { do: "openFile", key: "html" }), false);
+    assertEquals(await fs.isFile(codeFiles(editor.node as any).html), false);
     const data = await panel(allowed, { do: "getLayout" }) as any;
     assertEquals(data.id, 42);
     assertEquals(data.module, name);
