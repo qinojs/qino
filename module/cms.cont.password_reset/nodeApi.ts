@@ -1,4 +1,4 @@
-import { ApiError, contactOwner, unixTime } from "@qino/qino";
+import { ApiError, contactOwner, getCtx, unixTime } from "@qino/qino";
 import { send } from "@qino/qino/messaging.email";
 import { issue, redeem } from "@qino/qino/ticket";
 
@@ -7,6 +7,7 @@ import type { Node } from "@qino/qino/cms";
 export const PURPOSE = "auth.pwReset";
 export const TICKET_PARAM = "cmsContPwReset_t";
 export const TTL = 60 * 60;
+const PER_HOUR = 3; // links an account gets at most: enough for a lost mail, too few to flood an inbox
 
 /**
  * Public (no session when the password is forgotten). The answer is always the same, so it reveals
@@ -20,8 +21,14 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     // the address has to be a verified contact: a login handle that looks like one proves nothing
     const usrId = await contactOwner(app.db, "email", email);
     const active = usrId && await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND active = ${true}`;
-    if (active) await sendLink(node, usrId, email);
-    return { ok: true, message: await t`If that address has an account, a link is on its way.` };
+    const exhausted = active && Number(await app.db.one`SELECT COUNT(*) FROM ticket WHERE purpose = ${PURPOSE}
+      AND data = ${JSON.stringify({ usrId })} AND created > ${unixTime() - 3600}`) >= PER_HOUR;
+    // anonymous and it mails: every request counts a little, one past the limit more
+    app.fire("suspicious", { ctx: getCtx(), weight: exhausted ? 3 : 1, reason: "password reset requested" })
+      .catch(() => {});
+    if (active && !exhausted) await sendLink(node, usrId, email);
+    const message = await t`If that address has an account, a link is on its way. Please also check your spam folder.`;
+    return { ok: true, message };
   }
   if (vars.reset) {
     const { handle, pw } = vars.reset as { handle: string; pw: string };

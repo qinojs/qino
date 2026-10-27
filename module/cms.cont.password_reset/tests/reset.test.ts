@@ -1,5 +1,5 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { Db, pwVerify } from "@qino/qino";
+import { Db, pwVerify, requestStorage } from "@qino/qino";
 import { fakeT, ticketDbSchema as ticketSchema } from "@qino/qino/tests";
 import { issue } from "@qino/qino/ticket";
 
@@ -15,11 +15,13 @@ async function app() {
   await db.exec`CREATE TABLE sess (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;
   await db.exec`CREATE TABLE client (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;
   await db.exec`CREATE TABLE client_usr (client_id INTEGER, usr_id INTEGER, save_login INTEGER)`;
+  await db.exec`CREATE TABLE usr_contact (usr_id INTEGER, type TEXT, address TEXT)`;
   await db.loadTables();
   await db.table("usr").insert({ username: "one@qino.test", pw: "old", active: 1 });
   await db.table("sess").insert({ usr_id: 1 });
   await db.table("client").insert({ usr_id: 1 });
   await db.table("client_usr").insert({ client_id: 1, usr_id: 1, save_login: 1 });
+  await db.table("usr_contact").insert({ usr_id: 1, type: "email", address: "one@qino.test" });
   return {
     db,
     [Symbol.asyncDispose]: () => db.close(),
@@ -60,4 +62,21 @@ Deno.test("the link sets the password once and logs out every session and rememb
     message: "This link is no longer valid. Please request a new one.",
   });
   assertEquals(await pwVerify("a good password", String(await a.db.one`SELECT pw FROM usr WHERE id = ${1}`)), true);
+});
+
+Deno.test("an account gets three links an hour; each request counts a little suspicious, one past that more", async () => {
+  await using a = await app();
+  const weights: number[] = [];
+  a.fire = (name: string, e: { weight: number }) => (name === "suspicious" && weights.push(e.weight), Promise.resolve(e));
+  a.url = () => Promise.resolve("https://qino.test/");
+  const node = { app: a, url: () => Promise.resolve("/reset") } as unknown as Node;
+  const links = () => a.db.one`SELECT COUNT(*) FROM ticket WHERE purpose = ${PURPOSE}`;
+  const message = { ok: true, message: "If that address has an account, a link is on its way. Please also check your spam folder." };
+
+  await requestStorage.run({} as never, async () => {
+    assertEquals(await api(node, { request: "nobody@qino.test" }), message); // same answer, nothing sent
+    for (let i = 0; i < 4; i++) assertEquals(await api(node, { request: "One@qino.test" }), message);
+    assertEquals(await links(), 3); // the fourth within the hour sends nothing, and says the same
+  });
+  assertEquals(weights, [1, 1, 1, 1, 3]);
 });
