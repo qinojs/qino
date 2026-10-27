@@ -3,7 +3,6 @@ import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
 
 const sms = api["messaging.sms"];
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
 cms.initNode("cont.my.phones", async (el) => {
   const list = el.querySelector("[data-phones]");
@@ -35,7 +34,7 @@ cms.initNode("cont.my.phones", async (el) => {
         return html`<div data-phone="${p.address}">
           <p><strong>${p.address}</strong>
             ${main ? html`<span class=u2-badge>${labels.main}</span>` : ""}
-            <small>${labels.verified} ${fmt(p.created)}</small></p>
+            <small>${labels.verified} <u2-time datetime=${p.created * 1000} type=date></u2-time></small></p>
           ${main ? "" : html`<button type=button data-main>${labels.makeMain}</button>`}
           ${single ? "" : html`<button type=button data-delete>${labels.del}</button>`}
         </div>`;

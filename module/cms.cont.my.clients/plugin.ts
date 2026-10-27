@@ -52,7 +52,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
 
   // client_usr records "this user signed in on this device".
-  const links = await node.app.db.query`SELECT client_id, save_login, time AS since FROM client_usr WHERE usr_id = ${ctx.userId}`;
+  const links = await node.app.db.query`SELECT client_id, save_login FROM client_usr WHERE usr_id = ${ctx.userId}`;
   if (!links.length) return html.async`<div><h3>${t`Your devices`}</h3><p>${t`No devices found.`}</p></div>`;
 
   // The newest log row per device (last seen, user agent). An IN list instead of a correlated
@@ -66,7 +66,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   `;
   const seen = new Map(rows.map((row) => [Number(row.client_id), row]));
   const lastSeen = (link: typeof links[number]) => Number(seen.get(Number(link.client_id))?.time ?? 0);
-  links.sort((a, b) => lastSeen(b) - lastSeen(a) || Number(b.since) - Number(a.since));
+  links.sort((a, b) => lastSeen(b) - lastSeen(a));
 
   const hosts = await ipHosts(rows.map((row) => String(row.ip ?? "")));
   const now = Date.now() / 1000;
@@ -82,7 +82,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       <td title="${ua}">${device(ua) || t`Unknown device`}
       <td>${!ip ? "–" : ip === ctx.req.clientIp ? html`<strong>${ip}</strong>` : ip}
         ${hosts[ip] ? html`<br><small>${hosts[ip]}</small>` : ""}
-      <td>${u2.el.time(link.since)}
       <td>${u2.el.time(lastSeen(link))}
       <td>${link.save_login ? t`Yes` : "–"}
       <td>${state}
@@ -96,7 +95,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       <thead><tr>
         <th>${t`Device`}
         <th>${t`IP`}
-        <th>${t`Since`}
         <th>${t`Last seen`}
         <th>${t`Stay signed in`}
         <th>${t`State`}

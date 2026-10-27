@@ -3,7 +3,8 @@
   "description": "Connects the signed-in user's Telegram to the bot, and shows what is connected.",
   "dependencies": [
     "cms",
-    "messaging.telegram"
+    "messaging.telegram",
+    "u2"
   ],
   "files": [
     "manifest.json",

@@ -3,7 +3,8 @@
   "description": "Lets signed-in users register, verify and choose their email addresses.",
   "dependencies": [
     "cms",
-    "messaging.email"
+    "messaging.email",
+    "u2"
   ],
   "files": [
     "manifest.json",

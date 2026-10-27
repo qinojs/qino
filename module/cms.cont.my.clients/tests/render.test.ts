@@ -6,8 +6,8 @@ import manifest from "../manifest.json" with { type: "json" };
 const { name, dependencies } = manifest;
 
 const links = [
-  { client_id: 5, save_login: true, since: 1700000000 },
-  { client_id: 6, save_login: false, since: 1600000000 },
+  { client_id: 5, save_login: true },
+  { client_id: 6, save_login: false },
 ];
 const seen = [
   { client_id: 5, time: Math.floor(Date.now() / 1000), user_agent: "Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0", ip: "1.2.3.4" },

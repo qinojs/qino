@@ -1,4 +1,5 @@
 import { html } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 import { providers } from "@qino/qino/auth.oauth";
 
 import type { Ctx } from "@qino/qino";
@@ -11,6 +12,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   const t = app.t;
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
+  u2.assets(ctx, ["el/time/time.js"]);
 
   const returnTo = ctx.req.url.pathname + ctx.req.url.search;
   const label = await t`Connect`;
