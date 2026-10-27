@@ -9,6 +9,7 @@ cms.initNode("cont.my.phones", async (el) => {
   const list = el.querySelector("[data-phones]");
   const form = el.querySelector("[data-add]");
   const msg = el.querySelector(".-msg");
+  const single = el.hasAttribute("data-single");
   const labels = {
     main: await t`Main number`,
     makeMain: await t`Make main number`,
@@ -27,14 +28,16 @@ cms.initNode("cont.my.phones", async (el) => {
   const load = async () => {
     try {
       const { phones, pending } = await sms.phones.get();
+      // single: only the main one (listed first) is shown and kept
+      const shown = single ? phones.slice(0, 1) : phones;
       const verified = (p) => {
-        const main = p.main || phones.length === 1;
+        const main = p.main || shown.length === 1;
         return html`<div data-phone="${p.address}">
           <p><strong>${p.address}</strong>
             ${main ? html`<span class=u2-badge>${labels.main}</span>` : ""}
             <small>${labels.verified} ${fmt(p.created)}</small></p>
           ${main ? "" : html`<button type=button data-main>${labels.makeMain}</button>`}
-          <button type=button data-delete>${labels.del}</button>
+          ${single ? "" : html`<button type=button data-delete>${labels.del}</button>`}
         </div>`;
       };
       const claimed = (p) => html`<div data-pending="${p.address}">
@@ -43,13 +46,19 @@ cms.initNode("cont.my.phones", async (el) => {
         <button type=button data-verify>${labels.confirm}</button>
         <button type=button data-resend>${labels.resend}</button>
       </div>`;
-      list.innerHTML = phones.length || pending.length
-        ? html`${phones.map(verified)}${pending.map(claimed)}`
+      list.innerHTML = shown.length || pending.length
+        ? html`${shown.map(verified)}${pending.map(claimed)}`
         : labels.empty;
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));
     }
+  };
+
+  // the verified number takes the place of all others
+  const replaceOthers = async (number) => {
+    const { phones } = await sms.phones.get();
+    for (const p of phones) if (p.address !== number) await sms.phone(p.address).delete();
   };
 
   form.addEventListener("submit", async (event) => {
@@ -73,6 +82,7 @@ cms.initNode("cont.my.phones", async (el) => {
         const input = row.querySelector("[data-code]");
         if (!input.reportValidity()) return;
         await sms.phones.verify.post({ number, code: input.value.trim() });
+        if (single) await replaceOthers(number);
       } else if (event.target.closest("[data-resend]")) {
         await sms.phones.post({ number });
         show(labels.sent);

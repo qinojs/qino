@@ -9,6 +9,7 @@ cms.initNode("cont.my.emails", async (el) => {
   const list = el.querySelector("[data-emails]");
   const form = el.querySelector("[data-add]");
   const msg = el.querySelector(".-msg");
+  const single = el.hasAttribute("data-single");
   const labels = {
     main: await t`Main address`,
     makeMain: await t`Make main address`,
@@ -27,14 +28,16 @@ cms.initNode("cont.my.emails", async (el) => {
   const load = async () => {
     try {
       const { emails, pending } = await email.emails.get();
+      // single: only the main one (listed first) is shown and kept
+      const shown = single ? emails.slice(0, 1) : emails;
       const verified = (p) => {
-        const main = p.main || emails.length === 1;
+        const main = p.main || shown.length === 1;
         return html`<div data-email="${p.address}">
           <p><strong>${p.address}</strong>
             ${main ? html`<span class=u2-badge>${labels.main}</span>` : ""}
             <small>${labels.verified} ${fmt(p.created)}</small></p>
           ${main ? "" : html`<button type=button data-main>${labels.makeMain}</button>`}
-          <button type=button data-delete>${labels.del}</button>
+          ${single ? "" : html`<button type=button data-delete>${labels.del}</button>`}
         </div>`;
       };
       const claimed = (p) => html`<div data-pending="${p.address}">
@@ -43,13 +46,19 @@ cms.initNode("cont.my.emails", async (el) => {
         <button type=button data-verify>${labels.confirm}</button>
         <button type=button data-resend>${labels.resend}</button>
       </div>`;
-      list.innerHTML = emails.length || pending.length
-        ? html`${emails.map(verified)}${pending.map(claimed)}`
+      list.innerHTML = shown.length || pending.length
+        ? html`${shown.map(verified)}${pending.map(claimed)}`
         : labels.empty;
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));
     }
+  };
+
+  // the verified address takes the place of all others
+  const replaceOthers = async (address) => {
+    const { emails } = await email.emails.get();
+    for (const p of emails) if (p.address !== address) await email.email(p.address).delete();
   };
 
   form.addEventListener("submit", async (event) => {
@@ -73,6 +82,7 @@ cms.initNode("cont.my.emails", async (el) => {
         const input = row.querySelector("[data-code]");
         if (!input.reportValidity()) return;
         await email.emails.verify.post({ address, code: input.value.trim() });
+        if (single) await replaceOthers(address);
       } else if (event.target.closest("[data-resend]")) {
         await email.emails.post({ address });
         show(labels.sent);
