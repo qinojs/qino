@@ -125,6 +125,7 @@
     "cms.cont.my.clients": {},
     "cms.cont.my.emails": {},
     "cms.cont.my.oauth": {},
+    "cms.cont.my.password": {},
     "cms.cont.my.phones": {},
     "cms.cont.my.telegram": {},
     "cms.cont.my.totp": {},

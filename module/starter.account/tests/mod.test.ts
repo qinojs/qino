@@ -32,6 +32,7 @@ Deno.test({
       assert((await res.text()).includes("Please sign in"), "guests are asked to sign in");
       const [emails] = (await cm.nodesByModule("cms.cont.my.emails")).values();
       assertEquals(await emails.settings.single, true, "one address by default");
+      assertEquals((await cm.nodesByModule("cms.cont.my.password")).size, 1);
       const pages = await (await cm.node(1)).children({ type: "p" });
       const menu = pages.values().filter((p) => p.vs.visible).map((p) => p.vs.name);
       assertEquals([...menu], ["home", "contact", "account", "first-steps"]);

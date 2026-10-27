@@ -35,13 +35,14 @@ async function build(app: App) {
   const profile = { en: "Profile", de: "Profil", fr: "Profil", it: "Profilo" };
   await page(account, "profile", profile, shown, async (p) => {
     await prose(p, {
-      en: "<h1>Profile</h1>\n<p>The email address we reach you at.</p>",
-      de: "<h1>Profil</h1>\n<p>Die E-Mail-Adresse, unter der wir Sie erreichen.</p>",
-      fr: "<h1>Profil</h1>\n<p>L'adresse e-mail à laquelle nous vous joignons.</p>",
-      it: "<h1>Profilo</h1>\n<p>L'indirizzo e-mail al quale vi raggiungiamo.</p>",
+      en: "<h1>Profile</h1>\n<p>The email address we reach you at, and your password.</p>",
+      de: "<h1>Profil</h1>\n<p>Die E-Mail-Adresse, unter der wir Sie erreichen, und Ihr Passwort.</p>",
+      fr: "<h1>Profil</h1>\n<p>L'adresse e-mail à laquelle nous vous joignons, et votre mot de passe.</p>",
+      it: "<h1>Profilo</h1>\n<p>L'indirizzo e-mail al quale vi raggiungiamo, e la vostra password.</p>",
     });
     const emails = await section(p, "cms.cont.my.emails");
     await emails.settings.single(true); // most sites need one address; a site may allow more
+    await section(p, "cms.cont.my.password");
   });
   const passkeys = { en: "Passkeys", de: "Passkeys", fr: "Clés d'accès", it: "Passkey" };
   await sub(account, "passkeys", passkeys, ["cms.cont.my.webauthn"], {
