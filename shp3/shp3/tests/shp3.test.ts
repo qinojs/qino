@@ -173,8 +173,10 @@ Deno.test("shp3: the price passes four phases, in order", async () => {
   assertEquals(seen, ["initial:12", "additions:100", "discount:120", "final:60"]);
 });
 
-Deno.test("shp3: a product whose page is not public cannot be sold", async () => {
+Deno.test("shp3: a product whose page is not public or offline cannot be sold", async () => {
   await using app = await shop();
+  await app.db.table("page").insert({ id: 12, name: "Bowl", access: 1, online_end: 1000 }); // offline since 1970
+  await app.db.table("shp3_product").insert({ id: 12, price: 5 });
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
@@ -185,6 +187,8 @@ Deno.test("shp3: a product whose page is not public cannot be sold", async () =>
     const plate = (await app.db.table("shp3_product").get<Product>(11))!;
     await app.db.table("page").update(11, { access: 0 });
     assertEquals(Object.keys(await plate.errors()), ["no access"]);
+    const bowl = (await app.db.table("shp3_product").get<Product>(12))!;
+    assertEquals(Object.keys(await bowl.errors()), ["no access"]);
   });
 });
 

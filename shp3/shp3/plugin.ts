@@ -120,6 +120,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (e.product.price < 0) e.errors["not orderable"] = await t`This product cannot be ordered`;
     // A product whose page went offline or private must not stay in a cart either.
     const node = await cms(app).node(Number(e.product.$id));
-    if (await node.access() < 1) e.errors["no access"] = await t`You have no access to this product`;
+    if (await node.access() < 1 || !await node.isOnline()) e.errors["no access"] = await t`You have no access to this product`;
   });
 }
