@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.emails",
+  "description": "Lets signed-in users register, verify and choose their email addresses.",
+  "dependencies": [
+    "cms",
+    "messaging.email"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

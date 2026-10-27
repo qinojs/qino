@@ -1,5 +1,7 @@
-import { countContacts, errMsg } from "@qino/qino";
-import { attachmentFile, ChannelError, contactRecipients, delivered, send as dispatch, titled, unsubscribeHeaders } from "@qino/qino/messaging";
+import { addContact, ApiError, contactKey, contactOwner, countContacts, errMsg } from "@qino/qino";
+import {
+  attachmentFile, ChannelError, contactRecipients, delivered, redeemCode, requestCode, send as dispatch, titled, unsubscribeHeaders,
+} from "@qino/qino/messaging";
 
 import { addressOf, formatAddress } from "./lib/address.ts";
 import { defaults } from "./lib/settings.ts";
@@ -104,6 +106,30 @@ async function transmit(
     console.warn("email: sending failed —", errMsg(e));
     return new ChannelError(errMsg(e).trim() || "mail sending failed");
   }
+}
+
+/** Claim an address and mail a six-digit code. Nothing is stored on the user until verified. */
+export async function addEmail(app: App, usrId: number, input: string): Promise<Row> {
+  const address = contactKey("email", input);
+  const owner = await contactOwner(app.db, "email", address);
+  if (owner && owner !== usrId) throw new ApiError(409, "Email address is unavailable");
+  if (owner) return (await app.db.row`SELECT * FROM usr_contact WHERE type = ${"email"} AND address = ${address}`)!;
+
+  const code = await requestCode(app, "email", usrId, address);
+  let error: string | undefined;
+  const sent = await send(app, { email: address }, {
+    title: await app.t`Your verification code`,
+    text: await app.t`Your verification code is ${code}. It is valid for ten minutes.`,
+  }, { onError: (message) => error = message });
+  if (!sent) throw new ApiError(502, error ?? "Email could not be sent");
+  return { address };
+}
+
+/** Redeem the code and make the address the user's. */
+export async function verifyEmail(app: App, usrId: number, input: string, code: string): Promise<Row> {
+  const address = contactKey("email", input);
+  await redeemCode(app, "email", usrId, address, code);
+  return addContact(app.db, usrId, "email", address);
 }
 
 /** The channel this module is. */

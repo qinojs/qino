@@ -23,6 +23,14 @@ a plain-text alternative; plain text goes out as text only.
 `replyTo` overrides the inbound address — e.g. a contact form's reply goes to the person who filled
 it in, not to the site.
 
+## Verification
+
+Like [messaging.sms](../messaging.sms/#verification), with `address` instead of `number`:
+`POST messagingEmail/emails` with `{ address }` mails a six-digit code, `POST messagingEmail/emails/verify`
+with `{ address, code }` makes it the user's; `GET messagingEmail/emails`, `PUT …/email/<address>/main`
+and `DELETE …/email/<address>` complete it. [cms.cont.my.emails](../cms.cont.my.emails/) provides this
+flow to signed-in users.
+
 ## Receiving
 
 `address` is the system address and sender. `inbound.address` defaults to it; if different, it is

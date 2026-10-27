@@ -123,6 +123,7 @@
     "cms.cont.my.backup_codes": {},
     "cms.cont.my.chatgpt": {},
     "cms.cont.my.clients": {},
+    "cms.cont.my.emails": {},
     "cms.cont.my.oauth": {},
     "cms.cont.my.phones": {},
     "cms.cont.my.telegram": {},
