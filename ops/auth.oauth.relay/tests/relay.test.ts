@@ -3,7 +3,7 @@ import { assertEquals } from "@qino/qino/tests";
 import { createHmac } from "node:crypto";
 import { b64url, Output } from "@qino/qino";
 
-import { allowed, relay } from "../plugin.ts";
+import { relay } from "../plugin.ts";
 
 const CALLBACK = "https://kunde.example.ch/oauth/callback/google";
 const state = (url: string) => "rnd." + b64url(new TextEncoder().encode(url));
@@ -31,14 +31,6 @@ async function run(ctx: any) {
   }
   throw new Error("expected an Output signal");
 }
-
-Deno.test("auth.oauth.relay: allowed() matches exact hosts and *. subdomains", () => {
-  assertEquals(allowed("a.ch, *.b.ch", "a.ch"), true);
-  assertEquals(allowed("a.ch, *.b.ch", "x.b.ch"), true);
-  assertEquals(allowed("a.ch, *.b.ch", "b.ch"), false);
-  assertEquals(allowed("a.ch, *.b.ch", "evilb.ch"), false);
-  assertEquals(allowed("", "a.ch"), false);
-});
 
 Deno.test("auth.oauth.relay: forwards code and state to the app named in the state", async () => {
   const s = state(CALLBACK);

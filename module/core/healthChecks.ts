@@ -5,6 +5,7 @@ import { getCtx, requestStorage } from "./lib/ctx/Ctx.ts";
 import { pwVerify } from "./lib/auth/mod.ts";
 import { deleteUnlinkedDbFiles } from "./lib/DbFileManager.ts";
 import { urlOf } from "./lib/App.ts";
+import { isLocalHost } from "./lib/fileStream.ts";
 
 import type { App } from "./lib/App.ts";
 
@@ -50,6 +51,15 @@ export async function healthChecks(app: App) {
     const slash = (u: string) => u.replace(/\/?$/, "/");
     if (!url || !current || slash(url) === slash(current)) return;
     return { info: `mails and jobs link to ${hee(url)}`, solutions: setTo(current) };
+  };
+
+  notice["any host is accepted"] = async () => {
+    if (await settings.core.hosts) return;
+    const host = URL.parse(String(await settings.core.url ?? ""))?.hostname;
+    if (host && isLocalHost(host)) return; // a dev install
+    const www = host?.startsWith("www.") ? host.slice(4) : "www." + host;
+    const solve = async () => { await settings.core.hosts(`${host}\n${www}`); };
+    return { info: "a forged host can end up in redirects and links", solutions: host ? { [`allow only ${host} and ${www}`]: { solve } } : {} };
   };
 
   warning["a remote module is missing public files"] = async () => {

@@ -115,6 +115,12 @@ function isPublicIp(ip: string) {
   return !NON_PUBLIC_IPV6.check(ip, "ipv6") && PUBLIC_IPV6.check(ip, "ipv6");
 }
 
+/** `localhost` or a non-public IP: a URL hostname nobody outside can point at their own server. */
+export const isLocalHost = (host: string): boolean => {
+  const ip = host.replace(/^\[|\]$/g, "");
+  return /(^|\.)localhost$/.test(host) || (!!isIP(ip) && !isPublicIp(ip));
+};
+
 /** Resolves the URL once and returns only globally reachable addresses. */
 async function resolvePublicIps(url: URL) {
   // URL parsing normalizes decimal/hex/octal IPv4 forms to dotted notation.

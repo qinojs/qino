@@ -64,6 +64,18 @@ Deno.test("healthChecks: the address you are on differs from core.url", async ()
   assertEquals(Object.keys(found.solutions), ["set it to: https://other.example/"]);
 });
 
+Deno.test("healthChecks: an open host list offers the public host and its www twin", async () => {
+  await using a = await app();
+  let hosts = "";
+  a.settings = fakeSettings({ core: fakeSettings({ url: "https://www.set.example/", hosts: Object.assign((v: string) => hosts = v, { then: (r: any) => r(hosts) }) }) });
+  const found = await (await healthChecks(a)).notice["any host is accepted"]() as any;
+  await found.solutions["allow only www.set.example and set.example"].solve();
+  assertEquals(hosts, "www.set.example\nset.example");
+  assertEquals(await (await healthChecks(a)).notice["any host is accepted"](), undefined);
+  a.settings = fakeSettings({ core: fakeSettings({ url: "http://localhost:8000/" }) });
+  assertEquals(await (await healthChecks(a)).notice["any host is accepted"](), undefined, "a dev install");
+});
+
 Deno.test("healthChecks: a corrupt SQLite database is reported", async () => {
   const file = await Deno.makeTempFile({ suffix: ".sqlite" });
   const open = async (migrate = false) => {

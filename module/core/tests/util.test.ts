@@ -5,6 +5,7 @@ import {
   ensureSlash,
   header,
   hee,
+  hostAllowed,
   html,
   newestMtime,
   sqlSearch,
@@ -170,4 +171,12 @@ Deno.test("util: app.assertAllowedPath accepts app/module roots and rejects sibl
     () => app.assertAllowedPath("/var/www/workplace/qinojs/other/a.txt"),
     Output,
   );
+});
+
+Deno.test("util: hostAllowed matches exact hosts and *. subdomains", () => {
+  assertEquals(hostAllowed("a.ch, *.b.ch", "a.ch"), true);
+  assertEquals(hostAllowed("a.ch, *.b.ch", "x.b.ch"), true);
+  assertEquals(hostAllowed("a.ch, *.b.ch", "b.ch"), false);
+  assertEquals(hostAllowed("a.ch, *.b.ch", "evilb.ch"), false);
+  assertEquals(hostAllowed("", "a.ch"), false);
 });

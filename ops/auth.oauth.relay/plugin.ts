@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { Output, Redirect, safeEqual, unb64url } from "@qino/qino";
+import { hostAllowed, Output, Redirect, safeEqual, unb64url } from "@qino/qino";
 
 import type { App, Ctx } from "@qino/qino";
 
@@ -12,10 +12,6 @@ export const settingsSchema = {
     },
   },
 };
-
-/** Is `host` in a list like "a.ch *.b.ch"? */
-export const allowed = (list: string, host: string): boolean =>
-  list.split(/[\s,]+/).filter(Boolean).some((h) => h === host || (h.startsWith("*.") && host.endsWith(h.slice(1))));
 
 /** Signed by auth.oauth with one of these client secrets? Same signature as there. */
 export const signed = (keys: string[], data: string, sig: string): boolean =>
@@ -40,7 +36,7 @@ export async function relay(ctx: Ctx): Promise<never> {
   const url = part ? target(part) : null;
   const ok = url?.protocol === "https:" && /\/oauth\/callback\/[^/]+$/.test(url.pathname) && !url.search && !url.hash;
   if (!ok || !(signed(await secrets(ctx.app), `${rnd}.${part}`, sig) ||
-    allowed(String(await ctx.app.settings["auth.oauth.relay"].hosts ?? ""), url.hostname))) {
+    hostAllowed(String(await ctx.app.settings["auth.oauth.relay"].hosts ?? ""), url.hostname))) {
     throw new Output("oauth relay target not allowed", { status: 400 });
   }
   for (const [k, v] of params) url.searchParams.set(k, v);

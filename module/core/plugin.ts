@@ -1,10 +1,11 @@
 // Plugin of core. The public API is in ./mod.ts.
 import { randB64, sha256b64 } from "./lib/crypto.ts";
-import { isOn, Redirect, u2Root, itemRoot } from "./lib/util.ts";
+import { hostAllowed, isOn, Output, Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx, requestStorage } from "./lib/ctx/Ctx.ts";
 import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
 import { pendingLogin } from "./lib/auth/factors.ts";
+import { isLocalHost } from "./lib/fileStream.ts";
 
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/DbEvents.ts";
@@ -28,6 +29,11 @@ export const settingsSchema = {
         url: {
             type: "string",
             description: "Public address of this app, e.g. https://example.com/. Used wherever there is no request to read it from — links in mails, text messages and jobs. Filled in on its own from the first superuser request.",
+        },
+        hosts: {
+            type: "string",
+            "x-multiline": true,
+            description: "Hosts the app answers on, one per line; \"*.example.com\" covers subdomains. Others get a 421. The host of url and local hosts (localhost, private IPs) always pass. Empty accepts any host.",
         },
         loginTwoFactor: {
             type: "boolean",
@@ -158,6 +164,16 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         ctx.res.csp["script-src"][u2Root] = true;
         ctx.res.csp["style-src"][u2Root] = true;
         ctx.res.csp["connect-src"][u2Root] = true;
+    }, { signal });
+
+    // before any work, so no redirect or link is ever built from a forged host;
+    // a local host can't point at the attacker, so it always passes
+    app.on("request-start", async ({ request }) => {
+        const list = String(await settings.hosts ?? "");
+        const host = new URL(request.url).hostname;
+        if (!list || isLocalHost(host)) return;
+        const own = URL.parse(String(await settings.url ?? ""))?.hostname ?? "";
+        if (!hostAllowed(`${list} ${own}`, host)) throw new Output("", { status: 421 });
     }, { signal });
 
     app.languages.setLangs(String(await settings.langs ?? "").split(","));

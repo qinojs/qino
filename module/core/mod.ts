@@ -12,7 +12,7 @@ export { ResCsp } from "./lib/ctx/ResCsp.ts";
 export { b64url, grant, keyed, randB64, safeEqual, sha256b64url, sha256hex, uid, unb64url } from "./lib/crypto.ts";
 
 // HTML & general utilities
-export { hee, unhee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, sqlSearch, itemReadDeep, enableItemSchemaDefaults, u2Root, header } from "./lib/util.ts";
+export { hee, unhee, unixTime, errMsg, isOn, isEmptyObject, html, moduleIcon, Output, Redirect, urlize, clientIp, hostAllowed, sqlSearch, itemReadDeep, enableItemSchemaDefaults, u2Root, header } from "./lib/util.ts";
 export { csv } from "./lib/sheet/csv.ts";
 export { xlsx } from "./lib/sheet/xlsx.ts";
 export { fs } from "./lib/fs.ts";
