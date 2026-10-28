@@ -34,7 +34,7 @@ request-local one while a db scope is active (versions/draftmode), so those do n
 
 `ReqBody.parse` calls `.json()` / `.formData()` on a clone — the whole body materializes in RAM,
 capped only by `uploadMaxFileSize`. Files are spooled to disk *afterwards*
-([ReqBody.ts:35](../module/core/lib/ctx/ReqBody.ts#L35) → [fileStream.ts:24](../module/core/lib/fileStream.ts#L24)),
+([ReqBody.ts:35](../module/core/lib/ctx/ReqBody.ts#L35) → [fileStream.ts:25](../module/core/lib/fileStream.ts#L25)),
 which does not help the multipart parse that already buffered them. Ten concurrent 100 MB uploads is
 a gigabyte. Lower `core.uploadMaxFileSize` on sites that do not need large uploads.
 
@@ -57,7 +57,7 @@ which collects chunks into an array — same cap, same peak.
 [`FileTransformer.transform`](../module/core/lib/transform/FileTransformer.ts#L117) writes one file per
 `(source, size, options, toolchain, accept)` combination and never deletes. A responsive image with
 four widths × three formats × two DPR is 24 files per source image. The only eviction is
-[healthChecks.ts:291](../module/core/healthChecks.ts#L291), which deletes entries unused for a chosen
+[healthChecks.ts:316](../module/core/healthChecks.ts#L316), which deletes entries unused for a chosen
 age (three months down to five minutes) — a *manual* cleanup action in the backend, not a scheduled
 job. On a busy site this is the fastest-growing directory on the machine. Cache hits touch `mtime`
 (at most once a day, since `atime` is unreliable) so the age is meaningful
@@ -65,13 +65,13 @@ job. On a busy site this is the fastest-growing directory on the machine. Cache 
 
 ### Database growth
 
-The access log is the dominant writer. [`initLog`](../module/core/lib/ctx/init.ts#L62) runs on **every**
+The access log is the dominant writer. [`initLog`](../module/core/lib/ctx/init.ts#L68) runs on **every**
 request and writes up to five rows: `log`, plus `log_url`, `log_ip`, `log_user_agent` dictionary
 entries on first sight, plus the redacted POST body (clipped to 10 000 chars) inline in `log.post`.
 Other steady growers: `sess`, `client`, and `smalltext`, which gains a row for every new
 translatable string.
 
-Cleanup lives in [healthChecks.ts:225](../module/core/healthChecks.ts#L225) — deletes logs older than a
+Cleanup lives in [healthChecks.ts:250](../module/core/healthChecks.ts#L250) — deletes logs older than a
 month and unreferenced clients and sessions, and clears tokens of idle sessions. It is
 operator-triggered.
 
@@ -83,9 +83,9 @@ operator-triggered.
 | [transform/](../module/core/lib/transform/) — magick, ffmpeg, tesseract, pandoc | subprocesses; the only real CPU consumers, capped by [limit.ts](../module/core/lib/transform/limit.ts) |
 | [sanitize.ts](../module/cms/lib/sanitize.ts) — `sanitize-html` | a full HTML parse per text, on every render path; cached |
 | [LangManager.ts:116](../module/core/lib/LangManager.ts#L116) — md5 per `t\`\`` call | cheap alone, once per translatable string per render |
-| [init.ts:62](../module/core/lib/ctx/init.ts#L62) — logging | md5 of url and referer, plus the JSON stringify of the body, per request |
+| [init.ts:68](../module/core/lib/ctx/init.ts#L68) — logging | md5 of url and referer, plus the JSON stringify of the body, per request |
 | [Node.bough()](../module/cms/lib/Node.ts#L324) | recursive: one children-query per node in the subtree |
-| [Db.loadTables()](../module/core/lib/db/Db.ts#L178) | full introspection at boot and after every module install |
+| [Db.loadTables()](../module/core/lib/db/Db.ts#L186) | full introspection at boot and after every module install |
 
 ### bcrypt blocks the event loop
 
@@ -109,7 +109,7 @@ re-run after `resetCapabilityCache()`.
 
 ### Per-request baseline
 
-`initRequest` ([init.ts:10](../module/core/lib/ctx/init.ts#L10)) fires `authenticate`, loads or creates
+`initRequest` ([init.ts:11](../module/core/lib/ctx/init.ts#L11)) fires `authenticate`, loads or creates
 the client row, resolves the session, preloads `usr`, loads settings and language, and starts the log
 write. On a cold cache that is a handful of queries before any route runs. The log write is
 fire-and-forget — `ctx.logId` is a promise, and awaiting it inside an `*-after` hook deadlocks.

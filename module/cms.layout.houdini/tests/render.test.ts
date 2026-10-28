@@ -1,0 +1,284 @@
+import { App, fs, requestStorage } from "@qino/qino";
+import { cms, cmsCtx } from "@qino/qino/cms";
+import { moduleTemplate } from "@qino/qino/cms.templateParser";
+import { assert, assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
+
+import { cms as layout } from "../plugin.ts";
+
+const NAME = "cms.layout.houdini";
+
+async function fixture() {
+  const dir = await Deno.makeTempDir() + "/";
+  const app = new App({ db: "sqlite::memory:", dir });
+  app.stores.add(import.meta.resolve("../../store.json")).add(NAME);
+  await app.init();
+  const cm = cms(app);
+  const ctx = await testContext({ app: { db: app.db, modules: app.modules } });
+  const root = await cm.node(1);
+  await root.createChild({ id: 5, module: NAME, visible: false }); // Conventional CMS system page.
+  const page = await root.createChild({ module: NAME });
+  await page.title("en", "Example & more");
+  cmsCtx(ctx).mainNode = page;
+  const render = () => requestStorage.run(ctx, () => layout.node.render(page, { ctx }));
+  const close = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await app.db.close();
+    await Deno.remove(dir, { recursive: true });
+  };
+  return { app, cm, ctx, page, render, close };
+}
+
+Deno.test("houdini: isolated install, navigation, starter content and CSS precedence", async () => {
+  const f = await fixture();
+  try {
+    await requestStorage.run(f.ctx, async () => {
+      const root = await f.cm.node(1);
+      const hidden = await root.createChild({ visible: false, module: NAME });
+      await hidden.title("en", "Hidden page");
+      const out = await f.render();
+      assertStringIncludes(out, ">Home</span>");
+      assertStringIncludes(out, 'href="#content"');
+      assertStringIncludes(out, "<h1>Example &amp; more</h1>");
+      assertStringIncludes(out, "<nav");
+      assert(!out.includes("Hidden page"));
+      assert(!out.includes("cookiebanner"));
+      const global = await f.cm.layoutPage(NAME);
+      const nav = await global.cont("nav");
+      assertEquals(nav.module?.name, "cms.cont.nav");
+      assertEquals(nav.settings.pathOnly(), undefined);
+      assertStringIncludes(out, 'id="head-nav" popover');
+      assertEquals((await global.cont("lang")).module?.name, "cms.cont.lang.choose");
+
+      const main = await f.page.cont("main");
+      assertEquals((await main.conts()).length, 1);
+      const section = (await main.conts())[0];
+      assertEquals(section.module?.name, "cms.cont.section");
+      await main.removeChild(section);
+      assert(!String(await f.render()).includes("<h1>"));
+      assertEquals((await main.conts()).length, 0);
+      await main.set("module", "cms.cont.text");
+      await main.text("main", "en", "Replacement");
+      assertStringIncludes(await f.render(), "Replacement");
+      assertEquals(main.module?.name, "cms.cont.text");
+
+      await requestStorage.run(f.ctx, async () => {
+        const mod = f.page.module!;
+        const template = moduleTemplate(mod);
+        await template.create("#container { color: red; }");
+        const pinned = () => f.ctx.res.html.importMap.get("@u2/")!; // the layout's and its contents' release
+        await f.render();
+        assert(f.ctx.res.html.styles.has("@u2/class/grid/grid.css"));
+        assert(pinned().endsWith("@1.8.0/")); // its own pin
+        await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5.19"); // the site moves on
+        await f.render();
+        assert(pinned().endsWith("@1.5.19/"));
+        for (const directive of ["style-src", "script-src", "connect-src"] as const) // its release is allowed
+          assert(Object.keys(f.ctx.res.csp[directive]).some((src) => src.endsWith("@1.5.19/")));
+        await (await f.cm.layoutPage(NAME)).settings.u2Version("1.5."); // half typed in the panel: the pin
+        await f.render();
+        assert(pinned().endsWith("@1.8.0/"));
+        await fs.write(template.file, "<div id=own></div>");
+        assertEquals(await f.render(), '<div id="own"></div>');
+        await fs.write(template.file, "");
+        assertEquals(await f.render(), "");
+        await fs.remove(template.file);
+        assertStringIncludes(await f.render(), 'id="container"');
+        assertEquals(await Deno.stat(template.file).catch(() => null), null);
+      });
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+Deno.test("houdini: site template controls creation; apps keep separate identity and contents", async () => {
+  const a = await fixture();
+  const b = await fixture();
+  try {
+    await a.app.settings.identity.name("Alpha");
+    await b.app.settings.identity.name("Beta");
+    assertStringIncludes(await a.render(), ">Alpha</span>");
+    assertStringIncludes(await b.render(), ">Beta</span>");
+    assert(!String(await b.render()).includes("Alpha"));
+    const globalA = await a.cm.layoutPage(NAME);
+    const navA = await globalA.cont("nav");
+    await navA.settings.level(1);
+    assertEquals((await (await b.cm.layoutPage(NAME)).cont("nav")).settings.level(), undefined);
+
+    const custom = await (await a.cm.node(1)).createChild({ module: NAME });
+    await requestStorage.run(a.ctx, async () => {
+      const template = moduleTemplate(custom.module!);
+      await template.create("/* Site */");
+      await fs.write(template.file, "<main><cms-cont name=main module=cms.cont.text /></main>");
+      await layout.node.render(custom, { ctx: a.ctx });
+      assertEquals((await custom.cont("main")).module?.name, "cms.cont.text");
+      assertEquals((await (await custom.cont("main")).conts()).length, 0);
+      await fs.write(template.file, "<div></div>");
+      const empty = await (await a.cm.node(1)).createChild({ module: NAME });
+      await layout.node.render(empty, { ctx: a.ctx });
+      assertEquals((await empty.conts()).length, 0);
+    });
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});
+
+Deno.test("houdini: starter content follows the module the template gives main", async () => {
+  const f = await fixture();
+  try {
+    await requestStorage.run(f.ctx, async () => {
+      const template = moduleTemplate(f.page.module!);
+      await template.create("/* Site */");
+      await fs.write(template.file, `<div cms-text=main><cms-cont name=main /></div>`);
+      await f.render();
+      assertEquals((await f.page.conts()).length, 0);
+
+      await fs.write(template.file, `<div><cms-cont name=main module=cms.cont.text /><cms-cont name=main /></div>`);
+      await f.render();
+      assertEquals((await f.page.cont("main")).module?.name, "cms.cont.text");
+      assertEquals((await (await f.page.cont("main")).conts()).length, 0);
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+Deno.test("houdini: starter titles are editable language snapshots; removed slots stay absent", async () => {
+  const f = await fixture();
+  try {
+    f.app.languages.setLangs(["en", "de"]);
+    await f.page.title("de", "Deutsch <em>Titel</em> & mehr");
+    await requestStorage.run(f.ctx, async () => {
+      const template = moduleTemplate(f.page.module!);
+      await template.create("/* Site */");
+      await fs.write(template.file, "<main><cms-cont name=main /></main>");
+      await f.render();
+      assertEquals((await (await f.cm.layoutPage(NAME)).conts()).length, 0);
+      const main = await f.page.cont("main");
+      const text = await (await main.conts())[0].cont("main");
+      assertEquals(await (await text.text("main", "de")).get(), "<h1>Deutsch Titel &amp; mehr</h1>");
+      await text.text("main", "en", "<h1>Editorial title</h1>");
+      await f.page.title("en", "Changed page title");
+      await f.render();
+      assertEquals(await (await text.text("main", "en")).get(), "<h1>Editorial title</h1>");
+      await fs.write(template.file, "<div></div>");
+      assertEquals(await f.render(), "<div></div>");
+      assertEquals((await main.conts()).length, 1);
+      assertEquals(await (await text.text("main", "en")).get(), "<h1>Editorial title</h1>");
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+Deno.test("houdini: global design, translations and languages remain specific to their app", async () => {
+  const a = await fixture();
+  const b = await fixture();
+  try {
+    await requestStorage.run(a.ctx, async () => {
+      a.app.languages.setLangs(["en", "de", "fr"]);
+      const global = await a.cm.layoutPage(NAME);
+      await global.settings.design({ color: "#80502e", "font-2": "Georgia, serif", "input-radius": "0" });
+      await global.text("menu", "en", "Explore");
+      await global.text("notice", "en", "<p>Open for ideas</p>");
+      const out = await a.render();
+      assertStringIncludes(out, ">Explore</span>");
+      assertStringIncludes(out, "Open for ideas");
+      assertStringIncludes(out, 'hreflang="de"');
+      assertStringIncludes(out, 'hreflang="fr"');
+      assertStringIncludes([...a.ctx.res.html.inlineStyles].join(""), "--color:#80502e");
+      assertStringIncludes([...a.ctx.res.html.inlineStyles].join(""), "--input-radius:0");
+      const files = moduleTemplate(a.page.module!);
+      await files.create("html{--color:red}");
+      assertEquals(await fs.text(files.css), "html{--color:red}");
+      await a.render();
+      assertEquals(await fs.text(files.css), "html{--color:red}");
+    });
+    const out = await b.render();
+    assert(!out.includes("Explore"));
+    assert(!out.includes("Open for ideas"));
+    assert(!out.includes('hreflang="de"'));
+    assert(![...b.ctx.res.html.inlineStyles].join("").includes("#80502e"));
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});
+
+Deno.test("houdini: real CMS rendering orders u2, layout, content modules and site CSS", async () => {
+  const f = await fixture();
+  try {
+    await requestStorage.run(f.ctx, async () => {
+      const mod = f.page.module!;
+      await moduleTemplate(mod).create("html{--color:#80502e}");
+      await f.page.html();
+      const styles = [...f.ctx.res.html.styles];
+      const base = styles.indexOf("@u2/css/classless/classless.css");
+      const own = styles.indexOf(mod.modUrl + "pub/main.css");
+      const section = styles.findIndex((url) => url.includes("cms.cont.section/pub/main.css"));
+      assert(base >= 0 && own > base && section > own);
+      assertEquals(styles.at(-1), mod.dataUrl + "pub/main.css");
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+Deno.test("houdini: the site's flexible-content initializer takes precedence over the title starter", async () => {
+  const f = await fixture();
+  try {
+    await f.app.settings["cms.cont.flexible"]["init-child-module"]("cms.cont.text");
+    await requestStorage.run(f.ctx, async () => {
+      const out = await f.render();
+      const main = await f.page.cont("main");
+      const children = await main.conts();
+      assertEquals(children.length, 1);
+      assertEquals(children[0].module?.name, "cms.cont.text");
+      assert(!out.includes("<h1>"));
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+Deno.test("houdini: the real settings API saves a design and clears all overrides", async () => {
+  const f = await fixture();
+  try {
+    const ctx = await testContext({ set: { app: f.app, user: { superuser: true, valueOf: () => 0 } } });
+    cmsCtx(ctx).mainNode = f.page;
+    await requestStorage.run(ctx, async () => {
+      const global = await f.cm.layoutPage(NAME);
+      const ref = f.app.api.cms.node(global.id).settings("design");
+      await ref.put({ value: { color: "#80502e", "font-2": "Georgia, serif" } });
+      assertEquals(await ref.get(), { color: "#80502e", "font-2": "Georgia, serif" });
+      await layout.node.render(f.page, { ctx });
+      assert([...ctx.res.html.inlineStyles].some((css) => css.includes("#80502e")));
+      await ref.put({ value: {} });
+      assertEquals(await ref.get(), {});
+      ctx.res.html.inlineStyles.clear();
+      await layout.node.render(f.page, { ctx });
+      assert(![...ctx.res.html.inlineStyles].some((css) => css.includes("#80502e")));
+      const stored = await f.app.db.one`SELECT settings FROM page WHERE id = ${global.id}`;
+      assertEquals(JSON.parse(String(stored)).design, {});
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+Deno.test("houdini: brand links use the language entrance under the app mount at any page depth", async () => {
+  const f = await fixture();
+  try {
+    const nested = await f.page.createChild({ module: NAME });
+    const deep = await nested.createChild({ module: NAME });
+    const ctx = await testContext({ url: "http://qino.test/mounted/en/deep", appUrl: "/mounted/", app: { db: f.app.db, modules: f.app.modules } });
+    cmsCtx(ctx).mainNode = deep;
+    await requestStorage.run(ctx, async () => {
+      const out = await layout.node.render(deep, { ctx });
+      assertEquals((out.match(/href="\/mounted\/en\/"/g) ?? []).length, 2);
+    });
+  } finally {
+    await f.close();
+  }
+});

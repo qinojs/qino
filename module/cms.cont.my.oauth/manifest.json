@@ -3,7 +3,8 @@
   "description": "Lets signed-in users see which providers they sign in through, and connect or disconnect them.",
   "dependencies": [
     "cms",
-    "auth.oauth"
+    "auth.oauth",
+    "u2"
   ],
   "files": [
     "manifest.json",

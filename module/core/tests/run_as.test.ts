@@ -14,13 +14,13 @@ Deno.test("runAs: a context of its own, with the user's rights, through its acto
       const ctx = getCtx();
       return { user: ctx.user?.id, client: ctx.clientId, url: ctx.req.url.href, appUrl: ctx.req.appUrl };
     };
-    const first = await runAs(app, 7, "ai1.tools", seen);
+    const first = await runAs(app, 7, "ai.tools", seen);
     assertEquals([first.user, first.url, first.appUrl], [7, "https://example.test/sub/", "/sub/"]);
-    assertEquals((await runAs(app, 7, "ai1.tools", seen)).client, first.client); // one actor, one client
+    assertEquals((await runAs(app, 7, "ai.tools", seen)).client, first.client); // one actor, one client
     assertEquals((await runAs(app, 7, "cron", seen)).client === first.client, false);
 
     // what it writes carries its log entry, which names the actor's session and client
-    const logId = await runAs(app, 7, "ai1.tools", async () => {
+    const logId = await runAs(app, 7, "ai.tools", async () => {
       await app.db.table("grp").insert({ name: "made by the agent" });
       return getCtx().logId;
     });

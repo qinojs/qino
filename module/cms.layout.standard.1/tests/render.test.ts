@@ -77,8 +77,9 @@ const editors = async (access: number) => {
 
 Deno.test("cms.layout.standard.1: the layout page decides who may open its files", async () => {
   assertEquals(await editors(1), []); // read access on the layout page
+  assertEquals(await editors(2), []); // edit access: content only, code needs admin
 
-  const links = await editors(2) ?? [];
+  const links = await editors(3) ?? [];
   assertEquals(links.map((l: any) => l.name), ["template.html", "main.css"]);
   assertEquals(links.every((l: any) => l.url.includes("fileEditor?file=")), true);
 });

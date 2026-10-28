@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 import * as u2 from "@qino/qino/u2";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -13,7 +13,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const file of (await node.files()).values()) {
     if (!file.mime.startsWith("image/")) continue;
     images.push(html`<a href="${await file.url()}" u2-lightbox="gallery-${node.id}">
-      ${await cms_image2(file, {})}
+      ${await cms_image(file, {})}
     </a>`);
   }
   const width = node.settings["col-width"]<string>();

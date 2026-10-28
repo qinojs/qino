@@ -4,7 +4,6 @@ import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels } from "@qino/qino/messaging";
 
 import { userMessages } from "./lib/journal.ts";
-
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -16,6 +15,7 @@ const { name } = manifest;
 
 const PREVIEWS = 3; // enough to recognise a message, few enough to keep the row a row
 const LIST_LIMIT = 100;
+const SPAM = 0.5; // from this score on an incoming message is flagged
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
@@ -38,6 +38,7 @@ function intParam(url: URL, key: string) {
 /** The journal as a table: one row per logical message, filtered by text and channel. */
 async function renderOverview(node: Node, url: URL) {
   const app = node.app;
+  const t = app.t;
   const ctx = getCtx();
   const search = url.searchParams.get("search") ?? "";
   const filter = url.searchParams.get("channel") ?? "";
@@ -48,29 +49,30 @@ async function renderOverview(node: Node, url: URL) {
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto">
-      <div class=-head>${app.t`Messages`}</div>
+      <div class=-head>${t`Messages`}</div>
       <div>
         <form method=get data-filter>
           ${hidden(url, ["search", "channel", "usr", "msg"])}
-          <input type=search name=search value="${search}" placeholder="${app.t`Search...`}">
+          <input type=search name=search value="${search}" placeholder="${t`Search...`}">
           <select name=channel>
-            <option value="">${app.t`All types`}</option>
+            <option value="">${t`All types`}</option>
             ${used.map((c) => html`<option value="${c}"${c === filter ? " selected" : ""}>${view.label(c)}</option>`)}
           </select>
-          <button>${app.t`Search`}</button>
+          <button>${t`Search`}</button>
         </form>
       </div>
       <div style="overflow:auto; padding:0">
         <table class=u2-table>
           <thead><tr>
-            <th>${app.t`Id`}
+            <th>${t`Id`}
             <th>${view.time}
-            <th>${app.t`Type`}
-            <th>${app.t`Text`}
+            <th>${t`Type`}
+            <th>${view.spam}
+            <th>${t`Text`}
             <th>${view.attachments}
             <th>${view.recipients}
-            <th>${app.t`Opened`}
-            <th>${app.t`Clicks`}
+            <th>${t`Opened`}
+            <th>${t`Clicks`}
             <th>${view.errors}
           <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter } })}
         </table>
@@ -89,7 +91,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const sh = sqlSearch(search, ["m.title", "m.text"], { exact: ["m.id", "m.channel"] });
   const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, g.name AS grp_name,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, m.spam, g.name AS grp_name,
       (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.sent IS NOT NULL) AS sent_count,
@@ -101,7 +103,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY m.time DESC, m.id DESC
     LIMIT ${LIST_LIMIT}`;
   const [tracked, thumbs, view] = await Promise.all([trackingStats(app, rows), previews(app, rows), labels(app)]);
-  if (!rows.length) return html`<tr><td colspan=9>${search || filter ? view.noMatch : view.noMessages}`;
+  if (!rows.length) return html`<tr><td colspan=10>${search || filter ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
   const msgUrl = (id: unknown) => backend.toUrl(pageUrl, { msg: id });
@@ -113,8 +115,9 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
+      <td style="white-space:nowrap">${spam(row.spam)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
-      <td data-attachments>${thumbs.get(Number(row.id)) ?? html`${Number(row.attachment_count) || 0}`}
+      <td data-attachments>${thumbs.get(Number(row.id)) ?? (Number(row.attachment_count) || 0)}
       <td style="white-space:nowrap">${reached(row, view)}
       <td style="white-space:nowrap">${trackedStat(stats?.opened_count, stats?.opened_first)}
       <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}
@@ -122,8 +125,17 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   }));
 }
 
-/** How far a message got: how many of its recipients it reached, and what is still owed. */
+/** The spam score as a percentage, flagged from SPAM on; empty when not judged. */
+function spam(score: unknown) {
+  if (score == null) return "";
+  const p = Number(score);
+  return html`${p >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${Math.round(p * 100)}%`;
+}
+
+/** How far a message got: how many of its recipients it reached, and what is still owed. An incoming
+ *  message has only us. */
 function reached(row: Row, view: View) {
+  if (row.direction === "in") return "";
   const all = Number(row.recipient_count) || 0;
   const sent = Number(row.sent_count) || 0;
   const owed = Number(row.owed_count) || 0;
@@ -179,6 +191,7 @@ function trackedStat(count: unknown, first: unknown) {
 /** One message with its payload and the result per recipient. */
 async function renderMessage(node: Node, id: number, url: URL) {
   const app = node.app;
+  const t = app.t;
   const [row, deliveries, files, links, view] = await Promise.all([
     app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
     app.db.query`
@@ -202,7 +215,7 @@ async function renderMessage(node: Node, id: number, url: URL) {
       ORDER BY t.code`,
     labels(app),
   ]);
-  if (!row) return html.async`<div class=u2-card><div>${app.t`Message does not exist.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div>${t`Message does not exist.`}</div></div>`;
   const attachmentList = await attachments(app, files);
   // shorturl knows what a code stands for; without that module the code stands for itself
   const targets = links.length
@@ -212,12 +225,13 @@ async function renderMessage(node: Node, id: number, url: URL) {
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-basis:50rem">
-      <div class=-head>${app.t`Message`} #${row.id}</div>
+      <div class=-head>${t`Message`} #${row.id}</div>
       <table class=u2-table>
         <tr><td>${view.time}<td>${u2.el.time(row.time)}
-        <tr><td>${app.t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
-        <tr><td>${app.t`Title`}<td>${row.title}
-        <tr><td>${app.t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
+        <tr><td>${t`Type`}<td>${direction(row, view)} ${view.badge(row.channel)} ${messageTarget(row, view)}
+        ${row.spam == null ? "" : html`<tr><td>${view.spam}<td>${spam(row.spam)}`}
+        <tr><td>${t`Title`}<td>${row.title}
+        <tr><td>${t`Text`}<td${row.format ? "" : html.raw(' style="white-space:pre-wrap"')}>${body(row)}
         ${row.template ? html`<tr><td>${view.template}<td>${row.template}` : ""}
         ${files.length ? html`<tr><td>${view.attachments}<td>${attachmentList}` : ""}
         <tr><td>${view.payload}<td><pre>${readableData(row.data)}</pre>
@@ -229,11 +243,11 @@ async function renderMessage(node: Node, id: number, url: URL) {
         <table class=u2-table>
           <thead><tr>
             <th>${view.user}
-            <th>${app.t`Address`}
-            <th>${app.t`External ID`}
+            <th>${t`Address`}
+            <th>${t`External ID`}
             <th>${view.time}
-            <th>${app.t`Opened`}
-            <th>${app.t`Clicks`}
+            <th>${t`Opened`}
+            <th>${t`Clicks`}
             <th>${view.error}
           <tbody>${deliveries.map((d) => html`<tr>
             <td>${recipient(d, url, view)}
@@ -252,15 +266,16 @@ async function renderMessage(node: Node, id: number, url: URL) {
 
 /** Tracked links reached for this message, aggregated across every recipient. */
 async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>) {
-  const empty = await app.t`No links yet.`;
+  const t = app.t;
+  const empty = await t`No links yet.`;
   return html.async`<div class=u2-card style="flex:1 1 31.25rem">
-    <div class=-head>${app.t`Links`}</div>
+    <div class=-head>${t`Links`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>
         <thead><tr>
-          <th>${app.t`Link`}
-          <th>${app.t`Loads`}
-          <th>${app.t`Clicks`}
+          <th>${t`Link`}
+          <th>${t`Loads`}
+          <th>${t`Clicks`}
         <tbody>${rows.length
           ? rows.map((row) => html`<tr>
             <td>${urls.has(row.code)
@@ -276,11 +291,12 @@ async function linkTable(app: App, rows: Row[], urls: Map<unknown, unknown>) {
 
 async function renderConversation(node: Node, usrId: number, url: URL) {
   const app = node.app;
+  const t = app.t;
   const user = await app.db.row`SELECT id, username, given_name, family_name FROM usr WHERE id = ${usrId}`;
   if (!user) {
     return html.async`<div class=u2-flex>
       ${userCard(node, url, 0)}
-      <div class=u2-card><div>${app.t`User not found.`}</div></div>
+      <div class=u2-card><div>${t`User not found.`}</div></div>
     </div>`;
   }
   const [rows, reachable, view] = await Promise.all([
@@ -293,31 +309,31 @@ async function renderConversation(node: Node, usrId: number, url: URL) {
   return html.async`<div class=u2-flex>
     ${userCard(node, url, usrId)}
     <div class="u2-card -conversation" style="flex-basis:80rem">
-      <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
+      <div class=-head>${t`Communication with ${userName(user)}`} (${rows.length})</div>
       <div class=-scroll>
         ${rows.length
           ? html`<table class=-chat><tbody>${messages}</table>`
-          : html`<div>${await app.t`No messages yet.`}</div>`}
+          : html.async`<div>${t`No messages yet.`}</div>`}
       </div>
       <div>
         ${reachable.length ? html.async`<form class=-composer>
           <input type=hidden name=usr value="${user.id}">
           <label>
-            ${app.t`Channel`}:
+            ${t`Channel`}:
             <select name=channel>
               ${reachable.map((c) => html`<option value="${c.name}"${c.name === selectedChannel(rows, reachable) ? " selected" : ""}>${c.label}</option>`)}
             </select>
           </label>
-          <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
+          <textarea name=text maxlength=4096 rows=3 required placeholder="${t`Message`}"></textarea>
           <label>
-            ${app.t`Format`}:
+            ${t`Format`}:
             <select name=format>
-              <option value="">${app.t`Text`}</option>
+              <option value="">${t`Text`}</option>
               <option value=md>Markdown</option>
             </select>
           </label>
-          <button data-reply>${app.t`Send`}</button>
-        </form>` : html.async`<div>${app.t`No reachable channel.`}</div>`}
+          <button data-reply>${t`Send`}</button>
+        </form>` : html.async`<div>${t`No reachable channel.`}</div>`}
       </div>
     </div>
   </div>`;
@@ -383,7 +399,7 @@ async function chatBubble(app: App, row: Row & { deliveries: Row[]; attachments:
   return html`<div class="u2-card -bubble"><div>
     <div class=-text>${body(row)}</div>
     ${await attachments(app, row.attachments, true)}
-    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
+    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${Number(row.spam) >= SPAM ? html` · ${spam(row.spam)}` : ""}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
 
@@ -442,12 +458,14 @@ function cut(text: string, max = 120) {
 
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due] = await Promise
-    .all([app.t`Recipients`, app.t`Errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`,
-      app.t`No matching messages`, app.t`No messages yet.`, app.t`incoming`, app.t`outgoing`, app.t`Template`, app.t`Attachments`, app.t`due`]);
+  const t = app.t;
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam] =
+    await Promise.all([t`Recipients`, t`Errors`, t`User`, t`Time`, t`Error`, t`anonymous`, t`group`, t`Payload`,
+      t`No matching messages`, t`No messages yet.`, t`incoming`, t`outgoing`, t`Template`, t`Attachments`, t`due`,
+      t`Spam`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");
@@ -492,7 +510,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   return html.async`<div class=-body>
     <b>${Number(totals?.n ?? 0)}</b> ${app.t`messages in 7 days`}
     · ${Number(totals?.incoming ?? 0)} ${app.t`incoming`}
-    ${Number(totals?.errors ?? 0) ? html` · <span class=u2-badge>${totals!.errors} ${await app.t`errors`}</span>` : ""}
+    ${Number(totals?.errors ?? 0) ? html.async` · <span class=u2-badge>${totals!.errors} ${app.t`errors`}</span>` : ""}
   </div>
   ${recent.length ? html`<div style="overflow:auto;padding:0"><table class=u2-table>${recent.map((row) => {
     const errors = Number(row.error_count) || 0;

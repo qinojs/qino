@@ -3,7 +3,7 @@
   "description": "Renders declarative HTML templates with editable CMS fields and content.",
   "dependencies": [
     "cms",
-    "cms.image2"
+    "cms.image"
   ],
   "files": [
     "README.md",

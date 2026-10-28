@@ -1,4 +1,4 @@
-import { Hono, basePath, getConnInfo } from "../deps.ts";
+import { Hono, basePath } from "../deps.ts";
 
 import type { App } from "./App.ts";
 
@@ -8,6 +8,10 @@ import type { App } from "./App.ts";
  */
 export function honoAdapter(app: App): Hono {
   const hono = new Hono();
-  hono.all("*", (c) => app.handle(c.req.raw, basePath(c), getConnInfo(c).remote.address ?? ""));
+  // c.env is the server's second handler argument: the info of `sys.serve` (and `Deno.serve`)
+  hono.all("*", (c) => {
+    const info = c.env as { remoteAddr?: { hostname?: string } } | undefined;
+    return app.handle(c.req.raw, basePath(c), info?.remoteAddr?.hostname ?? "");
+  });
   return hono;
 }

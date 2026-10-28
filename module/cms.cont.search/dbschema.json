@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "cms_search": {
+      "description": "One search per content and page visit; live input replaces its last nonempty term until the field is cleared.",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "node_id": { "type": "integer", "x-index": true, "x-qg-parent": "page", "x-qg-on-parent-delete": "cascade" },
+          "log_id": { "type": "integer", "x-index": true, "x-qg-parent": "log", "description": "The latest search request; its time stays available because referenced logs are retained." },
+          "search": { "type": "string" },
+          "lang": { "type": "string", "maxLength": 12 },
+          "hits": { "type": "integer" }
+        },
+        "required": ["id", "node_id", "search", "lang", "hits"]
+      }
+    }
+  }
+}

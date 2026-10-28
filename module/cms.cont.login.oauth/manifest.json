@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.login.oauth",
+  "description": "Login links for configured OAuth providers.",
+  "dependencies": [
+    "auth.oauth",
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

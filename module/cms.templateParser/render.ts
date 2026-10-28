@@ -1,5 +1,5 @@
 import { fillPlaceholders, hee, modulePlaceholders, placeholderNames } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import { VOID } from "./parse.ts";
 
@@ -139,13 +139,14 @@ async function renderCmsText(el: El, name: string, t: Tpl) {
     if (a.name === "cms-text" || a.name === "node") continue;
     options[a.name] = a.value === null ? true : t.text(a.value);
   }
+  if (!/^[a-z][a-z0-9-]*$/i.test(String(options.tag))) options.tag = el.tag; // tag= may come from a setting
   const initial = serialize(el.children, t).trim();
   if (initial) options.initial = initial;
   return String(await target.cms.text(target, name, options));
 }
 
 // ---------------------------------------------------------------------------
-// <cms-image name=... /> — rendered via cms.image2, attributes become options
+// <cms-image name=... /> — rendered via cms.image, attributes become options
 // ---------------------------------------------------------------------------
 
 async function renderCmsImage(el: El, t: Tpl) {
@@ -163,7 +164,7 @@ async function renderCmsImage(el: El, t: Tpl) {
   }
   if (opts.width)  opts.width  = Number(opts.width)  || opts.width;
   if (opts.height) opts.height = Number(opts.height) || opts.height;
-  return String(await cms_image2(file, opts));
+  return String(await cms_image(file, opts));
 }
 
 // ---------------------------------------------------------------------------
@@ -179,11 +180,22 @@ async function renderCmsCont(el: El, t: Tpl) {
   return String(await (await target.cont(name, module)).html());
 }
 
+/** `{{settings.<path>}}`: a scalar setting of the node being rendered. */
+function setting(node: Node, path: string): TemplateValue | undefined {
+  const value = path.split(".").reduce((item: any, key) => item?.[key], node.settings)?.();
+  return ["string", "number", "boolean"].includes(typeof value) && value !== "" ? { text: String(value) } : undefined;
+}
+
 /** Static template text only: generated CMS content never passes through this resolver. */
 async function templateValues(named: Set<string>, node: Node) {
   const values: Record<string, TemplateValue> = {};
   const made = modulePlaceholders<Node>(node.app);
   for (const name of named) {
+    if (name.startsWith("settings.")) {
+      const value = setting(node, name.slice("settings.".length));
+      if (value) values[name] = value;
+      continue;
+    }
     const make = made[name];
     if (!make) { await warn(node, `unknown placeholder {{${name}}}`); continue; }
     const value = await make(node.app, node);

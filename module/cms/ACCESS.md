@@ -41,6 +41,9 @@ Computed in `Node.access()` / `#calcUsrAccess` (`lib/Node.ts`), cached per
 request in `cmsCtx(ctx).accessCache`. Other modules can adjust the result in the
 `node:access` event.
 
+Code files that run in the app origin (`cms.cont.html`, the layout templates)
+need **3** on their node: editors (2) maintain the content, admins (3) the code.
+
 Backend UI: *cms.backend.cms.tree.access* (per-page group matrix),
 *cms.backend.groups* (groups & members).
 

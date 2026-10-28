@@ -1,0 +1,89 @@
+import { html, safeEqual, sql, sqlSearch } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
+// The page title is the heading; the text explains and leads to the suggestions.
+const INITIAL = {
+  de: "<p>Die gewünschte Seite konnte nicht gefunden werden (Fehler 404). Vielleicht suchen Sie eine dieser Seiten:</p>",
+  en: "<p>The page you requested could not be found (error 404). Perhaps you are looking for one of these pages:</p>",
+  fr: "<p>La page demandée est introuvable (erreur 404). Vous cherchez peut-être l’une de ces pages :</p>",
+  it: "<p>La pagina richiesta non è stata trovata (errore 404). Forse cerchi una di queste pagine:</p>",
+};
+
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+
+  // Extract words from request URI for fulltext search
+  const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ");
+
+  const pages = new Set<number>();
+
+  if (words) {
+    const db = node.app.db;
+    let rows;
+    if (db.dialect === "mysql") {
+      const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
+      rows = await db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text_lang t ON p.title_id = t.text_id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
+    } else {
+      const { where } = sqlSearch(words, ["t.text"]);
+      rows = await db.query`SELECT p.id FROM page p INNER JOIN text_lang t ON p.title_id = t.text_id WHERE p.searchable AND ${where} GROUP BY p.id LIMIT 100`;
+    }
+    for (const row of rows) {
+      if (!await (await node.cms.node(row.id)).isReadable()) continue;
+      pages.add(Number(row.id));
+      if (pages.size >= 5) break;
+    }
+  }
+  // Always offer the home page
+  const home = await node.cms.nodeByPath(["home"]);
+  if (home && await home.isReadable()) pages.add(home.id);
+
+  const listItems = [...pages].map((id) => html.async`<li>${node.cms.link(id)}`);
+
+  return html.async`<div>
+  <div class=u2-width>
+    ${node.cms.text(node, "main", { initial: INITIAL })}
+    <ul>${listItems}</ul>
+    ${renderEditBox(node, ctx)}
+  </div>
+</div>`;
+}
+
+async function renderEditBox(node: Node, ctx: Ctx) {
+  if (!await node.edit()) return "";
+  const t = node.app.t;
+  // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
+  if (cmsCtx(ctx).mainNode === await node.cms.nodeFromRequest()) return "";
+
+  ctx.res.html.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
+  const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
+
+  let savedMsg: HtmlString | string = "";
+  if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "setRedirect" in ctx.req.body) {
+    const redirect = String(ctx.req.body.redirect ?? "").trim();
+    if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
+      savedMsg = html`<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
+    } else if (redirect) {
+      await node.app.db.table("page_redirect").ensure({ request: ctx.req.appPath, redirect });
+      savedMsg = html`<p style="color:green">${await t`Redirect saved.`}</p>`;
+    }
+  }
+
+  return html.async`<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:.625rem auto">
+  ${savedMsg}
+  <div class=-head>${t`Admin: define direct link to:`}</div>
+  <form class=-body method=post style="display:flex; margin:0">
+    <input type=hidden name=csrfToken value="${ctx.csrfToken}">
+    <input type=qgcms-page name=redirect style="flex:1 1 auto; box-sizing:border-box; border-right:0">
+    <button name=setRedirect>${t`ok`}</button>
+  </form>
+</div>`;
+}
+
+export const cms = {
+  node: {
+    render,
+  },
+};

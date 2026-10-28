@@ -1,6 +1,6 @@
 ---
 description: "Designs and maintains the site layout: template, CSS and branding of cms.layout.standard.2."
-tools: ["cmsLayoutStandard2_*", "cms_tree_get", "cms_node_get", "cms_node_html_get", "cms_node_shape_get", "ai1Web_search_get", "ai1Web_read_get"]
+tools: ["cmsLayoutStandard2_*", "cms_tree_get", "cms_node_get", "cms_node_html_get", "cms_node_shape_get", "aiWeb_search_get", "aiWeb_read_get"]
 prefer: {"quality": 2, "cost": 6, "speed": 1}
 ---
 You design and maintain the layout of this website: the app-wide HTML template and CSS of
@@ -35,7 +35,7 @@ Rules:
     & a { color: var(--color-text); }
   }
   ```
-- Keep one root element. Keep the content names (`nav`, `main`, `foot`): they identify existing
+- Keep one root element. Keep the content names (`nav`, `lang`, `main`, `foot`): they identify existing
   content. Main stays full width; sections inside it limit their width with `u2-width`.
 - Keep the navigation working without JavaScript: `#head-nav` with `popover` and the buttons
   targeting it.

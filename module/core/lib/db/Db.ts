@@ -159,9 +159,17 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.ensureDatabase();
   }
 
-  /** Migrate the database to match an item JSON-schema (dialect-specific DDL). */
-  migrate(schema: unknown, opts?: MigrateOptions): Promise<void> {
-    return this.#driver.migrate(schema, opts);
+  /** Migrate the database to match an item JSON-schema (dialect-specific DDL). Logs what it changes
+   *  in an existing database; a new one gets the whole schema, which says nothing. */
+  async migrate(schema: unknown, opts?: MigrateOptions): Promise<void> {
+    const fresh = !(await this.listTables()).length;
+    const { executed, warnings } = await this.#driver.migrate(schema, opts);
+    if (!fresh && executed.length) console.log(["db: migrated", ...warnings, ...executed].join("\n"));
+  }
+
+  /** The tables in the database now; `tables` has them only from `loadTables()` on. */
+  listTables(): Promise<string[]> {
+    return this.#driver.listTables();
   }
 
   /** Column metadata for a table, in MySQL `SHOW FULL COLUMNS` shape. */
@@ -181,8 +189,9 @@ export class Db extends Emitter<DbEvents> {
       // Keep existing table objects: module installs re-run this, and a new DbTable would lose its
       // row class and identity map.
       tables[name] = this.#tables[name] ?? new DbTable(this, name);
-      await tables[name].reloadFields();
     }
+    const results = await Promise.allSettled(Object.values(tables).map(table => table.reloadFields()));
+    for (const result of results) if (result.status === "rejected") throw result.reason;
     this.#tables = tables; // swapped at once, so parallel code never sees a half-filled list
   }
 

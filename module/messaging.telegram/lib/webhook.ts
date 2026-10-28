@@ -1,5 +1,6 @@
-import { Output, safeEqual, unixTime } from "@qino/qino";
+import { errMsg, Output, safeEqual, unixTime } from "@qino/qino";
 import { record } from "@qino/qino/messaging";
+import { spamScore } from "@qino/qino/security";
 
 import { call, webhookSecret } from "./bot.ts";
 import { readLinkToken } from "./link.ts";
@@ -13,9 +14,7 @@ export async function webhook(ctx: Ctx): Promise<never> {
   if (!safeEqual(ctx.req.header("x-telegram-bot-api-secret-token"), await webhookSecret(ctx.app))) throw new Output("Forbidden", { status: 403 });
   const updateBody = ctx.req.body;
   await update(ctx.app, updateBody).catch((e) => console.error("[telegram]", e));
-  if (typeof ctx.app.fire === "function") {
-    await ctx.app.fire("telegram:update", { update: updateBody }).catch((e) => console.error("[telegram]", e));
-  }
+  await ctx.app.fire("telegram:update", { update: updateBody }).catch((e) => console.error("[telegram]", e));
   throw new Output(undefined, { status: 200 });
 }
 
@@ -29,12 +28,14 @@ async function update(app: App, up: any) {
   const knownUsrId = Number(await app.db.one`SELECT usr_id FROM telegram_chat WHERE chat_id = ${chatId}`) || undefined;
   const linkedUsrId = command === "start" && payload ? await readLinkToken(app, payload) : undefined;
   const usrId = linkedUsrId || knownUsrId;
+  const text = String(msg.text ?? "");
   await record(app, {
     channel: "telegram",
     direction: "in",
-    msg: { text: String(msg.text ?? "") },
+    msg: { text },
     data: { updateId: up.update_id, messageId: msg.message_id, chatId },
     time: Number(msg.date) || unixTime(),
+    spam: await spam(app, text, chatId, usrId),
   }, [{ usrId, sent: unixTime() }]);
   if (!command) return;
 
@@ -54,6 +55,13 @@ async function update(app: App, up: any) {
   await reply(app, chatId, await app.t`Connected. You will receive messages here.`, linkedUsrId);
 }
 
+/** How likely a message is spam. A linked chat is judged too — an account can be taken over — but
+ *  the model is told. By chat, never by the request: that comes from Telegram's servers. */
+function spam(app: App, text: string, chatId: number, usrId?: number) {
+  const context = `a Telegram message to the website's bot${usrId ? " from a linked user" : ""}`;
+  return spamScore(app, text, { sender: `telegram:${chatId}`, context });
+}
+
 async function reply(app: App, chatId: number, text: string, usrId?: number) {
   const time = unixTime();
   let failed = false;
@@ -61,7 +69,7 @@ async function reply(app: App, chatId: number, text: string, usrId?: number) {
   try { await call(app, "sendMessage", { chat_id: chatId, text }); } catch (e) { failed = true; failure = e; }
   await record(app, { channel: "telegram", direction: "out", msg: { text }, data: { to: { chat: chatId } }, time }, [{
     usrId,
-    error: failure instanceof Error ? failure.message : failure == null ? undefined : String(failure),
+    error: failed ? errMsg(failure) : undefined,
     sent: unixTime(),
   }]);
   if (failed) throw failure;

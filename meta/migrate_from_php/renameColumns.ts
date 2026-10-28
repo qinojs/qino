@@ -4,7 +4,7 @@ import type { App, Db } from "@qino/qino";
 
 /** Renames that must happen before the schema migration, which only adds: a renamed column would
  *  appear as a new empty column next to the old one (never dropped in `patch` mode). */
-const columns: [table: string, old: string, current: string][] = [
+export const renamedColumns: [table: string, old: string, current: string][] = [
   // `usr.email` is only the login name now (addresses are in `usr_contact`); the others follow
   // OIDC/SCIM/vCard naming.
   ["usr", "email", "username"],
@@ -16,12 +16,12 @@ const columns: [table: string, old: string, current: string][] = [
 /** Update an existing database before `app.init()` migrates the schema. Idempotent; does nothing
  *  if the database doesn't exist yet. */
 export async function migrate(app: App): Promise<void> {
-  for (const table of new Set(columns.map(([of]) => of))) {
+  for (const table of new Set(renamedColumns.map(([of]) => of))) {
     // cms.versions mirrors a table column by column, so the mirror is renamed along with it
     for (const t of [table, "_vers_" + table]) {
       const have = await columnsOf(app.db, t);
       if (!have.size) continue;
-      for (const [, old, current] of columns.filter(([of]) => of === table)) {
+      for (const [, old, current] of renamedColumns.filter(([of]) => of === table)) {
         if (!have.has(old)) continue;
         // If the app booted before, the new column exists empty: copy the values and drop the old one.
         if (have.has(current)) await carryOver(app.db, t, old, current);

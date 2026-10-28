@@ -85,13 +85,21 @@ export class CMS extends Emitter<CmsEvents> {
     return (await this.nodesByName(name)).values().next().value;
   }
 
-  /** Global page of a layout module (child of the system page), created if missing */
+  /** The page at a path of names from the root, e.g. ["system", "not-found"]; undefined if there is
+   *  none. Only finds: pages are made with `node.child(name)`. */
+  async nodeByPath(path: string[]): Promise<Node | undefined> {
+    let node: Node | undefined = await this.node(1);
+    for (const name of path) node = node && (await node.children()).values().find((c) => c.vs.name === name);
+    return node;
+  }
+
+  /** Global page of a layout module (below system/layout), created if missing */
   async layoutPage(module: string): Promise<Node> {
-    const sysPage = await this.node(5);
-    const children = await sysPage.children({ module });
-    let lPage = children.values().next().value;
+    const system = await (await this.node(1)).child("system", { access: 0, visible: false, searchable: false });
+    const layouts = await system.child("layout", { access: 1, visible: false });
+    let lPage = (await layouts.children({ module })).values().next().value;
     if (!lPage) {
-      lPage = await sysPage.createChild({ module, name: module, access: 1 });
+      lPage = await layouts.createChild({ module, name: module, access: 1 });
       await lPage.title(this.app.languages.def, module);
     }
     return lPage;
@@ -169,17 +177,16 @@ export class CMS extends Emitter<CmsEvents> {
   async linkAttributes(node: Node | number): Promise<Record<string, string>> {
     const ctx = getCtx();
     const page = await this.node(Number(node));
-    const href = await page.url();
-    const target = (await page.urls()).get(ctx.lang)?.target;
+    const access = await page.access(); // first: url() and edit() reuse the cached level
     const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
-    const access = await page.access();
-    const inside = await mainNode.in?.(page);
-    const online = await page.isOnline();
-    const titleObj = await page.title();
+    const [href, urls, inside, online, titleObj, edit] = await Promise.all([
+      page.url(), page.urls(), mainNode.in?.(page), page.isOnline(), page.title(), page.edit(),
+    ]);
+    const target = urls.get(ctx.lang)?.target;
     return {
       href,
       class: `cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}`,
-      ...(await page.edit() ? { cmstxt: String(titleObj?.id ?? "") } : {}),
+      ...(edit ? { cmstxt: String(titleObj?.id ?? "") } : {}),
       ...(mainNode === page ? { "aria-current": "page" } : {}),
       ...(target ? { target } : {}),
     };

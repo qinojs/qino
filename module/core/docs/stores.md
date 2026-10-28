@@ -73,8 +73,7 @@ code, so registering a store is a superuser decision, and installing from it rel
 Core does not enforce this; `modules.install(url)` stays open, since modules must work without
 stores.
 
-A module may install other modules in its `install()` hook — that is how
-[cms.installation.default](../../cms.installation.default/plugin.ts) sets up a working CMS.
+A module may install other modules in its `install()` hook.
 During boot such an install only registers; `init()` links in passes, so the new modules get the
 same ordering and schema merge. They are normal installed rows and can be uninstalled one by one —
 a dependency could not.
@@ -207,7 +206,7 @@ start, and a health check lists incomplete modules.
   the list (see *Public files* above).
 
   Two more uses of that list are open: copying a remote module into the own store under a new name
-  (**fork** — [cms.backend.superuser.module.ownStore](../../cms.backend.superuser.module.ownStore/plugin.ts)
+  (**fork** — [cms.backend.superuser.module.own](../../cms.backend.superuser.module.own/plugin.ts)
   refuses it today), and generating the list when **publishing**. A publishing app has the
   directory and needs no file; only a static host (CDN, pages) has to keep one.
 

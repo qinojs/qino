@@ -19,7 +19,9 @@ type Preset = {
   token_url?: string;
   userinfo_url?: string;
   email_url?: string;
-  console_url: string; // Wo man Client-ID/Secret erstellt
+  response_mode?: string;
+  trust_email?: number;
+  console_url: string; // where to create the client ID/secret
 };
 
 // Well-known providers, seeded on install; the admin adds client_id/secret and replaces placeholders.
@@ -27,7 +29,7 @@ type Preset = {
 const PRESETS: Record<string, Preset> = {
   google:     { issuer: "https://accounts.google.com", scopes: "openid email profile", console_url: "https://console.cloud.google.com/apis/credentials" },
   microsoft:  { issuer: "https://login.microsoftonline.com/common/v2.0", scopes: "openid email profile", console_url: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" }, // "common" instead of a fixed tenant, so it works without a customer tenant id
-  apple:      { issuer: "https://appleid.apple.com", scopes: "openid email name", console_url: "https://developer.apple.com/account/resources/identifiers/list/serviceId" },
+  apple:      { issuer: "https://appleid.apple.com", scopes: "openid email name", response_mode: "form_post", console_url: "https://developer.apple.com/account/resources/identifiers/list/serviceId" },
   auth0:      { issuer: "https://<tenant>.auth0.com", scopes: "openid email profile", console_url: "https://manage.auth0.com/" },
   okta:       { issuer: "https://<tenant>.okta.com", scopes: "openid email profile", console_url: "https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/" },
   keycloak:   { issuer: "https://<domain>/realms/<realm>", scopes: "openid email profile", console_url: "https://www.keycloak.org/docs/latest/server_admin/#proc-creating-oidc-client_server_administration_guide" },
@@ -42,7 +44,7 @@ const PRESETS: Record<string, Preset> = {
   paypal:     { issuer: "https://www.paypal.com", scopes: "openid email profile", console_url: "https://developer.paypal.com/dashboard/applications/live" },
   github:   { scopes: "read:user user:email", authorize_url: "https://github.com/login/oauth/authorize", token_url: "https://github.com/login/oauth/access_token", userinfo_url: "https://api.github.com/user", email_url: "https://api.github.com/user/emails", console_url: "https://github.com/settings/applications/new" },
   discord:  { scopes: "identify email", authorize_url: "https://discord.com/oauth2/authorize", token_url: "https://discord.com/api/oauth2/token", userinfo_url: "https://discord.com/api/users/@me", console_url: "https://discord.com/developers/applications" },
-  facebook: { scopes: "email public_profile", authorize_url: "https://www.facebook.com/v19.0/dialog/oauth", token_url: "https://graph.facebook.com/v19.0/oauth/access_token", userinfo_url: "https://graph.facebook.com/me?fields=id,name,email", console_url: "https://developers.facebook.com/apps/" },
+  facebook: { trust_email: 1, scopes: "email public_profile", authorize_url: "https://www.facebook.com/v19.0/dialog/oauth", token_url: "https://graph.facebook.com/v19.0/oauth/access_token", userinfo_url: "https://graph.facebook.com/me?fields=id,name,email", console_url: "https://developers.facebook.com/apps/" },
   twitter:  { scopes: "users.read tweet.read", authorize_url: "https://twitter.com/i/oauth2/authorize", token_url: "https://api.twitter.com/2/oauth2/token", userinfo_url: "https://api.twitter.com/2/users/me", console_url: "https://console.x.com/" },
   spotify:  { scopes: "user-read-email", authorize_url: "https://accounts.spotify.com/authorize", token_url: "https://accounts.spotify.com/api/token", userinfo_url: "https://api.spotify.com/v1/me", console_url: "https://developer.spotify.com/dashboard" },
   bitbucket:{ scopes: "account email", authorize_url: "https://bitbucket.org/site/oauth2/authorize", token_url: "https://bitbucket.org/site/oauth2/access_token", userinfo_url: "https://api.bitbucket.org/2.0/user", console_url: "https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/" },
@@ -54,7 +56,8 @@ export async function install({ app }: { app: App }): Promise<void> {
     await app.db.table("oauth_provider").insert({
       name: pname, issuer: def.issuer ?? "", authorize_url: def.authorize_url ?? "", token_url: def.token_url ?? "",
       userinfo_url: def.userinfo_url ?? "", email_url: def.email_url ?? "", client_id: "", client_secret: "",
-      scopes: def.scopes, auto_create: 1, allowed_domains: "",
+      scopes: def.scopes, auto_create: 1, allowed_domains: "", response_mode: def.response_mode ?? "",
+      trust_email: def.trust_email ?? 0,
     });
   }
 }
@@ -73,7 +76,7 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
     ${PRESETS[v("name")]?.console_url ? 
       html`<a href="${PRESETS[v("name")]?.console_url ?? "#"}" target=_blank rel=noopener>Provider console</a><br>
     ` : ""}
-    <small>Redirect URI: <code>${selfBase + "oauth/callback/" + String(p.name)}</code></small>
+    <small>Redirect URI: <code>${p.redirect_uri || selfBase + "oauth/callback/" + String(p.name)}</code></small>
   </div>`}
   <div>
     <input type=hidden name=csrfToken value="${csrf}">
@@ -85,7 +88,13 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
       Client secret <input type=password name=client_secret value="" autocomplete=new-password${isNew ? "" : html.raw(` placeholder="•••••• (unchanged)"`)}>
       Scopes ${text("scopes", "openid email profile")}
       Allowed domains ${text("allowed_domains", "example.com")}
+      Shared redirect URI ${text("redirect_uri", "https://auth.example.com/oauth/relay")}
+      Response mode ${text("response_mode", "form_post")}
+      Key ID (JWT secret) ${text("key_id")}
+      Team ID (JWT secret) ${text("team_id")}
       <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
+      <div><label><input type=checkbox name=trust_email value=1${Number(p.trust_email) ? " checked" : ""}>
+        trust e-mails without verified flag (new accounts only, e.g. Facebook)</label></div>
     </u2-fields>
     <fieldset>
       <legend>OAuth2 (no discovery)</legend>
@@ -130,7 +139,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         client_id: String(b.client_id ?? "").trim(),
         scopes: String(b.scopes ?? "").trim(),
         auto_create: b.auto_create ? 1 : 0,
+        trust_email: b.trust_email ? 1 : 0,
         allowed_domains: String(b.allowed_domains ?? "").trim(),
+        redirect_uri: String(b.redirect_uri ?? "").trim(),
+        response_mode: String(b.response_mode ?? "").trim(),
+        key_id: String(b.key_id ?? "").trim(),
+        team_id: String(b.team_id ?? "").trim(),
       };
       const id = Number(b.id);
       if (id) { if (secret) vals.client_secret = secret; await db.table("oauth_provider").update(id, vals); }

@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.my.password",
+  "description": "Lets signed-in users change their password.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

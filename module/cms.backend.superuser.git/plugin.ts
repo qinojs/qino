@@ -1,5 +1,5 @@
-import { fromFileUrl } from "@std/path";
-import { errMsg, getCtx, html } from "@qino/qino";
+import { fileURLToPath } from "node:url";
+import { errMsg, getCtx, html, sys } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { git, refs, reposOf, status } from "./lib/git.ts";
@@ -23,7 +23,7 @@ function candidates(app: App) {
   for (const mod of app.modules.all().values()) if (mod.dir) dirs.set(mod.dir, { kind: "module", label: mod.name });
   for (const store of app.stores.all()) {
     if (!store.base.startsWith("file:")) continue;
-    const dir = fromFileUrl(store.base);
+    const dir = fileURLToPath(store.base);
     dirs.set(dir, { kind: "store", label: dir.split("/").findLast(Boolean) ?? dir });
   }
   return dirs;
@@ -59,18 +59,18 @@ async function author() {
 /** Whether a supervisor restarts the process: systemd sets INVOCATION_ID, others QINO_SUPERVISED. */
 function supervised() {
   try {
-    return !!(Deno.env.get("INVOCATION_ID") ?? Deno.env.get("QINO_SUPERVISED"));
+    return !!(sys.env("INVOCATION_ID") ?? sys.env("QINO_SUPERVISED"));
   } catch {
     return false; // no --allow-env, so nothing to go on: assume nobody is watching
   }
 }
 
-/** Deno keeps its loaded modules, so pulled code needs a restart: exit and let the supervisor start
+/** The runtime keeps its loaded modules, so pulled code needs a restart: exit and let the supervisor start
  *  it again. Non-zero, so `Restart=on-failure` works too. */
 function restart() {
   if (!supervised()) throw new Error("No service manager found — the process would stay down. Set QINO_SUPERVISED=1 if one is watching.");
   // In-flight requests end with the process; a delay long enough for this answer is what it gets.
-  setTimeout(() => Deno.exit(75), 500);
+  setTimeout(() => sys.exit(75), 500);
   return "Restarting — the page reloads once the server answers again.";
 }
 

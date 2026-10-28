@@ -17,6 +17,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const t = node.app.t;
   const admin = ctx.settings.cms.admin;
   if (ctx.req.query.rp) {
     const root = await node.cms.node(Number(ctx.req.query.rp));
@@ -27,21 +28,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const path: HtmlString[] = [];
   for (const page of (await root.path()).values()) {
     const title = await pageTitle(page, ctx.lang);
-    path.push(html`<a href="${"?rp=" + page.id}">${String(title).trim() || "(no text)"}</a> > `);
+    path.push(html`<a href="?rp=${page.id}">${String(title).trim() || "(no text)"}</a> > `);
   }
 
   const langs = node.app.languages.all;
   const head = html.join(langs.map((lang) => html`<th>${lang}`));
   return html.async`<div class=u2-card style="flex:0 1 auto">
-  <div class=-head>${node.app.t`URLs`}</div>
+  <div class=-head>${t`URLs`}</div>
   <div>
-    <label><input type=checkbox data-toggle-contents${admin.showContents() ? " checked" : ""}> ${node.app.t`Show contents`}</label>
+    <label><input type=checkbox data-toggle-contents${admin.showContents() ? " checked" : ""}> ${t`Show contents`}</label>
     <div>${path}</div>
   </div>
   <table class="u2-table cmsBeTree">
     <thead><tr>
-      <th style="width:1.25rem">${node.app.t`No.`}
-      <th style="min-width:15.625rem">${node.app.t`Page`}
+      <th style="width:1.25rem">${t`No.`}
+      <th style="min-width:15.625rem">${t`Page`}
       ${head}
     <tbody cms-part=list>${list(node, { ctx })}
   </table>
@@ -61,9 +62,9 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
 
   const root = await node.cms.node(Number(admin.rootPageNode()) || 1);
   const langs = node.app.languages.all;
-  const rows: HtmlString[] = [];
+  const rows: Promise<HtmlString>[] = [];
   await addChildren(root, 0);
-  return html.join(rows);
+  return html.async`${rows}`;
 
   async function addChildren(parent: Node, level: number) {
     for (const page of (await parent.children({ type })).values()) {
@@ -71,27 +72,27 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
       const hasChildren = (await page.children({ type })).size > 0;
       const isOpen = open.has(String(page.id));
       const title = access > 0
-        ? html`<span style="flex:1">${await pageTitle(page, ctx.lang)}</span><a style="vertical-align:middle" href="${await page.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
-        : html`<span style="flex:1; color:#bbb">(${await node.app.t`no access`})</span>`;
+        ? html.async`<span style="flex:1">${pageTitle(page, ctx.lang)}</span><a style="vertical-align:middle" href="${page.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
+        : html.async`<span style="flex:1; color:#bbb">(${node.app.t`no access`})</span>`;
       const toggle = hasChildren
         ? html`<button class="u2-unstyle -toggle" data-toggle-id="${page.id}" data-toggle-value="${isOpen ? 0 : 1}"><u2-ico icon="${isOpen ? "remove" : "add"}">${isOpen ? "−" : "+"}</u2-ico></button>`
         : html`<span class=-toggle></span>`;
-      const urls: HtmlString[] = [];
+      const urls: Promise<HtmlString>[] = [];
       const custom = new Set(access >= 2
         ? (await node.app.db.query`SELECT lang FROM page_url WHERE page_id = ${page.id} AND custom = ${true}`).map(row => row.lang)
         : []);
       for (const lang of langs) {
-        const url = access > 0 ? await page.urlSeo(lang) : "---";
-        urls.push(html`<td>${access < 2 ? url : await html.async`<div data-pid="${page.id}" data-lang="${lang}">
+        const url = access > 0 ? page.urlSeo(lang) : "---";
+        urls.push(html.async`<td>${access < 2 ? url : html.async`<div data-pid="${page.id}" data-lang="${lang}">
           <input name=url value="${url}" aria-label="${lang}">
           <input type=checkbox name=auto title="${node.app.t`Automatic`}"${custom.has(lang) ? "" : " checked"}>
           <output></output>
         </div>`}`);
       }
 
-      rows.push(html`<tr${page.vs.type === "c" ? html.raw(" class=-isCont") : ""}>
+      rows.push(html.async`<tr${page.vs.type === "c" ? html.raw(" class=-isCont") : ""}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${await node.app.t`Set as start point`}" href="${"?rp=" + page.id}">${page.id}</a>
+    <a title="${node.app.t`Set as start point`}" href="?rp=${page.id}">${page.id}</a>
   <td style="padding-left:${level * .9375}rem"><div style="display:flex; align-items:center">${toggle}${title}</div>
   ${urls}`);
       if (isOpen) await addChildren(page, level + 1);

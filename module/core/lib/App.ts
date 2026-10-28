@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import * as nodePath from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { fromFileUrl, serveFile } from "../deps.ts";
 import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
@@ -9,7 +9,6 @@ import { Db } from "./db/Db.ts";
 import { DbFileManager } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
-import { parkText, unparkText } from "./migrateTextLang.ts";
 import { FileTransformer } from "./transform/mod.ts";
 import { ModuleManager } from "./ModuleManager.ts";
 import { StoreManager } from "./StoreManager.ts";
@@ -18,17 +17,19 @@ import { appEvents } from "./AppEvents.ts";
 import { LangManager } from "./LangManager.ts";
 import { apiFetch, apiClient } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
+import { sys } from "./sys.ts";
+import { serveFile } from "./serveFile.ts";
 
 import type { ItemProxy } from "../deps.ts";
 import type { ApiTree, ApiProxy } from "./api/mod.ts";
 import type { AppEvents } from "./AppEvents.ts";
 
-const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir = fileURLToPath(new URL(".", sys.mainModule));
 
 const DEFAULT_CONFIG = {
     dir: mainDir,
     appUrl: "",
-    https: false,
+    forceHttps: false, // redirect http: to https:; cookies are Secure on https: requests either way
     dev: false,
     trustedProxyHops: 0, // proxies in front of the app; 0 = none, x-forwarded-for ignored
     db: "", // mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
@@ -53,7 +54,7 @@ export class App extends Emitter<AppEvents> {
 
     dir: string;
     appUrl: string;
-    https: boolean;
+    forceHttps: boolean;
     dev: boolean;
     trustedProxyHops: number;
     db: Db;
@@ -79,14 +80,14 @@ export class App extends Emitter<AppEvents> {
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
         const cfg = { ...DEFAULT_CONFIG, ...config };
-        const dir = cfg.dir.startsWith("file:") ? fromFileUrl(cfg.dir) : cfg.dir;
+        const dir = cfg.dir.startsWith("file:") ? fileURLToPath(cfg.dir) : cfg.dir;
 
         this.dir   = ensureSlash(dir);
         // before opening the database: sqlite only says "unable to open database file" when the
         // directory is missing — the first thing a new installation would see
         mkdirSync(this.dir, { recursive: true });
         this.appUrl    = ensureSlash(cfg.appUrl || "/");
-        this.https     = cfg.https;
+        this.forceHttps = cfg.forceHttps;
         this.dev       = cfg.dev;
         this.trustedProxyHops = cfg.trustedProxyHops;
 
@@ -108,15 +109,13 @@ export class App extends Emitter<AppEvents> {
     async init(): Promise<void> {
         await this.db.ensureDatabase();  // must exist before migration
         await this.stores.init();
-        await parkText(this.db);         // one-off text/text_lang split, around the schema migration
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
-        await unparkText(this.db);
     }
 
     /** `await using app = new App(...)` — closes the database. Files under `dir` are the caller's. */
     [Symbol.asyncDispose](): Promise<void> { return this.db.close(); }
 
-    /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
+    /** Web-standard entry point — `sys.serve({}, app.fetch)`. */
     get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
         return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
     }

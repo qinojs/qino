@@ -1,0 +1,13 @@
+{
+  "name": "fin.hosting.plesk",
+  "description": "The domains hosted on Plesk servers, with their aliases, for fin.hosting to bill: read daily over their API.",
+  "dependencies": [
+    "fin.hosting"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

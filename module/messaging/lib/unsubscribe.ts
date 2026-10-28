@@ -31,10 +31,6 @@ async function read(app: App, token: string) {
   return { usrId, grpId };
 }
 
-/** Leave the group. Idempotent. */
-const drop = (app: App, usrId: number, grpId: number) =>
-  app.db.exec`DELETE FROM usr_grp WHERE usr_id = ${usrId} AND grp_id = ${grpId}`;
-
 /**
  * `messaging/unsubscribe/<token>` — GET shows a confirmation page, POST unsubscribes.
  *
@@ -53,7 +49,7 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   if (ctx.req.method !== "POST") {
     return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
   }
-  await drop(app, target.usrId, target.grpId);
+  await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent
   return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
 }
 

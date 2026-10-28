@@ -3,7 +3,8 @@
   "description": "Personal API key creation and revocation.",
   "dependencies": [
     "cms",
-    "auth.api_keys"
+    "auth.api_keys",
+    "u2"
   ],
   "files": [
     "manifest.json",

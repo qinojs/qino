@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 
 import { uid } from "../crypto.ts";
 import { header, cookiePrefix, unixTime } from "../util.ts";
-import { loginFromRequest } from "../auth/login.ts";
+import { loginFromRequest, logout } from "../auth/login.ts";
 
 import type { Ctx } from "./Ctx.ts";
+import type { Usr } from "../rows.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: Ctx): Promise<void> {
@@ -12,8 +13,12 @@ export async function initRequest(ctx: Ctx): Promise<void> {
   ctx.sess ??= await ctx.app.sessions.loadFromRequest(ctx);
   await initClient(ctx);
   if (!ctx.statelessAuth) await loginFromRequest(ctx);
+  if (ctx.userId) {
+    const usr = await ctx.app.db.table("usr").get<Usr>(ctx.userId); // one SELECT, then ctx.user is synchronous
+    // a session outlives a deactivated or deleted user; tokens check that themselves
+    if (!ctx.statelessAuth && !usr?.active) await logout(ctx);
+  }
   ctx.sess.touch(ctx.userId);
-  if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user is synchronous
   await ctx.initSettings();
   await ctx.app.languages.initCtx(ctx);
   initLog(ctx);
@@ -22,7 +27,7 @@ export async function initRequest(ctx: Ctx): Promise<void> {
 async function initClient(ctx: Ctx) {
   if (ctx.clientId) return;
 
-  const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
+  const cid = ctx.req.cookies[cookiePrefix(ctx.req.url.protocol === "https:", ctx.req.appUrl) + "cid"];
   if (!cid) return registerClient(ctx);
   const client = await ctx.app.db.table("client").rowBy("hash", cid); // SELECT *, so ctx.client is loaded
   if (!client) return registerClient(ctx);
@@ -31,7 +36,8 @@ async function initClient(ctx: Ctx) {
 
 async function registerClient(ctx: Ctx) {
   const hash = uid();
-  ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure: ctx.app.https, maxAge: 5 * 365 * 24 * 60 * 60 }));
+  const secure = ctx.req.url.protocol === "https:";
+  ctx.res.headers.append(...header.setCookie("cid", hash, { path: ctx.req.appUrl, secure, maxAge: 5 * 365 * 24 * 60 * 60 }));
   ctx.clientId = String(await ctx.app.db.table("client").add({ hash }));
 }
 

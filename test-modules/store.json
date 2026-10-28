@@ -1,12 +1,13 @@
 {
   "modules": {
     "cms.backend.demo": {},
-    "cms.backend.superuser.score.test": {},
     "cms.cont.apitest": {},
-    "cms.cont.cms-image2-test": {},
+    "cms.cont.cms-image-test": {},
     "cms.cont.example": {},
     "cms.cont.example.ml": {},
+    "cms.cont.image.test": {},
     "cms.cont.my.debug": {},
+    "cms.cont.test.cmd-widget": {},
     "cms.cont.webpush.test": {}
   }
 }

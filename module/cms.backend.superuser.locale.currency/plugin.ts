@@ -1,6 +1,6 @@
-import { html, getCtx } from "@qino/qino";
+import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { currency } from "@qino/qino/locale.currency";
+import { currency, EVERY } from "@qino/qino/locale.currency";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -17,7 +17,6 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-const EVERY = ["never", "daily", "hourly"] as const;
 const label = (t: App["t"], every: string) => every === "hourly" ? t`every hour` : every === "daily" ? t`once a day` : t`never`;
 
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
@@ -30,10 +29,9 @@ async function render(node: Node) {
   const set = app.settings["locale.currency"];
   const every = String(await set.update ?? "never");
   const rows = await app.db.query`SELECT id, rate_to_usd FROM currency`;
-  // The option labels are translations, so they are resolved before they land in a fragment.
-  const options = await Promise.all(EVERY.map(async (v) =>
-    html`<option value=${v} ${v === every ? html.raw("selected") : ""}>${await label(t, v)}`
-  ));
+  const options = EVERY.map((v) =>
+    html.async`<option value=${v} ${v === every ? html.raw("selected") : ""}>${label(t, v)}`
+  );
 
   // A rate the job would overwrite on its next run is shown, not offered for editing.
   const byHand = every === "never";
@@ -55,6 +53,9 @@ async function render(node: Node) {
       : vs.rate_to_usd == null ? "" : Number(vs.rate_to_usd).toPrecision(6)}`;
   });
 
+  const updated = await set.updated;
+  const state = updated ? `${await t`last`} ${showTime(Number(updated))} · ${await set.source}` : await t`never fetched`;
+
   return html.async`<div class=u2-card style="flex:0 1 auto">
   <div class=-head>
     ${t`Exchange rates`}
@@ -66,9 +67,7 @@ async function render(node: Node) {
     </label>
     <p>
       <button class=-now>${t`Update now`}</button>
-      <small class=-state>${await set.updated
-        ? `${await t`last`} ${showTime(Number(await set.updated))} · ${await set.source}`
-        : await t`never fetched`}</small>
+      <small class=-state>${state}</small>
     </p>
   </div>
   <div><input type=search class=-search placeholder="${t`Search`}…"></div>
@@ -89,10 +88,10 @@ async function render(node: Node) {
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const { t, db } = app;
   const set = app.settings["locale.currency"];
-  const every = String(await set.update ?? "never");
+  const every = String(await set.update ?? "never"), updated = await set.updated;
   return html.async`<div class=-body>
   ${t`Fetch the rates`}: ${label(t, every)}<br>
-  <small>${db.one`SELECT count(*) FROM currency WHERE rate_to_usd IS NOT NULL`.catch(() => 0)} ${t`rates`}, ${await set.updated ? showTime(Number(await set.updated)) : await t`never fetched`}</small>
+  <small>${db.one`SELECT count(*) FROM currency WHERE rate_to_usd IS NOT NULL`.catch(() => 0)} ${t`rates`}, ${updated ? showTime(Number(updated)) : t`never fetched`}</small>
 </div>`;
 }
 

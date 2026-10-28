@@ -3,7 +3,8 @@
   "description": "Lets signed-in users register, verify and choose their SMS phone numbers.",
   "dependencies": [
     "cms",
-    "messaging.sms"
+    "messaging.sms",
+    "u2"
   ],
   "files": [
     "manifest.json",

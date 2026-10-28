@@ -67,8 +67,8 @@ export class SessionManager {
     return Number(await this.#app.settings.core.sess.maxIdle) || DEFAULT_MAX_IDLE;
   }
 
-  loadFromRequest({ req, app }: Ctx): Promise<Session> {
-    return this.load(req.cookies[cookiePrefix(app.https, req.appUrl) + COOKIE_NAME]);
+  loadFromRequest({ req }: Ctx): Promise<Session> {
+    return this.load(req.cookies[cookiePrefix(req.url.protocol === "https:", req.appUrl) + COOKIE_NAME]);
   }
 
   /** A `pinned` session never expires; if missing, it is recreated with the same token. */
@@ -104,7 +104,8 @@ export class SessionManager {
   setCookieIfNew(ctx: Ctx): void {
     if (!ctx.sess.isNew || ctx.sess.cookieSent || ctx.statelessAuth) return;
     ctx.sess.cookieSent = true;
-    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, { path: ctx.req.appUrl, secure: ctx.app.https }));
+    const secure = ctx.req.url.protocol === "https:";
+    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, { path: ctx.req.appUrl, secure }));
   }
 
   async #create(token = uid()) {

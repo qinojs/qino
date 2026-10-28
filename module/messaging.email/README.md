@@ -23,6 +23,14 @@ a plain-text alternative; plain text goes out as text only.
 `replyTo` overrides the inbound address — e.g. a contact form's reply goes to the person who filled
 it in, not to the site.
 
+## Verification
+
+Like [messaging.sms](../messaging.sms/#verification), with `address` instead of `number`:
+`POST messagingEmail/emails` with `{ address }` mails a six-digit code, `POST messagingEmail/emails/verify`
+with `{ address, code }` makes it the user's; `GET messagingEmail/emails`, `PUT …/email/<address>/main`
+and `DELETE …/email/<address>` complete it. [cms.cont.my.emails](../cms.cont.my.emails/) provides this
+flow to signed-in users.
+
 ## Receiving
 
 `address` is the system address and sender. `inbound.address` defaults to it; if different, it is
@@ -31,8 +39,15 @@ sent as `Reply-To`. So replies arrive in a mailbox this module reads, in the sam
 With `inbound.enabled`, the cron job `messaging.email.inbox` checks the mailbox every five minutes
 over IMAP ([imapflow](https://www.npmjs.com/package/imapflow) +
 [mailparser](https://www.npmjs.com/package/mailparser), loaded only when a host is configured).
-Each message is recorded as `direction: "in"`, assigned to the sender's user, and marked `\Seen`.
-That flag is the only state: if the app crashes on a message, it stays unseen and is read next time.
+Each message is recorded as `direction: "in"` and assigned to the sender's user; mailbox flags stay
+unchanged. A cursor per mailbox (`email_inbox`) fetches only newer mail, the first run the whole
+mailbox; a mail failing three times is skipped. `email_receipt` keeps a hash of every imported mail,
+so a mail deleted from the journal is not imported again, even when the server renumbers.
+
+Each incoming mail gets a `spam` score (0 to 1): the receiving server's verdict (`Authentication-Results`:
+DMARC/SPF/DKIM `fail`, and an `X-Spam-Flag`/`X-Spam-Status`/`X-Spam` saying yes) and security's
+`spamScore`; with ai, a model judges the content. A known sender — the address of a user, or one
+mailed before — is judged too, since an account can be taken over; the model is only told.
 
 ## Settings
 

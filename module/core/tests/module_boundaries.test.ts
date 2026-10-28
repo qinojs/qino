@@ -1,16 +1,19 @@
+import { fileURLToPath, pathToFileURL } from "node:url";
+
 import { assertEquals, assertStringIncludes } from "./deps.ts";
-import { fromFileUrl, toFileUrl } from "../deps.ts";
 import { itemRoot, u2Root } from "../lib/util.ts";
 
-const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
-const cmsLegacyDir = fromFileUrl(new URL("../../../cms-legacy/", import.meta.url));
-const metaDir = fromFileUrl(new URL("../../../meta/", import.meta.url));
-const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
-const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
-const finDir = fromFileUrl(new URL("../../../fin/", import.meta.url));
-const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shp3Dir, finDir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, testModuleDir];
+const moduleDir = fileURLToPath(new URL("../../", import.meta.url));
+const cmsLegacyDir = fileURLToPath(new URL("../../../cms-legacy/", import.meta.url));
+const metaDir = fileURLToPath(new URL("../../../meta/", import.meta.url));
+const testModuleDir = fileURLToPath(new URL("../../../test-modules/", import.meta.url));
+const shp3Dir = fileURLToPath(new URL("../../../shp3/", import.meta.url));
+const finDir = fileURLToPath(new URL("../../../fin/", import.meta.url));
+const iotDir = fileURLToPath(new URL("../../../iot/", import.meta.url));
+const opsDir = fileURLToPath(new URL("../../../ops/", import.meta.url));
+const qinoDir = fileURLToPath(new URL("../../../", import.meta.url));
+const stores = [moduleDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -33,8 +36,7 @@ function imports(source: string) {
   const found = new Map<string, Set<string>>();
   for (const { groups } of source.matchAll(IMPORT)) {
     if (!groups!.spec.startsWith(".") && !groups!.spec.startsWith("@qino/qino")) continue;
-    const names = found.get(groups!.spec) ?? new Set<string>();
-    found.set(groups!.spec, names);
+    const names = found.getOrInsertComputed(groups!.spec, () => new Set<string>());
     const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").replace(/^type\s+/, "").trim();
     if (clause.startsWith("*")) { names.add("*"); continue; }
     const braces = clause.match(/\{([\s\S]*?)\}/);
@@ -66,8 +68,8 @@ function valueImports(source: string) {
 
 /** Local target of a relative or @qino/qino package import. */
 function targetPath(spec: string, file: string) {
-  const url = spec.startsWith(".") ? new URL(spec, toFileUrl(file)).href : import.meta.resolve(spec);
-  return url.startsWith("file:") ? fromFileUrl(url) : undefined;
+  const url = spec.startsWith(".") ? new URL(spec, pathToFileURL(file)).href : import.meta.resolve(spec);
+  return url.startsWith("file:") ? fileURLToPath(url) : undefined;
 }
 
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
@@ -102,7 +104,7 @@ async function barrels() {
 const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
 
 // Still open, because the consumer is the defect and fixing it is a design change: `api` is a
-// manifest field the loader already publishes as app.apiTree["cms"]. See PLAN-modules.md.
+// manifest field the loader already publishes as app.apiTree["cms"]. See qinojs/doc/PLAN-modules.md.
 const OPEN = new Set<string>();
 
 /** The module folders below a store directory, as `<store dir><module>/`. */
@@ -174,6 +176,7 @@ async function assertStore(dir: string) {
 Deno.test("module stores list every plugin directory", async () => {
   await assertStore(moduleDir);
   await assertStore(finDir);
+  await assertStore(iotDir);
   await assertStore(testModuleDir);
 });
 
@@ -210,7 +213,7 @@ Deno.test({
 
 Deno.test("test-store plugins are importable", async () => {
   const store = JSON.parse(await Deno.readTextFile(testModuleDir + "store.json"));
-  for (const name of Object.keys(store.modules)) await import(toFileUrl(`${testModuleDir}${name}/plugin.ts`).href);
+  for (const name of Object.keys(store.modules)) await import(pathToFileURL(`${testModuleDir}${name}/plugin.ts`).href);
 });
 
 Deno.test("modules only consume public APIs of other modules", async () => {
@@ -242,17 +245,17 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 // Optional integrations: a value import of a module that need not be linked, so the installation
 // without it crashes on first use. Declaring the dependency is the wrong repair — it would drag the
 // whole module in for a link, a widget or a prompt. They want an extension point, and until that
-// vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
+// vocabulary exists (see qinojs/doc/PLAN-modules.md) they stay named here rather than invisible.
 const OPTIONAL = new Set([
-  "cms.backend.home/nodeApi.ts -> home.record", // manual measurements, guarded by modules.linked("home.record")
+  "cms.backend.iot/nodeApi.ts -> iot.record", // manual measurements, guarded by modules.linked("iot.record")
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
-  "cms.backend.superuser.db.query/lib/ai.ts -> ai1.tools", // "explain this query" is a bonus, not the console
-  "cms.text/api.ts -> ai1", // translation, guarded by modules.linked("ai1")
+  "cms.backend.superuser.db.query/lib/ai.ts -> ai.tools", // "explain this query" is a bonus, not the console
+  "cms.text/api.ts -> ai", // translation, guarded by modules.linked("ai")
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
   "cms.backend.superuser.module/detail.ts -> fileEditor",
   "cms.cont.html/plugin.ts -> fileEditor",
   "cms.cont.ts/plugin.ts -> fileEditor",
-  "cms.frontend.4/plugin.ts -> fileEditor", // editorUrl: "open this file", if an editor is configured
+  "cms.frontend/plugin.ts -> fileEditor", // editorUrl: "open this file", if an editor is configured
   "cms.layout.deck.1/plugin.ts -> fileEditor",
   "cms.layout.luca/plugin.ts -> fileEditor",
   "cms.layout.standard.1/plugin.ts -> fileEditor",
@@ -299,8 +302,8 @@ Deno.test("modules only take values from modules they depend on", async () => {
 
 // Prospective package boundary: cms* ships as @qino/cms, the rest as @qino/qino. An edge from the
 // lower to the upper layer would make the cms unextractable — type-only imports included, they are
-// just as unresolvable across a package split.
-const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.");
+// just as unresolvable across a package split. Starters build site content, so they ship with the cms.
+const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.") || mod.startsWith("starter.");
 
 Deno.test("the qino layer never imports from the cms layer", async () => {
   const errors = [];
@@ -324,6 +327,7 @@ const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
   "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
+  "cms.backend.ai/mod.ts CATALOG", // site modules outside this tree set up the known providers they have keys for
 ]);
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {
@@ -333,8 +337,7 @@ Deno.test("no mod.ts exports anything nobody imports", async () => {
       for (const [spec, names] of imports(await Deno.readTextFile(file))) {
         const target = targetPath(spec, file);
         if (!target?.startsWith(moduleDir)) continue;
-        const set = used.get(target) ?? new Set<string>();
-        used.set(target, set);
+        const set = used.getOrInsertComputed(target, () => new Set<string>());
         for (const name of names) set.add(name);
       }
     }

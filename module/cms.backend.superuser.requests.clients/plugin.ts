@@ -1,4 +1,6 @@
-import { getCtx, html, sql, unixTime } from "@qino/qino";
+import { Resolver } from "node:dns/promises";
+import { isIP } from "node:net";
+import { getCtx, html, sql, uaInfo, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -52,14 +54,16 @@ const userName = (row: Row) => [row.given_name, row.family_name].filter(Boolean)
 async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const { t } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
-  const rows = await latest(node.app, LIMIT, { returning: !!f.returning });
-  const badges = await ipBadges(node.app);
+  const [rows, badges] = await Promise.all([
+    latest(node.app, LIMIT, { returning: !!f.returning }),
+    ipBadges(node.app),
+  ]);
   const u = ctx.req.url.toURL();
   const href = (client: unknown) => (u.searchParams.set("id", String(client)), u.search);
 
   const trs = [];
   for (const row of rows) {
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     if (f.no_bots && info.bot) continue;
     if (f.users && !row.users) continue;
     const own = String(row.client_id) === String(ctx.clientId);
@@ -84,7 +88,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`Requests`}
     <th>${t`Last request`}
     <th>${t`Url`}
-<tbody>${trs.length ? trs : html`<tr><td colspan=8>${await t`No entries`}`}`;
+<tbody>${trs.length ? trs : html.async`<tr><td colspan=8>${t`No entries`}`}`;
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
@@ -120,17 +124,9 @@ const logRow = (db: App["db"], id: unknown) => db.row`
 /** PTR lookup for an IP (v4/v6); anonymized digits ("X") count as 1, like the PHP version. */
 async function hostname(ip: unknown) {
   const addr = String(ip ?? "").replaceAll("X", "1");
-  let name;
-  if (addr.includes(":")) {
-    const [head, tail = ""] = addr.split("::");
-    const left = head ? head.split(":") : [], right = tail ? tail.split(":") : [];
-    const all = [...left, ...Array(8 - left.length - right.length).fill("0"), ...right];
-    name = [...all.map((g) => g.padStart(4, "0")).join("")].reverse().join(".") + ".ip6.arpa";
-  } else if (/^\d+(\.\d+){3}$/.test(addr)) {
-    name = addr.split(".").reverse().join(".") + ".in-addr.arpa";
-  } else return "";
-  const names = await Deno.resolveDns(name, "PTR", { signal: AbortSignal.timeout(2000) }).catch(() => []);
-  return names.map((n) => n.replace(/\.$/, "")).join(", ");
+  if (!isIP(addr)) return "";
+  const names = await new Resolver({ timeout: 2000, tries: 1 }).reverse(addr).catch(() => []);
+  return names.join(", ");
 }
 
 const ACTIVE = 900; // a session touched within 15 min counts as active
@@ -176,7 +172,7 @@ async function renderDetail(node: Node, id: number) {
     range?.last ? logRow(db, range.last) : undefined,
     hostname(ips[0]?.ip),
   ]);
-  const info = backend.uaInfo(last?.user_agent ?? "");
+  const info = uaInfo(last?.user_agent ?? "");
   const now = unixTime();
   const active = sessions.some((s) => Number(s.access) >= now - ACTIVE);
   const [lastLabel, activeLabel, mobileLabel, desktopLabel, badges] = await Promise.all([t`last`, t`active`, t`mobile`, t`desktop`, ipBadges(node.app)]);
@@ -242,7 +238,7 @@ async function renderDetail(node: Node, id: number) {
         <div class=-head>${t`User agents`} (${agents.length})</div>
         <table class=u2-table>
             <tbody>${agents.map((row) => {
-              const ua = backend.uaInfo(row.user_agent ?? "");
+              const ua = uaInfo(row.user_agent ?? "");
               return html`<tr>
               <td><span style="color:${uniqueColor(ua.browser)}">${ua.browser} ${ua.version}</span> <small>${ua.os}</small><br><small style="word-break:break-all">${row.user_agent}</small>
               <td style="text-align:right">${row.n}
@@ -265,13 +261,15 @@ async function renderDetail(node: Node, id: number) {
 
 // newest other clients with more than one request
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
-  const rows = await latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) });
-  const badges = await ipBadges(app);
+  const [rows, badges] = await Promise.all([
+    latest(app, 35, { window: 10000, returning: true, exclude: Number(getCtx().clientId) }),
+    ipBadges(app),
+  ]);
   if (!rows.length || !page) return html``;
   const pageUrl = await page.url();
   const href = (client: unknown) => backend.toUrl(pageUrl, { id: client });
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     return html`<tr u2-href>
     <td><a href="${href(row.client_id)}" style="color:${uniqueColor(row.client_id)}">${row.client_id}</a>
     <td style="white-space:nowrap">${info.bot ? "bot" : html`<span style="color:${uniqueColor(info.browser)}">${info.browser}</span>`} ${row.usr_id ? html`<small style="color:${uniqueColor(row.usr_id)}">${userName(row)}</small>` : ""}

@@ -1,0 +1,13 @@
+{
+  "name": "fin.hosting.infomaniak",
+  "description": "The domains registered at Infomaniak, for fin.hosting to bill: read daily over their API.",
+  "dependencies": [
+    "fin.hosting"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

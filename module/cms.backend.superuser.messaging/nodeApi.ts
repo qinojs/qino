@@ -7,6 +7,7 @@ import type { Node } from "@qino/qino/cms";
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars.reply) return null;
   const app = node.app;
+  const t = app.t;
   try {
     const { usr, channel: inputChannel, text: input, format: inputFormat } = vars.reply as Record<string, unknown>;
     const usrId = Number(usr);
@@ -15,17 +16,17 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     const user = Number.isSafeInteger(usrId) && usrId > 0
       ? await app.db.row`SELECT id FROM usr WHERE id = ${usrId}`
       : undefined;
-    if (!user) return { ok: false, message: await app.t`User not found.` };
-    if (!text) return { ok: false, message: await app.t`A text is required.` };
-    if (text.length > 4096) return { ok: false, message: await app.t`The message is too long.` };
+    if (!user) return { ok: false, message: await t`User not found.` };
+    if (!text) return { ok: false, message: await t`A text is required.` };
+    if (text.length > 4096) return { ok: false, message: await t`The message is too long.` };
 
     const to = channel(app, name);
-    if (!to) return { ok: false, message: await app.t`Channel is not available.` };
+    if (!to) return { ok: false, message: await t`Channel is not available.` };
     const format = inputFormat === "md" || inputFormat === "html" ? inputFormat : undefined;
     const sent = await to.send(app, { usr: usrId }, { text, format });
     return sent
-      ? { ok: true, message: await app.t`Delivered over ${to.label} (${sent}).` }
-      : { ok: false, message: await app.t`${to.label} reached nobody.` };
+      ? { ok: true, message: await t`Delivered over ${to.label} (${sent}).` }
+      : { ok: false, message: await t`${to.label} reached nobody.` };
   } catch (e) {
     return { ok: false, message: errMsg(e) };
   }

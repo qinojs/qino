@@ -1,0 +1,8 @@
+{{addresses}} {
+    header -Via
+    # search engines only on the domain itself, not on its preview address
+    @alias not host {{domain}}
+    header @alias X-Robots-Tag "noindex, nofollow"
+    encode
+    reverse_proxy 127.0.0.1:{{port}}
+}

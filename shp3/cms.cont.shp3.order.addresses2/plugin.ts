@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   <form class=-addresses>
     <fieldset class=-bill>
       <legend>${t`Billing address`}</legend>
-      ${await fields(node, order, "bill", ctx.lang)}
+      ${fields(node, order, "bill", ctx.lang)}
     </fieldset>
     ${separate
       ? html.async`<label class=-unlike>
@@ -35,7 +35,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     </label>
     <fieldset class=-ship ${order.ship_unlike_bill ? "" : html.raw("hidden")}>
       <legend>${t`Delivery address`}</legend>
-      ${await fields(node, order, "ship", ctx.lang)}
+      ${fields(node, order, "ship", ctx.lang)}
     </fieldset>`
       : ""}
   </form>

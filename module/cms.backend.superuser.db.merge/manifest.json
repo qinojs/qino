@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.db.merge",
+  "description": "Finds duplicate rows of a table and merges them: references move, empty fields are filled.",
+  "dependencies": [
+    "cms.backend.superuser.db"
+  ],
+  "files": [
+    "lib/merge.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

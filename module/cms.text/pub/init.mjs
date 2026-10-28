@@ -160,7 +160,7 @@ setTimeout(() => {
 
 
 
-/* translate hole page */
+/* translate whole page */
 const addTranslateWidget = async el=>{
   el.insertAdjacentHTML('beforeend', await html.async`
         <div class="-widgetHead -open" tabindex=0><span class=-title>${t`Translate`}</span></div>

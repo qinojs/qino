@@ -6,7 +6,7 @@ sieben durchgespielten Sites steht in [MIGRATION.md](MIGRATION.md), die Verhalte
 
 Das PHP-Original liegt ausserhalb des Workspace unter `/var/www/workplace/v9` und wird nur gelesen.
 
-## Zwei Reihenfolge-Regeln
+## Drei Reihenfolge-Regeln
 
 Beides sind Eigenschaften der Startsequenz, keine Vorlieben — wer sie übergeht, verliert Daten
 oder kommt gar nicht erst hoch.
@@ -14,10 +14,11 @@ oder kommt gar nicht erst hoch.
 **1. `migrate_from_php` läuft zu spät für alles, was den Start selbst berührt.** Sein `install()`
 kommt nach der Schema-Migration, nach dem ersten Settings-Lesen und nach der ersten `module`-Zeile.
 Alles, was diese drei anfassen, muss vorher in Form sein — deshalb gibt es
-[tools/prepare-db.sh](tools/prepare-db.sh) mit fünf idempotenten Schritten: `qg_setting.w` löschen,
+[tools/prepare-db.sh](tools/prepare-db.sh) mit idempotenten Schritten: `qg_setting.w` löschen,
 `module.access` einen Default geben, unbekannte `NOT NULL`-Spalten ohne Default nullable machen,
 `datetime` → Unix-Zeit (sonst wird aus `2020-06-03 14:52:17` die Zahl `20200603145217`),
-MyISAM → InnoDB (sonst verpufft die Installations-Transaktion).
+Null-Daten (`0000-00-00`) → `NULL` (sonst scheitert das erste `MODIFY` der Spalte im Strict-Mode),
+MyISAM → InnoDB (sonst verpufft die Installations-Transaktion), eine Collation für alle Tabellen.
 
 Neue Reparaturen gehören nach `install()`, solange sie nach dem Start noch möglich sind. Nur was
 den Start blockiert, kommt in `prepare-db.sh`. Das Skript kennt die qino-Seite über
@@ -34,6 +35,12 @@ Konstruktor:
 await migrate(app);
 await app.init();
 ```
+
+**3. `migrate_from_php` wird direkt nach `cms` registriert.** Module installieren in
+Registrierungsreihenfolge. Käme z. B. `cms.backend.cms.tree` vorher dran, fände es seine Seite noch
+unter dem alten Namen (`cms.backend.struct`), legte sie neu an und nähme dabei IDs der frisch
+angelegten `text`-Tabelle, die die geparkten Legacy-Texte noch brauchen — `install()` bricht dann mit
+`Duplicate entry` ab.
 
 ## Werkzeuge
 

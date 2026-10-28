@@ -43,6 +43,7 @@ function providerNames(app: App) {
 const providerLabel = (name: string) => name[0].toUpperCase() + name.slice(1);
 
 export async function history(app: App): Promise<HtmlString> {
+  const t = app.t;
   const logIds = await app.db.col`SELECT log_id FROM social_post WHERE log_id IS NOT NULL
     GROUP BY log_id ORDER BY MAX(id) DESC LIMIT ${LIMIT}`;
   const rows = logIds.length
@@ -51,14 +52,13 @@ export async function history(app: App): Promise<HtmlString> {
   const posts = new Map<number, { text: string; byProvider: Map<string, Row[]> }>();
   for (const row of rows) {
     const logId = Number(row.log_id);
-    if (!posts.has(logId)) posts.set(logId, { text: String(row.text), byProvider: new Map() });
-    const deliveries = posts.get(logId)!.byProvider;
+    const { byProvider: deliveries } = posts.getOrInsertComputed(logId, () => ({ text: String(row.text), byProvider: new Map() }));
     const name = String(row.provider);
     deliveries.getOrInsert(name, []).push(row);
   }
   const names = [...new Set([...providerNames(app), ...rows.map((row) => String(row.provider))])];
   const [sent, error, notSent, empty] = await Promise.all([
-    app.t`Sent`, app.t`Error`, app.t`Not sent`, app.t`No posts yet.`,
+    t`Sent`, t`Error`, t`Not sent`, t`No posts yet.`,
   ]);
   const status = (deliveries: Row[] | undefined) => {
     if (!deliveries?.length || !deliveries.every((row) => row.sent != null)) {
@@ -73,10 +73,10 @@ export async function history(app: App): Promise<HtmlString> {
   };
 
   return html.async`<div class=u2-card cms-part=posts style="flex:1 1 40rem">
-    <div class=-head>${app.t`Posts`}</div>
+    <div class=-head>${t`Posts`}</div>
     <table class=u2-table>
       <thead><tr>
-        <th>${app.t`Post`}
+        <th>${t`Post`}
         ${names.map((name) => html`<th>${providerLabel(name)}`)}
       <tbody>${posts.size
         ? [...posts.values()].map((post) => html`<tr>
@@ -88,6 +88,7 @@ export async function history(app: App): Promise<HtmlString> {
 }
 
 async function render(node: Node) {
+  const t = node.app.t;
   const vars = postedVars(node.id);
   const available = await socialTargets(node.app);
   const note = await act(node.app, vars, available);
@@ -96,22 +97,22 @@ async function render(node: Node) {
     ? available.map((target, i) => html`<div><label>
         <input type=checkbox name=target value="${i}" checked> <strong>${providerLabel(target.provider)}</strong> <small>${target.label}</small>
       </label></div>`)
-    : html.async`<p>${node.app.t`No social targets configured.`}</p>`;
+    : html.async`<p>${t`No social targets configured.`}</p>`;
 
   return html.async`<div class=u2-flex style="flex: 1 1 auto;">
       <div class=u2-card style="flex:0 1 27rem">
-        <div class=-head>${node.app.t`New post`}</div>
+        <div class=-head>${t`New post`}</div>
         <form class=-body method=post>
           ${node.cms.formFields(node)}
           ${note ? html`<p>${note}</p>` : ""}
           <u2-fields>
-            ${node.app.t`Text`} <textarea name=text rows=5 required>${text}</textarea>
+            ${t`Text`} <textarea name=text rows=5 required>${text}</textarea>
           </u2-fields>
           <fieldset>
-            <legend>${node.app.t`Targets`}</legend>
+            <legend>${t`Targets`}</legend>
             ${choices}
           </fieldset>
-          <button name=publish value=1>${node.app.t`Publish`}</button>
+          <button name=publish value=1>${t`Publish`}</button>
         </form>
       </div>
       ${history(node.app)}

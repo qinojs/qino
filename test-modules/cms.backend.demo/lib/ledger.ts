@@ -4,13 +4,14 @@
 // Parallel requests have another context; nested writes (e.g. `Node.createChild()`) are covered.
 import { AsyncLocalStorage } from "node:async_hooks";
 
+import { fs } from "@qino/qino";
 import type { App, Db } from "@qino/qino";
 
 /** Rows in insert order, `[table, entry id]`. */
 export type Rows = [string, string][];
 
 /** Shared dictionaries and registries: rows a demo run may create but never owns. */
-const NEVER = new Set(["qg_setting", "log_url", "log_ip", "log_user_agent", "smalltext", "score_scope", "module", "store"]);
+const NEVER = new Set(["qg_setting", "log_url", "log_ip", "log_user_agent", "smalltext", "module", "store"]);
 
 const running = new AsyncLocalStorage<Rows>();
 
@@ -53,15 +54,15 @@ export type Ledger = { time: number; rows: Rows; counts: Record<string, number>;
 
 /** The ledger of the last run — an empty one when the app was never seeded. */
 export async function read(app: App): Promise<Ledger> {
-  const json = await Deno.readTextFile(path(app)).catch(() => "");
+  const json = await fs.text(path(app)).catch(() => "");
   const data = json ? JSON.parse(json) : null;
   return { time: 0, rows: [], counts: {}, ...data };
 }
 
 export async function write(app: App, data: Ledger): Promise<void> {
   const file = path(app);
-  await Deno.mkdir(file.replace(/\/[^/]+$/, ""), { recursive: true });
-  await Deno.writeTextFile(file, JSON.stringify(data));
+  await fs.mkdir(file.replace(/\/[^/]+$/, ""));
+  await fs.write(file, JSON.stringify(data));
 }
 
-export const forget = (app: App): Promise<void> => Deno.remove(path(app)).catch(() => {});
+export const forget = (app: App): Promise<void> => fs.remove(path(app)).catch(() => {});

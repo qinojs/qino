@@ -1,4 +1,5 @@
-import { fromFileUrl, resolve, toFileUrl } from "@std/path";
+import { resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { fs } from "@qino/qino";
 
 /** Table columns declared by all local qino stores (inline `dbSchema` and dbschema.json, via the
@@ -9,9 +10,9 @@ export async function schemaColumns(qino: string): Promise<Record<string, Record
   for (const storeFile of ["module/store.json", "shp3/store.json", "cms-legacy/store.json"]) {
     const storePath = qino + "/" + storeFile;
     const store = JSON.parse(await fs.text(storePath));
-    const base = fromFileUrl(new URL("./", toFileUrl(storePath)));
+    const base = fileURLToPath(new URL("./", pathToFileURL(storePath)));
     for (const name of Object.keys(store.modules ?? {})) {
-      const plugin = await import(toFileUrl(base + name + "/plugin.ts").href);
+      const plugin = await import(pathToFileURL(base + name + "/plugin.ts").href);
       const schema = plugin.dbSchema?.properties as Record<string, {
         additionalProperties?: { properties?: Record<string, { type?: unknown }> };
       }> | undefined;

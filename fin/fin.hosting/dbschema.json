@@ -1,0 +1,95 @@
+{
+  "properties": {
+    "fin_hosting_domain": {
+      "description": "A domain: where it is registered and hosted, whose it is; what their domain, hosting and service subscriptions are for",
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary",
+            "description": "The domain, lower case: example.ch"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Whose it is: a customer, or 0: ours. None: not assigned yet"
+          },
+          "alias_of": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "x-qg-parent": "fin_hosting_domain",
+            "x-qg-parent-field": "name",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The domain it is an alias of: served by its hosting, its customer's"
+          },
+          "registrar": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Where we registered it — then its registration is billed, unless ours. Empty: the customer keeps it elsewhere"
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Where we host it — then its hosting is billed, unless ours. Empty: not hosted by us. An alias never is"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date",
+            "description": "When its registration ends, as the registrar says"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["name", "created", "changed"]
+      }
+    },
+    "fin_hosting_source": {
+      "description": "Where domains are registered or hosted, to sync them from: an account, a server",
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "x-index": "primary",
+            "description": "Stored as its domains' registrar or host: infomaniak, s3"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "The source type a module declares (domainSourceTypes): infomaniak, plesk"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Where it is reached: https://s3.example.com:8443. Empty: the type's own"
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "Who signs in, or the account; as the type reads it"
+          },
+          "secret": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Password, token or API key; never shown"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": ["name", "type", "created", "changed"]
+      }
+    }
+  }
+}

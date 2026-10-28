@@ -249,8 +249,7 @@ export class Node {
         return p ? p.onlineEnd() : Number(this.vs.online_end ?? "0");
     }
     async isOnline(): Promise<boolean> {
-        const start = await this.onlineStart();
-        const end = await this.onlineEnd();
+        const [start, end] = await Promise.all([this.onlineStart(), this.onlineEnd()]);
         // small grace window so a freshly set online_start/end takes effect despite clock skew
         const now = unixTime() + 99;
         return (start === 0 || now > start) && (end === 0 || now < end);
@@ -735,6 +734,12 @@ export class Node {
         await this.db.table("page").delete(String(page));
         this.#clearTreeCache();
         return true;
+    }
+
+    /** The child page of that name, created when it is not there yet. */
+    async child(name: string, defaults: Record<string, unknown> = {}): Promise<Node> {
+        const child = (await this.children({ type: "p" })).values().find((c) => c.vs.name === name);
+        return child ?? this.createChild({ ...defaults, name });
     }
 
     /** The cont of that name, created when it is not there yet. */

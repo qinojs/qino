@@ -3,7 +3,7 @@
   "description": "Legacy pair of images with text, each optionally linked.",
   "dependencies": [
     "cms",
-    "cms.image2",
+    "cms.image",
     "cms.text"
   ],
   "files": [

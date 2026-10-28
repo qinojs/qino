@@ -1,11 +1,12 @@
+import { sys } from "@qino/qino";
+
 import type { App } from "@qino/qino";
 
 /** Tried in this order when the setting names none. */
 const CANDIDATES = ["chromium", "chromium-browser", "google-chrome-stable", "google-chrome", "microsoft-edge"];
 
-/** A missing binary throws synchronously from `output()`; the async wrapper makes it a rejection. */
-const runs = async (cmd: string) =>
-  (await new Deno.Command(cmd, { args: ["--version"], stdout: "null", stderr: "null" }).output()).success;
+const runs = (cmd: string) =>
+  sys.command(cmd, { args: ["--version"], stdout: "null", stderr: "null" }).then((o) => o.success);
 
 // Which browser is installed is a fact of the machine, not of an app, so it is looked up once.
 let found: Promise<string | undefined> | undefined;

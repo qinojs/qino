@@ -162,14 +162,23 @@ function journalData(data: Record<string, unknown> | undefined, msg?: Msg) {
  * Store one message and one row per recipient.
  *
  * `msg` goes into its own columns, so the journal can be read without knowing channels; `data` is
- * the channel's payload and routing.
+ * the channel's payload and routing. `spam`: how likely an incoming message is spam, 0 to 1.
  *
  * Record first, then send: `ids` are the delivery rows in the given order (tracked links need
  * them); `delivered()` stores the outcome.
  */
 export async function record(
   app: App,
-  message: { channel: string; direction: "in" | "out"; msg?: string | Msg; data?: Record<string, unknown>; grpId?: number; logId?: number; time?: number },
+  message: {
+    channel: string;
+    direction: "in" | "out";
+    msg?: string | Msg;
+    data?: Record<string, unknown>;
+    grpId?: number;
+    logId?: number;
+    time?: number;
+    spam?: number;
+  },
   deliveries: { usrId?: number; address?: string; externalId?: string; error?: string; sent?: number; due?: number }[] = [],
 ): Promise<{ id: number; ids: number[] }> {
   if (!message.channel) throw new Error("message channel is required");
@@ -192,6 +201,7 @@ export async function record(
       template: msg?.template ?? null,
       data: JSON.stringify(journalData(message.data, msg)),
       time,
+      spam: message.spam ?? null,
     }));
     const attachments = app.db.table("message_attachment");
     for (const [sort, file] of files.entries()) await attachments.insert({ message_id: id, file_id: file.id, sort });

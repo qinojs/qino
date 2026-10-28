@@ -3,7 +3,6 @@ import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
 
 const telegram = api["messaging.telegram"];
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
 cms.initNode("cont.my.telegram", async (el) => {
   const state = el.querySelector("[data-state]");
@@ -20,7 +19,8 @@ cms.initNode("cont.my.telegram", async (el) => {
 
   const draw = (url, chats) => {
     state.innerHTML = chats.length
-      ? html`${chats.map((c) => html`<p>${labels.connected} ${fmt(c.created)}${c.username ? html` · @${c.username}` : ""}
+      ? html`${chats.map((c) => html`<p>${labels.connected} <u2-time datetime=${c.created * 1000} type=date></u2-time>
+          ${c.username ? html` · @${c.username}` : ""}
           <button type=button data-disconnect>${labels.disconnect}</button></p>`)}`
       : html`<p><a href="${url}" target=_blank rel=noopener data-connect>${labels.connect}</a>
           <small>${labels.hint}</small></p>`;

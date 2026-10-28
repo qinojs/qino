@@ -1,0 +1,51 @@
+:where(cms-image) {
+  width:var(--image-width);
+  max-width:100%;
+  aspect-ratio:var(--aspect-ratio);
+}
+
+cms-image {
+  display:inline-block;
+  position:relative;
+  overflow:hidden;
+  box-sizing:border-box;
+
+  min-width:.625rem;
+  min-height:.625rem;
+
+  background-size:cover; /* can be overwritten */
+  background-repeat:no-repeat;
+  background-position:50% 50%; /* shout be overwritten */
+  vertical-align: middle;
+  padding:0 !important;
+
+  /* z-index:-1; todo? */
+}
+cms-image img {
+  position:absolute;
+  inset:0;
+  height:100%;
+  width:100%;
+  object-fit:cover;
+  object-position:50% 50%;  
+
+  /* transition*/
+  transition:opacity .2s;
+}
+/* only fade in when the element is upgraded - without js the <noscript> image stays visible */
+cms-image:defined:not([loaded]) img { opacity:0; }
+
+
+
+/* neede? cms-image[fit="contain"] { background-size:contain; } */
+cms-image[fit="contain"] img { object-fit:contain; }
+
+
+/* *
+cms-image::after {
+  transition: backdrop-filter .4s ease-in;
+}
+cms-image:not([loaded])::after {
+  backdrop-filter: blur(.75rem);
+}
+/* */

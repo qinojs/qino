@@ -9,7 +9,7 @@ import type { App } from "@qino/qino";
  *      .-m-cms-cont-section3   →   [qcms-mod="cont.section3"]
  *      .-pid123                 →   [qcms-id="123"]
  *
- *  Module names may contain dashes (`cms.backend.domain-monitor`), so they come from the database.
+ *  Module names may contain dashes, so they come from the database.
  *  Specificity stays the same. */
 export async function migrateCss(app: App): Promise<void> {
   const modules = await app.db.col<string>`SELECT DISTINCT module FROM page WHERE module <> ''`;

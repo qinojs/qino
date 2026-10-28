@@ -3,7 +3,6 @@ import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
 
 const oauth = api["auth.oauth"];
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
 cms.initNode("cont.my.oauth", async (el) => {
   const list = el.querySelector("[data-links]");
@@ -39,8 +38,10 @@ cms.initNode("cont.my.oauth", async (el) => {
       list.innerHTML = rows.length
         ? html`${rows.map((row) => html`<div data-provider="${row.provider}" data-sub="${row.sub}">
             <p><strong>${row.provider}</strong>
-              <small>${labels.connected} ${fmt(row.created)} ·
-                ${row.lastUsed ? html`${labels.lastUsed} ${fmt(row.lastUsed)}` : labels.never}</small></p>
+              <small>${labels.connected} <u2-time datetime=${row.created * 1000} type=date></u2-time> ·
+                ${row.lastUsed
+                  ? html`${labels.lastUsed} <u2-time datetime=${row.lastUsed * 1000} type=date></u2-time>`
+                  : labels.never}</small></p>
             <button type=button data-delete>${labels.del}</button>
           </div>`)}`
         : labels.empty;

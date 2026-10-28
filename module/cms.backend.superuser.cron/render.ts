@@ -15,7 +15,7 @@ export function counts(jobs: JobStatus[]) {
 
 export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<div class="u2-card">
+  return html.async`<div class=u2-card>
     <div class=-head>
       <span>${t`Cron jobs`}</span>
       <button type=button data-run-due>${t`Run due jobs`}</button>
@@ -30,25 +30,26 @@ export async function list(node: Node): Promise<HtmlString> {
 }
 
 export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
+  const t = app.t;
   const { active, running, failed } = counts(jobs);
-  const rows = await Promise.all(jobs.map((job) => renderRow(app, job)));
+  const rows = jobs.map((job) => renderRow(app, job));
 
   return html.async`<div>
-    <b>${active}</b> ${app.t`active jobs`}
-    · ${running} ${app.t`running`}
-    · ${failed} ${app.t`failed`}
+    <b>${active}</b> ${t`active jobs`}
+    · ${running} ${t`running`}
+    · ${failed} ${t`failed`}
   </div>
   <table class="u2-table -jobs -Sticky">
     <thead><tr>
-      <th>${app.t`Job`}
-      <th>${app.t`Schedule`}
-      <th>${app.t`State`}
-      <th>${app.t`Next run`}
-      <th>${app.t`Last started`}
-      <th>${app.t`Last finished`}
-      <th>${app.t`Last success`}
-      <th>${app.t`Duration`}
-      <th>${app.t`Failures`}
+      <th>${t`Job`}
+      <th>${t`Schedule`}
+      <th>${t`State`}
+      <th>${t`Next run`}
+      <th>${t`Last started`}
+      <th>${t`Last finished`}
+      <th>${t`Last success`}
+      <th>${t`Duration`}
+      <th>${t`Failures`}
       <th>
     <tbody>${rows}
   </table>`;
@@ -57,10 +58,10 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
 async function renderRow(app: App, job: JobStatus) {
   const due = job.active && !job.running && job.nextRun <= Date.now() / 1000;
   const [state, stateColor] = await stateInfo(app, job, due);
-  const error = job.lastError ? html`<details><summary>${await app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";
+  const error = job.lastError ? html.async`<details><summary>${app.t`Last error`}</summary><div class=-error>${job.lastError}</div></details>` : "";
   const action = job.active
-    ? html`<button type=button data-run-job="${job.id}" ${job.running ? "disabled" : ""}
-        u2-confirm="${await app.t`Run this job now?`}">${await app.t`Run now`}</button>`
+    ? html.async`<button type=button data-run-job="${job.id}" ${job.running ? "disabled" : ""}
+        u2-confirm="${app.t`Run this job now?`}">${app.t`Run now`}</button>`
     : "";
 
   return html.async`<tr ${job.active ? "" : "data-inactive"}>
@@ -77,11 +78,12 @@ async function renderRow(app: App, job: JobStatus) {
 }
 
 async function stateInfo(app: App, job: JobStatus, due: boolean) {
-  if (!job.active) return [await app.t`inactive`, "var(--gray)"] as const;
-  if (job.running) return [await app.t`running`, "var(--blue)"] as const;
-  if (job.failures) return [await app.t`failed`, "var(--red)"] as const;
-  if (due) return [await app.t`due`, "var(--orange)"] as const;
-  return [await app.t`waiting`, "var(--green)"] as const;
+  const t = app.t;
+  if (!job.active) return [await t`inactive`, "var(--gray)"] as const;
+  if (job.running) return [await t`running`, "var(--blue)"] as const;
+  if (job.failures) return [await t`failed`, "var(--red)"] as const;
+  if (due) return [await t`due`, "var(--orange)"] as const;
+  return [await t`waiting`, "var(--green)"] as const;
 }
 
 function cadence(job: JobStatus) {

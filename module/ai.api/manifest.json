@@ -1,0 +1,6 @@
+{
+  "name": "ai.api",
+  "description": "The AI capabilities for signed-in users in the browser.",
+  "dependencies": ["ai"],
+  "files": ["README.md", "api.ts", "manifest.json", "plugin.ts"]
+}

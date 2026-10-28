@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -30,7 +30,7 @@ async function render(node: Node) {
   for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const caption = await node.showText("file_" + file.id);
-    slides.push(html`<div class=-slide>${await cms_image2(file, {
+    slides.push(html`<div class=-slide>${await cms_image(file, {
       width,
       height,
       style: "max-width:none;width:100%;height:100%",

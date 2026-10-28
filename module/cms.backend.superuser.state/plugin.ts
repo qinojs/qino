@@ -1,6 +1,6 @@
 import { backend } from "@qino/qino/cms.backend";
 import { dump } from "@nuxodin/dump";
-import { $item, getCtx, html } from "@qino/qino";
+import { $item, getCtx, html, sys } from "@qino/qino";
 
 import type { HtmlString, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -68,7 +68,7 @@ function safeRender(value: unknown) {
 }
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
-  const rss = Deno.memoryUsage().rss;
+  const rss = sys.memoryUsage().rss;
   const upSec = Math.floor(performance.now() / 1000);
   const h = Math.floor(upSec / 3600), m = Math.floor((upSec % 3600) / 60);
   return html.async`<div class=-body>

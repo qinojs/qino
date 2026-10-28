@@ -1,0 +1,31 @@
+[qcms-mod="cont.image.test"] {
+  display:block;
+}
+[qcms-mod="cont.image.test"] section {
+  border-top:1px solid;
+  padding-block:1rem;
+}
+[qcms-mod="cont.image.test"] .-note {
+  max-width:50rem;
+}
+[qcms-mod="cont.image.test"] .-pair {
+  display:flex;
+  flex-wrap:wrap;
+  gap:1rem;
+  align-items:flex-start;
+}
+[qcms-mod="cont.image.test"] .-cell {
+  flex:1 1 20rem;
+  min-width:0;
+}
+/* the box is the only thing the scene css styles, so it must not carry a layout of its own */
+[qcms-mod="cont.image.test"] .-cell > .-box::after {
+  content:"";
+  display:table;
+  clear:both;
+}
+[qcms-mod="cont.image.test"] .-info,
+[qcms-mod="cont.image.test"] .-css {
+  margin:0;
+  white-space:pre-wrap;
+}

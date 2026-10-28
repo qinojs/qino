@@ -1,0 +1,2 @@
+/* The form whose entries are shown. */
+[qcms-mod="backend.cms.form"] [aria-current] { font-weight: bold; }

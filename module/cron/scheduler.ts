@@ -1,4 +1,4 @@
-import { sql, uid, unixTime } from "@qino/qino";
+import { sql, sys, uid, unixTime } from "@qino/qino";
 
 import { nextRun, scheduleKey, validateJob } from "./calendar.ts";
 
@@ -93,7 +93,7 @@ export class Scheduler {
       if (!this.#signal?.aborted) this.#schedule();
     }, this.#poll);
     this.#timer = timer;
-    Deno.unrefTimer(timer);
+    sys.unrefTimer(timer);
   }
 
   /** Declared jobs plus their persisted rows; seeds new jobs and reschedules changed ones. */
@@ -104,7 +104,7 @@ export class Scheduler {
     const rows = new Map((await db.query`SELECT * FROM cron_job`).map((row) => [String(row.id), row]));
     for (const { id, job, key } of jobs) {
       const row = rows.get(id);
-      if (row && row.schedule_key === key) continue;
+      if (row?.schedule_key === key) continue;
       const next_run = nextRun(job, now, { timeZone });
       if (!row) {
         const fresh = { ...IDLE, id, schedule_key: key, next_run };
@@ -148,7 +148,7 @@ export class Scheduler {
     const ctrl = new AbortController();
     const signal = this.#signal ? AbortSignal.any([this.#signal, ctrl.signal]) : ctrl.signal;
     const timer = setTimeout(() => ctrl.abort(new DOMException(`Cron job timed out after ${timeout} seconds`, "TimeoutError")), timeout * 1000);
-    Deno.unrefTimer(timer);
+    sys.unrefTimer(timer);
 
     let failure: string | undefined;
     try {

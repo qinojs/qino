@@ -29,26 +29,27 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
 
   const missingExpr = sql.join(langs.map(l => sql`CASE WHEN COALESCE(${sql.id(l)}, '') = '' THEN 1 ELSE 0 END`), " + ");
   const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);
-  const rows = await db.query`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
-  const total = Number(await db.one`SELECT count(*) FROM smalltext`);
+  const [rows, total] = await Promise.all([
+    db.query`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`,
+    db.one`SELECT count(*) FROM smalltext`,
+  ]);
 
   const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
   const sortMark = (col: string) => col === order ? (dir === "ASC" ? " ↑" : " ↓") : "";
 
   const langTh = langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`);
 
-  const rowsHtml = [];
-  for (const row of rows) {
+  const rowsHtml = rows.map((row) => {
     const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`);
-    rowsHtml.push(html`<tr data-hash="${row.hash}" data-ns="${row.namespace}">
+    return html`<tr data-hash="${row.hash}" data-ns="${row.namespace}">
       <td class=-namespace>${row.namespace}
       <td><div class=-original>${row.original}</div>
       ${langTds}
       <td>${row.count}
       <td><button class=u2-unstyle data-action=translate_entry><u2-ico icon=translate>↻</u2-ico></button>
       <td><button class=u2-unstyle data-action=delete_entry><u2-ico icon=delete>✕</u2-ico></button>
-    `);
-  }
+    `;
+  });
 
   return html`
   <table class="u2-table -Sticky">

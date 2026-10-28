@@ -16,11 +16,11 @@ uses it unchanged; this module adds one extra (below).
 
 ```ts
 // plugin.ts
-export const cms = { node: { render, widget: "pub/options.js" } };
+export const cms = { node: { render, widget: "pub/widget.js" } };
 ```
 
 ```js
-// pub/options.js — the whole file
+// pub/widget.js — the whole file
 import list, { css } from '../../cms.cont.flexible/pub/list.js';
 
 export { css };
@@ -40,7 +40,7 @@ since both modules are served under the same root.
 A container with a single block is an unnecessary wrapper. With exactly one entry the panel
 offers to remove it: the child takes the container's place and `name` (so the parent's slot stays
 filled), and the container is deleted. This is this module's `extra`
-([pub/options.js](pub/options.js)), not part of the list panel — a menu must not replace itself
+([pub/widget.js](pub/widget.js)), not part of the list panel — a menu must not replace itself
 with its only group.
 
 ## Settings

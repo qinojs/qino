@@ -3,7 +3,6 @@ import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
 
 const totp = api["auth.totp"];
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
 cms.initNode("cont.my.totp", async (el) => {
   const list = el.querySelector("[data-apps]");
@@ -36,8 +35,10 @@ cms.initNode("cont.my.totp", async (el) => {
       list.innerHTML = apps.length
         ? html`${apps.map((app) => html`<div data-app="${app.id}">
             <p><strong>${app.label || labels.unnamed}</strong>
-              <small>${labels.added} ${fmt(app.created)} ·
-                ${app.lastUsed ? html`${labels.lastUsed} ${fmt(app.lastUsed)}` : labels.never}</small></p>
+              <small>${labels.added} <u2-time datetime=${app.created * 1000} type=date></u2-time> ·
+                ${app.lastUsed
+                  ? html`${labels.lastUsed} <u2-time datetime=${app.lastUsed * 1000} type=date></u2-time>`
+                  : labels.never}</small></p>
             <button type=button data-delete>${labels.del}</button>
           </div>`)}`
         : labels.empty;

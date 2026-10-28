@@ -3,7 +3,7 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-import { clientIp, fs, getCtx, Output, unixTime } from "@qino/qino";
+import { clientIp, fs, Output, requestStorage, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -11,7 +11,7 @@ const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
 const REPORTER_PATH = REPORTER_ROOT + "mod.js";
 
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
-await import(REPORTER_PATH);
+await import("@nuxodin/reporter"); // the same file the browser gets from REPORTER_ROOT
 
 type Report = Record<string, unknown>;
 
@@ -121,14 +121,14 @@ async function addReport(app: App, vs: Report) {
     ...vs,
     time: new Date().toISOString().slice(0, 19).replace("T", " "),
   };
-  try {
-    const ctx = getCtx();
+  const ctx = requestStorage.getStore(); // none outside a request
+  if (ctx) {
     row.request ??= ctx.req.appUrl + ctx.req.appPath;
     row.referer ??= ctx.req.header("referer");
     row.browser = ctx.req.header("user-agent");
     row.ip = ctx.req.clientIp;
     row.log_id = await ctx.logId;
-  } catch { /* no request context available */ }
+  }
   // the column always holds a JSON array — a report from the browser may send anything at all
   row.backtrace = JSON.stringify(Array.isArray(row.backtrace) ? row.backtrace : []);
   await app.db.table("m_error_report").insert(row).catch(() => {});
@@ -139,7 +139,7 @@ async function addReport(app: App, vs: Report) {
 const apps = new Set<App>();
 
 function reportingApp(): App | undefined {
-  try { return getCtx().app; } catch { return [...apps][0]; } // no request: first app still running
+  return requestStorage.getStore()?.app ?? [...apps][0]; // no request: first app still running
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

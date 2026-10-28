@@ -1,4 +1,4 @@
-import { WRITE } from "@qino/qino/cms";
+import { ADMIN } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
@@ -54,7 +54,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 const api = async (node: Node, vars: Record<string, unknown>) => {
   if (vars.do !== "getFileEditorLinks") return;
   const layout = await node.cms.layoutPage(node.module!.name);
-  if (await layout.access() < WRITE) return [];
+  if (await layout.access() < ADMIN) return [];
   const { file, css } = moduleTemplate(node.module!);
   return [file, css].map((path) => ({ name: path.split("/").pop()!, url: editorUrl(path) })).filter((f) => f.url);
 };

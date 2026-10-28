@@ -39,7 +39,7 @@
           },
           "client_secret": {
             "type": "string",
-            "maxLength": 255
+            "maxLength": 1024
           },
           "scopes": {
             "type": "string",
@@ -48,9 +48,28 @@
           "auto_create": {
             "type": "integer"
           },
+          "trust_email": {
+            "type": "integer"
+          },
           "allowed_domains": {
             "type": "string",
             "maxLength": 255
+          },
+          "redirect_uri": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "response_mode": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "key_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "team_id": {
+            "type": "string",
+            "maxLength": 64
           }
         },
         "required": ["id", "name", "client_id", "client_secret"]

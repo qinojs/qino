@@ -1,4 +1,5 @@
 /** Thin wrapper around FFmpeg */
+import { sys } from "../sys.ts";
 import { probe } from "./tryCommand.ts";
 import { limited } from './limit.ts';
 
@@ -7,12 +8,12 @@ export const available = probe('ffmpeg', ['-version']);
 /** Write an audio file's cover art to `output` in its original format (usually JPEG).
  *  Throws if there is none. */
 export async function coverArt(input: string, output: string, signal?: AbortSignal): Promise<void> {
-  const { code, stderr } = await limited(() => new Deno.Command('ffmpeg', {
+  const { code, stderr } = await limited(() => sys.command('ffmpeg', {
     args: ['-i', input, '-an', '-vcodec', 'copy', '-y', output],
     signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output());
+  }));
   if (code !== 0) throw new Error(`FFmpeg error (cover art): ${new TextDecoder().decode(stderr).trim()}`);
 }
 
@@ -23,7 +24,7 @@ export async function frame(
   output: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  const { code, stderr } = await limited(() => new Deno.Command('ffmpeg', {
+  const { code, stderr } = await limited(() => sys.command('ffmpeg', {
     args: [
       '-i', input,
       '-vf', `select=eq(n\\,${frameIndex})`,
@@ -34,7 +35,7 @@ export async function frame(
     signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output());
+  }));
   if (code !== 0) {
     throw new Error(
       `FFmpeg Error: ${new TextDecoder().decode(stderr).trim()}`,
@@ -43,12 +44,12 @@ export async function frame(
 }
 
 export async function audio(input: string, output: string, signal?: AbortSignal): Promise<void> {
-  const { code, stderr } = await limited(() => new Deno.Command('ffmpeg', {
+  const { code, stderr } = await limited(() => sys.command('ffmpeg', {
     args: ['-i', input, '-map', '0:a:0', '-vn', '-acodec', 'aac', '-b:a', '128k', '-y', output],
     signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output());
+  }));
   if (code !== 0) {
     const msg = new TextDecoder().decode(stderr).trim();
     if (/Stream map.*matches no streams|Output file does not contain any stream/.test(msg))

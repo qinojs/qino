@@ -1,0 +1,15 @@
+{
+  "modules": {
+    "cms.backend.iot": {},
+    "cms.backend.iot.virtual": {},
+    "cms.cont.iot.chart": {},
+    "cms.cont.iot.command": {},
+    "cms.cont.iot.values": {},
+    "iot": {},
+    "iot.history": {},
+    "iot.homeassistant": {},
+    "iot.manual": {},
+    "iot.record": {},
+    "iot.virtual": {}
+  }
+}

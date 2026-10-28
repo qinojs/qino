@@ -14,7 +14,7 @@ async function census(app: App) {
 
 async function demoApp() {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.installation.default");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
   await app.init();
   return app;
@@ -79,7 +79,7 @@ Deno.test("cms.backend.demo: the panel lists the seeders and what the last run w
 
 Deno.test("cms.backend.demo: finance — invoices in every state, a statement, and a wipe leaves nothing", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.installation.default");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
   app.stores.add(import.meta.resolve("../../../fin/store.json"))
     .add("fin.invoice").add("fin.bank").add("fin.payment.qrbill").add("fin.accounting.ch");

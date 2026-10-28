@@ -1,3 +1,6 @@
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { Readable } from "node:stream";
 import { fs, header, isTrustedOrigin, Output } from "@qino/qino";
 
 import { CMS, cms, cmsInstances } from "./lib/CMS.ts";
@@ -22,33 +25,13 @@ export const settingsSchema = {
                 protocols: { type: "string", description: "Url protocols: \"href: http https, img(src: http https data)\"." },
             },
         },
-        backend: {
-            type: "integer",
-            description: "Page ID of the central backend entry point.",
-        },
         frontend: {
             type: "string",
-            description: "Name of the active frontend module, e.g. cms.frontend.4.",
+            description: "Name of the active frontend module, e.g. cms.frontend.",
         },
         models: {
             type: "string",
             description: "Default module list for new content.",
-        },
-        pageNotFound: {
-            type: "integer",
-            description: "Page ID for 404 errors.",
-        },
-        pageNoAccess: {
-            type: "integer",
-            description: "Page ID for missing access rights.",
-        },
-        pageOffline: {
-            type: "integer",
-            description: "Page ID for offline/maintenance mode.",
-        },
-        pageTrash: {
-            type: "integer",
-            description: "Page ID of the trash.",
         },
         feedback: {
             properties: {
@@ -184,7 +167,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
 export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
-    await app.db.table('page').insert({ id: 1, access: 1, visible: true, searchable: true, module: "cms.layout.custom.9", basis: 0, type: "p" });
+    await app.db.table('page').insert({ id: 1, access: 1, visible: true, searchable: true, module: "cms.layout.standard.2", basis: 0, type: "p" });
     await (await cms(app).node(1)).title("en", "root");
   }
 }
@@ -205,11 +188,8 @@ async function dbFiles2Zip(files: DbFile[]): Promise<ReadableStream<Uint8Array>>
         await cleanup();
         throw e;
     }
-    const proc = new Deno.Command("zip", { args: ["-q", "-", "--", ...names], cwd: dir, stdout: "piped", stderr: "null" }).spawn();
-    proc.status.finally(cleanup);
-    return proc.stdout.pipeThrough(new TransformStream({
-        cancel() { // client aborted: stop zip, cleanup runs via proc.status
-            try { proc.kill(); } catch { /* already exited */ }
-        },
-    }));
+    const proc = spawn("zip", ["-q", "-", "--", ...names], { cwd: dir, stdio: ["ignore", "pipe", "ignore"] });
+    proc.on("close", cleanup); // also after a failed start, or an aborted download: zip dies of the closed pipe
+    await once(proc, "spawn"); // a missing zip rejects here
+    return Readable.toWeb(proc.stdout) as ReadableStream<Uint8Array>;
 }

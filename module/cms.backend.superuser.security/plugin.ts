@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Security", de: "Sicherheit" });
 }
 
-export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const all = suspects(app);
   const blocked = all.filter((s) => s.blocked).length;
   return html.async`<div class=-body>
@@ -82,9 +82,8 @@ async function recentRows(node: Node, { ctx, link = ipLink(node, ctx) }: { ctx: 
 
 /** IP → request log of that IP, the own one badged; plain text for an IPv6 network or without the log page. */
 async function ipLink(node: Node, ctx: Ctx) {
-  const logUrl = await backend.toModuleUrl(node, "cms.backend.superuser.requests.log");
   const me = ctx.req.clientIp;
-  const myIp = await node.app.t`my IP`;
+  const [logUrl, myIp] = await Promise.all([backend.toModuleUrl(node, "cms.backend.superuser.requests.log"), node.app.t`my IP`]);
   return (value: string) => {
     const code = html`<code style="color:${uniqueColor(value)}">${value}</code>`;
     const badge = me && (value === me || value === ipKey(me)) ? html` <small class=u2-badge>${myIp}</small>` : "";

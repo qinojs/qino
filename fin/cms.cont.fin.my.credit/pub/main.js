@@ -6,7 +6,6 @@ import { html } from "@qino/pub/html.js";
 import { money } from "../../fin/pub/money.js";
 
 const credit = api["fin.payment.credit"];
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString(document.documentElement.lang || undefined) : "";
 
 cms.initNode("cont.fin.my.credit", async (el) => {
   const box = el.querySelector("[data-credit]");
@@ -21,7 +20,7 @@ cms.initNode("cont.fin.my.credit", async (el) => {
     box.innerHTML = html`<p><strong>${labels.balance}</strong>
       ${balances.length ? balances.map((b) => money(b.amount, b.currency)).join(" · ") : labels.empty}</p>
       ${moves.length ? html`<table class=u2-table>${moves.map((m) => html`<tr>
-        <td>${fmt(m.created)}
+        <td><u2-time datetime=${m.created * 1000} type=date></u2-time>
         <td>${money(m.amount, m.currency)}
         <td>${m.text}`)}
       </table>` : ""}`;

@@ -12,7 +12,7 @@ export async function canManageMembers(grpId: number): Promise<boolean> {
 
 async function requireMemberToManageMembers(grpId: number) {
   if (await canManageMembers(grpId)) return null;
-  return { error: String(getCtx().app.t`You are not a member of this group and cannot manage its members.`) };
+  return { error: await getCtx().app.t`You are not a member of this group and cannot manage its members.` };
 }
 
 export default async function (node: Node, vars: any): Promise<any> {
@@ -53,7 +53,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     // an account answers to both of its identifiers: the login handle and any verified address
     const typed = String(vars.email ?? "").trim().toLowerCase();
     const usrId = await contactOwner(db, "email", typed) ?? Number(await db.one`SELECT id FROM usr WHERE username = ${typed}` ?? 0);
-    if (!usrId) return { error: String(getCtx().app.t`No user found with this email address.`) };
+    if (!usrId) return { error: await getCtx().app.t`No user found with this email address.` };
     await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
     return 1;
   }

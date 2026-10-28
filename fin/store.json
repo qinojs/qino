@@ -1,10 +1,10 @@
 {
   "modules": {
-    "fin": {},
     "cms.backend.superuser.fin": {},
     "cms.backend.superuser.fin.accounting": {},
     "cms.backend.superuser.fin.accounting.export": {},
     "cms.backend.superuser.fin.bank": {},
+    "cms.backend.superuser.fin.hosting": {},
     "cms.backend.superuser.fin.invoice": {},
     "cms.backend.superuser.fin.invoice.inbox": {},
     "cms.backend.superuser.fin.party": {},
@@ -12,12 +12,17 @@
     "cms.backend.superuser.fin.subscription": {},
     "cms.cont.fin.my.address": {},
     "cms.cont.fin.my.credit": {},
+    "cms.cont.fin.my.domains": {},
     "cms.cont.fin.my.invoices": {},
     "cms.cont.fin.my.subscriptions": {},
+    "fin": {},
     "fin.accounting": {},
     "fin.accounting.ch": {},
     "fin.bank": {},
     "fin.bank.camt": {},
+    "fin.hosting": {},
+    "fin.hosting.infomaniak": {},
+    "fin.hosting.plesk": {},
     "fin.invoice": {},
     "fin.invoice.reminder": {},
     "fin.payment": {},
@@ -29,6 +34,7 @@
     "fin.payment.qrbill": {},
     "fin.payment.saferpay": {},
     "fin.payment.stripe": {},
-    "fin.subscription": {}
+    "fin.subscription": {},
+    "starter.fin": {}
   }
 }

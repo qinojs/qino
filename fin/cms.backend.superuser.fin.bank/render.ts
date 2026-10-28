@@ -83,8 +83,10 @@ async function lines(node: Node, url: URL) {
     app.db.one`SELECT COUNT(*) FROM bank_tx WHERE ${sql.join(where, " AND ")}`.then(Number),
   ]);
   if (!rows.length) return html.async`<p>${t`No lines`}`;
-  const guesses = await suggestions(app, rows.filter((row) => !row.payment_id));
-  const pageUrl = await (await node.page()).url();
+  const [guesses, pageUrl] = await Promise.all([
+    suggestions(app, rows.filter((row) => !row.payment_id)),
+    node.page().then((page) => page.url()),
+  ]);
   return html.async`<table class=u2-table>
     <thead><tr>
       <th>${t`Id`}

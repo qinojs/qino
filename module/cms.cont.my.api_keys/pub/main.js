@@ -4,7 +4,6 @@ import { html } from "@qino/pub/html.js";
 
 const apiKeys = api["auth.api_keys"];
 
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "–";
 
 cms.initNode("cont.my.api_keys", async (el) => {
   const list  = el.querySelector("[data-list]");
@@ -21,7 +20,8 @@ cms.initNode("cont.my.api_keys", async (el) => {
       list.innerHTML = keys.length
         ? html`${keys.map((k) => html`<div data-key>
             <code>${k.prefix}…</code> <strong>${k.name}</strong>
-            <small>${fmt(k.created)}${k.expires ? html` · ${labels.expires} ${fmt(k.expires)}` : ""}</small>
+            <small><u2-time datetime=${k.created * 1000} type=date></u2-time>${k.expires
+              ? html` · ${labels.expires} <u2-time datetime=${k.expires * 1000} type=date></u2-time>` : ""}</small>
             <button data-del="${k.id}"><u2-ico icon=delete>✕</u2-ico></button>
           </div>`)}`
         : labels.empty;

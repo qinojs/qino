@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.superuser.score",
-  "description": "Inspects and manages scored database records by scope.",
+  "description": "Inspects and manages the score tables.",
   "dependencies": [
     "cms.backend",
     "score"

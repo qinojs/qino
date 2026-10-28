@@ -17,6 +17,7 @@
     "shp3.payment.advance": {},
     "shp3.payment.invoice": {},
     "shp3.shipping.pickup": {},
-    "shp3.stock": {}
+    "shp3.stock": {},
+    "starter.shop": {}
   }
 }

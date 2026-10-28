@@ -177,3 +177,15 @@ Deno.test("a credit note prints what it gives back, positive, and names its invo
     for (const part of ["Due", "Payable within"]) assertEquals(doc.includes(part), false, part);
   });
 });
+
+Deno.test("the logo is inside the document: the print needs neither network nor public address", async () => {
+  await withApp(async (app) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>`;
+    const logo = await app.dbFiles.add(new File([svg], "logo.svg", { type: "image/svg+xml" }));
+    await app.db.table("identity_file").ensure({ name: "logo", file_id: logo.id });
+    await app.settings.core.url("https://not-yet-in-dns.test/");
+    const doc = await document(app, Number((await issue(app, await create(app, invoice)))?.id));
+    assertStringIncludes(doc, `<img src="data:image/svg+xml;base64,`);
+    assert(!doc.includes("not-yet-in-dns"));
+  });
+});

@@ -1,0 +1,6 @@
+{
+  "name": "ai.transform",
+  "description": "Reads images (OCR) and transcribes audio and video with ai when files are transformed.",
+  "dependencies": ["ai"],
+  "files": ["README.md", "manifest.json", "plugin.ts"]
+}

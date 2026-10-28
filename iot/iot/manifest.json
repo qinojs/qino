@@ -1,0 +1,17 @@
+{
+  "name": "iot",
+  "description": "Provider-independent IoT entities, actions and change events for Qino flows.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "command.ts",
+    "datapoint.ts",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

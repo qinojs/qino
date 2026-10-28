@@ -16,7 +16,7 @@ function contNode(settings: Record<string, unknown>, opt: { edit?: boolean } = {
     edit: () => !!opt.edit,
     app: { t: fakeT },
     settings: item.proxy,
-    cms: { text: () => "" },
+    cms: { text: () => Promise.resolve("") },
     saved,
   } as any;
 }

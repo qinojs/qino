@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -9,7 +9,7 @@ async function render(node: Node) {
   const edit = await node.edit();
   for (const file of (await node.files()).values()) {
     if (!file.mime.startsWith("image/")) continue;
-    images.push(html`<div>${await cms_image2(file, { width: 200, height: 200, fit: "contain", editable: edit })}</div>`);
+    images.push(html`<div>${await cms_image(file, { width: 200, height: 200, fit: "contain", editable: edit })}</div>`);
   }
   return html`<div><div class=l1_width><div class=c1-flex-grid>${images}</div></div></div>`;
 }

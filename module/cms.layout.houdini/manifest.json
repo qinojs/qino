@@ -1,0 +1,12 @@
+{
+  "name": "cms.layout.houdini",
+  "description": "A carefully composed u2 layout with visual design controls, responsive navigation, language selection and editable site templates.",
+  "dependencies": [
+    "cms", "cms.templateParser", "identity", "u2", "fileEditor",
+    "cms.cont.nav", "cms.cont.lang.choose", "cms.cont.flexible", "cms.cont.section", "cms.cont.text"
+  ],
+  "files": [
+    "README.md", "api.ts", "codeFiles.ts", "manifest.json", "plugin.ts",
+    "pub/main.css", "pub/main.js", "pub/module.svg", "pub/theme.js", "pub/widget.js", "template.html"
+  ]
+}

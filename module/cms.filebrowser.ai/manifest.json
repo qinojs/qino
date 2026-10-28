@@ -3,7 +3,7 @@
   "description": "Adds AI image generation to the CMS file browser.",
   "dependencies": [
     "cms",
-    "ai1.api",
+    "ai.api",
     "cms.filebrowser"
   ],
   "files": [

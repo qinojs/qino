@@ -1,6 +1,0 @@
-{
-  "name": "cms.backend.ai1.user_memory",
-  "description": "Shows the users agents keep something about, with their memories and sessions, and how decide() sorts a memory.",
-  "dependencies": ["cms.backend.ai1", "ai1.user_memory"],
-  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
-}

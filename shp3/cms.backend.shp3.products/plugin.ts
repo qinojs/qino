@@ -1,4 +1,5 @@
 import { html, getCtx, sql, tableRef } from "@qino/qino";
+import { cms as cmsOf } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 
 import api from "./nodeApi.ts";
@@ -14,6 +15,12 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
+}
+
+/** The product rows the user may read; online or not doesn't matter in the backend. */
+async function readable<T extends { id?: unknown }>(app: App, rows: T[]) {
+  const ok = await Promise.all(rows.map(async (vs) => await (await cmsOf(app).node(Number(vs.id))).access() > 0));
+  return rows.filter((_, i) => ok[i]);
 }
 
 function render(node: Node) {
@@ -38,9 +45,9 @@ async function renderList(node: Node) {
     LEFT JOIN ${sql.id(tableRef("text_lang"))} t  ON t.text_id = page.title_id AND t.lang = ${lang}
     LEFT JOIN ${sql.id(tableRef("text_lang"))} tf ON tf.text_id = page.title_id AND tf.lang = ${app.languages.def}
     WHERE page.module = ${module} OR p.id IS NOT NULL
-    ORDER BY title LIMIT 500`;
+    ORDER BY title`;
 
-  const trs = rows.map((vs) => html`<tr itemid=${vs.id}>
+  const trs = (await readable(app, rows)).slice(0, 500).map((vs) => html`<tr itemid=${vs.id}>
     <td><a href="?shp3_productId=${vs.id}">${vs.id}</a>
     <td>${vs.title || vs.id}
     <td><input class=-f data-field=price type=number step=any value=${Number(vs.price ?? 0)}>
@@ -76,7 +83,7 @@ async function renderList(node: Node) {
             <th> ${t`Name`}
             <th> ${t`Price`}
             <th> ${t`Weight`}
-            ${hasStock ? html`<th> ${await t`Stock`}` : ""}
+            ${hasStock ? html.async`<th> ${t`Stock`}` : ""}
             <th width=20>
         <tbody>${trs}
       </table>
@@ -90,15 +97,19 @@ async function renderProduct(node: Node, id: number) {
   const { app } = node;
   const t = app.t;
   const page = await node.cms.node(id);
-  if (!page.exists()) return html.async`<div class=u2-card><div>${t`Product not found.`}</div></div>`;
+  if (!page.exists() || await page.access() < 1) return html.async`<div class=u2-card><div>${t`Product not found.`}</div></div>`;
 
-  const vs = await app.db.row`SELECT * FROM shp3_product WHERE id = ${id}` ?? {};
-  const rates = await app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`;
-  const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => app.db.table("shp3_product").field(f));
+  const [row, rates] = await Promise.all([
+    app.db.row`SELECT * FROM shp3_product WHERE id = ${id}`,
+    app.db.query`SELECT country, rate FROM shp3_product_mwst WHERE product_id = ${id} ORDER BY country`,
+  ]);
+  const vs = row ?? {};
+  const table = app.db.table("shp3_product");
+  const fields = ["price", "weight", "stock", "stock_is_fix", "stock_trigger"].filter((f) => table.field(f));
 
   const rows = fields.map((field) => html`<tr>
     <th>${field}
-    <td>${app.db.table("shp3_product").field(field)!.schema.type === "boolean"
+    <td>${table.field(field)!.schema.type === "boolean"
       ? html`<input class=-f data-field=${field} type=checkbox ${vs[field] ? html.raw("checked") : ""}>`
       : html`<input class=-f data-field=${field} type=number step=any value="${Number(vs[field] ?? 0)}">`}`);
 
@@ -106,10 +117,11 @@ async function renderProduct(node: Node, id: number) {
     <td>${r.country}
     <td><input class=-vat data-country=${r.country} type=number step=any value=${Number(r.rate)}>
     <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
+  const title = await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id;
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1">
-    <div class=-head><a href="?">${t`Products`}</a> — ${await page.title(getCtx().lang) || await page.title(app.languages.def) || page.id}</div>
+    <div class=-head><a href="?">${t`Products`}</a> — ${title}</div>
     <div style="padding:0">
       <table class=u2-table itemid=${id}>${rows}</table>
     </div>
@@ -130,12 +142,13 @@ async function renderProduct(node: Node, id: number) {
 </div>`;
 }
 
-export function backendDashboardWidget({ t, db }: App): Promise<HtmlString> {
-  const zero = () => 0;
+export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+  const { t, db } = app;
+  const products = await readable(app, await db.query`SELECT id, price FROM shp3_product`.catch(() => []));
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>${t`Products`}:<td>${db.one`SELECT count(*) FROM shp3_product`.catch(zero)}
-  <tr><td>${t`Without a price`}:<td>${db.one`SELECT count(*) FROM shp3_product WHERE price <= ${0}`.catch(zero)}
+  <tr><td>${t`Products`}:<td>${products.length}
+  <tr><td>${t`Without a price`}:<td>${products.filter((p) => Number(p.price) <= 0).length}
 </table>
 </div>`;
 }

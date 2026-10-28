@@ -123,6 +123,14 @@ Deno.test("an issued invoice without a date is dated today, and numbers default 
   assertEquals([invoice?.date, invoice?.number], [today(), `${today().slice(0, 4)}-1`]);
 });
 
+Deno.test("an invoice over nothing is paid as it is issued: nothing is owed", async () => {
+  const { app, events } = await setup();
+  const credit = { currency: "CHF", lines: [{ name: "Cards", price: 1900, quantity: 2 }, { name: "Prepaid credit", price: -3800 }] };
+  const invoice = await issue(app, await create(app, credit));
+  assertEquals([invoice?.total, invoice?.status], [0, "paid"]);
+  assertEquals(events.map((e) => [e.invoice.status, e.previous]), [["open", "draft"], ["paid", "open"]]);
+});
+
 Deno.test("payments with its ref settle it, partly and fully; a refund reopens it", async () => {
   const { app, events } = await setup();
   const id = await issue(app, await create(app, order)).then((i) => Number(i?.id));

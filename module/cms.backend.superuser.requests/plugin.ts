@@ -100,10 +100,11 @@ async function render(node: Node) {
 }
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
+  const t = app.t;
   const c = await counts(app);
   return html.async`<div class=-body>
-    <b>${int(c.lastDay)}</b> ${app.t`requests (24h)`} · ${int(c.lastHour)} ${app.t`last hour`}<br>
-    <small>${int(c.clients)} ${app.t`clients`} · ${int(c.users)} ${app.t`logged-in users`} · ${int(c.online)} ${app.t`active sessions`}</small>
+    <b>${int(c.lastDay)}</b> ${t`requests (24h)`} · ${int(c.lastHour)} ${t`last hour`}<br>
+    <small>${int(c.clients)} ${t`clients`} · ${int(c.users)} ${t`logged-in users`} · ${int(c.online)} ${t`active sessions`}</small>
 </div>`;
 }
 

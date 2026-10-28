@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "ai_agent_feedback": {
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "time": { "type": "integer" },
+          "usr_id": { "type": "integer", "x-index": true, "description": "Who it came from: the session's user, or who called the api" },
+          "agent_id": { "type": "integer", "x-index": true, "x-qg-parent": "ai_agent", "x-qg-on-parent-delete": "setnull" },
+          "session_id": { "type": "integer", "x-index": true, "x-qg-parent": "ai_session", "x-qg-on-parent-delete": "setnull" },
+          "model": { "type": "string", "maxLength": 255, "x-index": true, "description": "The AI model that reported it, by name" },
+          "kind": { "type": "string", "enum": ["config", "description", "bug", "idea"], "x-index": true, "description": "config for the site's operator; the others for Qino's developers" },
+          "about": { "type": "string", "maxLength": 255, "x-index": true, "description": "The tool or part of the system it is about; empty for the whole" },
+          "content": { "type": "string", "description": "What was wrong, and what would have helped" },
+          "done": { "type": "boolean", "default": false, "description": "Dealt with by a developer" }
+        },
+        "required": ["id", "kind", "content"]
+      }
+    }
+  }
+}

@@ -82,10 +82,10 @@ export default async function (widget, { node, dialogs, signal, module: fixedMod
     <button type=button class="u2-unstyle -remove" title="${t`Delete`}"><u2-ico icon=delete>✕</u2-ico></button>
   </div>`;
 
-  const addButton = html`<button type=button class="-add">${t`Add entry`}</button>`;
+  const addButton = html.async`<button type=button class="-add">${t`Add entry`}</button>`;
   const list = rows.length
     ? html.async`<div class=-list u2-dropzone>${rows.map(row)}</div>`
-    : html`<div class=-empty>${t`No entries yet.`}</div>`;
+    : html.async`<div class=-empty>${t`No entries yet.`}</div>`;
 
   await widget.html`<div class="-items ${onTop ? '-top' : ''}">
     ${onTop ? addButton : ''}

@@ -1,6 +1,7 @@
 import { errMsg, isOn } from "@qino/qino";
 import { fromMinor, toMinor } from "@qino/qino/fin";
 import { currency as currencies } from "@qino/qino/locale.currency";
+import { dataOf } from "@qino/qino/fin.payment";
 
 import type { App, Row } from "@qino/qino";
 import type { Provider, State } from "@qino/qino/fin.payment";
@@ -44,7 +45,6 @@ async function call(app: App, path: string, body?: unknown) {
 
 /** Minor units as PayPal writes amounts: `47.26`, with all the currency's decimals. */
 const decimal = (minor: number, currency: string) => fromMinor(minor, currency).toFixed(currencies.decimals(currency));
-const dataOf = (payment: Row) => JSON.parse(String(payment.data ?? "{}")) ?? {};
 
 /** What a captured order says: paid, what PayPal kept, and the capture to refund. */
 // deno-lint-ignore no-explicit-any -- PayPal's order, as it answers

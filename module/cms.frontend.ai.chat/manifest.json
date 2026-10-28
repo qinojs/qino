@@ -1,0 +1,19 @@
+{
+  "name": "cms.frontend.ai.chat",
+  "description": "The site assistant as an item of the CMS panel; click things on the page to show them to it.",
+  "dependencies": [
+    "ai.agent",
+    "cms",
+    "cms.backend.ai",
+    "cms.frontend"
+  ],
+  "files": [
+    "README.md",
+    "agents/assistant.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/chat.css",
+    "pub/chat.js",
+    "pub/module.svg"
+  ]
+}

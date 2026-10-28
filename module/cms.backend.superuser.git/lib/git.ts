@@ -1,13 +1,14 @@
+import { sys } from "@qino/qino";
+
 /** Run git, never interactive (a credential prompt would hang the request); with timeout. */
 export async function git(dir: string, args: string[], timeout = 30_000): Promise<{ ok: boolean; out: string }> {
-  const cmd = new Deno.Command("git", {
+  const { success, stdout, stderr } = await sys.command("git", {
     args: ["-C", dir, ...args],
     env: { GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "true", GIT_OPTIONAL_LOCKS: "0" },
     stdout: "piped",
     stderr: "piped",
     signal: AbortSignal.timeout(timeout),
-  });
-  const { success, stdout, stderr } = await cmd.output().catch((e) => ({ success: false, stdout: new Uint8Array(), stderr: new TextEncoder().encode(String(e?.message ?? e)) }));
+  }).catch((e) => ({ success: false, stdout: new Uint8Array(), stderr: new TextEncoder().encode(String(e?.message ?? e)) }));
   const text = new TextDecoder();
   return { ok: success, out: (text.decode(stdout) + text.decode(stderr)).trim() };
 }

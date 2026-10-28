@@ -1,4 +1,5 @@
 /** Thin wrapper around ImageMagick (IM6: convert/identify, IM7: magick) */
+import { sys } from "../sys.ts";
 import { tryCommand } from "./tryCommand.ts";
 import { limited } from './limit.ts';
 
@@ -41,11 +42,11 @@ export async function avifSupported(): Promise<boolean> {
   await checkMagick().catch(() => { _avifSupported = false; });
   if (_avifSupported !== null) return _avifSupported;
   try {
-    const { stdout } = await new Deno.Command(_convertCmd, {
+    const { stdout } = await sys.command(_convertCmd, {
       args: ['-list', 'format'],
       stdout: 'piped',
       stderr: 'piped',
-    }).output();
+    });
     _avifSupported = new TextDecoder().decode(stdout).toUpperCase().includes('AVIF');
   } catch {
     _avifSupported = false;
@@ -55,12 +56,12 @@ export async function avifSupported(): Promise<boolean> {
 
 /** Runs convert/magick [...preArgs, input, ...args, output]. preArgs are input-settings that must precede the file (e.g. -density for PDF rasterization). */
 export async function run(input: string, args: string[], output: string, opts: { preArgs?: string[]; signal?: AbortSignal } = {}): Promise<void> {
-  const { code, stderr, stdout } = await limited(() => new Deno.Command(_convertCmd, {
+  const { code, stderr, stdout } = await limited(() => sys.command(_convertCmd, {
     args: [...opts.preArgs ?? [], input, ...args, output],
     signal: opts.signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output());
+  }));
   if (code !== 0) {
     const dec = new TextDecoder();
     const msg = dec.decode(stderr).trim() || dec.decode(stdout).trim() || `exit code ${code}`;
@@ -70,12 +71,12 @@ export async function run(input: string, args: string[], output: string, opts: {
 
 /** Returns identify format string, e.g. "%wx%h" → "1920x1080" */
 export async function identify(input: string, format: string, signal?: AbortSignal): Promise<string> {
-  const { stdout } = await new Deno.Command(_identifyCmd, {
+  const { stdout } = await sys.command(_identifyCmd, {
     args: [..._identifyArgs, '-format', format, `${input}[0]`],
     signal,
     stdout: 'piped',
     stderr: 'piped',
-  }).output();
+  });
   return new TextDecoder().decode(stdout).trim();
 }
 

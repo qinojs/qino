@@ -1,0 +1,262 @@
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { $item, Access, AccessError, ValidationError, fs, hee, s, unixTime } from "@qino/qino";
+import { cms, cmsCtx, policyCss, policyOf } from "@qino/qino/cms";
+import { editorUrl } from "@qino/qino/fileEditor";
+import { send } from "@qino/qino/messaging.email";
+
+import manifest from "./manifest.json" with { type: "json" };
+
+import type { Ctx, ApiTree, App } from "@qino/qino";
+
+type FeedbackInput = { msg: string; link?: string };
+type FileInput = { pid: number; in: string; path: string };
+type PidInput = { pid: number };
+
+const { name } = manifest;
+
+export const settingsSchema = {
+  properties: {
+    "show urls": {
+      type: "boolean",
+      description: "Shows the URL section in the page settings area.",
+    },
+    "show access.time": {
+      type: "boolean",
+      description: "Shows the access time window in the page settings area.",
+    },
+  },
+};
+
+export const ctxSettingsSchema = {
+  properties: {
+    tour_seen: { type: "boolean" },
+    ui: {
+      properties: {
+        widget: { additionalProperties: { type: "boolean" } },
+        sidebar: { type: "string" },
+        tree_show_c: { type: "boolean" },
+      },
+    },
+  },
+};
+
+/** Settings widgets of a node: the standard ones plus the module's own
+  * (`cms.node.widget = "pub/widget.js"` in its plugin). */
+async function settingsWidgets(ctx: Ctx, pid: number) {
+  const node = await cms(ctx.app).node(pid);
+  const access = await node.access();
+  if (access < 2) throw new AccessError();
+  const list = [];
+  const own = (widget: string) => ({ name: widget, src: ctx.req.moduleUrl + name + "/pub/panel/widgets/" + widget + ".js" });
+  // The options slot: the module's widget, else the generic settings editor if the node has
+  // settings. Same position and label for every module.
+  const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
+  const modWidget = mod?.plugin?.cms?.node?.widget;
+  const options = modWidget && mod?.modUrl ? mod.modUrl + modWidget
+    : node.settings[$item].keys?.length ? own("sets").src : null;
+  const [settingsTitle, showTime, showUrls] = await Promise.all([
+    ctx.app.t`Settings`,
+    ctx.app.settings[name]["show access.time"],
+    ctx.app.settings[name]["show urls"],
+  ]);
+  if (options) list.push({ name: "options", title: settingsTitle, src: options });
+  list.push(own("media"));
+  if (showTime) list.push(own("access.time"));
+  if (access > 2) list.push(own("access.grp"), own("access.usr"));
+  if (node.vs.type === "p") list.push(own("seo"));
+  if (showUrls) list.push(own("urls"));
+  // sets and txts hang inside extended, mounted by it
+  list.push({ ...own("extended"), context: { superuser: !!ctx.user?.superuser } });
+  if (ctx.user?.superuser) list.push(own("superuser"));
+  return list;
+}
+
+/* The two file roots of a node's module: the site's files and the module's own. */
+const ROOTS = ["data", "app"] as const;
+
+async function moduleRoot(ctx: Ctx, pid: number, scope: string) {
+  const node = await cms(ctx.app).node(pid);
+  const mod = node.module as { data?: string; dir?: string } | undefined;
+  const root = scope === "app" ? mod?.dir : mod?.data;
+  if (!root) throw new ValidationError([{ message: "unknown file root", path: ["in"] }]);
+  return root;
+}
+
+/** Resolve a path inside a root; escaping it is a bad request. */
+function inRoot(root: string, path: string) {
+  const file = resolve(root, path);
+  const rel = relative(resolve(root), file);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new ValidationError([{ message: "invalid path", path: ["path"] }]);
+  return file;
+}
+
+async function* walkDir(dir: string): AsyncGenerator<string> {
+  const entries = [];
+  try {
+    entries.push(...await fs.list(dir));
+  } catch { return; }
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (entry.isDirectory) yield* walkDir(dir + entry.name + "/");
+    else yield dir + entry.name;
+  }
+}
+
+async function moduleFiles(ctx: Ctx, pid: number) {
+  const node = await cms(ctx.app).node(pid);
+  const module = String(node.vs.module ?? "");
+  const filesIn = async (scope: string) => {
+    const root = await moduleRoot(ctx, pid, scope);
+    const paths = await Array.fromAsync(walkDir(root));
+    const stats = await Promise.all(paths.map((p) => fs.stat(p, { ttl: 0 }))); // may be edited by hand
+    return paths
+      .map((path, i) => ({ path, info: stats[i] }))
+      .filter(({ info }) => info?.isFile)
+      .map(({ path, info }) => ({ path, name: path.slice(root.length), mtime: Number(info!.mtime ?? 0), editor: editorUrl(path) }));
+  };
+  const [data, app] = await Promise.all(ROOTS.map(filesIn));
+  const list = { data, app };
+  // the module's app settings, if it has any — shown below the files
+  return { ...list, settings: module && module in ctx.app.settings ? module : null };
+}
+
+/** Feedback from the panel: sent to the configured address, replies go to the sender. */
+async function sendFeedback(ctx: Ctx, msg: string, link: string) {
+  const app = ctx.app;
+  const to = String(await app.settings.cms.feedback.email ?? "").trim();
+  if (!to) throw new Error("CMS feedback recipient is not configured");
+  // reply address: the verified contact, not the login name
+  const email = await ctx.user?.contact("email") ?? "";
+  const data: Record<string, string> = {
+    "Message:": msg,
+    Link: link,
+    Browser: ctx.req.header("user-agent") ?? "",
+    "E-Mail:": email,
+    Firstname: ctx.user?.given_name ?? "",
+    Lastname: ctx.user?.family_name ?? "",
+  };
+  const body = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
+    `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
+  ).join("")}</dl>`;
+  let failed = "";
+  const sent = await send(app, { email: to }, { title: "CMS feedback", text: body, format: "html", replyTo: email }, {
+    onError: (message: string) => failed ||= message, // send() reports errors only here
+  });
+  if (!sent) throw new Error("CMS feedback could not be sent" + (failed ? ": " + failed : ""));
+  ctx.settings.cms.feedback.text(""); // clear the draft
+  return { ok: true };
+}
+
+export const api: ApiTree = {
+  feedback: {
+    get: {
+      description: "Who is logged in, and where feedback goes.",
+      access: Access.USER,
+      execute: async (_a: unknown, ctx: Ctx) => ({
+        name: [ctx.user?.given_name, ctx.user?.family_name].filter(Boolean).join(" "),
+        email: String(await ctx.app.settings.cms.feedback.email ?? ""),
+      }),
+    },
+    post: {
+      description: "Send panel feedback by email.",
+      access: Access.USER,
+      input: s.object({ msg: s.string(), link: s.optional(s.string()) }),
+      execute: ({ msg, link }: FeedbackInput, ctx: Ctx) => sendFeedback(ctx, msg, link ?? ""),
+    },
+  },
+  files: {
+    ":pid": {
+      paramSchema: s.number(),
+      get: {
+        description: "Files of the node module's two roots, plus the module's app settings name.",
+        access: Access.SUPERUSER,
+        execute: ({ pid }: PidInput, ctx: Ctx) => moduleFiles(ctx, Number(pid)),
+      },
+      post: {
+        description: "Create an empty file in one of the roots.",
+        access: Access.SUPERUSER,
+        input: s.object({ in: s.string(), path: s.string() }),
+        execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
+          const file = inRoot(await moduleRoot(ctx, Number(pid), scope), path);
+          await fs.mkdir(dirname(file)).catch(() => {});
+          await fs.write(file, "");
+          ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1);
+          return { ok: true };
+        },
+      },
+      delete: {
+        description: "Delete a file from one of the roots.",
+        access: Access.SUPERUSER,
+        input: s.object({ in: s.string(), path: s.string() }),
+        execute: async ({ pid, in: scope, path }: FileInput, ctx: Ctx) => {
+          await fs.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
+          return { ok: true };
+        },
+      },
+    },
+  },
+  widgets: {
+    ":pid": {
+      get: {
+        description: "Widget module urls for the settings of a node, in display order.",
+        access: Access.USER,
+        execute: ({ pid }: PidInput, ctx: Ctx) => settingsWidgets(ctx, Number(pid)),
+      },
+    },
+  },
+};
+
+export function init(app: App, { signal }: { signal: AbortSignal }) {
+  cms(app).on("page:render-after", async ({ ctx }) => {
+    if (ctx.req.query.cms_noFrontend || await app.settings.cms.frontend !== name) return;
+
+    const settings = ctx.settings;
+
+    const node = cmsCtx(ctx).mainNode;
+    if (!node) return;
+    const access = await node.access();
+    const inBackend = node.vs?.module === "cms.layout.backend";
+
+    const html = ctx.res.html;
+    const moduleUrl = ctx.req.moduleUrl;
+    const qino = html.jsData.qino ??= {};
+    qino.cms ??= {};
+
+    if (access > 1 || inBackend) {
+      if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
+        const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
+        const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
+        const url = ctx.req.url;
+        settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
+        qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
+        html.scripts.add(moduleUrl + name + "/pub/js/init.js");
+      }
+    }
+
+    if (access > 1) {
+      ctx.res.csp["img-src"]["blob:"] = true;
+      qino.cms.nodeId = node.id;
+      qino.cms.requestedNodeId = cmsCtx(ctx).requestedNodeId;
+      qino.dev = ctx.dev;
+      qino.cms.editmode = cmsCtx(ctx).editmode;
+
+      if (cmsCtx(ctx).editmode) {
+        qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
+        qino.cms.ui = await settings[name].ui ?? {};
+        qino.cms.tourSeen = !!await settings[name].tour_seen;
+        const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
+        app.languages.nsStart("cms");
+        const panelHtml = String(await panel.default?.() ?? "");
+        app.languages.nsStop();
+        html.content += panelHtml;
+
+        html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
+        html.styles.add(moduleUrl + "cms/pub/css/ui.css");
+
+        html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
+        html.styles.add(moduleUrl + name + "/pub/inline/page.css");
+        html.scripts.add(moduleUrl + name + "/pub/inline/inline.js");
+        html.scripts.add(moduleUrl + name + "/pub/panel/panel.js");
+      }
+    }
+  }, { signal });
+}

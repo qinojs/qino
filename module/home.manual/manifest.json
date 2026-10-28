@@ -1,6 +1,0 @@
-{
-  "name": "home.manual",
-  "description": "Manual home datapoints without an external service or connection.",
-  "dependencies": ["home"],
-  "files": ["README.md", "manifest.json", "plugin.ts"]
-}

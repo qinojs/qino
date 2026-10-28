@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
+import { sql } from "../deps.ts";
 import { healthChecks } from "../healthChecks.ts";
 import { fakeSettings } from "./appFake.ts";
 import { requestStorage } from "../lib/ctx/Ctx.ts";
-
 import dbSchema from "../dbschema.json" with { type: "json" };
 
 // page/page_text live in the cms module; rebuilt here so core stays testable on its own.
@@ -93,4 +93,26 @@ Deno.test("healthChecks: a corrupt SQLite database is reported", async () => {
   } finally {
     await Deno.remove(file);
   }
+});
+
+Deno.test("healthChecks: settings their module no longer declares are listed and deleted, free objects aren't", async () => {
+  await using a = await app();
+  const settingsSchema = { properties: {
+    kept: { type: "string" },
+    keys: { additionalProperties: { type: "string" } },
+  } };
+  a.modules = { all: () => new Map([["shop", { plugin: { settingsSchema } }]]) };
+  const row = async (basis: number, key: string) =>
+    (await a.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${basis}, ${key}, ${"1"})`).insertId;
+  const shop = await row(0, "shop");
+  await row(shop, "kept");
+  const keys = await row(shop, "keys");
+  await row(keys, "any.host"); // a free object takes any key
+  const dropped = await row(shop, "dropped");
+  await row(dropped, "child");
+
+  const found = await (await healthChecks(a)).notice["settings no module declares"]() as any;
+  assertEquals(found.info, "shop.dropped");
+  await found.solutions["delete them"].solve();
+  assertEquals(await a.db.col`SELECT ${sql.id("offset")} FROM qg_setting ORDER BY id`, ["shop", "kept", "keys", "any.host"]);
 });

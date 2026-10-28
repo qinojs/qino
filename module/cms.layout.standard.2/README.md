@@ -10,7 +10,8 @@ Contents load that release through `u2.assets()` (import map entry `@u2/`); the 
 
 | Content | Owner | Initial module |
 |---|---|---|
-| `nav` | Global layout page | `cms.cont.nav4` |
+| `nav` | Global layout page | `cms.cont.nav` |
+| `lang` | Global layout page | `cms.cont.lang.choose` |
 | `main` | Current page | `cms.cont.flexible`, starting with a Section and Text |
 | `foot` | Global layout page | `cms.cont.flexible` |
 
@@ -35,7 +36,7 @@ free). Breakpoint and behaviour live in `pub/main.css`.
 The first render in edit mode copies `template.html` and a small `pub/main.css`
 into `data/cms.layout.standard.2/`, if that directory does not exist yet. The panel
 opens them in the file editor, writing a missing file's starting point first; editing
-requires WRITE on the global layout page.
+requires ADMIN on the global layout page.
 
 - The site's template wins while it exists; updates never overwrite it. Deleting it
   falls back to the shipped one until opened again; an empty file is an intentional empty override.
@@ -54,11 +55,11 @@ Like `cms.cont.html`, for agents and tools:
 
 `:node` is any page using this layout; the files are shared by all of them. GET
 returns `{ content }` — the starting point while the file is missing. PUT saves
-`{ content }` and returns the rendered page. Both require WRITE on the global layout
+`{ content }` and returns the rendered page. Both require ADMIN on the global layout
 page.
 
 ## Agent
 
-Where `ai1.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
+Where `ai.agent` is installed, the layout brings the agent `cms.layout.standard.2/designer`
 ([agents/designer.md](agents/designer.md)). It knows the template syntax and reads u2's index
 online before a change. A copy in `data/cms.layout.standard.2/agents/` wins.

@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.flexible.plus1",
+  "description": "Legacy content area laying out its contents as flex or grid.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

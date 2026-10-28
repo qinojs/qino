@@ -142,8 +142,8 @@ export const api: ApiTree = {
               ? await app.dbFiles.file(Number(row.file_id))
               : row.direction === "out" ? await print(app, Number(row.id)) : undefined;
             if (!await file?.exists()) throw new NotFoundError("no file");
-            // signed for the session that asked: the download needs no other right
-          return { name: file!.name, url: new URL(await file!.url({ grant: "session" }), await app.url()).href };
+            // signed for the session that asked: the download needs no other right; at the address it asked
+            return { name: file!.name, url: new URL(await file!.url({ grant: "session" }), ctx.req.url.toURL()).href };
           },
         },
       },

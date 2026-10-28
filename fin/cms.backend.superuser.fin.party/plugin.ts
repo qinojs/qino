@@ -1,11 +1,12 @@
 import { backend } from "@qino/qino/cms.backend";
-import { inFin } from "@qino/qino/cms.backend.superuser.fin";
+import { finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
 
-import { render } from "./render.ts";
+import { partyCard, render } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App } from "@qino/qino";
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
@@ -19,4 +20,8 @@ export const cms = {
     render: inFin(render),
     api: inFin(api),
   },
+};
+
+export const backendRowWidget = {
+  usr: (app: App, id: unknown, page: Node) => finTexts(app, () => partyCard(app, id, page)),
 };

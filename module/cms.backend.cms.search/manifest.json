@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.cms.search",
+  "description": "Shows frequent search terms, searches without results and recent searches.",
+  "dependencies": ["cms.backend.cms", "cms.cont.search"],
+  "files": ["manifest.json", "plugin.ts"]
+}

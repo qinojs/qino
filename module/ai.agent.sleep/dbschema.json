@@ -1,0 +1,31 @@
+{
+  "properties": {
+    "ai_agent_sleep": {
+      "description": "An agent's night: what it went over, and the plan for its memories (ai.agent.sleep)",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true },
+          "agent_id": { "type": "integer", "x-index": true, "x-qg-parent": "ai_agent", "x-qg-on-parent-delete": "cascade" },
+          "time": { "type": "integer", "description": "When it fell asleep" },
+          "until": { "type": "integer", "description": "The last message gone over; the next night starts after it" },
+          "stage": { "type": "string", "maxLength": 16, "description": "think, merge, planned, applied or failed" },
+          "expected": { "type": "integer", "description": "How many thoughts the thinkers give" },
+          "plan": { "type": "string", "maxLength": 1073741823, "description": "The merger's plan for the memories, as JSON" },
+          "error": { "type": "string" }
+        },
+        "required": ["id", "agent_id", "time", "until", "stage", "expected"]
+      }
+    },
+    "ai_agent_sleep_thought": {
+      "description": "A thinker's thoughts on one session of a night, as JSON",
+      "additionalProperties": {
+        "properties": {
+          "sleep_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "ai_agent_sleep", "x-qg-on-parent-delete": "cascade" },
+          "item": { "type": "string", "maxLength": 64, "x-index": "primary" },
+          "output": { "type": "string", "maxLength": 1073741823 }
+        },
+        "required": ["sleep_id", "item", "output"]
+      }
+    }
+  }
+}

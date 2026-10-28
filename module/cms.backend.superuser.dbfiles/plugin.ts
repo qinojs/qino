@@ -46,11 +46,12 @@ async function textView(f: DbFile) {
 
 /** The file's searchable text, shown as is (to spot bad OCR). `null` = not extracted yet, `""` = no text. */
 function searchText(app: App, id: number, text: string | null) {
-  if (text == null) return html.async`<button data-extract="${id}">${app.t`Extract text`}</button>`;
-  const again = html.async`<button data-extract="${id}" title="${app.t`extract again`}"><u2-ico icon=refresh>↻</u2-ico></button>`;
-  if (!text) return html.async`<small>${app.t`no text in this file`}</small> ${again}`;
+  const t = app.t;
+  if (text == null) return html.async`<button data-extract="${id}">${t`Extract text`}</button>`;
+  const again = html.async`<button data-extract="${id}" title="${t`extract again`}"><u2-ico icon=refresh>↻</u2-ico></button>`;
+  if (!text) return html.async`<small>${t`no text in this file`}</small> ${again}`;
   return html.async`<details>
-    <summary>${text.length.toLocaleString()} ${app.t`characters`} ${again}</summary>
+    <summary>${text.length.toLocaleString()} ${t`characters`} ${again}</summary>
     <pre style="white-space:pre-wrap; max-height:25rem; overflow:auto">${text}</pre>
   </details>`;
 }
@@ -66,6 +67,7 @@ const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 // list (filterable part): total + table rows, reloaded on search/order change
 async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }) {
   const app = node.app;
+  const t = app.t;
   const { db, dbFiles: fm } = app;
 
   const children = fileChildren(node);
@@ -112,35 +114,35 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
-    const exists = await f.exists();
+    const [exists, used] = await Promise.all([f.exists(), f.used()]);
     u.searchParams.set("id", String(row.id));
     const cells = children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻"));
     trs.push(html.async`<tr u2-href>
   <td class=-thumb>${mediaPreview(f, !!exists)}
   <td>${row.id}
-  <td><a href="${u.search}">${row.name}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
+  <td><a href="${u.search}">${row.name}${!exists ? html.async` <small style="color:red">${t`missing`}</small>` : ""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
   ${cells}
   <td>${u2.el.time(row.init_time)}<br><small>${row.usr_init_username}</small>
   <td>${u2.el.time(row.edit_time)}<br><small>${row.usr_edit_username}</small>
-  <td>${await f.used()?"◼":""}
+  <td>${used ? "◼" : ""}
   <td>${row.access?"◼":""}
   <td>
     <button data-delete="${row.id}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
   return html.async`
-<caption>${app.t`Total`}: ${rows.length}</caption>
+<caption>${t`Total`}: ${rows.length}</caption>
 <thead><tr style="vertical-align:bottom">
-  <th>${app.t`File`}
-  <th>${app.t`ID`}
-  <th style="width:35rem">${app.t`Name`}
-  <th>${app.t`Size`}
+  <th>${t`File`}
+  <th>${t`ID`}
+  <th style="width:35rem">${t`Name`}
+  <th>${t`Size`}
   ${relHeaders}
-  <th>${app.t`Created`}
-  <th>${app.t`Changed`}
-  <th style="writing-mode:sideways-lr">${app.t`Used`}
-  <th style="writing-mode:sideways-lr">${app.t`Public`}
+  <th>${t`Created`}
+  <th>${t`Changed`}
+  <th style="writing-mode:sideways-lr">${t`Used`}
+  <th style="writing-mode:sideways-lr">${t`Public`}
   <th>
 <tbody>${trs}`;
 }
@@ -177,6 +179,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
   const ctx = getCtx();
   const app = node.app;
+  const t = app.t;
   const get = ctx.req.query;
 
   const id = Number(vars.id ?? get.id); // vars: a reload posts to the api, where the page query is gone
@@ -188,20 +191,20 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   return html.async`
 <div class=u2-flex>
   <div class="u2-card -sidebar">
-    <div class=-head>${app.t`Filter`}</div>
+    <div class=-head>${t`Filter`}</div>
     <div>
       <form data-filter>
-        <label>${app.t`Search`}<br><input name=search></label><br><br>
-        <label>${app.t`Order`}<br><select name=order>${orderOpts}</select></label>
+        <label>${t`Search`}<br><input name=search></label><br><br>
+        <label>${t`Order`}<br><select name=order>${orderOpts}</select></label>
       </form>
     </div>
-    <div class=-head>${app.t`Actions`}</div>
+    <div class=-head>${t`Actions`}</div>
     <div>
       ${message ? html`<p>${message}</p>` : ""}
-      <button data-reload='{"do":"delete_unlinked"}'>${app.t`Delete files without DB entry`}</button><br>
-      <small>${app.t`Files in version history will not be deleted.`}</small><br><br>
-      <button data-reload='{"do":"delete_unlinked_db"}'>${app.t`Delete DB entries without link`}</button><br>
-      <small>${app.t`Warning: only files older than 7 days.`}</small>
+      <button data-reload='{"do":"delete_unlinked"}'>${t`Delete files without DB entry`}</button><br>
+      <small>${t`Files in version history will not be deleted.`}</small><br><br>
+      <button data-reload='{"do":"delete_unlinked_db"}'>${t`Delete DB entries without link`}</button><br>
+      <small>${t`Warning: only files older than 7 days.`}</small>
     </div>
   </div>
   <div class="u2-card -main" style="max-height:90vh; flex:0 1 auto;">
@@ -214,11 +217,12 @@ async function renderDetail(node: Node, id: number) {
   const ctx = getCtx();
   u2.elements(ctx, "code"); // the text view highlights with a library of its own
   const app = node.app;
+  const t = app.t;
 
   const { db, dbFiles: fm } = app;
 
   const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
-  if (!row) return html.async`<div>${app.t`File not found`}</div>`;
+  if (!row) return html.async`<div>${t`File not found`}</div>`;
 
   const f = await fm.file(id, row);
   const exists = await f.exists();
@@ -232,13 +236,13 @@ async function renderDetail(node: Node, id: number) {
   }))).flat();
   const linksHtml = linkRows.length
     ? html`<table class="u2-table -Fields">${linkRows}</table>`
-    : html.async`<div class=-body>${app.t`none`}</div>`;
+    : html.async`<div class=-body>${t`none`}</div>`;
 
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.req.url.toURL();
 
-  const preview = exists ? await mediaView(f) : "";
-  const text = exists ? await textView(f) : "";
+  const preview = exists ? mediaView(f) : "";
+  const text = exists ? textView(f) : "";
 
   return html.async`
 <div class=u2-flex>
@@ -246,39 +250,39 @@ async function renderDetail(node: Node, id: number) {
   <div class=u2-flex style="flex-direction:column; ">
     <div class=u2-card style="flex:0 0 auto" data-file-id="${row.id}">
       <div class=-head>${row.name}</div>
-      ${!exists ? html.async`<div class=-body style="color:red">${app.t`file missing on disk!`}</div>` : ""}
+      ${!exists ? html.async`<div class=-body style="color:red">${t`file missing on disk!`}</div>` : ""}
       <table class="u2-table -Fields">
-        <tr><th>${app.t`ID`}<td>${row.id}
+        <tr><th>${t`ID`}<td>${row.id}
         <tr>
-          <th>${app.t`Name`}
+          <th>${t`Name`}
           <td><input value="${row.name}" data-set=set_name>
         <tr>
-          <th>${app.t`Public`}
+          <th>${t`Public`}
           <td><input type=checkbox ${row.access?"checked":""} data-set=set_public>
         <tr>
-          <th>${app.t`Mime`}
+          <th>${t`Mime`}
           <td><input value="${row.mime}" data-set=set_mime>
-        <tr><th>${app.t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
-        <tr><th>${app.t`MD5`}<td><code>${row.md5}</code>
-        <tr><th>${app.t`URL`}<td><a href="${f.url()}" target=_blank data-url>${app.t`open`}</a> <a href="${f.url({dl:true})}" download>${app.t`download`}</a> <button data-copy-url>${app.t`copy url`}</button>
+        <tr><th>${t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
+        <tr><th>${t`MD5`}<td><code>${row.md5}</code>
+        <tr><th>${t`URL`}<td><a href="${f.url()}" target=_blank data-url>${t`open`}</a> <a href="${f.url({dl:true})}" download>${t`download`}</a> <button data-copy-url>${t`copy url`}</button>
       </table>
     </div>
 
     <div class=u2-card style="flex:0 0 auto">
-      <div class=-head>${app.t`Duplicates`}</div>
+      <div class=-head>${t`Duplicates`}</div>
       ${dupes.length
           ? html.async`<table class=u2-table>
-            <tr><th>${app.t`ID`}<th>${app.t`Name`}
+            <tr><th>${t`ID`}<th>${t`Name`}
             ${dupes.map((d) => {
               dupeU.searchParams.set("id", String(d.id));
               return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`;
             })}
           </table>`
-          : html.async`<div>${app.t`none`}</div>`}
+          : html.async`<div>${t`none`}</div>`}
     </div>
 
     <div class=u2-card style="flex:0 0 auto">
-      <div class=-head>${app.t`Links`}</div>
+      <div class=-head>${t`Links`}</div>
       ${linksHtml}
     </div>
 
@@ -289,7 +293,7 @@ async function renderDetail(node: Node, id: number) {
   ${text}
 
   <div class=u2-card style="flex:0 0 auto">
-    <div class=-head>${app.t`Search text`}</div>
+    <div class=-head>${t`Search text`}</div>
     <div>${searchText(app, row.id, row.text == null ? null : String(row.text))}</div>
   </div>
 

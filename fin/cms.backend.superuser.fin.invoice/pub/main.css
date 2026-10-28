@@ -1,4 +1,6 @@
 [qcms-mod="backend.superuser.fin.invoice"] {
+  /* a long party name is cut, the whole one is its title */
+  .-party { display: inline-block; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom }
   /* lines: the item takes the room, the numbers only what they need */
   [data-lines] td { vertical-align: top }
   [data-lines] .-item { width: 100% }

@@ -1,0 +1,6 @@
+[qcms-mod="cont.flexible.plus1"] {
+	flex-wrap:wrap;
+}
+[qcms-mod="cont.flexible.plus1"] > * {
+	flex:1 1 auto;
+}

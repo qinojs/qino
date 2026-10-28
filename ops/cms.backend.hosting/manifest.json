@@ -1,0 +1,28 @@
+{
+  "name": "cms.backend.hosting",
+  "description": "Lists, creates, starts, stops and archives the projects of a server, through a root helper.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "README.md",
+    "host/helper.ts",
+    "host/qino-hosting.service",
+    "host/templates/qino-bun/files/server.ts",
+    "host/templates/qino-bun/install.sh",
+    "host/templates/qino-bun/site.caddy",
+    "host/templates/qino-bun/unit.service",
+    "host/templates/qino-deno/files/server.ts",
+    "host/templates/qino-deno/install.sh",
+    "host/templates/qino-deno/site.caddy",
+    "host/templates/qino-deno/unit.service",
+    "lib/helper.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "cms.backend.reporting_server",
+  "description": "Receives the reports of instances running reporting: their versions, modules and errors, merged across all of them.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/intake.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

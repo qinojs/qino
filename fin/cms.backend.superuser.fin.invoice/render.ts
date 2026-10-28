@@ -34,6 +34,12 @@ const userLabel = (u: Row) =>
 const userLink = (node: Node, id: unknown, label = "") =>
   id ? rowLink(node, "cms.backend.superuser.fin.party", "usr", id, label || `#${id}`) : "";
 
+/** A small link to the party's page, behind its name: the list stays about the invoices. */
+async function partyIcon(node: Node, id: unknown) {
+  const url = (await backend.toModuleUrl(node, "cms.backend.superuser.fin.party"))({ usr: id });
+  return url ? html.async` <a href="${url}" title="${node.app.t`Customer`}"><u2-ico icon=person>👤</u2-ico></a>` : "";
+}
+
 /** A user's email address, the main one first; empty without one. */
 export const emailOf = async (app: App, id: unknown) => id
   ? String(await app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${Number(id)} AND type = 'email'
@@ -91,6 +97,7 @@ async function list(node: Node, url: URL) {
   const where = [
     sh.where,
     q("direction") ? sql`direction = ${q("direction")}` : null,
+    Number(q("usr")) ? sql`usr_id = ${Number(q("usr"))}` : null, // a party's, linked from its card
     q("status") ? sql`status = ${q("status")}` : null,
     q("overdue") ? sql`status = 'open' AND type = 'invoice' AND due < ${today()}` : null,
   ].flatMap((term) => term ?? []);
@@ -104,35 +111,37 @@ async function list(node: Node, url: URL) {
   const pageUrl = await (await node.page()).url();
   return html.async`<table class=u2-table style="white-space:nowrap">
     <thead><tr>
-      <th>${t`Number`}
+      <th>#
       <th>
       <th>${t`Party`}
       <th>${t`Date`}
-      <th>${t`Due`}
       <th>${t`Total`}
-      <th>${t`Paid`}
       <th>${t`Status`}
       <th>${t`For`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
         ${row.type === "credit_note" ? badge(t`credit note`) : ""}
       <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
-      <td>${row.usr_id ? userLink(node, row.usr_id, partyName(row)) : partyName(row)}
+      <td><span class=-party title="${partyName(row)}">${partyName(row)}</span>${row.usr_id ? partyIcon(node, row.usr_id) : ""}
       <td style="white-space:nowrap">${row.date}
-      <td style="white-space:nowrap">${due(app, row)}
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
-      <td style="text-align:end; white-space:nowrap">${money(row.paid, row.currency)}
-      <td>${status(row.status)}
+      <td>${overdue(row)
+      ? html.async`<span title="${t`Due`} ${row.due}">${badge(t`overdue`, "--red")}</span>`
+      : html.async`<span title="${row.due ? html.async`${t`Due`} ${row.due}` : ""}">${status(row.status)}</span>`}
+        ${partly(row) ? html.async`<small title="${t`Paid`}">${money(row.paid, row.currency)}</small>` : ""}
       <td>${refLink(node, row.ref)}`)}
-    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 9 })}
+    ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 7 })}
   </table>`;
 }
 
-/** The due date, marked once it has passed on an open invoice — a credit note is never overdue. */
-const due = (app: App, row: Row) =>
-  row.status === "open" && row.type === "invoice" && row.due && String(row.due) < today()
-  ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}`
-  : String(row.due ?? "");
+/** Open past its due date — a credit note is never overdue. */
+const overdue = (row: Row) => row.status === "open" && row.type === "invoice" && !!row.due && String(row.due) < today();
+
+/** Open with part of it paid: the status alone would not tell. */
+const partly = (row: Row) => row.status === "open" && Number(row.paid) !== 0 && Number(row.paid) !== Number(row.total);
+
+/** The due date, marked once it has passed. */
+const due = (app: App, row: Row) => overdue(row) ? html.async`${row.due} ${badge(app.t`overdue`, "--red")}` : String(row.due ?? "");
 
 /** A new invoice: what it is, then the editor takes over. */
 async function newForm(app: App) {
@@ -142,7 +151,7 @@ async function newForm(app: App) {
       <option value=out>${t`Issued (receivable)`}
       <option value=in>${t`Received (payable)`}
     </select>
-    <input name=currency value="${await mainCurrency(app)}" required maxlength=3 size=4>
+    <input name=currency value="${mainCurrency(app)}" required maxlength=3 size=4>
     <button>${t`New invoice`}</button>
   </form>`;
 }
@@ -304,8 +313,10 @@ async function original(node: Node, row: Row) {
 async function detail(node: Node, id: number) {
   const app = node.app;
   const t = app.t;
-  const row = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
-  const pageUrl = await (await node.page()).url();
+  const [row, pageUrl] = await Promise.all([
+    app.db.row`SELECT * FROM invoice WHERE id = ${id}`,
+    node.page().then((page) => page.url()),
+  ]);
   if (!row) return html.async`<div class=u2-card><div>${t`No invoice`} ${id}</div></div>`;
   if (row.status === "draft") return editor(node, row);
   const party = JSON.parse(String(row.party ?? "{}")) ?? {};
@@ -325,14 +336,15 @@ async function detail(node: Node, id: number) {
   const waiting = payments.some((p) => p.status === "pending" || p.status === "processing");
   const file = row.file_id ? await app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
   const pdfUrl = file ? await file.url({ grant: "session" }).catch(() => "") : "";
-  const preview = await document(app, id).catch((e) => `<p>${e.message}</p>`);
+  const preview = document(app, id).catch((e) => `<p>${e.message}</p>`);
+  const users = await usersOf(app, [row]);
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Invoices`}</a> › ${row.number || `#${id}`}</div>
     <table class=u2-table>
       ${field(t`Status`, status(row.status))}
-      ${field(t`User`, userLink(node, row.usr_id, (await usersOf(app, [row])).get(Number(row.usr_id))))}
+      ${field(t`User`, userLink(node, row.usr_id, users.get(Number(row.usr_id))))}
       ${field(t`Language`, row.lang)}
       ${credit ? field(t`Corrects`, row.corrects
         ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", row.corrects)
@@ -374,7 +386,7 @@ async function detail(node: Node, id: number) {
     </div>
     ${row.direction === "out" && row.status !== "canceled" && app.modules.linked("messaging.email") ? html.async`
     <form data-send="${id}">
-      <input type=email name=email value="${await emailOf(app, row.usr_id)}" placeholder="${t`Email address`}">
+      <input type=email name=email value="${emailOf(app, row.usr_id)}" placeholder="${t`Email address`}">
       <button>${t`Send by email`}</button>
     </form>` : ""}
   </div>
@@ -437,4 +449,25 @@ async function detail(node: Node, id: number) {
     <iframe data-sheets srcdoc="${preview}" style="width:100%; height:70rem; border:0; padding:0"></iframe>
   </div>`}
 </div>`;
+}
+
+/** A customer's latest invoices, as card on their page (`backendRowWidget`); "" without any. */
+export async function userInvoices(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+  const t = app.t;
+  const [rows, count] = await Promise.all([
+    app.db.query`SELECT * FROM invoice WHERE usr_id = ${id} ORDER BY id DESC LIMIT 10`,
+    app.db.one`SELECT COUNT(*) FROM invoice WHERE usr_id = ${id}`.then(Number),
+  ]);
+  if (!rows.length) return "";
+  const pageUrl = await page.url();
+  const all = count > rows.length
+    ? html.async`<p><a href="${backend.toUrl(pageUrl, { usr: id })}">${t`All`} ${count} ${t`invoices`}</a>`
+    : "";
+  return html.async`<table class=u2-table style="white-space:nowrap">${rows.map((row) => html.async`<tr>
+    <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || `#${row.id}`}</a>
+    <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
+    <td>${row.date}
+    <td style="text-align:end">${money(row.total, row.currency)}
+    <td>${status(row.status)}`)}
+  </table>${all}`;
 }

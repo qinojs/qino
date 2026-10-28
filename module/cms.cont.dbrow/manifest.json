@@ -1,0 +1,17 @@
+{
+  "name": "cms.cont.dbrow",
+  "description": "One row of a database table to read and edit in place, the detail page of cms.cont.dbtable.",
+  "dependencies": [
+    "cms",
+    "cms.cont.dbtable",
+    "u2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "pub/widget.js"
+  ]
+}

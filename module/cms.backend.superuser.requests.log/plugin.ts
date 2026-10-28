@@ -1,5 +1,5 @@
 import { dump } from "@nuxodin/dump";
-import { html, getCtx, sql, sqlSearch, unixTime } from "@qino/qino";
+import { html, getCtx, sql, sqlSearch, uaInfo, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { ipBadges } from "@qino/qino/cms.backend.superuser.requests";
 import * as u2 from "@qino/qino/u2";
@@ -88,7 +88,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
     const own = String(row.client_id) === String(ctx.clientId);
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     // referer is red only when it comes from another host (compare origins, not paths)
     let foreignRef = false;
     if (row.referer) { try { foreignRef = new URL(row.referer).host !== ownHost; } catch { foreignRef = true; } }
@@ -121,7 +121,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`IP`}
     <th>${t`POST`}
     <th>ID
-<tbody style="vertical-align:top">${trs.length ? trs : html`<tr><td colspan=7>${await t`No entries`}`}`;
+<tbody style="vertical-align:top">${trs.length ? trs : html.async`<tr><td colspan=7>${t`No entries`}`}`;
 }
 
 // ── stats + maintenance ─────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
   const initSearch = ctx.req.query.search ?? "";
-  const initialList = await list(node, { ctx, vars: { filter: { search: initSearch } } });
+  const initialList = list(node, { ctx, vars: { filter: { search: initSearch } } });
 
   // Single root element — the CMS injects qcms-id/qcms-mod into the first tag.
   // Keep the form inside it so the client can find it with querySelector.
@@ -218,7 +218,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
             ${message ? html`<p>${message}</p><hr>` : ""}
             <table class=u2-table>
                 <tr><td>${t`Entries`}<td style="text-align:right">${int(stats.rows)}
-                ${stats.mb == null ? "" : html`<tr><td>${await t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
+                ${stats.mb == null ? "" : html.async`<tr><td>${t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
             </table>
             <hr>
             <form data-tool=clean_data>
@@ -264,7 +264,7 @@ async function renderDetail(node: Node, id: number) {
 
   const sess = log.sess_id ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr = sess?.usr_id ? await db.row`SELECT * FROM usr WHERE id = ${sess.usr_id}` : null;
-  const info = backend.uaInfo(log.user_agent ?? "");
+  const info = uaInfo(log.user_agent ?? "");
 
   // relations: rows in other tables referencing this log entry
   const relationTrs = [];
@@ -311,6 +311,7 @@ async function renderDetail(node: Node, id: number) {
 
   // the client column points at the client detail page; without that module the filtered list has to do
   const clientUrl = await backend.toModuleUrl(node, "cms.backend.superuser.requests.clients");
+  const session = await t`Session`, client = await t`Client`;
 
   return html.async`
 <div class=u2-flex>
@@ -343,13 +344,13 @@ async function renderDetail(node: Node, id: number) {
 
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>${t`Relations`}</div>
-        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html`<tr><td>${await t`No entries`}`}</table>
+        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html.async`<tr><td>${t`No entries`}`}</table>
     </div>
 
     <div class=u2-card style="flex:1 1 40rem; max-height:88vh; overflow:auto">
         <div class=-head>${t`History`}</div>
         <div class=-body style="flex-grow:0">${t`History of:`}
-            ${histLink("sess", await t`Session`)} | ${histLink("client", await t`Client`)} | ${histLink("ip", "IP")}</div>
+            ${histLink("sess", session)} | ${histLink("client", client)} | ${histLink("ip", "IP")}</div>
         <table class=u2-table><tbody style="vertical-align:top">${historyTrs}</table>
     </div>
 </div>`;
@@ -359,8 +360,8 @@ async function renderDetail(node: Node, id: number) {
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const own = ctx.clientId;
-  const badges = await ipBadges(app);
-  const [rows, pageUrl] = await Promise.all([
+  const [badges, rows, pageUrl] = await Promise.all([
+    ipBadges(app),
     app.db.query`
       SELECT log.id, log.time, url.url AS url, ip.ip, ua.user_agent, usr.id AS usr_id, usr.username, usr.given_name, usr.family_name
        FROM log
@@ -376,7 +377,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   if (!rows.length) return html``;
   const href = (id: unknown) => backend.toUrl(pageUrl, { id });
   return html`<div style="overflow:auto; padding:0"><table class=u2-table>${rows.map((row) => {
-    const info = backend.uaInfo(row.user_agent ?? "");
+    const info = uaInfo(row.user_agent ?? "");
     const user = [row.given_name, row.family_name].filter(Boolean).join(" ") || row.username;
     return html`<tr u2-href>
     <td style="white-space:nowrap"><a href="${href(row.id)}" style="color:${ageColor(row.time)}">${u2.el.time(row.time, { narrow: true })}</a>

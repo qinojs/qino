@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { typeByExtension, sql } from "../deps.ts";
+import { mimeTypes, sql } from "../deps.ts";
 import { grant } from "./crypto.ts";
 import { File } from "./File.ts";
 import { fs } from "./fs.ts";
 import { getCtx } from "./ctx/Ctx.ts";
+import { serveFile } from "./serveFile.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, mimeType, readDataUrl, readUploadFile } from "./fileStream.ts";
 import { ensureSlash, header, unixTime } from "./util.ts";
@@ -106,7 +107,7 @@ export class DbFileManager {
       status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
-    let mime = mimeType(outputMime || typeByExtension(f.extension) || "application/octet-stream");
+    let mime = mimeType(outputMime || mimeTypes.lookup(f.extension) || "application/octet-stream");
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
@@ -132,32 +133,8 @@ export class DbFileManager {
     headers.set("Content-Type", mime);
 
     // Cache key as ETag; the cache file's mtime is touched for LRU, so unusable
-    const etag = `"qg${key ?? await fs.mtime(outputPath) ?? 0}"`;
-    headers.set("ETag", etag);
-    const inm = req.headers.get("if-none-match");
-    if (inm ? etagMatch(inm, etag) : Date.parse(req.headers.get("if-modified-since") ?? "") >= mtime! * 1000) {
-      return new Response(null, { status: 304, headers });
-    }
-
-    headers.set("Accept-Ranges", "bytes");
-    const rangeHeader = req.headers.get("range");
-    const ifRange = req.headers.get("if-range"); // stale validator: send the whole file
-    if (rangeHeader && (!ifRange || ifRange === etag || Date.parse(ifRange) === mtime! * 1000)) {
-      const range = await openRange(outputPath, rangeHeader);
-      if (typeof range === "number") {
-        headers.set("Content-Range", `bytes */${range}`);
-        return new Response(null, { status: 416, headers });
-      }
-      if (range) {
-        headers.set("Content-Range", range.contentRange);
-        headers.set("Content-Length", String(range.length));
-        return new Response(range.stream, { status: 206, headers });
-      }
-    }
-
-    const stream = await fs.stream(outputPath);
-    headers.set("Content-Length", String(await fs.size(outputPath)));
-    return new Response(stream, { status: 200, headers });
+    headers.set("ETag", `"qg${key ?? await fs.mtime(outputPath) ?? 0}"`);
+    return serveFile(req, outputPath, headers);
   }
 
 }
@@ -239,7 +216,7 @@ export class DbFile extends File {
     return e.access;
   }
 
-  // async updateDb() { // not ussed?
+  // async updateDb() { // not used?
   //   const { md5 } = await this.ensureVs();
   //   this.path = this.#manager.directory + md5;
   //   await this.setVs({ text: await this.getText(), size: await this.size() });
@@ -287,7 +264,7 @@ export class DbFile extends File {
     await fs.rename(f.tmpPath, this.path);
 
     const ext = f.name.replace(/.*\./, "").toLowerCase();
-    const type = f.type === "application/octet-stream" ? mimeType(typeByExtension(ext) ?? f.type) : f.type;
+    const type = f.type === "application/octet-stream" ? mimeType(mimeTypes.lookup(ext) || f.type) : f.type;
 
     await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: null });
   }
@@ -361,24 +338,6 @@ function parseTransformOptions(param: Record<string, unknown>) {
   return opt;
 }
 
-/** `If-None-Match` per RFC 9110: a list, `*`, and weak tags all match. */
-function etagMatch(header: string, etag: string) {
-  return header === "*" || header.split(",").some((t) => t.trim().replace(/^W\//, "") === etag);
-}
-
 function isTransformRequest(param: Record<string, unknown>) {
   return transformOptions.some((k) => k in param);
-}
-
-/** Stream a single `bytes=` range; a number = unsatisfiable (416, that size), null = serve the full file. */
-async function openRange(filePath: string, rangeHeader: string) {
-  const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
-  if (!m || (!m[1] && !m[2])) return null;
-  const size = await fs.size(filePath);
-  if (size === undefined) return null;
-  const start = m[1] === "" ? Math.max(size - Number(m[2]), 0) : Number(m[1]); // `-n` = last n bytes
-  const end = m[1] !== "" && m[2] !== "" ? Math.min(Number(m[2]), size - 1) : size - 1;
-  if (start > end || start >= size) return size;
-  const stream = await fs.stream(filePath, { start, end }).catch(() => null);
-  return stream && { stream, length: end - start + 1, contentRange: `bytes ${start}-${end}/${size}` };
 }

@@ -79,7 +79,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const zoom = clamp(Math.round(num(node.settings.zoom()) ?? 16), 1, 19);
   const height = clamp(Math.round(num(node.settings.height()) ?? 22), 8, 60);
 
-  const caption = await node.cms.text(node, "caption", { tag: "figcaption", if: true });
+  const caption = node.cms.text(node, "caption", { tag: "figcaption", if: true });
   const embed = `${OSM}/export/embed.html?bbox=${bbox(lat, lon, zoom)}&layer=mapnik&marker=${lat},${lon}`;
 
   // The frame is only allowed where it can actually appear.

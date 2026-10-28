@@ -1,24 +1,35 @@
-import { Db, unixTime } from "@qino/qino";
+import { Db, sql, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertThrows } from "@qino/qino/tests";
 
-import { forget, hit, prune, scored, sqlScore, strength } from "../mod.ts";
-import { cron, dbSchema, init, install } from "../plugin.ts";
+import { forget, halfLife, hit, prune, scores, sqlScore, strength } from "../mod.ts";
+import { cron, dbSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-
-import type { App } from "@qino/qino";
 
 const { name, dependencies } = manifest;
 
 const DAY = 86400;
 
-const ranked = (db: Db) => db.col<number>`SELECT id FROM score ORDER BY score DESC`;
-const stored = (db: Db, id: number) => db.one<number>`SELECT score FROM score WHERE id = ${id}`;
+// What a module declares: its key columns only.
+const declared = { properties: {
+  doc: { additionalProperties: { properties: {
+    id: { type: "integer", "x-index": "primary", "x-autoincrement": true },
+    usr_id: { type: "integer" },
+  } } },
+  score_doc_view: { additionalProperties: { properties: { doc_id: { type: "integer", "x-qg-parent": "doc" } } } },
+  score_doc_usr: { additionalProperties: { properties: {
+    usr_id: { type: "integer" },
+    doc_id: { type: "integer", "x-qg-parent": "doc" },
+  } } },
+} };
+
+const ranked = (db: Db) => db.col<number>`SELECT doc_id FROM score_doc_view ORDER BY score DESC`;
+const stored = (db: Db, id: number) => db.one<number>`SELECT score FROM score_doc_view WHERE doc_id = ${id}`;
 
 async function testDb() {
   const db = new Db("sqlite:");
-  await db.migrate(dbSchema);
-  await db.exec`CREATE TABLE doc (id INTEGER PRIMARY KEY AUTOINCREMENT, usr_id INTEGER)`;
-  await scored(db, "doc", 30 * DAY);
+  db.schema = { properties: { ...declared.properties, ...dbSchema(declared).properties } };
+  await db.migrate(db.schema);
+  await db.loadTables();
   return db;
 }
 
@@ -28,43 +39,26 @@ Deno.test("score: metadata is wired", () => {
   assertEquals(cron.prune.every, "day");
 });
 
-Deno.test("score: the table name is stored once, the scores carry its id", async () => {
+Deno.test("score: a declared table gets its key, score and time", async () => {
   await using db = await testDb();
-  await scored(db, "page", 7 * DAY);
-  await hit(db, "doc", 1);
-  await hit(db, "page", 1);
-
-  assertEquals(await db.query`SELECT id, tbl FROM score_scope ORDER BY id`, [{ id: 1, tbl: "doc" }, { id: 2, tbl: "page" }]);
-  assertEquals(await db.col`SELECT scope_id FROM score ORDER BY scope_id`, [1, 2]);
-
-  // a second registration reuses the row instead of inserting another
-  await scored(db, "doc", 30 * DAY);
-  assertEquals(await db.one`SELECT COUNT(*) FROM score_scope`, 2);
-});
-
-Deno.test("score: the composite index is created once and survives a migration", async () => {
-  await using db = await testDb();
-  const indexes = () => db.col<string>`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'score'`;
-  const app = { db } as App;
-
-  await install({ app });
-  await install({ app }); // idempotent — install runs on every link
-  assertEquals((await indexes()).filter((i) => i === "score_scope_score").length, 1);
-
-  // The module migrates with { patch: true }; a name outside the "idx_score_" namespace stays.
-  await db.migrate(dbSchema, { patch: true });
-  assert((await indexes()).includes("score_scope_score"));
+  assertEquals(scores(db).map(({ name, keys, half }) => ({ name, keys, half })), [
+    { name: "doc_view", keys: ["doc_id"], half: 30 * DAY },
+    { name: "doc_usr", keys: ["usr_id", "doc_id"], half: 30 * DAY },
+  ]);
+  assertEquals((await db.columns("score_doc_usr")).map((c) => c.Field), ["usr_id", "doc_id", "score", "time"]);
+  halfLife(db, "doc_view", 7 * DAY);
+  assertEquals(scores(db)[0].half, 7 * DAY);
 });
 
 Deno.test("score: hits accumulate and rank", async () => {
   await using db = await testDb();
-  await hit(db, "doc", 1);
-  await hit(db, "doc", 2);
-  await hit(db, "doc", 2);
-  await hit(db, "doc", 3, 5);
+  await hit(db, "doc_view", { doc_id: 1 });
+  await hit(db, "doc_view", { doc_id: 2 });
+  await hit(db, "doc_view", { doc_id: 2 });
+  await hit(db, "doc_view", { doc_id: 3 }, 5);
 
   assertEquals(await ranked(db), [3, 2, 1]);
-  assert(Math.abs(strength(db, "doc", (await stored(db, 2))!) - 2) < 1e-6);
+  assert(Math.abs(strength(db, "doc_view", (await stored(db, 2))!) - 2) < 1e-6);
 });
 
 Deno.test("score: recency beats a stale majority", async () => {
@@ -72,64 +66,71 @@ Deno.test("score: recency beats a stale majority", async () => {
   const now = unixTime();
   const rate = Math.LN2 / (30 * DAY);
   // 10 accesses 180 days ago (6 half-lives → 0.16) vs. one access today
-  await db.exec`INSERT INTO score (scope_id, id, score, time) VALUES (1, 1, ${rate * (now - 180 * DAY) + Math.log(10)}, ${now - 180 * DAY})`;
-  await hit(db, "doc", 2);
+  await db.exec`INSERT INTO score_doc_view (doc_id, score, time) VALUES (1, ${rate * (now - 180 * DAY) + Math.log(10)}, ${now - 180 * DAY})`;
+  await hit(db, "doc_view", { doc_id: 2 });
 
   assertEquals(await ranked(db), [2, 1]);
-  assert(Math.abs(strength(db, "doc", (await stored(db, 1))!) - 10 / 64) < 1e-6);
+  assert(Math.abs(strength(db, "doc_view", (await stored(db, 1))!) - 10 / 64) < 1e-6);
 });
 
 Deno.test("score: sqlScore orders a joined query and keeps unscored rows last", async () => {
   await using db = await testDb();
   for (const id of [1, 2, 3, 4]) await db.exec`INSERT INTO doc (id, usr_id) VALUES (${id}, 33)`;
   await db.exec`INSERT INTO doc (id, usr_id) VALUES (9, 34)`;
-  await hit(db, "doc", 2);
-  await hit(db, "doc", 3);
-  await hit(db, "doc", 3);
-  await hit(db, "doc", 9);
+  for (const id of [2, 3, 3, 9]) await hit(db, "doc_view", { doc_id: id });
 
   const ids = await db.col<number>`
     SELECT f.id FROM doc f
     WHERE f.usr_id = ${33}
-    ORDER BY ${sqlScore(db, "doc", "f.id")} DESC, f.id
+    ORDER BY ${sqlScore(db, "doc_view", { doc_id: sql`f.id` })} DESC, f.id
     LIMIT 3`;
   assertEquals(ids, [3, 2, 1]);
+});
 
-  // without an alias the default "<tbl>.id" applies
-  assertEquals(await db.col<number>`SELECT id FROM doc ORDER BY ${sqlScore(db, "doc")} DESC, id LIMIT 2`, [3, 2]);
+Deno.test("score: per user, by a key of more columns", async () => {
+  await using db = await testDb();
+  for (const id of [1, 2]) await db.exec`INSERT INTO doc (id, usr_id) VALUES (${id}, 33)`;
+  await hit(db, "doc_usr", { usr_id: 7, doc_id: 1 });
+  await hit(db, "doc_usr", { usr_id: 8, doc_id: 2 }, 3);
+  await hit(db, "doc_usr", { usr_id: 8, doc_id: 1 });
+
+  const top = (usr: number) => db.col<number>`SELECT id FROM doc d ORDER BY ${sqlScore(db, "doc_usr", { usr_id: usr, doc_id: sql`d.id` })} DESC, id`;
+  assertEquals([await top(7), await top(8)], [[1, 2], [2, 1]]);
+
+  await forget(db, "doc_usr", { usr_id: 8 }); // a part of the key: all its rows
+  assertEquals(await db.col`SELECT usr_id FROM score_doc_usr`, [7]);
 });
 
 Deno.test("score: forget weakens or drops, prune deletes", async () => {
   await using db = await testDb();
-  await hit(db, "doc", 1, 4);
-  await forget(db, "doc", 1, 0.5);
-  assert(Math.abs(strength(db, "doc", (await stored(db, 1))!) - 2) < 1e-6);
+  await hit(db, "doc_view", { doc_id: 1 }, 4);
+  await forget(db, "doc_view", { doc_id: 1 }, 0.5);
+  assert(Math.abs(strength(db, "doc_view", (await stored(db, 1))!) - 2) < 1e-6);
 
-  await hit(db, "doc", 2);
-  await forget(db, "doc", 2);
+  await hit(db, "doc_view", { doc_id: 2 });
+  await forget(db, "doc_view", { doc_id: 2 });
   assertEquals(await ranked(db), [1]);
 
-  await forget(db, "doc", 1, 0.001); // 0.002 accesses left — below FORGET
-  await hit(db, "doc", 3);
+  await forget(db, "doc_view", { doc_id: 1 }, 0.001); // 0.002 accesses left — below FORGET
+  await hit(db, "doc_view", { doc_id: 3 });
   await prune(db);
   assertEquals(await ranked(db), [3]);
 });
 
-Deno.test("score: unregistered tables and negative weights are rejected", async () => {
+Deno.test("score: undeclared tables, wrong keys and negative weights are rejected", async () => {
   await using db = await testDb();
-  assertThrows(() => hit(db, "page", 1), Error, "not scored");
-  assertThrows(() => sqlScore(db, "page"), Error, "not scored");
-  assertThrows(() => hit(db, "doc", 1, 0), Error, "weight");
-  await forget(db, "page", 1); // unscored: no-op, the delete hook runs for every table
+  assertThrows(() => hit(db, "page_view", { page_id: 1 }), Error, "No table");
+  assertThrows(() => hit(db, "doc_usr", { doc_id: 1 }), Error, "key");
+  assertThrows(() => sqlScore(db, "doc_view", { id: 1 }), Error, "key");
+  assertThrows(() => hit(db, "doc_view", { doc_id: 1 }, 0), Error, "weight");
 });
 
-Deno.test("score: a deleted row loses its score", async () => {
+Deno.test("score: a deleted row loses its scores", async () => {
   await using db = await testDb();
-  await db.loadTables();
-  init({ db } as App, { signal: new AbortController().signal });
   await db.exec`INSERT INTO doc (id, usr_id) VALUES (1, 33)`;
-  await hit(db, "doc", 1);
+  await hit(db, "doc_view", { doc_id: 1 });
+  await hit(db, "doc_usr", { usr_id: 7, doc_id: 1 });
   await db.table("doc").delete(1);
 
-  assertEquals(await ranked(db), []);
+  assertEquals([await ranked(db), await db.col`SELECT doc_id FROM score_doc_usr`], [[], []]);
 });

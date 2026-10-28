@@ -1,10 +1,10 @@
 // deno-lint-ignore-file require-await
-import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "@qino/qino";
-import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { Access, AccessError, ApiError, NotFoundError, ValidationError, bildJsonItem, invoke, html, requestStorage } from "@qino/qino";
+import { apiRequest, assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { cmsInstances } from "../lib/CMS.ts";
 import { api } from "../api.ts";
-import { cleanRequest } from "../api-exports.ts";
+import { cleanRequest, nodeFileAdd, nodeRemove, nodeRestore } from "../api-exports.ts";
 
 class TextObj {
   id: number;
@@ -33,6 +33,7 @@ class FakeNode {
   allFileNames = ["file.jpg", "placeholder.jpg"];
   deletedFiles: string[] = [];
   online = true;
+  settings = bildJsonItem(null, async () => {}).proxy;
 
   constructor(id: number, accessLevel = 3, vs: Record<string, unknown> = {}) {
     this.id = id;
@@ -78,8 +79,12 @@ class FakeNode {
   }
   conts() { return []; }
   createChild() { return new FakeNode(3, this.accessLevel); }
+  copied?: FakeNode;
+  copy() { return this.copied = new FakeNode(5, this.accessLevel, { ...this.vs, id: 5 }); }
   createCont({ module }: { module: string }) {
-    return new FakeNode(4, 3, { type: "c", module });
+    const cont = new FakeNode(4, 3, { type: "c", module });
+    cont.settings = bildJsonItem(JSON.stringify({ cols: 2 }), async () => {}).proxy;
+    return cont;
   }
   files() { return new Map(this.fileNames.map((slot) => [slot, fakeFile(slot)])); }
   filesAndPlaceholders() { return new Map(this.allFileNames.map((slot) => [slot, fakeFile(slot)])); }
@@ -95,6 +100,7 @@ async function setup(access = 3) {
   nodes.set(2, new FakeNode(2, 0));
   const user = { id: 9, superuser: false, toString: () => "9" };
   const ctx = await testContext({ userId: 9, app: {
+    languages: { all: ["de", "en"] },
     db: {
       one: () => null,
       table: (name: string) => ({
@@ -119,9 +125,14 @@ Deno.test("cms api: node title/text/flags write through resolved node", async ()
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "PUT", "/node/1/title", { value: "Hallo" }), { changed: true });
     assertEquals(await invoke(api, "PUT", "/node/1/text/main", { value: "Text", lang: "en" }), { changed: true });
-    const patched: any = await invoke(api, "PATCH", "/node/1", { visible: true, searchable: false, name: "n1", onlineStart: "2024-01-01T00:00:00Z", onlineEnd: "" });
+    const patched: any = await invoke(api, "PATCH", "/node/1", { visible: true, searchable: false, onlineStart: "2024-01-01T00:00:00Z", onlineEnd: "" });
     assertEquals(patched.id, 1);
     assertEquals(patched.visible, 1);
+    // the name is what code finds a page by: only a superuser changes it
+    await assertRejects(() => invoke(api, "PATCH", "/node/1", { name: "system" }), AccessError);
+    assertEquals(node.writes.name, undefined);
+    (ctx.user as { superuser: boolean }).superuser = true;
+    await invoke(api, "PATCH", "/node/1", { name: "n1" });
   });
 
   assertEquals(node.titleValue, "de:Hallo");
@@ -222,6 +233,7 @@ Deno.test("cms api: contents post returns rendered html and the block's shape", 
       contents: [],
       texts: {},
       files: { "file.jpg": { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" }, "placeholder.jpg": { placeholder: true } },
+      settings: { cols: 2 },
     });
   });
 });
@@ -304,6 +316,27 @@ Deno.test("cms api: node write access is required for mutations", async () => {
   });
 });
 
+Deno.test("cms api: helper errors are typed and keep their HTTP status and message", async () => {
+  const { ctx } = await setup();
+  ctx.app.db.transaction = (fn) => fn();
+  Object.assign(cmsInstances.get(ctx.app)!, { nodeByPath: () => null });
+  ctx.app.dbFiles.file = async () => ({ access: () => false }) as never;
+  await requestStorage.run(ctx, async () => {
+    for (const [run, status, message] of [
+      [() => nodeRemove({ parent: () => null }), 500, "No trash page (system/trash)"],
+      [() => nodeRestore({}), 400, "Node is not in trash"],
+      [() => nodeFileAdd({} as never, 1), 403, "Forbidden"],
+      [() => nodeFileAdd({} as never, "/local/file"), 403, "Forbidden"],
+    ] as const) {
+      const error = await assertRejects(run, status === 403 ? AccessError : ApiError, message);
+      assertEquals(error.status, status);
+      const res = await apiRequest({ test: { get: { access: Access.PUBLIC, execute: run } } }, "/test");
+      assertEquals(res.status, status);
+      assertEquals(await res.json(), { error: message, ...(status === 403 && { code: "access" }) });
+    }
+  });
+});
+
 Deno.test("cms api: validation rejects wrong params and payloads before writing", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
@@ -352,4 +385,12 @@ Deno.test("cms api: a request is stored the way routing matches it", () => {
   assertEquals(cleanRequest(" /menu/ "), "menu");
   assertEquals(cleanRequest("//a//b//"), "a//b");
   assertEquals(cleanRequest("/"), ""); // "/" is the entry link, and that is the empty request
+});
+
+Deno.test("cms api: a copy keeps everything but the name, which stays with the original", async () => {
+  const { ctx, nodes } = await setup();
+  const node = nodes.get(1)!;
+  node.vs.name = "system";
+  await requestStorage.run(ctx, () => invoke(api, "POST", "/node/1/copy", {}));
+  assertEquals([node.copied?.vs.name, node.vs.name], [null, "system"]);
 });

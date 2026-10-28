@@ -5,7 +5,7 @@ import { testContext } from "@qino/qino/tests";
 import type { Node } from "@qino/qino/cms";
 
 /** What every fin app links from the module store. */
-const BASE = ["cron", "identity", "locale.country", "locale.currency", "pdf"];
+const BASE = ["cron", "identity", "locale.country", "locale.currency", "pdf", "score", "security"];
 
 /** Boot an app with the base module fin and these (fin's, or others by name), run `fn`, tear it down again. */
 export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>): Promise<void> {
@@ -53,6 +53,7 @@ export async function inRequest<T>(app: App, url: string, fn: () => Promise<T>):
 /** A backend node at `url`, without a CMS around it: links to other backend pages become text. */
 export const backendNode = (app: App, url: string): Node => ({
   app,
+  vs: {},
   page: () => Promise.resolve({ url: () => Promise.resolve(url), children: () => Promise.resolve(new Map()) }),
   cms: { nodeByModule: () => Promise.resolve(undefined) },
 }) as unknown as Node;

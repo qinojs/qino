@@ -1,5 +1,5 @@
 import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, safeEqual, setMainContact } from "@qino/qino";
-import { backend } from "@qino/qino/cms.backend";
+import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
 import { list, allowLoginAs } from "./parts/list.ts";
@@ -141,6 +141,28 @@ ${loginRows}
 </div>`;
 }
 
+/** How a user signs in, as a card on other pages showing them (`backendRowWidget`): changed here. */
+async function loginCard(app: App, id: unknown, page: Node): Promise<{ title: string; body: HtmlString } | ""> {
+  const usrId = Number(id);
+  const u = await app.db.row`SELECT username, active, superuser FROM usr WHERE id = ${usrId}`;
+  if (!u) return "";
+  const t = app.t;
+  const [email, groups, url] = await Promise.all([
+    app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${usrId} AND type = 'email' ORDER BY main DESC`,
+    app.db.col`SELECT grp.name FROM grp JOIN usr_grp ON grp.id = usr_grp.grp_id WHERE usr_grp.usr_id = ${usrId} ORDER BY grp.name`,
+    page.url().then((pageUrl) => backend.toUrl(pageUrl, { id: usrId })),
+  ]);
+  const body = await html.async`<table class=u2-table style="white-space:nowrap">
+    <tr><th>${t`Username`}<td><a href="${url}">${u.username || html`<small>#${usrId}</small>`}</a>
+    <tr><th>${t`Email`}<td>${email}
+    <tr><th>${t`Active`}<td>${u.active ? "✓" : "–"}${u.superuser ? html.async` · ${t`Superuser`}` : ""}
+    <tr><th>${t`Groups`}<td>${groups.join(", ")}
+  </table>`;
+  return { title: await t`Login`, body };
+}
+
+export const backendRowWidget = { usr: loginCard };
+
 export const cms = {
   node: {
     js: ["pub/main.js"],
@@ -195,15 +217,15 @@ async function contactsCard(node: Node, usrId: number) {
             ? "★"
             : html`<button class=u2-unstyle data-main="${row.type}:${row.address}" title="${makeMain}">☆</button>`}
           <td><button class=u2-unstyle data-contact-delete="${row.type}:${row.address}" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`)
-        : html`<tr><td colspan=4>${await t`No contact yet — this user cannot be reached.`}`}
+        : html.async`<tr><td colspan=4>${t`No contact yet — this user cannot be reached.`}`}
     </table>
-    ${html.async`<form class=-body data-contact-add>
+    <form class=-body data-contact-add>
       <select name=type>
         ${types.map((type) => html`<option value="${type}">${type}</option>`)}
       </select>
       <input name=address placeholder="${t`Address`}">
       <button>${t`add`}</button>
-    </form>`}`;
+    </form>`;
 }
 
 async function renderDetail(node: Node, id: number) {
@@ -269,5 +291,6 @@ async function renderDetail(node: Node, id: number) {
       ${grpHtml}
     </table>
   </div>
+  ${renderRowWidgets(node, "usr", id)}
 </div>`;
 }

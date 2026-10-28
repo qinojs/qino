@@ -1,5 +1,5 @@
 import { Access, ConflictError, NotFoundError, fs, s, unixTime } from "@qino/qino";
-import { cms } from "@qino/qino/cms";
+import { ADMIN, cms } from "@qino/qino/cms";
 
 import { codeFiles } from "./codeFiles.ts";
 
@@ -8,15 +8,16 @@ import type { Node } from "@qino/qino/cms";
 
 const content = s.object({ content: s.string().describe("Complete file content") });
 const rendered = s.string().describe("Rendered HTML of the node after saving");
-const NODE_WRITE = {
+// code runs in the app origin, so it needs ADMIN; editors (WRITE) maintain the content
+const CODE_ACCESS = {
   access: Access.USER,
-  guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then((access) => access >= 2),
+  guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then((access) => access >= ADMIN),
 };
 
 const codeFile = (key: "src" | "css" | "js", label: string) => ({
   get: {
     description: `Open the ${label}, with examples for new nodes.`,
-    ...NODE_WRITE,
+    ...CODE_ACCESS,
     output: content,
     execute: async ({ node }: { node: Node }) => {
       const files = codeFiles(node);
@@ -26,7 +27,7 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
   },
   put: {
     description: `Save the ${label}. Open first to see the examples.`,
-    ...NODE_WRITE,
+    ...CODE_ACCESS,
     input: content,
     output: rendered,
     execute: async ({ node, content }: { node: Node; content: string }, ctx: Ctx) => {

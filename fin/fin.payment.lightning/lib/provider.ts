@@ -1,6 +1,6 @@
 import { errMsg, html, unixTime } from "@qino/qino";
 import { fromMinor } from "@qino/qino/fin";
-import { qr } from "@qino/qino/fin.payment";
+import { dataOf, qr } from "@qino/qino/fin.payment";
 
 import type { App } from "@qino/qino";
 import type { Provider } from "@qino/qino/fin.payment";
@@ -29,8 +29,6 @@ async function call(app: App, path: string, init: RequestInit = {}) {
   if (!res.ok) throw new Error(`fin.payment.lightning: ${res.status} ${json.detail ?? ""}`.trim());
   return json;
 }
-
-const dataOf = (payment: { data?: unknown }) => JSON.parse(String(payment.data ?? "{}")) ?? {};
 
 /**
  * Lightning through an LNbits wallet — LNbits runs on LND, Core Lightning, Phoenix and others, and

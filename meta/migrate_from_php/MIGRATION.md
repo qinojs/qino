@@ -237,7 +237,7 @@ unter demselben Namen, 20 nicht — ohne Modul rendert die Seite leer. Die alten
 in einem eigenen Store: [cms-legacy](../../cms-legacy/README.md).
 
 Der Store enthält inzwischen die für beide Testprojekte benötigten Layout-, Inhalts-, Slideshow-
-und Galerie-Module. `cms.cont.nav2` ist dabei nur ein Re-Export von `cms.cont.nav3` — der Nachfolger
+und Galerie-Module. `cms.cont.nav2` ist dabei nur ein Re-Export von `cms.cont.nav` — der Nachfolger
 hat exakt dieselben Einstellungsnamen. Die vollständige Liste und die Abgrenzung zu echten
 Umbenennungen stehen in [qino/cms-legacy/README.md](../../cms-legacy/README.md).
 
@@ -255,8 +255,8 @@ Die Site-Templates `data/cms.layout.custom.6/index.php` und `data/cms.cont.secti
 wurden von Hand nach `index.ts` portiert. Die Seite rendert damit Struktur, CSS, JS und Schriften
 der Site.
 
-Zusätzlich installiert `server.ts` die Module, die es in qino schon gibt (`cms.text`, `cms.image2`,
-`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image2`, `cms.cont.login4`, `cms.layout.system`).
+Zusätzlich installiert `server.ts` die Module, die es in qino schon gibt (`cms.text`, `cms.image`,
+`cms.cont.flexible`, `cms.cont.text`, `cms.cont.image`, `cms.cont.login.password`, `cms.layout.system`).
 
 > **Achtung beim Reset:** `data/` wird gelöscht. Portierte Templates deshalb immer unter
 > `site-templates/` behalten und nach dem Wiederherstellen von `qg/` erneut darüberkopieren.
@@ -286,8 +286,9 @@ Dieser Lauf hat drei generische Lücken sichtbar gemacht und geschlossen:
 1. `core.langs` war vor der Migration bereits leer gecacht. Nach `qg.langs` → `core.langs` wird
    deshalb auch der laufende Settings- und Sprachcache aktualisiert; der erste Prozess rendert nun
    sofort Deutsch und braucht keinen Neustart.
-2. `cms.cont.form1(.fields2)` wird strukturell nach `cms.cont.form2(.fields1)` migriert. Dabei
-   bleiben Feld-IDs, Empfänger, Buttons und der vorhandene Bestätigungstext erhalten.
+2. `cms.cont.form1(.fields2)` wird strukturell nach `cms.cont.form(.fields)` migriert. Die Felder
+   heissen danach nach ihrem Label statt nach ihrer Setting-ID; Empfänger, Buttons und der vorhandene
+   Bestätigungstext bleiben erhalten.
 3. Die gemeinsamen Legacy-Ports für `cms.layout.custom.7`, `cms.cont.slideshow.schwups2` und
    `cms.cont.gallery.photoswipe1` liegen im `cms-legacy`-Store. Nur das eigentliche Layout-Template
    der Schule bleibt projektspezifisch.
@@ -382,7 +383,7 @@ Was der Lauf an den Werkzeugen und am Kern geändert hat:
 3. Der Hinweis auf zu portierende Site-Templates zeigt nur noch die, die das Modul auch einbindet.
    Der Installer kopiert `custom/`-Ordner nach `qg/`, in denen manchmal eine `index.php` liegt, die
    kein Modul liest (`cms.cont.quote.cd` bei bioforskin).
-4. `cms.cont.table1` → `cms.cont.table2` ist jetzt eine Umbenennung. `table2` kennt dazu die zwei
+4. `cms.cont.table1` → `cms.cont.table` ist jetzt eine Umbenennung. `cms.cont.table` kennt dazu die zwei
    Legacy-Settings `units` und `direction`, und `migrateTable1` schreibt `units: "%"` dort hin, wo
    das PHP-Modul es als Default annahm — sonst würde aus `33.3 %` Spaltenbreite `33.3 px`.
 5. `cms_text($Cont,'title')` meint in PHP den **Knotentitel**, nicht einen Text namens `title`.
@@ -535,9 +536,30 @@ Ohne qino-Pendant bleiben `cms.backend.superuser.client1`,
 `cms.backend.superuser.performance` und `cms.backend.webmaster`. Das sind ausschließlich alte
 Backendseiten; sie beeinflussen die öffentliche Site nicht.
 
+## Achter Lauf: life-saver.ch, eine Fachanwendung
+
+Direkt von s3 statt aus dem Plesk-Backup (rsync + `mysqldump --skip-lock-tables`), Projekt unter
+`projects/life-saver.ch` (Doku dort in `doc/README.md`). 701 Seiten, Kursverwaltung mit Buchhaltung.
+Generisch dazugekommen:
+
+1. **`migrate_from_php` wird direkt nach `cms` registriert** (Regel 3 im AGENTS.md). Sonst legen
+   Backend-Module ihre Seiten unter neuem Namen neu an und nehmen IDs, die die geparkten Texte brauchen.
+2. **Alte URLs bleiben erreichbar**: `migrate()` hält jede PHP-URL als Weiterleitung auf die Seiten-ID
+   fest (`keepUrls.ts`); Titel-Änderungen erzeugen URLs neu, PHPs Kollisions-Suffixe (`-de881`) fallen weg.
+3. **`form1.fields3`** wie `fields2`; ein Bereich `1` mit Layout um die Felder bleibt Formularinhalt; ein
+   `buttons1` darin wird zum Senden-Knopf des Formulars; die Feldreihenfolge (`sort`) folgt den neuen IDs.
+4. **`cms.cont.phpfile1`** (Ordner pro Knoten) → `cms.cont.ts`; portierte Dateien gewinnen.
+5. **`cms.cont.l1.table1`** → `cms.cont.dbtable` (`migrateL1.ts`): Felder unter ihren PHP-Namen,
+   umbenannte Spalten (`usr.firstname` → `given_name` …) nachgezogen, auch in `fkSelect`-Ausdrücken;
+   ein `l1.table1.filter` wird zu den Filtern seiner Liste und verschwindet.
+6. `app1` → `identity` (Name, Inhaber, Farben, Icon/Logo), `qg.mail` → `messaging.email`, Layout-Font →
+   App-Setting.
+7. **Buchhaltung in derselben DB**: `accounting/import.ts --same-users`; Rechnungen behalten ihre PHP-ID,
+   die Backend-Seiten von `accounting1` zeigen das fin-Backend.
+
 ## 10. Login
 
-<http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login4` und
+<http://localhost:8091/en/system/login> — funktioniert. Nötig waren nur `cms.cont.login.password` und
 `cms.layout.system` (in PHP hiess das Layout `cms.layout.login`).
 
 Die Passwörter der PHP-Installation gelten weiter: qino ersetzt beim Prüfen PHPs `$2y$`-Präfix
@@ -562,14 +584,14 @@ ergibt eine Session mit „Log out", falsches den Fehlertext.
 | Module nachinstallieren | — | ✓ `/en/backend/superuser/module-stores` |
 
 `cms.frontend` stand nach der Migration auf `cms.frontend.1`, dem PHP-Modul — dadurch lud die
-Editier-UI nie. `migrate_from_php` bildet den Namen jetzt auf `cms.frontend.4` ab; weitere
+Editier-UI nie. `migrate_from_php` bildet den Namen jetzt auf `cms.frontend` ab; weitere
 Umbenennungen kommen in dieselbe Tabelle.
 
 Beim ersten Rendern nennt qino selbst fehlende Module; diese Meldungen sind zuverlässiger als ein
 reiner Namensabgleich. Die Auflösung folgt drei Regeln:
 
 - Reine Umbenennungen stehen in `renamedModules.ts`, zum Beispiel `cms.backend.struct` →
-  `cms.backend.cms.tree` und `cms.backend.mails` → `cms.backend.mail`.
+  `cms.backend.cms.tree` und `cms.backend.mails` → `cms.backend.superuser.messaging`.
 - Module mit eigener Ausgabe oder eigenem Verhalten bleiben als Port im `cms-legacy`-Store, etwa
   `cms.cont.section3`, `cms.cont.cd.boxes` und die Slideshow der Schule.
 - `cms.cont.phpfile` wird zu `cms.cont.ts`; die Dateien werden nach `data/cms.cont.ts/` verschoben,
@@ -593,6 +615,10 @@ await app.init();
 Erledigt heute `usr.email → username`, `firstname → given_name`, `lastname → family_name`,
 `company → organization`, jeweils samt `_vers_`-Spiegel. Idempotent, und still auf einer
 Datenbank, die es noch nicht gibt.
+
+Ausserdem legt es die Zeilen der PHP-Tabelle `text` (id, lang, text) beiseite: qino trennt sie in
+`text` und `text_lang`, und die Schema-Migration scheitert an doppelten ids. `install()` schreibt sie
+zurück, die ids bleiben ([migrateText.ts](migrateText.ts)).
 
 ## Was `tools/prepare-db.sh` erledigt
 

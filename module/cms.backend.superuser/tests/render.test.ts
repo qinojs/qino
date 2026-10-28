@@ -23,7 +23,7 @@ Deno.test("cms.backend.superuser: render links child modules", async () => {
     vs: { visible: 1 },
     access: () => 1,
     conts: () => [{ module: { plugin: { backendDashboardWidget: () => "<p>DB stats</p>" } } }],
-    url: () => `/backend/superuser?q="><script>x</script>`,
+    url: () => Promise.resolve(`/backend/superuser?q="><script>x</script>`),
     title: () => ({ string: () => `DB"><script>x</script>` }),
   };
   const page = { children: () => new Map([[1, child]]) };

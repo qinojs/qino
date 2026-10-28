@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
 import * as u2 from "@qino/qino/u2";
-import { html, sql } from "@qino/qino";
+import { html, sql, uaInfo } from "@qino/qino";
 import { cms as cmsOf, describeChange, WRITE } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -90,16 +90,15 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   }
 
   if (!order.length) return html.async`<tr class=-empty><td colspan=5>${app.t`No changes found.`}`;
-  const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
-  return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!, titles))));
+  return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!))));
 }
 
-async function renderRow(node: Node, ev: Event, titles: Map<number, string>) {
+async function renderRow(node: Node, ev: Event) {
   const t = node.app.t;
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
   const stamp = iso.slice(0, 16).replace("T", " ");
-  const ua = backend.uaInfo(r.ua ?? "");
+  const ua = uaInfo(r.ua ?? "");
 
   const seen = new Set<string>();
   const labels = [];
@@ -113,8 +112,8 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>) {
   return html.async`
 <tr class=-row data-key="${ev.key}" data-nc="${ev.ncMax}">
   <td class=-when><u2-time datetime="${iso}" type=relative title="${stamp}">${stamp}</u2-time>
-  <td class=-who>${await actorCell(r, t)}
-  <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
+  <td class=-who>${actorCell(r, t)}
+  <td class=-where>${backend.breadcrumb(node, Number(r.node_id))}
   <td class=-what>${labels}
   <td class=-client><span style="color:${backend.uniqueColor(r.ip)}">${r.ip ?? "-"}</span><br><small style="color:${backend.uniqueColor(ua.browser)}">${ua.browser} ${ua.version.split(".")[0]}${
     ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : ""
@@ -130,7 +129,7 @@ async function actorCell(r: Record<string, any>, t: TFn) {
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const t = node.app.t;
-  const initial = await list(node, { ctx, vars: { filter: vars.filter ?? {} } });
+  const initial = list(node, { ctx, vars: { filter: vars.filter ?? {} } });
   return html.async`
 <div class=u2-flex>
   <div class=u2-card>

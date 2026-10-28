@@ -1,0 +1,9 @@
+{
+  "modules": {
+    "auth.oauth.relay": {},
+    "cms.backend.domain_monitor": {},
+    "cms.backend.hosting": {},
+    "cms.backend.reporting_server": {},
+    "reporting": {}
+  }
+}

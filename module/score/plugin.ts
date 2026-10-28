@@ -1,61 +1,29 @@
-import { sql } from "@qino/qino";
+import { prune } from "./mod.ts";
 
-import { forget, prune } from "./mod.ts";
-
-import type { App, Db } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
-export const dbSchema = {
-  properties: {
-    // One row per scored table — the name is stored here, never in `score`.
-    score_scope: {
-      additionalProperties: {
-        properties: {
-          id: { type: "integer", minimum: 0, maximum: 65535, "x-index": "primary", "x-autoincrement": true },
-          tbl: { type: "string", maxLength: 64, "x-index": true },
-        },
-        required: ["id", "tbl"],
+type Props = Record<string, Record<string, unknown>>;
+
+/** Every `score_<name>` table, declared with its key columns only, complete: they become the primary
+ *  key (a row goes along with the entry of a key column that has `x-qg-parent`), score and time are
+ *  added. */
+export function dbSchema(merged: { properties: Record<string, { additionalProperties?: { properties?: Props } }> }) {
+  const tables = Object.entries(merged.properties).filter(([table]) => table.startsWith("score_"));
+  return { properties: Object.fromEntries(tables.map(([table, schema]) => {
+    const props = schema.additionalProperties?.properties ?? {}, keys = Object.keys(props);
+    const key = (col: string) => ({ ...props[col], "x-index": "primary", ...props[col]["x-qg-parent"] ? { "x-qg-on-parent-delete": "cascade" } : {} });
+    return [table, { ...schema, additionalProperties: {
+      properties: {
+        ...Object.fromEntries(keys.map((col) => [col, key(col)])),
+        score: { type: "number", "x-index": true },
+        time: { type: "integer", default: 0 },
       },
-    },
-    score: {
-      additionalProperties: {
-        properties: {
-          scope_id: { type: "integer", minimum: 0, maximum: 65535, "x-index": "primary" },
-          id: { type: "integer", minimum: 0, "x-index": "primary" },
-          score: { type: "number" }, // indexed together with scope_id, see ensureIndex below
-          time: { type: "integer", default: 0 },
-        },
-        required: ["scope_id", "id", "score", "time"],
-      },
-    },
-  },
-};
+      required: [...keys, "score", "time"],
+    } }];
+  })) };
+}
 
 export const cron = {
   prune: { every: "day", at: { hour: 4 }, jitter: 60 * 60, run: (app: App) => prune(app.db) },
 } satisfies Jobs;
-
-// TEMP: manual until item.js supports composite secondary indexes, then move to dbSchema. All reads
-// filter scope_id first, so this index covers them. Not named "idx_score_*" (the sqlite migration
-// drops those).
-const INDEX = "score_scope_score";
-
-async function ensureIndex(db: Db) {
-  if (db.dialect !== "mysql") { // sqlite and postgres are idempotent on their own
-    await db.exec`CREATE INDEX IF NOT EXISTS ${sql.id(INDEX)} ON score (scope_id, score)`;
-    return;
-  }
-  const has = await db.one`
-    SELECT 1 FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'score' AND index_name = ${INDEX}`;
-  if (!has) await db.exec`CREATE INDEX ${sql.id(INDEX)} ON score (scope_id, score)`;
-}
-
-export function install({ app }: { app: App }): Promise<void> {
-  return ensureIndex(app.db);
-}
-
-export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  // A deleted entry keeps no score; forget() ignores tables that are not scored.
-  app.db.on("table:delete-after", ({ table, id }) => forget(app.db, String(table), Number(id)), { signal });
-}

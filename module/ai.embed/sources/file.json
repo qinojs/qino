@@ -1,0 +1,14 @@
+{
+  "properties": {
+    "embedding_file_image": {
+      "additionalProperties": {
+        "properties": { "file_id": { "type": "integer", "x-qg-parent": "file" } }
+      }
+    },
+    "embedding_file_text": {
+      "additionalProperties": {
+        "properties": { "file_id": { "type": "integer", "x-qg-parent": "file" } }
+      }
+    }
+  }
+}

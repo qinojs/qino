@@ -55,7 +55,6 @@ export async function isEmptyTable(db: Db, table: string): Promise<boolean> {
 
 export async function sqliteFreeBytes(db: Db): Promise<number | null> {
   if (db.dialect !== "sqlite") return null;
-  const pages = Number(await db.one`PRAGMA freelist_count` ?? 0);
-  const size = Number(await db.one`PRAGMA page_size` ?? 0);
-  return pages * size;
+  const [pages, size] = await Promise.all([db.one`PRAGMA freelist_count`, db.one`PRAGMA page_size`]);
+  return Number(pages ?? 0) * Number(size ?? 0);
 }

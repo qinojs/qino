@@ -1,5 +1,5 @@
 import { hee } from "@qino/qino";
-import { cms as cmsOf, WRITE } from "@qino/qino/cms";
+import { ADMIN, WRITE, cms as cmsOf } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
@@ -57,16 +57,17 @@ async function starter(page: Node) {
 }
 
 /** The global layout page for the panel: its id (for its settings), the u2 release and the file
- *  editor links; editor URLs are session capabilities. Only for who may write it. */
+ *  editor links; editor URLs are session capabilities. Only for who may write it, files only for ADMIN. */
 const panelApi = async (node: Node, vars: Record<string, unknown>) => {
   if (vars.do !== "getLayout" && vars.do !== "openFile") return;
   const layout = await node.cms.layoutPage(node.module!.name);
-  if (await layout.access() < WRITE) return;
-  const files = codeFiles(node);
-  if (vars.do === "openFile") return (vars.key === "html" || vars.key === "css") && await files.open(vars.key);
+  const access = await layout.access();
+  if (access < WRITE) return;
+  const files = codeFiles(node), code = access >= ADMIN; // code runs in the app origin
+  if (vars.do === "openFile") return code && (vars.key === "html" || vars.key === "css") && await files.open(vars.key);
   return {
     id: layout.id, u2Version: layout.settings.u2Version() ?? "", u2Default: U2_VERSION,
-    files: (["html", "css"] as const)
+    files: (code ? ["html", "css"] as const : [])
       .map((key) => ({ key, name: files[key].split("/").pop()!, url: editorUrl(files[key]) })).filter((f) => f.url),
   };
 };
@@ -74,8 +75,8 @@ const panelApi = async (node: Node, vars: Record<string, unknown>) => {
 /** The designer agent (agents/designer.md) learns which u2 release the site loads. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const name = "cms.layout.standard.2";
-  app.on("ai1.agent:turn", async (turn: { agent: number; parts: string[] }) => {
-    if (await app.db.one`SELECT name FROM ai1_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
+  app.on("ai.agent:turn", async (turn: { agent: number; parts: string[] }) => {
+    if (await app.db.one`SELECT name FROM ai_agent WHERE id = ${turn.agent}` !== `${name}/designer`) return;
     const version = u2Version(await cmsOf(app).layoutPage(name));
     turn.parts.push(`## u2\nThis site loads u2 ${version}. Its index: ${u2.root(version)}SKILL.md`);
   }, { signal });

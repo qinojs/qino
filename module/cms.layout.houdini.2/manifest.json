@@ -1,0 +1,9 @@
+{
+  "name": "cms.layout.houdini.2",
+  "description": "The editorial Houdini: a generous masthead, serif typography, a separate navigation row and a dark footer, with the same visual design controls.",
+  "dependencies": ["cms.layout.houdini"],
+  "files": [
+    "README.md", "manifest.json", "plugin.ts", "pub/main.css", "pub/main.js",
+    "pub/module.svg", "pub/widget.js", "template.html"
+  ]
+}

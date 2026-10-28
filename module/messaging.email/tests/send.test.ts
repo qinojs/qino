@@ -1,15 +1,15 @@
-import { Db } from "@qino/qino";
-import { assertEquals, assertStringIncludes, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, templatePlaceholders } from "@qino/qino/tests";
-import { outbox } from "@qino/qino/messaging";
+import { ApiError, contacts, Db } from "@qino/qino";
+import { assertEquals, assertRejects, assertStringIncludes, authAttemptDbSchema, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, templatePlaceholders } from "@qino/qino/tests";
+import { outbox, pendingContacts } from "@qino/qino/messaging";
 
 import { inbound } from "../lib/settings.ts";
-import { messagingChannel, send, setTransport } from "../mod.ts";
+import { addEmail, messagingChannel, send, setTransport, verifyEmail } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
 async function makeApp() {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...fileDbSchema.properties, ...messageSchema.properties, ...contactDbSchema.properties } });
+  await db.migrate({ properties: { ...fileDbSchema.properties, ...messageSchema.properties, ...contactDbSchema.properties, ...authAttemptDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.query`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
@@ -257,5 +257,27 @@ Deno.test("a failure that names no reason is tried once more on a fresh connecti
   setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["mailbox full"] }) });
   await send(app, { email: "one@qino.test" }, "Hello", { onError: (error) => errors.push(error) });
   assertEquals(errors, ["mailbox full"]); // a server that says why is believed the first time
+  await close(app);
+});
+
+Deno.test("a user verifies an address by mailed code and cannot claim another user's", async () => {
+  const app = await makeApp();
+  const sent: Record<string, unknown>[] = [];
+  setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
+  await app.db.table("usr").insert({ username: "two" });
+
+  assertEquals((await addEmail(app, 2, " Two@Qino.Test ")).address, "two@qino.test");
+  assertEquals(await contacts(app.db, 2, "email"), []); // nothing is the user's before the code
+  assertEquals((await pendingContacts(app, "email", 2)).map((c) => c.address), ["two@qino.test"]);
+  const code = String((sent[0].content as { text: string }).text).match(/\d{6}/)![0];
+
+  await assertRejects(() => verifyEmail(app, 2, "two@qino.test", "000000"), ApiError, "Verification code is invalid");
+  assertEquals(Boolean((await verifyEmail(app, 2, "two@qino.test", code)).main), true);
+  assertEquals(await pendingContacts(app, "email", 2), []);
+  await assertRejects(() => addEmail(app, 2, "one@qino.test"), ApiError, "Email address is unavailable");
+
+  setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["mailbox unknown"] }) });
+  await assertRejects(() => addEmail(app, 2, "three@qino.test"), ApiError, "mailbox unknown");
+
   await close(app);
 });

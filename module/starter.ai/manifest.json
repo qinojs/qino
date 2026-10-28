@@ -1,0 +1,21 @@
+{
+  "name": "starter.ai",
+  "description": "AI on top of starter.cms: the assistant in the text editor, image generation in the file browser, a chat with agents and the AI backend.",
+  "dependencies": [
+    "starter.cms",
+    "ai",
+    "ai.api",
+    "cms.frontend.ai",
+    "cms.filebrowser.ai",
+    "cms.backend.ai",
+    "cms.backend.ai.calls",
+    "cms.backend.ai.agents",
+    "cms.backend.ai.chat"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

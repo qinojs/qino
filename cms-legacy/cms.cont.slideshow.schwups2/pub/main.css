@@ -21,7 +21,7 @@
   position:absolute;
   inset:0;
 }
-[qcms-mod="cont.slideshow.schwups2"] > .c1-aspectRatio > .-inner.b1_slideshow > .-slides > * > cms-image2 {
+[qcms-mod="cont.slideshow.schwups2"] > .c1-aspectRatio > .-inner.b1_slideshow > .-slides > * > cms-image {
   position:absolute;
   inset:0;
   height:100%;

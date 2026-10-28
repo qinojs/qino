@@ -46,11 +46,11 @@ export async function verify(app: App, kind: Kind, token: string) {
   return row;
 }
 
-/** Single-use lookup: the row is deleted either way (codes, refresh rotation). */
+/** Single-use lookup: the row is deleted either way (codes, refresh rotation). Of parallel calls,
+ *  only the one whose DELETE removed it gets the row. */
 export async function consume(app: App, kind: Kind, token: string) {
   const row = await verify(app, kind, token);
-  if (row) await app.db.table("oauth_token").delete(row.id);
-  return row;
+  if (row && await app.db.table("oauth_token").delete(row.id)) return row;
 }
 
 /** Drop everything a client can no longer redeem. */

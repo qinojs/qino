@@ -1,5 +1,5 @@
 import { Output } from "@qino/qino";
-import { forget, hit, scored, scopes, strength } from "@qino/qino/score";
+import { forget, halfLife, hit, strength } from "@qino/qino/score";
 
 import { ipKey } from "./ipKey.ts";
 
@@ -21,14 +21,14 @@ const states = new WeakMap<App, ReturnType<typeof newState>>();
 const now = () => Date.now() / 1000;
 const decay = (e: { s: number; t: number }, t: number) => e.s * 2 ** ((e.t - t) / HALF_LIFE);
 
-/** Registers the score scope and warms the in-memory view, so a restart does not forgive anyone. */
+/** Sets the stored score's half-life and warms the in-memory view, so a restart does not forgive anyone. */
 export async function load(app: App): Promise<void> {
-  await scored(app.db, "log_ip", HALF_LIFE);
+  halfLife(app.db, "log_ip_suspicious", HALF_LIFE);
   const state = newState();
   states.set(app, state);
-  const rows = await app.db.query`SELECT l.ip, s.score FROM score s JOIN log_ip l ON l.id = s.id WHERE s.scope_id = ${scopes(app.db).get("log_ip")!.id}`;
+  const rows = await app.db.query`SELECT l.ip, s.score FROM score_log_ip_suspicious s JOIN log_ip l ON l.id = s.ip_id`;
   for (const row of rows) {
-    const s = strength(app.db, "log_ip", Number(row.score));
+    const s = strength(app.db, "log_ip_suspicious", Number(row.score));
     if (s >= 1) state.keys.set(String(row.ip), { s, t: now(), stored: true });
   }
 }
@@ -65,7 +65,7 @@ export function reportIp(app: App, ip: string, weight: number, reason: string): 
 function store(app: App, key: string, add: number) {
   const { writes } = states.get(app)!;
   const write = (writes.get(key) ?? Promise.resolve())
-    .then(async () => hit(app.db, "log_ip", await keyId(app, key), add))
+    .then(async () => hit(app.db, "log_ip_suspicious", { ip_id: await keyId(app, key) }, add))
     .catch((e) => console.error("security: " + e.message))
     .finally(() => writes.get(key) === write && writes.delete(key));
   writes.set(key, write);
@@ -123,5 +123,5 @@ export async function release(app: App, key: string): Promise<void> {
   state?.keys.delete(key);
   await state?.writes.get(key); // a pending write would bring the score back
   const row = await app.db.table("log_ip").rowBy("ip", key);
-  if (row) await forget(app.db, "log_ip", Number(row));
+  if (row) await forget(app.db, "log_ip_suspicious", { ip_id: Number(row) });
 }

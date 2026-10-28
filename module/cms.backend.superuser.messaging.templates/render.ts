@@ -60,6 +60,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <td>${row.format || "text"}
       <td><small>${firstLine(row.text)}</small>`;
   }) : html`<tr><td colspan=5>${none}`;
+  const samples = await sampleValues(app);
 
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 40rem">
@@ -86,7 +87,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <button name=create>${t`Create`}</button>
     </form>
   </div>
-  ${placeholders(node, await sampleValues(app))}
+  ${placeholders(node, samples)}
 </div>`;
 }
 
@@ -229,7 +230,7 @@ export async function sampleValues(app: App): Promise<Computed> {
     Object.entries(made).map(([name, make]) => [placeholderName(mod, name), make] as const));
   // a preview is not a send: one placeholder that cannot answer must not take the page down
   const values = await Promise.all(made.map(async ([name, make]) =>
-    [name, await make(app, SAMPLE).catch(() => EMPTY) ?? EMPTY] as const
+    [name, await Promise.resolve().then(() => make(app, SAMPLE)).catch(() => EMPTY) ?? EMPTY] as const
   ));
   return Object.fromEntries(values);
 }

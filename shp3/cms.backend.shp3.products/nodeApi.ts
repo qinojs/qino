@@ -20,7 +20,9 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
   }
 
   if ("vat" in vars) {
-    const data = { product_id: String(vars.vat), country: String(vars.country ?? "").toUpperCase() };
+    const page = await node.cms.node(Number(vars.vat));
+    if (!page.exists() || await page.access() < 2) return false;
+    const data = { product_id: String(page.id), country: String(vars.country ?? "").toUpperCase() };
     if (!data.country) return false;
     // An empty rate is not "zero percent", it means "use the shop default".
     if (String(vars.rate ?? "") === "") await db.table("shp3_product_mwst").delete(data);

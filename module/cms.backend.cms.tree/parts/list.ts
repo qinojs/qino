@@ -28,10 +28,10 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const rootId = Number(admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
 
-  const trs: HtmlString[] = [];
+  const trs: Promise<HtmlString>[] = [];
 
   await renderChildren(rootNode, 0);
-  return html.join(trs);
+  return html.async`${trs}`;
 
   async function loopConts(page: Node) {
     const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
@@ -60,9 +60,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         : html`<span class=-toggle></span>`;
 
       // Title cell
-      let titleCell: HtmlString;
+      let titleCell: HtmlString | Promise<HtmlString>;
       if (subAccess < 1) {
-        titleCell = html`<span style="flex:1; color:#bbb">(${await t`no access`})</span>`;
+        titleCell = html.async`<span style="flex:1; color:#bbb">(${t`no access`})</span>`;
       } else {
         const titleObj = await subPage.title();
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
@@ -72,21 +72,19 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         titleCell = html`<input value="${titleText}" ${inputStyle} ${edit}>`;
       }
 
-      const linkCell = html`<a style="vertical-align:middle" href="${await subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`;
-
-      trs.push(html`
+      trs.push(html.async`
 <tr${isCont ? html.raw(' class=-isCont') : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${await t`Set as start point`}" href="${"?rp=" + subPage.id}">${subPage.id}</a>
+    <a title="${t`Set as start point`}" href="?rp=${subPage.id}">${subPage.id}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}
       ${titleCell}
-      ${linkCell}
+      <a style="vertical-align:middle" href="${subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>
     </div>
   <td>${renderOnlineStart(subPage, subAccess)}
-  <td>${await renderOnlineEnd(subPage, subAccess, contsData.onlineEnd)}
-  <td>${await renderAccess(subPage, subAccess, contsData.access)}
+  <td>${renderOnlineEnd(subPage, subAccess, contsData.onlineEnd)}
+  <td>${renderAccess(subPage, subAccess, contsData.access)}
   <td>${renderFlag("visible", subPage, subAccess)}
   <td>${renderFlag("searchable", subPage, subAccess)}
   <td><span>${subPage.vs.module}</span>`);

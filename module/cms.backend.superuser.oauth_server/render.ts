@@ -65,8 +65,8 @@ export async function grants(node: Node): Promise<HtmlString> {
     WHERE t.kind <> ${"code"}
     GROUP BY t.client_id, c.name, t.usr_id, u.username ORDER BY since DESC`;
   const body = rows.length
-    ? html.join(await Promise.all(rows.map((r) => grantRow(node.app, r))))
-    : html`<tr><td colspan=5>${await t`Nobody has authorized a client yet.`}`;
+    ? rows.map((r) => grantRow(node.app, r))
+    : html.async`<tr><td colspan=5>${t`Nobody has authorized a client yet.`}`;
 
   return html.async`<div class=-head>${t`Granted access`} (${rows.length})</div>
   <table class=u2-table>

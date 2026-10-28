@@ -60,6 +60,7 @@ recorded.
 A module declares `export const paymentProvider` (type `Provider`): `methods`, `start`, `sync`, and
 optionally `refund`, which only pays back — the refunded total and the status follow from the amount.
 A method with an empty name stands for the provider itself (`saferpay`: the payer chooses there).
+What a provider reports as `State.data` is stored with the payment; `dataOf(payment)` reads it back.
 
 More, all optional: `slip` — what the payer needs outside a provider's page (a QR bill, an address
 and its QR code; `qr(text)` draws one), shown at `payment/pay/<token>` and on invoices; `watch` —

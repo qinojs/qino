@@ -30,7 +30,7 @@ Deno.test("cms.cont.flexible: render concatenates child html", async () => {
       { html: () => "<p>B</p>" },
     ],
   };
-  assertEquals(await cms.node.render(node as any, { vars: {} }), "<div><p>A</p><p>B</p></div>");
+  assertEquals(await cms.node.render(node as any), "<div><p>A</p><p>B</p></div>");
 });
 
 Deno.test("cms.cont.flexible: render initializes default child when empty", async () => {
@@ -46,7 +46,8 @@ Deno.test("cms.cont.flexible: render initializes default child when empty", asyn
       initialized = true;
     },
   };
-  assertEquals(await cms.node.render(node as any, { vars: {} }), "<div><p>Init</p></div>");
+  // a render var cannot choose the module, only the site setting does
+  assertEquals(await (cms.node.render as any)(node, { vars: { "init-child-module": "cms.backend.superuser.db" } }), "<div><p>Init</p></div>");
   assertEquals(calls, ["cms.cont.text"]);
   assertEquals(settings.__inited(), true); // remembered, so the next render does not start over
   assertEquals(settings["default module"](), "cms.cont.text"); // the panel's picker starts there
@@ -60,6 +61,6 @@ Deno.test("cms.cont.flexible: an emptied container stays empty", async () => {
     conts: () => [],
     cont: (_name: string, module: string) => void calls.push(module),
   };
-  assertEquals(await cms.node.render(node as any, { vars: {} }), "<div></div>");
+  assertEquals(await cms.node.render(node as any), "<div></div>");
   assertEquals(calls, []);
 });

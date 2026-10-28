@@ -5,6 +5,8 @@ function. If a module has `template.html` next to its `plugin.ts`, this module
 provides `cms.node.render` from it. Local templates are reparsed when they change;
 remote templates are cached for the process lifetime, like their plugin.
 
+Writes through `fs` are seen at once, external edits after `fs.ttl()`.
+
 `renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
 other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.
 
@@ -40,7 +42,7 @@ return html.async`
 
 ## `<cms-image name=... />`
 
-Editable image via `cms.image2`. Other attributes are passed as options
+Editable image via `cms.image`. Other attributes are passed as options
 (`width`/`height` as numbers, bare attributes as `true`). With `localized`, each
 language has its own image (`cms.fileLang`).
 
@@ -53,8 +55,8 @@ language has its own image (`cms.fileLang`).
 const image1 = await node.file("image1");
 const logo   = await cms.fileLang(node, "logo");
 return html.async`
-  ${cms_image2(image1, { width: 110, height: 110, fit: "contain", if: 1 })}
-  ${logo && cms_image2(logo, { width: 110, height: 110, if: 1 })}`;
+  ${cms_image(image1, { width: 110, height: 110, fit: "contain", if: 1 })}
+  ${logo && cms_image(logo, { width: 110, height: 110, if: 1 })}`;
 ```
 
 ## `<cms-cont name=... />`
@@ -142,6 +144,15 @@ and edit mode.
 <a href="tel:{{identity.contact.telephone}}">
   {{identity.contact.telephone|Telephone}}
 </a>
+```
+
+`{{settings.<path>}}` reads a scalar setting of the node being rendered; the
+module's `settingsSchema` makes it editable and gives its default. With
+`tag=`, `cms-text` takes its wrapper from it — only a tag name, else the
+template's own.
+
+```html
+<h2 cms-text=title tag="{{settings.heading|h2}}" if></h2>
 ```
 
 ## Ideas (not implemented)

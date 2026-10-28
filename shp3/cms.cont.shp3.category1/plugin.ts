@@ -23,19 +23,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const withQuantity = await node.settings.quantity() !== false;
   const width = Number(await node.settings.width()) || 300;
 
-  const items: HtmlString[] = [];
+  const items: Promise<HtmlString>[] = [];
   for (const child of products.values()) {
     const product = await ensureProduct(child);
     if (!product) continue;
-    const prices = await product.pricesFor({ currency, quantity: 1 });
     // The regular price is the one before any time-limited offer — same amount, no moment.
-    const regular = await product.pricesFor({ currency, quantity: 1, time: 0 });
+    const [prices, regular] = await Promise.all([
+      product.pricesFor({ currency, quantity: 1 }),
+      product.pricesFor({ currency, quantity: 1, time: 0 }),
+    ]);
     const cheaper = prices.gross < regular.gross;
 
-    items.push(html`<div class=-item itemid=${child.id}>
-      <a href="${await child.url()}" class=-info>
-        ${await image(child, width)}
-        <h2 class=-title>${await child.title(ctx.lang)}</h2>
+    items.push(html.async`<div class=-item itemid=${child.id}>
+      <a href="${child.url()}" class=-info>
+        ${image(child, width)}
+        <h2 class=-title>${child.title(ctx.lang)}</h2>
         <div class=-price>
           <span class=${cheaper ? "-offer" : "-normal"}>${currency ? currency.show(prices.gross) : prices.gross}</span>
           ${cheaper ? html`<s class=-regular>${currency ? currency.show(regular.gross) : regular.gross}</s>` : ""}
@@ -44,7 +46,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       <form shp3-add class=-buy>
         <input type=hidden name=product_id value=${child.id}>
         ${withQuantity ? html`<input type=number name=quantity min=1 step=1 value=1>` : ""}
-        <button>${await t`Add to cart`}</button>
+        <button>${t`Add to cart`}</button>
       </form>
     </div>`);
   }

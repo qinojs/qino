@@ -7,10 +7,10 @@ import type { Node } from "@qino/qino/cms";
 export const cms = { node: { js: ["pub/main.js"], render } };
 
 // The secret is only ever fetched by the client, so a cached page cannot carry one.
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
-  u2.assets(ctx, ["el/qrcode/qrcode.js"]);
+  u2.assets(ctx, ["el/qrcode/qrcode.js", "el/time/time.js"]);
   return html.async`<div>
   <div data-apps>${t`Loading…`}</div>
   <div data-setup hidden></div>

@@ -1,4 +1,5 @@
 import { unixTime } from "@qino/qino";
+import { today } from "@qino/qino/fin";
 import qrcode from "nayuki-qr-code-generator";
 
 import { urls } from "./lib/url.ts";
@@ -77,6 +78,10 @@ export async function methods(app: App, offer: Offer): Promise<{ method: string;
 /** The `ref` of what follows from a payment elsewhere: a move on a user's credit, an entry. */
 export const refOf = (id: number): string => `fin.payment:${id}`;
 
+/** A payment's `data`: what its provider stored as `State.data`. */
+export const dataOf = (payment: { data?: unknown }): Record<string, any> =>
+  JSON.parse(String(payment.data ?? "{}")) ?? {};
+
 /** What every payment has. `ref` is the consumer's: `<module>:<id>`, found again in `payment:change`. */
 type Base = { amount: number; currency: string; ref?: string; description?: string; usrId?: number; payer?: Payer };
 
@@ -118,20 +123,23 @@ export async function create(
 
 /**
  * Record a payment that happened without a provider flow: cash, a bank transfer assigned by hand.
- * `provider` names the source. Paid in full unless `paid` says otherwise.
+ * `provider` names the source. Paid in full unless `paid` says otherwise; `date` is when the money
+ * moved (YYYY-MM-DD), today unless given.
  */
 export async function record(
   app: App,
-  opt: Base & { direction: "in" | "out"; provider: string; method?: string; paid?: number },
+  opt: Base & { direction: "in" | "out"; provider: string; method?: string; paid?: number; date?: string },
 ): Promise<number> {
   const paid = opt.paid ?? opt.amount;
   if (!Number.isSafeInteger(paid) || paid < 0) throw new Error("paid must be an integer in minor units");
+  if (opt.date != null && !/^\d{4}-\d\d-\d\d$/.test(opt.date)) throw new Error("date must be YYYY-MM-DD");
   const id = await insert(app, opt, {
     direction: opt.direction,
     provider: opt.provider,
     method: opt.method ?? null,
     status: "paid",
     paid,
+    date: opt.date ?? today(),
   });
   await app.fire("payment:change", { payment: await get(app, id) });
   return id;

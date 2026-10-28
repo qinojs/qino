@@ -40,7 +40,7 @@ export async function call(app: App, method: string, params: Record<string, unkn
 // deno-lint-ignore no-explicit-any
 const identities = new WeakMap<App, { token: string; me: Promise<any> }>();
 
-/** The bot behind the configured token: `id`, `username`, `first_name`, … */
+/** The bot behind the configured token (`id`, `username`, `first_name`, …) — throws when no token is set. */
 // deno-lint-ignore no-explicit-any
 export async function getMe(app: App): Promise<any> {
   const token = await botToken(app);

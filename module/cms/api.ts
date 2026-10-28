@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { $item, s, sql, sqlSearch, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
+import { $item, s, sql, sqlSearch, Access, AccessError, ApiError, ConflictError, NotFoundError, ValidationError, itemReadDeep } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
@@ -86,6 +86,13 @@ const contentsJson = (node: Node) => fns.treeToJson({
 });
 // Reads are sanitized like output (the stored text is raw). cmspid:// links stay unresolved, so
 // they survive editing.
+/** `lang`, else the request's. A translation in a language the app doesn't know would be kept, but never
+ *  shown: refused, so the caller learns it. */
+const knownLang = (ctx: Ctx, lang = ctx.lang) => {
+  if (!ctx.app.languages.all.includes(lang)) throw new ApiError(422, `Unknown language "${lang}"`);
+  return lang;
+};
+
 const textsJson = async (node: Node, lang?: string) => {
   const texts = (await node.texts()).entries();
   if (!lang) return Object.fromEntries(texts.map(([name, text]) => [name, text.id]));
@@ -94,11 +101,13 @@ const textsJson = async (node: Node, lang?: string) => {
   ));
 };
 
-/** A node's contents. Only complete after a render: modules create conts and texts lazily. */
+/** A node's contents, and the settings its module builds them from (values only; the schema at
+ *  settings). Only complete after a render: modules create conts and texts lazily. */
 const shape = async (node: Node) => ({
   contents: await contentsJson(node),
   texts:    await textsJson(node),
   files:    await fns.nodeFilesJson(node),
+  settings: await itemReadDeep(node.settings[$item]),
 });
 
 /** online_start / online_end: ISO string or Unix timestamp; "" removes the limit (inherit). */
@@ -109,7 +118,7 @@ const onlineDesc = (sample: string) => `ISO string ("${sample}"), Unix timestamp
 // ───── Node ───────────────────────────────────────────────────────────────
 
 const node = {
-  paramSchema: s.number().describe("Node-ID"),
+  paramSchema: s.number().describe("Node id: a page, or a content block"),
 
   resolve: async (id: number, ctx: Ctx) => {
     const n = await cms(ctx.app).node(id);
@@ -134,7 +143,7 @@ const node = {
     description: "Update node properties; only the given fields change. Returns the node as JSON.",
     ...nodeWrite,
     input: s.object({
-      name: s.optional(s.string()).describe("Internal name"),
+      name: s.optional(s.string()).describe("Internal name; superuser only — code finds pages by it"),
       visible: s.optional(s.boolean()),
       searchable: s.optional(s.boolean()),
       onlineStart: s.optional(s.string()).describe(onlineDesc("2024-01-01T00:00:00")),
@@ -142,7 +151,9 @@ const node = {
       // title: per language — PUT /cms/node/:node/title
       // module: own gate (requireModuleAdmin) and a recursive mode — PUT /cms/node/:node/module
     }),
-    execute: async ({ node, name, visible, searchable, onlineStart, onlineEnd }: any) => {
+    execute: async ({ node, name, visible, searchable, onlineStart, onlineEnd }: any, ctx: Ctx) => {
+      // node.child(name) is how code finds structure (system/layout …): a renamed page would take its place
+      if (name !== undefined && !ctx.user?.superuser) throw new AccessError();
       if (name !== undefined) await node.set("name", name);
       if (visible !== undefined) await node.set("visible", visible ? 1 : 0);
       if (searchable !== undefined) await node.set("searchable", searchable ? 1 : 0);
@@ -206,7 +217,7 @@ const node = {
       input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
       output: s.object({ changed: s.boolean() }),
       execute: async ({ node, value, lang }: any, ctx: Ctx) => {
-        const changed = await node.title(lang ?? ctx.lang, value);
+        const changed = await node.title(knownLang(ctx, lang), value);
         return { changed: !!changed };
       },
     },
@@ -249,7 +260,7 @@ const node = {
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),
         execute: async ({ node, name, value, lang }: any, ctx: Ctx) => {
-          const changed = await node.text(name, lang ?? ctx.lang, value);
+          const changed = await node.text(name, knownLang(ctx, lang), value);
           return { changed: !!changed };
         },
       },
@@ -311,6 +322,7 @@ const node = {
           if (await cp.access() < 1) return false;
         });
         if (!copied) throw new AccessError();
+        await copied.set("name", null); // a second page of that name beside the first would confuse child(name)
         await copied.changeUser(ctx.user, 3);
         const titleStr = String(await copied.showTitle()).trim();
         await copied.title(ctx.lang, titleStr ? titleStr + " (copy)" : "");
@@ -339,7 +351,7 @@ const node = {
 
   shape: {
     get: {
-      description: "What this node holds: content blocks, text field names, files",
+      description: "What this node holds: content blocks, text field names, files, settings",
       ...nodeRead,
       execute: async ({ node }: { node: Node }, ctx: Ctx) => {
         await asMainNode(node, ctx);
@@ -671,7 +683,7 @@ export const api = {
 
   module: {
     ":name": {
-      paramSchema: s.string().describe("Module name, e.g. \"cms.cont.image2\""),
+      paramSchema: s.string().describe("Module name, e.g. \"cms.cont.image\""),
       get: {
         description: "One assignable module with its settings schema",
         access: Access.USER,
@@ -752,7 +764,7 @@ export const api = {
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language") }),
         execute: async ({ id, value, lang }: any, ctx: Ctx) => {
           const db = ctx.app.db;
-          const lang_ = lang ?? ctx.lang;
+          const lang_ = knownLang(ctx, lang);
           const row = await db.row`SELECT name, page_id FROM page_text WHERE text_id = ${id}`;
           if (row) {
             const n = await cms(ctx.app).node(row.page_id);

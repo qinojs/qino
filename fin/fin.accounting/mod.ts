@@ -1,4 +1,4 @@
-import { getCtx, sql, unixTime } from "@qino/qino";
+import { requestStorage, sql, unixTime } from "@qino/qino";
 import { addDays, mainCurrency, today } from "@qino/qino/fin";
 
 import type { App, DbFile, Row } from "@qino/qino";
@@ -180,10 +180,4 @@ export async function reopen(app: App): Promise<void> {
 }
 
 /** Who books, inside a request; nobody for an automatic entry. */
-function userId() {
-  try {
-    return getCtx().userId || null;
-  } catch {
-    return null;
-  }
-}
+const userId = () => requestStorage.getStore()?.userId || null;

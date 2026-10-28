@@ -1,4 +1,4 @@
-import { toFileUrl } from "@std/path";
+import { pathToFileURL } from "node:url";
 import { errMsg, getCtx, html, moduleIcon, requireStepUp } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
@@ -8,9 +8,6 @@ import type { App, HtmlString, Module, Store } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const name = "cms.backend.superuser.module";
-
-// A typed URL wins, everything else is a path below the app.
-const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.dir)).href;
 
 // Stores decide where server code may come from, so only superusers may change them — page
 // access is not enough.
@@ -67,7 +64,7 @@ function storeLabel(app: App, url: string) {
   const u = new URL(url);
   if (u.host) return u.host;
   const dir = decodeURIComponent(new URL(".", url).pathname);
-  const own = toFileUrl(app.dir).pathname;
+  const own = pathToFileURL(app.dir).pathname;
   return dir.startsWith(own) ? "./" + dir.slice(own.length) : dir.split("/").filter(Boolean).slice(-2).join("/") || url;
 }
 
@@ -239,7 +236,8 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<{ 
     switch (act) {
       case "addStore":
         if (!isSuperuser()) throw new Error("Only a superuser can add a store");
-        await app.stores.install(resolve(app, store));
+        // a typed URL wins, everything else is a path below the app
+        await app.stores.install(new URL(store, pathToFileURL(app.dir)).href);
         return { ok: true };
       case "writeIndex":
         return { ok: true, message: await writeIndex(target()) };

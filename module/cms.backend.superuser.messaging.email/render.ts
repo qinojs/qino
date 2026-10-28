@@ -125,7 +125,7 @@ export async function sending(node: Node): Promise<HtmlString> {
     <small data-settings-state aria-live=polite></small>
   </form>
   <div class=-foot>
-    <small>${t`Replies go to`} <b>${replyTo || await t`nowhere — no system address`}</b>.
+    <small>${t`Replies go to`} <b>${replyTo || t`nowhere — no system address`}</b>.
     ${debug ? html`<br>${redirected}` : ""}</small>
   </div>`;
 }
@@ -146,6 +146,7 @@ export async function inbound(node: Node): Promise<HtmlString> {
     <span class=u2-badge>${receiving ? t`polling` : t`off`}</span></div>
   <form class=-body data-settings>
     <div class="u2-table -Fields -NoSideGaps">${fields(own, values)}</div>
+    <small>${t`Imports every mail in the mailbox, read ones too, and leaves its flags unchanged.`}</small>
     <details style="margin-block:.5em; border:0">
       <summary>${t`Advanced`}</summary>
       <div class="u2-table -Fields">${fields(own, values, true)}</div>
@@ -209,7 +210,7 @@ export async function send(node: Node): Promise<HtmlString> {
       ${t`Address`} <input type=email name=address placeholder="name@example.com">
       ${t`Subject`} <input name=title placeholder="${t`the first line of the text`}">
       ${t`Template`} <select name=template>
-        ${main ? html`<option value="">${await t`default`} (${main.name})</option>` : ""}
+        ${main ? html.async`<option value="">${t`default`} (${main.name})</option>` : ""}
         <option value="-">${t`none`}</option>
         ${own.filter((f) => !f.main).map((f) => html`<option value="${f.name}">${f.name}</option>`)}
       </select>

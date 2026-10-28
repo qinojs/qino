@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { errMsg, getCtx, sql } from "@qino/qino";
-import { run } from "@qino/qino/ai1.tools";
+import { run } from "@qino/qino/ai.tools";
 
 import type { App, Sql, Tool } from "@qino/qino";
 
@@ -39,7 +39,7 @@ const trySql = (app: App): Tool => ({
   execute: (args: any) => tryIt(app, args?.sql),
 });
 
-// Natural-language → SQL via ai1, checked with try_sql. Returns the generated SQL (never auto-run).
+// Natural-language → SQL via ai, checked with try_sql. Returns the generated SQL (never auto-run).
 // `current` is the query already in the editor, passed so the model can refine it.
 export function askDbAi(app: App, question: string, schema: string, current = ""): Promise<{ sql: string; note: string }> {
   const system = `You are a SQL assistant for a ${app.db.dialect} database.

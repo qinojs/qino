@@ -27,6 +27,16 @@ Tabelle `oauth_provider`:
 | `scopes` | leer = `openid email profile` |
 | `auto_create` | `1` = unbekannte, verifizierte User anlegen, `0` = nur bestehende |
 | `allowed_domains` | optional, kommagetrennt (z.B. `example.com`) — begrenzt öffentliche Provider |
+| `trust_email` | `1` = E-Mails ohne Bestätigungs-Flag gelten für **neue** Konten als bestätigt (Facebook liefert keins); bestehende Konten nur über Verknüpfung |
+| `redirect_uri` | optional, geteilter Callback statt `{appUrl}oauth/callback/<name>` (siehe `auth.oauth.relay`) |
+| `response_mode` | optional, z.B. `form_post` (Apple verlangt es für `name`/`email`) |
+| `key_id` / `team_id` | gesetzt = `client_secret` ist ein privater ES256-Schlüssel; das Modul signiert daraus pro Login ein JWT (Apple) |
+
+## Viele Domains, ein Eintrag beim Provider
+
+Mit `redirect_uri` zeigt der Provider auf einen geteilten Callback, z.B. **`auth.oauth.relay`** — dann
+muss beim Provider nicht jede Domain eingetragen werden. Die eigene Callback-URL reist dabei im `state`
+mit.
 
 ## Wer mit wem verknüpft ist
 
@@ -45,15 +55,19 @@ gelöscht, verschwinden seine Verknüpfungen.
 - **OIDC:** `google`, `microsoft`, `apple`, `auth0`, `gitlab`, `linkedin`, `slack`
   (`<tenant>` bei `microsoft`/`auth0` durch deine Domain/Tenant ersetzen).
 - **OAuth2:** `github`, `discord`.
-- **`apple`** braucht als `client_secret` ein kurzlebiges ES256-JWT statt eines festen
-  Secrets — das Modul erzeugt es nicht.
+- **`apple`**: `client_id` = Services ID, `client_secret` = Inhalt der `.p8`-Datei, dazu `key_id`
+  und `team_id` — das kurzlebige JWT erzeugt das Modul selbst. Antwortet per `form_post`; der
+  Callback macht daraus einen GET, damit das Session-Cookie (`SameSite=Lax`) mitkommt.
+- **`microsoft`** mit `common`: `iss` nennt den Tenant des Users, geprüft gegen `{tenantid}` aus der
+  Discovery. Microsoft schickt kein `email_verified` — in der App-Registrierung das optionale Claim
+  `xms_edov` aktivieren, sonst gelten E-Mails als unbestätigt.
 
 Weitere OAuth2-Provider: neue Zeile mit `authorize_url`, `token_url`, `userinfo_url`
 (+ ggf. `email_url`).
 
 ## Login starten
 
-**`cms.cont.oauth`** zeigt einen „Log in with …"-Link pro Provider, **`cms.cont.my.oauth`**
+**`cms.cont.login.oauth`** zeigt einen „Log in with …"-Link pro Provider, **`cms.cont.my.oauth`**
 zeigt dem Benutzer seine Verknüpfungen und verbindet weitere. Oder direkt verlinken:
 
 ```html
@@ -83,8 +97,6 @@ Optional `?return_to=/pfad` (nur lokale Pfade werden akzeptiert).
 Kern:
 - **JWKS-Signaturprüfung** als Defense-in-Depth; **`azp`** prüfen bei mehreren `aud`.
 - **Refresh-Tokens / RP-Logout** (`end_session_endpoint`): nicht implementiert.
-- **Apple client_secret-JWT** (ES256) generieren; **Microsoft Multi-Tenant** (`iss` mit
-  Tenant-ID) unterstützen.
 - **Zwei Logins parallel** (zwei Tabs) überschreiben sich in der Session → Fix: per `state`
   speichern.
 

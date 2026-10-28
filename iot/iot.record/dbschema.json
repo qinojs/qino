@@ -1,0 +1,62 @@
+{
+  "properties": {
+    "iot_number": {
+      "additionalProperties": {
+        "properties": {
+          "datapoint": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "iot_datapoint"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "x-index": "primary"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "datapoint",
+          "time",
+          "value"
+        ]
+      }
+    },
+    "iot_state": {
+      "additionalProperties": {
+        "properties": {
+          "datapoint": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "iot_datapoint"
+          },
+          "time": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "x-index": "primary"
+          },
+          "value": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": -128,
+            "maximum": 127
+          }
+        },
+        "required": [
+          "datapoint",
+          "time",
+          "value"
+        ]
+      }
+    }
+  }
+}

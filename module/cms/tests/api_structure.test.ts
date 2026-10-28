@@ -41,7 +41,7 @@ Deno.test("cms: node API tools include path parameters and required input", () =
   assertEquals(title?.parameters, {
     type: "object",
     properties: {
-      node: { type: "number", description: "Node-ID" },
+      node: { type: "number", description: "Node id: a page, or a content block" },
       value: { type: "string" },
       lang: { type: "string", description: 'Language code, e.g. "de". Default: current language.' },
     },
@@ -52,7 +52,7 @@ Deno.test("cms: node API tools include path parameters and required input", () =
   assertEquals(copy?.parameters, {
     type: "object",
     properties: {
-      node: { type: "number", description: "Node-ID" },
+      node: { type: "number", description: "Node id: a page, or a content block" },
       deep: { type: "boolean", description: "If true, sub-pages are copied too" },
     },
     required: ["node"],

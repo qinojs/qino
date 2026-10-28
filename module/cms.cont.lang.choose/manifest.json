@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.lang.choose",
+  "description": "Language links or selection menu.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

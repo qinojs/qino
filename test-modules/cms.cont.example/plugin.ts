@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -16,7 +16,7 @@ async function render(node: Node) {
   return html.async`
     <div style="background:${color}">
       <h2>${cms.text(node, "title", { tag: "span", initial: { de: "Titel", en: "Title" } })}</h2>
-      ${image && cms_image2(image, { width: 110, height: 110, fit: "contain" })}
+      ${image && cms_image(image, { width: 110, height: 110, fit: "contain" })}
       <div class=-text>${cms.text(node, "main", { initial: { de: "Text hier...", en: "Text here..." } })}</div>
       <div cms-part=teaser>${teaser(node)}</div>
     </div>`;

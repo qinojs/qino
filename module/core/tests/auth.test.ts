@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { attempt, beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
+import { initRequest } from "../lib/ctx/init.ts";
 
 Deno.test("loginFromRequest: login form requires token", async () => {
   const ctx = await testContext({
@@ -221,5 +222,22 @@ Deno.test("tryLogin: a client this user knows is not made to wait", async () => 
 
     await app.db.table("client_usr").insert({ client_id: 1, usr_id: 7 });
     assertEquals(await tryLogin(ctx, "ann@example.test", "right"), "");
+  });
+});
+
+Deno.test("initRequest: a deactivated user's session ends with the next request", async () => {
+  await withApp(async (app, ctx) => {
+    ctx.sess.data.core.userId(7);
+    const request = async () => {
+      const next = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
+      next.sess = ctx.sess;
+      next.clientId = ctx.clientId;
+      await initRequest(next);
+      return next.userId;
+    };
+    assertEquals(await request(), 7);
+    await (await app.db.table("usr").get(7))!.$set({ active: false });
+    assertEquals(await request(), 0);
+    assertEquals(ctx.sess.data.core.userId(), undefined); // gone from the session, not just ignored
   });
 });

@@ -8,7 +8,7 @@ WebAuthn-Modul (Passkeys, Fingerabdruck, Face ID, Hardware-Key). Unabhängig vom
 app.modules.add(import.meta.resolve("../qino/module/auth.webauthn/plugin.ts"));
 
 // Optional:
-app.modules.add(import.meta.resolve("../qino/module/cms.cont.webauthn/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.cont.login.webauthn/plugin.ts"));
 app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.auth.webauthn/plugin.ts"));
 ```
 
@@ -42,11 +42,11 @@ import { WebAuthn } from "/m/auth.webauthn/pub/webauthn.js";
 
 const wa = new WebAuthn({ apiBase: "/cms1/api/auth.webauthn" });
 await wa.register({ name: "Mein MacBook" });
-await wa.login({ email: "user@example.com" });
+await wa.login();
 await wa.loginConditional(); // Autofill-Passkey (Conditional UI), null wenn nicht verfügbar
 ```
 
-Fertige UI liefern die Content-Module `cms.cont.webauthn` (anmelden) und `cms.cont.my.webauthn`
+Fertige UI liefern die Content-Module `cms.cont.login.webauthn` (anmelden) und `cms.cont.my.webauthn`
 (eigene Passkeys verwalten) — siehe unten.
 
 ## Step-up Authentication
@@ -62,12 +62,11 @@ Der Nachweis landet über [auth](../auth/) in der Session. Serverseitig verlangt
 
 ## CMS-Module
 
-**`cms.cont.webauthn`** — Content-Node zum Anmelden, Settings:
+**`cms.cont.login.webauthn`** — Content-Node zum Anmelden, Settings:
 
 | Setting               | Beschreibung                                        |
 |-----------------------|-----------------------------------------------------|
 | `apiBase`             | URL der API (Standard: aus App-Pfad abgeleitet)     |
-| `showPasswordFallback`| Zeigt zusätzlich Passwort-Formular                  |
 | `redirectAfterLogin`  | Page-ID für Weiterleitung nach Login                |
 
 **`cms.cont.my.webauthn`** — Content-Node, auf dem der angemeldete Benutzer seine eigenen Passkeys

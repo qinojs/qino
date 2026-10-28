@@ -84,7 +84,7 @@ type Values = {
   count?: number | null;
   start?: string;
   end?: string | null;
-  ref?: string;
+  ref?: string | null;
 };
 
 /** The columns for `values`, as far as given. */
@@ -115,11 +115,18 @@ export async function subscribe(app: App, values: Values & { usrId: number; star
   if (!values.planId && (!values.name || values.price == null || !values.currency)) {
     throw new Error("fin.subscription: a plan, or a name, price and currency");
   }
-  return Number(await app.db.table("subscription").insert({
+  const id = Number(await app.db.table("subscription").insert({
     ...fieldsOf(values),
     usr_id: values.usrId,
     created: unixTime(),
   }));
+  await saved(app, id);
+  return id;
+}
+
+/** Tell who listens what a subscription is now. */
+async function saved(app: App, id: number) {
+  await app.fire("subscription:save", { subscription: await app.db.row`SELECT * FROM subscription WHERE id = ${id}` });
 }
 
 /**
@@ -134,7 +141,9 @@ export async function update(app: App, id: number, values: Values): Promise<void
     throw new Error("fin.subscription: billed already — the start stays");
   }
   const fields = fieldsOf(values);
-  if (Object.keys(fields).length) await app.db.table("subscription").update(id, fields);
+  if (!Object.keys(fields).length) return;
+  await app.db.table("subscription").update(id, fields);
+  await saved(app, id);
 }
 
 /** The periods of a subscription billed so far, the latest first, with their invoices. */
@@ -172,9 +181,8 @@ export async function bill(app: App, { until }: { until?: string } = {}): Promis
       const following = addMonths(start, Number(sub.count) * (sub.unit === "month" ? 1 : 12));
       const currency = String(sub.currencyCode);
       const key = `${sub.usr_id}:${currency}`;
-      const group = groups.get(key) ?? { usrId: Number(sub.usr_id), currency, periods: [] as Row[] };
-      group.periods.push({ ...sub, period_start: start, period_end: addDays(following, -1) });
-      groups.set(key, group);
+      groups.getOrInsertComputed(key, () => ({ usrId: Number(sub.usr_id), currency, periods: [] as Row[] }))
+        .periods.push({ ...sub, period_start: start, period_end: addDays(following, -1) });
       start = following;
     }
   }

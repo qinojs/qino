@@ -1,10 +1,10 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-
 import { create, issue } from "@qino/qino/fin.invoice";
 import { setTransport } from "@qino/qino/messaging.email";
 
 import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
+import { backendRowWidget } from "../plugin.ts";
 import { render } from "../render.ts";
 
 import type { App } from "@qino/qino";
@@ -206,5 +206,57 @@ Deno.test("issued, it goes to the customer at once where asked to, and says when
     assertEquals(mails.length, 1);
     const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, `data-sent="${id}"`);
+  });
+});
+
+Deno.test("a customer's page shows their invoices as a card, and nothing without any", async () => {
+  await withApp(async (app, as, node) => {
+    const id = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, given_name: "Anna" }));
+    const page = await node.page();
+    const card = () => as("http://qino.test/", () => backendRowWidget.usr(app, id, page)).then(String);
+    assertEquals(await card(), "");
+    const draft = Number(await create(app, { currency: "CHF", lines: [], usrId: id }));
+    const out = await card();
+    assertStringIncludes(out, `?invoice=${draft}">#${draft}</a>`);
+    assertStringIncludes(out, "draft");
+  });
+});
+
+Deno.test("the list shows overdue as status, the due date on hover, no column of its own", async () => {
+  await withApp(async (app, as, node) => {
+    const late = Number(await create(app, { currency: "CHF", date: "2020-01-01", term: 30, lines: [{ name: "Hosting", price: 24000 }] }));
+    await issue(app, late);
+    const fresh = Number(await create(app, { currency: "CHF", lines: [{ name: "Domain", price: 1000 }] }));
+    await issue(app, fresh);
+    const page = String(await as("http://qino.test/backend/invoices", () => render(node)));
+    assert(!page.includes("<th>Due") && !page.includes("<th>Paid") && page.includes("<th>#"));
+    assertStringIncludes(page, `<span title="Due 2020-01-31"><small class=u2-badge style="background:var(--red)">overdue</small></span>`);
+    assertEquals(page.match(/>overdue</g)?.length, 1); // the fresh one is open, not overdue
+    // the party is text, cut by CSS where long, whole in its title — not a link of its own
+    const party = await app.db.table("usr").insert({ active: 0, pw: "", superuser: 0, given_name: "", family_name: "", organization: "Lange Firma AG" });
+    await issue(app, Number(await create(app, { currency: "CHF", usrId: Number(party), party: { name: "Lange Firma AG" }, lines: [{ name: "Hosting", price: 100 }] })));
+    assertStringIncludes(String(await as("http://qino.test/backend/invoices", () => render(node))), `<span class=-party title="Lange Firma AG">Lange Firma AG</span>`);
+  });
+});
+
+Deno.test("the list says what of an open invoice is paid already, only where part of it is", async () => {
+  await withApp(async (app, as, node) => {
+    const id = Number(await create(app, { currency: "CHF", lines: [{ name: "Hosting", price: 24000 }] }));
+    await issue(app, id);
+    await app.db.exec`UPDATE invoice SET paid = 10000 WHERE id = ${id}`;
+    const page = String(await as("http://qino.test/backend/invoices", () => render(node)));
+    assert(/<small title="Paid">CHF\s100\.00<\/small>/.test(page));
+  });
+});
+
+Deno.test("a party's invoices: the list filters by it, its card links there once there are more than it shows", async () => {
+  await withApp(async (app, as, node) => {
+    const usr = Number(await app.db.table("usr").insert({ active: 0, pw: "", superuser: 0, given_name: "", family_name: "", organization: "Viel AG" }));
+    for (let i = 0; i < 11; i++) await create(app, { currency: "CHF", usrId: usr, party: { name: "Viel AG" }, lines: [{ name: "x", price: 100 }] });
+    await create(app, { currency: "CHF", party: { name: "Andere AG" }, lines: [{ name: "y", price: 100 }] });
+    const list = String(await as(`http://qino.test/backend/invoices?usr=${usr}`, () => render(node)));
+    assert(list.includes("Viel AG") && !list.includes("Andere AG"));
+    const card = String(await as("http://qino.test/", async () => backendRowWidget.usr(app, usr, await node.page())));
+    assertStringIncludes(card, `?usr=${usr}">All 11 invoices</a>`);
   });
 });

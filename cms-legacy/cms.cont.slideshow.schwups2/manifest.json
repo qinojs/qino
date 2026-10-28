@@ -3,7 +3,7 @@
   "description": "Legacy image slideshow.",
   "dependencies": [
     "cms",
-    "cms.image2"
+    "cms.image"
   ],
   "files": [
     "manifest.json",

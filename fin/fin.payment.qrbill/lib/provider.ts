@@ -8,6 +8,12 @@ import { isQrIban, qrr, scor } from "./reference.ts";
 import type { App, Row } from "@qino/qino";
 import type { Provider } from "@qino/qino/fin.payment";
 
+// swissqrbill's typings name SVGElement, which deno's server types lack; only the svg string is used
+declare global {
+  // deno-lint-ignore no-empty-interface
+  interface SVGElement {}
+}
+
 /** The currencies a QR bill knows. */
 const CURRENCIES = new Set(["CHF", "EUR"]);
 const LANGUAGES = new Set(["DE", "FR", "IT", "EN"]);

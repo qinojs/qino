@@ -3,7 +3,7 @@ import { hee } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Replaces PHP's `cms_image2_bg()` (preview + lazy size swap) with a plain CSS background, since
- *  qino's cms.image2 only has `<cms-image2>`. The file's focus point becomes `background-position`. */
+ *  qino's cms.image only has `<cms-image>`. The file's focus point becomes `background-position`. */
 export async function backgroundStyle(node: Node, fileName: string, params: Record<string, unknown> = { w: 1920, q: 78 }): Promise<string> {
   const file = await node.file(fileName);
   if (!await file.exists()) return "";

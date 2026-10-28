@@ -7,7 +7,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name } = manifest;
 
-const fakeNode = (dir: string, module = name, access = 2) => ({
+const fakeNode = (dir: string, module = name, access = 3) => ({
   id: 7,
   vs: { module },
   exists: () => true,
@@ -19,7 +19,7 @@ const fakeNode = (dir: string, module = name, access = 2) => ({
   },
 });
 
-const fakeCtx = (dir: string, module = name, access = 2) => {
+const fakeCtx = (dir: string, module = name, access = 3) => {
   const node = fakeNode(dir, module, access);
   const app = { assetRev: 0 };
   fakeCms(app, { node: () => node });
@@ -102,14 +102,16 @@ Deno.test("cms.cont.html api: rejects nodes of another module", async () => {
   }
 });
 
-Deno.test("cms.cont.html api: requires edit access to the node", async () => {
+Deno.test("cms.cont.html api: code needs admin access, edit access is not enough", async () => {
   const dir = await Deno.makeTempDir() + "/";
   try {
-    const ctx = fakeCtx(dir, name, 1);
-    await assertRejects(
-      () => requestStorage.run(ctx as any, () => invoke(api, "GET", "/node/7/codefiles/css")),
-      AccessError,
-    );
+    for (const access of [1, 2]) {
+      const ctx = fakeCtx(dir, name, access);
+      await assertRejects(
+        () => requestStorage.run(ctx as any, () => invoke(api, "GET", "/node/7/codefiles/css")),
+        AccessError,
+      );
+    }
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

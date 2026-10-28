@@ -126,7 +126,7 @@ export async function document(
 </table>
 ${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}
 </main>
-${(await slips()).map((slip) => html`<div class=slip>${html.raw(slip)}</div>`)}
+${slips().then((list) => list.map((slip) => html`<div class=slip>${html.raw(slip)}</div>`))}
 `);
   });
 }
@@ -174,10 +174,12 @@ async function organization(app: App): Promise<Record<string, any>> {
   return { name, legalName, vatID, address: Object.fromEntries(keys.map((k, i) => [k, address[i]])) };
 }
 
+/** The logo inside the document: the PDF is printed without asking the network, and needs no public address. */
 async function logoUrl(app: App) {
   const logo = await file(app, "logo").catch(() => undefined);
-  const path = await logo?.url({ h: 160 }).catch(() => undefined);
-  return path ? new URL(path, await app.url()).href : undefined;
+  const { path, mime } = await logo?.transform({ h: 160 }).catch(() => undefined) ?? {};
+  if (!path || !mime) return;
+  return `data:${mime};base64,${(await fs.bytes(path)).toBase64()}`;
 }
 
 /** The mail an invoice goes out with, in its language: the subject, a few lines, the PDF. A

@@ -54,7 +54,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
     app.db.query`SELECT id, given_name, family_name, organization FROM usr ORDER BY family_name, given_name`,
   ]);
   const names = new Map(users.map((u) => [Number(u.id), nameOf(u)]));
-  const until = await horizon(app);
+  const until = await horizon(app), currency = await mainCurrency(app);
   const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
   const due = all.filter((s) => renews(s, until));
   const userSelect = (name: string) => html`<select name=${name} required><option value="">—${users.map((u) =>
@@ -122,7 +122,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
       <u2-fields>
         ${t`Name`} <input name=name required placeholder="Hosting Light">
         ${t`Description`} <textarea name=description rows=3></textarea>
-        ${terms(app, { currency: await mainCurrency(app), interval_unit: "year", interval_count: 1 }, [])}
+        ${terms(app, { currency, interval_unit: "year", interval_count: 1 }, [])}
       </u2-fields>
       <button>${t`Add plan`}</button>
     </form>
@@ -134,7 +134,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
 async function planDetail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const pageUrl = await (await node.page()).url();
+  const pageUrl = node.page().then((page) => page.url());
   const p = (await plans(app)).find((row) => Number(row.id) === id);
   if (!p) return html.async`<div class=u2-card><div>${t`No plan`} ${id}</div></div>`;
   const used = (await subscriptions(app)).filter((s) => Number(s.plan_id) === id).length;
@@ -161,7 +161,7 @@ async function planDetail(node: Node, id: number): Promise<HtmlString> {
 async function detail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const pageUrl = await (await node.page()).url();
+  const pageUrl = node.page().then((page) => page.url());
   const [s] = (await subscriptions(app)).filter((row) => Number(row.id) === id);
   if (!s) return html.async`<div class=u2-card><div>${t`No subscription`} ${id}</div></div>`;
   const [billed, catalog] = await Promise.all([periods(app, id), plans(app)]);
@@ -190,8 +190,22 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     ${billed.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">${billed.map((p) => html.async`<tr>
         <td>${date(p.period_start)} – ${date(p.period_end)}
-        <td>${rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", p.invoice_id)}`)}
+        <td>${Number(p.invoice_id) ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", p.invoice_id) : "—"}`)}
       </table></div>` : html.async`<p>${t`Nothing billed yet`}`}
   </div>
 </div>`;
+}
+
+/** A customer's subscriptions, as card on their page (`backendRowWidget`); "" without any. */
+export async function userSubscriptions(app: App, id: unknown, page: Node): Promise<HtmlString | string> {
+  const subs = await subscriptions(app, Number(id));
+  if (!subs.length) return "";
+  const pageUrl = await page.url();
+  const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
+  return html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
+    <td><a href="${backend.toUrl(pageUrl, { subscription: s.id })}">${s.label}</a>
+    <td style="text-align:end">${money(s.amount, s.currencyCode)}
+    <td>${every(app, s.unit, s.count)}
+    <td>${ended(s) ? badge(app.t`ended`) : s.next}`)}
+  </table>`;
 }

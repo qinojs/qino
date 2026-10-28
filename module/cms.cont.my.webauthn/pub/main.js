@@ -2,7 +2,6 @@ import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
 
-const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
 cms.initNode("cont.my.webauthn", async (el) => {
   const wa = new WebAuthn({ apiBase: el.dataset.apiBase });
@@ -30,8 +29,10 @@ cms.initNode("cont.my.webauthn", async (el) => {
       list.innerHTML = keys.length
         ? html`${keys.map((key) => html`<div data-key="${key.id}">
             <p><strong>${key.name || labels.unnamed}</strong>
-              <small>${labels.added} ${fmt(key.created)} ·
-                ${key.lastUsed ? html`${labels.lastUsed} ${fmt(key.lastUsed)}` : labels.never}</small></p>
+              <small>${labels.added} <u2-time datetime=${key.created * 1000} type=date></u2-time> ·
+                ${key.lastUsed
+                  ? html`${labels.lastUsed} <u2-time datetime=${key.lastUsed * 1000} type=date></u2-time>`
+                  : labels.never}</small></p>
             <button type=button data-delete>${labels.del}</button>
           </div>`)}`
         : labels.empty;

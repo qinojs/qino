@@ -6,6 +6,7 @@ import {
   header,
   hee,
   html,
+  newestMtime,
   sqlSearch,
   unhee,
   urlize,
@@ -53,6 +54,13 @@ Deno.test("util: html.async renders renderable values (Node-like .html()) recurs
   assertEquals(String(out), "<p><i>raw</i>|<i>raw</i>|&lt;plain&gt;</p>");
 });
 
+Deno.test("util: html renders sync .html() too, and throws on what only html.async can await", () => {
+  const box = { html: () => new HtmlString("<i>raw</i>") };
+  assertEquals(String(html`<p>${box}|${{ html: () => "<plain>" }}</p>`), "<p><i>raw</i>|&lt;plain&gt;</p>");
+  assertThrows(() => html`<p>${{ html: () => Promise.resolve("x") }}</p>`, TypeError, "html.async");
+  assertThrows(() => html`<p>${Promise.resolve("x")}</p>`, TypeError, "html.async");
+});
+
 Deno.test("util: urlize transliterates and normalizes text", () => {
   assertEquals(urlize(" Äpfel & Öl — 100% "), "aepfel-and-oel-100");
   assertEquals(urlize("foo---bar"), "foo-bar");
@@ -61,6 +69,20 @@ Deno.test("util: urlize transliterates and normalizes text", () => {
 Deno.test("util: small string helpers", () => {
   assertEquals(ensureSlash("/tmp/qino"), "/tmp/qino/");
   assertEquals(ensureSlash("/tmp/qino/"), "/tmp/qino/");
+});
+
+Deno.test("util: newestMtime finds nested files, ignores directory times and handles missing or empty dirs", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    assertEquals(await newestMtime(dir), 0);
+    assertEquals(await newestMtime(dir + "/missing"), 0);
+    await Deno.mkdir(dir + "/nested");
+    for (const [name, ms] of [["a.txt", 1700000000000], ["nested/b.txt", 1700000001999]] as const) {
+      await Deno.writeTextFile(`${dir}/${name}`, "");
+      await Deno.utime(`${dir}/${name}`, new Date(ms), new Date(ms));
+    }
+    assertEquals(await newestMtime(dir), 1700000001);
+  } finally { await Deno.remove(dir, { recursive: true }); }
 });
 
 Deno.test("util: Output passes Web BodyInit objects through", async () => {

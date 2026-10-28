@@ -1,6 +1,7 @@
+import { dataOf } from "@qino/qino/fin.payment";
+
 import { call, SaferpayError, settings } from "./api.ts";
 
-import type { Row } from "@qino/qino";
 import type { Provider, State } from "@qino/qino/fin.payment";
 
 /** What a refused Assert means for the payment; `null`: not decided yet. Anything else is ours to
@@ -27,8 +28,6 @@ function refused(e: unknown): State {
   const status = REFUSED[e.code];
   return status ? { status } : {};
 }
-
-const dataOf = (payment: Row): Record<string, string> => JSON.parse(String(payment.data ?? "{}")) ?? {};
 
 /** Saferpay Payment Page: the payer pays on Saferpay's page, the payment is captured right after. */
 export const paymentProvider: Provider = {

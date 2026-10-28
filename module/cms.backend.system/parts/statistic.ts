@@ -1,4 +1,4 @@
-import { fs, html, sql } from "@qino/qino";
+import { fs, html, sql, sys } from "@qino/qino";
 
 import type { Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -61,17 +61,10 @@ async function dirTree(dir: string) {
         const rel  = relPath + entry.name;
         if (entry.isDirectory) {
           const size  = await walk(full + "/", rel + "/");
-          const parts = rel.split("/").filter(Boolean);
-          const p0    = parts[0];
-          if (p0) {
-            tree[p0] ??= { size: 0, children: {} };
-            tree[p0].size += size;
-            const p1 = parts[1];
-            if (p1) {
-              tree[p0].children[p1] ??= { size: 0, children: {} };
-              tree[p0].children[p1].size += size;
-            }
-          }
+          // size already holds the whole subtree: record it only at its own level, not at every ancestor's
+          const [p0, p1, deeper] = rel.split("/");
+          if (!p1) (tree[p0] ??= { size: 0, children: {} }).size = size;
+          else if (!deeper) (tree[p0] ??= { size: 0, children: {} }).children[p1] = { size, children: {} };
           total += size;
         } else {
           total += await fs.size(full, { ttl: 0 }) ?? 0;
@@ -88,12 +81,14 @@ export default async function summary(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
   const dir = node.app.dir;
 
-  const tables = await dbTableStats(db);
+  const [tables, diskTotal, dfOut] = await Promise.all([
+    dbTableStats(db),
+    dirSize(dir),
+    sys.command("df", { args: ["-B1", "--output=avail", dir] }),
+  ]);
   let dbTotal = 0;
   for (const t of tables) dbTotal += t.bytes;
 
-  const diskTotal = await dirSize(dir);
-  const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output();
   const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop());
 
   return html`

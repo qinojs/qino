@@ -95,7 +95,7 @@ export const messagingChannel: Channel = {
   label: "SMS",
   color: "--green",
   contact: "phone",
-  reach: (app: App, usrId: number) => countContacts(app.db, usrId, "phone"),
+  reach: (app, usrId) => countContacts(app.db, usrId, "phone"),
   recipients,
   send,
   deliver,

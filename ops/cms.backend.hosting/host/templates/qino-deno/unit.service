@@ -1,0 +1,30 @@
+[Unit]
+Description=Qino {{name}}
+After=network.target
+
+[Service]
+Type=simple
+User={{name}}
+WorkingDirectory={{root}}
+Environment=PORT={{port}}
+# server-wide settings such as QINO_SHARED_STORE; optional
+EnvironmentFile=-/etc/qino-hosting/env
+Environment=DENO_DIR={{root}}.deno-cache
+ExecStart=/usr/local/bin/deno run --allow-net --allow-read --allow-write --allow-env --allow-sys --allow-run --allow-ffi --allow-import server.ts
+Restart=on-failure
+RestartSec=10
+
+# Limits
+MemoryMax=1G
+CPUQuota=80%
+TasksMax=512
+
+# Isolation
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths={{root}}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,71 @@
+import { html } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+
+import api from "./nodeApi.ts";
+import { formLine, formOfVars, forms, list } from "./render.ts";
+import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
+const { name } = manifest;
+
+export async function install({ app }: { app: App }): Promise<void> {
+  await backend.install(app, name, {
+    en: "Form entries",
+    de: "Formular-Einträge",
+    fr: "Entrées de formulaire",
+    it: "Voci dei moduli",
+  });
+}
+
+export async function uninstall({ app }: { app: App }): Promise<void> {
+  await backend.uninstall(app, name);
+}
+
+/* Entries of the site's forms. Forms are found by their module, so new ones appear automatically.
+   Visibility follows the form's access rights. */
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
+  const app = node.app;
+  const { t } = app;
+  vars = { ...ctx.req.query, ...vars }; // ?form=… picks a form, so it can be linked to
+  const all = await forms(app);
+  const active = await formOfVars(app, vars);
+
+  if (!all.length) {
+    return html.async`<div class=u2-card>
+      <div class=-head>${t`Form entries`}</div>
+      <div>${t`This site has no form yet.`}</div>
+    </div>`;
+  }
+
+  return html.async`<div class=u2-flex>
+    <div class=u2-card style="flex-grow:0">
+        <div class=-head>${t`Forms`}</div>
+        <table class=u2-table>
+          <tr><th>${t`Form`}<th>${t`Entries`}<th>
+          ${all.map((form) => formLine(app, form, form.id === active?.id))}
+        </table>
+    </div>
+
+    <div class=u2-card>
+        <div class=-head>${t`Entries`}</div>
+        <div class=u2-flex>
+            <input type=search data-search placeholder="${t`Search`}…">
+            <button data-export=xlsx>${t`Export as Excel`}</button>
+            <button data-export=csv>${t`Export as CSV`}</button>
+        </div>
+        <table class=u2-table cms-part=list>${list(node, { vars })}</table>
+    </div>
+</div>`;
+}
+
+export const cms = {
+  node: {
+    js: ["pub/main.js"],
+    css: ["pub/main.css"],
+    render,
+    parts: { list },
+    api,
+  },
+};

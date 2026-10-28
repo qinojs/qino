@@ -25,9 +25,6 @@ const modAccess = (app: App, module: string) =>
 const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;
 const contentModules = (app: App) => app.modules.linked().map((mod) => mod.name).filter((n) => isContent(app, n)).sort();
 
-/** Detail link of a module list page (this one or cms.backend.superuser.module). */
-const modUrl = (base: string, module: string) => backend.toUrl(base, { mod: module });
-
 const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number(v)] ?? "?";
 const accessWord = word(["none", "read", "edit", "admin"]);
 // module.cms_access: null = no rule, 0 = off for everyone, 1-3 = default level (see cms/ACCESS.md)
@@ -48,11 +45,19 @@ const moduleStats = (app: App) => app.db.query`
     (SELECT MAX(l.time) FROM page p JOIN log l ON l.id = p.log_id_ch WHERE p.module = m.name) AS changed
   FROM module m`;
 
+/** Modules that nodes name but nothing renders (removed, renamed, failed) — listed so their nodes can be moved. */
+const missingModules = async (app: App) => (await app.db.query`
+  SELECT p.module AS name, COUNT(*) AS used, MAX(l.time) AS changed
+  FROM page p LEFT JOIN log l ON l.id = p.log_id_ch
+  GROUP BY p.module`).filter((r) => r.name && !isContent(app, String(r.name)));
+
 async function renderOverview(node: Node) {
   const app = node.app, t = app.t, ctx = getCtx();
   const u = ctx.req.url.toURL();
 
   const mods = new Map((await moduleStats(app)).map((r) => [String(r.name), r]));
+  const missing = new Map((await missingModules(app)).map((r) => [String(r.name), r]));
+  const lMissing = await t`missing`;
 
     console.log(getCtx().settings[name].filter.type());
 
@@ -60,8 +65,8 @@ async function renderOverview(node: Node) {
   const types = new Set<string>();
   const trs = [];
   let total = 0;
-  for (const modName of contentModules(app)) {
-    const row = mods.get(modName);
+  for (const modName of [...[...missing.keys()].sort(), ...contentModules(app)]) {
+    const row = missing.get(modName) ?? mods.get(modName);
     if (!row) continue;
     total++;
     const type = modType(modName);
@@ -69,11 +74,12 @@ async function renderOverview(node: Node) {
     u.searchParams.set("mod", modName);
     const icon = moduleIcon(app.modules.get(modName));
     trs.push(html`<tr data-type="${type}" u2-href>
-      <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : ""}
-      <td><a href="${u.search}">${modName}</a>
+      <td style="padding-right:0">${missing.has(modName) ? html`<u2-ico icon=warning title="${lMissing}" style="color:var(--red)">⚠</u2-ico>`
+        : icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : ""}
+      <td><a href="${u.search}">${modName}</a>${missing.has(modName) ? html` <small>${lMissing}</small>` : ""}
       <td>${type}
       <td style="text-align:right" data-value="${row.used}">${Number(row.used) || ""}
-      <td>${stdWord(row.cms_access)}
+      <td>${stdWord(mods.get(modName)?.cms_access)}
       <td data-value="${row.changed ?? 0}">${u2.el.time(row.changed)}`);
   }
 
@@ -128,7 +134,7 @@ async function replace(node: Node, vars: Record<string, unknown>) {
 
 // Change history of the given nodes — same source as cms.backend.cms.history,
 // narrowed to this module's nodes. One row per request and node.
-async function historyRows(node: Node, ids: number[], titles: Map<number, string>) {
+async function historyRows(node: Node, ids: number[]) {
   if (!ids.length) return [];
   const t = node.app.t;
   const rows = await node.app.db.query`
@@ -144,8 +150,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   for (const r of rows) {
     const key = `${r.log_id}:${r.node_id}`;
     if (!events.has(key) && events.size >= 60) break;
-    const ev = events.get(key) ?? { row: r, labels: new Set<string>() };
-    events.set(key, ev);
+    const ev = events.getOrInsertComputed(key, () => ({ row: r, labels: new Set<string>() }));
     ev.labels.add(await describeChange(r.data, t)); // already HTML-escaped
   }
 
@@ -156,7 +161,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
     out.push(html`<tr>
       <td data-value="${r.time}">${u2.el.time(r.time)}
       <td>${who}
-      <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
+      <td class=-where>${await backend.breadcrumb(node, Number(r.node_id))}
       <td>${Array.from(labels, (l) => html`<div>${html.raw(l)}</div>`)}`);
   }
   return out;
@@ -168,15 +173,18 @@ async function renderDetail(node: Node, modName: string, message: string) {
   const back = ctx.req.url.toURL();
   back.searchParams.delete("mod");
 
-  if (!isContent(app, modName)) {
+  const missing = !isContent(app, modName);
+  if (missing && !Number(await app.db.one`SELECT COUNT(*) FROM page WHERE module = ${modName}`)) {
     return html.async`<div class=u2-card>
       <div class=-head><a href="${back.search}">← ${t`Modules`}</a></div>
       <div>${t`Module`} ${modName} ${t`not found.`}</div>
     </div>`;
   }
 
-  const access = await modAccess(app, modName);
-  const standard = await app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`;
+  const [access, standard] = await Promise.all([
+    modAccess(app, modName),
+    app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`,
+  ]);
 
   const LIMIT = 500;
   const rows = await app.db.query`
@@ -185,7 +193,6 @@ async function renderDetail(node: Node, modName: string, message: string) {
     : Number(await app.db.one`SELECT COUNT(*) FROM page WHERE module = ${modName}`);
 
   const [lCont, lPage] = await Promise.all([t`content`, t`page`]); // plain html`` does not await
-  const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
   const trs = [];
   const visible = [];
   let editable = 0;
@@ -200,7 +207,7 @@ async function renderDetail(node: Node, modName: string, message: string) {
       <td>${nodeAccess >= WRITE ? html`<input type=checkbox data-check value="${n.id}">` : ""}
       <td><a href="${await n.url()}">${n.id}</a>
       <td>${row.type === "c" ? lCont : lPage}
-      <td class=-where>${await backend.breadcrumb(node, n.id, titles)}
+      <td class=-where>${await backend.breadcrumb(node, n.id)}
       <td>${accessWord(nodeAccess)}`);
   }
 
@@ -214,13 +221,13 @@ async function renderDetail(node: Node, modName: string, message: string) {
   const canReplace = access >= ADMIN && editable > 0 && !!targets.length;
   // the code/plugin view of the same module, if that backend page is installed and readable
   const codeUrl = (await backend.toModuleUrl(node, "cms.backend.superuser.module"))({ mod: modName });
-  const history = await historyRows(node, visible, titles);
+  const history = await historyRows(node, visible);
 
   return html.async`<div class="u2-flex cmsBackendCmsModule" data-mod="${modName}">
   <div class=u2-card style="flex:0 0 auto">
     <div class=-head><a href="${back.search}">← ${t`Modules`}</a> ${modName}</div>
     <table class=u2-table>
-      <tr><th>${t`Type`}<td>${modType(modName)}
+      <tr><th>${t`Type`}<td>${modType(modName)}${missing ? html.async` <small>${t`missing`}</small>` : ""}
       <tr><th>${t`Used`}<td>${usedTotal}
       <tr><th>${t`Module access`}<td>${accessWord(access)}
       <tr><th>${t`Standard`}<td>${stdWord(standard)}
@@ -279,15 +286,18 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
   const t = app.t;
   const rows = (await moduleStats(app)).filter((r) => isContent(app, String(r.name)));
+  const missing = (await missingModules(app)).length;
   const base = page ? await page.url() : "";
+  // detail link of a module list page (this one or cms.backend.superuser.module)
   const link = (r: Record<string, unknown>, extra: HtmlString | string) =>
-    html`<div><a href="${modUrl(base, String(r.name))}">${r.name}</a> ${extra}</div>`;
+    html`<div><a href="${backend.toUrl(base, { mod: String(r.name) })}">${r.name}</a> ${extra}</div>`;
 
   const top = rows.toSorted((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
   const recent = rows.filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
 
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${t`modules`}
+    ${missing ? html.async`<br><a href="${base}" style="color:var(--red)"><b>${missing}</b> ${t`not available`}</a>` : ""}
     <br><br><small>${t`Most used`}</small>
     ${top.map((r) => link(r, html`<small>${r.used}</small>`))}
     <br><small>${t`Recently changed`}</small>

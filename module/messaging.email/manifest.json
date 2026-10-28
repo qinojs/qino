@@ -3,14 +3,17 @@
   "description": "Email as a messaging channel — sends over any Upyo transport and receives over IMAP.",
   "dependencies": [
     "messaging",
-    "cron"
+    "cron",
+    "security"
   ],
   "files": [
     "README.md",
+    "dbschema.json",
     "healthChecks.ts",
     "lib/address.ts",
     "lib/inbound.ts",
     "lib/settings.ts",
+    "lib/spam.ts",
     "lib/transport.ts",
     "manifest.json",
     "mod.ts",

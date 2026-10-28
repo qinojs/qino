@@ -3,7 +3,7 @@
   "description": "Legacy slideshow: one image plus its own texts per slide.",
   "dependencies": [
     "cms",
-    "cms.image2",
+    "cms.image",
     "cms.text"
   ],
   "files": [

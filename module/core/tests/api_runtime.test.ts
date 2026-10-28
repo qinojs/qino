@@ -130,6 +130,28 @@ Deno.test("api: access and validation errors are typed", async () => {
   });
 });
 
+Deno.test("api: denied access skips path validation and resolution, including dry runs", async () => {
+  let resolved = 0;
+  let allowed = false;
+  const tree = { thing: { ":thing": {
+    ...api.thing[":thing"],
+    resolve: (id: number) => (resolved++, api.thing[":thing"].resolve(id)),
+    get: { ...api.thing[":thing"].get, access: () => allowed },
+    delete: { execute: () => null }, // missing access also denies before resolving
+  } } };
+  await withCtx(async () => {
+    for (const opts of [{}, { checkAccess: true }]) {
+      for (const id of ["1", "9", "invalid"])
+        await assertRejects(() => invoke(tree, "GET", `/thing/${id}`, {}, opts), AccessError);
+      await assertRejects(() => invoke(tree, "DELETE", "/thing/1", {}, opts), AccessError);
+    }
+    assertEquals(resolved, 0);
+    allowed = true;
+    assertEquals(await invoke(tree, "GET", "/thing/1"), { id: 1, title: "One" });
+    assertEquals(resolved, 1);
+  });
+});
+
 Deno.test("api: a guard sees the validated input", async () => {
   const seen: unknown[] = [];
   const tree: any = {
@@ -365,10 +387,10 @@ Deno.test("api: apiClient mirrors the action tree", async () => {
 });
 
 Deno.test("api: tool names stay within the MCP name charset", () => {
-  assertEquals(toolName("get", ["cms.frontend.4", "widget"]), "cmsFrontend4_widget_get");
+  assertEquals(toolName("get", ["cms.frontend", "widget"]), "cmsFrontend_widget_get");
   assertEquals(toolName("post", ["cms.backend.superuser.oauth_server"]), "cmsBackendSuperuserOauthServer_post");
   assertEquals(toolName("delete", ["file-store.9", ":id"]), "fileStore9_delete");
-  const tools = toTools({ "cms.frontend.4": { widget: { post: { execute: () => null } } } } as never);
+  const tools = toTools({ "cms.frontend": { widget: { post: { execute: () => null } } } } as never);
   assertEquals(/^[a-zA-Z0-9_-]{1,64}$/.test(tools[0].name), true);
 });
 

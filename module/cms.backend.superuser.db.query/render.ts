@@ -56,7 +56,7 @@ export async function render(node: Node): Promise<HtmlString> {
 }
 
 function renderAi(app: App, question: string, note: string, failed: boolean) {
-  if (!app.modules.linked("ai1.tools")) return "";
+  if (!app.modules.linked("ai.tools")) return "";
   const msg = note ? html`<u2-alert open ${failed ? "variant=danger" : ""} style="margin-top:.25rem">${note}</u2-alert>` : "";
   return html.async`<div class=-ai>
     <div class=-bar>

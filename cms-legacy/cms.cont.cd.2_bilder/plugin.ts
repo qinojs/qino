@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cms_image2 } from "@qino/qino/cms.image2";
+import { cms_image } from "@qino/qino/cms.image";
 
 import { cmsText } from "../lib/text.ts";
 
@@ -13,7 +13,7 @@ const settingsSchema = {
 };
 
 async function half(node: Node, side: "left" | "right", url: string) {
-  const image = cms_image2(await node.file(side), { width: 1000, style: "max-width:none", if: 1, editable: await node.edit() });
+  const image = cms_image(await node.file(side), { width: 1000, style: "max-width:none", if: 1, editable: await node.edit() });
   const body = html.async`
     <div class=-image>${image}</div>
     <div class=-text>${cmsText(node, side)}</div>
