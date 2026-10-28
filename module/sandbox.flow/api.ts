@@ -9,39 +9,34 @@ import type { ApiTree, Ctx, Params, StandardSchema } from "@qino/qino";
 // tools run with the owner's rights, so a flow can never do more than its owner.
 // Superusers only, for now: events are not filtered by rights yet, a flow sees every event of its host.
 
-const host = s.string().describe(
-  "Who fires the event: app or db. A discovered event is named host:event — db:table:update-after is host db, " +
-    "event table:update-after",
-);
-const event = s.string().describe(
-  "The event's name without its host, e.g. table:insert-after, table:update-after, table:delete-after (db), " +
-    "cron:hour, cron:day, iot:input (app)",
-);
+const host = s.string().describe("Who fires the event: app or db (db:table:update-after is host db)");
+const event = s.string().describe("The event's name without its host, e.g. table:update-after, cron:hour");
 const code = s.string().describe(
-  "The body of async (event, tools, state, context, owner) => { … }, plain JavaScript in a sandbox: it sees " +
-    "nothing else (no imports, no fetch, no globals of the app).\n" +
-    "- event: the event's data, e.g. { table, id, data } for db table events (id the primary key as text, " +
-    "data the columns written), { time, date, weekday, hour } for cron.\n" +
-    "- tools.<name>(params): always await; only the tools listed in `tools`, one params object with path " +
-    "params by name.\n" +
-    "- state: a plain object kept from run to run (not in test mode); remember what the flow made, e.g. " +
-    "state.invoice = id; state.clicks++.\n" +
-    "- context.user: who caused the event; owner: the flow's owner, so \"when I …\" is context.user === owner.\n" +
-    "- return ends the run, its value shows in the trace. Return early when the event is not for this flow.\n" +
-    "Example: if (event.table !== 'text_lang' || event.data.lang !== 'de') return; " +
-    "await tools.cmsText_text_translate_post({ text: event.data.text_id, targetLang: 'en' }); return 'translated';",
+  "Body of async (event, tools, state, context, owner) => { … }, plain JavaScript in a sandbox: no imports, " +
+    "no fetch, no app globals. One statement per line, indented by 2 spaces.\n" +
+    "- event: its data, e.g. { table, id, data } for table events (id: primary key as text), " +
+    "{ time, date, weekday, hour } for cron\n" +
+    "- tools.<name>(params): only the listed tools, one params object (path params by name), always await\n" +
+    "- state: kept from run to run (not in test mode), e.g. state.invoice = id\n" +
+    "- context.user: who caused the event; owner: the flow's owner (\"when I …\" is context.user === owner)\n" +
+    "- return early when the event is not for this flow; the returned value shows in the trace\n" +
+    "Example:\n" +
+    "if (event.table !== 'text_lang' || event.data.lang !== 'de') return;\n" +
+    "const { all } = await tools.core_languages_get();\n" +
+    "for (const lang of all.filter((l) => l !== 'de')) {\n" +
+    "  await tools.cmsText_text_translate_post({ text: event.data.text_id, targetLang: lang });\n" +
+    "}\n" +
+    "return 'translated';",
 );
 
 /** What makes a flow; to make one, host, event and code are needed. */
 const optional = {
-  description: s.optional(s.string()).describe("What it does, in a sentence in the user's language"),
-  tools: s.optional(s.array(s.string()))
-    .describe("The names of the tools the code may call, e.g. [\"core_languages_get\"]; calling others fails"),
-  active: s.optional(s.boolean())
-    .describe("Listen to the event; default false. Switch it on only when the user says so"),
+  description: s.optional(s.string()).describe("What it does, a sentence in the user's language"),
+  tools: s.optional(s.array(s.string())).describe("Tools the code may call, e.g. [\"core_languages_get\"]"),
+  active: s.optional(s.boolean()).describe("Listen to the event; default false. Only when the user says so"),
   test: s.optional(s.boolean()).describe(
-    "Test mode, default true: only *_get tools take effect, the others are recorded as skipped and return " +
-      "undefined, and state is not kept",
+    "Test mode, default true: only *_get tools take effect, others are skipped and return undefined; " +
+      "state is not kept",
   ),
 };
 const fields = { ...optional, host, event, code };
@@ -83,12 +78,10 @@ export const api: ApiTree = {
     get: verb("Your flows, with their code and state", async (_, ctx) =>
       (await ctx.app.db.query`SELECT * FROM flow WHERE usr_id = ${ctx.userId} ORDER BY id`).map(show)),
     post: verb<Fields>(
-      "Make a flow, owned by you: whenever the event fires, its code runs in a sandbox and may call the tools " +
-        "listed, with your rights. It starts inactive and in test mode. Then: try it with " +
-        "sandboxFlow_flow_test_post on an example event, fix it with sandboxFlow_flow_patch, and switch it on " +
-        "with { active: true, test: false } only when the user says so. Find events with aiDiscover_events_get " +
-        "and their data with aiDiscover_event_get, tools and their parameters with aiDiscover_tools_get and " +
-        "aiDiscover_tool_get, where available. Returns { id }.",
+      "Make a flow, owned by you: when the event fires, its code runs with the listed tools and your rights. " +
+        "Starts inactive in test mode: test it with sandboxFlow_flow_test_post, fix it with " +
+        "sandboxFlow_flow_patch, switch it on only when the user says so. Events and tools, if available: " +
+        "aiDiscover_events_get, aiDiscover_event_get, aiDiscover_tools_get, aiDiscover_tool_get. Returns { id }.",
       async (params, ctx) => {
         const id = await ctx.app.db.table("flow").insert({ ...columns(params), usr_id: ctx.userId });
         return { id: Number(id) };
@@ -121,8 +114,8 @@ export const api: ApiTree = {
       }),
       test: {
         post: verb<{ flow: number; event: unknown; user?: number }>(
-          "Run the flow once on an example event, always in test mode: only *_get tools take effect. Returns the " +
-            "trace { calls: [{ tool, args, result | skipped }], result, error?, end: done | error }",
+          "Run the flow once on an example event, always in test mode. Returns the trace " +
+            "{ calls: [{ tool, args, result | skipped }], result, error?, end: done | error }",
           async ({ flow, event, user }, ctx) =>
             run(ctx.app, { ...toFlow(await row(ctx, flow)), test: true }, event, { user }),
           {
