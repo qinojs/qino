@@ -91,7 +91,8 @@ async function fields(node: Node, order: Order, side: "bill" | "ship", lang: str
 /** The countries the shop delivers to, named in the visitor's language. */
 async function countryField(node: Node, name: string, value: string, autocomplete: string, required: boolean, lang: string) {
   const options = (await shp3(node.app).countries()).map((id) => ({ id, title: country.name(id, lang) }));
-  options.sort((a, b) => new Intl.Collator(lang).compare(a.title, b.title));
+  const { compare } = new Intl.Collator(lang);
+  options.sort((a, b) => compare(a.title, b.title));
   return html`<select name=${name} autocomplete="${autocomplete}" ${required ? html.raw("required") : ""}>
       <option value="">
       ${options.map((c) => html`<option value=${c.id} ${c.id === value ? html.raw("selected") : ""}>${c.title}`)}
