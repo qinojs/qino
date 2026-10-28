@@ -13,7 +13,7 @@ Deno.test("starter.fin: every module it brings is in a store", async () => {
 });
 
 Deno.test({
-  name: "starter.fin: the customer's invoices and address in the account area",
+  name: "starter.fin: the customer's invoices in the account area",
   ...quiet,
   fn: async () => {
     const dir = await Deno.makeTempDir() + "/";
@@ -24,12 +24,12 @@ Deno.test({
     try {
       const account = (await cms(app).nodesByName("account")).values().next().value!;
       assertEquals((await cms(app).nodesByName("todo-fin")).size, 1, "an item on the checklist");
-      for (const name of ["invoices", "address"]) {
+      for (const name of ["invoices"]) {
         const p = (await cms(app).nodesByName(name)).values().next().value!;
         assert(p && await p.in(account), name);
       }
       const below = (await account.children({ type: "p" })).values().map((p) => p.vs.name);
-      assertEquals([...below], ["profile", "invoices", "address", "passkeys", "two-factor", "devices"]);
+      assertEquals([...below], ["profile", "invoices", "security"]);
       const res = await app.fetch(new Request("http://localhost/en/my-account/invoices"));
       assertEquals(res.status, 200);
       await res.body?.cancel();

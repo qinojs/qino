@@ -1,12 +1,15 @@
 {
   "name": "starter.account",
-  "description": "A personal account area: profile with the email address, and security with password, passkeys, authenticator app, backup codes, connected services and signed-in devices.",
+  "description": "A personal account area: profile with name, image, email and postal address, and security with password, passkeys, authenticator app, backup codes, connected services and signed-in devices.",
   "dependencies": [
     "starter.cms",
     "auth.webauthn",
     "auth.totp",
     "auth.backup_codes",
+    "cms.cont.my.image",
+    "cms.cont.my.profile",
     "cms.cont.my.emails",
+    "cms.cont.my.address",
     "cms.cont.my.password",
     "cms.cont.my.webauthn",
     "cms.cont.my.totp",

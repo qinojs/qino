@@ -33,7 +33,9 @@ Deno.test({
       const [emails] = (await cm.nodesByModule("cms.cont.my.emails")).values();
       assertEquals(await emails.settings.single, true, "one address by default");
       assertEquals(await (await cm.nodeByModule("cms.cont.privacy"))!.settings.account, true, "the privacy policy covers accounts");
-      assertEquals((await cm.nodesByModule("cms.cont.my.password")).size, 1);
+      for (const mod of ["cms.cont.my.password", "cms.cont.my.image", "cms.cont.my.profile", "cms.cont.my.address", "cms.cont.my.oauth"]) {
+        assertEquals((await cm.nodesByModule(mod)).size, 1, mod);
+      }
       const pages = await (await cm.node(1)).children({ type: "p" });
       const menu = pages.values().filter((p) => p.vs.visible).map((p) => p.vs.name);
       assertEquals([...menu], ["home", "contact", "account", "first-steps"]);

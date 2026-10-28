@@ -1,8 +1,9 @@
 {
   "name": "fin",
-  "description": "What the fin modules share: users' postal address, and the texts payers read.",
+  "description": "What the fin modules share: users' bank account, and the texts payers read.",
   "dependencies": [
     "core",
+    "user.profile",
     "identity",
     "locale.country",
     "locale.currency"

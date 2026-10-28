@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "usr": {
+      "description": "A user's image",
+      "additionalProperties": {
+        "properties": {
+          "image_id": {
+            "type": "integer",
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Profile image; signed-in users see it"
+          }
+        }
+      }
+    }
+  }
+}

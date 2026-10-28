@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.address",
+  "description": "Lets signed-in users keep their postal address.",
+  "dependencies": [
+    "cms",
+    "user.profile"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

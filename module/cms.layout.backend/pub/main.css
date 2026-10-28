@@ -81,6 +81,16 @@ u2-accordion {
   color:var(--color-bg);
   align-items:center;
   padding-inline: 2rem;
+
+  u2-breadcrumb a { color:inherit; }
+
+  .-avatar {
+    display:block;
+    width:2.5rem;
+    height:2.5rem;
+    border-radius:50%;
+    object-fit:cover;
+  }
 }
 
 #nav {

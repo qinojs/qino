@@ -10,7 +10,6 @@
     "cms.backend.superuser.fin.party": {},
     "cms.backend.superuser.fin.payment": {},
     "cms.backend.superuser.fin.subscription": {},
-    "cms.cont.fin.my.address": {},
     "cms.cont.fin.my.credit": {},
     "cms.cont.fin.my.domains": {},
     "cms.cont.fin.my.invoices": {},

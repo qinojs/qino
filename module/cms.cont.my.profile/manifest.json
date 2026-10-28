@@ -1,9 +1,9 @@
 {
-  "name": "cms.cont.fin.my.address",
-  "description": "Lets signed-in users keep the postal address their invoices go to.",
+  "name": "cms.cont.my.profile",
+  "description": "Lets signed-in users keep their name and organization.",
   "dependencies": [
     "cms",
-    "fin"
+    "user.profile"
   ],
   "files": [
     "manifest.json",

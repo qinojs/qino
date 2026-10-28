@@ -51,10 +51,10 @@ const SECTIONS = [
   {
     name: "account", on: false, description: "User accounts.",
     initial: {
-      en: "<h2>User account</h2>\n<p>If you create an account, we store the details you provide, such as your name and email address, and your password in protected form, for as long as the account exists. You can ask us to delete your account at any time.</p>",
-      de: "<h2>Benutzerkonto</h2>\n<p>Wenn Sie ein Konto eröffnen, speichern wir Ihre Angaben wie Name und E-Mail-Adresse sowie Ihr Passwort in geschützter Form, solange das Konto besteht. Sie können jederzeit verlangen, dass wir Ihr Konto löschen.</p>",
-      fr: "<h2>Compte utilisateur</h2>\n<p>Si vous créez un compte, nous enregistrons les informations fournies, comme votre nom et votre adresse e-mail, ainsi que votre mot de passe sous forme protégée, aussi longtemps que le compte existe. Vous pouvez à tout moment nous demander de supprimer votre compte.</p>",
-      it: "<h2>Account utente</h2>\n<p>Se create un account, conserviamo i dati forniti, come nome e indirizzo e-mail, e la vostra password in forma protetta, finché l'account esiste. Potete chiederci in qualsiasi momento di cancellare il vostro account.</p>",
+      en: "<h2>User account</h2>\n<p>If you create an account, we store the details you provide, such as your name and email address, and your password in protected form, for as long as the account exists. A profile image is visible to other signed-in users. You can ask us to delete your account at any time.</p>",
+      de: "<h2>Benutzerkonto</h2>\n<p>Wenn Sie ein Konto eröffnen, speichern wir Ihre Angaben wie Name und E-Mail-Adresse sowie Ihr Passwort in geschützter Form, solange das Konto besteht. Ein Profilbild sehen andere angemeldete Benutzer. Sie können jederzeit verlangen, dass wir Ihr Konto löschen.</p>",
+      fr: "<h2>Compte utilisateur</h2>\n<p>Si vous créez un compte, nous enregistrons les informations fournies, comme votre nom et votre adresse e-mail, ainsi que votre mot de passe sous forme protégée, aussi longtemps que le compte existe. Une image de profil est visible par les autres utilisateurs connectés. Vous pouvez à tout moment nous demander de supprimer votre compte.</p>",
+      it: "<h2>Account utente</h2>\n<p>Se create un account, conserviamo i dati forniti, come nome e indirizzo e-mail, e la vostra password in forma protetta, finché l'account esiste. Un'immagine del profilo è visibile agli altri utenti connessi. Potete chiederci in qualsiasi momento di cancellare il vostro account.</p>",
     },
   },
   {

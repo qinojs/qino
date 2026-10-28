@@ -1,0 +1,16 @@
+{
+  "name": "user.image",
+  "description": "A user's profile image, seen by signed-in users.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

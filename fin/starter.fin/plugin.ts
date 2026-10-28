@@ -29,7 +29,7 @@ async function build(app: App) {
   const invoices = { en: "Invoices", de: "Rechnungen", fr: "Factures", it: "Fatture" };
   // what a customer comes for, before the sign-in settings of starter.account
   await page(account, "invoices", invoices, shown, async (p) => {
-    await before(p, "passkeys");
+    await before(p, "security");
     await prose(p, {
       en: "<h1>Invoices</h1>\n<p>Your invoices, each as PDF. What is still open can be paid here.</p>",
       de: "<h1>Rechnungen</h1>\n<p>Ihre Rechnungen, jede als PDF. Was noch offen ist, bezahlen Sie hier.</p>",
@@ -37,16 +37,5 @@ async function build(app: App) {
       it: "<h1>Fatture</h1>\n<p>Le vostre fatture, ognuna in PDF. Ciò che è ancora aperto si paga qui.</p>",
     });
     await section(p, "cms.cont.fin.my.invoices");
-  });
-  const address = { en: "Billing address", de: "Rechnungsadresse", fr: "Adresse de facturation", it: "Indirizzo di fatturazione" };
-  await page(account, "address", address, shown, async (p) => {
-    await before(p, "passkeys");
-    await prose(p, {
-      en: "<h1>Billing address</h1>\n<p>Where your invoices go.</p>",
-      de: "<h1>Rechnungsadresse</h1>\n<p>Wohin Ihre Rechnungen gehen.</p>",
-      fr: "<h1>Adresse de facturation</h1>\n<p>Où vos factures sont envoyées.</p>",
-      it: "<h1>Indirizzo di fatturazione</h1>\n<p>Dove vengono inviate le vostre fatture.</p>",
-    });
-    await section(p, "cms.cont.fin.my.address");
   });
 }

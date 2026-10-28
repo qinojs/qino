@@ -1,33 +1,9 @@
 {
   "properties": {
     "usr": {
-      "description": "The postal address of a user, where invoices go (schema.org PostalAddress), and their bank account",
+      "description": "A user's bank account; the postal address comes from user.profile",
       "additionalProperties": {
         "properties": {
-          "street_address": {
-            "type": "string",
-            "maxLength": 191,
-            "description": "Street and number"
-          },
-          "postal_code": {
-            "type": "string",
-            "maxLength": 32
-          },
-          "address_locality": {
-            "type": "string",
-            "maxLength": 191,
-            "description": "Town or city"
-          },
-          "address_region": {
-            "type": "string",
-            "maxLength": 191,
-            "description": "State, province or canton, where an address needs it"
-          },
-          "address_country": {
-            "type": "string",
-            "maxLength": 2,
-            "description": "ISO 3166-1 alpha-2"
-          },
           "iban": {
             "type": "string",
             "maxLength": 34,

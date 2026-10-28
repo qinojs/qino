@@ -1,5 +1,6 @@
 import { html, moduleIcon } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+import { imageUrl } from "@qino/qino/user.image";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -118,14 +119,14 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
     <div id=toolbar class=u2-flex>
       <u2-breadcrumb>${pathHtml}</u2-breadcrumb>
       <!--input type=search id=search placeholder="Search..." style="width:100%; max-width:20rem; background:var(--color-light); border:0; border-radius: var(--radius);"-->
-      <div style="margin-left:auto; display:flex; gap:.5rem">
+      <div style="margin-left:auto; display:flex; align-items:center; gap:.5rem">
         <nav>
           <ul>
             ${langHtml}
           </ul>
         </nav>
         <div shape=circle size=32>
-          ${ctx.user ? ctx.user.username : "Guest"}
+          ${await avatar(ctx)}
         </div>
       </div>
     </div>
@@ -133,6 +134,14 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
       ${contentHtml}
     </div>
   </div>`;
+}
+
+/** The user's image where user.image is installed and one is set, else the username. */
+async function avatar(ctx: Ctx) {
+  if (!ctx.user) return "Guest";
+  const src = ctx.app.modules.linked("user.image") && await imageUrl(ctx.app, ctx.userId!, 80); // 2.5rem, retina
+  const name = ctx.user.username;
+  return src ? html`<img class=-avatar src="${src}" alt="${name}" title="${name}">` : name;
 }
 
 export const cms = {

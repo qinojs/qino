@@ -97,6 +97,7 @@
     "./ticket": "./module/ticket/mod.ts",
     "./u2": "./module/u2/mod.ts",
     "./uncdn": "./module/uncdn/mod.ts",
+    "./user.image": "./module/user.image/mod.ts",
     "./webapp": "./module/webapp/mod.ts",
     "./tests": "./tests/mod.ts"
   },
@@ -196,6 +197,7 @@
     "@qino/qino/ticket": "./module/ticket/mod.ts",
     "@qino/qino/u2": "./module/u2/mod.ts",
     "@qino/qino/uncdn": "./module/uncdn/mod.ts",
+    "@qino/qino/user.image": "./module/user.image/mod.ts",
     "@qino/qino/webapp": "./module/webapp/mod.ts",
     "@qino/qino/tests": "./tests/mod.ts",
     "@nuxodin/dump": "jsr:@nuxodin/dump@^1.5.2",

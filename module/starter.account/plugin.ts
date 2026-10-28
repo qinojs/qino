@@ -22,10 +22,10 @@ async function build(app: App) {
   const account = await page(root, "account", titles, shown, async (p) => {
     await before(p, "first-steps");
     await prose(p, {
-      en: "<h1>My account</h1>\n<p>Sign in here. Below you choose how you sign in and which devices stay signed in.</p>",
-      de: "<h1>Mein Konto</h1>\n<p>Hier melden Sie sich an. Darunter legen Sie fest, wie Sie sich anmelden und welche Geräte angemeldet bleiben.</p>",
-      fr: "<h1>Mon compte</h1>\n<p>Connectez-vous ici. Ci-dessous, vous choisissez comment vous vous connectez et quels appareils restent connectés.</p>",
-      it: "<h1>Il mio account</h1>\n<p>Accedete qui. Qui sotto scegliete come accedere e quali dispositivi restano connessi.</p>",
+      en: "<h1>My account</h1>\n<p>Sign in here. Below are your profile and how you sign in.</p>",
+      de: "<h1>Mein Konto</h1>\n<p>Hier melden Sie sich an. Darunter finden Sie Ihr Profil und wie Sie sich anmelden.</p>",
+      fr: "<h1>Mon compte</h1>\n<p>Connectez-vous ici. Ci-dessous, votre profil et la manière dont vous vous connectez.</p>",
+      it: "<h1>Il mio account</h1>\n<p>Accedete qui. Qui sotto trovate il vostro profilo e come accedete.</p>",
     });
     await section(p, "cms.cont.login");
   });
@@ -33,13 +33,16 @@ async function build(app: App) {
   const profile = { en: "Profile", de: "Profil", fr: "Profil", it: "Profilo" };
   await page(account, "profile", profile, shown, async (p) => {
     await prose(p, {
-      en: "<h1>Profile</h1>\n<p>The email address we reach you at.</p>",
-      de: "<h1>Profil</h1>\n<p>Die E-Mail-Adresse, unter der wir Sie erreichen.</p>",
-      fr: "<h1>Profil</h1>\n<p>L'adresse e-mail à laquelle nous vous joignons.</p>",
-      it: "<h1>Profilo</h1>\n<p>L'indirizzo e-mail al quale vi raggiungiamo.</p>",
+      en: "<h1>Profile</h1>\n<p>Your name, your image, the email address we reach you at, and your postal address.</p>",
+      de: "<h1>Profil</h1>\n<p>Ihr Name, Ihr Bild, die E-Mail-Adresse, unter der wir Sie erreichen, und Ihre Postadresse.</p>",
+      fr: "<h1>Profil</h1>\n<p>Votre nom, votre image, l'adresse e-mail à laquelle nous vous joignons et votre adresse postale.</p>",
+      it: "<h1>Profilo</h1>\n<p>Il vostro nome, la vostra immagine, l'indirizzo e-mail al quale vi raggiungiamo e il vostro indirizzo postale.</p>",
     });
+    await section(p, "cms.cont.my.image");
+    await section(p, "cms.cont.my.profile");
     const emails = await section(p, "cms.cont.my.emails");
     await emails.settings.single(true); // most sites need one address; a site may allow more
+    await section(p, "cms.cont.my.address");
   });
   const security = { en: "Security", de: "Sicherheit", fr: "Sécurité", it: "Sicurezza" };
   const modules = [

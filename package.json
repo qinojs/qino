@@ -94,6 +94,7 @@
     "./ticket": "./module/ticket/mod.ts",
     "./u2": "./module/u2/mod.ts",
     "./uncdn": "./module/uncdn/mod.ts",
+    "./user.image": "./module/user.image/mod.ts",
     "./webapp": "./module/webapp/mod.ts",
     "./tests": "./tests/mod.ts"
   },

@@ -2,9 +2,9 @@
 
 The base of the `fin.*` modules. It carries
 
-- the **postal address of users** — `usr.street_address`, `postal_code`, `address_locality`,
-  `address_region`, `address_country` (schema.org PostalAddress): where an invoice goes. An invoice
-  keeps its own copy (`party`), as it was when issued. And `usr.iban`, the account to pay them;
+- `usr.iban`, the **account users are paid into**. Where an invoice goes is the user's postal
+  address from [user.profile](../../module/user.profile/); an invoice keeps its own copy (`party`),
+  as it was when issued;
 - the **texts payers and recipients read** — the invoice document, payment pages — in the
   translation namespace `fin` (`locale/`), translated once for all of them;
 - the **main currency** (`fin.mainCurrency`): the books keep it, new forms suggest it. Empty, it is
@@ -24,7 +24,7 @@ whoever reaches them acts there, through `mod.ts`.
 
 | Module | A user | A superuser, too |
 |---|---|---|
-| `fin` | `address`: read, change (not the IBAN) | anyone's, the IBAN |
+| `fin` | `iban`: read | anyone's, set it |
 | `fin.invoice` | issued ones: `invoices`, `invoice/:id`, `pdf`, `methods`, `pay` | drafts, `issue`, `cancel` … |
 | `fin.payment` | `payments`, `payment/:id` | record, `sync`, `cancel`, `refund` |
 | `fin.payment.credit` | balance and moves | add, take |
@@ -32,7 +32,8 @@ whoever reaches them acts there, through `mod.ts`.
 | `fin.accounting`, `fin.bank` … | — | entries, `reverse`, `close`, VAT, lines, `assign`, camt |
 
 For the pages of a site, the users' side is built from that api: `cms.cont.fin.my.invoices` (each as
-PDF, pay what is open), `.subscriptions` (when they renew, cancel), `.credit`, `.address`. Amounts
+PDF, pay what is open), `.subscriptions` (when they renew, cancel), `.credit`; the address is
+`cms.cont.my.address` of user.profile. Amounts
 and days in the browser come from `pub/money.js`.
 
 ## Decisions that may change
