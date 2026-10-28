@@ -4,7 +4,7 @@ import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** One text per language: `{ en: "Contact", de: "Kontakt" }`. */
-export type Texts = Record<string, string>;
+type Texts = Record<string, string>;
 
 /**
  * Hands a starter's modules over to the site: each becomes an installed module of its own, so it

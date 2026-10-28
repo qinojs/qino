@@ -259,6 +259,7 @@ const OPTIONAL = new Set([
   "cms.layout.deck.1/plugin.ts -> fileEditor",
   "cms.layout.luca/plugin.ts -> fileEditor",
   "cms.layout.standard.1/plugin.ts -> fileEditor",
+  "cms.layout.backend/plugin.ts -> user.image", // the user's image in the toolbar, guarded by modules.linked("user.image")
 ]);
 
 /** What a module may import values from. `dependencies` is transitive — declaring one module brings

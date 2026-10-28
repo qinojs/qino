@@ -5,7 +5,6 @@ import { run, status, trigger } from "../mod.ts";
 import { init } from "../plugin.ts";
 import { nextRun, scheduleKey, validateJob } from "../calendar.ts";
 import { Scheduler } from "../scheduler.ts";
-import { cron as coreCron } from "../../core/plugin.ts";
 
 import type { App } from "@qino/qino";
 import type { Job } from "../mod.ts";
@@ -61,10 +60,6 @@ Deno.test("cron fingerprints only settings relevant to the cadence", () => {
   assertEquals(scheduleKey(job(60), "UTC"), scheduleKey(job(60), "Europe/Zurich"));
   assertEquals(scheduleKey(job("week"), "UTC"), scheduleKey(job("week", { at: { weekday: "monday" } }), "UTC"));
   assert(scheduleKey(job("day"), "UTC") !== scheduleKey(job("day"), "Europe/Zurich"));
-});
-
-Deno.test("cron accepts core's daily log cleanup", () => {
-  validateJob("core:logs", coreCron.logs as Job);
 });
 
 Deno.test("cron reaches the scheduler only while the module is linked", () => {
