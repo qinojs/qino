@@ -1,5 +1,5 @@
 import { cms } from "@qino/qino/cms";
-import { adopt, before, moduleLink, page, prose, section, todo } from "@qino/qino/starter.cms";
+import { adopt, before, page, prose, section } from "@qino/qino/starter.cms";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -64,14 +64,6 @@ async function build(app: App) {
     de: "<h1>Geräte</h1>\n<p>Wo Sie angemeldet sind. Melden Sie ein Gerät ab, das Sie nicht mehr verwenden.</p>",
     fr: "<h1>Appareils</h1>\n<p>Où vous êtes connecté. Déconnectez un appareil que vous n'utilisez plus.</p>",
     it: "<h1>Dispositivi</h1>\n<p>Dove avete effettuato l'accesso. Disconnettete un dispositivo che non usate più.</p>",
-  });
-
-  const settings = await moduleLink(app, "cms.backend.settings", "Backend → Settings");
-  await todo(app, "todo-passkeys", { en: "Passkeys", de: "Passkeys", fr: "Clés d'accès", it: "Passkey" }, {
-    en: `<p>Passkeys are bound to a domain. Enter yours, without https:// (for example <code>example.com</code>), under ${settings} in <i>auth.webauthn → rpId</i> — until then they only work on localhost.</p>`,
-    de: `<p>Passkeys sind an eine Domain gebunden. Tragen Sie Ihre ohne https:// (zum Beispiel <code>example.com</code>) unter ${settings} bei <i>auth.webauthn → rpId</i> ein — bis dahin funktionieren sie nur auf localhost.</p>`,
-    fr: `<p>Les clés d'accès sont liées à un domaine. Indiquez le vôtre, sans https:// (par exemple <code>example.com</code>), sous ${settings} dans <i>auth.webauthn → rpId</i> — d'ici là, elles ne fonctionnent que sur localhost.</p>`,
-    it: `<p>Le passkey sono legate a un dominio. Inserite il vostro, senza https:// (per esempio <code>example.com</code>), sotto ${settings} in <i>auth.webauthn → rpId</i> — fino ad allora funzionano solo su localhost.</p>`,
   });
 }
 

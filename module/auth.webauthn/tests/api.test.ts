@@ -11,7 +11,7 @@ function makeApp() {
   const challenges: Record<string, unknown>[] = [];
   const execs: Array<[string, unknown[]]> = [];
   const app = {
-    settings: { "auth.webauthn": { rpId: "localhost", rpName: "Qino" } },
+    settings: { core: {}, "auth.webauthn": { rpId: "localhost", rpName: "Qino" } } as Record<string, Record<string, unknown>>,
     fire: () => Promise.resolve(),
     db: {
       row: () => null,
@@ -99,6 +99,16 @@ Deno.test("auth.webauthn: public login challenge stores challenge state without 
   assertEquals(challenges[0].type, "login");
   assertEquals(challenges[0].usr_id, 0);
   assertEquals(execs.length, 0);
+});
+
+Deno.test("auth.webauthn: rpId defaults to the host of core.url without www", async () => {
+  const { app } = makeApp();
+  app.settings = { core: { url: "https://www.example.ch/" }, "auth.webauthn": {} };
+  const c = await testContext({ app });
+  const out = await requestStorage.run(c, () =>
+    invoke((app as any).apiTree["auth.webauthn"], "POST", "/login/challenge")
+  ) as any;
+  assertEquals(out.publicKey.rpId, "example.ch");
 });
 
 Deno.test("auth.webauthn: cron purges expired challenges", async () => {

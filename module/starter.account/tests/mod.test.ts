@@ -21,7 +21,7 @@ Deno.test({
     await app.init();
     try {
       const cm = cms(app);
-      for (const name of ["account", "profile", "passkeys", "two-factor", "devices", "home", "login", "todo-passkeys"]) {
+      for (const name of ["account", "profile", "passkeys", "two-factor", "devices", "home", "login"]) {
         assertEquals((await cm.nodesByName(name)).size, 1, name);
       }
       const account = await app.fetch(new Request("http://localhost/en/my-account"));

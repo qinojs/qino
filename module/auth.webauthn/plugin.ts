@@ -20,7 +20,7 @@ export const authFactors: Factor[] = [{
 
 export const settingsSchema = {
   properties: {
-    rpId:   { type: "string", description: "Relying Party ID — domain without protocol, e.g. example.com" },
+    rpId:   { type: "string", description: "Relying Party ID — domain without protocol, e.g. example.com — default: host of core.url without www." },
     rpName: { type: "string", description: "Display name of the application in the authenticator dialog" },
     origin: { type: "string", description: "Accepted origin(s), comma-separated, e.g. https://example.com:8443 — default: request origin if its host matches rpId" },
   },
@@ -40,7 +40,8 @@ const CHALLENGE_TTL = 5 * 60;
 
 async function getRp(app: App) {
   const set = app.settings["auth.webauthn"];
-  return { rpId: String(await set.rpId ?? "") || "localhost", rpName: String(await set.rpName ?? "") || "Qino" };
+  const own = URL.parse(String(await app.settings.core.url ?? ""))?.hostname.replace(/^www\./, "");
+  return { rpId: String(await set.rpId ?? "") || own || "localhost", rpName: String(await set.rpName ?? "") || "Qino" };
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
