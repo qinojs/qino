@@ -1,0 +1,17 @@
+{
+  "name": "cms.cont.imprint",
+  "description": "Imprint with the owner's details from the identity and editable, switchable notices.",
+  "dependencies": [
+    "cms",
+    "identity",
+    "cms.cont.flexible"
+  ],
+  "files": [
+    "lib/sections.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg"
+  ]
+}

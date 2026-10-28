@@ -1,0 +1,4 @@
+/* each section and the free area have their own wrapper, so the first-/last-child margin resets would join them */
+[qcms-mod="cont.imprint"] > * + * {
+  margin-top: 1.5em;
+}

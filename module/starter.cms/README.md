@@ -61,8 +61,9 @@ item.js is released together with qino, so it may be younger than Deno's minimum
 | People | the group `admin`, allowed to edit every page, and the superuser `su` |
 | Modules | contents, forms, images, file browser, versions, SEO, error reports, local copies of CDN assets (uncdn) and the backend |
 
-Titles and texts come in English, German, French and Italian. Imprint and privacy policy are
-templates with `[placeholders]`. Service stays out of the menu; pages added below it appear in
+Titles and texts come in English, German, French and Italian. Imprint and privacy policy
+([cms.cont.imprint](../cms.cont.imprint/), [cms.cont.privacy](../cms.cont.privacy/)) take name and
+address from the identity. Service stays out of the menu; pages added below it appear in
 the footer.
 
 ## Starters

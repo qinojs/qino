@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.privacy",
+  "description": "Privacy policy for the Swiss FADP and the GDPR, with the controller from the identity and editable, switchable sections.",
+  "dependencies": [
+    "cms.cont.imprint"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg"
+  ]
+}

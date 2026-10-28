@@ -36,6 +36,8 @@
     "cms.cont.search",
     "cms.cont.login",
     "cms.cont.password_reset",
+    "cms.cont.imprint",
+    "cms.cont.privacy",
     "cms.cont.not_found",
     "cms.cont.trash",
     "cms.backend",

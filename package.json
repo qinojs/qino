@@ -35,6 +35,7 @@
     "./cms.cont.dbtable": "./module/cms.cont.dbtable/mod.ts",
     "./cms.cont.form": "./module/cms.cont.form/mod.ts",
     "./cms.cont.form.fields": "./module/cms.cont.form.fields/mod.ts",
+    "./cms.cont.imprint": "./module/cms.cont.imprint/mod.ts",
     "./cms.cont.nav": "./module/cms.cont.nav/mod.ts",
     "./cms.cont.quote.cd": "./cms-legacy/cms.cont.quote.cd/mod.ts",
     "./cms.cont.section3": "./cms-legacy/cms.cont.section3/mod.ts",

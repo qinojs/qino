@@ -42,8 +42,8 @@ async function build(app: App) {
   const service = await page(root, "service", TITLES.service, { access: 1, visible: false, searchable: false });
   const listed = { access: 1, visible: true, searchable: false };
   await page(service, "search", TITLES.search, listed, (p) => section(p, "cms.cont.search"));
-  const imprint = await page(service, "imprint", TITLES.imprint, listed, (p) => prose(p, IMPRINT));
-  const privacy = await page(service, "privacy", TITLES.privacy, listed, (p) => prose(p, PRIVACY));
+  const imprint = await page(service, "imprint", TITLES.imprint, listed, (p) => section(p, "cms.cont.imprint"));
+  const privacy = await page(service, "privacy", TITLES.privacy, listed, (p) => section(p, "cms.cont.privacy"));
 
   // The footer belongs to the layout, so every page shows it
   const foot = await (await cms(app).layoutPage(LAYOUT)).cont("foot", "cms.cont.flexible");
@@ -116,10 +116,10 @@ async function firstSteps(app: App, root: Node, imprint: Node, privacy: Node) {
     en: "Imprint and privacy policy", de: "Impressum und Datenschutz",
     fr: "Mentions légales et protection des données", it: "Colophon e protezione dei dati",
   }, {
-    en: `<p>Replace the [placeholders] in the ${link(imprint, "imprint")} and the ${link(privacy, "privacy policy")}.</p>`,
-    de: `<p>Ersetzen Sie die [Platzhalter] im ${link(imprint, "Impressum")} und in der ${link(privacy, "Datenschutzerklärung")}.</p>`,
-    fr: `<p>Remplacez les [espaces réservés] dans les ${link(imprint, "mentions légales")} et la ${link(privacy, "déclaration de protection des données")}.</p>`,
-    it: `<p>Sostituite i [segnaposto] nel ${link(imprint, "colophon")} e nella ${link(privacy, "dichiarazione sulla protezione dei dati")}.</p>`,
+    en: `<p>Name and address come from the identity. Check the texts in the ${link(imprint, "imprint")} and the ${link(privacy, "privacy policy")}: in edit mode, the settings of each block switch sections on and off, for example the commercial register or a user account.</p>`,
+    de: `<p>Name und Adresse kommen aus der Identität. Prüfen Sie die Texte im ${link(imprint, "Impressum")} und in der ${link(privacy, "Datenschutzerklärung")}: Im Bearbeitungsmodus schalten die Einstellungen des Blocks Abschnitte ein und aus, etwa das Handelsregister oder ein Benutzerkonto.</p>`,
+    fr: `<p>Le nom et l'adresse proviennent de l'identité. Vérifiez les textes des ${link(imprint, "mentions légales")} et de la ${link(privacy, "déclaration de protection des données")} : en mode édition, les réglages du bloc activent ou désactivent des sections, par exemple le registre du commerce ou un compte utilisateur.</p>`,
+    it: `<p>Nome e indirizzo provengono dall'identità. Verificate i testi nel ${link(imprint, "colophon")} e nella ${link(privacy, "dichiarazione sulla protezione dei dati")}: in modalità modifica, le impostazioni del blocco attivano o disattivano le sezioni, per esempio il registro di commercio o un account utente.</p>`,
   });
   const settings = await moduleLink(app, "cms.backend.settings", "Backend → Settings");
   await todo(app, "todo-languages", { en: "Languages", de: "Sprachen", fr: "Langues", it: "Lingue" }, {
@@ -239,65 +239,3 @@ const welcome = (login: Node) => ({
 <p>Questo è il vostro nuovo sito. ${link(login, "Accedete")}, attivate la modifica con l'interruttore in alto a destra (o il tasto E) e cliccate su un testo per modificarlo — anche su questo.</p>
 <p>Dopo l'accesso, il menu mostra la pagina <i>Primi passi</i>: cosa resta da fare prima che il sito diventi pubblico.</p>`,
 });
-
-const IMPRINT = {
-  en: `<h1>Imprint</h1>
-<p>[Company name]<br>[Street and number]<br>[Postcode and city]<br>[Country]</p>
-<p>Email: [address]<br>Phone: [number]</p>
-<p>Represented by: [name]<br>Commercial register: [register and number]<br>VAT number: [number]</p>`,
-  de: `<h1>Impressum</h1>
-<p>[Firmenname]<br>[Strasse und Nummer]<br>[PLZ und Ort]<br>[Land]</p>
-<p>E-Mail: [Adresse]<br>Telefon: [Nummer]</p>
-<p>Vertreten durch: [Name]<br>Handelsregister: [Register und Nummer]<br>MWST-Nummer: [Nummer]</p>`,
-  fr: `<h1>Mentions légales</h1>
-<p>[Raison sociale]<br>[Rue et numéro]<br>[NPA et localité]<br>[Pays]</p>
-<p>E-mail : [adresse]<br>Téléphone : [numéro]</p>
-<p>Représentée par : [nom]<br>Registre du commerce : [registre et numéro]<br>Numéro TVA : [numéro]</p>`,
-  it: `<h1>Colophon</h1>
-<p>[Ragione sociale]<br>[Via e numero]<br>[NPA e località]<br>[Paese]</p>
-<p>E-mail: [indirizzo]<br>Telefono: [numero]</p>
-<p>Rappresentata da: [nome]<br>Registro di commercio: [registro e numero]<br>Numero IVA: [numero]</p>`,
-};
-
-const PRIVACY = {
-  en: `<h1>Privacy policy</h1>
-<p><i>A starting point, not legal advice: adapt it to what your site really does.</i></p>
-<h2>Who is responsible</h2>
-<p>[Company name, address, email]</p>
-<h2>What we collect</h2>
-<p>When you visit this site, the server records technical data such as your IP address, the time and the page requested, to keep the site running and secure. Messages you send through the contact form are stored and used only to answer you.</p>
-<h2>Cookies</h2>
-<p>This site uses a cookie to keep you signed in. It does not use tracking cookies.</p>
-<h2>Your rights</h2>
-<p>You may ask what we store about you, and have it corrected or deleted. Write to [email].</p>`,
-  de: `<h1>Datenschutzerklärung</h1>
-<p><i>Eine Vorlage, keine Rechtsberatung: Passen Sie sie an das an, was Ihre Website tatsächlich tut.</i></p>
-<h2>Verantwortlich</h2>
-<p>[Firmenname, Adresse, E-Mail]</p>
-<h2>Was wir erheben</h2>
-<p>Beim Besuch dieser Website speichert der Server technische Daten wie Ihre IP-Adresse, die Uhrzeit und die aufgerufene Seite, um den Betrieb und die Sicherheit zu gewährleisten. Nachrichten aus dem Kontaktformular werden gespeichert und nur zur Beantwortung verwendet.</p>
-<h2>Cookies</h2>
-<p>Diese Website verwendet ein Cookie, um Sie angemeldet zu halten. Tracking-Cookies werden nicht verwendet.</p>
-<h2>Ihre Rechte</h2>
-<p>Sie können Auskunft darüber verlangen, was wir über Sie speichern, und es berichtigen oder löschen lassen. Schreiben Sie an [E-Mail].</p>`,
-  fr: `<h1>Protection des données</h1>
-<p><i>Un modèle, pas un conseil juridique : adaptez-le à ce que votre site fait réellement.</i></p>
-<h2>Responsable</h2>
-<p>[Raison sociale, adresse, e-mail]</p>
-<h2>Ce que nous collectons</h2>
-<p>Lors de votre visite, le serveur enregistre des données techniques comme votre adresse IP, l'heure et la page consultée, afin d'assurer le fonctionnement et la sécurité du site. Les messages envoyés via le formulaire de contact sont conservés et servent uniquement à vous répondre.</p>
-<h2>Cookies</h2>
-<p>Ce site utilise un cookie pour vous garder connecté. Il n'utilise pas de cookies de suivi.</p>
-<h2>Vos droits</h2>
-<p>Vous pouvez demander ce que nous conservons à votre sujet, et le faire corriger ou supprimer. Écrivez à [e-mail].</p>`,
-  it: `<h1>Protezione dei dati</h1>
-<p><i>Un modello, non una consulenza legale: adattatelo a ciò che il vostro sito fa davvero.</i></p>
-<h2>Responsabile</h2>
-<p>[Ragione sociale, indirizzo, e-mail]</p>
-<h2>Cosa raccogliamo</h2>
-<p>Durante la visita il server registra dati tecnici come l'indirizzo IP, l'ora e la pagina richiesta, per garantire il funzionamento e la sicurezza del sito. I messaggi inviati tramite il modulo di contatto vengono conservati e usati solo per rispondervi.</p>
-<h2>Cookie</h2>
-<p>Questo sito usa un cookie per mantenervi connessi. Non usa cookie di tracciamento.</p>
-<h2>I vostri diritti</h2>
-<p>Potete chiedere cosa conserviamo su di voi e farlo correggere o cancellare. Scrivete a [e-mail].</p>`,
-};
