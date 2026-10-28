@@ -21,13 +21,13 @@ Deno.test({
     await app.init();
     try {
       const cm = cms(app);
-      for (const name of ["account", "profile", "passkeys", "two-factor", "devices", "home", "login"]) {
+      for (const name of ["account", "profile", "security", "home", "login"]) {
         assertEquals((await cm.nodesByName(name)).size, 1, name);
       }
       const account = await app.fetch(new Request("http://localhost/en/my-account"));
       assert((await account.text()).includes("data-action=login"), "the account page offers passkey login");
 
-      const res = await app.fetch(new Request("http://localhost/en/my-account/passkeys"));
+      const res = await app.fetch(new Request("http://localhost/en/my-account/security"));
       assertEquals(res.status, 200);
       assert((await res.text()).includes("Please sign in"), "guests are asked to sign in");
       const [emails] = (await cm.nodesByModule("cms.cont.my.emails")).values();

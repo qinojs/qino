@@ -1,6 +1,6 @@
 {
   "name": "starter.account",
-  "description": "A personal account area: email address, password, passkeys, authenticator app, backup codes and signed-in devices.",
+  "description": "A personal account area: profile with the email address, and security with password, passkeys, authenticator app, backup codes, connected services and signed-in devices.",
   "dependencies": [
     "starter.cms",
     "auth.webauthn",
@@ -12,6 +12,7 @@
     "cms.cont.my.totp",
     "cms.cont.my.backup_codes",
     "cms.cont.my.clients",
+    "cms.cont.my.oauth",
     "cms.backend.superuser.auth",
     "cms.backend.superuser.auth.webauthn",
     "cms.backend.superuser.auth.totp",
