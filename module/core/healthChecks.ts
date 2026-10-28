@@ -8,6 +8,7 @@ import { urlOf } from "./lib/App.ts";
 import { isLocalHost } from "./lib/fileStream.ts";
 
 import type { App } from "./lib/App.ts";
+import type { Db } from "./lib/db/Db.ts";
 
 // Duck-typed (collected by cms.backend.system), so no type imports.
 type Check = () => unknown;
@@ -207,23 +208,8 @@ export async function healthChecks(app: App) {
     return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.exec`DELETE FROM text_lang WHERE lang = ''`; } } } };
   };
 
-  // MySQL-only; other dialects run without it.
-  const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
-
-  // "no row references this table"; `except` skips columns that belong to the parent itself.
-  const notLinked = (table: string, except: string[] = []) => {
-    const refs = db.table(table).children.filter((f) => !except.includes(`${f.table.name}.${f.name}`));
-    if (!refs.length) return sql`${false}`; // no references; an empty condition would mean "all unused"
-    return sql.join(
-      refs.map((f) =>
-        sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table.name)} WHERE ${sql.id(f.name)} IS NOT NULL)`
-      ),
-      " AND ",
-    );
-  };
-
   cleanup["not linked texts"] = async () => {
-    const where = notLinked("text", ["text_lang.text_id"]);
+    const where = notLinked(db, "text", ["text_lang.text_id"]);
     const count = Number(await db.one`SELECT count(*) FROM text WHERE ${where}`);
     if (!count) return;
     return {
@@ -233,7 +219,7 @@ export async function healthChecks(app: App) {
           solve: async () => {
             const res = await db.exec`DELETE FROM text WHERE ${where}`;
             await db.exec`DELETE FROM text_lang WHERE text_id NOT IN (SELECT id FROM text)`;
-            await optimize("text");
+            await optimize(db, "text");
             return res.affectedRows + " rows deleted\n";
           },
         },
@@ -259,40 +245,7 @@ export async function healthChecks(app: App) {
   // ── logs, clients, sessions ──────────────────────────────────────────────
   cleanup["clean logs, clients and sessions"] = () => ({
     info: "deletes what is not used any more, can take long!",
-    solutions: {
-      run: {
-        solve: async () => {
-          const start    = Date.now();
-          const monthAgo = unixTime() - (60 * 60 * 24 * 30);
-          let msg = "";
-
-          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} AND ${notLinked("log")}`;
-          await optimize("log");
-          msg += logRes.affectedRows + " log-rows deleted\n";
-
-          for (const table of ["log_url", "log_user_agent", "log_ip"]) {
-            const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${notLinked(table)}`;
-            await optimize(table);
-            msg += res.affectedRows + ` ${table}-rows deleted\n`;
-          }
-
-          const clientRes = await db.exec`DELETE FROM client WHERE ${notLinked("client")}`;
-          await optimize("client");
-          msg += clientRes.affectedRows + " client-rows deleted\n";
-
-          const idleBefore = unixTime() - await app.sessions.maxIdle(); // same limit as load()
-          const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${idleBefore} AND token IS NOT NULL`;
-          msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
-
-          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND ${notLinked("sess")}`;
-          await optimize("sess");
-          msg += sessRes.affectedRows + " sess-rows deleted\n";
-
-          msg += "duration: " + ((Date.now() - start) / 1000).toFixed(2) + " seconds";
-          return msg;
-        },
-      },
-    },
+    solutions: { run: { solve: () => cleanLogs(app) } },
   });
 
   // ── cache ────────────────────────────────────────────────────────────────
@@ -362,4 +315,52 @@ function dbEpochSql(dialect: string) {
   if (dialect === "postgres") return "SELECT floor(extract(epoch FROM now()))";
   if (dialect === "sqlite") return "SELECT strftime('%s','now')";
   return "SELECT UNIX_TIMESTAMP()";
+}
+
+// MySQL-only; other dialects run without it.
+const optimize = async (db: Db, table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
+
+// "no row references this table"; `except` skips columns that belong to the parent itself.
+const notLinked = (db: Db, table: string, except: string[] = []) => {
+  const refs = db.table(table).children.filter((f) => !except.includes(`${f.table.name}.${f.name}`));
+  if (!refs.length) return sql`${false}`; // no references; an empty condition would mean "all unused"
+  return sql.join(
+    refs.map((f) =>
+      sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table.name)} WHERE ${sql.id(f.name)} IS NOT NULL)`
+    ),
+    " AND ",
+  );
+};
+
+/** Logs older than a month and clients, sessions and log details nothing uses any more. */
+export async function cleanLogs(app: App): Promise<string> {
+  const db = app.db;
+  const start    = Date.now();
+  const monthAgo = unixTime() - (60 * 60 * 24 * 30);
+  let msg = "";
+
+  const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} AND ${notLinked(db, "log")}`;
+  await optimize(db, "log");
+  msg += logRes.affectedRows + " log-rows deleted\n";
+
+  for (const table of ["log_url", "log_user_agent", "log_ip"]) {
+    const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${notLinked(db, table)}`;
+    await optimize(db, table);
+    msg += res.affectedRows + ` ${table}-rows deleted\n`;
+  }
+
+  const clientRes = await db.exec`DELETE FROM client WHERE ${notLinked(db, "client")}`;
+  await optimize(db, "client");
+  msg += clientRes.affectedRows + " client-rows deleted\n";
+
+  const idleBefore = unixTime() - await app.sessions.maxIdle(); // same limit as load()
+  const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${idleBefore} AND token IS NOT NULL`;
+  msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
+
+  const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND ${notLinked(db, "sess")}`;
+  await optimize(db, "sess");
+  msg += sessRes.affectedRows + " sess-rows deleted\n";
+
+  msg += "duration: " + ((Date.now() - start) / 1000).toFixed(2) + " seconds";
+  return msg;
 }

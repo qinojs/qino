@@ -65,6 +65,8 @@ async function build(app: App) {
     fr: "<h1>Appareils</h1>\n<p>Où vous êtes connecté. Déconnectez un appareil que vous n'utilisez plus.</p>",
     it: "<h1>Dispositivi</h1>\n<p>Dove avete effettuato l'accesso. Disconnettete un dispositivo che non usate più.</p>",
   });
+  // accounts hold personal data: the privacy policy says so
+  await (await cm.nodeByModule("cms.cont.privacy"))?.settings.account(true);
 }
 
 /** A page below the account: an intro, then one section per module. */

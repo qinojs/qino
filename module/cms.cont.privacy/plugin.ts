@@ -94,7 +94,7 @@ const SECTIONS = [
     },
   },
   {
-    name: "changes", description: "Changes to this policy.",
+    name: "changes", area: true, description: "Changes to this policy.",
     initial: {
       en: "<h2>Changes</h2>\n<p>We may adapt this privacy policy at any time. The version published here applies.</p>",
       de: "<h2>Änderungen</h2>\n<p>Wir können diese Datenschutzerklärung jederzeit anpassen. Es gilt die hier veröffentlichte Fassung.</p>",

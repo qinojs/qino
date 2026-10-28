@@ -1,6 +1,6 @@
 import { App, Ctx, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { assertEquals } from "@qino/qino/tests";
+import { assert, assertEquals } from "@qino/qino/tests";
 
 Deno.test("cms.cont.imprint/privacy: owner from identity, switchable sections, editable texts", async () => {
   const dir = await Deno.makeTempDir() + "/";
@@ -29,7 +29,11 @@ Deno.test("cms.cont.imprint/privacy: owner from identity, switchable sections, e
         assertEquals(out.includes(part), true, part);
       }
       assertEquals(out.includes("Commercial register"), false, "off by default");
+      assert(out.indexOf('qcms-name="more"') < out.indexOf("Liability for content"), "credits go below the owner");
 
+      await imprint.settings.owner(false);
+      assert(String(await imprint.htmlRaw()).includes('qcms-name="more"'), "the free area stays with its section off");
+      await imprint.settings.owner(true);
       await imprint.settings.copyright(false);
       await imprint.settings.register(true);
       await identity.organization.address.addressLocality("Bern");

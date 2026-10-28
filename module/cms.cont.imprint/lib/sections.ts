@@ -4,9 +4,9 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** A block of a legal page: an editable text starting from `initial`, switched by the setting `name`;
- *  `owner` appends the owner's details from identity. */
+ *  `owner` appends the owner's details from identity, `area` the free area for the site's own blocks. */
 type Section = {
-  name: string; description: string; initial: Record<string, string>; on?: boolean; owner?: boolean;
+  name: string; description: string; initial: Record<string, string>; on?: boolean; owner?: boolean; area?: boolean;
 };
 
 /** One switch per section, defaulting to `on`. */
@@ -15,16 +15,13 @@ export const sectionSettings = (sections: Section[]) => ({
     [name, { type: "boolean", default: on, description }])),
 });
 
-/** The switched-on sections, then a free area for whatever a site needs beyond them. */
-export const renderSections = (sections: Section[]) => (node: Node, { ctx }: { ctx: Ctx }) => {
-  const shown = sections.filter(({ name }) => node.settings[name]<boolean>());
-  return html.async`<div>
+/** The switched-on sections; the free area stays where it is, even when its section is off. */
+export const renderSections = (sections: Section[]) => (node: Node, { ctx }: { ctx: Ctx }) => html.async`<div>
   ${hint(node)}
-  ${shown.map(({ name, initial, owner: o }) =>
-    html.async`<section>${node.cms.text(node, name, { initial })}${o ? owner(node, ctx.lang) : ""}</section>`)}
-  ${node.cont("more", "cms.cont.flexible")}
+  ${sections.map(({ name, initial, owner: o, area }) => html.async`${node.settings[name]<boolean>()
+    ? html.async`<section>${node.cms.text(node, name, { initial })}${o ? owner(node, ctx.lang) : ""}</section>`
+    : ""}${area ? node.cont("more", "cms.cont.flexible") : ""}`)}
 </div>`;
-};
 
 /** The owner's details, read from identity on every render: a new address shows at once. */
 async function owner(node: Node, lang: string) {

@@ -1,10 +1,11 @@
 import { renderSections, sectionSettings } from "./lib/sections.ts";
 
 // Starting texts for Switzerland, the EU and beyond: identity and contact (UWG Art. 3 lit. s,
-// DDG § 5, ECG § 5), then the usual notices. Editors adapt them; sites add blocks below.
+// DDG § 5, ECG § 5), then the usual notices. Sites add blocks, such as credits, below the owner.
 const SECTIONS = [
   {
-    name: "owner", owner: true, description: "Heading, then name, address, contact and numbers from the identity.",
+    name: "owner", owner: true, area: true,
+    description: "Heading, then name, address, contact and numbers from the identity.",
     initial: {
       en: "<h1>Imprint</h1>",
       de: "<h1>Impressum</h1>",

@@ -6,6 +6,7 @@ import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
 import { pendingLogin } from "./lib/auth/factors.ts";
 import { isLocalHost } from "./lib/fileStream.ts";
+import { cleanLogs } from "./healthChecks.ts";
 
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/DbEvents.ts";
@@ -14,6 +15,11 @@ export { api } from "./api.ts";
 export { healthChecks } from "./healthChecks.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+// Runs while the cron module is installed; core works without it.
+export const cron = {
+  logs: { every: "day", at: { hour: 3 }, jitter: 2 * 60 * 60, timeout: 60 * 60, run: cleanLogs },
+};
 
 // The password factor is part of core (column, form, check); only the declaration is needed.
 export const authFactors = [{

@@ -17,7 +17,9 @@ one is caught up once, late. A failing listener is logged, not retried, so the o
 
 ## Declaring jobs
 
-Add `cron` to the `dependencies` in `manifest.json` and export the jobs from `plugin.ts`:
+Export the jobs from `plugin.ts`. They run while `cron` is installed; a module that needs them
+lists `cron` in the `dependencies` of `manifest.json`, one that can do without (like core's log
+cleanup) does not:
 
 ```ts
 import type { App } from "@qino/qino";

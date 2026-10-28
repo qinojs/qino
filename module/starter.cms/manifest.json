@@ -4,6 +4,7 @@
   "dependencies": [
     "cms",
     "identity",
+    "cron",
     "webapp",
     "seo",
     "security",
