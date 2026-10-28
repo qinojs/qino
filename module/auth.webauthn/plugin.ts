@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, identified, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
+import { getCtx, hostAllowed, identified, unixTime, b64url, unb64url, randB64, Access, AccessError, Output, s } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 
@@ -21,8 +21,6 @@ export const authFactors: Factor[] = [{
 export const settingsSchema = {
   properties: {
     rpId:   { type: "string", description: "Relying Party ID — domain without protocol, e.g. example.com — default: host of core.url without www." },
-    rpName: { type: "string", description: "Display name of the application in the authenticator dialog" },
-    origin: { type: "string", description: "Accepted origin(s), comma-separated, e.g. https://example.com:8443 — default: request origin if its host matches rpId" },
   },
 };
 
@@ -38,19 +36,30 @@ export const cron = {
 
 const CHALLENGE_TTL = 5 * 60;
 
-async function getRp(app: App) {
-  const set = app.settings["auth.webauthn"];
-  const own = URL.parse(String(await app.settings.core.url ?? ""))?.hostname.replace(/^www\./, "");
-  return { rpId: String(await set.rpId ?? "") || own || "localhost", rpName: String(await set.rpName ?? "") || "Qino" };
+const ownHost = async (app: App) => URL.parse(String(await app.settings.core.url ?? ""))?.hostname ?? "";
+
+/** The app's hosts, as the core guard sees them: core.hosts plus the host of core.url. */
+const appHosts = async (app: App) => `${await app.settings.core.hosts ?? ""} ${await ownHost(app)}`;
+
+async function getRpId(app: App) {
+  const own = (await ownHost(app)).replace(/^www\./, "");
+  return String(await app.settings["auth.webauthn"].rpId ?? "") || own || "localhost";
 }
 
-/** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
-async function expectedOrigins(ctx: Ctx, rpId: string) {
-  const setting = String(await ctx.app.settings["auth.webauthn"].origin ?? "");
-  if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
-  const url = ctx.req.url;
-  if (url.hostname === rpId || url.hostname.endsWith("." + rpId)) return [url.origin];
-  return [rpId === "localhost" ? "http://localhost" : `https://${rpId}`];
+/** Origins accepted in clientDataJSON: the request's, if its host is under rpId or one of the app's hosts. */
+export async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
+  const { hostname, origin } = ctx.req.url;
+  const ok = hostname === rpId || hostname.endsWith("." + rpId) || hostAllowed(await appHosts(ctx.app), hostname);
+  return ok ? [origin] : [];
+}
+
+/** Related origins: the app's other domains may use passkeys of rpId. */
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
+  app.on("route", async ({ ctx }) => {
+    if (ctx.req.appPath !== ".well-known/webauthn") return;
+    const hosts = new Set((await appHosts(app)).split(/[\s,]+/).filter((h) => h && !h.startsWith("*.")));
+    throw new Output({ origins: [...hosts].map((h) => "https://" + h) });
+  }, { signal });
 }
 
 async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm") {
@@ -85,7 +94,7 @@ async function verifyAssertion(
   const cred = await ctx.app.db.row`SELECT * FROM webauthn_credential WHERE credential_id = ${credentialId}`;
   if (!cred) return { ok: false, error: "credential_not_found" };
 
-  const { rpId } = await getRp(ctx.app);
+  const rpId = await getRpId(ctx.app);
   const expectedOrigin = await expectedOrigins(ctx, rpId);
   try {
     const { verified, authenticationInfo } = await verifyAuthenticationResponse({
@@ -125,14 +134,14 @@ export const api: ApiTree = {
         execute: async () => {
           const ctx = getCtx();
           const db  = ctx.app.db;
-          const { rpId, rpName } = await getRp(ctx.app);
+          const rpId = await getRpId(ctx.app);
           const challenge = randB64(32);
           const token     = await storeChallenge(db, challenge, ctx.userId, "register");
           const usr       = await db.row`SELECT username, given_name, family_name FROM usr WHERE id = ${ctx.userId}`;
           return {
             token,
             publicKey: {
-              rp: { id: rpId, name: rpName },
+              rp: { id: rpId, name: rpId },
               user: {
                 id: b64url(new TextEncoder().encode(String(ctx.userId))),
                 name: String(usr?.username ?? ctx.userId),
@@ -168,7 +177,7 @@ export const api: ApiTree = {
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          const { rpId } = await getRp(ctx.app);
+          const rpId = await getRpId(ctx.app);
           const expectedOrigin = await expectedOrigins(ctx, rpId);
           let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>;
           try {
@@ -222,7 +231,7 @@ export const api: ApiTree = {
         access: Access.PUBLIC,
         execute: async () => {
           const ctx = getCtx();
-          const { rpId } = await getRp(ctx.app);
+          const rpId = await getRpId(ctx.app);
           const challenge = randB64(32);
           const token = await storeChallenge(ctx.app.db, challenge, 0, "login");
           return {
@@ -271,7 +280,7 @@ export const api: ApiTree = {
           const ctx = getCtx();
           const db  = ctx.app.db;
           const usrId = identified(ctx);
-          const { rpId } = await getRp(ctx.app);
+          const rpId = await getRpId(ctx.app);
           const challenge = randB64(32);
           const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;
           const token = await storeChallenge(db, challenge, usrId, "confirm");

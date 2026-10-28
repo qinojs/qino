@@ -1,7 +1,7 @@
 import { AccessError, Db, invoke, toTools, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
-import { api, authFactors, cron, settingsSchema } from "../plugin.ts";
+import { api, authFactors, cron, expectedOrigins, init, settingsSchema } from "../plugin.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import manifest from "../manifest.json" with { type: "json" };
 
@@ -11,7 +11,7 @@ function makeApp() {
   const challenges: Record<string, unknown>[] = [];
   const execs: Array<[string, unknown[]]> = [];
   const app = {
-    settings: { core: {}, "auth.webauthn": { rpId: "localhost", rpName: "Qino" } } as Record<string, Record<string, unknown>>,
+    settings: { core: {}, "auth.webauthn": { rpId: "localhost" } } as Record<string, Record<string, unknown>>,
     fire: () => Promise.resolve(),
     db: {
       row: () => null,
@@ -31,7 +31,6 @@ function makeApp() {
 Deno.test("auth.webauthn: module metadata is wired", () => {
   assertEquals(name, "auth.webauthn");
   assertEquals(settingsSchema.properties.rpId.type, "string");
-  assertEquals(settingsSchema.properties.rpName.type, "string");
 });
 
 Deno.test("auth.webauthn: api exposes expected api endpoints", () => {
@@ -130,4 +129,22 @@ Deno.test("auth.webauthn: a user has the factor only with a passkey of their own
   } finally {
     await db.close();
   }
+});
+
+Deno.test("auth.webauthn: the request origin passes under rpId or in core.hosts", async () => {
+  const app = { settings: { core: { hosts: "polarity.se", url: "https://schwups.ch/" } } };
+  const at = (url: string) => expectedOrigins({ app, req: { url: new URL(url) } } as any, "polarity.ch");
+  assertEquals(await at("https://schwups.ch/x"), ["https://schwups.ch"], "the host of core.url counts too");
+  assertEquals(await at("https://www.polarity.ch:8443/x"), ["https://www.polarity.ch:8443"]);
+  assertEquals(await at("https://polarity.se/x"), ["https://polarity.se"]);
+  assertEquals(await at("https://evil.ch/x"), []);
+});
+
+Deno.test("auth.webauthn: /.well-known/webauthn lists core.hosts as related origins", async () => {
+  let route: (e: any) => Promise<void> = async () => {};
+  const app = { settings: { core: { hosts: "polarity.se\n*.polarity.se www.polarity.se", url: "https://polarity.se/" } }, on: (_: string, fn: any) => route = fn };
+  init(app as any, { signal: new AbortController().signal });
+  assertEquals(await route({ ctx: { req: { appPath: "other" } } }), undefined);
+  const out = await route({ ctx: { req: { appPath: ".well-known/webauthn" } } }).catch((e) => e);
+  assertEquals(JSON.parse(out.body), { origins: ["https://polarity.se", "https://www.polarity.se"] });
 });

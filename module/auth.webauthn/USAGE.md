@@ -16,9 +16,12 @@ app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.auth.w
 
 | Key      | Default       | Beschreibung                                      |
 |----------|---------------|---------------------------------------------------|
-| `rpId`   | `"localhost"` | Domain ohne Protokoll, z.B. `example.com`         |
-| `rpName` | `"Qino"`      | Anzeigename im Authenticator-Dialog               |
-| `origin` | abgeleitet    | Erlaubte Origin(s), kommagetrennt, z.B. `https://example.com:8443`. Ohne Setting wird die Request-Origin akzeptiert, wenn ihr Host zur `rpId` passt |
+| `rpId`   | Host von `core.url` ohne `www.`, sonst `"localhost"` | Domain ohne Protokoll, z.B. `example.com` |
+
+Akzeptiert wird die Origin des Requests, wenn ihr Host unter der `rpId` liegt oder ein Host der App ist
+(`core.hosts` und der Host von `core.url`). Diese Hosts dürfen Passkeys der `rpId` mitbenutzen
+(`/.well-known/webauthn`, Related Origins) — so bleiben Passkeys auch nach einem Domainwechsel gültig,
+solange die alte Domain als `rpId` gesetzt ist und weiter auf die App zeigt.
 
 ## API
 

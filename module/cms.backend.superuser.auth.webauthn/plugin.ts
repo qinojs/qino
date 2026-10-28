@@ -52,15 +52,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     ? html`<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.`
     : "";
 
-  const rpId   = String(await node.app.settings["auth.webauthn"].rpId   ?? "") || "(not configured)";
-  const rpName = String(await node.app.settings["auth.webauthn"].rpName ?? "") || "(not configured)";
+  const rpId = String(await node.app.settings["auth.webauthn"].rpId ?? "") || "(host of core.url)";
 
   return html.async`<div class=u2-flex>
 <div class=u2-card style="flex:0 1 24rem">
   <div class=-head>Configuration</div>
   <table class=u2-table>
     <tr><th style="width:8em">Relying Party ID<td>${rpId}
-    <tr><th>RP Name<td>${rpName}
   </table>
   <div>
     <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → auth.webauthn</code>.</p>
