@@ -1,1 +1,1 @@
-export { renderSections, sectionSettings } from "./lib/sections.ts";
+export { sections } from "./lib/sections.ts";

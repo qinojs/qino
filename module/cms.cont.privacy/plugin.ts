@@ -1,4 +1,4 @@
-import { renderSections, sectionSettings } from "@qino/qino/cms.cont.imprint";
+import { sections } from "@qino/qino/cms.cont.imprint";
 
 // Starting texts covering the Swiss FADP (Art. 19) and the GDPR (Art. 13) for what a Qino site does
 // out of the box. Sections for features a site may add start switched off.
@@ -104,6 +104,6 @@ const SECTIONS = [
   },
 ];
 
-export const cms = {
-  node: { css: ["pub/main.css"], render: renderSections(SECTIONS), settingsSchema: sectionSettings(SECTIONS) },
-};
+const { render, settingsSchema } = sections(SECTIONS);
+
+export const cms = { node: { css: ["pub/main.css"], render, settingsSchema } };

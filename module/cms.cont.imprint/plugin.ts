@@ -1,4 +1,4 @@
-import { renderSections, sectionSettings } from "./lib/sections.ts";
+import { sections } from "./lib/sections.ts";
 
 // Starting texts for Switzerland, the EU and beyond: identity and contact (UWG Art. 3 lit. s,
 // DDG § 5, ECG § 5), then the usual notices. Sites add blocks, such as credits, below the owner.
@@ -60,6 +60,6 @@ const SECTIONS = [
   },
 ];
 
-export const cms = {
-  node: { css: ["pub/main.css"], render: renderSections(SECTIONS), settingsSchema: sectionSettings(SECTIONS) },
-};
+const { render, settingsSchema } = sections(SECTIONS);
+
+export const cms = { node: { css: ["pub/main.css"], render, settingsSchema } };

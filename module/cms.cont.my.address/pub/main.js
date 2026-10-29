@@ -12,8 +12,8 @@ cms.initNode("cont.my.address", async (el) => {
   const show = (value = "") => void (msg.value = value);
 
   try {
-    const address = await profile.get();
-    for (const field of fields) field.value = address[field.name] ?? "";
+    const data = await profile.get();
+    for (const field of fields) field.value = data[field.name] ?? "";
   } catch (e) { show(labels.error + " " + (e?.message || String(e))); }
 
   form.addEventListener("submit", async (event) => {

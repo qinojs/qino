@@ -3,25 +3,26 @@ import { html } from "@qino/qino";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-/** A block of a legal page: an editable text starting from `initial`, switched by the setting `name`;
- *  `owner` appends the owner's details from identity, `area` the free area for the site's own blocks. */
-type Section = {
+/**
+ * A legal page from `sections`: each an editable text starting from `initial`, switched by the setting
+ * `name`; `owner` appends the owner's details from identity, `area` the free area for the site's own
+ * blocks, which stays where it is even when its section is off.
+ */
+export function sections(list: {
   name: string; description: string; initial: Record<string, string>; on?: boolean; owner?: boolean; area?: boolean;
-};
-
-/** One switch per section, defaulting to `on`. */
-export const sectionSettings = (sections: Section[]) => ({
-  properties: Object.fromEntries(sections.map(({ name, description, on = true }) =>
-    [name, { type: "boolean", default: on, description }])),
-});
-
-/** The switched-on sections; the free area stays where it is, even when its section is off. */
-export const renderSections = (sections: Section[]) => (node: Node, { ctx }: { ctx: Ctx }) => html.async`<div>
+}[]) {
+  const settingsSchema = {
+    properties: Object.fromEntries(list.map(({ name, description, on = true }) =>
+      [name, { type: "boolean", default: on, description }])),
+  };
+  const render = (node: Node, { ctx }: { ctx: Ctx }) => html.async`<div>
   ${hint(node)}
-  ${sections.map(({ name, initial, owner: o, area }) => html.async`${node.settings[name]<boolean>()
+  ${list.map(({ name, initial, owner: o, area }) => html.async`${node.settings[name]<boolean>()
     ? html.async`<section>${node.cms.text(node, name, { initial })}${o ? owner(node, ctx.lang) : ""}</section>`
     : ""}${area ? node.cont("more", "cms.cont.flexible") : ""}`)}
 </div>`;
+  return { render, settingsSchema };
+}
 
 /** The owner's details, read from identity on every render: a new address shows at once. */
 async function owner(node: Node, lang: string) {
