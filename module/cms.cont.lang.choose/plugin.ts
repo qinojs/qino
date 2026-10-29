@@ -9,10 +9,10 @@ const LANG_NAMES: Record<string, string> = {
   fr: "Français",
   en: "English",
   it: "Italiano",
-  es: "Espanol",
+  es: "Español",
   nl: "Nederlands",
   pl: "Polski",
-  cz: "Cesky",
+  cz: "Česky",
 };
 
 const settingsSchema = {
@@ -61,20 +61,16 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   }
 
   // links (default)
-  const items = await Promise.all(langs.map(async (l) => {
-    if (hideActive && l === ctx.lang) return "";
-    const isActive = l === ctx.lang;
-    const cls = [`-${l}`, isActive ? "-active" : ""].filter(Boolean).join(" ");
-    const ariaLabel = !longText ? html` aria-label="${LANG_NAMES[l] ?? l}"` : "";
-    const ariaCurrent = isActive ? html.raw(" aria-current=page") : "";
-    const label = longText ? (LANG_NAMES[l] ?? l) : l;
-    return html`<li><a href="${await page.url(l)}" class="${cls}" lang="${l}" hreflang="${l}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
+  const shown = hideActive ? langs.filter((l) => l !== ctx.lang) : langs;
+  const items = await Promise.all(shown.map(async (l) => {
+    const active = l === ctx.lang;
+    const name = LANG_NAMES[l] ?? l;
+    const ariaLabel = longText ? "" : html` aria-label="${name}"`;
+    const ariaCurrent = active ? html.raw(" aria-current=page") : "";
+    return html`<li><a href="${await page.url(l)}" class="-${l}${active ? " -active" : ""}" lang="${l}" hreflang="${l}"${ariaLabel}${ariaCurrent}><span>${longText ? name : l}</span></a>`;
   }));
 
-  const filteredItems = items.filter(Boolean);
-  if (!filteredItems.length) return html`<span></span>`;
-
-  return html`<nav aria-label=Languages><ul>${filteredItems}</ul></nav>`;
+  return html`<nav aria-label=Languages><ul>${items}</ul></nav>`;
 }
 
 export const cms = {
