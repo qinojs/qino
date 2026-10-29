@@ -1,9 +1,9 @@
 {
-  "name": "cms.backend.superuser.auth.totp",
+  "name": "cms.backend.superuser.security.auth.totp",
   "description": "Sets up an authenticator app and lists everyone's.",
   "dependencies": [
     "auth.totp",
-    "cms.backend.superuser.auth"
+    "cms.backend.superuser.security.auth"
   ],
   "files": [
     "manifest.json",

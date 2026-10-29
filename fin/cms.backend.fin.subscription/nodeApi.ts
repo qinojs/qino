@@ -1,4 +1,4 @@
-import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { parseAmount } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { bill, cancel, plan, plans, subscribe, update } from "@qino/qino/fin.subscription";
 

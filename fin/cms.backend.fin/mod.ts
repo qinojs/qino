@@ -100,8 +100,8 @@ export async function rowLink(
 
 /** Where a `ref` of a fin module is shown: its backend page, the parameter, the word for it. */
 const REFS: Record<string, [string, string, string]> = {
-  "fin.invoice": ["cms.backend.superuser.fin.invoice", "invoice", "invoice"],
-  "fin.payment": ["cms.backend.superuser.fin.payment", "payment", "payment"],
+  "fin.invoice": ["cms.backend.fin.invoice", "invoice", "invoice"],
+  "fin.payment": ["cms.backend.fin.payment", "payment", "payment"],
 };
 
 /** `fin.invoice:7` or `fin.payment:12` as a link where its page is there; anything else as text. */

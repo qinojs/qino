@@ -1,5 +1,5 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
-import { badge, money, pager, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, pager, rowLink } from "@qino/qino/cms.backend.fin";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -104,7 +104,7 @@ async function lines(node: Node, url: URL) {
       <td>${row.reference ? html`<code style="white-space:nowrap">${readable(String(row.reference))}</code>` : ""}
       <td style="white-space:pre-line">${row.text}
       <td>${row.payment_id
-        ? rowLink(node, "cms.backend.superuser.fin.payment", "payment", row.payment_id)
+        ? rowLink(node, "cms.backend.fin.payment", "payment", row.payment_id)
         : assignForm(app, row, guesses.get(Number(row.id)) ?? [])}`)}
     ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 7 })}
   </table>`;

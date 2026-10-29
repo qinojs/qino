@@ -20,9 +20,9 @@ type Rows = Record<string, any>[];
 
 /** PHP's accounting pages → the fin backend. */
 const BACKEND = [
-  ["cms.backend.accounting1", "cms.backend.superuser.fin.invoice"],
-  ["cms.backend.accounting1.import_camt054", "cms.backend.superuser.fin.bank"],
-  ["cms.backend.accounting1.settings", "cms.backend.superuser.fin"],
+  ["cms.backend.accounting1", "cms.backend.fin.invoice"],
+  ["cms.backend.accounting1.import_camt054", "cms.backend.fin.bank"],
+  ["cms.backend.accounting1.settings", "cms.backend.fin"],
 ];
 
 /** The customers an import brought: the next one removes them again. */

@@ -14,7 +14,7 @@ export function install({ app }: { app: App }): Promise<void> {
 async function build(app: App) {
   await adopt(app, name);
   const modules = await moduleLink(app, "cms.backend.superuser.module", "Backend → Superuser → Modules");
-  const finance = await moduleLink(app, "cms.backend.superuser.fin", "Backend → Superuser → Finance");
+  const finance = await moduleLink(app, "cms.backend.fin", "Backend → Finance");
   await todo(app, "todo-fin", { en: "Invoices", de: "Rechnungen", fr: "Factures", it: "Fatture" }, {
     en: `<p>Your address on the invoices comes from the identity. To get paid online, install a payment provider under ${modules}, for example <i>fin.payment.qrbill</i> or <i>fin.payment.stripe</i>. Invoices are written under ${finance}.</p>`,
     de: `<p>Ihre Adresse auf den Rechnungen kommt aus der Identität. Für Online-Zahlungen installieren Sie unter ${modules} einen Zahlungsanbieter, zum Beispiel <i>fin.payment.qrbill</i> oder <i>fin.payment.stripe</i>. Rechnungen schreiben Sie unter ${finance}.</p>`,

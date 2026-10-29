@@ -10,7 +10,7 @@ import type { Node } from "@qino/qino/cms";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }) {
-  await backend.install(app, name, { en: "DB Files", de: "DB Dateien" });
+  await backend.install(app, name, { en: "Files", de: "Dateien" });
 }
 
 const IMG = new Set(["jpg","jpeg","gif","png","svg","webp"]);

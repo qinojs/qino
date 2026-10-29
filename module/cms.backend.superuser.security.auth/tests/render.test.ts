@@ -34,12 +34,12 @@ const render = (app: unknown, ctx: unknown) =>
   // deno-lint-ignore no-explicit-any
   cms.node.render({ app } as any, { ctx } as any).then(String);
 
-Deno.test("cms.backend.superuser.auth: metadata is wired", () => {
-  assertEquals(name, "cms.backend.superuser.auth");
-  assertEquals(dependencies, ["auth", "cms.backend"]);
+Deno.test("cms.backend.superuser.security.auth: metadata is wired", () => {
+  assertEquals(name, "cms.backend.superuser.security.auth");
+  assertEquals(dependencies, ["auth", "cms.backend.superuser.security"]);
 });
 
-Deno.test("cms.backend.superuser.auth: the page reads the factor declarations, not a list of its own", async () => {
+Deno.test("cms.backend.superuser.security.auth: the page reads the factor declarations, not a list of its own", async () => {
   const app = appWith(false);
   const out = await render(app, await testContext({ app, sess: guest }));
   assertStringIncludes(out, "Passkey");
@@ -47,7 +47,7 @@ Deno.test("cms.backend.superuser.auth: the page reads the factor declarations, n
   assertStringIncludes(out, "opens a session"); // the policy, told where the factors are
 });
 
-Deno.test("cms.backend.superuser.auth: it shows the policy and the verbs that demand a proof", async () => {
+Deno.test("cms.backend.superuser.security.auth: it shows the policy and the verbs that demand a proof", async () => {
   const app = appWith(true);
   const out = await render(app, await testContext({ app, sess: guest }));
   assertStringIncludes(out, "<code>core.loginTwoFactor</code>");

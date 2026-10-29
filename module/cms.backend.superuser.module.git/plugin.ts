@@ -12,6 +12,7 @@ import type { Repo } from "./lib/git.ts";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.git", name); // the module this one replaces
   await backend.install(app, name, { en: "Git", de: "Git" });
 }
 

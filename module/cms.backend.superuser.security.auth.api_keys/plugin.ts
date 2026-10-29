@@ -3,13 +3,18 @@ import { getCtx, html, NotFoundError, randB64, requireStepUp, safeEqual, sql, un
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
+import manifest from "./manifest.json" with { type: "json" };
+
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+
+const { name } = manifest;
 
 export const cms         = { node: { js: ["pub/main.js"], render, api, parts: { list } } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, "cms.backend.superuser.auth.api_keys", { en: "API Keys", de: "API-Schlüssel" });
+  await backend.takeOver(app, "cms.backend.superuser.auth.api_keys", name); // the module this one replaces
+  await backend.install(app, name, { en: "API Keys", de: "API-Schlüssel" });
 }
 
 async function api(node: Node, vars: Record<string, unknown>) {

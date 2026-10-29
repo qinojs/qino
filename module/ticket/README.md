@@ -53,7 +53,7 @@ issued and what happened. A weekly cron removes them a year after issue, but onl
 unused link without expiry is kept.
 
 Consumers: [cms.cont.password_reset](../cms.cont.password_reset/) issues them,
-[cms.backend.superuser.tickets](../cms.backend.superuser.tickets/) watches them.
+[cms.backend.superuser.security.tickets](../cms.backend.superuser.security.tickets/) watches them.
 
 ## Possible extensions
 

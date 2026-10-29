@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.locale.currency",
+  "name": "cms.backend.config.locale.currency",
   "description": "The exchange rates, and whether the daily job keeps them current.",
   "dependencies": [
-    "cms.backend.superuser.locale",
+    "cms.backend.config.locale",
     "locale.currency"
   ],
   "files": [

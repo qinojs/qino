@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.locale",
+  "name": "cms.backend.config.locale",
   "description": "Groups the reference data panels — countries, currencies, rates.",
   "dependencies": [
-    "cms.backend"
+    "cms.backend.config"
   ],
   "files": [
     "manifest.json",

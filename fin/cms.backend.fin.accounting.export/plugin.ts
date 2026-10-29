@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { inFin } from "@qino/qino/cms.backend.superuser.fin";
+import { inFin } from "@qino/qino/cms.backend.fin";
 
 import { render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -10,6 +10,7 @@ import type { App } from "@qino/qino";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.fin.accounting.export", name); // the module this one replaces
   await backend.install(app, name, { en: "Export", de: "Export" });
 }
 

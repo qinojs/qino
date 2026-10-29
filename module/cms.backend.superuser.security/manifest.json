@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser.security",
+  "description": "Provides the security administration dashboard.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

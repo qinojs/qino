@@ -2,7 +2,7 @@ import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
   badge, direction, inputAmount, money, pager, refLink, rowLink, status,
-} from "@qino/qino/cms.backend.superuser.fin";
+} from "@qino/qino/cms.backend.fin";
 import { mainCurrency, today } from "@qino/qino/fin";
 import { document, lines, refOf } from "@qino/qino/fin.invoice";
 import { methods } from "@qino/qino/fin.payment";
@@ -32,11 +32,11 @@ const userLabel = (u: Row) =>
 
 /** A user, linked to their page among customers and suppliers. */
 const userLink = (node: Node, id: unknown, label = "") =>
-  id ? rowLink(node, "cms.backend.superuser.fin.party", "usr", id, label || `#${id}`) : "";
+  id ? rowLink(node, "cms.backend.fin.party", "usr", id, label || `#${id}`) : "";
 
 /** A small link to the party's page, behind its name: the list stays about the invoices. */
 async function partyIcon(node: Node, id: unknown) {
-  const url = (await backend.toModuleUrl(node, "cms.backend.superuser.fin.party"))({ usr: id });
+  const url = (await backend.toModuleUrl(node, "cms.backend.fin.party"))({ usr: id });
   return url ? html.async` <a href="${url}" title="${node.app.t`Customer`}"><u2-ico icon=person>👤</u2-ico></a>` : "";
 }
 
@@ -347,7 +347,7 @@ async function detail(node: Node, id: number) {
       ${field(t`User`, userLink(node, row.usr_id, users.get(Number(row.usr_id))))}
       ${field(t`Language`, row.lang)}
       ${credit ? field(t`Corrects`, row.corrects
-        ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", row.corrects)
+        ? rowLink(node, "cms.backend.fin.invoice", "invoice", row.corrects)
         : "") : ""}
       ${field(t`Direction`, html.async`${direction(row.direction, "")}
         ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`}`)}
@@ -421,7 +421,7 @@ async function detail(node: Node, id: number) {
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`} <small>ref ${refOf(id)}</small></div>
     ${payments.length ? html.async`<table class=u2-table>${payments.map((p) => html.async`<tr>
-      <td>${rowLink(node, "cms.backend.superuser.fin.payment", "payment", p.id)}
+      <td>${rowLink(node, "cms.backend.fin.payment", "payment", p.id)}
       <td>${direction(p.direction, p.direction)} ${p.provider}
       <td style="text-align:end">${money(p.amount, p.currency)}
       <td style="text-align:end">${money(Number(p.paid) - Number(p.refunded), p.currency)}

@@ -1,4 +1,4 @@
-# cms.backend.superuser.fin.party
+# cms.backend.fin.party
 
 Customers and suppliers: the users invoices are for or from. Who is which follows from the
 invoices — issued to someone makes a customer, received from someone a supplier, both is fine —

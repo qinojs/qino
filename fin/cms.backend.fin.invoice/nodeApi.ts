@@ -1,6 +1,6 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { fileOf, parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { fileOf, parseAmount } from "@qino/qino/cms.backend.fin";
 import { partyOf } from "@qino/qino/fin";
 import {
   attach, cancel, create, creditNote, document, issue, payerOf, print, refOf, remove, revise, send, setSent, update,

@@ -66,5 +66,5 @@ That is why the domains live here and not in a monitor: monitoring is a tool, bi
 **Monitored.** Where [cms.backend.domain_monitor](../../ops/cms.backend.domain_monitor/) is
 installed, every saved domain is watched there (daily). Removing it there only stops the checks.
 
-The backend is [cms.backend.superuser.fin.hosting](../cms.backend.superuser.fin.hosting/), the
+The backend is [cms.backend.fin.hosting](../cms.backend.fin.hosting/), the
 customer's own list [cms.cont.fin.my.domains](../cms.cont.fin.my.domains/).

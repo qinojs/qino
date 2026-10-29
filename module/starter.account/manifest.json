@@ -16,10 +16,10 @@
     "cms.cont.my.backup_codes",
     "cms.cont.my.clients",
     "cms.cont.my.oauth",
-    "cms.backend.superuser.auth",
-    "cms.backend.superuser.auth.webauthn",
-    "cms.backend.superuser.auth.totp",
-    "cms.backend.superuser.auth.backup_codes"
+    "cms.backend.superuser.security.auth",
+    "cms.backend.superuser.security.auth.webauthn",
+    "cms.backend.superuser.security.auth.totp",
+    "cms.backend.superuser.security.auth.backup_codes"
   ],
   "files": [
     "README.md",

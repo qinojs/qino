@@ -388,7 +388,7 @@ Deno.test("api: apiClient mirrors the action tree", async () => {
 
 Deno.test("api: tool names stay within the MCP name charset", () => {
   assertEquals(toolName("get", ["cms.frontend", "widget"]), "cmsFrontend_widget_get");
-  assertEquals(toolName("post", ["cms.backend.superuser.oauth_server"]), "cmsBackendSuperuserOauthServer_post");
+  assertEquals(toolName("post", ["cms.backend.superuser.security.oauth_server"]), "cmsBackendSuperuserSecurityOauthServer_post");
   assertEquals(toolName("delete", ["file-store.9", ":id"]), "fileStore9_delete");
   const tools = toTools({ "cms.frontend": { widget: { post: { execute: () => null } } } } as never);
   assertEquals(/^[a-zA-Z0-9_-]{1,64}$/.test(tools[0].name), true);

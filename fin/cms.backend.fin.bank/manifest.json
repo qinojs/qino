@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.fin.bank",
+  "name": "cms.backend.fin.bank",
   "description": "Bank accounts and their statement lines: read camt files, see what settled which payment, assign the rest.",
   "dependencies": [
-    "cms.backend.superuser.fin",
+    "cms.backend.fin",
     "fin.bank"
   ],
   "files": [

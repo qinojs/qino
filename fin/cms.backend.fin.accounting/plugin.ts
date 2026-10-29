@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { finTexts, inFin, money } from "@qino/qino/cms.backend.superuser.fin";
+import { finTexts, inFin, money } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { balances } from "@qino/qino/fin.accounting";
 
@@ -13,6 +13,7 @@ import type { App, HtmlString } from "@qino/qino";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.fin.accounting", name); // the module this one replaces
   await backend.install(app, name, { en: "Accounting", de: "Buchhaltung" });
 }
 

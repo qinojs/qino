@@ -11,6 +11,7 @@ const { name } = manifest;
 export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.auth.webauthn", name); // the module this one replaces
   await backend.install(app, name, { en: "WebAuthn", de: "WebAuthn" });
 }
 

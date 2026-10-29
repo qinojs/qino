@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, refLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, refLink } from "@qino/qino/cms.backend.fin";
 import { addDays, addMonths, mainCurrency, today } from "@qino/qino/fin";
 import { balances } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";

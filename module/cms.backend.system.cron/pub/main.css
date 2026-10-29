@@ -1,4 +1,4 @@
-[qcms-mod="backend.superuser.cron"] {
+[qcms-mod="backend.system.cron"] {
   & > .-head { display: flex; align-items: center; gap: .5rem; }
   & > .-head > button:first-of-type { margin-left: auto; }
   /* the part wrapper is a direct card child, so it carries the card gap — the table must not */

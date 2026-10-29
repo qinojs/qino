@@ -1,6 +1,6 @@
 import { api } from "@qino/pub/api.js";
 
-cms.initNode("backend.superuser.tickets", (el) => {
+cms.initNode("backend.superuser.security.tickets", (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
   let busy = false;
 

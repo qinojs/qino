@@ -11,6 +11,7 @@ import type { App, HtmlString } from "@qino/qino";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.score", name); // the module this one replaces
   await backend.install(app, name, { en: "Scores", de: "Scores" });
 }
 

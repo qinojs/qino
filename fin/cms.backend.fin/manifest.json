@@ -1,5 +1,5 @@
 {
-  "name": "cms.backend.superuser.fin",
+  "name": "cms.backend.fin",
   "description": "Finance overview: what is open, how payments, invoices and bank work together, and which parts are there.",
   "dependencies": [
     "cms.backend",

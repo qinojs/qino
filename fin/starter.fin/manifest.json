@@ -8,10 +8,10 @@
     "fin.invoice",
     "fin.invoice.reminder",
     "cms.cont.fin.my.invoices",
-    "cms.backend.superuser.fin",
-    "cms.backend.superuser.fin.invoice",
-    "cms.backend.superuser.fin.party",
-    "cms.backend.superuser.fin.payment"
+    "cms.backend.fin",
+    "cms.backend.fin.invoice",
+    "cms.backend.fin.party",
+    "cms.backend.fin.payment"
   ],
   "files": [
     "README.md",

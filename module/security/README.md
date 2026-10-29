@@ -47,7 +47,7 @@ entry, a comment, an incoming message. The caller decides what to do with it.
 - A score from 0.5 on is reported against the address, so it is known next time.
 
 `mod.ts` exposes `suspects(app)`, `reports(app)` (the most recent, in memory) and
-`release(app, key)`; [`cms.backend.superuser.security`](../cms.backend.superuser.security/)
+`release(app, key)`; [`cms.backend.superuser.security.suspects`](../cms.backend.superuser.security.suspects/)
 shows them.
 
 ## Ideas

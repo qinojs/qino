@@ -1,6 +1,6 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { addUser, fileOf } from "@qino/qino/cms.backend.superuser.fin";
+import { addUser, fileOf } from "@qino/qino/cms.backend.fin";
 import { update } from "@qino/qino/fin.invoice";
 
 import { read, supplierOf } from "./lib/read.ts";
@@ -31,7 +31,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   const message = [`${done.length} ${await t`read`}`, ...failed].join("\n");
   // one invoice: straight to it
   if (done.length === 1 && !failed.length) {
-    const url = (await backend.toModuleUrl(node, "cms.backend.superuser.fin.invoice"))({ invoice: done[0] });
+    const url = (await backend.toModuleUrl(node, "cms.backend.fin.invoice"))({ invoice: done[0] });
     if (url) return { ok: true, url };
   }
   return { ok: !failed.length || done.length > 0, message };

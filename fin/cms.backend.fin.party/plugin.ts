@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
+import { finTexts, inFin } from "@qino/qino/cms.backend.fin";
 
 import { partyCard, render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -11,6 +11,7 @@ import type { Node } from "@qino/qino/cms";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.fin.party", name); // the module this one replaces
   await backend.install(app, name, { en: "Customers & suppliers", de: "Kunden & Lieferanten" });
 }
 

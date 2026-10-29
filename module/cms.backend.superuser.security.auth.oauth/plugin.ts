@@ -50,6 +50,7 @@ const PRESETS: Record<string, Preset> = {
   bitbucket:{ scopes: "account email", authorize_url: "https://bitbucket.org/site/oauth2/authorize", token_url: "https://bitbucket.org/site/oauth2/access_token", userinfo_url: "https://api.bitbucket.org/2.0/user", console_url: "https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/" },
 };
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.auth.oauth", name); // the module this one replaces
   await backend.install(app, name, { en: "Login providers", de: "Login-Provider" });
   for (const [pname, def] of Object.entries(PRESETS)) {
     if (await app.db.one`SELECT id FROM oauth_provider WHERE name = ${pname}`) continue;

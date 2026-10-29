@@ -1,5 +1,5 @@
 import { errMsg } from "@qino/qino";
-import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { parseAmount } from "@qino/qino/cms.backend.fin";
 import { record, refund, sync } from "@qino/qino/fin.payment";
 
 import type { Node } from "@qino/qino/cms";

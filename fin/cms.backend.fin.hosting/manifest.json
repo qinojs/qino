@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.fin.hosting",
+  "name": "cms.backend.fin.hosting",
   "description": "Domains & hosting: customers' domains, their aliases and the subscriptions they are billed by.",
   "dependencies": [
-    "cms.backend.superuser.fin",
+    "cms.backend.fin",
     "fin",
     "fin.hosting",
     "fin.subscription"

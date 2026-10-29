@@ -11,7 +11,7 @@ Per provider: `authorize_url` set → OAuth2; empty and `issuer` set → OIDC di
 
 ## Konfigurieren
 
-Im Backend-Modul **`cms.backend.superuser.auth.oauth`** (Superuser → Login providers). Gängige
+Im Backend-Modul **`cms.backend.superuser.security.auth.oauth`** (Superuser → Security → Authentication → Login providers). Gängige
 Provider sind als Vorlagen angelegt — meist nur `client_id`/`client_secret` eintragen. Die
 Redirect-URI für den Provider zeigt das Formular an: **`{appUrl}oauth/callback/<name>`**.
 

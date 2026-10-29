@@ -11,6 +11,7 @@ import type { Node } from "@qino/qino/cms";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.locale.currency", name); // the module this one replaces
   await backend.install(app, name, { en: "Currencies", de: "Währungen" });
 }
 export async function uninstall({ app }: { app: App }): Promise<void> {

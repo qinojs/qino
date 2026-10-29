@@ -1,4 +1,4 @@
-[qcms-mod="backend.superuser.git"] {
+[qcms-mod="backend.superuser.module.git"] {
   & .-ahead  { color: var(--green); }
   & .-behind { color: var(--orange); }
 

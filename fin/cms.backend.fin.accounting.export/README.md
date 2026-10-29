@@ -1,4 +1,4 @@
-# cms.backend.superuser.fin.accounting.export
+# cms.backend.fin.accounting.export
 
 The books of a period for the fiduciary, as one ZIP that any bookkeeping software or spreadsheet
 reads:

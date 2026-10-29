@@ -82,4 +82,4 @@ Public API from `@qino/qino/cron`: `run(app)`, `trigger(app, id)`, `status(app)`
 external heartbeat. `trigger` runs one job now without using up an upcoming scheduled run. Normal
 requests only nudge the scheduler and never wait. All three throw while the module is not linked.
 
-The optional `cms.backend.superuser.cron` module shows job state and runs jobs from the backend.
+The optional `cms.backend.system.cron` module shows job state and runs jobs from the backend.

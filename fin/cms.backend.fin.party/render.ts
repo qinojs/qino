@@ -2,7 +2,7 @@ import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import {
   amounts, badge, money, refLink,
-} from "@qino/qino/cms.backend.superuser.fin";
+} from "@qino/qino/cms.backend.fin";
 import { addMonths, mainCurrency, nameOf, today } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
 

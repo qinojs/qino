@@ -11,6 +11,7 @@ import type { Node } from "@qino/qino/cms";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }) {
+  await backend.takeOver(app, "cms.backend.superuser.uncdn", name); // the module this one replaces
   await backend.install(app, name, { en: "UnCDN Cache", de: "UnCDN Cache" });
 }
 

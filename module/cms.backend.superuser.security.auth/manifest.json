@@ -1,9 +1,9 @@
 {
-  "name": "cms.backend.superuser.auth",
+  "name": "cms.backend.superuser.security.auth",
   "description": "Shows the declared authentication factors and how the current session was authenticated.",
   "dependencies": [
     "auth",
-    "cms.backend"
+    "cms.backend.superuser.security"
   ],
   "files": [
     "manifest.json",

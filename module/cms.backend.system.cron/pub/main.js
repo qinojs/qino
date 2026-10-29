@@ -1,6 +1,6 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 
-cms.initNode("backend.superuser.cron", (el) => {
+cms.initNode("backend.system.cron", (el) => {
   const { execute, refresh, alert: show } = nodePanel(el, ["list"]);
 
   el.addEventListener("click", (event) => {

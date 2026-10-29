@@ -31,7 +31,7 @@ Each module documents itself in its README: [fin](fin/README.md),
 `qrbill`, `stripe`, `paypal` and `credit` (a user's credit as a ledger),
 [fin.invoice](fin.invoice/README.md) with `.reminder`, [fin.subscription](fin.subscription/README.md),
 [fin.bank](fin.bank/README.md) with `.camt`, [fin.accounting](fin.accounting/README.md) with `.ch`,
-[fin.hosting](fin.hosting/README.md), and the backend `cms.backend.superuser.fin.*`.
+[fin.hosting](fin.hosting/README.md), and the backend `cms.backend.fin.*`.
 PDF rendering is the core module [pdf](../module/pdf/), not finance.
 
 Dependencies only point down: `fin.invoice`, `fin.bank` and the providers → `fin.payment`; `qrbill` →
@@ -72,7 +72,7 @@ Uncertain, to be decided when it matters:
 - Translations: only languages the site has (`languages.all`) — an invoice in another language
   falls back to the default one, until smalltext stores rows instead of a column per language.
 - Texts of the browser scripts (`pub/*.js`) still translate in the core namespace.
-- Browser files import each other across a store by relative path (`../../cms.backend.superuser.fin`):
+- Browser files import each other across a store by relative path (`../../cms.backend.fin`):
   fine within one store; across stores a core question.
 
 Before going live on a server: `fc-match Arial` must give Liberation Sans or Arial (QR bill font).

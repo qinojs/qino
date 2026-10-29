@@ -1,6 +1,6 @@
 import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, rowLink } from "@qino/qino/cms.backend.fin";
 import { nameOf } from "@qino/qino/fin";
 import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
@@ -29,7 +29,7 @@ function customerSelect(app: App, users: Row[], current: unknown, empty: string 
 
 /** Whose a domain is: its customer, linked; "Ours"; or nothing yet. */
 const ownerCell = (node: Node, d: Row, names: Map<number, string>) =>
-  ours(d) ? node.app.t`Ours` : d.usr_id == null ? "" : rowLink(node, "cms.backend.superuser.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)));
+  ours(d) ? node.app.t`Ours` : d.usr_id == null ? "" : rowLink(node, "cms.backend.fin.party", "usr", d.usr_id, names.get(Number(d.usr_id)));
 
 function aliasSelect(all: Row[], current: unknown, except = "") {
   return html.async`<select name=aliasOf><option value="">—${all.filter((d) => !d.alias_of && d.name !== except).map((d) =>
@@ -212,7 +212,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     <p>
       <a href="https://${d.name}/" target=_blank rel=noopener>${t`Open`}</a>
       ${monitorUrl ? html.async` · <a href="${monitorUrl}">${t`Domain monitor`}</a>` : ""}
-      ${owner ? html.async` · ${rowLink(node, "cms.backend.superuser.fin.party", "usr", usrId, nameOf(owner))}` : ""}
+      ${owner ? html.async` · ${rowLink(node, "cms.backend.fin.party", "usr", usrId, nameOf(owner))}` : ""}
     </p>
     ${aliases.length ? html.async`<p>${t`Aliases`}: ${html.join(aliases.map((a) => nameCell(pageUrl, a)), ", ")}` : ""}
     ${why.length
@@ -223,7 +223,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
     <div class=-head>${t`Billed by`}</div>
     ${subs.length ? html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
       <td>${kindWord(app, kindOf(s))}
-      <td>${rowLink(node, "cms.backend.superuser.fin.subscription", "subscription", s.id, String(s.label))}
+      <td>${rowLink(node, "cms.backend.fin.subscription", "subscription", s.id, String(s.label))}
       <td style="text-align:end">${price(app, s)}
       <td>${running(s) ? s.next : badge(t`ended`)}
       <td>${running(s) ? html.async`<button data-unlink="${s.id}">${t`Unlink`}</button>` : ""}`)}

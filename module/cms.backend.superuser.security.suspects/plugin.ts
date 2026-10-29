@@ -12,7 +12,7 @@ const { name } = manifest;
 const { uniqueColor, ageColor } = backend;
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, name, { en: "Security", de: "Sicherheit" });
+  await backend.install(app, name, { en: "Suspects", de: "Verdächtige" });
 }
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {

@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.tickets",
+  "name": "cms.backend.superuser.security.tickets",
   "description": "Lists outstanding tickets \u2014 one-time links and the actions behind them.",
   "dependencies": [
-    "cms.backend",
+    "cms.backend.superuser.security",
     "ticket"
   ],
   "files": [

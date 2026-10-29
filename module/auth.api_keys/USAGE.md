@@ -13,7 +13,7 @@ app.modules.add(import.meta.resolve("../qino/module/auth.api_keys/plugin.ts"));
 
 // Optional UI:
 app.modules.add(import.meta.resolve("../qino/module/cms.cont.my.api_keys/plugin.ts"));         // self-service
-app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.auth.api_keys/plugin.ts")); // admin
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.security.auth.api_keys/plugin.ts")); // admin
 ```
 
 ## API (session-authenticated)

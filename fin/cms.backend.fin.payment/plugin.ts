@@ -1,6 +1,6 @@
 import { html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
+import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.fin";
 
 import { render } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -11,6 +11,7 @@ import type { App, HtmlString } from "@qino/qino";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.fin.payment", name); // the module this one replaces
   await backend.install(app, name, { en: "Payments", de: "Zahlungen" });
 }
 

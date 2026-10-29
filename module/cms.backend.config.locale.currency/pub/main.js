@@ -1,6 +1,6 @@
 import { api } from "@qino/pub/api.js";
 
-cms.initNode("backend.superuser.locale.currency", (el) => {
+cms.initNode("backend.config.locale.currency", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
 

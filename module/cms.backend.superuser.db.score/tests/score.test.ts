@@ -24,15 +24,15 @@ async function testNode() {
   return { node: { app } as never, db };
 }
 
-Deno.test("cms.backend.superuser.score: metadata is wired", () => {
-  assertEquals(name, "cms.backend.superuser.score");
-  assertEquals(dependencies, ["cms.backend", "score"]);
+Deno.test("cms.backend.superuser.db.score: metadata is wired", () => {
+  assertEquals(name, "cms.backend.superuser.db.score");
+  assertEquals(dependencies, ["cms.backend.superuser.db", "score"]);
   assertEquals(typeof cms.node.render, "function");
   assertEquals(typeof cms.node.api, "function");
   assertEquals(typeof cms.node.parts.list, "function");
 });
 
-Deno.test("cms.backend.superuser.score: a score table shows its numbers and strongest rows", async () => {
+Deno.test("cms.backend.superuser.db.score: a score table shows its numbers and strongest rows", async () => {
   const { node, db } = await testNode();
   await hit(db, "doc_view", { doc_id: 7 }, 4);
   await hit(db, "doc_view", { doc_id: 8 });
@@ -46,7 +46,7 @@ Deno.test("cms.backend.superuser.score: a score table shows its numbers and stro
   await db.close();
 });
 
-Deno.test("cms.backend.superuser.score: an empty score table says so instead of showing a table", async () => {
+Deno.test("cms.backend.superuser.db.score: an empty score table says so instead of showing a table", async () => {
   const { node, db } = await testNode();
   const out = String(await list(node));
   assertEquals(out.includes("No accesses recorded yet."), true);
@@ -54,7 +54,7 @@ Deno.test("cms.backend.superuser.score: an empty score table says so instead of 
   await db.close();
 });
 
-Deno.test("cms.backend.superuser.score: prune reports how many scores it deleted", async () => {
+Deno.test("cms.backend.superuser.db.score: prune reports how many scores it deleted", async () => {
   const { node, db } = await testNode();
   await hit(db, "doc_view", { doc_id: 1 });
   await db.exec`UPDATE score_doc_view SET score = 0 WHERE doc_id = 1`; // faded far below the limit

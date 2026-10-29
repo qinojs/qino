@@ -1,5 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
-import { addUser, parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { addUser, parseAmount } from "@qino/qino/cms.backend.fin";
 
 import type { Node } from "@qino/qino/cms";
 

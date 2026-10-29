@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, direction, money, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, direction, money, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
@@ -202,7 +202,7 @@ async function detail(node: Node, id: number) {
   ${lines.length ? html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Bank lines`}</div>
     <table class=u2-table>${lines.map((line) => html.async`<tr>
-      <td>${rowLink(node, "cms.backend.superuser.fin.bank", "line", line.id)}
+      <td>${rowLink(node, "cms.backend.fin.bank", "line", line.id)}
       <td>${line.date}
       <td style="text-align:end">${money(line.amount, line.currency)}
       <td>${line.party_name}`)}</table>

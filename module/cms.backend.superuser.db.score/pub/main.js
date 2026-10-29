@@ -1,6 +1,6 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 
-cms.initNode("backend.superuser.score", (el) => {
+cms.initNode("backend.superuser.db.score", (el) => {
   const { execute, refresh, alert } = nodePanel(el, ["list"]);
 
   el.addEventListener("click", (event) => {

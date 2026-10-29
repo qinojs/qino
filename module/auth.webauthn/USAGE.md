@@ -9,7 +9,7 @@ app.modules.add(import.meta.resolve("../qino/module/auth.webauthn/plugin.ts"));
 
 // Optional:
 app.modules.add(import.meta.resolve("../qino/module/cms.cont.login.webauthn/plugin.ts"));
-app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.auth.webauthn/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.security.auth.webauthn/plugin.ts"));
 ```
 
 ## Settings
@@ -75,4 +75,4 @@ Der Nachweis landet über [auth](../auth/) in der Session. Serverseitig verlangt
 **`cms.cont.my.webauthn`** — Content-Node, auf dem der angemeldete Benutzer seine eigenen Passkeys
 verwaltet. Ohne Settings.
 
-**`cms.backend.superuser.auth.webauthn`** — Backend-Seite, listet alle Credentials (Superuser).
+**`cms.backend.superuser.security.auth.webauthn`** — Backend-Seite, listet alle Credentials (Superuser).

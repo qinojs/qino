@@ -1,4 +1,4 @@
-# cms.backend.superuser.fin.invoice.inbox
+# cms.backend.fin.invoice.inbox
 
 Received invoices come in here: a PDF or a photo is read by a language model ([ai](../../module/ai/),
 `structured`) into a draft received invoice, and the file becomes its receipt — the original,

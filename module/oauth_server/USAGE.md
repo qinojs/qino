@@ -41,7 +41,7 @@ Clients mit Dynamic Registration brauchen nur die URL der Ressource; Registrieru
 Zustimmung laufen im Browser.
 
 Clients mit fester Client-ID werden vorher angelegt — im Backend unter
-`cms.backend.superuser.oauth_server` oder im Code:
+`cms.backend.superuser.security.oauth_server` oder im Code:
 
 ```ts
 import { saveClient } from "@qino/qino/oauth_server";

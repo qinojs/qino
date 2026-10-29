@@ -45,7 +45,7 @@ Whoever has the database can generate codes. [auth.webauthn](../auth.webauthn/) 
 public key — so passkeys are the better factor where available.
 
 Users set it up on [cms.cont.my.totp](../cms.cont.my.totp/), superusers in
-[cms.backend.superuser.auth.totp](../cms.backend.superuser.auth.totp/).
+[cms.backend.superuser.security.auth.totp](../cms.backend.superuser.security.auth.totp/).
 
 ## Possible extensions
 

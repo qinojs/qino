@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.git",
+  "name": "cms.backend.superuser.module.git",
   "description": "Shows the git repositories the app is made of and commits, pushes and pulls them.",
   "dependencies": [
-    "cms.backend"
+    "cms.backend.superuser.module"
   ],
   "files": [
     "lib/git.ts",

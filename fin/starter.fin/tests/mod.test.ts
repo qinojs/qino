@@ -33,7 +33,7 @@ Deno.test({
       const res = await app.fetch(new Request("http://localhost/en/my-account/invoices"));
       assertEquals(res.status, 200);
       await res.body?.cancel();
-      assert(await cms(app).nodeByModule("cms.backend.superuser.fin.invoice"), "the backend page is there");
+      assert(await cms(app).nodeByModule("cms.backend.fin.invoice"), "the backend page is there");
       // nothing switched on behind one's back: warned instead, until a second factor is asked for
       const warning = async (mod: string, name: string) =>
         (await (await app.modules.get(mod)!.plugin.healthChecks(app)).warning[name]())?.info;

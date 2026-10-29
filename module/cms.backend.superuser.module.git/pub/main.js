@@ -10,7 +10,7 @@ async function untilBack(tries = 60) {
   return false;
 }
 
-cms.initNode("backend.superuser.git", (el) => {
+cms.initNode("backend.superuser.module.git", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
 

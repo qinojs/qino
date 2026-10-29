@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.auth.api_keys",
+  "name": "cms.backend.superuser.security.auth.api_keys",
   "description": "Manages API keys across all users.",
   "dependencies": [
-    "cms.backend",
+    "cms.backend.superuser.security.auth",
     "auth.api_keys"
   ],
   "files": [

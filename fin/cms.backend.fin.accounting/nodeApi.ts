@@ -1,6 +1,6 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { parseAmount } from "@qino/qino/cms.backend.superuser.fin";
+import { parseAmount } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { account, book, close, reopen, reverse } from "@qino/qino/fin.accounting";
 

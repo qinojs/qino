@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.score",
+  "name": "cms.backend.superuser.db.score",
   "description": "Inspects and manages the score tables.",
   "dependencies": [
-    "cms.backend",
+    "cms.backend.superuser.db",
     "score"
   ],
   "files": [

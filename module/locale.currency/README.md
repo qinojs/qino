@@ -26,7 +26,7 @@ included, more than one rate):
 
 The source used is stored in `locale.currency.source` and shown in the panel. Fetching contacts
 external servers, so it is off by default — `locale.currency.update` is `never`, `daily` or
-`hourly`, set in *Superuser → Locale → Currencies*, where rates can also be fetched by hand or
+`hourly`, set in *Configuration → Locale → Currencies*, where rates can also be fetched by hand or
 entered manually.
 
 One hourly job covers all frequencies: it checks the rates' age and does nothing if they are fresh.

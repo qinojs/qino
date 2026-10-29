@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.oauth_server",
+  "name": "cms.backend.superuser.security.oauth_server",
   "description": "Manages OAuth clients, grants, and active authorizations.",
   "dependencies": [
-    "cms.backend",
+    "cms.backend.superuser.security",
     "oauth_server"
   ],
   "files": [

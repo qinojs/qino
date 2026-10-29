@@ -1,7 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import "@qino/m/core/pub/js/SettingsEditor.mjs";
 
-cms.initNode("backend.superuser.security", (el) => {
+cms.initNode("backend.superuser.security.suspects", (el) => {
   const { execute, refresh, alert } = nodePanel(el, ["suspects", "recent"]);
 
   el.addEventListener("click", (event) => {

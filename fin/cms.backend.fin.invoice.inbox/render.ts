@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, money, rowLink } from "@qino/qino/cms.backend.fin";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Row } from "@qino/qino";
@@ -10,7 +10,7 @@ import type { Node } from "@qino/qino/cms";
 export async function render(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const invoices = (await backend.toModuleUrl(node, "cms.backend.superuser.fin.invoice"));
+  const invoices = (await backend.toModuleUrl(node, "cms.backend.fin.invoice"));
   const drafts = await app.db.query`
     SELECT * FROM invoice WHERE direction = 'in' AND status = 'draft' ORDER BY id DESC LIMIT 100`;
   return html.async`<div class=u2-flex>
@@ -37,7 +37,7 @@ export async function render(node: Node): Promise<HtmlString> {
       <tbody>${drafts.map((row) => html.async`<tr u2-href>
         <td><a href="${invoices({ invoice: row.id })}">${supplier(row)}</a>
         <td>${row.usr_id
-          ? rowLink(node, "cms.backend.superuser.fin.party", "usr", row.usr_id)
+          ? rowLink(node, "cms.backend.fin.party", "usr", row.usr_id)
           : html.async`<button data-supplier="${row.id}">${t`Find or create`}</button>`}
         <td>${row.number}
         <td>${row.date}

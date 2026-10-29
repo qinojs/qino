@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.fin.invoice",
+  "name": "cms.backend.fin.invoice",
   "description": "Invoices issued and received: lines, payments, the document and its PDF, and new drafts.",
   "dependencies": [
-    "cms.backend.superuser.fin",
+    "cms.backend.fin",
     "fin",
     "fin.invoice",
     "pdf"

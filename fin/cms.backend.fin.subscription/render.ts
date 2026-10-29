@@ -1,6 +1,6 @@
 import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, inputAmount, money, rowLink } from "@qino/qino/cms.backend.superuser.fin";
+import { badge, inputAmount, money, rowLink } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, nameOf, today } from "@qino/qino/fin";
 import { horizon, periods, plans, renews, subscriptions } from "@qino/qino/fin.subscription";
 
@@ -73,7 +73,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
           <th>${t`Ends`}
           <th>
         <tbody>${all.map((s) => html.async`<tr>
-          <td>${rowLink(node, "cms.backend.superuser.fin.party", "usr", s.usr_id, names.get(Number(s.usr_id)))}
+          <td>${rowLink(node, "cms.backend.fin.party", "usr", s.usr_id, names.get(Number(s.usr_id)))}
           <td><a href="${backend.toUrl(pageUrl, { subscription: s.id })}">${s.label}</a>
             ${s.detail ? html`<small>${s.detail}</small>` : ""}
           <td style="text-align:end">${money(s.amount, s.currencyCode)}
@@ -190,7 +190,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     ${billed.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">${billed.map((p) => html.async`<tr>
         <td>${date(p.period_start)} – ${date(p.period_end)}
-        <td>${Number(p.invoice_id) ? rowLink(node, "cms.backend.superuser.fin.invoice", "invoice", p.invoice_id) : "—"}`)}
+        <td>${Number(p.invoice_id) ? rowLink(node, "cms.backend.fin.invoice", "invoice", p.invoice_id) : "—"}`)}
       </table></div>` : html.async`<p>${t`Nothing billed yet`}`}
   </div>
 </div>`;

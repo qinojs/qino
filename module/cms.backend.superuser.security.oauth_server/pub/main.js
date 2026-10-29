@@ -1,6 +1,6 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 
-cms.initNode("backend.superuser.oauth_server", (el) => {
+cms.initNode("backend.superuser.security.oauth_server", (el) => {
   const { execute } = nodePanel(el, ["clients", "grants"]);
 
   el.addEventListener("click", (event) => {

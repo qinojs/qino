@@ -6,7 +6,7 @@ import { cms } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
 
-Deno.test("cms.backend.superuser.security lists suspicious IPs and releases them", async () => {
+Deno.test("cms.backend.superuser.security.suspects lists suspicious IPs and releases them", async () => {
   const dir = await Deno.makeTempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("security");

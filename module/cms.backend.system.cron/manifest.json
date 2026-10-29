@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.cron",
+  "name": "cms.backend.system.cron",
   "description": "Monitors scheduled jobs and runs them on demand.",
   "dependencies": [
-    "cms.backend",
+    "cms.backend.system",
     "cron"
   ],
   "files": [

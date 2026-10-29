@@ -1,4 +1,4 @@
-cms.initNode("backend.superuser.uncdn", (el) => {
+cms.initNode("backend.system.uncdn", (el) => {
   const nid = Number(cms.el.nid(el));
 
   el.addEventListener("click", (e) => {

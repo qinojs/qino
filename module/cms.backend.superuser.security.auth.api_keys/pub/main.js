@@ -1,7 +1,7 @@
 import { cms } from "@qino/m/cms/pub/js/cms.mjs";
 import { api } from "@qino/pub/api.js";
 
-cms.initNode("backend.superuser.auth.api_keys", (el) => {
+cms.initNode("backend.superuser.security.auth.api_keys", (el) => {
   const nid = Number(cms.el.nid(el));
   el.addEventListener("change", async (e) => {
     const user = e.target.closest("[data-create] select[name=usr_id]");

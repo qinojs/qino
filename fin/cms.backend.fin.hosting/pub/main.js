@@ -1,6 +1,6 @@
-import { finPanel } from "../../cms.backend.superuser.fin/pub/panel.js";
+import { finPanel } from "../../cms.backend.fin/pub/panel.js";
 
-cms.initNode("backend.superuser.fin.hosting", (el) => {
+cms.initNode("backend.fin.hosting", (el) => {
   const { execute, fields } = finPanel(el);
 
   el.addEventListener("submit", (e) => {

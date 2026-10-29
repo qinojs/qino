@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { finTexts, inFin } from "@qino/qino/cms.backend.superuser.fin";
+import { finTexts, inFin } from "@qino/qino/cms.backend.fin";
 import { horizon, renews, subscriptions } from "@qino/qino/fin.subscription";
 
 import { render, userSubscriptions } from "./render.ts";
@@ -13,6 +13,7 @@ import type { Node } from "@qino/qino/cms";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await backend.takeOver(app, "cms.backend.superuser.fin.subscription", name); // the module this one replaces
   await backend.install(app, name, { en: "Subscriptions", de: "Abos" });
 }
 

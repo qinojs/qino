@@ -67,6 +67,24 @@ export async function install(app: App, module: string, titles?: Record<string, 
   return p;
 }
 
+const parentOf = (module: string) => module.slice(0, module.lastIndexOf("."));
+
+/** Take over the pages of a renamed module and retire it; call before install(). A page still where
+ *  the old name put it moves where the new one says, one placed by hand stays. A sub-page's module
+ *  must depend on its parent's, so the parent is taken over first. */
+export async function takeOver(app: App, old: string, module: string): Promise<void> {
+  const cm = cms(app);
+  const from = await (await cm.nodeByModule(parentOf(old)))?.page();
+  const to = parentOf(module);
+  for (const node of (await cm.nodesByModule(old)).values()) {
+    await node.set("module", module);
+    const page = await node.page();
+    if (!from || (await page.parent())?.id !== from.id) continue;
+    await (await (await cm.nodeByModule(to))?.page() ?? await install(app, to))?.insertBefore(page);
+  }
+  await app.modules.uninstall(old).catch(() => {});
+}
+
 /** Add query params to an app-relative page url ("" stays ""). */
 export function toUrl(url: string, params: Record<string, unknown> = {}): string {
   if (!url) return "";

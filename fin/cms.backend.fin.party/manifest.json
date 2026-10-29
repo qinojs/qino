@@ -1,8 +1,8 @@
 {
-  "name": "cms.backend.superuser.fin.party",
+  "name": "cms.backend.fin.party",
   "description": "Customers and suppliers: the users invoices are for or from, their address and their invoices.",
   "dependencies": [
-    "cms.backend.superuser.fin",
+    "cms.backend.fin",
     "fin",
     "fin.invoice"
   ],
