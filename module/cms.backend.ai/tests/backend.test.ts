@@ -209,14 +209,16 @@ const MODELS_DEV = {
   deepinfra: { id: "deepinfra", models: { "meta-llama/Llama-3.3-70B-Instruct": { id: "meta-llama/Llama-3.3-70B-Instruct", structured_output: true, modalities: { input: ["text", "image"], output: ["text"] }, cost: { input: 0.1, output: 0.3 } } } },
 };
 const today = new Date().toISOString().slice(0, 10);
-const BENCHMARKS = { data: [
+const LLMS = [
   { slug: "old-math-model", name: "Old", release_date: "2025-06-01", evaluations: { artificial_analysis_math_index: 80 } }, // math is measured no more
-  { slug: "gpt-6", name: "GPT-6", release_date: today, evaluations: {}, median_output_tokens_per_second: 0 }, // measured only per reasoning level
-  { slug: "gpt-6-high", name: "GPT-6 (high)", evaluations: { artificial_analysis_coding_index: 50 }, median_output_tokens_per_second: 80 },
-  { slug: "gpt-6-low", name: "GPT-6 (low)", evaluations: { artificial_analysis_coding_index: 30 }, median_output_tokens_per_second: 60 },
-  { slug: "gpt-6-medium", name: "GPT-6 (medium)", evaluations: { artificial_analysis_coding_index: 40 }, median_output_tokens_per_second: 70 },
-  { slug: "llama-3-3-instruct-70b", name: "Llama 3.3 Instruct 70B", release_date: today, evaluations: { artificial_analysis_intelligence_index: 28, artificial_analysis_coding_index: 22, aa_omniscience_index: 5, gpqa: 0.5, note: "text" }, median_output_tokens_per_second: 150 },
-] };
+  { slug: "gpt-6", name: "GPT-6", release_date: today, evaluations: {}, performance: { median_output_tokens_per_second: 0 } }, // measured only per reasoning level
+  { slug: "gpt-6-high", name: "GPT-6 (high)", evaluations: { artificial_analysis_coding_index: 50 }, performance: { median_output_tokens_per_second: 80 } },
+  { slug: "gpt-6-low", name: "GPT-6 (low)", evaluations: { artificial_analysis_coding_index: 30 }, performance: { median_output_tokens_per_second: 60 } },
+  { slug: "gpt-6-medium", name: "GPT-6 (medium)", evaluations: { artificial_analysis_coding_index: 40 }, performance: { median_output_tokens_per_second: 70 } },
+  { slug: "llama-3-3-instruct-70b", name: "Llama 3.3 Instruct 70B", release_date: today, evaluations: { artificial_analysis_intelligence_index: 28, artificial_analysis_coding_index: 22, aa_omniscience_index: 5, gpqa: 0.5, note: "text" }, performance: { median_output_tokens_per_second: 150 } },
+];
+/** Artificial Analysis' free tier, in pages: llama comes on the second. */
+const benchmarks = (url: string) => url.includes("page=2") ? { data: LLMS.slice(-1) } : { data: LLMS.slice(0, -1), pagination: { has_more: true } };
 
 /** llama at groq and at deepinfra (by its full name), both switched off. */
 async function llama(keys: Record<string, string> = {}) {
@@ -254,7 +256,7 @@ Deno.test("cms.backend.ai: names match across spellings", () => {
 Deno.test("cms.backend.ai: models.dev and Artificial Analysis fill prices, capabilities, context and scores", async () => {
   const { app, node } = await llama({ "artificialanalysis.ai": "aa-key" });
   await app.db.table("ai_model_score").insert({ model_id: 1, metric: "math", value: 60 }); // from an earlier import
-  await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : url.includes("artificialanalysis") ? BENCHMARKS : {}, async () => {
+  await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : url.includes("artificialanalysis") ? benchmarks(url) : {}, async () => {
     assertStringIncludes(await evaluate(app), "models.dev: 2\nArtificial Analysis: 1");
   });
   // each source's own entry is kept: models.dev per offer, the benchmarks per model
@@ -293,7 +295,7 @@ Deno.test("cms.backend.ai: models.dev and Artificial Analysis fill prices, capab
   ]);
   assertEquals(await app.db.col`SELECT speed FROM ai_model_provider WHERE model_id = 1`, [150, 150]);
   const gpt6 = Number(await app.db.table("ai_model").insert({ name: "gpt-6" }));
-  await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : url.includes("artificialanalysis") ? BENCHMARKS : {}, () => evaluate(app).then(() => {}));
+  await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : url.includes("artificialanalysis") ? benchmarks(url) : {}, () => evaluate(app).then(() => {}));
   assertEquals(await app.db.query`SELECT metric, value FROM ai_model_score WHERE model_id = ${gpt6} ORDER BY metric`, [
     { metric: "coding", value: 40 }, // the median of its levels'
     { metric: "tokens_per_second", value: 70 },

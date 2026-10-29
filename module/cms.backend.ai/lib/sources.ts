@@ -7,9 +7,9 @@ import { CATALOG } from "../catalog.ts";
 import type { App } from "@qino/qino";
 
 const MODELS_DEV = "https://models.dev/api.json";
-const BENCHMARKS = "https://artificialanalysis.ai/api/v2/data";
+const BENCHMARKS = "https://artificialanalysis.ai/api/v2";
 /** Artificial Analysis' arenas, by the capability their Elo tells the quality of. */
-const ARENAS: Record<string, string> = { image: "media/text-to-image", speak: "media/text-to-speech" };
+const ARENAS: Record<string, string> = { image: "media/text-to-image/models", speak: "media/text-to-speech/models" };
 /** The Artificial Analysis key's name in core.keys. */
 export const BENCHMARKS_KEY = "artificialanalysis.ai";
 /** An index no new model got for this long is no longer measured (math, since 2026-01): left out. */
@@ -230,16 +230,20 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   const db = app.db;
   const apiKey = String(await app.settings.core.keys[BENCHMARKS_KEY] ?? "");
   if (!apiKey) return;
-  const load = async (path: string): Promise<any[]> => (await get(`${BENCHMARKS}/${path}`, { "x-api-key": apiKey })).data ?? [];
+  // the free tier; the LLMs come in pages
+  const load = async (path: string, page = 1): Promise<any[]> => {
+    const res = await get(`${BENCHMARKS}/${path}/free${page > 1 ? `?page=${page}` : ""}`, { "x-api-key": apiKey });
+    return [...res.data ?? [], ...res.pagination?.has_more ? await load(path, page + 1) : []];
+  };
   const byName = (list: any[]) => {
     const map = new Map<string, any>();
     // the arenas name the model in brackets too: Nano Banana 2 (Gemini 3.1 Flash Image)
     for (const m of list) {
-      for (const name of [m.slug, m.name, m.openrouter_api_id, ...String(m.name).match(/(?<=\()[^)]+/g) ?? []]) if (name) map.set(key(name), m);
+      for (const name of [m.slug, m.name, ...String(m.name).match(/(?<=\()[^)]+/g) ?? []]) if (name) map.set(key(name), m);
     }
     return map;
   };
-  const data = await load("llms/models");
+  const data = await load("language/models");
   const llms = byName(data);
   // artificial_analysis_coding_index → coding; retired: no model of the last RETIRED_DAYS has it
   const indexName = (name: string) => name.replace(/^artificial_analysis_|^aa_|_index$/g, "");
@@ -268,7 +272,6 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   for (const r of await db.query`SELECT m.id, m.name, mp.provider_model FROM ai_model m LEFT JOIN ai_model_provider mp ON mp.model_id = m.id`) {
     names.set(r.id, [...names.get(r.id) ?? [String(r.name)], ...r.provider_model ? [String(r.provider_model)] : []]);
   }
-  const contexts = new Map((await db.query`SELECT id, context_length FROM ai_model`).map((m) => [m.id, m.context_length]));
   let found = 0;
   await db.transaction(async () => {
     for (const [model, list] of names) {
@@ -277,7 +280,7 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
       const ranked = arenas.map(([metric, map, bare]) => [metric, find(map) ?? within(told.get(model), bare)] as const);
       const scores = [
         ...m ? indexes.map((name) => [indexName(name), measure(m, (x) => x.evaluations?.[name])]) : [],
-        ...m ? [[SPEED, measure(m, (x) => x.median_output_tokens_per_second)]] : [],
+        ...m ? [[SPEED, measure(m, (x) => x.performance?.median_output_tokens_per_second)]] : [],
         ...ranked.map(([metric, entry]) => [metric, entry?.elo]),
       ].filter(([, value]) => typeof value === "number");
       if (!scores.length) continue;
@@ -285,7 +288,6 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
       if (m) await keep(app, "Artificial Analysis", m, model);
       for (const [metric, entry] of ranked) if (typeof entry?.elo === "number") await keep(app, `Artificial Analysis ${metric}`, entry, model);
       for (const [metric, value] of scores) await db.table("ai_model_score").ensure({ model_id: model, metric, value });
-      if (!contexts.get(model) && m?.context_window_tokens) await db.table("ai_model").update(model, { context_length: m.context_window_tokens }); // models.dev first
     }
   });
   return found;
