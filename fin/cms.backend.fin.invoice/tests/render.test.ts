@@ -284,6 +284,8 @@ Deno.test("a pro forma becomes its invoice; an invoice is held, reminded, writte
     const reminder = idOf(await act("remind", invoice));
     assertEquals(await app.db.one`SELECT type FROM invoice WHERE id = ${reminder}`, "reminder");
     assertStringIncludes(String(await as(`${base}?invoice=${reminder}`, () => render(node))), "Reminded invoices");
+    // the invoice names the reminders it is on
+    assertStringIncludes(String(await as(`${base}?invoice=${invoice}`, () => render(node))), `?invoice=${reminder}"`);
     await act("writeOff", invoice);
     assertEquals(await app.db.one`SELECT status FROM invoice WHERE id = ${invoice}`, "uncollectible");
   });

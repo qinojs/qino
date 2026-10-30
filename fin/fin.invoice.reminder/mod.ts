@@ -27,13 +27,17 @@ async function settingsOf(app: App) {
 /** Open invoices of ours, how often reminded (`level`), when last (`reminded`), and whether a reminder
  *  of them waits as a draft (`pending`). */
 const candidates = (app: App, where: ReturnType<typeof sql>) => app.db.query`
-  SELECT i.*, SUM(CASE WHEN r.status <> 'draft' THEN 1 ELSE 0 END) AS level,
-    MAX(CASE WHEN r.status <> 'draft' THEN r.date END) AS reminded,
-    SUM(CASE WHEN r.status = 'draft' THEN 1 ELSE 0 END) AS pending
-  FROM invoice i LEFT JOIN invoice_listed l ON l.listed_id = i.id
-    LEFT JOIN invoice r ON r.id = l.invoice_id AND r.type = 'reminder' AND r.status <> 'canceled'
+  SELECT i.*, COALESCE(x.level, 0) AS level, x.reminded, COALESCE(x.pending, 0) AS pending
+  FROM invoice i LEFT JOIN (
+    SELECT l.listed_id, SUM(CASE WHEN r.status <> 'draft' THEN 1 ELSE 0 END) AS level,
+      MAX(CASE WHEN r.status <> 'draft' THEN r.date END) AS reminded,
+      SUM(CASE WHEN r.status = 'draft' THEN 1 ELSE 0 END) AS pending
+    FROM invoice_listed l JOIN invoice r ON r.id = l.invoice_id
+    WHERE r.type = 'reminder' AND r.status <> 'canceled'
+    GROUP BY l.listed_id
+  ) x ON x.listed_id = i.id
   WHERE i.status = 'open' AND i.direction = 'out' AND i.type IN ('invoice', 'reminder') AND ${where}
-  GROUP BY i.id ORDER BY i.due, i.id`;
+  ORDER BY i.due, i.id`;
 
 /** Remind what is due — `days` after its due date, the levels apart — one reminder per debtor and
  *  currency. Resolves with how many were made. */

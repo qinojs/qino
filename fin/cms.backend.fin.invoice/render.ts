@@ -400,7 +400,7 @@ async function detail(node: Node, id: number) {
         <input type=date name=date value="${row.sent}"> <button>${t`Save`}</button>
       </form>`) : ""}
       ${listing.length ? field(t`Reminded`, html.join(listing.map((r) =>
-        html.async`<a href="${backend.toUrl(pageUrl, { invoice: r.id })}">${r.number || `#${r.id}`}</a>
+        html`<a href="${backend.toUrl(pageUrl, { invoice: r.id })}">${r.number || `#${r.id}`}</a>
           <small>${r.date}</small>`), ", ")) : ""}
       ${claims && reminders && row.status === "open" ? field(t`Reminders`, html.async`
         ${row.remind ? t`go out` : badge(t`held`, "--orange")}
