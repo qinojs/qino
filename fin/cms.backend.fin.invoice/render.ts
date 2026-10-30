@@ -4,14 +4,15 @@ import {
   badge, direction, inputAmount, money, pager, refLink, rowLink, status,
 } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, today } from "@qino/qino/fin";
-import { document, lines, refOf } from "@qino/qino/fin.invoice";
+import { document, lines, listedOf, owed, refOf } from "@qino/qino/fin.invoice";
 import { methods } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-const STATUSES = ["draft", "open", "paid", "canceled"];
+const STATUSES = ["draft", "open", "paid", "uncollectible", "canceled"];
+const TYPES = ["invoice", "credit_note", "proforma", "reminder"];
 const PER_PAGE = 100;
 
 export function render(node: Node): Promise<HtmlString> {
@@ -72,6 +73,8 @@ async function overview(node: Node, url: URL) {
         ${option("in", t`Received (payables)`, "direction")}
       </select>
       <select name=status>${option("", t`Any status`, "status")}${STATUSES.map((s) => option(s, s, "status"))}</select>
+      <select name=type>${option("", t`Any type`, "type")}
+        ${TYPES.map((type) => option(type, typeName(node.app, type), "type"))}</select>
       <label><input type=checkbox name=overdue value=1${q("overdue") ? html.raw(" checked") : ""}> ${t`overdue`}</label>
       <button>${t`Filter`}</button>
     </form>
@@ -99,7 +102,8 @@ async function list(node: Node, url: URL) {
     q("direction") ? sql`direction = ${q("direction")}` : null,
     Number(q("usr")) ? sql`usr_id = ${Number(q("usr"))}` : null, // a party's, linked from its card
     q("status") ? sql`status = ${q("status")}` : null,
-    q("overdue") ? sql`status = 'open' AND type = 'invoice' AND due < ${today()}` : null,
+    q("type") ? sql`type = ${q("type")}` : null,
+    q("overdue") ? sql`status = 'open' AND type IN ('invoice', 'reminder') AND due < ${today()}` : null,
   ].flatMap((term) => term ?? []);
   const page = Math.max(0, Number(q("page")) || 0);
   const [rows, total] = await Promise.all([
@@ -120,7 +124,7 @@ async function list(node: Node, url: URL) {
       <th>${t`For`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
-        ${row.type === "credit_note" ? badge(t`credit note`) : ""}
+        ${row.type === "invoice" ? "" : badge(typeName(app, row.type))}
       <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
       <td><span class=-party title="${partyName(row)}">${partyName(row)}</span>${row.usr_id ? partyIcon(node, row.usr_id) : ""}
       <td style="white-space:nowrap">${row.date}
@@ -134,8 +138,19 @@ async function list(node: Node, url: URL) {
   </table>`;
 }
 
-/** Open past its due date — a credit note is never overdue. */
-const overdue = (row: Row) => row.status === "open" && row.type === "invoice" && !!row.due && String(row.due) < today();
+/** What a type is called. */
+const typeName = (app: App, type: unknown) =>
+  type === "credit_note"
+    ? app.t`credit note`
+    : type === "proforma"
+    ? app.t`pro forma`
+    : type === "reminder"
+    ? app.t`reminder`
+    : app.t`invoice`;
+
+/** Open past its due date — what claims something: an invoice, a reminder's fees. */
+const overdue = (row: Row) =>
+  row.status === "open" && ["invoice", "reminder"].includes(String(row.type)) && !!row.due && String(row.due) < today();
 
 /** Open with part of it paid: the status alone would not tell. */
 const partly = (row: Row) => row.status === "open" && Number(row.paid) !== 0 && Number(row.paid) !== Number(row.total);
@@ -149,6 +164,7 @@ async function newForm(app: App) {
   return html.async`<form data-create>
     <select name=direction>
       <option value=out>${t`Issued (receivable)`}
+      <option value=proforma>${t`Pro forma invoice`}
       <option value=in>${t`Received (payable)`}
     </select>
     <input name=currency value="${mainCurrency(app)}" required maxlength=3 size=4>
@@ -171,6 +187,17 @@ async function accountsOf(app: App, direction: unknown): Promise<Accounts | unde
 /** What every line of a draft shares: its currency, the default tax rate, where it may be booked. */
 type Shared = { currency: unknown; rate: unknown; taxed: boolean; accounts?: Accounts };
 
+/** The tax categories (EN 16931) by what they mean. */
+const categories = (app: App): Record<string, unknown> => ({
+  S: app.t`Taxed`,
+  Z: app.t`Zero rated`,
+  E: app.t`Excluded from tax`,
+  AE: app.t`Reverse charge`,
+  K: app.t`Intra-community`,
+  G: app.t`Exempt: exports`,
+  O: app.t`Not subject to tax`,
+});
+
 /** One editable line; `i` keeps the fields of a line together. */
 const lineRow = (app: App, i: string | number, line: Row, { currency, rate, taxed, accounts }: Shared) =>
   html.async`<tr draggable=false>
@@ -188,8 +215,13 @@ const lineRow = (app: App, i: string | number, line: Row, { currency, rate, taxe
   <td><input name="unit${i}" style="width:3.5rem" value="${line.unit}">
   <td><input name="price${i}" inputmode=decimal style="width:6rem"
     value="${inputAmount(line.price, currency)}">
-  ${taxed ? html`<td><input name="taxRate${i}" inputmode=decimal style="width:3.5rem" placeholder="${rate ?? 0}"
-    value="${line.tax_rate == null ? "" : Number(line.tax_rate)}">` : ""}
+  ${taxed ? html.async`<td><input name="taxRate${i}" inputmode=decimal style="width:3.5rem" placeholder="${rate ?? 0}"
+    value="${line.tax_rate == null ? "" : Number(line.tax_rate)}">
+    <select name="taxCategory${i}" title="${app.t`Tax category`}">
+      <option value="">${app.t`Automatic`}
+      ${Object.entries(categories(app)).map(([code, label]) => html.async`<option value="${code}"${
+      code === line.tax_category ? html.raw(" selected") : ""}>${code} ${label}`)}
+    </select>` : ""}
   <td><button type=button data-remove-line class=u2-unstyle title="${app.t`Remove`}">
     <u2-ico icon=delete>✕</u2-ico></button>`;
 
@@ -321,16 +353,25 @@ async function detail(node: Node, id: number) {
   if (row.status === "draft") return editor(node, row);
   const party = JSON.parse(String(row.party ?? "{}")) ?? {};
   const address = party.address ?? {};
-  // what is still to move: for a credit note what we owe, its rest being negative
-  const open = Math.abs(Number(row.total) - Number(row.paid));
-  // a credit note asks for nothing: what is open on it, we owe
+  // a credit note asks for nothing: what is open on it, we owe, its rest being negative; anything
+  // else asks for what it is owed, with what it lists
   const credit = row.type === "credit_note";
-  const [items, payments, ways] = await Promise.all([
+  const open = credit ? Math.abs(Number(row.total) - Number(row.paid)) : await owed(app, row);
+  const claims = ["invoice", "reminder"].includes(String(row.type)) && row.direction === "out";
+  const reminders = app.modules.linked("fin.invoice.reminder");
+  const [items, payments, ways, listed, listing] = await Promise.all([
     lines(app, id),
-    app.db.query`SELECT * FROM payment WHERE ref = ${refOf(id)} ORDER BY id`,
-    row.status === "open" && open > 0 && !credit
+    // asked for with its ref, or paid on another and shared out to it (a reminder's): each by its index
+    app.db.query`SELECT p.*, a.amount AS share FROM payment p
+      LEFT JOIN invoice_payment a ON a.payment_id = p.id AND a.invoice_id = ${id}
+      WHERE p.ref = ${refOf(id)}
+        OR p.id IN (SELECT payment_id FROM invoice_payment WHERE invoice_id = ${id}) ORDER BY p.id`,
+    open > 0 && !credit && row.direction === "out"
       ? methods(app, { amount: open, currency: String(row.currency), usrId: Number(row.usr_id) || undefined })
       : [],
+    listedOf(app, id),
+    app.db.query`SELECT r.id, r.number, r.date, l.level FROM invoice_listed l JOIN invoice r ON r.id = l.invoice_id
+      WHERE l.listed_id = ${id} ORDER BY r.id`,
   ]);
   // while a payment is under way it asks for the rest itself; a second would ask twice
   const waiting = payments.some((p) => p.status === "pending" || p.status === "processing");
@@ -341,14 +382,17 @@ async function detail(node: Node, id: number) {
   const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
-    <div class=-head><a href="${pageUrl}">${t`Invoices`}</a> › ${row.number || `#${id}`}</div>
+    <div class=-head>
+      <a href="${pageUrl}">${t`Invoices`}</a> › ${typeName(app, row.type)} ${row.number || `#${id}`}
+    </div>
     <table class=u2-table>
       ${field(t`Status`, status(row.status))}
       ${field(t`User`, userLink(node, row.usr_id, users.get(Number(row.usr_id))))}
       ${field(t`Language`, row.lang)}
-      ${credit ? field(t`Corrects`, row.corrects
-        ? rowLink(node, "cms.backend.fin.invoice", "invoice", row.corrects)
-        : "") : ""}
+      ${field(t`Type`, typeName(app, row.type))}
+      ${row.preceding
+        ? field(credit ? t`Corrects` : t`Follows`, rowLink(node, "cms.backend.fin.invoice", "invoice", row.preceding))
+        : ""}
       ${field(t`Direction`, html.async`${direction(row.direction, "")}
         ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`}`)}
       ${field(t`Number`, row.number)}
@@ -357,7 +401,13 @@ async function detail(node: Node, id: number) {
       ${row.direction === "out" ? field(t`Sent`, html.async`<form data-sent="${id}">
         <input type=date name=date value="${row.sent}"> <button>${t`Save`}</button>
       </form>`) : ""}
-      ${Number(row.reminder) ? field(t`Reminded`, html.async`${row.reminder}× · ${row.reminded}`) : ""}
+      ${listing.length ? field(t`Reminded`, html.join(listing.map((r) =>
+        html.async`<a href="${backend.toUrl(pageUrl, { invoice: r.id })}">${r.number || `#${r.id}`}</a>
+          <small>${r.date}</small>`), ", ")) : ""}
+      ${claims && reminders && row.status === "open" ? field(t`Reminders`, html.async`
+        ${row.remind ? t`go out` : badge(t`held`, "--orange")}
+        <button data-action="${row.remind ? "hold" : "release"}" data-id="${id}">
+          ${row.remind ? t`Hold` : t`Release`}</button>`) : ""}
       ${field(t`Net`, money(row.net, row.currency))}
       ${field(t`Tax`, money(row.tax, row.currency))}
       ${field(t`Total`, html`<b>${money(row.total, row.currency)}</b>`)}
@@ -368,21 +418,33 @@ async function detail(node: Node, id: number) {
       ${field(t`Changed`, u2.el.time(row.changed))}
     </table>
     <div>
-      ${app.modules.linked("pdf")
+      ${app.modules.linked("pdf") && !(row.sent && file) // what went out stays as it was
         ? html.async`<button data-action=print data-id="${id}">${t`Print PDF`}</button>`
         : ""}
       ${pdfUrl && row.direction === "out" ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}
-      ${row.status === "open" && row.direction === "out" && app.modules.linked("fin.invoice.reminder")
+      ${claims && reminders && row.status === "open"
         ? html.async`<button data-action=remind data-id="${id}"
-          u2-confirm="${t`Send the next reminder to its user now?`}">${t`Remind`}</button>`
+          u2-confirm="${t`Make the next reminder of it now?`}">${t`Remind`}</button>`
         : ""}
-      ${!credit && row.direction === "out" && row.status !== "canceled"
+      ${row.type === "proforma" && row.status === "open"
+        ? html.async`<button data-action=finalize data-id="${id}"
+          u2-confirm="${t`Turn it into the invoice now? It is issued, and its tax is due.`}">
+          ${t`Make the invoice`}</button>`
+        : ""}
+      ${claims && ["open", "paid", "uncollectible"].includes(String(row.status))
         ? html.async`<button data-action=credit data-id="${id}">${t`Credit note`}</button>`
+        : ""}
+      ${claims && row.status === "open"
+        ? html.async`<button data-action=writeOff data-id="${id}"
+          u2-confirm="${t`Write off what is left? The loss is booked and its tax taken back.`}">
+          ${t`Write off`}</button>`
         : ""}
       ${row.status === "open" && !Number(row.paid) && !credit ? html.async`<button data-action=revise data-id="${id}"
         u2-confirm="${t`Revise it? It is canceled, and a draft with its content opens.`}">${t`Revise`}</button>` : ""}
       ${row.status !== "canceled" ? html.async`<button data-action=cancel data-id="${id}"
-        u2-confirm="${t`Cancel this invoice? Its number stays used.`}">${t`Cancel`}</button>` : ""}
+        u2-confirm="${row.sent && claims && Number(row.total)
+          ? t`Cancel this invoice? It went out: a credit note over all of it takes it back.`
+          : t`Cancel this invoice? Its number stays used.`}">${t`Cancel`}</button>` : ""}
     </div>
     ${row.direction === "out" && row.status !== "canceled" && app.modules.linked("messaging.email") ? html.async`
     <form data-send="${id}">
@@ -415,9 +477,18 @@ async function detail(node: Node, id: number) {
         <td style="text-align:end">${Number(line.quantity)} ${line.unit}
         <td style="text-align:end">${money(line.price, row.currency)}
         <td style="text-align:end">${Number(line.tax_rate)} %
+          ${line.tax_category === "S" ? "" : html`<small>${line.tax_category}</small>`}
         <td style="text-align:end">${money(line.amount, row.currency)}`)}
     </table></div>
   </div>
+  ${listed.length ? html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Reminded invoices`}</div>
+    <table class=u2-table>${listed.map((l) => html.async`<tr>
+      <td><a href="${backend.toUrl(pageUrl, { invoice: l.id })}">${l.number || `#${l.id}`}</a>
+      <td>${t`Due`} ${l.due}
+      <td style="text-align:end">${money(l.open, row.currency)}
+      <td>${l.level}.`)}</table>
+  </div>` : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`} <small>ref ${refOf(id)}</small></div>
     ${payments.length ? html.async`<table class=u2-table>${payments.map((p) => html.async`<tr>
@@ -425,13 +496,15 @@ async function detail(node: Node, id: number) {
       <td>${direction(p.direction, p.direction)} ${p.provider}
       <td style="text-align:end">${money(p.amount, p.currency)}
       <td style="text-align:end">${money(Number(p.paid) - Number(p.refunded), p.currency)}
+      <td style="text-align:end" title="${t`What of it went to this`}">
+        ${p.share == null ? "" : money(p.share, p.currency)}
       <td>${status(p.status)}`)}</table>` : html.async`<p>${t`No payments yet`}`}
     ${ways.length && !waiting ? html.async`<form data-request="${id}">
       ${t`Ask for`} ${money(open, row.currency)}:
       <select name=method>${ways.map((w) => html`<option value="${w.method}">${w.label}`)}</select>
       <button>${t`Create payment`}</button>
     </form>` : ""}
-    ${row.status === "open" && open > 0 ? html.async`<form data-record="${id}">
+    ${["open", "uncollectible"].includes(String(row.status)) && open > 0 ? html.async`<form data-record="${id}">
       ${credit ? t`Paid back` : t`Received by hand`}:
       <input name=amount inputmode=decimal size=8 placeholder="${money(open, row.currency)}">
       <input name=provider value=bank size=8>

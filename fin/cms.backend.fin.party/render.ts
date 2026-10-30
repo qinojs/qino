@@ -53,7 +53,8 @@ async function overview(node: Node, url: URL) {
   const open = ids.length
     ? await app.db.query`SELECT usr_id, direction, currency,
         SUM(total - paid) AS amount FROM invoice
-      WHERE status = 'open' AND ${sql.in("usr_id", ids)} GROUP BY usr_id, direction, currency ORDER BY currency`
+      WHERE status = 'open' AND type <> 'proforma' AND ${sql.in("usr_id", ids)}
+      GROUP BY usr_id, direction, currency ORDER BY currency`
     : [];
   // what users hold as credit, where credit is kept
   const credits = ids.length && credit

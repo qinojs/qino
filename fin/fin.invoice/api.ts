@@ -3,7 +3,8 @@ import { visible, whose, WHOSE } from "@qino/qino/fin";
 import { create as pay, methods } from "@qino/qino/fin.payment";
 
 import {
-  cancel, create, creditNote, issue, lines, payerOf, print, refOf, remove, revise, setSent, update,
+  cancel, CATEGORIES, create, creditNote, finalize, issue, lines, owed, payerOf, print, refOf, remove, revise, setSent,
+  update, writeOff,
 } from "./mod.ts";
 
 import type { ApiTree, Ctx, Params, Row } from "@qino/qino";
@@ -15,6 +16,7 @@ const LINE = s.object({
   unit: s.optional(s.string()),
   price: s.number().describe("Per unit, in minor units, finer if need be: 23.45 is 0.2345 CHF"),
   taxRate: s.optional(s.number().describe("Percent; none: the default (fin.invoice.taxRate)")),
+  taxCategory: s.optional(s.string().describe(`EN 16931: ${CATEGORIES.join(", ")}; none: S with a rate, O without`)),
   account: s.optional(s.string().describe("Where bookkeeping books it")),
 });
 
@@ -40,19 +42,16 @@ function shown({ data, ...row }: Row, ctx: Ctx) {
   return { ...row, party: json(row.party), ...ctx.user?.superuser ? { data: json(data) } : {} };
 }
 
-/** What is still owed on it, and whether its user can pay that here: an issued invoice of ours. */
-const open = (invoice: Row) => Number(invoice.total) - Number(invoice.paid);
-const payable = (invoice: Row) =>
-  invoice.status === "open" && invoice.direction === "out" && invoice.type === "invoice" && open(invoice) > 0;
-
-/** The ways its user may pay what is open. */
-const offered = (ctx: Ctx, invoice: Row) => payable(invoice)
-  ? methods(ctx.app, {
-    amount: open(invoice),
+/** The ways its user may pay what an issued document of ours asks for (`owed`). */
+async function offered(ctx: Ctx, invoice: Row) {
+  const amount = invoice.direction === "out" ? await owed(ctx.app, invoice) : 0;
+  if (amount <= 0) return [];
+  return methods(ctx.app, {
+    amount,
     currency: String(invoice.currency),
     usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
-  })
-  : Promise.resolve([]);
+  });
+}
 
 /** A superuser does anything here; a user reads their own issued invoices and pays them. */
 export const api: ApiTree = {
@@ -61,18 +60,20 @@ export const api: ApiTree = {
       description: "Invoices, newest first: one's own issued ones; a superuser asks for another's or all, drafts too",
       access: Access.USER,
       query: s.object({
-        status: s.optional(s.string().describe("draft, open, paid, canceled")),
+        status: s.optional(s.string().describe("draft, open, paid, uncollectible, canceled")),
+        type: s.optional(s.string().describe("invoice, credit_note, proforma, reminder")),
         direction: s.optional(s.string().describe("out: issued, in: received")),
         ...WHOSE,
         offset: s.optional(s.number()),
       }),
-      execute: async ({ status, direction, usrId, all, offset }: Params, ctx: Ctx) => {
+      execute: async ({ status, type, direction, usrId, all, offset }: Params, ctx: Ctx) => {
         const usr = whose(ctx, { usrId, all });
         const where = [
           usr === undefined ? null : sql`usr_id = ${usr}`,
           // one's own are what was sent: drafts only where a superuser looks after others
           usr === ctx.userId ? sql`status <> 'draft'` : null,
           status ? sql`status = ${status}` : null,
+          type ? sql`type = ${type}` : null,
           direction ? sql`direction = ${direction}` : null,
         ].flatMap((term) => term ?? []);
         const rows = await ctx.app.db.query`SELECT * FROM invoice
@@ -87,10 +88,12 @@ export const api: ApiTree = {
       input: s.object({
         ...VALUES,
         direction: s.optional(s.string().describe("out (default): we issue it, in: we received it")),
+        type: s.optional(s.string().describe("invoice (default), or proforma: a pro forma invoice")),
       }),
       execute: (values: Params, ctx: Ctx) => {
         const direction = values.direction === "in" ? "in" : "out";
-        return create(ctx.app, { ...values, direction } as Parameters<typeof create>[1]);
+        const type = values.type === "proforma" ? "proforma" : "invoice";
+        return create(ctx.app, { ...values, direction, type } as Parameters<typeof create>[1]);
       },
     },
   },
@@ -170,7 +173,7 @@ export const api: ApiTree = {
             }
             return await pay(ctx.app, {
               method: String(method),
-              amount: open(row),
+              amount: await owed(ctx.app, row),
               currency: String(row.currency),
               ref: refOf(Number(row.id)),
               description: String(row.number ?? ""),
@@ -182,9 +185,16 @@ export const api: ApiTree = {
         },
       },
       issue: { post: action("Issue a draft: it draws its number and is owed", issue) },
-      cancel: { post: action("Withdraw it; its number stays used", cancel) },
-      revise: { post: action("Cancel an open invoice nothing was paid on, for a draft with its content", revise) },
-      creditNote: { post: action("A draft credit note for an issued invoice of ours", creditNote) },
+      cancel: {
+        post: action(
+          "Withdraw it: one of ours that went out by a credit note over all of it, else its number stays used",
+          cancel,
+        ),
+      },
+      revise: { post: action("Withdraw an open invoice nothing was paid on, for a draft with its content", revise) },
+      creditNote: { post: action("A draft credit note for an issued invoice or reminder of ours", creditNote) },
+      writeOff: { post: action("Give up what is left on an open invoice of ours: uncollectible", writeOff) },
+      finalize: { post: action("Turn an issued pro forma into its invoice; the invoice's id comes back", finalize) },
       sent: {
         post: {
           description: "Say when it was sent — by post, from elsewhere; none: not yet",

@@ -17,6 +17,7 @@ const ROLES = {
   vatDue: "2200",
   vatInput: "1170",
   fees: "6940",
+  losses: "3805",
   money: "1020",
   moneyBy: "cash:1000, saferpay:1091, credit:2030",
   result: "2979",

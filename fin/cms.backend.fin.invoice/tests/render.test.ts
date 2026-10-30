@@ -260,3 +260,31 @@ Deno.test("a party's invoices: the list filters by it, its card links there once
     assertStringIncludes(card, `?usr=${usr}">All 11 invoices</a>`);
   });
 });
+
+Deno.test("a pro forma becomes its invoice; an invoice is held, reminded, written off", async () => {
+  await withFinApp([...FIN, "fin.invoice.reminder"], async (app) => {
+    const node = backendNode(app, "/backend/invoices");
+    const as = (url: string, run: () => Promise<unknown>) => inRequest(app, url, run);
+    const base = "http://qino.test/backend/invoices";
+    const act = (action: string, id: number) => as(base, () => api(node, { action: { action, id: String(id) } })) as Promise<Answer>;
+    const idOf = (answer: Answer) => Number(new URL(answer.url!, "http://-").searchParams.get("invoice"));
+
+    const created = await as(base, () => api(node, { create: { direction: "proforma", currency: "chf" } })) as Answer;
+    const proforma = idOf(created);
+    await as(base, () => api(node, { save: { ...edited, id: String(proforma) } }));
+    await act("issue", proforma);
+    assertStringIncludes(String(await as(`${base}?invoice=${proforma}`, () => render(node))), "data-action=finalize");
+    const invoice = idOf(await act("finalize", proforma));
+    const page = String(await as(`${base}?invoice=${invoice}`, () => render(node)));
+    for (const part of [`data-action="hold"`, "data-action=remind", "data-action=writeOff"]) assertStringIncludes(page, part);
+
+    await act("hold", invoice);
+    assertEquals(Number(await app.db.one`SELECT remind FROM invoice WHERE id = ${invoice}`), 0);
+    await act("release", invoice);
+    const reminder = idOf(await act("remind", invoice));
+    assertEquals(await app.db.one`SELECT type FROM invoice WHERE id = ${reminder}`, "reminder");
+    assertStringIncludes(String(await as(`${base}?invoice=${reminder}`, () => render(node))), "Reminded invoices");
+    await act("writeOff", invoice);
+    assertEquals(await app.db.one`SELECT status FROM invoice WHERE id = ${invoice}`, "uncollectible");
+  });
+});

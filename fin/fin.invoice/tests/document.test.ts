@@ -2,7 +2,7 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { fs } from "@qino/qino";
 
 import { withFinApp } from "../../tests/app.ts";
-import { attach, create, creditNote, document, issue, print, revise } from "../mod.ts";
+import { attach, create, creditNote, document, issue, print, revise, setSent } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -62,6 +62,8 @@ Deno.test("an issued invoice prints to a PDF kept as its file", async () => {
     const again = await print(app, id);
     assertEquals((await app.db.row`SELECT file_id FROM invoice WHERE id = ${id}`)?.file_id, again.id);
     assertEquals(await app.db.one`SELECT id FROM file WHERE id = ${pdf.id}`, undefined); // the old print is gone
+    await setSent(app, id, "2026-10-08");
+    await assertRejects(() => print(app, id), Error, "stays as sent"); // what went out stays as it was
   });
 });
 
@@ -187,5 +189,33 @@ Deno.test("the logo is inside the document: the print needs neither network nor 
     const doc = await document(app, Number((await issue(app, await create(app, invoice)))?.id));
     assertStringIncludes(doc, `<img src="data:image/svg+xml;base64,`);
     assert(!doc.includes("not-yet-in-dns"));
+  });
+});
+
+Deno.test("a reminder lists the overdue invoices, its fee, and asks for all of it", async () => {
+  await withApp(async (app) => {
+    const id = Number((await issue(app, await create(app, { ...invoice, due: "2026-10-20" })))?.id);
+    const listed = [{ id, open: 50000, level: 2 }];
+    const fee = [{ name: "Reminder fee", price: 2000, taxRate: 8.1 }];
+    const doc = (await document(app, Number((await issue(app, await create(app, {
+      currency: "CHF", party: invoice.party, type: "reminder", lines: fee, listed, date: "2026-11-05",
+    })))?.id))).replaceAll("\u00a0", " ");
+    for (const part of [
+      "<h1>Reminder 1 M2026-1</h1>", // the second time: the first reminder after the payment reminder
+      "The following invoices are overdue:",
+      "<td>2026-1",
+      '<td class="n amount"><span class=currency>CHF </span>500.00',
+      "Reminder fee",
+      "Amount due: <span class=currency>CHF </span>521.62", // with the tax on the fee
+    ]) assertStringIncludes(doc, part);
+  });
+});
+
+Deno.test("a pro forma says what it is, and an invoice made from it names it", async () => {
+  await withApp(async (app) => {
+    const proforma = Number((await issue(app, await create(app, { ...invoice, type: "proforma" })))?.id);
+    assertStringIncludes(await document(app, proforma), "<h1>Pro forma invoice P2026-1</h1>");
+    const { finalize } = await import("../mod.ts");
+    assertStringIncludes(await document(app, await finalize(app, proforma)), "Follows pro forma invoice P2026-1");
   });
 });

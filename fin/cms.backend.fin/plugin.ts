@@ -54,9 +54,9 @@ async function figures(app: App) {
   if (app.modules.linked("fin.invoice")) {
     const open = (direction: string) => app.db.query`
       SELECT currency, SUM(total - paid) AS amount FROM invoice
-      WHERE direction = ${direction} AND status = 'open' GROUP BY currency ORDER BY currency`;
+      WHERE direction = ${direction} AND status = 'open' AND type <> 'proforma' GROUP BY currency ORDER BY currency`;
     const overdue = Number(await app.db.one`
-      SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND type = 'invoice' AND status = 'open'
+      SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open'
         AND due < ${today()}`);
     rows.push(
       await row(t`Receivables open`, amounts(await open("out"))),

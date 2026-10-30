@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { attach, cancel, create, creditNote, issue, refOf, update } from "@qino/qino/fin.invoice";
+import { attach, cancel, create, creditNote, finalize, issue, refOf, setSent, update, writeOff } from "@qino/qino/fin.invoice";
 import { today } from "@qino/qino/fin";
 import { record } from "@qino/qino/fin.payment";
 
@@ -180,5 +180,43 @@ Deno.test("a credit note books revenue and tax back; paying it back books the mo
     assertEquals(await saldo(app), { "1020": 108100, "1100": -21620, "2200": -6480, "3400": -80000 });
     await record(app, { direction: "out", provider: "bank", amount: 21620, currency: "CHF", ref: refOf(note) });
     assertEquals(await saldo(app), { "1020": 86480, "2200": -6480, "3400": -80000 });
+  });
+});
+
+Deno.test("a pro forma books nothing; the invoice it becomes does", async () => {
+  await withApp(async (app) => {
+    const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", type: "proforma", lines })))?.id);
+    assertEquals(await saldo(app), {});
+    await finalize(app, id);
+    assertEquals(await saldo(app), { "1100": 108100, "2200": -8100, "3400": -100000 });
+  });
+});
+
+Deno.test("written off: the loss and its tax back; paid after all: taken back again", async () => {
+  await withApp(async (app) => {
+    const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }, { name: "Book", price: 10000, taxRate: 2.6 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
+    await record(app, { direction: "in", provider: "bank", amount: 108100, currency: "CHF", ref: refOf(id), date: "2026-10-05" });
+    // 102.60 left of 1183.60, shared by the rates as the invoice is: 93.71 at 8.1 % (tax 7.02),
+    // 8.89 at 2.6 % (tax 0.23)
+    await writeOff(app, id);
+    const after = await saldo(app);
+    assertEquals([after["1100"], after["3805"], after["2200"]], [undefined, 8669 + 866, -8360 + 702 + 23]);
+    await record(app, { direction: "in", provider: "bank", amount: 10260, currency: "CHF", ref: refOf(id), date: "2026-10-20" });
+    assertEquals((await saldo(app))["3805"], undefined);
+  });
+});
+
+Deno.test("an invoice that went out is canceled by a credit note: booked back in its own period", async () => {
+  await withApp(async (app) => {
+    const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
+    await setSent(app, id, "2026-10-01");
+    await cancel(app, id);
+    const entries = await app.db.query`SELECT ref, date FROM accounting_entry ORDER BY id`;
+    assertEquals(entries.length, 2); // the invoice and its credit note, none reversed
+    assertEquals(entries[1].date, today());
+    assertEquals(await saldo(app), {});
   });
 });

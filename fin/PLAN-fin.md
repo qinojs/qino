@@ -1,100 +1,129 @@
 # PLAN fin
 
-Money in qino: getting paid, paying, claims, bank reconciliation, bookkeeping. A basis for
-discussion. The modules live in their own store, this folder; the module `fin` is their base
-(the texts payers read, users' postal address and IBAN).
+Geld in qino: bezahlt werden, bezahlen, Forderungen, Bankabgleich, Buchhaltung. Eine Grundlage zur
+Diskussion. Die Module liegen in einem eigenen Store, diesem Ordner; das Modul `fin` ist ihre Basis
+(die Texte, die Zahlende lesen, Postadresse und IBAN der Benutzer).
 
-## Principles
+## Anforderungen
 
-- **International core.** Generic modules know no country. Anything national — QR bill, a chart of
-  accounts, a VAT report, a local bank API — lives in its own module, named after it (`qrbill`,
-  `blink`) or suffixed with the country code (`fin.accounting.ch`).
-- **Each layer stands alone.** Payment without invoices (shop, donation), invoices without
-  bookkeeping, bookkeeping without either (manual entries). Layers above listen, layers below
-  never know them.
-- **Coupled by `ref` and events, not by foreign keys.** `ref` is `<module>:<id>` (`shop.order:12`,
-  `fin.invoice:7`). Whoever owns the thing listens to the event and finds it by `ref`.
-- **Amounts are integers in minor units, always paired with a currency.** Decimals, names and
-  formatting come from [locale.currency](../module/locale.currency/); rates used in a booking
-  are stored with the booking.
-- **`direction: in | out` wherever money or claims flow**, from day one — like the messaging
-  journal. Building only `in` first is fine; adding the column later is a rebuild.
-- **The outside world is the source of truth.** Provider and bank say what happened; nothing a
-  browser or webhook sends is trusted as such.
-- **Books are append-only.** Corrections are reversals, not edits — what bookkeeping laws
-  require almost everywhere.
+- **Alle bedienen, skalieren.** fin soll vom Einzelunternehmen bis zum grossen Betrieb taugen.
+  Ausbaubarkeit und grosse Nutzer gehen vor Einfachheit — einfach ist aber erwünscht und oft
+  gerade das, was gut und skalierbar ist.
+- **Modular.** Jede Schicht ist für sich nutzbar: Rechnungen ohne Buchhaltung, auch ohne Benutzer
+  (`usr_id`) als Debitor.
+- **Wie professionelle Software.** Lösungen orientieren sich daran, wie es etablierte Systeme
+  machen (SAP, Business Central, Abacus, Odoo, bexio …), statt eigene Wege zu erfinden.
+- **Rechtlich korrekt, recherchiert statt vermutet.** Rechtliche und steuerliche Details werden
+  recherchiert und mit Quellen notiert: [LAW-CH.md](LAW-CH.md).
+- **Mahnwesen so gut wie möglich**: Zahlungserinnerung und Mahnungen, ausbaubar — Gebühren,
+  Verzugszins, später mehr.
+- **Ein Einzahlungsschein pro Schreiben.** Der Kunde bekommt nie zwei Einzahlungsscheine für einen
+  Vorgang (z.B. Mahnung und Mahngebühr).
+- **Proforma-Rechnungen** müssen abgedeckt werden können.
+- **Debitor ist `usr_id`.** Firmen sind Benutzer ohne Login; wer sonst auf die Sachen eines
+  Debitors zugreifen darf, kommt bei Bedarf dazu.
+- **Noch nirgends im Einsatz.** Alles darf grundlegend umgebaut werden.
 
-## Built
+## Grundsätze
 
-Each module documents itself in its README: [fin](fin/README.md),
-[fin.payment](fin.payment/README.md) with the providers `saferpay`, `btcpay`, `bitcoin`, `lightning`,
-`qrbill`, `stripe`, `paypal` and `credit` (a user's credit as a ledger),
-[fin.invoice](fin.invoice/README.md) with `.reminder`, [fin.subscription](fin.subscription/README.md),
-[fin.bank](fin.bank/README.md) with `.camt`, [fin.accounting](fin.accounting/README.md) with `.ch`,
-[fin.hosting](fin.hosting/README.md), and the backend `cms.backend.fin.*`.
-PDF rendering is the core module [pdf](../module/pdf/), not finance.
+- **Internationaler Kern.** Generische Module kennen kein Land. Alles Nationale — QR-Rechnung,
+  Kontenrahmen, MWST-Abrechnung, eine lokale Bank-API — lebt in einem eigenen Modul, benannt nach
+  der Sache (`qrbill`, `blink`) oder mit Ländercode als Suffix (`fin.accounting.ch`).
+- **Jede Schicht steht für sich.** Zahlung ohne Rechnung (Shop, Spende), Rechnungen ohne
+  Buchhaltung, Buchhaltung ohne beides (Buchungen von Hand). Obere Schichten hören zu, untere
+  kennen sie nie.
+- **Gekoppelt über `ref` und Events, nicht über Fremdschlüssel.** `ref` ist `<module>:<id>`
+  (`shop.order:12`, `fin.invoice:7`). Wem die Sache gehört, hört auf das Event und findet sie über
+  `ref`.
+- **Beträge sind Ganzzahlen in kleinster Einheit, immer mit Währung.** Dezimalstellen, Namen und
+  Formatierung kommen aus [locale.currency](../module/locale.currency/); in einer Buchung
+  verwendete Kurse werden mit der Buchung gespeichert.
+- **`direction: in | out` überall, wo Geld oder Forderungen fliessen**, vom ersten Tag an — wie im
+  messaging-Journal. Zuerst nur `in` zu bauen ist in Ordnung; die Spalte später nachzurüsten ist
+  ein Umbau.
+- **Die Aussenwelt ist die Quelle der Wahrheit.** Provider und Bank sagen, was geschehen ist; was
+  ein Browser oder Webhook schickt, gilt nicht schon als wahr.
+- **Bücher werden nur ergänzt.** Korrekturen sind Stornobuchungen, keine Änderungen — wie es
+  Buchführungsgesetze fast überall verlangen.
 
-Dependencies only point down: `fin.invoice`, `fin.bank` and the providers → `fin.payment`; `qrbill` →
-`fin.bank`, which settles it; `fin.accounting` → `fin.invoice`, `fin.payment`.
+## Gebaut
 
-## Open
+Jedes Modul beschreibt sich in seinem README: [fin](fin/README.md),
+[fin.payment](fin.payment/README.md) mit den Providern `saferpay`, `btcpay`, `bitcoin`, `lightning`,
+`qrbill`, `stripe`, `paypal` und `credit` (Guthaben eines Benutzers als Konto),
+[fin.invoice](fin.invoice/README.md) mit `.reminder`, [fin.subscription](fin.subscription/README.md),
+[fin.bank](fin.bank/README.md) mit `.camt`, [fin.accounting](fin.accounting/README.md) mit `.ch`,
+[fin.hosting](fin.hosting/README.md), und das Backend `cms.backend.fin.*`.
+Das PDF-Rendering ist das Core-Modul [pdf](../module/pdf/), nicht Teil von fin.
 
-Next, by use:
+Abhängigkeiten zeigen nur nach unten: `fin.invoice`, `fin.bank` und die Provider → `fin.payment`;
+`qrbill` → `fin.bank`, das sie begleicht; `fin.accounting` → `fin.invoice`, `fin.payment`.
 
-- Out payments: open received invoices as a pain.001 file for the bank (`send`); the suppliers'
-  IBANs are there (`usr.iban`).
-- "Sent on" on the invoice, not only in the message journal; sending on issue, as a setting.
-- Out payments also need a release step before `send`: plain module access (access = usage); amount
-  limits and four eyes only when someone needs them.
-- Providers `transfer` (bank transfer, reference in the message, matched like `qrbill`) and `pain001`
-  (ISO 20022 payment order file, confirmed by the debit in the statement).
-- Bank importers: `ebics`, national open-banking APIs (`blink` for CH, PSD2 aggregators), CSV for
-  PayPal and the like; a `bank:transaction` event once a second consumer needs it.
-- Credit: paying part of a payment with it; booking money that comes in for credit.
-- A default account per supplier; reminder fees as an invoice of their own; several items per
-  subscription, proration.
-- E-invoice formats (Factur-X/ZUGFeRD, XRechnung, Peppol UBL); export formats of single programs
-  (Banana, Abacus, DATEV) — each a module of its own, once needed.
-- Cash rounding per currency; stablecoins.
+## Offen
 
-Uncertain, to be decided when it matters:
+Als Nächstes, nach Bedarf:
 
-- Parties are users (`usr`, suppliers without a login). A contacts table of its own only once
-  users no longer fit.
-- One postal address per user; a billing or delivery address that differs lives on the invoice or
-  order.
-- One price per subscription, no proration; canceled invoices keep their subscription periods.
-- Multi-currency books (functional currency, revaluation) — only when needed.
-- Two main currencies: fin's (`fin.mainCurrency`, else the organization's country's) and the
-  shop's (`shp3_currency.main`, a table kept compatible with the PHP shop). The shop could follow
-  fin's once it builds on it.
-- Credit notes without an invoice, and credit notes from suppliers.
-- Translations: only languages the site has (`languages.all`) — an invoice in another language
-  falls back to the default one, until smalltext stores rows instead of a column per language.
-- Texts of the browser scripts (`pub/*.js`) still translate in the core namespace.
-- Browser files import each other across a store by relative path (`../../cms.backend.fin`):
-  fine within one store; across stores a core question.
+- Ausgehende Zahlungen: offene erhaltene Rechnungen als pain.001-Datei für die Bank (`send`); die
+  IBANs der Lieferanten sind vorhanden (`usr.iban`).
+- „Versendet am" auf der Rechnung, nicht nur im messaging-Journal; Versand beim Ausstellen, als
+  Einstellung.
+- Ausgehende Zahlungen brauchen vor `send` auch eine Freigabe: einfacher Modulzugriff (Zugriff =
+  Nutzung); Betragslimiten und Vier-Augen-Prinzip erst, wenn jemand sie braucht.
+- Provider `transfer` (Banküberweisung, Referenz in der Mitteilung, abgeglichen wie `qrbill`) und
+  `pain001` (ISO-20022-Zahlungsauftrag als Datei, bestätigt durch die Belastung im Kontoauszug).
+- Bank-Importer: `ebics`, nationale Open-Banking-APIs (`blink` für CH, PSD2-Aggregatoren), CSV für
+  PayPal und ähnliche; ein Event `bank:transaction`, sobald ein zweiter Konsument es braucht.
+- Guthaben: einen Teil einer Zahlung damit begleichen; eingehendes Geld fürs Guthaben buchen.
+- Rechnungen, offene Posten, Mahnwesen, Proforma, Korrekturen, MWST-Kategorien: umgesetzt; was
+  offen ist und bestätigt werden muss, steht in [PLAN-invoice.md](PLAN-invoice.md).
+- Ein Standardkonto pro Lieferant; mehrere Positionen pro Abo, anteilige Verrechnung.
+- E-Rechnungsformate (Factur-X/ZUGFeRD, XRechnung, Peppol UBL); Exportformate einzelner Programme
+  (Banana, Abacus, DATEV) — je ein eigenes Modul, sobald gebraucht.
+- Bargeldrundung pro Währung; Stablecoins.
 
-Before going live on a server: `fc-match Arial` must give Liberation Sans or Arial (QR bill font).
+Unsicher, zu entscheiden, wenn es darauf ankommt:
 
-### From the code review (2026-10)
+- Parteien sind Benutzer (`usr`, Lieferanten ohne Login). Eine eigene Kontakttabelle erst, wenn
+  Benutzer nicht mehr passen.
+- Eine Postadresse pro Benutzer; eine abweichende Rechnungs- oder Lieferadresse steht auf der
+  Rechnung oder Bestellung.
+- Ein Preis pro Abo, keine anteilige Verrechnung; stornierte Rechnungen behalten ihre Abo-Perioden.
+- Mehrwährungs-Buchhaltung (funktionale Währung, Neubewertung) — erst bei Bedarf.
+- Zwei Hauptwährungen: die von fin (`fin.mainCurrency`, sonst die des Landes der Organisation) und
+  die des Shops (`shp3_currency.main`, eine Tabelle, kompatibel mit dem PHP-Shop gehalten). Der Shop
+  könnte der von fin folgen, sobald er darauf aufbaut.
+- Gutschriften ohne Rechnung, und Gutschriften von Lieferanten.
+- Übersetzungen: nur Sprachen, die die Site hat (`languages.all`) — eine Rechnung in einer anderen
+  Sprache fällt auf die Standardsprache zurück, bis smalltext Zeilen statt einer Spalte pro Sprache
+  speichert.
+- Texte der Browser-Skripte (`pub/*.js`) werden noch im Core-Namespace übersetzt.
+- Browser-Dateien importieren einander über Stores hinweg per relativem Pfad
+  (`../../cms.backend.fin`): innerhalb eines Stores in Ordnung; über Stores hinweg eine Core-Frage.
 
-Found, not yet done — to be checked before acting on them.
+Vor dem Aufschalten auf einem Server: `fc-match Arial` muss Liberation Sans oder Arial liefern
+(Schrift der QR-Rechnung).
 
-Structure:
+### Aus dem Code-Review (2026-10)
 
-- Subscriptions: deleting a plan or a never billed subscription lives in the backend api; belongs
-  to `fin.subscription` (its errors then translated in the backend).
-- The party and subscription backend apis lack the `try … errMsg` the others have.
-- Settings defaults repeated in code (`?? 30`, `|| "{year}-{n}"`, the mempool URL): needed today,
-  since leaf reads (and `fakeSettings` in the tests) do not apply schema defaults. A core question.
-- Still copied in the backend pages: `option()`, `field()`, the overdue count (overview and invoice
-  widget), the user picker query. The accounting journal with `PER_PAGE + 1` instead of `pager()`.
-- Accounting widget and overview default to the calendar year, though the business year may end
-  on any day (`close()`).
-- `dataOf(payment)` in five providers; `Urls` in `fin.payment/mod.ts` repeats `lib/url.ts`.
-- Saferpay `sync` returns the raw answer as state when it has no transaction.
-- The inbox's `Read` type repeats its `SCHEMA`.
-- `fin.invoice:` still written by hand in the bank suggestions and `refLink`.
+Gefunden, noch nicht erledigt — vor dem Umsetzen prüfen.
 
-Decisions that may change, module by module, are in each README ("Decisions that may change").
+Struktur:
+
+- Abos: Das Löschen eines Plans oder eines nie verrechneten Abos liegt in der Backend-API; gehört
+  zu `fin.subscription` (dessen Fehler dann im Backend übersetzt).
+- Den Backend-APIs für Parteien und Abos fehlt das `try … errMsg`, das die anderen haben.
+- Settings-Defaults im Code wiederholt (`?? 30`, `|| "{year}-{n}"`, die mempool-URL): heute nötig,
+  weil Blatt-Lesezugriffe (und `fakeSettings` in den Tests) keine Schema-Defaults anwenden. Eine
+  Core-Frage.
+- Noch kopiert in den Backend-Seiten: `option()`, `field()`, die Anzahl überfälliger Rechnungen
+  (Übersicht und Rechnungs-Widget), die Abfrage der Benutzerauswahl. Das Buchhaltungsjournal mit
+  `PER_PAGE + 1` statt `pager()`.
+- Buchhaltungs-Widget und -Übersicht nehmen standardmässig das Kalenderjahr, obwohl das
+  Geschäftsjahr an einem beliebigen Tag enden kann (`close()`).
+- `dataOf(payment)` in fünf Providern; `Urls` in `fin.payment/mod.ts` wiederholt `lib/url.ts`.
+- Saferpay `sync` gibt die rohe Antwort als Status zurück, wenn es keine Transaktion gibt.
+- Der Typ `Read` der Inbox wiederholt ihr `SCHEMA`.
+- `fin.invoice:` noch von Hand geschrieben in den Bank-Vorschlägen und in `refLink`.
+
+Entscheide, die sich ändern können, stehen Modul für Modul im jeweiligen README („Decisions that
+may change").

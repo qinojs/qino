@@ -19,6 +19,7 @@
   ["3400", "Dienstleistungserlöse", "income"],
   ["3600", "Übrige Erlöse", "income"],
   ["3800", "Erlösminderungen", "income"],
+  ["3805", "Verluste aus Forderungen", "income"],
   ["4000", "Materialaufwand", "expense"],
   ["4400", "Aufwand für bezogene Dienstleistungen", "expense"],
   ["5000", "Lohnaufwand", "expense"],

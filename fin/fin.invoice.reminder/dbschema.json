@@ -3,15 +3,10 @@
     "invoice": {
       "additionalProperties": {
         "properties": {
-          "reminder": {
-            "type": "integer",
-            "default": 0,
-            "description": "How many reminders went out: 1 the payment reminder, 2 the first reminder …"
-          },
-          "reminded": {
-            "type": "string",
-            "format": "date",
-            "description": "When the last one went out"
+          "remind": {
+            "type": "boolean",
+            "default": true,
+            "description": "Reminders go out for it; false holds them, e.g. while it is disputed"
           }
         }
       }

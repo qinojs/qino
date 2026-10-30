@@ -1,11 +1,10 @@
 {
   "name": "fin.invoice.reminder",
-  "description": "Reminders for overdue invoices: a payment reminder, then the reminders, by mail and on time.",
+  "description": "Reminders for overdue invoices: a payment reminder, then the reminders, with fees and default interest, one per customer.",
   "dependencies": [
     "cron",
     "fin",
-    "fin.invoice",
-    "messaging.email"
+    "fin.invoice"
   ],
   "files": [
     "README.md",

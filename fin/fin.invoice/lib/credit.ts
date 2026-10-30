@@ -11,7 +11,7 @@ import type { App, Row } from "@qino/qino";
 /** What issued credit notes take off an invoice: positive, as paid. */
 export const credited = (app: App, id: number): Promise<number> =>
   app.db.one`SELECT COALESCE(SUM(total), 0) FROM invoice
-    WHERE corrects = ${id} AND type = 'credit_note' AND status IN ('open', 'paid')`.then((sum) => -Number(sum));
+    WHERE preceding = ${id} AND type = 'credit_note' AND status IN ('open', 'paid')`.then((sum) => -Number(sum));
 
 /**
  * How much of a credit note is settled, negative like its total: what its invoice did not need of
@@ -19,7 +19,7 @@ export const credited = (app: App, id: number): Promise<number> =>
  */
 export async function settledOf(app: App, credit: Row, refunds: number): Promise<number> {
   const given = -Number(credit.total);
-  const invoice = credit.corrects ? await app.db.row`SELECT * FROM invoice WHERE id = ${credit.corrects}` : null;
+  const invoice = credit.preceding ? await app.db.row`SELECT * FROM invoice WHERE id = ${credit.preceding}` : null;
   if (!invoice) return -refunds;
   // the invoice counts its credit notes as paid: beyond its total is what we owe
   const excess = Math.max(0, Number(invoice.paid) - Number(invoice.total));

@@ -3,7 +3,8 @@ import { backend } from "@qino/qino/cms.backend";
 import { fileOf, parseAmount } from "@qino/qino/cms.backend.fin";
 import { partyOf } from "@qino/qino/fin";
 import {
-  attach, cancel, create, creditNote, document, issue, payerOf, print, refOf, remove, revise, send, setSent, update,
+  attach, cancel, create, creditNote, document, finalize, issue, owed, payerOf, print, refOf, remove, revise, send,
+  setSent, update, writeOff,
 } from "@qino/qino/fin.invoice";
 import { create as pay, record } from "@qino/qino/fin.payment";
 import { render } from "@qino/qino/pdf";
@@ -23,8 +24,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   try {
     if (vars.create) {
       const { direction, currency } = vars.create as Record<string, string>;
+      // ours are invoices or pro forma invoices; received ones invoices
+      const type = direction === "proforma" ? "proforma" : "invoice";
       const kind = direction === "in" ? "in" : "out";
-      const id = await create(app, { direction: kind, currency: currency.toUpperCase(), lines: [] });
+      const id = await create(app, { direction: kind, type, currency: currency.toUpperCase(), lines: [] });
       return { ok: true, url: await pageUrl({ invoice: id }) };
     }
     // the editor saves as one types, and gets the invoice back as it will be printed
@@ -99,11 +102,14 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (action === "print") return { ok: !!await print(app, Number(id)), message: await t`Printed.` };
     if (action === "remind") {
       const { remind } = await import("@qino/qino/fin.invoice.reminder");
-      const level = await remind(app, Number(id));
-      return level
-        ? { ok: true, message: `${await t`Reminder sent`}: ${level}` }
-        : { ok: false, message: await t`No reminder sent: no user with an email address, or all are sent` };
+      return { ok: true, url: await pageUrl({ invoice: await remind(app, [Number(id)]) }) };
     }
+    if (action === "hold" || action === "release") {
+      await app.db.exec`UPDATE invoice SET remind = ${action === "release"} WHERE id = ${Number(id)}`;
+      return { ok: true };
+    }
+    if (action === "writeOff") return { ok: !!await writeOff(app, Number(id)), message: await t`Written off.` };
+    if (action === "finalize") return { ok: true, url: await pageUrl({ invoice: await finalize(app, Number(id)) }) };
     if (action === "remove") {
       await remove(app, Number(id));
       return { ok: true, url: await pageUrl({}) };
@@ -115,7 +121,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       if (!invoice) return { ok: false, message: await t`No invoice` };
       const payment = await pay(app, {
         method,
-        amount: Number(invoice.total) - Number(invoice.paid),
+        amount: await owed(app, invoice),
         currency: String(invoice.currency),
         ref: refOf(Number(id)),
         description: `${await t`Invoice`} ${invoice.number ?? ""}`.trim(),
@@ -135,7 +141,9 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       await record(app, {
         direction: (invoice.direction === "out") !== credit ? "in" : "out",
         provider: provider || "bank",
-        amount: amount ? parseAmount(amount, currency) : Math.abs(Number(invoice.total) - Number(invoice.paid)),
+        amount: amount
+          ? parseAmount(amount, currency)
+          : credit ? Math.abs(Number(invoice.total) - Number(invoice.paid)) : await owed(app, invoice),
         currency,
         ref: refOf(Number(id)),
       });
@@ -163,6 +171,7 @@ function valuesOf(v: Record<string, string>) {
       unit: v[`unit${i}`] || undefined,
       price: parseAmount(v[`price${i}`] || 0, currency),
       taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : undefined, // empty: the default
+      taxCategory: v[`taxCategory${i}`] || undefined, // empty: by the rate
     };
   });
   const address = Object.fromEntries(ADDRESS

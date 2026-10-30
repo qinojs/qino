@@ -1,5 +1,9 @@
 import type { Row } from "@qino/qino";
 
+/** Tax categories (EN 16931, UNCL 5305): S standard, Z zero rated, E exempt, AE reverse charge, K
+ *  intra-community, G export, O not subject to tax. */
+export const CATEGORIES = ["S", "Z", "E", "AE", "K", "G", "O"];
+
 /** A line as it is passed in. `price` is in minor units, finer if need be (23.45 = 0.2345 CHF);
  *  line amounts and totals are whole minor units. `taxRate` is in percent. */
 export type Line = {
@@ -9,6 +13,8 @@ export type Line = {
   unit?: string;
   price: number;
   taxRate?: number;
+  /** One of `CATEGORIES`; none: `S` with a rate, `O` without. */
+  taxCategory?: string;
   /** Where bookkeeping books it (fin.accounting keeps the column); none: its default account. */
   account?: string;
 };
@@ -42,5 +48,6 @@ export const lineOf = (row: Row): Line => ({
   unit: row.unit == null ? undefined : String(row.unit),
   price: Number(row.price),
   taxRate: Number(row.tax_rate),
+  taxCategory: row.tax_category ? String(row.tax_category) : undefined,
   account: row.account ? String(row.account) : undefined,
 });

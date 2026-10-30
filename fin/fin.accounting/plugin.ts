@@ -20,6 +20,7 @@ export const settingsSchema = {
         vatDue: role("Tax charged on issued invoices"),
         vatInput: role("Tax paid on received invoices"),
         fees: role("What payment providers and banks keep"),
+        losses: role("Claims given up (written off), net of their tax"),
         money: role("Where money lands, unless moneyBy names the provider"),
         moneyBy: role("Per provider: bank:1020, cash:1000, saferpay:1091"),
         result: role("Where closing a year puts its profit or loss (equity)"),

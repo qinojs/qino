@@ -1,6 +1,6 @@
 import { App, getCtx, s } from "@qino/qino";
 
-import { refOf, settle } from "./mod.ts";
+import { allocate } from "./mod.ts";
 
 import type { EventDecls } from "@qino/qino";
 
@@ -9,7 +9,7 @@ export { api } from "./api.ts";
 
 Object.assign(App.events, {
   "invoice:status": {
-    description: "An invoice was issued, paid, reopened by a refund or canceled — once per change.",
+    description: "An invoice was issued, paid, reopened by a refund, written off or canceled — once per change.",
     data: s.object({
       invoice: s.record().describe("The invoice row, after the change."),
       previous: s.string().describe("The status before."),
@@ -30,6 +30,8 @@ export const settingsSchema = {
       type: "string",
       description: "Format of credit note numbers, e.g. G{year}-{n}; empty: they count on with the invoices",
     },
+    proformaNumber: { type: "string", default: "P{year}-{n}", description: "Format of pro forma invoice numbers" },
+    reminderNumber: { type: "string", default: "M{year}-{n}", description: "Format of reminder numbers" },
     method: {
       type: "string",
       description: "Payment an issued invoice asks for, e.g. qrbill — its slip then goes with the invoice",
@@ -46,8 +48,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }, { signal });
   // deno-lint-ignore no-explicit-any -- module events carry their own payloads
   app.on("payment:change", async ({ payment }: any) => {
-    const ref = String(payment?.ref ?? "");
-    const id = Number(ref.split(":")[1]);
-    if (ref === refOf(id)) await settle(app, id);
+    if (String(payment?.ref ?? "").startsWith("fin.invoice:")) await allocate(app, payment);
   }, { signal });
 }

@@ -12,7 +12,12 @@ cms.initNode("cont.fin.my.invoices", async (el) => {
   const msg = el.querySelector(".-msg");
   const labels = {
     invoice: await t`Invoice`,
-    creditNote: await t`Credit note`,
+    types: {
+      invoice: await t`Invoice`,
+      credit_note: await t`Credit note`,
+      proforma: await t`Pro forma invoice`,
+      reminder: await t`Reminder`,
+    },
     date: await t`Date`,
     due: await t`Due`,
     total: await t`Total`,
@@ -24,17 +29,20 @@ cms.initNode("cont.fin.my.invoices", async (el) => {
     none: await t`It cannot be paid online.`,
     empty: await t`No invoices yet.`,
     error: await t`Error loading.`,
-    statuses: { open: await t`open`, paid: await t`paid`, canceled: await t`canceled` },
+    // written off is ours to know: to the customer it is still open
+    statuses: { open: await t`open`, uncollectible: await t`open`, paid: await t`paid`, canceled: await t`canceled` },
   };
   const show = (value = "") => void (msg.value = value);
   const today = new Date().toLocaleDateString("sv-SE");
 
-  // what is still owed, and whether it is paid here: an issued invoice of the shop, not a credit note
+  // what is still owed, and whether it is paid here: an issued document of the shop that claims
+  // something — not a credit note
   const rest = (i) => Number(i.total) - Number(i.paid);
-  const payable = (i) => i.status === "open" && i.direction === "out" && i.type === "invoice" && rest(i) > 0;
+  const payable = (i) =>
+    ["open", "uncollectible"].includes(i.status) && i.direction === "out" && i.type !== "credit_note" && rest(i) > 0;
 
   const row = (i) => html`<tr data-id="${i.id}">
-    <td>${i.type === "credit_note" ? labels.creditNote : labels.invoice} ${i.number}
+    <td>${labels.types[i.type] ?? labels.invoice} ${i.number}
     <td>${day(i.date)}
     <td>${day(i.due)} ${payable(i) && i.due && i.due < today ? html`<span class=u2-badge>${labels.overdue}</span>` : ""}
     <td>${money(i.total, i.currency)}

@@ -31,6 +31,13 @@ Settings `fin.accounting.accounts.*` name an account per role; a country module 
 | money in for an issued invoice | money (less fee), fees | receivable |
 | money out for a received invoice | payable, fees | money |
 | invoice canceled | its entry is reversed | |
+| invoice written off | losses (net), tax due | receivable |
+| written-off invoice paid after all | its write-off is reversed | |
+
+A pro forma books nothing; the invoice it becomes does. A credit note books revenue and tax back
+in its own period, as the law wants a correction (MWSTG 41). Every line carries its tax code —
+category and rate, `S8.1`, `E0` (see [fin.invoice](../fin.invoice/README.md#lines-and-tax)) —, what
+a VAT return adds up.
 
 An invoice line may name its own account (`invoice_line.account`, a column this module adds):
 revenue or expense is then split by the accounts of the lines, the rest on the role's account; tax
@@ -70,8 +77,7 @@ appropriation of the result and the VAT reconciliation are booked by hand.
 - **No carry-over entries.** Balance-sheet accounts are summed over all time, income and expense
   over the period asked for; closing a year is setting `closedUntil` and booking the result to
   equity by hand. Separate books per year would need opening entries.
-- **Tax in one line** per invoice, without a code per rate; a VAT report per rate would read the
-  invoice lines, or the entries need a tax code per rate.
+- **A write-off shares its tax by the invoice's rates**, in proportion to their gross amounts.
 - **Only payments for invoices** are booked automatically: for anything else (a shop order, a
   donation) the consumer knows the account.
 - **Accounts are never deleted** with their lines; there is no delete in the API.

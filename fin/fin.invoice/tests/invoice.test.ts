@@ -6,7 +6,9 @@ import { fakeSettings, paymentDbSchema } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { totals } from "../lib/totals.ts";
-import { cancel, create, creditNote, issue, lines, refOf, remove, revise, update } from "../mod.ts";
+import {
+  cancel, create, creditNote, finalize, issue, lines, owed, refOf, remove, revise, setSent, update, writeOff,
+} from "../mod.ts";
 import { init } from "../plugin.ts";
 
 import type { App, Row } from "@qino/qino";
@@ -255,11 +257,126 @@ Deno.test("a credit note counts on its invoice as paid; what goes beyond is owed
   await update(app, third, { lines: [{ name: "Goodwill", quantity: -1, price: 500 }] });
   await issue(app, third);
   const again = await row(app, await revise(app, third));
-  assertEquals([again?.type, again?.corrects, again?.total], ["credit_note", id, -500]);
+  assertEquals([again?.type, again?.preceding, again?.total], ["credit_note", id, -500]);
 });
 
 Deno.test("a credit note rounds as its invoice: half away from zero", () => {
   const line = { name: "Half", price: 125, taxRate: 10 }; // tax 12.5
   assertEquals(totals([line], false).tax, 13);
   assertEquals(totals([{ ...line, quantity: -1 }], false).tax, -13);
+});
+
+Deno.test("a line's tax category: S with a rate, O without, or as given; others are refused", async () => {
+  const { app } = await setup();
+  const id = await create(app, {
+    currency: "CHF",
+    lines: [{ name: "Design", price: 100, taxRate: 8.1 }, { name: "Fee", price: 100 }, { name: "Export", price: 100, taxCategory: "G" }],
+  });
+  assertEquals((await lines(app, id)).map((l) => l.tax_category), ["S", "O", "G"]);
+  await assertRejects(() => create(app, { currency: "CHF", lines: [{ name: "x", price: 1, taxCategory: "X" }] }), Error, "taxCategory");
+});
+
+Deno.test("a pro forma claims nothing; its money makes it the invoice, dated the day it came", async () => {
+  const { app } = await setup();
+  const id = await create(app, { ...order, type: "proforma" });
+  const proforma = await issue(app, id);
+  assertEquals([proforma?.number, proforma?.status], [`P${today().slice(0, 4)}-1`, "open"]);
+  assertEquals(await owed(app, proforma!), 47226);
+  await record(app, { direction: "in", provider: "bank", amount: 47226, currency: "CHF", ref: refOf(id), date: "2026-11-02" });
+  const invoice = await app.db.row`SELECT * FROM invoice WHERE preceding = ${id}`;
+  assertEquals([invoice?.type, invoice?.number, invoice?.date, invoice?.status, invoice?.paid], [
+    "invoice", `${today().slice(0, 4)}-1`, "2026-11-02", "paid", 47226,
+  ]);
+  assertEquals((await row(app, id))?.status, "paid"); // done
+  assertEquals(await finalize(app, id), Number(invoice?.id)); // made once
+});
+
+Deno.test("a pro forma is finalized by hand: delivered before it was paid", async () => {
+  const { app } = await setup();
+  const id = Number((await issue(app, await create(app, { ...order, type: "proforma" })))?.id);
+  const made = await finalize(app, id);
+  assertEquals([(await row(app, made))?.status, (await row(app, made))?.preceding], ["open", id]);
+  // paid on the pro forma's slip all the same: it goes to the invoice
+  await record(app, { direction: "in", provider: "bank", amount: 47226, currency: "CHF", ref: refOf(id) });
+  assertEquals((await row(app, made))?.status, "paid");
+  await assertRejects(() => finalize(app, made), Error, "pro forma");
+});
+
+Deno.test("an invoice that went out is canceled by a credit note over all of it; one that did not, just so", async () => {
+  const { app } = await setup();
+  const unsent = Number((await issue(app, await create(app, order)))?.id);
+  assertEquals((await cancel(app, unsent))?.status, "canceled");
+  const sent = Number((await issue(app, await create(app, order)))?.id);
+  await setSent(app, sent, "2026-10-01");
+  const settled = await cancel(app, sent);
+  assertEquals([settled?.status, settled?.paid], ["paid", 47226]);
+  const note = await app.db.row`SELECT * FROM invoice WHERE preceding = ${sent}`;
+  assertEquals([note?.type, note?.status, note?.total], ["credit_note", "paid", -47226]);
+  // revised after it went out: taken back by a credit note, and a new draft
+  const again = Number((await issue(app, await create(app, order)))?.id);
+  await setSent(app, again, "2026-10-01");
+  const draft = await revise(app, again);
+  assertEquals([(await row(app, again))?.status, (await row(app, draft))?.status], ["paid", "draft"]);
+});
+
+Deno.test("written off, an invoice is uncollectible until money comes after all", async () => {
+  const { app, events } = await setup();
+  const id = Number((await issue(app, await create(app, order)))?.id);
+  await record(app, { direction: "in", provider: "bank", amount: 7226, currency: "CHF", ref: refOf(id) });
+  assertEquals((await writeOff(app, id))?.status, "uncollectible");
+  await record(app, { direction: "in", provider: "bank", amount: 1000, currency: "CHF", ref: refOf(id) });
+  assertEquals((await row(app, id))?.status, "uncollectible"); // still not all
+  await record(app, { direction: "in", provider: "bank", amount: 39000, currency: "CHF", ref: refOf(id) });
+  assertEquals((await row(app, id))?.status, "paid");
+  assertEquals(events.slice(1).map((e) => [e.invoice.status, e.previous]), [["uncollectible", "open"], ["paid", "uncollectible"]]);
+  await assertRejects(() => writeOff(app, id), Error, "only open");
+});
+
+Deno.test("a payment for a document that lists others goes to its own lines first, then the oldest due", async () => {
+  const { app } = await setup();
+  const one = [{ name: "Design", price: 10000 }];
+  const older = Number((await issue(app, await create(app, { currency: "CHF", lines: one, due: "2026-01-10" })))?.id);
+  const newer = Number((await issue(app, await create(app, { currency: "CHF", lines: one, due: "2026-02-10" })))?.id);
+  const reminder = Number((await issue(app, await create(app, {
+    currency: "CHF",
+    type: "reminder",
+    lines: [{ name: "Fee", price: 2000 }],
+    listed: [{ id: newer, open: 10000, level: 1 }, { id: older, open: 10000, level: 2 }],
+  })))?.id);
+  assertEquals(await owed(app, (await row(app, reminder))!), 22000);
+  const paid = async () => [older, newer, reminder].map(async (id) => [(await row(app, id))?.status, (await row(app, id))?.paid]);
+  await record(app, { direction: "in", provider: "bank", amount: 15000, currency: "CHF", ref: refOf(reminder) });
+  assertEquals(await Promise.all(await paid()), [["paid", 10000], ["open", 3000], ["paid", 2000]]);
+  // more than all: the rest stays on the reminder, overpaid
+  await record(app, { direction: "in", provider: "bank", amount: 8000, currency: "CHF", ref: refOf(reminder) });
+  assertEquals(await Promise.all(await paid()), [["paid", 10000], ["paid", 10000], ["paid", 3000]]);
+  assertEquals(await owed(app, (await row(app, reminder))!), 0);
+});
+
+Deno.test("a reminder without fees is paid as issued, and still asks for what it lists", async () => {
+  const { app } = await setup();
+  const id = Number((await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] })))?.id);
+  const reminder = await issue(app, await create(app, {
+    currency: "CHF", type: "reminder", lines: [], listed: [{ id, open: 10000, level: 1 }],
+  }));
+  assertEquals([reminder?.number, reminder?.status], [`M${today().slice(0, 4)}-1`, "paid"]);
+  assertEquals(await owed(app, reminder!), 10000);
+  await record(app, { direction: "in", provider: "bank", amount: 10000, currency: "CHF", ref: refOf(Number(reminder?.id)) });
+  assertEquals((await row(app, id))?.status, "paid");
+});
+
+Deno.test("a payment synced again keeps its shares: what it paid before stays paid", async () => {
+  const { app } = await setup();
+  const one = [{ name: "Design", price: 10000 }];
+  const older = Number((await issue(app, await create(app, { currency: "CHF", lines: one, due: "2026-01-10" })))?.id);
+  const newer = Number((await issue(app, await create(app, { currency: "CHF", lines: one, due: "2026-02-10" })))?.id);
+  const reminder = Number((await issue(app, await create(app, {
+    currency: "CHF", type: "reminder", lines: [], listed: [{ id: older, open: 10000, level: 1 }, { id: newer, open: 10000, level: 1 }],
+  })))?.id);
+  // a QR bill paid in two transfers: the same payment, more money each time
+  const payment = await record(app, { direction: "in", provider: "bank", amount: 20000, paid: 12000, currency: "CHF", ref: refOf(reminder) });
+  await app.db.exec`UPDATE payment SET paid = 20000 WHERE id = ${payment}`;
+  await app.fire("payment:change", { payment: await app.db.row`SELECT * FROM payment WHERE id = ${payment}` });
+  const state = async (id: number) => [(await row(app, id))?.status, (await row(app, id))?.paid];
+  assertEquals([await state(older), await state(newer), await state(reminder)], [["paid", 10000], ["paid", 10000], ["paid", 0]]);
 });

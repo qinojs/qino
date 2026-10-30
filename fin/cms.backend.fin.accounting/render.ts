@@ -33,8 +33,12 @@ async function closing(app: App): Promise<HtmlString> {
   const from = closed ? addDays(closed, 1) : "0000-01-01";
   const until = closed ? addMonths(closed, 12) : `${new Date().getFullYear() - 1}-12-31`;
   const count = (query: Promise<unknown>) => query.then(Number);
-  const [drafts, unassigned, bare] = await Promise.all([
+  const currency = await mainCurrency(app) ?? "";
+  const [drafts, foreign, unassigned, bare] = await Promise.all([
     count(app.db.one`SELECT COUNT(*) FROM invoice WHERE status = 'draft' AND (date IS NULL OR date <= ${until})`),
+    // booked only in the book's currency: the others are missing from the books
+    count(app.db.one`SELECT COUNT(*) FROM invoice WHERE currency <> ${currency} AND type <> 'proforma'
+      AND status NOT IN ('draft', 'canceled') AND date >= ${from} AND date <= ${until}`),
     app.modules.linked("fin.bank")
       ? count(app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL AND date >= ${from}
         AND date <= ${until}`)
@@ -50,6 +54,7 @@ async function closing(app: App): Promise<HtmlString> {
     <div class=-head>${t`Close the year`} ${closed ? html.async`<small>${t`closed until`} ${closed}</small>` : ""}</div>
     <ul>
       ${check(drafts, t`draft invoices of the year`)}
+      ${check(foreign, t`invoices in another currency, not booked`)}
       ${app.modules.linked("fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
       ${check(bare, t`entries by hand without a receipt`)}
     </ul>
@@ -69,6 +74,11 @@ async function vat(app: App, from: string, to: string, currency: string): Promis
   const t = app.t;
   const { vatReturn } = await import("@qino/qino/fin.accounting.ch");
   const r = await vatReturn(app, { from, to });
+  const deduction: Record<string, unknown> = {
+    "220": t`Exempt: exports`,
+    "221": t`Services abroad`,
+    "230": t`Excluded from tax`,
+  };
   const row = (figure: string, label: unknown, ...amounts: number[]) => html.async`<tr>
     <td>${figure}
     <th>${label}
@@ -77,13 +87,13 @@ async function vat(app: App, from: string, to: string, currency: string): Promis
     <div class=-head>${t`VAT return`} <small>${from} – ${to}</small></div>
     <table class=u2-table style="white-space:nowrap">
       ${row("200", t`Total turnover`, r.turnover)}
-      ${r.exempt ? row("220", t`Exempt or abroad`, r.exempt) : ""}
-      ${r.rates.filter((x) => x.rate)
-        .map((x) => row(x.figure, html.async`${t`Turnover at`} ${x.rate} %`, x.turnover, x.tax))}
+      ${r.deductions.map((d) => row(d.figure, deduction[d.figure], d.turnover))}
+      ${r.rates.map((x) => row(x.figure, html.async`${t`Turnover at`} ${x.rate} %`, x.turnover, x.tax))}
       ${r.saldo
         ? row("322", html.async`${t`Turnover with tax at the net tax rate`} ${r.saldo.rate} %`,
           r.saldo.gross, r.saldo.tax)
-        : row("400", t`Input tax`, r.input)}
+        : html.async`${row("400", t`Input tax on material and services`, r.input)}
+          ${r.investments ? row("405", t`Input tax on investments`, r.investments) : ""}`}
       ${row(r.payable < 0 ? "510" : "500", html.async`<b>${r.payable < 0 ? t`Credit` : t`Payable`}</b>`,
         Math.abs(r.payable))}
     </table>

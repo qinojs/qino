@@ -110,7 +110,9 @@ async function invoices(app: App, data: Record<string, Rows>, usrs: Map<number, 
     await app.db.exec`UPDATE invoice SET number = ${String(inv.id)} WHERE id = ${id}`; // PHP's number is its id
     const sent = day(inv.sent_time);
     if (sent) await setSent(app, id, sent);
-    if (reminders && Number(inv.dunning)) await app.db.exec`UPDATE invoice SET reminder = ${Number(inv.dunning)} WHERE id = ${id}`;
+    // PHP's dunning level has no reminder of its own here: reminded once more, it starts over; held
+    // instead where PHP had reminded already, so nobody gets a payment reminder after a reminder
+    if (reminders && Number(inv.dunning)) await app.db.exec`UPDATE invoice SET remind = ${false} WHERE id = ${id}`;
     const pdf = pdfs && `${pdfs.replace(/\/?$/, "/")}${inv.id}.pdf`;
     if (pdf && await fs.isFile(pdf)) await attach(app, id, await app.dbFiles.add(pdf));
     else if (pdfs) report.push(`invoice ${inv.id}: no PDF`);

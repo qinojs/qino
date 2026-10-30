@@ -14,6 +14,7 @@ export async function document(
   app: App,
   invoice: Row,
   lines: Row[],
+  listed: Row[] = [],
   slips: () => Promise<string[]> = () => Promise.resolve([]),
 ): Promise<string> {
   const lang = languageOf(app, invoice);
@@ -40,6 +41,8 @@ export async function document(
     const country = (o: Record<string, any>) => String(o.address?.addressCountry ?? "").toUpperCase();
     const abroad = !!country(party) && country(party) !== country(sender);
     const vat = (o: Record<string, any>) => o.vatID ? html.async`\n${t`VAT ID`} ${o.vatID}` : "";
+    // a reminder lists what is overdue, and asks for that and its own lines
+    const due = sum.total + listed.reduce((total, row) => total + Number(row.open), 0);
     return String(await html.async`<!doctype html>
 <html lang="${lang}">
 <meta charset="utf-8">
@@ -55,7 +58,7 @@ export async function document(
   address { font-style: normal; white-space: pre-line }
   .to { margin-bottom: 3em }
   /* fixed columns: a table continued on the next page keeps its widths */
-  table { width: 100%; border-collapse: collapse; table-layout: fixed }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 1.5em }
   .pos { width: 2.5em }
   .quantity { width: 5.5em }
   .price { width: 8em }
@@ -90,15 +93,30 @@ export async function document(
   ${logo ? html`<img src="${logo}" alt="" style="max-height: 4em">` : ""}
 </header>
 <address class=to>${addressBlock(party, abroad)}${vat(party)}</address>
-<h1>${invoice.type === "credit_note" ? t`Credit note` : t`Invoice`}${invoice.number ? ` ${invoice.number}` : ""}${
+<h1>${titleOf(app, invoice, listed)}${invoice.number ? ` ${invoice.number}` : ""}${
   invoice.status === "draft" ? html.async` (${t`draft`})` : ""}</h1>
 <p>
-  ${invoice.corrected ? html.async`${t`Corrects invoice ${invoice.corrected}`}<br>` : ""}
+  ${invoice.preceded ? html.async`${invoice.type === "credit_note"
+    ? t`Corrects invoice ${invoice.preceded}`
+    : t`Follows pro forma invoice ${invoice.preceded}`}<br>` : ""}
   ${t`Date`}: ${day(invoice.date)}<br>
   ${asks && invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
   ${asks && invoice.term != null ? t`Payable within ${invoice.term} days` : ""}
 </p>
-<table>
+${listed.length ? html.async`<p>${t`The following invoices are overdue:`}</p>
+<table class=listed>
+  <thead><tr>
+    <th>${t`Invoice`}
+    <th>${t`Date`}
+    <th>${t`Due`}
+    <th class="n amount">${t`Open amount`} <span class=currency>${invoice.currency}</span>
+  <tbody>${listed.map((row) => html`<tr>
+    <td>${row.number}
+    <td>${day(row.date)}
+    <td>${day(row.due)}
+    <td class="n amount">${money(Number(row.open))}`)}
+</table>` : ""}
+${lines.length || !listed.length ? html.async`<table>
   <thead><tr>
     <th class=pos>${t`Pos.`}
     <th>${t`Description`}
@@ -123,7 +141,8 @@ export async function document(
     <tr class=total>
       <th colspan=${span}>${t`Total`} ${invoice.currency}
       <td class=n>${money(sum.total)}
-</table>
+</table>` : ""}
+${listed.length ? html.async`<p class=total>${t`Amount due`}: ${money(due)}</p>` : ""}
 ${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}
 </main>
 ${slips().then((list) => list.map((slip) => html`<div class=slip>${html.raw(slip)}</div>`))}
@@ -182,43 +201,56 @@ async function logoUrl(app: App) {
   return `data:${mime};base64,${(await fs.bytes(path)).toBase64()}`;
 }
 
-/** The mail an invoice goes out with, in its language: the subject, a few lines, the PDF. A
- *  `reminder` (1, 2 …) asks for what is still open: a payment reminder, then the reminders. */
-export async function mail(app: App, invoice: Row, pdf: DbFile, reminder = 0) {
+/** The title a document goes by: a reminder by its level — the first is a friendly payment
+ *  reminder, the ones after it are counted. */
+function titleOf(app: App, invoice: Row, listed: Row[]) {
+  const t = app.t;
+  const level = Math.max(0, ...listed.map((row) => Number(row.level)));
+  return invoice.type === "credit_note"
+    ? t`Credit note`
+    : invoice.type === "proforma"
+    ? t`Pro forma invoice`
+    : invoice.type !== "reminder"
+    ? t`Invoice`
+    : level > 1
+    ? t`Reminder ${level - 1}`
+    : t`Payment reminder`;
+}
+
+/** The mail a document goes out with, in its language: the subject, a few lines, the PDF. `owed` is
+ *  what it asks for; a reminder names the invoices it lists. */
+export async function mail(app: App, invoice: Row, pdf: DbFile, listed: Row[] = []) {
   const lang = languageOf(app, invoice);
   return await inLang(app, lang, async () => {
     const t = app.t;
     const sender = await organization(app);
     const locale = localeOf(lang, sender);
     const currency = String(invoice.currency);
-    const amount = new Intl.NumberFormat(locale, { style: "currency", currency })
-      .format(fromMinor(Number(invoice.total) - Number(invoice.paid), currency));
+    const format = new Intl.NumberFormat(locale, { style: "currency", currency });
+    const money = (minor: number) => format.format(fromMinor(minor, currency));
     const day = dayFormat(locale);
-    const [date, due] = [day(invoice.date), day(invoice.due)];
-    const credit = invoice.type === "credit_note";
-    const text = credit
+    const due = day(invoice.due);
+    const asked = due
+      ? await t`Amount due: ${money(Number(invoice.owed))}, payable by ${due}.`
+      : await t`Amount due: ${money(Number(invoice.owed))}.`;
+    const text = invoice.type === "credit_note"
       ? [await t`Please find our credit note ${invoice.number} attached.`]
-      : reminder
+      : invoice.type === "reminder"
       ? [
-        await t`Our invoice ${invoice.number} of ${date} was due on ${due}.`,
-        await t`Amount due: ${amount}.`,
+        await t`The following invoices are overdue:`,
+        ...await Promise.all(listed.map((row) =>
+          t`${row.number} of ${day(row.date)}, due on ${day(row.due)}: ${money(Number(row.open))}`.then((s) => `- ${s}`)
+        )),
+        "",
+        asked,
         await t`If you have paid it in the meantime, please disregard this message.`,
       ]
-      : [
-        await t`Please find our invoice ${invoice.number} attached.`,
-        due ? await t`Amount due: ${amount}, payable by ${due}.` : await t`Amount due: ${amount}.`,
-      ];
-    // the first reminder is a friendly one; the ones after it are counted
-    const title = await (credit
-      ? t`Credit note`
-      : reminder === 1
-      ? t`Payment reminder`
-      : reminder
-      ? t`Reminder ${reminder - 1}`
-      : t`Invoice`);
+      : invoice.type === "proforma"
+      ? [await t`Please find our pro forma invoice ${invoice.number} attached.`, asked]
+      : [await t`Please find our invoice ${invoice.number} attached.`, asked];
     const attachment = { name: pdf.name, type: pdf.mime, content: fs.bytes(pdf.path) };
     return {
-      title: `${title} ${invoice.number}`,
+      title: `${await titleOf(app, invoice, listed)} ${invoice.number}`,
       text: [...text, "", sender.legalName || sender.name].join("\n"),
       attachments: [attachment],
     };
@@ -226,7 +258,7 @@ export async function mail(app: App, invoice: Row, pdf: DbFile, reminder = 0) {
 }
 
 /** A language the site has no texts for is written in its default one, until t`` knows any language. */
-const languageOf = (app: App, invoice: Row) =>
+export const languageOf = (app: App, invoice: Row): string =>
   app.languages.all.includes(String(invoice.lang)) ? String(invoice.lang) : app.languages.def;
 
 /** The invoice's language, in the sender's country: `de-CH`. */
@@ -234,7 +266,7 @@ const localeOf = (lang: string, sender: Record<string, any>) =>
   `${lang}-${String(sender.address?.addressCountry ?? "").toUpperCase()}`.replace(/-$/, "");
 
 /** Run `fn` with translations in `lang`: a context of its own, without a request. */
-async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {
+export async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {
   const url = new URL(await app.url());
   const ctx = await Ctx.create(app, new Request(url), { appUrl: url.pathname, url });
   ctx.lang = ctx.langUsr = lang;
