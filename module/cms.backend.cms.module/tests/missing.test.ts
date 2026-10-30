@@ -8,7 +8,7 @@ import type { Node } from "@qino/qino/cms";
 
 Deno.test("cms.backend.cms.module: modules nodes name but nothing renders are listed and marked", async () => {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
-  for (const mod of ["cms", "cms.cont.text"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.text").add("cms.cont.section");
   await app.init();
   try {
     await app.settings.core.url("https://example.test/");
@@ -22,6 +22,7 @@ Deno.test("cms.backend.cms.module: modules nodes name but nothing renders are li
     assertStringIncludes(overview, "cms.cont.gone2</a> <small>missing</small>");
     assertStringIncludes(overview, "<u2-ico icon=warning");
     assert(!overview.includes("cms.cont.text</a> <small>"), "a module that renders is not marked");
+    assert(!overview.includes("cms.cont.section</a> <small>"), "a module that renders through its template is not marked");
     assert(overview.indexOf("cms.cont.gone2") < overview.indexOf("cms.cont.text"), "missing ones come first");
     assert(/<b>\d+<\/b> not available/.test(String(await backendDashboardWidget(app))));
     assertStringIncludes(await render({ mod: "cms.cont.gone2" }), "<small>missing</small>");

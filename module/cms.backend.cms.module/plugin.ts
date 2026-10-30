@@ -21,8 +21,8 @@ const modType = (n: string) => n.match(/^cms\.(cont|layout|backend)\b/)?.[1] ?? 
 const modAccess = (app: App, module: string) =>
   cmsOf(app).fire("module:access", { module, user: getCtx().user ?? undefined, access: ADMIN }).then((e) => Number(e.access));
 
-/** A module that can render a node — those are the ones listed here. */
-const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;
+/** A module that can render a node — itself or through its template.html — those are the ones listed here. */
+const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node;
 const contentModules = (app: App) => app.modules.linked().map((mod) => mod.name).filter((n) => isContent(app, n)).sort();
 
 const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number(v)] ?? "?";
