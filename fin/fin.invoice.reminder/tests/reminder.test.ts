@@ -45,6 +45,7 @@ Deno.test("overdue invoices are reminded in levels, apart, one reminder per cust
     await issued(app, { usrId: usr, due: day(-5) }); // 5 days over: not yet
     const nobody = await issued(app, { due: day(-40) });
 
+    assertEquals(await remindDue(app, { signal: AbortSignal.abort() }), 0); // aborted: the next run goes on
     assertEquals(await remindDue(app), 2); // the customer's two together, and the one without a user alone
     const [first, alone] = await reminders(app);
     assertEquals((await listed(app, Number(first.id))).map((r) => [r.listed_id, r.level]), [[old, 1], [older, 1]]);

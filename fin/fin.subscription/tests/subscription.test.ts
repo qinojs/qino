@@ -17,6 +17,7 @@ Deno.test("what renews is billed in advance, one invoice per customer, and stops
     await add("Domain example.ch", 2500, "2027-03-15");
     await add("Later", 100, "2027-06-01");
 
+    assertEquals(await bill(app, { until: "2027-03-31", signal: AbortSignal.abort() }), []); // aborted: none yet
     const [id] = await bill(app, { until: "2027-03-31" });
     assertEquals((await bill(app, { until: "2027-03-31" })).length, 0); // billed once
     const items = await lines(app, id);

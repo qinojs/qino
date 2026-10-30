@@ -30,8 +30,9 @@ Diskussion. Die Module liegen in einem eigenen Store, diesem Ordner; das Modul `
   Kontenrahmen, MWST-Abrechnung, eine lokale Bank-API — lebt in einem eigenen Modul, benannt nach
   der Sache (`qrbill`, `blink`) oder mit Ländercode als Suffix (`fin.accounting.ch`).
 - **Jede Schicht steht für sich.** Zahlung ohne Rechnung (Shop, Spende), Rechnungen ohne
-  Buchhaltung, Buchhaltung ohne beides (Buchungen von Hand). Obere Schichten hören zu, untere
-  kennen sie nie.
+  Buchhaltung, Buchhaltung ohne beides (Buchungen von Hand, z.B. ein Verein) — installiert sind
+  `fin.invoice` und `fin.payment` dann trotzdem, weil die automatischen Buchungen sie kennen; ein
+  eigenes Modul dafür erst, wenn das stört. Obere Schichten hören zu, untere kennen sie nie.
 - **Gekoppelt über `ref` und Events, nicht über Fremdschlüssel.** `ref` ist `<module>:<id>`
   (`shop.order:12`, `fin.invoice:7`). Wem die Sache gehört, hört auf das Event und findet sie über
   `ref`.
@@ -123,6 +124,13 @@ Struktur:
 - Saferpay `sync` gibt die rohe Antwort als Status zurück, wenn es keine Transaktion gibt.
 - Der Typ `Read` der Inbox wiederholt ihr `SCHEMA`.
 - `fin.invoice:` noch von Hand geschrieben in den Bank-Vorschlägen und in `refLink`.
+- Automatische Buchungen, die scheitern, werden nur geloggt: die Bücher können still Lücken haben.
+  Ein Nachholen bräuchte eine Regel, was als ungebucht gilt — Rechnungen von vor der Buchhaltung
+  sind oft schon als Eröffnungsbilanz von Hand gebucht.
+- Parteien-Liste fest `LIMIT 200` ohne Pager, Inbox `LIMIT 100`.
+- Listen-Einstellungen als Komma-Strings (`reminder.days`, `.fees`, `accounting.moneyBy`), von
+  Hand zerlegt und nicht geprüft; Arrays/Objekte im `settingsSchema` wären klarer.
+- `fin.hosting` (mit `.infomaniak`, `.plesk`) ist eine Branchenlösung im sonst generischen Store.
 
 Entscheide, die sich ändern können, stehen Modul für Modul im jeweiligen README („Decisions that
 may change").

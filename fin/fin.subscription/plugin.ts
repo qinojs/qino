@@ -32,5 +32,5 @@ export const settingsSchema = {
 };
 
 export const cron = {
-  bill: { every: 86400, timeout: 600, run: (app: App) => bill(app) },
+  bill: { every: 86400, timeout: 600, run: (app: App, { signal }) => bill(app, { signal }) },
 } satisfies Jobs;

@@ -40,8 +40,8 @@ const candidates = (app: App, where: ReturnType<typeof sql>) => app.db.query`
   ORDER BY i.due, i.id`;
 
 /** Remind what is due — `days` after its due date, the levels apart — one reminder per debtor and
- *  currency. Resolves with how many were made. */
-export async function remindDue(app: App): Promise<number> {
+ *  currency. Stops between reminders once `signal` aborts; the next run goes on. Resolves with how many were made. */
+export async function remindDue(app: App, { signal }: { signal?: AbortSignal } = {}): Promise<number> {
   const settings = await settingsOf(app);
   const { days } = settings;
   if (!days.length) return 0;
@@ -56,6 +56,7 @@ export async function remindDue(app: App): Promise<number> {
   const groups = Map.groupBy(due, (row) => `${row.usr_id ?? `#${row.id}`}:${row.currency}`);
   let made = 0;
   for (const group of groups.values()) {
+    if (signal?.aborted) break;
     const ids = group.map((row) => Number(row.id));
     await remind(app, ids).then(() => made++).catch((e) => console.error("fin.invoice.reminder", ids, e));
   }

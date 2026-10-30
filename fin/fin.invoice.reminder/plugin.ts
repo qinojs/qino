@@ -36,5 +36,5 @@ export const settingsSchema = {
 };
 
 export const cron = {
-  remind: { every: 86400, timeout: 600, run: (app: App) => remindDue(app) },
+  remind: { every: 86400, timeout: 600, run: (app: App, { signal }) => remindDue(app, { signal }) },
 } satisfies Jobs;

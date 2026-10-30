@@ -169,9 +169,13 @@ export const renews = (sub: Row, until: string): boolean =>
  * Bill what renews within the lead time (`fin.subscription.lead` days, 30): per user and currency
  * one invoice, a line per period — the plan's name, the detail and the period as its description —
  * in advance, missed periods too. Drafts to look at, issued with `fin.subscription.issue`, and
- * mailed to the customer too with `fin.subscription.send`. Resolves with the invoices.
+ * mailed to the customer too with `fin.subscription.send`. Stops between invoices once `signal` aborts;
+ * the next run goes on. Resolves with the invoices.
  */
-export async function bill(app: App, { until }: { until?: string } = {}): Promise<number[]> {
+export async function bill(
+  app: App,
+  { until, signal }: { until?: string; signal?: AbortSignal } = {},
+): Promise<number[]> {
   const settings = app.settings["fin.subscription"];
   const last = until ?? await horizon(app);
   const groups = new Map<string, { usrId: number; currency: string; periods: Row[] }>();
@@ -188,6 +192,7 @@ export async function bill(app: App, { until }: { until?: string } = {}): Promis
   }
   const ids: number[] = [];
   for (const { usrId, currency, periods } of groups.values()) {
+    if (signal?.aborted) break;
     const usr = await app.db.row`SELECT * FROM usr WHERE id = ${usrId}`;
     if (!usr) continue;
     const lang = String(usr.lang || app.languages.def);
