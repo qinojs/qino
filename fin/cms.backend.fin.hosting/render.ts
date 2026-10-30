@@ -2,7 +2,7 @@ import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, rowLink } from "@qino/qino/cms.backend.fin";
 import { nameOf } from "@qino/qino/fin";
-import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
+import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, overbilled, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -47,12 +47,17 @@ const price = (app: App, s: Row) =>
 /** What we bill a domain for (`billable`) without a running subscription for it. */
 const unbilled = (d: Row, subs: Row[]) => billable(d).filter((kind) => !subs.some((s) => running(s) && kindOf(s) === kind));
 
+/** "billed, not registered", or "billed, not hosted": a subscription we bill for nothing (`overbilled`). */
+const overbilledBadge = (app: App, kind: Kind | undefined) =>
+  badge(html.async`${kindWord(app, kind)} ${kind === "domain" ? app.t`billed, not registered` : app.t`billed, not hosted`}`, "--red");
+
 /** What a domain is billed by, each subscription with what it is for; what we bill for (`billable`)
- *  without a running subscription for it. */
+ *  without a running subscription for it, and what we bill without registering or hosting it. */
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
   return html.async`${live.map((s) => html.async`<div><small>${kindWord(app, kindOf(s))}</small> ${s.label} <small>${price(app, s)}</small></div>`)}
-    ${unbilled(d, subs).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}`;
+    ${unbilled(d, subs).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}
+    ${overbilled(d, subs).map((kind) => overbilledBadge(app, kind))}`;
 }
 
 /** The fields of a domain: where it is registered and hosted; an alias has no host. */
@@ -72,37 +77,43 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
       ${names.length ? html.async`<button data-sync style="margin-left:auto">${t`Sync`} <small>${names.join(", ")}</small></button>` : ""}</div>
     ${todo.length ? html.async`<table class=u2-table>${todo.map(({ domain, missing, kind }) => html.async`<tr>
       <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
-      <td>${missing === "customer" ? badge(t`no customer`, "--red") : badge(html.async`${kindWord(app, kind)} ${t`not billed`}`, "--orange")}
+      <td>${missing === "customer" ? badge(t`no customer`, "--red")
+        : missing === "service" ? overbilledBadge(app, kind)
+        : badge(html.async`${kindWord(app, kind)} ${t`not billed`}`, "--orange")}
       <td>${kind === "hosting" ? domain.host : domain.registrar}
       <td>${kind !== "hosting" && domain.expires ? html.async`<small>${t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`)}
     </table>` : html.async`<p>${t`Every domain we register or host has a customer and is billed.`}`}
   </div>`;
 }
 
-/** Where the domains are synced from — accounts, servers —, and adding or changing one (`?source=`). */
-async function sourcesCard(app: App, pageUrl: string, editing: string | null): Promise<HtmlString> {
+/** The fields of a source, as its dialog shows them (`data-source-dialog`); `current` to change one. */
+function sourceFields(app: App, types: string[], current?: Row) {
+  const t = app.t;
+  return html.async`<template><u2-fields>
+    ${t`Name`} <input name=name required value="${current?.name ?? ""}" placeholder="s3">
+    ${t`Type`} <select name=type>${types.map((type) => html`<option${selected(type === current?.type)}>${type}`)}</select>
+    ${t`URL`} <input name=url value="${current?.url ?? ""}" placeholder="https://s3.example.com:8443">
+    ${t`User`} <input name=user value="${current?.user ?? ""}" autocomplete=off>
+    ${t`Secret`} <input name=secret type=password autocomplete=new-password placeholder="${current?.secret ? t`unchanged` : ""}">
+  </u2-fields></template>`;
+}
+
+/** Where the domains are synced from — accounts, servers —, and adding or changing one in a dialog. */
+async function sourcesCard(app: App): Promise<HtmlString> {
   const t = app.t;
   const [list, types] = [await sources(app), sourceTypes(app)];
-  const current = list.find((s) => s.name === editing);
+  const names = Object.keys(types);
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Sources`}</div>
     ${list.length ? html.async`<table class=u2-table>${list.map((s) => html.async`<tr>
-      <td><a href="${backend.toUrl(pageUrl, { source: s.name })}">${s.name}</a>
+      <td>${s.name}
       <td>${types[String(s.type)] ? s.type : badge(html.async`${s.type} ${t`not installed`}`, "--red")}
       <td>${s.url}
       <td>${s.user}
-      <td><button data-remove-source="${s.name}" u2-confirm="${t`Remove this source? Its domains stay.`}">${t`Remove`}</button>`)}
+      <td style="white-space:nowrap"><button data-source-dialog>${t`Edit`}</button>${sourceFields(app, names, s)}
+        <button data-remove-source="${s.name}" u2-confirm="${t`Remove this source? Its domains stay.`}">${t`Remove`}</button>`)}
     </table>` : ""}
-    <form data-source>
-      <u2-fields>
-        ${t`Name`} <input name=name required value="${current?.name ?? ""}" placeholder="s3">
-        ${t`Type`} <select name=type>${Object.keys(types).map((type) => html`<option${selected(type === current?.type)}>${type}`)}</select>
-        ${t`URL`} <input name=url value="${current?.url ?? ""}" placeholder="https://s3.example.com:8443">
-        ${t`User`} <input name=user value="${current?.user ?? ""}" autocomplete=off>
-        ${t`Secret`} <input name=secret type=password autocomplete=new-password placeholder="${current?.secret ? t`unchanged` : ""}">
-      </u2-fields>
-      <button>${current ? t`Save` : t`Add`}</button>
-    </form>
+    <div><button data-source-dialog>${t`Add`}</button>${sourceFields(app, names)}</div>
   </div>`;
 }
 
@@ -125,7 +136,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   const aliasesOf = Map.groupBy(all.filter(folds), (d) => d.alias_of);
   return html.async`<div class=u2-flex>
   ${openCard(node, pageUrl)}
-  ${sourcesCard(app, pageUrl, url.searchParams.get("source"))}
+  ${sourcesCard(app)}
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
     <div class=-head>${t`Domains`} <small>${rows.length}</small>
       <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias, hosting or registrar sync?`}">${t`Remove unlinked`}</button></div>
@@ -226,6 +237,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
       <td>${rowLink(node, "cms.backend.fin.subscription", "subscription", s.id, String(s.label))}
       <td style="text-align:end">${price(app, s)}
       <td>${running(s) ? s.next : badge(t`ended`)}
+        ${running(s) && overbilled(d, [s]).length ? overbilledBadge(app, kindOf(s)) : ""}
       <td>${running(s) ? html.async`<button data-unlink="${s.id}">${t`Unlink`}</button>` : ""}`)}
     </table>` : html.async`<p>${t`No subscriptions yet`}`}
     ${free.length ? html.async`<form data-link="${d.name}">

@@ -21,6 +21,11 @@
             "x-index": true,
             "description": "Provider, or the source of a recorded payment (cash, bank)"
           },
+          "recorded": {
+            "type": "boolean",
+            "default": false,
+            "description": "Recorded by hand (record): no provider flow behind it, whoever recorded it is its source"
+          },
           "method": {
             "type": "string",
             "maxLength": 32,

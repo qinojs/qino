@@ -290,3 +290,20 @@ Deno.test("a pro forma becomes its invoice; an invoice is held, reminded, writte
     assertEquals(await app.db.one`SELECT status FROM invoice WHERE id = ${invoice}`, "uncollectible");
   });
 });
+
+Deno.test("paid by hand, the source is suggested: those the books know an account for", async () => {
+  await withFinApp([...FIN, "fin.accounting", "fin.accounting.ch"], async (app) => {
+    const node = backendNode(app, "/backend/invoices");
+    const draft = await create(app, { direction: "in", number: "S-1", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });
+    const id = Number((await issue(app, draft))?.id);
+    const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
+    assertStringIncludes(page, `list="sources-${id}"`);
+    assertStringIncludes(page, `<option value="bank">1020 Bank`);
+    assertStringIncludes(page, `<option value="owner">2210 Kontokorrent Gesellschafter`);
+    // a payment provider is no source: its payments go through it
+    const refused = await inRequest(app, "http://qino.test/", () =>
+      api(node, { record: { id: String(id), amount: "", provider: "qrbill" } })) as { ok: boolean; message: string };
+    assertEquals(refused.ok, false);
+    assertStringIncludes(refused.message, "payment provider");
+  });
+});

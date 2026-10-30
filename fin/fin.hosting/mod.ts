@@ -149,22 +149,28 @@ export const billable = (d: Row): Kind[] => ours(d) ? [] : [
   ...d.host ? ["hosting" as const] : [],
 ];
 
+/** What a running subscription still bills a domain for though we register or host it no more:
+ *  without `registrar`, or `host` — moved away, or ended. */
+export const overbilled = (d: Row, subs: Row[]): Kind[] =>
+  KINDS.filter((kind) => !d[kind === "domain" ? "registrar" : "host"] && subs.some((s) => running(s) && kindOf(s) === kind));
+
 /**
- * What is still to do: a domain we bill for not assigned yet (`customer`), or a customer's
- * without a running subscription for its registration or its hosting (`billed`, with the `kind`).
- * Empty when everything is billed.
+ * What is still to do: a domain we bill for not assigned yet (`customer`), a customer's without a
+ * running subscription for its registration or its hosting (`billed`, with the `kind`), or one billed
+ * for what we register or host no more (`service`, with the `kind`). Empty when everything is billed.
  */
-export async function open(app: App): Promise<{ domain: Row; missing: "customer" | "billed"; kind?: Kind }[]> {
+export async function open(app: App): Promise<{ domain: Row; missing: "customer" | "billed" | "service"; kind?: Kind }[]> {
   const [all, subs] = await Promise.all([domains(app), subscriptionsBy(app)]);
-  const out: { domain: Row; missing: "customer" | "billed"; kind?: Kind }[] = [];
+  const out: { domain: Row; missing: "customer" | "billed" | "service"; kind?: Kind }[] = [];
   for (const domain of all) {
+    const live = (subs.get(String(domain.name)) ?? []).filter(running);
+    for (const kind of overbilled(domain, live)) out.push({ domain, missing: "service", kind });
     const kinds = billable(domain);
     if (!kinds.length) continue;
     if (domain.usr_id == null) {
       out.push({ domain, missing: "customer" });
       continue;
     }
-    const live = (subs.get(String(domain.name)) ?? []).filter(running);
     for (const kind of kinds) if (!live.some((s) => kindOf(s) === kind)) out.push({ domain, missing: "billed", kind });
   }
   return out;

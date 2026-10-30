@@ -63,3 +63,20 @@ Deno.test("what cannot be done says so instead of failing", async () => {
     assertEquals(record.ok, false);
   });
 });
+
+Deno.test("a payment recorded by hand can be canceled from its page; one a provider stands behind cannot", async () => {
+  await withApp(async (app, as, node) => {
+    const { id: asked } = await create(app, { method: "qrbill", amount: 1000, currency: "CHF", return: "/" });
+    const page = (id: unknown) => as(`http://qino.test/backend/payments?payment=${id}`, () => render(node)).then(String);
+    assert(!(await page(asked)).includes("data-cancel"));
+    await as("http://qino.test/", () => api(node, {
+      record: { direction: "out", provider: "cash", amount: "5", currency: "CHF", ref: "", description: "Typo" },
+    }));
+    const id = Number(await app.db.one`SELECT id FROM payment WHERE description = ${"Typo"}`);
+    assertStringIncludes(await page(id), `data-cancel="${id}"`);
+    const answer = await as("http://qino.test/", () => api(node, { cancel: String(id) })) as { ok: boolean };
+    assertEquals(answer.ok, true);
+    assertEquals(await app.db.row`SELECT status, paid FROM payment WHERE id = ${id}`, { status: "canceled", paid: 0 });
+    assert(!(await page(id)).includes("data-cancel"));
+  });
+});

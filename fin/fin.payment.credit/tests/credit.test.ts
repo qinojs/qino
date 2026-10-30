@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { create as invoice, issue, refOf } from "@qino/qino/fin.invoice";
-import { create, methods, refund } from "@qino/qino/fin.payment";
+import { cancel, create, methods, refund } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
 import { add, balance, moves, payOut } from "../mod.ts";
@@ -40,5 +40,22 @@ Deno.test("paid out onto credit: an outgoing payment, and the credit it adds, re
     );
     assertEquals(await balance(app, usr, "CHF"), 1500);
     assertEquals((await moves(app, usr)).map((m) => [m.amount, m.text, m.ref]), [[1500, "G2027-1", `fin.payment:${payment}`]]);
+  });
+});
+
+Deno.test("paid out onto credit by mistake: canceled, the credit goes back — not where it is spent", async () => {
+  await withFinApp(["fin.payment", "fin.payment.credit"], async (app) => {
+    const usr = Number(await app.db.table("usr").insert({
+      active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",
+    }));
+    const wrong = await payOut(app, usr, { amount: 1500, currency: "CHF", text: "G2027-1" });
+    assertEquals((await cancel(app, wrong))?.status, "canceled");
+    assertEquals(await balance(app, usr, "CHF"), 0);
+
+    const spent = await payOut(app, usr, { amount: 1500, currency: "CHF", text: "G2027-2" });
+    await add(app, usr, { amount: -1000, currency: "CHF", text: "Spent" });
+    await assertRejects(() => cancel(app, spent), Error, "not enough");
+    assertEquals(await app.db.one`SELECT status FROM payment WHERE id = ${spent}`, "paid"); // as it was
+    assertEquals(await balance(app, usr, "CHF"), 500);
   });
 });

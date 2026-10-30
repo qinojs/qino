@@ -186,5 +186,13 @@ export async function reopen(app: App): Promise<void> {
   if (entry != null) await reverse(app, Number(entry), { date: closed, text: `Reopened ${closed}` });
 }
 
+/** Where each source's money lands (`accounts.moneyBy`, "cash:1000, owner:2210"): source → account
+ *  number. A source not named lands on `accounts.money`. */
+export async function moneyBy(app: App): Promise<Map<string, string>> {
+  const pairs = String(await app.settings["fin.accounting"].accounts.moneyBy ?? "").split(",")
+    .map((pair) => pair.split(":").map((v) => v.trim()));
+  return new Map(pairs.filter(([source, number]) => source && number) as [string, string][]);
+}
+
 /** Who books, inside a request; nobody for an automatic entry. */
 const userId = () => requestStorage.getStore()?.userId || null;

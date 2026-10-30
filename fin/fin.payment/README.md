@@ -74,7 +74,10 @@ Providers: [saferpay](../fin.payment.saferpay/), [qrbill](../fin.payment.qrbill/
 [credit](../fin.payment.credit/) (a user's credit with us).
 
 `cancel(app, id)` withdraws a payment nobody has started paying (`pending`) — an invoice paid
-another way does so with the ones still waiting for it.
+another way does so with the ones still waiting for it. It also takes back a payment recorded
+by hand (`recorded`), by mistake: whoever recorded it is its only source. It
+ends `canceled`, nothing moved; what it paid is open again, its entry booked back, a bank line it
+was assigned free. One a provider stands behind is paid back with `refund`.
 
 `sync` asks the provider and is the only source of truth. The payer's return
 (`payment/return/<token>`) and the provider's notification (`payment/notify/<token>`, both handed

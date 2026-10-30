@@ -47,7 +47,8 @@ domain is added as the customer's, if it is not there, and linked — unless the
 customer's.
 
 **What to bill.** `open(app)` lists what is still to do: a domain we register or host not assigned
-yet, or a customer's without a running subscription for its registration or its hosting.
+yet, a customer's without a running subscription for its registration or its hosting, or one still
+billed for what we register or host no more (`overbilled`) — moved away, or ended.
 
 **Sources.** Where domains are registered or hosted is a source, kept in `fin_hosting_source`: a name
 (stored as its domains' `registrar` or `host`), a type, a URL, a user and a secret — an account, a

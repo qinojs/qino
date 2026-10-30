@@ -190,6 +190,13 @@ Deno.test("fin.hosting: the registrars say which domains are ours to register; w
     assertEquals((await open(app)).map((o) => [o.domain.name, o.missing]), [["example.ch", "customer"]]);
     await save(app, "example.ch", { usrId: anna });
     assertEquals((await open(app)).map((o) => [o.domain.name, o.missing, o.kind]), [["example.ch", "billed", "domain"]]);
+    // gone from the registrar while still billed: stands out
+    list = [{ name: "example.ch" }, { name: "ours.ch" }];
+    await sync(app, { registrars: [registrar] });
+    assertEquals((await open(app)).map((o) => [o.domain.name, o.missing, o.kind]), [
+      ["anna.ch", "service", "domain"],
+      ["example.ch", "billed", "domain"],
+    ]);
 
     // a registrar that fails changes nothing
     list = [];

@@ -1,7 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
-  badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, status,
+  badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, sources, status,
 } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, today } from "@qino/qino/fin";
 import { document, lines, listedOf, owed, refOf } from "@qino/qino/fin.invoice";
@@ -505,7 +505,7 @@ async function detail(node: Node, id: number) {
     ${["open", "uncollectible"].includes(String(row.status)) && open > 0 ? html.async`<form data-record="${id}">
       ${credit ? t`Paid back` : row.direction === "in" ? t`Paid by hand` : t`Received by hand`}:
       <input name=amount inputmode=decimal size=8 placeholder="${money(open, row.currency)}">
-      <input name=provider value=bank size=8>
+      <input name=provider value=bank size=8 list="sources-${id}">${sources(app, `sources-${id}`)}
       <button>${t`Record`}</button>
     </form>` : ""}
     ${credit && row.status === "open" && open > 0 && row.usr_id && app.modules.linked("fin.payment.credit")

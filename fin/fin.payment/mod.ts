@@ -136,6 +136,7 @@ export async function record(
   const id = await insert(app, opt, {
     direction: opt.direction,
     provider: opt.provider,
+    recorded: true,
     method: opt.method ?? null,
     status: "paid",
     paid,
@@ -154,11 +155,19 @@ export async function sync(app: App, id: number): Promise<Row | undefined> {
   return apply(app, payment, await selected.sync(app, payment));
 }
 
-/** Withdraw a payment nobody has started paying (`pending`): what it asked for is no longer owed.
- *  Anything further along is left as it is. */
+/**
+ * Withdraw a payment nobody has started paying (`pending`): what it asked for is no longer owed. Or
+ * take back one recorded by hand, by mistake: whoever recorded it is its only source; it never
+ * moved. What follows from it (`payment:change`) goes with it or not at all. Anything a provider
+ * flow stands behind is left to it (`refund`).
+ */
 export async function cancel(app: App, id: number): Promise<Row | undefined> {
   const payment = await get(app, id);
-  if (payment?.status !== "pending") return payment;
+  if (!payment || payment.status === "canceled") return payment;
+  if (Number(payment.recorded)) {
+    return app.db.transaction(() => apply(app, payment, { status: "canceled", paid: 0, refunded: 0, fee: 0 }));
+  }
+  if (payment.status !== "pending") return payment;
   return apply(app, payment, { status: "canceled" });
 }
 

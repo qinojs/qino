@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { attach, cancel, create, creditNote, finalize, issue, refOf, setSent, update, writeOff } from "@qino/qino/fin.invoice";
 import { today } from "@qino/qino/fin";
-import { record } from "@qino/qino/fin.payment";
+import { cancel as cancelPayment, record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
 import { balances, book, businessYear, close, reopen, reverse } from "../mod.ts";
@@ -112,6 +112,31 @@ Deno.test("a received invoice is a debt, paid from the bank", async () => {
     assertEquals(Number(await app.db.one`SELECT f.file_id FROM accounting_entry_file f JOIN accounting_entry e ON e.id = f.entry_id WHERE e.ref = ${refOf(id)}`), original.id);
     await record(app, { direction: "out", provider: "bank", amount: 180000, currency: "CHF", ref: refOf(id) });
     assertEquals(await saldo(app), { "1020": -180000, "4400": 180000 });
+  });
+});
+
+Deno.test("a payment recorded by mistake is canceled: the bill is open again, its entry taken back", async () => {
+  await withApp(async (app) => {
+    const draft = await create(app, { direction: "in", number: "S-2", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });
+    const id = Number((await issue(app, draft))?.id);
+    // by hand, even under a provider's name: saferpay knows nothing of it
+    const payment = await record(app, { direction: "out", provider: "saferpay", amount: 5000, currency: "CHF", ref: refOf(id) });
+    assertEquals(await app.db.one`SELECT status FROM invoice WHERE id = ${id}`, "paid");
+    assertEquals((await cancelPayment(app, payment))?.status, "canceled");
+    assertEquals(await app.db.one`SELECT status FROM invoice WHERE id = ${id}`, "open");
+    assertEquals(await saldo(app), { "2000": -5000, "4400": 5000 }); // owed again, the money as before
+    // paid privately after all
+    await record(app, { direction: "out", provider: "owner", amount: 5000, currency: "CHF", ref: refOf(id) });
+    assertEquals(await saldo(app), { "2210": -5000, "4400": 5000 });
+  });
+});
+
+Deno.test("a bill a partner paid privately: the company owes it to them", async () => {
+  await withApp(async (app) => {
+    const draft = await create(app, { direction: "in", number: "S-1", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });
+    const id = Number((await issue(app, draft))?.id);
+    await record(app, { direction: "out", provider: "owner", amount: 5000, currency: "CHF", ref: refOf(id) });
+    assertEquals(await saldo(app), { "2210": -5000, "4400": 5000 });
   });
 });
 

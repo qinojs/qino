@@ -3,11 +3,17 @@ import { finPanel } from "../../cms.backend.fin/pub/panel.js";
 cms.initNode("backend.fin.hosting", (el) => {
   const { execute, fields } = finPanel(el);
 
+  /** A source's fields (the `<template>` after the button) in a dialog; saved on OK. */
+  const editSource = async (button) => {
+    const { form } = await import("@qino/u2/js/dialog/dialog.js");
+    const data = await form({ body: button.nextElementSibling.innerHTML, root: el });
+    if (data) execute(button, { source: data });
+  };
+
   el.addEventListener("submit", (e) => {
     const form = e.target;
     if (form.dataset.save !== undefined) execute(e.submitter, { save: { ...fields(form), id: form.dataset.save } });
     else if (form.dataset.link) execute(e.submitter, { link: { ...fields(form), id: form.dataset.link } });
-    else if (form.dataset.source !== undefined) execute(e.submitter, { source: fields(form) });
     else return; // the filter is a plain GET form
     e.preventDefault();
   });
@@ -19,6 +25,8 @@ cms.initNode("backend.fin.hosting", (el) => {
       for (const row of el.querySelectorAll(`[data-alias-of="${CSS.escape(fold.dataset.aliases)}"]`)) row.hidden = !row.hidden;
       return;
     }
+    const edit = e.target.closest("[data-source-dialog]");
+    if (edit) return editSource(edit);
     const source = e.target.closest("[data-remove-source]");
     if (source) return execute(source, { removeSource: source.dataset.removeSource });
     if (e.target.closest("[data-prune]")) return execute(e.target.closest("[data-prune]"), { prune: true });

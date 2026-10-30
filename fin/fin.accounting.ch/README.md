@@ -12,8 +12,11 @@ and, where nothing is set yet, the accounts automatic entries use. The book keep
 | tax due / input tax | 2200 / 1170 |
 | fees | 6940 |
 | losses (written off) | 3805 |
-| money | 1020 bank; cash 1000, Saferpay 1091, credit 2030 |
+| money | 1020 bank; cash 1000, Saferpay 1091, credit 2030, paid by a partner privately (`owner`) 2210 |
 | result (closing) | 2979; a sole proprietorship sets 2800 |
+
+A bill a partner paid privately is recorded as paid by `owner`: the company owes it to them on
+2210, until paid back by hand (2210 to bank). A sole proprietorship sets `owner:2850` (Privat).
 
 Accounts are only added or renamed, never removed. More accounts: `account(app, number, …)` or
 the backend.

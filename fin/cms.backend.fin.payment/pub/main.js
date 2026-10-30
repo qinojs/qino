@@ -17,5 +17,7 @@ cms.initNode("backend.fin.payment", (el) => {
   el.addEventListener("click", (e) => {
     const sync = e.target.closest("[data-sync]");
     if (sync) execute(sync, { sync: sync.dataset.sync });
+    const cancel = e.target.closest("[data-cancel]");
+    if (cancel) execute(cancel, { cancel: cancel.dataset.cancel });
   });
 });

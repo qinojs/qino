@@ -1,6 +1,8 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, direction, field, money, option, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.fin";
+import {
+  badge, direction, field, money, option, pager, refLink, rowLink, sources, status,
+} from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
@@ -51,12 +53,13 @@ async function overview(node: Node, url: URL) {
     <form data-record>
       <u2-fields>
         ${t`Direction`} <select name=direction>${option("in", t`In`)}${option("out", t`Out`)}</select>
-        ${t`Source`} <input name=provider required placeholder="cash, bank …">
+        ${t`Source`} <input name=provider required placeholder="cash, bank …" list=sources>
         ${t`Amount`} <input name=amount required inputmode=decimal placeholder="120.00">
         ${t`Currency`} <input name=currency required value="${mainCurrency(node.app)}" maxlength=3 size=4>
         ${t`For (ref)`} <input name=ref placeholder="fin.invoice:7">
         ${t`Description`} <input name=description>
       </u2-fields>
+      ${sources(node.app, "sources")}
       <button>${t`Record`}</button>
     </form>
   </div>
@@ -187,6 +190,9 @@ async function detail(node: Node, id: number) {
     </table>
     <div>
       ${provider ? html.async`<button data-sync="${id}">${t`Ask the provider`}</button>` : ""}
+      ${Number(row.recorded) && row.status !== "canceled" ? html.async`<button data-cancel="${id}"
+        u2-confirm="${t`Cancel this payment? It was recorded by mistake: what it paid is open again.`}">
+        ${t`Cancel`}</button>` : ""}
       ${provider?.refund && open > 0 ? html.async`<form data-refund="${id}" style="display:inline">
         <input name=amount inputmode=decimal size=8 placeholder="${money(open, row.currency)}">
         <button u2-confirm="${t`Really pay back?`}">${t`Refund`}</button>

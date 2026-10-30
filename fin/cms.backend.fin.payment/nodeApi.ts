@@ -1,6 +1,6 @@
 import { errMsg } from "@qino/qino";
-import { parseAmount } from "@qino/qino/cms.backend.fin";
-import { record, refund, sync } from "@qino/qino/fin.payment";
+import { parseAmount, sourceOf } from "@qino/qino/cms.backend.fin";
+import { cancel, record, refund, sync } from "@qino/qino/fin.payment";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -12,6 +12,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (vars.sync) {
       const row = await sync(app, Number(vars.sync));
       return { ok: true, message: `${await t`The provider says`}: ${row?.status}` };
+    }
+    if (vars.cancel) {
+      const row = await cancel(app, Number(vars.cancel));
+      return { ok: row?.status === "canceled", message: await t`Canceled.` };
     }
     if (vars.refund) {
       const { id, amount } = vars.refund as { id: string; amount: string };
@@ -25,7 +29,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const currency = String(v.currency ?? "").toUpperCase();
       const id = await record(app, {
         direction: v.direction === "out" ? "out" : "in",
-        provider: v.provider,
+        provider: await sourceOf(app, v.provider),
         amount: parseAmount(v.amount, currency),
         currency,
         ref: v.ref || undefined,

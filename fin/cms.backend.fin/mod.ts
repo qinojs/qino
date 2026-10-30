@@ -1,6 +1,7 @@
-import { html, requestStorage } from "@qino/qino";
+import { html, requestStorage, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { fromMinor, toMinor, today } from "@qino/qino/fin";
+import { provider } from "@qino/qino/fin.payment";
 
 import type { App, DbFile, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -49,6 +50,30 @@ const STATUS: Record<string, string> = {
   uncollectible: "--red",
   refunded: "--blue",
 };
+
+/** The source a payment is recorded from, as typed, `bank` where none. A payment provider is no
+ *  source: what is paid through it is not recorded by hand. */
+export async function sourceOf(app: App, value: unknown): Promise<string> {
+  const source = String(value ?? "").trim() || "bank";
+  if (provider(app, source)) throw new Error(await app.t`${source} is a payment provider, not a source to record from`);
+  return source;
+}
+
+/** The sources money is recorded from, as a `<datalist>` for an input's `list`: `bank`, and those the
+ *  books give an account of their own (`fin.accounting.accounts.moneyBy`) — not payment providers —,
+ *  each with its account. */
+export async function sources(app: App, id: string): Promise<HtmlString> {
+  const books = app.modules.linked("fin.accounting") ? await import("@qino/qino/fin.accounting") : undefined;
+  const money = books ? String(await app.settings["fin.accounting"].accounts.money ?? "") : "";
+  const listed: [string, string][] = [["bank", money], ...books ? await books.moneyBy(app) : []];
+  const all = new Map(listed.filter(([source]) => !provider(app, source)));
+  const numbers = [...new Set(all.values())].filter(Boolean);
+  const names = new Map((numbers.length
+    ? await app.db.query`SELECT number, name FROM accounting_account WHERE ${sql.in("number", numbers)}`
+    : []).map((row) => [String(row.number), String(row.name)]));
+  return html`<datalist id="${id}">${[...all].map(([source, number]) =>
+    html`<option value="${source}">${number} ${names.get(number) ?? ""}`)}</datalist>`;
+}
 
 /** A small badge, in a color of the palette (`--red`) where it should stand out. */
 export const badge = (content: unknown, color = ""): Promise<HtmlString> =>

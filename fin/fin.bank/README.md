@@ -18,7 +18,7 @@ await ingest(app, {
   ],
 }); // { added: 2, matched: 1 }
 
-await assign(app, txId, "fin.invoice:7"); // the second line, by hand
+await assign(app, txId, "fin.invoice:7"); // the second line, by hand; its payment canceled frees it again
 ```
 
 Importers turn a format into this shape and call `ingest`: [fin.bank.camt](../fin.bank.camt/) reads

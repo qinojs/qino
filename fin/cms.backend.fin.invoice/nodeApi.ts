@@ -1,6 +1,6 @@
 import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { fileOf, parseAmount } from "@qino/qino/cms.backend.fin";
+import { fileOf, parseAmount, sourceOf } from "@qino/qino/cms.backend.fin";
 import { partyOf } from "@qino/qino/fin";
 import {
   attach, cancel, create, creditNote, document, finalize, issue, owed, payerOf, print, refOf, remove, revise, send,
@@ -140,7 +140,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const credit = invoice.type === "credit_note";
       await record(app, {
         direction: (invoice.direction === "out") !== credit ? "in" : "out",
-        provider: provider || "bank",
+        provider: await sourceOf(app, provider),
         amount: amount
           ? parseAmount(amount, currency)
           : credit ? Math.abs(Number(invoice.total) - Number(invoice.paid)) : await owed(app, invoice),

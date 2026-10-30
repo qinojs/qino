@@ -116,13 +116,14 @@ Deno.test("domains: sources are added, changed without showing the secret, and r
     const as = (run: () => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
     const source = { name: "s3", type: "plesk", url: "https://s3.example.com:8443", user: "admin", secret: "s3cr3t" };
     assertEquals((await as(() => api(node, { source }))).ok, true);
-    const page = String(await inRequest(app, `${BASE}?source=s3`, () => render(node)));
-    assertStringIncludes(page, `<a href="/backend/domains?source=s3">s3</a>`);
+    const page = String(await inRequest(app, BASE, () => render(node)));
+    assertStringIncludes(page, `<button data-source-dialog>Edit</button><template>`); // changed in a dialog
+    assertStringIncludes(page, `value="admin"`);
     assertStringIncludes(page, `placeholder="unchanged"`);
     assert(!page.includes("s3cr3t"));
     assertStringIncludes(page, "<button data-sync"); // a source there: something to sync
     assertEquals((await as(() => api(node, { source: { ...source, type: "nowhere" } }))).message, "no source type nowhere");
     await as(() => api(node, { removeSource: "s3" }));
-    assert(!String(await inRequest(app, BASE, () => render(node))).includes("?source=s3"));
+    assert(!String(await inRequest(app, BASE, () => render(node))).includes("data-source-dialog>Edit"));
   });
 });
