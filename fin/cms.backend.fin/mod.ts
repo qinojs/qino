@@ -145,12 +145,15 @@ export async function rowLink(
 const REFS: Record<string, [string, string, string]> = {
   "fin.invoice": ["cms.backend.fin.invoice", "invoice", "invoice"],
   "fin.payment": ["cms.backend.fin.payment", "payment", "payment"],
+  "fin.hosting": ["cms.backend.fin.hosting", "domain", "domain"],
 };
 
-/** `fin.invoice:7` or `fin.payment:12` as a link where its page is there; anything else as text. */
+/** `fin.invoice:7`, `fin.payment:12` or `fin.hosting:example.ch/domain` as a link where its page is
+ *  there; anything else as text. */
 export async function refLink(node: Node, ref: unknown): Promise<HtmlString | string> {
-  const [module, id] = String(ref ?? "").split(":");
+  const [module, rest] = String(ref ?? "").split(":");
   const target = REFS[module];
+  const id = rest?.split("/")[0];
   if (!target || !id) return String(ref ?? "");
-  return rowLink(node, target[0], target[1], id, `${target[2]} #${id}`);
+  return rowLink(node, target[0], target[1], id, /^\d+$/.test(id) ? `${target[2]} #${id}` : `${target[2]} ${id}`);
 }

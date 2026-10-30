@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import api from "../nodeApi.ts";
@@ -56,6 +56,9 @@ Deno.test("a subscription is changed on its page: start and period only until bi
     const page = async () =>
       String(await inRequest(app, `http://qino.test/?subscription=${id}`, () => render(node)));
     assertStringIncludes(await page(), 'value="240"');
+    assertStringIncludes(await page(), "data-action=cancel"); // runs on: may be canceled here
+    await app.db.exec`UPDATE subscription SET ref = ${"fin.hosting:example.ch/domain"} WHERE id = ${id}`;
+    assertStringIncludes(await page(), "domain example.ch"); // what it is for
     const change = {
       id: String(id), name: "Hosting Plus", price: "300", start: "2030-01-01", unit: "month", count: "3",
     };
@@ -65,6 +68,7 @@ Deno.test("a subscription is changed on its page: start and period only until bi
       [row?.name, row?.price, row?.interval_unit, row?.end_date],
       ["Hosting Plus", 30000, "month", "2031-01-01"],
     );
+    assert(!(await page()).includes("data-action=cancel")); // it ends already
 
     await app.db.table("subscription_invoice").insert({
       subscription_id: id, period_start: "2030-01-01", period_end: "2030-03-31", invoice_id: 1,

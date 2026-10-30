@@ -1,6 +1,6 @@
 import { getCtx, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, inputAmount, money, rowLink } from "@qino/qino/cms.backend.fin";
+import { badge, inputAmount, money, refLink, rowLink } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, nameOf, today } from "@qino/qino/fin";
 import { horizon, periods, plans, renews, subscriptions } from "@qino/qino/fin.subscription";
 
@@ -169,6 +169,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Subscriptions`}</a> › ${s.label} ${s.detail}</div>
+    ${s.ref ? html.async`<p>${t`For`} ${refLink(node, s.ref)}` : ""}
     <form data-update="${id}">
       <u2-fields>
         ${t`Plan`} <select name=planId><option value="">—${catalog.map((p) =>
@@ -181,6 +182,8 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
         ${t`Until`} <input name=end type=date value="${date(s.end_date)}">
       </u2-fields>
       <button>${t`Save`}</button>
+      ${s.end_date ? "" : html.async`<button type=button data-action=cancel data-id="${id}"
+        u2-confirm="${t`End it with the period under way?`}">${t`Cancel subscription`}</button>`}
     </form>
     <p><small>${t`Changes apply from the next period. Empty fields take the plan's; empty until: it runs on.`}
       ${billed.length ? t`The start stays: periods are billed already.` : ""}</small>
