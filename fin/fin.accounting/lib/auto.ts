@@ -68,7 +68,7 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
   // the invoice's file is the entry's receipt: the original of a received one, the print of an issued one
   const files = invoice.file_id ? [await app.dbFiles.file(Number(invoice.file_id))] : [];
   const text = `${out ? "Invoice" : "Bill"} ${invoice.number ?? invoice.id}`;
-  await book(app, { date, text, ref, lines, currency, files });
+  await book(app, { date, text, ref, lines, files });
 }
 
 /** A line's tax code: its category and rate, `S8.1`, `E0` — what a tax report adds up. */
@@ -125,7 +125,7 @@ async function writeOff(app: App, invoice: Row) {
     { account: roles.receivable, amount: -open },
   ];
   // on the day it is given up: the tax is corrected in that period
-  await book(app, { date: today(), text: `Loss ${invoice.number ?? id}`, ref: lossRef(id), lines, currency });
+  await book(app, { date: today(), text: `Loss ${invoice.number ?? id}`, ref: lossRef(id), lines });
 }
 
 /**
@@ -173,7 +173,6 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
     text: String(payment.description || `Payment #${payment.id}`),
     ref,
     lines: lines.filter((line) => line.account),
-    currency,
   });
   // money on a claim given up: the loss is only what is still missing, its tax owed again (MWSTG 41 I)
   if (invoice.status === "uncollectible") {

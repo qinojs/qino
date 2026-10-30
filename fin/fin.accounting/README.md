@@ -76,8 +76,11 @@ appropriation of the result and the VAT reconciliation are booked by hand.
 - **One signed amount per line** (debit +, credit −) instead of two columns: a balance is a sum.
   The backend shows debit and credit apart.
 - **One currency per book**: the main one ([`fin.mainCurrency`](../fin/), else the organization's
-  country's). Invoices and payments in another currency
-  are not booked automatically; booking them needs rates at the booking date — not built.
+  country's); `amount` is always in it. Invoices and payments in another currency are not booked
+  automatically. Accounts in another currency or unit — a bank account in EUR, a bitcoin wallet —
+  would add a foreign amount per line beside `amount`, at the rate of the day
+  ([`locale.currency`](../../module/locale.currency/) `rate(…, { date })`), and a revaluation at
+  closing — not built.
 - **No carry-over entries.** Balance-sheet accounts are summed over all time, income and expense
   over the period asked for; closing a year is setting `closedUntil` and booking the result to
   equity by hand. Separate books per year would need opening entries.

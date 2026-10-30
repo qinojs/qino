@@ -57,7 +57,6 @@ export const api: ApiTree = {
           amount: s.number().describe("Minor units: debit positive, credit negative"),
           taxCode: s.optional(s.string()),
         })),
-        currency: s.optional(s.string().describe("ISO 4217; the main one by default")),
         ref: s.optional(s.string()),
       }),
       execute: (entry: Params, ctx: Ctx) => book(ctx.app, entry as Parameters<typeof book>[1]),

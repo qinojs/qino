@@ -28,10 +28,11 @@ Deno.test("the books of a period export as a ZIP: journal, balances, receipts", 
   });
 });
 
-Deno.test("an entry in another currency is written in that currency's decimals", async () => {
+Deno.test("a book in another currency is written in that currency's decimals", async () => {
   await withApp(async (app) => {
+    await app.settings.fin.mainCurrency("JPY");
     const lines = [{ account: "6000", amount: 1000 }, { account: "1020", amount: -1000 }];
-    await book(app, { date: "2026-10-01", text: "Tokyo", lines, currency: "JPY" });
+    await book(app, { date: "2026-10-01", text: "Tokyo", lines });
     const files = unzipSync(await exportBooks(app, { from: "2026-01-01", to: "2026-12-31" }));
     assertStringIncludes(strFromU8(files["journal.csv"]), ";6000;Raumaufwand;1000;;;JPY;");
   });

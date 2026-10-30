@@ -27,20 +27,19 @@ export async function account(app: App, number: string, values: { name: string; 
 
 /**
  * Book an entry. Its lines add up to zero — what is debited somewhere is credited elsewhere — and
- * name accounts by number. A date in a closed period is refused. Entries are never changed; a
- * mistake is taken back with `reverse()`.
+ * name accounts by number, their amounts in the book's currency (the main one): one currency per
+ * book. A date in a closed period is refused. Entries are never changed; a mistake is taken back
+ * with `reverse()`.
  */
 export async function book(app: App, entry: {
   date: string;
   text: string;
   lines: Line[];
-  currency?: string;
   ref?: string;
   files?: DbFile[];
 }): Promise<number> {
   const s = app.settings["fin.accounting"];
-  // the book keeps the main currency
-  const currency = entry.currency ?? await mainCurrency(app) ?? "";
+  const currency = await mainCurrency(app) ?? "";
   if (!/^[A-Z]{3}$/.test(currency)) fail("the book needs its currency (fin.mainCurrency)");
   if (!DATE.test(entry.date)) fail("dates are YYYY-MM-DD");
   const closed = String(await s.closedUntil ?? "");
@@ -95,7 +94,6 @@ export async function reverse(
     const back = await book(app, {
       date: date ?? today(),
       text: text ?? `Reversal: ${entry.text}`,
-      currency: String(entry.currency),
       ref: entry.ref == null ? undefined : String(entry.ref),
       lines: lines.map((l) => ({
         account: String(l.number),

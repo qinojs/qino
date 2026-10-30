@@ -503,7 +503,7 @@ async function detail(node: Node, id: number) {
       <button>${t`Create payment`}</button>
     </form>` : ""}
     ${["open", "uncollectible"].includes(String(row.status)) && open > 0 ? html.async`<form data-record="${id}">
-      ${credit ? t`Paid back` : t`Received by hand`}:
+      ${credit ? t`Paid back` : row.direction === "in" ? t`Paid by hand` : t`Received by hand`}:
       <input name=amount inputmode=decimal size=8 placeholder="${money(open, row.currency)}">
       <input name=provider value=bank size=8>
       <button>${t`Record`}</button>
