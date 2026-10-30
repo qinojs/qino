@@ -5,7 +5,7 @@ import { candidates } from "@qino/qino/ai";
 import { backend } from "@qino/qino/cms.backend";
 import { allowMarkdown } from "@qino/qino/cms.backend.ai";
 import { sqlScore, strength } from "@qino/qino/score";
-import { Agent, called, IN_MIND, Session } from "@qino/qino/ai.agent";
+import { Agent, called, declare, IN_MIND, Session } from "@qino/qino/ai.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -131,6 +131,7 @@ const agentRows = (db: Db, agent = 0) => db.query`
 /** Every agent with the most important, the most recently active first; a click opens its page. */
 export async function agents(node: Node): Promise<HtmlString> {
   const { db, t } = node.app, url = await pageUrl(node);
+  await declare(node.app); // also those of modules installed since the start
   const rows = await agentRows(db);
   const last = await messages(db, rows.map((r) => r.last));
   return html.async`

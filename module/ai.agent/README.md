@@ -67,7 +67,8 @@ You design and maintain the layout of this website. …
 
 Front matter has one JSON value per line, then the role. At start it becomes the agent named
 `<module>/<key>`, and on every start its role, tools and prefer follow the file again; memories and
-sessions stay with its id. Changing it here is refused: the file sets it. A copy at the same path in
+sessions stay with its id. `Agent.named(app, name)` finds it, and declares one of a module installed
+since the start. Changing it here is refused: the file sets it. A copy at the same path in
 the module's data dir wins.
 
 ## Hooks

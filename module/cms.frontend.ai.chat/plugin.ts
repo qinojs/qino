@@ -21,9 +21,9 @@ async function session(ctx: Ctx, fresh = false): Promise<{ id: number }> {
   const db = ctx.app.db, kept = Number(await ctx.settings[name].session) || 0;
   const owner = kept && Number(await db.one`SELECT usr_id FROM ai_session WHERE id = ${kept}`);
   if (!fresh && kept && owner === ctx.userId) return { id: kept };
-  const agent = Number(await db.one`SELECT id FROM ai_agent WHERE name = ${AGENT}`);
+  const agent = await Agent.named(ctx.app, AGENT);
   if (!agent) throw new Error(`No agent ${AGENT}`);
-  const { id } = await new Agent(ctx.app, agent).start(ctx.userId);
+  const { id } = await agent.start(ctx.userId);
   await ctx.settings[name].session(id);
   return { id };
 }

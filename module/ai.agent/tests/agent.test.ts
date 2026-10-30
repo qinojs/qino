@@ -385,6 +385,14 @@ Deno.test("ai.agent: a module's declared agents follow their file, by name", () 
   await assertRejects(() => runAs(app, 7, "test", () => (app.api as any)["ai.agent"].agent(Number(row!.id)).patch({ system: "x" })), ConflictError);
 }));
 
+Deno.test("ai.agent: a declared agent is found by name, declared now when its module came after the start", () => withApp(async (app) => {
+  await app.db.query`DELETE FROM ai_agent WHERE name = ${"toolset/clockwork"}`; // as if installed since the start
+  const agent = await Agent.named(app, "toolset/clockwork");
+  assertEquals(agent?.id, Number(await app.db.one`SELECT id FROM ai_agent WHERE name = ${"toolset/clockwork"}`));
+  assertEquals((await Agent.named(app, "toolset/clockwork"))?.id, agent?.id);
+  assertEquals(await Agent.named(app, "toolset/none"), undefined);
+}));
+
 Deno.test("ai.agent: the strongest memories go into the context, as many as fit in IN_MIND characters", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "lead" });
   const long = (c: string) => c.repeat(IN_MIND / 3);

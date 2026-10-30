@@ -1,6 +1,7 @@
 import { unixTime } from "@qino/qino";
 
 import { findable } from "./lib/search.ts";
+import { declare } from "./lib/declared.ts";
 import { context, known } from "./lib/context.ts";
 import { checkTools, ranked, toolsOf } from "./lib/tools.ts";
 import { live } from "./lib/live.ts";
@@ -9,6 +10,7 @@ import { ask, cancel, note, running } from "./lib/turn.ts";
 
 export { IN_MIND, Memories } from "./lib/memory.ts";
 export { CALL, called } from "./lib/tools.ts";
+export { declare } from "./lib/declared.ts";
 
 import type { App, Tool } from "@qino/qino";
 import type { Message, Part, TextOutput } from "@qino/qino/ai";
@@ -30,6 +32,13 @@ export class Agent {
     const id = Number(await app.db.table("ai_agent").insert({ system, tools: JSON.stringify(tools), prefer: prefer ? JSON.stringify(prefer) : "", time: unixTime() }));
     findable(app, "ai_agent", { agent_id: id }, system);
     return new Agent(app, id);
+  }
+
+  /** The agent a module brings, by name `<module>/<key>`; one of a module installed since the start is declared now. */
+  static async named(app: App, name: string): Promise<Agent | undefined> {
+    const find = async () => Number(await app.db.one`SELECT id FROM ai_agent WHERE name = ${name}`);
+    const id = await find() || (await declare(app), await find());
+    return id ? new Agent(app, id) : undefined;
   }
 
   /** A fresh start with user `usrId`, in which the agent acts with that user's rights; `prefer`
