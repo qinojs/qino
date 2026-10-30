@@ -33,6 +33,7 @@ Settings `fin.accounting.accounts.*` name an account per role; a country module 
 | invoice canceled | its entry is reversed | |
 | invoice written off | losses (net), tax due | receivable |
 | written-off invoice paid after all | its write-off is reversed | |
+| written-off invoice paid in part | its write-off is reversed, the rest written off anew | |
 
 A pro forma books nothing; the invoice it becomes does. A credit note books revenue and tax back
 in its own period, as the law wants a correction (MWSTG 41). Every line carries its tax code —
@@ -61,10 +62,13 @@ of December: income and expense since the last closing go to the result account
 (`ref` `fin.accounting:close:<until>`), and the books are closed up to that day. The result of a
 closed year still shows: `balances(app, { from, to, closings: false })` leaves the closing out.
 `reopen(app)` opens the last closed year again and takes its closing entry back on its own day.
+`businessYear(app, day?)` is the year a day is in: years on from the last closing, else the
+calendar year — what the backend shows by default.
 
 There is no carry-over into the new year: the book runs on, the balance sheet adds up all that
 came before. The accounting backend lists what is still open in the year (drafts, unassigned
-bank lines, entries by hand without a receipt) and closes it. Accruals, depreciation, the
+bank lines, entries by hand without a receipt, payments for something else than an invoice not
+booked), compares receivables and payables in the books with the open invoices, and closes it. Accruals, depreciation, the
 appropriation of the result and the VAT reconciliation are booked by hand.
 
 ## Decisions that may change

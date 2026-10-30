@@ -1,4 +1,6 @@
 // ISO 4217 currencies. Names, symbols and decimals come from Intl; the table only stores the rate.
+import { ratesOn } from "./lib/rates.ts";
+
 import type { Db } from "@qino/qino";
 
 export { updateRates } from "./lib/rates.ts";
@@ -32,10 +34,12 @@ export const currency = {
     return new Intl.NumberFormat(lang, { style: "currency", currency: id }).format(value);
   },
 
-  /** How many of `to` one `from` buys, via the stored USD rates. */
-  async rate(db: Db, from: string, to: string): Promise<number | undefined> {
+  /** How many of `to` one `from` buys: by the stored rates, or with `date` (`YYYY-MM-DD`) by that day's,
+   *  asked of a source that knows past days — throws if none answers. */
+  async rate(db: Db, from: string, to: string, { date }: { date?: string } = {}): Promise<number | undefined> {
     if (from === to) return 1;
-    const a = await usd(db, from), b = await usd(db, to);
+    const of = date ? await ratesOn(date).then((rates) => (id: string) => rates.get(id)) : (id: string) => usd(db, id);
+    const [a, b] = await Promise.all([of(from), of(to)]);
     if (a && b) return b / a;
   },
 

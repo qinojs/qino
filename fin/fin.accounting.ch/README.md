@@ -31,11 +31,12 @@ every line its category and rate — into the figures of the Swiss form:
 | `E` | 230, excluded |
 | `O` | no turnover (default interest, damages) |
 
-Turnover (200) is all of them but `O`. Input tax goes to 400, or to 405 where its entry books onto
+A loss written off (on `accounts.losses`) is a reduction of consideration, 235, taken off the
+turnover of its category and rate. Turnover (200) is all of them but `O`. Input tax goes to 400, or to 405 where its entry books onto
 an asset account (an investment); payable (500) or credit (510). With
 `fin.accounting.ch.vat.method` "saldo" it is the taxed turnover with tax at the net tax rate
 (`vat.rate`, 322), without input tax. The accounting backend shows it for the period chosen. The
-mapping is in [LAW-CH.md](../LAW-CH.md) — to be confirmed by a fiduciary.
+mapping is in [LAW-CH.md](../LAW-CH.md).
 
 ## Decisions that may change
 

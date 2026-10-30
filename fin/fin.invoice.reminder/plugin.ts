@@ -19,7 +19,7 @@ export const settingsSchema = {
     },
     interest: {
       type: "number",
-      description: "Default interest in percent a year, charged from the due date; empty: none",
+      description: "Default interest in percent a year, charged from the first reminder on; empty: none",
     },
     term: { type: "integer", default: 10, description: "Days to pay a reminder" },
     issue: {

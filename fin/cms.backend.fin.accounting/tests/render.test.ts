@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
+import { record } from "@qino/qino/fin.payment";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import api from "../nodeApi.ts";
@@ -55,5 +56,29 @@ Deno.test("a year is closed from its card, which lists what is still open, and o
     assertStringIncludes(page, 'value="2026-12-31"'); // the next one, a year on
     await inRequest(app, base, () => api(node, { reopen: true }));
     assertEquals(await app.settings["fin.accounting"].closedUntil, "");
+  });
+});
+
+Deno.test("the closing card compares the books with the open invoices, and finds money nobody booked", async () => {
+  await withFinApp(FIN, async (app) => {
+    const node = backendNode(app, "/backend/accounting");
+    await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] }));
+    let page = String(await inRequest(app, BASE, () => render(node)));
+    assertStringIncludes(page, "receivables match the open invoices");
+    // one the books never saw: issued before they were kept
+    await app.db.table("invoice").insert({
+      direction: "out", type: "invoice", status: "open", currency: "CHF", total: 5000, created: 1, changed: 1,
+    });
+    page = String(await inRequest(app, BASE, () => render(node)));
+    assertStringIncludes(page, "receivables: books and open invoices differ by");
+    assertStringIncludes(page, "50.00");
+    // money for something else than an invoice: its owner books it, or nobody
+    const unbooked = `>1</small> payments not for an invoice, not booked`;
+    assert(!page.includes(unbooked));
+    const payment = await record(app, { direction: "in", provider: "bank", amount: 2000, currency: "CHF", ref: "shop.order:1" });
+    // in the year the card closes: the last one
+    await app.db.exec`UPDATE payment SET created = ${Date.parse(`${new Date().getFullYear() - 1}-06-01`) / 1000}
+      WHERE id = ${payment}`;
+    assertStringIncludes(String(await inRequest(app, BASE, () => render(node))), unbooked);
   });
 });

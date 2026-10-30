@@ -128,12 +128,14 @@ async function feeLines(app: App, items: Row[], fee: number) {
     .map(({ taxRate, taxCategory, price }) => ({ name, price, taxRate, taxCategory }));
 }
 
-/** Default interest, percent a year, since due or last reminded: damages, not subject to tax (MWSTG 18 II i). */
+/** Default interest, percent a year, since the last reminder: in default only once reminded — a due date the
+ *  invoice states is not one agreed (OR 102). Damages, not subject to tax (MWSTG 18 II i). */
 async function interestLines(app: App, items: Row[], rate: number, date: string) {
   if (rate <= 0) return [];
   const out: Line[] = [];
   for (const item of items) {
-    const days = Math.round((Date.parse(date) - Date.parse(String(item.reminded ?? item.due))) / 86400_000);
+    if (!item.reminded) continue;
+    const days = Math.round((Date.parse(date) - Date.parse(String(item.reminded))) / 86400_000);
     const price = round((Number(item.total) - Number(item.paid)) * rate / 100 * days / 365);
     if (price <= 0) continue;
     const name = await app.t`Default interest ${rate} % on ${item.number} for ${days} days`;

@@ -13,7 +13,8 @@
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "usr",
-            "x-qg-on-parent-delete": "cascade"
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Whose credit; kept when they are removed: the books keep what moved (OR 958f)"
           },
           "currency": {
             "type": "string",
@@ -39,7 +40,7 @@
             "type": "integer"
           }
         },
-        "required": ["id", "usr_id", "currency", "amount", "created"]
+        "required": ["id", "currency", "amount", "created"]
       }
     }
   }

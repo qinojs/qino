@@ -1,3 +1,4 @@
+import { errMsg } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { addUser, parseAmount } from "@qino/qino/cms.backend.fin";
 
@@ -30,25 +31,29 @@ const valuesOf = (v: Record<string, string>) => Object.fromEntries(FIELDS.map((k
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
   const t = app.t;
-  if (vars.create) {
-    const values = valuesOf(vars.create as Record<string, string>);
-    if (!values.organization && !values.family_name) return { ok: false, message: await t`A name, please` };
-    const id = await addUser(app, values);
-    const url = backend.toUrl(await (await node.page()).url(), { usr: id });
-    return { ok: true, url };
+  try {
+    if (vars.create) {
+      const values = valuesOf(vars.create as Record<string, string>);
+      if (!values.organization && !values.family_name) return { ok: false, message: await t`A name, please` };
+      const id = await addUser(app, values);
+      const url = backend.toUrl(await (await node.page()).url(), { usr: id });
+      return { ok: true, url };
+    }
+    // credit added by hand (or taken, negative): a goodwill, money paid in for it
+    if (vars.credit) {
+      const v = vars.credit as Record<string, string>;
+      const currency = String(v.currency ?? "").toUpperCase();
+      const { add } = await import("@qino/qino/fin.payment.credit");
+      await add(app, Number(v.id), { amount: parseAmount(v.amount, currency), currency, text: v.text });
+      return { ok: true };
+    }
+    if (vars.save) {
+      const v = vars.save as Record<string, string>;
+      await app.db.table("usr").update(Number(v.id), valuesOf(v));
+      return { ok: true, message: await t`Saved.` };
+    }
+    return null;
+  } catch (e) {
+    return { ok: false, message: errMsg(e) };
   }
-  // credit added by hand (or taken, negative): a goodwill, money paid in for it
-  if (vars.credit) {
-    const v = vars.credit as Record<string, string>;
-    const currency = String(v.currency ?? "").toUpperCase();
-    const { add } = await import("@qino/qino/fin.payment.credit");
-    await add(app, Number(v.id), { amount: parseAmount(v.amount, currency), currency, text: v.text });
-    return { ok: true };
-  }
-  if (vars.save) {
-    const v = vars.save as Record<string, string>;
-    await app.db.table("usr").update(Number(v.id), valuesOf(v));
-    return { ok: true, message: await t`Saved.` };
-  }
-  return null;
 }

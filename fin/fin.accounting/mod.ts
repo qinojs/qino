@@ -1,5 +1,5 @@
 import { requestStorage, sql, unixTime } from "@qino/qino";
-import { addDays, mainCurrency, today } from "@qino/qino/fin";
+import { addDays, addMonths, mainCurrency, today } from "@qino/qino/fin";
 
 import type { App, DbFile, Row } from "@qino/qino";
 
@@ -162,6 +162,15 @@ export async function close(app: App, until: string): Promise<number | undefined
     : undefined;
   await s.closedUntil(until);
   return id;
+}
+
+/** The business year `day` is in, today by default: years on from the last closing, else the calendar year. */
+export async function businessYear(app: App, day = today()): Promise<{ from: string; to: string }> {
+  const closed = String(await app.settings["fin.accounting"].closedUntil ?? "");
+  if (!closed) return { from: `${day.slice(0, 4)}-01-01`, to: `${day.slice(0, 4)}-12-31` };
+  let [from, to] = [addDays(closed, 1), addMonths(closed, 12)];
+  while (to < day) [from, to] = [addDays(to, 1), addMonths(to, 12)];
+  return { from, to };
 }
 
 /** Open the last closed year again: its closing entry is taken back on its own day. */

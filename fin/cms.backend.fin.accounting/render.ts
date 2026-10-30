@@ -1,8 +1,8 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, refLink } from "@qino/qino/cms.backend.fin";
+import { badge, money, pager, refLink } from "@qino/qino/cms.backend.fin";
 import { addDays, addMonths, mainCurrency, today } from "@qino/qino/fin";
-import { balances } from "@qino/qino/fin.accounting";
+import { balances, businessYear } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -34,7 +34,19 @@ async function closing(app: App): Promise<HtmlString> {
   const until = closed ? addMonths(closed, 12) : `${new Date().getFullYear() - 1}-12-31`;
   const count = (query: Promise<unknown>) => query.then(Number);
   const currency = await mainCurrency(app) ?? "";
-  const [drafts, foreign, unassigned, bare] = await Promise.all([
+  const roles = app.settings["fin.accounting"].accounts;
+  const [receivable, payable] = (await Promise.all([roles.receivable, roles.payable]))
+    .map((v) => String(v ?? "").trim());
+  // what the books hold on an account against what is open on the invoices: they differ where
+  // something was not booked
+  const gap = async (number: string, direction: string, sign: number) => number
+    ? Number(await app.db.one`SELECT COALESCE(SUM(l.amount), 0) FROM accounting_entry_line l
+      JOIN accounting_account a ON a.id = l.account_id WHERE a.number = ${number}`)
+      - sign * Number(await app.db.one`SELECT COALESCE(SUM(total - paid), 0) FROM invoice WHERE status = 'open'
+      AND direction = ${direction} AND type <> 'proforma' AND currency = ${currency}`)
+    : 0;
+  const [unixFrom, unixUntil] = [from, addDays(until, 1)].map((day) => Date.parse(day) / 1000);
+  const [drafts, foreign, unassigned, bare, unbooked, receivables, payables] = await Promise.all([
     count(app.db.one`SELECT COUNT(*) FROM invoice WHERE status = 'draft' AND (date IS NULL OR date <= ${until})`),
     // booked only in the book's currency: the others are missing from the books
     count(app.db.one`SELECT COUNT(*) FROM invoice WHERE currency <> ${currency} AND type <> 'proforma'
@@ -47,9 +59,18 @@ async function closing(app: App): Promise<HtmlString> {
     count(app.db.one`SELECT COUNT(*) FROM accounting_entry e WHERE e.ref IS NULL AND e.reverses IS NULL
       AND e.date >= ${from} AND e.date <= ${until}
       AND NOT EXISTS (SELECT 1 FROM accounting_entry_file f WHERE f.entry_id = e.id)`),
+    // money only invoices book by themselves; for anything else (a shop order) it is up to its owner
+    count(app.db.one`SELECT COUNT(*) FROM payment p WHERE p.paid > 0 AND p.currency = ${currency}
+      AND (p.ref IS NULL OR p.ref NOT LIKE 'fin.invoice:%') AND p.created >= ${unixFrom} AND p.created < ${unixUntil}
+      AND NOT EXISTS (SELECT 1 FROM accounting_entry e WHERE e.ref = CONCAT('fin.payment:', p.id))`),
+    gap(receivable, "out", 1),
+    gap(payable, "in", -1),
   ]);
   const check = (n: number, label: unknown) =>
     html.async`<li>${n ? badge(n, "--orange") : badge("✓", "--green")} ${label}`;
+  const diff = (amount: number, differ: unknown, match: unknown) => amount
+    ? html.async`<li>${badge("!", "--orange")} ${differ} ${money(Math.abs(amount), currency)}`
+    : html.async`<li>${badge("✓", "--green")} ${match}`;
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Close the year`} ${closed ? html.async`<small>${t`closed until`} ${closed}</small>` : ""}</div>
     <ul>
@@ -57,6 +78,11 @@ async function closing(app: App): Promise<HtmlString> {
       ${check(foreign, t`invoices in another currency, not booked`)}
       ${app.modules.linked("fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
       ${check(bare, t`entries by hand without a receipt`)}
+      ${check(unbooked, t`payments not for an invoice, not booked`)}
+      ${receivable
+        ? diff(receivables, t`receivables: books and open invoices differ by`, t`receivables match the open invoices`)
+        : ""}
+      ${payable ? diff(payables, t`payables: books and open invoices differ by`, t`payables match the open invoices`) : ""}
     </ul>
     <p><small>${t`By hand before: accruals, depreciation, the VAT reconciliation.`}</small>
     <form data-close>
@@ -78,6 +104,7 @@ async function vat(app: App, from: string, to: string, currency: string): Promis
     "220": t`Exempt: exports`,
     "221": t`Services abroad`,
     "230": t`Excluded from tax`,
+    "235": t`Reductions of consideration`,
   };
   const row = (figure: string, label: unknown, ...amounts: number[]) => html.async`<tr>
     <td>${figure}
@@ -105,9 +132,9 @@ async function vat(app: App, from: string, to: string, currency: string): Promis
 async function overview(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
-  const year = new Date().getFullYear();
-  const from = url.searchParams.get("from") || `${year}-01-01`;
-  const to = url.searchParams.get("to") || `${year}-12-31`;
+  const year = await businessYear(app);
+  const from = url.searchParams.get("from") || year.from;
+  const to = url.searchParams.get("to") || year.to;
   const currency = await mainCurrency(app) ?? "";
   const [accounts, flows] = await Promise.all([balances(app, { from, to }), balances(app, { from, to, closings: false })]);
   const selected = (number: unknown) => url.searchParams.get("account") === number ? html.raw(" selected") : "";
@@ -199,16 +226,16 @@ async function journal(node: Node, url: URL, from: string, to: string) {
       WHERE x.entry_id = e.id AND y.number = ${q("account")})` : null,
   ].flatMap((term) => term ?? []);
   const page = Math.max(0, Number(q("page")) || 0);
-  const entries = await app.db.query`SELECT e.* FROM accounting_entry e WHERE ${sql.join(where, " AND ")}
-    ORDER BY e.date DESC, e.id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
-  if (!entries.length) return html.async`<p>${t`No entries`}`;
-  const more = entries.length > PER_PAGE;
-  const shown = entries.slice(0, PER_PAGE);
+  const [shown, count] = await Promise.all([
+    app.db.query`SELECT e.* FROM accounting_entry e WHERE ${sql.join(where, " AND ")}
+      ORDER BY e.date DESC, e.id DESC LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
+    app.db.one`SELECT COUNT(*) FROM accounting_entry e WHERE ${sql.join(where, " AND ")}`.then(Number),
+  ]);
+  if (!shown.length) return html.async`<p>${t`No entries`}`;
   const lines = await app.db.query`
     SELECT l.entry_id, l.amount, a.number FROM accounting_entry_line l JOIN accounting_account a ON a.id = l.account_id
     WHERE ${sql.in("l.entry_id", shown.map((e) => Number(e.id)))} ORDER BY l.amount DESC`;
   const pageUrl = await (await node.page()).url();
-  const at = (p: number) => backend.toUrl(pageUrl, { ...Object.fromEntries(url.searchParams), page: p });
   return html.async`<table class=u2-table>
     <thead><tr>
       <th>${t`Id`}
@@ -230,9 +257,7 @@ async function journal(node: Node, url: URL, from: string, to: string) {
         <td style="text-align:end; white-space:nowrap">${money(total(debit), entry.currency)}
         <td>${refLink(node, entry.ref)}`;
     })}
-    ${page || more ? html`<tfoot><tr><td colspan=7>
-      ${page ? html`<a href="${at(page - 1)}">‹</a>` : ""} ${page + 1}
-      ${more ? html`<a href="${at(page + 1)}">›</a>` : ""}` : ""}
+    ${pager(pageUrl, url, { page, shown: shown.length, total: count, per: PER_PAGE, span: 7 })}
   </table>`;
 }
 

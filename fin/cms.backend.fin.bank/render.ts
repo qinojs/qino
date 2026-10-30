@@ -131,6 +131,7 @@ function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[
 async function suggestions(app: App, open: Row[]) {
   const found = new Map<number, { ref: string; label: string }[]>();
   if (!open.length || !app.modules.linked("fin.invoice")) return found;
+  const { refOf } = await import("@qino/qino/fin.invoice");
   // only those whose rest is one of the amounts: the database finds them, not a loop over all
   const amounts = [...new Set(open.map((row) => Math.abs(Number(row.amount))))];
   const invoices = await app.db.query`
@@ -142,7 +143,7 @@ async function suggestions(app: App, open: Row[]) {
       // what the line would be: our claim comes in, theirs goes out
       .filter((i) => i.currency === row.currency && (i.direction === "out" ? 1 : -1) * Number(i.rest) === amount)
       .map((i) => ({
-        ref: `fin.invoice:${i.id}`,
+        ref: refOf(Number(i.id)),
         label: `${i.number ?? "#" + i.id} ${JSON.parse(String(i.party ?? "{}"))?.name ?? ""}`.trim(),
       })));
   }

@@ -1,8 +1,8 @@
 # Swiss law for fin
 
 What Swiss law says about invoices, reminders, VAT and records, as far as fin is concerned.
-Researched 2026-10 from the statutes and the federal tax administration (ESTV); a fiduciary should
-confirm it before fin goes live. **Verified** = read in the statute or an ESTV text;
+Researched 2026-10 from the statutes and the federal tax administration (ESTV); not confirmed by
+a fiduciary. **Verified** = read in the statute or an ESTV text;
 **secondary** = from guides, not checked against the source.
 
 ## Invoices (MWSTG 26, 27)
@@ -29,9 +29,11 @@ confirm it before fin goes live. **Verified** = read in the statute or an ESTV t
   (40 I c). A pro forma that is paid triggers VAT on payment.
 - **Later changes** (41, verified): discounts, credit notes, bad debts are booked in the period
   the correction is booked or the reduced money comes in; earlier returns are not corrected.
-- **Bad debt** (secondary): counts as a reduction of the consideration, the VAT on it is taken
-  back — only once the loss is final (e.g. a certificate of loss); a general allowance
-  (Delkredere) does not count.
+- **Bad debt**: a correction of the consideration, adjusted when it is booked (MWSTG 41 I,
+  verified) and declared as a reduction (figure 235, secondary) — only once the loss is final:
+  the claim is "definitiv uneinbringlich" (MWST-Info 04, verified, on factoring), e.g. a
+  certificate of loss; a general allowance (Delkredere) does not count (secondary). Paid after
+  all, the tax is owed again (secondary).
 
 ## Foreign currency (MWSTV 45, verified)
 
@@ -67,9 +69,12 @@ filed online only since 2025 (secondary).
 ## Reminders, interest, fees (OR, MWST-Info 04)
 
 - **Default** (OR 102, secondary): the debtor is in default after a reminder, or without one once
-  an agreed due day has passed.
+  an agreed due day has passed. A due date or "payable within 30 days" on the invoice is no
+  agreed due day by the prevailing view — a reminder is needed (minority: AGVE 2003 Nr. 6 takes
+  "net 30 days" as the reminder).
 - **Default interest** 5 % a year (OR 104, secondary, consistent across sources). Not taxable:
-  damages (MWSTG 18 II i; MWST-Info 04, 3.8.2.3, verified).
+  damages (MWSTG 18 II i; MWST-Info 04, 3.8.2.3, verified). Contractual interest (a loan, paying
+  by instalments) is part of the consideration and taxable (same, verified).
 - **Reminder fees**: no statutory fee; owed only if agreed (contract, terms) or proven as damage
   (secondary). **Taxable**: "Mahnspesen … gehören zum Entgelt der erbrachten Leistung"
   (MWST-Info 04, 3.8.2.3, verified) — at the rate of the service they remind of.
@@ -111,3 +116,8 @@ businesses.
 - QR bill addresses (ZKB): https://www.zkb.ch/media/zkb/dokumente/merkblaetter/fs-strukturierte-adressen-qr-rechnung-de.pdf
 - Pro forma: https://pfeffersack.ch/lexikon/proforma-rechnung
 - Reminder fees: https://magicheidi.ch/blog/mahngebuehren-schweiz
+- Default and due day: https://pfeffersack.ch/lexikon/mahnwesen,
+  https://law.ch/lawinfo/verzugszins/beginn-des-verzugszinslaufs/verfalltag/,
+  https://files.entscheidsuche.ch/chunks/AG/OG/009/AGVE-2003-6_2003-12-31.pdf
+- Bad debt: https://pfeffersack.ch/lexikon/forderungsverlust
+- Figures 220/221/230: https://www.weka.ch/themen/finanzen-controlling/mehrwertsteuer/buchfuehrung-und-abrechnung/article/mwst-abrechnen-wie-fuelle-ich-die-mwst-abrechnung-korrekt-aus/

@@ -63,8 +63,9 @@ export const paymentProvider: Provider = {
   async sync(app, payment) {
     if (payment.status !== "pending" && payment.status !== "processing") return {};
     const data = dataOf(payment);
-    const res = await call(app, "PaymentPage/Assert", { Token: data.token }).catch(refused);
-    if (!res.Transaction) return res;
+    const res = await call(app, "PaymentPage/Assert", { Token: data.token }).catch((e) => ({ refused: refused(e) }));
+    if (res.refused) return res.refused;
+    if (!res.Transaction) return {}; // nothing to go by: as it was
     const tx = res.Transaction;
     const state: State = {
       externalId: tx.Id,

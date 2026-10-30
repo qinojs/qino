@@ -110,24 +110,17 @@ Gefunden, noch nicht erledigt — vor dem Umsetzen prüfen.
 
 Struktur:
 
-- Abos: Das Löschen eines Plans oder eines nie verrechneten Abos liegt in der Backend-API; gehört
-  zu `fin.subscription` (dessen Fehler dann im Backend übersetzt).
-- Den Backend-APIs für Parteien und Abos fehlt das `try … errMsg`, das die anderen haben.
 - Settings-Defaults im Code wiederholt (`?? 30`, `|| "{year}-{n}"`, die mempool-URL): heute nötig,
   weil Blatt-Lesezugriffe (und `fakeSettings` in den Tests) keine Schema-Defaults anwenden. Eine
   Core-Frage.
 - Benutzerauswahl (Rechnungseditor, Abos, Hosting) lädt alle Benutzer in ein `<select>`: bei vielen
-  Kunden eine Suche statt der Liste. Das Buchhaltungsjournal mit `PER_PAGE + 1` statt `pager()`.
-- Buchhaltungs-Widget und -Übersicht nehmen standardmässig das Kalenderjahr, obwohl das
-  Geschäftsjahr an einem beliebigen Tag enden kann (`close()`).
-- `dataOf(payment)` in fünf Providern; `Urls` in `fin.payment/mod.ts` wiederholt `lib/url.ts`.
-- Saferpay `sync` gibt die rohe Antwort als Status zurück, wenn es keine Transaktion gibt.
-- Der Typ `Read` der Inbox wiederholt ihr `SCHEMA`.
-- `fin.invoice:` noch von Hand geschrieben in den Bank-Vorschlägen und in `refLink`.
-- Automatische Buchungen, die scheitern, werden nur geloggt: die Bücher können still Lücken haben.
-  Ein Nachholen bräuchte eine Regel, was als ungebucht gilt — Rechnungen von vor der Buchhaltung
-  sind oft schon als Eröffnungsbilanz von Hand gebucht.
-- Parteien-Liste fest `LIMIT 200` ohne Pager, Inbox `LIMIT 100`.
+  Kunden eine Suche statt der Liste.
+- Automatische Buchungen, die scheitern, werden nur geloggt. Die Abschluss-Karte zeigt die Lücke
+  (Debitoren/Kreditoren gegen offene Rechnungen, Zahlungen ohne Buchung); ein Nachholen bräuchte
+  eine Regel, was als ungebucht gilt — Rechnungen von vor der Buchhaltung sind oft schon als
+  Eröffnungsbilanz von Hand gebucht.
+- Zahlungen ohne Rechnung (Shop, Spende) bucht ihr Konsument (`book` mit `ref`), nicht fin — ein
+  Durchlaufkonto verschöbe nur; die Abschluss-Karte zählt, was ungebucht ist.
 - Listen-Einstellungen als Komma-Strings (`reminder.days`, `.fees`, `accounting.moneyBy`), von
   Hand zerlegt und nicht geprüft; Arrays/Objekte im `settingsSchema` wären klarer.
 

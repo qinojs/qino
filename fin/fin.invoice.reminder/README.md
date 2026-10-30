@@ -33,7 +33,9 @@ that could not be mailed is printed and posted by hand (`sent` stays empty).
   only where it was agreed (contract, terms). It is part of the price of what it reminds of (ESTV,
   MWST-Info 04, 3.8.2.3), so it is taxed as those lines are, shared by what is open of each.
 - `interest`: default interest in percent a year (5 % by law in Switzerland, OR 104), on what is
-  open, since it was due or last reminded; empty: none. Damages, not subject to tax (category `O`).
+  open, since the last reminder; empty: none. The first reminder charges none: the debtor is in
+  default once reminded (OR 102 I) — a due date the invoice states is not one agreed (102 II).
+  Damages, not subject to tax (category `O`).
 
 Money paid on a reminder goes to its fee and interest first, then to the oldest invoice (OR 85,
 87; see [fin.invoice](../fin.invoice/README.md#paid)).
@@ -51,8 +53,10 @@ Money paid on a reminder goes to its fee and interest first, then to the oldest 
 
 ## Decisions that may change
 
-- **A fee across rates is shared** by what is open per rate and category. To be confirmed by a
-  fiduciary; see [LAW-CH.md](../LAW-CH.md).
+- **A fee across rates is shared** by what is open per rate and category: the ESTV only says it is
+  part of the price of what it reminds of; see [LAW-CH.md](../LAW-CH.md).
+- **Interest from the first reminder**, not from the due date: right without agreed terms. Where
+  the terms fix the due day, interest could run from it — not built.
 - **Interest since the last reminder**, assuming that one charged it up to its day.
 - **Stops after the last level.** What follows — collection — is by hand; `writeOff` gives up the
   rest.

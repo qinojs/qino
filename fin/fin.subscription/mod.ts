@@ -39,6 +39,13 @@ export async function plan(app: App, values: {
   return Number(await app.db.table("subscription_plan").insert({ ...fields, created: unixTime() }));
 }
 
+/** Take a plan from the catalog — only one no subscription is on. Resolves whether it went. */
+export async function removePlan(app: App, id: number): Promise<boolean> {
+  if (await app.db.one`SELECT 1 FROM subscription WHERE plan_id = ${id}`) return false;
+  await app.db.table("subscription_plan").delete(id);
+  return true;
+}
+
 /**
  * Subscriptions with what applies to them — their own fields, else their plan's — as `label`
  * (what the invoice line says), `detail`, `text` (what it includes), `amount`, `currencyCode`,
@@ -144,6 +151,13 @@ export async function update(app: App, id: number, values: Values): Promise<void
   if (!Object.keys(fields).length) return;
   await app.db.table("subscription").update(id, fields);
   await saved(app, id);
+}
+
+/** Throw away a subscription never billed: a mistake; one billed is canceled instead. Resolves whether it went. */
+export async function remove(app: App, id: number): Promise<boolean> {
+  if (await app.db.one`SELECT 1 FROM subscription_invoice WHERE subscription_id = ${id}`) return false;
+  await app.db.table("subscription").delete(id);
+  return true;
 }
 
 /** The periods of a subscription billed so far, the latest first, with their invoices. */

@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
-import { cancel, create, issue } from "@qino/qino/fin.invoice";
+import { today } from "@qino/qino/fin";
+import { cancel, create, issue, writeOff } from "@qino/qino/fin.invoice";
 
 import { withFinApp } from "../../tests/app.ts";
 import { vatReturn } from "../mod.ts";
@@ -34,5 +35,19 @@ Deno.test("the VAT return adds up the books per rate and category, effective or 
     await app.settings["fin.accounting.ch"].vat.rate(6.2);
     const s = await vatReturn(app, period);
     assertEquals([s.saldo?.gross, s.saldo?.tax, s.payable], [112204, 6957, 6957]);
+  });
+});
+
+Deno.test("a loss written off is a reduction of consideration (235), off the turnover at its rate", async () => {
+  await withFinApp(MODULES, async (app) => {
+    const old = await issue(app, await create(app, {
+      currency: "CHF", date: "2026-09-10", lines: [{ name: "Design", price: 100000, taxRate: 8.1 }],
+    }));
+    await app.db.exec`UPDATE invoice SET due = '2026-09-30' WHERE id = ${old?.id}`;
+    await writeOff(app, Number(old?.id)); // today: in the period asked for below
+    const r = await vatReturn(app, { from: today(), to: today() });
+    assertEquals(r.deductions, [{ figure: "235", turnover: 100000 }]);
+    assertEquals(r.rates.map((x) => [x.figure, x.turnover, x.tax]), [["303", -100000, -8100]]);
+    assertEquals([r.turnover, r.payable], [0, -8100]);
   });
 });

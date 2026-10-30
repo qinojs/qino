@@ -24,7 +24,7 @@ const parse = (code: unknown) => {
  *  assets), or at the net tax rate (`vat.method` "saldo"). Amounts in minor units. */
 export async function vatReturn(app: App, { from, to }: { from: string; to: string }) {
   const s = app.settings["fin.accounting"].accounts;
-  const [due, input] = (await Promise.all([s.vatDue, s.vatInput])).map((v) => String(v ?? ""));
+  const [due, input, losses] = (await Promise.all([s.vatDue, s.vatInput, s.losses])).map((v) => String(v ?? ""));
   const v = app.settings["fin.accounting.ch"].vat;
   const [method, saldo] = [String(await v.method ?? "effective"), Number(await v.rate ?? 0)];
   const rows = (await app.db.query`
@@ -35,18 +35,23 @@ export async function vatReturn(app: App, { from, to }: { from: string; to: stri
     .map((row) => ({ type: row.type, number: row.number, amount: Number(row.amount), ...parse(row.tax_code) }));
   type Sum = (typeof rows)[number];
   const sum = (match: (row: Sum) => boolean) => rows.filter(match).reduce((total, row) => total + row.amount, 0);
-  // turnover is credit on income, tax due credit on its account: both negative in the books
-  const taxed = [...new Set(rows.filter((r) => r.type === "income" && r.category === "S").map((r) => r.rate))]
+  // turnover is credit on income, tax due credit on its account: both negative in the books; a loss
+  // written off is debit on its account, a reduction of consideration (235) off the turnover it was
+  const sold = (r: Sum) => r.type === "income" || (!!losses && r.number === losses);
+  const taxed = [...new Set(rows.filter((r) => sold(r) && r.category === "S").map((r) => r.rate))]
     .sort((a, b) => b - a);
   const rates = taxed.map((rate) => ({
     rate,
     figure: FIGURES[String(rate)] ?? "",
-    turnover: -sum((r) => r.type === "income" && r.category === "S" && r.rate === rate),
+    turnover: -sum((r) => sold(r) && r.category === "S" && r.rate === rate),
     tax: -sum((r) => r.number === due && r.category === "S" && r.rate === rate),
   }));
-  const deductions = [...new Set(Object.values(DEDUCTIONS))]
-    .map((figure) => ({ figure, turnover: -sum((r) => r.type === "income" && DEDUCTIONS[r.category] === figure) }))
-    .filter((d) => d.turnover);
+  const lost = sum((r) => !!losses && r.number === losses && (r.category === "S" || r.category in DEDUCTIONS));
+  const deductions = [
+    ...[...new Set(Object.values(DEDUCTIONS))]
+      .map((figure) => ({ figure, turnover: -sum((r) => sold(r) && DEDUCTIONS[r.category] === figure) })),
+    { figure: "235", turnover: lost },
+  ].filter((d) => d.turnover);
   const turnover = [...rates, ...deductions].reduce((total, r) => total + r.turnover, 0);
   if (method === "saldo") {
     const gross = rates.reduce((total, r) => total + r.turnover + r.tax, 0);

@@ -1,56 +1,41 @@
 // Reading received invoices. Lives in this backend page for now; once something else needs it — the
 // mail inbox, an API — it moves into a module of its own (fin.invoice.read).
-import { fs } from "@qino/qino";
+import { fs, s } from "@qino/qino";
 import { structured } from "@qino/qino/ai";
 import { mainCurrency } from "@qino/qino/fin";
 import { attach, create } from "@qino/qino/fin.invoice";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
-import type { App, DbFile } from "@qino/qino";
+import type { App, DbFile, StandardSchema } from "@qino/qino";
 import type { Part } from "@qino/qino/ai";
 
 /** What is asked of the model: the invoice as it is printed, amounts as decimals. */
-const SCHEMA = {
-  type: "object",
-  properties: {
-    supplier: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        street: { type: "string" },
-        postalCode: { type: "string" },
-        city: { type: "string" },
-        country: { type: "string", description: "ISO 3166 alpha-2" },
-        vatID: { type: "string" },
-        iban: { type: "string", description: "The account to pay into" },
-      },
-      required: ["name"],
-    },
-    number: { type: "string", description: "The supplier's invoice number" },
-    date: { type: "string", description: "YYYY-MM-DD" },
-    due: { type: "string", description: "YYYY-MM-DD, empty if none" },
-    currency: { type: "string", description: "ISO 4217" },
-    pricesIncludeTax: { type: "boolean", description: "Whether the line prices include VAT" },
-    lines: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          description: { type: "string", description: "Details below the name, empty if none" },
-          quantity: { type: "number" },
-          unit: { type: "string" },
-          unitPrice: { type: "number", description: "Per unit, as printed" },
-          taxRate: { type: "number", description: "VAT percent, 0 if none" },
-        },
-        required: ["name", "quantity", "unitPrice", "taxRate"],
-      },
-    },
-    total: { type: "number", description: "The total to pay, as printed" },
-    reference: { type: "string", description: "Payment reference (QR, RF …), empty if none" },
-  },
-  required: ["supplier", "currency", "lines", "total"],
-};
+const SCHEMA = s.object({
+  supplier: s.object({
+    name: s.string(),
+    street: s.optional(s.string()),
+    postalCode: s.optional(s.string()),
+    city: s.optional(s.string()),
+    country: s.optional(s.string().describe("ISO 3166 alpha-2")),
+    vatID: s.optional(s.string()),
+    iban: s.optional(s.string().describe("The account to pay into")),
+  }),
+  number: s.optional(s.string().describe("The supplier's invoice number")),
+  date: s.optional(s.string().describe("YYYY-MM-DD")),
+  due: s.optional(s.string().describe("YYYY-MM-DD, empty if none")),
+  currency: s.string().describe("ISO 4217"),
+  pricesIncludeTax: s.optional(s.boolean().describe("Whether the line prices include VAT")),
+  lines: s.array(s.object({
+    name: s.string(),
+    description: s.optional(s.string().describe("Details below the name, empty if none")),
+    quantity: s.number(),
+    unit: s.optional(s.string()),
+    unitPrice: s.number().describe("Per unit, as printed"),
+    taxRate: s.number().describe("VAT percent, 0 if none"),
+  })),
+  total: s.number().describe("The total to pay, as printed"),
+  reference: s.optional(s.string().describe("Payment reference (QR, RF …), empty if none")),
+});
 
 const INSTRUCTION = "Read this received invoice. Answer with what is printed, nothing invented: " +
   "dates as YYYY-MM-DD, amounts as numbers without currency or thousands separators. One line per " +
@@ -58,32 +43,7 @@ const INSTRUCTION = "Read this received invoice. Answer with what is printed, no
   "part names the account (IBAN), the reference and the amount.";
 
 /** The answer, as the model gives it. */
-export type Read = {
-  supplier: {
-    name: string;
-    street?: string;
-    postalCode?: string;
-    city?: string;
-    country?: string;
-    vatID?: string;
-    iban?: string;
-  };
-  number?: string;
-  date?: string;
-  due?: string;
-  currency: string;
-  pricesIncludeTax?: boolean;
-  lines: {
-    name: string;
-    description?: string;
-    quantity: number;
-    unit?: string;
-    unitPrice: number;
-    taxRate: number;
-  }[];
-  total: number;
-  reference?: string;
-};
+export type Read = typeof SCHEMA extends StandardSchema<infer T> ? T : never;
 
 /** Pages of a PDF shown as pictures when it has no text: an invoice rarely has more. */
 const PAGES = 5;
@@ -160,7 +120,7 @@ export async function supplierOf(app: App, party: { name?: string; iban?: string
 /** Read a received invoice into a draft, its file attached as receipt; its supplier found where known. */
 export async function read(app: App, file: DbFile): Promise<number> {
   const parts = await partsOf(file);
-  const answer = await structured<Read>(app, {
+  const answer = await structured(app, {
     messages: [{ role: "system", content: INSTRUCTION }, { role: "user", content: parts }],
     schema: SCHEMA,
   });

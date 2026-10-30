@@ -8,16 +8,24 @@ Gebühr und Verzugszins, MWST-Ziffern nach Kategorie. Beschrieben in den READMEs
 [fin.accounting](fin.accounting/README.md), [fin.accounting.ch](fin.accounting.ch/README.md).
 Anforderungen: [PLAN-fin.md](PLAN-fin.md#anforderungen), Rechtliches: [LAW-CH.md](LAW-CH.md).
 
-## Von einem Treuhänder bestätigen lassen
+## Recherchiert (2026-10), ohne Treuhänder
 
-- **Mahngebühr bei mehreren Steuersätzen**: anteilig nach offenem Betrag pro Satz und Kategorie
-  verteilt (MWST-Info 04, 3.8.2.3 sagt nur: Teil des Entgelts der gemahnten Leistung).
-- **Zuordnung Kategorie → Ziffer**: `G`/`K`/`Z` → 220, `AE` → 221, `E` → 230, `O` → kein Umsatz.
-  Besonders: Leistungen ins Ausland als `AE`.
-- **Verzugszins ab Fälligkeit**: setzt voraus, dass das Fälligkeitsdatum ein Verfalltag ist
-  (OR 102 II); sonst erst ab der ersten Mahnung.
-- **Ausbuchen**: MWST-Korrektur sofort beim Ausbuchen — gilt nur bei endgültigem Verlust
-  (Verlustschein), nicht für eine blosse Wertberichtigung.
+Quellen und Wortlaut in [LAW-CH.md](LAW-CH.md).
+
+- **Mahngebühr bei mehreren Steuersätzen**: anteilig nach offenem Betrag pro Satz und Kategorie.
+  Die ESTV sagt nur „gehören zum Entgelt der erbrachten Leistung“ (MWST-Info 04, 3.8.2.3); bei
+  mehreren Leistungen ist die anteilige Verteilung die Umsetzung davon. Bleibt.
+- **Zuordnung Kategorie → Ziffer**: `G`/`K`/`Z` → 220, `AE` → 221, `E` → 230, `O` → kein Umsatz —
+  deckt sich mit Formular und Praxis. Ausgenommene Leistungen mit Ort im Ausland ohne Option
+  (Versicherung, Finanz) gehören in 230, nicht 221: dort `E` wählen.
+- **Verzugszins erst ab der Mahnung**: Ein Fälligkeitsdatum oder „zahlbar innert 30 Tagen“ auf
+  der Rechnung ist nach h.M. kein verabredeter Verfalltag (OR 102 II). Umgesetzt: Zins ab der
+  ersten Mahnung, die Zahlungserinnerung trägt keinen.
+- **Ausbuchen nur beim endgültigen Verlust** (Verlustschein, Konkurs): Erst dann wird die MWST
+  korrigiert, in der laufenden Periode (MWSTG 41 I), Ziffer 235 — so weist es `vatReturn` jetzt
+  aus. Eine Wertberichtigung (Delkredere) korrigiert keine MWST: von Hand buchen, nicht
+  `writeOff`. Zahlt der Schuldner danach doch, ist die Steuer darauf wieder geschuldet:
+  umgesetzt, der Verlust wird auf den Rest neu gebucht.
 
 ## Später
 

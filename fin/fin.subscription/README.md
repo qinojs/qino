@@ -6,7 +6,7 @@ period by period, in advance. A subscription has a price per period, a period of
 `end_date`. A user may have several, of the same kind too (two domains).
 
 ```ts
-import { bill, cancel, plan, subscribe, update } from "@qino/qino/fin.subscription";
+import { bill, cancel, plan, remove, removePlan, subscribe, update } from "@qino/qino/fin.subscription";
 
 const light = await plan(app, { name: "Hosting Light", price: 24000, currency: "CHF" });
 await subscribe(app, { usrId: 42, planId: light, name: "example.ch", start: "2027-03-01" });
@@ -14,6 +14,8 @@ await subscribe(app, { usrId: 42, name: "Domain example.ch", price: 2500, curren
 await bill(app); // what renews within the lead time, one invoice per user and currency
 await update(app, id, { price: 22000 }); // from the next period
 await cancel(app, id); // ends with the period under way
+await remove(app, id); // only one never billed: false otherwise
+await removePlan(app, light); // only one no subscription is on: false otherwise
 ```
 
 Each subscription added or changed fires `subscription:save` with its row: what it is for (`ref`)

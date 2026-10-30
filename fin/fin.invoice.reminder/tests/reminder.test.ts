@@ -71,18 +71,23 @@ Deno.test("a fee is taxed as what it reminds of, shared by what is open; interes
     await app.settings["fin.invoice.reminder"].interest(5);
     const a = await issued(app, { usrId: usr, due: day(-50) });
     const b = await issued(app, { usrId: usr, due: day(-50), lines: [{ name: "Book", price: 10000, taxRate: 2.6 }] });
-    // the payment reminder: no fee, interest for 50 days on 108.10 and 102.60
+    // the payment reminder: no fee, and no interest — in default only once reminded (OR 102)
     const first = await remind(app, [a, b]);
-    assertEquals((await lines(app, first)).map((l) => [l.amount, Number(l.tax_rate), l.tax_category]), [[74, 0, "O"], [70, 0, "O"]]);
-    assertStringIncludes(String((await lines(app, first))[0].name), "Default interest 5 % on ");
-    // the next level: CHF 20, half at each rate; no interest since the last reminder today
+    assertEquals((await lines(app, first)).length, 0);
+    await app.db.exec`UPDATE invoice SET date = ${day(-30)} WHERE id = ${first}`;
+    // the next level: CHF 20, half at each rate; interest for the 30 days since on 108.10 and 102.60
     const second = await remind(app, [a, b]);
-    assertEquals((await lines(app, second)).map((l) => [l.name, l.amount, Number(l.tax_rate), l.tax_category]), [
-      ["Reminder fee", 1000, 8.1, "S"],
-      ["Reminder fee", 1000, 2.6, "S"],
+    const charged = await lines(app, second);
+    assertEquals(charged.map((l) => [l.amount, Number(l.tax_rate), l.tax_category]), [
+      [1000, 8.1, "S"],
+      [1000, 2.6, "S"],
+      [44, 0, "O"],
+      [42, 0, "O"],
     ]);
+    assertStringIncludes(String(charged[2].name), "Default interest 5 % on ");
+    assertStringIncludes(String(charged[2].name), " for 30 days");
     const reminder = await app.db.row`SELECT * FROM invoice WHERE id = ${second}`;
-    assertEquals([reminder?.total, reminder?.tax_included], [2000, 1]); // the tax is in the fee
+    assertEquals([reminder?.total, reminder?.tax_included], [2000 + 44 + 42, 1]); // the tax is in the fee
   });
 });
 

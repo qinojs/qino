@@ -1,13 +1,15 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import {
-  amounts, badge, money, option, refLink,
+  amounts, badge, money, option, pager, refLink,
 } from "@qino/qino/cms.backend.fin";
 import { addMonths, mainCurrency, nameOf, today } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+
+const PER_PAGE = 100;
 
 export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
@@ -40,14 +42,18 @@ async function overview(node: Node, url: URL) {
     current,
   ].filter((c) => c !== null);
   const having = conditions.length ? sql`HAVING ${sql.join(conditions, " AND ")}` : sql``;
-  const rows = await app.db.query`
+  const parties = sql`
     SELECT u.id, u.given_name, u.family_name, u.organization, u.address_locality,
       SUM(CASE WHEN i.direction = 'out' THEN 1 ELSE 0 END) AS issued,
       SUM(CASE WHEN i.direction = 'in' THEN 1 ELSE 0 END) AS received
     FROM usr u JOIN invoice i ON i.usr_id = u.id
     WHERE ${where}
-    GROUP BY u.id, u.given_name, u.family_name, u.organization, u.address_locality ${having}
-    ORDER BY u.family_name, u.given_name LIMIT 200`;
+    GROUP BY u.id, u.given_name, u.family_name, u.organization, u.address_locality ${having}`;
+  const page = Math.max(0, Number(q("page")) || 0);
+  const [rows, total] = await Promise.all([
+    app.db.query`${parties} ORDER BY u.family_name, u.given_name, u.id LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
+    app.db.one`SELECT COUNT(*) FROM (${parties}) x`.then(Number),
+  ]);
   const ids = rows.map((row) => Number(row.id));
   // what is open, per user, direction and currency: what they owe us and what we owe them
   const open = ids.length
@@ -96,6 +102,7 @@ async function overview(node: Node, url: URL) {
         <td style="text-align:end">${owed(row.id, "in")}
         ${credits ? html.async`<td style="text-align:end">${
       amounts(credits.filter((c) => Number(c.usr_id) === Number(row.id)))}` : ""}`)}
+      ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: credits ? 8 : 7 })}
     </table></div>` : html.async`<p>${t`No one with invoices yet`}`}
   </div>
   <div class=u2-card style="flex:0 1 auto">

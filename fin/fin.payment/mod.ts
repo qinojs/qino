@@ -19,7 +19,7 @@ type Offer = { amount: number; currency: string; country?: string; usrId?: numbe
 type Method = { name: string; label: string };
 
 /** Where the payer and the provider's server come back: see `lib/url.ts`. */
-type Urls = { back: string; notify: string; pay: string };
+type Urls = Awaited<ReturnType<typeof urls>>;
 
 /** What a provider reports. Left-out fields stay as they are; `data` is the provider's own state. */
 export type State = {

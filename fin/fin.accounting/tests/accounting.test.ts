@@ -4,7 +4,7 @@ import { today } from "@qino/qino/fin";
 import { record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
-import { balances, book, close, reopen, reverse } from "../mod.ts";
+import { balances, book, businessYear, close, reopen, reverse } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -168,6 +168,15 @@ Deno.test("closing a year puts its result onto equity, closes the books, and ope
   });
 });
 
+Deno.test("the business year runs on from the last closing, any day; without one it is the calendar year", async () => {
+  await withApp(async (app) => {
+    assertEquals(await businessYear(app, "2027-03-15"), { from: "2027-01-01", to: "2027-12-31" });
+    await app.settings["fin.accounting"].closedUntil("2025-06-30");
+    assertEquals(await businessYear(app, "2026-03-15"), { from: "2025-07-01", to: "2026-06-30" });
+    assertEquals(await businessYear(app, "2027-03-15"), { from: "2026-07-01", to: "2027-06-30" }); // a year not closed yet
+  });
+});
+
 Deno.test("a credit note books revenue and tax back; paying it back books the money out", async () => {
   await withApp(async (app) => {
     const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
@@ -203,8 +212,13 @@ Deno.test("written off: the loss and its tax back; paid after all: taken back ag
     await writeOff(app, id);
     const after = await saldo(app);
     assertEquals([after["1100"], after["3805"], after["2200"]], [undefined, 8669 + 866, -8360 + 702 + 23]);
-    await record(app, { direction: "in", provider: "bank", amount: 10260, currency: "CHF", ref: refOf(id), date: "2026-10-20" });
-    assertEquals((await saldo(app))["3805"], undefined);
+    // part of it after all: the claim stays settled in the books, the loss with its tax is only what is missing
+    await record(app, { direction: "in", provider: "bank", amount: 5000, currency: "CHF", ref: refOf(id), date: "2026-10-15" });
+    const part = await saldo(app);
+    assertEquals([part["1100"], part["3805"] + part["2200"] + 8360], [undefined, 10260 - 5000]);
+    await record(app, { direction: "in", provider: "bank", amount: 5260, currency: "CHF", ref: refOf(id), date: "2026-10-20" });
+    const paid = await saldo(app);
+    assertEquals([paid["1100"], paid["3805"], paid["2200"]], [undefined, undefined, -8360]);
   });
 });
 

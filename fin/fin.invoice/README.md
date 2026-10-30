@@ -82,7 +82,8 @@ it came (the tax arises with a prepayment, MWSTG 40 I c) and goes to the invoice
 - `revise()`: an open invoice nothing was paid on is canceled so, and a draft with the same content
   takes its place.
 - `writeOff()`: what is left on an open invoice of ours is given up: `uncollectible`. Bookkeeping
-  books the loss and takes its tax back (MWSTG 41). Money that comes after all settles it.
+  books the loss and takes its tax back (MWSTG 41) — so only for a loss that is final (a
+  certificate of loss), not an allowance. Money that comes after all settles it.
 
 ## Lines and tax
 

@@ -147,3 +147,32 @@ Deno.test("locale.currency: a source that is down hands over to the next", async
     await app.db.close();
   }
 });
+
+// The BAZG's daily rates: CHF for so many units, published the day before they apply.
+const BAZG_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<wechselkurse>
+  <datum>19.10.2026</datum>
+  <gueltigkeit>20.10.2026</gueltigkeit>
+  <devise code="eur"><waehrung>1 EUR</waehrung><kurs>0.93930</kurs></devise>
+  <devise code="usd"><waehrung>1 USD</waehrung><kurs>0.83840</kurs></devise>
+  <devise code="jpy"><waehrung>100 JPY</waehrung><kurs>0.52000</kurs></devise>
+</wechselkurse>`;
+
+Deno.test("locale.currency: the rates of a day, from a source that knows past days, asked once", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
+  await app.init();
+  const source = serve({ match: "bazg", body: BAZG_XML }); // frankfurter, asked first, does not answer
+  try {
+    const date = "2026-10-20";
+    assertEquals(Number(await currency.rate(app.db, "EUR", "CHF", { date })).toFixed(4), "0.9393");
+    assertEquals(source.asked.at(-1)?.includes("d=20261019"), true); // published the day before
+    assertEquals(Number(await currency.rate(app.db, "CHF", "JPY", { date })).toFixed(2), "192.31"); // per 100
+    assertEquals(source.asked.length, 2); // frankfurter, then bazg — and the second day asks nothing more
+    assertEquals(await currency.rate(app.db, "CHF", "EUR"), undefined); // the current rates stay as they were
+    await assertRejects(() => currency.rate(app.db, "CHF", "EUR", { date: "20.10.2026" }), Error, "YYYY-MM-DD");
+  } finally {
+    source.stop();
+    await app.db.close();
+  }
+});

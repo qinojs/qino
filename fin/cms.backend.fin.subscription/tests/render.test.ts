@@ -70,8 +70,9 @@ Deno.test("a subscription is changed on its page: start and period only until bi
       subscription_id: id, period_start: "2030-01-01", period_end: "2030-03-31", invoice_id: 1,
     });
     assertStringIncludes(await page(), "disabled"); // billed: start and period stay
-    const refused = await as(() => api(node, { update: { ...change, start: "2029-01-01" } })).catch((e) => e);
-    assertStringIncludes(String(refused), "billed already");
+    const refused = await as(() => api(node, { update: { ...change, start: "2029-01-01" } })) as Answer;
+    assertEquals(refused.ok, false);
+    assertStringIncludes(String(refused.message), "billed already");
     await as(() => api(node, { update: { id: String(id), name: "Hosting Plus", price: "300", end: "" } }));
     row = await app.db.row`SELECT * FROM subscription WHERE id = ${id}`;
     assertEquals(row?.end_date, null); // runs on again

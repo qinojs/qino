@@ -138,7 +138,7 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
   if (payment.ref !== invoiceRef(id)) return; // what else a payment is for, its consumer books
   const { roles, currency, moneyBy, closed } = await setup(app);
   if (payment.currency !== currency) return;
-  const invoice = await app.db.row`SELECT direction FROM invoice WHERE id = ${id}`;
+  const invoice = await app.db.row`SELECT * FROM invoice WHERE id = ${id}`;
   if (!invoice) return;
   // the claim is ours or theirs; the money comes in or goes out — a credit note's refund goes out
   const counter = invoice.direction === "out" ? roles.receivable : roles.payable;
@@ -175,4 +175,10 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
     lines: lines.filter((line) => line.account),
     currency,
   });
+  // money on a claim given up: the loss is only what is still missing, its tax owed again (MWSTG 41 I)
+  if (invoice.status === "uncollectible") {
+    const loss = await booked(app, lossRef(id));
+    if (loss) await reverse(app, Number(loss));
+    await writeOff(app, invoice);
+  }
 }
