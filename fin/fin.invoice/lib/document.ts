@@ -58,7 +58,7 @@ export async function document(
   address { font-style: normal; white-space: pre-line }
   .to { margin-bottom: 3em }
   /* fixed columns: a table continued on the next page keeps its widths */
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 1.5em }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed }
   .pos { width: 2.5em }
   .quantity { width: 5.5em }
   .price { width: 8em }
@@ -104,7 +104,7 @@ export async function document(
   ${asks && invoice.term != null ? t`Payable within ${invoice.term} days` : ""}
 </p>
 ${listed.length ? html.async`<p>${t`The following invoices are overdue:`}</p>
-<table class=listed>
+<table>
   <thead><tr>
     <th>${t`Invoice`}
     <th>${t`Date`}
@@ -201,8 +201,7 @@ async function logoUrl(app: App) {
   return `data:${mime};base64,${(await fs.bytes(path)).toBase64()}`;
 }
 
-/** The title a document goes by: a reminder by its level — the first is a friendly payment
- *  reminder, the ones after it are counted. */
+/** A document's title; a reminder's by its level: the first a payment reminder, then counted. */
 function titleOf(app: App, invoice: Row, listed: Row[]) {
   const t = app.t;
   const level = Math.max(0, ...listed.map((row) => Number(row.level)));
@@ -217,8 +216,7 @@ function titleOf(app: App, invoice: Row, listed: Row[]) {
     : t`Payment reminder`;
 }
 
-/** The mail a document goes out with, in its language: the subject, a few lines, the PDF. `owed` is
- *  what it asks for; a reminder names the invoices it lists. */
+/** The mail a document goes out with, in its language: subject, a few lines (asking for `owed`), the PDF. */
 export async function mail(app: App, invoice: Row, pdf: DbFile, listed: Row[] = []) {
   const lang = languageOf(app, invoice);
   return await inLang(app, lang, async () => {

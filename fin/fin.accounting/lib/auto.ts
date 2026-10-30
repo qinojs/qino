@@ -36,11 +36,8 @@ const sumOn = (app: App, ref: string, number: string) => app.db.one`
 /** The ref of an invoice's write-off entry. */
 const lossRef = (id: number) => `fin.accounting:loss:${id}`;
 
-/**
- * An issued invoice is a claim, a received one a debt: receivable to revenue and tax due, or
- * expense and input tax to payable. A canceled one is taken back; one written off books its loss,
- * taken back again when it is paid after all. A pro forma claims nothing and books nothing.
- */
+/** An issued invoice books a claim, a received one a debt; canceled it is taken back, written off its
+ *  loss is booked until paid after all. A pro forma books nothing. */
 export async function onInvoice(app: App, invoice: Row, previous: string): Promise<void> {
   if (invoice.type === "proforma") return;
   const ref = invoiceRef(Number(invoice.id));
@@ -105,10 +102,7 @@ function split(items: Row[], taxIncluded: boolean, fallback: string) {
   return { nets, rates: coded };
 }
 
-/**
- * Write off what is left on an invoice of ours: a loss (`losses`), and the tax on it back, as the
- * invoice's rates share it (MWSTG 41) — out of the receivable.
- */
+/** Write off what is left: a loss (`losses`) and its tax back, shared by the invoice's rates (MWSTG 41). */
 async function writeOff(app: App, invoice: Row) {
   const id = Number(invoice.id);
   const { roles, currency } = await setup(app);

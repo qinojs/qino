@@ -1,6 +1,5 @@
 import { html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
-import { today } from "@qino/qino/fin";
 
 import { amounts, badge, inFin, openInvoices, overdueInvoices } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };

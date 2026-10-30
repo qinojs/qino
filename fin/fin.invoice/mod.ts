@@ -14,8 +14,7 @@ import type { Line } from "./lib/totals.ts";
 export type { Line } from "./lib/totals.ts";
 export { CATEGORIES, lineOf, round, totals } from "./lib/totals.ts";
 
-/** What a document is: an invoice, a credit note, a pro forma invoice, a reminder. */
-export type Type = "invoice" | "credit_note" | "proforma" | "reminder";
+type Type = "invoice" | "credit_note" | "proforma" | "reminder";
 
 /** What an invoice holds. `party` is the other side as printed, shaped like `identity.organization`
  *  (`name`, `legalName`, `address` { `streetAddress`, `postalCode`, `addressLocality`,
@@ -40,8 +39,7 @@ type Values = {
   data?: Record<string, unknown>;
 };
 
-/** Run `fn` in the language of a document, with the texts recipients read (namespace `fin`): what
- *  is written onto it, such as a reminder's fee, reads as the document does. */
+/** Run `fn` in a document's language and texts (namespace `fin`), to write onto it what reads as it does. */
 export const inLanguage = <T>(app: App, invoice: Row, fn: () => Promise<T>): Promise<T> =>
   inLang(app, languageOf(app, invoice), fn);
 
@@ -60,8 +58,8 @@ export function payerOf(invoice: Row): Payer | undefined {
   return party?.name ? { name: String(party.legalName || party.name), address: party.address } : undefined;
 }
 
-/** A new draft. `in` is an invoice received: it keeps the sender's `number`. `listed`: the documents
- *  it lists, with what is open on them and their reminder level — a reminder's overdue invoices. */
+/** A new draft. `in` is an invoice received: it keeps the sender's `number`. `listed`: what it lists — a
+ *  reminder its overdue invoices, with what is open on each and its level. */
 export async function create(
   app: App,
   values: Values & {
@@ -101,11 +99,10 @@ export async function update(app: App, id: number, values: Partial<Values>): Pro
   });
 }
 
-/** Number formats of the types that do not count on with the invoices unless set so. */
+/** The number formats of types with a sequence of their own. */
 const FORMATS: Partial<Record<Type, string>> = { proforma: "P{year}-{n}", reminder: "M{year}-{n}" };
 
-/** The number format of a type: its own setting (`creditNumber`, `proformaNumber`, `reminderNumber`),
- *  its default, else the invoices' (`number`). */
+/** A type's number format: its setting (`creditNumber` …), its default, else the invoices' (`number`). */
 async function formatOf(app: App, type: Type) {
   const s = app.settings["fin.invoice"];
   const own = {
@@ -148,8 +145,7 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
   });
 }
 
-/** The payment an issued document of ours asks for, by the method set (`fin.invoice.method`), over
- *  all it asks for (`owed`): its slip — a QR bill — then goes with it. */
+/** Ask for what an issued document of ours is owed, by `fin.invoice.method`: its slip (a QR bill) goes with it. */
 async function ask(app: App, id: number) {
   const invoice = await get(app, id);
   const method = String(await app.settings["fin.invoice"].method ?? "");
@@ -167,9 +163,8 @@ async function ask(app: App, id: number) {
   });
 }
 
-/** What an issued document asks for: what is open on it, and on the open ones it lists — a reminder
- *  without fees asks for its invoices all the same. A credit note asks for nothing, nor a pro forma
- *  that is done (`paid`). */
+/** What an issued document asks for: what is open on it and on what it lists. A credit note asks for
+ *  nothing, nor a pro forma that is done. */
 export async function owed(app: App, invoice: Row): Promise<number> {
   if (invoice.type === "credit_note" || ["draft", "canceled"].includes(String(invoice.status))) return 0;
   const listed = Number(await app.db.one`SELECT COALESCE(SUM(i.total - i.paid), 0)
@@ -220,11 +215,8 @@ export async function revise(app: App, id: number): Promise<number> {
   });
 }
 
-/**
- * Withdraw an invoice. One of ours that went out is taken back by a credit note over all of it — a
- * document that names it and revokes it (MWSTG 27 IV) —, and counts as settled by it. Anything else
- * is `canceled`; its number stays used.
- */
+/** Withdraw an invoice: one of ours that went out by a credit note over all of it (MWSTG 27 IV), anything
+ *  else is `canceled`; its number stays used. */
 export async function cancel(app: App, id: number): Promise<Row | undefined> {
   const invoice = await get(app, id);
   if (!invoice || invoice.status === "canceled") return invoice;
@@ -239,12 +231,14 @@ export async function cancel(app: App, id: number): Promise<Row | undefined> {
   }
   const canceled = await status(app, invoice, "canceled");
   // a credit note taken back no longer counts on its invoice
-  if (invoice.type === "credit_note") await uncredit(app, invoice);
+  if (invoice.type === "credit_note") {
+    await app.db.exec`DELETE FROM invoice_settlement WHERE credit_id = ${id}`;
+    await settle(app, Number(invoice.preceding));
+  }
   return canceled;
 }
 
-/** Give up what is left on an issued invoice of ours: `uncollectible`. Bookkeeping books the loss and
- *  takes its tax back (MWSTG 41). Money that comes after all still settles it. */
+/** Give up what is left on an open invoice of ours: `uncollectible`. Money that comes after all settles it. */
 export async function writeOff(app: App, id: number): Promise<Row | undefined> {
   const invoice = await get(app, id);
   const claims = ["invoice", "reminder"].includes(String(invoice?.type));
@@ -254,11 +248,8 @@ export async function writeOff(app: App, id: number): Promise<Row | undefined> {
   return status(app, invoice, "uncollectible");
 }
 
-/**
- * Turn an issued pro forma into its invoice: the same content, issued, dated `date` — when its money
- * came, the day its tax arises (MWSTG 40 I c) — or today. The pro forma is done then (`paid`).
- * Resolves with the invoice; asked again, with the one made before.
- */
+/** Turn an issued pro forma into its invoice, dated `date` (when its money came: MWSTG 40 I c) or today; the
+ *  pro forma is done (`paid`). Resolves with the invoice, asked again with the same one. */
 export async function finalize(app: App, id: number, { date }: { date?: string } = {}): Promise<number> {
   const proforma = await get(app, id);
   if (proforma?.type !== "proforma" || proforma.status === "draft" || proforma.status === "canceled") {
@@ -315,17 +306,13 @@ export async function document(app: App, id: number): Promise<string> {
   return htmlOf(app, { ...invoice, preceded }, await lines(app, id), listed, slips);
 }
 
-/** What a document lists, as it was then: number, date and due of each, what was open on it and
- *  its reminder level. */
+/** What a document lists, as it was then: number, dates, what was open and its level. */
 export const listedOf = (app: App, id: number): Promise<Row[]> => app.db.query`
   SELECT i.id, i.number, i.date, i.due, l.open, l.level FROM invoice_listed l JOIN invoice i ON i.id = l.listed_id
   WHERE l.invoice_id = ${id} ORDER BY i.due, i.id`;
 
-/**
- * Print it to a PDF and keep that as its file: the document as sent. Printing again replaces it —
- * until it went out (`sent`): from then on it stays as it is (OR 958f). Only its user (`usr_id`) may
- * download it.
- */
+/** Print it to a PDF kept as its file. Printing again replaces it until it went out (`sent`, OR 958f).
+ *  Only its user (`usr_id`) may download it. */
 export async function print(app: App, id: number, { html }: { html?: string } = {}): Promise<DbFile> {
   const invoice = await get(app, id);
   if (!invoice || invoice.status === "draft") throw new Error("fin.invoice: only issued invoices are printed");
@@ -414,14 +401,8 @@ export async function attach(app: App, id: number, file: DbFile): Promise<Row | 
 export const lines = (app: App, id: number): Promise<Row[]> =>
   app.db.query`SELECT * FROM invoice_line WHERE invoice_id = ${id} ORDER BY sort, id`;
 
-/**
- * Spread what a payment moved over the documents it is for: the one its `ref` names first — a
- * reminder's own fees and interest before the debt (OR 85) —, then the open ones it lists, the
- * oldest due first (OR 87); each up to what is open on it, the rest to the named one (overpaid). Only
- * money in the document's direction counts: in for ours, out for theirs and for our credit notes. A
- * pro forma's money goes to its invoice, made now if need be. Called on `payment:change`; safe to
- * call any time.
- */
+/** Spread what a payment moved: to the document its `ref` names — a reminder's fees first (OR 85) —, then
+ *  to what it lists, oldest due first (OR 87); each up to its open amount, the rest to the named one. */
 export async function allocate(app: App, payment: Row): Promise<void> {
   const before = await app.db.col`SELECT invoice_id FROM invoice_settlement WHERE payment_id = ${payment.id}`;
   await app.db.exec`DELETE FROM invoice_settlement WHERE payment_id = ${payment.id}`;
@@ -457,11 +438,7 @@ export async function allocate(app: App, payment: Row): Promise<void> {
   for (const id of new Set([...before.map(Number), ...shares.keys()])) await settle(app, id);
 }
 
-/**
- * A credit note takes off its invoice what is open there (EN 16931 381: negative quantities at the
- * invoice's prices, so its total is below zero). What it gives beyond is owed to the customer —
- * paid back, or put onto their credit —; until then it stays open.
- */
+/** A credit note takes off its invoice what is open there; the rest it owes, until paid back. */
 async function credit(app: App, note: Row) {
   const invoice = await get(app, Number(note.preceding));
   const share = invoice ? Math.min(-Number(note.total), Math.max(0, await openOf(app, invoice))) : 0;
@@ -472,14 +449,7 @@ async function credit(app: App, note: Row) {
   await settle(app, Number(note.id));
 }
 
-/** A credit note taken back: what it took off its invoice is open there again. */
-async function uncredit(app: App, note: Row) {
-  await app.db.exec`DELETE FROM invoice_settlement WHERE credit_id = ${note.id}`;
-  if (note.preceding) await settle(app, Number(note.preceding));
-}
-
-/** What settles a document, in its sign: what it got — payments, credit notes — less what it gave
- *  (a credit note what it took off its invoice). */
+/** What settles a document, in its sign: what it got less what it gave (a credit note to its invoice). */
 const settledOf = (app: App, id: number) => app.db.one`
   SELECT COALESCE(SUM(CASE WHEN invoice_id = ${id} THEN amount ELSE -amount END), 0) FROM invoice_settlement
   WHERE invoice_id = ${id} OR credit_id = ${id}`.then(Number);
@@ -487,13 +457,9 @@ const settledOf = (app: App, id: number) => app.db.one`
 /** What is open on a document by what settles it. */
 const openOf = async (app: App, invoice: Row) => Number(invoice.total) - await settledOf(app, Number(invoice.id));
 
-/**
- * Take over what settles it (`invoice_settlement`): `paid` is its payments (`allocate`) and credit
- * notes, whatever the payments' status — a QR bill paid in part is still `processing`, yet its money
- * counts. Settled once that reaches the total — below zero for a credit note; a refund below reopens
- * it. Safe to call any time.
- */
-export async function settle(app: App, id: number): Promise<Row | undefined> {
+/** Take over what settles it as `paid`, whatever the payments' status; settled once that reaches the
+ *  total, reopened below it. Safe to call any time. */
+async function settle(app: App, id: number): Promise<Row | undefined> {
   const invoice = await get(app, id);
   if (!invoice) return;
   const paid = await settledOf(app, id);
@@ -514,7 +480,7 @@ export async function settle(app: App, id: number): Promise<Row | undefined> {
   return fresh;
 }
 
-/** Withdraw the payments still waiting for a document (a QR bill, a payment page) once it asks for nothing. */
+/** Withdraw what still waits for a document (a QR bill) once it asks for nothing. */
 async function withdraw(app: App, id: number) {
   const invoice = await get(app, id);
   if (!invoice || invoice.type === "credit_note" || await owed(app, invoice) > 0) return;

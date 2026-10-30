@@ -10,9 +10,8 @@ const FIGURES: Record<string, string> = {
   "3.7": "342",
 };
 
-/** Where turnover without Swiss tax goes, by tax category: exports (and what EN 16931 calls zero
- *  rated or intra-community) 220, services abroad — reverse charge at the customer — 221, excluded
- *  services 230. Not subject to tax (`O`: default interest, damages) is no turnover at all. */
+/** Where turnover without Swiss tax goes, by category: exports 220, abroad (reverse charge) 221, excluded
+ *  230; not subject to tax (`O`) is no turnover. */
 const DEDUCTIONS: Record<string, string> = { G: "220", K: "220", Z: "220", AE: "221", E: "230" };
 
 /** A tax code, `S8.1`, as category and rate. */
@@ -21,14 +20,8 @@ const parse = (code: unknown) => {
   return { category: category || "S", rate: Number(rate || 0) };
 };
 
-/**
- * The Swiss VAT return of a period, from the books: every entry line carries its tax code, category
- * and rate (fin.accounting books invoices so). Turnover (200) is all but what is not subject to tax;
- * taxed turnover goes per rate, the rest is deducted (220, 221, 230). Effective method: the tax per
- * rate less the input tax — on material and services (400), or on investments (405) where the entry
- * books onto an asset account. Net tax rate method (`fin.accounting.ch.vat.method` "saldo"): the
- * taxed turnover with tax times the net tax rate (`vat.rate`), no input tax. Amounts in minor units.
- */
+/** The Swiss VAT return of a period, from the tax codes in the books: effective (input tax 400, 405 on
+ *  assets), or at the net tax rate (`vat.method` "saldo"). Amounts in minor units. */
 export async function vatReturn(app: App, { from, to }: { from: string; to: string }) {
   const s = app.settings["fin.accounting"].accounts;
   const [due, input] = (await Promise.all([s.vatDue, s.vatInput])).map((v) => String(v ?? ""));
@@ -58,8 +51,9 @@ export async function vatReturn(app: App, { from, to }: { from: string; to: stri
   if (method === "saldo") {
     const gross = rates.reduce((total, r) => total + r.turnover + r.tax, 0);
     const tax = Math.round(gross * saldo / 100);
-    const net = { rate: saldo, gross, tax };
-    return { method, turnover, deductions, rates, saldo: net, input: 0, investments: 0, payable: tax };
+    return {
+      method, turnover, deductions, rates, saldo: { rate: saldo, gross, tax }, input: 0, investments: 0, payable: tax,
+    };
   }
   const tax = rates.reduce((total, r) => total + r.tax, 0);
   // input tax on an entry that books onto an asset account is on an investment

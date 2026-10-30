@@ -24,27 +24,19 @@ async function settingsOf(app: App) {
   };
 }
 
-/** Open invoices of ours with how often they were reminded (`level`), when last (`reminded`), and
- *  whether a reminder of them waits as a draft (`pending`). */
+/** Open invoices of ours, how often reminded (`level`), when last (`reminded`), and whether a reminder
+ *  of them waits as a draft (`pending`). */
 const candidates = (app: App, where: ReturnType<typeof sql>) => app.db.query`
-  SELECT i.*,
-    (SELECT COUNT(*) FROM invoice_listed l JOIN invoice r ON r.id = l.invoice_id
-      WHERE l.listed_id = i.id AND r.type = 'reminder' AND r.status NOT IN ('draft', 'canceled')) AS level,
-    (SELECT MAX(r.date) FROM invoice_listed l JOIN invoice r ON r.id = l.invoice_id
-      WHERE l.listed_id = i.id AND r.type = 'reminder' AND r.status NOT IN ('draft', 'canceled')) AS reminded,
-    (SELECT COUNT(*) FROM invoice_listed l JOIN invoice r ON r.id = l.invoice_id
-      WHERE l.listed_id = i.id AND r.type = 'reminder' AND r.status = 'draft') AS pending
-  FROM invoice i
+  SELECT i.*, SUM(CASE WHEN r.status <> 'draft' THEN 1 ELSE 0 END) AS level,
+    MAX(CASE WHEN r.status <> 'draft' THEN r.date END) AS reminded,
+    SUM(CASE WHEN r.status = 'draft' THEN 1 ELSE 0 END) AS pending
+  FROM invoice i LEFT JOIN invoice_listed l ON l.listed_id = i.id
+    LEFT JOIN invoice r ON r.id = l.invoice_id AND r.type = 'reminder' AND r.status <> 'canceled'
   WHERE i.status = 'open' AND i.direction = 'out' AND i.type IN ('invoice', 'reminder') AND ${where}
-  ORDER BY i.due, i.id`;
+  GROUP BY i.id ORDER BY i.due, i.id`;
 
-/**
- * Remind what is due: every open invoice of ours — a reminder with fees left open too — whose next
- * level has come, so many days after its due date (`days`) and as many after its last reminder as
- * the levels lie apart. One reminder per debtor and currency; an invoice without a user is one of
- * its own. Held ones (`remind`) and those on a reminder still waiting as a draft are left out.
- * Resolves with how many reminders were made.
- */
+/** Remind what is due — `days` after its due date, the levels apart — one reminder per debtor and
+ *  currency. Resolves with how many were made. */
 export async function remindDue(app: App): Promise<number> {
   const settings = await settingsOf(app);
   const { days } = settings;
@@ -66,13 +58,8 @@ export async function remindDue(app: App): Promise<number> {
   return made;
 }
 
-/**
- * A reminder of these invoices — one debtor's, in one currency —, each on its next level: listed
- * with what is open on them, with the fee of the highest level (`fees`) and default interest
- * (`interest`) since they were due or last reminded. Issued and mailed as set (`issue`, `send`);
- * resolves with its id. Its slip asks for all of it; money paid on it goes to its fee and interest
- * first, then to the oldest invoice.
- */
+/** A reminder of one debtor's invoices in one currency, each on its next level, with the highest
+ *  level's fee and default interest; issued and mailed as set. Resolves with its id. */
 export async function remind(app: App, ids: number[]): Promise<number> {
   const settings = await settingsOf(app);
   const items = await candidates(app, sql`${sql.in("i.id", ids)}`);
@@ -113,11 +100,8 @@ export async function remind(app: App, ids: number[]): Promise<number> {
   return id;
 }
 
-/**
- * The fee as lines. It is part of the price of what it reminds of (MWST-Info 04, 3.8.2.3), so it is
- * taxed as those lines are: shared by rate and category in proportion to what is open of them.
- */
-async function feeLines(app: App, items: Row[], fee: number): Promise<Line[]> {
+/** The fee, taxed as what it reminds of (MWST-Info 04, 3.8.2.3): shared by rate and category as is open. */
+async function feeLines(app: App, items: Row[], fee: number) {
   if (fee <= 0) return [];
   const weights = new Map<string, { taxRate: number; taxCategory: string; weight: number }>();
   for (const item of items) {
@@ -139,9 +123,8 @@ async function feeLines(app: App, items: Row[], fee: number): Promise<Line[]> {
     .map(({ taxRate, taxCategory, price }) => ({ name, price, taxRate, taxCategory }));
 }
 
-/** Default interest at `rate` percent a year on what is open, since it was due or last reminded —
- *  damages, not subject to tax (MWSTG 18 II i). */
-async function interestLines(app: App, items: Row[], rate: number, date: string): Promise<Line[]> {
+/** Default interest, percent a year, since due or last reminded: damages, not subject to tax (MWSTG 18 II i). */
+async function interestLines(app: App, items: Row[], rate: number, date: string) {
   if (rate <= 0) return [];
   const out: Line[] = [];
   for (const item of items) {

@@ -1,7 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { amounts, finTexts, inFin, openInvoices, overdueInvoices } from "@qino/qino/cms.backend.fin";
-import { today } from "@qino/qino/fin";
 
 import { render, userInvoices } from "./render.ts";
 import api from "./nodeApi.ts";
