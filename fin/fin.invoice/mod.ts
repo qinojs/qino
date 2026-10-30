@@ -5,7 +5,6 @@ import { render } from "@qino/qino/pdf";
 
 import { document as htmlOf, inLang, languageOf, mail as mailOf } from "./lib/document.ts";
 import { draw } from "./lib/number.ts";
-import { credited, settledOf } from "./lib/credit.ts";
 import { CATEGORIES, lineOf, totals } from "./lib/totals.ts";
 
 import type { App, DbFile, Row } from "@qino/qino";
@@ -140,7 +139,7 @@ export async function issue(app: App, id: number): Promise<Row | undefined> {
   }).then(async (issued) => {
     if (!issued) return;
     // outside the transaction: a provider may be asked over the network
-    if (issued.type === "credit_note") await settle(app, Number(issued.preceding ?? id));
+    if (issued.type === "credit_note") await credit(app, issued);
     else {
       if (!Number(issued.total)) await settle(app, id); // nothing owed of its own: paid as issued
       await ask(app, id).catch((e) => console.error(`fin.invoice: no payment asked for ${id}`, e));
@@ -232,15 +231,15 @@ export async function cancel(app: App, id: number): Promise<Row | undefined> {
   const revoked = invoice.sent && invoice.direction === "out" && Number(invoice.total)
     && ["invoice", "reminder"].includes(String(invoice.type)) && invoice.status !== "draft";
   if (revoked) {
-    if (await credited(app, id)) {
-      throw new Error("fin.invoice: partly credited already — take back the rest by a credit note");
-    }
+    const credited = await app.db.one`SELECT 1 FROM invoice
+      WHERE preceding = ${id} AND type = 'credit_note' AND status IN ('open', 'paid')`;
+    if (credited) throw new Error("fin.invoice: partly credited already — take back the rest by a credit note");
     await issue(app, await creditNote(app, id));
     return get(app, id);
   }
   const canceled = await status(app, invoice, "canceled");
   // a credit note taken back no longer counts on its invoice
-  if (invoice.type === "credit_note" && invoice.preceding) await settle(app, Number(invoice.preceding));
+  if (invoice.type === "credit_note") await uncredit(app, invoice);
   return canceled;
 }
 
@@ -424,8 +423,8 @@ export const lines = (app: App, id: number): Promise<Row[]> =>
  * call any time.
  */
 export async function allocate(app: App, payment: Row): Promise<void> {
-  const before = await app.db.col`SELECT invoice_id FROM invoice_payment WHERE payment_id = ${payment.id}`;
-  await app.db.exec`DELETE FROM invoice_payment WHERE payment_id = ${payment.id}`;
+  const before = await app.db.col`SELECT invoice_id FROM invoice_settlement WHERE payment_id = ${payment.id}`;
+  await app.db.exec`DELETE FROM invoice_settlement WHERE payment_id = ${payment.id}`;
   const moved = Number(payment.paid) - Number(payment.refunded);
   let invoice = await get(app, idOf(payment.ref) ?? 0);
   if (invoice?.type === "proforma" && invoice.status !== "draft") {
@@ -435,7 +434,10 @@ export async function allocate(app: App, payment: Row): Promise<void> {
     invoice = made ? await get(app, made) : undefined;
   }
   const shares = new Map<number, number>();
-  const inward = invoice && (invoice.direction === "out") !== (invoice.type === "credit_note");
+  // money goes to whom it is owed: in for what is owed to us, out for what we owe — a received
+  // invoice, our credit note (below zero)
+  const sign = Number(invoice?.total) < 0 ? -1 : 1;
+  const inward = invoice && (invoice.direction === "out") === sign > 0;
   if (invoice && moved && payment.direction === (inward ? "in" : "out")) {
     // paid ones too: one this very payment paid before keeps its share; what is open caps each
     const listed = await app.db.query`SELECT i.* FROM invoice_listed l JOIN invoice i ON i.id = l.listed_id
@@ -447,50 +449,67 @@ export async function allocate(app: App, payment: Row): Promise<void> {
       rest -= share;
     }
     shares.set(Number(invoice.id), (shares.get(Number(invoice.id)) ?? 0) + rest);
-    const table = app.db.table("invoice_payment");
-    for (const [id, amount] of shares) await table.insert({ invoice_id: id, payment_id: payment.id, amount });
+    const table = app.db.table("invoice_settlement");
+    for (const [id, share] of shares) {
+      await table.insert({ invoice_id: id, payment_id: payment.id, amount: sign * share });
+    }
   }
   for (const id of new Set([...before.map(Number), ...shares.keys()])) await settle(app, id);
 }
 
-/** What is open on a document by what is assigned to it: its total less its payments and credit notes. */
-const openOf = async (app: App, invoice: Row) => Number(invoice.total) - await paymentsOf(app, Number(invoice.id))
-  - await credited(app, Number(invoice.id));
+/**
+ * A credit note takes off its invoice what is open there (EN 16931 381: negative quantities at the
+ * invoice's prices, so its total is below zero). What it gives beyond is owed to the customer —
+ * paid back, or put onto their credit —; until then it stays open.
+ */
+async function credit(app: App, note: Row) {
+  const invoice = await get(app, Number(note.preceding));
+  const share = invoice ? Math.min(-Number(note.total), Math.max(0, await openOf(app, invoice))) : 0;
+  if (share > 0) {
+    await app.db.table("invoice_settlement").insert({ invoice_id: invoice!.id, credit_id: note.id, amount: share });
+  }
+  if (invoice) await settle(app, Number(invoice.id));
+  await settle(app, Number(note.id));
+}
 
-const paymentsOf = (app: App, id: number) =>
-  app.db.one`SELECT COALESCE(SUM(amount), 0) FROM invoice_payment WHERE invoice_id = ${id}`.then(Number);
+/** A credit note taken back: what it took off its invoice is open there again. */
+async function uncredit(app: App, note: Row) {
+  await app.db.exec`DELETE FROM invoice_settlement WHERE credit_id = ${note.id}`;
+  if (note.preceding) await settle(app, Number(note.preceding));
+}
+
+/** What settles a document, in its sign: what it got — payments, credit notes — less what it gave
+ *  (a credit note what it took off its invoice). */
+const settledOf = (app: App, id: number) => app.db.one`
+  SELECT COALESCE(SUM(CASE WHEN invoice_id = ${id} THEN amount ELSE -amount END), 0) FROM invoice_settlement
+  WHERE invoice_id = ${id} OR credit_id = ${id}`.then(Number);
+
+/** What is open on a document by what settles it. */
+const openOf = async (app: App, invoice: Row) => Number(invoice.total) - await settledOf(app, Number(invoice.id));
 
 /**
- * Take over what is assigned to it: `paid` is its payments (`allocate`) and credit notes, whatever
- * the payments' status — a QR bill paid in part is still `processing`, yet its money counts. Settled
- * once that reaches the total; a refund below reopens it. Safe to call any time.
+ * Take over what settles it (`invoice_settlement`): `paid` is its payments (`allocate`) and credit
+ * notes, whatever the payments' status — a QR bill paid in part is still `processing`, yet its money
+ * counts. Settled once that reaches the total — below zero for a credit note; a refund below reopens
+ * it. Safe to call any time.
  */
 export async function settle(app: App, id: number): Promise<Row | undefined> {
   const invoice = await get(app, id);
   if (!invoice) return;
-  const credit = invoice.type === "credit_note";
-  const payments = await paymentsOf(app, id);
-  const paid = credit ? await settledOf(app, invoice, payments) : payments + await credited(app, id);
+  const paid = await settledOf(app, id);
   await app.db.exec`UPDATE invoice SET paid = ${paid}, changed = ${unixTime()} WHERE id = ${id}`;
   // a pro forma is done by its invoice, not by money; drafts and canceled ones keep their status
   if (invoice.type === "proforma" || !["open", "paid", "uncollectible"].includes(String(invoice.status))) {
     return get(app, id);
   }
-  // settled once what moved reaches the total — below zero for a credit note
   const total = Number(invoice.total);
-  const settled = credit ? paid <= total : paid >= total;
+  const settled = total < 0 ? paid <= total : paid >= total;
   const unsettled = invoice.status === "uncollectible" ? "uncollectible" : "open";
   const fresh = await status(app, invoice, settled ? "paid" : unsettled);
   if (fresh?.status === "paid") {
     // paid another way: what still waits for it, or for a reminder listing it, asks for nothing owed
     const listing = await app.db.col`SELECT invoice_id FROM invoice_listed WHERE listed_id = ${id}`;
     for (const doc of [id, ...listing.map(Number)]) await withdraw(app, doc);
-  }
-  // what its credit notes still owe follows from what was paid here
-  if (!credit) {
-    const credits = await app.db.col`SELECT id FROM invoice
-      WHERE preceding = ${id} AND type = 'credit_note' AND status IN ('open', 'paid')`;
-    for (const note of credits) await settle(app, Number(note));
   }
   return fresh;
 }

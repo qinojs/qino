@@ -1,6 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, direction, money, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.fin";
+import { badge, direction, field, money, option, pager, refLink, rowLink, status } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
@@ -23,21 +23,20 @@ async function overview(node: Node, url: URL) {
   const t = node.app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const providers = await node.app.db.col<string>`SELECT DISTINCT provider FROM payment ORDER BY provider`;
-  const option = (value: string, label: string | Promise<string>, key = "") =>
-    html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`}</div>
     <form method=get>
       <input type=search name=search value="${q("search")}" placeholder="${t`Id, ref, description, external id`}">
       <select name=direction>
-        ${option("", t`In and out`, "direction")}
-        ${option("in", t`In`, "direction")}
-        ${option("out", t`Out`, "direction")}
+        ${option("", t`In and out`, q("direction"))}
+        ${option("in", t`In`, q("direction"))}
+        ${option("out", t`Out`, q("direction"))}
       </select>
-      <select name=status>${option("", t`Any status`, "status")}${STATUSES.map((s) => option(s, s, "status"))}</select>
+      <select name=status>${option("", t`Any status`, q("status"))}
+        ${STATUSES.map((s) => option(s, s, q("status")))}</select>
       <select name=provider>
-        ${option("", t`Any provider`, "provider")}${providers.map((p) => option(p, p, "provider"))}
+        ${option("", t`Any provider`, q("provider"))}${providers.map((p) => option(p, p, q("provider")))}
       </select>
       <button>${t`Filter`}</button>
     </form>
@@ -164,7 +163,6 @@ async function detail(node: Node, id: number) {
   const lines = app.modules.linked("fin.bank")
     ? await app.db.query`SELECT * FROM bank_tx WHERE payment_id = ${id} ORDER BY date, id`
     : [];
-  const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Payments`}</a> › #${id}</div>

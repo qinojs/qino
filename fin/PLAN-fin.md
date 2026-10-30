@@ -115,9 +115,8 @@ Struktur:
 - Settings-Defaults im Code wiederholt (`?? 30`, `|| "{year}-{n}"`, die mempool-URL): heute nötig,
   weil Blatt-Lesezugriffe (und `fakeSettings` in den Tests) keine Schema-Defaults anwenden. Eine
   Core-Frage.
-- Noch kopiert in den Backend-Seiten: `option()`, `field()`, die Anzahl überfälliger Rechnungen
-  (Übersicht und Rechnungs-Widget), die Abfrage der Benutzerauswahl. Das Buchhaltungsjournal mit
-  `PER_PAGE + 1` statt `pager()`.
+- Benutzerauswahl (Rechnungseditor, Abos, Hosting) lädt alle Benutzer in ein `<select>`: bei vielen
+  Kunden eine Suche statt der Liste. Das Buchhaltungsjournal mit `PER_PAGE + 1` statt `pager()`.
 - Buchhaltungs-Widget und -Übersicht nehmen standardmässig das Kalenderjahr, obwohl das
   Geschäftsjahr an einem beliebigen Tag enden kann (`close()`).
 - `dataOf(payment)` in fünf Providern; `Urls` in `fin.payment/mod.ts` wiederholt `lib/url.ts`.

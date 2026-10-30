@@ -1,7 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import {
-  amounts, badge, money, refLink,
+  amounts, badge, money, option, refLink,
 } from "@qino/qino/cms.backend.fin";
 import { addMonths, mainCurrency, nameOf, today } from "@qino/qino/fin";
 import * as u2 from "@qino/qino/u2";
@@ -63,15 +63,13 @@ async function overview(node: Node, url: URL) {
     : undefined;
   const owed = (id: unknown, dir: string) =>
     amounts(open.filter((o) => Number(o.usr_id) === Number(id) && o.direction === dir));
-  const option = (value: string, label: string | Promise<string>) =>
-    html.async`<option value="${value}"${value === role ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Customers & suppliers`}</div>
     <form>
       <input type=search name=search value="${q("search")}" placeholder="${t`Name, place, id`}">
-      <select name=role>${option("", t`All`)}${option("customer", t`Customers`)}${
-    option("supplier", t`Suppliers`)}</select>
+      <select name=role>${option("", t`All`, role)}${option("customer", t`Customers`, role)}${
+    option("supplier", t`Suppliers`, role)}</select>
       <label title="${t`Without anything open and without an invoice for two years`}"><input type=checkbox name=former value=1${
     q("former") ? html.raw(" checked") : ""}> ${t`former too`}</label>
       <button>${t`Filter`}</button>

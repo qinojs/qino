@@ -1,7 +1,7 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
-  badge, direction, inputAmount, money, pager, refLink, rowLink, status,
+  badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, status,
 } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, today } from "@qino/qino/fin";
 import { document, lines, listedOf, owed, refOf } from "@qino/qino/fin.invoice";
@@ -60,21 +60,20 @@ async function usersOf(app: App, rows: Row[]) {
 async function overview(node: Node, url: URL) {
   const t = node.app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
-  const option = (value: string, label: string | Promise<string>, key = "") =>
-    html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
     <form method=get>
       <input type=search name=search value="${q("search")}" placeholder="${t`Number, party, ref`}">
       <select name=direction>
-        ${option("", t`Issued and received`, "direction")}
-        ${option("out", t`Issued (receivables)`, "direction")}
-        ${option("in", t`Received (payables)`, "direction")}
+        ${option("", t`Issued and received`, q("direction"))}
+        ${option("out", t`Issued (receivables)`, q("direction"))}
+        ${option("in", t`Received (payables)`, q("direction"))}
       </select>
-      <select name=status>${option("", t`Any status`, "status")}${STATUSES.map((s) => option(s, s, "status"))}</select>
-      <select name=type>${option("", t`Any type`, "type")}
-        ${TYPES.map((type) => option(type, typeName(node.app, type), "type"))}</select>
+      <select name=status>${option("", t`Any status`, q("status"))}
+        ${STATUSES.map((s) => option(s, s, q("status")))}</select>
+      <select name=type>${option("", t`Any type`, q("type"))}
+        ${TYPES.map((type) => option(type, typeName(node.app, type), q("type")))}</select>
       <label><input type=checkbox name=overdue value=1${q("overdue") ? html.raw(" checked") : ""}> ${t`overdue`}</label>
       <button>${t`Filter`}</button>
     </form>
@@ -363,9 +362,9 @@ async function detail(node: Node, id: number) {
     lines(app, id),
     // asked for with its ref, or paid on another and shared out to it (a reminder's): each by its index
     app.db.query`SELECT p.*, a.amount AS share FROM payment p
-      LEFT JOIN invoice_payment a ON a.payment_id = p.id AND a.invoice_id = ${id}
+      LEFT JOIN invoice_settlement a ON a.payment_id = p.id AND a.invoice_id = ${id}
       WHERE p.ref = ${refOf(id)}
-        OR p.id IN (SELECT payment_id FROM invoice_payment WHERE invoice_id = ${id}) ORDER BY p.id`,
+        OR p.id IN (SELECT payment_id FROM invoice_settlement WHERE invoice_id = ${id}) ORDER BY p.id`,
     open > 0 && !credit && row.direction === "out"
       ? methods(app, { amount: open, currency: String(row.currency), usrId: Number(row.usr_id) || undefined })
       : [],
@@ -379,7 +378,6 @@ async function detail(node: Node, id: number) {
   const pdfUrl = file ? await file.url({ grant: "session" }).catch(() => "") : "";
   const preview = document(app, id).catch((e) => `<p>${e.message}</p>`);
   const users = await usersOf(app, [row]);
-  const field = (label: string | Promise<string>, value: unknown) => html.async`<tr><th>${label}<td>${value}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>

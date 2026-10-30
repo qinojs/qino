@@ -1,5 +1,5 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
-import { badge, money, pager, rowLink } from "@qino/qino/cms.backend.fin";
+import { badge, money, option, pager, rowLink } from "@qino/qino/cms.backend.fin";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -18,8 +18,6 @@ export async function render(node: Node): Promise<HtmlString> {
       SUM(CASE WHEN x.id IS NOT NULL AND x.payment_id IS NULL THEN 1 ELSE 0 END) AS unassigned
     FROM bank_account a LEFT JOIN bank_tx x ON x.account_id = a.id
     GROUP BY a.id, a.name, a.number, a.currency, a.created ORDER BY a.name`;
-  const option = (value: string, label: string | Promise<string>, key: string) =>
-    html.async`<option value="${value}"${value === q(key) ? html.raw(" selected") : ""}>${label}`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Accounts`}</div>
@@ -51,12 +49,13 @@ export async function render(node: Node): Promise<HtmlString> {
     <form method=get>
       <input type=search name=search value="${q("search")}" placeholder="${t`Party, reference, text, id`}">
       <select name=account>
-        ${option("", t`All accounts`, "account")}${accounts.map((a) => option(String(a.id), String(a.name), "account"))}
+        ${option("", t`All accounts`, q("account"))}
+        ${accounts.map((a) => option(String(a.id), String(a.name), q("account")))}
       </select>
       <select name=state>
-        ${option("", t`All`, "state")}
-        ${option("open", t`Unassigned`, "state")}
-        ${option("assigned", t`Assigned`, "state")}
+        ${option("", t`All`, q("state"))}
+        ${option("open", t`Unassigned`, q("state"))}
+        ${option("assigned", t`Assigned`, q("state"))}
       </select>
       <button>${t`Filter`}</button>
     </form>
@@ -132,8 +131,11 @@ function assignForm(app: App, row: Row, guesses: { ref: string; label: string }[
 async function suggestions(app: App, open: Row[]) {
   const found = new Map<number, { ref: string; label: string }[]>();
   if (!open.length || !app.modules.linked("fin.invoice")) return found;
+  // only those whose rest is one of the amounts: the database finds them, not a loop over all
+  const amounts = [...new Set(open.map((row) => Math.abs(Number(row.amount))))];
   const invoices = await app.db.query`
-    SELECT id, direction, number, currency, total - paid AS rest, party FROM invoice WHERE status = 'open'`;
+    SELECT id, direction, number, currency, total - paid AS rest, party FROM invoice
+    WHERE status = 'open' AND ABS(total - paid) IN (${sql.join(amounts.map((a) => sql`${a}`), ", ")})`;
   for (const row of open) {
     const amount = Number(row.amount);
     found.set(Number(row.id), invoices

@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { amounts, finTexts, inFin } from "@qino/qino/cms.backend.fin";
+import { amounts, finTexts, inFin, openInvoices, overdueInvoices } from "@qino/qino/cms.backend.fin";
 import { today } from "@qino/qino/fin";
 
 import { render, userInvoices } from "./render.ts";
@@ -19,14 +19,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 /** What customers still owe, and how much of it is late. */
 async function widget(app: App): Promise<HtmlString> {
-  const [open, overdue] = await Promise.all([
-    // a credit note is negative: it takes off what is claimed by itself; it is never overdue. A pro
-    // forma claims nothing
-    app.db.query`SELECT currency, SUM(total - paid) AS amount FROM invoice
-      WHERE direction = 'out' AND status = 'open' AND type <> 'proforma' GROUP BY currency ORDER BY currency`,
-    app.db.one`SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND type IN ('invoice', 'reminder')
-      AND status = 'open' AND due < ${today()}`.then(Number),
-  ]);
+  const [open, overdue] = await Promise.all([openInvoices(app, "out"), overdueInvoices(app)]);
   return html.async`<div>
     ${amounts(open)} <small>${app.t`receivable`}</small><br>
     <b>${overdue}</b> ${app.t`overdue`}

@@ -1,7 +1,7 @@
 # PLAN Rechnungen, offene Posten, Mahnwesen
 
-Umgesetzt (2026-10): Dokument = offener Posten, Zahlungen verteilt über `invoice_payment`
-(OR 85–87), Typen `invoice`/`credit_note`/`proforma`/`reminder`, `preceding`, Storno per Gutschrift,
+Umgesetzt (2026-10): Dokument = offener Posten, Zahlungen und Gutschriften begleichen über
+`invoice_settlement` (OR 85–87), Typen `invoice`/`credit_note`/`proforma`/`reminder`, `preceding`, Storno per Gutschrift,
 `writeOff` (`uncollectible`), eingefrorenes PDF, Steuerkategorie pro Position, Sammelmahnung mit
 Gebühr und Verzugszins, MWST-Ziffern nach Kategorie. Beschrieben in den READMEs:
 [fin.invoice](fin.invoice/README.md), [fin.invoice.reminder](fin.invoice.reminder/README.md),

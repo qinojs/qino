@@ -52,7 +52,8 @@ was open on each and its reminder level ([fin.invoice.reminder](../fin.invoice.r
 
 ## Paid
 
-Payments come to documents through `invoice_payment`: what of which payment went where. On each
+What settles a document is in `invoice_settlement`: a payment, a share of one, or a credit note —
+one mechanism, as open items are cleared against each other. On each
 `payment:change` of a payment with `ref` `fin.invoice:<id>`, `allocate()` spreads what it moved
 (`paid` less `refunded`, whatever its status — a QR bill paid in part is still `processing`):
 
@@ -115,10 +116,10 @@ sum over invoices comes out right without asking for the type (as ERPNext and Do
 its document, and the invoice editor, show them positive. Rounding is half away from zero, so a
 full credit note's tax is its invoice's to the cent. Issued, it draws its
 number — with the invoices, or from `fin.invoice.creditNumber` — books revenue and tax back, and
-counts on the invoice it corrects (`preceding`) as if paid. What it gives beyond what is still
-open there is owed to the customer: it stays open until paid back (an outgoing payment) or put
+takes off the invoice it corrects (`preceding`) what is still open there, as a settlement like a
+payment. What it gives beyond is owed to the customer: it stays open until paid back (an outgoing payment) or put
 onto their credit (`fin.payment.credit`). Its document says "Credit note" and names the invoice;
-it asks for no payment, and no reminder goes out for it. The logic lives in `lib/credit.ts`.
+it asks for no payment, and no reminder goes out for it.
 
 ## The other side, the document
 

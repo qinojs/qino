@@ -1,6 +1,6 @@
 import { html, requestStorage } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { fromMinor, toMinor } from "@qino/qino/fin";
+import { fromMinor, toMinor, today } from "@qino/qino/fin";
 
 import type { App, DbFile, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -46,12 +46,30 @@ const STATUS: Record<string, string> = {
   processing: "--orange",
   paid: "--green",
   failed: "--red",
+  uncollectible: "--red",
   refunded: "--blue",
 };
 
 /** A small badge, in a color of the palette (`--red`) where it should stand out. */
 export const badge = (content: unknown, color = ""): Promise<HtmlString> =>
   html.async`<small class=u2-badge${color ? html.raw(` style="background:var(${color})"`) : ""}>${content}</small>`;
+
+/** An option of a filter, selected where it is the `current` value. */
+export const option = (value: string, label: unknown, current = ""): Promise<HtmlString> =>
+  html.async`<option value="${value}"${value === current ? html.raw(" selected") : ""}>${label}`;
+
+/** A row of a detail table. */
+export const field = (label: unknown, value: unknown): Promise<HtmlString> => html.async`<tr><th>${label}<td>${value}`;
+
+/** What is open on invoices one way (`out` receivable, `in` payable), per currency: a credit note
+ *  takes off by itself, a pro forma claims nothing. */
+export const openInvoices = (app: App, direction: string): Promise<Record<string, unknown>[]> => app.db.query`
+  SELECT currency, SUM(total - paid) AS amount FROM invoice
+  WHERE direction = ${direction} AND status = 'open' AND type <> 'proforma' GROUP BY currency ORDER BY currency`;
+
+/** How many of our invoices — reminders with fees too — are past their due date. */
+export const overdueInvoices = (app: App): Promise<number> => app.db.one`SELECT COUNT(*) FROM invoice
+  WHERE direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open' AND due < ${today()}`.then(Number);
 
 /** A status as a badge in its color. */
 export const status = (value: unknown): Promise<HtmlString> => badge(value, STATUS[String(value)]);

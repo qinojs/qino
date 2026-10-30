@@ -113,6 +113,7 @@
           },
           "file_id": {
             "type": "integer",
+            "x-index": true,
             "x-qg-parent": "file",
             "x-qg-on-parent-delete": "setnull",
             "description": "The PDF as it was printed"
@@ -199,8 +200,8 @@
         "required": ["id", "invoice_id", "price", "amount"]
       }
     },
-    "invoice_payment": {
-      "description": "What of a payment went to which document: a payment may settle several",
+    "invoice_settlement": {
+      "description": "What settles a document: a payment, a share of one — a payment may settle several —, or a credit note",
       "additionalProperties": {
         "properties": {
           "id": {
@@ -212,21 +213,30 @@
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "invoice",
-            "x-qg-on-parent-delete": "cascade"
+            "x-qg-on-parent-delete": "cascade",
+            "description": "The document settled"
           },
           "payment_id": {
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "payment",
-            "x-qg-on-parent-delete": "cascade"
+            "x-qg-on-parent-delete": "cascade",
+            "description": "Settled by this payment …"
+          },
+          "credit_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "invoice",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "… or by this credit note"
           },
           "amount": {
             "type": "integer",
             "default": 0,
-            "description": "In minor units; positive as the money moved for it"
+            "description": "In minor units, in the settled document's sign: a refund on a credit note is negative"
           }
         },
-        "required": ["id", "invoice_id", "payment_id", "amount"]
+        "required": ["id", "invoice_id", "amount"]
       }
     },
     "invoice_listed": {

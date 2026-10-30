@@ -2,7 +2,7 @@ import { html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import { today } from "@qino/qino/fin";
 
-import { amounts, badge, inFin } from "./mod.ts";
+import { amounts, badge, inFin, openInvoices, overdueInvoices } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
@@ -52,16 +52,11 @@ async function figures(app: App) {
   const row = (label: Promise<string> | string, value: HtmlString | string | number) =>
     html.async`<tr><th>${label}<td>${value}`;
   if (app.modules.linked("fin.invoice")) {
-    const open = (direction: string) => app.db.query`
-      SELECT currency, SUM(total - paid) AS amount FROM invoice
-      WHERE direction = ${direction} AND status = 'open' AND type <> 'proforma' GROUP BY currency ORDER BY currency`;
-    const overdue = Number(await app.db.one`
-      SELECT COUNT(*) FROM invoice WHERE direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open'
-        AND due < ${today()}`);
+    const overdue = await overdueInvoices(app);
     rows.push(
-      await row(t`Receivables open`, amounts(await open("out"))),
+      await row(t`Receivables open`, amounts(await openInvoices(app, "out"))),
       await row(t`Overdue`, overdue ? await badge(overdue, "--red") : "0"),
-      await row(t`Payables open`, amounts(await open("in"))),
+      await row(t`Payables open`, amounts(await openInvoices(app, "in"))),
     );
   }
   if (app.modules.linked("fin.payment")) {
