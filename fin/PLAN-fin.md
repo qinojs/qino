@@ -130,7 +130,6 @@ Struktur:
 - Parteien-Liste fest `LIMIT 200` ohne Pager, Inbox `LIMIT 100`.
 - Listen-Einstellungen als Komma-Strings (`reminder.days`, `.fees`, `accounting.moneyBy`), von
   Hand zerlegt und nicht geprüft; Arrays/Objekte im `settingsSchema` wären klarer.
-- `fin.hosting` (mit `.infomaniak`, `.plesk`) ist eine Branchenlösung im sonst generischen Store.
 
 Entscheide, die sich ändern können, stehen Modul für Modul im jeweiligen README („Decisions that
 may change").
