@@ -11,7 +11,8 @@ cms.initNode("backend.cms.form", (el) => {
   const active = () => form || el.querySelector("[aria-current]")?.getAttribute("href").replace("?form=", "");
 
   // reload only the table part (it keeps form, search, sort, page)
-  const reloadList = (vars) => cms.reloadPart(nid, "list", { form, search: search.value, spam: spam.checked, sort, dir, page, ...vars });
+  const reloadList = (vars) =>
+    cms.reloadPart(nid, "list", { form, search: search.value, spam: spam.checked, sort, dir, page, ...vars });
 
   search.addEventListener("input", () => {
     clearTimeout(timer);
@@ -23,7 +24,8 @@ cms.initNode("backend.cms.form", (el) => {
   // An entry is corrected in a dialog: its fields, labeled by the table's head; uploads are not values.
   const edit = async (row) => {
     const cells = [...row.querySelectorAll("[data-field]")];
-    const label = (name) => el.querySelector(`th[data-sort="${CSS.escape(name)}"]`)?.textContent.replace(/[▲▼]/g, "").trim();
+    const label = (name) =>
+      el.querySelector(`th[data-sort="${CSS.escape(name)}"]`)?.textContent.replace(/[▲▼]/g, "").trim();
     const { form: dialog } = await import("@qino/u2/js/dialog/dialog.js");
     const title = await t`Edit`;
     const data = await dialog({
@@ -33,7 +35,7 @@ cms.initNode("backend.cms.form", (el) => {
         d.querySelector("b").textContent = title;
         const fields = d.querySelector("u2-fields");
         for (const cell of cells) {
-          const value = cell.textContent;
+          const value = cell.dataset.value;
           const input = document.createElement(value.includes("\n") || value.length > 60 ? "textarea" : "input");
           Object.assign(input, { name: cell.dataset.field, value });
           if (input.localName === "textarea") input.rows = Math.min(12, value.split("\n").length + 2);
@@ -62,7 +64,9 @@ cms.initNode("backend.cms.form", (el) => {
 
     const exp = e.target.closest("[data-export]");
     if (exp) {
-      const res = await api.cms.node(nid).api.post({ export: active(), search: search.value, spam: spam.checked, format: exp.dataset.export });
+      const res = await api.cms.node(nid).api.post({
+        export: active(), search: search.value, spam: spam.checked, format: exp.dataset.export,
+      });
       if (!res?.data) return;
       // The file is made here rather than fetched: the api already carries the rights.
       const url = URL.createObjectURL(new Blob([Uint8Array.fromBase64(res.data)], { type: res.type }));

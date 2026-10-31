@@ -9,6 +9,8 @@ import type { Node } from "@qino/qino/cms";
 
 /** How many entries one page of the table holds. */
 const PER_PAGE = 50;
+/** How many characters of a value the table shows; the dialog has all of it. */
+const SHORT = 100;
 
 /** Forms this user may view — reading entries requires edit access to the form. */
 export async function forms(app: App): Promise<Node[]> {
@@ -105,7 +107,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 
   if (vars.save) await save(app, form, vars.save as { id: string; data: Record<string, string> });
   if (vars.delete) await remove(app, form, Number(vars.delete));
-  if (vars.mark) await mark(app, form, vars.mark as { id: string; spam: string });
+  if (vars.mark) await markSpam(app, form, vars.mark as { id: string; spam: string });
 
   const page = Number(vars.page ?? 0);
   const { rows, total } = await entries(app, form, { ...vars, page, spam: !!vars.spam });
@@ -127,10 +129,20 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
   const cells = (row: { id: number; data: Record<string, unknown> }) =>
     names.map((name) => {
       const sent = files.get(`${row.id}:${name}`);
-      // An upload is not a value one corrects — it is a file one looks at or takes away. A value cell
-      // closes, so the dialog reads exactly the value (without the markup's whitespace).
-      return sent ? html`<td>${sent}` : html`<td data-field="${name}">${row.data[name]}</td>`;
+      // An upload is not a value one corrects — it is a file one looks at or takes away.
+      if (sent) return html`<td>${sent}`;
+      const value = String(row.data[name] ?? "");
+      const short = value.length > SHORT ? value.slice(0, SHORT) + "…" : value;
+      return html`<td data-field="${name}" data-value="${value}">${short}`;
     });
+
+  // the score toggles: spam becomes none, anything else spam
+  const mark = (row: { id: number; spam: number }) => {
+    const spam = row.spam >= SPAM;
+    return html.async`<button class=u2-unstyle data-mark="${row.id}" data-to="${spam ? 0 : 1}"
+        title="${spam ? t`Mark as not spam` : t`Mark as spam`}"${spam ? html.raw(' style="color:var(--red)"') : ""}>
+        ${percent(row.spam)}</button>`;
+  };
 
   return html.async`<thead><tr>
       ${head("created", await t`Received`)}
@@ -142,9 +154,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
       ${rows.map((row) =>
     html.async`<tr data-entry="${row.id}">
         <td>${received(row)}
-        <td class=-num><button class=u2-unstyle data-mark="${row.id}" data-to="${row.spam >= SPAM ? 0 : 1}"
-            title="${row.spam >= SPAM ? t`Mark as not spam` : t`Mark as spam`}">
-          ${row.spam >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${percent(row.spam)}</button>
+        <td class=-num>${mark(row)}
         ${cells(row)}
         <td><button class=u2-unstyle data-edit title="${t`Edit`}"><u2-ico icon=edit>✎</u2-ico></button>
           <button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
@@ -178,7 +188,7 @@ async function save(app: App, form: Node, vs: { id: string; data: Record<string,
 }
 
 /** Correct the spam judgement of an entry: 0 is none, 1 is spam. */
-async function mark(app: App, form: Node, vs: { id: string; spam: string }) {
+async function markSpam(app: App, form: Node, vs: { id: string; spam: string }) {
   const id = Number(vs.id);
   const own = await app.db.one`
     SELECT id FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
