@@ -320,8 +320,8 @@ export async function journal(node: Node): Promise<HtmlString> {
       <td>${url ? html`<a href="${backend.toUrl(url, { msg: m.id })}">${m.id}</a>` : m.id}
       <td>${u2.el.time(m.time)}
       <td>${m.direction === "out"
-        ? html`<u2-ico inline icon=call_made>→</u2-ico>`
-        : html`<u2-ico inline icon=call_received>←</u2-ico>`}
+        ? html`<u2-ico inline icon=send>→</u2-ico>`
+        : html`<u2-ico inline icon=move_to_inbox>←</u2-ico>`}
       <td>${m.title ? html`<b>${m.title}</b> ` : ""}${cut(textOf({ text: String(m.text ?? ""), format: m.format || undefined }))}
       <td>${Number(m.attachments) || 0}
       <td>${m.recipient ?? ""}${Number(m.recipients) > 1 ? html` <small>+${Number(m.recipients) - 1}</small>` : ""}

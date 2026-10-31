@@ -10,7 +10,7 @@ cms.initNode("backend.superuser.messaging", (el) => {
     timer = setTimeout(() => {
       const vars = Object.fromEntries(new FormData(filter));
       const url = new URL(location);
-      for (const key of ["search", "channel"]) vars[key] ? url.searchParams.set(key, vars[key]) : url.searchParams.delete(key);
+      for (const key of ["search", "channel", "direction"]) vars[key] ? url.searchParams.set(key, vars[key]) : url.searchParams.delete(key);
       history.replaceState(null, "", url);
       cms.reloadPart(nid, "list", vars);
     }, 250);

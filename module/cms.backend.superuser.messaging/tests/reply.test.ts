@@ -89,7 +89,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(overview, '<option value="telegram">Telegram');
     assertStringIncludes(overview, "Hello");
     assertStringIncludes(overview, "<tbody cms-part=list>");
-    assertStringIncludes(overview, "icon=call_made");
+    assertStringIncludes(overview, "icon=send");
     assertStringIncludes(overview, 'href="/de/backend/superuser/nachrichten?msg=1"');
     assertStringIncludes(overview, "<td data-attachments><span class=-thumbs>");
     const widget = String(await backendDashboardWidget(app as never, {

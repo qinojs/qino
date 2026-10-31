@@ -42,6 +42,7 @@ async function renderOverview(node: Node, url: URL) {
   const ctx = getCtx();
   const search = url.searchParams.get("search") ?? "";
   const filter = url.searchParams.get("channel") ?? "";
+  const way = url.searchParams.get("direction") ?? "";
   const [used, view] = await Promise.all([
     app.db.col<string>`SELECT DISTINCT channel FROM message ORDER BY channel`,
     labels(app),
@@ -52,11 +53,16 @@ async function renderOverview(node: Node, url: URL) {
       <div class=-head>${t`Messages`}</div>
       <div>
         <form method=get data-filter>
-          ${hidden(url, ["search", "channel", "usr", "msg"])}
+          ${hidden(url, ["search", "channel", "direction", "usr", "msg"])}
           <input type=search name=search value="${search}" placeholder="${t`Search...`}">
           <select name=channel>
             <option value="">${t`All types`}</option>
             ${used.map((c) => html`<option value="${c}"${c === filter ? " selected" : ""}>${view.label(c)}</option>`)}
+          </select>
+          <select name=direction>
+            <option value="">${t`All directions`}</option>
+            ${[["out", view.outgoing], ["in", view.incoming]].map(([v, label]) =>
+              html`<option value="${v}"${v === way ? " selected" : ""}>${label}</option>`)}
           </select>
           <button>${t`Search`}</button>
         </form>
@@ -67,14 +73,13 @@ async function renderOverview(node: Node, url: URL) {
             <th>${t`Id`}
             <th>${view.time}
             <th>${t`Type`}
-            <th>${view.spam}
             <th>${t`Text`}
-            <th>${view.attachments}
+            <th>
             <th>${view.recipients}
             <th>${t`Opened`}
             <th>${t`Clicks`}
-            <th>${view.errors}
-          <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter } })}
+            <th>${t`Issues`}
+          <tbody cms-part=list>${list(node, { ctx, vars: { search, channel: filter, direction: way } })}
         </table>
       </div>
     </div>
@@ -88,12 +93,16 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const app = ctx.app;
   const search = String(vars.search ?? "").trim();
   const filter = String(vars.channel ?? "");
+  const way = String(vars.direction ?? "");
   const sh = sqlSearch(search, ["m.title", "m.text"], { exact: ["m.id", "m.channel"] });
-  const where = filter ? sql`${sh.where} AND m.channel = ${filter}` : sh.where;
+  const where = sql`${sh.where}${filter ? sql` AND m.channel = ${filter}` : sql``}${
+    way ? sql` AND m.direction = ${way}` : sql``}`;
   const rows = await app.db.query`
     SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, m.spam, g.name AS grp_name,
       (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
+      (SELECT COALESCE(d.address, u.username) FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
+        WHERE d.message_id = m.id ORDER BY d.id LIMIT 1) AS recipient,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.sent IS NOT NULL) AS sent_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.due IS NOT NULL) AS owed_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
@@ -103,25 +112,25 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY m.time DESC, m.id DESC
     LIMIT ${LIST_LIMIT}`;
   const [tracked, thumbs, view] = await Promise.all([trackingStats(app, rows), previews(app, rows), labels(app)]);
-  if (!rows.length) return html`<tr><td colspan=10>${search || filter ? view.noMatch : view.noMessages}`;
+  if (!rows.length) return html`<tr><td colspan=9>${search || filter || way ? view.noMatch : view.noMessages}`;
 
   const pageUrl = await (await node.page()).url();
   const msgUrl = (id: unknown) => backend.toUrl(pageUrl, { msg: id });
   return html.join(rows.map((row) => {
     const errors = Number(row.error_count) || 0;
+    const incoming = row.direction === "in";
     const target = messageTarget(row, view);
     const stats = tracked.get(Number(row.id));
     return html`<tr u2-href>
       <td><a href="${msgUrl(row.id)}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.time)}
       <td style="white-space:nowrap">${direction(row, view)} ${view.badge(row.channel)}
-      <td style="white-space:nowrap">${spam(row.spam)}
       <td>${row.title ? html`<b>${cut(String(row.title), 60)}</b> ` : ""}${cut(plain(row))}${target ? html` <small>${target}</small>` : ""}
-      <td data-attachments>${thumbs.get(Number(row.id)) ?? (Number(row.attachment_count) || 0)}
+      <td data-attachments>${thumbs.get(Number(row.id)) ?? (Number(row.attachment_count) || "")}
       <td style="white-space:nowrap">${reached(row, view)}
-      <td style="white-space:nowrap">${trackedStat(stats?.opened_count, stats?.opened_first)}
-      <td style="white-space:nowrap">${trackedStat(stats?.clicked_count, stats?.clicked_first)}
-      <td>${errors ? html`<span class=u2-badge>${errors}</span>` : ""}`;
+      <td style="white-space:nowrap">${incoming ? "" : trackedStat(stats?.opened_count, stats?.opened_first)}
+      <td style="white-space:nowrap">${incoming ? "" : trackedStat(stats?.clicked_count, stats?.clicked_first)}
+      <td style="white-space:nowrap">${errors ? html`<span class=u2-badge>${errors}</span> ` : ""}${spam(row.spam)}`;
   }));
 }
 
@@ -129,7 +138,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 function spam(score: unknown) {
   if (score == null) return "";
   const p = Number(score);
-  return html`${p >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${Math.round(p * 100)}%`;
+  const percent = `${Math.round(p * 100)}%`;
+  return p >= SPAM ? html`<span style="color:var(--red)">${percent}</span>` : html`${percent}`;
 }
 
 /** How far a message got: how many of its recipients it reached, and what is still owed. An incoming
@@ -140,9 +150,9 @@ function reached(row: Row, view: View) {
   const sent = Number(row.sent_count) || 0;
   const owed = Number(row.owed_count) || 0;
   if (!all) return html`0`;
-  return html`<span class=-reached><progress value="${sent}" max="${all}"></progress> ${sent}/${all}${owed
+  return html`<small class=-reached><progress value="${sent}" max="${all}"></progress> ${sent}/${all}${owed
     ? html` <span class=u2-badge title="${view.due}">${owed}</span>`
-    : ""}</span>`;
+    : ""}</small>`;
 }
 
 /** Thumbnails of the first attachments of the visible messages. One query, including the file rows. */
@@ -423,17 +433,19 @@ async function attachments(app: App, rows: Row[], compact = false) {
   return html`<div class=-attachments>${items}</div>`;
 }
 
+/** The group, or the first recipient and how many more. An incoming message's delivery is its sender. */
 function messageTarget(row: Row, view: View) {
   if (row.grp_id) return `[${row.grp_name ?? view.group} #${row.grp_id}]`;
   const count = Number(row.recipient_count ?? row.deliveries?.length ?? 0);
-  return count > 1 ? `[${count} ${view.recipients}]` : "";
+  const first = row.recipient ?? row.deliveries?.[0]?.address;
+  return first ? `[${first}${count > 1 ? ` +${count - 1}` : ""}]` : "";
 }
 
-/** Incoming or outgoing, as the call-log icons say it. */
+/** Incoming or outgoing, as two distinct shapes — mirrored arrows are hard to tell apart. */
 function direction(row: Row, view: View) {
   return row.direction === "out"
-    ? html`<u2-ico inline icon=call_made aria-label="${view.outgoing}">→</u2-ico>`
-    : html`<u2-ico inline icon=call_received aria-label="${view.incoming}">←</u2-ico>`;
+    ? html`<u2-ico inline class=-direction icon=send aria-label="${view.outgoing}">→</u2-ico>`
+    : html`<u2-ico inline class=-direction icon=move_to_inbox aria-label="${view.incoming}">←</u2-ico>`;
 }
 
 /** What the message says, without its markup — for previews and search results. */
@@ -475,7 +487,7 @@ async function labels(app: App) {
     badge(channel: unknown): HtmlString {
       const name = String(channel ?? "");
       const c = known.get(name);
-      return html`<span class=u2-badge${c?.color ? html.raw(` style="--color-dark:var(${c.color})"`) : ""}>${c?.label ?? name}</span>`;
+      return html`<small class=u2-badge${c?.color ? html.raw(` style="--color-dark:var(${c.color})"`) : ""}>${c?.label ?? name}</small>`;
     },
   };
 }
@@ -501,6 +513,8 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     app.db.query`
       SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.format, m.time, g.name AS grp_name,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
+        (SELECT COALESCE(d.address, u.username) FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
+        WHERE d.message_id = m.id ORDER BY d.id LIMIT 1) AS recipient,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS error_count
       FROM message m LEFT JOIN grp g ON g.id = m.grp_id
       ORDER BY m.time DESC, m.id DESC LIMIT 5`.catch(() => []),
