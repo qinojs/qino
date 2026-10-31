@@ -27,19 +27,16 @@ cms.initNode("backend.cms.form", (el) => {
     const { form: dialog } = await import("@qino/u2/js/dialog/dialog.js");
     const title = await t`Edit`;
     const data = await dialog({
-      body: "<b></b>",
+      body: '<b></b><u2-fields></u2-fields>',
       init(d) {
-        const head = d.querySelector("b");
-        head.textContent = title;
-        for (const cell of cells.toReversed()) {
+        d.querySelector("b").textContent = title;
+        const fields = d.querySelector("u2-fields");
+        for (const cell of cells) {
           const value = cell.textContent;
           const input = document.createElement(value.includes("\n") || value.length > 60 ? "textarea" : "input");
           Object.assign(input, { name: cell.dataset.field, value });
           if (input.localName === "textarea") input.rows = Math.min(12, value.split("\n").length + 2);
-          input.style.cssText = "display:block;width:min(40rem,80vw)";
-          const field = document.createElement("label");
-          field.append(label(cell.dataset.field) ?? cell.dataset.field, input);
-          head.after(field);
+          fields.append(label(cell.dataset.field) ?? cell.dataset.field, input);
         }
       },
     });
