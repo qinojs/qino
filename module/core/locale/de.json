@@ -183,6 +183,8 @@
   "Main": "Standard",
   "Main for this channel": "Standard für diesen Kanal",
   "Maintenance": "Wartung",
+  "Mark as not spam": "Als kein Spam markieren",
+  "Mark as spam": "Als Spam markieren",
   "Max cache bytes": "Max. Cache-Bytes",
   "Maximum 1000 are shown.": "Es werden maximal 1000 angezeigt.",
   "Mime": "Mime",

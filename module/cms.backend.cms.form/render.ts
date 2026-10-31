@@ -105,6 +105,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
 
   if (vars.save) await save(app, form, vars.save as { id: string; data: Record<string, string> });
   if (vars.delete) await remove(app, form, Number(vars.delete));
+  if (vars.mark) await mark(app, form, vars.mark as { id: string; spam: string });
 
   const page = Number(vars.page ?? 0);
   const { rows, total } = await entries(app, form, { ...vars, page, spam: !!vars.spam });
@@ -141,7 +142,9 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
       ${rows.map((row) =>
     html.async`<tr data-entry="${row.id}">
         <td>${received(row)}
-        <td class=-num>${row.spam >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${percent(row.spam)}
+        <td class=-num><button class=u2-unstyle data-mark="${row.id}" data-to="${row.spam >= SPAM ? 0 : 1}"
+            title="${row.spam >= SPAM ? t`Mark as not spam` : t`Mark as spam`}">
+          ${row.spam >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${percent(row.spam)}</button>
         ${cells(row)}
         <td><button class=u2-unstyle data-edit title="${t`Edit`}"><u2-ico icon=edit>✎</u2-ico></button>
           <button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
@@ -172,6 +175,14 @@ async function save(app: App, form: Node, vs: { id: string; data: Record<string,
     data[field] = typeof old === "number" && value !== "" && !isNaN(Number(value)) ? Number(value) : String(value);
   }
   await app.db.table("form_entry").update(id, { data: JSON.stringify(data) });
+}
+
+/** Correct the spam judgement of an entry: 0 is none, 1 is spam. */
+async function mark(app: App, form: Node, vs: { id: string; spam: string }) {
+  const id = Number(vs.id);
+  const own = await app.db.one`
+    SELECT id FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
+  if (own) await app.db.table("form_entry").update(id, { spam: Number(vs.spam) ? 1 : 0 });
 }
 
 /** Throw one entry away. Its files hang on it and go along. */

@@ -27,8 +27,9 @@ cms.initNode("backend.cms.form", (el) => {
     const { form: dialog } = await import("@qino/u2/js/dialog/dialog.js");
     const title = await t`Edit`;
     const data = await dialog({
-      body: '<b></b><u2-fields></u2-fields>',
+      body: "<b></b><u2-fields></u2-fields>",
       init(d) {
+        d.style.width = "63rem"; // room for long messages; the browser keeps a modal within the window
         d.querySelector("b").textContent = title;
         const fields = d.querySelector("u2-fields");
         for (const cell of cells) {
@@ -52,6 +53,9 @@ cms.initNode("backend.cms.form", (el) => {
 
     const ed = e.target.closest("[data-edit]");
     if (ed) return edit(ed.closest("[data-entry]"));
+
+    const mark = e.target.closest("[data-mark]");
+    if (mark) { mark.disabled = true; return reloadList({ mark: { id: mark.dataset.mark, spam: mark.dataset.to } }); }
 
     const del = e.target.closest("[data-delete]");
     if (del) { del.disabled = true; return reloadList({ delete: del.dataset.delete }); }
