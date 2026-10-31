@@ -133,7 +133,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       form.files.map(async ({ upload }) => ({ name: upload.name, content: await fs.bytes(upload.tmpPath) })),
     );
     await keepEntry(node, form);
-    if (mail) await send(node, form, attachments);
+    // the entry is kept: a failed mail must not cost the visitor the confirmation (or make them send again)
+    if (mail) await send(node, form, attachments).catch((e) => console.error(`form ${node.id}: mail failed`, e));
     const redirect = await cms.url(String(successPage ?? ""));
     if (redirect) {
       ctx.res.headers.set("Location", redirect);
