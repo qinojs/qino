@@ -50,7 +50,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
     <div class=u2-card>
         <div class=-head>${t`Entries`}</div>
-        <div class=u2-flex>
+        <div class=u2-flex style="align-items:baseline">
             <input type=search data-search placeholder="${t`Search`}…">
             <label><input type=checkbox data-spam> ${t`Show spam`}</label>
             <u2-menubutton>
