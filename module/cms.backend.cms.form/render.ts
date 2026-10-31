@@ -1,5 +1,7 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
 import { entryData, fields, SPAM, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
 
 import type { App, HtmlString } from "@qino/qino";
@@ -35,7 +37,7 @@ export async function entries(app: App, node: Node, opt: {
 } = {}) {
   const sh = sqlSearch(String(opt.search ?? ""), ["data"]);
   const rows = await app.db.query`
-    SELECT id, created, lang, spam, data FROM ${sql.id(tableRef("form_entry"))}
+    SELECT id, created, lang, spam, log_id, data FROM ${sql.id(tableRef("form_entry"))}
     WHERE node_id = ${node.id} AND ${sh.where} ORDER BY created DESC, id DESC`;
 
   // Values stay in `data`, so fields named `id` or `created` don't clash with the entry's columns.
@@ -44,6 +46,7 @@ export async function entries(app: App, node: Node, opt: {
     created: Number(row.created),
     lang: String(row.lang ?? ""),
     spam: Number(row.spam ?? 0),
+    log: Number(row.log_id ?? 0),
     data: entryData(row.data),
   }));
 
@@ -112,6 +115,12 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
         ${caption}${sort === name ? html.raw(dir === "asc" ? " ▲" : " ▼") : ""}`;
 
   const files = await uploads(app, rows.map((row) => row.id));
+  // the request that sent it — linked only if the user may see the request log
+  const logUrl = await backend.toModuleUrl(node, "cms.backend.superuser.requests.log");
+  const received = (row: { created: number; log: number }) => {
+    const href = row.log ? logUrl({ id: row.log }) : "";
+    return href ? html`<a href="${href}">${u2.el.time(row.created)}</a>` : u2.el.time(row.created);
+  };
   const cells = (row: { id: number; data: Record<string, unknown> }) =>
     names.map((name) => {
       const sent = files.get(`${row.id}:${name}`);
@@ -128,7 +137,7 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
     <tbody>
       ${rows.map((row) =>
     html.async`<tr data-entry="${row.id}">
-        <td>${date(row.created)}
+        <td>${received(row)}
         <td class=-num>${row.spam >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${percent(row.spam)}
         ${cells(row)}
         <td><button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
