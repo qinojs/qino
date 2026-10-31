@@ -19,7 +19,7 @@ export type Policy = {
 export const policy: Policy = {
   elements: [
     "h1", "h2", "h3", "h4", "h5", "h6", "p", "div", "span", "br", "hr", "blockquote", "pre", "code",
-    "b", "strong", "i", "em", "u", "s", "sub", "sup", "a", "img", "figure", "figcaption",
+    "b", "strong", "i", "em", "u", "s", "small", "sub", "sup", "a", "img", "figure", "figcaption",
     "table", "thead", "tbody", "tfoot", "tr", "td", "th", "ul", "ol", "li",
   ],
   attributes: {
