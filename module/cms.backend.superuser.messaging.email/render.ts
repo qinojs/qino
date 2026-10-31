@@ -305,6 +305,7 @@ export async function journal(node: Node): Promise<HtmlString> {
       SELECT m.id, m.direction, m.title, m.text, m.format, m.time,
         (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachments,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipients,
+        (SELECT d.address FROM message_delivery d WHERE d.message_id = m.id ORDER BY d.id LIMIT 1) AS recipient,
         (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND d.error IS NOT NULL) AS errors
       FROM message m WHERE m.channel = ${CHANNEL} ORDER BY m.time DESC, m.id DESC LIMIT 25`,
     app.db.row`SELECT
@@ -323,7 +324,7 @@ export async function journal(node: Node): Promise<HtmlString> {
         : html`<u2-ico inline icon=call_received>←</u2-ico>`}
       <td>${m.title ? html`<b>${m.title}</b> ` : ""}${cut(textOf({ text: String(m.text ?? ""), format: m.format || undefined }))}
       <td>${Number(m.attachments) || 0}
-      <td>${m.recipients}
+      <td>${m.recipient ?? ""}${Number(m.recipients) > 1 ? html` <small>+${Number(m.recipients) - 1}</small>` : ""}
       <td>${Number(m.errors) ? html`<span class=u2-badge>${m.errors}</span>` : ""}`)
     : html`<tr><td colspan=7>${nothing}`;
 
