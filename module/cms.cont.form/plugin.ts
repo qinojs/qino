@@ -41,6 +41,7 @@ async function spam(node: Node, form: Form, ctx: Ctx) {
     node.app.fire("suspicious", { ctx, weight: 15, reason: "form honeypot filled" }).catch(() => {});
     return 1;
   }
+  if (await node.access() >= 2) return 0; // who may read the entries is their recipient, not a spammer
   const labeled = Object.fromEntries(
     Object.entries(form.values).map(([name, value]) => [form.labels[name] || name, value]),
   );

@@ -18,7 +18,7 @@ export default async function (node: Node, vars: any): Promise<any> {
   if (!vars?.export) return false;
   const form = await cms(node.app).node(Number(vars.export));
   if (!form.exists() || form.vs.module !== "cms.cont.form" || await form.access() < 2) return false;
-  const rows = await exportRows(node.app, form, String(vars.search ?? ""));
+  const rows = await exportRows(node.app, form, String(vars.search ?? ""), !!vars.spam);
   const format = vars.format === "csv" ? "csv" : "xlsx";
   const bytes = format === "csv" ? new TextEncoder().encode(csv(rows)) : await xlsx(rows);
   return { name: `form-${form.id}.${format}`, type: TYPES[format], data: bytes.toBase64() };

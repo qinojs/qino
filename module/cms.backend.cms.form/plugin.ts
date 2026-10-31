@@ -52,8 +52,14 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
         <div class=-head>${t`Entries`}</div>
         <div class=u2-flex>
             <input type=search data-search placeholder="${t`Search`}…">
-            <button data-export=xlsx>${t`Export as Excel`}</button>
-            <button data-export=csv>${t`Export as CSV`}</button>
+            <label><input type=checkbox data-spam> ${t`Show spam`}</label>
+            <u2-menubutton>
+              <button type=button>${t`Export`} ▾</button>
+              <menu>
+                <li><button data-export=xlsx>Excel</button>
+                <li><button data-export=csv>CSV</button>
+              </menu>
+            </u2-menubutton>
         </div>
         <table class=u2-table cms-part=list>${list(node, { vars })}</table>
     </div>

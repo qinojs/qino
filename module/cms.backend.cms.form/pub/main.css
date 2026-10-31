@@ -1,2 +1,4 @@
 /* The form whose entries are shown. */
 [qcms-mod="backend.cms.form"] [aria-current] { font-weight: bold; }
+/* Messages keep their line breaks. */
+[qcms-mod="backend.cms.form"] [data-field] { white-space: pre-line; }

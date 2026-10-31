@@ -23,7 +23,7 @@ export async function forms(app: App): Promise<Node[]> {
 }
 
 /**
- * A form's entries, searched and sorted. `sort` is a field name or "created".
+ * A form's entries, searched and sorted, spam only on request. `sort` is a field name or "created".
  *
  * Search in SQL (LIKE over the json text); sorting and paging in JS, since JSON paths differ per
  * database. So all entries of a form are loaded — fine until a form has tens of thousands.
@@ -34,11 +34,13 @@ export async function entries(app: App, node: Node, opt: {
   dir?: string;
   page?: number;
   all?: boolean;
+  spam?: boolean;
 } = {}) {
   const sh = sqlSearch(String(opt.search ?? ""), ["data"]);
+  const spam = opt.spam ? sql`${true}` : sql`spam < ${SPAM}`;
   const rows = await app.db.query`
     SELECT id, created, lang, spam, log_id, data FROM ${sql.id(tableRef("form_entry"))}
-    WHERE node_id = ${node.id} AND ${sh.where} ORDER BY created DESC, id DESC`;
+    WHERE node_id = ${node.id} AND ${spam} AND ${sh.where} ORDER BY created DESC, id DESC`;
 
   // Values stay in `data`, so fields named `id` or `created` don't clash with the entry's columns.
   const all = rows.map((row) => ({
@@ -101,11 +103,11 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
   const form = await formOfVars(app, vars);
   if (!form) return html`<tbody><tr><td>${await t`No form selected.`}</tbody>`;
 
-  if (vars.save) await save(app, form, vars.save as Record<string, string>);
+  if (vars.save) await save(app, form, vars.save as { id: string; data: Record<string, string> });
   if (vars.delete) await remove(app, form, Number(vars.delete));
 
   const page = Number(vars.page ?? 0);
-  const { rows, total } = await entries(app, form, { ...vars, page });
+  const { rows, total } = await entries(app, form, { ...vars, page, spam: !!vars.spam });
   const label = await fields(form, rows), names = [...label.keys()];
 
   const sort = String(vars.sort ?? "created");
@@ -124,8 +126,9 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
   const cells = (row: { id: number; data: Record<string, unknown> }) =>
     names.map((name) => {
       const sent = files.get(`${row.id}:${name}`);
-      // An upload is not a value one corrects — it is a file one looks at or takes away.
-      return sent ? html`<td>${sent}` : html`<td><input data-field="${name}" value="${row.data[name]}" size=12>`;
+      // An upload is not a value one corrects — it is a file one looks at or takes away. A value cell
+      // closes, so the dialog reads exactly the value (without the markup's whitespace).
+      return sent ? html`<td>${sent}` : html`<td data-field="${name}">${row.data[name]}</td>`;
     });
 
   return html.async`<thead><tr>
@@ -140,7 +143,8 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
         <td>${received(row)}
         <td class=-num>${row.spam >= SPAM ? html`<u2-ico inline icon=report>⚠</u2-ico> ` : ""}${percent(row.spam)}
         ${cells(row)}
-        <td><button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
+        <td><button class=u2-unstyle data-edit title="${t`Edit`}"><u2-ico icon=edit>✎</u2-ico></button>
+          <button class=u2-unstyle data-delete="${row.id}" u2-confirm="${t`Delete entry?`}"><u2-ico icon=delete>✕</u2-ico></button>`
   )}
       ${!rows.length ? html.async`<tr><td colspan="${names.length + 3}">${t`No entries.`}` : ""}
     </tbody>
@@ -156,15 +160,17 @@ export async function list(node: Node, { vars = {} }: { vars?: Record<string, un
     </tfoot>`;
 }
 
-/** Correct one value of an entry. Numbers stay numbers, so sorting still works. */
-async function save(app: App, form: Node, vs: Record<string, string>) {
+/** Correct the values of an entry. Numbers stay numbers, so sorting still works. */
+async function save(app: App, form: Node, vs: { id: string; data: Record<string, string> }) {
   const id = Number(vs.id);
   const row = await app.db.row`
     SELECT data FROM ${sql.id(tableRef("form_entry"))} WHERE id = ${id} AND node_id = ${form.id}`;
   if (!row) return; // an entry of another form is none of this table's business
   const data = entryData(row.data);
-  const old = data[vs.field];
-  data[vs.field] = typeof old === "number" && vs.value !== "" && !isNaN(Number(vs.value)) ? Number(vs.value) : String(vs.value);
+  for (const [field, value] of Object.entries(vs.data ?? {})) {
+    const old = data[field];
+    data[field] = typeof old === "number" && value !== "" && !isNaN(Number(value)) ? Number(value) : String(value);
+  }
   await app.db.table("form_entry").update(id, { data: JSON.stringify(data) });
 }
 
@@ -205,9 +211,9 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
       <td>${url ? html.async`<a href="${url}" target=_blank title="${app.t`Show the form on its page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}`;
 }
 
-/** The export of what the table currently shows — the search included, the paging not. */
-export async function exportRows(app: App, node: Node, search: string): Promise<unknown[][]> {
-  const { rows } = await entries(app, node, { search, sort: "created", dir: "asc", all: true });
+/** The export of what the table currently shows — search and spam included, the paging not. */
+export async function exportRows(app: App, node: Node, search: string, spam = false): Promise<unknown[][]> {
+  const { rows } = await entries(app, node, { search, spam, sort: "created", dir: "asc", all: true });
   const label = await fields(node, rows), names = [...label.keys()];
   const files = await uploadsOf(app, rows.map((row) => row.id));
   const attached = (id: number, name: string) => files.get(`${id}:${name}`)?.map((f) => f.name);

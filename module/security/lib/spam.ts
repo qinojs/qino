@@ -8,7 +8,7 @@ import type { App, Ctx } from "@qino/qino";
 /** A client younger than this many seconds may be a bot; at 0 it surely is. */
 const YOUNG = 20;
 /** From this score on it is spam either way: a model could only raise it, so it is not asked. */
-const SURE = 0.5;
+const SURE = 0.9;
 /** How many verdicts are kept per app, the latest. */
 const VERDICTS = 1000;
 
@@ -26,7 +26,8 @@ async function youth(ctx: Ctx) {
   return Math.max(0, 1 - age / YOUNG) ** 2;
 }
 
-/** A model's probability that `content` is spam, once per `key` (if any); undefined without a model. */
+/** A model's probability that `content` is spam; undefined without a model. A spam verdict sticks to
+ *  `key` (if any), so its next messages are not asked again — a doubtful one does not. */
 async function verdict(app: App, content: string, key: string, context?: string) {
   const known = verdicts.getOrInsertComputed(app, () => new Map());
   if (key && known.has(key)) return known.get(key);
@@ -36,7 +37,7 @@ async function verdict(app: App, content: string, key: string, context?: string)
   const answer = await decide(app, { content, question }).catch(() => undefined);
   if (!answer) return;
   const p = answer.probabilities.yes ?? 0;
-  if (key) known.set(key, p);
+  if (key && p >= SURE) known.set(key, p);
   if (known.size > VERDICTS) known.delete(known.keys().next().value!);
   return p;
 }
@@ -49,7 +50,7 @@ const combine = (...signals: number[]) => 1 - signals.reduce((clean, p) => clean
  * How likely `content` is spam, from 0 to 1. `ctx`: sent by a visitor's request (the address's
  * record and the client's age count). `sender`: who sent it otherwise, e.g. "email:a@b.ch".
  * `context`: what it was sent through, e.g. 'the form "Complaints"'. With ai, a model judges the
- * content too, once per user, address or sender.
+ * content too; a spam verdict holds for that user, address or sender.
  */
 export async function spamScore(
   app: App,
