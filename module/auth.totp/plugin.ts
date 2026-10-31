@@ -3,7 +3,7 @@ import { stored } from "@qino/qino/auth";
 
 import { confirm, enrol, forget, verify } from "./mod.ts";
 
-import type { ApiTree, App, Params } from "@qino/qino";
+import type { ApiTree, Params } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
 export const authFactors: Factor[] = [{
@@ -11,7 +11,7 @@ export const authFactors: Factor[] = [{
   label: "Authenticator app",
   stepUp: true,
   order: 20,
-  has: async (app: App, usrId: number) => !!(await stored(app, usrId, "totp")).length,
+  has: async (app, usrId) => !!(await stored(app, usrId, "totp")).length,
 }];
 
 export const api: ApiTree = {
