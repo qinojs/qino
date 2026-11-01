@@ -18,11 +18,28 @@ globalContextMenu().addItem('CMS Text',{
   onclick() { showEditor(this.qgCurrentTarget); }
 });
 
+const showDialog = async (parts, style = '') => {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'backdropClose';
+  dialog.style.cssText = style;
+  dialog.innerHTML = await html.async`<div style="display:flex">${parts}</div>`;
+  dialog.firstElementChild.lastElementChild.style.borderRight = 'none';
+  dialog.addEventListener('close', () => setTimeout(() => dialog.remove(), 2000));
+  document.querySelector('qino-cms').shadowRoot.append(dialog);
+  dialog.showModal();
+  return dialog;
+};
+
+// like typing: cms.mjs saves it and mirrors it into the page
+const setText = (field, text) => {
+  if ('value' in field) field.value = unhee(text);
+  else field.innerHTML = text;
+  field.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+};
+
 const showEditor = async el => {
   const tid = el.getAttribute('cmstxt');
   const data = await api['cms.text'].text(tid).get();
-  const dialog = document.createElement('dialog');
-  dialog.className = 'qgCMS';
   const parts = [];
   for (const row of data) {
     let sourceLang = null;
@@ -49,20 +66,19 @@ const showEditor = async el => {
         </div>`);
   }
   // the t`` calls above are queued in one microtask, so they travel in a single request
-  dialog.innerHTML = await html.async`<div style="display:flex">${parts}</div>`;
-  dialog.style.cssText = 'inset: auto 0 0 0; box-shadow:0 0 1rem #0008; border:0; padding:0';
-  dialog.addEventListener('click', e => e.target === dialog && dialog.close() );
+  const dialog = await showDialog(parts, 'inset:auto 0 1rem 0');
   dialog.addEventListener('click',async e=>{
     if (!e.target.classList.contains('-translate')) return;
     const btn = e.target;
-    const targetLang = btn.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
+    const field = btn.closest('.-language').querySelector(':scope >[cmstxt]');
+    const targetLang = field.getAttribute('cmslang');
     const sourceLang = btn.dataset.sourceLang;
     const { default: loading } = await import('@qino/pub/c1/loading.mjs');
     const unmark = loading.mark(e.target.closest('.-language'));
     try {
       await api['cms.text'].text(tid).translate.post({ targetLang, sourceLang });
-      dialog.close();
-      showEditor(el);
+      const rows = await api['cms.text'].text(tid).get();
+      setText(field, rows.find(row => row.lang === targetLang).text);
     } catch (err) {
       await cms.dialogs.alert(err.message);
     }
@@ -70,54 +86,26 @@ const showEditor = async el => {
   });
   dialog.addEventListener('click',async e=>{
     if (!e.target.classList.contains('-history')) return;
-    const lang = e.target.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
-    const history = await api['cms.text'].text(tid).history.get({ lang });
-    const hDialog = document.createElement('dialog');
-
-    hDialog.className = 'qgCMS';
-    const parts = [];
-    for (const row of history) {
+    const field = e.target.closest('.-language').querySelector(':scope >[cmstxt]');
+    const history = await api['cms.text'].text(tid).history.get({ lang: field.getAttribute('cmslang') });
+    const parts = history.map((row, i) => {
       const date = new Date(row.log_time*1000).toLocaleString(false, {dateStyle: 'short', timeStyle: 'short'});
-      parts.push(html.async`
-            <div class=-language style="padding:1rem; min-width:15rem; border-right:1px solid">
+      return html.async`
+            <div style="padding:1rem; min-width:15rem; border-right:1px solid">
                 <div style="display:flex; align-items:end; margin-bottom:.5rem">
                     <h2 style="margin:0 auto 0 0" title="${row.email}">${date}</h2>
-                    <button class=-restore style="white-space:nowrap">${t`restore`}</button>
+                    <button class=-restore value=${i} style="white-space:nowrap">${t`restore`}</button>
                 </div>
-                <div cmstxt=${tid} cmslang="${lang}" style="min-height:2em; flex:1; border:.125rem solid var(--cms-dark); overflow:auto; padding:.2rem; max-height:70vh;">${html.raw(row.text === false ? '' : row.text)}</div>
-            </div>`);
-    }
-    hDialog.innerHTML = await html.async`<div style="display:flex">${parts}</div>`;
-    hDialog.style.cssText = 'inset: 0 0 0 0; box-shadow:0 0 1rem #0008; border:0; padding:0';
-    document.body.append(hDialog);
-    hDialog.addEventListener('click', e => e.target === hDialog && hDialog.close() );
-    hDialog.addEventListener('click', async e => {
-      if (!e.target.classList.contains('-restore')) return;
-      const historyItem = e.target.closest('.-language');
-      const textEl = historyItem.querySelector('[cmstxt]');
-      const lang = textEl.getAttribute('cmslang');
-      const textContent = textEl.tagName === 'INPUT' ? textEl.value : textEl.innerHTML;
-
-      // Restore the text
-      const { default: loading } = await import('@qino/pub/c1/loading.mjs');
-      const unmark = loading.mark(historyItem);
-      const success = await api.cms.txt(parseInt(tid)).put({ value: textContent, lang });
-      unmark();
-
-      if (success) {
-        hDialog.close();
-        dialog.close();
-        showEditor(el); // Reload the main editor with restored content
-      } else {
-        await cms.dialogs.alert('Failed to restore');
-      }
+                <div style="min-height:2em; flex:1; border:.125rem solid var(--cms-dark); overflow:auto; padding:.2rem; max-height:70vh;">${html.raw(row.text ?? '')}</div>
+            </div>`;
     });
-    hDialog.addEventListener('close', () => setTimeout(() => hDialog.remove(), 2000));
-    hDialog.showModal();
+    const hDialog = await showDialog(parts);
+    hDialog.addEventListener('click', e => {
+      if (!e.target.classList.contains('-restore')) return;
+      setText(field, history[e.target.value].text ?? '');
+      hDialog.close();
+    });
   });
-  dialog.addEventListener('close', () => setTimeout(() => dialog.remove(), 2000));
-  document.body.append(dialog);
-  dialog.showModal();
 }
 
 // mark untranslated / void texts
