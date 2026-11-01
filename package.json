@@ -99,8 +99,8 @@
     "./tests": "./tests/mod.ts"
   },
   "dependencies": {
-    "@nuxodin/dump": "github:nuxodin/dump.js#5ff0494",
-    "@nuxodin/reporter": "github:nuxodin/reporter.js#ecdebde",
+    "@nuxodin/dump": "^1.5.2",
+    "@nuxodin/reporter": "^1.3.0",
     "@qino/item": "npm:@nuxodin/item@^0.6.19",
     "@scure/bip32": "^1",
     "@scure/btc-signer": "^1",

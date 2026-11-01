@@ -7,7 +7,7 @@ import { clientIp, fs, Output, requestStorage, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
-const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
+const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.3.0/";
 const REPORTER_PATH = REPORTER_ROOT + "mod.js";
 
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
