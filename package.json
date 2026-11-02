@@ -2,6 +2,10 @@
   "name": "@qino/qino",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qinojs/qino"
+  },
   "engines": {
     "node": ">=26"
   },
