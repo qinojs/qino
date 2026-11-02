@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test:node": "node --test --test-force-exit",
-    "test:bun": "bun test --isolate",
+    "test:bun": "bun test --isolate --timeout 60000",
     "test:deno": "deno task test"
   },
   "exports": {

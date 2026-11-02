@@ -37,7 +37,7 @@ leave the instance dormant. Unreachable Home Assistant does not prevent Qino fro
 Rejected credentials stop automatic retries until configuration is corrected.
 
 The URL may include a reverse proxy prefix. HTTP/HTTPS and WS/WSS URLs are accepted; the adapter
-connects to `<base>/api/websocket`. Allow the Home Assistant host in Deno's network permissions.
+connects to `<base>/api/websocket`. On Deno, allow the Home Assistant host in the network permissions.
 
 ## Behaviour
 

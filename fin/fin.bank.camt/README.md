@@ -4,9 +4,10 @@ Reads ISO 20022 **camt.053** (account statement) and **camt.054** (debit/credit 
 XML banks across Europe, and all Swiss ones, export — into [fin.bank](../fin.bank/).
 
 ```ts
+import { fs } from "@qino/qino";
 import { ingest, parse } from "@qino/qino/fin.bank.camt";
 
-await ingest(app, await Deno.readTextFile("statement.xml")); // { added, matched }
+await ingest(app, await fs.text("statement.xml")); // { added, matched }
 parse(xml); // the statements, without storing them
 ```
 

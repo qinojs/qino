@@ -4,7 +4,7 @@
   <img src="module/cms.layout.backend/pub/logo.svg" alt="Qino" width="140">
 </p>
 
-**The Deno framework for building modern digital platforms.**
+**The TypeScript framework for building modern digital platforms.**
 
 Qino is a modular system for web platforms. Start with a small API, then add login, permissions, messaging, AI, a CMS and operational tools as your application grows.
 
@@ -25,7 +25,7 @@ Use only what you need. Modules work without configuration, declare their depend
 
 ## Why Qino
 
-- **Deno-native** — TypeScript, ESM, and Web APIs from end to end.
+- **Runs on Node, Bun and Deno** — TypeScript, ESM, and Web APIs from end to end.
 - **Modular** — features are ordinary modules, no framework magic.
 - **Declarative APIs** — define an action tree once, serve it over HTTP, MCP or other adapters.
 - **Database-ready** — one query API for SQLite, PostgreSQL and MySQL.
@@ -36,7 +36,7 @@ Use only what you need. Modules work without configuration, declare their depend
 ## Quick start
 
 ```ts
-import { Access, App } from "jsr:@qino/qino@^0.7";
+import { Access, App, sys } from "jsr:@qino/qino@^0.7";
 
 const app = new App(); // SQLite by default
 
@@ -51,10 +51,12 @@ app.apiTree = {
 };
 
 await app.init();
-Deno.serve(app.fetch);
+sys.serve({ port: 8080 }, app.fetch);
 ```
 
 Your endpoint is now available at `GET /api/hello`.
+
+Qino runs on Node 26, Bun and Deno. The examples here use Deno with JSR; the npm package `qinojs` is in preparation.
 
 Direct `jsr:` imports, including package subpaths, work without a `deno.json`:
 
@@ -125,14 +127,14 @@ This action is available as `GET /api/users/:id` and, for example, as an MCP too
 `app.fetch` works wherever a standard request handler is accepted:
 
 ```ts
-Deno.serve({ port: 8080 }, app.fetch);
+sys.serve({ port: 8080 }, app.fetch); // or Deno.serve, Bun.serve
 ```
 
 Hono is optional. Use the adapter to mount Qino below an existing route:
 
 ```ts
 import { Hono } from "npm:hono@^4";
-import { App, honoAdapter } from "jsr:@qino/qino";
+import { App, honoAdapter, sys } from "jsr:@qino/qino";
 
 const app = new App();
 await app.init();
@@ -140,7 +142,7 @@ await app.init();
 const hono = new Hono();
 hono.route("/app", honoAdapter(app));
 
-Deno.serve(hono.fetch);
+sys.serve({ port: 8080 }, hono.fetch);
 ```
 
 ## CMS included
