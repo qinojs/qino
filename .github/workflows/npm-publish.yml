@@ -1,0 +1,76 @@
+name: Publish to npm
+
+# Runs after JSR, which already tested this commit and set the version's tag.
+on:
+  workflow_run:
+    workflows: [Publish to JSR]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          registry-url: https://registry.npmjs.org
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Read version
+        id: version
+        run: echo "version=$(jq -r '.version' deno.json)" >> $GITHUB_OUTPUT
+
+      # deno.json can change without a new version; the registry decides whether there is anything to do.
+      - name: Version already on npm?
+        id: check
+        run: |
+          if npm view qinojs@${{ steps.version.outputs.version }} version >/dev/null 2>&1; then
+            echo "new=false" >> $GITHUB_OUTPUT
+          else
+            echo "new=true" >> $GITHUB_OUTPUT
+          fi
+
+      # The repo imports itself as @qino/qino; on npm the package is qinojs. tests/ needs @std/assert from JSR
+      # and stays out of the package.
+      - name: Rename to qinojs
+        if: steps.check.outputs.new == 'true'
+        run: |
+          grep -rlE '@qino/qino' --include='*.ts' --exclude-dir=node_modules . | xargs sed -i -E 's#(jsr:)?@qino/qino#qinojs#g'
+          jq --arg v '${{ steps.version.outputs.version }}' \
+            '.name = "qinojs" | .version = $v | del(.private, .scripts, .devDependencies, .exports["./tests"])' \
+            package.json > package.tmp && mv package.tmp package.json
+
+      - name: Boot from the tarball
+        if: steps.check.outputs.new == 'true'
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP"
+          echo '{ "private": true, "type": "module" }' > package.json
+          npm install ./qinojs-*.tgz
+          cat > boot.ts <<'EOF'
+          import { App } from "qinojs";
+          const dir = `${import.meta.dirname}/${process.argv[2]}/`;
+          const app = new App({ dir, db: `sqlite:${dir}site.sqlite` });
+          await app.stores.add(new URL("./node_modules/qinojs/module/store.json", import.meta.url).href).addAll();
+          await app.init();
+          const res = await app.fetch(new Request("http://localhost/"));
+          console.log(process.argv[2], res.status);
+          process.exit(res.status < 400 ? 0 : 1);
+          EOF
+          node --import qinojs/node boot.ts node
+          bun boot.ts bun
+
+      - name: Update npm # OIDC needs npm >= 11.5.1
+        if: steps.check.outputs.new == 'true'
+        run: npm install -g npm@latest
+
+      - name: npm publish
+        if: steps.check.outputs.new == 'true'
+        run: npm publish --access public

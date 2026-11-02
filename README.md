@@ -56,7 +56,21 @@ sys.serve({ port: 8080 }, app.fetch);
 
 Your endpoint is now available at `GET /api/hello`.
 
-Qino runs on Node 26, Bun and Deno. The examples here use Deno with JSR; the npm package `qinojs` is in preparation.
+Qino runs on Node 26, Bun and Deno. The examples here use Deno with JSR; on npm the package is `qinojs`:
+
+```sh
+npm install qinojs
+```
+
+```ts
+import { App } from "qinojs";
+import type { Node } from "qinojs/cms";
+```
+
+```sh
+bun server.ts
+node --import qinojs/node server.ts # Node refuses TypeScript below node_modules; this lifts that
+```
 
 Direct `jsr:` imports, including package subpaths, work without a `deno.json`:
 

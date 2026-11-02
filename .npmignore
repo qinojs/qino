@@ -1,0 +1,6 @@
+.github
+bun.lock
+/docs
+/test-modules
+tests
+*.test.ts

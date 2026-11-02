@@ -101,7 +101,8 @@
     "./uncdn": "./module/uncdn/mod.ts",
     "./user.image": "./module/user.image/mod.ts",
     "./webapp": "./module/webapp/mod.ts",
-    "./tests": "./tests/mod.ts"
+    "./tests": "./tests/mod.ts",
+    "./node": "./node.mjs"
   },
   "dependencies": {
     "@nuxodin/dump": "^1.5.2",
