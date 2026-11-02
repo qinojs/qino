@@ -8,6 +8,6 @@ cat > deno.json <<'JSON'
   "workspace": ["./qino"],
   "unstable": ["worker-options"],
   "nodeModulesDir": "none",
-  "minimumDependencyAge": { "age": "P1D", "exclude": ["jsr:@nuxodin/item"] }
+  "minimumDependencyAge": { "age": "P1D", "exclude": ["jsr:@nuxodin/item", "npm:@nuxodin/dump", "npm:@nuxodin/reporter"] }
 }
 JSON

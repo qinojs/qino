@@ -14,6 +14,7 @@ JSON
 cat > bunfig.toml <<'TOML'
 [install]
 minimumReleaseAge = 86400
-minimumReleaseAgeExcludes = ["@nuxodin/item"]
+minimumReleaseAgeExcludes = ["@nuxodin/item", "@nuxodin/dump", "@nuxodin/reporter"]
 TOML
-/usr/local/bin/bun install
+cp qino/.npmrc . # a workspace reads only the root's
+/usr/local/bin/bun install --production
