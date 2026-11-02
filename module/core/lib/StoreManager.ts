@@ -19,7 +19,7 @@ async function readFolder(url: string) {
 
 /** The catalog's module names, sorted; validates the format. */
 async function readCatalog(url: string) {
-  const res = await fetch(url); // works for file: and http(s):
+  const res = url.startsWith("file:") ? new Response(await fs.text(fileURLToPath(url))) : await fetch(url); // works for file: and http(s):
   if (!res.ok) throw new Error(`Store ${url}: ${res.status} ${res.statusText}`);
   const modules = (await res.json())?.modules;
   if (!modules || typeof modules !== "object" || Array.isArray(modules)) throw new Error(`Store ${url}: modules must be an object`);

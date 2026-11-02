@@ -1,11 +1,12 @@
-import { html, moduleIcon } from "@qino/qino";
+import { fileURLToPath } from "node:url";
+import { fs, html, moduleIcon } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { imageUrl } from "@qino/qino/user.image";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-const ICON = html.raw(await (await fetch(new URL("./pub/logo-wide.svg", import.meta.url))).text());
+const ICON = html.raw(await fs.text(fileURLToPath(new URL("./pub/logo-wide.svg", import.meta.url))));
 
 async function render(node: Node, {ctx}: { ctx: Ctx }) {
 

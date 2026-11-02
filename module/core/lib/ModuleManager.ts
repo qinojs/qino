@@ -33,7 +33,9 @@ export type Manifest = {
 
 /** Read a module's manifest. May be missing: a module can be just a plugin.ts. */
 export async function readManifest(source: string): Promise<Manifest> {
-  const res = await fetch(new URL("manifest.json", source)).catch(() => null); // reads file: and http(s): alike
+  const url = new URL("manifest.json", source);
+  const read = url.protocol === "file:" ? fs.text(fileURLToPath(url)).then((text) => new Response(text)) : fetch(url);
+  const res = await read.catch(() => null); // reads file: and http(s): alike
   if (!res?.ok) return {};
   const manifest = await res.json();
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) throw new Error(`Manifest of ${source} must be an object`);
