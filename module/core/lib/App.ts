@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdirSync } from "node:fs";
 import * as nodePath from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +26,9 @@ import type { ApiTree, ApiProxy } from "./api/mod.ts";
 import type { AppEvents } from "./AppEvents.ts";
 
 const mainDir = fileURLToPath(new URL(".", sys.mainModule));
+
+// Deno's import() leaves its context behind and Deno.serve calls handlers in it, so requests start clean there.
+const startContext: <T>(fn: () => T) => T = "Deno" in globalThis ? AsyncLocalStorage.snapshot() : (fn) => fn();
 
 const DEFAULT_CONFIG = {
     dir: mainDir,
@@ -121,7 +125,11 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Entry point: `Request` in, `Response` out. `appUrl` = the path prefix the app is served under. */
-    async handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {
+    handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {
+        return startContext(() => this.#handle(request, appUrl, peerAddr));
+    }
+
+    async #handle(request: Request, appUrl: string, peerAddr: string): Promise<Response> {
         const time = performance.now();
         const base = ensureSlash(appUrl || "/");
         const meta = { request, peerAddr, time, base };
