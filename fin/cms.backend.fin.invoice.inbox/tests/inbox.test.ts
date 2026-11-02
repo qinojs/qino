@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { FileTransformer } from "@qino/qino";
 import { create } from "@qino/qino/fin.invoice";
 import { render as pdf } from "@qino/qino/pdf";
 
@@ -40,9 +41,11 @@ test("a PDF is shown as its text, one without text as its pages; anything else i
     const fileOf = async (body: string) =>
       app.dbFiles.add(new File([await pdf(app, body)], "invoice.pdf", { type: "application/pdf" }));
     const text = await fileOf("<p>Rechnung R-778 Total CHF 132.37, zahlbar in 30 Tagen</p>").catch(() => undefined);
-    if (text) {
+    if (text && await FileTransformer.capabilities.pdftotext) {
       const [part] = await partsOf(text);
       assertStringIncludes(part.type === "text" ? part.text : "", "Rechnung R-778");
+    }
+    if (text && (await text.transform({ page: 1, w: 1600, fmt: "jpg" })).transformed) {
       const scan = await fileOf('<div style="width:5cm; height:2cm; background:#000"></div>');
       const parts = await partsOf(scan);
       assertEquals(parts.map((p) => p.type), ["image"]);
